@@ -984,6 +984,53 @@ function MobileVacancyWrite() {
     </div>
   );
 
+  const renderSelectOrInput = (
+    value: string,
+    setValue: (val: string) => void,
+    options: { label: string; value: string }[],
+    placeholder: string
+  ) => {
+    const isCustom = value !== "" && !options.some(o => o.value === value);
+
+    if (isCustom) {
+      return (
+        <div style={{ display: "flex", gap: 6, flex: 1 }}>
+          <input
+            type="text"
+            placeholder={placeholder}
+            value={value === " " ? "" : value}
+            onChange={(e) => setValue(e.target.value || " ")}
+            style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={() => setValue("")}
+            style={{ padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, background: "#f8fafc", color: "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
+          >
+            취소
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <select
+        value={value}
+        onChange={(e) => setValue(e.target.value === "기타" ? " " : e.target.value)}
+        style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}
+      >
+        <option value="">선택</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+        <option value="기타">기타 (직접입력)</option>
+      </select>
+    );
+  };
+
   return (
     <div style={{ minHeight:"100dvh", background:"#f4f5f7", fontFamily:"'Pretendard Variable', -apple-system, sans-serif" }}>
       {/* 헤더 */}
@@ -1395,13 +1442,12 @@ function MobileVacancyWrite() {
               <div style={{flex:1}}>
                 <label style={labelStyle}>현재 용도 (현용도)</label>
                 <div style={{ display:"flex", gap:6 }}>
-                  <select value={["공실", "사무실", "식당/카페", "학원/병원", "미용/뷰티", "판매/소매", "창고/공장", "기타", ""].includes(currentUsage) ? currentUsage : "기타"} onChange={(e) => setCurrentUsage(e.target.value === "기타" ? "" : e.target.value)} style={{ ...inputStyle, flex: 1 }}>
-                    <option value="">선택</option>
-                    {["공실", "사무실", "식당/카페", "학원/병원", "미용/뷰티", "판매/소매", "창고/공장", "기타"].map(v => (
-                      <option key={v} value={v}>{v}</option>
-                    ))}
-                  </select>
-                  <input type="text" placeholder="직접 입력" value={currentUsage} onChange={(e) => setCurrentUsage(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                  {renderSelectOrInput(
+                    currentUsage,
+                    setCurrentUsage,
+                    ["공실", "사무실", "식당/카페", "학원/병원", "미용/뷰티", "판매/소매", "창고/공장"].map(v => ({ label: v, value: v })),
+                    "직접 입력"
+                  )}
                 </div>
               </div>
             </div>
@@ -1462,26 +1508,24 @@ function MobileVacancyWrite() {
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>건축물 주용도</label>
               <div style={{ display: "flex", gap: 6 }}>
-                <select value={["제1종근린생활시설", "제2종근린생활시설", "판매시설", "업무시설", "교육연구시설", "의료시설", "숙박시설", "단독주택", "공동주택", "공장", "창고시설", "기타", ""].includes(mainUsage) ? mainUsage : "기타"} onChange={(e) => setMainUsage(e.target.value === "기타" ? "" : e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
-                  <option value="">선택</option>
-                  {["제1종근린생활시설", "제2종근린생활시설", "판매시설", "업무시설", "교육연구시설", "의료시설", "숙박시설", "단독주택", "공동주택", "공장", "창고시설", "기타"].map(v => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
-                <input type="text" placeholder="직접입력" value={mainUsage} onChange={(e) => setMainUsage(e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+                {renderSelectOrInput(
+                  mainUsage,
+                  setMainUsage,
+                  ["제1종근린생활시설", "제2종근린생활시설", "판매시설", "업무시설", "교육연구시설", "의료시설", "숙박시설", "단독주택", "공동주택", "공장", "창고시설"].map(v => ({ label: v, value: v })),
+                  "직접 입력"
+                )}
               </div>
             </div>
             
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>건물 구조</label>
               <div style={{ display: "flex", gap: 6 }}>
-                <select value={["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조", "기타", ""].includes(buildingStructure) ? buildingStructure : "기타"} onChange={(e) => setBuildingStructure(e.target.value === "기타" ? "" : e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
-                  <option value="">선택</option>
-                  {["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조", "기타"].map(v => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
-                <input type="text" placeholder="직접입력" value={buildingStructure} onChange={(e) => setBuildingStructure(e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+                {renderSelectOrInput(
+                  buildingStructure,
+                  setBuildingStructure,
+                  ["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조"].map(v => ({ label: v, value: v })),
+                  "직접 입력"
+                )}
               </div>
             </div>
 
@@ -1489,17 +1533,19 @@ function MobileVacancyWrite() {
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>승강기 대수</label>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <select value={["없음", "1", "2", "3", "4", "5", "기타", ""].includes(elevatorCnt) ? elevatorCnt : "기타"} onChange={(e) => setElevatorCnt(e.target.value === "기타" ? "" : e.target.value)} style={{ flex: 1, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
-                    <option value="">선택</option>
-                    <option value="없음">없음</option>
-                    <option value="1">1대</option>
-                    <option value="2">2대</option>
-                    <option value="3">3대</option>
-                    <option value="4">4대</option>
-                    <option value="5">5대 이상</option>
-                    <option value="기타">기타</option>
-                  </select>
-                  <input type="text" placeholder="입력" value={elevatorCnt} onChange={(e) => setElevatorCnt(e.target.value)} style={{ flex: 0.8, height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 10px", fontSize: 14, background: "#fff" }} />
+                  {renderSelectOrInput(
+                    elevatorCnt,
+                    setElevatorCnt,
+                    [
+                      { label: "없음", value: "없음" },
+                      { label: "1대", value: "1" },
+                      { label: "2대", value: "2" },
+                      { label: "3대", value: "3" },
+                      { label: "4대", value: "4" },
+                      { label: "5대 이상", value: "5" }
+                    ],
+                    "입력"
+                  )}
                 </div>
               </div>
               <div style={{ flex: 1 }}>

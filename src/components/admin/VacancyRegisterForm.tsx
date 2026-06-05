@@ -820,6 +820,53 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     </button>
   );
 
+  const renderSelectOrInput = (
+    value: string,
+    setValue: (val: string) => void,
+    options: { label: string; value: string }[],
+    placeholder: string
+  ) => {
+    const isCustom = value !== "" && !options.some(o => o.value === value);
+
+    if (isCustom) {
+      return (
+        <div style={{ display: "flex", gap: 8, flex: 1 }}>
+          <input
+            type="text"
+            placeholder={placeholder}
+            value={value === " " ? "" : value}
+            onChange={(e) => setValue(e.target.value || " ")}
+            style={{ ...inputStyle, background: "#fff", flex: 1 }}
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={() => setValue("")}
+            style={{ padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: "#f8fafc", color: textSecondary, fontSize: 13, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+          >
+            취소
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <select
+        value={value}
+        onChange={(e) => setValue(e.target.value === "기타" ? " " : e.target.value)}
+        style={{ ...inputStyle, background: "#fff", flex: 1 }}
+      >
+        <option value="">선택</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+        <option value="기타">기타 (직접입력)</option>
+      </select>
+    );
+  };
+
   // ── 체크리스트 계산 ──
   const checkItems = [
     { label: "공실광고 분류 선택 완료", done: !!propertyType },
@@ -1630,13 +1677,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>현재 용도 (현용도)</label>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <select value={["공실", "사무실", "식당/카페", "학원/병원", "미용/뷰티", "판매/소매", "창고/공장", "기타", ""].includes(currentUsage) ? currentUsage : "기타"} onChange={(e) => setCurrentUsage(e.target.value === "기타" ? "" : e.target.value)} style={{ ...inputStyle, flex: 1 }}>
-                      <option value="">선택</option>
-                      {["공실", "사무실", "식당/카페", "학원/병원", "미용/뷰티", "판매/소매", "창고/공장", "기타"].map(v => (
-                        <option key={v} value={v}>{v}</option>
-                      ))}
-                    </select>
-                    <input type="text" placeholder="직접 입력" value={currentUsage} onChange={(e) => setCurrentUsage(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                    {renderSelectOrInput(
+                      currentUsage,
+                      setCurrentUsage,
+                      ["공실", "사무실", "식당/카페", "학원/병원", "미용/뷰티", "판매/소매", "창고/공장"].map(v => ({ label: v, value: v })),
+                      "직접 입력"
+                    )}
                   </div>
                 </div>
                 <div style={{ flex: 1 }}></div>
@@ -1767,25 +1813,23 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <div style={{ flex: 1 }}>
                     <label style={{...labelStyle, marginBottom: 6}}>건축물 주용도</label>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <select value={["제1종근린생활시설", "제2종근린생활시설", "판매시설", "업무시설", "교육연구시설", "의료시설", "숙박시설", "단독주택", "공동주택", "공장", "창고시설", "기타", ""].includes(mainUsage) ? mainUsage : "기타"} onChange={(e) => setMainUsage(e.target.value === "기타" ? "" : e.target.value)} style={{...inputStyle, background: "#fff", flex: 1}}>
-                        <option value="">선택</option>
-                        {["제1종근린생활시설", "제2종근린생활시설", "판매시설", "업무시설", "교육연구시설", "의료시설", "숙박시설", "단독주택", "공동주택", "공장", "창고시설", "기타"].map(v => (
-                          <option key={v} value={v}>{v}</option>
-                        ))}
-                      </select>
-                      <input type="text" placeholder="직접 입력" value={mainUsage} onChange={(e) => setMainUsage(e.target.value)} style={{...inputStyle, background: "#fff", flex: 1}} />
+                      {renderSelectOrInput(
+                        mainUsage,
+                        setMainUsage,
+                        ["제1종근린생활시설", "제2종근린생활시설", "판매시설", "업무시설", "교육연구시설", "의료시설", "숙박시설", "단독주택", "공동주택", "공장", "창고시설"].map(v => ({ label: v, value: v })),
+                        "직접 입력"
+                      )}
                     </div>
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{...labelStyle, marginBottom: 6}}>건물 구조</label>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <select value={["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조", "기타", ""].includes(buildingStructure) ? buildingStructure : "기타"} onChange={(e) => setBuildingStructure(e.target.value === "기타" ? "" : e.target.value)} style={{...inputStyle, background: "#fff", flex: 1}}>
-                        <option value="">선택</option>
-                        {["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조", "기타"].map(v => (
-                          <option key={v} value={v}>{v}</option>
-                        ))}
-                      </select>
-                      <input type="text" placeholder="직접 입력" value={buildingStructure} onChange={(e) => setBuildingStructure(e.target.value)} style={{...inputStyle, background: "#fff", flex: 1}} />
+                      {renderSelectOrInput(
+                        buildingStructure,
+                        setBuildingStructure,
+                        ["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조"].map(v => ({ label: v, value: v })),
+                        "직접 입력"
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1794,17 +1838,19 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   <div style={{ flex: 1 }}>
                     <label style={{...labelStyle, marginBottom: 6}}>승강기 대수</label>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <select value={["없음", "1", "2", "3", "4", "5", "기타", ""].includes(elevatorCnt) ? elevatorCnt : "기타"} onChange={(e) => setElevatorCnt(e.target.value === "기타" ? "" : e.target.value)} style={{...inputStyle, background: "#fff", flex: 1}}>
-                        <option value="">선택</option>
-                        <option value="없음">없음</option>
-                        <option value="1">1대</option>
-                        <option value="2">2대</option>
-                        <option value="3">3대</option>
-                        <option value="4">4대</option>
-                        <option value="5">5대 이상</option>
-                        <option value="기타">기타</option>
-                      </select>
-                      <input type="text" placeholder="직접 입력(숫자)" value={elevatorCnt} onChange={(e) => setElevatorCnt(e.target.value)} style={{...inputStyle, background: "#fff", flex: 1}} />
+                      {renderSelectOrInput(
+                        elevatorCnt,
+                        setElevatorCnt,
+                        [
+                          { label: "없음", value: "없음" },
+                          { label: "1대", value: "1" },
+                          { label: "2대", value: "2" },
+                          { label: "3대", value: "3" },
+                          { label: "4대", value: "4" },
+                          { label: "5대 이상", value: "5" }
+                        ],
+                        "직접 입력(숫자)"
+                      )}
                     </div>
                   </div>
                   <div style={{ flex: 1 }}>
