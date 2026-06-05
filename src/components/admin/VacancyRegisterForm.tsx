@@ -1384,7 +1384,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {/* ── 섹션 2: 거래 및 상세 정보 ── */}
             <div style={{ display: "flex", alignItems: "center", margin: "0 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>
-                거래 및 상세 정보 (전세, 월세, 면적 등)
+                거래 및 상세 정보
               </h2>
             </div>
 
