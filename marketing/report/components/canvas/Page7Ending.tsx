@@ -242,7 +242,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                          src={info.agentCardFront || ""}
                          alt="명함 이미지"
                          imageKey="agentCardFront"
-                         onImageUpload={async (file) => {
+                         onImageUpload={async (key, file) => {
                            if (onImageUpload) {
                              const url = await onImageUpload('agentCardFront', file);
                              if (url && onUpdateInfo) onUpdateInfo({ ...info, agentCardFront: url });
@@ -388,7 +388,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                        src={info.agentCardFront || ""}
                        alt="명함 이미지"
                        imageKey="agentCardFront"
-                       onImageUpload={async (file) => {
+                       onImageUpload={async (key, file) => {
                          if (onImageUpload) {
                            const url = await onImageUpload('agentCardFront', file);
                            if (url && onUpdateInfo) onUpdateInfo({ ...info, agentCardFront: url });
