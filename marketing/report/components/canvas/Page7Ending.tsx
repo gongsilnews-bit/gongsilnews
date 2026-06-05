@@ -180,7 +180,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                       </p>
                       <p className="flex justify-between">
                         <span className="text-gray-400">대표</span> 
-                        <span><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block text-right" /></span>
+                        <span><EditableText value={info.agencyRepresentative || info.agentRepresentative || "김민혁"} onChange={(v) => hc('agencyRepresentative', v)} className="inline-block text-right" /></span>
                       </p>
                       <p className="flex justify-between">
                         <span className="text-gray-400">등록번호</span> 

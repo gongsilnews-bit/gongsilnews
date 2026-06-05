@@ -16,7 +16,7 @@ const CompletedOverlay: React.FC<CompletedOverlayProps> = ({ info, colorTheme })
         <div className="absolute top-4 right-8 bg-white rounded-xl border border-gray-200/80 shadow-md p-4 w-[280px] text-left z-50 flex flex-col gap-1.5 select-none pointer-events-auto">
           <div className="text-[10px] font-black tracking-widest text-gray-400 uppercase">REALTY AGENCY</div>
           <div className="text-xs font-extrabold text-gray-800 truncate">
-            {info.agentName || "미래에셋공인 중개사 사무소"} <span className="text-gray-300 font-normal mx-1">|</span> <span className="text-gray-500 font-semibold">대표 {info.agentRepresentative || "김상태"}</span>
+            {info.agentName || "미래에셋공인 중개사 사무소"} <span className="text-gray-300 font-normal mx-1">|</span> <span className="text-gray-500 font-semibold">대표 {info.agencyRepresentative || info.agentRepresentative || "김상태"}</span>
           </div>
           <div className="text-[9px] text-gray-400 font-medium flex items-center gap-1">
             <span className="bg-gray-100 text-gray-500 px-1 rounded text-[8px] font-bold shrink-0">등록</span>

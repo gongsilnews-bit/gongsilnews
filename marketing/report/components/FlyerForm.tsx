@@ -589,6 +589,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       <div className="space-y-3">
                           <div><label className="text-xs text-gray-500">중개사무소명</label><input name="agentName" value={info.agentName || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
                           <div><label className="text-xs text-gray-500">등록번호</label><input name="agentRegistrationNumber" value={info.agentRegistrationNumber || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" placeholder="제11680-2015-00123호" /></div>
+                          <div><label className="text-xs text-gray-500">대표자명</label><input name="agencyRepresentative" value={info.agencyRepresentative || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
                           <div><label className="text-xs text-gray-500">담당자명/직급</label><input name="agentRepresentative" value={info.agentRepresentative || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>
                           <div><label className="text-xs text-gray-500">대표 번호</label><input name="agentPhone" value={info.agentPhone || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" placeholder="02-1234-5678" /></div>
                           <div><label className="text-xs text-gray-500">문의 휴대전화</label><input name="agentMobile" value={info.agentMobile || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" /></div>

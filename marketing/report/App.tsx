@@ -678,9 +678,10 @@ function App() {
         const agency = Array.isArray(owner.agencies) ? owner.agencies[0] : owner.agencies;
         
         const agentName = agency?.name || owner.company_name || owner.name || "공실뉴스 중개소";
-        const agentRepresentative = agency?.ceo_name || owner.name || v.client_name || "담당자명";
+        const agentRepresentative = owner.name || v.client_name || "담당자명";
+        const agencyRepresentative = agency?.ceo_name || owner.name || "대표자명";
         const agentPhone = agency?.phone || owner.phone || owner.tel_num || v.client_phone || "";
-        const agentMobile = agency?.cell || owner.cellphone || owner.phone || owner.cell_num || v.client_phone || "";
+        const agentMobile = owner.cellphone || owner.phone || owner.cell_num || agency?.cell || v.client_phone || "";
         const agentRegistrationNumber = agency?.reg_num || owner.company_reg_no || INITIAL_INFO.agentRegistrationNumber;
         
         const additionalInfo: string[] = [];
@@ -769,6 +770,7 @@ function App() {
           
           agentName,
           agentRepresentative,
+          agencyRepresentative,
           agentPhone,
           agentMobile,
           agentRegistrationNumber,

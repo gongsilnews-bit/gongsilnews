@@ -50,6 +50,7 @@ export interface PropertyInfo {
   qrLabel?: string;
   agentRegistrationNumber?: string;
   agentRepresentative: string;
+  agencyRepresentative?: string;
   agentPhone: string;
   agentMobile: string;
   agentAddress?: string;
