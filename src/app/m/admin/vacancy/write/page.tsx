@@ -130,6 +130,11 @@ function MobileVacancyWrite() {
   const [floorAreaRatio, setFloorAreaRatio] = useState(""); // 용적률
   const [currentUsage, setCurrentUsage] = useState(""); // 현용도
 
+  // 건물 매매 추가 필드
+  const [roadWidth, setRoadWidth] = useState("");
+  const [groundFloors, setGroundFloors] = useState("");
+  const [undergroundFloors, setUndergroundFloors] = useState("");
+
   // 지식산업센터 특화 스펙
   const [jisanUsage, setJisanUsage] = useState("");
   const [ceilingHeight, setCeilingHeight] = useState("");
@@ -298,6 +303,9 @@ function MobileVacancyWrite() {
           if (d.metadata.building_coverage) setBuildingCoverage(String(d.metadata.building_coverage));
           if (d.metadata.floor_area_ratio) setFloorAreaRatio(String(d.metadata.floor_area_ratio));
           if (d.metadata.current_usage) setCurrentUsage(d.metadata.current_usage);
+          if (d.metadata.road_width) setRoadWidth(String(d.metadata.road_width));
+          if (d.metadata.ground_floors) setGroundFloors(String(d.metadata.ground_floors));
+          if (d.metadata.underground_floors) setUndergroundFloors(String(d.metadata.underground_floors));
           if (d.metadata.jisan_usage) setJisanUsage(d.metadata.jisan_usage);
           if (d.metadata.ceiling_height) setCeilingHeight(d.metadata.ceiling_height);
           if (d.metadata.power_capacity) setPowerCapacity(d.metadata.power_capacity);
@@ -709,6 +717,9 @@ function MobileVacancyWrite() {
           building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : undefined,
           floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : undefined,
           current_usage: currentUsage || undefined,
+          road_width: roadWidth ? parseFloat(roadWidth) : undefined,
+          ground_floors: groundFloors ? parseInt(groundFloors) : undefined,
+          underground_floors: undergroundFloors ? parseInt(undergroundFloors) : undefined,
         },
         consent: true, status,
       };
@@ -1357,50 +1368,81 @@ function MobileVacancyWrite() {
               )}
             </>
           )}
-          <div style={{ display:"flex", gap:10, marginBottom:14 }}>
-            <div style={{flex:1}}>
-              <label style={labelStyle}>해당층 <span style={{fontSize:11, color:"#9ca3af", fontWeight:400}}>(직접입력)</span></label>
-              <input type="text" inputMode="numeric" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder={propertyType === "상가·사무실·건물·공장·토지" ? "예: 1, B1, 1~2, 1층전체" : "예: 3"} style={{...inputStyle, marginBottom: 8}}/>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {(propertyType === "상가·사무실·건물·공장·토지" ? ['지하', '1층', '2층', '루프탑', '통임대'] : ((propertyType === "빌라·주택" || propertyType === "원룸·투룸(풀옵션)") ? ['지하', '저층', '중층', '고층', '옥탑'] : ['저층', '중층', '고층'])).map(f => (
-                  <button 
-                    key={f} 
-                    type="button" 
-                    onClick={() => setCurrentFloor(currentFloor === f ? "" : f)} 
-                    style={{ 
-                      padding:"4px 12px", borderRadius:20, 
-                      border: currentFloor === f ? "1px solid #1a73e8" : "1px solid #e5e7eb", 
-                      background: currentFloor === f ? "#1a73e8" : "#fff", 
-                      fontSize:12, fontWeight: currentFloor === f ? 800 : 600, 
-                      color: currentFloor === f ? "#fff" : "#6b7280", 
-                      boxShadow: currentFloor === f ? "0 2px 6px rgba(26,115,232,0.15)" : "none",
-                      cursor:"pointer", transition:"all 0.15s ease" 
+          {(tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) ? (
+            <>
+              <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+                <div style={{flex:1}}>
+                  <label style={labelStyle}>지상 층수</label>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <input type="number" placeholder="예: 5" value={groundFloors} onChange={(e) => setGroundFloors(e.target.value)} style={inputStyle} />
+                    <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>층</span>
+                  </div>
+                </div>
+                <div style={{flex:1}}>
+                  <label style={labelStyle}>지하 층수</label>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <input type="number" placeholder="예: 1" value={undergroundFloors} onChange={(e) => setUndergroundFloors(e.target.value)} style={inputStyle} />
+                    <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>층</span>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+                <div style={{flex:1}}>
+                  <label style={labelStyle}>도로 폭</label>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <input type="number" placeholder="예: 6" value={roadWidth} onChange={(e) => setRoadWidth(e.target.value)} style={inputStyle} />
+                    <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>m</span>
+                  </div>
+                </div>
+                <div style={{flex:1}}></div>
+              </div>
+            </>
+          ) : (
+            <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+              <div style={{flex:1}}>
+                <label style={labelStyle}>해당층 <span style={{fontSize:11, color:"#9ca3af", fontWeight:400}}>(직접입력)</span></label>
+                <input type="text" inputMode="numeric" value={currentFloor} onChange={e=>setCurrentFloor(e.target.value)} placeholder={propertyType === "상가·사무실·건물·공장·토지" ? "예: 1, B1, 1~2, 1층전체" : "예: 3"} style={{...inputStyle, marginBottom: 8}}/>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  {(propertyType === "상가·사무실·건물·공장·토지" ? ['지하', '1층', '2층', '루프탑', '통임대'] : ((propertyType === "빌라·주택" || propertyType === "원룸·투룸(풀옵션)") ? ['지하', '저층', '중층', '고층', '옥탑'] : ['저층', '중층', '고층'])).map(f => (
+                    <button 
+                      key={f} 
+                      type="button" 
+                      onClick={() => setCurrentFloor(currentFloor === f ? "" : f)} 
+                      style={{ 
+                        padding:"4px 12px", borderRadius:20, 
+                        border: currentFloor === f ? "1px solid #1a73e8" : "1px solid #e5e7eb", 
+                        background: currentFloor === f ? "#1a73e8" : "#fff", 
+                        fontSize:12, fontWeight: currentFloor === f ? 800 : 600, 
+                        color: currentFloor === f ? "#fff" : "#6b7280", 
+                        boxShadow: currentFloor === f ? "0 2px 6px rgba(26,115,232,0.15)" : "none",
+                        cursor:"pointer", transition:"all 0.15s ease" 
+                      }}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setCurrentFloor("")}
+                    style={{
+                      padding:"4px 12px", borderRadius:20,
+                      border: "1px solid #fca5a5",
+                      background: "#fef2f2",
+                      color: "#ef4444",
+                      fontSize:12, fontWeight: 700,
+                      cursor:"pointer", transition:"all 0.15s ease"
                     }}
                   >
-                    {f}
+                    초기화
                   </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setCurrentFloor("")}
-                  style={{
-                    padding:"4px 12px", borderRadius:20,
-                    border: "1px solid #fca5a5",
-                    background: "#fef2f2",
-                    color: "#ef4444",
-                    fontSize:12, fontWeight: 700,
-                    cursor:"pointer", transition:"all 0.15s ease"
-                  }}
-                >
-                  초기화
-                </button>
+                </div>
+              </div>
+              <div style={{flex:1}}>
+                <label style={labelStyle}>전체층</label>
+                <input type="number" value={totalFloor} onChange={e=>setTotalFloor(e.target.value)} placeholder="15" style={inputStyle}/>
               </div>
             </div>
-            <div style={{flex:1}}>
-              <label style={labelStyle}>전체층</label>
-              <input type="number" value={totalFloor} onChange={e=>setTotalFloor(e.target.value)} placeholder="15" style={inputStyle}/>
-            </div>
-          </div>
+          )}
           
           {propertyType === "상가·사무실·건물·공장·토지" && ["상가", "사무실"].includes(subCategory) && (
             <div style={{ display:"flex", gap:10, marginBottom:14 }}>
