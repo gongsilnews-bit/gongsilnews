@@ -1567,12 +1567,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>해당층</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <input type="text" placeholder={propertyType === "상가·사무실·건물·공장·토지" ? "예: 1, B1, 1~2, 1층전체" : "예: 3, 저층, 고층"} value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
+                    <input type="text" placeholder={propertyType === "상가·사무실·건물·공장·토지" ? "예: 1, B1, 1~2, 1층전체" : (propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory) ? "예: 일부, 1, 2, 전체" : "예: 3, 저층, 고층")} value={currentFloor} onChange={(e) => setCurrentFloor(e.target.value)} style={inputStyle} />
                     {(!currentFloor || !isNaN(Number(currentFloor))) && <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>층</span>}
                   </div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {(() => {
-                      if (propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) return ['일부', '전체'];
+                      if (propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) return ['일부', '1층', '2층', '전체'];
                       if (propertyType === "상가·사무실·건물·공장·토지") return ['지하', '1층', '2층', '루프탑', '통임대'];
                       if (propertyType === "빌라·주택" || propertyType === "원룸·투룸(풀옵션)") return ['지하', '저층', '중층', '고층', '옥탑'];
                       return ['저층', '중층', '고층'];
