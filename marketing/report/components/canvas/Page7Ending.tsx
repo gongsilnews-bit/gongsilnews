@@ -242,8 +242,16 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                          src={info.agentCardFront || ""}
                          alt="명함 이미지"
                          imageKey="agentCardFront"
-                         onImageUpload={(file) => onImageUpload && onImageUpload('agentCardFront', file)}
-                         onDelete={() => onDeleteImage && onDeleteImage('agentCardFront')}
+                         onImageUpload={async (file) => {
+                           if (onImageUpload) {
+                             const url = await onImageUpload('agentCardFront', file);
+                             if (url && onUpdateInfo) onUpdateInfo({ ...info, agentCardFront: url });
+                           }
+                         }}
+                         onDelete={() => {
+                           if (onUpdateInfo) onUpdateInfo({ ...info, agentCardFront: "" });
+                           if (onDeleteImage) onDeleteImage('agentCardFront');
+                         }}
                          isUploading={isUploading}
                          className="w-full h-full object-contain"
                          placeholderText="명함 사진 등록"
@@ -380,8 +388,16 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                        src={info.agentCardFront || ""}
                        alt="명함 이미지"
                        imageKey="agentCardFront"
-                       onImageUpload={(file) => onImageUpload && onImageUpload('agentCardFront', file)}
-                       onDelete={() => onDeleteImage && onDeleteImage('agentCardFront')}
+                       onImageUpload={async (file) => {
+                         if (onImageUpload) {
+                           const url = await onImageUpload('agentCardFront', file);
+                           if (url && onUpdateInfo) onUpdateInfo({ ...info, agentCardFront: url });
+                         }
+                       }}
+                       onDelete={() => {
+                         if (onUpdateInfo) onUpdateInfo({ ...info, agentCardFront: "" });
+                         if (onDeleteImage) onDeleteImage('agentCardFront');
+                       }}
                        isUploading={isUploading}
                        className="w-full h-full object-contain"
                        placeholderText="명함 사진 등록"

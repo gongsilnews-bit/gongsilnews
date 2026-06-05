@@ -1443,9 +1443,9 @@ function MobileVacancyWrite() {
               </select>
             </div>
             <div style={{flex:1}}>
-              <label style={labelStyle}>입주가능일</label>
+              <label style={labelStyle}>{subCategory === "토지" ? "사용 가능일" : "입주가능일"}</label>
               <select value={moveInDate} onChange={e=>setMoveInDate(e.target.value)} style={{...inputStyle,cursor:"pointer"}}>
-                {["즉시입주(공실)","1개월 이내","2개월 이내","3개월 이내","날짜 협의"].map(o=><option key={o}>{o}</option>)}
+                <option>{subCategory === "토지" ? "즉시사용" : "즉시입주(공실)"}</option><option>1개월 이내</option><option>2개월 이내</option><option>3개월 이내</option><option>날짜 협의</option>
               </select>
             </div>
           </div>
