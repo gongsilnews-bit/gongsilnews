@@ -1156,54 +1156,7 @@ function MobileVacancyWrite() {
 
 
 
-        {/* 지식산업센터 특화 제원 */}
-        {subCategory === "지식산업센터" && (
-          <div style={{ background: "#f0fdf4", border: "1px solid #10b981", borderRadius: 14, padding: 16, marginBottom: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#065f46", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
-              <span>⚙️ 지식산업센터 특화 제원</span>
-            </div>
-            
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>호실 용도 (필수)</label>
-              <select value={jisanUsage} onChange={(e) => setJisanUsage(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
-                <option value="">선택</option>
-                {["제조형 공장", "업무형 공장", "지원시설(상가)", "지원시설(업무)", "창고", "기숙사", "기타"].map(v => (
-                  <option key={v} value={v}>{v}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>해당 호실 무료 주차 (대)</label>
-              <input type="number" placeholder="예: 2" value={freeParkingCnt} onChange={(e) => setFreeParkingCnt(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
-            </div>
 
-            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>층고 (m)</label>
-                <input type="number" placeholder="예: 5.5" value={ceilingHeight} onChange={(e) => setCeilingHeight(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>사용 전력 (kW)</label>
-                <input type="number" placeholder="예: 20" value={powerCapacity} onChange={(e) => setPowerCapacity(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 8 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 8, display: "block" }}>특화 구조 / 접근성 (다중 선택)</label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                <button type="button" onClick={() => setHasDriveIn(!hasDriveIn)} style={{ padding: "8px 12px", borderRadius: 8, border: hasDriveIn ? "1px solid #10b981" : "1px solid #d1d5db", background: hasDriveIn ? "#d1fae5" : "#fff", color: hasDriveIn ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
-                  {hasDriveIn ? "✅ 드라이브인" : "드라이브인"}
-                </button>
-                <button type="button" onClick={() => setHasDoorToDoor(!hasDoorToDoor)} style={{ padding: "8px 12px", borderRadius: 8, border: hasDoorToDoor ? "1px solid #10b981" : "1px solid #d1d5db", background: hasDoorToDoor ? "#d1fae5" : "#fff", color: hasDoorToDoor ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
-                  {hasDoorToDoor ? "✅ 도어투도어" : "도어투도어"}
-                </button>
-                <button type="button" onClick={() => setHasFreightElevator(!hasFreightElevator)} style={{ padding: "8px 12px", borderRadius: 8, border: hasFreightElevator ? "1px solid #10b981" : "1px solid #d1d5db", background: hasFreightElevator ? "#d1fae5" : "#fff", color: hasFreightElevator ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
-                  {hasFreightElevator ? "✅ 화물 승강기" : "화물 승강기"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
 
         {/* 2. 거래 및 상세 정보 */}
@@ -1497,6 +1450,55 @@ function MobileVacancyWrite() {
             </div>
           </div>
         </div>
+
+        {/* 지식산업센터 특화 제원 */}
+        {subCategory === "지식산업센터" && (
+          <div style={{ background: "#f0fdf4", border: "1px solid #10b981", borderRadius: 14, padding: 16, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#065f46", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
+              <span>⚙️ 지식산업센터 특화 제원</span>
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>호실 용도 (필수)</label>
+              <select value={jisanUsage} onChange={(e) => setJisanUsage(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
+                <option value="">선택</option>
+                {["제조형 공장", "업무형 공장", "지원시설(상가)", "지원시설(업무)", "창고", "기숙사", "기타"].map(v => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>해당 호실 무료 주차 (대)</label>
+              <input type="number" placeholder="예: 2" value={freeParkingCnt} onChange={(e) => setFreeParkingCnt(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>층고 (m)</label>
+                <input type="number" placeholder="예: 5.5" value={ceilingHeight} onChange={(e) => setCeilingHeight(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>사용 전력 (kW)</label>
+                <input type="number" placeholder="예: 20" value={powerCapacity} onChange={(e) => setPowerCapacity(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }} />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 8, display: "block" }}>특화 구조 / 접근성 (다중 선택)</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                <button type="button" onClick={() => setHasDriveIn(!hasDriveIn)} style={{ padding: "8px 12px", borderRadius: 8, border: hasDriveIn ? "1px solid #10b981" : "1px solid #d1d5db", background: hasDriveIn ? "#d1fae5" : "#fff", color: hasDriveIn ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                  {hasDriveIn ? "✅ 드라이브인" : "드라이브인"}
+                </button>
+                <button type="button" onClick={() => setHasDoorToDoor(!hasDoorToDoor)} style={{ padding: "8px 12px", borderRadius: 8, border: hasDoorToDoor ? "1px solid #10b981" : "1px solid #d1d5db", background: hasDoorToDoor ? "#d1fae5" : "#fff", color: hasDoorToDoor ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                  {hasDoorToDoor ? "✅ 도어투도어" : "도어투도어"}
+                </button>
+                <button type="button" onClick={() => setHasFreightElevator(!hasFreightElevator)} style={{ padding: "8px 12px", borderRadius: 8, border: hasFreightElevator ? "1px solid #10b981" : "1px solid #d1d5db", background: hasFreightElevator ? "#d1fae5" : "#fff", color: hasFreightElevator ? "#065f46" : "#4b5563", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>
+                  {hasFreightElevator ? "✅ 화물 승강기" : "화물 승강기"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 상세 제원 (선택형) - 지식산업센터 제외 */}
         {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && subCategory !== "지식산업센터" && (
