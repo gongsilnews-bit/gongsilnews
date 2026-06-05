@@ -1411,7 +1411,7 @@ ${clone.outerHTML}
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 font-sans pb-32">
+    <div className="min-h-screen bg-gray-50 font-sans pb-32">
       {loadingData && (
         <div className="fixed inset-0 bg-slate-900/80 z-[200] flex flex-col items-center justify-center text-white backdrop-blur-sm">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-500 mb-6"></div>
@@ -1463,7 +1463,7 @@ ${clone.outerHTML}
         </div>
       </header>
 
-      <main className="flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 items-start">
+      <main className="max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 items-start">
         <div className="col-span-12 lg:col-span-4 xl:col-span-3">
           <FlyerForm 
             info={state.info}
