@@ -90,6 +90,7 @@ export async function GET(
       const primaryColor = colorTheme.primary || '#00788c';
       const agentMobile = info.agentMobile || info.agentPhone || "010-8831-9450";
       const agentMobileClean = agentMobile.replace(/[^0-9]/g, '');
+      const agentPhone = info.agentPhone || info.agentMobile || "02-1234-5678";
       const agentName = info.agentName || "미래에셋공인 중개사 사무소";
       const agentRep = info.agencyRepresentative || info.agentRepresentative || "김상태";
       const agentReg = info.agentRegistrationNumber || info.agentRegistrationNo || "제11680-2015-00123호";
@@ -108,6 +109,7 @@ export async function GET(
       const agentReg = "${agentReg}";
       const agentMobile = "${agentMobile}";
       const agentMobileClean = "${agentMobileClean}";
+      const agentPhone = "${agentPhone}";
       const agentAddress = "${agentAddress}";
 
       const overlayHtml = \`
@@ -126,7 +128,7 @@ export async function GET(
             \` : ''}
             <div style="font-size: 12px; color: #1e293b; font-weight: 800; display: flex; align-items: center; gap: 0.375rem; margin-top: 0.125rem;">
               <svg style="width: 0.875rem; height: 0.875rem; shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="\${primaryColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-              <span style="color: #0f172a; font-weight: 900;">\${agentMobile}</span>
+              <span style="color: #0f172a; font-weight: 900;">\${agentPhone}</span>
             </div>
             \${agentAddress ? \`
               <div style="font-size: 9px; color: #94a3b8; font-weight: 500; display: flex; align-items: flex-start; gap: 0.25rem; line-height: 1.25; margin-top: 0.125rem;">
