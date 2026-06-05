@@ -90,10 +90,10 @@ export async function GET(
       const primaryColor = colorTheme.primary || '#00788c';
       const agentMobile = info.agentMobile || info.agentPhone || "010-8831-9450";
       const agentMobileClean = agentMobile.replace(/[^0-9]/g, '');
-      const agentName = info.agentName || "미래에셋공인 중개사";
+      const agentName = info.agentName || "미래에셋공인 중개사 사무소";
       const agentRep = info.agentRepresentative || "김상태";
-      const agentReg = info.agentRegistrationNumber || info.agentRegistrationNo || "";
-      const agentAddress = info.agentAddress || "서울시 강남구 논현동 인근";
+      const agentReg = info.agentRegistrationNumber || info.agentRegistrationNo || "제11680-2015-00123호";
+      const agentAddress = info.agentAddress || "서울 강남구 논현동 123-45";
 
       const scriptCode = `
 <script>
