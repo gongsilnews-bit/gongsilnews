@@ -74,11 +74,11 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
                             else if (tType === "월세" || tType === "임대") label = "보증금 / 월세";
                             else if (tType !== "매매") label = "임대가";
                             return (
-                                <tr className="bg-[#fff9f0] border-t border-gray-200">
+                                <tr className="border-t border-gray-200" style={{ backgroundColor: info.priceBgColor || '#fff9f0' }}>
                                     <td className="w-1/3 text-gray-600 font-bold py-2 pl-4 align-middle">
                                         <EditableText value={info.priceMainLabel || label} onChange={(v) => hc('priceMainLabel', v)} className="w-full hover:bg-white/50 hover:ring-2 hover:ring-amber-200 rounded px-1 -ml-1 transition-all text-left" />
                                     </td>
-                                    <td className="w-2/3 text-[#cc5a27] font-extrabold py-2 pl-4 align-middle">
+                                    <td className="w-2/3 font-extrabold py-2 pl-4 align-middle" style={{ color: info.priceTextColor || '#cc5a27' }}>
                                         <EditableText value={(() => {
                                             const tType = info.transactionType || "매매";
                                             if ((tType === "월세" || tType === "단기임대") && info.priceSub) {

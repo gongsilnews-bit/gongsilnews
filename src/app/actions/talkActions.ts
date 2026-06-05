@@ -23,6 +23,8 @@ export interface TalkRoom {
   avatar: string;
   created_by: string;
   created_at: string;
+  source_type?: string;
+  source_id?: string;
   // 조인
   last_message?: string;
   last_message_time?: string;
@@ -39,6 +41,7 @@ export interface TalkMessage {
   sender_name: string;
   content: string;
   created_at: string;
+  is_secret?: boolean;
   sender_profile_image?: string;
 }
 
@@ -114,7 +117,7 @@ export async function getRoomMessages(roomId: string, limit = 50): Promise<{ suc
   try {
     const { data, error } = await supabase
       .from("talk_messages")
-      .select("id, room_id, sender_id, sender_name, content, created_at")
+      .select("id, room_id, sender_id, sender_name, content, created_at, is_secret")
       .eq("room_id", roomId)
       .order("created_at", { ascending: true })
       .limit(limit);
@@ -146,12 +149,12 @@ export async function getRoomMessages(roomId: string, limit = 50): Promise<{ suc
 
 /* ═══════════════ 메시지 전송 ═══════════════ */
 
-export async function sendMessage(roomId: string, senderId: string, senderName: string, content: string): Promise<{ success: boolean; error?: string }> {
+export async function sendMessage(roomId: string, senderId: string, senderName: string, content: string, isSecret = false): Promise<{ success: boolean; error?: string }> {
   const supabase = getAdminClient();
   try {
     const { error } = await supabase
       .from("talk_messages")
-      .insert({ room_id: roomId, sender_id: senderId, sender_name: senderName, content });
+      .insert({ room_id: roomId, sender_id: senderId, sender_name: senderName, content, is_secret: isSecret });
 
     if (error) throw error;
     return { success: true };
@@ -169,6 +172,8 @@ export async function createRoom(params: {
   type: string;
   avatar: string;
   creatorId: string;
+  sourceType?: string;
+  sourceId?: string;
 }): Promise<{ success: boolean; roomId?: string; error?: string }> {
   const supabase = getAdminClient();
   try {
@@ -181,6 +186,8 @@ export async function createRoom(params: {
         type: params.type,
         avatar: params.avatar,
         created_by: params.creatorId,
+        source_type: params.sourceType || "general",
+        source_id: params.sourceId || null,
       })
       .select("id")
       .single();
@@ -716,3 +723,51 @@ export async function moveFriendToFolder(friendshipId: string, folderId: string 
     return { success: false, error: error.message };
   }
 }
+
+/** 어드민용 모든 채팅방 목록 조회 */
+export async function getAdminRooms(): Promise<{ success: boolean; data?: TalkRoom[]; error?: string }> {
+  const supabase = getAdminClient();
+  try {
+    const { data: rooms, error: roomErr } = await supabase
+      .from("talk_rooms")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (roomErr) throw roomErr;
+
+    const result: TalkRoom[] = [];
+    for (const room of rooms || []) {
+      // 마지막 메시지
+      const { data: lastMsg } = await supabase
+        .from("talk_messages")
+        .select("content, sender_name, created_at")
+        .eq("room_id", room.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // 멤버 수
+      const { count } = await supabase
+        .from("talk_room_members")
+        .select("*", { count: "exact", head: true })
+        .eq("room_id", room.id);
+
+      result.push({
+        ...room,
+        last_message: lastMsg?.content || "",
+        last_message_time: lastMsg?.created_at || room.created_at,
+        last_sender_name: lastMsg?.sender_name || "",
+        member_count: count || 0,
+      });
+    }
+
+    // 마지막 메시지 시간 기준 정렬
+    result.sort((a, b) => new Date(b.last_message_time || "").getTime() - new Date(a.last_message_time || "").getTime());
+
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error("어드민 채팅방 목록 조회 오류:", error);
+    return { success: false, error: error.message };
+  }
+}
+

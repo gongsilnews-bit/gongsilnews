@@ -1002,7 +1002,7 @@ function MobileVacancyWrite() {
             }} />)}
           </div>
           <label style={labelStyle}>소분류</label>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
             {(SUB_CATEGORIES[propertyType]||[]).map(s => <SBtn key={s} label={s} sel={subCategory===s} onClick={() => {
               setSubCategory(s);
               if (s === "원룸" || s === "1.5룸") setRoomCount("1");
@@ -1207,9 +1207,9 @@ function MobileVacancyWrite() {
           </div>
         )}
 
-        {/* 2. 거래/금액 */}
+        {/* 2. 거래 및 상세 정보 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>거래정보</div>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>거래 및 상세 정보</div>
           <label style={labelStyle}>거래유형</label>
           <div style={{ display:"flex", gap:8, marginBottom:14 }}>
             {["매매","전세","월세","단기"]
@@ -1218,17 +1218,25 @@ function MobileVacancyWrite() {
           </div>
 
           <label style={labelStyle}>{tradeType==="매매"?"매매가":"보증금"} {deposit && <span style={{color:"#1a73e8", fontWeight:600}}>{formatKorean(deposit)}</span>}</label>
-          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
             <input id="input-deposit" type="number" value={deposit} onChange={e=>setDeposit(e.target.value)} placeholder="만원 단위" style={inputStyle} />
             <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
+          </div>
+          <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:10 }}>
+            {[{l:"+50억",v:500000},{l:"+5억",v:50000},{l:"+1억",v:10000},{l:"+5000만",v:5000},{l:"+1000만",v:1000},{l:"+500만",v:500},{l:"+100만",v:100},{l:"+50만",v:50},{l:"+10만",v:10}].map(b=><button key={b.l} type="button" onClick={()=>setDeposit(String((parseInt(deposit||"0")||0)+b.v))} style={{padding:"4px 8px",fontSize:11,background:"#f1f3f5",border:"1px solid #e5e7eb",borderRadius:6,cursor:"pointer",color:"#6b7280",fontWeight:600}}>{b.l}</button>)}
+            <button type="button" onClick={()=>setDeposit("")} style={{padding:"4px 8px",fontSize:11,background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:6,cursor:"pointer",color:"#ef4444",fontWeight:600}}>초기화</button>
           </div>
 
           {(tradeType==="월세"||tradeType==="단기") && (
             <>
               <label style={labelStyle}>월세 {monthly && <span style={{color:"#1a73e8",fontWeight:600}}>{formatKorean(monthly)}</span>}</label>
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
                 <input id="input-monthly" type="number" value={monthly} onChange={e=>setMonthly(e.target.value)} placeholder="만원 단위" style={inputStyle} />
                 <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
+              </div>
+              <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:10 }}>
+                {[{l:"+500만",v:500},{l:"+100만",v:100},{l:"+50만",v:50},{l:"+10만",v:10},{l:"+5만",v:5},{l:"+1만",v:1}].map(b=><button key={b.l} type="button" onClick={()=>setMonthly(String((parseInt(monthly||"0")||0)+b.v))} style={{padding:"4px 8px",fontSize:11,background:"#f1f3f5",border:"1px solid #e5e7eb",borderRadius:6,cursor:"pointer",color:"#6b7280",fontWeight:600}}>{b.l}</button>)}
+                <button type="button" onClick={()=>setMonthly("")} style={{padding:"4px 8px",fontSize:11,background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:6,cursor:"pointer",color:"#ef4444",fontWeight:600}}>초기화</button>
               </div>
             </>
           )}
@@ -1238,12 +1246,10 @@ function MobileVacancyWrite() {
             <input type="number" value={maintenance} onChange={e=>setMaintenance(e.target.value)} placeholder="만원 단위" style={inputStyle} />
             <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
           </div>
-        </div>
 
-        {/* 3. 면적·층수 (Step 1 통합) */}
-        <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-            <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10 }}>면적·층수</div>
+          {/* 면적·층수 */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, marginTop:16, borderTop:"1px dashed #e5e7eb", paddingTop:16 }}>
+            <div style={{ fontSize:14, fontWeight:800, color:"#111" }}>면적·층수</div>
             <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:"1px solid #e5e7eb" }}>
               <button type="button" onClick={()=>setAreaUnit("py")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="py"?"#1a73e8":"#fff", color: areaUnit==="py"?"#fff":"#6b7280" }}>평</button>
               <button type="button" onClick={()=>setAreaUnit("m2")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="m2"?"#1a73e8":"#fff", color: areaUnit==="m2"?"#fff":"#6b7280" }}>m²</button>
@@ -1435,11 +1441,9 @@ function MobileVacancyWrite() {
               </div>
             </div>
           )}
-        </div>
 
-        {/* 주차·입주 (Step 1 통합) */}
-        <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>주차·입주</div>
+          {/* 주차·입주 */}
+          <div style={{ borderTop:"1px dashed #e5e7eb", marginTop:16, paddingTop:16 }}></div>
           <div style={{ display:"flex", gap:10 }}>
             <div style={{flex:1}}>
               <label style={labelStyle}>주차</label>
