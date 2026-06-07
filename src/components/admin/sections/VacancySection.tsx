@@ -54,8 +54,18 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const [searchVacancyNo, setSearchVacancyNo] = useState("");
   const [searchType, setSearchType] = useState("전체");
   const [searchKeyword, setSearchKeyword] = useState("");
-  const [activeFilters, setActiveFilters] = useState({ vacancyNo: "", type: "전체", keyword: "" });
+  const [searchPropertyType, setSearchPropertyType] = useState("전체");
+  const [searchSubCategory, setSearchSubCategory] = useState("전체");
+  const [activeFilters, setActiveFilters] = useState({ vacancyNo: "", type: "전체", keyword: "", propertyType: "전체", subCategory: "전체" });
   const [excludeOnbid, setExcludeOnbid] = useState(role === "admin");
+
+  const SUB_CATEGORY_MAP: Record<string, string[]> = {
+    "아파트·오피스텔": ["아파트", "아파트분양권", "오피스텔", "오피스텔분양권"],
+    "빌라·주택": ["빌라/연립", "단독/다가구", "전원주택", "상가주택"],
+    "원룸·투룸(풀옵션)": ["원룸", "1.5룸", "투룸"],
+    "상가·사무실·건물·공장·토지": ["상가", "사무실", "건물/빌딩", "공장/창고", "지식산업센터", "토지"],
+    "분양": ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"],
+  };
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(30);
@@ -86,6 +96,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     if (activeFilters.vacancyNo) params.vacancyNo = activeFilters.vacancyNo;
     if (activeFilters.type !== "전체") params.tradeType = activeFilters.type;
     if (activeFilters.keyword) params.searchKeyword = activeFilters.keyword;
+    if (activeFilters.propertyType !== "전체") params.propertyType = activeFilters.propertyType;
+    if (activeFilters.subCategory !== "전체") params.subCategory = activeFilters.subCategory;
 
     const res = await getVacancies(params);
     if (res.success) {
@@ -211,7 +223,21 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       <div style={{ padding: "16px 24px", background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>공실광고 번호</label>
-          <input type="text" value={searchVacancyNo} onChange={e => setSearchVacancyNo(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); setCurrentPage(1); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
+          <input type="text" value={searchVacancyNo} onChange={e => setSearchVacancyNo(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword, propertyType: searchPropertyType, subCategory: searchSubCategory }); if (searchVacancyNo || searchKeyword || searchType !== "전체" || searchPropertyType !== "전체") setActiveTab("전체"); setCurrentPage(1); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>1차 카테고리</label>
+          <select value={searchPropertyType} onChange={e => { setSearchPropertyType(e.target.value); setSearchSubCategory("전체"); }} style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 100 }}>
+            <option value="전체">전체</option>
+            {Object.keys(SUB_CATEGORY_MAP).map(k => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>2차 카테고리</label>
+          <select value={searchSubCategory} onChange={e => setSearchSubCategory(e.target.value)} style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 100 }}>
+            <option value="전체">전체</option>
+            {searchPropertyType !== "전체" && SUB_CATEGORY_MAP[searchPropertyType]?.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>거래구분</label>
@@ -219,7 +245,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
             <option value="전체">전체</option><option value="매매">매매</option><option value="전세">전세</option><option value="월세">월세</option>
           </select>
         </div>
-        <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); setCurrentPage(1); } }} placeholder="주소, 등록자 또는 연락처 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+        <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword, propertyType: searchPropertyType, subCategory: searchSubCategory }); if (searchVacancyNo || searchKeyword || searchType !== "전체" || searchPropertyType !== "전체") setActiveTab("전체"); setCurrentPage(1); } }} placeholder="주소, 등록자 또는 연락처 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
         {role === "admin" && (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#2563eb", cursor: "pointer", background: darkMode ? "#1e293b" : "#eff6ff", padding: "8px 12px", borderRadius: 8, border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, height: 36, boxSizing: "border-box", whiteSpace: "nowrap" }}>
@@ -238,8 +264,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
             <option value={100}>100개씩</option>
           </select>
         </div>
-        <button onClick={() => { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword }); if (searchVacancyNo || searchKeyword || searchType !== "전체") setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
-        <button onClick={() => { setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setActiveFilters({ vacancyNo: "", type: "전체", keyword: "" }); setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+        <button onClick={() => { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword, propertyType: searchPropertyType, subCategory: searchSubCategory }); if (searchVacancyNo || searchKeyword || searchType !== "전체" || searchPropertyType !== "전체") setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
+        <button onClick={() => { setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setSearchPropertyType("전체"); setSearchSubCategory("전체"); setActiveFilters({ vacancyNo: "", type: "전체", keyword: "", propertyType: "전체", subCategory: "전체" }); setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
       </div>
 
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
@@ -251,8 +277,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
             return (
               <button key={tab} onClick={() => {
                 setActiveTab(tab);
-                setActiveFilters({ vacancyNo: "", type: "전체", keyword: "" });
-                setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword("");
+                setActiveFilters({ vacancyNo: "", type: "전체", keyword: "", propertyType: "전체", subCategory: "전체" });
+                setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setSearchPropertyType("전체"); setSearchSubCategory("전체");
                 setCurrentPage(1);
               }}
                 style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: activeTab === tab ? 800 : 600, color: activeTab === tab ? "#3b82f6" : textSecondary, borderBottom: activeTab === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>

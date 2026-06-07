@@ -199,6 +199,8 @@ export async function getVacancies(options?: {
   limit?: number;
   vacancyNo?: string;
   tradeType?: string;
+  propertyType?: string;
+  subCategory?: string;
   searchKeyword?: string;
   excludeOnbid?: boolean;
   stringify?: boolean;
@@ -255,6 +257,12 @@ export async function getVacancies(options?: {
       }
       if (options?.excludeOnbid) {
         pageQuery = pageQuery.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+      }
+      if (options?.propertyType && options.propertyType !== "전체") {
+        pageQuery = pageQuery.eq('property_type', options.propertyType);
+      }
+      if (options?.subCategory && options.subCategory !== "전체") {
+        pageQuery = pageQuery.eq('sub_category', options.subCategory);
       }
 
       const { data, error, count } = await pageQuery;
