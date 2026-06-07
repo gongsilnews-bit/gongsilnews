@@ -1339,7 +1339,20 @@ function MobileVacancyWrite() {
                     <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>m</span>
                   </div>
                 </div>
-                <div style={{flex:1}}></div>
+                <div style={{flex:1}}>
+                  {propertyType === "상가·사무실·건물·공장·토지" && (
+                    <>
+                      <label style={labelStyle}>준공연도</label>
+                      <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                        <option value="">선택 (선택사항)</option>
+                        {Array.from({length: 2026 - 1980 + 1}, (_, i) => 2026 - i).map(y => (
+                          <option key={y} value={y}>{y}년</option>
+                        ))}
+                        <option value="1979">1980년 이전</option>
+                      </select>
+                    </>
+                  )}
+                </div>
               </div>
             </>
           ) : (
@@ -1438,6 +1451,19 @@ function MobileVacancyWrite() {
               <label style={labelStyle}>준공연도</label>
               <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
                 <option value="">선택</option>
+                {Array.from({length: 2026 - 1980 + 1}, (_, i) => 2026 - i).map(y => (
+                  <option key={y} value={y}>{y}년</option>
+                ))}
+                <option value="1979">1980년 이전</option>
+              </select>
+            </div>
+          )}
+
+          {propertyType === "상가·사무실·건물·공장·토지" && !((tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "")) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>준공연도</label>
+              <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                <option value="">선택 (선택사항)</option>
                 {Array.from({length: 2026 - 1980 + 1}, (_, i) => 2026 - i).map(y => (
                   <option key={y} value={y}>{y}년</option>
                 ))}

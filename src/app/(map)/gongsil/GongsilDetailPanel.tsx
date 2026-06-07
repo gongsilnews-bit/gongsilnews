@@ -1104,6 +1104,12 @@ export default function GongsilDetailPanel({
                       fields.push({ label: "도로 폭", value: `${meta.road_width}m` });
                     }
 
+                    // 4-1. 준공연도 (도로 폭 직후)
+                    fields.push({
+                      label: "준공연도",
+                      value: v.metadata?.approval_year ? (v.metadata.approval_year <= 1979 ? "1980년 이전" : `${v.metadata.approval_year}년`) : "-"
+                    });
+
                     // 5. 건물구조 (상업용 - 토지/지산 제외)
                     if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
                       fields.push({ label: "건물구조", value: meta.building_structure || "-" });
@@ -1261,11 +1267,7 @@ export default function GongsilDetailPanel({
                       });
                     }
 
-                    // 21. 준공연도
-                    fields.push({
-                      label: "준공연도",
-                      value: v.metadata?.approval_year ? (v.metadata.approval_year <= 1979 ? "1980년 이전" : `${v.metadata.approval_year}년`) : "-"
-                    });
+                    // 준공연도는 위(도로 폭 직후)로 이동됨
 
                     return fields;
                   };

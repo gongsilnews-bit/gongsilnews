@@ -1608,7 +1608,20 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>m</span>
                     </div>
                   </div>
-                  <div style={{ flex: 1 }}></div>
+                  <div style={{ flex: 1 }}>
+                    {propertyType === "상가·사무실·건물·공장·토지" && (
+                      <>
+                        <label style={labelStyle}>준공연도</label>
+                        <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                          <option value="">선택 (선택사항)</option>
+                          {Array.from({length: 2026 - 1980 + 1}, (_, i) => 2026 - i).map(y => (
+                            <option key={y} value={y}>{y}년</option>
+                          ))}
+                          <option value="1979">1980년 이전</option>
+                        </select>
+                      </>
+                    )}
+                  </div>
                 </div>
               </>
             ) : (
@@ -1735,6 +1748,23 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   </div>
                 </div>
               </>
+            )}
+
+            {/* 준공연도 (도로 폭이 없는 상가/사무실/지식산업센터 등의 경우) */}
+            {propertyType === "상가·사무실·건물·공장·토지" && !((tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "")) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) && (
+              <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>준공연도</label>
+                  <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                    <option value="">선택 (선택사항)</option>
+                    {Array.from({length: 2026 - 1980 + 1}, (_, i) => 2026 - i).map(y => (
+                      <option key={y} value={y}>{y}년</option>
+                    ))}
+                    <option value="1979">1980년 이전</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}></div>
+              </div>
             )}
 
             {/* 주차 / 입주가능일 */}

@@ -419,6 +419,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                   <div className="gdv-info-label">관리비</div><div className="gdv-info-value">{vacancy.maintenance_fee ? (vacancy.maintenance_fee / 10000) + '만원' : '없음'}</div>
                   {vacancy.metadata?.zoning && <><div className="gdv-info-label">용도지역</div><div className="gdv-info-value">{vacancy.metadata.zoning}</div></>}
                   {vacancy.metadata?.road_width !== undefined && vacancy.metadata?.road_width !== null && <><div className="gdv-info-label">도로 폭</div><div className="gdv-info-value">{vacancy.metadata.road_width}m</div></>}
+                  <div className="gdv-info-label">준공연도</div><div className="gdv-info-value">{vacancy.metadata?.approval_year ? (vacancy.metadata.approval_year <= 1979 ? "1980년 이전" : `${vacancy.metadata.approval_year}년`) : '-'}</div>
                   {(vacancy.metadata?.ground_floors !== undefined || vacancy.metadata?.underground_floors !== undefined) && <><div className="gdv-info-label">건물규모</div><div className="gdv-info-value">지하 {vacancy.metadata?.underground_floors || 0}층 / 지상 {vacancy.metadata?.ground_floors || 0}층</div></>}
                   {vacancy.metadata?.land_share_m2 && <><div className="gdv-info-label">대지면적</div><div className="gdv-info-value">{vacancy.metadata.land_share_m2}m² ({vacancy.metadata.land_share_py}평)</div></>}
                   <div className="gdv-info-label">{areaLabel}</div><div className="gdv-info-value">{areaDisplay}</div>
@@ -439,7 +440,6 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                     if (vacancy.commission_etc) parts.push(`(${vacancy.commission_etc})`);
                     return parts.length > 0 ? parts.join(' ') : '-';
                   })()}</div>
-                  <div className="gdv-info-label">준공연도</div><div className="gdv-info-value">{vacancy.metadata?.approval_year ? (vacancy.metadata.approval_year <= 1979 ? "1980년 이전" : `${vacancy.metadata.approval_year}년`) : '-'}</div>
                   <div className="gdv-info-label">상세설명</div><div className="gdv-info-value gdv-info-desc">{vacancy.description || ''}</div>
                 </div>
 
