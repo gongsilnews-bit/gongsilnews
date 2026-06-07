@@ -1026,68 +1026,215 @@ export default function GongsilDetailPanel({
                   })()}
                 </div>
                 {(() => {
-                  const propType = prop.property_type || "";
-                  const subCategory = prop.sub_category || "";
-                  const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
-                  const exp = prop.address_exposure;
-                  const isPrivateAddr = !isApt && exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개";
-                  const displayValue = isPrivateAddr ? "-" : (prop.building_name || "-");
+                  const getDynamicFields = (v: any) => {
+                    const propType = v.property_type || "";
+                    const subCategory = v.sub_category || "";
+                    const tradeType = v.trade_type || "";
+                    const meta = v.metadata || {};
+
+                    const fields: { label: string; value: string }[] = [];
+
+                    // 1. 단지명 / 건물명
+                    const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
+                    const exp = v.address_exposure;
+                    const isPrivateAddr = !isApt && exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개";
+                    const displayBuildingName = isPrivateAddr ? "-" : (v.building_name || "-");
+                    fields.push({
+                      label: isApt ? "단지명" : "건물명",
+                      value: displayBuildingName
+                    });
+
+                    // 카테고리 분류
+                    const isVillaHouse = propType === "빌라·주택";
+                    const isCommercial = propType === "상가·사무실·건물·공장·토지";
+
+                    // 2. 용도지역 (빌라·주택 또는 상업용인 경우)
+                    if ((isVillaHouse || isCommercial) && meta.zoning) {
+                      fields.push({ label: "용도지역", value: meta.zoning });
+                    }
+
+                    // 3. 지목 (토지인 경우)
+                    if (subCategory === "토지" && meta.land_purpose) {
+                      fields.push({ label: "지목", value: meta.land_purpose });
+                    }
+
+                    // 4. 도로 폭
+                    if (meta.road_width !== undefined && meta.road_width !== null && meta.road_width !== "") {
+                      fields.push({ label: "도로 폭", value: `${meta.road_width}m` });
+                    }
+
+                    // 5. 건물구조
+                    if (meta.building_structure) {
+                      fields.push({ label: "건물구조", value: meta.building_structure });
+                    }
+
+                    // 6. 주용도
+                    if (meta.main_usage) {
+                      fields.push({ label: "주용도", value: meta.main_usage });
+                    }
+
+                    // 7. 건물규모
+                    const hasScale = meta.ground_floors !== undefined || meta.underground_floors !== undefined;
+                    if (hasScale) {
+                      const parts = [];
+                      if (meta.ground_floors !== undefined && meta.ground_floors !== null && meta.ground_floors !== "") {
+                        parts.push(`지상 ${meta.ground_floors}층`);
+                      }
+                      if (meta.underground_floors !== undefined && meta.underground_floors !== null && meta.underground_floors !== "") {
+                        parts.push(`지하 ${meta.underground_floors}층`);
+                      }
+                      if (parts.length > 0) {
+                        fields.push({ label: "건물규모", value: parts.join(" / ") });
+                      }
+                    }
+
+                    // 8. 대지면적
+                    if (meta.land_share_m2) {
+                      const pyVal = meta.land_share_py || (parseFloat(meta.land_share_m2) / 3.3058).toFixed(1);
+                      fields.push({ label: "대지면적", value: `${meta.land_share_m2}m² (${pyVal}평)` });
+                    }
+
+                    // 9. 공급/전용면적 또는 연면적
+                    if (subCategory !== "토지") {
+                      const isStandaloneBuilding = (isVillaHouse && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) ||
+                                                   (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory));
+                      
+                      if (tradeType === "매매" && isStandaloneBuilding) {
+                        const pyVal = v.supply_py || (v.supply_m2 ? (parseFloat(v.supply_m2) / 3.3058).toFixed(1) : "0");
+                        fields.push({
+                          label: "연면적",
+                          value: v.supply_m2 ? `${v.supply_m2}m² (${pyVal}평)` : "-"
+                        });
+                      } else {
+                        const supplyPyVal = v.supply_py || (v.supply_m2 ? (parseFloat(v.supply_m2) / 3.3058).toFixed(1) : "-");
+                        const exclusivePyVal = v.exclusive_py || (v.exclusive_m2 ? (parseFloat(v.exclusive_m2) / 3.3058).toFixed(1) : "-");
+                        fields.push({
+                          label: "공급/전용면적",
+                          value: `${v.supply_m2 ? `${v.supply_m2}m²(${supplyPyVal}평)` : "-"} / ${v.exclusive_m2 ? `${v.exclusive_m2}m²(${exclusivePyVal}평)` : "-"}`
+                        });
+                      }
+                    }
+
+                    // 10. 건폐율/용적률
+                    if (tradeType === "매매" && (meta.building_coverage || meta.floor_area_ratio)) {
+                      const cov = meta.building_coverage ? `${meta.building_coverage}%` : "-";
+                      const far = meta.floor_area_ratio ? `${meta.floor_area_ratio}%` : "-";
+                      fields.push({
+                        label: "건폐율/용적률",
+                        value: `${cov} / ${far}`
+                      });
+                    }
+
+                    // 11. 현용도
+                    if (meta.current_usage) {
+                      fields.push({ label: "현용도", value: meta.current_usage });
+                    }
+
+                    // 12. 해당층/총층
+                    if (!hasScale && subCategory !== "토지") {
+                      fields.push({
+                        label: "해당층/총층",
+                        value: `${v.current_floor || "-"} / ${v.total_floor || v.floor || "-"}`
+                      });
+                    }
+
+                    // 13. 방/욕실수 (주거형)
+                    if (!isCommercial) {
+                      fields.push({
+                        label: "방/욕실수",
+                        value: `${v.room_count || 0}개 / ${v.bathroom_count || v.bath_count || 0}개`
+                      });
+                    }
+
+                    // 14. 방향 (주거형)
+                    if (!isCommercial) {
+                      fields.push({
+                        label: "방향",
+                        value: v.direction || "-"
+                      });
+                    }
+
+                    // 15. 주차
+                    if (subCategory !== "토지") {
+                      fields.push({
+                        label: isCommercial ? "주차대수" : "주차가능 여부",
+                        value: v.parking || "없음"
+                      });
+                    }
+
+                    // 16. 승강기
+                    if (meta.elevator_cnt) {
+                      fields.push({ label: "승강기", value: meta.elevator_cnt });
+                    }
+
+                    // 17. 위반건축물
+                    if (meta.is_illegal !== undefined && meta.is_illegal !== null) {
+                      fields.push({
+                        label: "위반건축물",
+                        value: meta.is_illegal ? "적발(위반)" : "무"
+                      });
+                    }
+
+                    // 18. 지식산업센터 특화 제원
+                    if (subCategory === "지식산업센터") {
+                      if (meta.jisan_usage) {
+                        fields.push({ label: "호실 용도", value: meta.jisan_usage });
+                      }
+                      if (meta.ceiling_height) {
+                        fields.push({ label: "층고", value: `${meta.ceiling_height}m` });
+                      }
+                      if (meta.power_capacity) {
+                        fields.push({ label: "사용 전력", value: `${meta.power_capacity}kW` });
+                      }
+                      if (meta.free_parking_cnt) {
+                        fields.push({ label: "무료 주차", value: `${meta.free_parking_cnt}대` });
+                      }
+                      
+                      const specs = [];
+                      if (meta.has_drive_in) specs.push("드라이브인");
+                      if (meta.has_door_to_door) specs.push("도어투도어");
+                      if (meta.has_freight_elevator) specs.push("화물승강기");
+                      if (specs.length > 0) {
+                        fields.push({ label: "특화구조", value: specs.join(", ") });
+                      }
+                    }
+
+                    // 19. 입주가능일
+                    fields.push({
+                      label: subCategory === "토지" ? "사용 가능일" : "입주가능일",
+                      value: v.move_in_date || (subCategory === "토지" ? "즉시사용" : "즉시입주(공실)")
+                    });
+
+                    // 20. 관리비
+                    if (tradeType !== "매매") {
+                      fields.push({
+                        label: "관리비",
+                        value: v.maintenance_fee ? `${v.maintenance_fee / 10000}만원` : "없음"
+                      });
+                    }
+
+                    // 21. 준공연도
+                    if (v.approval_year) {
+                      fields.push({
+                        label: "준공연도",
+                        value: `${v.approval_year}년`
+                      });
+                    }
+
+                    return fields;
+                  };
+
                   return (
                     <>
-                      <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>건물명</div>
-                      <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{displayValue}</div>
+                      {getDynamicFields(prop).map((f, idx) => (
+                        <React.Fragment key={idx}>
+                          <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>{f.label}</div>
+                          <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{f.value}</div>
+                        </React.Fragment>
+                      ))}
                     </>
                   );
                 })()}
-                {prop.metadata?.zoning && (
-                  <>
-                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>용도지역</div>
-                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.metadata.zoning}</div>
-                  </>
-                )}
-                {prop.metadata?.road_width !== undefined && prop.metadata?.road_width !== null && (
-                  <>
-                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>도로 폭</div>
-                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.metadata.road_width}m</div>
-                  </>
-                )}
-                {(prop.metadata?.ground_floors !== undefined || prop.metadata?.underground_floors !== undefined) && (
-                  <>
-                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>건물규모</div>
-                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>지하 {prop.metadata?.underground_floors || 0}층 / 지상 {prop.metadata?.ground_floors || 0}층</div>
-                  </>
-                )}
-                {prop.metadata?.land_share_m2 && (
-                  <>
-                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>대지면적</div>
-                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.metadata.land_share_m2}m² ({prop.metadata.land_share_py}평)</div>
-                  </>
-                )}
-                <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>
-                  {prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category))) ? "연면적" : "공급/전용면적"}
-                </div>
-                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>
-                  {prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category)))
-                    ? (prop.supply_m2 ? `${prop.supply_m2}m²(${prop.supply_py || 0}평)` : "-")
-                    : `${prop.supply_m2 ? `${prop.supply_m2}m²(${prop.supply_py || 0}평)` : "-"} / ${prop.exclusive_m2 ? `${prop.exclusive_m2}m²(${prop.exclusive_py || 0}평)` : "-"}`
-                  }
-                </div>
-                {!(prop.metadata?.ground_floors !== undefined || prop.metadata?.underground_floors !== undefined) && (
-                  <>
-                    <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>해당층/총층</div>
-                    <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.current_floor || "-"} / {prop.total_floor || "-"}</div>
-                  </>
-                )}
-                <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방/욕실수</div>
-                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.room_count || 0}개 / {prop.bathroom_count || 0}개</div>
-                <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>방향</div>
-                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.direction || "-"}</div>
-                <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>주차가능 여부</div>
-                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.parking || "없음"}</div>
-                <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>입주가능일</div>
-                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.move_in_date || "즉시입주(공실)"}</div>
-                <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>관리비</div>
-                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.maintenance_fee ? `${prop.maintenance_fee / 10000}만원` : "없음"}</div>
                 <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>상세설명</div>
                 <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", whiteSpace: "pre-line" }}>{prop.description || "-"}</div>
               </div>
