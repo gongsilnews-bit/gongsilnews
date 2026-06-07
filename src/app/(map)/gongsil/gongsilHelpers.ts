@@ -5,7 +5,7 @@ export const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; ba
   apart: { name: "아파트·오피스텔", pills: ["아파트", "오피스텔", "기타"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   villa: { name: "빌라·주택", pills: ["빌라/연립", "단독/다가구", "전원주택"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   one: { name: "원룸·투룸(풀옵션)", pills: ["원룸", "1.5룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
-  biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "건물/빌딩", "공장/창고", "토지"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
+  biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   sale: { name: "신축/분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   auction: { name: "경매/공매", pills: ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },

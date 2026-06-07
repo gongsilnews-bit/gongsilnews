@@ -699,9 +699,6 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           if (v.themes && Array.isArray(v.themes) && v.themes.includes("오피스텔")) return true;
           return false;
         }
-        if (activeCategory === "biz" && activePills.includes("사무실")) {
-          if (v.sub_category === "지식산업센터") return true;
-        }
         if (activeCategory === "biz" && activePills.includes("건물/빌딩")) {
           if (v.sub_category === "건물" || v.sub_category === "빌딩/건물" || v.sub_category === "건물/빌딩") return true;
         }
