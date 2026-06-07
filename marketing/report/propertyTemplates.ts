@@ -255,7 +255,7 @@ export const buildOverviewTable = (
     maintenanceFee: vacancy.maintenance_fee
       ? `${Math.round(vacancy.maintenance_fee / 10000)}만원`
       : '',
-    completionYear: vacancy.approval_year ? `${vacancy.approval_year}년` : '',
+    completionYear: vacancy.metadata?.approval_year ? (vacancy.metadata.approval_year <= 1979 ? "1980년 이전" : `${vacancy.metadata.approval_year}년`) : '',
 
     // 빌딩/상가/토지용 — metadata 내부 필드 참조
     zoning: meta.zoning || '',
@@ -326,7 +326,7 @@ export const buildInvestmentSummary = (
   const roomCount = vacancy.room_count || '';
   const exclusiveM2 = vacancy.exclusive_m2 ? parseFloat(vacancy.exclusive_m2) : 0;
   const exclusivePy = exclusiveM2 ? `${(exclusiveM2 / 3.3058).toFixed(0)}평` : '';
-  const approvalYear = vacancy.approval_year || '';
+  const approvalYear = vacancy.metadata?.approval_year ? (vacancy.metadata.approval_year <= 1979 ? "1980년 이전" : `${vacancy.metadata.approval_year}년`) : '';
 
   // 방향 텍스트
   const dirText = direction ? `${direction}\n채광 우수` : '우수한\n채광 조건';
@@ -430,7 +430,7 @@ export const buildPage2Content = (
   const moveIn = vacancy.move_in_date || '즉시입주';
   const buildingName = vacancy.building_name || '';
   const roomCount = vacancy.room_count || '';
-  const approvalYear = vacancy.approval_year || '';
+  const approvalYear = vacancy.metadata?.approval_year ? (vacancy.metadata.approval_year <= 1979 ? "1980년 이전" : `${vacancy.metadata.approval_year}년`) : '';
   const maintenance = vacancy.maintenance_fee
     ? `${Math.round(vacancy.maintenance_fee / 10000)}만원`
     : '';

@@ -286,7 +286,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.direction) setDirection(editData.direction);
     if (editData.current_floor) setCurrentFloor(editData.current_floor);
     if (editData.total_floor) setTotalFloor(editData.total_floor);
-    if (editData.approval_year) setApprovalYear(String(editData.approval_year));
+    if (editData.metadata?.approval_year) setApprovalYear(String(editData.metadata.approval_year));
     if (editData.deposit) setDeposit(String(editData.deposit / 10000));
     if (editData.monthly_rent) setMonthly(String(editData.monthly_rent / 10000));
     if (editData.maintenance_fee) setMaintenance(String(editData.maintenance_fee / 10000));
@@ -2258,7 +2258,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     total_floor: totalFloor || null,
                     parking,
                     move_in_date: moveInDate,
-                    approval_year: approvalYear ? parseInt(approvalYear) : null,
+
                     options: selectedOptions,
                     themes: selectedThemes,
                     sido, sigungu, dong,
@@ -2285,6 +2285,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : null,
                       floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : null,
                       current_usage: currentUsage || null,
+                      approval_year: approvalYear ? parseInt(approvalYear) : null,
                       jisan_usage: jisanUsage || undefined,
                       ceiling_height: ceilingHeight || undefined,
                       power_capacity: powerCapacity || undefined,

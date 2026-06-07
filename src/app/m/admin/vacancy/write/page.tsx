@@ -320,7 +320,7 @@ function MobileVacancyWrite() {
         if (d.room_count) setRoomCount(String(d.room_count));
         if (d.bath_count) setBathCount(String(d.bath_count));
         if (d.direction) setDirection(d.direction);
-        if (d.approval_year) setApprovalYear(String(d.approval_year));
+        if (d.metadata?.approval_year) setApprovalYear(String(d.metadata.approval_year));
         if (d.sido) setSido(d.sido);
         if (d.sigungu) setSigungu(d.sigungu);
         if (d.dong) setDong(d.dong);
@@ -685,7 +685,7 @@ function MobileVacancyWrite() {
         room_count: isCommercial ? undefined : parseInt(roomCount)||1,
         bath_count: isCommercial ? undefined : parseInt(bathCount)||1,
         direction: isCommercial ? undefined : direction,
-        approval_year: approvalYear ? parseInt(approvalYear) : undefined,
+
         sido, sigungu, dong, building_name: buildingName||undefined, detail_addr: detailAddr||undefined,
         apt_dong: aptDong||undefined, hosu: hosu||undefined, address_exposure: addressExposure,
         lat: coords?.lat, lng: coords?.lng,
@@ -708,6 +708,7 @@ function MobileVacancyWrite() {
           elevator_cnt: elevatorCnt,
           is_illegal: isIllegal,
           building_structure: buildingStructure,
+          approval_year: approvalYear ? parseInt(approvalYear) : undefined,
           jisan_usage: jisanUsage || undefined,
           ceiling_height: ceilingHeight || undefined,
           power_capacity: powerCapacity || undefined,

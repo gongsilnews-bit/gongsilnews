@@ -1049,7 +1049,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   // 21. 준공연도
                   fields.push({
                     label: "준공연도",
-                    value: v.approval_year ? (v.approval_year <= 1979 ? "1980년 이전" : `${v.approval_year}년`) : "-"
+                    value: v.metadata?.approval_year ? (v.metadata.approval_year <= 1979 ? "1980년 이전" : `${v.metadata.approval_year}년`) : "-"
                   });
 
                   return fields;
