@@ -877,13 +877,13 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   const isCommercial = propType === "상가·사무실·건물·공장·토지";
 
                   // 2. 용도지역 (빌라·주택 또는 상업용인 경우)
-                  if ((isVillaHouse || isCommercial) && meta.zoning) {
-                    fields.push({ label: "용도지역", value: meta.zoning });
+                  if (isVillaHouse || isCommercial) {
+                    fields.push({ label: "용도지역", value: meta.zoning || "-" });
                   }
 
                   // 3. 지목 (토지인 경우)
-                  if (subCategory === "토지" && meta.land_purpose) {
-                    fields.push({ label: "지목", value: meta.land_purpose });
+                  if (subCategory === "토지") {
+                    fields.push({ label: "지목", value: meta.land_purpose || "-" });
                   }
 
                   // 4. 도로 폭
@@ -891,14 +891,14 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     fields.push({ label: "도로 폭", value: `${meta.road_width}m` });
                   }
 
-                  // 5. 건물구조
-                  if (meta.building_structure) {
-                    fields.push({ label: "건물구조", value: meta.building_structure });
+                  // 5. 건물구조 (상업용 - 토지/지산 제외)
+                  if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
+                    fields.push({ label: "건물구조", value: meta.building_structure || "-" });
                   }
 
-                  // 6. 주용도
-                  if (meta.main_usage) {
-                    fields.push({ label: "주용도", value: meta.main_usage });
+                  // 6. 주용도 (상업용 - 토지/지산 제외)
+                  if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
+                    fields.push({ label: "주용도", value: meta.main_usage || "-" });
                   }
 
                   // 7. 건물규모
@@ -944,7 +944,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   }
 
                   // 10. 건폐율/용적률
-                  if (tradeType === "매매" && (meta.building_coverage || meta.floor_area_ratio)) {
+                  if (tradeType === "매매" && (isVillaHouse || isCommercial)) {
                     const cov = meta.building_coverage ? `${meta.building_coverage}%` : "-";
                     const far = meta.floor_area_ratio ? `${meta.floor_area_ratio}%` : "-";
                     fields.push({
@@ -953,9 +953,9 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     });
                   }
 
-                  // 11. 현용도
-                  if (meta.current_usage) {
-                    fields.push({ label: "현용도", value: meta.current_usage });
+                  // 11. 현용도 (상업용 - 상가/사무실)
+                  if (isCommercial && ["상가", "사무실"].includes(subCategory)) {
+                    fields.push({ label: "현용도", value: meta.current_usage || "-" });
                   }
 
                   // 12. 해당층/총층
@@ -990,16 +990,16 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     });
                   }
 
-                  // 16. 승강기
-                  if (meta.elevator_cnt) {
-                    fields.push({ label: "승강기", value: meta.elevator_cnt });
+                  // 16. 엘리베이터 갯수 (상업용 - 토지/지산 제외)
+                  if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
+                    fields.push({ label: "엘리베이터 갯수", value: meta.elevator_cnt || "-" });
                   }
 
-                  // 17. 위반건축물
-                  if (meta.is_illegal !== undefined && meta.is_illegal !== null) {
+                  // 17. 위반건축물 (상업용 - 토지/지산 제외)
+                  if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
                     fields.push({
                       label: "위반건축물",
-                      value: meta.is_illegal ? "적발(위반)" : "무"
+                      value: meta.is_illegal ? "적발(위반)" : "해당없음"
                     });
                   }
 
