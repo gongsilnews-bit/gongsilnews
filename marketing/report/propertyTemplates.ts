@@ -27,7 +27,8 @@ export interface OverviewField {
  */
 export const getOverviewTemplate = (
   category: PropertyCategory,
-  isSale: boolean
+  isSale: boolean,
+  subCategory?: string
 ): OverviewField[] => {
   switch (category) {
     case 'apartment':
@@ -116,7 +117,20 @@ export const getOverviewTemplate = (
         { label: '개발가능', dataKey: 'developmentPotential' },
       ];
 
-    case 'house':
+    case 'house': {
+      // 단독/다가구, 전원주택, 상가주택 매매일 경우 건물형 필드 (대지면적, 연면적, 건물규모 등)
+      const isStandaloneSale = isSale && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory || '');
+      if (isStandaloneSale) {
+        return [
+          { label: '소재지', dataKey: 'address' },
+          { label: '용도지역', dataKey: 'zoning' },
+          { label: '대지면적', dataKey: 'landArea' },
+          { label: '연면적', dataKey: 'totalArea' },
+          { label: '건물규모', dataKey: 'buildingScale' },
+          { label: '주차대수', dataKey: 'parking' },
+          { label: '준공연도', dataKey: 'completionYear' },
+        ];
+      }
       return [
         { label: '소재지', dataKey: 'address' },
         { label: '건물명', dataKey: 'buildingName' },
@@ -126,10 +140,9 @@ export const getOverviewTemplate = (
         { label: '방향', dataKey: 'direction' },
         { label: '주차가능 여부', dataKey: 'parking' },
         { label: '입주가능일', dataKey: 'moveInDate' },
-        isSale
-          ? { label: '준공연도', dataKey: 'completionYear' }
-          : { label: '관리비', dataKey: 'maintenanceFee' },
+        { label: '관리비', dataKey: 'maintenanceFee' },
       ];
+    }
 
     case 'studio':
       return [
@@ -252,7 +265,8 @@ export const buildOverviewTable = (
   isSale: boolean,
   extraData?: Record<string, string>
 ): { label: string; value: string }[] => {
-  const template = getOverviewTemplate(category, isSale);
+  const subCategory = vacancy.sub_category || '';
+  const template = getOverviewTemplate(category, isSale, subCategory);
   const meta = vacancy.metadata || {};
 
   // vacancy 데이터에서 값 자동 매핑

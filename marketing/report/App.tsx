@@ -617,18 +617,15 @@ function App() {
         const supabaseFlyerSettings = json.flyer?.flyer_state || v.infrastructure?._flyer_settings;
         if (supabaseFlyerSettings) {
           const merged = { ...mergeStateWithDefaults(supabaseFlyerSettings), isAdClosed: v.status === 'STOPPED' };
-          // overviewTable 값이 전부 비어있으면 vacancy 원본에서 재생성
-          const ot = merged.info?.overviewTable;
-          if (Array.isArray(ot) && ot.length > 0 && ot.every((r: any) => !r.value || r.value.trim() === '')) {
-            const cat = detectPropertyCategory(v.sub_category, v.property_type);
-            const isSale = (v.trade_type || '매매') === '매매';
-            merged.info = {
-              ...merged.info,
-              overviewTable: buildOverviewTable(v, cat, isSale),
-              propertyCategory: cat,
-              transactionType: v.trade_type || '매매',
-            };
-          }
+          // 항상 최신 vacancy 데이터로 overviewTable 갱신 (공실등록 수정 시 즉시 반영)
+          const cat = detectPropertyCategory(v.sub_category, v.property_type);
+          const isSale = (v.trade_type || '매매') === '매매';
+          merged.info = {
+            ...merged.info,
+            overviewTable: buildOverviewTable(v, cat, isSale),
+            propertyCategory: cat,
+            transactionType: v.trade_type || '매매',
+          };
           setState(merged);
           setIsLoadedFromStorage(true);
           setIsInitialized(true);
@@ -642,18 +639,15 @@ function App() {
           try {
             const savedState = JSON.parse(savedStr);
             const merged = { ...mergeStateWithDefaults(savedState), isAdClosed: v.status === 'STOPPED' };
-            // overviewTable 값이 전부 비어있으면 vacancy 원본에서 재생성
-            const ot = merged.info?.overviewTable;
-            if (Array.isArray(ot) && ot.length > 0 && ot.every((r: any) => !r.value || r.value.trim() === '')) {
-              const cat = detectPropertyCategory(v.sub_category, v.property_type);
-              const isSale = (v.trade_type || '매매') === '매매';
-              merged.info = {
-                ...merged.info,
-                overviewTable: buildOverviewTable(v, cat, isSale),
-                propertyCategory: cat,
-                transactionType: v.trade_type || '매매',
-              };
-            }
+            // 항상 최신 vacancy 데이터로 overviewTable 갱신 (공실등록 수정 시 즉시 반영)
+            const cat = detectPropertyCategory(v.sub_category, v.property_type);
+            const isSale = (v.trade_type || '매매') === '매매';
+            merged.info = {
+              ...merged.info,
+              overviewTable: buildOverviewTable(v, cat, isSale),
+              propertyCategory: cat,
+              transactionType: v.trade_type || '매매',
+            };
             setState(merged);
             setIsLoadedFromStorage(true);
             setIsInitialized(true);
