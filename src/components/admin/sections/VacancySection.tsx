@@ -71,6 +71,35 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   const [pageSize, setPageSize] = useState(30);
   const [totalCount, setTotalCount] = useState(0);
   const [counts, setCounts] = useState({ 전체: 0, 광고중: 0, 광고종료: 0, 임시저장: 0 });
+  const [isStateRestored, setIsStateRestored] = useState(false);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem("vacancy_search_state");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.searchVacancyNo !== undefined) setSearchVacancyNo(parsed.searchVacancyNo);
+        if (parsed.searchType !== undefined) setSearchType(parsed.searchType);
+        if (parsed.searchKeyword !== undefined) setSearchKeyword(parsed.searchKeyword);
+        if (parsed.searchPropertyType !== undefined) setSearchPropertyType(parsed.searchPropertyType);
+        if (parsed.searchSubCategory !== undefined) setSearchSubCategory(parsed.searchSubCategory);
+        if (parsed.activeFilters !== undefined) setActiveFilters(parsed.activeFilters);
+        if (parsed.activeTab !== undefined) setActiveTab(parsed.activeTab);
+        if (parsed.currentPage !== undefined) setCurrentPage(parsed.currentPage);
+        if (parsed.pageSize !== undefined) setPageSize(parsed.pageSize);
+        if (parsed.excludeOnbid !== undefined) setExcludeOnbid(parsed.excludeOnbid);
+      } catch (e) {}
+    }
+    setIsStateRestored(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isStateRestored) return;
+    sessionStorage.setItem("vacancy_search_state", JSON.stringify({
+      searchVacancyNo, searchType, searchKeyword, searchPropertyType, searchSubCategory,
+      activeFilters, activeTab, currentPage, pageSize, excludeOnbid
+    }));
+  }, [searchVacancyNo, searchType, searchKeyword, searchPropertyType, searchSubCategory, activeFilters, activeTab, currentPage, pageSize, excludeOnbid, isStateRestored]);
 
   const fetchAllVacancies = async () => {
     const params: any = {
@@ -164,8 +193,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   };
 
   useEffect(() => {
+    if (!isStateRestored) return;
     fetchAllVacancies();
-  }, [currentPage, activeTab, activeFilters, showRegisterForm, excludeOnbid, pageSize]);
+  }, [currentPage, activeTab, activeFilters, showRegisterForm, excludeOnbid, pageSize, isStateRestored]);
 
   useEffect(() => {
     const fetchEditData = async () => {
@@ -265,7 +295,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
           </select>
         </div>
         <button onClick={() => { setActiveFilters({ vacancyNo: searchVacancyNo, type: searchType, keyword: searchKeyword, propertyType: searchPropertyType, subCategory: searchSubCategory }); if (searchVacancyNo || searchKeyword || searchType !== "전체" || searchPropertyType !== "전체") setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
-        <button onClick={() => { setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setSearchPropertyType("전체"); setSearchSubCategory("전체"); setActiveFilters({ vacancyNo: "", type: "전체", keyword: "", propertyType: "전체", subCategory: "전체" }); setActiveTab("전체"); setCurrentPage(1); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+        <button onClick={() => { setSearchVacancyNo(""); setSearchType("전체"); setSearchKeyword(""); setSearchPropertyType("전체"); setSearchSubCategory("전체"); setActiveFilters({ vacancyNo: "", type: "전체", keyword: "", propertyType: "전체", subCategory: "전체" }); setActiveTab("전체"); setCurrentPage(1); sessionStorage.removeItem("vacancy_search_state"); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
       </div>
 
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
