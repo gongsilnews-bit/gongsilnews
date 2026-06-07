@@ -1043,7 +1043,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   if (v.commission_etc) commParts.push(`(${v.commission_etc})`);
                   if (commParts.length > 0) {
                     fields.push({
-                      label: "중개보수/수수료",
+                      label: "중개보수",
                       value: commParts.join(" ")
                     });
                   }
