@@ -829,6 +829,20 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     value: displayBuildingName
                   });
 
+                  // 1-2. 동/호수
+                  const showDongHosu = !isPrivateAddr && (exp === "동/호수공개" || exp === "번지공개" || exp === "지번공개" || !exp);
+                  if (showDongHosu) {
+                    const dongParts = [];
+                    if (v.apt_dong) dongParts.push(v.apt_dong);
+                    if (v.hosu) dongParts.push(v.hosu);
+                    if (dongParts.length > 0) {
+                      fields.push({
+                        label: "동/호수",
+                        value: dongParts.join(" ")
+                      });
+                    }
+                  }
+
                   // 카테고리 분류
                   const isVillaHouse = propType === "빌라·주택";
                   const isCommercial = propType === "상가·사무실·건물·공장·토지";
@@ -995,6 +1009,19 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     fields.push({
                       label: "관리비",
                       value: v.maintenance_fee ? `${v.maintenance_fee / 10000}만원` : "없음"
+                    });
+                  }
+
+                  // 20-2. 중개보수/수수료
+                  const commParts = [];
+                  const baseComm = v.realtor_commission || v.commission_type;
+                  if (baseComm) commParts.push(baseComm);
+                  if (v.commission_amount) commParts.push(`${v.commission_amount}만원`);
+                  if (v.commission_etc) commParts.push(`(${v.commission_etc})`);
+                  if (commParts.length > 0) {
+                    fields.push({
+                      label: "중개보수/수수료",
+                      value: commParts.join(" ")
                     });
                   }
 
