@@ -162,10 +162,10 @@ export const detectPropertyCategory = (
   if (/아파트/.test(raw)) return 'apartment';
   if (/오피스텔/.test(raw)) return 'officetel';
   if (/빌딩|건물|상가건물/.test(raw)) return 'building';
+  if (/빌라|주택|단독|다가구|다세대/.test(raw)) return 'house';
   if (/상가|점포/.test(raw)) return 'shop';
   if (/사무실/.test(raw)) return 'office';
   if (/토지|나대지/.test(raw)) return 'land';
-  if (/빌라|주택|단독|다가구|다세대/.test(raw)) return 'house';
   if (/원룸|투룸|쓰리룸|고시원/.test(raw)) return 'studio';
 
   return 'building'; // 기본값
