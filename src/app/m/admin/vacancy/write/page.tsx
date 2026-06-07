@@ -105,6 +105,7 @@ function MobileVacancyWrite() {
   const [roomCount, setRoomCount] = useState("1");
   const [bathCount, setBathCount] = useState("1");
   const [direction, setDirection] = useState("");
+  const [approvalYear, setApprovalYear] = useState("");
 
   // 주소
   const [sido, setSido] = useState("");
@@ -319,6 +320,7 @@ function MobileVacancyWrite() {
         if (d.room_count) setRoomCount(String(d.room_count));
         if (d.bath_count) setBathCount(String(d.bath_count));
         if (d.direction) setDirection(d.direction);
+        if (d.approval_year) setApprovalYear(String(d.approval_year));
         if (d.sido) setSido(d.sido);
         if (d.sigungu) setSigungu(d.sigungu);
         if (d.dong) setDong(d.dong);
@@ -683,6 +685,7 @@ function MobileVacancyWrite() {
         room_count: isCommercial ? undefined : parseInt(roomCount)||1,
         bath_count: isCommercial ? undefined : parseInt(bathCount)||1,
         direction: isCommercial ? undefined : direction,
+        approval_year: approvalYear ? parseInt(approvalYear) : undefined,
         sido, sigungu, dong, building_name: buildingName||undefined, detail_addr: detailAddr||undefined,
         apt_dong: aptDong||undefined, hosu: hosu||undefined, address_exposure: addressExposure,
         lat: coords?.lat, lng: coords?.lng,
@@ -1425,6 +1428,16 @@ function MobileVacancyWrite() {
                   <option value="">선택</option>
                   {["남향","남동향","남서향","동향","서향","북향"].map(d=><option key={d} value={d}>{d}</option>)}
                 </select>
+              </div>
+            </div>
+          )}
+
+          {propertyType === "빌라·주택" && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>준공연도</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input type="number" placeholder="예: 2024" value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={inputStyle} />
+                <span style={{ color: "#6b7280", fontSize: 14, flexShrink: 0 }}>년</span>
               </div>
             </div>
           )}

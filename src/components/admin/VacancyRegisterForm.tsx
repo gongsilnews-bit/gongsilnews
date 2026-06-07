@@ -148,6 +148,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [hasDoorToDoor, setHasDoorToDoor] = useState(false);
   const [hasFreightElevator, setHasFreightElevator] = useState(false);
   const [freeParkingCnt, setFreeParkingCnt] = useState("");
+  const [approvalYear, setApprovalYear] = useState("");
 
   // 전달사항
   const [description, setDescription] = useState("");
@@ -285,6 +286,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.direction) setDirection(editData.direction);
     if (editData.current_floor) setCurrentFloor(editData.current_floor);
     if (editData.total_floor) setTotalFloor(editData.total_floor);
+    if (editData.approval_year) setApprovalYear(String(editData.approval_year));
     if (editData.deposit) setDeposit(String(editData.deposit / 10000));
     if (editData.monthly_rent) setMonthly(String(editData.monthly_rent / 10000));
     if (editData.maintenance_fee) setMaintenance(String(editData.maintenance_fee / 10000));
@@ -1709,12 +1711,25 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     </select>
                   </div>
                 </div>
-                <div style={{ marginBottom: 24, maxWidth: "50%" }}>
-                  <label style={labelStyle}>방향 (거실 등 주실 기준)</label>
-                  <select value={direction} onChange={(e) => setDirection(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                    <option value="">선택</option>
-                    {["남향","남동향","남서향","동향","서향","북향","북동향","북서향"].map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>방향 (거실 등 주실 기준)</label>
+                    <select value={direction} onChange={(e) => setDirection(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                      <option value="">선택</option>
+                      {["남향","남동향","남서향","동향","서향","북향","북동향","북서향"].map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    {propertyType === "빌라·주택" && (
+                      <>
+                        <label style={labelStyle}>준공연도</label>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <input type="number" placeholder="예: 2024" value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={inputStyle} />
+                          <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>년</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </>
             )}
@@ -2240,6 +2255,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     total_floor: totalFloor || null,
                     parking,
                     move_in_date: moveInDate,
+                    approval_year: approvalYear ? parseInt(approvalYear) : null,
                     options: selectedOptions,
                     themes: selectedThemes,
                     sido, sigungu, dong,

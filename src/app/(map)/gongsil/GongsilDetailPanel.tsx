@@ -1262,12 +1262,10 @@ export default function GongsilDetailPanel({
                     }
 
                     // 21. 준공연도
-                    if (v.approval_year) {
-                      fields.push({
-                        label: "준공연도",
-                        value: `${v.approval_year}년`
-                      });
-                    }
+                    fields.push({
+                      label: "준공연도",
+                      value: v.approval_year ? `${v.approval_year}년` : "-"
+                    });
 
                     return fields;
                   };
