@@ -439,7 +439,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                     if (vacancy.commission_etc) parts.push(`(${vacancy.commission_etc})`);
                     return parts.length > 0 ? parts.join(' ') : '-';
                   })()}</div>
-                  <div className="gdv-info-label">준공연도</div><div className="gdv-info-value">{vacancy.approval_year ? `${vacancy.approval_year}년` : '-'}</div>
+                  <div className="gdv-info-label">준공연도</div><div className="gdv-info-value">{vacancy.approval_year ? (vacancy.approval_year <= 1979 ? "1980년 이전" : `${vacancy.approval_year}년`) : '-'}</div>
                   <div className="gdv-info-label">상세설명</div><div className="gdv-info-value gdv-info-desc">{vacancy.description || ''}</div>
                 </div>
 

@@ -1723,10 +1723,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     {propertyType === "빌라·주택" && (
                       <>
                         <label style={labelStyle}>준공연도</label>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <input type="number" placeholder="예: 2024" value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={inputStyle} />
-                          <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>년</span>
-                        </div>
+                        <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                          <option value="">선택</option>
+                          {Array.from({length: 2026 - 1980 + 1}, (_, i) => 2026 - i).map(y => (
+                            <option key={y} value={y}>{y}년</option>
+                          ))}
+                          <option value="1979">1980년 이전</option>
+                        </select>
                       </>
                     )}
                   </div>
