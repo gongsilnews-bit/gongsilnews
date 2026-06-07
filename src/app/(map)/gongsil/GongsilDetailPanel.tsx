@@ -1046,17 +1046,19 @@ export default function GongsilDetailPanel({
 
                     // 1-2. 동/호수
                     const showDongHosu = !isPrivateAddr && (exp === "동/호수공개" || exp === "번지공개" || exp === "지번공개" || !exp);
+                    let displayDongHosu = "-";
                     if (showDongHosu) {
                       const dongParts = [];
                       if (v.apt_dong) dongParts.push(v.apt_dong);
                       if (v.hosu) dongParts.push(v.hosu);
                       if (dongParts.length > 0) {
-                        fields.push({
-                          label: "동/호수",
-                          value: dongParts.join(" ")
-                        });
+                        displayDongHosu = dongParts.join(" ");
                       }
                     }
+                    fields.push({
+                      label: "동/호수",
+                      value: displayDongHosu
+                    });
 
                     // 카테고리 분류
                     const isVillaHouse = propType === "빌라·주택";
