@@ -407,7 +407,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                 <div className="gdv-info-grid">
                   <div className="gdv-info-label">공실광고번호</div><div className="gdv-info-value">{vacancy.vacancy_no || '-'}</div>
                   <div className="gdv-info-label">소재지</div><div className="gdv-info-value">{[vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_addr || vacancy.detail_address].filter(Boolean).join(' ')}</div>
-                  <div className="gdv-info-label">공실광고특징</div><div className="gdv-info-value">{propName}</div>
+                  <div className="gdv-info-label">건물명</div><div className="gdv-info-value">{propName}</div>
                   <div className="gdv-info-label">동/호수</div><div className="gdv-info-value">{[vacancy.apt_dong, vacancy.hosu].filter(Boolean).join(' ') || '-'}</div>
                   <div className="gdv-info-label">거래구분</div><div className="gdv-info-value">{vacancy.trade_type || '-'}</div>
                   <div className="gdv-info-label">금액</div><div className="gdv-info-value">{(() => {
