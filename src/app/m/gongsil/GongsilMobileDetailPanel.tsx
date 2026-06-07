@@ -865,12 +865,10 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   });
 
                   // 1-5. 관리비
-                  if (tradeType !== "매매") {
-                    fields.push({
-                      label: "관리비",
-                      value: v.maintenance_fee ? `${v.maintenance_fee / 10000}만원` : "없음"
-                    });
-                  }
+                  fields.push({
+                    label: "관리비",
+                    value: v.maintenance_fee ? `${v.maintenance_fee / 10000}만원` : "없음"
+                  });
 
                   // 카테고리 분류
                   const isVillaHouse = propType === "빌라·주택";
