@@ -157,12 +157,31 @@ export const detectPropertyCategory = (
   subCategory?: string,
   propertyType?: string
 ): PropertyCategory => {
-  const raw = (subCategory || propertyType || '').trim();
+  const sub = (subCategory || '').trim();
 
+  // 1. 2차 카테고리(subCategory) 정확한 매칭을 최우선으로 처리 (혼동 방지)
+  if (["아파트", "아파트분양권", "도시형생활주택"].includes(sub)) return 'apartment';
+  if (["오피스텔", "오피스텔분양권", "생활숙박시설"].includes(sub)) return 'officetel';
+  if (["빌라/연립", "단독/다가구", "전원주택", "상가주택", "빌라"].includes(sub)) return 'house';
+  if (["건물/빌딩", "공장/창고", "지식산업센터"].includes(sub)) return 'building';
+  if (["상가", "상가/업무"].includes(sub)) return 'shop';
+  if (["사무실"].includes(sub)) return 'office';
+  if (["토지"].includes(sub)) return 'land';
+  if (["원룸", "1.5룸", "투룸"].includes(sub)) return 'studio';
+
+  // 2. 1차 카테고리(propertyType) 매칭
+  const type = (propertyType || '').trim();
+  if (type === "아파트·오피스텔") return 'apartment'; 
+  if (type === "빌라·주택") return 'house';
+  if (type === "원룸·투룸(풀옵션)") return 'studio';
+  if (type === "상가·사무실·건물·공장·토지") return 'building';
+
+  // 3. 예전 데이터나 텍스트 직접 입력 시트를 위한 폴백 매칭 (가장 나중)
+  const raw = (sub || type || '').trim();
   if (/아파트/.test(raw)) return 'apartment';
   if (/오피스텔/.test(raw)) return 'officetel';
-  if (/빌딩|건물|상가건물/.test(raw)) return 'building';
   if (/빌라|주택|단독|다가구|다세대/.test(raw)) return 'house';
+  if (/빌딩|건물|상가건물/.test(raw)) return 'building';
   if (/상가|점포/.test(raw)) return 'shop';
   if (/사무실/.test(raw)) return 'office';
   if (/토지|나대지/.test(raw)) return 'land';
