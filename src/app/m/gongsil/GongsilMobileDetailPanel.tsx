@@ -845,6 +845,33 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     value: displayDongHosu
                   });
 
+                  // 1-3. 거래구분
+                  fields.push({
+                    label: "거래구분",
+                    value: tradeType || "-"
+                  });
+
+                  // 1-4. 금액
+                  let displayPrice = "-";
+                  const monthlyManwon = v.monthly_rent ? Math.round(v.monthly_rent / 10000) : 0;
+                  if (v.trade_type === "매매" || v.trade_type === "전세") {
+                    displayPrice = v.deposit ? formatAmount(v.deposit) : "-";
+                  } else if (v.trade_type) {
+                    displayPrice = `${v.deposit ? formatAmount(v.deposit) : "0"}/${monthlyManwon > 0 ? `${monthlyManwon}만` : "0"}`;
+                  }
+                  fields.push({
+                    label: "금액",
+                    value: displayPrice
+                  });
+
+                  // 1-5. 관리비
+                  if (tradeType !== "매매") {
+                    fields.push({
+                      label: "관리비",
+                      value: v.maintenance_fee ? `${v.maintenance_fee / 10000}만원` : "없음"
+                    });
+                  }
+
                   // 카테고리 분류
                   const isVillaHouse = propType === "빌라·주택";
                   const isCommercial = propType === "상가·사무실·건물·공장·토지";
@@ -1006,13 +1033,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     value: v.move_in_date || (subCategory === "토지" ? "즉시사용" : "즉시입주(공실)")
                   });
 
-                  // 20. 관리비
-                  if (tradeType !== "매매") {
-                    fields.push({
-                      label: "관리비",
-                      value: v.maintenance_fee ? `${v.maintenance_fee / 10000}만원` : "없음"
-                    });
-                  }
+                  // 20. 관리비 제거 (상단으로 이동)
 
                   // 20-2. 중개보수/수수료
                   const commParts = [];
