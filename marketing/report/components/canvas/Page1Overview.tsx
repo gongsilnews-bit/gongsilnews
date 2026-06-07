@@ -1,5 +1,6 @@
 import React from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../../types';
+import { detectPropertyCategory, getOverviewTemplate } from '../../propertyTemplates';
 import { EditableText, EditableBlock, ReportPage, SectionTitle, EditableImage } from '../shared';
 
 interface Props {
@@ -52,13 +53,14 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
                                     ))}
                                 </>);
                             }
-                            const rows = [
-                                { k: '소재지', v: info.overviewTable?.location }, { k: '용도지역', v: info.overviewTable?.zoning },
-                                { k: '대지면적', v: info.overviewTable?.landArea }, { k: '연면적', v: info.overviewTable?.totalArea },
-                                { k: '건물규모', v: info.overviewTable?.buildingScale }, { k: '주용도', v: info.overviewTable?.mainPurpose },
-                                { k: '주차대수', v: info.overviewTable?.parking }, { k: '승강기', v: info.overviewTable?.elevator },
-                                { k: '준공연도', v: info.overviewTable?.completionYear },
-                            ];
+                            const cat = detectPropertyCategory(info.propertyCategory);
+                            const isSale = !info.transactionType || info.transactionType === '매매';
+                            const template = getOverviewTemplate(cat, isSale);
+                            const tblObj = info.overviewTable as any;
+                            const rows = template.map((f: any) => ({
+                                k: f.label,
+                                v: f.dataKey ? (tblObj?.[f.dataKey] || '') : ''
+                            }));
                             return rows.filter(r => r.v && r.v.trim() !== '').map((r, i) => (
                                 <tr key={i} className="border-b border-gray-100 last:border-0 bg-white">
                                     <td className="w-1/3 text-gray-500 font-bold py-2 pl-4 align-middle">{r.k}</td>

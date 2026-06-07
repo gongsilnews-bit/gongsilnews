@@ -6,7 +6,7 @@ import FlyerCanvas from './components/FlyerCanvas';
 import TableEditorModal from './components/TableEditorModal';
 import { generateFlyerCopy, fileToGenerativePart, extractPropertyInfoFromImages, extractAgentInfoFromImage, extractComplexInfoFromImage } from './services/geminiService';
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
-import { detectPropertyCategory, buildOverviewTable, buildInvestmentSummary, buildPage2Content, buildPage5Content, buildPage6Content } from './propertyTemplates';
+import { detectPropertyCategory, getOverviewTemplate, buildOverviewTable, buildInvestmentSummary, buildPage2Content, buildPage5Content, buildPage6Content, type OverviewField } from './propertyTemplates';
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
 
 export const COLORS: FlyerColor[] = [
@@ -314,24 +314,20 @@ const uploadImageToServer = async (file: File | Blob, vacancyId: string): Promis
 const convertOverviewTableToArray = (tbl: any, category?: string, transactionType?: string): { label: string; value: string }[] => {
   if (Array.isArray(tbl)) return tbl;
   if (tbl && typeof tbl === 'object') {
-    return [
-      { label: "소재지", value: tbl.location || "" },
-      { label: "용도지역", value: tbl.zoning || "" },
-      { label: "대지면적", value: tbl.landArea || "" },
-      { label: "연면적", value: tbl.totalArea || "" },
-      { label: "건물규모", value: tbl.buildingScale || "" },
-      { label: "주용도", value: tbl.mainPurpose || "" },
-      { label: "주차대수", value: tbl.parking || "" },
-      { label: "승강기", value: tbl.elevator || "" },
-      { label: "준공연도", value: tbl.completionYear || "" },
-    ].filter(row => row.value !== undefined && row.value !== null);
+    // 카테고리 기반으로 동적 템플릿 적용 (물건 유형에 맞는 필드명 사용)
+    const detected = detectPropertyCategory(category);
+    const isSale = !transactionType || transactionType === '매매';
+    const template = getOverviewTemplate(detected, isSale);
+    return template.map((f: OverviewField) => ({
+      label: f.label,
+      value: (f.dataKey ? (tbl[f.dataKey] || '') : '') || '',
+    }));
   }
   // 카테고리가 주어지면 해당 템플릿의 필드명 사용
   const detected = detectPropertyCategory(category);
   const isSale = !transactionType || transactionType === '매매';
-  const { getOverviewTemplate } = require('./propertyTemplates');
   const template = getOverviewTemplate(detected, isSale);
-  return template.map((f: any) => ({ label: f.label, value: '' }));
+  return template.map((f: OverviewField) => ({ label: f.label, value: '' }));
 };
 
 const mergeStateWithDefaults = (loaded: any): FlyerState => {
@@ -362,7 +358,11 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
       ...loadedInfo,
       coverQRLink,
       visiblePages: mergedVisiblePages,
-      overviewTable: convertOverviewTableToArray(loaded?.info?.overviewTable || loaded?.info?.overviewTableObj),
+      overviewTable: convertOverviewTableToArray(
+        loaded?.info?.overviewTable || loaded?.info?.overviewTableObj,
+        loadedInfo.propertyCategory || loadedInfo.sub_category || loadedInfo.property_type,
+        loadedInfo.transactionType
+      ),
       floorStatus: loaded?.info?.floorStatus || INITIAL_INFO.floorStatus,
       highlights: loaded?.info?.highlights || INITIAL_INFO.highlights,
       leaseTable: (loaded?.info?.leaseTable && Array.isArray(loaded.info.leaseTable.headers) && Array.isArray(loaded.info.leaseTable.rows)) 

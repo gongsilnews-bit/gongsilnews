@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PropertyInfo, FlyerColor, FlyerLayout } from '../types';
+import { detectPropertyCategory, getOverviewTemplate } from '../propertyTemplates';
 import { SwatchIcon, RectangleGroupIcon, PhotoIcon, TrashIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
 
 interface FlyerFormProps {
@@ -382,7 +383,6 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               const tbl = Array.isArray(info.overviewTable) 
                                   ? info.overviewTable 
                                   : (() => {
-                                      const { detectPropertyCategory, getOverviewTemplate } = require('../../propertyTemplates');
                                       const cat = detectPropertyCategory(info.propertyCategory);
                                       const isSale = !info.transactionType || info.transactionType === '매매';
                                       const template = getOverviewTemplate(cat, isSale);
