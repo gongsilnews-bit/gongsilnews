@@ -1720,7 +1720,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     </select>
                   </div>
                   <div style={{ flex: 1 }}>
-                    {propertyType === "빌라·주택" && (
+                    {(propertyType === "빌라·주택" || propertyType === "아파트·오피스텔") && (
                       <>
                         <label style={labelStyle}>준공연도</label>
                         <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
