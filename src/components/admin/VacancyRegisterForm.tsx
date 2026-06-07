@@ -1838,7 +1838,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
                 <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{...labelStyle, marginBottom: 6}}>승강기 대수</label>
+                    <label style={{...labelStyle, marginBottom: 6}}>엘리베이터 갯수</label>
                     <div style={{ display: "flex", gap: 8 }}>
                       {renderSelectOrInput(
                         elevatorCnt,

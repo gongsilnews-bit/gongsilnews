@@ -1533,7 +1533,7 @@ function MobileVacancyWrite() {
 
             <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>승강기 대수</label>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>엘리베이터 갯수</label>
                 <div style={{ display: "flex", gap: 6 }}>
                   {renderSelectOrInput(
                     elevatorCnt,
