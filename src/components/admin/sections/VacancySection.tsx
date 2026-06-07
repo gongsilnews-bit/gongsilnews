@@ -304,8 +304,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                   }} />
                 </th>
                 <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 50, whiteSpace: "nowrap" }}>번호</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 140, whiteSpace: "nowrap" }}>1차 매물카테고리</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120, whiteSpace: "nowrap" }}>2차 매물카테고리</th>
                 <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 90, whiteSpace: "nowrap" }}>광고설정</th>
-                <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110, whiteSpace: "nowrap" }}>공실광고 종류</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: "auto" }}>주소 / 연락처</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 70, whiteSpace: "nowrap" }}>거래</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 140, whiteSpace: "nowrap" }}>금액</th>
@@ -317,7 +318,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
             </thead>
             <tbody>
               {filteredVacancies.length === 0 ? (
-                <tr><td colSpan={10} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 공실이 없습니다.</td></tr>
+                <tr><td colSpan={12} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 공실이 없습니다.</td></tr>
               ) : filteredVacancies.map((row, idx) => {
                   const formatAmount = (amt: number) => {
                   if (!amt) return "0";
@@ -369,6 +370,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                     <td style={{ padding: "16px 4px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>
                       {row.vacancy_no || '-'}
                     </td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, fontWeight: 600, color: textPrimary, whiteSpace: "nowrap" }}>{row.property_type || "-"}</td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, fontWeight: 600, color: textPrimary, whiteSpace: "nowrap" }}>{row.sub_category || "-"}</td>
                     <td style={{ padding: "16px 4px", textAlign: "center", verticalAlign: "middle" }}>
                       {canToggleStatus ? (
                         row.status === 'DRAFT' ? (
@@ -402,7 +405,6 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                       )}
                       <div style={{ fontSize: 13, color: textSecondary, marginTop: 4, fontWeight: 600 }}>{daysSinceCreated}일</div>
                     </td>
-                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary, whiteSpace: "nowrap" }}>{row.sub_category || row.property_type}</td>
                     <td style={{ padding: "16px 10px", verticalAlign: "middle", cursor: "pointer", minWidth: 200 }} onClick={() => {
                       const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
                       router.push(`${path}?menu=gongsil&action=detail&id=${row.id}`);

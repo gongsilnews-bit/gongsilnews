@@ -213,7 +213,7 @@ export async function getVacancies(options?: {
   const supabase = getAdminClient();
   try {
     const selectFields = options?.all
-      ? 'id, vacancy_no, owner_id, status, trade_type, property_type, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, building_name, lat, lng, created_at, exposure_type, realtor_commission, room_count, bath_count, exclusive_m2, supply_m2, parking, total_floor, current_floor, direction, move_in_date, client_name, client_phone, themes, options, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)'
+      ? 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, building_name, lat, lng, created_at, exposure_type, realtor_commission, room_count, bath_count, exclusive_m2, supply_m2, parking, total_floor, current_floor, direction, move_in_date, client_name, client_phone, themes, options, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)'
       : '*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
 
     // 만약 페이지네이션이 명시된 경우, 단일 쿼리로 최적화해서 수행
