@@ -461,17 +461,34 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                               </button>
                                           </div>
                                       ))}
-                                      <button
-                                          type="button"
-                                          onClick={() => {
-                                              const newTable = [...tbl];
-                                              newTable.push({ label: '', value: '' });
-                                              setInfo({ ...info, overviewTable: newTable });
-                                          }}
-                                          className="w-full mt-2 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-dashed border-blue-200"
-                                      >
-                                          + 개요 항목(행) 추가
-                                      </button>
+                                      <div className="flex gap-2 w-full mt-2">
+                                          <button
+                                              type="button"
+                                              onClick={() => {
+                                                  const newTable = [...tbl];
+                                                  newTable.push({ label: '', value: '' });
+                                                  setInfo({ ...info, overviewTable: newTable });
+                                              }}
+                                              className="flex-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors border border-dashed border-blue-200"
+                                          >
+                                              + 개요 항목(행) 추가
+                                          </button>
+                                          <button
+                                              type="button"
+                                              onClick={() => {
+                                                  if (window.confirm('기본 물건 개요 양식으로 초기화하시겠습니까? (기존에 수정한 표 내용이 삭제됩니다)')) {
+                                                      const cat = detectPropertyCategory(info.propertyCategory);
+                                                      const isSale = !info.transactionType || info.transactionType === '매매';
+                                                      const template = getOverviewTemplate(cat, isSale);
+                                                      const newTable = template.map(f => ({ label: f.label, value: '' }));
+                                                      setInfo({ ...info, overviewTable: newTable });
+                                                  }
+                                              }}
+                                              className="px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg text-xs font-bold transition-colors border border-dashed border-gray-200 shrink-0"
+                                          >
+                                              ↺ 표 초기화
+                                          </button>
+                                      </div>
                                   </>
                               );
                           })()}
