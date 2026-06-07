@@ -170,6 +170,59 @@ export const detectPropertyCategory = (
 };
 
 /**
+ * 대지면적 포맷 (metadata.land_share_m2 / land_share_py)
+ */
+const formatLandArea = (meta: any): string => {
+  const m2 = meta.land_share_m2;
+  const py = meta.land_share_py;
+  if (m2 && py) return `${Number(py).toFixed(1)}평 (${Number(m2).toFixed(1)}㎡)`;
+  if (m2) return `${Number(m2).toFixed(1)}㎡ (${(Number(m2) * 0.3025).toFixed(1)}평)`;
+  if (py) return `${Number(py).toFixed(1)}평`;
+  return '';
+};
+
+/**
+ * 연면적/총면적 포맷 (supply_m2/supply_py — 건물 매매 시 연면적으로 사용)
+ */
+const formatTotalArea = (vacancy: any): string => {
+  const m2 = vacancy.supply_m2;
+  const py = vacancy.supply_py;
+  if (m2 && py) return `${Number(py).toFixed(1)}평 (${Number(m2).toFixed(1)}㎡)`;
+  if (m2) return `${Number(m2).toFixed(1)}㎡ (${(Number(m2) * 0.3025).toFixed(1)}평)`;
+  if (py) return `${Number(py).toFixed(1)}평`;
+  return '';
+};
+
+/**
+ * 건물규모 포맷 (metadata.ground_floors / underground_floors → "지상5층 / 지하1층")
+ */
+const formatBuildingScale = (meta: any, vacancy: any): string => {
+  const ground = meta.ground_floors;
+  const underground = meta.underground_floors;
+  if (ground || underground) {
+    const parts: string[] = [];
+    if (ground) parts.push(`지상 ${ground}층`);
+    if (underground) parts.push(`지하 ${underground}층`);
+    return parts.join(' / ');
+  }
+  // fallback: current_floor / total_floor
+  if (vacancy.total_floor) return `총 ${vacancy.total_floor}층`;
+  return '';
+};
+
+/**
+ * 승강기 포맷 (metadata.elevator_cnt)
+ */
+const formatElevator = (meta: any): string => {
+  const cnt = meta.elevator_cnt;
+  if (!cnt) return '';
+  if (cnt === '없음' || cnt === '0') return '없음';
+  const num = parseInt(cnt, 10);
+  if (!isNaN(num)) return `${num}대`;
+  return cnt;
+};
+
+/**
  * vacancy 데이터에서 overviewTable 배열을 자동 생성
  */
 export const buildOverviewTable = (
@@ -179,9 +232,12 @@ export const buildOverviewTable = (
   extraData?: Record<string, string>
 ): { label: string; value: string }[] => {
   const template = getOverviewTemplate(category, isSale);
+  const meta = vacancy.metadata || {};
 
   // vacancy 데이터에서 값 자동 매핑
+  // 주의: 빌딩/상가 관련 필드는 vacancy.metadata.* 에 저장됨 (VacancyRegisterForm 참조)
   const dataMap: Record<string, string> = {
+    // 공통 필드 (최상위)
     address: [vacancy.sido, vacancy.sigungu, vacancy.dong].filter(Boolean).join(' ') || '',
     buildingName: vacancy.building_name || '',
     area: formatAreaDisplay(vacancy),
@@ -189,7 +245,7 @@ export const buildOverviewTable = (
       ? `${vacancy.current_floor}층 / 총 ${vacancy.total_floor || '-'}층`
       : '',
     roomCount: vacancy.room_count
-      ? `${vacancy.room_count}개 / ${vacancy.bathroom_count || '-'}개`
+      ? `${vacancy.room_count}개 / ${vacancy.bath_count || vacancy.bathroom_count || '-'}개`
       : '',
     direction: vacancy.direction || '',
     parking: vacancy.parking || '',
@@ -198,13 +254,14 @@ export const buildOverviewTable = (
       ? `${Math.round(vacancy.maintenance_fee / 10000)}만원`
       : '',
     completionYear: vacancy.approval_year ? `${vacancy.approval_year}년` : '',
-    // 빌딩/토지용 (데이터가 없으면 공란)
-    zoning: vacancy.zoning || '',
-    landArea: vacancy.land_area || '',
-    totalArea: vacancy.total_area || '',
-    buildingScale: vacancy.building_scale || '',
-    mainPurpose: vacancy.main_purpose || '',
-    elevator: vacancy.elevator || '',
+
+    // 빌딩/상가/토지용 — metadata 내부 필드 참조
+    zoning: meta.zoning || '',
+    landArea: formatLandArea(meta),
+    totalArea: formatTotalArea(vacancy),
+    buildingScale: formatBuildingScale(meta, vacancy),
+    mainPurpose: meta.main_usage || meta.main_purpose || '',
+    elevator: formatElevator(meta),
     ...extraData,
   };
 

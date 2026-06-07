@@ -616,7 +616,20 @@ function App() {
         // 1. Supabase 클라우드 동기화 데이터 우선 로드
         const supabaseFlyerSettings = json.flyer?.flyer_state || v.infrastructure?._flyer_settings;
         if (supabaseFlyerSettings) {
-          setState({ ...mergeStateWithDefaults(supabaseFlyerSettings), isAdClosed: v.status === 'STOPPED' });
+          const merged = { ...mergeStateWithDefaults(supabaseFlyerSettings), isAdClosed: v.status === 'STOPPED' };
+          // overviewTable 값이 전부 비어있으면 vacancy 원본에서 재생성
+          const ot = merged.info?.overviewTable;
+          if (Array.isArray(ot) && ot.length > 0 && ot.every((r: any) => !r.value || r.value.trim() === '')) {
+            const cat = detectPropertyCategory(v.sub_category, v.property_type);
+            const isSale = (v.trade_type || '매매') === '매매';
+            merged.info = {
+              ...merged.info,
+              overviewTable: buildOverviewTable(v, cat, isSale),
+              propertyCategory: cat,
+              transactionType: v.trade_type || '매매',
+            };
+          }
+          setState(merged);
           setIsLoadedFromStorage(true);
           setIsInitialized(true);
           setLoadingData(false);
@@ -628,7 +641,20 @@ function App() {
         if (savedStr) {
           try {
             const savedState = JSON.parse(savedStr);
-            setState({ ...mergeStateWithDefaults(savedState), isAdClosed: v.status === 'STOPPED' });
+            const merged = { ...mergeStateWithDefaults(savedState), isAdClosed: v.status === 'STOPPED' };
+            // overviewTable 값이 전부 비어있으면 vacancy 원본에서 재생성
+            const ot = merged.info?.overviewTable;
+            if (Array.isArray(ot) && ot.length > 0 && ot.every((r: any) => !r.value || r.value.trim() === '')) {
+              const cat = detectPropertyCategory(v.sub_category, v.property_type);
+              const isSale = (v.trade_type || '매매') === '매매';
+              merged.info = {
+                ...merged.info,
+                overviewTable: buildOverviewTable(v, cat, isSale),
+                propertyCategory: cat,
+                transactionType: v.trade_type || '매매',
+              };
+            }
+            setState(merged);
             setIsLoadedFromStorage(true);
             setIsInitialized(true);
             setLoadingData(false);
