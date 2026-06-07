@@ -119,14 +119,16 @@ export const getOverviewTemplate = (
     case 'house':
       return [
         { label: '소재지', dataKey: 'address' },
-        { label: '용도지역', dataKey: 'zoning' },
-        { label: '대지면적', dataKey: 'landArea' },
-        { label: '연면적', dataKey: 'totalArea' },
-        { label: '건물규모', dataKey: 'buildingScale' },
-        { label: '세대수', dataKey: 'unitCount' },
-        { label: '주차대수', dataKey: 'parking' },
-        { label: '준공연도', dataKey: 'completionYear' },
-        { label: '월수익', dataKey: 'monthlyIncome' },
+        { label: '건물명', dataKey: 'buildingName' },
+        { label: '공급/전용면적', dataKey: 'area' },
+        { label: '해당층/총층', dataKey: 'floor' },
+        { label: '방/욕실수', dataKey: 'roomCount' },
+        { label: '방향', dataKey: 'direction' },
+        { label: '주차가능 여부', dataKey: 'parking' },
+        { label: '입주가능일', dataKey: 'moveInDate' },
+        isSale
+          ? { label: '준공연도', dataKey: 'completionYear' }
+          : { label: '관리비', dataKey: 'maintenanceFee' },
       ];
 
     case 'studio':
@@ -163,7 +165,7 @@ export const detectPropertyCategory = (
   if (/상가|점포/.test(raw)) return 'shop';
   if (/사무실/.test(raw)) return 'office';
   if (/토지|나대지/.test(raw)) return 'land';
-  if (/단독|다가구|다세대/.test(raw)) return 'house';
+  if (/빌라|주택|단독|다가구|다세대/.test(raw)) return 'house';
   if (/원룸|투룸|쓰리룸|고시원/.test(raw)) return 'studio';
 
   return 'building'; // 기본값
