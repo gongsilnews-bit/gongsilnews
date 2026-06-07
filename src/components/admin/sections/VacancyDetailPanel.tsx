@@ -408,6 +408,15 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                   <div className="gdv-info-label">공실광고번호</div><div className="gdv-info-value">{vacancy.vacancy_no || '-'}</div>
                   <div className="gdv-info-label">소재지</div><div className="gdv-info-value">{[vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_addr || vacancy.detail_address].filter(Boolean).join(' ')}</div>
                   <div className="gdv-info-label">공실광고특징</div><div className="gdv-info-value">{propName}</div>
+                  <div className="gdv-info-label">동/호수</div><div className="gdv-info-value">{[vacancy.apt_dong, vacancy.hosu].filter(Boolean).join(' ') || '-'}</div>
+                  <div className="gdv-info-label">거래구분</div><div className="gdv-info-value">{vacancy.trade_type || '-'}</div>
+                  <div className="gdv-info-label">금액</div><div className="gdv-info-value">{(() => {
+                    const monthlyManwon = vacancy.monthly_rent ? Math.round(vacancy.monthly_rent / 10000) : 0;
+                    if (vacancy.trade_type === '매매' || vacancy.trade_type === '전세') return vacancy.deposit ? formatAmount(vacancy.deposit) : '-';
+                    if (vacancy.trade_type) return `${vacancy.deposit ? formatAmount(vacancy.deposit) : '0'}/${monthlyManwon > 0 ? `${monthlyManwon}만` : '0'}`;
+                    return '-';
+                  })()}</div>
+                  <div className="gdv-info-label">관리비</div><div className="gdv-info-value">{vacancy.maintenance_fee ? (vacancy.maintenance_fee / 10000) + '만원' : '없음'}</div>
                   {vacancy.metadata?.zoning && <><div className="gdv-info-label">용도지역</div><div className="gdv-info-value">{vacancy.metadata.zoning}</div></>}
                   {vacancy.metadata?.road_width !== undefined && vacancy.metadata?.road_width !== null && <><div className="gdv-info-label">도로 폭</div><div className="gdv-info-value">{vacancy.metadata.road_width}m</div></>}
                   {(vacancy.metadata?.ground_floors !== undefined || vacancy.metadata?.underground_floors !== undefined) && <><div className="gdv-info-label">건물규모</div><div className="gdv-info-value">지하 {vacancy.metadata?.underground_floors || 0}층 / 지상 {vacancy.metadata?.ground_floors || 0}층</div></>}
@@ -422,7 +431,14 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                   <div className="gdv-info-label">방향</div><div className="gdv-info-value">{vacancy.direction || '-'}</div>
                   <div className="gdv-info-label">주차가능 여부</div><div className="gdv-info-value">{vacancy.parking || '없음'}</div>
                   <div className="gdv-info-label">입주가능일</div><div className="gdv-info-value">{vacancy.move_in_date || '즉시입주(공실)'}</div>
-                  <div className="gdv-info-label">관리비</div><div className="gdv-info-value">{vacancy.maintenance_fee ? (vacancy.maintenance_fee / 10000) + '만원' : '없음'}</div>
+                  <div className="gdv-info-label">중개보수</div><div className="gdv-info-value">{(() => {
+                    const parts: string[] = [];
+                    const baseComm = vacancy.realtor_commission || vacancy.commission_type;
+                    if (baseComm) parts.push(baseComm);
+                    if (vacancy.commission_amount) parts.push(`${vacancy.commission_amount}만원`);
+                    if (vacancy.commission_etc) parts.push(`(${vacancy.commission_etc})`);
+                    return parts.length > 0 ? parts.join(' ') : '-';
+                  })()}</div>
                   <div className="gdv-info-label">상세설명</div><div className="gdv-info-value gdv-info-desc">{vacancy.description || ''}</div>
                 </div>
 
