@@ -4,7 +4,7 @@ import { jsPDF } from 'jspdf';
 import FlyerForm from './components/FlyerForm';
 import FlyerCanvas from './components/FlyerCanvas';
 import TableEditorModal from './components/TableEditorModal';
-import { generateFlyerCopy, fileToGenerativePart, extractPropertyInfoFromImages, extractAgentInfoFromImage, extractComplexInfoFromImage } from './services/geminiService';
+// Removed geminiService imports to prevent client-side API usage
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
 import { detectPropertyCategory, getOverviewTemplate, buildOverviewTable, buildInvestmentSummary, buildPage2Content, buildPage5Content, buildPage6Content, type OverviewField } from './propertyTemplates';
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
@@ -1249,136 +1249,22 @@ function App() {
 
   // 1. Text-based Generation
   const handleGenerateAI = async () => {
-    if (!state.info.address) return;
-    setIsGenerating(true);
-    try {
-      const result = await generateFlyerCopy(state.info);
-      applyGeneratedContent(result);
-    } catch (e) {
-      alert("AI 생성 중 오류가 발생했습니다.");
-    } finally {
-      setIsGenerating(false);
-    }
+    alert("보안상의 이유로 클라이언트 AI 생성 기능이 비활성화되었습니다.");
   };
 
   // 2. Image-based Analysis & Generation
   const handleAnalyzeImage = async (files: File[]) => {
-    const params = new URLSearchParams(window.location.search);
-    const vacancyId = params.get("vacancy_id") || "unknown";
-
-    setIsGenerating(true);
-    try {
-        const imageSlots = [
-            'mainImage', 
-            'subImage1', 'subImage2', 
-            'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
-        ];
-        
-        const newImages: Record<string, string> = {};
-        let fileSlotIndex = 0;
-
-        const imagesData = await Promise.all(files.map(async (file) => ({
-            data: await fileToGenerativePart(file),
-            mimeType: file.type
-        })));
-
-        const { info: extractedInfo, generated } = await extractPropertyInfoFromImages(imagesData);
-
-        await Promise.all(files.map(async (file) => {
-            while (fileSlotIndex < imageSlots.length && state[imageSlots[fileSlotIndex]]) {
-                fileSlotIndex++;
-            }
-            if (fileSlotIndex < imageSlots.length) {
-                const slot = imageSlots[fileSlotIndex];
-                setIsUploadingImage(prev => ({ ...prev, [slot]: true }));
-                try {
-                  const compressedBlob = await compressToWebP(file, 0.82);
-                  const publicUrl = await uploadImageToServer(compressedBlob, vacancyId);
-                  newImages[slot] = publicUrl;
-                } catch (e) {
-                  console.error(`${slot} 업로드 실패:`, e);
-                } finally {
-                  setIsUploadingImage(prev => ({ ...prev, [slot]: false }));
-                }
-                fileSlotIndex++;
-            }
-        }));
-
-        const mergedInfo: PropertyInfo = {
-            ...state.info,
-            ...extractedInfo,
-            sections: state.info.sections 
-        };
-
-        applyGeneratedContent(generated, mergedInfo, newImages);
-
-    } catch (e) {
-        console.error(e);
-        alert("이미지 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-    } finally {
-        setIsGenerating(false); 
-    }
+    alert("보안상의 이유로 클라이언트 이미지 분석 기능이 비활성화되었습니다.");
   };
 
   // 3. Agent Image Analysis
   const handleAnalyzeAgentImage = async (file: File) => {
-      setIsGenerating(true);
-      try {
-          await handleImageUpload('agentImage', file);
-          
-          const base64 = await fileToGenerativePart(file);
-          const extractedAgentInfo = await extractAgentInfoFromImage(base64, file.type);
-          
-          setState(prev => ({
-              ...prev,
-              info: {
-                  ...prev.info,
-                  ...extractedAgentInfo,
-                  agentAdditionalInfo: extractedAgentInfo.agentAdditionalInfo || prev.info.agentAdditionalInfo
-              }
-          }));
-          
-      } catch (e) {
-          console.error(e);
-          alert("명함 분석 중 오류가 발생했습니다.");
-      } finally {
-          setIsGenerating(false);
-      }
+      alert("보안상의 이유로 클라이언트 명함 분석 기능이 비활성화되었습니다.");
   };
 
   // 4. Complex Info Analysis
   const handleAnalyzeComplexImage = async (sectionId: string, file: File) => {
-      setIsGenerating(true);
-      try {
-          await handleImageUpload(`complexImage-${sectionId}`, file);
-          
-          const base64 = await fileToGenerativePart(file);
-          const extractedData = await extractComplexInfoFromImage(base64, file.type);
-          
-          setState(prev => {
-              const newSections = prev.info.sections.map(sec => {
-                  if (sec.id !== sectionId) return sec;
-                  
-                  const newItems = sec.items.map(item => {
-                      if (item.title && extractedData[item.title]) {
-                          return { ...item, text: extractedData[item.title] };
-                      }
-                      return item;
-                  });
-                  return { ...sec, items: newItems };
-              });
-              
-              return {
-                  ...prev,
-                  info: { ...prev.info, sections: newSections }
-              };
-          });
-      } catch (e) {
-          console.error(e);
-          alert("단지 정보 분석 중 오류가 발생했습니다.");
-      } finally {
-          setIsGenerating(false);
-      }
+      alert("보안상의 이유로 클라이언트 단지 정보 분석 기능이 비활성화되었습니다.");
   };
 
   // Helper to apply generated content to sections

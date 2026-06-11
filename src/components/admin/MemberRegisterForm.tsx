@@ -609,7 +609,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         {formData.role === "비즈니스회원" && (
           <button onClick={() => setActiveTab(3)} style={{ flex: 1, padding: "14px", background: activeTab === 3 ? (darkMode ? "#8b5cf6" : "#7c3aed") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 3 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 3 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 3 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>비즈니스정보</button>
         )}
-        <button onClick={() => setActiveTab(2)} style={{ flex: 1, padding: "14px", background: activeTab === 2 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 2 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 2 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 2 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>마케팅정보</button>
+
       </div>
 
       {activeTab === 0 && (
@@ -1239,131 +1239,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         </div>
       )}
 
-      {activeTab === 2 && (
-        <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderBottomLeftRadius: 12, borderBottomRightRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderTop: "none", overflow: "hidden", marginBottom: 24 }}>
-          <div style={{ padding: "16px 20px", color: darkMode ? "#9ca3af" : "#65748b", fontSize: 13, borderBottom: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, background: darkMode ? "#333" : "#f8fafc", lineHeight: 1.5 }}>
-            아래 마케팅 항목은 원하시는 분만 입력하는 <strong style={{color: "#3b82f6"}}>선택사항</strong>입니다.<br/>
-            <span style={{color: "#ef4444", fontSize: 12}}>※ 우측에 메모하시는 ID/PW 정보는 관리자나 외부인에게 노출되지 않으며, **오직 본인만** 열람할 수 있도록 안전하게 보관됩니다.</span>
-          </div>
 
-          <div style={rowStyle}>
-            <div style={{...labelStyle, flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 6}}>
-              <div>API Key 메모</div>
-              <button onClick={handleAddApi} style={{ padding: "4px 10px", fontSize: 12, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}>+ 추가하기</button>
-            </div>
-            <div style={{ ...contentStyle, flexDirection: "column", gap: 10, alignItems: "stretch" }}>
-              {apiList.map((api, idx) => (
-                <div key={idx} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", background: darkMode ? "#333" : "#f9fafb", padding: "10px 14px", borderRadius: 8, border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}` }}>
-                  <select 
-                    value={api.provider} 
-                    onChange={(e) => handleApiChange(idx, 'provider', e.target.value)} 
-                    style={{ ...inputStyle, flex: "none", width: 120 }}
-                  >
-                    <option value="챗GPT">챗GPT</option>
-                    <option value="클로드">클로드</option>
-                    <option value="구글">구글 (Gemini)</option>
-                    <option value="기타">기타 API</option>
-                  </select>
-                  <div style={{ display: "flex", flex: 2, minWidth: 200, position: "relative" }}>
-                    <input
-                      type="text"
-                      value={api.key_value}
-                      onChange={(e) => handleApiChange(idx, 'key_value', e.target.value)}
-                      style={{ ...inputStyle, width: "100%", paddingRight: 32 }}
-                      placeholder="API Key 또는 주소"
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => handleCopy(api.key_value)}
-                      title="복사하기"
-                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 4 }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={darkMode ? "#9ca3af" : "#6b7280"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                      </svg>
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={api.login_id}
-                    onChange={(e) => handleApiChange(idx, 'login_id', e.target.value)}
-                    style={{ ...inputStyle, flex: 1, minWidth: 100 }}
-                    placeholder="로그인 ID"
-                  />
-                  <input
-                    type="password"
-                    value={api.login_pw}
-                    onChange={(e) => handleApiChange(idx, 'login_pw', e.target.value)}
-                    style={{ ...inputStyle, flex: 1, minWidth: 100 }}
-                    placeholder="비밀번호"
-                  />
-                  <button onClick={() => handleRemoveApi(idx)} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, height: 36, padding: "0 14px", fontSize: 13, fontWeight: "bold", cursor: "pointer" }}>삭제</button>
-                </div>
-              ))}
-              {apiList.length === 0 && (
-                <span style={{ fontSize: 13, color: darkMode ? "#9ca3af" : "#6b7280", padding: "10px 0" }}>등록된 API 정보가 없습니다. 좌측의 추가 버튼을 눌러 추가해주세요.</span>
-              )}
-            </div>
-          </div>
-
-          {Object.keys(snsLabels).map((key) => {
-            const sns = snsLinks[key] || initialSnsObj;
-            return (
-              <div style={rowStyle} key={key}>
-                <div style={labelStyle}>{snsLabels[key]}</div>
-                <div style={{ ...contentStyle, gap: 8, flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", flex: 2, minWidth: 200, position: "relative" }}>
-                    <input
-                      type="text"
-                      value={sns.url}
-                      onChange={(e) => handleSnsObjChange(key, 'url', e.target.value)}
-                      style={{ ...inputStyle, width: "100%", paddingRight: 32 }}
-                      placeholder={`${snsLabels[key]} 주소(URL) 입력`}
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => handleCopy(sns.url)}
-                      title="복사하기"
-                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 4 }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={darkMode ? "#9ca3af" : "#6b7280"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                      </svg>
-                    </button>
-                  </div>
-                  <select 
-                    value={sns.login_type} 
-                    onChange={(e) => handleSnsObjChange(key, 'login_type', e.target.value)} 
-                    style={{ ...inputStyle, flex: "none", width: 130, padding: "0 10px" }}
-                  >
-                    <option value="일반">일반/직접가입</option>
-                    <option value="네이버">네이버 가입</option>
-                    <option value="카카오">카카오 가입</option>
-                    <option value="구글">구글 가입</option>
-                    <option value="다음">다음(Daum)</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={sns.login_id}
-                    onChange={(e) => handleSnsObjChange(key, 'login_id', e.target.value)}
-                    style={{ ...inputStyle, flex: 1, minWidth: 100 }}
-                    placeholder="로그인 ID (메모)"
-                  />
-                  <input
-                    type="password"
-                    value={sns.login_pw}
-                    onChange={(e) => handleSnsObjChange(key, 'login_pw', e.target.value)}
-                    style={{ ...inputStyle, flex: 1, minWidth: 120 }}
-                    placeholder="비밀번호 (메모)"
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* 액션 버튼 */}
       <div style={{ display: "flex", gap: 10, paddingBottom: 60, flexWrap: "wrap", alignItems: "center" }}>
