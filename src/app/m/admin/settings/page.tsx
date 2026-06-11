@@ -396,7 +396,7 @@ function MobileSettings() {
 
       {/* 탭 */}
       <div style={{ display: "flex", background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
-        {[{ key: "basic" as const, label: "기본정보" }, { key: "agency" as const, label: "부동산정보" }].map(t => (
+        {[{ key: "basic" as const, label: "기본정보" }, { key: "agency" as const, label: "부동산정보" }, { key: "marketing" as const, label: "마케팅정보" }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ flex: 1, padding: "14px 0", border: "none", background: "none", fontSize: 14, fontWeight: tab === t.key ? 800 : 500, color: tab === t.key ? "#2563eb" : "#6b7280", borderBottom: tab === t.key ? "3px solid #2563eb" : "3px solid transparent", cursor: "pointer" }}>
             {t.label}
@@ -565,7 +565,35 @@ function MobileSettings() {
           </>
         )}
 
+        {/* ── 마케팅정보 탭 ── */}
+        {tab === "marketing" && (
+          <>
+            <div style={{ background: "#f8fafc", padding: "14px 16px", borderRadius: 10, fontSize: 13, color: "#64748b", lineHeight: 1.5, marginBottom: 16 }}>
+              아래 마케팅 항목은 원하시는 분만 입력하는 <strong style={{color: "#3b82f6"}}>선택사항</strong>입니다.<br/>
+              <span style={{color: "#ef4444", fontSize: 12}}>※ 우측에 메모하시는 ID/PW 정보는 관리자나 외부인에게 노출되지 않으며, **오직 본인만** 열람할 수 있도록 안전하게 보관됩니다.</span>
+            </div>
 
+
+
+            {/* SNS 링크 */}
+            <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb", marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 16 }}>🔗 마케팅 및 SNS 링크</div>
+              {Object.keys(snsLabels).map((key) => {
+                const sns = snsLinks[key] || initialSnsObj;
+                return (
+                  <div key={key} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid #f3f4f6" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8 }}>{snsLabels[key]}</div>
+                    <div style={{ display: "flex", position: "relative", marginBottom: 8 }}>
+                      <input type="text" value={sns.url} onChange={(e) => handleSnsObjChange(key, 'url', e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} placeholder={`${snsLabels[key]} 주소(URL) 입력`} />
+                      <button onClick={() => handleCopy(sns.url)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", padding: 4 }}>📋</button>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {/* ── 하단 버튼 영역 (스크롤 끝, 고정바 아님) ── */}
         <div style={{ marginTop: 32, marginBottom: 16 }}>
