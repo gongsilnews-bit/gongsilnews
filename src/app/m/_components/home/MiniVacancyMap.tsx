@@ -24,8 +24,11 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
   const centerLng = 127.027610;
 
   // 지도의 현재 중심 좌표와 배율을 유지한 채 전체 지도 페이지로 정밀 이동
-  const handleNavigate = () => {
-    if (mapInstance) {
+  const handleNavigate = (targetLat?: number, targetLng?: number) => {
+    if (targetLat !== undefined && targetLng !== undefined) {
+      const level = mapInstance ? mapInstance.getLevel() : 7;
+      router.push(`/m/gongsil?lat=${targetLat}&lng=${targetLng}&level=${level}&mode=auction`);
+    } else if (mapInstance) {
       const center = mapInstance.getCenter();
       const lat = center.getLat();
       const lng = center.getLng();
@@ -141,6 +144,12 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
     });
     clustererRef.current = clusterer;
 
+    // 클러스터 클릭 시 해당 위치 기반으로 공실열람으로 이동
+    kakao.maps.event.addListener(clusterer, 'clusterclick', (cluster: any) => {
+      const center = cluster.getCenter();
+      handleNavigate(center.getLat(), center.getLng());
+    });
+
     // 클러스터 병합 완료 시 내부 매물 타입에 맞춰 곤색/파란색 동적 색상 매칭
     kakao.maps.event.addListener(clusterer, "clustered", (clusters: any[]) => {
       clusters.forEach((cluster) => {
@@ -172,6 +181,10 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
           new kakao.maps.Size(size, size),
           { offset: new kakao.maps.Point(size / 2, size / 2) }
         ),
+      });
+
+      kakao.maps.event.addListener(marker, 'click', () => {
+        handleNavigate(v.lat, v.lng);
       });
 
       marker.customData = v;

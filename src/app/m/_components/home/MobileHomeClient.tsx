@@ -266,7 +266,7 @@ export default function MobileHomeClient(props: Props) {
 
         <div className="sec-hd">
           <h2>실시간 공실 공실광고</h2>
-          <span style={{ fontSize: 15, color: "#6b7280", textDecoration: "none", cursor: "default" }}>더보기 ›</span>
+          <Link href="/m/gongsil?mode=auction" style={{ fontSize: 15, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>더보기 ›</Link>
         </div>
         <div style={{ padding: "0 16px 16px", position: "relative" }}>
           <MiniVacancyMap vacancies={vacancies} isLoading={isMapLoading} />

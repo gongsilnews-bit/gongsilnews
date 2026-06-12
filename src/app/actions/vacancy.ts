@@ -531,6 +531,11 @@ export async function getAgencyInfo(ownerId: string) {
 }
 
 
+// --- Node.js Server-side Global Cache for Map ---
+let _serverMapCache: any[] | null = null;
+let _serverMapCacheTime: number = 0;
+const SERVER_MAP_CACHE_TTL = 3 * 60 * 1000; // 3분 캐시
+
 export async function getVacanciesForMap(options?: {
   bbox?: {
     swLat: number;
@@ -546,6 +551,14 @@ export async function getVacanciesForMap(options?: {
 }) {
   const supabase = getAdminClient();
   try {
+    // 1. 캐시 활용 (특정 범위/조건이 없는 메인페이지의 전체 로딩인 경우)
+    const isGlobalFetch = !options?.bbox && !options?.sido && !options?.sigungu && !options?.dong && options?.is_auction === undefined;
+    if (isGlobalFetch) {
+      if (_serverMapCache && (Date.now() - _serverMapCacheTime < SERVER_MAP_CACHE_TTL)) {
+        return { success: true, data: _serverMapCache };
+      }
+    }
+
     const batchSize = 1000;
     const maxLimit = options?.limit ?? 10000;
     // 필요한 만큼만 병렬 쿼리 호출 (limit이 1000이면 1페이지만 조회하여 10배 속도 향상!)
@@ -555,7 +568,7 @@ export async function getVacanciesForMap(options?: {
     for (let i = 0; i < pages; i++) {
       let pageQuery = supabase
         .from('vacancies')
-        .select('*, vacancy_photos(url, sort_order)')
+        .select('id, lat, lng, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, detail_addr, building_name, hosu, exclusive_m2, supply_m2, room_count, bath_count, direction, parking, owner_role, realtor_commission, commission_type, status, themes, options, exposure_type, created_at, metadata, vacancy_photos(url, sort_order)')
         .eq('status', 'ACTIVE')
         .not('lat', 'is', null)
         .not('lng', 'is', null);
@@ -605,7 +618,7 @@ export async function getVacanciesForMap(options?: {
     }
 
     const lightData = combinedData.map(v => {
-      const { infrastructure, description, metadata, members, vacancy_photos, ...rest } = v;
+      const { metadata, vacancy_photos, ...rest } = v;
       const lightMetadata = metadata ? {
         cltrUsgLclsCtgrNm: metadata.cltrUsgLclsCtgrNm,
         cltrUsgMclsCtgrNm: metadata.cltrUsgMclsCtgrNm,
@@ -623,6 +636,11 @@ export async function getVacanciesForMap(options?: {
       } : {};
       return { ...rest, metadata: lightMetadata, vacancy_photos };
     });
+
+    if (isGlobalFetch) {
+      _serverMapCache = lightData;
+      _serverMapCacheTime = Date.now();
+    }
 
     return { success: true, data: lightData };
   } catch (error: any) {
