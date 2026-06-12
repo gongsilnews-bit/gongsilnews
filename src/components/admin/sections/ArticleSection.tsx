@@ -22,7 +22,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
   const [articleFilter, setArticleFilter] = useState("전체");
-  const [publishFilter, setPublishFilter] = useState<"전체" | "헤드라인" | "중요">("전체");
+  const [publishFilter, setPublishFilter] = useState<"전체" | "헤드라인" | "중요" | "일반기사">("전체");
   const [isHeadlineHovered, setIsHeadlineHovered] = useState(false);
   const [isImportantHovered, setIsImportantHovered] = useState(false);
   const [checkedArticleIds, setCheckedArticleIds] = useState<string[]>([]);
@@ -59,7 +59,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [pageSize, setPageSize] = useState(30);
   const [sortBy, setSortBy] = useState("published_at");
   const [totalCount, setTotalCount] = useState(0);
-  const [counts, setCounts] = useState({ 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, 작성중: 0, 반려: 0, 헤드라인: 0, 중요: 0 });
+  const [counts, setCounts] = useState({ 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, 작성중: 0, 반려: 0, 헤드라인: 0, 중요: 0, 일반기사: 0 });
 
   const loadData = async () => {
     const params: any = {
@@ -84,6 +84,9 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
         params.is_headline = true;
       } else if (publishFilter === "중요") {
         params.is_important = true;
+      } else if (publishFilter === "일반기사") {
+        params.is_headline = false;
+        params.is_important = false;
       }
     }
 
@@ -94,7 +97,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     }
 
     // Fetch tab counts via server action (admin client, bypasses RLS)
-    const [allRes, pendingRes, approvedRes, scheduledRes, draftRes, rejectedRes, headlineRes, importantRes] = await Promise.all([
+    const [allRes, pendingRes, approvedRes, scheduledRes, draftRes, rejectedRes, headlineRes, importantRes, regularRes] = await Promise.all([
       getArticles({ limit: 1 }),
       getArticles({ status: "PENDING", limit: 1 }),
       getArticles({ status: "APPROVED", limit: 1 }),
@@ -103,6 +106,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       getArticles({ status: "REJECTED", limit: 1 }),
       getArticles({ status: "APPROVED", is_headline: true, limit: 1 }),
       getArticles({ status: "APPROVED", is_important: true, limit: 1 }),
+      getArticles({ status: "APPROVED", is_headline: false, is_important: false, limit: 1 }),
     ]);
     setCounts({
       전체: allRes.count || 0,
@@ -113,6 +117,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       반려: rejectedRes.count || 0,
       헤드라인: headlineRes.count || 0,
       중요: importantRes.count || 0,
+      일반기사: regularRes.count || 0,
     });
   };
 
@@ -225,68 +230,11 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               );
             })}
           </div>
-          {articleFilter === "발행됨" && (
-            <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 8 }}>
-              <button
-                onClick={() => {
-                  setPublishFilter(prev => prev === "헤드라인" ? "전체" : "헤드라인");
-                  setCurrentPage(1);
-                }}
-                onMouseEnter={() => setIsHeadlineHovered(true)}
-                onMouseLeave={() => setIsHeadlineHovered(false)}
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: "#ef4444",
-                  background: publishFilter === "헤드라인" ? "#fecaca" : (isHeadlineHovered ? "#fee2e2" : "#fef2f2"),
-                  padding: "6px 12px",
-                  borderRadius: 6,
-                  border: publishFilter === "헤드라인" ? "2px solid #ef4444" : "1px solid #fecaca",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  boxShadow: publishFilter === "헤드라인" ? "0 2px 4px rgba(239, 68, 68, 0.2)" : "none",
-                  transform: isHeadlineHovered ? "translateY(-1px)" : "none",
-                  transition: "all 0.2s",
-                  outline: "none"
-                }}
-              >
-                📌 헤드라인: {counts.헤드라인}건
-              </button>
-              <button
-                onClick={() => {
-                  setPublishFilter(prev => prev === "중요" ? "전체" : "중요");
-                  setCurrentPage(1);
-                }}
-                onMouseEnter={() => setIsImportantHovered(true)}
-                onMouseLeave={() => setIsImportantHovered(false)}
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: "#f59e0b",
-                  background: publishFilter === "중요" ? "#fde68a" : (isImportantHovered ? "#fef3c7" : "#fffbeb"),
-                  padding: "6px 12px",
-                  borderRadius: 6,
-                  border: publishFilter === "중요" ? "2px solid #f59e0b" : "1px solid #fde68a",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  boxShadow: publishFilter === "중요" ? "0 2px 4px rgba(245, 158, 11, 0.2)" : "none",
-                  transform: isImportantHovered ? "translateY(-1px)" : "none",
-                  transition: "all 0.2s",
-                  outline: "none"
-                }}
-              >
-                ⭐ 중요기사: {counts.중요}건
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* 액션 버튼 */}
-        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
+        {/* 액션 버튼 및 발행됨 필터 */}
+        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button onClick={() => router.push("?menu=article&action=write")} style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", gap: 6 }}>+ 새 기사 작성</button>
           <button onClick={async () => {
             if (checkedArticleIds.length === 0) { alert("승인할 기사를 선택하세요."); return; }
@@ -314,6 +262,17 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             선택삭제
           </button>
+          </div>
+
+          {/* 발행됨 탭에서 노출되는 기사 유형 필터 */}
+          {articleFilter === "발행됨" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <button onClick={() => { setPublishFilter("전체"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "전체" ? "none" : `1px solid ${border}`, background: publishFilter === "전체" ? (darkMode ? "#4b5563" : "#374151") : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "전체" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>전체 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.발행됨}</span></button>
+              <button onClick={() => { setPublishFilter("헤드라인"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "헤드라인" ? "none" : `1px solid ${border}`, background: publishFilter === "헤드라인" ? "#ef4444" : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "헤드라인" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>📌 헤드라인 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.헤드라인}</span></button>
+              <button onClick={() => { setPublishFilter("중요"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "중요" ? "none" : `1px solid ${border}`, background: publishFilter === "중요" ? "#f59e0b" : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "중요" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>⭐ 중요기사 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.중요}</span></button>
+              <button onClick={() => { setPublishFilter("일반기사"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "일반기사" ? "none" : `1px solid ${border}`, background: publishFilter === "일반기사" ? "#3b82f6" : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "일반기사" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>일반기사 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.일반기사}</span></button>
+            </div>
+          )}
         </div>
 
         {/* 테이블 */}
