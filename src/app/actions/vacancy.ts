@@ -215,7 +215,7 @@ export async function getVacancies(options?: {
   const supabase = getAdminClient();
   try {
     const selectFields = options?.all
-      ? 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, building_name, lat, lng, created_at, exposure_type, realtor_commission, room_count, bath_count, exclusive_m2, supply_m2, parking, total_floor, current_floor, direction, move_in_date, client_name, client_phone, themes, options, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)'
+      ? 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, building_name, lat, lng, created_at, address_exposure, exposure_type, realtor_commission, room_count, bath_count, exclusive_m2, supply_m2, parking, total_floor, current_floor, direction, move_in_date, client_name, client_phone, themes, options, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)'
       : '*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
 
     // 만약 페이지네이션이 명시된 경우, 단일 쿼리로 최적화해서 수행
@@ -568,7 +568,7 @@ export async function getVacanciesForMap(options?: {
     for (let i = 0; i < pages; i++) {
       let pageQuery = supabase
         .from('vacancies')
-        .select('id, lat, lng, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, detail_addr, building_name, hosu, exclusive_m2, supply_m2, room_count, bath_count, direction, parking, owner_role, realtor_commission, commission_type, status, themes, options, exposure_type, created_at, metadata, vacancy_photos(url, sort_order)')
+        .select('id, lat, lng, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, detail_addr, building_name, hosu, exclusive_m2, supply_m2, room_count, bath_count, direction, parking, owner_role, realtor_commission, commission_type, status, themes, options, address_exposure, exposure_type, created_at, metadata, vacancy_photos(url, sort_order)')
         .eq('status', 'ACTIVE')
         .not('lat', 'is', null)
         .not('lng', 'is', null);
