@@ -398,32 +398,8 @@ function App() {
       const json = await res.json();
       if (json.success && json.data) {
         const v = json.data;
+        const photos = json.photos || [];
 
-        // 1. Supabase 클라우드 동기화 데이터 우선 로드
-        const supabaseFlyerSettings = json.flyer?.flyer_state || v.infrastructure?._flyer_settings;
-        if (supabaseFlyerSettings) {
-          setState(supabaseFlyerSettings);
-          setIsLoadedFromStorage(true);
-          setIsInitialized(true);
-          setLoadingData(false);
-          return;
-        }
-
-        // 2. 브라우저 로컬 스토리지 캐시 로드
-        const savedStr = localStorage.getItem(`easyflyer_saved_${vacancyId}`);
-        if (savedStr) {
-          try {
-            const savedState = JSON.parse(savedStr);
-            setState(savedState);
-            setIsLoadedFromStorage(true);
-            setIsInitialized(true);
-            setLoadingData(false);
-            return;
-          } catch (e) {
-            console.error("로컬 저장소 데이터 로드 실패, 새로 생성합니다:", e);
-          }
-        }
-        
         // 포맷팅 헬퍼들
         const formatAmount = (amt: number) => {
           if (!amt) return '';
@@ -477,47 +453,6 @@ function App() {
           additionalInfo.push(`소재지: ${fullAddress}`);
         }
 
-        // 아파트 브랜드 자동 감지해서 컬러 테마 설정
-        let autoTheme = COLORS[0]; // 기본 Teal
-        const buildingLower = (v.building_name || "").toLowerCase();
-        if (buildingLower.includes("롯데") || buildingLower.includes("캐슬")) autoTheme = COLORS[1]; // Gold
-        else if (buildingLower.includes("푸르지오")) autoTheme = COLORS[2]; // Green
-        else if (buildingLower.includes("힐스") || buildingLower.includes("현대")) autoTheme = COLORS[3]; // Burgundy
-        else if (buildingLower.includes("아크로") || buildingLower.includes("자이")) autoTheme = COLORS[4]; // Orange
-
-        // 매물 사진들 매핑
-        const newImages: Record<string, any> = {};
-        const photos = json.photos || [];
-        if (photos.length > 0) {
-          const imageSlots = [
-            'mainImage', 
-            'subImage1', 'subImage2', 
-            'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
-          ];
-          photos.forEach((ph: any, i: number) => {
-            if (i < imageSlots.length) {
-              newImages[imageSlots[i]] = ph.url;
-            }
-          });
-        }
-
-        // 복합 단지 테이블 조립
-        const newSections = INITIAL_INFO.sections.map(sec => {
-          if (sec.type !== 'table') return sec;
-          
-          const newItems = sec.items.map(item => {
-            if (item.title === '세대수' && v.total_units) return { ...item, text: `${v.total_units}세대` };
-            if (item.title === '저/최고층' && v.current_floor && v.total_floor) return { ...item, text: `${v.current_floor}층/${v.total_floor}층` };
-            if (item.title === '사용승인일' && v.approval_year) return { ...item, text: `${v.approval_year}년` };
-            if (item.title === '건설사' && v.constructor_name) return { ...item, text: v.constructor_name };
-            if (item.title === '주소') return { ...item, text: [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") };
-            if (item.title === '면적' && areaDisplay !== '-') return { ...item, text: areaDisplay };
-            return item;
-          });
-
-          return { ...sec, items: newItems };
-        });
-
         const mappedInfo: PropertyInfo = {
           promotionText: priceText,
           address: v.building_name || [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") || "공실 매물 정보",
@@ -544,12 +479,9 @@ function App() {
 
           noticeTitle: "PREMIUM LISTING DETAIL",
           noticeContent: v.description || "",
-          sections: newSections
+          sections: []
         };
 
-        // AI 문구 자동 생성 (제미나이 호출 제거 및 규칙 기반 매핑 적용 - 로딩 0초)
-        // setIsGenerating(true);
-        // const aiCopy = await generateFlyerCopy(mappedInfo);
         const aiCopy = {
             promotionText: mappedInfo.promotionText,
             summary: mappedInfo.subTitle, // 서브타이틀을 요약문구로 활용
@@ -557,52 +489,170 @@ function App() {
                 title: "주요 특징",
                 intro: "HIGHLIGHTS",
                 features: [
-                  mappedInfo.direction === "방향 없음" ? "우수한 채광" : `채광 좋은 ${mappedInfo.direction}`,
-                  "탁 트인 개방감",
-                  mappedInfo.parking !== "없음" ? "편리한 주차" : "역세권 인프라",
-                  "다양한 옵션"
+                  mappedInfo.direction === "방향 없음" ? "우수한 채광과 통풍" : `채광 좋은 ${mappedInfo.direction}`,
+                  "탁 트인 개방감 및 우수한 조망",
+                  mappedInfo.parking !== "없음" ? "편리한 자주식 주차 공간" : "역세권의 편리한 인프라",
+                  "다양한 옵션 및 깔끔한 마감"
                 ]
             },
             listInfo: {
-                title: "공간 상세",
+                title: "공간 상세 정보",
                 intro: "DETAILS",
                 description: "섬세한 디테일과 세련된 마감이 돋보이는 공간입니다.",
                 items: [
-                    { title: "MAIN ZONE", description: "아늑하고 편안한 분위기의 메인 공간입니다." },
-                    { title: "SUB ZONE", description: "효율적인 동선으로 설계된 서브 공간입니다." }
+                    { title: "MAIN ZONE", description: "우수한 공간 활용도와 개방감이 돋보이는 메인 생활 공간입니다." },
+                    { title: "SUB ZONE", description: "아늑한 분위기 속에서 편안하게 휴식을 취할 수 있는 서브 공간입니다." }
                 ]
             }
         };
-        
-        const finalSections = [...mappedInfo.sections];
-        
-        // Grid Section
-        const gridIndex = finalSections.findIndex(s => s.type === 'grid');
-        if (gridIndex !== -1 && aiCopy.gridInfo) {
-          const sec = { ...finalSections[gridIndex] };
-          sec.title = aiCopy.gridInfo.title || sec.title;
-          sec.intro = aiCopy.gridInfo.intro || sec.intro;
-          sec.items = sec.items.map((it, idx) => ({
-            ...it,
-            text: aiCopy.gridInfo?.features[idx] || it.text
-          }));
-          finalSections[gridIndex] = sec;
+
+        const getPhotoUrl = (index: number) => {
+          if (photos.length > 0) {
+            return photos[index % photos.length].url;
+          }
+          return null;
+        };
+
+        const buildDefaultSections = (vacancy: any, areaDisp: string, ai: any) => {
+          const gridSec = {
+            id: 'section-features',
+            type: 'grid',
+            intro: ai.gridInfo.intro,
+            title: ai.gridInfo.title,
+            items: [
+              { id: 'feat-1', text: ai.gridInfo.features[0], imageKey: 'featureImage1' },
+              { id: 'feat-2', text: ai.gridInfo.features[1], imageKey: 'featureImage2' },
+              { id: 'feat-3', text: ai.gridInfo.features[2], imageKey: 'featureImage3' },
+              { id: 'feat-4', text: ai.gridInfo.features[3], imageKey: 'featureImage4' },
+            ]
+          };
+
+          const listSec = {
+            id: 'section-zones',
+            type: 'list',
+            intro: ai.listInfo.intro,
+            title: ai.listInfo.title,
+            description: ai.listInfo.description,
+            items: [
+              { 
+                id: 'zone-1', 
+                title: ai.listInfo.items[0].title, 
+                text: ai.listInfo.items[0].description, 
+                imageKey: 'subImage1' 
+              },
+              { 
+                id: 'zone-2', 
+                title: ai.listInfo.items[1].title, 
+                text: ai.listInfo.items[1].description, 
+                imageKey: 'subImage2' 
+              }
+            ]
+          };
+
+          const tableSec = {
+            id: 'section-complex',
+            type: 'table',
+            intro: "COMPLEX INFO",
+            title: "단지 정보",
+            items: [
+              { id: 'info-1', title: '세대수', text: vacancy.total_units ? `${vacancy.total_units}세대` : '정보 없음', imageKey: '' },
+              { id: 'info-2', title: '저/최고층', text: (vacancy.current_floor && vacancy.total_floor) ? `${vacancy.current_floor}층/${vacancy.total_floor}층` : '정보 없음', imageKey: '' },
+              { id: 'info-3', title: '사용승인일', text: vacancy.approval_year ? `${vacancy.approval_year}년` : '정보 없음', imageKey: '' },
+              { id: 'info-4', title: '총주차대수', text: vacancy.parking || '정보 없음', imageKey: '' },
+              { id: 'info-5', title: '건설사', text: vacancy.constructor_name || '정보 없음', imageKey: '' },
+              { id: 'info-6', title: '주소', text: [vacancy.sido, vacancy.sigungu, vacancy.dong].filter(Boolean).join(" ") || '정보 없음', imageKey: '' },
+              { id: 'info-7', title: '면적', text: areaDisp !== '-' ? areaDisp : '정보 없음', imageKey: '' },
+            ]
+          };
+
+          return [gridSec, listSec, tableSec];
+        };
+
+        // 아파트 브랜드 자동 감지해서 컬러 테마 설정
+        let autoTheme = COLORS[0]; // 기본 Teal
+        const buildingLower = (v.building_name || "").toLowerCase();
+        if (buildingLower.includes("롯데") || buildingLower.includes("캐슬")) autoTheme = COLORS[1]; // Gold
+        else if (buildingLower.includes("푸르지오")) autoTheme = COLORS[2]; // Green
+        else if (buildingLower.includes("힐스") || buildingLower.includes("현대")) autoTheme = COLORS[3]; // Burgundy
+        else if (buildingLower.includes("아크로") || buildingLower.includes("자이")) autoTheme = COLORS[4]; // Orange
+
+        // 1. Supabase 클라우드 동기화 데이터 우선 로드
+        const supabaseFlyerSettings = json.flyer?.flyer_state || v.infrastructure?._flyer_settings;
+        if (supabaseFlyerSettings) {
+          let loadedState = { ...supabaseFlyerSettings };
+          if (!loadedState.info) {
+            loadedState.info = { ...INITIAL_INFO };
+          }
+          if (!loadedState.info.sections || loadedState.info.sections.length === 0) {
+            loadedState.info.sections = buildDefaultSections(v, areaDisplay, aiCopy);
+          }
+          if (photos.length > 0) {
+            const imageSlots = [
+              'mainImage', 
+              'subImage1', 'subImage2', 
+              'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
+            ];
+            imageSlots.forEach((slot, idx) => {
+              if (!loadedState[slot]) {
+                loadedState[slot] = getPhotoUrl(idx);
+              }
+            });
+          }
+          setState(loadedState);
+          setIsLoadedFromStorage(true);
+          setIsInitialized(true);
+          setLoadingData(false);
+          return;
         }
 
-        // List Section
-        const listIndex = finalSections.findIndex(s => s.type === 'list');
-        if (listIndex !== -1 && aiCopy.listInfo) {
-          const sec = { ...finalSections[listIndex] };
-          sec.title = aiCopy.listInfo.title || sec.title;
-          sec.intro = aiCopy.listInfo.intro || sec.intro;
-          sec.description = aiCopy.listInfo.description || sec.description;
-          sec.items = sec.items.map((it, idx) => ({
-            ...it,
-            title: aiCopy.listInfo?.items[idx]?.title || it.title,
-            text: aiCopy.listInfo?.items[idx]?.description || it.text
-          }));
-          finalSections[listIndex] = sec;
+        // 2. 브라우저 로컬 스토리지 캐시 로드
+        const savedStr = localStorage.getItem(`easyflyer_saved_${vacancyId}`);
+        if (savedStr) {
+          try {
+            const savedState = JSON.parse(savedStr);
+            let loadedState = { ...savedState };
+            if (!loadedState.info) {
+              loadedState.info = { ...INITIAL_INFO };
+            }
+            if (!loadedState.info.sections || loadedState.info.sections.length === 0) {
+              loadedState.info.sections = buildDefaultSections(v, areaDisplay, aiCopy);
+            }
+            if (photos.length > 0) {
+              const imageSlots = [
+                'mainImage', 
+                'subImage1', 'subImage2', 
+                'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
+              ];
+              imageSlots.forEach((slot, idx) => {
+                if (!loadedState[slot]) {
+                  loadedState[slot] = getPhotoUrl(idx);
+                }
+              });
+            }
+            setState(loadedState);
+            setIsLoadedFromStorage(true);
+            setIsInitialized(true);
+            setLoadingData(false);
+            return;
+          } catch (e) {
+            console.error("로컬 저장소 데이터 로드 실패, 새로 생성합니다:", e);
+          }
         }
+
+        // 새 매물 사진들 매핑
+        const newImages: Record<string, any> = {};
+        if (photos.length > 0) {
+          const imageSlots = [
+            'mainImage', 
+            'subImage1', 'subImage2', 
+            'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
+          ];
+          imageSlots.forEach((slot, idx) => {
+            newImages[slot] = getPhotoUrl(idx);
+          });
+        }
+
+        const finalSections = buildDefaultSections(v, areaDisplay, aiCopy);
 
         setState(prev => ({
           ...prev,
