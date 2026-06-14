@@ -596,7 +596,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
         {renderStats()}
 
         {/* 3. INFO TABLE SECTION */}
-        <div data-export-id="basic-info" className="pt-20 pb-12 px-6 md:px-12 bg-white">
+        <div data-export-id="basic-info" className="pt-6 pb-12 px-6 md:px-12 bg-white">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4 md:gap-0">
                 <div>
                     <span contentEditable spellCheck={false} suppressContentEditableWarning className={`font-bold text-xs tracking-widest block mb-1 ${editClass}`} style={{ color: primaryColor }}>PROPERTY INFO</span>
@@ -623,14 +623,13 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                 ))}
 
                 {/* Notice Box */}
-                <div data-print-notice-box className={`col-span-1 md:col-span-2 p-6 mt-4 ${layout === 'type4' ? 'border-2 border-gray-100 bg-white' : 'bg-[#f4f6f8] rounded-sm'}`}>
-                    <span className="font-bold block mb-2 text-xs" style={{ color: primaryColor }}>
-                        <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('noticeTitle', e.currentTarget.innerText)} className={editClass}>{info.noticeTitle || "DETAIL INFO"}</span>
-                    </span>
-                    <p data-print-notice-text contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('noticeContent', e.currentTarget.innerText)} className={`text-gray-950 text-[17px] md:text-sm font-bold leading-relaxed whitespace-pre-wrap ${bodyFont} ${editClass}`}>
-                        {info.noticeContent}
-                    </p>
-                </div>
+                {info.noticeContent && info.noticeContent.trim() !== "" && (
+                    <div data-print-notice-box className={`col-span-1 md:col-span-2 p-6 mt-4 ${layout === 'type4' ? 'border-2 border-gray-100 bg-white' : 'bg-[#f4f6f8] rounded-sm'}`}>
+                        <p data-print-notice-text contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('noticeContent', e.currentTarget.innerText)} className={`text-gray-950 text-[17px] md:text-sm font-bold leading-relaxed whitespace-pre-wrap ${bodyFont} ${editClass}`}>
+                            {info.noticeContent}
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
 

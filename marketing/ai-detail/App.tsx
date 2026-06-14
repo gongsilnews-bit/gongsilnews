@@ -543,7 +543,7 @@ function App() {
           agentAdditionalInfo: additionalInfo,
 
           noticeTitle: "PREMIUM LISTING DETAIL",
-          noticeContent: v.description || "상세 설명이 등록되지 않았습니다.",
+          noticeContent: v.description || "",
           sections: newSections
         };
 
@@ -1258,14 +1258,18 @@ ${clone.outerHTML}
           }
         }
 
-        // 극단적으로 길어 최소 폰트 크기로도 초과하는 경우, 정확한 A4 한 장 비율을 위해 내용 잘림 처리
-        if (clone.offsetHeight > maxTargetHeight && noticeBox) {
-          const currentBoxHeight = noticeBox.offsetHeight;
-          const overshoot = clone.offsetHeight - maxTargetHeight;
-          const allowedBoxHeight = Math.max(50, currentBoxHeight - overshoot);
-          noticeBox.style.maxHeight = `${allowedBoxHeight}px`;
-          noticeBox.style.overflow = 'hidden';
-          noticeBox.style.position = 'relative';
+        // 극단적으로 길어 최소 폰트 크기로도 초과하는 경우, 라인 수를 줄여가며 말줄임표(...) 처리
+        if (clone.offsetHeight > maxTargetHeight && noticeText) {
+          noticeText.style.display = '-webkit-box';
+          noticeText.style.webkitBoxOrient = 'vertical';
+          noticeText.style.overflow = 'hidden';
+          noticeText.style.textOverflow = 'ellipsis';
+
+          let lines = 15; // 넉넉한 초기 라인 수
+          while (clone.offsetHeight > maxTargetHeight && lines > 1) {
+            lines--;
+            noticeText.style.webkitLineClamp = `${lines}`;
+          }
         }
       }
 
