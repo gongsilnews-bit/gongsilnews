@@ -529,6 +529,66 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
         ref={ref}
         className={`bg-white shadow-2xl flex flex-col w-full max-w-[860px] mx-auto min-h-[1400px] ${bodyFont}`}
       >
+        <style dangerouslySetInnerHTML={{ __html: `
+            /* Global font size overrides for Flyer Canvas */
+            
+            /* Stats Bar values */
+            [data-export-id="stats"] .text-lg,
+            [data-export-id="stats"] .text-xl,
+            [data-export-id="stats"] .md\\:text-xl,
+            [data-export-id="stats"] .text-2xl,
+            [data-export-id="stats"] .md\\:text-2xl,
+            [data-export-id="stats"] .text-3xl,
+            [data-export-id="stats"] .md\\:text-3xl {
+              font-size: 26px !important;
+              font-weight: 900 !important;
+            }
+            /* Stats Bar labels */
+            [data-export-id="stats"] .text-\\[10px\\],
+            [data-export-id="stats"] .text-xs,
+            [data-export-id="stats"] .opacity-70 {
+              font-size: 13px !important;
+              font-weight: 700 !important;
+            }
+            /* Property Info Table Title */
+            [data-export-id="basic-info"] h2 {
+              font-size: 32px !important;
+              font-weight: 900 !important;
+            }
+            /* Property Info Table Management Fee Label */
+            [data-export-id="basic-info"] .text-gray-400 {
+              font-size: 14px !important;
+              font-weight: 700 !important;
+            }
+            /* Property Info Table Management Fee Value */
+            [data-export-id="basic-info"] .text-xl {
+              font-size: 26px !important;
+              font-weight: 900 !important;
+            }
+            /* Table Row Labels */
+            [data-export-id="basic-info"] .grid > div > span:first-child {
+              font-size: 18px !important;
+              font-weight: 800 !important;
+            }
+            /* Table Row Values */
+            [data-export-id="basic-info"] .grid > div > span:last-child {
+              font-size: 20px !important;
+              font-weight: 900 !important;
+            }
+            /* Notice Box default (JS loop overrides font-size, padding, margin-top) */
+            [data-print-notice-box] {
+              padding: 20px;
+              margin-top: 16px;
+            }
+            [data-print-notice-box] > span {
+              font-size: 15px !important;
+              font-weight: 800 !important;
+            }
+            [data-print-notice-text] {
+              font-size: 16px;
+              font-weight: 800 !important;
+            }
+        `}} />
         {/* 1. HERO SECTION */}
         {renderHero()}
 

@@ -1233,14 +1233,14 @@ ${clone.outerHTML}
 
       if (clone.offsetHeight > maxTargetHeight && (noticeBox || noticeText)) {
         if (noticeBox) {
-          noticeBox.style.padding = '16px';
-          noticeBox.style.marginTop = '8px';
+          noticeBox.style.padding = '20px';
+          noticeBox.style.marginTop = '16px';
         }
 
-        let fontSize = 14; // 기본 폰트 크기 (md:text-sm 상당인 14px부터 축소 시작)
+        let fontSize = 16; // 기본 폰트 크기 (새로운 큰 폰트 크기 16px부터 축소 시작)
         let lineHeight = 1.5;
-        let padding = 16;
-        let marginTop = 8;
+        let padding = 20;
+        let marginTop = 16;
 
         while (clone.offsetHeight > maxTargetHeight && fontSize > 8.5) {
           fontSize -= 0.5;
