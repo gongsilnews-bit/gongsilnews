@@ -563,11 +563,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onText
                 ))}
 
                 {/* Notice Box */}
-                <div className={`col-span-1 md:col-span-2 p-6 mt-4 ${layout === 'type4' ? 'border-2 border-gray-100 bg-white' : 'bg-[#f4f6f8] rounded-sm'}`}>
+                <div data-print-notice-box className={`col-span-1 md:col-span-2 p-6 mt-4 ${layout === 'type4' ? 'border-2 border-gray-100 bg-white' : 'bg-[#f4f6f8] rounded-sm'}`}>
                     <span className="font-bold block mb-2 text-xs" style={{ color: primaryColor }}>
                         <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('noticeTitle', e.currentTarget.innerText)} className={editClass}>{info.noticeTitle || "DETAIL INFO"}</span>
                     </span>
-                    <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('noticeContent', e.currentTarget.innerText)} className={`text-gray-950 text-[17px] md:text-sm font-bold leading-relaxed whitespace-pre-wrap ${bodyFont} ${editClass}`}>
+                    <p data-print-notice-text contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('noticeContent', e.currentTarget.innerText)} className={`text-gray-950 text-[17px] md:text-sm font-bold leading-relaxed whitespace-pre-wrap ${bodyFont} ${editClass}`}>
                         {info.noticeContent}
                     </p>
                 </div>

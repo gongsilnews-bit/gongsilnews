@@ -1226,6 +1226,49 @@ ${clone.outerHTML}
         }
       });
 
+      // ── A4 세로 1장에 맞추기 위한 상세설명 자동 축소 로직 (A4 세로 비율: 860px 너비 기준 1216px 높이) ──
+      const maxTargetHeight = 1216;
+      const noticeBox = clone.querySelector('[data-print-notice-box]') as HTMLElement | null;
+      const noticeText = clone.querySelector('[data-print-notice-text]') as HTMLElement | null;
+
+      if (clone.offsetHeight > maxTargetHeight && (noticeBox || noticeText)) {
+        if (noticeBox) {
+          noticeBox.style.padding = '16px';
+          noticeBox.style.marginTop = '8px';
+        }
+
+        let fontSize = 14; // 기본 폰트 크기 (md:text-sm 상당인 14px부터 축소 시작)
+        let lineHeight = 1.5;
+        let padding = 16;
+        let marginTop = 8;
+
+        while (clone.offsetHeight > maxTargetHeight && fontSize > 8.5) {
+          fontSize -= 0.5;
+          if (lineHeight > 1.2) lineHeight -= 0.05;
+          if (padding > 8) padding -= 1;
+          if (marginTop > 4) marginTop -= 1;
+
+          if (noticeText) {
+            noticeText.style.fontSize = `${fontSize}px`;
+            noticeText.style.lineHeight = `${lineHeight}`;
+          }
+          if (noticeBox) {
+            noticeBox.style.padding = `${padding}px`;
+            noticeBox.style.marginTop = `${marginTop}px`;
+          }
+        }
+
+        // 극단적으로 길어 최소 폰트 크기로도 초과하는 경우, 정확한 A4 한 장 비율을 위해 내용 잘림 처리
+        if (clone.offsetHeight > maxTargetHeight && noticeBox) {
+          const currentBoxHeight = noticeBox.offsetHeight;
+          const overshoot = clone.offsetHeight - maxTargetHeight;
+          const allowedBoxHeight = Math.max(50, currentBoxHeight - overshoot);
+          noticeBox.style.maxHeight = `${allowedBoxHeight}px`;
+          noticeBox.style.overflow = 'hidden';
+          noticeBox.style.position = 'relative';
+        }
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const canvas = await (window as any).html2canvas(clone, {
         scale: 2,
