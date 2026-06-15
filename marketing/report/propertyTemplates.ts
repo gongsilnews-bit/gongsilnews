@@ -139,11 +139,11 @@ export const getOverviewTemplate = (
       if (isStandaloneSale) {
         return [
           { label: '소재지', dataKey: 'address' },
+          { label: '대지면적/연면적', dataKey: 'landTotalArea' },
+          { label: '건폐율/용적률', dataKey: 'coverageFar' },
           { label: '용도지역', dataKey: 'zoning' },
-          { label: '대지면적', dataKey: 'landArea' },
-          { label: '연면적', dataKey: 'totalArea' },
-          { label: '건물규모', dataKey: 'buildingScale' },
-          { label: '주차대수', dataKey: 'parking' },
+          { label: '지상/지하층수', dataKey: 'buildingScale' },
+          { label: '도로폭/방향', dataKey: 'roadWidthDirection' },
           { label: '준공연도', dataKey: 'completionYear' },
         ];
       }
@@ -314,6 +314,26 @@ export const buildOverviewTable = (
     buildingScale: formatBuildingScale(meta, vacancy),
     mainPurpose: meta.main_usage || meta.main_purpose || '',
     elevator: formatElevator(meta),
+    landTotalArea: (() => {
+      const land = formatLandArea(meta);
+      const total = formatTotalArea(vacancy);
+      if (land && total) return `대지: ${land} / 연면적: ${total}`;
+      return land || total || '';
+    })(),
+    coverageFar: (() => {
+      const cov = meta.building_coverage || meta.coverage;
+      const far = meta.floor_area_ratio || meta.far;
+      if (cov && far) return `건폐율 ${cov}% / 용적률 ${far}%`;
+      if (cov) return `건폐율 ${cov}%`;
+      if (far) return `용적률 ${far}%`;
+      return '';
+    })(),
+    roadWidthDirection: (() => {
+      const width = meta.road_width ? `${meta.road_width}m` : '';
+      const dir = meta.road_direction ? `${meta.road_direction}` : '';
+      if (width && dir) return `${width} / ${dir}`;
+      return width || dir || '';
+    })(),
     ...extraData,
   };
 
