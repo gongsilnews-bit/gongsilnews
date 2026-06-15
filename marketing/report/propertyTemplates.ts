@@ -79,12 +79,12 @@ export const getOverviewTemplate = (
         return [
           { label: '소재지', dataKey: 'address' },
           { label: '건물명', dataKey: 'buildingName' },
-          { label: '전용면적', dataKey: 'area' },
+          { label: '공급/전용면적', dataKey: 'area' },
           { label: '해당층/총층', dataKey: 'floor' },
           { label: '현용도', dataKey: 'currentUse' },
           { label: '주차 / 사용가능일', dataKey: 'parkingMoveIn' },
           { label: '준공연도', dataKey: 'completionYear' },
-          { label: '매매가', dataKey: 'salePrice' },
+          { label: '건축물용도/구조', dataKey: 'mainUsageStructure' },
           { label: '임대수익(수익률)', dataKey: 'rentalYield' },
         ];
       }
@@ -337,6 +337,10 @@ export const buildOverviewTable = (
     totalArea: formatTotalArea(vacancy),
     buildingScale: formatBuildingScale(meta, vacancy),
     mainPurpose: meta.main_usage || meta.main_purpose || '',
+    currentUse: meta.current_usage || '',
+    premiumFee: vacancy.premium ? `${Math.round(vacancy.premium / 10000)}만원` : '',
+    buildingGrade: meta.building_grade || '',
+    mainUsageStructure: [meta.main_usage, meta.building_structure].filter(Boolean).join(' / '),
     elevator: formatElevator(meta),
     landTotalArea: (() => {
       const land = formatLandArea(meta);
