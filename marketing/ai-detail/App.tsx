@@ -307,6 +307,8 @@ function App() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showAutoSaveIndicator, setShowAutoSaveIndicator] = useState(false);
   const flyerRef = useRef<HTMLDivElement>(null);
   const hiddenFileInputRef = useRef<HTMLInputElement>(null);
   const formScrollRef = useRef<HTMLDivElement>(null);
@@ -353,9 +355,11 @@ function App() {
 
   const handleTextChange = (key: any, value: string) => {
       setState(prev => ({ ...prev, info: { ...prev.info, [key]: value } }));
+      setIsDirty(true);
   };
 
   const handleSectionTextChange = (sectionId: string, itemId: string, key: 'title' | 'text', value: string) => {
+      setIsDirty(true);
       setState(prev => {
           const newSections = prev.info.sections.map(sec => {
               if (sec.id !== sectionId) return sec;
@@ -721,11 +725,15 @@ function App() {
     setIsLoadedFromStorage(true);
     try {
       const htmlContent = await generateHtmlContent();
-      await fetch("/api/vacancy/save-flyer", {
+      const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent } })
       });
+      const json = await res.json();
+      if (json.success) {
+        setIsDirty(false);
+      }
     } catch (err) {
       console.warn("Silent cloud save failed:", err);
     }
@@ -799,8 +807,30 @@ function App() {
     const vacancyId = params.get("vacancy_id");
     if (vacancyId && !loadingData && !isGenerating) {
       localStorage.setItem(`easyflyer_saved_${vacancyId}`, JSON.stringify(state));
+      
+      // 오직 실제로 변경사항이 발생한 경우에만 실시간 임시저장 인디케이터 깜빡임
+      if (isDirty) {
+        setShowAutoSaveIndicator(true);
+        const timer = setTimeout(() => {
+          setShowAutoSaveIndicator(false);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [state, loadingData, isGenerating, isInitialized]);
+  }, [state, loadingData, isGenerating, isInitialized, isDirty]);
+
+  // 페이지 이탈(닫기, 새로고침 등) 시 저장 경고
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "저장하지 않은 변경사항이 있습니다. 페이지를 나가시겠습니까?";
+        return e.returnValue;
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   const handleSaveToStorage = async () => {
     const params = new URLSearchParams(window.location.search);
@@ -826,6 +856,7 @@ function App() {
       const json = await res.json();
       if (json.success) {
         alert("성공적으로 저장되었습니다");
+        setIsDirty(false);
       } else {
         throw new Error(json.error || "서버 응답 오류");
       }
@@ -861,6 +892,7 @@ function App() {
       if (!json.success) {
         throw new Error(json.error || "서버 응답 오류");
       }
+      setIsDirty(false);
     } catch (err: any) {
       console.warn("클라우드 동기화 저장 실패:", err);
     } finally {
@@ -926,14 +958,17 @@ function App() {
 
   const handleInfoChange = (newInfo: PropertyInfo) => {
     setState(prev => ({ ...prev, info: newInfo }));
+    setIsDirty(true);
   };
 
   const handleColorChange = (color: FlyerColor) => {
     setState(prev => ({ ...prev, colorTheme: color }));
+    setIsDirty(true);
   };
 
   const handleLayoutChange = (layout: FlyerLayout) => {
     setState(prev => ({ ...prev, layoutTheme: layout }));
+    setIsDirty(true);
   };
 
   const handleImageUpload = async (key: string, file: File): Promise<string | undefined> => {
@@ -950,6 +985,7 @@ function App() {
         ...prev,
         [key]: publicUrl
       }));
+      setIsDirty(true);
       return publicUrl;
     } catch (err: any) {
       console.error("이미지 업로드 실패:", err);
@@ -1430,7 +1466,31 @@ ${clone.outerHTML}
                   </div>
                 </div>
             </div>
-            <div></div>
+            <div className="flex items-center gap-2">
+              {showAutoSaveIndicator ? (
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 transition-all duration-300 animate-pulse">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                    <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                  </svg>
+                  <span>임시저장 완료</span>
+                </div>
+              ) : isDirty ? (
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100 transition-all duration-300">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  </span>
+                  <span>편집 중 (저장 필요)</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 transition-all duration-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-slate-300">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                  </svg>
+                  <span>클라우드 동기화 완료</span>
+                </div>
+              )}
+            </div>
         </div>
       </header>
 
