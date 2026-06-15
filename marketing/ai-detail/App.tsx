@@ -1328,7 +1328,7 @@ ${clone.outerHTML}
         let padding = 20;
         let marginTop = 16;
 
-        while (clone.offsetHeight > maxTargetHeight && fontSize > 8.5) {
+        while (clone.offsetHeight > maxTargetHeight && fontSize > 12) {
           fontSize -= 0.5;
           if (lineHeight > 1.2) lineHeight -= 0.05;
           if (padding > 8) padding -= 1;
@@ -1352,7 +1352,7 @@ ${clone.outerHTML}
           noticeText.style.textOverflow = 'ellipsis';
 
           let lines = 15; // 넉넉한 초기 라인 수
-          while (clone.offsetHeight > maxTargetHeight && lines > 1) {
+          while (clone.offsetHeight > maxTargetHeight && lines > 3) {
             lines--;
             noticeText.style.webkitLineClamp = `${lines}`;
           }
