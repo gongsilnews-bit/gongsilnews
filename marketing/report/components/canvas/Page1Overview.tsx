@@ -21,7 +21,7 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
         pageNumber={1} pageString={pageString} isHidden={isHidden}
         title={targetTitle} subtitle={info.subTitle} 
-        badgeText={info.pageBadges?.page1 || info.subCategory || "매물"} exportId="page-1"
+        badgeText={info.pageBadges?.page1 || `${info.subCategory || "매물"} | ${info.transactionType || "매매"}`} exportId="page-1"
         onUpdateTitle={(v) => hc('address', v)} onUpdateSubtitle={(v) => hc('subTitle', v)}
         onUpdateBadge={(v) => { if (onUpdateInfo) onUpdateInfo({ ...info, pageBadges: { ...(info.pageBadges || {}), page1: v } }); }}
         footerText={info.footerText || "PROPERTY REPORT"}

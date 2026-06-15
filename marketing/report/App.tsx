@@ -380,7 +380,7 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
         ...(loaded?.info?.pageBadges || {}),
         page1: (loaded?.info?.pageBadges?.page1 && !["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes(loaded.info.pageBadges.page1.toUpperCase().trim()))
           ? loaded.info.pageBadges.page1
-          : (loaded?.info?.subCategory || loaded?.info?.sub_category || "매물")
+          : `${loaded?.info?.subCategory || loaded?.info?.sub_category || "매물"} | ${loaded?.info?.transactionType || loaded?.info?.trade_type || "매매"}`
       },
       subCategory: loaded?.info?.subCategory || loaded?.info?.sub_category || "",
       investmentSummary: {
@@ -641,7 +641,7 @@ function App() {
           };
           if (!merged.info.pageBadges) merged.info.pageBadges = {};
           if (!merged.info.pageBadges.page1 || ["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes((merged.info.pageBadges.page1 || "").toUpperCase().trim())) {
-            merged.info.pageBadges.page1 = v.sub_category || "매물";
+            merged.info.pageBadges.page1 = `${v.sub_category || "매물"} | ${v.trade_type || "매매"}`;
           }
           setState(merged);
           setIsLoadedFromStorage(true);
@@ -668,7 +668,7 @@ function App() {
             };
             if (!merged.info.pageBadges) merged.info.pageBadges = {};
             if (!merged.info.pageBadges.page1 || ["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes((merged.info.pageBadges.page1 || "").toUpperCase().trim())) {
-              merged.info.pageBadges.page1 = v.sub_category || "매물";
+              merged.info.pageBadges.page1 = `${v.sub_category || "매물"} | ${v.trade_type || "매매"}`;
             }
             setState(merged);
             setIsLoadedFromStorage(true);
@@ -824,7 +824,7 @@ function App() {
 
           pageBadges: {
             ...INITIAL_INFO.pageBadges,
-            page1: v.sub_category || "매물",
+            page1: `${v.sub_category || "매물"} | ${v.trade_type || "매매"}`,
             page6: buildPage6Content(
               v,
               detectPropertyCategory(v.sub_category, v.property_type),
