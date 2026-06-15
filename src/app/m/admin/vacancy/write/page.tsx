@@ -320,12 +320,12 @@ function MobileVacancyWrite() {
           if (d.metadata.ground_floors) setGroundFloors(String(d.metadata.ground_floors));
           if (d.metadata.underground_floors) setUndergroundFloors(String(d.metadata.underground_floors));
           if (d.metadata.jisan_usage) setJisanUsage(d.metadata.jisan_usage);
-          if (d.metadata.ceiling_height) setCeilingHeight(d.metadata.ceiling_height);
-          if (d.metadata.power_capacity) setPowerCapacity(d.metadata.power_capacity);
-          if (d.metadata.has_drive_in) setHasDriveIn(d.metadata.has_drive_in);
-          if (d.metadata.has_door_to_door) setHasDoorToDoor(d.metadata.has_door_to_door);
-          if (d.metadata.has_freight_elevator) setHasFreightElevator(d.metadata.has_freight_elevator);
-          if (d.metadata.free_parking_cnt) setFreeParkingCnt(d.metadata.free_parking_cnt);
+          if (d.metadata.ceiling_height) setCeilingHeight(String(d.metadata.ceiling_height));
+          if (d.metadata.power_capacity) setPowerCapacity(String(d.metadata.power_capacity));
+          if (d.metadata.has_drive_in !== undefined) setHasDriveIn(!!d.metadata.has_drive_in);
+          if (d.metadata.has_door_to_door !== undefined) setHasDoorToDoor(!!d.metadata.has_door_to_door);
+          if (d.metadata.has_freight_elevator !== undefined) setHasFreightElevator(!!d.metadata.has_freight_elevator);
+          if (d.metadata.free_parking_cnt) setFreeParkingCnt(String(d.metadata.free_parking_cnt));
         }
         if (d.current_floor) setCurrentFloor(d.current_floor);
         if (d.total_floor) setTotalFloor(d.total_floor);

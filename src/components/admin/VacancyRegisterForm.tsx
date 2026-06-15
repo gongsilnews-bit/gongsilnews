@@ -362,6 +362,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.metadata?.road_direction) setRoadDirection(editData.metadata.road_direction);
     if (editData.metadata?.ground_floors) setGroundFloors(String(editData.metadata.ground_floors));
     if (editData.metadata?.underground_floors) setUndergroundFloors(String(editData.metadata.underground_floors));
+    if (editData.metadata?.jisan_usage) setJisanUsage(editData.metadata.jisan_usage);
+    if (editData.metadata?.ceiling_height) setCeilingHeight(String(editData.metadata.ceiling_height));
+    if (editData.metadata?.power_capacity) setPowerCapacity(String(editData.metadata.power_capacity));
+    if (editData.metadata?.has_drive_in !== undefined) setHasDriveIn(!!editData.metadata.has_drive_in);
+    if (editData.metadata?.has_door_to_door !== undefined) setHasDoorToDoor(!!editData.metadata.has_door_to_door);
+    if (editData.metadata?.has_freight_elevator !== undefined) setHasFreightElevator(!!editData.metadata.has_freight_elevator);
+    if (editData.metadata?.free_parking_cnt) setFreeParkingCnt(String(editData.metadata.free_parking_cnt));
 
     if (editData.detail_addr) setDetailAddr(editData.detail_addr);
     if (editData.building_name) setBuildingName(editData.building_name);
