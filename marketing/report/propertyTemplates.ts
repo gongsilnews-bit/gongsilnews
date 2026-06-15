@@ -368,21 +368,24 @@ export const buildOverviewTable = (
       if (!d) return '';
       const num = parseFloat(d);
       if (isNaN(num) || num <= 0) return '';
-      const eok = Math.floor(num / 10000);
-      const man = num % 10000;
+      // deposit는 원 단위 → 만원으로 변환
+      const man = Math.round(num / 10000);
+      const eok = Math.floor(man / 10000);
+      const remainder = man % 10000;
       let result = '';
       if (eok > 0) result += `${eok}억`;
-      if (man > 0) result += (result ? ' ' : '') + `${man}만`;
+      if (remainder > 0) result += (result ? ' ' : '') + `${remainder}만`;
       return (result || '0') + '원';
     })(),
     rentalYield: (() => {
       const dep = meta.current_rental_deposit;
       const mon = meta.current_rental_monthly;
-      const salePrice = parseFloat(vacancy.deposit || '0');
-      if (!mon || salePrice <= 0) return '';
+      // deposit는 원 단위, rental는 만원 단위 → 만원으로 통일
+      const salePriceMan = Math.round(parseFloat(vacancy.deposit || '0') / 10000);
+      if (!mon || salePriceMan <= 0) return '';
       const monthly = parseFloat(mon);
       const deposit = dep ? parseFloat(dep) : 0;
-      const yieldRate = (monthly * 12 / salePrice * 100).toFixed(2);
+      const yieldRate = (monthly * 12 / salePriceMan * 100).toFixed(2);
       let result = '';
       if (deposit > 0) {
         const depEok = Math.floor(deposit / 10000);
@@ -392,7 +395,7 @@ export const buildOverviewTable = (
         if (depMan > 0) depStr += (depStr ? ' ' : '') + `${depMan}만`;
         result += `보증금 ${depStr} / `;
       }
-      result += `월 ${monthly}만 (${yieldRate}%)`;
+      result += `월 ${monthly}만 (연 ${yieldRate}%)`;
       return result;
     })(),
     ...extraData,
@@ -471,22 +474,56 @@ export const buildInvestmentSummary = (
       : '넓은 공간\n활용';
 
   switch (transactionType) {
-    case '매매':
+    case '매매': {
+      const meta = vacancy.metadata || {};
+      const isCommercialSale = ['shop', 'office', 'building'].includes(category);
+      const rentalMon = meta.current_rental_monthly ? parseFloat(meta.current_rental_monthly) : 0;
+      const rentalDep = meta.current_rental_deposit ? parseFloat(meta.current_rental_deposit) : 0;
+      const salePriceMan = Math.round(parseFloat(vacancy.deposit || '0') / 10000);
+
+      // box2: 상가/사무실/건물 매매일 때 임대현황
+      let box2Title = category === 'apartment' || category === 'officetel'
+        ? 'BRAND' : 'ASSET QUALITY';
+      let box2Text = buildingName
+        ? `${buildingName}\n브랜드 단지`
+        : approvalYear
+          ? `${approvalYear}년 준공\n우수 관리`
+          : '내외관\n리모델링';
+
+      if (isCommercialSale && rentalMon > 0) {
+        box2Title = 'RENTAL';
+        const depStr = rentalDep > 0 ? (() => {
+          const e = Math.floor(rentalDep / 10000);
+          const m = rentalDep % 10000;
+          let s = '';
+          if (e > 0) s += `${e}억`;
+          if (m > 0) s += (s ? ' ' : '') + `${m}만`;
+          return s;
+        })() : '';
+        box2Text = depStr ? `보증금 ${depStr}\n월 ${rentalMon}만원` : `월 ${rentalMon}만원\n임대 중`;
+      }
+
+      // box3: 상가/사무실/건물 매매일 때 수익률
+      let box3Title = 'UNIT';
+      let box3Text = unitText;
+
+      if (isCommercialSale && rentalMon > 0 && salePriceMan > 0) {
+        box3Title = 'YIELD';
+        const yieldRate = (rentalMon * 12 / salePriceMan * 100).toFixed(1);
+        box3Text = `연 ${yieldRate}%\n수익률`;
+      }
+
       return {
         sectionTitle: 'INVESTMENT SUMMARY',
         sectionSubtitle: '투자요약',
         box1Title: 'LOCATION',
         box1Text: dirText,
-        box2Title: category === 'apartment' || category === 'officetel'
-          ? 'BRAND' : 'ASSET QUALITY',
-        box2Text: buildingName
-          ? `${buildingName}\n브랜드 단지`
-          : approvalYear
-            ? `${approvalYear}년 준공\n우수 관리`
-            : '내외관\n리모델링',
-        box3Title: 'UNIT',
-        box3Text: unitText,
+        box2Title,
+        box2Text,
+        box3Title,
+        box3Text,
       };
+    }
 
     case '전세':
       return {
