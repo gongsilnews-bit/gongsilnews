@@ -244,6 +244,29 @@ export const detectPropertyCategory = (
 };
 
 /**
+ * 만원 단위 숫자를 한글 금액(억, 천, 만)으로 포맷팅
+ */
+const formatKoreanAmountFromMan = (num: number): string => {
+  if (isNaN(num) || num <= 0) return '';
+  const eok = Math.floor(num / 10000);
+  const man = num % 10000;
+  let result = '';
+  if (eok > 0) result += `${eok}억`;
+  if (man > 0) {
+    let manStr = '';
+    const cheon = Math.floor(man / 1000);
+    const rest = man % 1000;
+
+    if (cheon > 0) manStr += `${cheon}천`;
+    if (rest > 0) {
+      manStr += rest;
+    }
+    result += (eok > 0 ? ' ' : '') + `${manStr}만`;
+  }
+  return result.trim();
+};
+
+/**
  * 대지면적 포맷 (metadata.land_share_m2 / land_share_py)
  */
 const formatLandArea = (meta: any): string => {
@@ -345,13 +368,8 @@ export const buildOverviewTable = (
       } else if (vacancy.premium) {
         valMan = Math.round(parseFloat(vacancy.premium) / 10000);
       }
-      if (isNaN(valMan) || valMan <= 0) return '없음';
-      const eok = Math.floor(valMan / 10000);
-      const man = valMan % 10000;
-      let result = '';
-      if (eok > 0) result += `${eok}억`;
-      if (man > 0) result += (result ? ' ' : '') + `${man}만`;
-      return result + '원';
+      const amt = formatKoreanAmountFromMan(valMan);
+      return amt ? `${amt}원` : '없음';
     })(),
     buildingGrade: meta.building_grade || '',
     mainUsageStructure: [meta.main_usage, meta.building_structure].filter(Boolean).join(' / '),
@@ -402,14 +420,11 @@ export const buildOverviewTable = (
       const yieldRate = (monthly * 12 / salePriceMan * 100).toFixed(2);
       let result = '';
       if (deposit > 0) {
-        const depEok = Math.floor(deposit / 10000);
-        const depMan = deposit % 10000;
-        let depStr = '';
-        if (depEok > 0) depStr += `${depEok}억`;
-        if (depMan > 0) depStr += (depStr ? ' ' : '') + `${depMan}만`;
+        const depStr = formatKoreanAmountFromMan(deposit);
         result += `보증금 ${depStr} / `;
       }
-      result += `월 ${monthly}만 (연 ${yieldRate}%)`;
+      const monStr = formatKoreanAmountFromMan(monthly);
+      result += `월 ${monStr} (연 ${yieldRate}%)`;
       return result;
     })(),
     ...extraData,
@@ -506,15 +521,9 @@ export const buildInvestmentSummary = (
 
       if (isCommercialSale && rentalMon > 0) {
         box2Title = 'RENTAL';
-        const depStr = rentalDep > 0 ? (() => {
-          const e = Math.floor(rentalDep / 10000);
-          const m = rentalDep % 10000;
-          let s = '';
-          if (e > 0) s += `${e}억`;
-          if (m > 0) s += (s ? ' ' : '') + `${m}만`;
-          return s;
-        })() : '';
-        box2Text = depStr ? `보증금 ${depStr}\n월 ${rentalMon}만원` : `월 ${rentalMon}만원\n임대 중`;
+        const depStr = rentalDep > 0 ? formatKoreanAmountFromMan(rentalDep) : '';
+        const monStr = formatKoreanAmountFromMan(rentalMon);
+        box2Text = depStr ? `보증금 ${depStr}\n월 ${monStr}원` : `월 ${monStr}원\n임대 중`;
       }
 
       // box3: 상가/사무실/건물 매매일 때 수익률
