@@ -68,12 +68,9 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
                                 </tr>
                             ));
                         })()}
-                        {/* Price Row - 상가/사무실/건물 매매는 template에 포함되어 있으므로 제외 */}
+                        {/* Price Row */}
                         {(() => {
                             const tType = info.transactionType || "매매";
-                            const cat = detectPropertyCategory(info.subCategory, info.propertyCategory);
-                            const isCommercialSale = tType === "매매" && ['shop', 'office', 'building'].includes(cat);
-                            if (isCommercialSale) return null;
                             let label = "매매가";
                             if (tType === "전세") label = "보증금 (전세)";
                             else if (tType === "월세" || tType === "임대") label = "보증금 / 월세";
