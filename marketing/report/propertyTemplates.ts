@@ -118,15 +118,14 @@ export const getOverviewTemplate = (
       ];
 
     case 'house': {
-      // 빌라/연립 매매인 경우 공급/전용면적 아래에 대지면적/용도 추가, 관리비 삭제
+      // 빌라/연립 매매인 경우 공급/전용면적 아래에 대지/용도 1줄로 추가, 관리비 삭제
       const isVillaSale = isSale && ["빌라/연립", "빌라"].includes(subCategory || '');
       if (isVillaSale) {
         return [
           { label: '소재지', dataKey: 'address' },
           { label: '건물명', dataKey: 'buildingName' },
           { label: '공급/전용면적', dataKey: 'area' },
-          { label: '대지면적', dataKey: 'landArea' },
-          { label: '용도', dataKey: 'zoning' },
+          { label: '대지 / 용도', dataKey: 'landAreaZoning' },
           { label: '해당층/총층', dataKey: 'floor' },
           { label: '방/욕실수', dataKey: 'roomCount' },
           { label: '방향', dataKey: 'direction' },
@@ -310,6 +309,7 @@ export const buildOverviewTable = (
     // 빌딩/상가/토지용 — metadata 내부 필드 참조
     zoning: meta.zoning || '',
     landArea: formatLandArea(meta),
+    landAreaZoning: [formatLandArea(meta), meta.zoning].filter(Boolean).join(' / '),
     totalArea: formatTotalArea(vacancy),
     buildingScale: formatBuildingScale(meta, vacancy),
     mainPurpose: meta.main_usage || meta.main_purpose || '',
