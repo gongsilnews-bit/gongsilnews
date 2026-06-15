@@ -71,7 +71,7 @@ export const getOverviewTemplate = (
             { label: '호실 용도', dataKey: 'mainPurpose' },
             { label: '특화 구조 / 접근성', dataKey: 'jisangSpecialStructure' },
             { label: '층고 / 사용 전력', dataKey: 'jisangHeightPower' },
-            { label: '준공연도 / 구조', dataKey: 'buildingScaleYearOnly' },
+            { label: '준공연도', dataKey: 'jisangCompletionYear' },
             { label: '주차 / 승강기', dataKey: 'parkingElevator' },
             { label: '임대수익(수익률)', dataKey: 'rentalYield' },
           ];
@@ -83,7 +83,7 @@ export const getOverviewTemplate = (
             { label: '호실 용도', dataKey: 'mainPurpose' },
             { label: '특화 구조 / 접근성', dataKey: 'jisangSpecialStructure' },
             { label: '층고 / 사용 전력', dataKey: 'jisangHeightPower' },
-            { label: '준공연도 / 구조', dataKey: 'buildingScaleYearOnly' },
+            { label: '준공연도', dataKey: 'jisangCompletionYear' },
             { label: '주차 / 승강기', dataKey: 'parkingElevator' },
             { label: '관리비', dataKey: 'maintenanceFee' },
           ];
@@ -475,6 +475,7 @@ export const buildOverviewTable = (
       if (year && structure) return `${year} / ${structure}`;
       return year || structure || '';
     })(),
+    jisangCompletionYear: meta.approval_year ? `${meta.approval_year}년 준공` : '',
     roadWidth: meta.road_width ? `${meta.road_width}m 도로 접함` : '',
     roadWidthDirection: (() => {
       const width = meta.road_width ? `${meta.road_width}m` : '';
