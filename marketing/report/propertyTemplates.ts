@@ -144,6 +144,8 @@ export const getOverviewTemplate = (
           { label: '용도지역', dataKey: 'zoning' },
           { label: '지상/지하층수', dataKey: 'buildingScale' },
           { label: '도로폭/방향', dataKey: 'roadWidthDirection' },
+          { label: '주차대수', dataKey: 'parking' },
+          { label: '사용가능일', dataKey: 'moveInDate' },
           { label: '준공연도', dataKey: 'completionYear' },
         ];
       }
