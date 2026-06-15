@@ -75,6 +75,19 @@ export const getOverviewTemplate = (
       ];
 
     case 'shop':
+      if (isSale) {
+        return [
+          { label: '소재지', dataKey: 'address' },
+          { label: '건물명', dataKey: 'buildingName' },
+          { label: '전용면적', dataKey: 'area' },
+          { label: '해당층/총층', dataKey: 'floor' },
+          { label: '현용도', dataKey: 'currentUse' },
+          { label: '주차 / 사용가능일', dataKey: 'parkingMoveIn' },
+          { label: '준공연도', dataKey: 'completionYear' },
+          { label: '매매가', dataKey: 'salePrice' },
+          { label: '임대수익(수익률)', dataKey: 'rentalYield' },
+        ];
+      }
       return [
         { label: '소재지', dataKey: 'address' },
         { label: '건물명', dataKey: 'buildingName' },
@@ -84,12 +97,23 @@ export const getOverviewTemplate = (
         { label: '권리금', dataKey: 'premiumFee' },
         { label: '주차가능 여부', dataKey: 'parking' },
         { label: '입주가능일', dataKey: 'moveInDate' },
-        isSale
-          ? { label: '준공연도', dataKey: 'completionYear' }
-          : { label: '관리비', dataKey: 'maintenanceFee' },
+        { label: '관리비', dataKey: 'maintenanceFee' },
       ];
 
     case 'office':
+      if (isSale) {
+        return [
+          { label: '소재지', dataKey: 'address' },
+          { label: '건물명', dataKey: 'buildingName' },
+          { label: '전용면적', dataKey: 'area' },
+          { label: '해당층/총층', dataKey: 'floor' },
+          { label: '건물등급', dataKey: 'buildingGrade' },
+          { label: '주차 / 사용가능일', dataKey: 'parkingMoveIn' },
+          { label: '준공연도', dataKey: 'completionYear' },
+          { label: '매매가', dataKey: 'salePrice' },
+          { label: '임대수익(수익률)', dataKey: 'rentalYield' },
+        ];
+      }
       return [
         { label: '소재지', dataKey: 'address' },
         { label: '건물명', dataKey: 'buildingName' },
@@ -99,9 +123,7 @@ export const getOverviewTemplate = (
         { label: '주차대수', dataKey: 'parking' },
         { label: '승강기', dataKey: 'elevator' },
         { label: '입주가능일', dataKey: 'moveInDate' },
-        isSale
-          ? { label: '준공연도', dataKey: 'completionYear' }
-          : { label: '관리비', dataKey: 'maintenanceFee' },
+        { label: '관리비', dataKey: 'maintenanceFee' },
       ];
 
     case 'land':
@@ -335,6 +357,39 @@ export const buildOverviewTable = (
       const dir = meta.road_direction ? `${meta.road_direction}` : '';
       if (width && dir) return `${width} / ${dir}`;
       return width || dir || '';
+    })(),
+    parkingMoveIn: [vacancy.parking, vacancy.move_in_date].filter(Boolean).join(' / '),
+    salePrice: (() => {
+      const d = vacancy.deposit;
+      if (!d) return '';
+      const num = parseFloat(d);
+      if (isNaN(num) || num <= 0) return '';
+      const eok = Math.floor(num / 10000);
+      const man = num % 10000;
+      let result = '';
+      if (eok > 0) result += `${eok}억`;
+      if (man > 0) result += (result ? ' ' : '') + `${man}만`;
+      return (result || '0') + '원';
+    })(),
+    rentalYield: (() => {
+      const dep = meta.current_rental_deposit;
+      const mon = meta.current_rental_monthly;
+      const salePrice = parseFloat(vacancy.deposit || '0');
+      if (!mon || salePrice <= 0) return '';
+      const monthly = parseFloat(mon);
+      const deposit = dep ? parseFloat(dep) : 0;
+      const yieldRate = (monthly * 12 / salePrice * 100).toFixed(2);
+      let result = '';
+      if (deposit > 0) {
+        const depEok = Math.floor(deposit / 10000);
+        const depMan = deposit % 10000;
+        let depStr = '';
+        if (depEok > 0) depStr += `${depEok}억`;
+        if (depMan > 0) depStr += (depStr ? ' ' : '') + `${depMan}만`;
+        result += `보증금 ${depStr} / `;
+      }
+      result += `월 ${monthly}만 (${yieldRate}%)`;
+      return result;
     })(),
     ...extraData,
   };
