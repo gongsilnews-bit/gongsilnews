@@ -417,7 +417,7 @@ export const buildOverviewTable = (
       if (!mon || salePriceMan <= 0) return '';
       const monthly = parseFloat(mon);
       const deposit = dep ? parseFloat(dep) : 0;
-      const yieldRate = (monthly * 12 / salePriceMan * 100).toFixed(2);
+      const yieldRate = parseFloat((monthly * 12 / salePriceMan * 100).toFixed(2));
       let result = '';
       if (deposit > 0) {
         const depStr = formatKoreanAmountFromMan(deposit);
@@ -532,7 +532,7 @@ export const buildInvestmentSummary = (
 
       if (isCommercialSale && rentalMon > 0 && salePriceMan > 0) {
         box3Title = 'YIELD';
-        const yieldRate = (rentalMon * 12 / salePriceMan * 100).toFixed(1);
+        const yieldRate = parseFloat((rentalMon * 12 / salePriceMan * 100).toFixed(2));
         box3Text = `연 ${yieldRate}%\n수익률`;
       }
 
