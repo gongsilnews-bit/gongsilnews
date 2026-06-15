@@ -377,8 +377,12 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
       leaseRightText: loaded?.info?.leaseRightText !== undefined ? loaded?.info?.leaseRightText : INITIAL_INFO.leaseRightText,
       pageBadges: {
         ...INITIAL_INFO.pageBadges,
-        ...(loaded?.info?.pageBadges || {})
+        ...(loaded?.info?.pageBadges || {}),
+        page1: (loaded?.info?.pageBadges?.page1 && !["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes(loaded.info.pageBadges.page1.toUpperCase().trim()))
+          ? loaded.info.pageBadges.page1
+          : (loaded?.info?.subCategory || loaded?.info?.sub_category || "매물")
       },
+      subCategory: loaded?.info?.subCategory || loaded?.info?.sub_category || "",
       investmentSummary: {
         ...INITIAL_INFO.investmentSummary,
         ...(loaded?.info?.investmentSummary || {})
@@ -633,7 +637,12 @@ function App() {
             overviewTable: buildOverviewTable(v, cat, isSale),
             propertyCategory: cat,
             transactionType: v.trade_type || '매매',
+            subCategory: v.sub_category || "",
           };
+          if (!merged.info.pageBadges) merged.info.pageBadges = {};
+          if (!merged.info.pageBadges.page1 || ["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes((merged.info.pageBadges.page1 || "").toUpperCase().trim())) {
+            merged.info.pageBadges.page1 = v.sub_category || "매물";
+          }
           setState(merged);
           setIsLoadedFromStorage(true);
           setIsInitialized(true);
@@ -655,7 +664,12 @@ function App() {
               overviewTable: buildOverviewTable(v, cat, isSale),
               propertyCategory: cat,
               transactionType: v.trade_type || '매매',
+              subCategory: v.sub_category || "",
             };
+            if (!merged.info.pageBadges) merged.info.pageBadges = {};
+            if (!merged.info.pageBadges.page1 || ["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes((merged.info.pageBadges.page1 || "").toUpperCase().trim())) {
+              merged.info.pageBadges.page1 = v.sub_category || "매물";
+            }
             setState(merged);
             setIsLoadedFromStorage(true);
             setIsInitialized(true);
@@ -785,6 +799,7 @@ function App() {
           subTitle: `${v.sub_category || v.property_type || "프리미엄"} | ${v.direction || "방향 없음"} | ${areaDisplay}`,
           transactionType: v.trade_type || "월세",
           propertyCategory: detectPropertyCategory(v.sub_category, v.property_type),
+          subCategory: v.sub_category || "",
           priceMain: formatAmount(v.deposit) || "",
           priceSub: v.monthly_rent ? `${Math.round(v.monthly_rent / 10000)}만` : "",
           managementFee: v.maintenance_fee ? `${Math.round(v.maintenance_fee / 10000)}만원` : "없음",
@@ -809,7 +824,7 @@ function App() {
 
           pageBadges: {
             ...INITIAL_INFO.pageBadges,
-            page1: getEnglishTradeType(v.trade_type),
+            page1: v.sub_category || "매물",
             page6: buildPage6Content(
               v,
               detectPropertyCategory(v.sub_category, v.property_type),
