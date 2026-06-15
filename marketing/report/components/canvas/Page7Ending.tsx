@@ -44,11 +44,16 @@ const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = fal
   <div className={`flex gap-3 mb-2 ${className}`}>
     <div className={`flex-1 border ${dark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'} rounded-xl p-4 shadow-sm flex flex-col justify-center relative overflow-hidden`}>
       <div className={`absolute top-0 left-0 w-1 h-full ${dark ? 'bg-[var(--theme-secondary)]' : 'bg-[var(--theme-primary)]'}`}></div>
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <MapPinIcon className={`w-3.5 h-3.5 ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`} />
-        <span className={`font-black text-xs tracking-widest ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`}>
-          <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
-        </span>
+      <div className="flex items-center justify-between gap-1.5 mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <MapPinIcon className={`w-3.5 h-3.5 ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`} />
+          <span className={`font-black text-xs tracking-widest ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`}>
+            <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
+          </span>
+        </div>
+        <div className={`text-[11px] font-extrabold ${dark ? 'text-white/60' : 'text-gray-500'} tracking-wider`}>
+          <EditableText value={info.agentName || "미래에셋공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
+        </div>
       </div>
       <div className={`${dark ? 'text-white/90' : 'text-gray-700'} font-bold text-[13px] leading-relaxed whitespace-pre-wrap break-keep`}>
         <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 및 다수의 버스 노선 접근이 용이하여 출퇴근 및 대중교통 편리성 확보"} onChange={(v) => hc('agentAddress', v)} />
@@ -65,14 +70,22 @@ const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = fal
 const PhoneBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyInfo, hc: any, dark?: boolean, stacked?: boolean }) => (
   <div className="flex flex-col justify-center py-2 w-full">
     {stacked && (
-       <div className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest mb-1`}>
-         문의하기
+       <div className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest mb-1 flex items-center gap-2`}>
+         <span>문의하기</span>
+         <span className={`text-[10px] ${dark ? 'text-white/40' : 'text-gray-400'} font-bold`}>
+           (담당자: <EditableText value={info.agencyRepresentative || info.agentRepresentative || "김상태"} onChange={(v) => hc('agencyRepresentative', v)} className="inline-block" />)
+         </span>
        </div>
     )}
     <div className={`flex items-center gap-3 ${stacked ? 'w-full' : ''}`}>
       <div className={`${stacked ? 'text-[26px]' : 'text-[30px]'} font-black ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} flex-1 tracking-tight flex items-center whitespace-nowrap`}>
         {!stacked && (
-          <span className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest mr-3 whitespace-nowrap shrink-0`}>문의하기</span>
+          <div className="flex flex-col mr-3 shrink-0">
+            <span className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest whitespace-nowrap`}>문의하기</span>
+            <span className={`text-[10px] ${dark ? 'text-white/40' : 'text-gray-400'} font-bold whitespace-nowrap mt-0.5`}>
+              담당자: <EditableText value={info.agencyRepresentative || info.agentRepresentative || "김상태"} onChange={(v) => hc('agencyRepresentative', v)} className="inline-block" />
+            </span>
+          </div>
         )}
         <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
       </div>
