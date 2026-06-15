@@ -807,7 +807,7 @@ function App() {
           direction: v.direction || "남향",
           roomCount: `${v.room_count || "-"}개 / ${v.bathroom_count || "-"}개`,
           parking: v.parking || "없음",
-          moveInDate: v.move_in_date || "즉시 입주 가능",
+          moveInDate: v.move_in_date || (['shop', 'office', 'building'].includes(detectPropertyCategory(v.sub_category, v.property_type)) ? "즉시 사용 가능" : "즉시 입주 가능"),
           options: Array.isArray(v.options) ? v.options.join(", ") : (v.options || ""),
           
           agentName,

@@ -91,12 +91,12 @@ export const getOverviewTemplate = (
       return [
         { label: '소재지', dataKey: 'address' },
         { label: '건물명', dataKey: 'buildingName' },
-        { label: '전용면적', dataKey: 'area' },
+        { label: '공급/전용면적', dataKey: 'area' },
         { label: '해당층/총층', dataKey: 'floor' },
         { label: '현용도', dataKey: 'currentUse' },
         { label: '권리금', dataKey: 'premiumFee' },
         { label: '주차가능 여부', dataKey: 'parking' },
-        { label: '입주가능일', dataKey: 'moveInDate' },
+        { label: '사용가능일', dataKey: 'moveInDate' },
         { label: '관리비', dataKey: 'maintenanceFee' },
       ];
 
@@ -122,7 +122,7 @@ export const getOverviewTemplate = (
         { label: '건물등급', dataKey: 'buildingGrade' },
         { label: '주차대수', dataKey: 'parking' },
         { label: '승강기', dataKey: 'elevator' },
-        { label: '입주가능일', dataKey: 'moveInDate' },
+        { label: '사용가능일', dataKey: 'moveInDate' },
         { label: '관리비', dataKey: 'maintenanceFee' },
       ];
 
@@ -338,7 +338,21 @@ export const buildOverviewTable = (
     buildingScale: formatBuildingScale(meta, vacancy),
     mainPurpose: meta.main_usage || meta.main_purpose || '',
     currentUse: meta.current_usage || '',
-    premiumFee: vacancy.premium ? `${Math.round(vacancy.premium / 10000)}만원` : '',
+    premiumFee: (() => {
+      let valMan = 0;
+      if (meta.premium_fee !== undefined && meta.premium_fee !== null) {
+        valMan = parseFloat(meta.premium_fee);
+      } else if (vacancy.premium) {
+        valMan = Math.round(parseFloat(vacancy.premium) / 10000);
+      }
+      if (isNaN(valMan) || valMan <= 0) return '없음';
+      const eok = Math.floor(valMan / 10000);
+      const man = valMan % 10000;
+      let result = '';
+      if (eok > 0) result += `${eok}억`;
+      if (man > 0) result += (result ? ' ' : '') + `${man}만`;
+      return result + '원';
+    })(),
     buildingGrade: meta.building_grade || '',
     mainUsageStructure: [meta.main_usage, meta.building_structure].filter(Boolean).join(' / '),
     elevator: formatElevator(meta),
@@ -525,22 +539,28 @@ export const buildInvestmentSummary = (
       };
     }
 
-    case '전세':
+    case '전세': {
+      const isCommercial = ['shop', 'office', 'building'].includes(category);
+      const moveInLabel = isCommercial ? '사용 가능' : '입주 가능';
+      const moveInText = moveIn === '즉시입주' || moveIn.includes('즉시')
+        ? (isCommercial ? '즉시사용\n가능' : '즉시입주\n가능')
+        : `${moveIn}\n${moveInLabel}`;
+
       return {
         sectionTitle: 'LIVING SUMMARY',
-        sectionSubtitle: '생활요약',
+        sectionSubtitle: isCommercial ? '사용요약' : '생활요약',
         box1Title: 'LOCATION',
         box1Text: dirText,
         box2Title: 'PARKING',
         box2Text: parkText,
-        box3Title: 'MOVE-IN',
-        box3Text: moveIn === '즉시입주' || moveIn.includes('즉시')
-          ? '즉시입주\n가능'
-          : `${moveIn}\n입주 가능`,
+        box3Title: isCommercial ? 'USE-DATE' : 'MOVE-IN',
+        box3Text: moveInText,
       };
+    }
 
     case '월세':
-    case '단기임대':
+    case '단기임대': {
+      const isCommercial = ['shop', 'office', 'building'].includes(category);
       // 월 총비용 계산
       const totalCost = monthlyRent && maintenance
         ? `월세 ${monthlyRent}\n관리비 ${maintenance}`
@@ -550,18 +570,22 @@ export const buildInvestmentSummary = (
             ? `관리비\n${maintenance}`
             : '합리적\n임대 조건';
 
+      const moveInLabel = isCommercial ? '사용 가능' : '입주 가능';
+      const moveInText = moveIn === '즉시입주' || moveIn.includes('즉시')
+        ? (isCommercial ? '즉시사용\n가능' : '즉시입주\n가능')
+        : `${moveIn}\n${moveInLabel}`;
+
       return {
         sectionTitle: 'RENTAL SUMMARY',
-        sectionSubtitle: '입주요약',
+        sectionSubtitle: isCommercial ? '임대요약' : '입주요약',
         box1Title: 'LOCATION',
         box1Text: dirText,
         box2Title: 'TOTAL COST',
         box2Text: totalCost,
-        box3Title: 'MOVE-IN',
-        box3Text: moveIn === '즉시입주' || moveIn.includes('즉시')
-          ? '즉시입주\n가능'
-          : `${moveIn}\n입주 가능`,
+        box3Title: isCommercial ? 'USE-DATE' : 'MOVE-IN',
+        box3Text: moveInText,
       };
+    }
 
     default:
       return {

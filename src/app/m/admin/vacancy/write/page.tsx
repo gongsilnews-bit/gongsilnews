@@ -134,6 +134,7 @@ function MobileVacancyWrite() {
   const [currentRentalMonthly, setCurrentRentalMonthly] = useState(""); // 현재 임대 월세 (만원)
   const [loanAmount, setLoanAmount] = useState(""); // 융자금 (만원)
   const [loanRate, setLoanRate] = useState(""); // 대출 연이율 (%)
+  const [premiumFee, setPremiumFee] = useState(""); // 권리금 (만원)
 
   // 건물 매매 추가 필드
   const [roadWidth, setRoadWidth] = useState("");
@@ -313,6 +314,7 @@ function MobileVacancyWrite() {
           if (d.metadata.current_rental_monthly) setCurrentRentalMonthly(String(d.metadata.current_rental_monthly));
           if (d.metadata.loan_amount) setLoanAmount(String(d.metadata.loan_amount));
           if (d.metadata.loan_rate) setLoanRate(String(d.metadata.loan_rate));
+          if (d.metadata.premium_fee) setPremiumFee(String(d.metadata.premium_fee));
           if (d.metadata.road_width) setRoadWidth(String(d.metadata.road_width));
           if (d.metadata.road_direction) setRoadDirection(d.metadata.road_direction);
           if (d.metadata.ground_floors) setGroundFloors(String(d.metadata.ground_floors));
@@ -731,6 +733,7 @@ function MobileVacancyWrite() {
           building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : undefined,
           floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : undefined,
           current_usage: currentUsage || undefined,
+          premium_fee: premiumFee ? parseFloat(premiumFee) : undefined,
           current_rental_deposit: currentRentalDeposit ? parseFloat(currentRentalDeposit) : undefined,
           current_rental_monthly: currentRentalMonthly ? parseFloat(currentRentalMonthly) : undefined,
           loan_amount: loanAmount ? parseFloat(loanAmount) : undefined,
@@ -1456,6 +1459,15 @@ function MobileVacancyWrite() {
                   )}
                 </div>
               </div>
+              <div style={{flex:1}}>
+                <label style={labelStyle}>권리금
+                  {premiumFee && <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700 }}> {formatKoreanAmount(premiumFee)}</span>}
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <input type="number" placeholder="예: 3000" value={premiumFee} onChange={(e) => setPremiumFee(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                  <span style={{ color: "#6b7280", fontSize: 11, flexShrink: 0 }}>만원</span>
+                </div>
+              </div>
             </div>
           )}
           {!isCommercial && (
@@ -1522,9 +1534,9 @@ function MobileVacancyWrite() {
               </select>
             </div>
             <div style={{flex:1}}>
-              <label style={labelStyle}>{subCategory === "토지" ? "사용 가능일" : tradeType === "매매" ? "사용가능일" : "입주가능일"}</label>
+              <label style={labelStyle}>{subCategory === "토지" ? "사용 가능일" : (tradeType === "매매" || isCommercial) ? "사용가능일" : "입주가능일"}</label>
               <select value={moveInDate} onChange={e=>setMoveInDate(e.target.value)} style={{...inputStyle,cursor:"pointer"}}>
-                <option>{subCategory === "토지" ? "즉시사용" : tradeType === "매매" ? "즉시사용" : "즉시입주(공실)"}</option><option>1개월 이내</option><option>2개월 이내</option><option>3개월 이내</option><option>날짜 협의</option>
+                <option>{subCategory === "토지" ? "즉시사용" : (tradeType === "매매" || isCommercial) ? "즉시사용" : "즉시입주(공실)"}</option><option>1개월 이내</option><option>2개월 이내</option><option>3개월 이내</option><option>날짜 협의</option>
               </select>
             </div>
           </div>
