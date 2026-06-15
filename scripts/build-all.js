@@ -16,21 +16,7 @@ try {
   console.log('Building subproject...');
   execSync('npm run build', { cwd: subprojectDir, stdio: 'inherit' });
   
-  // 3. Clean target public directory if exists
-  if (fs.existsSync(targetPublicDir)) {
-    console.log('Cleaning existing target public directory...');
-    fs.rmSync(targetPublicDir, { recursive: true, force: true });
-  }
-  
-  // 4. Create target public directory
-  fs.mkdirSync(targetPublicDir, { recursive: true });
-  
-  // 5. Copy dist to public
-  const distDir = path.join(subprojectDir, 'dist');
-  console.log(`Copying ${distDir} to ${targetPublicDir}...`);
-  fs.cpSync(distDir, targetPublicDir, { recursive: true, force: true });
-  
-  console.log('Subproject build and copy completed successfully!');
+  console.log('Subproject build completed successfully! (Vite outputs directly to public)');
   
   console.log('=== STARTING SUBPROJECT BUILD (marketing/report) ===');
   const reportDir = path.join(__dirname, '../marketing/report');
