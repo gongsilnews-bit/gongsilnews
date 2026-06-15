@@ -62,6 +62,34 @@ export const getOverviewTemplate = (
       ];
 
     case 'building':
+      if (subCategory === "지식산업센터") {
+        if (isSale) {
+          return [
+            { label: '소재지', dataKey: 'address' },
+            { label: '공급 / 전용면적', dataKey: 'area' },
+            { label: '해당층 / 총층', dataKey: 'floor' },
+            { label: '호실 용도', dataKey: 'mainPurpose' },
+            { label: '특화 구조 / 접근성', dataKey: 'jisangSpecialStructure' },
+            { label: '층고 / 사용 전력', dataKey: 'jisangHeightPower' },
+            { label: '준공연도 / 구조', dataKey: 'buildingScaleYearOnly' },
+            { label: '주차 / 승강기', dataKey: 'parkingElevator' },
+            { label: '임대수익(수익률)', dataKey: 'rentalYield' },
+          ];
+        } else {
+          return [
+            { label: '소재지', dataKey: 'address' },
+            { label: '공급 / 전용면적', dataKey: 'area' },
+            { label: '해당층 / 총층', dataKey: 'floor' },
+            { label: '호실 용도', dataKey: 'mainPurpose' },
+            { label: '특화 구조 / 접근성', dataKey: 'jisangSpecialStructure' },
+            { label: '층고 / 사용 전력', dataKey: 'jisangHeightPower' },
+            { label: '준공연도 / 구조', dataKey: 'buildingScaleYearOnly' },
+            { label: '주차 / 승강기', dataKey: 'parkingElevator' },
+            { label: '관리비', dataKey: 'maintenanceFee' },
+          ];
+        }
+      }
+
       if (isSale) {
         return [
           { label: '소재지', dataKey: 'address' },
@@ -372,7 +400,7 @@ export const buildOverviewTable = (
     landAreaZoning: [formatLandArea(meta), meta.zoning].filter(Boolean).join(' / '),
     totalArea: formatTotalArea(vacancy),
     buildingScale: formatBuildingScale(meta, vacancy),
-    mainPurpose: meta.main_usage || meta.main_purpose || '',
+    mainPurpose: meta.jisan_usage || meta.main_usage || meta.main_purpose || '',
     currentUse: meta.current_usage || '',
     premiumFee: (() => {
       let valMan = 0;
@@ -420,10 +448,26 @@ export const buildOverviewTable = (
       return main || cur || '';
     })(),
     parkingElevator: (() => {
-      const park = vacancy.parking && vacancy.parking !== '없음' ? `주차 ${vacancy.parking}` : '';
-      const elev = formatElevator(meta);
+      let park = vacancy.parking && vacancy.parking !== '없음' ? `주차 ${vacancy.parking}` : '';
+      if (meta.free_parking_cnt) {
+        park += ` (무료 ${meta.free_parking_cnt}대)`;
+      }
+      const elev = meta.has_freight_elevator ? '화물승강기' : formatElevator(meta);
       if (park && elev) return `${park} / ${elev}`;
       return park || elev || '';
+    })(),
+    jisangSpecialStructure: (() => {
+      const parts: string[] = [];
+      if (meta.has_drive_in) parts.push('드라이브인');
+      if (meta.has_door_to_door) parts.push('도어투도어');
+      if (meta.has_freight_elevator) parts.push('화물승강기');
+      return parts.join(', ') || '없음';
+    })(),
+    jisangHeightPower: (() => {
+      const h = meta.ceiling_height ? `${meta.ceiling_height}m` : '';
+      const p = meta.power_capacity ? `${meta.power_capacity}kW` : '';
+      if (h && p) return `${h} / ${p}`;
+      return h || p || '미입력';
     })(),
     buildingScaleYearOnly: (() => {
       const year = meta.approval_year ? `${meta.approval_year}년 준공` : '';

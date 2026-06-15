@@ -1561,7 +1561,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             </div>
             )}
 
-            {(propertyType === "빌라·주택" || propertyType === COMMERCIAL_CATEGORY) && tradeType === "매매" && (
+            {(propertyType === "빌라·주택" || propertyType === COMMERCIAL_CATEGORY) && tradeType === "매매" && subCategory !== "지식산업센터" && (
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>대지면적</label>
@@ -1776,7 +1776,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             )}
             
-            {propertyType === "상가·사무실·건물·공장·토지" && ["상가", "사무실"].includes(subCategory) && (
+            {propertyType === "상가·사무실·건물·공장·토지" && ["상가", "사무실", "지식산업센터"].includes(subCategory) && (
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>현재 용도 (현용도)</label>
@@ -2005,6 +2005,33 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   </div>
                 </div>
               </>
+            )}
+
+            {/* 💰 지식산업센터 매매일 때 현재 임차인 임대료 정보 입력 (수익률 계산용) */}
+            {tradeType === "매매" && propertyType === "상가·사무실·건물·공장·토지" && subCategory === "지식산업센터" && (
+              <div style={{ background: "#f9fafb", border: `1px dashed ${border}`, borderRadius: 10, padding: "16px 20px", marginBottom: 24 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary, marginBottom: 12 }}>현재 임차인 정보 (수익률 계산용 - 선택사항)</div>
+                <div style={{ display: "flex", gap: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ ...labelStyle, marginBottom: 6 }}>현재 임차 보증금
+                      {currentRentalDeposit && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(currentRentalDeposit)}</span>}
+                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input type="number" placeholder="예: 3000" value={currentRentalDeposit} onChange={(e) => setCurrentRentalDeposit(e.target.value)} style={{ ...inputStyle, background: "#fff" }} />
+                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>만원</span>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ ...labelStyle, marginBottom: 6 }}>현재 월세
+                      {currentRentalMonthly && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(currentRentalMonthly)}</span>}
+                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input type="number" placeholder="예: 150" value={currentRentalMonthly} onChange={(e) => setCurrentRentalMonthly(e.target.value)} style={{ ...inputStyle, background: "#fff" }} />
+                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>만원</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* 💰 수익률 계산기 - 상가/사무실/건물 매매일 때만 */}

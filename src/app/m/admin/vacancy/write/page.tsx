@@ -1446,7 +1446,7 @@ function MobileVacancyWrite() {
             </div>
           )}
           
-          {propertyType === "상가·사무실·건물·공장·토지" && ["상가", "사무실"].includes(subCategory) && (
+          {propertyType === "상가·사무실·건물·공장·토지" && ["상가", "사무실", "지식산업센터"].includes(subCategory) && (
             <div style={{ display:"flex", gap:10, marginBottom:14 }}>
               <div style={{flex:1}}>
                 <label style={labelStyle}>현재 용도 (현용도)</label>
@@ -1645,6 +1645,35 @@ function MobileVacancyWrite() {
               </label>
             </div>
           </>
+        )}
+
+        {/* 💰 지식산업센터 매매일 때 현재 임차인 임대료 정보 입력 (수익률 계산용) */}
+        {tradeType === "매매" && propertyType === "상가·사무실·건물·공장·토지" && subCategory === "지식산업센터" && (
+          <div style={{ background: "#f9fafb", border: "1px dashed #cbd5e1", borderRadius: 14, padding: 16, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", marginBottom: 12 }}>
+              현재 임차인 정보 (수익률 계산용 - 선택)
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#4b5563", marginBottom: 4, display: "block" }}>임차 보증금
+                  {currentRentalDeposit && <span style={{ color: "#3b82f6", fontWeight: 700 }}> {formatKorean(currentRentalDeposit)}</span>}
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <input type="number" placeholder="예: 3000" value={currentRentalDeposit} onChange={e=>setCurrentRentalDeposit(e.target.value)} style={{...inputStyle, flex: 1, background: "#fff"}} />
+                  <span style={{ fontSize: 11, color: "#6b7280" }}>만원</span>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#4b5563", marginBottom: 4, display: "block" }}>현재 월세
+                  {currentRentalMonthly && <span style={{ color: "#3b82f6", fontWeight: 700 }}> {formatKorean(currentRentalMonthly)}</span>}
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <input type="number" placeholder="예: 150" value={currentRentalMonthly} onChange={e=>setCurrentRentalMonthly(e.target.value)} style={{...inputStyle, flex: 1, background: "#fff"}} />
+                  <span style={{ color: "#6b7280" }}>만원</span>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* 💰 수익률 계산기 - 상가/사무실/건물 매매일 때만 */}
