@@ -130,6 +130,8 @@ function MobileVacancyWrite() {
   const [buildingCoverage, setBuildingCoverage] = useState(""); // 건폐율
   const [floorAreaRatio, setFloorAreaRatio] = useState(""); // 용적률
   const [currentUsage, setCurrentUsage] = useState(""); // 현용도
+  const [currentRentalDeposit, setCurrentRentalDeposit] = useState(""); // 현재 임대 보증금 (만원)
+  const [currentRentalMonthly, setCurrentRentalMonthly] = useState(""); // 현재 임대 월세 (만원)
 
   // 건물 매매 추가 필드
   const [roadWidth, setRoadWidth] = useState("");
@@ -305,6 +307,8 @@ function MobileVacancyWrite() {
           if (d.metadata.building_coverage) setBuildingCoverage(String(d.metadata.building_coverage));
           if (d.metadata.floor_area_ratio) setFloorAreaRatio(String(d.metadata.floor_area_ratio));
           if (d.metadata.current_usage) setCurrentUsage(d.metadata.current_usage);
+          if (d.metadata.current_rental_deposit) setCurrentRentalDeposit(String(d.metadata.current_rental_deposit));
+          if (d.metadata.current_rental_monthly) setCurrentRentalMonthly(String(d.metadata.current_rental_monthly));
           if (d.metadata.road_width) setRoadWidth(String(d.metadata.road_width));
           if (d.metadata.road_direction) setRoadDirection(d.metadata.road_direction);
           if (d.metadata.ground_floors) setGroundFloors(String(d.metadata.ground_floors));
@@ -723,6 +727,8 @@ function MobileVacancyWrite() {
           building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : undefined,
           floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : undefined,
           current_usage: currentUsage || undefined,
+          current_rental_deposit: currentRentalDeposit ? parseFloat(currentRentalDeposit) : undefined,
+          current_rental_monthly: currentRentalMonthly ? parseFloat(currentRentalMonthly) : undefined,
           road_width: roadWidth ? parseFloat(roadWidth) : undefined,
           road_direction: roadDirection || undefined,
           ground_floors: groundFloors ? parseInt(groundFloors) : undefined,
@@ -1444,6 +1450,23 @@ function MobileVacancyWrite() {
                   )}
                 </div>
               </div>
+              {tradeType === "매매" && (
+                <div style={{flex:1}}>
+                  <label style={labelStyle}>현재 임대 수익</label>
+                  <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                    <span style={{ color:"#6b7280", fontSize:11, flexShrink:0 }}>보증금</span>
+                    <input type="number" placeholder="3000" value={currentRentalDeposit} onChange={e=>setCurrentRentalDeposit(e.target.value)} style={{...inputStyle, flex:1}} />
+                    <span style={{ color:"#6b7280", fontSize:11, flexShrink:0 }}>/ 월</span>
+                    <input type="number" placeholder="150" value={currentRentalMonthly} onChange={e=>setCurrentRentalMonthly(e.target.value)} style={{...inputStyle, flex:1}} />
+                    <span style={{ color:"#6b7280", fontSize:11, flexShrink:0 }}>만원</span>
+                  </div>
+                  {deposit && currentRentalMonthly && parseFloat(currentRentalMonthly) > 0 && parseFloat(deposit) > 0 && (
+                    <div style={{ marginTop:4, fontSize:11, color:"#cc5a27", fontWeight:700 }}>
+                      💰 연 수익률: {((parseFloat(currentRentalMonthly) * 12 / parseFloat(deposit)) * 100).toFixed(2)}%
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
           {!isCommercial && (

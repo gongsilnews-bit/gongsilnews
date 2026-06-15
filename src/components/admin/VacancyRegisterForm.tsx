@@ -183,6 +183,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [buildingCoverage, setBuildingCoverage] = useState(""); // 건폐율
   const [floorAreaRatio, setFloorAreaRatio] = useState(""); // 용적률
   const [currentUsage, setCurrentUsage] = useState(""); // 현용도
+  const [currentRentalDeposit, setCurrentRentalDeposit] = useState(""); // 현재 임대 보증금 (만원)
+  const [currentRentalMonthly, setCurrentRentalMonthly] = useState(""); // 현재 임대 월세 (만원)
   // 지식산업센터 특화 스펙
   const [jisanUsage, setJisanUsage] = useState("");
   const [ceilingHeight, setCeilingHeight] = useState("");
@@ -348,6 +350,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.metadata?.building_coverage) setBuildingCoverage(String(editData.metadata.building_coverage));
     if (editData.metadata?.floor_area_ratio) setFloorAreaRatio(String(editData.metadata.floor_area_ratio));
     if (editData.metadata?.current_usage) setCurrentUsage(editData.metadata.current_usage);
+    if (editData.metadata?.current_rental_deposit) setCurrentRentalDeposit(String(editData.metadata.current_rental_deposit));
+    if (editData.metadata?.current_rental_monthly) setCurrentRentalMonthly(String(editData.metadata.current_rental_monthly));
     if (editData.metadata?.road_width) setRoadWidth(String(editData.metadata.road_width));
     if (editData.metadata?.road_direction) setRoadDirection(editData.metadata.road_direction);
     if (editData.metadata?.ground_floors) setGroundFloors(String(editData.metadata.ground_floors));
@@ -1779,7 +1783,25 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     )}
                   </div>
                 </div>
-                <div style={{ flex: 1 }}></div>
+                {tradeType === "매매" ? (
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>현재 임대 수익</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>보증금</span>
+                      <input type="number" placeholder="예: 3000" value={currentRentalDeposit} onChange={(e) => setCurrentRentalDeposit(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>/ 월</span>
+                      <input type="number" placeholder="예: 150" value={currentRentalMonthly} onChange={(e) => setCurrentRentalMonthly(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>만원</span>
+                    </div>
+                    {deposit && currentRentalMonthly && parseFloat(currentRentalMonthly) > 0 && parseFloat(deposit) > 0 && (
+                      <div style={{ marginTop: 6, fontSize: 12, color: "#cc5a27", fontWeight: 700 }}>
+                        💰 연 수익률: {((parseFloat(currentRentalMonthly) * 12 / parseFloat(deposit)) * 100).toFixed(2)}%
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ flex: 1 }}></div>
+                )}
               </div>
             )}
 
@@ -2395,6 +2417,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : null,
                       floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : null,
                       current_usage: currentUsage || null,
+                      current_rental_deposit: currentRentalDeposit ? parseFloat(currentRentalDeposit) : null,
+                      current_rental_monthly: currentRentalMonthly ? parseFloat(currentRentalMonthly) : null,
                       approval_year: approvalYear ? parseInt(approvalYear) : null,
                       jisan_usage: jisanUsage || undefined,
                       ceiling_height: ceilingHeight || undefined,
