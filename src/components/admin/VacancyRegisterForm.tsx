@@ -45,6 +45,48 @@ const formatPhoneNumber = (val: string) => {
   }
 };
 
+// ── 금액 포맷 헬퍼 ──
+const formatAmount = (amt: number) => {
+  if (!amt) return "";
+  const m = Math.round(amt / 10000);
+  if (m === 0) return "";
+
+  const e = Math.floor(m / 10000);
+  const r = m % 10000;
+
+  let result = "";
+  if (e > 0) result += `${e}억`;
+  if (r > 0) {
+    const c = Math.floor(r / 1000);
+    const rem = r % 1000;
+    let rest = "";
+    if (c > 0) rest += `${c}천`;
+    if (rem > 0) rest += `${rem}`;
+    result += (result ? " " : "") + rest + "만";
+  }
+  return result || "";
+};
+
+const formatPrice = (v: any): string => {
+  const dep = v.deposit || 0;
+  const rent = v.monthly_rent || 0;
+  const trade = v.trade_type || "";
+
+  if (trade === "경매") {
+    const meta = v.metadata || {};
+    const appraisalPrice = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || (dep && dep > 100000 ? dep : dep * 10000);
+    const lowestBidPrice = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+    const displayPrice = lowestBidPrice > 0 ? lowestBidPrice : appraisalPrice;
+    return `${formatAmount(displayPrice)}`;
+  }
+  if (trade === "월세" && rent > 0) {
+    const monthlyManwon = Math.round(rent / 10000);
+    return `${formatAmount(dep)}/${monthlyManwon}만`;
+  }
+  if (dep > 0) return `${formatAmount(dep)}`;
+  return "-";
+};
+
 // ── 1차→2차 카테고리 매핑 (원본 register.html에서 추출) ──
 const SUB_CATEGORIES: Record<string, string[]> = {
   "아파트·오피스텔": ["아파트", "아파트분양권", "오피스텔", "오피스텔분양권"],
@@ -2694,7 +2736,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     onClick={() => handleSelectPrevVacancy(v)}>
                       <div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: textPrimary, marginBottom: 4 }}>
-                          [{v.property_type}] {v.sub_category} ({v.trade_type})
+                          [{v.sub_category || v.property_type}] ({v.trade_type}) {formatPrice(v)}
                         </div>
                         <div style={{ fontSize: 13, color: textSecondary }}>
                           {v.sido} {v.sigungu} {v.dong} {v.detail_addr}
