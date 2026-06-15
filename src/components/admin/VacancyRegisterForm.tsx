@@ -185,6 +185,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [currentUsage, setCurrentUsage] = useState(""); // 현용도
   const [currentRentalDeposit, setCurrentRentalDeposit] = useState(""); // 현재 임대 보증금 (만원)
   const [currentRentalMonthly, setCurrentRentalMonthly] = useState(""); // 현재 임대 월세 (만원)
+  const [loanAmount, setLoanAmount] = useState(""); // 융자금 (만원)
+  const [loanRate, setLoanRate] = useState(""); // 대출 연이율 (%)
   // 지식산업센터 특화 스펙
   const [jisanUsage, setJisanUsage] = useState("");
   const [ceilingHeight, setCeilingHeight] = useState("");
@@ -352,6 +354,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.metadata?.current_usage) setCurrentUsage(editData.metadata.current_usage);
     if (editData.metadata?.current_rental_deposit) setCurrentRentalDeposit(String(editData.metadata.current_rental_deposit));
     if (editData.metadata?.current_rental_monthly) setCurrentRentalMonthly(String(editData.metadata.current_rental_monthly));
+    if (editData.metadata?.loan_amount) setLoanAmount(String(editData.metadata.loan_amount));
+    if (editData.metadata?.loan_rate) setLoanRate(String(editData.metadata.loan_rate));
     if (editData.metadata?.road_width) setRoadWidth(String(editData.metadata.road_width));
     if (editData.metadata?.road_direction) setRoadDirection(editData.metadata.road_direction);
     if (editData.metadata?.ground_floors) setGroundFloors(String(editData.metadata.ground_floors));
@@ -1783,28 +1787,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     )}
                   </div>
                 </div>
-                {tradeType === "매매" ? (
-                  <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>현재 임대 수익
-                      {currentRentalDeposit && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> 보증금 {formatKoreanAmount(currentRentalDeposit)}</span>}
-                      {currentRentalMonthly && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> / 월 {formatKoreanAmount(currentRentalMonthly)}</span>}
-                    </label>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>보증금</span>
-                      <input type="number" placeholder="예: 3000" value={currentRentalDeposit} onChange={(e) => setCurrentRentalDeposit(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>/ 월</span>
-                      <input type="number" placeholder="예: 150" value={currentRentalMonthly} onChange={(e) => setCurrentRentalMonthly(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>만원</span>
-                    </div>
-                    {deposit && currentRentalMonthly && parseFloat(currentRentalMonthly) > 0 && parseFloat(deposit) > 0 && (
-                      <div style={{ marginTop: 6, fontSize: 12, color: "#cc5a27", fontWeight: 700 }}>
-                        💰 연 수익률: {((parseFloat(currentRentalMonthly) * 12 / parseFloat(deposit)) * 100).toFixed(2)}%
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div style={{ flex: 1 }}></div>
-                )}
+                <div style={{ flex: 1 }}></div>
               </div>
             )}
 
@@ -1956,16 +1939,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             )}
 
-            {/* 추가 정보 (용도, 구조, 승강기 등) - 지식산업센터 제외 */}
+            {/* 추가 정보 (용도, 구조, 승강기 등) - 지식산업센터/토지 제외, 일반 입력란으로 배치 */}
             {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && subCategory !== "지식산업센터" && (
-              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, marginBottom: 24 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>🏢 상세 제원 (선택형)</span>
-                </div>
-                
-                <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+              <>
+                <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{...labelStyle, marginBottom: 6}}>건축물 주용도</label>
+                    <label style={labelStyle}>건축물 주용도</label>
                     <div style={{ display: "flex", gap: 8 }}>
                       {renderSelectOrInput(
                         mainUsage,
@@ -1976,7 +1955,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     </div>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{...labelStyle, marginBottom: 6}}>건물 구조</label>
+                    <label style={labelStyle}>건물 구조</label>
                     <div style={{ display: "flex", gap: 8 }}>
                       {renderSelectOrInput(
                         buildingStructure,
@@ -1987,10 +1966,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     </div>
                   </div>
                 </div>
-
-                <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{...labelStyle, marginBottom: 6}}>엘리베이터 갯수</label>
+                    <label style={labelStyle}>엘리베이터 갯수</label>
                     <div style={{ display: "flex", gap: 8 }}>
                       {renderSelectOrInput(
                         elevatorCnt,
@@ -2014,6 +1992,83 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     </label>
                   </div>
                 </div>
+              </>
+            )}
+
+            {/* 💰 수익률 계산기 - 상가/사무실/건물 매매일 때만 */}
+            {tradeType === "매매" && propertyType === "상가·사무실·건물·공장·토지" && ["상가", "사무실", "건물/빌딩", "공장/창고", "상가/업무"].includes(subCategory) && (
+              <div style={{ background: "#fffbeb", border: "1px solid #f59e0b", borderRadius: 8, padding: 16, marginBottom: 24 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "#92400e", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>💰 수익률 계산기</span>
+                </div>
+
+                <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{...labelStyle, marginBottom: 6}}>현재 임차인 보증금
+                      {currentRentalDeposit && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(currentRentalDeposit)}</span>}
+                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input type="number" placeholder="예: 3000" value={currentRentalDeposit} onChange={(e) => setCurrentRentalDeposit(e.target.value)} style={{ ...inputStyle, flex: 1, background: "#fff" }} />
+                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>만원</span>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{...labelStyle, marginBottom: 6}}>현재 월세
+                      {currentRentalMonthly && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(currentRentalMonthly)}</span>}
+                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input type="number" placeholder="예: 150" value={currentRentalMonthly} onChange={(e) => setCurrentRentalMonthly(e.target.value)} style={{ ...inputStyle, flex: 1, background: "#fff" }} />
+                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>만원</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{...labelStyle, marginBottom: 6}}>융자금 (선택)
+                      {loanAmount && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(loanAmount)}</span>}
+                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input type="number" placeholder="예: 40000" value={loanAmount} onChange={(e) => setLoanAmount(e.target.value)} style={{ ...inputStyle, flex: 1, background: "#fff" }} />
+                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>만원</span>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{...labelStyle, marginBottom: 6}}>대출 연이율 (선택)</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input type="number" step="0.1" placeholder="예: 4.5" value={loanRate} onChange={(e) => setLoanRate(e.target.value)} style={{ ...inputStyle, flex: 1, background: "#fff" }} />
+                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {deposit && currentRentalMonthly && parseFloat(currentRentalMonthly) > 0 && parseFloat(deposit) > 0 && (
+                  <div style={{ background: "#fff", border: "1px solid #fbbf24", borderRadius: 8, padding: 12, marginTop: 8 }}>
+                    <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#92400e" }}>
+                        📊 단순 수익률: <span style={{ fontSize: 16, color: "#dc2626" }}>{((parseFloat(currentRentalMonthly) * 12 / parseFloat(deposit)) * 100).toFixed(2)}%</span>
+                      </div>
+                      {loanAmount && loanRate && parseFloat(loanAmount) > 0 && parseFloat(loanRate) > 0 && (() => {
+                        const monthlyRent = parseFloat(currentRentalMonthly);
+                        const salePrice = parseFloat(deposit);
+                        const tenantDeposit = parseFloat(currentRentalDeposit || "0");
+                        const loan = parseFloat(loanAmount);
+                        const rate = parseFloat(loanRate);
+                        const monthlyInterest = loan * (rate / 100) / 12;
+                        const netMonthly = monthlyRent - monthlyInterest;
+                        const realInvestment = salePrice - tenantDeposit - loan;
+                        if (realInvestment <= 0) return <span style={{ fontSize: 13, color: "#6b7280" }}>실투자금이 0 이하입니다</span>;
+                        const realYield = (netMonthly * 12 / realInvestment) * 100;
+                        return (
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#92400e" }}>
+                            🏦 실투자 수익률: <span style={{ fontSize: 16, color: "#2563eb" }}>{realYield.toFixed(2)}%</span>
+                            <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 8 }}>(실투자금: {formatKoreanAmount(String(realInvestment))}, 월이자: {formatKoreanAmount(String(Math.round(monthlyInterest)))})</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -2422,6 +2477,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       current_usage: currentUsage || null,
                       current_rental_deposit: currentRentalDeposit ? parseFloat(currentRentalDeposit) : null,
                       current_rental_monthly: currentRentalMonthly ? parseFloat(currentRentalMonthly) : null,
+                      loan_amount: loanAmount ? parseFloat(loanAmount) : null,
+                      loan_rate: loanRate ? parseFloat(loanRate) : null,
                       approval_year: approvalYear ? parseInt(approvalYear) : null,
                       jisan_usage: jisanUsage || undefined,
                       ceiling_height: ceilingHeight || undefined,

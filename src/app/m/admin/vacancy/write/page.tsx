@@ -132,6 +132,8 @@ function MobileVacancyWrite() {
   const [currentUsage, setCurrentUsage] = useState(""); // 현용도
   const [currentRentalDeposit, setCurrentRentalDeposit] = useState(""); // 현재 임대 보증금 (만원)
   const [currentRentalMonthly, setCurrentRentalMonthly] = useState(""); // 현재 임대 월세 (만원)
+  const [loanAmount, setLoanAmount] = useState(""); // 융자금 (만원)
+  const [loanRate, setLoanRate] = useState(""); // 대출 연이율 (%)
 
   // 건물 매매 추가 필드
   const [roadWidth, setRoadWidth] = useState("");
@@ -309,6 +311,8 @@ function MobileVacancyWrite() {
           if (d.metadata.current_usage) setCurrentUsage(d.metadata.current_usage);
           if (d.metadata.current_rental_deposit) setCurrentRentalDeposit(String(d.metadata.current_rental_deposit));
           if (d.metadata.current_rental_monthly) setCurrentRentalMonthly(String(d.metadata.current_rental_monthly));
+          if (d.metadata.loan_amount) setLoanAmount(String(d.metadata.loan_amount));
+          if (d.metadata.loan_rate) setLoanRate(String(d.metadata.loan_rate));
           if (d.metadata.road_width) setRoadWidth(String(d.metadata.road_width));
           if (d.metadata.road_direction) setRoadDirection(d.metadata.road_direction);
           if (d.metadata.ground_floors) setGroundFloors(String(d.metadata.ground_floors));
@@ -729,6 +733,8 @@ function MobileVacancyWrite() {
           current_usage: currentUsage || undefined,
           current_rental_deposit: currentRentalDeposit ? parseFloat(currentRentalDeposit) : undefined,
           current_rental_monthly: currentRentalMonthly ? parseFloat(currentRentalMonthly) : undefined,
+          loan_amount: loanAmount ? parseFloat(loanAmount) : undefined,
+          loan_rate: loanRate ? parseFloat(loanRate) : undefined,
           road_width: roadWidth ? parseFloat(roadWidth) : undefined,
           road_direction: roadDirection || undefined,
           ground_floors: groundFloors ? parseInt(groundFloors) : undefined,
@@ -1450,26 +1456,6 @@ function MobileVacancyWrite() {
                   )}
                 </div>
               </div>
-              {tradeType === "매매" && (
-                <div style={{flex:1}}>
-                  <label style={labelStyle}>현재 임대 수익
-                    {currentRentalDeposit && <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700 }}> 보증금 {formatKorean(currentRentalDeposit)}</span>}
-                    {currentRentalMonthly && <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700 }}> / 월 {formatKorean(currentRentalMonthly)}</span>}
-                  </label>
-                  <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                    <span style={{ color:"#6b7280", fontSize:11, flexShrink:0 }}>보증금</span>
-                    <input type="number" placeholder="3000" value={currentRentalDeposit} onChange={e=>setCurrentRentalDeposit(e.target.value)} style={{...inputStyle, flex:1}} />
-                    <span style={{ color:"#6b7280", fontSize:11, flexShrink:0 }}>/ 월</span>
-                    <input type="number" placeholder="150" value={currentRentalMonthly} onChange={e=>setCurrentRentalMonthly(e.target.value)} style={{...inputStyle, flex:1}} />
-                    <span style={{ color:"#6b7280", fontSize:11, flexShrink:0 }}>만원</span>
-                  </div>
-                  {deposit && currentRentalMonthly && parseFloat(currentRentalMonthly) > 0 && parseFloat(deposit) > 0 && (
-                    <div style={{ marginTop:4, fontSize:11, color:"#cc5a27", fontWeight:700 }}>
-                      💰 연 수익률: {((parseFloat(currentRentalMonthly) * 12 / parseFloat(deposit)) * 100).toFixed(2)}%
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           )}
           {!isCommercial && (
@@ -1593,15 +1579,11 @@ function MobileVacancyWrite() {
           </div>
         )}
 
-        {/* 상세 제원 (선택형) - 지식산업센터 제외 */}
+        {/* 상세 제원 필드를 일반 입력란으로 배치 */}
         {propertyType === "상가·사무실·건물·공장·토지" && subCategory !== "토지" && subCategory !== "지식산업센터" && (
-          <div style={{ background: "#f8fafc", borderRadius: 14, padding: 16, marginBottom: 12, border: "1px solid #e2e8f0" }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
-              <span>🏢 상세 제원 (선택형)</span>
-            </div>
-            
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>건축물 주용도</label>
+          <>
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>건축물 주용도</label>
               <div style={{ display: "flex", gap: 6 }}>
                 {renderSelectOrInput(
                   mainUsage,
@@ -1611,22 +1593,20 @@ function MobileVacancyWrite() {
                 )}
               </div>
             </div>
-            
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>건물 구조</label>
-              <div style={{ display: "flex", gap: 6 }}>
-                {renderSelectOrInput(
-                  buildingStructure,
-                  setBuildingStructure,
-                  ["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조"].map(v => ({ label: v, value: v })),
-                  "직접 입력"
-                )}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+            <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>엘리베이터 갯수</label>
+                <label style={labelStyle}>건물 구조</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {renderSelectOrInput(
+                    buildingStructure,
+                    setBuildingStructure,
+                    ["철근콘크리트구조", "철골구조", "경량철골구조", "일반철골구조", "벽돌구조", "목구조"].map(v => ({ label: v, value: v })),
+                    "직접 입력"
+                  )}
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>엘리베이터</label>
                 <div style={{ display: "flex", gap: 6 }}>
                   {renderSelectOrInput(
                     elevatorCnt,
@@ -1637,19 +1617,90 @@ function MobileVacancyWrite() {
                       { label: "2대", value: "2" },
                       { label: "3대", value: "3" },
                       { label: "4대", value: "4" },
-                      { label: "5대 이상", value: "5" }
+                      { label: "5대+", value: "5" }
                     ],
                     "입력"
                   )}
                 </div>
               </div>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, height: 42, background: isIllegal ? "#fef2f2" : "#fff", border: `1px solid ${isIllegal ? "#ef4444" : "#e2e8f0"}`, borderRadius: 8, padding: "0 12px", cursor: "pointer" }}>
+                <input type="checkbox" checked={isIllegal} onChange={(e) => setIsIllegal(e.target.checked)} style={{ width: 18, height: 18, accentColor: "#ef4444" }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: isIllegal ? "#ef4444" : "#4b5563" }}>⚠️ 위반건축물 여부</span>
+              </label>
+            </div>
+          </>
+        )}
+
+        {/* 💰 수익률 계산기 - 상가/사무실/건물 매매일 때만 */}
+        {tradeType === "매매" && propertyType === "상가·사무실·건물·공장·토지" && ["상가", "사무실", "건물/빌딩", "공장/창고", "상가/업무"].includes(subCategory) && (
+          <div style={{ background: "#fffbeb", border: "1px solid #f59e0b", borderRadius: 14, padding: 16, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#92400e", marginBottom: 12 }}>
+              💰 수익률 계산기
+            </div>
+            <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 46, background: isIllegal ? "#fef2f2" : "#fff", border: `1px solid ${isIllegal ? "#ef4444" : "#e2e8f0"}`, borderRadius: 8, marginTop: 24, cursor: "pointer" }}>
-                  <input type="checkbox" checked={isIllegal} onChange={(e) => setIsIllegal(e.target.checked)} style={{ width: 18, height: 18, accentColor: "#ef4444" }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: isIllegal ? "#ef4444" : "#4b5563" }}>⚠️ 위반건축물</span>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#4b5563", marginBottom: 4, display: "block" }}>임차인 보증금
+                  {currentRentalDeposit && <span style={{ color: "#3b82f6", fontWeight: 700 }}> {formatKorean(currentRentalDeposit)}</span>}
                 </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <input type="number" placeholder="3000" value={currentRentalDeposit} onChange={e=>setCurrentRentalDeposit(e.target.value)} style={{...inputStyle, flex: 1, background: "#fff"}} />
+                  <span style={{ fontSize: 11, color: "#6b7280" }}>만원</span>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#4b5563", marginBottom: 4, display: "block" }}>현재 월세
+                  {currentRentalMonthly && <span style={{ color: "#3b82f6", fontWeight: 700 }}> {formatKorean(currentRentalMonthly)}</span>}
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <input type="number" placeholder="150" value={currentRentalMonthly} onChange={e=>setCurrentRentalMonthly(e.target.value)} style={{...inputStyle, flex: 1, background: "#fff"}} />
+                  <span style={{ fontSize: 11, color: "#6b7280" }}>만원</span>
+                </div>
               </div>
             </div>
+            <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#4b5563", marginBottom: 4, display: "block" }}>융자금 (선택)
+                  {loanAmount && <span style={{ color: "#3b82f6", fontWeight: 700 }}> {formatKorean(loanAmount)}</span>}
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <input type="number" placeholder="40000" value={loanAmount} onChange={e=>setLoanAmount(e.target.value)} style={{...inputStyle, flex: 1, background: "#fff"}} />
+                  <span style={{ fontSize: 11, color: "#6b7280" }}>만원</span>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#4b5563", marginBottom: 4, display: "block" }}>연이율 (선택)</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <input type="number" step="0.1" placeholder="4.5" value={loanRate} onChange={e=>setLoanRate(e.target.value)} style={{...inputStyle, flex: 1, background: "#fff"}} />
+                  <span style={{ fontSize: 11, color: "#6b7280" }}>%</span>
+                </div>
+              </div>
+            </div>
+            {deposit && currentRentalMonthly && parseFloat(currentRentalMonthly) > 0 && parseFloat(deposit) > 0 && (
+              <div style={{ background: "#fff", border: "1px solid #fbbf24", borderRadius: 8, padding: 10, marginTop: 6 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 4 }}>
+                  📊 단순 수익률: <span style={{ fontSize: 15, color: "#dc2626" }}>{((parseFloat(currentRentalMonthly) * 12 / parseFloat(deposit)) * 100).toFixed(2)}%</span>
+                </div>
+                {loanAmount && loanRate && parseFloat(loanAmount) > 0 && parseFloat(loanRate) > 0 && (() => {
+                  const mRent = parseFloat(currentRentalMonthly);
+                  const sp = parseFloat(deposit);
+                  const td = parseFloat(currentRentalDeposit || "0");
+                  const ln = parseFloat(loanAmount);
+                  const rt = parseFloat(loanRate);
+                  const mi = ln * (rt / 100) / 12;
+                  const net = mRent - mi;
+                  const ri = sp - td - ln;
+                  if (ri <= 0) return <span style={{ fontSize: 11, color: "#6b7280" }}>실투자금 0 이하</span>;
+                  return (
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e" }}>
+                      🏦 실투자: <span style={{ fontSize: 15, color: "#2563eb" }}>{(net * 12 / ri * 100).toFixed(2)}%</span>
+                      <span style={{ fontSize: 10, color: "#6b7280", marginLeft: 6 }}>(실투자금 {formatKorean(String(ri))})</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         )}
         </>)}
