@@ -77,14 +77,14 @@ export const getOverviewTemplate = (
       }
       return [
         { label: '소재지', dataKey: 'address' },
-        { label: '용도지역', dataKey: 'zoning' },
-        { label: '대지면적', dataKey: 'landArea' },
-        { label: '연면적', dataKey: 'totalArea' },
-        { label: '건물규모', dataKey: 'buildingScale' },
-        { label: '주용도', dataKey: 'mainPurpose' },
-        { label: '주차대수', dataKey: 'parking' },
-        { label: '승강기', dataKey: 'elevator' },
-        { label: '준공연도', dataKey: 'completionYear' },
+        { label: '공급 / 전용면적', dataKey: 'area' },
+        { label: '건물 규모', dataKey: 'buildingScale' },
+        { label: '준공연도 / 구조', dataKey: 'buildingScaleYearOnly' },
+        { label: '도로 조건', dataKey: 'roadWidth' },
+        { label: '건축물 주용도', dataKey: 'mainPurpose' },
+        { label: '주차 / 승강기', dataKey: 'parkingElevator' },
+        { label: '사용가능일', dataKey: 'moveInDate' },
+        { label: '관리비', dataKey: 'maintenanceFee' },
       ];
 
     case 'shop':
@@ -425,6 +425,13 @@ export const buildOverviewTable = (
       if (park && elev) return `${park} / ${elev}`;
       return park || elev || '';
     })(),
+    buildingScaleYearOnly: (() => {
+      const year = meta.approval_year ? `${meta.approval_year}년 준공` : '';
+      const structure = meta.building_structure || '';
+      if (year && structure) return `${year} / ${structure}`;
+      return year || structure || '';
+    })(),
+    roadWidth: meta.road_width ? `${meta.road_width}m 도로 접함` : '',
     roadWidthDirection: (() => {
       const width = meta.road_width ? `${meta.road_width}m` : '';
       const dir = meta.road_direction ? `${meta.road_direction}` : '';
