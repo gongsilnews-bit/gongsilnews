@@ -1452,7 +1452,10 @@ function MobileVacancyWrite() {
               </div>
               {tradeType === "매매" && (
                 <div style={{flex:1}}>
-                  <label style={labelStyle}>현재 임대 수익</label>
+                  <label style={labelStyle}>현재 임대 수익
+                    {currentRentalDeposit && <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700 }}> 보증금 {formatKorean(currentRentalDeposit)}</span>}
+                    {currentRentalMonthly && <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700 }}> / 월 {formatKorean(currentRentalMonthly)}</span>}
+                  </label>
                   <div style={{ display:"flex", alignItems:"center", gap:4 }}>
                     <span style={{ color:"#6b7280", fontSize:11, flexShrink:0 }}>보증금</span>
                     <input type="number" placeholder="3000" value={currentRentalDeposit} onChange={e=>setCurrentRentalDeposit(e.target.value)} style={{...inputStyle, flex:1}} />
