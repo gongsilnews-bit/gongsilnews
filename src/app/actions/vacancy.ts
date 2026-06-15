@@ -687,30 +687,59 @@ export async function getVacanciesByOwnerId(ownerId: string) {
 }
 
 // ── AI 매물 상세페이지 (Flyer) 저장/삭제 ──
-export async function saveVacancyFlyer(vacancyId: string, flyerState: any) {
+export async function saveVacancyFlyer(vacancyId: string, flyerState: any, type: 'flyer' | 'report' = 'flyer') {
   const supabase = getAdminClient();
   try {
     if (flyerState === null) {
-      const { error: deleteFlyerError } = await supabase
+      const { data: existing } = await supabase
         .from('vacancy_flyers')
-        .delete()
-        .eq('vacancy_id', vacancyId);
-      if (deleteFlyerError) return { success: false, error: deleteFlyerError.message };
-
-      const { data: vac, error: fetchError } = await supabase
-        .from('vacancies')
-        .select('infrastructure')
-        .eq('id', vacancyId)
+        .select('flyer_state')
+        .eq('vacancy_id', vacancyId)
         .maybeSingle();
 
-      if (!fetchError && vac && vac.infrastructure) {
-        const infra = { ...vac.infrastructure };
-        if ('_flyer_settings' in infra) {
-          delete infra._flyer_settings;
-          await supabase
-            .from('vacancies')
-            .update({ infrastructure: infra })
-            .eq('id', vacancyId);
+      if (existing && existing.flyer_state) {
+        let stateObj = { ...existing.flyer_state };
+        if (stateObj.flyer !== undefined || stateObj.report !== undefined) {
+          stateObj[type] = null;
+          if (stateObj.flyer === null && stateObj.report === null) {
+            const { error: deleteFlyerError } = await supabase
+              .from('vacancy_flyers')
+              .delete()
+              .eq('vacancy_id', vacancyId);
+            if (deleteFlyerError) return { success: false, error: deleteFlyerError.message };
+          } else {
+            const { error: updateError } = await supabase
+              .from('vacancy_flyers')
+              .update({ flyer_state: stateObj, updated_at: new Date().toISOString() })
+              .eq('vacancy_id', vacancyId);
+            if (updateError) return { success: false, error: updateError.message };
+          }
+        } else {
+          // Legacy format deletion
+          const { error: deleteFlyerError } = await supabase
+            .from('vacancy_flyers')
+            .delete()
+            .eq('vacancy_id', vacancyId);
+          if (deleteFlyerError) return { success: false, error: deleteFlyerError.message };
+        }
+      }
+
+      if (type === 'flyer') {
+        const { data: vac, error: fetchError } = await supabase
+          .from('vacancies')
+          .select('infrastructure')
+          .eq('id', vacancyId)
+          .maybeSingle();
+
+        if (!fetchError && vac && vac.infrastructure) {
+          const infra = { ...vac.infrastructure };
+          if ('_flyer_settings' in infra) {
+            delete infra._flyer_settings;
+            await supabase
+              .from('vacancies')
+              .update({ infrastructure: infra })
+              .eq('id', vacancyId);
+          }
         }
       }
 
@@ -719,20 +748,37 @@ export async function saveVacancyFlyer(vacancyId: string, flyerState: any) {
 
     const { data: existing } = await supabase
       .from('vacancy_flyers')
-      .select('id')
+      .select('flyer_state')
       .eq('vacancy_id', vacancyId)
       .maybeSingle();
 
+    let finalState: any = {};
     if (existing) {
+      let existingState = existing.flyer_state || {};
+      if ('flyer' in existingState || 'report' in existingState) {
+        finalState = { ...existingState };
+      } else {
+        // Convert legacy single flyer_state to composite
+        finalState = {
+          flyer: existingState,
+          report: null
+        };
+      }
+      finalState[type] = flyerState;
+
       const { error } = await supabase
         .from('vacancy_flyers')
-        .update({ flyer_state: flyerState, updated_at: new Date().toISOString() })
+        .update({ flyer_state: finalState, updated_at: new Date().toISOString() })
         .eq('vacancy_id', vacancyId);
       if (error) return { success: false, error: error.message };
     } else {
+      finalState = {
+        flyer: type === 'flyer' ? flyerState : null,
+        report: type === 'report' ? flyerState : null
+      };
       const { error } = await supabase
         .from('vacancy_flyers')
-        .insert({ vacancy_id: vacancyId, flyer_state: flyerState });
+        .insert({ vacancy_id: vacancyId, flyer_state: finalState });
       if (error) return { success: false, error: error.message };
     }
 
@@ -741,6 +787,7 @@ export async function saveVacancyFlyer(vacancyId: string, flyerState: any) {
     return { success: false, error: error.message };
   }
 }
+
 
 // ── AI 전단지 목록 조회 (고객관리 매칭용) ──
 export async function getVacancyFlyers() {
@@ -756,7 +803,16 @@ export async function getVacancyFlyers() {
     // 실제 등록된 전단지 매핑
     const mapped = data?.map(f => {
       const vacancies = f.vacancies as any;
-      const title = f.flyer_state?.title || vacancies?.building_name || "이름 없는 전단지";
+      const state = f.flyer_state;
+      let flyerStateObj = state;
+      if (state && typeof state === 'object') {
+        if ('flyer' in state) {
+          flyerStateObj = state.flyer;
+        } else if ('report' in state) {
+          flyerStateObj = state.report;
+        }
+      }
+      const title = flyerStateObj?.title || vacancies?.building_name || "이름 없는 전단지";
       const deposit = vacancies?.deposit || 0;
       const monthly_rent = vacancies?.monthly_rent || 0;
       const trade_type = vacancies?.trade_type || "";
@@ -787,4 +843,5 @@ export async function getVacancyFlyers() {
     return { success: false, error: error.message };
   }
 }
+
 

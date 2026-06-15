@@ -581,7 +581,15 @@ function App() {
         else if (buildingLower.includes("아크로") || buildingLower.includes("자이")) autoTheme = COLORS[4]; // Orange
 
         // 1. Supabase 클라우드 동기화 데이터 우선 로드
-        const supabaseFlyerSettings = json.flyer?.flyer_state || v.infrastructure?._flyer_settings;
+        let supabaseFlyerSettings = json.flyer?.flyer_state;
+        if (supabaseFlyerSettings) {
+          if ('flyer' in supabaseFlyerSettings || 'report' in supabaseFlyerSettings) {
+            supabaseFlyerSettings = supabaseFlyerSettings.flyer;
+          }
+        }
+        if (!supabaseFlyerSettings) {
+          supabaseFlyerSettings = v.infrastructure?._flyer_settings;
+        }
         if (supabaseFlyerSettings) {
           let loadedState = { ...supabaseFlyerSettings };
           if (!loadedState.info) {
@@ -728,7 +736,7 @@ function App() {
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent } })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "flyer" })
       });
       const json = await res.json();
       if (json.success) {
@@ -851,7 +859,7 @@ function App() {
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent } })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "flyer" })
       });
       const json = await res.json();
       if (json.success) {
@@ -886,7 +894,7 @@ function App() {
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent } })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "flyer" })
       });
       const json = await res.json();
       if (!json.success) {
@@ -944,7 +952,7 @@ function App() {
           await fetch("/api/vacancy/save-flyer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ vacancyId, flyerState: null }) // null 전달하여 삭제
+            body: JSON.stringify({ vacancyId, flyerState: null, type: "flyer" }) // null 전달하여 삭제
           });
         }
       } catch (e) {

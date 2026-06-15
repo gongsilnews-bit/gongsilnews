@@ -25,7 +25,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   
   const [dbVacancies, setDbVacancies] = useState<any[]>(initialData || []);
   const [editingVacancy, setEditingVacancy] = useState<any>(null);
-  const [flyerMap, setFlyerMap] = useState<Record<string, boolean>>({});
+  const [flyerMap, setFlyerMap] = useState<Record<string, { flyer: boolean; report: boolean }>>({});
 
   useEffect(() => {
     async function checkFlyers() {
@@ -35,13 +35,16 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       
       const { data: flyers } = await supabase
         .from("vacancy_flyers")
-        .select("vacancy_id")
+        .select("vacancy_id, flyer_state")
         .in("vacancy_id", ids);
         
       if (flyers) {
-        const map: Record<string, boolean> = {};
+        const map: Record<string, { flyer: boolean; report: boolean }> = {};
         flyers.forEach((f: any) => {
-          map[f.vacancy_id] = true;
+          const state = f.flyer_state;
+          const hasFlyer = state ? (('flyer' in state) ? !!state.flyer : true) : false;
+          const hasReport = state ? (('report' in state) ? !!state.report : false) : false;
+          map[f.vacancy_id] = { flyer: hasFlyer, report: hasReport };
         });
         setFlyerMap(map);
       }
@@ -513,7 +516,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                           <>
                             <div style={{ display: "flex", gap: 6, justifyContent: "center", width: "100%" }}>
                               {(role === "admin" || role === "realtor") && (() => {
-                                const hasFlyer = flyerMap[row.id];
+                                const status = flyerMap[row.id] || { flyer: false, report: false };
+                                const hasFlyer = status.flyer;
+                                const hasReport = status.report;
                                 const showIMReport = true;
 
                                 return (
@@ -524,9 +529,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                         style={{ 
                                           height: 30, 
                                           padding: "0 10px", 
-                                          background: hasFlyer ? (darkMode ? "#1e3a8a" : "#eff6ff") : (darkMode ? "#2a2d35" : "#f3f4f6"), 
-                                          color: hasFlyer ? (darkMode ? "#93c5fd" : "#1d4ed8") : (darkMode ? "#7c8ba1" : "#8a94a6"), 
-                                          border: hasFlyer ? `1px solid ${darkMode ? "#1e40af" : "#bfdbfe"}` : `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, 
+                                          background: hasReport ? (darkMode ? "#1e3a8a" : "#eff6ff") : (darkMode ? "#2a2d35" : "#f3f4f6"), 
+                                          color: hasReport ? (darkMode ? "#93c5fd" : "#1d4ed8") : (darkMode ? "#7c8ba1" : "#8a94a6"), 
+                                          border: hasReport ? `1px solid ${darkMode ? "#1e40af" : "#bfdbfe"}` : `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, 
                                           borderRadius: 4, 
                                           fontSize: 12, 
                                           fontWeight: 700, 
@@ -539,16 +544,16 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                           transition: "all 0.15s"
                                         }}
                                         onMouseEnter={(e) => { 
-                                          e.currentTarget.style.background = hasFlyer 
+                                          e.currentTarget.style.background = hasReport 
                                             ? (darkMode ? "#1e40af" : "#dbeafe") 
                                             : (darkMode ? "#343842" : "#e5e7eb"); 
                                         }}
                                         onMouseLeave={(e) => { 
-                                          e.currentTarget.style.background = hasFlyer 
+                                          e.currentTarget.style.background = hasReport 
                                             ? (darkMode ? "#1e3a8a" : "#eff6ff") 
                                             : (darkMode ? "#2a2d35" : "#f3f4f6"); 
                                         }}
-                                        title={hasFlyer ? "AI 물건보고서 완성됨 (클릭하여 편집/수정)" : "AI 물건보고서 미작성 (클릭하여 제작)"}
+                                        title={hasReport ? "AI 물건보고서 완성됨 (클릭하여 편집/수정)" : "AI 물건보고서 미작성 (클릭하여 제작)"}
                                       >
                                         AI물건보고서
                                       </button>
@@ -591,7 +596,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                       }}
                                       title={hasFlyer ? "AI 온라인전단지 완성됨 (클릭하여 편집/수정)" : "AI 온라인전단지 미작성 (클릭하여 제작)"}
                                     >
-                                      {hasFlyer ? "AI온라인전단지" : "AI온라인전단지"}
+                                      AI온라인전단지
                                     </button>
                                   </div>
                                 );

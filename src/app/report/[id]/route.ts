@@ -18,7 +18,7 @@ export async function GET(
   try {
     const { id } = await params;
     if (!id) {
-      return new NextResponse("Flyer ID is missing.", { status: 400 });
+      return new NextResponse("Report ID is missing.", { status: 400 });
     }
 
     // Strip .html suffix if present in the URL
@@ -33,47 +33,45 @@ export async function GET(
 
     if (error) {
       console.error("Supabase load error:", error);
-      return new NextResponse("Error loading flyer from database.", { status: 500 });
+      return new NextResponse("Error loading report from database.", { status: 500 });
     }
 
     if (!flyer || !flyer.flyer_state) {
-      return new NextResponse("Flyer not found or not initialized yet.", { status: 404 });
+      return new NextResponse("Report not found or not initialized yet.", { status: 404 });
     }
 
     const state = flyer.flyer_state;
-    let flyerStateObj = state;
-    if (state && typeof state === 'object' && 'flyer' in state) {
-      flyerStateObj = state.flyer;
+    let reportStateObj = null;
+    if (state && typeof state === 'object' && 'report' in state) {
+      reportStateObj = state.report;
     }
 
-    if (!flyerStateObj) {
-      return new NextResponse("Flyer not found or not initialized yet.", { status: 404 });
+    if (!reportStateObj) {
+      return new NextResponse("Report not found or not initialized yet.", { status: 404 });
     }
 
-    const htmlContent = flyerStateObj.htmlContent;
+    const htmlContent = reportStateObj.htmlContent;
     if (!htmlContent) {
-      // Fallback: If flyer exists but htmlContent is missing (older saved flyers), 
-      // let's show a friendly message to re-save it in the AI Editor.
       return new NextResponse(
         `<!DOCTYPE html>
         <html>
         <head>
-          <title>전단지 업그레이드 안내 | 공실뉴스</title>
+          <title>보고서 최적화 안내 | 공실뉴스</title>
           <meta charset="utf-8">
           <style>
             body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f8fafc; margin: 0; color: #334155; }
             .card { max-width: 480px; padding: 2.5rem; background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; text-align: center; }
             h1 { font-size: 1.5rem; color: #0f172a; margin-top: 0; }
             p { font-size: 0.95rem; line-height: 1.6; color: #64748b; }
-            .btn { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #00788c; color: white; text-decoration: none; border-radius: 0.5rem; font-weight: bold; }
+            .btn { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #1e3a8a; color: white; text-decoration: none; border-radius: 0.5rem; font-weight: bold; }
           </style>
         </head>
         <body>
           <div class="card">
-            <h1>📄 전단지 최적화 업데이트</h1>
-            <p>공실뉴스의 더 완벽하고 깨짐 없는 프리미엄 전단지 엔진 업그레이드로 인해, 기존에 생성되었던 전단지 파일의 재동기화가 필요합니다.</p>
-            <p><strong>[EasyFlyer AI 제작기]</strong> 화면으로 돌아가 <strong>[저장하기]</strong> 버튼을 다시 한 번 눌러주시면 무결점 HTML 전단지로 즉시 자동 재생성됩니다.</p>
-            <a href="/marketing/ai-detail?vacancy_id=${cleanId}" class="btn">에디터로 이동하여 업데이트하기</a>
+            <h1>📄 물건보고서 최적화 업데이트</h1>
+            <p>공실뉴스의 더 완벽하고 깨짐 없는 프리미엄 물건보고서 엔진 업그레이드로 인해, 기존에 생성되었던 보고서 파일의 재동기화가 필요합니다.</p>
+            <p><strong>[물건보고서 AI 제작기]</strong> 화면으로 돌아가 <strong>[저장하기]</strong> 버튼을 다시 한 번 눌러주시면 무결점 HTML 보고서로 즉시 자동 재생성됩니다.</p>
+            <a href="/marketing/report?vacancy_id=${cleanId}" class="btn">에디터로 이동하여 업데이트하기</a>
           </div>
         </body>
         </html>`,
@@ -94,13 +92,9 @@ export async function GET(
 
     let finalHtml = htmlContent;
     if (vacancy?.status === "STOPPED") {
-      let flyerState = state;
-      if (state && typeof state === 'object' && 'flyer' in state) {
-        flyerState = state.flyer;
-      }
-      const info = flyerState?.info || {};
-      const colorTheme = flyerState?.colorTheme || { primary: '#00788c', secondary: '#ff9800', dark: '#1e293b' };
-      const primaryColor = colorTheme.primary || '#00788c';
+      const info = reportStateObj.info || {};
+      const colorTheme = reportStateObj.colorTheme || { primary: '#1e3a8a', secondary: '#ff9800', dark: '#1e293b' };
+      const primaryColor = colorTheme.primary || '#1e3a8a';
       const agentMobile = info.agentMobile || info.agentPhone || "010-8831-9450";
       const agentMobileClean = agentMobile.replace(/[^0-9]/g, '');
       const agentPhone = info.agentPhone || info.agentMobile || "02-1234-5678";
@@ -154,7 +148,7 @@ export async function GET(
           <!-- Central Announcement Box -->
           <div style="display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 650px; z-index: 100000; box-sizing: border-box;">
             <div style="padding: 0.875rem 2rem; background-color: \${primaryColor}; color: white; font-weight: 800; font-size: 1.5rem; letter-spacing: 0.025em; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 0.75rem; white-space: nowrap;">
-              본 물건은 계약완료(종료) 물건입니다.
+              본 물건보고서는 계약완료(종료) 물건입니다.
             </div>
             <div style="font-weight: 800; font-size: 1.125rem; margin-bottom: 1.5rem; letter-spacing: 0.025em; color: \${primaryColor};">
               궁금한 내용은 아래로 문의주세요
@@ -181,19 +175,14 @@ export async function GET(
  
               <!-- Right: 문의하기 -->
               <div style="flex: 1; padding-left: 1.5rem; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; gap: 0.375rem;">
-                <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: \${primaryColor};">문의하기</div>
+                <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: \${primaryColor};">문서 문의하기</div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
                   <span style="font-size: 17px; font-weight: 900; color: #0f172a; letter-spacing: -0.025em;">
                     \${agentMobile}
                   </span>
                   <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <!-- Phone Call Button (Larger: 3rem / 48px) -->
                     <a href="tel:\${agentMobileClean}" style="width: 3rem; height: 3rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; color: white; background-color: \${primaryColor}; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer;" title="전화하기">
                       <svg style="width: 1.25rem; height: 1.25rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                    </a>
-                    <!-- SMS Button (Standard: 2.5rem / 40px) -->
-                    <a href="sms:\${agentMobileClean}" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; color: white; background-color: \${primaryColor}; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer;" title="문자하기">
-                      <svg style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     </a>
                   </div>
                 </div>
@@ -231,7 +220,7 @@ export async function GET(
       },
     });
   } catch (err: any) {
-    console.error("Flyer Route Handler Exception:", err);
+    console.error("Report Route Handler Exception:", err);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

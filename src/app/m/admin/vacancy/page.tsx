@@ -19,7 +19,7 @@ function MobileVacancyAdmin() {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [flyerMap, setFlyerMap] = useState<Record<string, boolean>>({});
+  const [flyerMap, setFlyerMap] = useState<Record<string, { flyer: boolean; report: boolean }>>({});
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -89,13 +89,16 @@ function MobileVacancyAdmin() {
         const ids = list.map((v: any) => v.id);
         const { data: flyers } = await supabase
           .from("vacancy_flyers")
-          .select("vacancy_id")
+          .select("vacancy_id, flyer_state")
           .in("vacancy_id", ids);
           
         if (flyers) {
-          const map: Record<string, boolean> = {};
+          const map: Record<string, { flyer: boolean; report: boolean }> = {};
           flyers.forEach((f: any) => {
-            map[f.vacancy_id] = true;
+            const state = f.flyer_state;
+            const hasFlyer = state ? (('flyer' in state) ? !!state.flyer : true) : false;
+            const hasReport = state ? (('report' in state) ? !!state.report : false) : false;
+            map[f.vacancy_id] = { flyer: hasFlyer, report: hasReport };
           });
           setFlyerMap(map);
         }
@@ -343,7 +346,8 @@ function MobileVacancyAdmin() {
 
                 {/* AI 온라인 전단지 전용 공유 / 비활성 버튼 */}
                 {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === '최고관리자' || userRole === '부동산' || userRole === 'REALTOR') && (() => {
-                  const hasFlyer = flyerMap[row.id];
+                  const status = flyerMap[row.id] || { flyer: false, report: false };
+                  const hasFlyer = status.flyer;
                   if (hasFlyer) {
                     return (
                       <button 

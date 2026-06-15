@@ -600,7 +600,7 @@ function App() {
   }, [handleUndo, handleRedo]);
 
   const loadVacancyDataDirectly = async (vacancyId: string) => {
-    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/flyer/${vacancyId}` : "https://gongsilnews.com";
+    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/report/${vacancyId}.html` : "https://gongsilnews.com";
     setLoadingData(true);
     try {
       const res = await fetch(`/api/vacancy/detail?id=${vacancyId}`);
@@ -614,7 +614,15 @@ function App() {
         const v = json.data;
 
         // 1. Supabase 클라우드 동기화 데이터 우선 로드
-        const supabaseFlyerSettings = json.flyer?.flyer_state || v.infrastructure?._flyer_settings;
+        let supabaseFlyerSettings = json.flyer?.flyer_state;
+        if (supabaseFlyerSettings) {
+          if ('flyer' in supabaseFlyerSettings || 'report' in supabaseFlyerSettings) {
+            supabaseFlyerSettings = supabaseFlyerSettings.report;
+          } else {
+            // Ignore legacy flyer settings for reports
+            supabaseFlyerSettings = null;
+          }
+        }
         if (supabaseFlyerSettings) {
           const merged = { ...mergeStateWithDefaults(supabaseFlyerSettings), isAdClosed: v.status === 'STOPPED' };
           // 항상 최신 vacancy 데이터로 overviewTable 갱신 (공실등록 수정 시 즉시 반영)
@@ -1007,7 +1015,7 @@ function App() {
       await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent } })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "report" })
       });
     } catch (err) {
       console.warn("Silent cloud save failed:", err);
@@ -1024,7 +1032,7 @@ function App() {
     const vacancyId = params.get("vacancy_id");
     if (!vacancyId) return;
 
-    const shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
+    const shareUrl = `${window.location.origin}/report/${vacancyId}.html`;
     
     // First, save the current flyer state before sharing
     await handleSaveToStorageQuietly();
@@ -1055,7 +1063,7 @@ function App() {
     // Save first
     await handleSaveToStorageQuietly();
 
-    const shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
+    const shareUrl = `${window.location.origin}/report/${vacancyId}.html`;
     try {
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(shareUrl);
@@ -1104,7 +1112,7 @@ function App() {
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent } })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "report" })
       });
       const json = await res.json();
       if (json.success) {
@@ -1138,7 +1146,7 @@ function App() {
       const res = await fetch("/api/vacancy/save-flyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent } })
+        body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "report" })
       });
       const json = await res.json();
       if (!json.success) {
@@ -1151,7 +1159,7 @@ function App() {
     }
 
     // 2. 공유 고유 URL 주소 빌드 (html 확장자 유지)
-    const shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
+    const shareUrl = `${window.location.origin}/report/${vacancyId}.html`;
     
     // 3. 브라우저 클립보드 복사
     try {
@@ -1195,7 +1203,7 @@ function App() {
           await fetch("/api/vacancy/save-flyer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ vacancyId, flyerState: null }) // null 전달하여 삭제
+            body: JSON.stringify({ vacancyId, flyerState: null, type: "report" }) // null 전달하여 삭제
           });
         }
       } catch (e) {

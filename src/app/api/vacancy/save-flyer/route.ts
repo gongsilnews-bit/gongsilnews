@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { vacancyId, flyerState } = body;
+    const { vacancyId, flyerState, type = "flyer" } = body;
 
     if (!vacancyId) {
       return NextResponse.json({ success: false, error: "Vacancy ID is required." }, { status: 400 });
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Save directly using the server action to the vacancy_flyers table
-    const saveRes = await saveVacancyFlyer(vacancyId, flyerState);
+    const saveRes = await saveVacancyFlyer(vacancyId, flyerState, type);
     if (!saveRes.success) {
       return NextResponse.json({ success: false, error: saveRes.error }, { status: 500 });
     }
