@@ -62,6 +62,19 @@ export const getOverviewTemplate = (
       ];
 
     case 'building':
+      if (isSale) {
+        return [
+          { label: '소재지', dataKey: 'address' },
+          { label: '용도지역', dataKey: 'zoning' },
+          { label: '대지 / 연면적', dataKey: 'landTotalArea' },
+          { label: '건폐율 / 용적률', dataKey: 'coverageFar' },
+          { label: '건물 규모', dataKey: 'buildingScaleYear' },
+          { label: '도로 조건 / 구조', dataKey: 'roadStructure' },
+          { label: '건축물용도 / 현용도', dataKey: 'mainUsageCurrent' },
+          { label: '주차 / 승강기', dataKey: 'parkingElevator' },
+          { label: '임대수익(수익률)', dataKey: 'rentalYield' },
+        ];
+      }
       return [
         { label: '소재지', dataKey: 'address' },
         { label: '용도지역', dataKey: 'zoning' },
@@ -377,7 +390,7 @@ export const buildOverviewTable = (
     landTotalArea: (() => {
       const land = formatLandArea(meta);
       const total = formatTotalArea(vacancy);
-      if (land && total) return `대지: ${land} / 연면적: ${total}`;
+      if (land && total) return `대지 ${land} / 연면적 ${total}`;
       return land || total || '';
     })(),
     coverageFar: (() => {
@@ -387,6 +400,30 @@ export const buildOverviewTable = (
       if (cov) return `건폐율 ${cov}%`;
       if (far) return `용적률 ${far}%`;
       return '';
+    })(),
+    buildingScaleYear: (() => {
+      const scale = formatBuildingScale(meta, vacancy);
+      const year = meta.approval_year ? `${meta.approval_year}년 준공` : '';
+      if (scale && year) return `${scale} (${year})`;
+      return scale || year || '';
+    })(),
+    roadStructure: (() => {
+      const width = meta.road_width ? `${meta.road_width}m 도로 접함` : '';
+      const structure = meta.building_structure || '';
+      if (width && structure) return `${width} / ${structure}`;
+      return width || structure || '';
+    })(),
+    mainUsageCurrent: (() => {
+      const main = meta.main_usage || meta.main_purpose || '';
+      const cur = meta.current_usage || '';
+      if (main && cur) return `${main} / ${cur}`;
+      return main || cur || '';
+    })(),
+    parkingElevator: (() => {
+      const park = vacancy.parking && vacancy.parking !== '없음' ? `주차 ${vacancy.parking}` : '';
+      const elev = formatElevator(meta);
+      if (park && elev) return `${park} / ${elev}`;
+      return park || elev || '';
     })(),
     roadWidthDirection: (() => {
       const width = meta.road_width ? `${meta.road_width}m` : '';
