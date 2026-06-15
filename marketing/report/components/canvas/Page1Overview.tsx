@@ -53,9 +53,9 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
                                     ))}
                                 </>);
                             }
-                            const cat = detectPropertyCategory(info.propertyCategory);
+                            const cat = detectPropertyCategory(info.subCategory, info.propertyCategory);
                             const isSale = !info.transactionType || info.transactionType === '매매';
-                            const template = getOverviewTemplate(cat, isSale);
+                            const template = getOverviewTemplate(cat, isSale, info.subCategory);
                             const tblObj = info.overviewTable as any;
                             const rows = template.map((f: any) => ({
                                 k: f.label,

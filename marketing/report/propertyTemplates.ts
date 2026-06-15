@@ -118,6 +118,23 @@ export const getOverviewTemplate = (
       ];
 
     case 'house': {
+      // 빌라/연립 매매인 경우 공급/전용면적 아래에 대지면적/용도 추가, 관리비 삭제
+      const isVillaSale = isSale && ["빌라/연립", "빌라"].includes(subCategory || '');
+      if (isVillaSale) {
+        return [
+          { label: '소재지', dataKey: 'address' },
+          { label: '건물명', dataKey: 'buildingName' },
+          { label: '공급/전용면적', dataKey: 'area' },
+          { label: '대지면적', dataKey: 'landArea' },
+          { label: '용도', dataKey: 'zoning' },
+          { label: '해당층/총층', dataKey: 'floor' },
+          { label: '방/욕실수', dataKey: 'roomCount' },
+          { label: '방향', dataKey: 'direction' },
+          { label: '주차가능 여부', dataKey: 'parking' },
+          { label: '입주가능일', dataKey: 'moveInDate' },
+        ];
+      }
+
       // 단독/다가구, 전원주택, 상가주택 매매일 경우 건물형 필드 (대지면적, 연면적, 건물규모 등)
       const isStandaloneSale = isSale && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory || '');
       if (isStandaloneSale) {

@@ -311,22 +311,20 @@ const uploadImageToServer = async (file: File | Blob, vacancyId: string): Promis
   }
 };
 
-const convertOverviewTableToArray = (tbl: any, category?: string, transactionType?: string): { label: string; value: string }[] => {
+const convertOverviewTableToArray = (tbl: any, category?: string, transactionType?: string, subCategory?: string): { label: string; value: string }[] => {
   if (Array.isArray(tbl)) return tbl;
+  const sub = subCategory || category || "";
+  const detected = detectPropertyCategory(sub, category);
+  const isSale = !transactionType || transactionType === '매매';
+  const template = getOverviewTemplate(detected, isSale, sub);
   if (tbl && typeof tbl === 'object') {
     // 카테고리 기반으로 동적 템플릿 적용 (물건 유형에 맞는 필드명 사용)
-    const detected = detectPropertyCategory(category);
-    const isSale = !transactionType || transactionType === '매매';
-    const template = getOverviewTemplate(detected, isSale);
     return template.map((f: OverviewField) => ({
       label: f.label,
       value: (f.dataKey ? (tbl[f.dataKey] || '') : '') || '',
     }));
   }
   // 카테고리가 주어지면 해당 템플릿의 필드명 사용
-  const detected = detectPropertyCategory(category);
-  const isSale = !transactionType || transactionType === '매매';
-  const template = getOverviewTemplate(detected, isSale);
   return template.map((f: OverviewField) => ({ label: f.label, value: '' }));
 };
 
@@ -361,7 +359,8 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
       overviewTable: convertOverviewTableToArray(
         loaded?.info?.overviewTable || loaded?.info?.overviewTableObj,
         loadedInfo.propertyCategory || loadedInfo.sub_category || loadedInfo.property_type,
-        loadedInfo.transactionType
+        loadedInfo.transactionType,
+        loadedInfo.subCategory || loadedInfo.sub_category
       ),
       floorStatus: loaded?.info?.floorStatus || INITIAL_INFO.floorStatus,
       highlights: loaded?.info?.highlights || INITIAL_INFO.highlights,
