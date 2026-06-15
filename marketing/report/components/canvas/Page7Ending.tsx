@@ -51,7 +51,7 @@ const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = fal
             <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
           </span>
         </div>
-        <div className={`text-[11px] font-extrabold ${dark ? 'text-white/60' : 'text-gray-500'} tracking-wider`}>
+        <div className={`text-[13px] font-extrabold ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} tracking-wider`}>
           <EditableText value={info.agentName || "미래에셋공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
         </div>
       </div>
@@ -72,8 +72,8 @@ const PhoneBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyI
     {stacked && (
        <div className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest mb-1 flex items-center gap-2`}>
          <span>문의하기</span>
-         <span className={`text-[10px] ${dark ? 'text-white/40' : 'text-gray-400'} font-bold`}>
-           (담당자: <EditableText value={info.agencyRepresentative || info.agentRepresentative || "김상태"} onChange={(v) => hc('agencyRepresentative', v)} className="inline-block" />)
+         <span className={`text-[12px] ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} font-bold`}>
+           (담당자: <EditableText value={info.agentRepresentative || info.agencyRepresentative || "김정민"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />)
          </span>
        </div>
     )}
@@ -82,8 +82,8 @@ const PhoneBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyI
         {!stacked && (
           <div className="flex flex-col mr-3 shrink-0">
             <span className={`text-[13px] ${dark ? 'text-white/50' : 'text-[var(--theme-primary)]'} font-extrabold tracking-widest whitespace-nowrap`}>문의하기</span>
-            <span className={`text-[10px] ${dark ? 'text-white/40' : 'text-gray-400'} font-bold whitespace-nowrap mt-0.5`}>
-              담당자: <EditableText value={info.agencyRepresentative || info.agentRepresentative || "김상태"} onChange={(v) => hc('agencyRepresentative', v)} className="inline-block" />
+            <span className={`text-[13px] ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} font-extrabold whitespace-nowrap mt-0.5`}>
+              담당자: <EditableText value={info.agentRepresentative || info.agencyRepresentative || "김정민"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
             </span>
           </div>
         )}
