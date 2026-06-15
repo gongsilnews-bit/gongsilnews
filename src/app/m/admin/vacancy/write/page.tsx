@@ -733,7 +733,7 @@ function MobileVacancyWrite() {
           building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : undefined,
           floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : undefined,
           current_usage: currentUsage || undefined,
-          premium_fee: premiumFee ? parseFloat(premiumFee) : undefined,
+          premium_fee: (tradeType !== "매매" && premiumFee) ? parseFloat(premiumFee) : undefined,
           current_rental_deposit: currentRentalDeposit ? parseFloat(currentRentalDeposit) : undefined,
           current_rental_monthly: currentRentalMonthly ? parseFloat(currentRentalMonthly) : undefined,
           loan_amount: loanAmount ? parseFloat(loanAmount) : undefined,
@@ -1459,15 +1459,17 @@ function MobileVacancyWrite() {
                   )}
                 </div>
               </div>
-              <div style={{flex:1}}>
-                <label style={labelStyle}>권리금
-                  {premiumFee && <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700 }}> {formatKoreanAmount(premiumFee)}</span>}
-                </label>
-                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <input type="number" placeholder="예: 3000" value={premiumFee} onChange={(e) => setPremiumFee(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-                  <span style={{ color: "#6b7280", fontSize: 11, flexShrink: 0 }}>만원</span>
+              {tradeType !== "매매" && (
+                <div style={{flex:1}}>
+                  <label style={labelStyle}>권리금
+                    {premiumFee && <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700 }}> {formatKoreanAmount(premiumFee)}</span>}
+                  </label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <input type="number" placeholder="예: 3000" value={premiumFee} onChange={(e) => setPremiumFee(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                    <span style={{ color: "#6b7280", fontSize: 11, flexShrink: 0 }}>만원</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
           {!isCommercial && (

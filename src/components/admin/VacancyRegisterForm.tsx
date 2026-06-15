@@ -1789,15 +1789,17 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     )}
                   </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>권리금
-                    {premiumFee && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(premiumFee)}</span>}
-                  </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <input type="number" placeholder="예: 3000" value={premiumFee} onChange={(e) => setPremiumFee(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-                    <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>만원</span>
+                {tradeType !== "매매" && (
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>권리금
+                      {premiumFee && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}> {formatKoreanAmount(premiumFee)}</span>}
+                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input type="number" placeholder="예: 3000" value={premiumFee} onChange={(e) => setPremiumFee(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                      <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>만원</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -2485,7 +2487,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : null,
                       floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : null,
                       current_usage: currentUsage || null,
-                      premium_fee: premiumFee ? parseFloat(premiumFee) : null,
+                      premium_fee: (tradeType !== "매매" && premiumFee) ? parseFloat(premiumFee) : null,
                       current_rental_deposit: currentRentalDeposit ? parseFloat(currentRentalDeposit) : null,
                       current_rental_monthly: currentRentalMonthly ? parseFloat(currentRentalMonthly) : null,
                       loan_amount: loanAmount ? parseFloat(loanAmount) : null,
