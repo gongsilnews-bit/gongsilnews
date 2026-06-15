@@ -177,6 +177,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   // 건물 매매 추가 필드
   const [roadWidth, setRoadWidth] = useState("");
+  const [roadDirection, setRoadDirection] = useState(""); // 도로방향
   const [groundFloors, setGroundFloors] = useState("");
   const [undergroundFloors, setUndergroundFloors] = useState("");
   const [buildingCoverage, setBuildingCoverage] = useState(""); // 건폐율
@@ -347,6 +348,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.metadata?.building_coverage) setBuildingCoverage(String(editData.metadata.building_coverage));
     if (editData.metadata?.floor_area_ratio) setFloorAreaRatio(String(editData.metadata.floor_area_ratio));
     if (editData.metadata?.current_usage) setCurrentUsage(editData.metadata.current_usage);
+    if (editData.metadata?.road_width) setRoadWidth(String(editData.metadata.road_width));
+    if (editData.metadata?.road_direction) setRoadDirection(editData.metadata.road_direction);
+    if (editData.metadata?.ground_floors) setGroundFloors(String(editData.metadata.ground_floors));
+    if (editData.metadata?.underground_floors) setUndergroundFloors(String(editData.metadata.underground_floors));
 
     if (editData.detail_addr) setDetailAddr(editData.detail_addr);
     if (editData.building_name) setBuildingName(editData.building_name);
@@ -467,6 +472,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.metadata?.building_structure) setBuildingStructure(editData.metadata.building_structure);
     if (editData.metadata?.zoning) setZoning(editData.metadata.zoning);
     if (editData.metadata?.land_purpose) setLandPurpose(editData.metadata.land_purpose);
+    if (editData.metadata?.building_coverage) setBuildingCoverage(String(editData.metadata.building_coverage));
+    if (editData.metadata?.floor_area_ratio) setFloorAreaRatio(String(editData.metadata.floor_area_ratio));
+    if (editData.metadata?.current_usage) setCurrentUsage(editData.metadata.current_usage);
+    if (editData.metadata?.road_width) setRoadWidth(String(editData.metadata.road_width));
+    if (editData.metadata?.road_direction) setRoadDirection(editData.metadata.road_direction);
+    if (editData.metadata?.ground_floors) setGroundFloors(String(editData.metadata.ground_floors));
+    if (editData.metadata?.underground_floors) setUndergroundFloors(String(editData.metadata.underground_floors));
 
     if (editData.detail_addr) setDetailAddr(editData.detail_addr);
     if (editData.building_name) setBuildingName(editData.building_name);
@@ -1620,6 +1632,19 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>%</span>
                   </div>
                 </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>용도지역</label>
+                  <select
+                    value={zoning}
+                    onChange={(e) => setZoning(e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">선택</option>
+                    {["1종전용주거", "2종전용주거", "1종일반주거", "2종일반주거", "3종일반주거", "준주거", "중심상업", "일반상업", "근린상업", "유통상업", "보전녹지", "생산녹지", "자연녹지", "보전관리", "생산관리", "계획관리", "농림지역", "자연환경보전"].map(v => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
 
@@ -1651,7 +1676,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     </div>
                   </div>
                   <div style={{ flex: 1 }}>
-                    {propertyType === "상가·사무실·건물·공장·토지" && (
+                    {propertyType === "상가·사무실·건물·공장·토지" ? (
                       <>
                         <label style={labelStyle}>준공연도</label>
                         <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
@@ -1662,6 +1687,18 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                           <option value="1979">1980년 이전</option>
                         </select>
                       </>
+                    ) : (
+                      propertyType === "빌라·주택" && (
+                        <>
+                          <label style={labelStyle}>도로 방향</label>
+                          <select value={roadDirection} onChange={(e) => setRoadDirection(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                            <option value="">선택</option>
+                            {["남","북","동","서","남동","남서","북동","북서","남측","북측","동측","서측","남동측","남서측","북동측","북서측","남향","북향","동향","서향"].map(d => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+                        </>
+                      )
                     )}
                   </div>
                 </div>
@@ -2352,6 +2389,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       zoning: zoning || null,
                       land_purpose: landPurpose || null,
                       road_width: roadWidth ? parseFloat(roadWidth) : null,
+                      road_direction: roadDirection || null,
                       ground_floors: groundFloors ? parseInt(groundFloors) : null,
                       underground_floors: undergroundFloors ? parseInt(undergroundFloors) : null,
                       building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : null,

@@ -133,6 +133,7 @@ function MobileVacancyWrite() {
 
   // 건물 매매 추가 필드
   const [roadWidth, setRoadWidth] = useState("");
+  const [roadDirection, setRoadDirection] = useState("");
   const [groundFloors, setGroundFloors] = useState("");
   const [undergroundFloors, setUndergroundFloors] = useState("");
 
@@ -305,6 +306,7 @@ function MobileVacancyWrite() {
           if (d.metadata.floor_area_ratio) setFloorAreaRatio(String(d.metadata.floor_area_ratio));
           if (d.metadata.current_usage) setCurrentUsage(d.metadata.current_usage);
           if (d.metadata.road_width) setRoadWidth(String(d.metadata.road_width));
+          if (d.metadata.road_direction) setRoadDirection(d.metadata.road_direction);
           if (d.metadata.ground_floors) setGroundFloors(String(d.metadata.ground_floors));
           if (d.metadata.underground_floors) setUndergroundFloors(String(d.metadata.underground_floors));
           if (d.metadata.jisan_usage) setJisanUsage(d.metadata.jisan_usage);
@@ -722,6 +724,7 @@ function MobileVacancyWrite() {
           floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : undefined,
           current_usage: currentUsage || undefined,
           road_width: roadWidth ? parseFloat(roadWidth) : undefined,
+          road_direction: roadDirection || undefined,
           ground_floors: groundFloors ? parseInt(groundFloors) : undefined,
           underground_floors: undergroundFloors ? parseInt(undergroundFloors) : undefined,
         },
@@ -1295,6 +1298,15 @@ function MobileVacancyWrite() {
                       <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>%</span>
                     </div>
                   </div>
+                  <div style={{flex:1}}>
+                    <label style={labelStyle}>용도지역</label>
+                    <select value={zoning} onChange={e=>setZoning(e.target.value)} style={inputStyle}>
+                      <option value="">선택</option>
+                      {["1종전용주거", "2종전용주거", "1종일반주거", "2종일반주거", "3종일반주거", "준주거", "중심상업", "일반상업", "근린상업", "유통상업", "보전녹지", "생산녹지", "자연녹지", "보전관리", "생산관리", "계획관리", "농림지역", "자연환경보전"].map(v => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
               
@@ -1340,7 +1352,7 @@ function MobileVacancyWrite() {
                   </div>
                 </div>
                 <div style={{flex:1}}>
-                  {propertyType === "상가·사무실·건물·공장·토지" && (
+                  {propertyType === "상가·사무실·건물·공장·토지" ? (
                     <>
                       <label style={labelStyle}>준공연도</label>
                       <select value={approvalYear} onChange={(e) => setApprovalYear(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
@@ -1351,6 +1363,18 @@ function MobileVacancyWrite() {
                         <option value="1979">1980년 이전</option>
                       </select>
                     </>
+                  ) : (
+                    propertyType === "빌라·주택" && (
+                      <>
+                        <label style={labelStyle}>도로 방향</label>
+                        <select value={roadDirection} onChange={(e) => setRoadDirection(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                          <option value="">선택</option>
+                          {["남","북","동","서","남동","남서","북동","북서","남측","북측","동측","서측","남동측","남서측","북동측","북서측","남향","북향","동향","서향"].map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      </>
+                    )
                   )}
                 </div>
               </div>
