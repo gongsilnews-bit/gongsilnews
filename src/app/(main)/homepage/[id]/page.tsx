@@ -393,7 +393,28 @@ export default function HomepageViewPage() {
       });
     }
 
-    return fields;
+    const filteredFields = fields.filter(field => {
+      const isRequired = [
+        "공실광고번호",
+        "소재지",
+        "단지명",
+        "건물명",
+        "동/호수",
+        "거래구분",
+        "금액",
+        "공급/전용면적",
+        "연면적",
+        "관리비",
+        "입주가능일",
+        "사용 가능일"
+      ].includes(field.label);
+      if (isRequired) return true;
+
+      const val = field.value?.trim();
+      return val && val !== "-" && val !== "없음" && val !== "0/0" && val !== "0층 / 0층" && val !== "지하 0층 / 지상 0층" && val !== "-개 / -개";
+    });
+
+    return filteredFields;
   };
 
   useEffect(() => {

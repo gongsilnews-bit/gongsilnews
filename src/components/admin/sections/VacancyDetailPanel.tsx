@@ -321,6 +321,309 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
     return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}.`;
   };
 
+  const getDynamicFields = (v: any) => {
+    const formatManwon = (val: number | string | null | undefined): string => {
+      if (val === undefined || val === null) return "-";
+      const num = typeof val === "string" ? parseInt(val, 10) : val;
+      if (isNaN(num) || num <= 0) return "-";
+      
+      const eok = Math.floor(num / 10000);
+      const man = num % 10000;
+      
+      let result = "";
+      if (eok > 0) result += `${eok}억`;
+      if (man > 0) {
+        const formattedMan = man.toLocaleString("ko-KR");
+        result += (result ? " " : "") + `${formattedMan}만`;
+      }
+      return result + "원";
+    };
+
+    const propType = v.property_type || "";
+    const subCategory = v.sub_category || "";
+    const tradeType = v.trade_type || "";
+    const meta = v.metadata || {};
+
+    const fields: { label: string; value: string }[] = [];
+
+    // 1. 단지명 / 건물명
+    const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
+    fields.push({
+      label: isApt ? "단지명" : "건물명",
+      value: v.building_name || "-"
+    });
+
+    // 1-2. 동/호수 (어드민 상세이므로 무조건 노출)
+    let displayDongHosu = "-";
+    const dongParts = [];
+    if (v.apt_dong) dongParts.push(v.apt_dong);
+    if (v.hosu) dongParts.push(v.hosu);
+    if (dongParts.length > 0) {
+      displayDongHosu = dongParts.join(" ");
+    }
+    fields.push({
+      label: "동/호수",
+      value: displayDongHosu
+    });
+
+    // 1-3. 거래구분
+    fields.push({
+      label: "거래구분",
+      value: tradeType || "-"
+    });
+
+    // 1-4. 금액
+    let displayPrice = "-";
+    const monthlyManwon = v.monthly_rent ? Math.round(v.monthly_rent / 10000) : 0;
+    if (v.trade_type === "매매" || v.trade_type === "전세") {
+      displayPrice = v.deposit ? formatAmount(v.deposit) : "-";
+    } else if (v.trade_type) {
+      displayPrice = `${v.deposit ? formatAmount(v.deposit) : "0"}/${monthlyManwon > 0 ? `${monthlyManwon}만` : "0"}`;
+    }
+    fields.push({
+      label: "금액",
+      value: displayPrice
+    });
+
+    // 1-5. 관리비
+    fields.push({
+      label: "관리비",
+      value: v.maintenance_fee ? `${v.maintenance_fee / 10000}만원` : "없음"
+    });
+
+    // 카테고리 분류
+    const isVillaHouse = propType === "빌라·주택";
+    const isCommercial = propType === "상가·사무실·건물·공장·토지";
+
+    // 2. 용도지역
+    if (isVillaHouse || isCommercial) {
+      fields.push({ label: "용도지역", value: meta.zoning || "-" });
+    }
+
+    // 3. 지목
+    if (subCategory === "토지") {
+      fields.push({ label: "지목", value: meta.land_purpose || "-" });
+    }
+
+    // 4. 준공연도
+    if (meta.approval_year) {
+      const yearVal = parseInt(meta.approval_year, 10);
+      fields.push({
+        label: "준공연도",
+        value: yearVal <= 1979 ? "1980년 이전" : `${yearVal}년`
+      });
+    }
+
+    // 5. 건물규모
+    if (meta.ground_floors !== undefined || meta.underground_floors !== undefined) {
+      const gFloors = meta.ground_floors || 0;
+      const uFloors = meta.underground_floors || 0;
+      if (gFloors > 0 || uFloors > 0) {
+        fields.push({
+          label: "건물규모",
+          value: `지하 ${uFloors}층 / 지상 ${gFloors}층`
+        });
+      }
+    }
+
+    // 6. 주용도 / 건물구조 / 위반건축물
+    if (isCommercial) {
+      if (meta.main_usage) fields.push({ label: "주용도", value: meta.main_usage });
+      if (meta.building_structure) fields.push({ label: "건물구조", value: meta.building_structure });
+      if (meta.is_illegal) fields.push({ label: "위반건축물", value: meta.is_illegal });
+    }
+
+    // 7. 엘리베이터 수
+    if (isCommercial && meta.elevator_cnt !== undefined && meta.elevator_cnt !== null) {
+      fields.push({ label: "엘리베이터 수", value: `${meta.elevator_cnt}대` });
+    }
+
+    // 8. 도로 폭
+    if (isCommercial && meta.road_width) {
+      fields.push({ label: "도로 폭", value: `${meta.road_width}m` });
+    }
+
+    // 9. 방 수 / 욕실 수 / 방향
+    const isResidential = ["아파트·오피스텔", "빌라·주택", "원룸·투룸(풀옵션)", "아파트", "오피스텔", "원룸", "1.5룸", "투룸", "빌라/연립", "단독/다가구", "전원주택", "상가주택"].some(t => propType.includes(t) || subCategory.includes(t));
+    if (isResidential) {
+      if (v.room_count || v.bathroom_count || v.bath_count) {
+        const bathVal = v.bathroom_count || v.bath_count || "-";
+        fields.push({
+          label: "방/욕실수",
+          value: `${v.room_count || "-"}개 / ${bathVal}개`
+        });
+      }
+      if (v.direction) {
+        fields.push({ label: "방향", value: v.direction });
+      }
+    }
+
+    // 10. 공급면적 / 전용면적 / 대지면적
+    const isSpecialSale = tradeType === "매매" && (
+      (propType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) ||
+      (propType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))
+    );
+
+    if (isSpecialSale) {
+      if (meta.land_share_m2) {
+        const py = meta.land_share_py || Math.round(parseFloat(meta.land_share_m2) / 3.3);
+        fields.push({ label: "대지면적", value: `${meta.land_share_m2}㎡ (${py}평)` });
+      }
+      if (v.supply_m2) {
+        const py = Math.round(parseFloat(v.supply_m2) / 3.3);
+        fields.push({ label: "연면적", value: `${v.supply_m2}㎡ (${py}평)` });
+      }
+    } else {
+      const supArea = v.supply_m2 ? parseFloat(v.supply_m2) : 0;
+      const excArea = v.exclusive_m2 ? parseFloat(v.exclusive_m2) : 0;
+      const fmtM2Val = (m2: number) => m2 ? `${m2}㎡ (${(m2 / 3.3058).toFixed(1)}평)` : '';
+      
+      let areaDisp = '-';
+      if (supArea && excArea) areaDisp = `${fmtM2Val(supArea)} / ${fmtM2Val(excArea)}`;
+      else if (supArea) areaDisp = fmtM2Val(supArea);
+      else if (excArea) areaDisp = fmtM2Val(excArea);
+      
+      if (areaDisp !== '-') {
+        fields.push({
+          label: "공급/전용면적",
+          value: areaDisp
+        });
+      }
+    }
+
+    // 11. 주차
+    if (v.parking) {
+      fields.push({ label: "주차대수", value: v.parking });
+    }
+
+    // 12. 입주가능일
+    fields.push({
+      label: subCategory === "토지" ? "사용 가능일" : "입주가능일",
+      value: v.move_in_date || (subCategory === "토지" ? "즉시사용" : "즉시입주(공실)")
+    });
+
+    // 13. 상업용 세부 항목
+    if (isCommercial) {
+      if (meta.jisan_usage) fields.push({ label: "호실 용도", value: meta.jisan_usage });
+      if (meta.ceiling_height) fields.push({ label: "층고", value: `${meta.ceiling_height}m` });
+      if (meta.power_capacity) fields.push({ label: "사용 전력", value: `${meta.power_capacity}kW` });
+      if (meta.free_parking_cnt !== undefined && meta.free_parking_cnt !== null) {
+        fields.push({ label: "무료 주차", value: `${meta.free_parking_cnt}대` });
+      }
+    }
+
+    // 14. 상업용 특화 구조
+    if (isCommercial) {
+      const specialFeatures = [];
+      if (meta.has_drive_in === "true" || meta.has_drive_in === true) specialFeatures.push("드라이브인");
+      if (meta.has_door_to_door === "true" || meta.has_door_to_door === true) specialFeatures.push("도어투도어");
+      if (meta.has_freight_elevator === "true" || meta.has_freight_elevator === true) specialFeatures.push("화물승강기");
+      if (specialFeatures.length > 0) {
+        fields.push({ label: "특화구조", value: specialFeatures.join(", ") });
+      }
+    }
+
+    // 19-1. 도로방향
+    if (isCommercial && meta.road_direction) {
+      fields.push({ label: "도로방향", value: meta.road_direction });
+    }
+
+    // 19-2. 권리금
+    if (isCommercial && subCategory === "상가" && meta.premium_fee) {
+      fields.push({ label: "권리금", value: formatManwon(meta.premium_fee) });
+    }
+
+    // 19-3. 현재임대 보증금/월세
+    if (tradeType === "매매" && isCommercial && (meta.current_rental_deposit || meta.current_rental_monthly)) {
+      const rentalDep = meta.current_rental_deposit ? formatManwon(meta.current_rental_deposit) : "-";
+      const rentalMon = meta.current_rental_monthly ? formatManwon(meta.current_rental_monthly) : "-";
+      fields.push({ label: "현재임대 보증금/월세", value: `${rentalDep} / ${rentalMon}` });
+    }
+
+    // 19-4. 융자금/대출이율
+    if (tradeType === "매매" && meta.loan_amount) {
+      const loanText = formatManwon(meta.loan_amount);
+      const rateText = meta.loan_rate ? ` (연 ${meta.loan_rate}%)` : "";
+      fields.push({ label: "융자금", value: `${loanText}${rateText}` });
+    }
+
+    // 19-7. 수익률 계산 및 추가
+    if (tradeType === "매매" && meta.current_rental_monthly && parseFloat(meta.current_rental_monthly) > 0 && v.deposit && parseFloat(v.deposit) > 0) {
+      const monthlyRent = parseFloat(meta.current_rental_monthly);
+      const salePrice = parseFloat(v.deposit) / 10000;
+      const simpleYield = ((monthlyRent * 12) / salePrice) * 100;
+      fields.push({
+        label: "단순 수익률",
+        value: `연 ${simpleYield.toFixed(2)}%`
+      });
+
+      if (meta.loan_amount && meta.loan_rate && parseFloat(meta.loan_amount) > 0 && parseFloat(meta.loan_rate) > 0) {
+        const tenantDeposit = parseFloat(meta.current_rental_deposit || "0");
+        const loan = parseFloat(meta.loan_amount);
+        const rate = parseFloat(meta.loan_rate);
+        const monthlyInterest = loan * (rate / 100) / 12;
+        const netMonthly = monthlyRent - monthlyInterest;
+        const realInvestment = salePrice - tenantDeposit - loan;
+        
+        if (realInvestment > 0) {
+          const leveragedYield = (netMonthly * 12 / realInvestment) * 100;
+
+          fields.push({
+            label: "실투자 수익률",
+            value: `연 ${leveragedYield.toFixed(2)}% (실투자금: ${formatManwon(realInvestment)})`
+          });
+        }
+      }
+    }
+
+    // 19-5. 지형/형상 (토지)
+    if (subCategory === "토지" && meta.terrain) {
+      fields.push({ label: "지형/형상", value: meta.terrain });
+    }
+
+    // 19-6. 개발가능 여부 (토지)
+    if (subCategory === "토지" && meta.development_potential) {
+      fields.push({ label: "개발가능", value: meta.development_potential });
+    }
+
+    // 20-2. 중개보수/수수료
+    const commParts = [];
+    const baseComm = v.realtor_commission || v.commission_type;
+    if (baseComm) commParts.push(baseComm);
+    if (v.commission_amount) commParts.push(`${v.commission_amount}만원`);
+    if (v.commission_etc) commParts.push(`(${v.commission_etc})`);
+    if (commParts.length > 0) {
+      fields.push({
+        label: "중개보수",
+        value: commParts.join(" ")
+      });
+    }
+
+    // 필터링 처리
+    const filteredFields = fields.filter(field => {
+      const isRequired = [
+        "공실광고번호",
+        "소재지",
+        "단지명",
+        "건물명",
+        "동/호수",
+        "거래구분",
+        "금액",
+        "공급/전용면적",
+        "연면적",
+        "관리비",
+        "입주가능일",
+        "사용 가능일"
+      ].includes(field.label);
+      if (isRequired) return true;
+
+      const val = field.value?.trim();
+      return val && val !== "-" && val !== "없음" && val !== "0/0" && val !== "0층 / 0층" && val !== "지하 0층 / 지상 0층" && val !== "-개 / -개";
+    });
+
+    return filteredFields;
+  };
+
   const getDeviceClass = () => {
     if (deviceMode === "tablet") return "gdv-tablet";
     if (deviceMode === "mobile") return "gdv-mobile";
@@ -407,39 +710,12 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                 <div className="gdv-info-grid">
                   <div className="gdv-info-label">공실광고번호</div><div className="gdv-info-value">{vacancy.vacancy_no || '-'}</div>
                   <div className="gdv-info-label">소재지</div><div className="gdv-info-value">{[vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_addr || vacancy.detail_address].filter(Boolean).join(' ')}</div>
-                  <div className="gdv-info-label">건물명</div><div className="gdv-info-value">{propName}</div>
-                  <div className="gdv-info-label">동/호수</div><div className="gdv-info-value">{[vacancy.apt_dong, vacancy.hosu].filter(Boolean).join(' ') || '-'}</div>
-                  <div className="gdv-info-label">거래구분</div><div className="gdv-info-value">{vacancy.trade_type || '-'}</div>
-                  <div className="gdv-info-label">금액</div><div className="gdv-info-value">{(() => {
-                    const monthlyManwon = vacancy.monthly_rent ? Math.round(vacancy.monthly_rent / 10000) : 0;
-                    if (vacancy.trade_type === '매매' || vacancy.trade_type === '전세') return vacancy.deposit ? formatAmount(vacancy.deposit) : '-';
-                    if (vacancy.trade_type) return `${vacancy.deposit ? formatAmount(vacancy.deposit) : '0'}/${monthlyManwon > 0 ? `${monthlyManwon}만` : '0'}`;
-                    return '-';
-                  })()}</div>
-                  <div className="gdv-info-label">관리비</div><div className="gdv-info-value">{vacancy.maintenance_fee ? (vacancy.maintenance_fee / 10000) + '만원' : '없음'}</div>
-                  {vacancy.metadata?.zoning && <><div className="gdv-info-label">용도지역</div><div className="gdv-info-value">{vacancy.metadata.zoning}</div></>}
-                  {vacancy.metadata?.road_width !== undefined && vacancy.metadata?.road_width !== null && <><div className="gdv-info-label">도로 폭</div><div className="gdv-info-value">{vacancy.metadata.road_width}m</div></>}
-                  <div className="gdv-info-label">준공연도</div><div className="gdv-info-value">{vacancy.metadata?.approval_year ? (vacancy.metadata.approval_year <= 1979 ? "1980년 이전" : `${vacancy.metadata.approval_year}년`) : '-'}</div>
-                  {(vacancy.metadata?.ground_floors !== undefined || vacancy.metadata?.underground_floors !== undefined) && <><div className="gdv-info-label">건물규모</div><div className="gdv-info-value">지하 {vacancy.metadata?.underground_floors || 0}층 / 지상 {vacancy.metadata?.ground_floors || 0}층</div></>}
-                  {vacancy.metadata?.land_share_m2 && <><div className="gdv-info-label">대지면적</div><div className="gdv-info-value">{vacancy.metadata.land_share_m2}m² ({vacancy.metadata.land_share_py}평)</div></>}
-                  <div className="gdv-info-label">{areaLabel}</div><div className="gdv-info-value">{areaDisplay}</div>
-                  {!(vacancy.metadata?.ground_floors !== undefined || vacancy.metadata?.underground_floors !== undefined) && (
-                    <>
-                      <div className="gdv-info-label">해당층/총층</div><div className="gdv-info-value">{vacancy.current_floor||'-'}층 / {vacancy.total_floor||'-'}층</div>
-                    </>
-                  )}
-                  <div className="gdv-info-label">방/욕실수</div><div className="gdv-info-value">{vacancy.room_count||'-'}개 / {vacancy.bathroom_count||'-'}개</div>
-                  <div className="gdv-info-label">방향</div><div className="gdv-info-value">{vacancy.direction || '-'}</div>
-                  <div className="gdv-info-label">주차가능 여부</div><div className="gdv-info-value">{vacancy.parking || '없음'}</div>
-                  <div className="gdv-info-label">입주가능일</div><div className="gdv-info-value">{vacancy.move_in_date || '즉시입주(공실)'}</div>
-                  <div className="gdv-info-label">중개보수</div><div className="gdv-info-value">{(() => {
-                    const parts: string[] = [];
-                    const baseComm = vacancy.realtor_commission || vacancy.commission_type;
-                    if (baseComm) parts.push(baseComm);
-                    if (vacancy.commission_amount) parts.push(`${vacancy.commission_amount}만원`);
-                    if (vacancy.commission_etc) parts.push(`(${vacancy.commission_etc})`);
-                    return parts.length > 0 ? parts.join(' ') : '-';
-                  })()}</div>
+                  {getDynamicFields(vacancy).map((f, idx) => (
+                    <React.Fragment key={idx}>
+                      <div className="gdv-info-label">{f.label}</div>
+                      <div className="gdv-info-value">{f.value}</div>
+                    </React.Fragment>
+                  ))}
                   <div className="gdv-info-label">상세설명</div><div className="gdv-info-value gdv-info-desc">{vacancy.description || ''}</div>
                 </div>
 
