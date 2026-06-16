@@ -380,22 +380,12 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
           ...(loaded?.info?.pageBadges || {})
         };
         
-        // Map old/deprecated badges to new standardized names
-        if (!rawBadges.page2 || rawBadges.page2 === "EVIDENCE & DATA") {
-          rawBadges.page2 = "DETAILS";
-        }
-        if (!rawBadges.page3 || rawBadges.page3 === "RENTAL STATUS" || rawBadges.page3 === "RENT ROLL") {
-          rawBadges.page3 = "LEASING";
-        }
-        if (!rawBadges.page4 || rawBadges.page4 === "PHYSICAL ASSETS" || rawBadges.page4 === "PROPERTY IMAGES") {
-          rawBadges.page4 = "GALLERY";
-        }
-        if (!rawBadges.page5 || rawBadges.page5 === "LOCATION ANALYSIS" || rawBadges.page5 === "AREA ANALYSIS") {
-          rawBadges.page5 = "LOCATION";
-        }
-        if (!rawBadges.page6 || rawBadges.page6 === "FUTURE BLUEPRINT" || rawBadges.page6 === "INVESTMENT ROADMAP" || rawBadges.page6 === "LIVING STRATEGY" || rawBadges.page6 === "ASSET ROADMAP" || rawBadges.page6 === "BUSINESS BLUEPRINT") {
-          rawBadges.page6 = "ROADMAP";
-        }
+        // Force standardized 1-word badge names (always override)
+        rawBadges.page2 = "DETAILS";
+        rawBadges.page3 = "LEASING";
+        rawBadges.page4 = "GALLERY";
+        rawBadges.page5 = "LOCATION";
+        rawBadges.page6 = "ROADMAP";
 
         rawBadges.page1 = (loaded?.info?.pageBadges?.page1 && !["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes(loaded.info.pageBadges.page1.toUpperCase().trim()))
           ? loaded.info.pageBadges.page1
