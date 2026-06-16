@@ -83,7 +83,7 @@ export default function GongsilDetailPanel({
   replyTarget,
   setReplyTarget,
   handleCommentSubmit,
-  agencyInfo,
+  agencyInfo: passedAgencyInfo,
   realtorTradeType,
   setRealtorTradeType,
   openGalleryModal,
@@ -95,6 +95,9 @@ export default function GongsilDetailPanel({
   if (!baseProp) return null;
   const fullProp = fullDetailsMap[activeProperty] || {};
   const prop = { ...baseProp, ...fullProp }; // Lazy-loaded fields overlay
+
+  const m = prop.members || {};
+  const agencyInfo = (Array.isArray(m.agencies) ? m.agencies[0] : m.agencies) || passedAgencyInfo;
 
   const images = prop.images && prop.images.length > 0 ? prop.images : [""];
 
@@ -1994,7 +1997,7 @@ const filteredFields = fields.filter(field => {
                       border: "2px solid #e5e7eb",
                     }}
                   >
-                    {(agencyInfo?.name || prop.members?.name || prop.client_name || "?")[0]}
+                    {(agencyInfo?.agency_name || agencyInfo?.name || prop.members?.name || prop.client_name || "?")[0]}
                   </div>
                 )}
                 <div style={{ flex: 1 }}>
@@ -2027,18 +2030,18 @@ const filteredFields = fields.filter(field => {
                           e.currentTarget.style.color = "#111";
                         }}
                       >
-                        {agencyInfo ? agencyInfo.name : prop.members ? prop.members.name : prop.client_name}
+                        {agencyInfo ? (agencyInfo.agency_name || agencyInfo.name) : prop.members ? prop.members.name : prop.client_name}
                       </Link>
                     ) : (
-                      <span>{agencyInfo ? agencyInfo.name : prop.members ? prop.members.name : prop.client_name}</span>
+                      <span>{agencyInfo ? (agencyInfo.agency_name || agencyInfo.name) : prop.members ? prop.members.name : prop.client_name}</span>
                     )}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
                     {agencyInfo ? (
                       <>
                         <span style={{ fontSize: 14, color: "#555" }}>
-                          대표 {agencyInfo.ceo_name} <span style={{ color: "#ccc", margin: "0 6px" }}>|</span> 등록번호{" "}
-                          {agencyInfo.reg_num || "-"}
+                          대표 {agencyInfo.ceo_name || "-"} <span style={{ color: "#ccc", margin: "0 6px" }}>|</span> 등록번호{" "}
+                          {agencyInfo.registration_no || agencyInfo.reg_num || "-"}
                         </span>
                         <span style={{ fontSize: 14, color: "#555" }}>
                           {[agencyInfo.address, agencyInfo.address_detail].filter(Boolean).join(" ") || "-"}
