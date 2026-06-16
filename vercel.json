@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build:all",
+  "installCommand": "npm install && cd marketing/ai-detail && npm install && npm run build && cd ../report && npm install && npm run build",
   "crons": [
     {
       "path": "/api/cron/press-release",
