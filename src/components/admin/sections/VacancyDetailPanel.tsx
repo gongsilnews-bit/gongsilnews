@@ -710,12 +710,61 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                 <div className="gdv-info-grid">
                   <div className="gdv-info-label">공실광고번호</div><div className="gdv-info-value">{vacancy.vacancy_no || '-'}</div>
                   <div className="gdv-info-label">소재지</div><div className="gdv-info-value">{[vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_addr || vacancy.detail_address].filter(Boolean).join(' ')}</div>
-                  {getDynamicFields(vacancy).map((f, idx) => (
-                    <React.Fragment key={idx}>
-                      <div className="gdv-info-label">{f.label}</div>
-                      <div className="gdv-info-value">{f.value}</div>
-                    </React.Fragment>
-                  ))}
+                  {(() => {
+                    const allFields = getDynamicFields(vacancy);
+                    
+                    const basicLabels = ["단지명", "건물명", "동/호수", "거래구분", "금액", "관리비", "용도지역", "지목", "공급/전용면적", "연면적", "대지면적", "입주가능일", "사용 가능일"];
+                    const facilityLabels = ["준공연도", "건물규모", "주용도", "건물구조", "위반건축물", "엘리베이터 수", "도로 폭", "방/욕실수", "방향", "주차대수", "호실 용도", "층고", "사용 전력", "무료 주차", "특화구조", "지형/형상", "개발가능"];
+                    const financeLabels = ["도로방향", "권리금", "현재임대 보증금/월세", "융자금", "단순 수익률", "실투자 수익률", "중개보수"];
+
+                    const basicFields = allFields.filter(f => basicLabels.includes(f.label) || (!facilityLabels.includes(f.label) && !financeLabels.includes(f.label)));
+                    const facilityFields = allFields.filter(f => facilityLabels.includes(f.label));
+                    const financeFields = allFields.filter(f => financeLabels.includes(f.label));
+
+                    const renderHeader = (title: string) => (
+                      <div style={{ gridColumn: "span 2", fontSize: 12, color: "#495057", background: "#f1f3f5", fontWeight: "bold", padding: "10px 20px", borderBottom: "1px solid #dee2e6" }}>
+                        📍 {title}
+                      </div>
+                    );
+
+                    return (
+                      <>
+                        {basicFields.length > 0 && (
+                          <>
+                            {renderHeader("기본 정보")}
+                            {basicFields.map((f, idx) => (
+                              <React.Fragment key={`basic-${idx}`}>
+                                <div className="gdv-info-label">{f.label}</div>
+                                <div className="gdv-info-value">{f.value}</div>
+                              </React.Fragment>
+                            ))}
+                          </>
+                        )}
+                        {facilityFields.length > 0 && (
+                          <>
+                            {renderHeader("시설 및 건물 상세")}
+                            {facilityFields.map((f, idx) => (
+                              <React.Fragment key={`fac-${idx}`}>
+                                <div className="gdv-info-label">{f.label}</div>
+                                <div className="gdv-info-value">{f.value}</div>
+                              </React.Fragment>
+                            ))}
+                          </>
+                        )}
+                        {financeFields.length > 0 && (
+                          <>
+                            {renderHeader("재무 및 계약 정보")}
+                            {financeFields.map((f, idx) => (
+                              <React.Fragment key={`fin-${idx}`}>
+                                <div className="gdv-info-label">{f.label}</div>
+                                <div className="gdv-info-value">{f.value}</div>
+                              </React.Fragment>
+                            ))}
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
                   <div className="gdv-info-label">상세설명</div><div className="gdv-info-value gdv-info-desc">{vacancy.description || ''}</div>
                 </div>
 
