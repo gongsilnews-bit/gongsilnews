@@ -173,30 +173,48 @@ const PhoneBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyI
   </div>
 );
 
-const SnsBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyInfo, hc: any, dark?: boolean, stacked?: boolean }) => (
-  <div className={`flex justify-between items-center text-xs font-bold ${dark ? 'text-white/60' : 'text-gray-500'} w-full`}>
-    <div className={`flex ${stacked ? 'flex-col gap-3' : 'gap-6'} w-full`}>
-      <div className="flex items-center gap-2 flex-1 group/sns">
-        <DocumentTextIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
-        <a href={info.contactBlog ? (String(info.contactBlog).startsWith('http') ? info.contactBlog : `https://${info.contactBlog}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactBlog) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
-          <EditableText value={info.contactBlog ? String(info.contactBlog).replace('https://', '') : ""} placeholder="블로그 (미입력시 숨김)" onChange={(v) => hc('contactBlog', v)} className="w-full" />
-        </a>
-      </div>
-      <div className="flex items-center gap-2 flex-1 group/sns">
-        <PlayCircleIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
-        <a href={info.contactYoutube ? (String(info.contactYoutube).startsWith('http') ? info.contactYoutube : `https://${info.contactYoutube}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactYoutube) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
-          <EditableText value={info.contactYoutube ? String(info.contactYoutube).replace('https://', '') : ""} placeholder="유튜브 (미입력시 숨김)" onChange={(v) => hc('contactYoutube', v)} className="w-full" />
-        </a>
-      </div>
-      <div className="flex items-center gap-2 flex-1 group/sns">
-        <GlobeAltIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
-        <a href={info.contactWebsite ? (String(info.contactWebsite).startsWith('http') ? info.contactWebsite : `https://${info.contactWebsite}`) : '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { if (!info.contactWebsite) e.preventDefault(); }} className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
-          <EditableText value={info.contactWebsite ? String(info.contactWebsite).replace('https://', '') : ""} placeholder="웹사이트 (미입력시 숨김)" onChange={(v) => hc('contactWebsite', v)} className="w-full" />
-        </a>
+const SnsBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyInfo, hc: any, dark?: boolean, stacked?: boolean }) => {
+  const hasBlog = !!info.contactBlog;
+  const hasYoutube = !!info.contactYoutube;
+  const hasWebsite = !!info.contactWebsite;
+  const hasAny = hasBlog || hasYoutube || hasWebsite;
+
+  return (
+    <div className={`flex justify-between items-center text-xs font-bold ${dark ? 'text-white/60' : 'text-gray-500'} w-full`}>
+      <div className={`flex ${stacked ? 'flex-col gap-3' : 'gap-6'} w-full`}>
+        {hasBlog && (
+          <div className="flex items-center gap-2 flex-1 group/sns">
+            <DocumentTextIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
+            <a href={String(info.contactBlog).startsWith('http') ? info.contactBlog : `https://${info.contactBlog}`} target="_blank" rel="noopener noreferrer" className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
+              <EditableText value={String(info.contactBlog).replace('https://', '')} placeholder="블로그" onChange={(v) => hc('contactBlog', v)} className="w-full" />
+            </a>
+          </div>
+        )}
+        {hasYoutube && (
+          <div className="flex items-center gap-2 flex-1 group/sns">
+            <PlayCircleIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
+            <a href={String(info.contactYoutube).startsWith('http') ? info.contactYoutube : `https://${info.contactYoutube}`} target="_blank" rel="noopener noreferrer" className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
+              <EditableText value={String(info.contactYoutube).replace('https://', '')} placeholder="유튜브" onChange={(v) => hc('contactYoutube', v)} className="w-full" />
+            </a>
+          </div>
+        )}
+        {hasWebsite && (
+          <div className="flex items-center gap-2 flex-1 group/sns">
+            <GlobeAltIcon className={`w-5 h-5 ${dark ? 'text-white/30' : 'text-gray-300'} group-hover/sns:${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} transition-colors shrink-0`} />
+            <a href={String(info.contactWebsite).startsWith('http') ? info.contactWebsite : `https://${info.contactWebsite}`} target="_blank" rel="noopener noreferrer" className={`w-full hover:${dark ? 'text-white' : 'text-[var(--theme-primary)]'} transition-colors`}>
+              <EditableText value={String(info.contactWebsite).replace('https://', '')} placeholder="웹사이트" onChange={(v) => hc('contactWebsite', v)} className="w-full" />
+            </a>
+          </div>
+        )}
+        {!hasAny && (
+          <div className={`text-xs ${dark ? 'text-white/20' : 'text-gray-300'} italic`}>
+            좌측 폼에서 SNS 링크를 입력하면 자동으로 표시됩니다
+          </div>
+        )}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, agentImage, onImageUpload, onDeleteImage, isUploading, isUploadingImage }) => {
   const hc = (key: string, value: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, [key]: value }); };
