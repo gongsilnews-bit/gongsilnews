@@ -1061,6 +1061,46 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     fields.push({ label: "융자금", value: `${loanText}${rateText}` });
                   }
 
+                  // 19-7. 수익률 계산 및 추가 (매매이고 임대 월세 정보가 있으며, 매매가가 0보다 큰 경우)
+                  if (tradeType === "매매" && meta.current_rental_monthly && parseFloat(meta.current_rental_monthly) > 0 && v.deposit && parseFloat(v.deposit) > 0) {
+                    const monthlyRent = parseFloat(meta.current_rental_monthly);
+                    const salePrice = parseFloat(v.deposit) / 10000; // deposit is in won, convert to manwon
+                    const simpleYield = ((monthlyRent * 12) / salePrice) * 100;
+                    fields.push({
+                      label: "단순 수익률",
+                      value: `연 ${simpleYield.toFixed(2)}%`
+                    });
+
+                    // 실투자 수익률 (융자금 및 대출이율이 있는 경우)
+                    if (meta.loan_amount && meta.loan_rate && parseFloat(meta.loan_amount) > 0 && parseFloat(meta.loan_rate) > 0) {
+                      const tenantDeposit = parseFloat(meta.current_rental_deposit || "0");
+                      const loan = parseFloat(meta.loan_amount);
+                      const rate = parseFloat(meta.loan_rate);
+                      const monthlyInterest = loan * (rate / 100) / 12;
+                      const netMonthly = monthlyRent - monthlyInterest;
+                      const realInvestment = salePrice - tenantDeposit - loan;
+                      
+                      if (realInvestment > 0) {
+                        const leveragedYield = (netMonthly * 12 / realInvestment) * 100;
+                        
+                        // 실투자금 한글 포맷 변환용 간이 함수
+                        const formatManwon = (val: number) => {
+                          if (val >= 10000) {
+                            const eok = Math.floor(val / 10000);
+                            const rest = val % 10000;
+                            return rest > 0 ? `${eok}억 ${rest}만원` : `${eok}억원`;
+                          }
+                          return `${val}만원`;
+                        };
+
+                        fields.push({
+                          label: "실투자 수익률",
+                          value: `연 ${leveragedYield.toFixed(2)}% (실투자금: ${formatManwon(realInvestment)})`
+                        });
+                      }
+                    }
+                  }
+
                   // 19-5. 지형/형상 (토지)
                   if (subCategory === "토지" && meta.terrain) {
                     fields.push({ label: "지형/형상", value: meta.terrain });
