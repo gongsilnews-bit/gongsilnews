@@ -1037,6 +1037,40 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     value: v.move_in_date || (subCategory === "토지" ? "즉시사용" : "즉시입주(공실)")
                   });
 
+                  // 19-1. 도로방향 (건물/빌딩, 공장/창고 매매)
+                  if (isCommercial && meta.road_direction) {
+                    fields.push({ label: "도로방향", value: meta.road_direction });
+                  }
+
+                  // 19-2. 권리금 (상가)
+                  if (isCommercial && subCategory === "상가" && meta.premium_fee) {
+                    fields.push({ label: "권리금", value: `${meta.premium_fee}만원` });
+                  }
+
+                  // 19-3. 현재임대 보증금/월세 (건물 매매)
+                  if (tradeType === "매매" && isCommercial && (meta.current_rental_deposit || meta.current_rental_monthly)) {
+                    const rentalDep = meta.current_rental_deposit ? `${meta.current_rental_deposit}만원` : "-";
+                    const rentalMon = meta.current_rental_monthly ? `${meta.current_rental_monthly}만원` : "-";
+                    fields.push({ label: "현재임대 보증금/월세", value: `${rentalDep} / ${rentalMon}` });
+                  }
+
+                  // 19-4. 융자금/대출이율 (매매)
+                  if (tradeType === "매매" && meta.loan_amount) {
+                    const loanText = `${meta.loan_amount}만원`;
+                    const rateText = meta.loan_rate ? ` (연 ${meta.loan_rate}%)` : "";
+                    fields.push({ label: "융자금", value: `${loanText}${rateText}` });
+                  }
+
+                  // 19-5. 지형/형상 (토지)
+                  if (subCategory === "토지" && meta.terrain) {
+                    fields.push({ label: "지형/형상", value: meta.terrain });
+                  }
+
+                  // 19-6. 개발가능 여부 (토지)
+                  if (subCategory === "토지" && meta.development_potential) {
+                    fields.push({ label: "개발가능", value: meta.development_potential });
+                  }
+
                   // 20. 관리비 제거 (상단으로 이동)
 
                   // 20-2. 중개보수/수수료
