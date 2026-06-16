@@ -1574,6 +1574,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             )}
 
             {(propertyType === "빌라·주택" || propertyType === COMMERCIAL_CATEGORY) && tradeType === "매매" && subCategory !== "지식산업센터" && (
+              <>
+              {/* 1행: 대지면적 | 용도지역 (또는 연면적) */}
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>대지면적</label>
@@ -1621,22 +1623,33 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   </>
                   )}
                 </div>
-                {subCategory === "토지" && (
-                  <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>토지 용도(지목)</label>
-                    <select
-                      value={landPurpose}
-                      onChange={(e) => setLandPurpose(e.target.value)}
-                      style={inputStyle}
-                    >
-                      <option value="">선택</option>
-                      {["전", "답", "과수원", "목장용지", "임야", "광천지", "염전", "대", "공장용지", "학교용지", "주차장", "주유소용지", "창고용지", "도로", "철도용지", "제방", "하천", "구거", "유지", "양어장", "수도용지", "공원", "체육용지", "유원지", "종교용지", "사적지", "묘지", "잡종지"].map(v => (
-                        <option key={v} value={v}>{v}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
               </div>
+              {/* 2행: 토지 → 지목 | 도로폭 */}
+              {isLand && (
+              <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>토지 용도(지목)</label>
+                  <select
+                    value={landPurpose}
+                    onChange={(e) => setLandPurpose(e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">선택</option>
+                    {["전", "답", "과수원", "목장용지", "임야", "광천지", "염전", "대", "공장용지", "학교용지", "주차장", "주유소용지", "창고용지", "도로", "철도용지", "제방", "하천", "구거", "유지", "양어장", "수도용지", "공원", "체육용지", "유원지", "종교용지", "사적지", "묘지", "잡종지"].map(v => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>도로 폭</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="number" placeholder="예: 6" value={roadWidth} onChange={(e) => setRoadWidth(e.target.value)} style={inputStyle} />
+                    <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>m</span>
+                  </div>
+                </div>
+              </div>
+              )}
+              </>
             )}
             {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && (
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
@@ -1671,19 +1684,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             )}
 
             {/* 공통 필드: 해당층 / 전체층 (단독 건물 매매 시 지상/지하 층수 및 도로 폭으로 대체) */}
-            {isLand ? (
-              /* 토지: 도로 폭만 표시 (지상/지하 층수, 준공연도 불필요) */
-              <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>도로 폭</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input type="number" placeholder="예: 6" value={roadWidth} onChange={(e) => setRoadWidth(e.target.value)} style={inputStyle} />
-                    <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>m</span>
-                  </div>
-                </div>
-                <div style={{ flex: 1 }}></div>
-              </div>
-            ) : (tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory || ""))) ? (
+            {isLand ? null : (tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory || ""))) ? (
               <>
                 <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                   <div style={{ flex: 1 }}>
