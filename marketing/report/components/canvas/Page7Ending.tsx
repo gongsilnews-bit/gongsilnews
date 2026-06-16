@@ -123,12 +123,15 @@ const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = fal
   <div className={`flex gap-3 mb-2 ${className}`}>
     <div className={`flex-1 border ${dark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'} rounded-xl p-4 shadow-sm flex flex-col justify-center relative overflow-hidden`}>
       <div className={`absolute top-0 left-0 w-1 h-full ${dark ? 'bg-[var(--theme-secondary)]' : 'bg-[var(--theme-primary)]'}`}></div>
-      <div className="flex items-center gap-1.5 mb-1.5">
+      <div className="flex items-center justify-between gap-1.5 mb-1.5">
         <div className="flex items-center gap-1.5">
           <MapPinIcon className={`w-3.5 h-3.5 ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`} />
           <span className={`font-black text-xs tracking-widest ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'}`}>
             <EditableText value={info.page7DirectionsTitle || "오시는 길"} onChange={(v) => hc('page7DirectionsTitle', v)} />
           </span>
+        </div>
+        <div className={`text-[13px] font-extrabold ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} tracking-wider`}>
+          <EditableText value={info.agentName || "미래에셋공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
         </div>
       </div>
       <div className={`${dark ? 'text-white/90' : 'text-gray-700'} font-bold text-[13px] leading-relaxed whitespace-pre-wrap break-keep`}>
@@ -147,14 +150,10 @@ const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = fal
 
 const PhoneBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyInfo, hc: any, dark?: boolean, stacked?: boolean }) => (
   <div className="flex flex-col justify-center py-2 w-full">
-    {/* Agency Name - Large & Theme Colored */}
-    <div className={`text-[22px] font-black ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} tracking-tight mb-2`}>
-      <EditableText value={info.agentName || "미래에셋공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
-    </div>
     <div className={`flex items-center gap-3 ${stacked ? 'w-full' : ''}`}>
       <div className={`flex-1 flex items-center gap-3`}>
-        {/* Inquiry Label - Compact single line */}
-        <div className={`text-[13px] ${dark ? 'text-white/60' : 'text-gray-500'} font-bold whitespace-nowrap shrink-0`}>
+        {/* Inquiry Label - Theme colored, slightly smaller than phone */}
+        <div className={`text-[18px] ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} font-extrabold whitespace-nowrap shrink-0`}>
           문의 : <EditableText value={info.agentRepresentative || info.agencyRepresentative || "김정민"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
         </div>
         {/* Phone Number */}
