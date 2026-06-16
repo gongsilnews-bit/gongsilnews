@@ -1002,11 +1002,11 @@ export default function GongsilDetailPanel({
                 <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", whiteSpace: "pre-line" }}>{prop.description || "-"}</div>
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "110px 1fr 110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", borderBottom: "10px solid #f5f5f5" }}>
                 <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>공실광고번호</div>
-                <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", gridColumn: "span 3" }}>{prop.vacancy_no}</div>
+                <div style={{ fontSize: 14, color: "#222", fontWeight: "bold", padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{prop.vacancy_no}</div>
                 <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>소재지</div>
-                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", gridColumn: "span 3" }}>
+                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>
                   {getMaskedAddress(prop)}
                   {(() => {
                     const exp = prop.address_exposure;
@@ -1099,43 +1099,54 @@ export default function GongsilDetailPanel({
                     // 1-5. 관리비
                     fields.push({
                       label: "관리비",
-                      value: v.maintenance_fee ? `${Math.round(v.maintenance_fee / 10000)}만원` : "없음"
+                      value: v.maintenance_fee ? `${v.maintenance_fee / 10000}만원` : "없음"
                     });
 
-                    // 2. 용도지역 (토지/상업용)
-                    const isVillaHouse = propType.includes("빌라") || propType.includes("주택") || propType.includes("원룸") || propType.includes("상가주택");
-                    const isCommercial = propType.includes("상가") || propType.includes("사무실") || propType.includes("공장") || propType.includes("창고") || propType.includes("건물") || propType.includes("빌딩") || propType.includes("지식산업센터") || subCategory.includes("토지");
-                    if ((isCommercial || subCategory === "토지") && meta.land_use_region) {
-                      fields.push({ label: "용도지역", value: meta.land_use_region });
+                    // 카테고리 분류
+                    const isVillaHouse = propType === "빌라·주택";
+                    const isCommercial = propType === "상가·사무실·건물·공장·토지";
+
+                    // 2. 용도지역 (빌라·주택 또는 상업용인 경우)
+                    if (isVillaHouse || isCommercial) {
+                      fields.push({ label: "용도지역", value: meta.zoning || "-" });
                     }
 
-                    // 3. 지목 (토지)
-                    if (subCategory === "토지" && meta.land_category) {
-                      fields.push({ label: "지목", value: meta.land_category });
+                    // 3. 지목 (토지인 경우)
+                    if (subCategory === "토지") {
+                      fields.push({ label: "지목", value: meta.land_purpose || "-" });
                     }
 
-                    // 4. 준공연도
-                    if (meta.completion_year) {
-                      fields.push({ label: "준공연도", value: `${meta.completion_year}년` });
+                    // 4. 도로 폭
+                    if (meta.road_width !== undefined && meta.road_width !== null && meta.road_width !== "") {
+                      fields.push({ label: "도로 폭", value: `${meta.road_width}m` });
                     }
 
-                    // 5. 주용도 (상업용)
-                    if (isCommercial && meta.primary_usage) {
-                      fields.push({ label: "주용도", value: meta.primary_usage });
+                    // 4-1. 준공연도 (도로 폭 직후)
+                    fields.push({
+                      label: "준공연도",
+                      value: v.metadata?.approval_year ? (v.metadata.approval_year <= 1979 ? "1980년 이전" : `${v.metadata.approval_year}년`) : "-"
+                    });
+
+                    // 5. 건물구조 (상업용 - 토지/지산 제외)
+                    if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
+                      fields.push({ label: "건물구조", value: meta.building_structure || "-" });
                     }
 
-                    // 6. 건물구조 (상업용)
-                    if (isCommercial && meta.building_structure) {
-                      fields.push({ label: "건물구조", value: meta.building_structure });
+                    // 6. 주용도 (상업용 - 토지/지산 제외)
+                    if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
+                      fields.push({ label: "주용도", value: meta.main_usage || "-" });
                     }
 
-                    // 7. 건물규모 (건물/빌딩, 공장/창고)
-                    const hasScale = (isVillaHouse && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) ||
-                                     (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory));
+                    // 7. 건물규모
+                    const hasScale = meta.ground_floors !== undefined || meta.underground_floors !== undefined;
                     if (hasScale) {
                       const parts = [];
-                      if (meta.underground_floors) parts.push(`지하 ${meta.underground_floors}층`);
-                      if (meta.aboveground_floors) parts.push(`지상 ${meta.aboveground_floors}층`);
+                      if (meta.ground_floors !== undefined && meta.ground_floors !== null && meta.ground_floors !== "") {
+                        parts.push(`지상 ${meta.ground_floors}층`);
+                      }
+                      if (meta.underground_floors !== undefined && meta.underground_floors !== null && meta.underground_floors !== "") {
+                        parts.push(`지하 ${meta.underground_floors}층`);
+                      }
                       if (parts.length > 0) {
                         fields.push({ label: "건물규모", value: parts.join(" / ") });
                       }
@@ -1322,6 +1333,8 @@ export default function GongsilDetailPanel({
                       fields.push({ label: "개발가능", value: meta.development_potential });
                     }
 
+                    // 20. 관리비 제거 (상단으로 이동)
+
                     // 20-2. 중개보수/수수료
                     const commParts = [];
                     const baseComm = v.realtor_commission || v.commission_type;
@@ -1359,44 +1372,19 @@ export default function GongsilDetailPanel({
                     return filteredFields;
                   };
 
-                  const fields = getDynamicFields(prop);
-                  const pairedRows: { f1: typeof fields[0]; f2?: typeof fields[0] }[] = [];
-                  for (let i = 0; i < fields.length; i += 2) {
-                    pairedRows.push({
-                      f1: fields[i],
-                      f2: fields[i + 1]
-                    });
-                  }
-
                   return (
                     <>
-                      {pairedRows.map((row, idx) => (
+                      {getDynamicFields(prop).map((f, idx) => (
                         <React.Fragment key={idx}>
-                          <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>{row.f1.label}</div>
-                          <div style={{
-                            fontSize: 14,
-                            color: "#222",
-                            fontWeight: 500,
-                            padding: "16px 20px 16px 16px",
-                            borderBottom: "1px solid #eee",
-                            borderRight: row.f2 ? "1px solid #eee" : undefined,
-                            lineHeight: 1.6,
-                            wordBreak: "break-all",
-                            gridColumn: row.f2 ? undefined : "span 3"
-                          }}>{row.f1.value}</div>
-                          {row.f2 && (
-                            <>
-                              <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>{row.f2.label}</div>
-                              <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{row.f2.value}</div>
-                            </>
-                          )}
+                          <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "center", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>{f.label}</div>
+                          <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all" }}>{f.value}</div>
                         </React.Fragment>
                       ))}
                     </>
                   );
                 })()}
                 <div style={{ fontSize: 13, color: "#444", background: "#f4f5f7", fontWeight: "bold", display: "flex", alignItems: "flex-start", padding: "16px 12px 16px 20px", borderBottom: "1px solid #eee" }}>상세설명</div>
-                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", whiteSpace: "pre-line", gridColumn: "span 3" }}>{prop.description || "-"}</div>
+                <div style={{ fontSize: 14, color: "#222", fontWeight: 500, padding: "16px 20px 16px 16px", borderBottom: "1px solid #eee", lineHeight: 1.6, wordBreak: "break-all", whiteSpace: "pre-line" }}>{prop.description || "-"}</div>
               </div>
             )}
 
