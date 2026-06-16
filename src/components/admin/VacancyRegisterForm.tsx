@@ -129,6 +129,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [totalFloor, setTotalFloor] = useState("");
 
   const isCommercial = propertyType === COMMERCIAL_CATEGORY;
+  const isLand = subCategory === "토지";
 
   // 금액 필드
   const [deposit, setDeposit] = useState("");
@@ -1527,15 +1528,19 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </>
             )}
 
-            {/* 관리비 */}
+            {/* 관리비 (토지 제외) */}
+            {!isLand && (
+            <>
             <label style={labelStyle}>관리비 {maintenance && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(maintenance)}</span>}</label>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, maxWidth: 400 }}>
               <input type="text" placeholder="예: 10" value={maintenance} onChange={(e) => setMaintenance(e.target.value)} style={{ ...inputStyle }} />
               <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>만원</span>
             </div>
+            </>
+            )}
 
             {/* 면적 */}
-            {!(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory)))) && (
+            {!isLand && !(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory)))) && (
             <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>공급면적</label>
@@ -1666,7 +1671,19 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             )}
 
             {/* 공통 필드: 해당층 / 전체층 (단독 건물 매매 시 지상/지하 층수 및 도로 폭으로 대체) */}
-            {(tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) ? (
+            {isLand ? (
+              /* 토지: 도로 폭만 표시 (지상/지하 층수, 준공연도 불필요) */
+              <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>도로 폭</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="number" placeholder="예: 6" value={roadWidth} onChange={(e) => setRoadWidth(e.target.value)} style={inputStyle} />
+                    <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>m</span>
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}></div>
+              </div>
+            ) : (tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory || ""))) ? (
               <>
                 <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                   <div style={{ flex: 1 }}>
@@ -1873,8 +1890,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             )}
 
-            {/* 주차 / 입주가능일 */}
+            {/* 주차 / 입주가능일 (토지: 주차 제외, 사용가능일만 표시) */}
             <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+              {!isLand && (
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>주차가능 여부</label>
                 <select value={parking} onChange={(e) => setParking(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
@@ -1899,10 +1917,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   )}
                 </select>
               </div>
+              )}
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>{subCategory === "토지" ? "사용 가능일" : (tradeType === "매매" || isCommercial) ? "사용가능일" : "입주가능일"}</label>
+                <label style={labelStyle}>{isLand ? "사용 가능일" : (tradeType === "매매" || isCommercial) ? "사용가능일" : "입주가능일"}</label>
                 <select value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                  <option>{subCategory === "토지" ? "즉시사용" : (tradeType === "매매" || isCommercial) ? "즉시사용" : "즉시입주(공실)"}</option><option>1개월 이내</option><option>2개월 이내</option><option>3개월 이내</option><option>날짜 협의</option>
+                  <option>{isLand ? "즉시사용" : (tradeType === "매매" || isCommercial) ? "즉시사용" : "즉시입주(공실)"}</option><option>1개월 이내</option><option>2개월 이내</option><option>3개월 이내</option><option>날짜 협의</option>
                 </select>
               </div>
             </div>
