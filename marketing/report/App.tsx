@@ -374,13 +374,35 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
       leaseNotice: loaded?.info?.leaseNotice !== undefined ? loaded?.info?.leaseNotice : INITIAL_INFO.leaseNotice,
       leaseRightTitle: loaded?.info?.leaseRightTitle !== undefined ? loaded?.info?.leaseRightTitle : INITIAL_INFO.leaseRightTitle,
       leaseRightText: loaded?.info?.leaseRightText !== undefined ? loaded?.info?.leaseRightText : INITIAL_INFO.leaseRightText,
-      pageBadges: {
-        ...INITIAL_INFO.pageBadges,
-        ...(loaded?.info?.pageBadges || {}),
-        page1: (loaded?.info?.pageBadges?.page1 && !["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes(loaded.info.pageBadges.page1.toUpperCase().trim()))
+      pageBadges: (() => {
+        const rawBadges = {
+          ...INITIAL_INFO.pageBadges,
+          ...(loaded?.info?.pageBadges || {})
+        };
+        
+        // Map old/deprecated badges to new standardized names
+        if (!rawBadges.page2 || rawBadges.page2 === "EVIDENCE & DATA") {
+          rawBadges.page2 = "DETAILS";
+        }
+        if (!rawBadges.page3 || rawBadges.page3 === "RENTAL STATUS" || rawBadges.page3 === "RENT ROLL") {
+          rawBadges.page3 = "LEASING";
+        }
+        if (!rawBadges.page4 || rawBadges.page4 === "PHYSICAL ASSETS" || rawBadges.page4 === "PROPERTY IMAGES") {
+          rawBadges.page4 = "GALLERY";
+        }
+        if (!rawBadges.page5 || rawBadges.page5 === "LOCATION ANALYSIS" || rawBadges.page5 === "AREA ANALYSIS") {
+          rawBadges.page5 = "LOCATION";
+        }
+        if (!rawBadges.page6 || rawBadges.page6 === "FUTURE BLUEPRINT" || rawBadges.page6 === "INVESTMENT ROADMAP" || rawBadges.page6 === "LIVING STRATEGY" || rawBadges.page6 === "ASSET ROADMAP" || rawBadges.page6 === "BUSINESS BLUEPRINT") {
+          rawBadges.page6 = "ROADMAP";
+        }
+
+        rawBadges.page1 = (loaded?.info?.pageBadges?.page1 && !["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes(loaded.info.pageBadges.page1.toUpperCase().trim()))
           ? loaded.info.pageBadges.page1
-          : `${loaded?.info?.subCategory || loaded?.info?.sub_category || "매물"} | ${loaded?.info?.transactionType || loaded?.info?.trade_type || "매매"}`
-      },
+          : `${loaded?.info?.subCategory || loaded?.info?.sub_category || "매물"} | ${loaded?.info?.transactionType || loaded?.info?.trade_type || "매매"}`;
+          
+        return rawBadges;
+      })(),
       subCategory: loaded?.info?.subCategory || loaded?.info?.sub_category || "",
       investmentSummary: {
         ...INITIAL_INFO.investmentSummary,
