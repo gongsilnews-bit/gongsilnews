@@ -647,9 +647,15 @@ export default function HomepageViewPage() {
                 const facilityFields = allFields.filter(f => facilityLabels.includes(f.label));
                 const financeFields = allFields.filter(f => financeLabels.includes(f.label));
 
-                const renderHeader = (title: string) => (
-                  <div style={{ background: "#f1f3f5", color: "#495057", padding: "10px 16px", fontSize: 12, fontWeight: "bold", borderBottom: "1px solid #dee2e6" }}>
-                    📍 {title}
+                const renderHeader = (title: string, isFirst = false) => (
+                  <div style={{
+                    fontSize: 16,
+                    fontWeight: 800,
+                    color: "#222",
+                    background: "#fff",
+                    padding: isFirst ? "20px 16px 12px 16px" : "36px 16px 12px 16px"
+                  }}>
+                    {title}
                   </div>
                 );
 
@@ -657,7 +663,7 @@ export default function HomepageViewPage() {
                   <>
                     {basicFields.length > 0 && (
                       <>
-                        {renderHeader("기본 정보")}
+                        {renderHeader("기본 정보", true)}
                         {basicFields.map((f, idx) => (
                           <TRow key={`basic-${idx}`} label={f.label} value={f.value} />
                         ))}

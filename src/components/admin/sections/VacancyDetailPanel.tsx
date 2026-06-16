@@ -721,9 +721,17 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                     const facilityFields = allFields.filter(f => facilityLabels.includes(f.label));
                     const financeFields = allFields.filter(f => financeLabels.includes(f.label));
 
-                    const renderHeader = (title: string) => (
-                      <div style={{ gridColumn: "span 2", fontSize: 12, color: "#495057", background: "#f1f3f5", fontWeight: "bold", padding: "10px 20px", borderBottom: "1px solid #dee2e6" }}>
-                        📍 {title}
+                    const renderHeader = (title: string, isFirst = false) => (
+                      <div style={{
+                        gridColumn: "span 2",
+                        fontSize: 16,
+                        fontWeight: 800,
+                        color: "#222",
+                        background: "#fff",
+                        padding: isFirst ? "20px 20px 12px 20px" : "36px 20px 12px 20px",
+                        borderBottom: "none"
+                      }}>
+                        {title}
                       </div>
                     );
 
@@ -731,7 +739,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
                       <>
                         {basicFields.length > 0 && (
                           <>
-                            {renderHeader("기본 정보")}
+                            {renderHeader("기본 정보", true)}
                             {basicFields.map((f, idx) => (
                               <React.Fragment key={`basic-${idx}`}>
                                 <div className="gdv-info-label">{f.label}</div>
