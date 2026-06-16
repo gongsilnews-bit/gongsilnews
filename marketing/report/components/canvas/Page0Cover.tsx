@@ -100,11 +100,12 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                   </div>
                 </div>
                 {qrCodeUrl && (
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="p-2 border border-gray-200 bg-white shadow-sm rounded-lg">
-                      <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32" />
+                  <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm text-gray-800">
+                    <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32 rounded-md" />
+                    <div className="text-left">
+                      <p className="text-xs font-black text-gray-800">QR 안내</p>
+                      <p className="text-[14px] text-gray-400 font-bold leading-tight mt-0.5">스마트폰 카메라로<br />스캔하여 상세 정보 확인</p>
                     </div>
-                    <span className="text-sm text-gray-400 font-bold tracking-wider">SCAN FOR DETAIL</span>
                   </div>
                 )}
               </div>
@@ -259,11 +260,11 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                   </div>
                 </div>
                 {qrCodeUrl && (
-                  <div className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-lg border border-white/10">
-                    <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32" />
-                    <div className="text-left text-gray-800">
-                      <p className="text-xs font-bold">ONLINE BRIEFING</p>
-                      <p className="text-[12px] text-gray-400 font-bold mt-0.5">Scan to view webpage</p>
+                  <div className="flex items-center gap-4 bg-white p-3 rounded-xl shadow-lg border border-white/10 text-gray-800">
+                    <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32 rounded-md" />
+                    <div className="text-left">
+                      <p className="text-xs font-black text-gray-800">QR 안내</p>
+                      <p className="text-[14px] text-gray-400 font-bold leading-tight mt-0.5">스마트폰 카메라로<br />스캔하여 상세 정보 확인</p>
                     </div>
                   </div>
                 )}
@@ -342,9 +343,12 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                   </div>
                 </div>
                 {qrCodeUrl && (
-                  <div className="flex flex-col items-end gap-1.5">
-                    <img src={qrCodeUrl} alt="QR Code" className="w-14 h-14 grayscale hover:grayscale-0 transition-all border border-gray-100 p-1 bg-white" />
-                    <span className="text-[12px] text-gray-400 font-semibold tracking-widest">QR CODE</span>
+                  <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm text-gray-800">
+                    <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32 rounded-md" />
+                    <div className="text-left">
+                      <p className="text-xs font-black text-gray-800">QR 안내</p>
+                      <p className="text-[14px] text-gray-400 font-bold leading-tight mt-0.5">스마트폰 카메라로<br />스캔하여 상세 정보 확인</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -437,41 +441,38 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
               </div>
 
               <div className="z-20 flex justify-end items-end h-full relative pointer-events-none">
-                <div className="flex flex-col items-end">
-                  <div className="w-[72px] text-center pointer-events-auto leading-tight mb-1.5">
-                    <p className="text-[14px] font-extrabold text-white tracking-widest uppercase">
-                      <EditableText value={info.qrLabel || "QR REPORT"} onChange={(v) => hc('qrLabel', v)} className="!w-full text-center" multiline={true} />
-                    </p>
-                  </div>
-                  {(customQrImage || qrCodeUrl) && (
-                    <div className="pointer-events-auto relative group/qr">
-                      <label className="cursor-pointer block relative">
-                        <img src={customQrImage || qrCodeUrl || ''} alt="QR Code" className="w-[72px] h-[72px] p-1 bg-white rounded shadow-sm opacity-95 object-cover" />
-                        {onImageUpload && (
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity rounded flex flex-col items-center justify-center print:hidden">
-                            <span className="text-[14px] text-white font-bold leading-tight text-center">QR<br/>변경</span>
-                          </div>
-                        )}
-                        {onImageUpload && (
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) onImageUpload('customQrImage', file);
-                            }} 
-                          />
-                        )}
-                        {isUploadingQr && (
-                          <div className="absolute inset-0 bg-white/80 rounded flex items-center justify-center">
-                            <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                          </div>
-                        )}
-                      </label>
+                {(customQrImage || qrCodeUrl) && (
+                  <div className="pointer-events-auto relative group/qr bg-white p-3 rounded-xl shadow-lg border border-white/10 flex items-center gap-4 text-gray-800">
+                    <label className="cursor-pointer block relative">
+                      <img src={customQrImage || qrCodeUrl || ''} alt="QR Code" className="w-32 h-32 rounded-md object-cover" />
+                      {onImageUpload && (
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity rounded flex flex-col items-center justify-center print:hidden">
+                          <span className="text-[14px] text-white font-bold leading-tight text-center">QR<br/>변경</span>
+                        </div>
+                      )}
+                      {onImageUpload && (
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) onImageUpload('customQrImage', file);
+                          }} 
+                        />
+                      )}
+                      {isUploadingQr && (
+                        <div className="absolute inset-0 bg-white/80 rounded flex items-center justify-center">
+                          <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </label>
+                    <div className="text-left">
+                      <p className="text-xs font-black text-gray-800">QR 안내</p>
+                      <p className="text-[14px] text-gray-400 font-bold leading-tight mt-0.5">스마트폰 카메라로<br />스캔하여 상세 정보 확인</p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
