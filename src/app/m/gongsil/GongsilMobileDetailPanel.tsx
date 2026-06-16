@@ -891,52 +891,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   const isVillaHouse = propType === "빌라·주택";
                   const isCommercial = propType === "상가·사무실·건물·공장·토지";
 
-                  // 2. 용도지역 (빌라·주택 또는 상업용인 경우)
-                  if (isVillaHouse || isCommercial) {
-                    fields.push({ label: "용도지역", value: meta.zoning || "-" });
-                  }
-
-                  // 3. 지목 (토지인 경우)
-                  if (subCategory === "토지") {
-                    fields.push({ label: "지목", value: meta.land_purpose || "-" });
-                  }
-
-                  // 4. 도로 폭
-                  if (meta.road_width !== undefined && meta.road_width !== null && meta.road_width !== "") {
-                    fields.push({ label: "도로 폭", value: `${meta.road_width}m` });
-                  }
-
-                  // 4-1. 준공연도 (도로 폭 직후)
-                  fields.push({
-                    label: "준공연도",
-                    value: v.metadata?.approval_year ? (v.metadata.approval_year <= 1979 ? "1980년 이전" : `${v.metadata.approval_year}년`) : "-"
-                  });
-
-                  // 5. 건물구조 (상업용 - 토지/지산 제외)
-                  if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
-                    fields.push({ label: "건물구조", value: meta.building_structure || "-" });
-                  }
-
-                  // 6. 주용도 (상업용 - 토지/지산 제외)
-                  if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
-                    fields.push({ label: "주용도", value: meta.main_usage || "-" });
-                  }
-
-                  // 7. 건물규모
-                  const hasScale = meta.ground_floors !== undefined || meta.underground_floors !== undefined;
-                  if (hasScale) {
-                    const parts = [];
-                    if (meta.ground_floors !== undefined && meta.ground_floors !== null && meta.ground_floors !== "") {
-                      parts.push(`지상 ${meta.ground_floors}층`);
-                    }
-                    if (meta.underground_floors !== undefined && meta.underground_floors !== null && meta.underground_floors !== "") {
-                      parts.push(`지하 ${meta.underground_floors}층`);
-                    }
-                    if (parts.length > 0) {
-                      fields.push({ label: "건물규모", value: parts.join(" / ") });
-                    }
-                  }
-
+                  // ── 2그룹: 면적 및 물리적 규모 (대폭 상향 배치) ──
                   // 8. 대지면적
                   if (meta.land_share_m2) {
                     const pyVal = meta.land_share_py || (parseFloat(meta.land_share_m2) / 3.3058).toFixed(1);
@@ -964,6 +919,29 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     }
                   }
 
+                  // 7. 건물규모
+                  const hasScale = meta.ground_floors !== undefined || meta.underground_floors !== undefined;
+                  if (hasScale) {
+                    const parts = [];
+                    if (meta.ground_floors !== undefined && meta.ground_floors !== null && meta.ground_floors !== "") {
+                      parts.push(`지상 ${meta.ground_floors}층`);
+                    }
+                    if (meta.underground_floors !== undefined && meta.underground_floors !== null && meta.underground_floors !== "") {
+                      parts.push(`지하 ${meta.underground_floors}층`);
+                    }
+                    if (parts.length > 0) {
+                      fields.push({ label: "건물규모", value: parts.join(" / ") });
+                    }
+                  }
+
+                  // 12. 해당층/총층
+                  if (!hasScale && subCategory !== "토지") {
+                    fields.push({
+                      label: "해당층/총층",
+                      value: `${v.current_floor || "-"} / ${v.total_floor || v.total_floors || v.floor || "-"}`
+                    });
+                  }
+
                   // 10. 건폐율/용적률
                   if (tradeType === "매매" && (isVillaHouse || isCommercial)) {
                     const cov = meta.building_coverage ? `${meta.building_coverage}%` : "-";
@@ -974,16 +952,11 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     });
                   }
 
-                  // 11. 현용도 (상업용 - 상가/사무실)
-                  if (isCommercial && ["상가", "사무실"].includes(subCategory)) {
-                    fields.push({ label: "현용도", value: meta.current_usage || "-" });
-                  }
-
-                  // 12. 해당층/총층
-                  if (!hasScale && subCategory !== "토지") {
+                  // 15. 주차
+                  if (subCategory !== "토지") {
                     fields.push({
-                      label: "해당층/총층",
-                      value: `${v.current_floor || "-"} / ${v.total_floor || v.total_floors || v.floor || "-"}`
+                      label: isCommercial ? "주차대수" : "주차가능 여부",
+                      value: v.parking || "없음"
                     });
                   }
 
@@ -1003,12 +976,47 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     });
                   }
 
-                  // 15. 주차
-                  if (subCategory !== "토지") {
-                    fields.push({
-                      label: isCommercial ? "주차대수" : "주차가능 여부",
-                      value: v.parking || "없음"
-                    });
+                  // ── 3그룹: 용도 및 규제 정보 ──
+                  // 6. 주용도 (상업용 - 토지/지산 제외)
+                  if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
+                    fields.push({ label: "주용도", value: meta.main_usage || "-" });
+                  }
+
+                  // 11. 현용도 (상업용 - 상가/사무실)
+                  if (isCommercial && ["상가", "사무실"].includes(subCategory)) {
+                    fields.push({ label: "현용도", value: meta.current_usage || "-" });
+                  }
+
+                  // 2. 용도지역 (빌라·주택 또는 상업용인 경우)
+                  if (isVillaHouse || isCommercial) {
+                    fields.push({ label: "용도지역", value: meta.zoning || "-" });
+                  }
+
+                  // 3. 지목 (토지인 경우)
+                  if (subCategory === "토지") {
+                    fields.push({ label: "지목", value: meta.land_purpose || "-" });
+                  }
+
+                  // 4. 도로 폭
+                  if (meta.road_width !== undefined && meta.road_width !== null && meta.road_width !== "") {
+                    fields.push({ label: "도로 폭", value: `${meta.road_width}m` });
+                  }
+
+                  // 19-1. 도로방향 (건물/빌딩, 공장/창고 매매)
+                  if (isCommercial && meta.road_direction) {
+                    fields.push({ label: "도로방향", value: meta.road_direction });
+                  }
+
+                  // ── 4그룹: 건물 세부 상태 ──
+                  // 4-1. 준공연도
+                  fields.push({
+                    label: "준공연도",
+                    value: v.metadata?.approval_year ? (v.metadata.approval_year <= 1979 ? "1980년 이전" : `${v.metadata.approval_year}년`) : "-"
+                  });
+
+                  // 5. 건물구조 (상업용 - 토지/지산 제외)
+                  if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
+                    fields.push({ label: "건물구조", value: meta.building_structure || "-" });
                   }
 
                   // 16. 엘리베이터 갯수 (상업용 - 토지/지산 제외)
@@ -1048,16 +1056,12 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     }
                   }
 
+                  // ── 5그룹: 계약 세부사항 및 투자 정보 ──
                   // 19. 입주가능일
                   fields.push({
                     label: subCategory === "토지" ? "사용 가능일" : "입주가능일",
                     value: v.move_in_date || (subCategory === "토지" ? "즉시사용" : "즉시입주(공실)")
                   });
-
-                  // 19-1. 도로방향 (건물/빌딩, 공장/창고 매매)
-                  if (isCommercial && meta.road_direction) {
-                    fields.push({ label: "도로방향", value: meta.road_direction });
-                  }
 
                   // 19-2. 권리금 (상가)
                   if (isCommercial && subCategory === "상가" && meta.premium_fee) {
@@ -1117,8 +1121,6 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   if (subCategory === "토지" && meta.development_potential) {
                     fields.push({ label: "개발가능", value: meta.development_potential });
                   }
-
-                  // 20. 관리비 제거 (상단으로 이동)
 
                   // 20-2. 중개보수/수수료
                   const commParts = [];

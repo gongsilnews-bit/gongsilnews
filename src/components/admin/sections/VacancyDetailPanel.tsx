@@ -395,69 +395,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
     const isVillaHouse = propType === "빌라·주택";
     const isCommercial = propType === "상가·사무실·건물·공장·토지";
 
-    // 2. 용도지역
-    if (isVillaHouse || isCommercial) {
-      fields.push({ label: "용도지역", value: meta.zoning || "-" });
-    }
-
-    // 3. 지목
-    if (subCategory === "토지") {
-      fields.push({ label: "지목", value: meta.land_purpose || "-" });
-    }
-
-    // 4. 준공연도
-    if (meta.approval_year) {
-      const yearVal = parseInt(meta.approval_year, 10);
-      fields.push({
-        label: "준공연도",
-        value: yearVal <= 1979 ? "1980년 이전" : `${yearVal}년`
-      });
-    }
-
-    // 5. 건물규모
-    if (meta.ground_floors !== undefined || meta.underground_floors !== undefined) {
-      const gFloors = meta.ground_floors || 0;
-      const uFloors = meta.underground_floors || 0;
-      if (gFloors > 0 || uFloors > 0) {
-        fields.push({
-          label: "건물규모",
-          value: `지하 ${uFloors}층 / 지상 ${gFloors}층`
-        });
-      }
-    }
-
-    // 6. 주용도 / 건물구조 / 위반건축물
-    if (isCommercial) {
-      if (meta.main_usage) fields.push({ label: "주용도", value: meta.main_usage });
-      if (meta.building_structure) fields.push({ label: "건물구조", value: meta.building_structure });
-      if (meta.is_illegal) fields.push({ label: "위반건축물", value: meta.is_illegal });
-    }
-
-    // 7. 엘리베이터 수
-    if (isCommercial && meta.elevator_cnt !== undefined && meta.elevator_cnt !== null) {
-      fields.push({ label: "엘리베이터 수", value: `${meta.elevator_cnt}대` });
-    }
-
-    // 8. 도로 폭
-    if (isCommercial && meta.road_width) {
-      fields.push({ label: "도로 폭", value: `${meta.road_width}m` });
-    }
-
-    // 9. 방 수 / 욕실 수 / 방향
-    const isResidential = ["아파트·오피스텔", "빌라·주택", "원룸·투룸(풀옵션)", "아파트", "오피스텔", "원룸", "1.5룸", "투룸", "빌라/연립", "단독/다가구", "전원주택", "상가주택"].some(t => propType.includes(t) || subCategory.includes(t));
-    if (isResidential) {
-      if (v.room_count || v.bathroom_count || v.bath_count) {
-        const bathVal = v.bathroom_count || v.bath_count || "-";
-        fields.push({
-          label: "방/욕실수",
-          value: `${v.room_count || "-"}개 / ${bathVal}개`
-        });
-      }
-      if (v.direction) {
-        fields.push({ label: "방향", value: v.direction });
-      }
-    }
-
+    // ── 2그룹: 면적 및 물리적 규모 (대폭 상향 배치) ──
     // 10. 공급면적 / 전용면적 / 대지면적
     const isSpecialSale = tradeType === "매매" && (
       (propType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) ||
@@ -474,6 +412,10 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
         fields.push({ label: "연면적", value: `${v.supply_m2}㎡ (${py}평)` });
       }
     } else {
+      if (meta.land_share_m2) {
+        const py = meta.land_share_py || Math.round(parseFloat(meta.land_share_m2) / 3.3);
+        fields.push({ label: "대지면적", value: `${meta.land_share_m2}㎡ (${py}평)` });
+      }
       const supArea = v.supply_m2 ? parseFloat(v.supply_m2) : 0;
       const excArea = v.exclusive_m2 ? parseFloat(v.exclusive_m2) : 0;
       const fmtM2Val = (m2: number) => m2 ? `${m2}㎡ (${(m2 / 3.3058).toFixed(1)}평)` : '';
@@ -491,18 +433,84 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
       }
     }
 
+    // 5. 건물규모
+    if (meta.ground_floors !== undefined || meta.underground_floors !== undefined) {
+      const gFloors = meta.ground_floors || 0;
+      const uFloors = meta.underground_floors || 0;
+      if (gFloors > 0 || uFloors > 0) {
+        fields.push({
+          label: "건물규모",
+          value: `지하 ${uFloors}층 / 지상 ${gFloors}층`
+        });
+      }
+    }
+
     // 11. 주차
     if (v.parking) {
       fields.push({ label: "주차대수", value: v.parking });
     }
 
-    // 12. 입주가능일
-    fields.push({
-      label: subCategory === "토지" ? "사용 가능일" : "입주가능일",
-      value: v.move_in_date || (subCategory === "토지" ? "즉시사용" : "즉시입주(공실)")
-    });
+    // 9. 방 수 / 욕실 수 / 방향
+    const isResidential = ["아파트·오피스텔", "빌라·주택", "원룸·투룸(풀옵션)", "아파트", "오피스텔", "원룸", "1.5룸", "투룸", "빌라/연립", "단독/다가구", "전원주택", "상가주택"].some(t => propType.includes(t) || subCategory.includes(t));
+    if (isResidential) {
+      if (v.room_count || v.bathroom_count || v.bath_count) {
+        const bathVal = v.bathroom_count || v.bath_count || "-";
+        fields.push({
+          label: "방/욕실수",
+          value: `${v.room_count || "-"}개 / ${bathVal}개`
+        });
+      }
+      if (v.direction) {
+        fields.push({ label: "방향", value: v.direction });
+      }
+    }
 
-    // 13. 상업용 세부 항목
+    // ── 3그룹: 용도 및 규제 정보 ──
+    // 6. 주용도 (상업용)
+    if (isCommercial && meta.main_usage) {
+      fields.push({ label: "주용도", value: meta.main_usage });
+    }
+
+    // 2. 용도지역
+    if (isVillaHouse || isCommercial) {
+      fields.push({ label: "용도지역", value: meta.zoning || "-" });
+    }
+
+    // 3. 지목
+    if (subCategory === "토지") {
+      fields.push({ label: "지목", value: meta.land_purpose || "-" });
+    }
+
+    // 8. 도로 폭
+    if (isCommercial && meta.road_width) {
+      fields.push({ label: "도로 폭", value: `${meta.road_width}m` });
+    }
+
+    // 19-1. 도로방향
+    if (isCommercial && meta.road_direction) {
+      fields.push({ label: "도로방향", value: meta.road_direction });
+    }
+
+    // ── 4그룹: 건물 세부 상태 ──
+    // 4. 준공연도
+    if (meta.approval_year) {
+      const yearVal = parseInt(meta.approval_year, 10);
+      fields.push({
+        label: "준공연도",
+        value: yearVal <= 1979 ? "1980년 이전" : `${yearVal}년`
+      });
+    }
+
+    // 건물구조 / 위반건축물 / 엘리베이터 수 (상업용)
+    if (isCommercial) {
+      if (meta.building_structure) fields.push({ label: "건물구조", value: meta.building_structure });
+      if (meta.elevator_cnt !== undefined && meta.elevator_cnt !== null) {
+        fields.push({ label: "엘리베이터 수", value: `${meta.elevator_cnt}대` });
+      }
+      if (meta.is_illegal) fields.push({ label: "위반건축물", value: meta.is_illegal });
+    }
+
+    // 지식산업센터 특화 제원
     if (isCommercial) {
       if (meta.jisan_usage) fields.push({ label: "호실 용도", value: meta.jisan_usage });
       if (meta.ceiling_height) fields.push({ label: "층고", value: `${meta.ceiling_height}m` });
@@ -510,10 +518,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
       if (meta.free_parking_cnt !== undefined && meta.free_parking_cnt !== null) {
         fields.push({ label: "무료 주차", value: `${meta.free_parking_cnt}대` });
       }
-    }
-
-    // 14. 상업용 특화 구조
-    if (isCommercial) {
+      
       const specialFeatures = [];
       if (meta.has_drive_in === "true" || meta.has_drive_in === true) specialFeatures.push("드라이브인");
       if (meta.has_door_to_door === "true" || meta.has_door_to_door === true) specialFeatures.push("도어투도어");
@@ -523,10 +528,12 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
       }
     }
 
-    // 19-1. 도로방향
-    if (isCommercial && meta.road_direction) {
-      fields.push({ label: "도로방향", value: meta.road_direction });
-    }
+    // ── 5그룹: 계약 세부사항 및 투자 정보 ──
+    // 12. 입주가능일
+    fields.push({
+      label: subCategory === "토지" ? "사용 가능일" : "입주가능일",
+      value: v.move_in_date || (subCategory === "토지" ? "즉시사용" : "즉시입주(공실)")
+    });
 
     // 19-2. 권리금
     if (isCommercial && subCategory === "상가" && meta.premium_fee) {
