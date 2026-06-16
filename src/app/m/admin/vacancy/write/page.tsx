@@ -98,6 +98,8 @@ function MobileVacancyWrite() {
   const [landSharePy, setLandSharePy] = useState("");
   const [zoning, setZoning] = useState("");
   const [landPurpose, setLandPurpose] = useState("");
+  const [terrain, setTerrain] = useState(""); // 지형/형상
+  const [developmentPotential, setDevelopmentPotential] = useState(""); // 개발가능
   const [existingMetadata, setExistingMetadata] = useState<any>({});
   const [areaUnit, setAreaUnit] = useState<"m2"|"py">("py");
   const [currentFloor, setCurrentFloor] = useState("");
@@ -307,6 +309,8 @@ function MobileVacancyWrite() {
           }
           if (d.metadata.zoning) setZoning(d.metadata.zoning);
           if (d.metadata.land_purpose) setLandPurpose(d.metadata.land_purpose);
+          if (d.metadata.terrain) setTerrain(d.metadata.terrain);
+          if (d.metadata.development_potential) setDevelopmentPotential(d.metadata.development_potential);
           if (d.metadata.building_coverage) setBuildingCoverage(String(d.metadata.building_coverage));
           if (d.metadata.floor_area_ratio) setFloorAreaRatio(String(d.metadata.floor_area_ratio));
           if (d.metadata.current_usage) setCurrentUsage(d.metadata.current_usage);
@@ -730,6 +734,8 @@ function MobileVacancyWrite() {
           free_parking_cnt: freeParkingCnt || undefined,
           zoning: zoning || undefined,
           land_purpose: landPurpose || undefined,
+          terrain: terrain || undefined,
+          development_potential: developmentPotential || undefined,
           building_coverage: buildingCoverage ? parseFloat(buildingCoverage) : undefined,
           floor_area_ratio: floorAreaRatio ? parseFloat(floorAreaRatio) : undefined,
           current_usage: currentUsage || undefined,
@@ -1326,21 +1332,90 @@ function MobileVacancyWrite() {
               )}
               
               {subCategory === "토지" && (
-                <div style={{ display:"flex", gap:10, marginBottom:10 }}>
-                  <div style={{flex:1}}>
-                    <label style={labelStyle}>토지 용도(지목)</label>
-                    <select value={landPurpose} onChange={e=>setLandPurpose(e.target.value)} style={inputStyle}>
-                      <option value="">선택</option>
-                      {["전", "답", "과수원", "목장용지", "임야", "광천지", "염전", "대", "공장용지", "학교용지", "주차장", "주유소용지", "창고용지", "도로", "철도용지", "제방", "하천", "구거", "유지", "양어장", "수도용지", "공원", "체육용지", "유원지", "종교용지", "사적지", "묘지", "잡종지"].map(v => (
-                        <option key={v} value={v}>{v}</option>
-                      ))}
-                    </select>
+                <>
+                  <div style={{ display:"flex", gap:10, marginBottom:10 }}>
+                    <div style={{flex:1}}>
+                      <label style={labelStyle}>토지 용도(지목)</label>
+                      <select value={landPurpose} onChange={e=>setLandPurpose(e.target.value)} style={inputStyle}>
+                        <option value="">선택</option>
+                        {["전", "답", "과수원", "목장용지", "임야", "광천지", "염전", "대", "공장용지", "학교용지", "주차장", "주유소용지", "창고용지", "도로", "철도용지", "제방", "하천", "구거", "유지", "양어장", "수도용지", "공원", "체육용지", "유원지", "종교용지", "사적지", "묘지", "잡종지"].map(v => (
+                          <option key={v} value={v}>{v}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{flex:1}}>
+                      <label style={labelStyle}>도로 폭</label>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <input type="number" placeholder="예: 6" value={roadWidth} onChange={(e) => setRoadWidth(e.target.value)} style={inputStyle} />
+                        <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>m</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
+
+                  <div style={{ display:"flex", gap:10, marginBottom:10 }}>
+                    <div style={{flex:1}}>
+                      <label style={labelStyle}>건폐율</label>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <input type="number" placeholder="예: 60" value={buildingCoverage} onChange={(e) => setBuildingCoverage(e.target.value)} style={inputStyle} />
+                        <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>%</span>
+                      </div>
+                    </div>
+                    <div style={{flex:1}}>
+                      <label style={labelStyle}>용적률</label>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <input type="number" placeholder="예: 200" value={floorAreaRatio} onChange={(e) => setFloorAreaRatio(e.target.value)} style={inputStyle} />
+                        <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display:"flex", gap:10, marginBottom:10 }}>
+                    <div style={{flex:1}}>
+                      <label style={labelStyle}>현재이용 (현용도)</label>
+                      {renderSelectOrInput(
+                        currentUsage,
+                        setCurrentUsage,
+                        ["나대지", "농경지", "주차장", "과수원", "잡종지", "창고지"].map(v => ({ label: v, value: v })),
+                        "직접 입력"
+                      )}
+                    </div>
+                    <div style={{flex:1}}>
+                      <label style={labelStyle}>지형/형상</label>
+                      {renderSelectOrInput(
+                        terrain,
+                        setTerrain,
+                        ["평지", "완경사", "급경사", "고지", "저지"].map(v => ({ label: v, value: v })),
+                        "직접 입력"
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display:"flex", gap:10, marginBottom:10 }}>
+                    <div style={{flex:1}}>
+                      <label style={labelStyle}>개발가능 여부</label>
+                      {renderSelectOrInput(
+                        developmentPotential,
+                        setDevelopmentPotential,
+                        ["즉시 가능", "허가 필요", "개발 불가", "협의 필요"].map(v => ({ label: v, value: v })),
+                        "직접 입력"
+                      )}
+                    </div>
+                    <div style={{flex:1}}>
+                      <label style={labelStyle}>사용 가능일</label>
+                      <select value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)} style={inputStyle}>
+                        <option>즉시사용</option>
+                        <option>1개월 이내</option>
+                        <option>2개월 이내</option>
+                        <option>3개월 이내</option>
+                        <option>날짜 협의</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
               )}
             </>
           )}
-          {(tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "토지", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고", "토지"].includes(subCategory || ""))) ? (
+          {(tradeType === "매매" && ["단독/다가구", "전원주택", "상가주택", "빌딩/건물", "공장/창고", "상가건물", "상가/업무"].includes(subCategory || "") || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory || ""))) ? (
             <>
               <div style={{ display:"flex", gap:10, marginBottom:14 }}>
                 <div style={{flex:1}}>

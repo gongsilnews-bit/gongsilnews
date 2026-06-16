@@ -175,6 +175,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   // 토지 관련 옵션
   const [zoning, setZoning] = useState("");
   const [landPurpose, setLandPurpose] = useState("");
+  const [terrain, setTerrain] = useState(""); // 지형/형상
+  const [developmentPotential, setDevelopmentPotential] = useState(""); // 개발가능
 
   // 건물 매매 추가 필드
   const [roadWidth, setRoadWidth] = useState("");
@@ -348,10 +350,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.metadata?.main_usage) setMainUsage(editData.metadata.main_usage);
     if (editData.metadata?.elevator_cnt) setElevatorCnt(editData.metadata.elevator_cnt);
     if (editData.metadata?.is_illegal) setIsIllegal(editData.metadata.is_illegal);
-    if (editData.metadata?.building_structure) setBuildingStructure(editData.metadata.building_structure);
     if (editData.metadata?.zoning) setZoning(editData.metadata.zoning);
     if (editData.metadata?.land_purpose) setLandPurpose(editData.metadata.land_purpose);
+    if (editData.metadata?.terrain) setTerrain(editData.metadata.terrain);
+    if (editData.metadata?.development_potential) setDevelopmentPotential(editData.metadata.development_potential);
     if (editData.metadata?.building_coverage) setBuildingCoverage(String(editData.metadata.building_coverage));
+    if (editData.metadata?.floor_area_ratio) setFloorAreaRatio(String(editData.metadata.floor_area_ratio));
     if (editData.metadata?.floor_area_ratio) setFloorAreaRatio(String(editData.metadata.floor_area_ratio));
     if (editData.metadata?.current_usage) setCurrentUsage(editData.metadata.current_usage);
     if (editData.metadata?.current_rental_deposit) setCurrentRentalDeposit(String(editData.metadata.current_rental_deposit));
@@ -487,10 +491,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.metadata?.main_usage) setMainUsage(editData.metadata.main_usage);
     if (editData.metadata?.elevator_cnt) setElevatorCnt(editData.metadata.elevator_cnt);
     if (editData.metadata?.is_illegal) setIsIllegal(editData.metadata.is_illegal);
-    if (editData.metadata?.building_structure) setBuildingStructure(editData.metadata.building_structure);
     if (editData.metadata?.zoning) setZoning(editData.metadata.zoning);
     if (editData.metadata?.land_purpose) setLandPurpose(editData.metadata.land_purpose);
+    if (editData.metadata?.terrain) setTerrain(editData.metadata.terrain);
+    if (editData.metadata?.development_potential) setDevelopmentPotential(editData.metadata.development_potential);
     if (editData.metadata?.building_coverage) setBuildingCoverage(String(editData.metadata.building_coverage));
+    if (editData.metadata?.floor_area_ratio) setFloorAreaRatio(String(editData.metadata.floor_area_ratio));
     if (editData.metadata?.floor_area_ratio) setFloorAreaRatio(String(editData.metadata.floor_area_ratio));
     if (editData.metadata?.current_usage) setCurrentUsage(editData.metadata.current_usage);
     if (editData.metadata?.road_width) setRoadWidth(String(editData.metadata.road_width));
@@ -1624,34 +1630,106 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   )}
                 </div>
               </div>
-              {/* 2행: 토지 → 지목 | 도로폭 */}
+              {/* 2행 이하: 토지 전용 필드 */}
               {isLand && (
-              <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>토지 용도(지목)</label>
-                  <select
-                    value={landPurpose}
-                    onChange={(e) => setLandPurpose(e.target.value)}
-                    style={inputStyle}
-                  >
-                    <option value="">선택</option>
-                    {["전", "답", "과수원", "목장용지", "임야", "광천지", "염전", "대", "공장용지", "학교용지", "주차장", "주유소용지", "창고용지", "도로", "철도용지", "제방", "하천", "구거", "유지", "양어장", "수도용지", "공원", "체육용지", "유원지", "종교용지", "사적지", "묘지", "잡종지"].map(v => (
-                      <option key={v} value={v}>{v}</option>
-                    ))}
-                  </select>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>도로 폭</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input type="number" placeholder="예: 6" value={roadWidth} onChange={(e) => setRoadWidth(e.target.value)} style={inputStyle} />
-                    <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>m</span>
+              <>
+                {/* 2행: 토지 용도(지목) | 도로 폭 */}
+                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>토지 용도(지목)</label>
+                    <select
+                      value={landPurpose}
+                      onChange={(e) => setLandPurpose(e.target.value)}
+                      style={inputStyle}
+                    >
+                      <option value="">선택</option>
+                      {["전", "답", "과수원", "목장용지", "임야", "광천지", "염전", "대", "공장용지", "학교용지", "주차장", "주유소용지", "창고용지", "도로", "철도용지", "제방", "하천", "구거", "유지", "양어장", "수도용지", "공원", "체육용지", "유원지", "종교용지", "사적지", "묘지", "잡종지"].map(v => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>도로 폭</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="number" placeholder="예: 6" value={roadWidth} onChange={(e) => setRoadWidth(e.target.value)} style={inputStyle} />
+                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>m</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+
+                {/* 3행: 건폐율 | 용적률 */}
+                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>건폐율</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="number" placeholder="예: 60" value={buildingCoverage} onChange={(e) => setBuildingCoverage(e.target.value)} style={inputStyle} />
+                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>%</span>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>용적률</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="number" placeholder="예: 200" value={floorAreaRatio} onChange={(e) => setFloorAreaRatio(e.target.value)} style={inputStyle} />
+                      <span style={{ color: textSecondary, fontSize: 14, flexShrink: 0 }}>%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4행: 현재이용 | 지형/형상 */}
+                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>현재이용 (현용도)</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {renderSelectOrInput(
+                        currentUsage,
+                        setCurrentUsage,
+                        ["나대지", "농경지", "주차장", "과수원", "잡종지", "창고지"].map(v => ({ label: v, value: v })),
+                        "직접 입력"
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>지형/형상</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {renderSelectOrInput(
+                        terrain,
+                        setTerrain,
+                        ["평지", "완경사", "급경사", "고지", "저지"].map(v => ({ label: v, value: v })),
+                        "직접 입력"
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5행: 개발가능 | 사용 가능일 */}
+                <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>개발가능 여부</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {renderSelectOrInput(
+                        developmentPotential,
+                        setDevelopmentPotential,
+                        ["즉시 가능", "허가 필요", "개발 불가", "협의 필요"].map(v => ({ label: v, value: v })),
+                        "직접 입력"
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>사용 가능일</label>
+                    <select value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                      <option>즉시사용</option>
+                      <option>1개월 이내</option>
+                      <option>2개월 이내</option>
+                      <option>3개월 이내</option>
+                      <option>날짜 협의</option>
+                    </select>
+                  </div>
+                </div>
+              </>
               )}
               </>
             )}
-            {tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && (
+            {!isLand && tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory))) && (
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>건폐율</label>
@@ -1891,9 +1969,9 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             )}
 
-            {/* 주차 / 입주가능일 (토지: 주차 제외, 사용가능일만 표시) */}
+            {/* 주차 / 입주가능일 (토지 제외) */}
+            {!isLand && (
             <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-              {!isLand && (
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>주차가능 여부</label>
                 <select value={parking} onChange={(e) => setParking(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
@@ -1918,14 +1996,14 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   )}
                 </select>
               </div>
-              )}
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>{isLand ? "사용 가능일" : (tradeType === "매매" || isCommercial) ? "사용가능일" : "입주가능일"}</label>
+                <label style={labelStyle}>{(tradeType === "매매" || isCommercial) ? "사용가능일" : "입주가능일"}</label>
                 <select value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                  <option>{isLand ? "즉시사용" : (tradeType === "매매" || isCommercial) ? "즉시사용" : "즉시입주(공실)"}</option><option>1개월 이내</option><option>2개월 이내</option><option>3개월 이내</option><option>날짜 협의</option>
+                  <option>{(tradeType === "매매" || isCommercial) ? "즉시사용" : "즉시입주(공실)"}</option><option>1개월 이내</option><option>2개월 이내</option><option>3개월 이내</option><option>날짜 협의</option>
                 </select>
               </div>
             </div>
+            )}
 
             {/* 지식산업센터 특화 제원 */}
             {subCategory === "지식산업센터" && (
@@ -2507,6 +2585,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                       building_structure: buildingStructure,
                       zoning: zoning || null,
                       land_purpose: landPurpose || null,
+                      terrain: terrain || null,
+                      development_potential: developmentPotential || null,
                       road_width: roadWidth ? parseFloat(roadWidth) : null,
                       road_direction: roadDirection || null,
                       ground_floors: groundFloors ? parseInt(groundFloors) : null,

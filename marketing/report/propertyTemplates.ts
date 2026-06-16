@@ -396,6 +396,18 @@ export const buildOverviewTable = (
 
     // 빌딩/상가/토지용 — metadata 내부 필드 참조
     zoning: meta.zoning || '',
+    landCategory: meta.land_purpose || '',
+    coverageRatio: (() => {
+      const cov = meta.building_coverage || meta.coverage;
+      const far = meta.floor_area_ratio || meta.far;
+      if (cov && far) return `건폐율 ${cov}% / 용적률 ${far}%`;
+      if (cov) return `건폐율 ${cov}%`;
+      if (far) return `용적률 ${far}%`;
+      return '';
+    })(),
+    roadCondition: meta.road_width ? `${meta.road_width}m 도로 접함` : '',
+    terrain: meta.terrain || '',
+    developmentPotential: meta.development_potential || '',
     landArea: formatLandArea(meta),
     landAreaZoning: [formatLandArea(meta), meta.zoning].filter(Boolean).join(' / '),
     totalArea: formatTotalArea(vacancy),
