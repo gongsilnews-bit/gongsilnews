@@ -592,6 +592,49 @@ export const buildInvestmentSummary = (
   const exclusivePy = exclusiveM2 ? `${(exclusiveM2 / 3.3058).toFixed(0)}평` : '';
   const approvalYear = vacancy.metadata?.approval_year ? (vacancy.metadata.approval_year <= 1979 ? "1980년 이전" : `${vacancy.metadata.approval_year}년`) : '';
 
+  // 토지(land)인 경우 커스텀 3박스 생성
+  if (category === 'land') {
+    const meta = vacancy.metadata || {};
+    const roadWidth = meta.road_width ? parseFloat(meta.road_width) : 0;
+    const roadText = roadWidth > 0 ? `${roadWidth}m 도로 접합\n진입성 우수` : '도로 접합\n진입성 확인';
+    const zoning = meta.zoning || '';
+    const devPotential = meta.development_potential || '';
+    const currentUsage = meta.current_usage || '';
+    const terrain = meta.terrain || '';
+
+    const devText = [devPotential, zoning ? `${zoning} 지역` : ''].filter(Boolean).join('\n') || '개발가능 여부\n협의 필요';
+    const usageText = (currentUsage || terrain)
+      ? `${[currentUsage, terrain ? `(${terrain})` : ''].filter(Boolean).join(' ')}\n다용도 활용 가능`
+      : '지목/현황에 맞춰\n다용도 활용 가능';
+
+    if (transactionType === '매매') {
+      return {
+        sectionTitle: 'INVESTMENT SUMMARY',
+        sectionSubtitle: '투자요약',
+        box1Title: 'LOCATION',
+        box1Text: roadText,
+        box2Title: 'DEVELOPMENT',
+        box2Text: devText,
+        box3Title: 'CURRENT STATUS',
+        box3Text: usageText,
+      };
+    } else {
+      // 전세, 월세, 단기임대
+      const moveInText = moveIn === '즉시입주' || moveIn.includes('즉시') ? '즉시사용\n가능' : `${moveIn}\n사용 가능`;
+      const rentalUseText = currentUsage ? `${currentUsage} 상태\n야적장 등 추천` : '나대지 상태\n야적장 등 추천';
+      return {
+        sectionTitle: 'RENTAL SUMMARY',
+        sectionSubtitle: '임대요약',
+        box1Title: 'LOCATION',
+        box1Text: roadText,
+        box2Title: 'CURRENT USE',
+        box2Text: rentalUseText,
+        box3Title: 'USE-DATE',
+        box3Text: moveInText,
+      };
+    }
+  }
+
   // 방향 텍스트
   const dirText = direction ? `${direction}\n채광 우수` : '우수한\n채광 조건';
   // 주차 텍스트
