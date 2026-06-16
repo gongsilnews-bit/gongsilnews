@@ -1,4 +1,5 @@
 {
+  "buildCommand": "npm run build:all",
   "crons": [
     {
       "path": "/api/cron/press-release",

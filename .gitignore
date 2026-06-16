@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# sub-project build outputs (Vercel builds these automatically via build:all)
+/public/marketing/report/assets/
+/public/marketing/ai-detail/assets/
