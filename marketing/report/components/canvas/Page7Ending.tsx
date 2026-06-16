@@ -325,7 +325,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                   <div className="w-5/12 flex flex-col justify-center items-center h-full">
                     <div className="w-full aspect-[9/5] border border-gray-300 rounded-2xl p-8 shadow-sm flex flex-col justify-center items-center text-center">
                       {/* Inquiry Label */}
-                      <div className="text-[22px] text-[var(--theme-primary)] font-black tracking-tight mb-1">
+                      <div className="text-[22px] text-[var(--theme-primary)] font-black tracking-tight mb-1 whitespace-nowrap">
                         문의 : <EditableText value={info.agentRepresentative || info.agencyRepresentative || "김정민"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
                       </div>
                       {/* Phone Number */}
