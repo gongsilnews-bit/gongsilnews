@@ -103,7 +103,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                   <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm text-gray-800">
                     <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32 rounded-md" />
                     <div className="text-left">
-                      <p className="text-xs font-black text-gray-800">QR 안내</p>
+                      <p className="text-xs font-black text-gray-800">QR 온라인 보고서</p>
                       <p className="text-[14px] text-gray-400 font-bold leading-tight mt-0.5">스마트폰 카메라로<br />스캔하여 상세 정보 확인</p>
                     </div>
                   </div>
@@ -176,7 +176,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm">
                       <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32 rounded-md" />
                       <div className="text-left">
-                        <p className="text-xs font-black text-gray-800">QR 안내</p>
+                        <p className="text-xs font-black text-gray-800">QR 온라인 보고서</p>
                         <p className="text-[14px] text-gray-400 font-bold leading-tight mt-0.5">스마트폰 카메라로<br />스캔하여 상세 정보 확인</p>
                       </div>
                     </div>
@@ -263,7 +263,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                   <div className="flex items-center gap-4 bg-white p-3 rounded-xl shadow-lg border border-white/10 text-gray-800">
                     <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32 rounded-md" />
                     <div className="text-left">
-                      <p className="text-xs font-black text-gray-800">QR 안내</p>
+                      <p className="text-xs font-black text-gray-800">QR 온라인 보고서</p>
                       <p className="text-[14px] text-gray-400 font-bold leading-tight mt-0.5">스마트폰 카메라로<br />스캔하여 상세 정보 확인</p>
                     </div>
                   </div>
@@ -346,7 +346,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                   <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm text-gray-800">
                     <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32 rounded-md" />
                     <div className="text-left">
-                      <p className="text-xs font-black text-gray-800">QR 안내</p>
+                      <p className="text-xs font-black text-gray-800">QR 온라인 보고서</p>
                       <p className="text-[14px] text-gray-400 font-bold leading-tight mt-0.5">스마트폰 카메라로<br />스캔하여 상세 정보 확인</p>
                     </div>
                   </div>
@@ -468,7 +468,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                       )}
                     </label>
                     <div className="text-left">
-                      <p className="text-xs font-black text-gray-800">QR 안내</p>
+                      <p className="text-xs font-black text-gray-800">QR 온라인 보고서</p>
                       <p className="text-[14px] text-gray-400 font-bold leading-tight mt-0.5">스마트폰 카메라로<br />스캔하여 상세 정보 확인</p>
                     </div>
                   </div>

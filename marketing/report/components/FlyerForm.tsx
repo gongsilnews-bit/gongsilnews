@@ -374,7 +374,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                   <input type="text" name="coverSubtitle" value={info.coverSubtitle || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" />
                               </div>
                               <div>
-                                  <label className="text-xs text-gray-500">QR 안내 링크 (QR Code Link)</label>
+                                  <label className="text-xs text-gray-500">QR 온라인 보고서 링크 (QR Code Link)</label>
                                   <input type="text" name="coverQRLink" value={info.coverQRLink || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm placeholder-gray-400 font-mono" placeholder="https://..." />
                               </div>
                           </div>
