@@ -393,10 +393,20 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 <div className="w-5/12 flex flex-col justify-center gap-12 bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
                   <div>
                     <span className="text-xs text-[var(--theme-secondary)] font-bold tracking-widest block mb-3">AGENT</span>
-                    <span className="text-4xl font-extrabold text-white tracking-tight"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-4xl font-extrabold text-white tracking-tight"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
+                      <a href={`tel:${String(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-secondary)] text-[var(--theme-dark)] flex items-center justify-center shadow-md hover:opacity-80 transition-opacity" title="전화걸기">
+                        <PhoneIcon className="w-4 h-4" />
+                      </a>
+                      <a href={`sms:${String(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-secondary)] text-[var(--theme-dark)] flex items-center justify-center shadow-md hover:opacity-80 transition-opacity" title="문자보내기">
+                        <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" />
+                      </a>
+                    </div>
                   </div>
-                  <div className="pt-6 border-t border-white/10">
-                    <PhoneBox info={info} hc={hc} dark stacked={true} />
+                  <div className="text-center">
+                    <div className="text-[30px] font-black text-[var(--theme-secondary)] tracking-tight">
+                      <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
+                    </div>
                   </div>
                 </div>
                 
