@@ -149,33 +149,6 @@ const KakaoMap = ({ address, lat, lng, onCoordsChange }: KakaoMapProps) => {
     }
   }, [loaded, address, lat, lng, onCoordsChange]);
 
-  const handleAddressSearchReset = () => {
-    if (!loaded || !(window as any).kakao || !(window as any).kakao.maps || !address) return;
-
-    try {
-      const geocoder = new (window as any).kakao.maps.services.Geocoder();
-      
-      let cleanAddress = address.split('\n')[0];
-      const cleanPatterns = [/(매매|전세|월세|임대).*/g, /\d+억.*/g, /\s+([지상하B]*\d+[층호]).*$/g];
-      cleanPatterns.forEach(pat => {
-        cleanAddress = cleanAddress.replace(pat, "").trim();
-      });
-
-      geocoder.addressSearch(cleanAddress, (result: any, status: any) => {
-        if (status === (window as any).kakao.maps.services.Status.OK) {
-          if (onCoordsChange) {
-            onCoordsChange(Number(result[0].y), Number(result[0].x));
-          }
-        } else {
-          alert(`주소 "${cleanAddress}"에 매칭되는 정확한 좌표를 찾을 수 없습니다. 올바른 지번이나 도로명 주소인지 확인해주세요.`);
-        }
-      });
-    } catch (e) {
-      console.error("Geocoding reset error", e);
-      alert("주소 검색 중 오류가 발생했습니다.");
-    }
-  };
-
   if (errorMsg) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 font-bold p-6 text-center">
@@ -191,15 +164,6 @@ const KakaoMap = ({ address, lat, lng, onCoordsChange }: KakaoMapProps) => {
   return (
     <div className="w-full h-full relative" style={{ minHeight: "100%" }}>
       <div ref={containerRef} className="w-full h-full relative" />
-      {onCoordsChange && (
-        <button
-          type="button"
-          onClick={handleAddressSearchReset}
-          className="absolute top-4 right-4 z-[50] flex items-center gap-1 bg-white hover:bg-gray-50 text-[10px] font-bold text-gray-700 px-2.5 py-1.5 rounded-lg border border-gray-200 shadow-md cursor-pointer print:hidden transition-colors"
-        >
-          🔍 입력한 주소로 재검색
-        </button>
-      )}
     </div>
   );
 };

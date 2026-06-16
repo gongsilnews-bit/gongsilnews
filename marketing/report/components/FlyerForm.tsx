@@ -80,6 +80,57 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
     }
   };
 
+  const handleGeocodeAddress = (type: 'page5' | 'page7') => {
+    const addressToSearch = type === 'page5' 
+      ? (info.mapAddress || info.address) 
+      : (info.agentMapAddress || info.agentAddress);
+
+    if (!addressToSearch) {
+      alert("검색할 주소를 먼저 입력해주세요.");
+      return;
+    }
+
+    if (!(window as any).kakao || !(window as any).kakao.maps || !(window as any).kakao.maps.services) {
+      alert("지도 라이브러리가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
+    try {
+      const geocoder = new (window as any).kakao.maps.services.Geocoder();
+      let cleanAddress = addressToSearch.split('\n')[0];
+      const cleanPatterns = [/(매매|전세|월세|임대).*/g, /\d+억.*/g, /\s+([지상하B]*\d+[층호]).*$/g];
+      cleanPatterns.forEach(pat => {
+        cleanAddress = cleanAddress.replace(pat, "").trim();
+      });
+
+      geocoder.addressSearch(cleanAddress, (result: any, status: any) => {
+        if (status === (window as any).kakao.maps.services.Status.OK) {
+          const newLat = Number(result[0].y);
+          const newLng = Number(result[0].x);
+          if (type === 'page5') {
+            setInfo({
+              ...info,
+              page5Lat: newLat,
+              page5Lng: newLng
+            });
+          } else {
+            setInfo({
+              ...info,
+              page7Lat: newLat,
+              page7Lng: newLng
+            });
+          }
+          alert("주소 검색 결과로 지도 위치가 갱신되었습니다.");
+        } else {
+          alert(`주소 "${cleanAddress}"에 매칭되는 정확한 좌표를 찾을 수 없습니다. 올바른 지번이나 도로명 주소인지 확인해주세요.`);
+        }
+      });
+    } catch (e) {
+      console.error("Geocoding reset error", e);
+      alert("주소 검색 중 오류가 발생했습니다.");
+    }
+  };
+
   const primaryColor = currentColor.primary;
 
   const renderImageUpload = (key: string, label: string) => (
@@ -1055,6 +1106,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                   placeholder={info.address || "예: 서울시 강남구 역삼동 123"} 
                                   className="w-full border rounded p-2 text-sm bg-white text-gray-800" 
                               />
+                              <button
+                                  type="button"
+                                  onClick={() => handleGeocodeAddress('page5')}
+                                  className="w-full mt-1.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition-colors flex items-center justify-center gap-1 border-none cursor-pointer"
+                              >
+                                  🔍 입력한 주소로 재검색
+                              </button>
                           </div>
                           <div><label className="text-xs text-gray-500">타겟 로케이션 (우측 상단 뱃지)</label><textarea name="areaTargetName" value={info.areaTargetName} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={2}/></div>
                           <div><label className="text-xs text-gray-500">입지 설명 텍스트</label><textarea name="areaTargetDesc" value={info.areaTargetDesc} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4}/></div>
@@ -1288,6 +1346,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                       placeholder={info.agentAddress || "예: 서울시 서초구 서초동 456"} 
                                       className="w-full border rounded p-2 text-sm bg-white text-gray-800" 
                                   />
+                                  <button
+                                      type="button"
+                                      onClick={() => handleGeocodeAddress('page7')}
+                                      className="w-full mt-1.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition-colors flex items-center justify-center gap-1 border-none cursor-pointer"
+                                  >
+                                      🔍 입력한 주소로 재검색
+                              </button>
                               </div>
                           </div>
                       </div>
