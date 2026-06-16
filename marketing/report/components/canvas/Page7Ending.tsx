@@ -321,19 +321,15 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 </div>
 
                 <div className="flex gap-8 my-5 flex-1 h-full">
-                  {/* 왼쪽: 문의 정보 카드 */}
-                  <div className="w-5/12 flex flex-col justify-center h-full">
-                    <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm flex flex-col justify-center items-start h-full">
-                      {/* Agency Name */}
-                      <div className="text-[22px] font-black text-[var(--theme-primary)] tracking-tight mb-6">
-                        <EditableText value={info.agentName || "미래에셋공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
-                      </div>
+                  {/* 왼쪽: 명함 스타일 문의 카드 */}
+                  <div className="w-5/12 flex flex-col justify-center items-center h-full">
+                    <div className="w-full aspect-[9/5] border border-gray-300 rounded-2xl p-8 shadow-sm flex flex-col justify-center items-center text-center">
                       {/* Inquiry Label */}
-                      <div className="text-[16px] text-[var(--theme-primary)] font-extrabold mb-2">
+                      <div className="text-[22px] text-[var(--theme-primary)] font-black tracking-tight mb-1">
                         문의 : <EditableText value={info.agentRepresentative || info.agencyRepresentative || "김정민"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
                       </div>
                       {/* Phone Number */}
-                      <div className="text-[32px] font-black text-[var(--theme-primary)] tracking-tight mb-6">
+                      <div className="text-[32px] font-black text-[var(--theme-primary)] tracking-tight mb-5">
                         <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
                       </div>
                       {/* Phone / SMS Buttons */}
