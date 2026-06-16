@@ -171,6 +171,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, active
                 onImageUpload={onImageUpload}
                 onDeleteImage={onDeleteImage}
                 isUploading={isUploadingImage?.['agentImage'] || isUploadingImage?.['agentCardFront'] || false}
+                isUploadingImage={isUploadingImage}
             />
         )}
       </div>

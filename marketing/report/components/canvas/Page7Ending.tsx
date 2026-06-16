@@ -25,16 +25,95 @@ interface Props {
   onImageUpload?: (key: string, file: File) => Promise<string | undefined>;
   onDeleteImage?: (key: string) => void;
   isUploading?: boolean;
+  isUploadingImage?: Record<string, boolean>;
 }
 
-const MapBlock = ({ info, className = "h-[290px]" }: { info: PropertyInfo, className?: string }) => (
-  <div className={`w-full overflow-hidden relative ${className}`}>
-    {info.agentAddress ? (
-      <KakaoMap address={String(info.agentAddress)} />
-    ) : (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400 font-bold text-sm">
-        <MapPinIcon className="w-8 h-8 text-gray-300 mb-2" />
-        오시는 길 주소를 입력하면 지도가 표시됩니다.
+const MapBlock = ({ 
+  info, 
+  onUpdateInfo,
+  onImageUpload,
+  onDeleteImage,
+  isUploadingImage,
+  className = "h-[290px]" 
+}: { 
+  info: PropertyInfo, 
+  onUpdateInfo?: (info: any) => void,
+  onImageUpload?: (key: string, file: File) => Promise<string | undefined>,
+  onDeleteImage?: (key: string) => void,
+  isUploadingImage?: Record<string, boolean>,
+  className?: string 
+}) => (
+  <div className={`w-full overflow-hidden relative group/map z-10 ${className}`}>
+    {/* Map Mode Picker Overlay (print:hidden, visible on hover) */}
+    <div className="absolute top-4 left-4 z-[40] flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-1 shadow-md opacity-0 group-hover/map:opacity-100 transition-opacity duration-200 print:hidden">
+      {[
+        { type: "kakao", label: "카카오" },
+        { type: "upload", label: "이미지 업로드" }
+      ].map(opt => (
+        <button
+          key={opt.type}
+          type="button"
+          onClick={() => onUpdateInfo && onUpdateInfo({ ...info, agentMapType: opt.type })}
+          className={`px-2 py-1 rounded-lg text-[9px] font-extrabold transition-colors cursor-pointer border-none ${
+            (info.agentMapType || "kakao") === opt.type 
+              ? "bg-[#cc5a27] text-white" 
+              : "hover:bg-gray-100 text-gray-600 bg-transparent"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+
+    {(!info.agentMapType || info.agentMapType === "kakao") && (
+      info.agentAddress ? (
+        <KakaoMap 
+          address={String(info.agentAddress)} 
+          lat={info.page7Lat}
+          lng={info.page7Lng}
+          onCoordsChange={(lat, lng) => {
+            if (onUpdateInfo) {
+              onUpdateInfo({
+                ...info,
+                page7Lat: lat,
+                page7Lng: lng
+              });
+            }
+          }}
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400 font-bold text-sm">
+          <MapPinIcon className="w-8 h-8 text-gray-300 mb-2" />
+          오시는 길 주소를 입력하면 지도가 표시됩니다.
+        </div>
+      )
+    )}
+
+    {info.agentMapType === "upload" && (
+      <div className="w-full h-full relative">
+        <EditableImage 
+          src={info.agentMapImage || ""} 
+          alt="Uploaded Agent Map" 
+          imageKey="agentMapImage"
+          onImageUpload={async (key, file) => {
+            if (onImageUpload) {
+              const url = await onImageUpload('agentMapImage', file);
+              if (url && onUpdateInfo) onUpdateInfo({ ...info, agentMapImage: url });
+            }
+          }}
+          onDelete={() => {
+            if (onUpdateInfo) onUpdateInfo({ ...info, agentMapImage: "" });
+            if (onDeleteImage) onDeleteImage('agentMapImage');
+          }}
+          isUploading={isUploadingImage?.agentMapImage}
+          aspectRatioClass="object-cover"
+        />
+        {!info.agentMapImage && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-4 text-center">
+            <MapPinIcon className="w-8 h-8 text-gray-300 mb-1" />
+            <span className="text-[10px] text-gray-400 font-bold">마우스를 올려 지도를 업로드하세요</span>
+          </div>
+        )}
       </div>
     )}
   </div>
@@ -126,7 +205,7 @@ const SnsBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyInf
   </div>
 );
 
-const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, agentImage, onImageUpload, onDeleteImage, isUploading }) => {
+const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, onUpdateInfo, agentImage, onImageUpload, onDeleteImage, isUploading, isUploadingImage }) => {
   const hc = (key: string, value: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, [key]: value }); };
   const headingFont = layoutTheme?.headingFont || 'font-sans';
   const bodyFont = layoutTheme?.bodyFont || 'font-sans';
@@ -166,7 +245,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               <div className="flex flex-col gap-6 flex-1">
                 {/* 상단: 지도(좌) + 연락처/SNS(우) */}
                 <div className="flex gap-6 flex-1">
-                  <MapBlock info={info} className="w-7/12 rounded-xl border border-gray-200" />
+                  <MapBlock info={info} onUpdateInfo={onUpdateInfo} onImageUpload={onImageUpload} onDeleteImage={onDeleteImage} isUploadingImage={isUploadingImage} className="w-7/12 rounded-xl border border-gray-200" />
                   
                   <div className="w-5/12 flex flex-col justify-center">
                     <div className="bg-white border border-gray-100 p-8 rounded-xl flex-1 flex flex-col justify-center shadow-sm">
@@ -275,7 +354,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
 
                   {/* 오른쪽: 지도 및 오시는 길/연락처 */}
                   <div className="w-7/12 flex flex-col gap-4 h-full">
-                    <MapBlock info={info} className="flex-1 rounded-xl border border-gray-200 shadow-sm" />
+                    <MapBlock info={info} onUpdateInfo={onUpdateInfo} onImageUpload={onImageUpload} onDeleteImage={onDeleteImage} isUploadingImage={isUploadingImage} className="flex-1 rounded-xl border border-gray-200 shadow-sm" />
                     
                     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex items-center justify-between gap-4 shrink-0">
                       <div className="flex-1">
@@ -333,7 +412,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 </div>
                 
                 <div className="w-7/12 flex flex-col">
-                  <MapBlock info={info} className="flex-1 mb-3 border border-white/10 rounded-xl" />
+                  <MapBlock info={info} onUpdateInfo={onUpdateInfo} onImageUpload={onImageUpload} onDeleteImage={onDeleteImage} isUploadingImage={isUploadingImage} className="flex-1 mb-3 border border-white/10 rounded-xl" />
                   
                   {/* Custom Directions Box for Theme 4 with Agent Name */}
                   <div className="flex gap-3 shrink-0">
@@ -422,7 +501,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                   </div>
                 </div>
                 <div className="w-7/12 flex flex-col">
-                  <MapBlock info={info} className="flex-1 mb-3 border border-gray-200 rounded-xl" />
+                  <MapBlock info={info} onUpdateInfo={onUpdateInfo} onImageUpload={onImageUpload} onDeleteImage={onDeleteImage} isUploadingImage={isUploadingImage} className="flex-1 mb-3 border border-gray-200 rounded-xl" />
                   <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} className="" />
                 </div>
               </div>
@@ -450,7 +529,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 <div className="w-16 h-1 bg-[var(--theme-primary)] mt-4"></div>
               </div>
 
-              <MapBlock info={info} className="flex-1 mb-6 mt-4 rounded-xl border border-gray-200 shadow-sm" />
+              <MapBlock info={info} onUpdateInfo={onUpdateInfo} onImageUpload={onImageUpload} onDeleteImage={onDeleteImage} isUploadingImage={isUploadingImage} className="flex-1 mb-6 mt-4 rounded-xl border border-gray-200 shadow-sm" />
               <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} className="bg-white" />
               <PhoneBox info={info} hc={hc} />
 

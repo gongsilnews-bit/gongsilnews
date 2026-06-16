@@ -1,6 +1,13 @@
 import React from 'react';
 
-const KakaoMap = ({ address }: { address: string }) => {
+interface KakaoMapProps {
+  address: string;
+  lat?: number | null;
+  lng?: number | null;
+  onCoordsChange?: (lat: number, lng: number) => void;
+}
+
+const KakaoMap = ({ address, lat, lng, onCoordsChange }: KakaoMapProps) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
@@ -48,79 +55,99 @@ const KakaoMap = ({ address }: { address: string }) => {
       const container = containerRef.current;
       container.innerHTML = "";
 
-      const geocoder = new (window as any).kakao.maps.services.Geocoder();
-      
-      // Clean up search query (take only the first line if multiline, to allow directions text)
+      const initMapWithCoords = (coords: any, labelText: string) => {
+        const options = {
+          center: coords,
+          level: 3
+        };
+
+        const map = new (window as any).kakao.maps.Map(container, options);
+
+        // Add a custom styled marker
+        const marker = new (window as any).kakao.maps.Marker({
+          map: map,
+          position: coords,
+          draggable: !!onCoordsChange
+        });
+
+        // Add a beautiful custom styled info bubble overlay
+        const contentStr = `
+          <div style="
+            padding: 6px 12px;
+            background-color: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            font-size: 11px;
+            font-weight: 800;
+            color: #1e293b;
+            text-align: center;
+            white-space: nowrap;
+          ">
+            📌 ${labelText}
+          </div>
+        `;
+        
+        const customOverlay = new (window as any).kakao.maps.CustomOverlay({
+          position: coords,
+          content: contentStr,
+          yAnchor: 2.2
+        });
+
+        customOverlay.setMap(map);
+
+        if (onCoordsChange) {
+          (window as any).kakao.maps.event.addListener(marker, 'drag', () => {
+            customOverlay.setPosition(marker.getPosition());
+          });
+          (window as any).kakao.maps.event.addListener(marker, 'dragend', () => {
+            const latlng = marker.getPosition();
+            customOverlay.setPosition(latlng);
+            onCoordsChange(latlng.getLat(), latlng.getLng());
+          });
+        }
+        
+        // Disable interactive behaviors if not in editor mode
+        map.setZoomable(!!onCoordsChange);
+        map.setDraggable(!!onCoordsChange);
+      };
+
+      // Clean up search query for label text
       let cleanAddress = address.split('\n')[0];
       const cleanPatterns = [/(매매|전세|월세|임대).*/g, /\d+억.*/g, /\s+([지상하B]*\d+[층호]).*$/g];
       cleanPatterns.forEach(pat => {
         cleanAddress = cleanAddress.replace(pat, "").trim();
       });
+      const labelText = cleanAddress.split(' ').slice(0, 3).join(' ');
 
-      geocoder.addressSearch(cleanAddress, (result: any, status: any) => {
-        if (status === (window as any).kakao.maps.services.Status.OK) {
-          setErrorMsg(null);
-          const coords = new (window as any).kakao.maps.LatLng(result[0].y, result[0].x);
-          
-          const options = {
-            center: coords,
-            level: 3
-          };
-
-          const map = new (window as any).kakao.maps.Map(container, options);
-
-          // Add a custom styled marker
-          const marker = new (window as any).kakao.maps.Marker({
-            map: map,
-            position: coords
-          });
-
-          // Add a beautiful custom styled info bubble overlay
-          const contentStr = `
-            <div style="
-              padding: 6px 12px;
-              background-color: #fff;
-              border: 1px solid #e2e8f0;
-              border-radius: 8px;
-              box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-              font-size: 11px;
-              font-weight: 800;
-              color: #1e293b;
-              text-align: center;
-              white-space: nowrap;
-            ">
-              📌 ${cleanAddress.split(' ').slice(0, 3).join(' ')}
-            </div>
-          `;
-          
-          const customOverlay = new (window as any).kakao.maps.CustomOverlay({
-            position: coords,
-            content: contentStr,
-            yAnchor: 2.2
-          });
-
-          customOverlay.setMap(map);
-          
-          // Disable interactive behaviors
-          map.setZoomable(false);
-          map.setDraggable(false);
-        } else {
-          // Fallback to default coordinate if exact geocode fails
-          geocoder.addressSearch("서울 강남구 역삼동", (fallbackResult: any, fallbackStatus: any) => {
-            if (fallbackStatus === (window as any).kakao.maps.services.Status.OK) {
-              const coords = new (window as any).kakao.maps.LatLng(fallbackResult[0].y, fallbackResult[0].x);
-              const map = new (window as any).kakao.maps.Map(container, { center: coords, level: 3 });
-              new (window as any).kakao.maps.Marker({ map, position: coords });
-            }
-          });
-          setErrorMsg("입력한 주소의 정확한 좌표를 찾을 수 없습니다.");
-        }
-      });
+      if (lat && lng && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
+        const coords = new (window as any).kakao.maps.LatLng(Number(lat), Number(lng));
+        setErrorMsg(null);
+        initMapWithCoords(coords, labelText);
+      } else {
+        const geocoder = new (window as any).kakao.maps.services.Geocoder();
+        geocoder.addressSearch(cleanAddress, (result: any, status: any) => {
+          if (status === (window as any).kakao.maps.services.Status.OK) {
+            setErrorMsg(null);
+            const coords = new (window as any).kakao.maps.LatLng(result[0].y, result[0].x);
+            initMapWithCoords(coords, labelText);
+          } else {
+            // Fallback to default coordinate if exact geocode fails
+            geocoder.addressSearch("서울 강남구 역삼동", (fallbackResult: any, fallbackStatus: any) => {
+              if (fallbackStatus === (window as any).kakao.maps.services.Status.OK) {
+                const coords = new (window as any).kakao.maps.LatLng(fallbackResult[0].y, fallbackResult[0].x);
+                initMapWithCoords(coords, "역삼동");
+              }
+            });
+            setErrorMsg("입력한 주소의 정확한 좌표를 찾을 수 없습니다.");
+          }
+        });
+      }
     } catch (e) {
       console.error("Kakao Map init error", e);
       setErrorMsg("지도 초기화 오류");
     }
-  }, [loaded, address]);
+  }, [loaded, address, lat, lng, onCoordsChange]);
 
   if (errorMsg) {
     return (

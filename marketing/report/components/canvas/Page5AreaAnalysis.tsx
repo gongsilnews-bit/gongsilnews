@@ -86,7 +86,20 @@ const Page5AreaAnalysis: React.FC<Page5AreaAnalysisProps> = ({
 
                     {(!info.mapType || info.mapType === "kakao") && (
                         info.address ? (
-                            <KakaoMap address={info.address} />
+                            <KakaoMap 
+                                address={info.address} 
+                                lat={info.page5Lat}
+                                lng={info.page5Lng}
+                                onCoordsChange={(lat, lng) => {
+                                    if (onUpdateInfo) {
+                                        onUpdateInfo({
+                                            ...info,
+                                            page5Lat: lat,
+                                            page5Lng: lng
+                                        });
+                                    }
+                                }}
+                            />
                         ) : (
                             <div className="text-gray-400 font-bold">주소를 입력하면 지도가 표시됩니다.</div>
                         )
