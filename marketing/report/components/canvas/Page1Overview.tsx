@@ -7,15 +7,20 @@ interface Props {
   info: PropertyInfo; pageString: string; isHidden: boolean;
   layoutTheme: FlyerLayout; colorTheme: FlyerColor;
   mainImage: string;
+  customQrImage?: string | null;
   onUpdateInfo?: (info: any) => void;
   onImageUpload?: (key: string, file: File) => Promise<string | undefined>;
   isUploadingImage?: Record<string, boolean>;
 }
 
-const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, mainImage, onUpdateInfo, onImageUpload, isUploadingImage }) => {
+const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, mainImage, customQrImage, onUpdateInfo, onImageUpload, isUploadingImage }) => {
   const hc = (key: string, value: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, [key]: value }); };
   const targetTitle = info.address || '서초동 역세권 매매 안내서';
   const price = info.priceMain || '75억 원';
+
+  const qrCodeUrl = info.coverQRLink
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.coverQRLink)}`
+    : null;
 
   return (
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
@@ -121,8 +126,13 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
             </div>
             {/* Right Col: Image & Summary */}
             <div className="w-7/12 flex flex-col justify-between h-full">
-                <div className="h-[340px]">
+                <div className="h-[340px] relative">
                     <EditableImage src={mainImage || ""} alt="Main Image" imageKey="mainImage" onImageUpload={onImageUpload} isUploading={isUploadingImage?.mainImage} aspectRatioClass="object-cover" />
+                    {(customQrImage || qrCodeUrl) && (
+                        <div className="absolute bottom-3 right-3 p-1 bg-white rounded shadow-md border border-gray-100 z-30">
+                            <img src={customQrImage || qrCodeUrl || ''} alt="QR Code" className="w-32 h-32 rounded object-cover" />
+                        </div>
+                    )}
                 </div>
                 <div>
                     <SectionTitle 
