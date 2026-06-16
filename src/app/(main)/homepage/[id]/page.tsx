@@ -636,58 +636,9 @@ export default function HomepageViewPage() {
             <div ref={infoRef} style={{ background: "#fff", marginBottom: 50, scrollMarginTop: 200, paddingTop: 30 }}>
               <TRow label="공실광고번호" value={vacancy.vacancy_no || String(vacancy.id).split('-')[0].toUpperCase()} />
               <TRow label="소재지" value={getMaskedAddress(vacancy)} />
-              {(() => {
-                const allFields = getDynamicFields(vacancy);
-                
-                const basicLabels = ["단지명", "건물명", "동/호수", "거래구분", "금액", "관리비", "용도지역", "지목", "공급/전용면적", "연면적", "대지면적", "입주가능일", "사용 가능일"];
-                const facilityLabels = ["준공연도", "건물규모", "주용도", "건물구조", "위반건축물", "엘리베이터 수", "도로 폭", "방/욕실수", "방향", "주차대수", "호실 용도", "층고", "사용 전력", "무료 주차", "특화구조", "지형/형상", "개발가능"];
-                const financeLabels = ["도로방향", "권리금", "현재임대 보증금/월세", "융자금", "단순 수익률", "실투자 수익률", "중개보수"];
-
-                const basicFields = allFields.filter(f => basicLabels.includes(f.label) || (!facilityLabels.includes(f.label) && !financeLabels.includes(f.label)));
-                const facilityFields = allFields.filter(f => facilityLabels.includes(f.label));
-                const financeFields = allFields.filter(f => financeLabels.includes(f.label));
-
-                const renderHeader = (title: string, isFirst = false) => (
-                  <div style={{
-                    fontSize: 16,
-                    fontWeight: 800,
-                    color: "#222",
-                    background: "#fff",
-                    padding: isFirst ? "20px 16px 12px 16px" : "36px 16px 12px 16px"
-                  }}>
-                    {title}
-                  </div>
-                );
-
-                return (
-                  <>
-                    {basicFields.length > 0 && (
-                      <>
-                        {renderHeader("기본 정보", true)}
-                        {basicFields.map((f, idx) => (
-                          <TRow key={`basic-${idx}`} label={f.label} value={f.value} />
-                        ))}
-                      </>
-                    )}
-                    {facilityFields.length > 0 && (
-                      <>
-                        {renderHeader("시설 및 건물 상세")}
-                        {facilityFields.map((f, idx) => (
-                          <TRow key={`fac-${idx}`} label={f.label} value={f.value} />
-                        ))}
-                      </>
-                    )}
-                    {financeFields.length > 0 && (
-                      <>
-                        {renderHeader("재무 및 계약 정보")}
-                        {financeFields.map((f, idx) => (
-                          <TRow key={`fin-${idx}`} label={f.label} value={f.value} />
-                        ))}
-                      </>
-                    )}
-                  </>
-                );
-              })()}
+              {getDynamicFields(vacancy).map((f, idx) => (
+                <TRow key={idx} label={f.label} value={f.value} />
+              ))}
               <TRow label="등록자명" value={(() => {
                 const m = vacancy.members;
                 if (!m) return vacancy.client_name || "-";
