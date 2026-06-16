@@ -119,7 +119,7 @@ const MapBlock = ({
   </div>
 );
 
-const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = false }: { info: PropertyInfo, hc: any, qrCodeUrl: string, className?: string, dark?: boolean }) => (
+const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = false, hideQR = false }: { info: PropertyInfo, hc: any, qrCodeUrl: string, className?: string, dark?: boolean, hideQR?: boolean }) => (
   <div className={`flex gap-3 mb-2 ${className}`}>
     <div className={`flex-1 border ${dark ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white'} rounded-xl p-4 shadow-sm flex flex-col justify-center relative overflow-hidden`}>
       <div className={`absolute top-0 left-0 w-1 h-full ${dark ? 'bg-[var(--theme-secondary)]' : 'bg-[var(--theme-primary)]'}`}></div>
@@ -139,10 +139,12 @@ const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = fal
       </div>
     </div>
 
-    <div className="w-[90px] shrink-0 flex flex-col items-center justify-center">
-      <img src={qrCodeUrl} alt="Naver Map QR" className={`w-16 h-16 ${dark ? 'bg-white p-1 rounded' : 'mix-blend-multiply'}`} />
-      <span className={`text-[8px] ${dark ? 'text-white/40' : 'text-gray-400'} font-bold tracking-widest mt-1 uppercase`}>네이버 지도</span>
-    </div>
+    {!hideQR && (
+      <div className="w-[90px] shrink-0 flex flex-col items-center justify-center">
+        <img src={qrCodeUrl} alt="Naver Map QR" className={`w-16 h-16 ${dark ? 'bg-white p-1 rounded' : 'mix-blend-multiply'}`} />
+        <span className={`text-[8px] ${dark ? 'text-white/40' : 'text-gray-400'} font-bold tracking-widest mt-1 uppercase`}>네이버 지도</span>
+      </div>
+    )}
   </div>
 );
 
@@ -530,7 +532,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               </div>
 
               <MapBlock info={info} onUpdateInfo={onUpdateInfo} onImageUpload={onImageUpload} onDeleteImage={onDeleteImage} isUploadingImage={isUploadingImage} className="flex-1 mb-6 mt-4 rounded-xl border border-gray-200 shadow-sm" />
-              <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} className="bg-white" />
+              <DirectionsBox info={info} hc={hc} qrCodeUrl={qrCodeUrl} className="bg-white" hideQR={true} />
               <PhoneBox info={info} hc={hc} />
 
               <div className="border-t border-gray-200 pt-5 mt-auto flex justify-between items-center text-xs text-gray-500 font-bold">
@@ -553,6 +555,22 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               </div>
 
               <div className="absolute inset-0 z-10 bg-gradient-to-tr from-[var(--theme-dark)] via-[var(--theme-dark)]/90 to-[var(--theme-primary)]/40 mix-blend-overlay pointer-events-none"></div>
+
+              {/* QR Code Block in the bottom right */}
+              {qrCodeUrl && (
+                <div className="relative z-20 mt-auto ml-auto flex items-center gap-4 bg-white/95 backdrop-blur p-4 rounded-2xl shadow-2xl text-gray-800 border border-white/20">
+                  <img src={qrCodeUrl} alt="Naver Map QR" className="w-28 h-28 rounded-xl object-contain bg-white shadow-sm" />
+                  <div className="text-left">
+                    <p className="text-sm font-black text-gray-950 flex items-center gap-1.5">
+                      <MapPinIcon className="w-4 h-4 text-[var(--theme-primary)] shrink-0" />
+                      오시는 길
+                    </p>
+                    <p className="text-xs text-gray-500 font-bold leading-normal mt-1.5 break-keep">
+                      스마트폰 카메라로 스캔하여<br />네이버 지도로 바로 연결
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
