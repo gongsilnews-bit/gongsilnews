@@ -323,10 +323,10 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                 <div className="flex gap-8 my-5 flex-1 h-full">
                   {/* 왼쪽: 명함 스타일 문의 카드 */}
                   <div className="w-5/12 flex flex-col justify-center items-center h-full">
-                    <div className="w-full aspect-[9/5] border border-gray-300 rounded-2xl p-8 shadow-sm flex flex-col justify-center items-center text-center">
+                    <div className="w-full aspect-[9/5] border border-gray-300 rounded-2xl p-8 shadow-sm flex flex-col justify-center items-start text-left">
                       {/* Inquiry Label */}
                       <div className="text-[22px] text-[var(--theme-primary)] font-black tracking-tight mb-1 whitespace-nowrap">
-                        문의 : <EditableText value={info.agentRepresentative || info.agencyRepresentative || "김정민"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
+                        문의  <EditableText value={info.agentRepresentative || info.agencyRepresentative || "김정민"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
                       </div>
                       {/* Phone Number */}
                       <div className="text-[32px] font-black text-[var(--theme-primary)] tracking-tight mb-5">
