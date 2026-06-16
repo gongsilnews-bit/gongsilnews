@@ -131,35 +131,44 @@ const KakaoMap = ({ address, lat, lng, onCoordsChange }: KakaoMapProps) => {
             setErrorMsg(null);
             const coords = new (window as any).kakao.maps.LatLng(result[0].y, result[0].x);
             initMapWithCoords(coords, labelText);
+            if (onCoordsChange) onCoordsChange(Number(result[0].y), Number(result[0].x));
           } else {
-            // Fallback to default coordinate if exact geocode fails
-            geocoder.addressSearch("서울 강남구 역삼동", (fallbackResult: any, fallbackStatus: any) => {
-              if (fallbackStatus === (window as any).kakao.maps.services.Status.OK) {
-                const coords = new (window as any).kakao.maps.LatLng(fallbackResult[0].y, fallbackResult[0].x);
-                initMapWithCoords(coords, "역삼동");
+            // Progressive fallback: try broader address parts (시/구/동)
+            const parts = cleanAddress.replace(/\d+[-\d]*/g, '').trim().split(/\s+/).filter(Boolean);
+            const fallbackQueries = [];
+            if (parts.length >= 3) fallbackQueries.push(parts.slice(0, 3).join(' '));
+            if (parts.length >= 2) fallbackQueries.push(parts.slice(0, 2).join(' '));
+            if (parts.length >= 1) fallbackQueries.push(parts[0]);
+            
+            const tryFallback = (index: number) => {
+              if (index >= fallbackQueries.length) {
+                // All fallbacks failed — show Seoul center silently
+                setErrorMsg(null);
+                const defaultCoords = new (window as any).kakao.maps.LatLng(37.5665, 126.978);
+                initMapWithCoords(defaultCoords, parts[0] || "서울");
+                return;
               }
-            });
-            setErrorMsg("입력한 주소의 정확한 좌표를 찾을 수 없습니다.");
+              geocoder.addressSearch(fallbackQueries[index], (fbResult: any, fbStatus: any) => {
+                if (fbStatus === (window as any).kakao.maps.services.Status.OK) {
+                  setErrorMsg(null);
+                  const coords = new (window as any).kakao.maps.LatLng(fbResult[0].y, fbResult[0].x);
+                  initMapWithCoords(coords, fallbackQueries[index]);
+                  if (onCoordsChange) onCoordsChange(Number(fbResult[0].y), Number(fbResult[0].x));
+                } else {
+                  tryFallback(index + 1);
+                }
+              });
+            };
+            tryFallback(0);
           }
         });
       }
     } catch (e) {
       console.error("Kakao Map init error", e);
-      setErrorMsg("지도 초기화 오류");
+      // Even on exception, don't show error to user — show blank map container
+      setErrorMsg(null);
     }
   }, [loaded, address, lat, lng, onCoordsChange]);
-
-  if (errorMsg) {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 font-bold p-6 text-center">
-        <svg className="w-8 h-8 text-red-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-        <span className="text-xs text-red-500 mb-1">{errorMsg}</span>
-        <span className="text-[10px] text-gray-400">사이드바 주소 설정을 정정하거나, 지도 캡처 이미지 직접 업로드를 사용하세요.</span>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full h-full relative" style={{ minHeight: "100%" }}>
