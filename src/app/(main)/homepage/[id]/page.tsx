@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
+import { getMaskedAddress } from "@/app/(map)/gongsil/gongsilHelpers";
 
 const BRAND = "#2845B3";
 const LABEL: React.CSSProperties = { width: 120, fontSize: 13, fontWeight: 700, color: "#555", padding: "10px 14px", background: "#f8f9fa", borderRight: "1px solid #e5e7eb", whiteSpace: "nowrap" };
@@ -71,6 +72,282 @@ export default function HomepageViewPage() {
       <div style={{ flex: 1, padding: "16px", fontSize: 14, color: "#111", display: "flex", alignItems: "center", lineHeight: 1.5 }}>{value}</div>
     </div>
   );
+
+  const getDynamicFields = (v: any) => {
+    const propType = v.property_type || "";
+    const subCategory = v.sub_category || "";
+    const tradeType = v.trade_type || "";
+    const meta = v.metadata || {};
+
+    const fields: { label: string; value: string }[] = [];
+
+    // 1. 단지명 / 건물명
+    const isApt = ["아파트", "오피스텔", "도시형생활주택"].some(t => propType.includes(t) || subCategory.includes(t));
+    const exp = v.address_exposure;
+    const isPrivateAddr = !isApt && exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개";
+    const displayBuildingName = isPrivateAddr ? "-" : (v.building_name || "-");
+    fields.push({
+      label: isApt ? "단지명" : "건물명",
+      value: displayBuildingName
+    });
+
+    // 1-2. 동/호수
+    const showDongHosu = !isPrivateAddr && (exp === "동/호수공개" || exp === "번지공개" || exp === "지번공개" || !exp);
+    let displayDongHosu = "-";
+    if (showDongHosu) {
+      const dongParts = [];
+      if (v.apt_dong) dongParts.push(v.apt_dong);
+      if (v.hosu) dongParts.push(v.hosu);
+      if (dongParts.length > 0) {
+        displayDongHosu = dongParts.join(" ");
+      }
+    }
+    fields.push({
+      label: "동/호수",
+      value: displayDongHosu
+    });
+
+    // 1-3. 거래구분
+    fields.push({
+      label: "거래구분",
+      value: tradeType || "-"
+    });
+
+    // 1-4. 금액
+    let displayPrice = "-";
+    const monthlyManwon = v.monthly_rent ? Math.round(v.monthly_rent / 10000) : 0;
+    if (v.trade_type === "매매" || v.trade_type === "전세") {
+      displayPrice = v.deposit ? formatAmount(v.deposit) : "-";
+    } else if (v.trade_type) {
+      displayPrice = `${v.deposit ? formatAmount(v.deposit) : "0"}/${monthlyManwon > 0 ? `${monthlyManwon}만` : "0"}`;
+    }
+    fields.push({
+      label: "금액",
+      value: displayPrice
+    });
+
+    // 1-5. 관리비
+    fields.push({
+      label: "관리비",
+      value: v.maintenance_fee ? `${v.maintenance_fee / 10000}만원` : "없음"
+    });
+
+    // 카테고리 분류
+    const isVillaHouse = propType === "빌라·주택";
+    const isCommercial = propType === "상가·사무실·건물·공장·토지";
+
+    // 2. 용도지역 (빌라·주택 또는 상업용인 경우)
+    if (isVillaHouse || isCommercial) {
+      fields.push({ label: "용도지역", value: meta.zoning || "-" });
+    }
+
+    // 3. 지목 (토지인 경우)
+    if (subCategory === "토지") {
+      fields.push({ label: "지목", value: meta.land_purpose || "-" });
+    }
+
+    // 4. 도로 폭
+    if (meta.road_width !== undefined && meta.road_width !== null && meta.road_width !== "") {
+      fields.push({ label: "도로 폭", value: `${meta.road_width}m` });
+    }
+
+    // 4-1. 준공연도 (도로 폭 직후)
+    fields.push({
+      label: "준공연도",
+      value: v.metadata?.approval_year ? (v.metadata.approval_year <= 1979 ? "1980년 이전" : `${v.metadata.approval_year}년`) : "-"
+    });
+
+    // 5. 건물구조 (상업용 - 토지/지산 제외)
+    if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
+      fields.push({ label: "건물구조", value: meta.building_structure || "-" });
+    }
+
+    // 6. 주용도 (상업용 - 토지/지산 제외)
+    if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
+      fields.push({ label: "주용도", value: meta.main_usage || "-" });
+    }
+
+    // 7. 건물규모
+    const hasScale = meta.ground_floors !== undefined || meta.underground_floors !== undefined;
+    if (hasScale) {
+      const parts = [];
+      if (meta.ground_floors !== undefined && meta.ground_floors !== null && meta.ground_floors !== "") {
+        parts.push(`지상 ${meta.ground_floors}층`);
+      }
+      if (meta.underground_floors !== undefined && meta.underground_floors !== null && meta.underground_floors !== "") {
+        parts.push(`지하 ${meta.underground_floors}층`);
+      }
+      if (parts.length > 0) {
+        fields.push({ label: "건물규모", value: parts.join(" / ") });
+      }
+    }
+
+    // 8. 대지면적
+    if (meta.land_share_m2) {
+      const pyVal = meta.land_share_py || (parseFloat(meta.land_share_m2) / 3.3058).toFixed(1);
+      fields.push({ label: "대지면적", value: `${meta.land_share_m2}m² (${pyVal}평)` });
+    }
+
+    // 9. 공급/전용면적 또는 연면적
+    if (subCategory !== "토지") {
+      const isStandaloneBuilding = (isVillaHouse && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) ||
+                                   (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory));
+      
+      if (tradeType === "매매" && isStandaloneBuilding) {
+        const pyVal = v.supply_py || (v.supply_m2 ? (parseFloat(v.supply_m2) / 3.3058).toFixed(1) : "0");
+        fields.push({
+          label: "연면적",
+          value: v.supply_m2 ? `${v.supply_m2}m² (${pyVal}평)` : "-"
+        });
+      } else {
+        const supplyPyVal = v.supply_py || (v.supply_m2 ? (parseFloat(v.supply_m2) / 3.3058).toFixed(1) : "-");
+        const exclusivePyVal = v.exclusive_py || (v.exclusive_m2 ? (parseFloat(v.exclusive_m2) / 3.3058).toFixed(1) : "-");
+        fields.push({
+          label: "공급/전용면적",
+          value: `${v.supply_m2 ? `${v.supply_m2}m²(${supplyPyVal}평)` : "-"} / ${v.exclusive_m2 ? `${v.exclusive_m2}m²(${exclusivePyVal}평)` : "-"}`
+        });
+      }
+    }
+
+    // 10. 건폐율/용적률
+    if (tradeType === "매매" && (isVillaHouse || isCommercial)) {
+      const cov = meta.building_coverage ? `${meta.building_coverage}%` : "-";
+      const far = meta.floor_area_ratio ? `${meta.floor_area_ratio}%` : "-";
+      fields.push({
+        label: "건폐율/용적률",
+        value: `${cov} / ${far}`
+      });
+    }
+
+    // 11. 현용도 (상업용 - 상가/사무실)
+    if (isCommercial && ["상가", "사무실"].includes(subCategory)) {
+      fields.push({ label: "현용도", value: meta.current_usage || "-" });
+    }
+
+    // 12. 해당층/총층
+    if (!hasScale && subCategory !== "토지") {
+      fields.push({
+        label: "해당층/총층",
+        value: `${v.current_floor || "-"} / ${v.total_floor || v.floor || "-"}`
+      });
+    }
+
+    // 13. 방/욕실수 (주거형)
+    if (!isCommercial) {
+      fields.push({
+        label: "방/욕실수",
+        value: `${v.room_count || 0}개 / ${v.bathroom_count || v.bath_count || 0}개`
+      });
+    }
+
+    // 14. 방향 (주거형)
+    if (!isCommercial) {
+      fields.push({
+        label: "방향",
+        value: v.direction || "-"
+      });
+    }
+
+    // 15. 주차
+    if (subCategory !== "토지") {
+      fields.push({
+        label: isCommercial ? "주차대수" : "주차가능 여부",
+        value: v.parking || "없음"
+      });
+    }
+
+    // 16. 엘리베이터 갯수 (상업용 - 토지/지산 제외)
+    if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
+      fields.push({ label: "엘리베이터 갯수", value: meta.elevator_cnt || "-" });
+    }
+
+    // 17. 위반건축물 (상업용 - 토지/지산 제외)
+    if (isCommercial && subCategory !== "토지" && subCategory !== "지식산업센터") {
+      fields.push({
+        label: "위반건축물",
+        value: meta.is_illegal ? "적발(위반)" : "해당없음"
+      });
+    }
+
+    // 18. 지식산업센터 특화 제원
+    if (subCategory === "지식산업센터") {
+      if (meta.jisan_usage) {
+        fields.push({ label: "호실 용도", value: meta.jisan_usage });
+      }
+      if (meta.ceiling_height) {
+        fields.push({ label: "층고", value: `${meta.ceiling_height}m` });
+      }
+      if (meta.power_capacity) {
+        fields.push({ label: "사용 전력", value: `${meta.power_capacity}kW` });
+      }
+      if (meta.free_parking_cnt) {
+        fields.push({ label: "무료 주차", value: `${meta.free_parking_cnt}대` });
+      }
+      
+      const specs = [];
+      if (meta.has_drive_in) specs.push("드라이브인");
+      if (meta.has_door_to_door) specs.push("도어투도어");
+      if (meta.has_freight_elevator) specs.push("화물승강기");
+      if (specs.length > 0) {
+        fields.push({ label: "특화구조", value: specs.join(", ") });
+      }
+    }
+
+    // 19. 입주가능일
+    fields.push({
+      label: subCategory === "토지" ? "사용 가능일" : "입주가능일",
+      value: v.move_in_date || (subCategory === "토지" ? "즉시사용" : "즉시입주(공실)")
+    });
+
+    // 19-1. 도로방향 (건물/빌딩, 공장/창고 매매)
+    if (isCommercial && meta.road_direction) {
+      fields.push({ label: "도로방향", value: meta.road_direction });
+    }
+
+    // 19-2. 권리금 (상가)
+    if (isCommercial && subCategory === "상가" && meta.premium_fee) {
+      fields.push({ label: "권리금", value: `${meta.premium_fee}만원` });
+    }
+
+    // 19-3. 현재임대 보증금/월세 (건물 매매)
+    if (tradeType === "매매" && isCommercial && (meta.current_rental_deposit || meta.current_rental_monthly)) {
+      const rentalDep = meta.current_rental_deposit ? `${meta.current_rental_deposit}만원` : "-";
+      const rentalMon = meta.current_rental_monthly ? `${meta.current_rental_monthly}만원` : "-";
+      fields.push({ label: "현재임대 보증금/월세", value: `${rentalDep} / ${rentalMon}` });
+    }
+
+    // 19-4. 융자금/대출이율 (매매)
+    if (tradeType === "매매" && meta.loan_amount) {
+      const loanText = `${meta.loan_amount}만원`;
+      const rateText = meta.loan_rate ? ` (연 ${meta.loan_rate}%)` : "";
+      fields.push({ label: "융자금", value: `${loanText}${rateText}` });
+    }
+
+    // 19-5. 지형/형상 (토지)
+    if (subCategory === "토지" && meta.terrain) {
+      fields.push({ label: "지형/형상", value: meta.terrain });
+    }
+
+    // 19-6. 개발가능 여부 (토지)
+    if (subCategory === "토지" && meta.development_potential) {
+      fields.push({ label: "개발가능", value: meta.development_potential });
+    }
+
+    // 20-2. 중개보수/수수료
+    const commParts = [];
+    const baseComm = v.realtor_commission || v.commission_type;
+    if (baseComm) commParts.push(baseComm);
+    if (v.commission_amount) commParts.push(`${v.commission_amount}만원`);
+    if (v.commission_etc) commParts.push(`(${v.commission_etc})`);
+    if (commParts.length > 0) {
+      fields.push({
+        label: "중개보수",
+        value: commParts.join(" ")
+      });
+    }
+
+    return fields;
+  };
 
   useEffect(() => {
     async function load() {
@@ -256,12 +533,22 @@ export default function HomepageViewPage() {
               {/* Row 3: Detail Specs */}
               <div style={{ paddingBottom: 20 }}>
                 <div style={{ fontSize: 14, color: "#666", marginBottom: 8 }}>
-                  아파트 · 오피스텔 · 방/욕실수 {vacancy.rooms || 0}/{vacancy.bathrooms || 0} · 공급/전용 {Math.round((vacancy.area_m2 || 0)*1.3)}m²/{vacancy.area_m2 || 0}m²
+                  {[
+                    vacancy.property_type || vacancy.sub_category,
+                    (vacancy.room_count !== undefined || vacancy.bathroom_count !== undefined || vacancy.bath_count !== undefined)
+                      ? `방/욕실수 ${vacancy.room_count || 0}/${vacancy.bathroom_count || vacancy.bath_count || 0}`
+                      : null,
+                    (vacancy.supply_m2 || vacancy.exclusive_m2)
+                      ? `공급/전용 ${vacancy.supply_m2 ? `${vacancy.supply_m2}㎡` : "-"}/${vacancy.exclusive_m2 ? `${vacancy.exclusive_m2}㎡` : "-"}`
+                      : null
+                  ].filter(Boolean).join(" · ")}
                 </div>
                 <div style={{ fontSize: 14, color: "#888", display: "flex", gap: 16 }}>
                   <span>총 <strong style={{ color: "#333" }}>{vacancy.photos?.length || 0}</strong>개</span>
-                  <span>주차 {vacancy.parking_spots || "불가"}</span>
-                  <span>에어컨, 렌지, 세탁기 등</span>
+                  <span>주차 {vacancy.parking || "없음"}</span>
+                  {vacancy.options && vacancy.options.length > 0 && (
+                    <span>{vacancy.options.slice(0, 4).join(", ")}{vacancy.options.length > 4 ? " 등" : ""}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -279,11 +566,11 @@ export default function HomepageViewPage() {
 
             {/* ── 공실광고정보 Table ── */}
             <div ref={infoRef} style={{ background: "#fff", marginBottom: 50, scrollMarginTop: 200, paddingTop: 30 }}>
-              <TRow label="공실광고번호" value={String(vacancy.id).split('-')[0].toUpperCase()} />
-              <TRow label="소재지" value={`${vacancy.sido} ${vacancy.sigungu} ${vacancy.dong} ${vacancy.detail_addr || ""}`} />
-              <TRow label="공실광고특징" value={vacancy.building_name || "특징 없음"} />
-              <TRow label="공급/전용면적" value={`${Math.round((vacancy.area_m2 || 0) * 1.3)}m² / ${vacancy.area_m2 || 0}m²`} />
-              <TRow label="해당층/총층" value={`${vacancy.floor || "해당층"} / ${vacancy.total_floors || "전체층"}`} />
+              <TRow label="공실광고번호" value={vacancy.vacancy_no || String(vacancy.id).split('-')[0].toUpperCase()} />
+              <TRow label="소재지" value={getMaskedAddress(vacancy)} />
+              {getDynamicFields(vacancy).map((f, idx) => (
+                <TRow key={idx} label={f.label} value={f.value} />
+              ))}
               <TRow label="등록자명" value={(() => {
                 const m = vacancy.members;
                 if (!m) return vacancy.client_name || "-";
@@ -294,11 +581,6 @@ export default function HomepageViewPage() {
                 const tag = m.role === "REALTOR" ? "부동산" : m.role === "ADMIN" ? "관리자" : "일반";
                 return <span>{name} <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, marginLeft: 6, background: m.role === "REALTOR" ? "#dbeafe" : "#f3f4f6", color: m.role === "REALTOR" ? "#1e40af" : "#6b7280", fontWeight: 600 }}>{tag}</span></span>;
               })()} />
-              <TRow label="방/욕실수" value={`${vacancy.rooms || 0}개 / ${vacancy.bathrooms || 0}개`} />
-              <TRow label="방향" value={vacancy.direction || "방향정보 없음"} />
-              <TRow label="주차가능 여부" value={vacancy.parking_spots ? `${vacancy.parking_spots}대` : "불가"} />
-              <TRow label="입주가능일" value={vacancy.move_in_date || "즉시입주"} />
-              <TRow label="관리비" value={vacancy.maintenance_fee ? `${Math.round(vacancy.maintenance_fee/10000)}만원` : "없음"} />
               <TRow label="연락처" value={(() => {
                 const m = vacancy.members;
                 if (!m) return vacancy.client_phone || "-";
