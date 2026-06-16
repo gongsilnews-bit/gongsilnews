@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
 import { getMaskedAddress } from "@/app/(map)/gongsil/gongsilHelpers";
@@ -57,6 +57,14 @@ export default function HomepageViewPage() {
   const locationRef = useRef<HTMLDivElement>(null);
   const envRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState('info');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>, tabItem: string) => {
     setActiveTab(tabItem);
@@ -66,8 +74,13 @@ export default function HomepageViewPage() {
     }
   };
 
-  const TRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
-    <div style={{ display: "flex", borderBottom: "1px solid #eee" }}>
+  const TRow = ({ label, value, fullWidth, rightBorder }: { label: string; value: React.ReactNode; fullWidth?: boolean; rightBorder?: boolean }) => (
+    <div style={{
+      display: "flex",
+      borderBottom: "1px solid #eee",
+      borderRight: (!isMobile && rightBorder) ? "1px solid #eee" : undefined,
+      gridColumn: (!isMobile && fullWidth) ? "span 2" : undefined
+    }}>
       <div style={{ width: 140, background: "#f9f9f9", padding: "16px", fontSize: 14, fontWeight: "bold", color: "#555", display: "flex", alignItems: "center" }}>{label}</div>
       <div style={{ flex: 1, padding: "16px", fontSize: 14, color: "#111", display: "flex", alignItems: "center", lineHeight: 1.5 }}>{value}</div>
     </div>
@@ -633,12 +646,40 @@ export default function HomepageViewPage() {
             {/* 사진 표시 (리스트 위치 이동됨) */}
 
             {/* ── 공실광고정보 Table ── */}
-            <div ref={infoRef} style={{ background: "#fff", marginBottom: 50, scrollMarginTop: 200, paddingTop: 30 }}>
-              <TRow label="공실광고번호" value={vacancy.vacancy_no || String(vacancy.id).split('-')[0].toUpperCase()} />
-              <TRow label="소재지" value={getMaskedAddress(vacancy)} />
-              {getDynamicFields(vacancy).map((f, idx) => (
-                <TRow key={idx} label={f.label} value={f.value} />
-              ))}
+            <div ref={infoRef} style={{
+              background: "#fff",
+              marginBottom: 50,
+              scrollMarginTop: 200,
+              paddingTop: 30,
+              display: isMobile ? "block" : "grid",
+              gridTemplateColumns: isMobile ? undefined : "1fr 1fr"
+            }}>
+              <TRow label="공실광고번호" value={vacancy.vacancy_no || String(vacancy.id).split('-')[0].toUpperCase()} fullWidth />
+              <TRow label="소재지" value={getMaskedAddress(vacancy)} fullWidth />
+              {(() => {
+                const fields = getDynamicFields(vacancy);
+                if (isMobile) {
+                  return fields.map((f, idx) => (
+                    <TRow key={idx} label={f.label} value={f.value} />
+                  ));
+                }
+
+                // PC 2-column mode
+                const pairedRows: { f1: typeof fields[0]; f2?: typeof fields[0] }[] = [];
+                for (let i = 0; i < fields.length; i += 2) {
+                  pairedRows.push({
+                    f1: fields[i],
+                    f2: fields[i + 1]
+                  });
+                }
+
+                return pairedRows.map((row, idx) => (
+                  <React.Fragment key={idx}>
+                    <TRow label={row.f1.label} value={row.f1.value} fullWidth={!row.f2} rightBorder={!!row.f2} />
+                    {row.f2 && <TRow label={row.f2.label} value={row.f2.value} />}
+                  </React.Fragment>
+                ));
+              })()}
               <TRow label="등록자명" value={(() => {
                 const m = vacancy.members;
                 if (!m) return vacancy.client_name || "-";
@@ -648,14 +689,14 @@ export default function HomepageViewPage() {
                   }
                 const tag = m.role === "REALTOR" ? "부동산" : m.role === "ADMIN" ? "관리자" : "일반";
                 return <span>{name} <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, marginLeft: 6, background: m.role === "REALTOR" ? "#dbeafe" : "#f3f4f6", color: m.role === "REALTOR" ? "#1e40af" : "#6b7280", fontWeight: 600 }}>{tag}</span></span>;
-              })()} />
+              })()} fullWidth />
               <TRow label="연락처" value={(() => {
                 const m = vacancy.members;
                 if (!m) return vacancy.client_phone || "-";
                 if (m.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].phone || m.phone || vacancy.client_phone || "-";
                 return m.phone || vacancy.client_phone || "-";
-              })()} />
-              <TRow label="상세설명" value={vacancy.description || "상세내용 없음"} />
+              })()} fullWidth />
+              <TRow label="상세설명" value={vacancy.description || "상세내용 없음"} fullWidth />
             </div>
 
             {/* ── 옵션 ── */}

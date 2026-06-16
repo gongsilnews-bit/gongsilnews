@@ -707,16 +707,49 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
             {activeTab === 'info' ? (
               <div>
                 {/* Info Grid */}
-                <div className="gdv-info-grid">
-                  <div className="gdv-info-label">공실광고번호</div><div className="gdv-info-value">{vacancy.vacancy_no || '-'}</div>
-                  <div className="gdv-info-label">소재지</div><div className="gdv-info-value">{[vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_addr || vacancy.detail_address].filter(Boolean).join(' ')}</div>
-                  {getDynamicFields(vacancy).map((f, idx) => (
-                    <React.Fragment key={idx}>
-                      <div className="gdv-info-label">{f.label}</div>
-                      <div className="gdv-info-value">{f.value}</div>
-                    </React.Fragment>
-                  ))}
-                  <div className="gdv-info-label">상세설명</div><div className="gdv-info-value gdv-info-desc">{vacancy.description || ''}</div>
+                <div className="gdv-info-grid" style={{ gridTemplateColumns: deviceMode === 'mobile' ? "110px 1fr" : "110px 1fr 110px 1fr" }}>
+                  <div className="gdv-info-label">공실광고번호</div>
+                  <div className="gdv-info-value" style={{ gridColumn: deviceMode === 'mobile' ? undefined : "span 3" }}>{vacancy.vacancy_no || '-'}</div>
+                  <div className="gdv-info-label">소재지</div>
+                  <div className="gdv-info-value" style={{ gridColumn: deviceMode === 'mobile' ? undefined : "span 3" }}>{[vacancy.sido, vacancy.sigungu, vacancy.dong, vacancy.detail_addr || vacancy.detail_address].filter(Boolean).join(' ')}</div>
+                  {(() => {
+                    const fields = getDynamicFields(vacancy);
+                    if (deviceMode === 'mobile') {
+                      return fields.map((f, idx) => (
+                        <React.Fragment key={idx}>
+                          <div className="gdv-info-label">{f.label}</div>
+                          <div className="gdv-info-value">{f.value}</div>
+                        </React.Fragment>
+                      ));
+                    }
+
+                    // PC/Tablet 2-column mode
+                    const pairedRows: { f1: typeof fields[0]; f2?: typeof fields[0] }[] = [];
+                    for (let i = 0; i < fields.length; i += 2) {
+                      pairedRows.push({
+                        f1: fields[i],
+                        f2: fields[i + 1]
+                      });
+                    }
+
+                    return pairedRows.map((row, idx) => (
+                      <React.Fragment key={idx}>
+                        <div className="gdv-info-label">{row.f1.label}</div>
+                        <div className="gdv-info-value" style={{
+                          gridColumn: row.f2 ? undefined : "span 3",
+                          borderRight: row.f2 ? "1px solid #eee" : undefined
+                        }}>{row.f1.value}</div>
+                        {row.f2 && (
+                          <>
+                            <div className="gdv-info-label">{row.f2.label}</div>
+                            <div className="gdv-info-value">{row.f2.value}</div>
+                          </>
+                        )}
+                      </React.Fragment>
+                    ));
+                  })()}
+                  <div className="gdv-info-label">상세설명</div>
+                  <div className="gdv-info-value gdv-info-desc" style={{ gridColumn: deviceMode === 'mobile' ? undefined : "span 3" }}>{vacancy.description || ''}</div>
                 </div>
 
                 {/* Map Section */}
