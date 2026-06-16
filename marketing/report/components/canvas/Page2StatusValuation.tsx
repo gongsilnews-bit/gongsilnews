@@ -16,7 +16,7 @@ const Page2StatusValuation: React.FC<Props> = ({ info, pageString, isHidden, lay
         pageNumber={2} pageString={pageString} isHidden={isHidden}
         title={info.page2Title || "매물설명 & 시세"} onUpdateTitle={(v) => hc('page2Title', v)}
         subtitle={info.page2Subtitle || "Status & Valuation"} onUpdateSubtitle={(v) => hc('page2Subtitle', v)}
-        badgeText={info.pageBadges?.page2 || "DETAILS"} exportId="page-2"
+        badgeText="DETAILS" exportId="page-2"
         onUpdateBadge={(v) => { if (onUpdateInfo) onUpdateInfo({ ...info, pageBadges: { ...(info.pageBadges || {}), page2: v } }); }}
         footerText={info.footerText || "PROPERTY REPORT"}
         onUpdateFooter={(v) => hc('footerText', v)}
