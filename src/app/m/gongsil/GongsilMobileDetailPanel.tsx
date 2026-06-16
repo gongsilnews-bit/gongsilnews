@@ -812,6 +812,23 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
               </div>
               {(() => {
                 const getDynamicFields = (v: any) => {
+                  const formatManwon = (val: number | string | null | undefined): string => {
+                    if (val === undefined || val === null) return "-";
+                    const num = typeof val === "string" ? parseInt(val, 10) : val;
+                    if (isNaN(num) || num <= 0) return "-";
+                    
+                    const eok = Math.floor(num / 10000);
+                    const man = num % 10000;
+                    
+                    let result = "";
+                    if (eok > 0) result += `${eok}억`;
+                    if (man > 0) {
+                      const formattedMan = man.toLocaleString("ko-KR");
+                      result += (result ? " " : "") + `${formattedMan}만`;
+                    }
+                    return result + "원";
+                  };
+
                   const propType = v.property_type || "";
                   const subCategory = v.sub_category || "";
                   const tradeType = v.trade_type || "";
@@ -1044,19 +1061,19 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
 
                   // 19-2. 권리금 (상가)
                   if (isCommercial && subCategory === "상가" && meta.premium_fee) {
-                    fields.push({ label: "권리금", value: `${meta.premium_fee}만원` });
+                    fields.push({ label: "권리금", value: formatManwon(meta.premium_fee) });
                   }
 
                   // 19-3. 현재임대 보증금/월세 (건물 매매)
                   if (tradeType === "매매" && isCommercial && (meta.current_rental_deposit || meta.current_rental_monthly)) {
-                    const rentalDep = meta.current_rental_deposit ? `${meta.current_rental_deposit}만원` : "-";
-                    const rentalMon = meta.current_rental_monthly ? `${meta.current_rental_monthly}만원` : "-";
+                    const rentalDep = meta.current_rental_deposit ? formatManwon(meta.current_rental_deposit) : "-";
+                    const rentalMon = meta.current_rental_monthly ? formatManwon(meta.current_rental_monthly) : "-";
                     fields.push({ label: "현재임대 보증금/월세", value: `${rentalDep} / ${rentalMon}` });
                   }
 
                   // 19-4. 융자금/대출이율 (매매)
                   if (tradeType === "매매" && meta.loan_amount) {
-                    const loanText = `${meta.loan_amount}만원`;
+                    const loanText = formatManwon(meta.loan_amount);
                     const rateText = meta.loan_rate ? ` (연 ${meta.loan_rate}%)` : "";
                     fields.push({ label: "융자금", value: `${loanText}${rateText}` });
                   }
@@ -1082,16 +1099,6 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                       
                       if (realInvestment > 0) {
                         const leveragedYield = (netMonthly * 12 / realInvestment) * 100;
-                        
-                        // 실투자금 한글 포맷 변환용 간이 함수
-                        const formatManwon = (val: number) => {
-                          if (val >= 10000) {
-                            const eok = Math.floor(val / 10000);
-                            const rest = val % 10000;
-                            return rest > 0 ? `${eok}억 ${rest}만원` : `${eok}억원`;
-                          }
-                          return `${val}만원`;
-                        };
 
                         fields.push({
                           label: "실투자 수익률",
