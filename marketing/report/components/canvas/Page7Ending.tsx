@@ -234,7 +234,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
             <div className="flex-1 flex flex-col p-16 border-[12px] border-[var(--theme-dark)] h-full">
               <div className="text-center mb-6">
                 <h1 className={`${info.isAdClosed ? 'text-3xl tracking-tight' : 'text-4xl tracking-[0.2em] uppercase'} font-extrabold text-[var(--theme-dark)] ${headingFont}`}>
-                  {info.isAdClosed ? "위 매물은 광고가 종료되었습니다." : "CONTACT US"}
+                  {info.isAdClosed ? "위 매물은 광고가 종료되었습니다." : "CONTACT"}
                 </h1>
                 <p className="text-xs text-gray-400 tracking-[0.3em] font-bold uppercase mt-3">
                   {info.isAdClosed ? "자세한 문의는 아래로 연락주시기 바랍니다" : "전문가 상담 및 매물 문의"}
@@ -319,7 +319,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
               <div className="flex-1 flex flex-col justify-between p-16">
                 <div>
                   <h1 className={`${info.isAdClosed ? 'text-3xl' : 'text-4xl'} font-black text-gray-900 tracking-tight ${headingFont}`}>
-                    {info.isAdClosed ? "위 매물은 광고가 종료되었습니다." : "CONTACT INFORMATION"}
+                    {info.isAdClosed ? "위 매물은 광고가 종료되었습니다." : "CONTACT"}
                   </h1>
                   <span className="text-[var(--theme-primary)] text-xs font-bold tracking-widest uppercase mt-2 block">
                     {info.isAdClosed ? "자세한 문의는 아래로 연락주시기 바랍니다" : "중개 및 매물 세부조건 문의처"}
@@ -395,7 +395,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                   {info.isAdClosed ? "ADVERTISEMENT ENDED" : "FOR INQUIRIES"}
                 </span>
                 <h1 className={`${info.isAdClosed ? 'text-4xl' : 'text-5xl'} font-black tracking-tight leading-none uppercase ${headingFont}`}>
-                  {info.isAdClosed ? "위 매물은 광고가 종료되었습니다." : "CONTACT US"}
+                  {info.isAdClosed ? "위 매물은 광고가 종료되었습니다." : "CONTACT"}
                 </h1>
                 <div className="w-20 h-[6px] bg-[var(--theme-secondary)] mt-4"></div>
               </div>
@@ -519,7 +519,7 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
             <div className="w-7/12 p-16 flex flex-col justify-between h-full bg-[#f8fafc] border-r border-gray-200">
               <div className="mb-4">
                 <h1 className={`${info.isAdClosed ? 'text-3xl' : 'text-4xl'} font-extrabold text-gray-900 tracking-tight leading-none ${headingFont}`}>
-                  {info.isAdClosed ? "위 매물은 광고가 종료되었습니다." : "CONTACT US"}
+                  {info.isAdClosed ? "위 매물은 광고가 종료되었습니다." : "CONTACT"}
                 </h1>
                 {info.isAdClosed && (
                   <p className="text-sm text-gray-500 font-bold mt-3">

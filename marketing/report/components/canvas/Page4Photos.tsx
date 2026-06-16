@@ -53,7 +53,7 @@ const Page4Photos: React.FC<Page4PhotosProps> = ({
         onUpdateTitle={(val) => handleTextChange('page4Title', val)}
         subtitle={info.page4Subtitle || "Property Photo"} 
         onUpdateSubtitle={(val) => handleTextChange('page4Subtitle', val)}
-        badgeText={info.pageBadges?.page4 !== undefined ? info.pageBadges.page4 : ""}
+        badgeText={info.pageBadges?.page4 || "GALLERY"}
         exportId="page-4"
         onUpdateBadge={(val) => {
             if (onUpdateInfo) {

@@ -34,7 +34,7 @@ const Page6Roadmap: React.FC<Page6RoadmapProps> = ({
         onUpdateTitle={(val) => handleTextChange('page6Title', val)}
         subtitle={info.page6Subtitle || "Value & Roadmap"} 
         onUpdateSubtitle={(val) => handleTextChange('page6Subtitle', val)}
-        badgeText={info.pageBadges?.page6 || "INVESTMENT ROADMAP"}
+        badgeText={info.pageBadges?.page6 || "ROADMAP"}
         exportId="page-6"
         onUpdateBadge={(val) => {
             if (onUpdateInfo) {

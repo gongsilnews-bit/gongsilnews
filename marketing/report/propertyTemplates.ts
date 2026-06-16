@@ -989,7 +989,7 @@ export const buildPage6Content = (
     return {
       page6Title: '주거 가치 & 추천 전략',
       page6Subtitle: 'Living Strategy',
-      page6Badge: 'LIVING STRATEGY',
+      page6Badge: 'ROADMAP',
       page6FooterQuote: `"${dong}에서 편리하고 품격 있는 라이프스타일을 시작해 보세요."`,
       roadmap: {
         box1Title: '완벽한 교통 및 직주근접',
@@ -1013,7 +1013,7 @@ export const buildPage6Content = (
     return {
       page6Title: '자산 가치 & 주거 로드맵',
       page6Subtitle: 'Asset Roadmap',
-      page6Badge: 'ASSET ROADMAP',
+      page6Badge: 'ROADMAP',
       page6FooterQuote: `"${dong} 최고의 생활 환경에서 편리한 일상과 자산 가치 상승을 함께 누리세요."`,
       roadmap: {
         box1Title: '최고의 정주 여건 만족',
@@ -1037,7 +1037,7 @@ export const buildPage6Content = (
     return {
       page6Title: '비즈니스 공간 & 추천 전략',
       page6Subtitle: 'Business Blueprint',
-      page6Badge: 'BUSINESS BLUEPRINT',
+      page6Badge: 'ROADMAP',
       page6FooterQuote: `"귀사의 성장과 비즈니스 성공을 위한 최상의 업무 파트너가 되어 드립니다."`,
       roadmap: {
         box1Title: '비즈니스 효율 공간 설계',
@@ -1060,7 +1060,7 @@ export const buildPage6Content = (
   return {
     page6Title: '가치 및 로드맵',
     page6Subtitle: 'Value & Roadmap',
-    page6Badge: 'INVESTMENT ROADMAP',
+    page6Badge: 'ROADMAP',
     page6FooterQuote: '"최고의 입지에 미래 가치를 더합니다."',
     roadmap: {
       box1Title: '단독 사옥 활용 시나리오',

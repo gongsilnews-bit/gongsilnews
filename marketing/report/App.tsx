@@ -129,11 +129,11 @@ const INITIAL_INFO: PropertyInfo = {
   
   pageBadges: {
     page1: "CONFIDENTIAL | INFORMATION MEMORANDUM",
-    page2: "EVIDENCE & DATA",
-    page3: "RENTAL STATUS",
-    page4: "PHYSICAL ASSETS",
-    page5: "LOCATION ANALYSIS",
-    page6: "FUTURE BLUEPRINT",
+    page2: "DETAILS",
+    page3: "LEASING",
+    page4: "GALLERY",
+    page5: "LOCATION",
+    page6: "ROADMAP",
   },
   
   // Backward compat

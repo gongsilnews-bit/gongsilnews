@@ -73,7 +73,7 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
         onUpdateTitle={(val) => handleTextChange('page3Title', val)}
         subtitle={info.page3Subtitle || "Rent Roll"} 
         onUpdateSubtitle={(val) => handleTextChange('page3Subtitle', val)}
-        badgeText={info.pageBadges?.page3 || "RENT ROLL"} exportId="page-3"
+        badgeText={info.pageBadges?.page3 || "LEASING"} exportId="page-3"
         onUpdateBadge={(val) => {
             if (onUpdateInfo) onUpdateInfo({ ...info, pageBadges: { ...(info.pageBadges || {}), page3: val } });
         }}

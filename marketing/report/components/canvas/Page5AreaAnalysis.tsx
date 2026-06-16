@@ -45,7 +45,7 @@ const Page5AreaAnalysis: React.FC<Page5AreaAnalysisProps> = ({
         onUpdateTitle={(val) => handleTextChange('page5Title', val)}
         subtitle={info.page5Subtitle || "Strategic Connectivity"} 
         onUpdateSubtitle={(val) => handleTextChange('page5Subtitle', val)}
-        badgeText={info.pageBadges?.page5 || "AREA ANALYSIS"}
+        badgeText={info.pageBadges?.page5 || "LOCATION"}
         exportId="page-5"
         onUpdateBadge={(val) => {
             if (onUpdateInfo) {
