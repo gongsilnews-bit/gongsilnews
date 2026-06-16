@@ -1573,7 +1573,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             </div>
             )}
 
-            {(propertyType === "빌라·주택" || propertyType === COMMERCIAL_CATEGORY) && tradeType === "매매" && subCategory !== "지식산업센터" && (
+            {(propertyType === "빌라·주택" || propertyType === COMMERCIAL_CATEGORY) && (tradeType === "매매" || isLand) && subCategory !== "지식산업센터" && (
               <>
               {/* 1행: 대지면적 | 용도지역 (또는 연면적) */}
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
