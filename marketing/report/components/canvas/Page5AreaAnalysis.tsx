@@ -85,9 +85,9 @@ const Page5AreaAnalysis: React.FC<Page5AreaAnalysisProps> = ({
                     </div>
 
                     {(!info.mapType || info.mapType === "kakao") && (
-                        info.address ? (
+                        (info.mapAddress || info.address) ? (
                             <KakaoMap 
-                                address={info.address} 
+                                address={info.mapAddress || info.address} 
                                 lat={info.page5Lat}
                                 lng={info.page5Lng}
                                 onCoordsChange={(lat, lng) => {
@@ -106,14 +106,14 @@ const Page5AreaAnalysis: React.FC<Page5AreaAnalysisProps> = ({
                     )}
 
                     {info.mapType === "google" && (
-                        info.address ? (
+                        (info.mapAddress || info.address) ? (
                             <iframe 
                                 title="Location Map"
                                 width="100%" 
                                 height="100%" 
                                 frameBorder="0" 
                                 style={{ border: 0 }}
-                                src={`https://maps.google.com/maps?q=${encodeURIComponent(info.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                                src={`https://maps.google.com/maps?q=${encodeURIComponent(info.mapAddress || info.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
                                 allowFullScreen
                                 className="w-full h-full object-cover"
                             />

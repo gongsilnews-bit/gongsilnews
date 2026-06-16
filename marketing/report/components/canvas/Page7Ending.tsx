@@ -66,9 +66,9 @@ const MapBlock = ({
     </div>
 
     {(!info.agentMapType || info.agentMapType === "kakao") && (
-      info.agentAddress ? (
+      (info.agentMapAddress || info.agentAddress) ? (
         <KakaoMap 
-          address={String(info.agentAddress)} 
+          address={String(info.agentMapAddress || info.agentAddress)} 
           lat={info.page7Lat}
           lng={info.page7Lng}
           onCoordsChange={(lat, lng) => {

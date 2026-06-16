@@ -1045,6 +1045,17 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                       </div>
 
                       <div className="space-y-3">
+                          <div>
+                              <label className="text-xs text-gray-500 font-bold block mb-1">📍 지도용 검색 주소 (기본 주소와 다를 경우만 입력)</label>
+                              <input 
+                                  type="text" 
+                                  name="mapAddress" 
+                                  value={info.mapAddress || ""} 
+                                  onChange={handleChange} 
+                                  placeholder={info.address || "예: 서울시 강남구 역삼동 123"} 
+                                  className="w-full border rounded p-2 text-sm bg-white text-gray-800" 
+                              />
+                          </div>
                           <div><label className="text-xs text-gray-500">타겟 로케이션 (우측 상단 뱃지)</label><textarea name="areaTargetName" value={info.areaTargetName} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={2}/></div>
                           <div><label className="text-xs text-gray-500">입지 설명 텍스트</label><textarea name="areaTargetDesc" value={info.areaTargetDesc} onChange={handleChange} className="w-full border rounded p-2 text-sm" rows={4}/></div>
                       </div>
@@ -1266,6 +1277,17 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               <div>
                                   <label className="text-xs text-gray-500">대표 유선 번호 (Phone)</label>
                                   <input type="text" name="agentPhone" value={info.agentPhone || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" />
+                              </div>
+                              <div>
+                                  <label className="text-xs text-gray-500 font-bold block mb-1">📍 사무소 지도용 검색 주소 (기본 주소와 다를 경우만 입력)</label>
+                                  <input 
+                                      type="text" 
+                                      name="agentMapAddress" 
+                                      value={info.agentMapAddress || ""} 
+                                      onChange={handleChange} 
+                                      placeholder={info.agentAddress || "예: 서울시 서초구 서초동 456"} 
+                                      className="w-full border rounded p-2 text-sm bg-white text-gray-800" 
+                                  />
                               </div>
                           </div>
                       </div>
