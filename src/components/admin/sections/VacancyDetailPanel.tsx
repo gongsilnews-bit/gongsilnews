@@ -778,13 +778,13 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
 
                 {/* Map Section */}
                 <div className="gdv-extra-section">
-                  <div className="gdv-extra-title">📍 위치정보</div>
+                  <div className="gdv-extra-title">위치정보</div>
                   <div ref={mapRef} className="gdv-map-box">로딩중...</div>
                 </div>
 
                 {/* Roadview Section */}
                 <div className="gdv-extra-section">
-                  <div className="gdv-extra-title">🛣️ 로드뷰</div>
+                  <div className="gdv-extra-title">로드뷰</div>
                   <div ref={roadviewRef} className="gdv-map-box">로딩중...</div>
                 </div>
               </div>
