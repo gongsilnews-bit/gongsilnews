@@ -163,10 +163,10 @@ export default function AboutPage() {
       {/* ===== Hero Section ===== */}
       <section className="about-hero">
         <div className="hero-content">
-          <h1 className="hero-title">공실뉴스<br/>비즈솔루션본부</h1>
+          <h1 className="hero-title">공실뉴스<br/>편집장 인사말</h1>
           <p className="hero-desc">
-            부동산 미디어의 디지털 혁신을 주도하며<br/>
-            객관적인 지역/단지 정보를 바탕으로 최고의 마케팅 솔루션을 제공합니다.
+            11만 부동산과 임대인의 빠른 공실계약을 위해<br/>
+            함께 노력하는 공동중개 실매물 뉴스 채널
           </p>
         </div>
       </section>
@@ -175,17 +175,49 @@ export default function AboutPage() {
       <main className="about-main">
         <div className="content-grid">
           <div>
-            <p className="text-paragraph">
-              공실뉴스는 대한민국 11만 개업공인중개사와 임대인, 매수인을 연결하는 가장 빠르고 정확한 부동산 전문 미디어 채널입니다. 급변하는 부동산 시장 속에서 오직 '팩트'와 '데이터'에 기반한 깊이 있는 시세 정보와 로컬 부동산 동향을 제공하여, 중개 시장의 정보 비대칭을 해소하는 데 앞장서고 있습니다.
+            <p className="text-paragraph" style={{ fontSize: 20, fontWeight: 700, color: "#111", marginBottom: 32, lineHeight: 1.6 }}>
+              안녕하십니까. 공실뉴스 편집장입니다.
             </p>
             <p className="text-paragraph">
-              우리는 단순한 뉴스 전달을 넘어, 중개사들의 실무 역량을 강화하는 AI 맞춤형 교육 특강과, 수수료 0원의 투명한 공동중개 공실광고 네트워크를 통해 부동산 중개업계의 질적 성장을 지원합니다.
+              공실뉴스는 11만 개업공인중개사 여러분과 함께 만들어가는 부동산 네트워크 플랫폼입니다.
             </p>
             <p className="text-paragraph">
-              앞으로도 공실뉴스는 '가장 신뢰받는 부동산 비즈니스 파트너'로서, 혁신적인 프롭테크(Prop-tech) 솔루션과 수준 높은 미디어 콘텐츠를 결합하여 대한민국 부동산 시장의 새로운 표준을 만들어 가겠습니다.
+              공실뉴스는 지역의 로컬 부동산들이 빠른 공실 계약을 위해 공실을 무료로 등록하고, 지역 부동산 정보를 뉴스로 공유하며 홍보할 수 있는 공동중개 실매물 뉴스 채널입니다.
             </p>
+            <p className="text-paragraph" style={{ fontWeight: 700, color: "#111", marginBottom: 8 }}>
+              부동산 회원이라면 누구나 아래 혜택을 누리실 수 있습니다.
+            </p>
+
+            <div style={{ margin: "32px 0", padding: "28px 32px", background: "#f8fafc", borderRadius: 16, borderLeft: "4px solid #3b82f6" }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1e40af", marginBottom: 12 }}>🤝 무료 공동중개 네트워크</h3>
+              <p className="text-paragraph" style={{ marginBottom: 0 }}>
+                내 주변 공실의 빠른 계약을 위해 부동산이 직접 등록한 공동중개 물건을 누구나 무료로 열람하고, 공유할 수 있습니다.
+              </p>
+            </div>
+
+            <div style={{ margin: "24px 0", padding: "28px 32px", background: "#f8fafc", borderRadius: 16, borderLeft: "4px solid #10b981" }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#047857", marginBottom: 12 }}>🎓 실전 부동산 마케팅 교육</h3>
+              <p className="text-paragraph" style={{ marginBottom: 0 }}>
+                이제 AI를 활용한 마케팅은 필수입니다. 공실뉴스는 중개사님들이 변화하는 디지털 환경에 발 빠르게 적응하실 수 있도록 AI 기반의 실무 마케팅 교육과 특강을 제공합니다.
+              </p>
+            </div>
+
+            <div style={{ margin: "24px 0", padding: "28px 32px", background: "#f8fafc", borderRadius: 16, borderLeft: "4px solid #f59e0b" }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#b45309", marginBottom: 12 }}>📰 부동산 마케팅 및 지역 뉴스 정보</h3>
+              <p className="text-paragraph" style={{ marginBottom: 0 }}>
+                공실뉴스는 중개사님들이 경쟁력을 갖출 수 있도록 다양한 부동산 정보를 뉴스로 제공합니다. 특히, 지역의 믿을 수 있는 공실뉴스 부동산이 내 지역 부동산 정보를 뉴스로 제공합니다. 빠른 계약을 위한 무료 공동중개 및 AI시대 꼭 필요한 유튜브/블로그 교육을 공실뉴스에서 쉽게 열람하세요.
+              </p>
+            </div>
+
+            <p className="text-paragraph" style={{ marginTop: 32, fontWeight: 600 }}>
+              공실뉴스는 11만 부동산과 임대인의 빠른 공실계약을 위해 함께 노력하겠습니다.
+            </p>
+            <p className="text-paragraph">
+              감사합니다.
+            </p>
+
             <div className="signature">
-              (주)공실마케팅 대표이사 <span className="signature-name">김 윤 경</span>
+              공실뉴스 <span className="signature-name">편집장</span>
             </div>
           </div>
           
