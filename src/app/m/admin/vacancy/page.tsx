@@ -344,77 +344,139 @@ function MobileVacancyAdmin() {
                   </button>
                 </div>
 
-                {/* AI 온라인 전단지 전용 공유 / 비활성 버튼 */}
+                {/* AI 온라인 전단지 및 물건보고서 공유 / 비활성 버튼 */}
                 {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === '최고관리자' || userRole === '부동산' || userRole === 'REALTOR') && (() => {
                   const status = flyerMap[row.id] || { flyer: false, report: false };
                   const hasFlyer = status.flyer;
-                  if (hasFlyer) {
-                    return (
-                      <button 
-                        onClick={() => {
-                          const shareUrl = `${window.location.origin}/flyer/${row.id}.html`;
-                          navigator.clipboard.writeText(shareUrl).then(() => {
-                            alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
-                          }).catch(() => {
-                            const textArea = document.createElement("textarea");
-                            textArea.value = shareUrl;
-                            document.body.appendChild(textArea);
-                            textArea.select();
-                            document.execCommand("copy");
-                            document.body.removeChild(textArea);
-                            alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
-                          });
-                        }}
-                        style={{ 
-                          width: "100%", 
-                          height: 38, 
-                          background: "linear-gradient(135deg, #10b981, #059669)", 
-                          color: "#fff", 
-                          border: "none", 
-                          borderRadius: 8, 
-                          fontSize: 13, 
-                          fontWeight: 800, 
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                          boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)",
-                          marginTop: 4
-                        }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                        📢 전단지 URL 복사
-                      </button>
-                    );
-                  } else {
-                    return (
-                      <button 
-                        onClick={() => {
-                          alert("이 매물은 아직 AI 온라인전단지가 제작되지 않았습니다.\nPC 버전 공실관리에서 전단지를 먼저 제작/저장해 주세요!");
-                        }}
-                        style={{ 
-                          width: "100%", 
-                          height: 38, 
-                          background: "#e5e7eb", 
-                          color: "#9ca3af", 
-                          border: "1px solid #d1d5db", 
-                          borderRadius: 8, 
-                          fontSize: 13, 
-                          fontWeight: 700, 
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                          marginTop: 4
-                        }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        📢 AI 전단지 미작성 (PC에서 제작 필요)
-                      </button>
-                    );
-                  }
+                  const hasReport = status.report;
+
+                  return (
+                    <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                      {/* AI 물건보고서 버튼 */}
+                      {hasReport ? (
+                        <button 
+                          onClick={() => {
+                            const shareUrl = `${window.location.origin}/report/${row.id}.html`;
+                            navigator.clipboard.writeText(shareUrl).then(() => {
+                              alert("물건보고서 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
+                            }).catch(() => {
+                              const textArea = document.createElement("textarea");
+                              textArea.value = shareUrl;
+                              document.body.appendChild(textArea);
+                              textArea.select();
+                              document.execCommand("copy");
+                              document.body.removeChild(textArea);
+                              alert("물건보고서 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
+                            });
+                          }}
+                          style={{ 
+                            flex: 1, 
+                            height: 38, 
+                            background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", 
+                            color: "#fff", 
+                            border: "none", 
+                            borderRadius: 8, 
+                            fontSize: 12, 
+                            fontWeight: 800, 
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 4,
+                            boxShadow: "0 2px 4px rgba(59, 130, 246, 0.15)"
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                          AI 물건보고서 URL 복사
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => {
+                            alert("이 매물은 아직 AI 물건보고서가 제작되지 않았습니다.\nPC 버전 공실관리에서 보고서를 먼저 제작/저장해 주세요!");
+                          }}
+                          style={{ 
+                            flex: 1, 
+                            height: 38, 
+                            background: "#e5e7eb", 
+                            color: "#9ca3af", 
+                            border: "1px solid #d1d5db", 
+                            borderRadius: 8, 
+                            fontSize: 12, 
+                            fontWeight: 700, 
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 4
+                          }}
+                        >
+                          AI 보고서 미작성
+                        </button>
+                      )}
+
+                      {/* AI 온라인 전단지 버튼 */}
+                      {hasFlyer ? (
+                        <button 
+                          onClick={() => {
+                            const shareUrl = `${window.location.origin}/flyer/${row.id}.html`;
+                            navigator.clipboard.writeText(shareUrl).then(() => {
+                              alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
+                            }).catch(() => {
+                              const textArea = document.createElement("textarea");
+                              textArea.value = shareUrl;
+                              document.body.appendChild(textArea);
+                              textArea.select();
+                              document.execCommand("copy");
+                              document.body.removeChild(textArea);
+                              alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
+                            });
+                          }}
+                          style={{ 
+                            flex: 1, 
+                            height: 38, 
+                            background: "linear-gradient(135deg, #10b981, #059669)", 
+                            color: "#fff", 
+                            border: "none", 
+                            borderRadius: 8, 
+                            fontSize: 12, 
+                            fontWeight: 800, 
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 4,
+                            boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)"
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                          전단지 URL 복사
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => {
+                            alert("이 매물은 아직 AI 온라인전단지가 제작되지 않았습니다.\nPC 버전 공실관리에서 전단지를 먼저 제작/저장해 주세요!");
+                          }}
+                          style={{ 
+                            flex: 1, 
+                            height: 38, 
+                            background: "#e5e7eb", 
+                            color: "#9ca3af", 
+                            border: "1px solid #d1d5db", 
+                            borderRadius: 8, 
+                            fontSize: 12, 
+                            fontWeight: 700, 
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 4
+                          }}
+                        >
+                          AI 전단지 미작성
+                        </button>
+                      )}
+                    </div>
+                  );
                 })()}
               </div>
             </div>
