@@ -2,6 +2,7 @@ import React from "react";
 
 // 카테고리 설정 데이터
 export const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; basicFilters: string[]; detailFilters: string[]; showToggle: boolean; pillStyle?: string }> = {
+  all: { name: "전체", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
   apart: { name: "아파트·오피스텔", pills: ["아파트", "오피스텔", "기타"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   villa: { name: "빌라·주택", pills: ["빌라/연립", "단독/다가구", "전원주택"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   one: { name: "원룸·투룸(풀옵션)", pills: ["원룸", "1.5룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
