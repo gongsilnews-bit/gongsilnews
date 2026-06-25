@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { getBannersByPlacement, trackBannerClick, trackBannerView } from "@/app/actions/banner";
+import { matchCategory } from "@/constants/categories";
 
 interface BannerSlotProps {
   placement: string;
@@ -21,7 +22,7 @@ export default function BannerSlot({ placement, category, className, style, init
         const parts = (b.link_target || "_blank").split("|");
         if (parts.length > 1) {
           const targets = parts[1].split(",");
-          return targets.includes(category) || targets.includes("all");
+          return matchCategory(targets, category);
         }
         return true;
       });
@@ -47,7 +48,7 @@ export default function BannerSlot({ placement, category, className, style, init
             const parts = (b.link_target || "_blank").split("|");
             if (parts.length > 1) {
               const targets = parts[1].split(",");
-              return targets.includes(category) || targets.includes("all");
+              return matchCategory(targets, category);
             }
             return true;
           });

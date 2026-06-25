@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getBanners, createBanner, updateBanner, deleteBanner, toggleBannerActive, getBannerStats } from "@/app/actions/banner";
+import { BANNER_TARGET_CATEGORIES } from "@/constants/categories";
 
 const PLACEMENT_OPTIONS = [
   { value: "TOP_FULL", label: "메인 최상단 와이드" },
@@ -304,6 +305,23 @@ function MobileBannerAdmin() {
                   <option value="_blank">새 창에서 열기</option>
                   <option value="_self">현재 창에서 열기</option>
                 </select>
+
+                {(selectedPlacement === "LIST_INLINE" || selectedPlacement === "LIST_SIDEBAR") && (
+                  <div style={{ marginTop: 16, padding: "16px", background: "#f9fafb", borderRadius: 8, border: "1px solid #3b82f6" }}>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#111", marginBottom: 12 }}>✅ 노출 카테고리 (중복선택 가능)</label>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {BANNER_TARGET_CATEGORIES.map(cat => {
+                        const isChecked = b?.link_target ? b.link_target.includes(cat.value) : (cat.value === "all");
+                        return (
+                          <label key={cat.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                            <input type="checkbox" name="target_categories" value={cat.value} defaultChecked={isChecked} style={{ accentColor: "#3b82f6" }} />
+                            <span style={{ fontSize: 13, color: "#111" }}>{cat.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { AdminSectionProps } from "./types";
 import { getBanners, createBanner, updateBanner, deleteBanner, toggleBannerActive, getBannerStats } from "@/app/actions/banner";
+import { BANNER_TARGET_CATEGORIES } from "@/constants/categories";
 
 const PLACEMENT_OPTIONS = [
   { value: "TOP_FULL", label: "메인 최상단 와이드" },
@@ -397,18 +398,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
                 <div style={{ marginTop: 16, padding: "16px", background: darkMode ? "#1a1b1e" : "#f9fafb", borderRadius: 8, border: `1px solid #3b82f6` }}>
                   <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 12 }}>✅ 노출 카테고리 (중복선택 가능)</label>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    {[
-                      { value: "all", label: "전체뉴스" },
-                      { value: "finance", label: "부동산·주식·재테크" },
-                      { value: "map", label: "우리동네뉴스" },                      
-                      { value: "politics", label: "정치·경제·사회" },
-                      { value: "law", label: "세무·법률" },
-                      { value: "life", label: "여행·건강·생활" },
-                      { value: "etc", label: "기타(전체)" },
-                      { value: "etc_it", label: "IT·가전·가구" },
-                      { value: "etc_sports", label: "스포츠·연예·Car" },
-                      { value: "etc_mission", label: "인물·미션·기타" },
-                    ].map(cat => {
+                    {BANNER_TARGET_CATEGORIES.map(cat => {
                       const isChecked = b?.link_target ? b.link_target.includes(cat.value) : (cat.value === "all");
                       return (
                         <label key={cat.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
