@@ -133,7 +133,7 @@ export default function KakaoMapView({
             const diff = currentDistance - initialPinchDistance;
 
             if (Math.abs(diff) > 15) {
-              const deltaY = diff > 0 ? -120 : 120;
+              const deltaY = diff > 0 ? 120 : -120;
               const centerX = (t1.clientX + t2.clientX) / 2;
               const centerY = (t1.clientY + t2.clientY) / 2;
 
