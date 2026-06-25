@@ -123,36 +123,68 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   };
 
   const renderMoreButton = (totalCount: number, currentLimit: number, setLimit: (val: number) => void) => {
-    if (totalCount <= currentLimit) return null;
-    return (
-      <div style={{ display: "flex", justifyContent: "center", marginTop: "16px", marginBottom: "8px" }}>
-        <button
-          onClick={() => setLimit(currentLimit + 5)}
-          style={{
-            padding: "8px 24px",
-            fontSize: "13px",
-            fontWeight: 600,
-            color: "#6b7280",
-            backgroundColor: "#fff",
-            border: "1px solid #e5e7eb",
-            borderRadius: "20px",
-            cursor: "pointer",
-            transition: "all 0.2s",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px"
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#fff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
-        >
-          기사 5건 더보기
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </button>
-      </div>
-    );
+    if (currentLimit === 3) {
+      if (totalCount <= 3) return null;
+      return (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "16px", marginBottom: "8px" }}>
+          <button
+            onClick={() => setLimit(8)}
+            style={{
+              padding: "8px 24px",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#6b7280",
+              backgroundColor: "#fff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "20px",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#fff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
+          >
+            기사 5건 더보기
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+      );
+    } else {
+      return (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "16px", marginBottom: "8px" }}>
+          <button
+            onClick={() => setLimit(3)}
+            style={{
+              padding: "8px 24px",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#6b7280",
+              backgroundColor: "#fff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "20px",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#fff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
+          >
+            닫기
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+          </button>
+        </div>
+      );
+    }
   };
 
   return (
