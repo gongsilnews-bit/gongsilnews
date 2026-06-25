@@ -568,7 +568,7 @@ export async function getVacanciesForMap(options?: {
     for (let i = 0; i < pages; i++) {
       let pageQuery = supabase
         .from('vacancies')
-        .select('id, lat, lng, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, detail_addr, building_name, hosu, exclusive_m2, supply_m2, room_count, bath_count, direction, parking, owner_role, realtor_commission, commission_type, status, themes, options, address_exposure, exposure_type, created_at, metadata, vacancy_photos(url, sort_order)')
+        .select('id, owner_id, lat, lng, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, detail_addr, building_name, hosu, exclusive_m2, supply_m2, room_count, bath_count, direction, parking, owner_role, realtor_commission, commission_type, status, themes, options, address_exposure, exposure_type, created_at, metadata, vacancy_photos(url, sort_order)')
         .eq('status', 'ACTIVE')
         .not('lat', 'is', null)
         .not('lng', 'is', null);
