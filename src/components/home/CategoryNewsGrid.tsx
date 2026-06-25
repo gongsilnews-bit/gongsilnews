@@ -199,24 +199,29 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
         .vid-title { font-size: 16px; font-weight: 700; line-height: 1.4; color: #111; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
       
-      {/* 5. AI마케팅 */}
+      {/* 5. 공실뉴스 + 부동산·경제 */}
       <div className="mt-50 mb-50">
-        <div className="sec-title-wrap">
-          <Link href="/news_marketing" style={{ textDecoration: "none" }}><h2 className="sec-title">AI마케팅 &gt;</h2></Link>
-        </div>
-        <div className="hot-issue-wrap">
-          <div className="hi-left">
-            <div className="hi-list">
-              {renderArticleList(marketingArts)}
+        <div className="hot-issue-wrap" style={{ gap: 40 }}>
+          <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
+            <div className="sec-title-wrap">
+              <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title">공실뉴스 &gt;</h2></Link>
             </div>
-            {renderMoreButton(allMarketing.length, marketingLimit, setMarketingLimit)}
+            <div className="hi-list">
+              {renderArticleList(gongsilListArts)}
+            </div>
+            {renderMoreButton(allGongsilList.length, gongsilLimit, setGongsilLimit)}
           </div>
-          <div className="hi-right">
+          <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
+            <div className="sec-title-wrap">
+              <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산·경제 &gt;</h2></Link>
+            </div>
+            <div className="hi-list">
+              {renderArticleList(economyArts)}
+            </div>
+            {renderMoreButton(allEconomy.length, economyLimit, setEconomyLimit)}
           </div>
         </div>
       </div>
-
-
 
       {/* 6. Video News: 공실뉴스 — 블랙 배경 */}
       <div className="video-dark-bg" style={{ background: "#111", margin: "0 -9999px", padding: "40px 9999px 48px", position: "relative" }}>
@@ -246,43 +251,26 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
         </div>
       </div>
 
-      {/* 7. 부동산·경제 + 공실뉴스 */}
+      {/* 7. AI마케팅 + 라이프·오피니언 */}
       <div className="mt-50 mb-50">
         <div className="hot-issue-wrap" style={{ gap: 40 }}>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
-              <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산·경제 &gt;</h2></Link>
+              <Link href="/news_marketing" style={{ textDecoration: "none" }}><h2 className="sec-title">AI마케팅 &gt;</h2></Link>
             </div>
             <div className="hi-list">
-              {renderArticleList(economyArts)}
+              {renderArticleList(marketingArts)}
             </div>
-            {renderMoreButton(allEconomy.length, economyLimit, setEconomyLimit)}
+            {renderMoreButton(allMarketing.length, marketingLimit, setMarketingLimit)}
           </div>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
-              <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title">공실뉴스 &gt;</h2></Link>
+              <Link href="/news_etc" style={{ textDecoration: "none" }}><h2 className="sec-title">라이프·오피니언 &gt;</h2></Link>
             </div>
-            <div className="hi-list">
-              {renderArticleList(gongsilListArts)}
-            </div>
-            {renderMoreButton(allGongsilList.length, gongsilLimit, setGongsilLimit)}
-          </div>
-        </div>
-      </div>
-
-      {/* 8. 라이프·오피니언 */}
-      <div className="mt-50 mb-50">
-        <div className="sec-title-wrap">
-          <Link href="/news_etc" style={{ textDecoration: "none" }}><h2 className="sec-title">라이프·오피니언 &gt;</h2></Link>
-        </div>
-        <div className="hot-issue-wrap">
-          <div className="hi-left">
             <div className="hi-list">
               {renderArticleList(lifeArts)}
             </div>
             {renderMoreButton(allLife.length, lifeLimit, setLifeLimit)}
-          </div>
-          <div className="hi-right">
           </div>
         </div>
       </div>
