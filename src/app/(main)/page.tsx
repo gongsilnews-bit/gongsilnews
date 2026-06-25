@@ -6,7 +6,6 @@ import { getArticles } from "@/app/actions/article";
 export const revalidate = 300; // 5분 캐시 (60s → 300s 확장)
 
 import QuickFloatingMenu from "@/components/common/QuickFloatingMenu";
-import MarketTickerBar from "@/components/home/MarketTickerBar";
 import HeroMapSection from "@/components/home/HeroMapSection";
 import HeroSideContent from "@/components/home/HeroSideContent";
 import CategoryNewsGrid from "@/components/home/CategoryNewsGrid";
@@ -50,7 +49,7 @@ export default async function Home() {
   const mapArticles = mapNewsRes.success ? mapNewsRes.data || [] : [];
 
   return (
-      <>
+    <>
       <main className="container px-20" style={{ position: "relative" }}>
         
         <QuickFloatingMenu />
@@ -65,9 +64,6 @@ export default async function Home() {
           <HeroMapSection />
           <HeroSideContent />
         </div>
-
-        {/* ========== 4. Ticker Section ========== */}
-        <MarketTickerBar />
 
         {/* ========== 5. Category News Grid (pre-fetched data) ========== */}
         <CategoryNewsGrid

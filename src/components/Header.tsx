@@ -223,11 +223,6 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
         </div>
         <div className="top-bar-right">
 
-          
-          <div onClick={() => router.push('/signup')} style={{ cursor: "pointer", fontSize: "13px", fontWeight: "700", color: "#fcd34d", marginRight: "12px", whiteSpace: "nowrap" }}>
-            중개업소무료가입
-          </div>
-
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
               <div style={{
