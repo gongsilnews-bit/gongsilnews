@@ -120,7 +120,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
     });
   };
 
-  const renderRowMoreButton = (hasMore: boolean, currentLimit: number, setLimit: (val: number) => void) => {
+  const renderRowMoreButton = (hasMore: boolean, currentLimit: number, setLimit: (val: number) => void, sectionId: string) => {
     if (currentLimit === 3) {
       if (!hasMore) return null;
       return (
@@ -156,7 +156,17 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
       return (
         <div style={{ display: "flex", justifyContent: "center", marginTop: "16px", marginBottom: "8px" }}>
           <button
-            onClick={() => setLimit(3)}
+            onClick={() => {
+              setLimit(3);
+              setTimeout(() => {
+                const element = document.getElementById(sectionId);
+                if (element) {
+                  const yOffset = -100;
+                  const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                  window.scrollTo({ top: y, behavior: "smooth" });
+                }
+              }, 50);
+            }}
             style={{
               padding: "8px 24px",
               fontSize: "13px",
@@ -198,7 +208,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
       `}</style>
       
       {/* 5. 공실뉴스 + 부동산·경제 */}
-      <div className="mt-50 mb-50">
+      <div id="row-gongsil-economy" className="mt-50 mb-50">
         <div className="hot-issue-wrap" style={{ gap: 40, marginBottom: "8px" }}>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
@@ -217,7 +227,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             </div>
           </div>
         </div>
-        {renderRowMoreButton(allGongsilList.length > 3 || allEconomy.length > 3, row1Limit, setRow1Limit)}
+        {renderRowMoreButton(allGongsilList.length > 3 || allEconomy.length > 3, row1Limit, setRow1Limit, "row-gongsil-economy")}
       </div>
 
       {/* 6. Video News: 공실뉴스 — 블랙 배경 */}
@@ -249,7 +259,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
       </div>
 
       {/* 7. AI마케팅 + 라이프·오피니언 */}
-      <div className="mt-50 mb-50">
+      <div id="row-marketing-life" className="mt-50 mb-50">
         <div className="hot-issue-wrap" style={{ gap: 40, marginBottom: "8px" }}>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
@@ -268,7 +278,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             </div>
           </div>
         </div>
-        {renderRowMoreButton(allMarketing.length > 3 || allLife.length > 3, row3Limit, setRow3Limit)}
+        {renderRowMoreButton(allMarketing.length > 3 || allLife.length > 3, row3Limit, setRow3Limit, "row-marketing-life")}
       </div>
     </>
   );
