@@ -46,23 +46,21 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   };
 
   // JS에서 새 카테고리별 분류 및 더보기 상태 관리
-  const [marketingLimit, setMarketingLimit] = useState(3);
-  const [economyLimit, setEconomyLimit] = useState(3);
-  const [lifeLimit, setLifeLimit] = useState(3);
-  const [gongsilLimit, setGongsilLimit] = useState(3);
+  const [row1Limit, setRow1Limit] = useState(3); // 공실뉴스 + 부동산·경제
+  const [row3Limit, setRow3Limit] = useState(3); // AI마케팅 + 라이프·오피니언
 
   const allMarketing = allNewsArticles.filter(a => a.section1 === "AI마케팅");
   const allEconomy = allNewsArticles.filter(a => a.section1 === "부동산·경제");
   const allLife = allNewsArticles.filter(a => a.section1 === "라이프·오피니언");
   const allGongsilList = allNewsArticles.filter(a => a.section1 === "공실뉴스" && !extractYoutubeIdInfo(a).hasVideo);
 
-  const marketingArts = allMarketing.slice(0, marketingLimit);
-  const economyArts = allEconomy.slice(0, economyLimit);
-  const lifeArts = allLife.slice(0, lifeLimit);
+  const marketingArts = allMarketing.slice(0, row3Limit);
+  const economyArts = allEconomy.slice(0, row1Limit);
+  const lifeArts = allLife.slice(0, row3Limit);
   
   // 공실뉴스: 영상이 있는 기사는 블랙 배경 비디오 섹션으로, 없는 기사는 하단 리스트로 분리
   const gongsilArts = allNewsArticles.filter(a => a.section1 === "공실뉴스" && extractYoutubeIdInfo(a).hasVideo).slice(0, 3);
-  const gongsilListArts = allGongsilList.slice(0, gongsilLimit);
+  const gongsilListArts = allGongsilList.slice(0, row1Limit);
 
   // 날짜 포맷팅
   const formatDate = (dateStr: string) => {
@@ -122,9 +120,9 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
     });
   };
 
-  const renderMoreButton = (totalCount: number, currentLimit: number, setLimit: (val: number) => void) => {
+  const renderRowMoreButton = (hasMore: boolean, currentLimit: number, setLimit: (val: number) => void) => {
     if (currentLimit === 3) {
-      if (totalCount <= 3) return null;
+      if (!hasMore) return null;
       return (
         <div style={{ display: "flex", justifyContent: "center", marginTop: "16px", marginBottom: "8px" }}>
           <button
@@ -201,7 +199,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
       
       {/* 5. 공실뉴스 + 부동산·경제 */}
       <div className="mt-50 mb-50">
-        <div className="hot-issue-wrap" style={{ gap: 40 }}>
+        <div className="hot-issue-wrap" style={{ gap: 40, marginBottom: "8px" }}>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
               <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title">공실뉴스 &gt;</h2></Link>
@@ -209,7 +207,6 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             <div className="hi-list">
               {renderArticleList(gongsilListArts)}
             </div>
-            {renderMoreButton(allGongsilList.length, gongsilLimit, setGongsilLimit)}
           </div>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
@@ -218,9 +215,9 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             <div className="hi-list">
               {renderArticleList(economyArts)}
             </div>
-            {renderMoreButton(allEconomy.length, economyLimit, setEconomyLimit)}
           </div>
         </div>
+        {renderRowMoreButton(allGongsilList.length > 3 || allEconomy.length > 3, row1Limit, setRow1Limit)}
       </div>
 
       {/* 6. Video News: 공실뉴스 — 블랙 배경 */}
@@ -253,7 +250,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
 
       {/* 7. AI마케팅 + 라이프·오피니언 */}
       <div className="mt-50 mb-50">
-        <div className="hot-issue-wrap" style={{ gap: 40 }}>
+        <div className="hot-issue-wrap" style={{ gap: 40, marginBottom: "8px" }}>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
               <Link href="/news_marketing" style={{ textDecoration: "none" }}><h2 className="sec-title">AI마케팅 &gt;</h2></Link>
@@ -261,7 +258,6 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             <div className="hi-list">
               {renderArticleList(marketingArts)}
             </div>
-            {renderMoreButton(allMarketing.length, marketingLimit, setMarketingLimit)}
           </div>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
@@ -270,9 +266,9 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             <div className="hi-list">
               {renderArticleList(lifeArts)}
             </div>
-            {renderMoreButton(allLife.length, lifeLimit, setLifeLimit)}
           </div>
         </div>
+        {renderRowMoreButton(allMarketing.length > 3 || allLife.length > 3, row3Limit, setRow3Limit)}
       </div>
     </>
   );
