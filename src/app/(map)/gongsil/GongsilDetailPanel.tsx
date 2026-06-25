@@ -1963,136 +1963,121 @@ const filteredFields = fields.filter(field => {
         {/* 등록자정보 탭 */}
         {activeDetailTab === "realtor" && (
           <>
-            <div style={{ padding: "30px 20px", background: "#fff" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 25, gap: 15 }}>
-                {/* 프로필 사진 */}
-                {prop.members?.profile_image_url ? (
-                  <img
-                    src={prop.members.profile_image_url}
-                    alt="프로필"
-                    style={{
-                      width: 72,
-                      height: 72,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      flexShrink: 0,
-                      border: "2px solid #e5e7eb",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 72,
-                      height: 72,
-                      borderRadius: "50%",
-                      background: "#e8f0fe",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 28,
-                      fontWeight: 700,
-                      color: "#508bf5",
-                      flexShrink: 0,
-                      border: "2px solid #e5e7eb",
-                    }}
-                  >
-                    {(agencyInfo?.agency_name || agencyInfo?.name || prop.members?.name || prop.client_name || "?")[0]}
-                  </div>
-                )}
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 800,
-                      color: "#111",
-                      marginBottom: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    {prop.owner_id ? (
-                      <Link
-                        href={`/reporter/${prop.owner_id}`}
+            <div style={{ padding: "24px 20px", background: "#fff" }}>
+              <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
+                {/* 좌측 기본 정보 영역 */}
+                <div style={{ flex: "0 0 320px", minWidth: 0 }}>
+                  {/* Profile Card Header */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                    {/* 프로필 사진 */}
+                    {prop.members?.profile_image_url ? (
+                      <img
+                        src={prop.members.profile_image_url}
+                        alt="프로필"
                         style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          flexShrink: 0,
+                          border: "1.5px solid #e5e7eb",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: "50%",
+                          background: "#e8f0fe",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 18,
+                          fontWeight: 700,
+                          color: "#508bf5",
+                          flexShrink: 0,
+                          border: "1.5px solid #e5e7eb",
+                        }}
+                      >
+                        {(agencyInfo?.agency_name || agencyInfo?.name || prop.members?.name || prop.client_name || "?")[0]}
+                      </div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 17,
+                          fontWeight: 800,
                           color: "#111",
-                          textDecoration: "none",
-                          cursor: "pointer",
-                          transition: "color 0.2s",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.textDecoration = "underline";
-                          e.currentTarget.style.color = "#3b82f6";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.textDecoration = "none";
-                          e.currentTarget.style.color = "#111";
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis"
                         }}
                       >
-                        {agencyInfo ? (agencyInfo.agency_name || agencyInfo.name) : prop.members ? prop.members.name : prop.client_name}
-                      </Link>
-                    ) : (
-                      <span>{agencyInfo ? (agencyInfo.agency_name || agencyInfo.name) : prop.members ? prop.members.name : prop.client_name}</span>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
-                    {agencyInfo ? (
-                      <>
-                        <span style={{ fontSize: 14, color: "#555" }}>
-                          대표 {agencyInfo.ceo_name || "-"} <span style={{ color: "#ccc", margin: "0 6px" }}>|</span> 등록번호{" "}
-                          {agencyInfo.registration_no || agencyInfo.reg_num || "-"}
-                        </span>
-                        <span style={{ fontSize: 14, color: "#555" }}>
-                          {[agencyInfo.address, agencyInfo.address_detail].filter(Boolean).join(" ") || "-"}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span style={{ fontSize: 14, color: "#555" }}>
-                          일반회원 <span style={{ color: "#ccc", margin: "0 6px" }}>|</span>{" "}
-                          {prop.members ? prop.members.name : prop.client_name}
-                        </span>
-                      </>
-                    )}
-                    <span
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "bold",
-                        color: "#1a73e8",
-                        marginTop: 4,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                      </svg>
-                      전화{" "}
-                      {agencyInfo?.phone
-                        ? `${agencyInfo.phone}${
-                            agencyInfo?.cell && agencyInfo.cell !== agencyInfo.phone ? `, ${agencyInfo.cell}` : ""
-                          }`
-                        : prop.client_phone || prop.members?.phone || "미등록"}
-                    </span>
+                        {prop.owner_id ? (
+                          <Link
+                            href={`/reporter/${prop.owner_id}`}
+                            style={{
+                              color: "#111",
+                              textDecoration: "none",
+                              cursor: "pointer",
+                              transition: "color 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.textDecoration = "underline";
+                              e.currentTarget.style.color = "#3b82f6";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.textDecoration = "none";
+                              e.currentTarget.style.color = "#111";
+                            }}
+                          >
+                            {agencyInfo ? (agencyInfo.agency_name || agencyInfo.name) : prop.members ? prop.members.name : prop.client_name}
+                          </Link>
+                        ) : (
+                          <span>{agencyInfo ? (agencyInfo.agency_name || agencyInfo.name) : prop.members ? prop.members.name : prop.client_name}</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 13, color: "#666", marginTop: 2 }}>
+                        {agencyInfo ? (
+                          <span>
+                            대표 {agencyInfo.ceo_name || "-"} <span style={{ color: "#ccc", margin: "0 6px" }}>|</span> 등록번호{" "}
+                            {agencyInfo.registration_no || agencyInfo.reg_num || "-"}
+                          </span>
+                        ) : (
+                          <span>
+                            일반회원 <span style={{ color: "#ccc", margin: "0 6px" }}>|</span>{" "}
+                            {prop.members ? prop.members.name : prop.client_name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* 그룹 컨테이너 (SNS + 오시는길) */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
-                    {/* SNS Links (Excluding API info) */}
+                  {/* Profile Details List */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 6, marginBottom: 14 }}>
+                    {agencyInfo?.address && (
+                      <div style={{ fontSize: 13, color: "#444", display: "flex", alignItems: "flex-start", gap: 6 }}>
+                        <span style={{ color: "#888", width: 45, flexShrink: 0 }}>주소</span>
+                        <span style={{ flex: 1 }}>{[agencyInfo.address, agencyInfo.address_detail].filter(Boolean).join(" ")}</span>
+                      </div>
+                    )}
+                    <div style={{ fontSize: 13, color: "#444", display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ color: "#888", width: 45, flexShrink: 0 }}>연락처</span>
+                      <span style={{ fontWeight: "bold", color: "#1a73e8" }}>
+                        {agencyInfo?.phone
+                          ? `${agencyInfo.phone}${
+                              agencyInfo?.cell && agencyInfo.cell !== agencyInfo.phone ? `, ${agencyInfo.cell}` : ""
+                            }`
+                          : prop.client_phone || prop.members?.phone || "미등록"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* SNS & Actions Container */}
+                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, paddingLeft: 6 }}>
                     {prop.members?.sns_links &&
-                      Object.keys(prop.members.sns_links).filter((k) => k !== "api_info" && k !== "api_list" && prop.members.sns_links[k]?.url)
-                        .length > 0 &&
                       Object.keys(prop.members.sns_links)
                         .filter((k) => k !== "api_info" && k !== "api_list" && prop.members.sns_links[k]?.url)
                         .map((key) => {
@@ -2139,10 +2124,10 @@ const filteredFields = fields.filter(field => {
                               );
                               break;
                             case "blog":
-                              iconHtml = <span style={{ fontSize: 13, fontWeight: "bold" }}>BLOG</span>;
+                              iconHtml = <span style={{ fontSize: 9, fontWeight: "bold" }}>BLOG</span>;
                               break;
                             case "cafe":
-                              iconHtml = <span style={{ fontSize: 13, fontWeight: "bold" }}>CAFE</span>;
+                              iconHtml = <span style={{ fontSize: 9, fontWeight: "bold" }}>CAFE</span>;
                               break;
                             case "kakao":
                               iconHtml = (
@@ -2203,12 +2188,12 @@ const filteredFields = fields.filter(field => {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                width: 44,
-                                height: 44,
+                                width: 32,
+                                height: 32,
                                 borderRadius: "50%",
                                 background: "#f8f9fa",
                                 border: "1px solid #e0e0e0",
-                                color: "#444",
+                                color: "#555",
                                 transition: "all 0.2s",
                                 textDecoration: "none",
                               }}
@@ -2220,13 +2205,13 @@ const filteredFields = fields.filter(field => {
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.background = "#f8f9fa";
                                 e.currentTarget.style.borderColor = "#e0e0e0";
-                                e.currentTarget.style.color = "#444";
+                                e.currentTarget.style.color = "#555";
                               }}
                             >
                               <div
                                 style={{
-                                  width: 22,
-                                  height: 22,
+                                  width: 16,
+                                  height: 16,
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
@@ -2253,12 +2238,12 @@ const filteredFields = fields.filter(field => {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          width: 44,
-                          height: 44,
+                          width: 32,
+                          height: 32,
                           borderRadius: "50%",
                           background: "#f8f9fa",
                           border: "1px solid #e0e0e0",
-                          color: "#444",
+                          color: "#555",
                           transition: "all 0.2s",
                           textDecoration: "none",
                         }}
@@ -2270,13 +2255,13 @@ const filteredFields = fields.filter(field => {
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = "#f8f9fa";
                           e.currentTarget.style.borderColor = "#e0e0e0";
-                          e.currentTarget.style.color = "#444";
+                          e.currentTarget.style.color = "#555";
                         }}
                       >
                         <svg
                           viewBox="0 0 24 24"
-                          width="22"
-                          height="22"
+                          width="16"
+                          height="16"
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
@@ -2291,24 +2276,26 @@ const filteredFields = fields.filter(field => {
                   </div>
                 </div>
 
-                {/* 부동산 소개란 (agency_info intro) */}
+                {/* 우측 소개글 영역 */}
                 {agencyInfo?.intro && (
-                  <div
-                    style={{
-                      width: 230,
-                      flexShrink: 0,
-                      padding: "12px 14px",
-                      background: "#f8f9fa",
-                      borderRadius: 8,
-                      fontSize: 13,
-                      color: "#444",
-                      border: "1px solid #eee",
-                      lineHeight: 1.5,
-                      wordBreak: "keep-all",
-                    }}
-                  >
-                    <div style={{ fontWeight: "bold", fontSize: 12, color: "#888", marginBottom: 6 }}>부동산 소개</div>
-                    {agencyInfo.intro}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        padding: "12px 14px",
+                        background: "#f8fafc",
+                        borderRadius: 6,
+                        fontSize: 13,
+                        color: "#555",
+                        border: "1px solid #e2e8f0",
+                        lineHeight: 1.5,
+                        wordBreak: "break-all",
+                        height: "100%",
+                        boxSizing: "border-box"
+                      }}
+                    >
+                      <div style={{ fontWeight: "bold", fontSize: 11, color: "#64748b", marginBottom: 6 }}>소개말</div>
+                      <div style={{ whiteSpace: "pre-line" }}>{agencyInfo.intro}</div>
+                    </div>
                   </div>
                 )}
               </div>
