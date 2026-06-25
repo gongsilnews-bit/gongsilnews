@@ -115,10 +115,48 @@ export default function KakaoMapView({
     map.setMinLevel(3);
     map.setMaxLevel(14);
 
-    // 🚀 PC 페이지를 태블릿/모바일에서 열 때 터치 드래그 강제 활성화 (자식 target에 이벤트 위임)
+    // 🚀 PC 페이지를 태블릿/모바일에서 열 때 터치 드래그 및 핀치 줌 강제 활성화 (자식 target에 이벤트 위임 및 휠 시뮬레이션)
     if (mapRef.current && ('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
       const container = mapRef.current;
+      let initialPinchDistance = 0;
+
       const forwardTouch = (e: TouchEvent, mouseType: string) => {
+        // 손가락이 두 개인 경우 (핀치 줌 제스처) 처리
+        if (e.touches.length === 2) {
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+
+          if (mouseType === 'mousedown') { // touchstart 대응
+            initialPinchDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+          } else if (mouseType === 'mousemove') { // touchmove 대응
+            const currentDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+            const diff = currentDistance - initialPinchDistance;
+
+            if (Math.abs(diff) > 15) {
+              const deltaY = diff > 0 ? -120 : 120;
+              const centerX = (t1.clientX + t2.clientX) / 2;
+              const centerY = (t1.clientY + t2.clientY) / 2;
+
+              const target = e.target || document.elementFromPoint(centerX, centerY);
+              if (target) {
+                const wheelEvent = new WheelEvent('wheel', {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window,
+                  deltaY: deltaY,
+                  clientX: centerX,
+                  clientY: centerY,
+                });
+                target.dispatchEvent(wheelEvent);
+              }
+              initialPinchDistance = currentDistance;
+            }
+          }
+          e.preventDefault();
+          return;
+        }
+
+        // 손가락이 한 개인 경우 (기존 드래그 처리)
         if (e.touches.length > 1) return;
         const touch = e.touches[0] || e.changedTouches[0];
         const target = e.target as HTMLElement;
