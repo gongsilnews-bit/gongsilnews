@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect } from "react";
+import { useState, useLayoutEffect } from "react";
 import Link from "next/link";
 import BannerSlot from "@/components/BannerSlot";
 
@@ -45,14 +45,24 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
     return { id: null, hasVideo: false };
   };
 
-  // JS에서 새 카테고리별 분류
-  const marketingArts = allNewsArticles.filter(a => a.section1 === "AI마케팅").slice(0, 2);
-  const economyArts = allNewsArticles.filter(a => a.section1 === "부동산·경제").slice(0, 2);
-  const lifeArts = allNewsArticles.filter(a => a.section1 === "라이프·오피니언").slice(0, 2);
+  // JS에서 새 카테고리별 분류 및 더보기 상태 관리
+  const [marketingLimit, setMarketingLimit] = useState(3);
+  const [economyLimit, setEconomyLimit] = useState(3);
+  const [lifeLimit, setLifeLimit] = useState(3);
+  const [gongsilLimit, setGongsilLimit] = useState(3);
+
+  const allMarketing = allNewsArticles.filter(a => a.section1 === "AI마케팅");
+  const allEconomy = allNewsArticles.filter(a => a.section1 === "부동산·경제");
+  const allLife = allNewsArticles.filter(a => a.section1 === "라이프·오피니언");
+  const allGongsilList = allNewsArticles.filter(a => a.section1 === "공실뉴스" && !extractYoutubeIdInfo(a).hasVideo);
+
+  const marketingArts = allMarketing.slice(0, marketingLimit);
+  const economyArts = allEconomy.slice(0, economyLimit);
+  const lifeArts = allLife.slice(0, lifeLimit);
   
   // 공실뉴스: 영상이 있는 기사는 블랙 배경 비디오 섹션으로, 없는 기사는 하단 리스트로 분리
   const gongsilArts = allNewsArticles.filter(a => a.section1 === "공실뉴스" && extractYoutubeIdInfo(a).hasVideo).slice(0, 3);
-  const gongsilListArts = allNewsArticles.filter(a => a.section1 === "공실뉴스" && !extractYoutubeIdInfo(a).hasVideo).slice(0, 2);
+  const gongsilListArts = allGongsilList.slice(0, gongsilLimit);
 
   // 날짜 포맷팅
   const formatDate = (dateStr: string) => {
@@ -112,6 +122,39 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
     });
   };
 
+  const renderMoreButton = (totalCount: number, currentLimit: number, setLimit: (val: number) => void) => {
+    if (totalCount <= currentLimit) return null;
+    return (
+      <div style={{ display: "flex", justifyContent: "center", marginTop: "16px", marginBottom: "8px" }}>
+        <button
+          onClick={() => setLimit(currentLimit + 5)}
+          style={{
+            padding: "8px 24px",
+            fontSize: "13px",
+            fontWeight: 600,
+            color: "#6b7280",
+            backgroundColor: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: "20px",
+            cursor: "pointer",
+            transition: "all 0.2s",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px"
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#fff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
+        >
+          기사 5건 더보기
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+    );
+  };
+
   return (
     <>
       <style>{`
@@ -134,6 +177,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             <div className="hi-list">
               {renderArticleList(marketingArts)}
             </div>
+            {renderMoreButton(allMarketing.length, marketingLimit, setMarketingLimit)}
           </div>
           <div className="hi-right">
             <BannerSlot placement="MAIN_ISSUE_RIGHT" initialBanners={issueRightBanners} />
@@ -181,6 +225,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             <div className="hi-list">
               {renderArticleList(economyArts)}
             </div>
+            {renderMoreButton(allEconomy.length, economyLimit, setEconomyLimit)}
           </div>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
@@ -189,6 +234,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             <div className="hi-list">
               {renderArticleList(gongsilListArts)}
             </div>
+            {renderMoreButton(allGongsilList.length, gongsilLimit, setGongsilLimit)}
           </div>
         </div>
       </div>
@@ -203,6 +249,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             <div className="hi-list">
               {renderArticleList(lifeArts)}
             </div>
+            {renderMoreButton(allLife.length, lifeLimit, setLifeLimit)}
           </div>
           <div className="hi-right">
             <BannerSlot placement="MAIN_MIDDLE_ISSUE" initialBanners={middleIssueBanners} />
