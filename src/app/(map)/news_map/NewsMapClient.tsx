@@ -282,14 +282,19 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
     map.setMinLevel(3);
     map.setMaxLevel(9);
 
-    // 🚀 PC 페이지를 태블릿/모바일에서 열 때 터치 드래그 및 핀치 줌 강제 활성화 (자식 target에 이벤트 위임 및 휠 시뮬레이션)
+    // 🚀 PC 페이지를 태블릿/모바일에서 열 때 터치 드래그 및 핀치 줌 강제 활성화 (자식 target에 이벤트 위임 및 휠/클릭 시뮬레이션)
     if (mapRef.current && ('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
       const container = mapRef.current;
       let initialPinchDistance = 0;
+      let startX = 0;
+      let startY = 0;
+      let hasMoved = false;
+      let isPinching = false;
 
       const forwardTouch = (e: TouchEvent, mouseType: string) => {
-        // 손가락이 두 개인 경우 (핀치 줌 제스처) 처리
+        // 1. 손가락이 두 개인 경우 (핀치 줌 제스처) 처리
         if (e.touches.length === 2) {
+          isPinching = true;
           const t1 = e.touches[0];
           const t2 = e.touches[1];
 
@@ -323,11 +328,23 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
           return;
         }
 
-        // 손가락이 한 개인 경우 (기존 드래그 처리)
+        // 2. 손가락이 한 개인 경우 (드래그 및 클릭 구분 처리)
         if (e.touches.length > 1) return;
         const touch = e.touches[0] || e.changedTouches[0];
         const target = e.target as HTMLElement;
         if (!target) return;
+
+        if (mouseType === 'mousedown') {
+          startX = touch.clientX;
+          startY = touch.clientY;
+          hasMoved = false;
+          if (e.touches.length === 0) isPinching = false;
+        } else if (mouseType === 'mousemove') {
+          const dist = Math.hypot(touch.clientX - startX, touch.clientY - startY);
+          if (dist > 8) {
+            hasMoved = true;
+          }
+        }
 
         const mouseEvent = new MouseEvent(mouseType, {
           bubbles: true,
@@ -340,6 +357,23 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
         });
 
         target.dispatchEvent(mouseEvent);
+
+        if (mouseType === 'mouseup') {
+          if (!hasMoved && !isPinching) {
+            const clickEvent = new MouseEvent('click', {
+              bubbles: true,
+              cancelable: true,
+              view: window,
+              clientX: touch.clientX,
+              clientY: touch.clientY,
+              screenX: touch.screenX,
+              screenY: touch.screenY,
+            });
+            target.dispatchEvent(clickEvent);
+          }
+          if (e.touches.length === 0) isPinching = false;
+        }
+
         if (mouseType !== 'mouseup') e.preventDefault();
       };
       container.addEventListener('touchstart', (e) => forwardTouch(e, 'mousedown'), { passive: false });
