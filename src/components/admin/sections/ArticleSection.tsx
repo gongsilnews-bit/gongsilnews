@@ -242,7 +242,10 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               // 낙관적 업데이트
               setDbArticles(prev => prev.map(a => checkedArticleIds.includes(a.id) ? { ...a, status: 'APPROVED' } : a));
               const res = await adminUpdateArticleStatus(checkedArticleIds, 'APPROVED');
-              if (res.success) { setCheckedArticleIds([]); }
+              if (res.success) { 
+                setCheckedArticleIds([]); 
+                loadData();
+              }
               else { alert("오류가 발생했습니다: " + res.error); getArticles().then(r => setDbArticles(r.data || [])); }
             }
           }} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✓ 선택 승인</button>
@@ -321,6 +324,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                         onClick={async () => {
                           setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, is_important: false, is_headline: false } : p));
                           await adminUpdateArticleFlags(a.id, false, false);
+                          loadData();
                         }}
                         title="일반 기사"
                         style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: (!a.is_important && !a.is_headline) ? "#3b82f6" : "#fff", color: (!a.is_important && !a.is_headline) ? "#fff" : "#888", transition: "all 0.2s" }}
@@ -330,6 +334,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                           const newImportant = !a.is_important;
                           setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, is_important: newImportant } : p));
                           await adminUpdateArticleFlags(a.id, newImportant, !!a.is_headline);
+                          loadData();
                         }}
                         title="중요 기사 (카테고리 상단 노출)"
                         style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: a.is_important ? "#f59e0b" : "#fff", color: a.is_important ? "#fff" : "#888", transition: "all 0.2s" }}
@@ -339,6 +344,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                           const newHeadline = !a.is_headline;
                           setDbArticles(prev => prev.map(p => p.id === a.id ? { ...p, is_headline: newHeadline } : p));
                           await adminUpdateArticleFlags(a.id, !!a.is_important, newHeadline);
+                          loadData();
                         }}
                         title="헤드라인 기사 (메인 영역 노출)"
                         style={{ width: 24, height: 24, padding: 0, border: "1px solid #ddd", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: a.is_headline ? "#ef4444" : "#fff", color: a.is_headline ? "#fff" : "#888", transition: "all 0.2s" }}
@@ -460,7 +466,11 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               <button onClick={async () => {
                 setDbArticles(prev => prev.map(a => selectedArticleIdsForReject.includes(a.id) ? { ...a, status: 'REJECTED' } : a));
                 const res = await adminUpdateArticleStatus(selectedArticleIdsForReject, 'REJECTED', rejectReason);
-                if (res.success) { setCheckedArticleIds([]); setShowRejectModal(false); }
+                if (res.success) { 
+                  setCheckedArticleIds([]); 
+                  setShowRejectModal(false); 
+                  loadData();
+                }
                 else { alert("처리 실패: " + res.error); getArticles().then(r => setDbArticles(r.data || [])); }
               }} style={{ padding: "10px 18px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>반려 처리</button>
             </div>
