@@ -256,21 +256,18 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
 
   // 페이지네이션 계산
   const totalPages = Math.max(1, Math.ceil(sortedArticles.length / ITEMS_PER_PAGE));
-  const pagedArticles = sortedArticles.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const pagedArticles = sortedArticles.slice(0, currentPage * ITEMS_PER_PAGE);
 
-  const handlePageChange = (delta: number) => {
-    const newPage = currentPage + delta;
-    if (newPage >= 1 && newPage <= totalPages) {
+  const handleLoadMore = () => {
+    const newPage = currentPage + 1;
+    if (newPage <= totalPages) {
+      setCurrentPage(newPage);
       if (typeof window !== "undefined") {
         sessionStorage.setItem(`pc_news_page_${category}`, newPage.toString());
       }
       const params = new URLSearchParams(searchParams.toString());
       params.set("page", newPage.toString());
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     }
   };
 
@@ -638,12 +635,34 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
               </div>
             ))}
 
-            {/* 페이지네이션 */}
-            {displayArticles.length > 0 && (
-              <div className="pagination">
-                <button className="page-btn" disabled={currentPage <= 1} onClick={() => handlePageChange(-1)}>&lt; 이전</button>
-                <span className="page-info">{currentPage} / {totalPages}</span>
-                <button className="page-btn" disabled={currentPage >= totalPages} onClick={() => handlePageChange(1)}>다음 &gt;</button>
+            {/* 더보기 버튼 */}
+            {displayArticles.length > 0 && currentPage < totalPages && (
+              <div style={{ display: "flex", justifyContent: "center", marginTop: "32px", marginBottom: "16px" }}>
+                <button 
+                  onClick={handleLoadMore}
+                  style={{
+                    padding: "12px 36px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "#4b5563",
+                    backgroundColor: "#fff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#fff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
+                >
+                  더보기
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
               </div>
             )}
           </div>
