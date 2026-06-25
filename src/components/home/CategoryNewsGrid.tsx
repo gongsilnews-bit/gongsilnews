@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useLayoutEffect } from "react";
+import { useState, useLayoutEffect, useRef, useEffect } from "react";
 import Link from "next/link";
 import BannerSlot from "@/components/BannerSlot";
 
@@ -49,6 +49,29 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   const [row1Limit, setRow1Limit] = useState(3); // 공실뉴스 + 부동산·경제
   const [row3Limit, setRow3Limit] = useState(3); // AI마케팅 + 라이프·오피니언
 
+  const videoScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollVideoLeft, setCanScrollVideoLeft] = useState(false);
+  const [canScrollVideoRight, setCanScrollVideoRight] = useState(true);
+
+  const checkVideoScroll = () => {
+    if (videoScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = videoScrollRef.current;
+      setCanScrollVideoLeft(scrollLeft > 0);
+      setCanScrollVideoRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  const scrollVideo = (direction: "left" | "right") => {
+    if (videoScrollRef.current) {
+      const scrollAmount = videoScrollRef.current.clientWidth / 2;
+      videoScrollRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth"
+      });
+      setTimeout(checkVideoScroll, 500);
+    }
+  };
+
   const allMarketing = allNewsArticles.filter(a => a.section1 === "AI마케팅");
   const allEconomy = allNewsArticles.filter(a => a.section1 === "부동산·경제");
   const allLife = allNewsArticles.filter(a => a.section1 === "라이프·오피니언");
@@ -59,8 +82,14 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   const lifeArts = allLife.slice(0, row3Limit);
   
   // 공실뉴스: 영상이 있는 기사는 블랙 배경 비디오 섹션으로, 없는 기사는 하단 리스트로 분리
-  const gongsilArts = allNewsArticles.filter(a => a.section1 === "공실뉴스" && extractYoutubeIdInfo(a).hasVideo).slice(0, 3);
+  const gongsilArts = allNewsArticles.filter(a => a.section1 === "공실뉴스" && extractYoutubeIdInfo(a).hasVideo).slice(0, 12);
   const gongsilListArts = allGongsilList.slice(0, row1Limit);
+
+  useEffect(() => {
+    checkVideoScroll();
+    window.addEventListener("resize", checkVideoScroll);
+    return () => window.removeEventListener("resize", checkVideoScroll);
+  }, [gongsilArts]);
 
   // 날짜 포맷팅
   const formatDate = (dateStr: string) => {
@@ -199,12 +228,13 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
     <>
       <style>{`
         .video-grid { display: flex; gap: 20px; }
-        .vid-item { flex: 1; display: flex; flex-direction: column; cursor: pointer; transition: transform 0.2s; text-decoration: none; color: inherit; }
+        .vid-item { display: flex; flex-direction: column; cursor: pointer; transition: transform 0.2s; text-decoration: none; color: inherit; }
         .vid-item:hover { transform: translateY(-3px); }
         .vid-thumb { position: relative; width: 100%; padding-bottom: 56.25%; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
-        .vid-thumb img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; objectFit: cover; opacity: 0.8; transition: opacity 0.2s; }
+        .vid-thumb img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: opacity 0.2s; }
         .vid-item:hover .vid-thumb img { opacity: 1; }
         .vid-title { font-size: 16px; font-weight: 700; line-height: 1.4; color: #111; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
       `}</style>
       
       {/* 5. 공실뉴스 + 부동산·경제 */}
@@ -236,24 +266,76 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
           <div className="sec-title-wrap">
             <Link href="/news_gongsil" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}><svg width="28" height="20" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg><h2 className="sec-title" style={{ color: "#fff", margin: 0 }}>공실뉴스 &gt;</h2></Link>
           </div>
-          <div className="video-grid">
-            {gongsilArts.length > 0 ? (
-              gongsilArts.map((item, i) => {
-                const ytInfo = extractYoutubeIdInfo(item);
-                const thumbSrc = getThumbnailSrc(item, ytInfo);
-                return (
-                  <Link key={i} href={`/news/${item.article_no || item.id}`} className="vid-item" onClick={saveScroll}>
-                    <div className="vid-thumb">
-                      <img src={thumbSrc || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} />
-                      <div className="vid-play"></div>
-                    </div>
-                    <div className="vid-title" style={{ color: "#fff" }}>{item.title}</div>
-                  </Link>
-                );
-              })
-            ) : (
-              <div style={{ color: "#666", padding: "40px 0", width: "100%", textAlign: "center" }}>등록된 공실뉴스 기사가 없습니다.</div>
+
+          <div style={{ position: "relative" }}>
+            {/* 화살표 버튼 */}
+            {canScrollVideoLeft && (
+              <button 
+                onClick={() => scrollVideo("left")}
+                style={{ position: "absolute", left: "-24px", top: "105px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                onMouseOver={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1.05)"; e.currentTarget.style.color = "#1e56a0"; }}
+                onMouseOut={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1)"; e.currentTarget.style.color = "#333"; }}
+                title="이전"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
             )}
+            {canScrollVideoRight && gongsilArts.length > 3 && (
+              <button 
+                onClick={() => scrollVideo("right")}
+                style={{ position: "absolute", right: "-24px", top: "105px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                onMouseOver={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1.05)"; e.currentTarget.style.color = "#1e56a0"; }}
+                onMouseOut={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1)"; e.currentTarget.style.color = "#333"; }}
+                title="다음"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            )}
+
+            <div 
+              ref={videoScrollRef}
+              onScroll={checkVideoScroll}
+              className="video-grid hide-scroll"
+              style={{
+                display: "flex",
+                gap: "20px",
+                overflowX: "auto",
+                scrollSnapType: "x mandatory",
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+                paddingBottom: "10px"
+              }}
+            >
+              {gongsilArts.length > 0 ? (
+                gongsilArts.map((item, i) => {
+                  const ytInfo = extractYoutubeIdInfo(item);
+                  const thumbSrc = getThumbnailSrc(item, ytInfo);
+                  return (
+                    <Link 
+                      key={i} 
+                      href={`/news/${item.article_no || item.id}`} 
+                      className="vid-item" 
+                      onClick={saveScroll}
+                      style={{
+                        flex: "0 0 calc(33.333% - 13.33px)",
+                        minWidth: "280px",
+                        scrollSnapAlign: "start",
+                        textDecoration: "none",
+                        display: "block"
+                      }}
+                    >
+                      <div className="vid-thumb">
+                        <img src={thumbSrc || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} />
+                        <div className="vid-play"></div>
+                      </div>
+                      <div className="vid-title" style={{ color: "#fff" }}>{item.title}</div>
+                    </Link>
+                  );
+                })
+              ) : (
+                <div style={{ color: "#666", padding: "40px 0", width: "100%", textAlign: "center" }}>등록된 공실뉴스 기사가 없습니다.</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
