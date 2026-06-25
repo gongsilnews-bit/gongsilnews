@@ -22,7 +22,10 @@ export default async function Home() {
     { data: issueRightBanners },
     { data: middleIssueBanners },
     { data: lecturesData },
-    allNewsRes,
+    marketingRes,
+    economyRes,
+    lifeRes,
+    gongsilRes,
     mapNewsRes,
   ] = await Promise.all([
     getBannersByPlacement("MAIN_TOP"),
@@ -30,12 +33,20 @@ export default async function Home() {
     getBannersByPlacement("MAIN_ISSUE_RIGHT"),
     getBannersByPlacement("MAIN_MIDDLE_ISSUE"),
     getLectures({ status: "ACTIVE" }),
-    // ✅ 기사 8개 쿼리 → 2개로 통합
-    getArticles({ status: "APPROVED", limit: 100 }),
+    // ✅ 카테고리별로 개별 조회하여 노출 및 성능 최적화
+    getArticles({ status: "APPROVED", section1: "AI마케팅", limit: 5 }),
+    getArticles({ status: "APPROVED", section1: "부동산·경제", limit: 5 }),
+    getArticles({ status: "APPROVED", section1: "라이프·오피니언", limit: 5 }),
+    getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 10 }),
     getArticles({ status: "APPROVED", section1: "우리동네뉴스", limit: 30 }),
   ]);
 
-  const allNewsArticles = allNewsRes.success ? allNewsRes.data || [] : [];
+  const allNewsArticles = [
+    ...(marketingRes.success ? marketingRes.data || [] : []),
+    ...(economyRes.success ? economyRes.data || [] : []),
+    ...(lifeRes.success ? lifeRes.data || [] : []),
+    ...(gongsilRes.success ? gongsilRes.data || [] : []),
+  ];
   const mapArticles = mapNewsRes.success ? mapNewsRes.data || [] : [];
 
   return (
