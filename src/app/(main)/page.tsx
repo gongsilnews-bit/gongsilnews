@@ -32,7 +32,7 @@ export default async function Home() {
     getArticles({ status: "APPROVED", section1: "AI마케팅", limit: 8 }),
     getArticles({ status: "APPROVED", section1: "부동산·경제", limit: 8 }),
     getArticles({ status: "APPROVED", section1: "라이프·오피니언", limit: 8 }),
-    getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 15 }),
+    getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 40 }),
     getArticles({ status: "APPROVED", section1: "우리동네뉴스", limit: 30 }),
   ]);
 
