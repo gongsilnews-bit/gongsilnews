@@ -492,7 +492,10 @@ function NewsSection({ title, href, articles, onArticleClick }: { title: string;
       {/* 나머지 기사 (번호 제거 리스트) */}
       {rest.slice(0, 3).map((a: any) => (
         <Link key={a.id} href={`/m/news/${a.article_no || a.id}`} className="tap art-row" onClick={onArticleClick} style={{ display: "flex" }}>
-          <p style={{ fontSize: 18, fontWeight: 600, color: "#333333", lineHeight: 1.5, flex: 1, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: 0, letterSpacing: "-0.3px" }}>{a.title}</p>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 18, fontWeight: 600, color: "#333333", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "keep-all", margin: "0 0 6px", letterSpacing: "-0.3px" }}>{a.title}</p>
+            <p style={{ fontSize: 14, color: "#222222", fontWeight: 500, margin: 0, letterSpacing: "-0.2px" }}>{a.author_name} · {formatDate(a.published_at || a.created_at)}</p>
+          </div>
           {a.thumbnail_url && (
             <div style={{ width: 104, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#e5e7eb", position: "relative" }}>
               <Image src={a.thumbnail_url} alt="" fill style={{ objectFit: "cover" }} sizes="104px" />
