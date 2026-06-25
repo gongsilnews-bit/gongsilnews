@@ -1512,13 +1512,18 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     try {
       // 노출시간 조합 (폼의 날짜/시간은 KST 기준이므로 +09:00 오프셋 명시)
       let publishedAt: string | null = null;
-      if (isReserved && publishDate) {
-        // 예약: KST 기준 날짜+시간을 ISO로 변환
-        const kstDateStr = `${publishDate}T${publishTime || "00:00"}:00+09:00`;
-        publishedAt = new Date(kstDateStr).toISOString();
-      } else {
-        // 예약이 아닌 경우: 신규/수정 모두 현재 시간
-        publishedAt = new Date().toISOString();
+      const isApprovedStatus = finalStatus === "APPROVED" || finalStatus === "승인" || finalStatus === "광고중";
+      if (isApprovedStatus) {
+        if (isReserved || loadArticleId) {
+          if (publishDate) {
+            const kstDateStr = `${publishDate}T${publishTime || "00:00"}:00+09:00`;
+            publishedAt = new Date(kstDateStr).toISOString();
+          } else {
+            publishedAt = new Date().toISOString();
+          }
+        } else {
+          publishedAt = new Date().toISOString();
+        }
       }
 
       // 대표 이미지 URL 결정

@@ -138,6 +138,8 @@ export async function saveArticle(data: {
       if (existing && existing.status === "APPROVED") {
         (articleData as any).edit_count = (existing.edit_count || 0) + 1;
       }
+      // 수정일(updated_at)을 현재 시간으로 동기화
+      (articleData as any).updated_at = new Date().toISOString();
       // 수정
       const { error } = await supabase
         .from("articles")
@@ -501,6 +503,8 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
     if (status === 'APPROVED') {
       updateData.published_at = new Date().toISOString();
     }
+    // 상태 변경도 변경사항이므로 수정일(updated_at)을 현재 시간으로 동기화
+    updateData.updated_at = new Date().toISOString();
 
     const { error } = await supabase
       .from("articles")
@@ -537,7 +541,11 @@ export async function adminUpdateArticleFlags(articleId: string, isImportant: bo
   try {
     const { error } = await supabase
       .from("articles")
-      .update({ is_important: isImportant, is_headline: isHeadline })
+      .update({ 
+        is_important: isImportant, 
+        is_headline: isHeadline,
+        updated_at: new Date().toISOString()
+      })
       .eq("id", articleId);
       
     if (error) return { success: false, error: error.message };
