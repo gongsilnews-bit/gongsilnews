@@ -520,7 +520,9 @@ function MobileArticleWrite() {
                   <option value="인물/인터뷰">인물/인터뷰</option>
                   <option value="부동산/인테리어 꿀팁">부동산/인테리어 꿀팁</option>
                   <option value="맛집/여행/건강">맛집/여행/건강</option>
-                  <option value="자유 에세이">자유 에세이</option>
+                  <option value="스포츠">스포츠</option>
+                  <option value="연예">연예</option>
+                  <option value="기타">기타</option>
                 </>
               )}
             </select>

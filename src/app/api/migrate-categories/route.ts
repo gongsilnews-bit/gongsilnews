@@ -36,11 +36,11 @@ const MIGRATION_RULES = [
   // 6. 뉴스/칼럼 > 여행·건강·생활 → 라이프·오피니언 > 맛집/여행/건강
   { oldSection1: "뉴스/칼럼", oldSection2: "여행·건강·생활", newSection1: "라이프·오피니언", newSection2: "맛집/여행/건강" },
 
-  // 7. 뉴스/칼럼 > IT·가전·가구 → 라이프·오피니언 > 자유 에세이
-  { oldSection1: "뉴스/칼럼", oldSection2: "IT·가전·가구", newSection1: "라이프·오피니언", newSection2: "자유 에세이" },
+  // 7. 뉴스/칼럼 > IT·가전·가구 → 라이프·오피니언 > 기타
+  { oldSection1: "뉴스/칼럼", oldSection2: "IT·가전·가구", newSection1: "라이프·오피니언", newSection2: "기타" },
 
-  // 8. 뉴스/칼럼 > 스포츠·연예·Car → 라이프·오피니언 > 자유 에세이
-  { oldSection1: "뉴스/칼럼", oldSection2: "스포츠·연예·Car", newSection1: "라이프·오피니언", newSection2: "자유 에세이" },
+  // 8. 뉴스/칼럼 > 스포츠·연예·Car → 라이프·오피니언 > 스포츠
+  { oldSection1: "뉴스/칼럼", oldSection2: "스포츠·연예·Car", newSection1: "라이프·오피니언", newSection2: "스포츠" },
 
   // 9. 뉴스/칼럼 > 인물·미션·기타 → 라이프·오피니언 > 인물/인터뷰
   { oldSection1: "뉴스/칼럼", oldSection2: "인물·미션·기타", newSection1: "라이프·오피니언", newSection2: "인물/인터뷰" },

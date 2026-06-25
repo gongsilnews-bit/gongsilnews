@@ -546,7 +546,9 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>인물/인터뷰</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산/인테리어 꿀팁</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>맛집/여행/건강</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자유 에세이</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>스포츠</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>연예</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>기타</a></li>
                 </ul>
               </div>
               
