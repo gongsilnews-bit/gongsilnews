@@ -115,27 +115,6 @@ export default function KakaoMapView({
     map.setMinLevel(3);
     map.setMaxLevel(14);
 
-    // 🚀 PC 페이지를 태블릿/모바일에서 열 때 터치 드래그 강제 활성화
-    // Kakao Maps SDK가 데스크톱 모드에서 마우스 이벤트만 수신하므로,
-    // 터치 이벤트를 마우스 이벤트로 변환하여 지도에 전달
-    if (mapRef.current && ('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
-      const container = mapRef.current;
-      const forwardTouch = (e: TouchEvent, mouseType: string) => {
-        if (e.touches.length > 1) return; // 핀치줌은 SDK 기본 동작에 위임
-        const touch = e.touches[0] || e.changedTouches[0];
-        const mouseEvent = new MouseEvent(mouseType, {
-          bubbles: true, cancelable: true,
-          clientX: touch.clientX, clientY: touch.clientY,
-          screenX: touch.screenX, screenY: touch.screenY,
-        });
-        container.dispatchEvent(mouseEvent);
-        if (mouseType !== 'mouseup') e.preventDefault();
-      };
-      container.addEventListener('touchstart', (e) => forwardTouch(e, 'mousedown'), { passive: false });
-      container.addEventListener('touchmove', (e) => forwardTouch(e, 'mousemove'), { passive: false });
-      container.addEventListener('touchend', (e) => forwardTouch(e, 'mouseup'), { passive: false });
-    }
-
     kakao.maps.event.addListener(map, "idle", () => {
       setMapBounds(map.getBounds());
       // Reverse Geocoder for the center
@@ -687,7 +666,7 @@ export default function KakaoMapView({
         isPushedDown={activeFilterDropdown !== null}
       />
 
-      <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed", touchAction: "none" }}>
+      <div ref={mapRef} style={{ width: "100%", height: "100%", background: "#e8eaed" }}>
         {mapError && (
           <div
             style={{
