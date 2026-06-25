@@ -27,11 +27,11 @@ const MIGRATION_RULES = [
   // 3. 뉴스/칼럼 > 부동산·주식·재테크 → 부동산·경제 > 경제/재테크/주식
   { oldSection1: "뉴스/칼럼", oldSection2: "부동산·주식·재테크", newSection1: "부동산·경제", newSection2: "경제/재테크/주식" },
 
-  // 4. 뉴스/칼럼 > 정치·경제·사회 → 부동산·경제 > 부동산 정책/동향
-  { oldSection1: "뉴스/칼럼", oldSection2: "정치·경제·사회", newSection1: "부동산·경제", newSection2: "부동산 정책/동향" },
-
-  // 5. 뉴스/칼럼 > 세무·법률 → 부동산·경제 > 법률/세무 지식
-  { oldSection1: "뉴스/칼럼", oldSection2: "세무·법률", newSection1: "부동산·경제", newSection2: "법률/세무 지식" },
+  // 4. 뉴스/칼럼 > 정치·경제·사회 → 부동산·경제 > 부동산정책/정치
+  { oldSection1: "뉴스/칼럼", oldSection2: "정치·경제·사회", newSection1: "부동산·경제", newSection2: "부동산정책/정치" },
+ 
+  // 5. 뉴스/칼럼 > 세무·법률 → 부동산·경제 > 세무/법률/기타
+  { oldSection1: "뉴스/칼럼", oldSection2: "세무·법률", newSection1: "부동산·경제", newSection2: "세무/법률/기타" },
 
   // 6. 뉴스/칼럼 > 여행·건강·생활 → 라이프·오피니언 > 맛집/여행/건강
   { oldSection1: "뉴스/칼럼", oldSection2: "여행·건강·생활", newSection1: "라이프·오피니언", newSection2: "맛집/여행/건강" },

@@ -490,9 +490,9 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
               <option value="신축/분양/경매">신축/분양/경매</option>
             </>)}
             {section1 === "부동산·경제" && (<>
-              <option value="부동산 정책/동향">부동산 정책/동향</option>
+              <option value="부동산정책/정치">부동산정책/정치</option>
               <option value="경제/재테크/주식">경제/재테크/주식</option>
-              <option value="법률/세무 지식">법률/세무 지식</option>
+              <option value="세무/법률/기타">세무/법률/기타</option>
             </>)}
             {section1 === "AI마케팅" && (<>
               <option value="AI/NEWS">AI/NEWS</option>

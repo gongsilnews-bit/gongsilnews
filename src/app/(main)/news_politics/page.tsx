@@ -17,7 +17,7 @@ export default async function NewsPoliticsPage() {
     : [];
   const importantArticles = importantRes.success ? (importantRes.data || []) : [];
 
-  const subCategories = ["부동산 정책/동향", "경제/재테크/주식", "법률/세무 지식"];
+  const subCategories = ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타"];
 
   return <NewsListLayout 
     category="부동산·경제" 

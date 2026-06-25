@@ -59,14 +59,14 @@ export async function sendAgentMessage(params: {
           subtitle: aiResult.subtitle,
           content: finalContent,
           section1: "부동산·경제",
-          section2: aiResult.section2 || "부동산 정책/동향",
+          section2: aiResult.section2 || "부동산정책/정치",
           status: 'DRAFT',
           author_id: admin?.id || null,
           author_name: admin?.name || '공실뉴스 AI 비서',
           author_email: admin?.email || 'gongsilnews@gmail.com',
         }).select('id').single();
 
-      const text = `✅ **기사 초안이 성공적으로 작성되었습니다!**\n\n📌 **제목:** ${aiResult.title}\n📂 **카테고리:** 부동산·경제 > ${aiResult.section2 || '부동산 정책/동향'}\n\n[기사관리 > 작성중] 탭에서 확인 및 승인해주세요.`;
+      const text = `✅ **기사 초안이 성공적으로 작성되었습니다!**\n\n📌 **제목:** ${aiResult.title}\n📂 **카테고리:** 부동산·경제 > ${aiResult.section2 || '부동산정책/정치'}\n\n[기사관리 > 작성중] 탭에서 확인 및 승인해주세요.`;
       
       const tokens = aiResult.usage?.totalTokens || 0;
       const costKrw = Math.round((tokens * 0.00000045) * 1350 * 100) / 100; // 대략적인 계산
@@ -117,7 +117,7 @@ export async function sendAgentMessage(params: {
           subtitle: aiResult.subtitle,
           content: finalContent,
           section1: "부동산·경제",
-          section2: "부동산 정책/동향",
+          section2: "부동산정책/정치",
           status: 'DRAFT',
           author_id: admin?.id || null,
           author_name: admin?.name || '공실뉴스 AI 비서',
@@ -585,7 +585,7 @@ export async function loadArticleCronConfig(): Promise<ArticleCronConfig> {
     isActive: true,
     hours: [8, 14, 23],
     categories: [
-      "부동산 정책/동향", "법률/세무 지식", "경제/재테크/주식",
+      "부동산 정책/동향", "세무/법률/기타", "경제/재테크/주식",
       "AI/NEWS", "부동산유튜브/블로그", "맛집/여행/건강", "IT/가전/가구", "스포츠/연예/Car"
     ]
   };

@@ -186,9 +186,9 @@ export default function Footer() {
           </div>
           <div className="sitemap-col">
             <h4 className="sitemap-title">부동산 경제</h4>
-            <Link href="/news_politics" className="sitemap-link">부동산 정책/동향</Link>
+            <Link href="/news_politics" className="sitemap-link">부동산정책/정치</Link>
             <Link href="/news_politics" className="sitemap-link">경제/재테크/주식</Link>
-            <Link href="/news_politics" className="sitemap-link">법률/세무 지식</Link>
+            <Link href="/news_politics" className="sitemap-link">세무/법률/기타</Link>
           </div>
           <div className="sitemap-col">
             <h4 className="sitemap-title">AI마케팅</h4>

@@ -19,8 +19,8 @@ const parser = new Parser({
 });
 
 const FULL_CATEGORY_MAP = [
-  { section1: "부동산·경제", section2: "부동산 정책/동향", keyword: "부동산 정책 OR 부동산 동향 OR 아파트 분양" },
-  { section1: "부동산·경제", section2: "법률/세무 지식", keyword: "부동산 세금 OR 취득세 OR 종부세 OR 부동산 판례 OR 전세사기" },
+  { section1: "부동산·경제", section2: "부동산정책/정치", keyword: "부동산 정책 OR 부동산 동향 OR 아파트 분양" },
+  { section1: "부동산·경제", section2: "세무/법률/기타", keyword: "부동산 세금 OR 취득세 OR 종부세 OR 부동산 판례 OR 전세사기" },
   { section1: "부동산·경제", section2: "경제/재테크/주식", keyword: "금리 인하 OR 주식 시장 OR 경제 전망 OR 재테크" },
   { section1: "AI마케팅", section2: "AI/NEWS", keyword: "생성형 AI OR 챗GPT OR 프롭테크" },
   { section1: "AI마케팅", section2: "부동산유튜브/블로그", keyword: "site:youtube.com 부동산 마케팅 OR site:blog.naver.com 공인중개사 마케팅" },

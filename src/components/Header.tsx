@@ -523,9 +523,9 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               <div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>부동산 경제</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산 정책/동향</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산정책/정치</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>경제/재테크/주식</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>법률/세무 지식</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>세무/법률/기타</a></li>
                 </ul>
               </div>
 

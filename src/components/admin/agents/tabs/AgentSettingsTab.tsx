@@ -275,7 +275,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
                     <div style={{ fontSize: 13, fontWeight: 600, color: theme.textSecondary, marginBottom: 8 }}>📂 수집 카테고리 선택</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {[
-                        "부동산 정책/동향", "법률/세무 지식", "경제/재테크/주식",
+                        "부동산정책/정치", "세무/법률/기타", "경제/재테크/주식",
                         "AI/NEWS", "부동산유튜브/블로그", "맛집/여행/건강", "IT/가전/가구", "스포츠/연예/Car"
                       ].map(cat => (
                         <label key={cat} style={{ display: "flex", alignItems: "center", gap: 4, background: theme.darkMode ? "#334155" : "#fff", padding: "6px 12px", borderRadius: 20, border: `1px solid ${cronConfig.categories.includes(cat) ? "#3b82f6" : theme.border}`, cursor: "pointer" }}>
