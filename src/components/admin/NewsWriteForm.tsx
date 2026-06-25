@@ -1510,6 +1510,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
     setSaving(true);
     try {
+      const finalStatus = overrideStatus || status;
+
       // 노출시간 조합 (폼의 날짜/시간은 KST 기준이므로 +09:00 오프셋 명시)
       let publishedAt: string | null = null;
       const isApprovedStatus = finalStatus === "APPROVED" || finalStatus === "승인" || finalStatus === "광고중";
@@ -1536,8 +1538,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       // 사진 대표이면 업로드 후 URL 업데이트 (아래에서 처리)
 
       const currentHtmlContent = editorRef.current ? editorRef.current.innerHTML : content;
-
-      const finalStatus = overrideStatus || status;
 
       const result = await saveArticle({
         id: loadArticleId || undefined,
