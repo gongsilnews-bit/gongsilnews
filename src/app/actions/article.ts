@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { reviewArticleByAI, isAgentAutoMode } from "@/app/actions/agentChat";
 
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/utils/supabase/server";
 import { unstable_cache, revalidateTag } from "next/cache";
 import { getEffectivePlan } from "@/utils/planCheck";
 
@@ -124,11 +125,22 @@ export async function saveArticle(data: {
       // 수정 횟수 제한 체크 (발행된 기사만 카운트, 최고관리자는 제한 없음)
       const { data: existing } = await supabase.from("articles").select("edit_count, status, author_id").eq("id", articleId).single();
       
-      // 관리자 여부 확인
+      // 관리자 여부 확인 (실제 편집을 요청한 로그인 유저가 관리자이거나 기사 작성자가 관리자인지 확인)
       let isAdmin = false;
-      if (data.author_id) {
-        const { data: currentMember } = await supabase.from('members').select('role').eq('id', data.author_id).single();
-        if (currentMember?.role === 'ADMIN') isAdmin = true;
+      try {
+        const serverSupabase = await createServerClient();
+        const { data: { user: currentUser } } = await serverSupabase.auth.getUser();
+        if (currentUser) {
+          const { data: currentMember } = await supabase.from('members').select('role').eq('id', currentUser.id).single();
+          if (currentMember?.role === 'ADMIN') isAdmin = true;
+        }
+      } catch (err) {
+        console.error("Error checking editor role:", err);
+      }
+
+      if (!isAdmin && data.author_id) {
+        const { data: authorMember } = await supabase.from('members').select('role').eq('id', data.author_id).single();
+        if (authorMember?.role === 'ADMIN') isAdmin = true;
       }
       
       if (!isAdmin && existing && existing.status === "APPROVED" && (existing.edit_count || 0) >= 3) {
