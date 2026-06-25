@@ -282,6 +282,33 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
     map.setMinLevel(3);
     map.setMaxLevel(9);
 
+    // 🚀 PC 페이지를 태블릿/모바일에서 열 때 터치 드래그 강제 활성화 (자식 target에 이벤트 위임)
+    if (mapRef.current && ('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
+      const container = mapRef.current;
+      const forwardTouch = (e: TouchEvent, mouseType: string) => {
+        if (e.touches.length > 1) return;
+        const touch = e.touches[0] || e.changedTouches[0];
+        const target = e.target as HTMLElement;
+        if (!target) return;
+
+        const mouseEvent = new MouseEvent(mouseType, {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+          screenX: touch.screenX,
+          screenY: touch.screenY,
+        });
+
+        target.dispatchEvent(mouseEvent);
+        if (mouseType !== 'mouseup') e.preventDefault();
+      };
+      container.addEventListener('touchstart', (e) => forwardTouch(e, 'mousedown'), { passive: false });
+      container.addEventListener('touchmove', (e) => forwardTouch(e, 'mousemove'), { passive: false });
+      container.addEventListener('touchend', (e) => forwardTouch(e, 'mouseup'), { passive: false });
+    }
+
     // 지도 이동/줌 완료 시 → 현재 뷰포트에 보이는 기사만 사이드바에 표시 + 주소 파악
     kakao.maps.event.addListener(map, 'idle', () => {
       if (!clusterModeRef.current) {
@@ -706,7 +733,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
           </div>
 
           {/* 지도 영역 */}
-          <div ref={mapRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#e8eaed" }}>
+          <div ref={mapRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#e8eaed", touchAction: "none" }}>
             {mapError && (
               <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#ffefef", color: "#d32f2f", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, zIndex: 10 }}>
                 <span style={{ fontSize: 40 }}>⚠️</span>
