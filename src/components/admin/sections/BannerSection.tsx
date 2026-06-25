@@ -11,8 +11,6 @@ const PLACEMENT_OPTIONS = [
   { value: "MAIN_TOP", label: "메인 상단" },
   { value: "MAIN_MIDDLE", label: "메인 중간" },
   { value: "MAIN_BOTTOM_FULL", label: "메인 최하단 롤링" },
-  { value: "MAIN_ISSUE_RIGHT", label: "메인 이슈 우측" },
-  { value: "MAIN_MIDDLE_ISSUE", label: "중간이슈 우측" },
   { value: "SIDEBAR", label: "뉴스상세사이드바" },
   { value: "LIST_INLINE", label: "뉴스 리스트형" },
   { value: "LIST_SIDEBAR", label: "뉴스 리스트 사이드바" },
@@ -70,30 +68,6 @@ const PLACEMENT_CARDS = [
         <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
         <rect x="5" y="40" width="90" height="25" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
         <path d="M15 15 L85 15 M15 25 L60 25" stroke="#e5e7eb" strokeWidth="1" />
-      </svg>
-    )
-  },
-  { 
-    value: "MAIN_ISSUE_RIGHT", label: "메인 이슈 우측", size: "600x300px",
-    icon: (selected: boolean) => (
-      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
-        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
-        <path d="M5 20 L95 20" />
-        <path d="M50 20 L50 70" />
-        <path d="M8 25 L45 25 M8 30 L45 30" stroke="#e5e7eb" strokeWidth="1" />
-        <rect x="55" y="25" width="35" height="35" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" rx="2" />
-      </svg>
-    )
-  },
-  { 
-    value: "MAIN_MIDDLE_ISSUE", label: "중간이슈 우측", size: "600x300px",
-    icon: (selected: boolean) => (
-      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
-        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
-        <path d="M5 20 L95 20" />
-        <path d="M50 20 L50 70" />
-        <path d="M8 25 L45 25 M8 30 L45 30" stroke="#e5e7eb" strokeWidth="1" />
-        <rect x="55" y="25" width="35" height="35" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" rx="2" />
       </svg>
     )
   },

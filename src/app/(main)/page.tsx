@@ -18,8 +18,6 @@ export default async function Home() {
   const [
     { data: mainTopBanners },
     { data: mainBottomBanners },
-    { data: issueRightBanners },
-    { data: middleIssueBanners },
     { data: lecturesData },
     marketingRes,
     economyRes,
@@ -29,8 +27,6 @@ export default async function Home() {
   ] = await Promise.all([
     getBannersByPlacement("MAIN_TOP"),
     getBannersByPlacement("MAIN_BOTTOM_FULL"),
-    getBannersByPlacement("MAIN_ISSUE_RIGHT"),
-    getBannersByPlacement("MAIN_MIDDLE_ISSUE"),
     getLectures({ status: "ACTIVE" }),
     // ✅ 카테고리별로 개별 조회하여 노출 및 성능 최적화 (초기 3개 + 더보기 5개 대응을 위해 개수 확장)
     getArticles({ status: "APPROVED", section1: "AI마케팅", limit: 8 }),
@@ -69,8 +65,8 @@ export default async function Home() {
         <CategoryNewsGrid
           allNewsArticles={allNewsArticles}
           mapArticles={mapArticles}
-          issueRightBanners={issueRightBanners}
-          middleIssueBanners={middleIssueBanners}
+          issueRightBanners={[]}
+          middleIssueBanners={[]}
         />
       </main>
 

@@ -212,7 +212,6 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             {renderMoreButton(allMarketing.length, marketingLimit, setMarketingLimit)}
           </div>
           <div className="hi-right">
-            <BannerSlot placement="MAIN_ISSUE_RIGHT" initialBanners={issueRightBanners} />
           </div>
         </div>
       </div>
@@ -284,7 +283,6 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             {renderMoreButton(allLife.length, lifeLimit, setLifeLimit)}
           </div>
           <div className="hi-right">
-            <BannerSlot placement="MAIN_MIDDLE_ISSUE" initialBanners={middleIssueBanners} />
           </div>
         </div>
       </div>
