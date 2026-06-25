@@ -1848,7 +1848,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 {section1 === "라이프·오피니언" && (
                   <>
                     <option value="인물/인터뷰">인물/인터뷰</option>
-                    <option value="부동산/인테리어 꿀팁">부동산/인테리어 꿀팁</option>
+                    <option value="중개실무/인테리어Tip">중개실무/인테리어Tip</option>
                     <option value="맛집/여행/건강">맛집/여행/건강</option>
                     <option value="스포츠/연예/기타">스포츠/연예/기타</option>
                   </>

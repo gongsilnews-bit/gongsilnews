@@ -199,7 +199,7 @@ export default function Footer() {
           <div className="sitemap-col">
             <h4 className="sitemap-title">라이프·오피니언</h4>
             <Link href="/news_etc" className="sitemap-link">인물/인터뷰</Link>
-            <Link href="/news_etc" className="sitemap-link">부동산/인테리어 꿀팁</Link>
+            <Link href="/news_etc" className="sitemap-link">중개실무/인테리어Tip</Link>
             <Link href="/news_etc" className="sitemap-link">맛집/여행/건강</Link>
             <Link href="/news_etc" className="sitemap-link">스포츠/연예/기타</Link>
           </div>
