@@ -161,6 +161,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
       articleId={editId}
       onBack={() => router.push("?menu=article")}
       onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)}
+      role={role}
     />;
   }
 

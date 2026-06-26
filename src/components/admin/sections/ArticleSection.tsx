@@ -137,7 +137,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const filtered = dbArticles;
 
   if (action === "detail" && editId) {
-    return <ArticleDetailPanel articleId={editId} onBack={() => router.push('?menu=article')} onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)} />;
+    return <ArticleDetailPanel role="admin" articleId={editId} onBack={() => router.push('?menu=article')} onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)} />;
   }
 
   if (showWriteForm) {

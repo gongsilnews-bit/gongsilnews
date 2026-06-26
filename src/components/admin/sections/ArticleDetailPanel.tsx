@@ -11,9 +11,11 @@ interface ArticleDetailPanelProps {
   articleId: string;
   onBack: () => void;
   onEdit: () => void;
+  role?: string;
 }
 
-export default function ArticleDetailPanel({ articleId, onBack, onEdit }: ArticleDetailPanelProps) {
+export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: ArticleDetailPanelProps) {
+  const isAdmin = role === "admin";
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [device, setDevice] = useState<'pc'|'tablet'|'mobile'>('pc');
@@ -210,8 +212,24 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit }: Articl
             <button className="adp-toolbar-btn" onClick={async () => { if(confirm('이 기사를 삭제하시겠습니까?')) { await deleteArticle(article.id); onBack(); } }}>🗑️ 삭제</button>
             <button className="adp-toolbar-btn" onClick={() => { const url = `https://gongsilnews.com${articleUrl}`; navigator.clipboard?.writeText(url).then(() => alert('URL 복사됨')); }}>🔗 주소복사</button>
             <button className="adp-toolbar-btn" onClick={() => window.open(articleUrl)}>💻 미리보기</button>
-            {!isPublished && <button className="adp-toolbar-btn adp-green" onClick={() => handleStatusChange('APPROVED')}>✓ 승인</button>}
-            {!isPublished && <button className="adp-toolbar-btn adp-red" onClick={() => handleStatusChange('REJECTED')}>🚫 반려</button>}
+            {isAdmin ? (
+              <>
+                {!isPublished && <button className="adp-toolbar-btn adp-green" onClick={() => handleStatusChange('APPROVED')}>✓ 승인</button>}
+                {!isPublished && <button className="adp-toolbar-btn adp-red" onClick={() => handleStatusChange('REJECTED')}>🚫 반려</button>}
+              </>
+            ) : (
+              <>
+                {article.status === 'PENDING' && (
+                  <span style={{ padding: '6px 14px', background: '#8b5cf6', color: '#fff', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>승인대기</span>
+                )}
+                {article.status === 'REJECTED' && (
+                  <span style={{ padding: '6px 14px', background: '#ef4444', color: '#fff', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>반려됨</span>
+                )}
+                {article.status === 'DRAFT' && (
+                  <span style={{ padding: '6px 14px', background: '#9ca3af', color: '#fff', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>작성중</span>
+                )}
+              </>
+            )}
             {isPublished && (
               <span style={{ padding: '6px 14px', background: '#10b981', color: '#fff', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>발행중</span>
             )}
