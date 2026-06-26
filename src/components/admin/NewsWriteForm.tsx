@@ -3268,41 +3268,46 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
             {/* 헤더 */}
             <div style={{
-              background: "linear-gradient(135deg, #1e1b4b, #312e81)", padding: "22px 28px",
-              display: "flex", alignItems: "center", justifyContent: "space-between", color: "#fff"
+              background: "#ffffff", padding: "20px 28px",
+              display: "flex", alignItems: "center", justifyContent: "space-between", color: "#0f172a",
+              borderBottom: "1px solid #f1f5f9"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 22 }}>🪄</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/>
+                  <path d="m14 7 3 3"/>
+                  <path d="M5 6v1M19 17v1M20 12h1M3 12h1M19 8l.9.9M4 15l.9.9"/>
+                </svg>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900, letterSpacing: "-0.03em" }}>AI 초안 마법사 (Multi-Channel Writer)</h3>
-                  <div style={{ fontSize: 13, color: "#a5b4fc", marginTop: 4 }}>단 한 번의 입력으로 5개 채널 원고를 기적처럼 동시 생성</div>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: "-0.03em", color: "#0f172a" }}>AI 초안 마법사 (Multi-Channel Writer)</h3>
+                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>단 한 번의 입력으로 5개 채널 원고를 동시에 자동 작성합니다.</div>
                 </div>
               </div>
               <button type="button" onClick={() => setShowAiWizardModal(false)}
                 style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 24, cursor: "pointer", transition: "color 0.2s" }}
-                onMouseOver={e => e.currentTarget.style.color = "#fff"}
+                onMouseOver={e => e.currentTarget.style.color = "#0f172a"}
                 onMouseOut={e => e.currentTarget.style.color = "#94a3b8"}>✕</button>
             </div>
 
             {/* 탭 네비게이션 */}
-            <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: "#fafafa" }}>
+            <div style={{ display: "flex", borderBottom: "1px solid #f1f5f9", background: "#ffffff" }}>
               <button type="button" onClick={() => setAiWizardTab("vacancy")}
                 style={{
-                  flex: 1, padding: "18px 0", border: "none", background: "none",
-                  borderBottom: aiWizardTab === "vacancy" ? "3px solid #0f172a" : "3px solid transparent",
-                  fontSize: 16, fontWeight: aiWizardTab === "vacancy" ? 900 : 700,
-                  color: aiWizardTab === "vacancy" ? "#0f172a" : textSecondary, cursor: "pointer", transition: "all 0.15s"
+                  flex: 1, padding: "16px 0", border: "none", background: "none",
+                  borderBottom: aiWizardTab === "vacancy" ? "2px solid #6366f1" : "2px solid transparent",
+                  fontSize: 15, fontWeight: aiWizardTab === "vacancy" ? 700 : 500,
+                  color: aiWizardTab === "vacancy" ? "#6366f1" : "#64748b", cursor: "pointer", transition: "all 0.15s"
                 }}>
-                🏢 내 등록 매물 연동 초안 쓰기
+                내 등록 매물 연동 초안 쓰기
               </button>
               <button type="button" onClick={() => setAiWizardTab("news")}
                 style={{
-                  flex: 1, padding: "18px 0", border: "none", background: "none",
-                  borderBottom: aiWizardTab === "news" ? "3px solid #0f172a" : "3px solid transparent",
-                  fontSize: 16, fontWeight: aiWizardTab === "news" ? 900 : 700,
-                  color: aiWizardTab === "news" ? "#0f172a" : textSecondary, cursor: "pointer", transition: "all 0.15s"
+                  flex: 1, padding: "16px 0", border: "none", background: "none",
+                  borderBottom: aiWizardTab === "news" ? "2px solid #6366f1" : "2px solid transparent",
+                  fontSize: 15, fontWeight: aiWizardTab === "news" ? 700 : 500,
+                  color: aiWizardTab === "news" ? "#6366f1" : "#64748b", cursor: "pointer", transition: "all 0.15s"
                 }}>
-                📰 일반 외부 자료/보도초안 쓰기
+                일반 외부 자료/보도초안 쓰기
               </button>
             </div>
 
@@ -3311,40 +3316,48 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               {aiWizardTab === "vacancy" ? (
                 <div>
                   {/* 매물 연동 방식 선택 토글 */}
-                  <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                  <div style={{
+                    display: "flex",
+                    background: "#f1f5f9",
+                    padding: 4,
+                    borderRadius: 8,
+                    marginBottom: 20
+                  }}>
                     <button
                       type="button"
                       onClick={() => setDirectVacancyMode("select")}
                       style={{
-                        flex: 1, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                        border: directVacancyMode === "select" ? "2px solid #0f172a" : `1px solid ${border}`,
-                        background: directVacancyMode === "select" ? "#f1f5f9" : "#fff",
-                        color: directVacancyMode === "select" ? "#0f172a" : textSecondary,
+                        flex: 1, padding: "8px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                        border: "none",
+                        background: directVacancyMode === "select" ? "#ffffff" : "transparent",
+                        color: directVacancyMode === "select" ? "#0f172a" : "#64748b",
+                        boxShadow: directVacancyMode === "select" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                         transition: "all 0.15s"
                       }}
                     >
-                      🏢 내 등록 매물 연동하기
+                      내 등록 매물 연동하기
                     </button>
                     <button
                       type="button"
                       onClick={() => setDirectVacancyMode("direct")}
                       style={{
-                        flex: 1, padding: "10px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                        border: directVacancyMode === "direct" ? "2px solid #0f172a" : `1px solid ${border}`,
-                        background: directVacancyMode === "direct" ? "#f1f5f9" : "#fff",
-                        color: directVacancyMode === "direct" ? "#0f172a" : textSecondary,
+                        flex: 1, padding: "8px 12px", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                        border: "none",
+                        background: directVacancyMode === "direct" ? "#ffffff" : "transparent",
+                        color: directVacancyMode === "direct" ? "#0f172a" : "#64748b",
+                        boxShadow: directVacancyMode === "direct" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                         transition: "all 0.15s"
                       }}
                     >
-                      ✍️ 매물 직접 입력하여 작성
+                      매물 직접 입력하여 작성
                     </button>
                   </div>
 
                   {directVacancyMode === "direct" ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "14px", background: "#ffffff", borderRadius: 12, border: "1px solid #e2e8f0", marginBottom: 16 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "16px", background: "#ffffff", borderRadius: 12, border: "1px solid #e2e8f0", marginBottom: 16 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: 10, marginBottom: 4 }}>
-                        <h4 style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#1e293b", display: "flex", alignItems: "center", gap: 4 }}>
-                          ✏️ 매물 상세정보 수동 등록
+                        <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+                          매물 상세정보 수동 입력
                         </h4>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <a
@@ -3354,12 +3367,11 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                             style={{
                               display: "inline-flex",
                               alignItems: "center",
-                              gap: 4,
                               padding: "4px 8px",
                               background: "#03c75a",
                               color: "#ffffff",
                               fontSize: 10,
-                              fontWeight: 800,
+                              fontWeight: 700,
                               borderRadius: 6,
                               textDecoration: "none",
                               transition: "all 0.15s"
@@ -3373,19 +3385,18 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                               (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
                             }}
                           >
-                            🏠 네이버 부동산 ↗
+                            네이버 부동산 ↗
                           </a>
                           
                           <label
                             style={{
                               display: "inline-flex",
                               alignItems: "center",
-                              gap: 4,
                               padding: "4px 8px",
                               background: "#3b82f6",
                               color: "#ffffff",
                               fontSize: 10,
-                              fontWeight: 800,
+                              fontWeight: 700,
                               borderRadius: 6,
                               cursor: "pointer",
                               transition: "all 0.15s"
@@ -3399,7 +3410,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                               (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
                             }}
                           >
-                            📸 사진 첨부
+                            사진 첨부
                             <input
                               type="file"
                               accept="image/*"
@@ -3426,12 +3437,12 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       {/* 건물명, 주소 */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>건물명/단지명 <span style={{ color: "#ef4444" }}>*</span></label>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>건물명/단지명 <span style={{ color: "#ef4444" }}>*</span></label>
                           <input type="text" placeholder="예: 한양아이클래스" value={directBuildingName} onChange={e => setDirectBuildingName(e.target.value)}
                             style={{ width: "100%", padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, boxSizing: "border-box" }} />
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>소재지 주소</label>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>소재지 주소</label>
                           <input type="text" placeholder="예: 서울시 강남구 역삼동" value={directAddress} onChange={e => setDirectAddress(e.target.value)}
                             style={{ width: "100%", padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, boxSizing: "border-box" }} />
                         </div>
@@ -3440,21 +3451,23 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       {/* 매물형태, 거래종류 */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>매물형태</label>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>매물형태</label>
                           <select value={directPropertyType} onChange={e => setDirectPropertyType(e.target.value)}
                             style={{ width: "100%", padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, background: "#fff" }}>
                             {["아파트", "오피스텔", "원룸/투룸", "빌라/연립", "상가/사무실", "토지/건물"].map(x => <option key={x} value={x}>{x}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>거래종류</label>
-                          <div style={{ display: "flex", gap: 6 }}>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>거래종류</label>
+                          <div style={{ display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 8 }}>
                             {["매매", "전세", "월세"].map(x => (
                               <button key={x} type="button" onClick={() => setDirectTradeType(x)}
                                 style={{
-                                  flex: 1, padding: "10px 0", border: directTradeType === x ? "2px solid #0f172a" : `1px solid ${border}`,
-                                  borderRadius: 6, fontSize: 13, fontWeight: 700, background: directTradeType === x ? "#f1f5f9" : "#fff",
-                                  color: directTradeType === x ? "#0f172a" : textSecondary, cursor: "pointer"
+                                  flex: 1, padding: "8px 0", border: "none",
+                                  borderRadius: 6, fontSize: 13, fontWeight: 600, background: directTradeType === x ? "#ffffff" : "transparent",
+                                  color: directTradeType === x ? "#0f172a" : "#64748b", cursor: "pointer",
+                                  boxShadow: directTradeType === x ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                                  transition: "all 0.15s"
                                 }}>{x}</button>
                             ))}
                           </div>
@@ -3464,7 +3477,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       {/* 가격 설정 */}
                       <div style={{ display: "grid", gridTemplateColumns: directTradeType === "월세" ? "1fr 1fr" : "1fr", gap: 10 }}>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>
                             {directTradeType === "매매" ? "매매가 (만원)" : directTradeType === "전세" ? "전세금 (만원)" : "보증금 (만원)"}
                           </label>
                           <input type="number" placeholder="예: 5000" value={directDeposit} onChange={e => setDirectDeposit(e.target.value)}
@@ -3472,7 +3485,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                         </div>
                         {directTradeType === "월세" && (
                           <div>
-                            <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>월세 (만원)</label>
+                            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>월세 (만원)</label>
                             <input type="number" placeholder="예: 60" value={directMonthlyRent} onChange={e => setDirectMonthlyRent(e.target.value)}
                               style={{ width: "100%", padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, boxSizing: "border-box" }} />
                           </div>
@@ -3482,12 +3495,12 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       {/* 면적, 구조 */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>전용면적 (평)</label>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>전용면적 (평)</label>
                           <input type="number" placeholder="예: 18" value={directExclusivePy} onChange={e => setDirectExclusivePy(e.target.value)}
                             style={{ width: "100%", padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, boxSizing: "border-box" }} />
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>구조 (방 수 / 욕실 수)</label>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>구조 (방 수 / 욕실 수)</label>
                           <div style={{ display: "flex", gap: 6 }}>
                             <input type="number" placeholder="방" value={directRoomCount} onChange={e => setDirectRoomCount(e.target.value)}
                               style={{ flex: 1, padding: "10px 8px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, textAlign: "center", boxSizing: "border-box" }} />
@@ -3500,7 +3513,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       {/* 층수, 방향, 주차 */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>층수 (해당/전체)</label>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>층수 (해당/전체)</label>
                           <div style={{ display: "flex", gap: 4 }}>
                             <input type="number" placeholder="해당" value={directCurrentFloor} onChange={e => setDirectCurrentFloor(e.target.value)}
                               style={{ flex: 1, padding: "10px 4px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, textAlign: "center", boxSizing: "border-box" }} />
@@ -3509,19 +3522,21 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                           </div>
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>방향 (향)</label>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>방향 (향)</label>
                           <input type="text" placeholder="남향/동향" value={directDirection} onChange={e => setDirectDirection(e.target.value)}
                             style={{ width: "100%", padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, boxSizing: "border-box" }} />
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>주차 가능 여부</label>
-                          <div style={{ display: "flex", gap: 4 }}>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>주차 가능 여부</label>
+                          <div style={{ display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 8 }}>
                             {["가능", "불가"].map(x => (
                               <button key={x} type="button" onClick={() => setDirectParking(x)}
                                 style={{
-                                  flex: 1, padding: "10px 0", border: directParking === x ? "2px solid #0f172a" : `1px solid ${border}`,
-                                  borderRadius: 6, fontSize: 13, fontWeight: 700, background: directParking === x ? "#f1f5f9" : "#fff",
-                                  color: directParking === x ? "#0f172a" : textSecondary, cursor: "pointer"
+                                  flex: 1, padding: "8px 0", border: "none",
+                                  borderRadius: 6, fontSize: 13, fontWeight: 600, background: directParking === x ? "#ffffff" : "transparent",
+                                  color: directParking === x ? "#0f172a" : "#64748b", cursor: "pointer",
+                                  boxShadow: directParking === x ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                                  transition: "all 0.15s"
                                 }}>{x}</button>
                             ))}
                           </div>
@@ -3530,7 +3545,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
                       {/* 제공 옵션 */}
                       <div style={{ marginTop: 6 }}>
-                        <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>제공 옵션</label>
+                        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>제공 옵션</label>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                           {["에어컨", "냉장고", "세탁기", "침대", "옷장", "신발장", "인덕션", "TV", "싱크대", "도어락", "엘리베이터"].map(opt => {
                             const isSelected = directOptions.includes(opt);
@@ -3543,9 +3558,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                                 }}
                                 style={{
                                   padding: "6px 12px", borderRadius: 14, fontSize: 13, fontWeight: 600, cursor: "pointer",
-                                  border: isSelected ? "2px solid #0f172a" : `1px solid ${border}`,
-                                  background: isSelected ? "#f1f5f9" : "#fff",
-                                  color: isSelected ? "#0f172a" : textSecondary,
+                                  border: isSelected ? "1px solid #6366f1" : `1px solid ${border}`,
+                                  background: isSelected ? "#eff6ff" : "#fff",
+                                  color: isSelected ? "#6366f1" : "#64748b",
                                   transition: "all 0.1s"
                                 }}
                               >
@@ -3559,12 +3574,12 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       {/* 입주예정일, 특장점 */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>입주 가능일</label>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>입주 가능일</label>
                           <input type="text" placeholder="예: 즉시 입주 가능 또는 협의" value={directMoveInDate} onChange={e => setDirectMoveInDate(e.target.value)}
                             style={{ width: "100%", padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, boxSizing: "border-box" }} />
                         </div>
                         <div>
-                          <label style={{ display: "block", fontSize: 13, fontWeight: 800, color: textSecondary, marginBottom: 6 }}>매물 추가 특장점 요약</label>
+                          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6 }}>매물 추가 특장점 요약</label>
                           <textarea placeholder="예: 역세권 5분 거리, 풀옵션 신축 빌라, 주변 학군 우수" value={directDescription} onChange={e => setDirectDescription(e.target.value)}
                             style={{ width: "100%", height: 80, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, resize: "none", boxSizing: "border-box", outline: "none" }} />
                         </div>
@@ -3572,7 +3587,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                     </div>
                   ) : (
                     <div>
-                      <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 8 }}>
+                      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 8 }}>
                         연동할 매물 선택 <span style={{ color: "#ef4444" }}>*</span>
                       </label>
                       
@@ -3606,7 +3621,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                         </select>
                       )}
 
-                      <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 8, marginTop: 14 }}>
+                      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#0f172a", marginBottom: 8, marginTop: 14 }}>
                         보충 정보 및 참고 원문 (선택)
                       </label>
                       <textarea
@@ -3624,7 +3639,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               ) : (
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <label style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
                       외부 뉴스 및 참고 자료 원문 입력 <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -3635,15 +3650,14 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: 4,
                           padding: "5px 11px",
                           background: "#03c75a",
                           color: "#ffffff",
                           fontSize: 11,
-                          fontWeight: 800,
+                          fontWeight: 700,
                           borderRadius: 6,
                           textDecoration: "none",
-                          boxShadow: "0 2px 6px rgba(3, 199, 90, 0.2)",
+                          boxShadow: "0 2px 6px rgba(3, 199, 90, 0.1)",
                           transition: "all 0.15s"
                         }}
                         onMouseOver={e => {
@@ -3655,19 +3669,18 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                           (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
                         }}
                       >
-                        📰 네이버 뉴스 ↗
+                        네이버 뉴스 ↗
                       </a>
                       
                       <label
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: 4,
                           padding: "5px 11px",
                           background: "#3b82f6",
                           color: "#ffffff",
                           fontSize: 11,
-                          fontWeight: 800,
+                          fontWeight: 700,
                           borderRadius: 6,
                           cursor: "pointer",
                           transition: "all 0.15s"
@@ -3681,7 +3694,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                           (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
                         }}
                       >
-                        📸 사진 첨부
+                        사진 첨부
                         <input
                           type="file"
                           accept="image/*"
@@ -3710,82 +3723,80 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                     placeholder="네이버 뉴스 등 일반 보도자료 내용이나, 홍보하고 싶은 매물의 세부 줄글 정보를 붙여넣어 주세요. AI가 고품격 마케팅 패키지로 완벽하게 변환해 드립니다."
                     style={{
                       width: "100%", height: 180, padding: "14px", border: `1px solid ${border}`, borderRadius: 8,
-                      fontSize: 15, color: textPrimary, outline: "none", resize: "none", background: "#fff", boxSizing: "border-box", marginBottom: 18
+                      fontSize: 14, color: textPrimary, outline: "none", resize: "none", background: "#fff", boxSizing: "border-box", marginBottom: 18
                     }}
                   />
                 </div>
               )}
 
-              {/* ✍️ 작성 톤앤매너 선택 */}
+              {/* 작성 톤앤매너 선택 */}
               <div style={{ marginTop: 22 }}>
-                <label style={{ display: "block", fontSize: 15, fontWeight: 800, color: textPrimary, marginBottom: 10 }}>
-                  ✍️ 작성 톤앤매너 선택
+                <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#334155", marginBottom: 8 }}>
+                  작성 톤앤매너 설정
                 </label>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                <div style={{ display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 8 }}>
                   {["오피셜 칼럼", "친근한 대화체", "전문가 정보 제공"].map(t => (
                     <button
                       key={t} type="button" onClick={() => setAiTone(t)}
                       style={{
-                        padding: "12px 0", border: aiTone === t ? "2px solid #0f172a" : `1px solid ${border}`,
-                        borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer",
-                        background: aiTone === t ? "#f1f5f9" : "#fff",
-                        color: aiTone === t ? "#0f172a" : textSecondary,
+                        flex: 1, padding: "10px 0", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                        background: aiTone === t ? "#ffffff" : "transparent",
+                        color: aiTone === t ? "#0f172a" : "#64748b",
+                        boxShadow: aiTone === t ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                         transition: "all 0.15s"
                       }}
                     >
-                      {t === "오피셜 칼럼" ? "📰 " : t === "친근한 대화체" ? "💬 " : "🎓 "}
                       {t}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* 🎯 타깃 독자층 설정 */}
+              {/* 타깃 독자층 설정 */}
               <div style={{ marginTop: 22 }}>
-                <label style={{ display: "block", fontSize: 15, fontWeight: 800, color: textPrimary, marginBottom: 10 }}>
-                  🎯 타깃 독자층 설정
+                <label style={{ display: "block", fontSize: 14, fontWeight: 600, color: "#334155", marginBottom: 8 }}>
+                  타깃 독자층 설정
                 </label>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                <div style={{ display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 8 }}>
                   {["일반 매수자/세입자", "부동산 투자자", "동료 중개업자"].map(a => (
                     <button
                       key={a} type="button" onClick={() => setAiAudience(a)}
                       style={{
-                        padding: "12px 0", border: aiAudience === a ? "2px solid #0f172a" : `1px solid ${border}`,
-                        borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer",
-                        background: aiAudience === a ? "#f1f5f9" : "#fff",
-                        color: aiAudience === a ? "#0f172a" : textSecondary,
+                        flex: 1, padding: "10px 0", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                        background: aiAudience === a ? "#ffffff" : "transparent",
+                        color: aiAudience === a ? "#0f172a" : "#64748b",
+                        boxShadow: aiAudience === a ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                         transition: "all 0.15s"
                       }}
                     >
-                      {a === "일반 매수자/세입자" ? "🏠 " : a === "부동산 투자자" ? "📈 " : "🤝 "}
                       {a.split(" ")[0]}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* ⚙️ 전문가 전용 상세 옵션 설정 */}
+              {/* 전문가 전용 상세 옵션 설정 */}
               <div style={{ marginTop: 24, padding: "22px 0 0 0", borderTop: "1px dashed #e2e8f0" }}>
-                <h4 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 900, color: "#1e293b", display: "flex", alignItems: "center", gap: 6 }}>
-                  ⚙️ 전문가 전용 상세 옵션 설정
+                <h4 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
+                  전문가 전용 상세 옵션 설정
                 </h4>
                 
                 {/* 글의 길이 */}
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", fontSize: 14, fontWeight: 800, color: textPrimary, marginBottom: 8 }}>
-                    📏 글의 길이 설정
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 8 }}>
+                    글의 길이 설정
                   </label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                  <div style={{ display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 8 }}>
                     {["짧게(500자)", "보통(1000자)", "길게(1500자)", "직접 입력"].map(len => {
                       const isSelected = aiLengthType === len.split("(")[0];
                       return (
                         <button
                           key={len} type="button" onClick={() => setAiLengthType(len.split("(")[0])}
                           style={{
-                            padding: "10px 0", border: isSelected ? "2px solid #0f172a" : `1px solid ${border}`,
-                            borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                            background: isSelected ? "#f1f5f9" : "#fff",
-                            color: isSelected ? "#0f172a" : textSecondary,
+                            flex: 1, padding: "8px 0", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                            background: isSelected ? "#ffffff" : "transparent",
+                            color: isSelected ? "#0f172a" : "#64748b",
+                            boxShadow: isSelected ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                             transition: "all 0.15s"
                           }}
                         >
@@ -3811,58 +3822,59 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
                 {/* 기사 구성 패턴 */}
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", fontSize: 14, fontWeight: 800, color: textPrimary, marginBottom: 8 }}>
-                    📰 기사 구성 레이아웃 패턴 선택
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 8 }}>
+                    기사 구성 레이아웃 패턴 선택
                   </label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                  <div style={{ display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 8 }}>
                     {([
-                      { k: "standard" as const, l: "정통 보도기사형", d: "연속 줄글 형식" },
-                      { k: "summary_header" as const, l: "요약 + 소제목형", d: "■ 요약표 & 소제목" },
-                      { k: "targeted" as const, l: "타깃 맞춤 추천형", d: "요약표 & 타깃추천" }
+                      { k: "standard" as const, l: "정통 보도기사형", d: "연속 줄글" },
+                      { k: "summary_header" as const, l: "요약 + 소제목형", d: "요약표 & 소제목" },
+                      { k: "targeted" as const, l: "타깃 맞춤 추천형", d: "요약표 & 타깃" }
                     ]).map(pattern => {
                       const isSelected = aiLayoutPattern === pattern.k;
                       return (
                         <button
                           key={pattern.k} type="button" onClick={() => setAiLayoutPattern(pattern.k)}
                           style={{
-                            padding: "10px 4px", border: isSelected ? "2px solid #0f172a" : `1px solid ${border}`,
-                            borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                            background: isSelected ? "#f1f5f9" : "#fff",
-                            color: isSelected ? "#0f172a" : textSecondary,
+                            flex: 1, padding: "8px 4px", border: "none",
+                            borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                            background: isSelected ? "#ffffff" : "transparent",
+                            color: isSelected ? "#0f172a" : "#64748b",
+                            boxShadow: isSelected ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                             transition: "all 0.15s",
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
                             justifyContent: "center",
-                            gap: 4
+                            gap: 2
                           }}
                         >
-                          <span>{pattern.l}</span>
-                          <span style={{ fontSize: 11, fontWeight: 500, color: isSelected ? "#0f172a" : textMuted }}>{pattern.d}</span>
+                          <span style={{ fontSize: 13 }}>{pattern.l}</span>
+                          <span style={{ fontSize: 10, fontWeight: 500, color: isSelected ? "#4f46e5" : "#94a3b8" }}>{pattern.d}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* 작성 스타일 */}
+                {/* 상세 작성 스타일 */}
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", fontSize: 14, fontWeight: 800, color: textPrimary, marginBottom: 8 }}>
-                    🎨 상세 작성 스타일
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 8 }}>
+                    상세 작성 스타일
                   </label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                  <div style={{ display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 8 }}>
                     {["기본", "오피셜 보도기사", "블로그 정보성", "친근한 추천체", "유머러스 소통"].map(style => (
                       <button
                         key={style} type="button" onClick={() => setAiStyleType(style)}
                         style={{
-                          padding: "10px 0", border: aiStyleType === style ? "2px solid #0f172a" : `1px solid ${border}`,
-                          borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                          background: aiStyleType === style ? "#f1f5f9" : "#fff",
-                          color: aiStyleType === style ? "#0f172a" : textSecondary,
+                          flex: 1, padding: "8px 0", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                          background: aiStyleType === style ? "#ffffff" : "transparent",
+                          color: aiStyleType === style ? "#0f172a" : "#64748b",
+                          boxShadow: aiStyleType === style ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                           transition: "all 0.15s"
                         }}
                       >
-                        {style}
+                        {style.includes("오피셜") ? "보도기사" : style.includes("블로그") ? "블로그형" : style.includes("친근한") ? "친근체" : style.includes("유머러스") ? "소통형" : "기본"}
                       </button>
                     ))}
                   </div>
@@ -3870,18 +3882,18 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
                 {/* 말투 설정 */}
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: "block", fontSize: 14, fontWeight: 800, color: textPrimary, marginBottom: 8 }}>
-                    💬 말투 / 종결어미
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 8 }}>
+                    말투 / 종결어미
                   </label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                  <div style={{ display: "flex", background: "#f1f5f9", padding: 4, borderRadius: 8 }}>
                     {["하십시오체", "해요체", "해라체/다체"].map(ending => (
                       <button
                         key={ending} type="button" onClick={() => setAiEndingType(ending)}
                         style={{
-                          padding: "10px 0", border: aiEndingType === ending ? "2px solid #0f172a" : `1px solid ${border}`,
-                          borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                          background: aiEndingType === ending ? "#f1f5f9" : "#fff",
-                          color: aiEndingType === ending ? "#0f172a" : textSecondary,
+                          flex: 1, padding: "8px 0", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                          background: aiEndingType === ending ? "#ffffff" : "transparent",
+                          color: aiEndingType === ending ? "#0f172a" : "#64748b",
+                          boxShadow: aiEndingType === ending ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                           transition: "all 0.15s"
                         }}
                       >
@@ -3896,11 +3908,11 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
             {/* 푸터 */}
             <div style={{
-              padding: "22px 32px", borderTop: `1px solid ${border}`, background: "#fafafa",
+              padding: "20px 32px", borderTop: "1px solid #f1f5f9", background: "#ffffff",
               display: "flex", gap: 12, justifyContent: "flex-end"
             }}>
               <button type="button" onClick={() => setShowAiWizardModal(false)}
-                style={{ padding: "12px 28px", background: "#fff", border: `1px solid ${border}`, borderRadius: 8, fontSize: 15, fontWeight: 700, color: textSecondary, cursor: "pointer" }}>
+                style={{ padding: "12px 28px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 15, fontWeight: 600, color: "#64748b", cursor: "pointer" }}>
                 취소
               </button>
               <button 
@@ -3909,13 +3921,27 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 disabled={aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0}
                 style={{
                   padding: "12px 36px",
-                  background: (aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0) ? "#d1d5db" : "linear-gradient(135deg, #1e293b, #0f172a)",
-                  color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 900,
+                  background: (aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0) ? "#e2e8f0" : "#6366f1",
+                  color: (aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0) ? "#94a3b8" : "#ffffff",
+                  border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600,
                   cursor: (aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0) ? "not-allowed" : "pointer",
-                  boxShadow: (aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0) ? "none" : "0 4px 12px rgba(15, 23, 42, 0.25)"
+                  display: "inline-flex", alignItems: "center", gap: 6, transition: "background 0.2s"
+                }}
+                onMouseOver={e => {
+                  if (!(aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0)) {
+                    e.currentTarget.style.background = "#4f46e5";
+                  }
+                }}
+                onMouseOut={e => {
+                  if (!(aiWizardTab === "vacancy" && directVacancyMode === "select" && myVacancies.length === 0)) {
+                    e.currentTarget.style.background = "#6366f1";
+                  }
                 }}
               >
-                🪄 5대 초안 즉시 생성하기
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                </svg>
+                5대 초안 즉시 생성하기
               </button>
             </div>
 
