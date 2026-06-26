@@ -1875,12 +1875,12 @@ ${clone.outerHTML}
       </main>
 
       {/* Floating Bottom Action Bar */}
-      <div className="print:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95%] sm:w-auto sm:min-w-[520px] bg-white/95 backdrop-blur-md border border-gray-200/80 p-4 rounded-2xl shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] flex items-center justify-between gap-4">
+      <div className="print:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95%] sm:w-auto sm:max-w-[95%] bg-white/95 backdrop-blur-md border border-gray-200/80 p-4 rounded-2xl shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] flex items-center justify-between gap-4 overflow-x-auto no-scrollbar">
         {/* Save Button */}
         <button 
           onClick={handleSaveToStorage}
           disabled={isSavingCloud}
-          className="flex-1 py-3 px-6 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-95 active:scale-95 transition-all duration-150 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 py-3 px-6 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-95 active:scale-95 transition-all duration-150 shadow-md disabled:opacity-50 disabled:cursor-not-allowed shrink-0 whitespace-nowrap"
           style={{ backgroundColor: state.colorTheme.primary }}
         >
           {isSavingCloud ? (
@@ -1904,7 +1904,7 @@ ${clone.outerHTML}
         {/* AI Regenerate Button */}
         <button 
             onClick={handleResetAndRegenerate} 
-            className="py-3 px-5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+            className="py-3 px-5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm shrink-0 whitespace-nowrap"
             title="임시저장 데이터를 지우고 AI로 처음부터 다시 생성합니다."
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-4 h-4">
@@ -1916,7 +1916,7 @@ ${clone.outerHTML}
         {/* Image Export Button */}
         <button 
           onClick={() => setShowExportModal(true)}
-          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm shrink-0 whitespace-nowrap"
         >
           <ArrowDownTrayIcon className="w-4 h-4 text-gray-500" />
           <span>이미지 내보내기</span>
@@ -1926,7 +1926,7 @@ ${clone.outerHTML}
         <button 
           onClick={handleDirectPrint}
           disabled={isPrinting || isGeneratingPdf}
-          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed shrink-0 whitespace-nowrap"
         >
           {isPrinting ? (
             <>
@@ -1950,7 +1950,7 @@ ${clone.outerHTML}
         <button 
           onClick={downloadPdf}
           disabled={isGeneratingPdf}
-          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed shrink-0 whitespace-nowrap"
         >
           {isGeneratingPdf ? (
             <svg className="animate-spin h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -1967,10 +1967,10 @@ ${clone.outerHTML}
 
 
         {/* Share Button (Relative Container for Popover) */}
-        <div ref={sharePopoverRef} className="relative">
+        <div ref={sharePopoverRef} className="relative shrink-0">
           <button 
             onClick={() => setShowSharePopover(!showSharePopover)}
-            className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+            className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm whitespace-nowrap"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
               <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935-2.186 2.25 2.25 0 00-3.935 2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
@@ -2009,6 +2009,8 @@ ${clone.outerHTML}
         </div>
       </div>
       <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none !important; }
+        .no-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
         .custom-scrollbar::-webkit-scrollbar { width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
