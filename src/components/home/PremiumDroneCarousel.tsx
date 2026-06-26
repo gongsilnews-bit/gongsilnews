@@ -90,7 +90,21 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
         <style>{`.hide-scroll::-webkit-scrollbar { display: none; }`}</style>
         
         {posts.map((item, i) => {
-          const thumb = item.thumbnail_url || getYoutubeThumb(item.youtube_url) || getDriveThumb(item.drive_url) || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337";
+          let ytUrl = item.youtube_url;
+          let drUrl = item.drive_url;
+          if (!ytUrl && !drUrl && item.external_url) {
+            try {
+              const links = typeof item.external_url === 'string' ? JSON.parse(item.external_url) : item.external_url;
+              if (Array.isArray(links)) {
+                const ytLink = links.find((l: any) => l.type === "YOUTUBE" || (l.url && (l.url.includes("youtube.com") || l.url.includes("youtu.be"))));
+                const drLink = links.find((l: any) => l.type === "DRIVE" || (l.url && l.url.includes("drive.google.com")));
+                if (ytLink) ytUrl = ytLink.url;
+                if (drLink) drUrl = drLink.url;
+              }
+            } catch (e) {}
+          }
+
+          const thumb = item.thumbnail_url || getYoutubeThumb(ytUrl) || getDriveThumb(drUrl) || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337";
           return (
             <Link 
               key={item.id} 
@@ -114,7 +128,7 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
                 }}
               >
                 {/* 비디오 아이콘 */}
-                {(item.youtube_url || item.drive_url) && (
+                {(ytUrl || drUrl) && (
                   <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
                     <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <circle cx="24" cy="24" r="24" fill="rgba(0, 0, 0, 0.5)" />
