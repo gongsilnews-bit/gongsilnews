@@ -21,6 +21,24 @@ function MobileVacancyAdmin() {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [flyerMap, setFlyerMap] = useState<Record<string, { flyer: boolean; report: boolean }>>({});
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [shareTarget, setShareTarget] = useState<{ id: string; type: "report" | "flyer"; row: any } | null>(null);
+
+  // 카카오 Share SDK 로드 (공유 기능용)
+  useEffect(() => {
+    const scriptId = "kakao-share-script";
+    if (document.getElementById(scriptId)) return;
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js";
+    script.onload = () => {
+      const Kakao = (window as any).Kakao;
+      if (Kakao && !Kakao.isInitialized()) {
+        const kakaoJsKey = "435d3602201a49ea712e5f5a36fe6efc";
+        Kakao.init(kakaoJsKey);
+      }
+    };
+    document.head.appendChild(script);
+  }, []);
 
   useEffect(() => {
     async function init() {
@@ -76,12 +94,71 @@ function MobileVacancyAdmin() {
     return () => window.removeEventListener('message', handleMessage);
   }, [previewId]);
 
+  const handleMobileKakaoShare = (target: { id: string; type: "report" | "flyer"; row: any }) => {
+    const Kakao = (window as any).Kakao;
+    if (!Kakao || !Kakao.isInitialized()) {
+      alert("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
+      return;
+    }
+    const { id, type, row } = target;
+    const shareUrl = `${window.location.origin}/${type}/${id}.html`;
+
+    const addrText = [
+      row.dong,
+      row.detail_addr,
+      row.building_name,
+      row.apt_dong ? (row.apt_dong.includes("동") ? row.apt_dong : `${row.apt_dong}동`) : "",
+      row.hosu ? (row.hosu.includes("호") ? row.hosu : `${row.hosu}호`) : ""
+    ].filter(Boolean).join(" ") || [row.sido, row.sigungu, row.dong].filter(Boolean).join(" ");
+
+    const priceText = row.trade_type === "매매" ? `매매 ${formatAmount(row.deposit)}`
+      : row.trade_type === "전세" ? `전세 ${formatAmount(row.deposit)}`
+      : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
+
+    const title = type === "report" ? `[AI 물건보고서] ${addrText}` : `[AI 온라인전단지] ${addrText}`;
+    const description = `${priceText}\n공실뉴스에서 제공하는 검증된 매물 정보입니다.`;
+    const imageUrl = row.vacancy_photos?.[0]?.url || "https://gongsilnews.com/logo.png";
+
+    Kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title,
+        description,
+        imageUrl,
+        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+      },
+      buttons: [
+        { title: type === "report" ? "보고서 보기" : "전단지 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
+      ],
+    });
+    setShareTarget(null);
+  };
+
+  const handleMobileCopyUrl = (target: { id: string; type: "report" | "flyer"; row: any }) => {
+    const { id, type } = target;
+    const shareUrl = `${window.location.origin}/${type}/${id}.html`;
+    const typeLabel = type === "report" ? "물건보고서" : "온라인전단지";
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert(`${typeLabel} 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!`);
+    }).catch(() => {
+      const textArea = document.createElement("textarea");
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      alert(`${typeLabel} 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!`);
+    });
+    setShareTarget(null);
+  };
+
   const fetchVacancies = async () => {
     if (!memberId) return;
     setLoading(true);
     const res = await getVacancies({ ownerId: memberId, excludeOnbid: true });
     if (res.success) {
-      const list = res.data || [];
+      const list = Array.isArray(res.data) ? res.data : [];
       setVacancies(list);
       
       if (list.length > 0) {
@@ -356,18 +433,7 @@ function MobileVacancyAdmin() {
                       {hasReport ? (
                         <button 
                           onClick={() => {
-                            const shareUrl = `${window.location.origin}/report/${row.id}.html`;
-                            navigator.clipboard.writeText(shareUrl).then(() => {
-                              alert("물건보고서 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
-                            }).catch(() => {
-                              const textArea = document.createElement("textarea");
-                              textArea.value = shareUrl;
-                              document.body.appendChild(textArea);
-                              textArea.select();
-                              document.execCommand("copy");
-                              document.body.removeChild(textArea);
-                              alert("물건보고서 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
-                            });
+                            setShareTarget({ id: row.id, type: "report", row });
                           }}
                           style={{ 
                             flex: 1, 
@@ -386,8 +452,8 @@ function MobileVacancyAdmin() {
                             boxShadow: "0 2px 4px rgba(59, 130, 246, 0.15)"
                           }}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                          AI 물건보고서 URL 복사
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                          보고서 공유
                         </button>
                       ) : (
                         <button 
@@ -418,18 +484,7 @@ function MobileVacancyAdmin() {
                       {hasFlyer ? (
                         <button 
                           onClick={() => {
-                            const shareUrl = `${window.location.origin}/flyer/${row.id}.html`;
-                            navigator.clipboard.writeText(shareUrl).then(() => {
-                              alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
-                            }).catch(() => {
-                              const textArea = document.createElement("textarea");
-                              textArea.value = shareUrl;
-                              document.body.appendChild(textArea);
-                              textArea.select();
-                              document.execCommand("copy");
-                              document.body.removeChild(textArea);
-                              alert("온라인전단지 링크 주소가 복사되었습니다.\n원하는 대화방에 붙여넣어 전송해보세요!");
-                            });
+                            setShareTarget({ id: row.id, type: "flyer", row });
                           }}
                           style={{ 
                             flex: 1, 
@@ -448,8 +503,8 @@ function MobileVacancyAdmin() {
                             boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)"
                           }}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                          전단지 URL 복사
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                          전단지 공유
                         </button>
                       ) : (
                         <button 
@@ -532,9 +587,132 @@ function MobileVacancyAdmin() {
         </div>
       )}
 
+      {/* 공유하기 모달/바텀시트 */}
+      {shareTarget && (() => {
+        const { type, row } = shareTarget;
+        const typeLabel = type === "report" ? "AI 물건보고서" : "AI 온라인 전단지";
+        const addrText = [
+          row.dong,
+          row.detail_addr,
+          row.building_name
+        ].filter(Boolean).join(" ") || "공실 매물";
+
+        return (
+          <div 
+            onClick={() => setShareTarget(null)}
+            style={{ 
+              position: "fixed", 
+              inset: 0, 
+              zIndex: 100000, 
+              background: "rgba(0,0,0,0.6)", 
+              display: "flex", 
+              alignItems: "flex-end", 
+              justifyContent: "center" 
+            }}
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              style={{ 
+                width: "100%", 
+                maxWidth: "448px", 
+                background: "#fff", 
+                borderTopLeftRadius: "20px", 
+                borderTopRightRadius: "20px", 
+                padding: "24px 20px 32px", 
+                boxShadow: "0 -4px 20px rgba(0,0,0,0.15)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+                animation: "slideUp 0.25s ease-out forwards"
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
+                <span style={{ fontSize: "12px", color: "#3b82f6", fontWeight: 800 }}>{typeLabel} 공유하기</span>
+                <span style={{ fontSize: "16px", color: "#111", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {addrText}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", gap: 12 }}>
+                <button 
+                  onClick={() => handleMobileKakaoShare(shareTarget)}
+                  style={{ 
+                    flex: 1, 
+                    height: "52px", 
+                    background: "#FEE500", 
+                    color: "#3C1E1E", 
+                    border: "none", 
+                    borderRadius: "12px", 
+                    fontSize: "14px", 
+                    fontWeight: 700, 
+                    cursor: "pointer", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center", 
+                    gap: 8 
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#3C1E1E">
+                    <path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path>
+                  </svg>
+                  카카오톡 공유
+                </button>
+
+                <button 
+                  onClick={() => handleMobileCopyUrl(shareTarget)}
+                  style={{ 
+                    flex: 1, 
+                    height: "52px", 
+                    background: "#f3f4f6", 
+                    color: "#374151", 
+                    border: "none", 
+                    borderRadius: "12px", 
+                    fontSize: "14px", 
+                    fontWeight: 700, 
+                    cursor: "pointer", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center", 
+                    gap: 8 
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
+                  URL 복사
+                </button>
+              </div>
+
+              <button 
+                onClick={() => setShareTarget(null)}
+                style={{ 
+                  width: "100%", 
+                  height: "48px", 
+                  background: "#fff", 
+                  color: "#9ca3af", 
+                  border: "1px solid #e5e7eb", 
+                  borderRadius: "12px", 
+                  fontSize: "14px", 
+                  fontWeight: 600, 
+                  cursor: "pointer",
+                  marginTop: 4
+                }}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
       `}</style>
     </div>
   );
