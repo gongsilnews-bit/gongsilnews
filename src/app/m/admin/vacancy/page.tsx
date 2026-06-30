@@ -458,14 +458,14 @@ function MobileVacancyAdmin() {
                       ) : (
                         <button 
                           onClick={() => {
-                            alert("이 매물은 아직 AI 물건보고서가 제작되지 않았습니다.\nPC 버전 공실관리에서 보고서를 먼저 제작/저장해 주세요!");
+                            router.push(`/m/admin/vacancy/report-write?vacancy_id=${row.id}`);
                           }}
                           style={{ 
                             flex: 1, 
                             height: 38, 
-                            background: "#e5e7eb", 
-                            color: "#9ca3af", 
-                            border: "1px solid #d1d5db", 
+                            background: "#eff6ff", 
+                            color: "#3b82f6", 
+                            border: "1px solid #bfdbfe", 
                             borderRadius: 8, 
                             fontSize: 12, 
                             fontWeight: 700, 
@@ -476,7 +476,7 @@ function MobileVacancyAdmin() {
                             gap: 4
                           }}
                         >
-                          AI 보고서 미작성
+                          ➕ 보고서 작성
                         </button>
                       )}
 
@@ -509,14 +509,14 @@ function MobileVacancyAdmin() {
                       ) : (
                         <button 
                           onClick={() => {
-                            alert("이 매물은 아직 AI 온라인전단지가 제작되지 않았습니다.\nPC 버전 공실관리에서 전단지를 먼저 제작/저장해 주세요!");
+                            router.push(`/m/admin/vacancy/flyer-write?vacancy_id=${row.id}`);
                           }}
                           style={{ 
                             flex: 1, 
                             height: 38, 
-                            background: "#e5e7eb", 
-                            color: "#9ca3af", 
-                            border: "1px solid #d1d5db", 
+                            background: "#ecfdf5", 
+                            color: "#10b981", 
+                            border: "1px solid #a7f3d0", 
                             borderRadius: 8, 
                             fontSize: 12, 
                             fontWeight: 700, 
@@ -527,7 +527,7 @@ function MobileVacancyAdmin() {
                             gap: 4
                           }}
                         >
-                          AI 전단지 미작성
+                          ➕ 전단지 작성
                         </button>
                       )}
                     </div>
@@ -606,6 +606,7 @@ function MobileVacancyAdmin() {
               zIndex: 100000, 
               background: "rgba(0,0,0,0.6)", 
               display: "flex", 
+              boxSizing: "border-box",
               alignItems: "flex-end", 
               justifyContent: "center" 
             }}
@@ -622,6 +623,7 @@ function MobileVacancyAdmin() {
                 boxShadow: "0 -4px 20px rgba(0,0,0,0.15)",
                 display: "flex",
                 flexDirection: "column",
+                boxSizing: "border-box",
                 gap: 16,
                 animation: "slideUp 0.25s ease-out forwards"
               }}
@@ -683,6 +685,32 @@ function MobileVacancyAdmin() {
                   URL 복사
                 </button>
               </div>
+
+              <button 
+                onClick={() => {
+                  const url = type === "report" 
+                    ? `/m/admin/vacancy/report-write?vacancy_id=${row.id}` 
+                    : `/m/admin/vacancy/flyer-write?vacancy_id=${row.id}`;
+                  router.push(url);
+                }}
+                style={{ 
+                  width: "100%", 
+                  height: "52px", 
+                  background: type === "report" ? "#ebf8ff" : "#ecfdf5", 
+                  color: type === "report" ? "#2b6cb0" : "#0f766e", 
+                  border: `1px solid ${type === "report" ? "#bee3f8" : "#a7f3d0"}`, 
+                  borderRadius: "12px", 
+                  fontSize: "14px", 
+                  fontWeight: 800, 
+                  cursor: "pointer", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  gap: 8 
+                }}
+              >
+                ✏️ {typeLabel} 편집/수정
+              </button>
 
               <button 
                 onClick={() => setShareTarget(null)}
