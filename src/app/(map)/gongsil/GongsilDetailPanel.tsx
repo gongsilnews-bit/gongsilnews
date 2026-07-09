@@ -449,7 +449,7 @@ export default function GongsilDetailPanel({
     <div
       style={{
         position: "absolute",
-        left: 0,
+        left: 380,
         top: 0,
         width: 600,
         height: "100%",

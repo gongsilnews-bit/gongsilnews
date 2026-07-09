@@ -575,7 +575,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     // 만약 검색어가 숫자(공실번호)인 경우, 다른 모든 필터를 우회하여 해당 공실만 반환합니다.
     if (filterSearchKeyword && /^\d+$/.test(filterSearchKeyword.trim())) {
       const kw = filterSearchKeyword.trim();
-      return list.filter((v) => String(v.vacancy_no) === kw);
+      let matched = list.filter((v) => String(v.vacancy_no) === kw);
+      if (activeProperty) {
+        const activeItem = list.find((v) => String(v.id) === String(activeProperty));
+        if (activeItem && !matched.some((v) => String(v.id) === String(activeProperty))) {
+          matched = [activeItem, ...matched];
+        }
+      }
+      return matched;
     }
 
     if (isAuctionMode) {
@@ -708,6 +715,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           if (filterAreaMax !== null && area > filterAreaMax) return false;
           return true;
         });
+      }
+
+      if (activeProperty) {
+        const activeItem = dbVacancies.find((v) => String(v.id) === String(activeProperty));
+        if (activeItem && activeItem.trade_type === "경매" && !auctionList.some((v) => String(v.id) === String(activeProperty))) {
+          auctionList = [activeItem, ...auctionList];
+        }
       }
 
       return auctionList;
@@ -932,6 +946,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       });
     }
 
+    if (activeProperty) {
+      const activeItem = dbVacancies.find((v) => String(v.id) === String(activeProperty));
+      if (activeItem && !list.some((v) => String(v.id) === String(activeProperty))) {
+        list = [activeItem, ...list];
+      }
+    }
+
     return list;
   }, [
     dbVacancies,
@@ -970,6 +991,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     filterAuctionDiscount,
     filterAuctionBidCount,
     filterAuctionStartDate,
+    activeProperty,
   ]);
 
   // Reset pagination whenever filters, map bounds, or selected cluster changes to keep map responsive
@@ -4734,35 +4756,33 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
       {/* ===== 메인 레이아웃 ===== */}
       <main style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
-        {(!showDetail || !activeProperty) && (
-          <GongsilSidebar
-            activeCategory={activeCategory}
-            wishTab={wishTab}
-            setWishTab={setWishTab}
-            displayVacancies={displayVacancies}
-            categories={categories}
-            selectedCategoryId={selectedCategoryId}
-            setSelectedCategoryId={setSelectedCategoryId}
-            zoomLevel={zoomLevel}
-            isAuctionMode={isAuctionMode}
-            selectedClusterIds={selectedClusterIds}
-            visibleCount={visibleCount}
-            setVisibleCount={setVisibleCount}
-            activeProperty={activeProperty}
-            setActiveProperty={setActiveProperty}
-            showDetail={showDetail}
-            setShowDetail={setShowDetail}
-            setPrevPropertyId={setPrevPropertyId}
-            setActiveDetailTab={setActiveDetailTab}
-            setGalleryIndex={setGalleryIndex}
-            showArticleOnMap={showArticleOnMap}
-            currentUser={currentUser}
-            userLevel={userLevel}
-            setIsAuthModalOpen={setIsAuthModalOpen}
-            setSelectedVacancyId={setSelectedVacancyId}
-            setShowCategoryModal={setShowCategoryModal}
-          />
-        )}
+        <GongsilSidebar
+          activeCategory={activeCategory}
+          wishTab={wishTab}
+          setWishTab={setWishTab}
+          displayVacancies={displayVacancies}
+          categories={categories}
+          selectedCategoryId={selectedCategoryId}
+          setSelectedCategoryId={setSelectedCategoryId}
+          zoomLevel={zoomLevel}
+          isAuctionMode={isAuctionMode}
+          selectedClusterIds={selectedClusterIds}
+          visibleCount={visibleCount}
+          setVisibleCount={setVisibleCount}
+          activeProperty={activeProperty}
+          setActiveProperty={setActiveProperty}
+          showDetail={showDetail}
+          setShowDetail={setShowDetail}
+          setPrevPropertyId={setPrevPropertyId}
+          setActiveDetailTab={setActiveDetailTab}
+          setGalleryIndex={setGalleryIndex}
+          showArticleOnMap={showArticleOnMap}
+          currentUser={currentUser}
+          userLevel={userLevel}
+          setIsAuthModalOpen={setIsAuthModalOpen}
+          setSelectedVacancyId={setSelectedVacancyId}
+          setShowCategoryModal={setShowCategoryModal}
+        />
 
         <GongsilDetailPanel
           showDetail={showDetail}
