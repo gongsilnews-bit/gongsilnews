@@ -170,6 +170,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
     return [];
   });
+
   const [activeCategory, setActiveCategory] = useState(() => {
     const first = initialVacancies[0];
     if (first) {
@@ -429,6 +430,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const itemMapRef = useRef<HTMLDivElement>(null);
   const roadviewRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
+  const skipNextBboxFetchRef = useRef(false);
 
   useEffect(() => {
     if (activeFilterDropdown === "거래유형" || activeFilterDropdown === "거래방식") {
@@ -458,6 +460,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   // 💡 Bbox(지도의 경계면) 변화 시 Supabase 실시간 Bbox 데이터 패치 적용 (성능 60fps 극대화)
   useEffect(() => {
     if (!mapBounds) return;
+
+    // URL 파라미터 진입 시 panTo로 인한 불필요한 bbox fetch 스킵 (깜빡임 방지)
+    if (skipNextBboxFetchRef.current) {
+      skipNextBboxFetchRef.current = false;
+      return;
+    }
 
     const fetchBboxVacancies = async () => {
       setIsFetchingVacancies(true);
@@ -972,10 +980,19 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     filterAuctionStartDate,
   ]);
 
-  // Reset pagination whenever filters, map bounds, or selected cluster changes to keep map responsive
-  useEffect(() => {
-    setVisibleCount(30);
-  }, [filteredVacancies, selectedClusterIds, mapBounds]);
+  // Reset pagination whenever the filtered list or cluster selection substantially changes
+  const prevFilteredLenRef = useRef(filteredVacancies.length);
+  const prevClusterIdsRef = useRef(selectedClusterIds);
+  if (
+    filteredVacancies.length !== prevFilteredLenRef.current ||
+    selectedClusterIds !== prevClusterIdsRef.current
+  ) {
+    prevFilteredLenRef.current = filteredVacancies.length;
+    prevClusterIdsRef.current = selectedClusterIds;
+    if (visibleCount !== 30) {
+      setVisibleCount(30);
+    }
+  }
 
   // ── 지도 범위 / 클러스터 선택 적용 ──
   const displayVacancies = React.useMemo(() => {
@@ -1098,6 +1115,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
           if (target.lat && target.lng && idParamMapPannedRef.current !== idParam) {
             idParamMapPannedRef.current = idParam;
+            skipNextBboxFetchRef.current = true;
             if (kakaoMapRef.current) {
               const kakao = (window as any).kakao;
               if (kakao?.maps) {
@@ -1168,6 +1186,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
       // 지도를 해당 물건 위치로 이동 (지도 준비 전이면 보류)
       if (target.lat && target.lng) {
+        skipNextBboxFetchRef.current = true;
         if (kakaoMapRef.current) {
           const kakao = (window as any).kakao;
           if (kakao?.maps) {
@@ -1190,6 +1209,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     if (mapLoaded && kakaoMapRef.current && pendingPan) {
       const kakao = (window as any).kakao;
       if (kakao?.maps) {
+        skipNextBboxFetchRef.current = true;
         kakaoMapRef.current.panTo(new kakao.maps.LatLng(pendingPan.lat, pendingPan.lng));
         kakaoMapRef.current.setLevel(5);
         setPendingPan(null);
