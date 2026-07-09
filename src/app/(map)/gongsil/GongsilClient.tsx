@@ -157,17 +157,54 @@ const getScaleIndex = (val: number | null, scale: number[], isMax: boolean) => {
 export default function GongsilClient({ initialVacancies }: { initialVacancies: any[] }) {
   /* ── State & Refs ── */
   const searchParams = useSearchParams();
-  const [dbVacancies, setDbVacancies] = useState<any[]>(initialVacancies);
+  const [dbVacancies, setDbVacancies] = useState<any[]>(() => {
+    if (initialVacancies && initialVacancies.length > 0) {
+      return initialVacancies.map((v: any) => ({
+        ...v,
+        images: v.images && v.images.length > 0
+          ? v.images
+          : (v.vacancy_photos
+              ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+              : []),
+      }));
+    }
+    return [];
+  });
   const [activeCategory, setActiveCategory] = useState(() => {
+    const first = initialVacancies[0];
+    if (first) {
+      if (first.trade_type === "경매") return "auction";
+      const catEntry = Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(
+        ([, pType]) => pType === first.property_type
+      );
+      if (catEntry) return catEntry[0];
+    }
     if (typeof window !== "undefined") {
       return localStorage.getItem("gongsil_category") || "auction";
     }
     return "auction";
   });
   const [activePills, setActivePills] = useState<string[]>(() => {
+    const first = initialVacancies[0];
+    if (first) {
+      if (first.trade_type === "경매") {
+        const meta = first.metadata || {};
+        const scls = meta.cltrUsgSclsCtgrNm || "";
+        if (scls.includes("아파트") || scls.includes("오피스텔") || scls.includes("공동주택")) return ["아파트"];
+        if (scls.includes("단독") || scls.includes("다가구") || scls.includes("주택")) return ["단독/다가구"];
+        if (scls.includes("빌라") || scls.includes("다세대") || scls.includes("연립")) return ["빌라/주택"];
+        if (scls.includes("상가") || scls.includes("점포") || scls.includes("사무") || scls.includes("빌딩") || scls.includes("근린생활")) return ["빌딩/사무실"];
+        if (scls.includes("공장") || scls.includes("창고")) return ["공장/창고"];
+        if (scls.includes("토지") || scls.includes("대지") || scls.includes("임야")) return ["토지"];
+        return ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"];
+      } else {
+        if (first.sub_category) {
+          return [first.sub_category];
+        }
+      }
+    }
     if (typeof window !== "undefined") {
       const cat = localStorage.getItem("gongsil_category") || "auction";
-      // sessionStorage에서 복원 (새로고침 시 유지, 브라우저 재접속 시 초기화)
       const saved = sessionStorage.getItem(`gongsil_pills_${cat}`);
       if (saved) {
         try { return JSON.parse(saved); } catch {}
@@ -179,30 +216,46 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     }
     return [];
   });
-  const [activeProperty, setActiveProperty] = useState<string | number | null>(null);
+  const [activeProperty, setActiveProperty] = useState<string | number | null>(() => {
+    return initialVacancies[0]?.id || null;
+  });
   const [prevPropertyId, setPrevPropertyId] = useState<string | number | null>(null);
   const [showDetail, setShowDetail] = useState(true);
   const [activeDetailTab, setActiveDetailTab] = useState<
     "info" | "realtor" | "auction_detail" | "auction_property" | "auction_bid" | "auction_market"
-  >("info");
+  >(() => {
+    const first = initialVacancies[0];
+    if (first && first.trade_type === "경매") {
+      return "auction_detail";
+    }
+    return "info";
+  });
   const [showDetailFilters, setShowDetailFilters] = useState(false);
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<string | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isAuctionMode, setIsAuctionMode] = useState(() => {
+    const first = initialVacancies[0];
+    if (first) {
+      return first.trade_type === "경매";
+    }
     if (typeof window !== "undefined") {
       const cat = localStorage.getItem("gongsil_category") || "auction";
       return cat === "auction";
     }
-    return true; // SSR 기본값: 경매 활성화
+    return true;
   });
   const [activeMode, setActiveMode] = useState<"공실" | "분양" | "경매">(() => {
+    const first = initialVacancies[0];
+    if (first) {
+      return first.trade_type === "경매" ? "경매" : "공실";
+    }
     if (typeof window !== "undefined") {
       const cat = localStorage.getItem("gongsil_category") || "auction";
       return cat === "auction" ? "경매" : "공실";
     }
-    return "경매"; // 기본값: 경매 모드
+    return "경매";
   });
   const shareDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -522,7 +575,14 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     // 만약 검색어가 숫자(공실번호)인 경우, 다른 모든 필터를 우회하여 해당 공실만 반환합니다.
     if (filterSearchKeyword && /^\d+$/.test(filterSearchKeyword.trim())) {
       const kw = filterSearchKeyword.trim();
-      return list.filter((v) => String(v.vacancy_no) === kw);
+      let matched = list.filter((v) => String(v.vacancy_no) === kw);
+      if (activeProperty) {
+        const activeItem = list.find((v) => String(v.id) === String(activeProperty));
+        if (activeItem && !matched.some((v) => String(v.id) === String(activeProperty))) {
+          matched = [activeItem, ...matched];
+        }
+      }
+      return matched;
     }
 
     if (isAuctionMode) {
@@ -655,6 +715,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
           if (filterAreaMax !== null && area > filterAreaMax) return false;
           return true;
         });
+      }
+
+      if (activeProperty) {
+        const activeItem = dbVacancies.find((v) => String(v.id) === String(activeProperty));
+        if (activeItem && activeItem.trade_type === "경매" && !auctionList.some((v) => String(v.id) === String(activeProperty))) {
+          auctionList = [activeItem, ...auctionList];
+        }
       }
 
       return auctionList;
@@ -879,6 +946,13 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       });
     }
 
+    if (activeProperty) {
+      const activeItem = dbVacancies.find((v) => String(v.id) === String(activeProperty));
+      if (activeItem && !list.some((v) => String(v.id) === String(activeProperty))) {
+        list = [activeItem, ...list];
+      }
+    }
+
     return list;
   }, [
     dbVacancies,
@@ -917,6 +991,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     filterAuctionDiscount,
     filterAuctionBidCount,
     filterAuctionStartDate,
+    activeProperty,
   ]);
 
   // Reset pagination whenever filters, map bounds, or selected cluster changes to keep map responsive
@@ -980,8 +1055,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   const [pendingPan, setPendingPan] = useState<{ lat: number; lng: number } | null>(null);
 
   // Handle ?id=X from main page navigation
-  const idParamHandledRef = useRef<string | null>(null);
-  const idParamMapPannedRef = useRef<string | null>(null);
+  const idParamHandledRef = useRef<string | null>(initialVacancies[0] ? String(initialVacancies[0].id) : null);
+  const idParamMapPannedRef = useRef<string | null>(initialVacancies[0] ? String(initialVacancies[0].id) : null);
   useEffect(() => {
     const idParam = searchParams.get("id");
     if (idParam && idParamHandledRef.current !== idParam) {
@@ -1065,7 +1140,11 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
   }, [searchParams, mapLoaded]);
 
   // Handle ?mng=물건관리번호 from main page hero (경매 물건 — UUID 대신 안정적 식별자 사용)
-  const mngParamHandledRef = useRef<string | null>(null);
+  const mngParamHandledRef = useRef<string | null>(
+    initialVacancies[0]
+      ? (initialVacancies[0].metadata?.cltrMngNo || initialVacancies[0].metadata?.cltr_mng_no || null)
+      : null
+  );
   useEffect(() => {
     const mngParam = searchParams.get("mng");
     if (!mngParam || mngParamHandledRef.current === mngParam) return;
