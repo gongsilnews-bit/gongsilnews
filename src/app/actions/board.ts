@@ -149,6 +149,26 @@ export async function saveBoardPost(payload: {
   }
 }
 
+/* ── 게시글 일괄 저장 (벌크 등록) ── */
+export async function saveBoardPostsBatch(posts: {
+  board_id: string;
+  author_id?: string;
+  author_name?: string;
+  title: string;
+  content?: string;
+  drive_url?: string;
+  youtube_url?: string;
+  external_url?: string;
+}[]) {
+  const { data, error } = await supabase
+    .from("board_posts")
+    .insert(posts)
+    .select("id");
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, count: data?.length || 0 };
+}
+
 /* ── 게시글 삭제 (소프트) ── */
 export async function deleteBoardPost(postId: string) {
   const { error } = await supabase

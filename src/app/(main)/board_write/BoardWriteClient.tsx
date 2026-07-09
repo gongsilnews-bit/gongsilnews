@@ -3,7 +3,7 @@
 import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { saveBoardPost, uploadBoardAttachment, uploadBoardThumbnail } from "@/app/actions/board";
+import { saveBoardPost, uploadBoardAttachment, uploadBoardThumbnail, saveBoardPostsBatch } from "@/app/actions/board";
 import { createClient } from "@/utils/supabase/client";
 import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 
@@ -28,6 +28,45 @@ const convertToWebp = (file: File): Promise<File> => {
     img.onerror = () => resolve(file);
     img.src = URL.createObjectURL(file);
   });
+};
+
+const parseCSV = (text: string): string[][] => {
+  const result: string[][] = [];
+  let row: string[] = [];
+  let inQuotes = false;
+  let currentValue = "";
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const nextChar = text[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        currentValue += '"';
+        i++; // skip next quote
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      row.push(currentValue);
+      currentValue = "";
+    } else if ((char === '\r' || char === '\n') && !inQuotes) {
+      if (char === '\r' && nextChar === '\n') {
+        i++; // skip \n
+      }
+      row.push(currentValue);
+      result.push(row);
+      row = [];
+      currentValue = "";
+    } else {
+      currentValue += char;
+    }
+  }
+  if (currentValue || row.length > 0) {
+    row.push(currentValue);
+    result.push(row);
+  }
+  return result.filter(r => r.length > 0 && r.some(cell => cell.trim() !== ""));
 };
 
 export interface LinkItem {
@@ -101,6 +140,10 @@ export default function BoardWriteClient({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvPreview, setCsvPreview] = useState<any[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
+
   const [userLevel, setUserLevel] = useState<number>(serverUserLevel ?? 0);
   const [isLevelChecking, setIsLevelChecking] = useState(!serverUser && !serverUserLevel);
 
@@ -126,6 +169,134 @@ export default function BoardWriteClient({
     if (file) {
       setThumbnailFile(file);
       setThumbnailPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCsvFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const parsedRows = parseCSV(text);
+      if (parsedRows.length <= 1) {
+        alert("등록된 데이터가 없거나 올바르지 않은 CSV 파일입니다.");
+        return;
+      }
+
+      const headers = parsedRows[0].map(h => h.trim());
+      const hasKoreanHeader = headers.some(h => h.includes("제목") || h.includes("내용") || h.includes("구분") || h.includes("URL"));
+      
+      if (!hasKoreanHeader) {
+        const eucReader = new FileReader();
+        eucReader.onload = (eucEvent) => {
+          const eucText = eucEvent.target?.result as string;
+          processCsvText(eucText);
+        };
+        eucReader.readAsText(file, "EUC-KR");
+      } else {
+        processCsvText(text);
+      }
+    };
+    reader.readAsText(file, "UTF-8");
+  };
+
+  const processCsvText = (text: string) => {
+    const parsedRows = parseCSV(text);
+    if (parsedRows.length <= 1) return;
+
+    const headers = parsedRows[0].map(h => h.trim());
+    
+    const titleIdx = headers.findIndex(h => h.includes("제목"));
+    const categoryIdx = headers.findIndex(h => h.includes("구분") || h.includes("카테고리"));
+    const contentIdx = headers.findIndex(h => h.includes("내용") || h.includes("본문"));
+    const driveIdx = headers.findIndex(h => h.includes("드라이브") || h.includes("구글드라이브"));
+    const youtubeIdx = headers.findIndex(h => h.includes("유튜브"));
+
+    if (titleIdx === -1) {
+      alert("CSV 파일에 '게시물제목' 또는 '제목' 컬럼이 반드시 존재해야 합니다.");
+      return;
+    }
+
+    const previewData = parsedRows.slice(1).map((row, idx) => {
+      const titleVal = row[titleIdx] || "";
+      const catVal = categoryIdx !== -1 ? row[categoryIdx] || "" : "";
+      const contentVal = contentIdx !== -1 ? row[contentIdx] || "" : "";
+      const driveVal = driveIdx !== -1 ? row[driveIdx] || "" : "";
+      const youtubeVal = youtubeIdx !== -1 ? row[youtubeIdx] || "" : "";
+
+      return {
+        id: idx,
+        title: titleVal,
+        category: catVal,
+        content: contentVal,
+        drive_url: driveVal,
+        youtube_url: youtubeVal,
+      };
+    });
+
+    setCsvPreview(previewData);
+  };
+
+  const handleBulkSubmit = async () => {
+    if (csvPreview.length === 0) return;
+    
+    setIsImporting(true);
+    
+    const formattedPosts = csvPreview.map(item => {
+      let fullTitle = item.title;
+      if (item.category && !item.title.startsWith("[")) {
+        fullTitle = `[${item.category}] ${item.title}`;
+      }
+
+      const externalLinksList = [];
+      if (item.drive_url) {
+        externalLinksList.push({
+          id: "drive_" + Math.random().toString(36).substring(2, 9),
+          type: "DRIVE" as const,
+          label: "공유 드라이브",
+          url: item.drive_url
+        });
+      }
+      if (item.youtube_url) {
+        externalLinksList.push({
+          id: "youtube_" + Math.random().toString(36).substring(2, 9),
+          type: "YOUTUBE" as const,
+          label: "유튜브 시청",
+          url: item.youtube_url
+        });
+      }
+
+      const postObj: any = {
+        board_id: boardId,
+        title: fullTitle,
+        content: item.content,
+        author_id: serverUser?.id || undefined,
+        author_name: (userLevel >= 5 || serverUser?.role?.toUpperCase() === "ADMIN" || serverUser?.role?.toUpperCase() === "최고관리자" || serverUser?.role?.includes("관리자"))
+          ? "최고관리자"
+          : (serverUser?.name || serverUser?.email?.split('@')[0] || "익명"),
+      };
+
+      if (item.drive_url) postObj.drive_url = item.drive_url;
+      if (item.youtube_url) postObj.youtube_url = item.youtube_url;
+      if (externalLinksList.length > 0) {
+        postObj.external_url = JSON.stringify(externalLinksList);
+      }
+
+      return postObj;
+    });
+
+    const res = await saveBoardPostsBatch(formattedPosts);
+    setIsImporting(false);
+
+    if (res.success) {
+      alert(`성공적으로 ${res.count}개의 게시글이 일괄 등록되었습니다.`);
+      router.push(`/board?id=${boardId}`);
+    } else {
+      alert("일괄 등록에 실패했습니다: " + res.error);
     }
   };
 
@@ -216,6 +387,83 @@ export default function BoardWriteClient({
         </h1>
         <span style={{ fontSize: 14, color: "#888" }}>작성자: {editPost?.author_name || "관리자"}</span>
       </div>
+
+      {/* 엑셀/CSV 일괄 등록 (관리자용) */}
+      {!isEditMode && (userLevel >= 5 || serverUser?.role?.toUpperCase() === "ADMIN" || serverUser?.role?.toUpperCase() === "최고관리자" || serverUser?.role?.includes("관리자")) && (
+        <div style={{
+          background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+          border: "1px solid #cbd5e1",
+          borderRadius: 12,
+          padding: "24px",
+          marginBottom: 30,
+          boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
+          fontFamily: "inherit"
+        }}>
+          <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginTop: 0, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+            📊 <span>엑셀/CSV 일괄 등록 (관리자용)</span>
+          </h3>
+          <p style={{ fontSize: 13, color: "#475569", margin: "0 0 16px 0", lineHeight: 1.5 }}>
+            CSV 백업 파일을 선택하여 다수의 게시글을 한 번에 일괄 등록할 수 있습니다.<br />
+            필수 헤더: <strong>게시물제목</strong> (또는 제목), <strong>구분</strong> (또는 카테고리), <strong>내용</strong> (또는 본문), <strong>구글드라이브 URL</strong> (또는 드라이브 URL).
+          </p>
+          
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <label style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "10px 18px", background: "#fff", border: "1px solid #cbd5e1",
+              borderRadius: 6, fontSize: 14, fontWeight: 600, color: "#334155",
+              cursor: "pointer", boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+            }}>
+              📁 파일 선택
+              <input type="file" accept=".csv" onChange={handleCsvUpload} style={{ display: "none" }} />
+            </label>
+            {csvFile && <span style={{ fontSize: 14, color: "#0f172a", fontWeight: 500 }}>선택된 파일: {csvFile.name} ({csvPreview.length}개 항목)</span>}
+          </div>
+
+          {/* 파싱 결과 미리보기 */}
+          {csvPreview.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 8 }}>미리보기 (최대 5건 표시)</div>
+              <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, textAlign: "left" }}>
+                  <thead>
+                    <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                      <th style={{ padding: "8px 12px", color: "#64748b" }}>제목</th>
+                      <th style={{ padding: "8px 12px", color: "#64748b", width: 80 }}>구분</th>
+                      <th style={{ padding: "8px 12px", color: "#64748b" }}>드라이브 URL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {csvPreview.slice(0, 5).map((row, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "8px 12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }} title={row.title}>{row.title}</td>
+                        <td style={{ padding: "8px 12px" }}>{row.category}</td>
+                        <td style={{ padding: "8px 12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }} title={row.drive_url}>{row.drive_url}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+                <button
+                  type="button"
+                  onClick={handleBulkSubmit}
+                  disabled={isImporting}
+                  style={{
+                    padding: "10px 24px", background: isImporting ? "#64748b" : "#10b981",
+                    color: "#fff", border: "none", borderRadius: 6, fontSize: 14,
+                    fontWeight: 700, cursor: isImporting ? "not-allowed" : "pointer",
+                    boxShadow: "0 2px 4px rgba(16,185,129,0.2)"
+                  }}
+                >
+                  🚀 {isImporting ? "등록 중..." : `${csvPreview.length}개 게시글 일괄 등록 실행`}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 카테고리 + 제목 */}
       <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>

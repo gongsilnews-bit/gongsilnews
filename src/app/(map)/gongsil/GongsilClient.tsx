@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getVacancies, getAgencyInfo, getVacancyDetail, getVacanciesForMap } from "@/app/actions/vacancy";
+import { getVacancies, getAgencyInfo, getVacancyDetail, getVacanciesForMap, getVacancyByVacancyNo } from "@/app/actions/vacancy";
 import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyComments";
 import { getVacancyUserData, toggleWishlistToDB, addRecentViewToDB } from "@/app/actions/vacancyUserData";
 import { getPermissionLevel } from "@/utils/permissionCheck";
@@ -518,6 +518,12 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
   const filteredVacancies = React.useMemo(() => {
     let list = dbVacancies;
+
+    // 만약 검색어가 숫자(공실번호)인 경우, 다른 모든 필터를 우회하여 해당 공실만 반환합니다.
+    if (filterSearchKeyword && /^\d+$/.test(filterSearchKeyword.trim())) {
+      const kw = filterSearchKeyword.trim();
+      return list.filter((v) => String(v.vacancy_no) === kw);
+    }
 
     if (isAuctionMode) {
       // Auction Mode: Only show auction listings
@@ -1753,6 +1759,114 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
     setFilterTradeTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   };
 
+  const handleSearch = async (keyword: string) => {
+    const trimmed = keyword.trim();
+    if (!trimmed) {
+      setFilterSearchKeyword("");
+      return;
+    }
+
+    // 공실번호(숫자) 형식인 경우 글로벌 DB 검색 수행
+    const isNum = /^\d+$/.test(trimmed);
+    if (isNum) {
+      const numVal = parseInt(trimmed, 10);
+      
+      // 1) 이미 로드된 매물 중에서 먼저 찾기
+      let target = dbVacancies.find((v) => v.vacancy_no === numVal);
+      
+      // 2) 로드되어 있지 않다면 서버에서 직접 가져오기
+      if (!target) {
+        setIsFetchingVacancies(true);
+        try {
+          const res = await getVacancyByVacancyNo(numVal);
+          if (res.success && res.data) {
+            const data = res.data;
+            const withImages = {
+              ...data,
+              images: data.vacancy_photos
+                ? [...data.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+                : [],
+            };
+            target = withImages;
+            // dbVacancies에 추가
+            setDbVacancies((prev) => {
+              if (prev.some((v) => String(v.id) === String(withImages.id))) return prev;
+              return [withImages, ...prev];
+            });
+          }
+        } catch (err) {
+          console.error("Failed to query global vacancy by number:", err);
+        } finally {
+          setIsFetchingVacancies(false);
+        }
+      }
+
+      // 3) 매물을 찾았을 경우 상세창 활성화, 카테고리/Pill 동기화, 지도 이동 처리
+      if (target) {
+        setActiveProperty(target.id);
+        setShowDetail(true);
+
+        if (target.trade_type === "경매") {
+          setActiveCategory("auction");
+          setIsAuctionMode(true);
+          setActiveMode("경매");
+          setActiveDetailTab("auction_detail");
+          localStorage.setItem("gongsil_category", "auction");
+          
+          const savedPills = localStorage.getItem("gongsil_pills_auction");
+          let pills: string[] = [];
+          if (savedPills) { try { pills = JSON.parse(savedPills); } catch {} }
+          if (pills.length === 0) {
+            pills = CATEGORY_CONFIG["auction"]?.pills || [];
+          }
+          setActivePills(pills);
+          localStorage.setItem("gongsil_pills", JSON.stringify(pills));
+        } else {
+          setActiveDetailTab("info");
+          const catEntry = Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(
+            ([, pType]) => pType === target!.property_type
+          );
+          if (catEntry) {
+            setActiveCategory(catEntry[0]);
+            setIsAuctionMode(false);
+            setActiveMode("공실");
+            
+            const savedPills = localStorage.getItem(`gongsil_pills_${catEntry[0]}`);
+            let pills: string[] = [];
+            if (savedPills) { try { pills = JSON.parse(savedPills); } catch {} }
+            if (pills.length === 0) {
+              pills = target.sub_category ? [target.sub_category] : (CATEGORY_CONFIG[catEntry[0]]?.pills || []);
+            }
+            setActivePills(pills);
+            localStorage.setItem("gongsil_pills", JSON.stringify(pills));
+            localStorage.setItem("gongsil_category", catEntry[0]);
+          }
+        }
+
+        // 지도 중심 이동
+        if (target.lat && target.lng) {
+          if (kakaoMapRef.current) {
+            const kakao = (window as any).kakao;
+            if (kakao?.maps) {
+              kakaoMapRef.current.panTo(new kakao.maps.LatLng(target.lat, target.lng));
+              kakaoMapRef.current.setLevel(5);
+            }
+          } else {
+            setPendingPan({ lat: target.lat, lng: target.lng });
+          }
+        }
+        setSelectedClusterIds([String(target.id)]);
+        setFilterSearchKeyword(trimmed);
+      } else {
+        setToastMessage("입력하신 공실번호에 해당하는 활성 매물을 찾을 수 없습니다.");
+        setFilterSearchKeyword(trimmed);
+      }
+    } else {
+      // 일반 주소/지하철/텍스트 검색어인 경우 기존처럼 텍스트 필터링 수행
+      setFilterSearchKeyword(trimmed);
+    }
+  };
+
   const hasActiveFilters =
     filterTradeTypes.length > 0 ||
     appliedMaemaeMin !== null ||
@@ -1955,7 +2069,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   onChange={(e) => setPopoverSearchKeyword(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      setFilterSearchKeyword(popoverSearchKeyword);
+                      handleSearch(popoverSearchKeyword);
                     }
                   }}
                   style={{
@@ -1969,7 +2083,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                   }}
                 />
                 <button
-                  onClick={() => setFilterSearchKeyword(popoverSearchKeyword)}
+                  onClick={() => handleSearch(popoverSearchKeyword)}
                   style={{
                     height: "36px",
                     padding: "0 14px",

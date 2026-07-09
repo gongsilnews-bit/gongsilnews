@@ -432,6 +432,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
             {/* 거대한 검색 입력창 */}
             <div style={{ position: "relative", width: "100%", borderBottom: "3px solid #102c57", paddingBottom: "15px", display: "flex", alignItems: "center" }}>
               <input
+                ref={searchInputRef}
                 type="text"
                 autoFocus
                 placeholder="검색어를 입력하세요"
@@ -448,7 +449,14 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   outline: "none", color: "#111", paddingLeft: "10px"
                 }}
               />
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#102c57" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: "pointer", flexShrink: 0, marginLeft: "15px" }}>
+              <svg 
+                onClick={() => {
+                  const query = searchInputRef.current?.value.trim();
+                  if (query) {
+                    window.location.href = `/search?q=${encodeURIComponent(query)}`;
+                  }
+                }}
+                width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#102c57" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: "pointer", flexShrink: 0, marginLeft: "15px" }}>
                 <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
             </div>

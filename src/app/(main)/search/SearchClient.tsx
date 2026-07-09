@@ -173,7 +173,7 @@ export default function SearchClient({ query, articles, vacancies, vacancyCount 
                     onMouseEnter={(e) => e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)"}
                     onMouseLeave={(e) => e.currentTarget.style.boxShadow = "none"}
                     onClick={() => {
-                        window.location.href = `/m/gongsil?id=${v.id}`; // 임시로 모바일 공실상세로 이동 (PC 전용 상세가 아직 없으므로)
+                        window.location.href = `/gongsil?id=${v.id}`;
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>

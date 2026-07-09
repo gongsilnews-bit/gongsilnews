@@ -396,11 +396,20 @@ export async function getVacancies(options?: {
 export async function getVacancyCountByKeyword(keyword: string) {
   const supabase = getAdminClient();
   try {
+    const trimmed = keyword.trim();
+    if (!trimmed) return { success: true, count: 0 };
+
+    let orConditions = `dong.ilike.%${trimmed}%,sigungu.ilike.%${trimmed}%,sido.ilike.%${trimmed}%,building_name.ilike.%${trimmed}%,detail_addr.ilike.%${trimmed}%`;
+    if (/^\d+$/.test(trimmed)) {
+      orConditions += `,vacancy_no.eq.${trimmed}`;
+    }
+    orConditions += `,metadata->>cltrMngNo.ilike.%${trimmed}%,metadata->>cltr_mng_no.ilike.%${trimmed}%`;
+
     const { count, error } = await supabase
       .from('vacancies')
       .select('id', { count: 'exact', head: true })
       .neq('status', 'DELETED')
-      .or(`dong.ilike.%${keyword}%,sigungu.ilike.%${keyword}%,sido.ilike.%${keyword}%,building_name.ilike.%${keyword}%,detail_addr.ilike.%${keyword}%`);
+      .or(orConditions);
 
     if (error) return { success: false, error: error.message };
     return { success: true, count: count || 0 };
@@ -469,6 +478,25 @@ export async function getVacancyByMngNo(mngNo: string) {
     return { success: false, error: error.message };
   }
 }
+
+// ── 공실번호(vacancy_no)로 매물 조회 ──
+export async function getVacancyByVacancyNo(vacancyNo: number) {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase
+      .from('vacancies')
+      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
+      .eq('vacancy_no', vacancyNo)
+      .neq('status', 'DELETED')
+      .maybeSingle();
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 
 // ── 공실 상태 변경 (광고중 ↔ 광고종료, 승인 등) ──
 export async function updateVacancyStatus(vacancyId: string, newStatus: string) {
@@ -568,7 +596,7 @@ export async function getVacanciesForMap(options?: {
     for (let i = 0; i < pages; i++) {
       let pageQuery = supabase
         .from('vacancies')
-        .select('id, owner_id, lat, lng, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, detail_addr, building_name, hosu, exclusive_m2, supply_m2, room_count, bath_count, direction, parking, owner_role, realtor_commission, commission_type, status, themes, options, address_exposure, exposure_type, created_at, metadata, vacancy_photos(url, sort_order)')
+        .select('id, vacancy_no, owner_id, lat, lng, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, detail_addr, building_name, hosu, exclusive_m2, supply_m2, room_count, bath_count, direction, parking, owner_role, realtor_commission, commission_type, status, themes, options, address_exposure, exposure_type, created_at, metadata, vacancy_photos(url, sort_order)')
         .eq('status', 'ACTIVE')
         .not('lat', 'is', null)
         .not('lng', 'is', null);
@@ -651,7 +679,22 @@ export async function getVacanciesForMap(options?: {
 export async function getVacancyListByKeyword(keyword: string) {
   const supabase = getAdminClient();
   try {
-    const { data, error } = await supabase.from('vacancies').select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)').neq('status', 'DELETED').or(`dong.ilike.%${keyword}%,sigungu.ilike.%${keyword}%,sido.ilike.%${keyword}%,building_name.ilike.%${keyword}%,detail_addr.ilike.%${keyword}%`).order('created_at', { ascending: false });
+    const trimmed = keyword.trim();
+    if (!trimmed) return { success: true, data: [] };
+
+    let orConditions = `dong.ilike.%${trimmed}%,sigungu.ilike.%${trimmed}%,sido.ilike.%${trimmed}%,building_name.ilike.%${trimmed}%,detail_addr.ilike.%${trimmed}%`;
+    if (/^\d+$/.test(trimmed)) {
+      orConditions += `,vacancy_no.eq.${trimmed}`;
+    }
+    orConditions += `,metadata->>cltrMngNo.ilike.%${trimmed}%,metadata->>cltr_mng_no.ilike.%${trimmed}%`;
+
+    const { data, error } = await supabase
+      .from('vacancies')
+      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
+      .neq('status', 'DELETED')
+      .or(orConditions)
+      .order('created_at', { ascending: false });
+
     if (error) throw error;
     const withImages = data?.map(v => ({ ...v, images: v.vacancy_photos ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [] })) || [];
     return { success: true, data: withImages };

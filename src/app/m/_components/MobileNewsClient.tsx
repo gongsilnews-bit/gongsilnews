@@ -742,6 +742,19 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       loadSearchData();
     } else {
       setArticles(initialArticles);
+      if (keywordMatch) {
+        const loadVacanciesOnly = async () => {
+          const [vRes, listRes] = await Promise.all([
+            getVacancyCountByKeyword(keywordMatch),
+            getVacancyListByKeyword(keywordMatch)
+          ]);
+          if (vRes.success) setVacancyCount(vRes.count || 0);
+          else setVacancyCount(0);
+          if (listRes.success) setVacancyList(listRes.data || []);
+          else setVacancyList([]);
+        };
+        loadVacanciesOnly();
+      }
     }
   }, [searchParams, initialArticles, initialKeyword, initialAuthorName]);
 
