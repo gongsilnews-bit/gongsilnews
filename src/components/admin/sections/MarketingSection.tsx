@@ -64,6 +64,13 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
   const [msgTitle, setMsgTitle] = useState("");
   const [msgContent, setMsgContent] = useState("");
   
+  // 내 문자함 템플릿 리스트
+  const [savedTemplates, setSavedTemplates] = useState([
+    { id: "t1", title: "공실접수 안내", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n{상호} 인근 신규 매물 접수 안내드립니다. 신속하고 투명한 중개 거래를 위해 공실뉴스 파트너에 무료 가입해보세요!\n\n무료수신거부: 080-1555-5343" },
+    { id: "t2", title: "추천 매물 목록", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n오늘의 추천 매물 정보 공유드립니다. {지역} 지역 내 단독 독점 물건 다량 보유 중입니다.\n\n무료수신거부: 080-1555-5343" },
+    { id: "t3", title: "서비스 혜택", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n공실뉴스 프리미엄 멤버십 가입 시 첫달 무료 이벤트 적용 안내입니다.\n\n무료수신거부: 080-1555-5343" }
+  ]);
+
   // 발신 및 수신 타겟
   const [selectedCity, setSelectedCity] = useState("서울특별시");
   const [selectedDistrict, setSelectedDistrict] = useState("전체");
@@ -113,8 +120,37 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
     setShowVariableMenu(false);
   };
 
+  const handleAddTemplate = () => {
+    if (!msgContent.trim()) {
+      alert("저장할 메시지 내용을 입력해주세요.");
+      return;
+    }
+    const title = window.prompt("저장할 문자의 제목을 입력하세요:", msgTitle || "새 저장 문자");
+    if (title === null) return; // 취소
+
+    const newTemplate = {
+      id: `template_${Date.now()}`,
+      title: title.trim() || "새 저장 문자",
+      content: msgContent
+    };
+
+    setSavedTemplates([...savedTemplates, newTemplate]);
+    alert("💾 내 문자함에 성공적으로 저장되었습니다!");
+  };
+
+  const handleSelectTemplate = (t: { title: string; content: string }) => {
+    setMsgTitle(t.title);
+    setMsgContent(t.content);
+  };
+
+  const handleDeleteTemplate = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm("이 문자를 저장함에서 삭제하시겠습니까?")) {
+      setSavedTemplates(savedTemplates.filter(t => t.id !== id));
+    }
+  };
+
   const handleAddDbTarget = () => {
-    // 타겟 명단 목록에 가상의 단체 수신 그룹 추가
     const newGroup = {
       id: `group_${Date.now()}`,
       name: `${selectedCity} ${selectedDistrict} 부동산`,
@@ -124,7 +160,6 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
       district: selectedDistrict
     };
     
-    // 중복 방지
     if (recipients.some(r => r.type === "db" && r.city === selectedCity && r.district === selectedDistrict)) {
       alert("이미 추가된 지역 타겟입니다.");
       return;
@@ -155,7 +190,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
       const mockExcelGroup = {
         id: `excel_${Date.now()}`,
         name: `엑셀: ${file.name}`,
-        count: 1250, // 모의 1250개
+        count: 1250,
         type: "excel"
       };
       setRecipients([...recipients, mockExcelGroup]);
@@ -255,44 +290,39 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
         </button>
       </div>
 
-      {/* 3. 본문 2컬럼 레이아웃 */}
+      {/* 3. 본문 레이아웃 */}
       <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", flex: 1 }}>
         
-        {/* === 좌측: 메시지 입력 (Message Editor) === */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px", background: cardBg, padding: 20, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+        {/* === 좌측: 메시지 입력 및 내 문자함 (두 영역이 나란히) === */}
+        <div style={{ flex: 1.8, display: "flex", gap: "16px", minWidth: 0 }}>
           
-          {/* 가이드 문구 */}
-          <div style={{ fontSize: "12px", color: textSecondary, lineHeight: 1.5, background: darkMode ? "#202124" : "#f8fafc", padding: "12px", borderRadius: 8, borderLeft: "4px solid #3b82f6" }}>
-            • 90byte 초과 시, 장문(LMS)으로 자동 전환됩니다. 최대 2,000byte까지 작성이 가능합니다.<br />
-            • 광고성 문자는 반드시 <span style={{ color: "#ef4444", fontWeight: 700 }}>[광고문자]</span> 탭에서 발송해주세요. 080 번호를 무료로 제공합니다.
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: textPrimary }}>메시지 입력</h3>
+          {/* A. 메시지 입력 카드 (가로 너비 축소) */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px", background: cardBg, padding: 18, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: textPrimary }}>메시지 입력</h3>
             
             {/* 제목 인풋 */}
             <input 
               type="text" 
-              placeholder="제목을 입력해주세요. (최대30byte, 발송관리용)"
+              placeholder="제목을 입력해주세요. (최대30byte)"
               value={msgTitle}
               onChange={(e) => setMsgTitle(e.target.value)}
               style={{
-                width: "100%", height: 38, padding: "0 12px", borderRadius: 6, border: `1px solid ${border}`,
-                background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, outline: "none", fontSize: 13, fontWeight: 600
+                width: "100%", height: 36, padding: "0 10px", borderRadius: 6, border: `1px solid ${border}`,
+                background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, outline: "none", fontSize: 12, fontWeight: 600
               }}
             />
 
             {/* 에디터 툴바 */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
-              <div style={{ display: "flex", gap: 6 }}>
-                <span style={{ padding: "4px 8px", background: "#fef3c7", color: "#d97706", borderRadius: 4, fontWeight: 800, fontSize: 11 }}>✦ AI 맞춤 추천</span>
-                <span style={{ padding: "4px 8px", background: "#dbeafe", color: "#2563eb", borderRadius: 4, fontWeight: 800, fontSize: 11 }}>✦ AI 생성</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11 }}>
+              <div style={{ display: "flex", gap: 4 }}>
+                <span style={{ padding: "3px 6px", background: "#fef3c7", color: "#d97706", borderRadius: 4, fontWeight: 800, fontSize: 10 }}>✦ AI 추천</span>
+                <span style={{ padding: "3px 6px", background: "#dbeafe", color: "#2563eb", borderRadius: 4, fontWeight: 800, fontSize: 10 }}>✦ AI 생성</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontWeight: 800, color: textPrimary }}>{byteCount}</span>
                 <span style={{ color: textSecondary }}>/ 90byte</span>
                 <span style={{
-                  padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 800,
+                  padding: "1px 5px", borderRadius: 4, fontSize: 9, fontWeight: 800,
                   background: isLms ? "#fecaca" : "#d1fae5",
                   color: isLms ? "#b91c1c" : "#065f46"
                 }}>
@@ -300,7 +330,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                 </span>
                 <button 
                   onClick={() => setMsgContent("")}
-                  style={{ border: "none", background: "none", cursor: "pointer", fontSize: 14, color: textSecondary }}
+                  style={{ border: "none", background: "none", cursor: "pointer", fontSize: 12, color: textSecondary }}
                   title="초기화"
                 >
                   🔄
@@ -308,43 +338,41 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
               </div>
             </div>
 
-            {/* 에디터 텍스트에어리어 */}
-            <div style={{ position: "relative" }}>
-              <textarea 
-                placeholder="내용을 입력해주세요. 90byte 초과 시 장문 문자로, 이미지 추가 시 포토 문자로 자동 전환됩니다."
-                value={msgContent}
-                onChange={(e) => setMsgContent(e.target.value)}
-                style={{
-                  width: "100%", height: 260, padding: 14, borderRadius: 6, border: `1px solid ${border}`,
-                  background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, outline: "none", resize: "none",
-                  fontSize: 13, lineHeight: 1.6, fontFamily: "inherit"
-                }}
-              />
-            </div>
+            {/* 에디터 텍스트에어리어 (높이를 조금 콤팩트하게 조절) */}
+            <textarea 
+              placeholder="내용을 입력해주세요. 90byte 초과 시 장문 문자로 자동 전환됩니다."
+              value={msgContent}
+              onChange={(e) => setMsgContent(e.target.value)}
+              style={{
+                width: "100%", height: 200, padding: 12, borderRadius: 6, border: `1px solid ${border}`,
+                background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, outline: "none", resize: "none",
+                fontSize: 13, lineHeight: 1.5, fontFamily: "inherit"
+              }}
+            />
 
             {/* 변수 및 특수문자 단축바 */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${border}`, paddingBottom: 12 }}>
-              <div style={{ display: "flex", gap: 8, position: "relative" }}>
-                <button style={{ padding: "6px 12px", background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${border}`, paddingBottom: 10 }}>
+              <div style={{ display: "flex", gap: 6, position: "relative" }}>
+                <button style={{ padding: "5px 10px", background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>
                   특수문자 ▾
                 </button>
                 <button 
                   onClick={() => setShowVariableMenu(!showVariableMenu)}
-                  style={{ padding: "6px 12px", background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer" }}
+                  style={{ padding: "5px 10px", background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: textPrimary, cursor: "pointer" }}
                 >
                   변수추가 ▾
                 </button>
                 
                 {showVariableMenu && (
                   <div style={{
-                    position: "absolute", bottom: "100%", left: 80, background: darkMode ? "#25262b" : "#fff", border: `1px solid ${border}`,
-                    borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", padding: 6, display: "flex", flexDirection: "column", gap: 4, zIndex: 10
+                    position: "absolute", bottom: "100%", left: 70, background: darkMode ? "#25262b" : "#fff", border: `1px solid ${border}`,
+                    borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", padding: 4, display: "flex", flexDirection: "column", gap: 3, zIndex: 10
                   }}>
                     {["{대표자명}", "{상호}", "{지역}"].map(v => (
                       <button 
                         key={v}
                         onClick={() => insertPlaceholder(v)}
-                        style={{ padding: "8px 16px", background: "none", border: "none", color: textPrimary, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "left", borderRadius: 4 }}
+                        style={{ padding: "6px 12px", background: "none", border: "none", color: textPrimary, fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "left", borderRadius: 4 }}
                         onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#333" : "#f3f4f6"}
                         onMouseLeave={e => e.currentTarget.style.background = "none"}
                       >
@@ -354,31 +382,93 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                   </div>
                 )}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: textSecondary }}>
-                <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: textSecondary }}>
+                <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                   <input type="checkbox" style={{ cursor: "pointer" }} /> 변수 길게 사용
                 </label>
               </div>
             </div>
 
-            {/* 에디터 하단 버튼 */}
+            {/* 에디터 하단 버튼 (요청하신 대로 [내 문자함], [문자저장]은 제외하고 [최근발송]만 남김) */}
             <div style={{ display: "flex", gap: 8 }}>
               <button style={{ flex: 1, height: 34, background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>
                 🕒 최근발송
               </button>
-              <button style={{ flex: 1, height: 34, background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>
-                📁 내 문자함
-              </button>
-              <button style={{ flex: 1, height: 34, background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>
-                💾 문자저장
-              </button>
             </div>
-
           </div>
+
+          {/* B. 내 문자함 카드 (저장된 템플릿 그리드 및 + 저장 버튼) */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px", background: cardBg, padding: 18, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)", minHeight: 360 }}>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: textPrimary, borderBottom: `1px solid ${border}`, paddingBottom: 10 }}>📁 내 문자함</h3>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", flex: 1, alignContent: "start", overflowY: "auto", maxHeight: 310 }}>
+              {savedTemplates.map(t => (
+                <div 
+                  key={t.id}
+                  onClick={() => handleSelectTemplate(t)}
+                  style={{
+                    border: `1px solid ${border}`, borderRadius: 8, padding: 10, cursor: "pointer",
+                    background: darkMode ? "#2c2d31" : "#fff", display: "flex", flexDirection: "column",
+                    justifyContent: "space-between", height: 90, position: "relative",
+                    transition: "all 0.2s", boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = "#3b82f6";
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = border;
+                    e.currentTarget.style.transform = "none";
+                  }}
+                >
+                  {/* 삭제 버튼 */}
+                  <button
+                    onClick={(e) => handleDeleteTemplate(t.id, e)}
+                    style={{
+                      position: "absolute", top: 4, right: 6, border: "none", background: "none",
+                      color: textSecondary, fontSize: 14, fontWeight: 800, cursor: "pointer"
+                    }}
+                    title="삭제"
+                  >
+                    ×
+                  </button>
+                  
+                  <div style={{ fontSize: 11, fontWeight: 800, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "80%", marginBottom: 2 }}>
+                    {t.title}
+                  </div>
+                  <div style={{ fontSize: 10, color: textSecondary, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", lineHeight: 1.3 }}>
+                    {t.content}
+                  </div>
+                </div>
+              ))}
+              
+              {/* 템플릿 추가 버튼 카드 */}
+              <div 
+                onClick={handleAddTemplate}
+                style={{
+                  border: `2px dashed ${darkMode ? "#555" : "#ccc"}`, borderRadius: 8, padding: 10, cursor: "pointer",
+                  background: "none", display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", height: 90, transition: "all 0.2s"
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = "#3b82f6";
+                  e.currentTarget.style.background = darkMode ? "rgba(59, 130, 246, 0.05)" : "rgba(59, 130, 246, 0.02)";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = darkMode ? "#555" : "#ccc";
+                  e.currentTarget.style.background = "none";
+                }}
+              >
+                <span style={{ fontSize: 20, color: "#3b82f6", fontWeight: 700 }}>+</span>
+                <span style={{ fontSize: 10, color: textSecondary, fontWeight: 700, marginTop: 2 }}>문자 저장하기</span>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         {/* === 우측: 발신번호 & 수신번호 설정 (Target Panel) === */}
-        <div style={{ width: 450, display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0 }}>
+        <div style={{ width: 420, display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0 }}>
           
           {/* 발신번호 설정 */}
           <div style={{ background: cardBg, padding: 16, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
