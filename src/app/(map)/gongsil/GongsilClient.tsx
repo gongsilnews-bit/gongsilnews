@@ -1262,7 +1262,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
       if (data?.user) {
         const { data: memberData } = await client
           .from("members")
-          .select("role, plan_type")
+          .select("role, plan_type, agencies(status)")
           .eq("id", data.user.id)
           .single();
         setCurrentUser({ ...data.user, role: memberData?.role });

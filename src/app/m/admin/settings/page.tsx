@@ -249,11 +249,12 @@ function MobileSettings() {
         sns_links: { ...snsLinks, api_list: apiList },
       });
 
+      let saveStatus = agencyStatus;
       /* 부동산 정보 */
       if (tab === "agency" || isRealtor) {
         let regUrl = regCertPreview?.startsWith("http") ? regCertPreview : null;
         let bizUrl = bizCertPreview?.startsWith("http") ? bizCertPreview : null;
-
+ 
         if (regCertFile) {
           const fd = new FormData();
           fd.append("file", regCertFile);
@@ -268,9 +269,9 @@ function MobileSettings() {
           const r = await adminUploadAgencyDocument(fd);
           if (r.success) bizUrl = r.url || null;
         }
-
+ 
         // 반려 상태에서 재저장 시 → 자동으로 승인대기로 변경 (임시저장이 아닐 때만)
-        let saveStatus = (!isTemp && agencyStatus === 'REJECTED') ? 'PENDING' : agencyStatus;
+        saveStatus = (!isTemp && agencyStatus === 'REJECTED') ? 'PENDING' : agencyStatus;
 
         // [AI 서류 자동 검증]
         let aiReason = "";

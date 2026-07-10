@@ -24,16 +24,45 @@ function MobileMemberAdmin() {
     if (res.success && res.data) {
       const processedMembers = res.data.map((m: any) => {
         let agencyStatus = null;
-        if (m.agencies) agencyStatus = Array.isArray(m.agencies) ? m.agencies[0]?.status : m.agencies.status;
+        let agencyUpdatedAt = null;
+        if (m.agencies) {
+          const ag = Array.isArray(m.agencies) ? m.agencies[0] : m.agencies;
+          agencyStatus = ag?.status;
+          agencyUpdatedAt = ag?.updated_at || ag?.created_at;
+        }
+        let bizStatus = null;
+        let bizUpdatedAt = null;
+        if (m.business_profiles) {
+          const bp = Array.isArray(m.business_profiles) ? m.business_profiles[0] : m.business_profiles;
+          bizStatus = bp?.status;
+          bizUpdatedAt = bp?.updated_at || bp?.created_at;
+        }
+
         let computedStatus = m.signup_completed ? '정상' : '승인대기';
         if (m.role === 'REALTOR') {
           if (agencyStatus === 'APPROVED') computedStatus = '정상승인';
           else if (agencyStatus === 'REJECTED') computedStatus = '서류보완';
           else computedStatus = '승인대기';
+        } else if (m.role === 'BIZ') {
+          if (bizStatus === 'APPROVED') computedStatus = '정상승인';
+          else if (bizStatus === 'REJECTED') computedStatus = '서류보완';
+          else computedStatus = '승인대기';
         } else {
           computedStatus = '정상승인'; // 일반회원 및 관리자는 기본 정상
         }
-        return { ...m, computedStatus, agencyStatus };
+
+        let isLongTermPending = false;
+        if (computedStatus === '승인대기') {
+          const targetTime = m.role === 'BIZ' ? bizUpdatedAt : agencyUpdatedAt;
+          if (targetTime) {
+            const diffMs = new Date().getTime() - new Date(targetTime).getTime();
+            if (diffMs > 48 * 60 * 60 * 1000) {
+              isLongTermPending = true;
+            }
+          }
+        }
+
+        return { ...m, computedStatus, agencyStatus, isLongTermPending };
       });
       setMembers(processedMembers);
     }
@@ -230,9 +259,19 @@ function MobileMemberAdmin() {
                   <span style={{ background: roleColor.bg, color: roleColor.text, padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
                     {roleLabel}
                   </span>
-                  {member.role === 'REALTOR' && (
+                  {(member.role === 'REALTOR' || member.role === 'BIZ') && (
                     <span style={{ background: st.bg, color: st.color, padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
                       {st.label}
+                    </span>
+                  )}
+                  {member.isLongTermPending && (
+                    <span style={{ 
+                      display: "inline-flex", alignItems: "center", gap: 3, padding: "3px 8px", borderRadius: 6, 
+                      background: "#fee2e2", color: "#ef4444", fontWeight: 700, fontSize: 10, border: "1px solid #fca5a5",
+                      animation: "pulseBlink 1.5s infinite ease-in-out"
+                    }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444" }} />
+                      장기 미승인
                     </span>
                   )}
                 </div>
@@ -283,6 +322,11 @@ function MobileMemberAdmin() {
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes pulseBlink {
+          0% { opacity: 0.6; }
+          50% { opacity: 1; }
+          100% { opacity: 0.6; }
+        }
       `}</style>
 
       {/* 반려 사유 모달 */}

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import BoardDropdownHeader from "../_components/header/BoardDropdownHeader";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
+import { getPermissionLevel } from "@/utils/permissionCheck";
 
 function getYoutubeThumbnail(url: string): string | null {
   if (!url) return null;
@@ -64,11 +65,6 @@ function hasVideoLink(p: any, skinType: string): boolean {
   return !!hasVideo;
 }
 
-function getPermissionLevel(data: any): number {
-  if (data.role === 'admin') return 10;
-  if (data.plan_type === 'premium') return 5;
-  return 1;
-}
 
 export default function MobileBoardClient({ board, initialPosts, serverUser, serverUserLevel }: { board: any, initialPosts: any[], serverUser?: any, serverUserLevel?: number }) {
   const router = useRouter();
@@ -123,7 +119,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from('members').select('role, plan_type').eq('id', user.id).single();
+        const { data } = await supabase.from('members').select('role, plan_type, agencies(status)').eq('id', user.id).single();
         if (data) {
           setUserLevel(getPermissionLevel(data));
           setCurrentUser({ ...user, role: data.role });

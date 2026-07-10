@@ -553,7 +553,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       if (data?.user) {
         setCurrentUser(data.user);
         const { data: memberData } = await client.from('members')
-          .select('name, role, plan_type').eq('id', data.user.id).single();
+          .select('name, role, plan_type, agencies(status)').eq('id', data.user.id).single();
         if (memberData) {
           setUserLevel(getPermissionLevel(memberData));
           if (memberData.name) {

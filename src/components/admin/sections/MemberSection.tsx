@@ -47,9 +47,19 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
 
   const processedMembers = dbMembers.map(m => {
     let agencyStatus = null;
-    if (m.agencies) agencyStatus = Array.isArray(m.agencies) ? m.agencies[0]?.status : m.agencies.status;
+    let agencyUpdatedAt = null;
+    if (m.agencies) {
+      const ag = Array.isArray(m.agencies) ? m.agencies[0] : m.agencies;
+      agencyStatus = ag?.status;
+      agencyUpdatedAt = ag?.updated_at || ag?.created_at;
+    }
     let bizStatus = null;
-    if (m.business_profiles) bizStatus = Array.isArray(m.business_profiles) ? m.business_profiles[0]?.status : m.business_profiles.status;
+    let bizUpdatedAt = null;
+    if (m.business_profiles) {
+      const bp = Array.isArray(m.business_profiles) ? m.business_profiles[0] : m.business_profiles;
+      bizStatus = bp?.status;
+      bizUpdatedAt = bp?.updated_at || bp?.created_at;
+    }
     let computedStatus = m.signup_completed ? '정상' : '승인대기';
     if (m.role === 'REALTOR') {
       if (agencyStatus === 'APPROVED') computedStatus = '정상';
@@ -61,7 +71,19 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
       else if (bizStatus === 'REJECTED') computedStatus = '서류보완';
       else computedStatus = '승인대기';
     }
-    return { ...m, computedStatus };
+
+    let isLongTermPending = false;
+    if (computedStatus === '승인대기') {
+      const targetTime = m.role === 'BIZ' ? bizUpdatedAt : agencyUpdatedAt;
+      if (targetTime) {
+        const diffMs = new Date().getTime() - new Date(targetTime).getTime();
+        if (diffMs > 48 * 60 * 60 * 1000) {
+          isLongTermPending = true;
+        }
+      }
+    }
+
+    return { ...m, computedStatus, isLongTermPending };
   });
 
   const counts = {
@@ -269,8 +291,20 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{displayRole}</td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{createdDate}</td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14 }}>
-                      <span onClick={() => { setSelectedMemberId(member.id); setShowMemberRegister(true); }}
-                        style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: statusBg, color: statusColor, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{displayStatus}</span>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                        <span onClick={() => { setSelectedMemberId(member.id); setShowMemberRegister(true); }}
+                          style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: statusBg, color: statusColor, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{displayStatus}</span>
+                        {member.isLongTermPending && (
+                          <span style={{ 
+                            display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 6px", borderRadius: 4, 
+                            background: "#fee2e2", color: "#ef4444", fontWeight: 700, fontSize: 10, border: "1px solid #fca5a5",
+                            animation: "pulseBlink 1.5s infinite ease-in-out"
+                          }}>
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444" }} />
+                            장기 미승인
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textPrimary, fontWeight: 700 }}>
                       {member.vacancies_count ?? 0} / {member.max_vacancies ?? 5}
@@ -384,6 +418,13 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
           </div>
         </div>
       )}
+      <style>{`
+        @keyframes pulseBlink {
+          0% { opacity: 0.6; }
+          50% { opacity: 1; }
+          100% { opacity: 0.6; }
+        }
+      `}</style>
     </div>
   );
 }

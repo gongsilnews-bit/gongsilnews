@@ -26,7 +26,7 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
     
     let isAdmin = false;
     if (user) {
-      const { data } = await supabase.from("members").select("role, plan_type").eq("id", user.id).single();
+      const { data } = await supabase.from("members").select("role, plan_type, agencies(status)").eq("id", user.id).single();
       const r = data?.role?.toUpperCase() || "";
       isAdmin = r === "ADMIN" || r === "최고관리자" || r.includes("관리자");
       

@@ -89,6 +89,16 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.max_articles_per_month !== undefined) dbUpdates.max_articles_per_month = updates.max_articles_per_month;
     if (updates.profile_image_url !== undefined) dbUpdates.profile_image_url = updates.profile_image_url;
 
+    if (updates.role === 'USER') {
+      dbUpdates.plan_type = 'free';
+      dbUpdates.max_vacancies = 10;
+      dbUpdates.max_articles_per_month = 0;
+      
+      // Update agencies and business_profiles status to REJECTED
+      await supabaseAdmin.from('agencies').update({ status: 'REJECTED', reject_reason: '관리자에 의한 일반회원 전환' }).eq('owner_id', memberId);
+      await supabaseAdmin.from('business_profiles').update({ status: 'REJECTED', rejection_reason: '관리자에 의한 일반회원 전환', updated_at: new Date().toISOString() }).eq('user_id', memberId);
+    }
+
     const { error } = await supabaseAdmin.from('members').update(dbUpdates).eq('id', memberId);
     if (error) return { success: false, error: error.message };
     return { success: true };

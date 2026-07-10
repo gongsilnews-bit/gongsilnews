@@ -75,7 +75,7 @@ export default function BoardReadClient({
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from('members').select('role, plan_type').eq('id', user.id).single();
+        const { data } = await supabase.from('members').select('role, plan_type, agencies(status)').eq('id', user.id).single();
         if (data) {
           setCurrentUser({ ...user, role: data.role });
           setUserLevel(getPermissionLevel(data));

@@ -174,7 +174,7 @@ export default function HomepagePage() {
       const client = createClient();
       const { data } = await client.auth.getUser();
       if (data?.user) {
-        const { data: memberData } = await client.from('members').select('role, plan_type').eq('id', data.user.id).single();
+        const { data: memberData } = await client.from('members').select('role, plan_type, agencies(status)').eq('id', data.user.id).single();
         if (memberData) {
           setUserLevel(getPermissionLevel(memberData));
         } else {

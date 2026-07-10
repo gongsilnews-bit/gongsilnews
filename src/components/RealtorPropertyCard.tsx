@@ -177,7 +177,7 @@ export default function RealtorPropertyCard({ userId, userName, isMyProperty, on
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: member } = await supabase.from("members").select("role, plan_type").eq("id", user.id).single();
+        const { data: member } = await supabase.from("members").select("role, plan_type, agencies(status)").eq("id", user.id).single();
         if (member) setUserLevel(getPermissionLevel(member));
       }
     }

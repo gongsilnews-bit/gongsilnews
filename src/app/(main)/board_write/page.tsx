@@ -30,7 +30,7 @@ export default async function BoardWritePage({
 
   if (user) {
     const { getPermissionLevel } = await import("@/utils/permissionCheck");
-    const { data: memberData } = await supabase.from("members").select("role, plan_type").eq("id", user.id).single();
+    const { data: memberData } = await supabase.from("members").select("role, plan_type, agencies(status)").eq("id", user.id).single();
     if (memberData) {
       serverUser = { id: user.id, role: memberData.role, email: user.email };
       serverUserLevel = getPermissionLevel(memberData);

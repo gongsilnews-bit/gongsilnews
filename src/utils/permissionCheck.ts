@@ -1,6 +1,7 @@
 export function getPermissionLevel(member: {
   role?: string;
   plan_type?: string;
+  agencies?: { status?: string } | { status?: string }[] | null;
 } | null | undefined): number {
   if (!member || !member.role) return 0; // 비회원
 
@@ -9,6 +10,18 @@ export function getPermissionLevel(member: {
   if (member.role === 'USER' || member.role === '일반회원') return 1;
 
   if (member.role === 'REALTOR' || member.role === '부동산회원') {
+    let agencyStatus = "";
+    if (member.agencies) {
+      if (Array.isArray(member.agencies)) {
+        agencyStatus = member.agencies[0]?.status || "";
+      } else {
+        agencyStatus = member.agencies.status || "";
+      }
+    }
+    if (agencyStatus !== 'APPROVED') {
+      return 1; // 미승인 부동산 회원은 일반회원(1레벨) 권한으로 제한
+    }
+
     if (member.plan_type === 'news_premium') return 3;
     if (member.plan_type === 'vacancy_premium') return 4;
     return 2; // 무료부동산회원
