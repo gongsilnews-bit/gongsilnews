@@ -22,11 +22,13 @@ const PointSection = lazy(() => import("@/components/admin/sections/PointSection
 const AdminManual = lazy(() => import("./AdminManual"));
 const AIWorkspaceSection = lazy(() => import("@/components/admin/agents/AIWorkspaceSection"));
 const InquirySection = lazy(() => import("@/components/admin/sections/InquirySection"));
+const MarketingSection = lazy(() => import("@/components/admin/sections/MarketingSection"));
 
 /* ── 최고관리자 메뉴 ── */
 const ADMIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "agent", label: "AI 비서실", icon: <IconRobot /> },
+  { key: "marketing", label: "부동산마케팅", icon: <IconComment /> },
   { key: "members", label: "회원관리", icon: <IconMembers />, submenus: [{ key: "members_list", label: "회원목록" }, { key: "dormant", label: "휴지통" }] },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
@@ -254,6 +256,7 @@ function AdminContent() {
           {activeMenu === "point" && <PointSection theme={theme} activeSubmenu={activeSubmenu} onSubmenuChange={setActiveSubmenu} />}
           {activeMenu === "inquiry" && <InquirySection theme={theme} />}
           {activeMenu === "agent" && <AIWorkspaceSection theme={theme} />}
+          {activeMenu === "marketing" && <MarketingSection theme={theme} />}
           {activeMenu === "manual" && <AdminManual />}
           {activeMenu === "settings" && (
             <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: theme.cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
