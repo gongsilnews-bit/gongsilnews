@@ -335,10 +335,10 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
         </button>
       </div>
 
-      {/* 3. 본문 레이아웃 (좌측 에디터 크기 460px로 확장, 우측 발신/수신 설정 확장) */}
+      {/* 3. 본문 레이아웃 (좌측 에디터 크기 460px, 우측 설정 영역 크기 680px로 제한하여 컴팩트한 화면 구성) */}
       <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", flex: 1 }}>
         
-        {/* === 좌측: 메시지 입력 (Message Editor - 가로 및 세로 확장) === */}
+        {/* === 좌측: 메시지 입력 (Message Editor) === */}
         <div style={{ width: "460px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "12px", background: cardBg, padding: 20, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
           
           {/* 가이드 문구 */}
@@ -388,7 +388,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
               </div>
             </div>
 
-            {/* 에디터 텍스트에어리어 (높이를 340px로 키워 스크롤 없이 넓게 보이도록 설정) */}
+            {/* 에디터 텍스트에어리어 */}
             <textarea 
               placeholder="내용을 입력해주세요. 90byte 초과 시 장문 문자로 자동 전환됩니다."
               value={msgContent}
@@ -467,8 +467,8 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
           </div>
         </div>
 
-        {/* === 우측: 발신번호 & 수신번호 설정 (Target Panel - 전체 확장) === */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px", minWidth: 0 }}>
+        {/* === 우측: 발신번호 & 수신번호 설정 (Target Panel - 최대 가로폭 680px로 제한) === */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px", minWidth: 0, maxWidth: "680px" }}>
           
           {/* 발신번호 설정 */}
           <div style={{ background: cardBg, padding: 16, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
