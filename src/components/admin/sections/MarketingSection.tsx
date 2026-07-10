@@ -652,7 +652,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
           alignItems: "center", zIndex: 9999, backdropFilter: "blur(2px)"
         }}>
           <div style={{
-            background: darkMode ? "#1f2023" : "#ffffff", width: 780, maxHeight: "88vh",
+            background: darkMode ? "#1f2023" : "#ffffff", width: 840, maxHeight: "90vh",
             borderRadius: 14, overflow: "hidden", boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
             border: `1px solid ${border}`, display: "flex", flexDirection: "column"
           }}>
@@ -746,9 +746,9 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                 </div>
               </div>
 
-              {/* 3열 템플릿 카드 그리드 */}
+              {/* 3열 템플릿 카드 그리드 (진짜 휴대폰 문자 발송 포맷 스타일로 카드 높이를 250px로 확장) */}
               <div style={{
-                display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 8,
+                display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginTop: 8,
                 paddingBottom: 20
               }}>
                 {filteredTemplates.map(t => (
@@ -756,14 +756,14 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                     key={t.id}
                     onClick={() => handleSelectTemplate(t)}
                     style={{
-                      border: `1px solid ${border}`, borderRadius: 8, padding: 12, cursor: "pointer",
+                      border: `1px solid ${border}`, borderRadius: 10, padding: 14, cursor: "pointer",
                       background: darkMode ? "#2c2d31" : "#fff", display: "flex", flexDirection: "column",
-                      justifyContent: "space-between", height: 160, position: "relative",
-                      transition: "all 0.15s"
+                      justifyContent: "space-between", height: 250, position: "relative",
+                      transition: "all 0.15s", boxShadow: "0 2px 5px rgba(0,0,0,0.03)"
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.borderColor = "#3b82f6";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(59,130,246,0.1)";
+                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(59,130,246,0.12)";
                     }}
                     onMouseLeave={e => {
                       e.currentTarget.style.borderColor = border;
@@ -775,25 +775,49 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                       <input type="checkbox" style={{ cursor: "pointer" }} />
                       <button 
                         onClick={(e) => handleDeleteTemplate(t.id, e)}
-                        style={{ border: "none", background: "none", color: textSecondary, cursor: "pointer", fontSize: 14, fontWeight: "bold" }}
+                        style={{ border: "none", background: "none", color: textSecondary, cursor: "pointer", fontSize: 15, fontWeight: "bold" }}
                         title="삭제"
                       >
                         ×
                       </button>
                     </div>
 
-                    {/* 타이틀 */}
-                    <div style={{ fontSize: 12, fontWeight: 800, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>
+                    {/* 카드 타이틀 */}
+                    <div style={{ fontSize: 12, fontWeight: 800, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 6 }}>
                       {t.title}
                     </div>
 
-                    {/* 본문 Snippet */}
-                    <div style={{ fontSize: 11, color: textSecondary, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", lineHeight: 1.4, flex: 1 }}>
-                      {t.content}
+                    {/* 휴대폰 화면 스타일의 말풍선 문자함 뷰포트 (스크롤바 포함) */}
+                    <div style={{
+                      background: darkMode ? "#18191c" : "#e2e8f0", // 스마트폰 대화창 느낌의 배경색
+                      borderRadius: 8,
+                      padding: "8px 10px",
+                      height: 135,
+                      overflowY: "auto",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "flex-start",
+                      border: `1px solid ${border}`,
+                      gap: 4
+                    }}>
+                      {/* 진짜 문자 발송 말풍선 */}
+                      <div style={{
+                        background: darkMode ? "#374151" : "#ffffff",
+                        color: textPrimary,
+                        padding: "8px 12px",
+                        borderRadius: "10px 10px 10px 0px", // 전형적인 말풍선 형태
+                        fontSize: 11,
+                        lineHeight: 1.5,
+                        whiteSpace: "pre-wrap",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                        wordBreak: "break-all"
+                      }}>
+                        {t.content}
+                      </div>
                     </div>
 
                     {/* 하단 바이트 & 일자 */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${border}`, paddingTop: 6, marginTop: 6, fontSize: 10, color: textSecondary }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${border}`, paddingTop: 8, marginTop: 8, fontSize: 10, color: textSecondary }}>
                       <span style={{ color: t.byte > 90 ? "#ef4444" : "#10b981", fontWeight: 800 }}>{t.byte}byte {t.byte > 90 ? "장문" : "단문"}</span>
                       <span>{t.date}</span>
                     </div>
