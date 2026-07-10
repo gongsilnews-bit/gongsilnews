@@ -2,6 +2,8 @@
 
 import { createClient } from "@supabase/supabase-js";
 
+import { sendPpurioSms, sendPpurioKakao } from "@/utils/ppurio";
+
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -301,5 +303,76 @@ export async function getCustomerDetail(customerId: string) {
   }
 
   return { success: true, data };
+}
+
+export async function sendSmsToCustomer(customerId: string, content: string, subject?: string) {
+  const supabase = getAdminClient();
+  
+  // 1. 고객 연락처 조회
+  const { data: customer, error: customerError } = await supabase
+    .from("crm_customers")
+    .select("phone, name")
+    .eq("id", customerId)
+    .single();
+
+  if (customerError || !customer || !customer.phone) {
+    return { success: false, message: "고객 연락처를 찾을 수 없습니다." };
+  }
+
+  // 2. 뿌리오 API를 통한 문자 발송
+  const ppurioRes = await sendPpurioSms({
+    to: customer.phone,
+    content: content,
+    subject: subject || "공실뉴스"
+  });
+
+  if (!ppurioRes.success) {
+    return { success: false, message: ppurioRes.error || "문자 발송에 실패했습니다." };
+  }
+
+  // 3. 발송 이력을 crm_logs에 sms 타입으로 기록
+  await supabase.from("crm_logs").insert([{
+    customer_id: customerId,
+    type: "sms",
+    content: `[💬 문자 발송]\n${content}`
+  }]);
+
+  return { success: true, message: "문자가 성공적으로 발송되었습니다." };
+}
+
+export async function sendKakaoToCustomer(customerId: string, content: string, templateCode: string) {
+  const supabase = getAdminClient();
+  
+  // 1. 고객 연락처 및 이름 조회
+  const { data: customer, error: customerError } = await supabase
+    .from("crm_customers")
+    .select("phone, name")
+    .eq("id", customerId)
+    .single();
+
+  if (customerError || !customer || !customer.phone) {
+    return { success: false, message: "고객 연락처를 찾을 수 없습니다." };
+  }
+
+  // 2. 뿌리오 API를 통한 카카오 알림톡 발송
+  const ppurioRes = await sendPpurioKakao({
+    to: customer.phone,
+    content: content,
+    templateCode: templateCode,
+    name: customer.name
+  });
+
+  if (!ppurioRes.success) {
+    return { success: false, message: ppurioRes.error || "카카오톡 발송에 실패했습니다." };
+  }
+
+  // 3. 발송 이력을 crm_logs에 kakao 타입으로 기록
+  await supabase.from("crm_logs").insert([{
+    customer_id: customerId,
+    type: "kakao",
+    content: `[🟡 카카오톡 발송]\n${content}`
+  }]);
+
+  return { success: true, message: "카카오톡이 성공적으로 발송되었습니다." };
 }
 
