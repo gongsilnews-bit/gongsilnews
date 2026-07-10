@@ -64,11 +64,17 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
   const [msgTitle, setMsgTitle] = useState("");
   const [msgContent, setMsgContent] = useState("");
   
+  // 내 문자함 모달 상태 및 템플릿 검색
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [templateSearchTerm, setTemplateSearchTerm] = useState("");
+  const [selectedModalTab, setSelectedModalTab] = useState<"msg" | "photo">("msg");
+
   // 내 문자함 템플릿 리스트
   const [savedTemplates, setSavedTemplates] = useState([
-    { id: "t1", title: "공실접수 안내", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n{상호} 인근 신규 매물 접수 안내드립니다. 신속하고 투명한 중개 거래를 위해 공실뉴스 파트너에 무료 가입해보세요!\n\n무료수신거부: 080-1555-5343" },
-    { id: "t2", title: "추천 매물 목록", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n오늘의 추천 매물 정보 공유드립니다. {지역} 지역 내 단독 독점 물건 다량 보유 중입니다.\n\n무료수신거부: 080-1555-5343" },
-    { id: "t3", title: "서비스 혜택", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n공실뉴스 프리미엄 멤버십 가입 시 첫달 무료 이벤트 적용 안내입니다.\n\n무료수신거부: 080-1555-5343" }
+    { id: "t1", title: "공실접수 안내", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n{상호} 인근 신규 매물 접수 안내드립니다. 신속하고 투명한 중개 거래를 위해 공실뉴스 파트너에 무료 가입해보세요!\n\n무료수신거부: 080-1555-5343", byte: 172, date: "2026-07-10 14:30" },
+    { id: "t2", title: "추천 매물 목록", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n오늘의 추천 매물 정보 공유드립니다. {지역} 지역 내 단독 독점 물건 다량 보유 중입니다.\n\n무료수신거부: 080-1555-5343", byte: 165, date: "2026-07-09 11:20" },
+    { id: "t3", title: "서비스 혜택 안내", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n공실뉴스 프리미엄 멤버십 가입 시 첫달 무료 이벤트 적용 안내입니다.\n\n무료수신거부: 080-1555-5343", byte: 144, date: "2026-07-08 17:05" },
+    { id: "t4", title: "[EVENT] 공실뉴스 무료특강", content: "안녕하세요, 공실뉴스 마케팅실입니다.\n오랜만에 인사 드립니다. 대표님들을 위한 세무/유튜브 무료특강이 있어 우선 안내 드립니다.\n\n무료수신거부: 080-1555-5343", byte: 154, date: "2026-07-05 09:52" }
   ]);
 
   // 발신 및 수신 타겟
@@ -128,19 +134,25 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
     const title = window.prompt("저장할 문자의 제목을 입력하세요:", msgTitle || "새 저장 문자");
     if (title === null) return; // 취소
 
+    const now = new Date();
+    const dateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
     const newTemplate = {
       id: `template_${Date.now()}`,
       title: title.trim() || "새 저장 문자",
-      content: msgContent
+      content: msgContent,
+      byte: byteCount,
+      date: dateString
     };
 
-    setSavedTemplates([...savedTemplates, newTemplate]);
+    setSavedTemplates([newTemplate, ...savedTemplates]);
     alert("💾 내 문자함에 성공적으로 저장되었습니다!");
   };
 
   const handleSelectTemplate = (t: { title: string; content: string }) => {
     setMsgTitle(t.title);
     setMsgContent(t.content);
+    setIsTemplateModalOpen(false);
   };
 
   const handleDeleteTemplate = (id: string, e: React.MouseEvent) => {
@@ -243,6 +255,12 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
 
   const totalRecipientCount = recipients.reduce((sum, r) => sum + r.count, 0);
 
+  // 내 문자함 모달 필터링
+  const filteredTemplates = savedTemplates.filter(t => 
+    t.title.toLowerCase().includes(templateSearchTerm.toLowerCase()) ||
+    t.content.toLowerCase().includes(templateSearchTerm.toLowerCase())
+  );
+
   return (
     <div style={{ padding: "20px 32px", display: "flex", flexDirection: "column", gap: "16px", height: "calc(100vh - 64px)", overflowY: "auto", background: darkMode ? "#18191c" : "#f4f5f7" }}>
       {/* 1. 페이지 헤더 */}
@@ -290,39 +308,44 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
         </button>
       </div>
 
-      {/* 3. 본문 레이아웃 */}
+      {/* 3. 본문 레이아웃 (좌측 에디터, 우측 수신설정) */}
       <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", flex: 1 }}>
         
-        {/* === 좌측: 메시지 입력 및 내 문자함 (두 영역이 나란히) === */}
-        <div style={{ flex: 1.8, display: "flex", gap: "16px", minWidth: 0 }}>
+        {/* === 좌측: 메시지 입력 (Message Editor) === */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px", background: cardBg, padding: 20, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
           
-          {/* A. 메시지 입력 카드 (가로 너비 축소) */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px", background: cardBg, padding: 18, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: textPrimary }}>메시지 입력</h3>
+          {/* 가이드 문구 */}
+          <div style={{ fontSize: "12px", color: textSecondary, lineHeight: 1.5, background: darkMode ? "#202124" : "#f8fafc", padding: "12px", borderRadius: 8, borderLeft: "4px solid #3b82f6" }}>
+            • 90byte 초과 시, 장문(LMS)으로 자동 전환됩니다. 최대 2,000byte까지 작성이 가능합니다.<br />
+            • 광고성 문자는 반드시 <span style={{ color: "#ef4444", fontWeight: 700 }}>[광고문자]</span> 탭에서 발송해주세요. 080 번호를 무료로 제공합니다.
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: textPrimary }}>메시지 입력</h3>
             
             {/* 제목 인풋 */}
             <input 
               type="text" 
-              placeholder="제목을 입력해주세요. (최대30byte)"
+              placeholder="제목을 입력해주세요. (최대30byte, 발송관리용)"
               value={msgTitle}
               onChange={(e) => setMsgTitle(e.target.value)}
               style={{
-                width: "100%", height: 36, padding: "0 10px", borderRadius: 6, border: `1px solid ${border}`,
-                background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, outline: "none", fontSize: 12, fontWeight: 600
+                width: "100%", height: 38, padding: "0 12px", borderRadius: 6, border: `1px solid ${border}`,
+                background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, outline: "none", fontSize: 13, fontWeight: 600
               }}
             />
 
             {/* 에디터 툴바 */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11 }}>
-              <div style={{ display: "flex", gap: 4 }}>
-                <span style={{ padding: "3px 6px", background: "#fef3c7", color: "#d97706", borderRadius: 4, fontWeight: 800, fontSize: 10 }}>✦ AI 추천</span>
-                <span style={{ padding: "3px 6px", background: "#dbeafe", color: "#2563eb", borderRadius: 4, fontWeight: 800, fontSize: 10 }}>✦ AI 생성</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <span style={{ padding: "4px 8px", background: "#fef3c7", color: "#d97706", borderRadius: 4, fontWeight: 800, fontSize: 11 }}>✦ AI 맞춤 추천</span>
+                <span style={{ padding: "4px 8px", background: "#dbeafe", color: "#2563eb", borderRadius: 4, fontWeight: 800, fontSize: 11 }}>✦ AI 생성</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontWeight: 800, color: textPrimary }}>{byteCount}</span>
                 <span style={{ color: textSecondary }}>/ 90byte</span>
                 <span style={{
-                  padding: "1px 5px", borderRadius: 4, fontSize: 9, fontWeight: 800,
+                  padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 800,
                   background: isLms ? "#fecaca" : "#d1fae5",
                   color: isLms ? "#b91c1c" : "#065f46"
                 }}>
@@ -330,7 +353,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                 </span>
                 <button 
                   onClick={() => setMsgContent("")}
-                  style={{ border: "none", background: "none", cursor: "pointer", fontSize: 12, color: textSecondary }}
+                  style={{ border: "none", background: "none", cursor: "pointer", fontSize: 14, color: textSecondary }}
                   title="초기화"
                 >
                   🔄
@@ -338,41 +361,41 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
               </div>
             </div>
 
-            {/* 에디터 텍스트에어리어 (높이를 조금 콤팩트하게 조절) */}
+            {/* 에디터 텍스트에어리어 */}
             <textarea 
               placeholder="내용을 입력해주세요. 90byte 초과 시 장문 문자로 자동 전환됩니다."
               value={msgContent}
               onChange={(e) => setMsgContent(e.target.value)}
               style={{
-                width: "100%", height: 200, padding: 12, borderRadius: 6, border: `1px solid ${border}`,
+                width: "100%", height: 240, padding: 14, borderRadius: 6, border: `1px solid ${border}`,
                 background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, outline: "none", resize: "none",
-                fontSize: 13, lineHeight: 1.5, fontFamily: "inherit"
+                fontSize: 13, lineHeight: 1.6, fontFamily: "inherit"
               }}
             />
 
             {/* 변수 및 특수문자 단축바 */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${border}`, paddingBottom: 10 }}>
-              <div style={{ display: "flex", gap: 6, position: "relative" }}>
-                <button style={{ padding: "5px 10px", background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${border}`, paddingBottom: 12 }}>
+              <div style={{ display: "flex", gap: 8, position: "relative" }}>
+                <button style={{ padding: "6px 12px", background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>
                   특수문자 ▾
                 </button>
                 <button 
                   onClick={() => setShowVariableMenu(!showVariableMenu)}
-                  style={{ padding: "5px 10px", background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: textPrimary, cursor: "pointer" }}
+                  style={{ padding: "6px 12px", background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer" }}
                 >
                   변수추가 ▾
                 </button>
                 
                 {showVariableMenu && (
                   <div style={{
-                    position: "absolute", bottom: "100%", left: 70, background: darkMode ? "#25262b" : "#fff", border: `1px solid ${border}`,
-                    borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", padding: 4, display: "flex", flexDirection: "column", gap: 3, zIndex: 10
+                    position: "absolute", bottom: "100%", left: 80, background: darkMode ? "#25262b" : "#fff", border: `1px solid ${border}`,
+                    borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", padding: 6, display: "flex", flexDirection: "column", gap: 4, zIndex: 10
                   }}>
                     {["{대표자명}", "{상호}", "{지역}"].map(v => (
                       <button 
                         key={v}
                         onClick={() => insertPlaceholder(v)}
-                        style={{ padding: "6px 12px", background: "none", border: "none", color: textPrimary, fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "left", borderRadius: 4 }}
+                        style={{ padding: "8px 16px", background: "none", border: "none", color: textPrimary, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "left", borderRadius: 4 }}
                         onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#333" : "#f3f4f6"}
                         onMouseLeave={e => e.currentTarget.style.background = "none"}
                       >
@@ -382,93 +405,42 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                   </div>
                 )}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: textSecondary }}>
-                <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: textSecondary }}>
+                <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                   <input type="checkbox" style={{ cursor: "pointer" }} /> 변수 길게 사용
                 </label>
               </div>
             </div>
 
-            {/* 에디터 하단 버튼 (요청하신 대로 [내 문자함], [문자저장]은 제외하고 [최근발송]만 남김) */}
+            {/* 에디터 하단 버튼 (요청하신 구도: 최근발송 옆에 내문자함, 그 옆에 문자저장 배치) */}
             <div style={{ display: "flex", gap: 8 }}>
-              <button style={{ flex: 1, height: 34, background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>
+              <button 
+                type="button"
+                style={{ flex: 1, height: 38, background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+              >
                 🕒 최근발송
               </button>
-            </div>
-          </div>
-
-          {/* B. 내 문자함 카드 (저장된 템플릿 그리드 및 + 저장 버튼) */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px", background: cardBg, padding: 18, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)", minHeight: 360 }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: textPrimary, borderBottom: `1px solid ${border}`, paddingBottom: 10 }}>📁 내 문자함</h3>
-            
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", flex: 1, alignContent: "start", overflowY: "auto", maxHeight: 310 }}>
-              {savedTemplates.map(t => (
-                <div 
-                  key={t.id}
-                  onClick={() => handleSelectTemplate(t)}
-                  style={{
-                    border: `1px solid ${border}`, borderRadius: 8, padding: 10, cursor: "pointer",
-                    background: darkMode ? "#2c2d31" : "#fff", display: "flex", flexDirection: "column",
-                    justifyContent: "space-between", height: 90, position: "relative",
-                    transition: "all 0.2s", boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = "#3b82f6";
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = border;
-                    e.currentTarget.style.transform = "none";
-                  }}
-                >
-                  {/* 삭제 버튼 */}
-                  <button
-                    onClick={(e) => handleDeleteTemplate(t.id, e)}
-                    style={{
-                      position: "absolute", top: 4, right: 6, border: "none", background: "none",
-                      color: textSecondary, fontSize: 14, fontWeight: 800, cursor: "pointer"
-                    }}
-                    title="삭제"
-                  >
-                    ×
-                  </button>
-                  
-                  <div style={{ fontSize: 11, fontWeight: 800, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "80%", marginBottom: 2 }}>
-                    {t.title}
-                  </div>
-                  <div style={{ fontSize: 10, color: textSecondary, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", lineHeight: 1.3 }}>
-                    {t.content}
-                  </div>
-                </div>
-              ))}
-              
-              {/* 템플릿 추가 버튼 카드 */}
-              <div 
-                onClick={handleAddTemplate}
-                style={{
-                  border: `2px dashed ${darkMode ? "#555" : "#ccc"}`, borderRadius: 8, padding: 10, cursor: "pointer",
-                  background: "none", display: "flex", flexDirection: "column",
-                  alignItems: "center", justifyContent: "center", height: 90, transition: "all 0.2s"
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = "#3b82f6";
-                  e.currentTarget.style.background = darkMode ? "rgba(59, 130, 246, 0.05)" : "rgba(59, 130, 246, 0.02)";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = darkMode ? "#555" : "#ccc";
-                  e.currentTarget.style.background = "none";
-                }}
+              <button 
+                type="button"
+                onClick={() => setIsTemplateModalOpen(true)}
+                style={{ flex: 1, height: 38, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
               >
-                <span style={{ fontSize: 20, color: "#3b82f6", fontWeight: 700 }}>+</span>
-                <span style={{ fontSize: 10, color: textSecondary, fontWeight: 700, marginTop: 2 }}>문자 저장하기</span>
-              </div>
+                📁 내 문자함
+              </button>
+              <button 
+                type="button"
+                onClick={handleAddTemplate}
+                style={{ flex: 1, height: 38, background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+              >
+                💾 문자저장
+              </button>
             </div>
-          </div>
 
+          </div>
         </div>
 
         {/* === 우측: 발신번호 & 수신번호 설정 (Target Panel) === */}
-        <div style={{ width: 420, display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0 }}>
+        <div style={{ width: 450, display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0 }}>
           
           {/* 발신번호 설정 */}
           <div style={{ background: cardBg, padding: 16, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
@@ -671,6 +643,174 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
         </div>
 
       </div>
+
+      {/* === 고해상도 뿌리오 스타일 "내 문자함" 팝업 모달 === */}
+      {isTemplateModalOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+          backgroundColor: "rgba(0, 0, 0, 0.55)", display: "flex", justifyContent: "center",
+          alignItems: "center", zIndex: 9999, backdropFilter: "blur(2px)"
+        }}>
+          <div style={{
+            background: darkMode ? "#1f2023" : "#ffffff", width: 780, maxHeight: "88vh",
+            borderRadius: 14, overflow: "hidden", boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+            border: `1px solid ${border}`, display: "flex", flexDirection: "column"
+          }}>
+            {/* 모달 헤더 */}
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "16px 24px", borderBottom: `1px solid ${border}`, background: darkMode ? "#25262b" : "#f8fafc"
+            }}>
+              <span style={{ fontSize: 16, fontWeight: 900, color: textPrimary }}>내 문자함</span>
+              <button 
+                onClick={() => setIsTemplateModalOpen(false)}
+                style={{
+                  background: "none", border: "none", fontSize: 20, color: textSecondary,
+                  cursor: "pointer", fontWeight: "bold"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 모달 서브 탭 */}
+            <div style={{
+              display: "flex", gap: "2px", borderBottom: `1px solid ${border}`,
+              padding: "0 24px", background: darkMode ? "#1f2023" : "#ffffff"
+            }}>
+              <button 
+                onClick={() => setSelectedModalTab("msg")}
+                style={{
+                  padding: "12px 20px", fontSize: "13px", fontWeight: 800, cursor: "pointer", border: "none", background: "none",
+                  color: selectedModalTab === "msg" ? "#3b82f6" : textSecondary,
+                  borderBottom: selectedModalTab === "msg" ? "2px solid #3b82f6" : "2px solid transparent",
+                  marginBottom: -1
+                }}
+              >
+                문자({savedTemplates.length})
+              </button>
+              <button 
+                onClick={() => setSelectedModalTab("photo")}
+                style={{
+                  padding: "12px 20px", fontSize: "13px", fontWeight: 800, cursor: "pointer", border: "none", background: "none",
+                  color: selectedModalTab === "photo" ? "#3b82f6" : textSecondary,
+                  borderBottom: selectedModalTab === "photo" ? "2px solid #3b82f6" : "2px solid transparent",
+                  marginBottom: -1
+                }}
+              >
+                포토문자(0)
+              </button>
+            </div>
+
+            {/* 모달 본문 전체 */}
+            <div style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: 12, flex: 1, overflowY: "auto" }}>
+              
+              {/* 알림 문구 */}
+              <div style={{ fontSize: "11px", color: textSecondary, lineHeight: 1.6, background: darkMode ? "#25262b" : "#f1f5f9", padding: "10px 14px", borderRadius: 8 }}>
+                * 메시지 내용을 선택하시면 메시지 내용을 본문으로 불러옵니다. (수정 및 저장한 내용은 발송창에서 작성 가능)<br />
+                * 광고(선거)문자에서 단문을 불러오는 경우 수신거부 등의 문구 추가에 따라 자동으로 장문으로 전환될 수 있습니다.
+              </div>
+
+              {/* 검색 및 선택삭제 바 */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button style={{ padding: "6px 12px", background: darkMode ? "#2c2d31" : "#fff", border: `1px solid ${border}`, borderRadius: 4, fontSize: 11, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>전체 선택</button>
+                  <button style={{ padding: "6px 12px", background: darkMode ? "#2c2d31" : "#fff", border: `1px solid ${border}`, borderRadius: 4, fontSize: 11, fontWeight: 700, color: textPrimary, cursor: "pointer" }}>선택 삭제</button>
+                </div>
+                
+                {/* 검색 상자 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <input 
+                      type="text" 
+                      placeholder="검색어를 입력하세요"
+                      value={templateSearchTerm}
+                      onChange={(e) => setTemplateSearchTerm(e.target.value)}
+                      style={{
+                        width: 180, height: 28, padding: "0 28px 0 8px", borderRadius: 4, border: `1px solid ${border}`,
+                        background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 11, outline: "none"
+                      }}
+                    />
+                    <span style={{ position: "absolute", right: 8, fontSize: 11, color: textSecondary }}>🔍</span>
+                  </div>
+                  <button 
+                    onClick={() => setTemplateSearchTerm("")}
+                    style={{
+                      height: 28, padding: "0 8px", background: darkMode ? "#2c2d31" : "#fff", border: `1px solid ${border}`,
+                      borderRadius: 4, fontSize: 11, color: textPrimary, cursor: "pointer"
+                    }}
+                    title="새로고침"
+                  >
+                    🔄
+                  </button>
+                </div>
+              </div>
+
+              {/* 3열 템플릿 카드 그리드 */}
+              <div style={{
+                display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 8,
+                paddingBottom: 20
+              }}>
+                {filteredTemplates.map(t => (
+                  <div 
+                    key={t.id}
+                    onClick={() => handleSelectTemplate(t)}
+                    style={{
+                      border: `1px solid ${border}`, borderRadius: 8, padding: 12, cursor: "pointer",
+                      background: darkMode ? "#2c2d31" : "#fff", display: "flex", flexDirection: "column",
+                      justifyContent: "space-between", height: 160, position: "relative",
+                      transition: "all 0.15s"
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = "#3b82f6";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(59,130,246,0.1)";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = border;
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  >
+                    {/* 상단 체크박스 및 삭제 */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }} onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" style={{ cursor: "pointer" }} />
+                      <button 
+                        onClick={(e) => handleDeleteTemplate(t.id, e)}
+                        style={{ border: "none", background: "none", color: textSecondary, cursor: "pointer", fontSize: 14, fontWeight: "bold" }}
+                        title="삭제"
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    {/* 타이틀 */}
+                    <div style={{ fontSize: 12, fontWeight: 800, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>
+                      {t.title}
+                    </div>
+
+                    {/* 본문 Snippet */}
+                    <div style={{ fontSize: 11, color: textSecondary, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", lineHeight: 1.4, flex: 1 }}>
+                      {t.content}
+                    </div>
+
+                    {/* 하단 바이트 & 일자 */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${border}`, paddingTop: 6, marginTop: 6, fontSize: 10, color: textSecondary }}>
+                      <span style={{ color: t.byte > 90 ? "#ef4444" : "#10b981", fontWeight: 800 }}>{t.byte}byte {t.byte > 90 ? "장문" : "단문"}</span>
+                      <span>{t.date}</span>
+                    </div>
+                  </div>
+                ))}
+
+                {filteredTemplates.length === 0 && (
+                  <div style={{ gridColumn: "span 3", textAlign: "center", padding: "40px 0", color: textSecondary, fontSize: 12 }}>
+                    검색 결과와 일치하는 문자가 없습니다.
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
