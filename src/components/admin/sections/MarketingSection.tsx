@@ -593,8 +593,9 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
   };
 
   return (
-    <div style={{ padding: "20px 32px", display: "flex", flexDirection: "column", gap: "16px", height: "calc(100vh - 64px)", overflowY: "auto", background: darkMode ? "#18191c" : "#f4f5f7" }}>
-      {/* 1. 페이지 헤더 */}
+    <div style={{ padding: "20px 32px", height: "calc(100vh - 64px)", overflowY: "auto", background: darkMode ? "#18191c" : "#f4f5f7" }}>
+      <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "16px" }}>
+        {/* 1. 페이지 헤더 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${border}`, paddingBottom: 12 }}>
         <h1 style={{ fontSize: 24, fontWeight: 900, color: textPrimary, margin: 0 }}>문자</h1>
         <div style={{ fontSize: 13, color: textSecondary, fontWeight: 600 }}>
@@ -1524,6 +1525,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
