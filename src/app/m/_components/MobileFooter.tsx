@@ -71,6 +71,7 @@ export default function MobileFooter() {
       >
         {[
           { label: "회사소개", href: "/m/about", bold: true },
+          { label: "광고안내", href: "/m/marketing", bold: true },
           { label: "제휴문의", href: "/m/partnership", bold: true },
           { label: "이용약관", href: "/m/terms", bold: true },
           { label: "개인정보 처리방침", href: "#", bold: true },
