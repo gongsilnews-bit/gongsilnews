@@ -524,36 +524,38 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
               </button>
             </div>
 
-            {/* 수신 입력 카드 양방향 분할 레이아웃 */}
-            <div style={{ display: "flex", gap: 12, height: 200 }}>
+            {/* 수신 입력 카드 양방향 분할 레이아웃 (세로 높이를 320px로 확장) */}
+            <div style={{ display: "flex", gap: 12, height: 320 }}>
               
               {/* 좌측: 입력 컨트롤러 */}
               <div style={{ flex: 1.2, display: "flex", flexDirection: "column", gap: 8, height: "100%", justifyContent: "space-between" }}>
                 {activeRecipTab === "db" && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: textSecondary }}>시/도</label>
-                    <select 
-                      value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict("전체"); }}
-                      style={{ width: "100%", height: 32, padding: "0 8px", borderRadius: 4, border: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 12, outline: "none", fontWeight: 700 }}
-                    >
-                      {Object.keys(REGION_COUNTS).map(c => <option key={c}>{c}</option>)}
-                    </select>
-                    
-                    <label style={{ fontSize: 11, fontWeight: 700, color: textSecondary }}>시/군/구</label>
-                    <select 
-                      value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)}
-                      style={{ width: "100%", height: 32, padding: "0 8px", borderRadius: 4, border: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 12, outline: "none", fontWeight: 700 }}
-                    >
-                      {currentDistricts.map(d => <option key={d}>{d}</option>)}
-                    </select>
-                    
-                    <span style={{ fontSize: 11, color: "#3b82f6", fontWeight: 800, marginTop: 4 }}>
-                      추출 대상: {finalLeadCount.toLocaleString()}명
-                    </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, height: "100%", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: textSecondary }}>시/도</label>
+                      <select 
+                        value={selectedCity} onChange={(e) => { setSelectedCity(e.target.value); setSelectedDistrict("전체"); }}
+                        style={{ width: "100%", height: 32, padding: "0 8px", borderRadius: 4, border: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 12, outline: "none", fontWeight: 700 }}
+                      >
+                        {Object.keys(REGION_COUNTS).map(c => <option key={c}>{c}</option>)}
+                      </select>
+                      
+                      <label style={{ fontSize: 11, fontWeight: 700, color: textSecondary }}>시/군/구</label>
+                      <select 
+                        value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)}
+                        style={{ width: "100%", height: 32, padding: "0 8px", borderRadius: 4, border: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 12, outline: "none", fontWeight: 700 }}
+                      >
+                        {currentDistricts.map(d => <option key={d}>{d}</option>)}
+                      </select>
+                      
+                      <span style={{ fontSize: 11, color: "#3b82f6", fontWeight: 800, marginTop: 4 }}>
+                        추출 대상: {finalLeadCount.toLocaleString()}명
+                      </span>
+                    </div>
                     
                     <button 
                       onClick={handleAddDbTarget}
-                      style={{ height: 32, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 800, cursor: "pointer", marginTop: 4 }}
+                      style={{ width: "100%", height: 36, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 800, cursor: "pointer", marginTop: 4 }}
                     >
                       타겟 그룹 추가 +
                     </button>
@@ -570,7 +572,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                     />
                     <button 
                       onClick={handleAddDirect}
-                      style={{ height: 32, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 800, cursor: "pointer" }}
+                      style={{ height: 36, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 800, cursor: "pointer" }}
                     >
                       번호 추가 +
                     </button>
@@ -579,11 +581,11 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
 
                 {activeRecipTab === "excel" && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, height: "100%", justifyContent: "center", alignItems: "center", border: `2px dashed ${border}`, borderRadius: 6, padding: 12 }}>
-                    <span style={{ fontSize: 24 }}>파일</span>
+                    <span style={{ fontSize: 32 }}>파일</span>
                     <span style={{ fontSize: 11, color: textSecondary, textAlign: "center" }}>
                       엑셀 파일을 드래그하거나<br />아래 버튼으로 업로드하세요.
                     </span>
-                    <label style={{ padding: "6px 14px", background: "#10b981", color: "#fff", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    <label style={{ padding: "8px 16px", background: "#10b981", color: "#fff", borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                       파일 선택
                       <input type="file" accept=".xlsx, .csv" onChange={handleExcelImport} style={{ display: "none" }} />
                     </label>
