@@ -69,12 +69,33 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
   const [templateSearchTerm, setTemplateSearchTerm] = useState("");
   const [selectedModalTab, setSelectedModalTab] = useState<"msg" | "photo">("msg");
 
+  // 최근 발송 모달 상태
+  const [isRecentModalOpen, setIsRecentModalOpen] = useState(false);
+
   // 내 문자함 템플릿 리스트
   const [savedTemplates, setSavedTemplates] = useState([
     { id: "t1", title: "공실접수 안내", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n{상호} 인근 신규 매물 접수 안내드립니다. 신속하고 투명한 중개 거래를 위해 공실뉴스 파트너에 무료 가입해보세요!\n\n무료수신거부: 080-1555-5343", byte: 172, date: "2026-07-10 14:30" },
     { id: "t2", title: "추천 매물 목록", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n오늘의 추천 매물 정보 공유드립니다. {지역} 지역 내 단독 독점 물건 다량 보유 중입니다.\n\n무료수신거부: 080-1555-5343", byte: 165, date: "2026-07-09 11:20" },
     { id: "t3", title: "서비스 혜택 안내", content: "(광고) 공실뉴스\n\n안녕하세요, {대표자명} 대표님.\n공실뉴스 프리미엄 멤버십 가입 시 첫달 무료 이벤트 적용 안내입니다.\n\n무료수신거부: 080-1555-5343", byte: 144, date: "2026-07-08 17:05" },
     { id: "t4", title: "[EVENT] 공실뉴스 무료특강", content: "안녕하세요, 공실뉴스 마케팅실입니다.\n오랜만에 인사 드립니다. 대표님들을 위한 세무/유튜브 무료특강이 있어 우선 안내 드립니다.\n\n무료수신거부: 080-1555-5343", byte: 154, date: "2026-07-05 09:52" }
+  ]);
+
+  // 최근 발송 리스트 (모바일 말풍선 포맷에 맞춘 데이터)
+  const [recentMessages, setRecentMessages] = useState([
+    {
+      id: "r1",
+      title: "특강 안내",
+      content: "대표님에게만 우선 보내는 초청 문자입니다.\n\n# 특강 안내\n■ 일시 : 2026.05월 07일 (목)\n■ 시간 : 오후 4시~6시\n■ 대상 : 강남/서초, 부동산 대표님\n■ 강사 : 노정민 세무사 (로앤파트너스 대표), 김동현 마케팅 이사 (전, 공실닷컴)\n■ 금액 : 무료\n■ 장소 : 서울 서초구 서초동 1362-16 (지하철3호선, 신분당선 양재역 2분 출구에서 1분 거리 )\n\n세미나실 장소 때문에 선착순 마감됩니다. 아래 신청서에 우선 접수해주세요!\n감사합니다.\n\nhttps://forms.gle/ZaKLSKNQ1wdW4BfcA",
+      type: "장문",
+      date: "2026-05-06 오전 10:04"
+    },
+    {
+      id: "r2",
+      title: "추천 매물 안내",
+      content: "공실뉴스\n안녕하세요, 김동현 고객님. 찾으시는 조건(논현동 보증금 5천/100만원)에 맞는 추천 매물 리스트를 안내해 드립니다.\n\n[매물 링크: ]",
+      type: "장문",
+      date: "2026-07-10 오후 3:38"
+    }
   ]);
 
   // 발신 및 수신 타겟
@@ -153,6 +174,12 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
     setMsgTitle(t.title);
     setMsgContent(t.content);
     setIsTemplateModalOpen(false);
+  };
+
+  const handleSelectRecent = (r: { title: string; content: string }) => {
+    setMsgTitle(r.title);
+    setMsgContent(r.content);
+    setIsRecentModalOpen(false);
   };
 
   const handleDeleteTemplate = (id: string, e: React.MouseEvent) => {
@@ -416,6 +443,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
             <div style={{ display: "flex", gap: 8 }}>
               <button 
                 type="button"
+                onClick={() => setIsRecentModalOpen(true)}
                 style={{ flex: 1, height: 38, background: darkMode ? "#202124" : "#f1f5f9", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: textPrimary, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
               >
                 🕒 최근발송
@@ -829,6 +857,116 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                     검색 결과와 일치하는 문자가 없습니다.
                   </div>
                 )}
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* === 고해상도 뿌리오 스타일 "최근발송 문자" 팝업 모달 === */}
+      {isRecentModalOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+          backgroundColor: "rgba(0, 0, 0, 0.55)", display: "flex", justifyContent: "center",
+          alignItems: "center", zIndex: 9999, backdropFilter: "blur(2px)"
+        }}>
+          <div style={{
+            background: darkMode ? "#1f2023" : "#ffffff", width: 520, maxHeight: "85vh",
+            borderRadius: 14, overflow: "hidden", boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+            border: `1px solid ${border}`, display: "flex", flexDirection: "column"
+          }}>
+            {/* 모달 헤더 */}
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "16px 24px", borderBottom: `1px solid ${border}`, background: darkMode ? "#25262b" : "#f8fafc"
+            }}>
+              <span style={{ fontSize: 16, fontWeight: 900, color: textPrimary }}>최근발송 문자</span>
+              <button 
+                onClick={() => setIsRecentModalOpen(false)}
+                style={{
+                  background: "none", border: "none", fontSize: 20, color: textSecondary,
+                  cursor: "pointer", fontWeight: "bold"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 모달 본문 리스트 */}
+            <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 12, flex: 1, overflowY: "auto" }}>
+              
+              {/* 가이드 문구 */}
+              <div style={{ fontSize: "11px", color: textSecondary, lineHeight: 1.6, marginBottom: 8 }}>
+                * 가장 최근에 발송된 발송결과 내역이 보여집니다. (최대 10건)<br />
+                * 메시지를 선택하시면 메시지 내용을 불러옵니다.
+              </div>
+
+              {/* 최근발송 리스트 컨테이너 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {recentMessages.map((r, idx) => (
+                  <div 
+                    key={r.id}
+                    onClick={() => handleSelectRecent(r)}
+                    style={{
+                      display: "flex",
+                      gap: 16,
+                      alignItems: "flex-start",
+                      paddingBottom: 16,
+                      borderBottom: idx < recentMessages.length - 1 ? `1px dotted ${border}` : "none",
+                      cursor: "pointer"
+                    }}
+                  >
+                    {/* 모바일 스타일의 말풍선 프레임 */}
+                    <div style={{
+                      flex: 1.3,
+                      background: darkMode ? "#2c2d31" : "#f3f4f6",
+                      borderRadius: "12px 12px 12px 0px", // 말풍선 모양
+                      padding: "12px 16px",
+                      border: `1px solid ${border}`,
+                      maxHeight: 180,
+                      overflowY: "auto",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                      transition: "all 0.15s"
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = "#3b82f6";
+                      e.currentTarget.style.background = darkMode ? "#34353a" : "#ebf2ff";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = border;
+                      e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f3f4f6";
+                    }}
+                    >
+                      <div style={{
+                        fontSize: 12,
+                        color: textPrimary,
+                        lineHeight: 1.55,
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-all"
+                      }}>
+                        {r.content}
+                      </div>
+                    </div>
+
+                    {/* 우측 정보 영역 (구분, 날짜/시간) */}
+                    <div style={{
+                      flex: 0.7,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "flex-end",
+                      height: "100%",
+                      alignSelf: "stretch",
+                      fontSize: 11,
+                      paddingBottom: 4
+                    }}>
+                      <span style={{ color: "#ef4444", fontWeight: 800, marginBottom: 4 }}>{r.type}</span>
+                      <span style={{ color: textSecondary, fontWeight: 600 }}>{r.date.split(" ")[0]}</span>
+                      <span style={{ color: textSecondary, fontWeight: 600 }}>{r.date.split(" ").slice(1).join(" ")}</span>
+                    </div>
+
+                  </div>
+                ))}
               </div>
 
             </div>
