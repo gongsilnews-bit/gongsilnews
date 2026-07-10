@@ -308,16 +308,16 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
         </button>
       </div>
 
-      {/* 3. 본문 레이아웃 (좌측 에디터, 우측 수신설정) */}
+      {/* 3. 본문 레이아웃 (좌측 에디터 크기 380px로 축소, 우측 발신/수신 설정 확장) */}
       <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", flex: 1 }}>
         
-        {/* === 좌측: 메시지 입력 (Message Editor) === */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px", background: cardBg, padding: 20, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+        {/* === 좌측: 메시지 입력 (Message Editor - 크기 고정) === */}
+        <div style={{ width: "380px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "12px", background: cardBg, padding: 20, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
           
           {/* 가이드 문구 */}
           <div style={{ fontSize: "12px", color: textSecondary, lineHeight: 1.5, background: darkMode ? "#202124" : "#f8fafc", padding: "12px", borderRadius: 8, borderLeft: "4px solid #3b82f6" }}>
-            • 90byte 초과 시, 장문(LMS)으로 자동 전환됩니다. 최대 2,000byte까지 작성이 가능합니다.<br />
-            • 광고성 문자는 반드시 <span style={{ color: "#ef4444", fontWeight: 700 }}>[광고문자]</span> 탭에서 발송해주세요. 080 번호를 무료로 제공합니다.
+            • 90byte 초과 시, 장문(LMS)으로 자동 전환됩니다.<br />
+            • 광고성 문자는 반드시 <span style={{ color: "#ef4444", fontWeight: 700 }}>[광고문자]</span> 탭에서 발송해주세요.
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -326,7 +326,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
             {/* 제목 인풋 */}
             <input 
               type="text" 
-              placeholder="제목을 입력해주세요. (최대30byte, 발송관리용)"
+              placeholder="제목을 입력해주세요. (최대30byte)"
               value={msgTitle}
               onChange={(e) => setMsgTitle(e.target.value)}
               style={{
@@ -338,7 +338,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
             {/* 에디터 툴바 */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
               <div style={{ display: "flex", gap: 6 }}>
-                <span style={{ padding: "4px 8px", background: "#fef3c7", color: "#d97706", borderRadius: 4, fontWeight: 800, fontSize: 11 }}>✦ AI 맞춤 추천</span>
+                <span style={{ padding: "4px 8px", background: "#fef3c7", color: "#d97706", borderRadius: 4, fontWeight: 800, fontSize: 11 }}>✦ AI 추천</span>
                 <span style={{ padding: "4px 8px", background: "#dbeafe", color: "#2563eb", borderRadius: 4, fontWeight: 800, fontSize: 11 }}>✦ AI 생성</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -412,7 +412,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
               </div>
             </div>
 
-            {/* 에디터 하단 버튼 (요청하신 구도: 최근발송 옆에 내문자함, 그 옆에 문자저장 배치) */}
+            {/* 에디터 하단 버튼 */}
             <div style={{ display: "flex", gap: 8 }}>
               <button 
                 type="button"
@@ -439,8 +439,8 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
           </div>
         </div>
 
-        {/* === 우측: 발신번호 & 수신번호 설정 (Target Panel) === */}
-        <div style={{ width: 450, display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0 }}>
+        {/* === 우측: 발신번호 & 수신번호 설정 (Target Panel - 전체 확장) === */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px", minWidth: 0 }}>
           
           {/* 발신번호 설정 */}
           <div style={{ background: cardBg, padding: 16, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
