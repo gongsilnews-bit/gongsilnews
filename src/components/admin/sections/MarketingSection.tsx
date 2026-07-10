@@ -308,11 +308,11 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
         </button>
       </div>
 
-      {/* 3. 본문 레이아웃 (좌측 에디터 크기 380px로 축소, 우측 발신/수신 설정 확장) */}
+      {/* 3. 본문 레이아웃 (좌측 에디터 크기 460px로 확장, 우측 발신/수신 설정 확장) */}
       <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", flex: 1 }}>
         
-        {/* === 좌측: 메시지 입력 (Message Editor - 크기 고정) === */}
-        <div style={{ width: "380px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "12px", background: cardBg, padding: 20, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+        {/* === 좌측: 메시지 입력 (Message Editor - 가로 및 세로 확장) === */}
+        <div style={{ width: "460px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "12px", background: cardBg, padding: 20, borderRadius: 12, border: `1px solid ${border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
           
           {/* 가이드 문구 */}
           <div style={{ fontSize: "12px", color: textSecondary, lineHeight: 1.5, background: darkMode ? "#202124" : "#f8fafc", padding: "12px", borderRadius: 8, borderLeft: "4px solid #3b82f6" }}>
@@ -361,13 +361,13 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
               </div>
             </div>
 
-            {/* 에디터 텍스트에어리어 */}
+            {/* 에디터 텍스트에어리어 (높이를 340px로 키워 스크롤 없이 넓게 보이도록 설정) */}
             <textarea 
               placeholder="내용을 입력해주세요. 90byte 초과 시 장문 문자로 자동 전환됩니다."
               value={msgContent}
               onChange={(e) => setMsgContent(e.target.value)}
               style={{
-                width: "100%", height: 240, padding: 14, borderRadius: 6, border: `1px solid ${border}`,
+                width: "100%", height: 340, padding: 14, borderRadius: 6, border: `1px solid ${border}`,
                 background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, outline: "none", resize: "none",
                 fontSize: 13, lineHeight: 1.6, fontFamily: "inherit"
               }}
