@@ -18,30 +18,31 @@ interface MarketingSectionProps {
   theme: AdminTheme;
 }
 
-// 모의 데이터베이스 구별 부동산 숫자 매핑
+// 모의 데이터베이스 구별 부동산 숫자 매핑 (Excel 규격에 맞게 도시명 간소화)
 const REGION_COUNTS: Record<string, Record<string, number>> = {
-  "서울특별시": {
+  "서울": {
     "전체": 45120,
+    "동대문구": 1680,
+    "노원구": 1520,
+    "송파구": 4120,
     "강남구": 3450,
     "서초구": 2820,
-    "송파구": 4120,
     "성북구": 1840,
     "마포구": 2210,
     "영등포구": 2540,
-    "동대문구": 1680,
   },
-  "경기도": {
+  "경기": {
     "전체": 38450,
     "성남시 분당구": 2910,
     "수원시 영통구": 2180,
     "고양시 일산동구": 1540,
     "용인시 수지구": 1870,
   },
-  "인천광역시": {
+  "인천": {
     "전체": 18900,
+    "연수구": 1670,
     "남동구": 2130,
     "부평구": 1980,
-    "연수구": 1670,
   }
 };
 
@@ -91,7 +92,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
   ]);
 
   // 발신 및 수신 타겟
-  const [selectedCity, setSelectedCity] = useState("서울특별시");
+  const [selectedCity, setSelectedCity] = useState("서울");
   const [selectedDistrict, setSelectedDistrict] = useState("전체");
   const [directPhoneInput, setDirectPhoneInput] = useState("");
   const [recipients, setRecipients] = useState<any[]>([]);
@@ -113,16 +114,97 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
   const [searchKeyword, setSearchKeyword] = useState("");
 
   const [realtorData, setRealtorData] = useState([
-    { id: "r1", name: "김동현", agency: "공실공인중개사사무소", phone: "010-1234-5678", sido: "서울특별시", sigungu: "강남구", date: "2026-07-10" },
-    { id: "r2", name: "박영희", agency: "에이스부동산중개", phone: "010-9876-5432", sido: "서울특별시", sigungu: "서초구", date: "2026-07-09" },
-    { id: "r3", name: "이철수", agency: "일등공인중개사", phone: "010-5555-4444", sido: "경기도", sigungu: "성남시 분당구", date: "2026-07-08" },
-    { id: "r4", name: "최민수", agency: "코리아부동산", phone: "010-2222-7777", sido: "인천광역시", sigungu: "연수구", date: "2026-07-06" },
+    {
+      id: "r1",
+      agency: "(21세기)CENTURY21공인중개사사무소",
+      name: "조수경",
+      phone: "010-3755-6612",
+      sido: "서울",
+      sigungu: "동대문구",
+      roadAddress: "서울특별시 동대문구 약령시로 107",
+      jibunAddress: "서울특별시 동대문구 제기동 348-2",
+      date: "2026-07-10"
+    },
+    {
+      id: "r2",
+      agency: "(933-8899)태양부동산공인중개사사무소",
+      name: "강두형",
+      phone: "010-8497-8801",
+      sido: "서울",
+      sigungu: "노원구",
+      roadAddress: "서울특별시 노원구 동일로218길 35",
+      jibunAddress: "서울특별시 노원구 상계동 725-2",
+      date: "2026-07-09"
+    },
+    {
+      id: "r3",
+      agency: "(가락)학사공인중개사사무소",
+      name: "조원진",
+      phone: "010-4143-4586",
+      sido: "서울",
+      sigungu: "송파구",
+      roadAddress: "서울특별시 송파구 중대로 345",
+      jibunAddress: "서울특별시 송파구 가락동 479",
+      date: "2026-07-08"
+    },
+    {
+      id: "r4",
+      agency: "(개포)써밋공인중개사사무소",
+      name: "이주연",
+      phone: "010-2455-2606",
+      sido: "서울",
+      sigungu: "강남구",
+      roadAddress: "서울특별시 강남구 삼성로 11",
+      jibunAddress: "서울특별시 강남구 개포동 1281",
+      date: "2026-07-06"
+    },
+    {
+      id: "r5",
+      agency: "(단지내)개포자이프레지던스공인중개사사무소",
+      name: "고성희",
+      phone: "010-8497-1234",
+      sido: "서울",
+      sigungu: "강남구",
+      roadAddress: "서울특별시 강남구 삼성로 14",
+      jibunAddress: "서울특별시 강남구 개포동 189",
+      date: "2026-07-05"
+    }
   ]);
 
   const [lessorData, setLessorData] = useState([
-    { id: "l1", name: "최상호", propertyCount: 3, phone: "010-1111-2222", sido: "서울특별시", sigungu: "송파구", date: "2026-07-10" },
-    { id: "l2", name: "정은지", propertyCount: 1, phone: "010-3333-4444", sido: "경기도", sigungu: "용인시 수지구", date: "2026-07-09" },
-    { id: "l3", name: "강태우", propertyCount: 5, phone: "010-7777-8888", sido: "인천광역시", sigungu: "연수구", date: "2026-07-07" },
+    {
+      id: "l1",
+      agency: "현대타운 A동 (건물주)",
+      name: "최상호",
+      phone: "010-1111-2222",
+      sido: "서울",
+      sigungu: "송파구",
+      roadAddress: "서울특별시 송파구 올림픽로 123",
+      jibunAddress: "서울특별시 송파구 잠실동 45-6",
+      date: "2026-07-10"
+    },
+    {
+      id: "l2",
+      agency: "그린빌라 201호 (임대룸)",
+      name: "정은지",
+      phone: "010-3333-4444",
+      sido: "경기",
+      sigungu: "용인시 수지구",
+      roadAddress: "경기도 용인시 수지구 포은대로 456",
+      jibunAddress: "경기도 용인시 수지구 풍덕천동 789-1",
+      date: "2026-07-09"
+    },
+    {
+      id: "l3",
+      agency: "자이플라자 5층 (상가주)",
+      name: "강태우",
+      phone: "010-7777-8888",
+      sido: "인천",
+      sigungu: "연수구",
+      roadAddress: "인천광역시 연수구 인천타워대로 789",
+      jibunAddress: "인천광역시 연수구 송도동 12-3",
+      date: "2026-07-07"
+    }
   ]);
 
   // 서브탭 전환 시 체크박스 초기화
@@ -366,17 +448,12 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
   // 엑셀 다운로드 (CSV 변환)
   const handleDownloadExcel = () => {
     const headers = isRealtorMode 
-      ? "이름,상호,연락처,시도,시군구,등록일\n"
-      : "이름,임대건물수,연락처,시도,시군구,등록일\n";
+      ? "상호,대표자명,시,지역,소재지,지번주소,연락처,등록일\n"
+      : "임대물건,임대인명,시,지역,소재지,지번주소,연락처,등록일\n";
     
     const rows = filteredDataList.map(item => {
-      if (isRealtorMode) {
-        const r = item as any;
-        return `"${r.name}","${r.agency}","${r.phone}","${r.sido}","${r.sigungu}","${r.date}"`;
-      } else {
-        const l = item as any;
-        return `"${l.name}","${l.propertyCount}","${l.phone}","${l.sido}","${l.sigungu}","${l.date}"`;
-      }
+      const r = item as any;
+      return `"${r.agency}","${r.name}","${r.sido}","${r.sigungu}","${r.roadAddress}","${r.jibunAddress}","${r.phone}","${r.date}"`;
     }).join("\n");
     
     const csvContent = "\uFEFF" + headers + rows; // 엑셀 한글 깨짐 방지 BOM 추가
@@ -393,8 +470,8 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
   // 샘플 파일 다운로드
   const handleDownloadSample = () => {
     const headers = isRealtorMode 
-      ? "이름,상호,연락처,시도,시군구\n홍길동,대박공인중개사,010-1234-5678,서울특별시,강남구"
-      : "이름,임대건물수,연락처,시도,시군구\n김갑동,2,010-1111-2222,서울특별시,서초구";
+      ? "상호,대표자명,시,지역,소재지,지번주소,연락처\n(21세기)CENTURY21공인중개사사무소,조수경,서울,동대문구,서울특별시 동대문구 약령시로 107,서울특별시 동대문구 제기동 348-2,010-3755-6612"
+      : "임대물건,임대인명,시,지역,소재지,지번주소,연락처\n현대타운 A동 (건물주),최상호,서울,송파구,서울특별시 송파구 올림픽로 123,서울특별시 송파구 잠실동 45-6,010-1111-2222";
       
     const csvContent = "\uFEFF" + headers;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -424,24 +501,36 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
         dataLines.forEach((line, idx) => {
           const cols = line.split(",").map(c => c.trim().replace(/^["']|["']$/g, ""));
           if (cols.length >= 4) {
+            const agencyVal = cols[0] || "";
+            const nameVal = cols[1] || "";
+            const sidoVal = cols[2] || "서울";
+            const sigunguVal = cols[3] || "전체";
+            const roadAddressVal = cols[4] || "정보없음";
+            const jibunAddressVal = cols[5] || "정보없음";
+            const phoneVal = cols[6] || "010-0000-0000";
+
             if (isRealtorMode) {
               newItems.push({
                 id: `realtor_csv_${Date.now()}_${idx}`,
-                name: cols[0] || "엑셀회원",
-                agency: cols[1] || "정보없음",
-                phone: cols[2] || "010-0000-0000",
-                sido: cols[3] || "서울특별시",
-                sigungu: cols[4] || "전체",
+                agency: agencyVal || "정보없음",
+                name: nameVal || "엑셀회원",
+                sido: sidoVal,
+                sigungu: sigunguVal,
+                roadAddress: roadAddressVal,
+                jibunAddress: jibunAddressVal,
+                phone: phoneVal,
                 date: new Date().toISOString().split("T")[0]
               });
             } else {
               newItems.push({
                 id: `lessor_csv_${Date.now()}_${idx}`,
-                name: cols[0] || "엑셀임대인",
-                propertyCount: parseInt(cols[1]) || 1,
-                phone: cols[2] || "010-0000-0000",
-                sido: cols[3] || "서울특별시",
-                sigungu: cols[4] || "전체",
+                agency: agencyVal || "정보없음",
+                name: nameVal || "엑셀임대인",
+                sido: sidoVal,
+                sigungu: sigunguVal,
+                roadAddress: roadAddressVal,
+                jibunAddress: jibunAddressVal,
+                phone: phoneVal,
                 date: new Date().toISOString().split("T")[0]
               });
             }
@@ -459,15 +548,15 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
           // 데모용 샘플 데이터 자동 로드
           if (isRealtorMode) {
             const demoRealtors = [
-              { id: `realtor_demo_${Date.now()}_1`, name: "강성호", agency: "스마트중개사", phone: "010-8888-9999", sido: "서울특별시", sigungu: "마포구", date: new Date().toISOString().split("T")[0] },
-              { id: `realtor_demo_${Date.now()}_2`, name: "임하늘", agency: "파트너공인", phone: "010-7777-6666", sido: "경기도", sigungu: "성남시 분당구", date: new Date().toISOString().split("T")[0] }
+              { id: `realtor_demo_${Date.now()}_1`, agency: "(21세기)CENTURY21공인중개사사무소", name: "조수경", phone: "010-3755-6612", sido: "서울", sigungu: "동대문구", roadAddress: "서울특별시 동대문구 약령시로 107", jibunAddress: "서울특별시 동대문구 제기동 348-2", date: new Date().toISOString().split("T")[0] },
+              { id: `realtor_demo_${Date.now()}_2`, agency: "(단지내)대성공인중개사사무소", name: "강두형", phone: "010-8497-8801", sido: "서울", sigungu: "성북구", roadAddress: "서울특별시 성북구 보문사길 111", jibunAddress: "서울특별시 성북구 보문동6가 458", date: new Date().toISOString().split("T")[0] }
             ];
             setRealtorData([...demoRealtors, ...realtorData]);
             alert(`📁 파일명: ${file.name}\n(양식 자동 규격 보완을 위해 데모 데이터 ${demoRealtors.length}건이 주소록에 자동 등록되었습니다.)`);
           } else {
             const demoLessors = [
-              { id: `lessor_demo_${Date.now()}_1`, name: "홍길동", propertyCount: 2, phone: "010-4444-5555", sido: "서울특별시", sigungu: "강남구", date: new Date().toISOString().split("T")[0] },
-              { id: `lessor_demo_${Date.now()}_2`, name: "심사임당", propertyCount: 4, phone: "010-2222-3333", sido: "인천광역시", sigungu: "부평구", date: new Date().toISOString().split("T")[0] }
+              { id: `lessor_demo_${Date.now()}_1`, agency: "현대타운 A동 (건물주)", name: "최상호", phone: "010-1111-2222", sido: "서울", sigungu: "송파구", roadAddress: "서울특별시 송파구 올림픽로 123", jibunAddress: "서울특별시 송파구 잠실동 45-6", date: new Date().toISOString().split("T")[0] },
+              { id: `lessor_demo_${Date.now()}_2`, agency: "그린빌라 201호 (임대룸)", name: "정은지", phone: "010-3333-4444", sido: "경기", sigungu: "용인시 수지구", roadAddress: "경기도 용인시 수지구 포은대로 456", jibunAddress: "경기도 용인시 수지구 풍덕천동 789-1", date: new Date().toISOString().split("T")[0] }
             ];
             setLessorData([...demoLessors, ...lessorData]);
             alert(`📁 파일명: ${file.name}\n(양식 자동 규격 보완을 위해 데모 데이터 ${demoLessors.length}건이 주소록에 자동 등록되었습니다.)`);
@@ -641,7 +730,7 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
               <input 
                 type="text" 
-                placeholder={isRealtorMode ? "이름, 상호, 또는 연락처 검색" : "이름 또는 연락처 검색"}
+                placeholder="상호, 이름, 연락처, 또는 주소 검색"
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
                 style={{
@@ -658,12 +747,12 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
             </div>
           </div>
 
-          {/* 주소록 테이블 */}
-          <div style={{ border: `1px solid ${border}`, borderRadius: 8, overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, textAlign: "left" }}>
+          {/* 주소록 테이블 (Excel 스프레드시트 그리드 스타일) */}
+          <div style={{ border: `1px solid ${border}`, borderRadius: 8, overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}` }}>
               <thead>
-                <tr style={{ background: darkMode ? "#202124" : "#f8fafc", borderBottom: `1px solid ${border}` }}>
-                  <th style={{ padding: "12px 16px", width: 40, textAlign: "center" }}>
+                <tr style={{ background: darkMode ? "#2a2b30" : "#f1f5f9" }}>
+                  <th style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "8px 10px", width: 40, textAlign: "center" }}>
                     <input 
                       type="checkbox" 
                       checked={filteredDataList.length > 0 && selectedDataIds.length === filteredDataList.length}
@@ -671,58 +760,97 @@ export default function MarketingSection({ theme }: MarketingSectionProps) {
                       style={{ cursor: "pointer" }}
                     />
                   </th>
-                  <th style={{ padding: "12px 16px", fontWeight: 800, color: textPrimary }}>이름</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 800, color: textPrimary }}>
-                    {isRealtorMode ? "상호명" : "보유 임대건물 수"}
+                  <th style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "8px 12px", fontWeight: 800, color: textPrimary, textAlign: "left" }}>
+                    {isRealtorMode ? "상호" : "임대물건"}
                   </th>
-                  <th style={{ padding: "12px 16px", fontWeight: 800, color: textPrimary }}>연락처</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 800, color: textPrimary }}>소속 지역</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 800, color: textPrimary }}>등록일</th>
-                  <th style={{ padding: "12px 16px", width: 80, textAlign: "center", fontWeight: 800, color: textPrimary }}>작업</th>
+                  <th style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "8px 12px", fontWeight: 800, color: textPrimary, textAlign: "center", width: 100 }}>
+                    {isRealtorMode ? "대표자명" : "임대인명"}
+                  </th>
+                  <th style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "8px 12px", fontWeight: 800, color: textPrimary, textAlign: "center", width: 120 }}>
+                    연락처
+                  </th>
+                  <th style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "8px 12px", fontWeight: 800, color: textPrimary, textAlign: "center", width: 60 }}>
+                    시
+                  </th>
+                  <th style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "8px 12px", fontWeight: 800, color: textPrimary, textAlign: "center", width: 110 }}>
+                    지역
+                  </th>
+                  <th style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "8px 12px", fontWeight: 800, color: textPrimary, textAlign: "left" }}>
+                    소재지 (도로명)
+                  </th>
+                  <th style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "8px 12px", fontWeight: 800, color: textPrimary, textAlign: "left" }}>
+                    지번주소
+                  </th>
+                  <th style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "8px 12px", fontWeight: 800, color: textPrimary, textAlign: "center", width: 95 }}>
+                    등록일
+                  </th>
+                  <th style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "8px 12px", width: 60, textAlign: "center", fontWeight: 800, color: textPrimary }}>
+                    작업
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredDataList.map((item) => (
-                  <tr 
-                    key={item.id} 
-                    style={{ 
-                      borderBottom: `1px solid ${border}`, 
-                      background: selectedDataIds.includes(item.id) 
-                        ? (darkMode ? "#2a3b5c" : "#eff6ff") 
-                        : "none",
-                      transition: "background 0.15s"
-                    }}
-                  >
-                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                      <input 
-                        type="checkbox" 
-                        checked={selectedDataIds.includes(item.id)}
-                        onChange={() => handleToggleSelectRow(item.id)}
-                        style={{ cursor: "pointer" }}
-                      />
-                    </td>
-                    <td style={{ padding: "12px 16px", fontWeight: 700, color: textPrimary }}>{item.name}</td>
-                    <td style={{ padding: "12px 16px", color: textSecondary, fontWeight: 600 }}>
-                      {isRealtorMode ? (item as any).agency : `${(item as any).propertyCount}개 매물`}
-                    </td>
-                    <td style={{ padding: "12px 16px", fontWeight: 700, color: "#3b82f6" }}>{item.phone}</td>
-                    <td style={{ padding: "12px 16px", color: textPrimary, fontWeight: 600 }}>
-                      {item.sido} {item.sigungu}
-                    </td>
-                    <td style={{ padding: "12px 16px", color: textSecondary }}>{item.date}</td>
-                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                      <button 
-                        onClick={() => handleDeleteAddress(item.id, item.name)}
-                        style={{ border: "none", background: "none", color: "#ef4444", cursor: "pointer", fontSize: 13, fontWeight: "bold" }}
-                      >
-                        삭제
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredDataList.map((item, idx) => {
+                  const isSelected = selectedDataIds.includes(item.id);
+                  const isEven = idx % 2 === 0;
+                  const rowBg = isSelected 
+                    ? (darkMode ? "#2a3b5c" : "#eff6ff") 
+                    : (!isEven ? (darkMode ? "#202124" : "#f8fafc") : (darkMode ? "#2b2c30" : "#ffffff"));
+
+                  return (
+                    <tr 
+                      key={item.id} 
+                      style={{ 
+                        background: rowBg,
+                        transition: "background 0.15s"
+                      }}
+                    >
+                      <td style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "6px 8px", textAlign: "center" }}>
+                        <input 
+                          type="checkbox" 
+                          checked={isSelected}
+                          onChange={() => handleToggleSelectRow(item.id)}
+                          style={{ cursor: "pointer" }}
+                        />
+                      </td>
+                      <td style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "6px 12px", fontWeight: 600, color: textPrimary, textAlign: "left" }}>
+                        {item.agency}
+                      </td>
+                      <td style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "6px 12px", fontWeight: 700, color: textPrimary, textAlign: "center" }}>
+                        {item.name}
+                      </td>
+                      <td style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "6px 12px", fontWeight: 700, color: "#3b82f6", textAlign: "center" }}>
+                        {item.phone}
+                      </td>
+                      <td style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "6px 12px", color: textPrimary, fontWeight: 500, textAlign: "center" }}>
+                        {item.sido}
+                      </td>
+                      <td style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "6px 12px", color: textPrimary, fontWeight: 500, textAlign: "center" }}>
+                        {item.sigungu}
+                      </td>
+                      <td style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "6px 12px", color: textSecondary, fontSize: 12, textAlign: "left" }}>
+                        {item.roadAddress}
+                      </td>
+                      <td style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "6px 12px", color: textSecondary, fontSize: 12, textAlign: "left" }}>
+                        {item.jibunAddress}
+                      </td>
+                      <td style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "6px 12px", color: textSecondary, textAlign: "center" }}>
+                        {item.date}
+                      </td>
+                      <td style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "6px 8px", textAlign: "center" }}>
+                        <button 
+                          onClick={() => handleDeleteAddress(item.id, item.name)}
+                          style={{ border: "none", background: "none", color: "#ef4444", cursor: "pointer", fontSize: 12, fontWeight: "bold" }}
+                        >
+                          삭제
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {filteredDataList.length === 0 && (
                   <tr>
-                    <td colSpan={7} style={{ padding: "40px 0", textAlign: "center", color: textSecondary, fontSize: 13 }}>
+                    <td colSpan={10} style={{ border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, padding: "40px 0", textAlign: "center", color: textSecondary, fontSize: 13 }}>
                       주소록에 등록된 연락처가 없습니다.
                     </td>
                   </tr>
