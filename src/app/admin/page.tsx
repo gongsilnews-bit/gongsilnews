@@ -29,7 +29,7 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "agent", label: "AI 비서실", icon: <IconRobot /> },
   { key: "marketing", label: "부동산마케팅", icon: <IconComment /> },
-  { key: "members", label: "회원관리", icon: <IconMembers />, submenus: [{ key: "members_list", label: "회원목록" }, { key: "dormant", label: "휴지통" }] },
+  { key: "members", label: "회원관리", icon: <IconMembers />, submenus: [{ key: "members_list", label: "회원목록" }, { key: "dormant", label: "휴지통" }, { key: "policy", label: "등급별 한도 설정" }] },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "inquiry", label: "문의관리", icon: <IconEdit /> },
@@ -247,7 +247,7 @@ function AdminContent() {
         {/* 콘텐츠 영역 */}
         <Suspense fallback={<AdminLoadingFallback />}>
           {activeMenu === "dashboard" && <DashboardSection theme={theme} role="admin" onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
-          {activeMenu === "members" && <MemberSection theme={theme} activeSubmenu={activeSubmenu as "members_list" | "dormant"} onSubmenuChange={setActiveSubmenu} initialData={prefetchedData["members"]} />}
+          {activeMenu === "members" && <MemberSection theme={theme} activeSubmenu={activeSubmenu} onSubmenuChange={setActiveSubmenu} initialData={prefetchedData["members"]} />}
           {activeMenu === "gongsil" && <VacancySection theme={theme} role="admin" ownerId={adminUserId} initialData={prefetchedData["gongsil"]} />}
           {activeMenu === "article" && <ArticleSection theme={theme} initialData={prefetchedData["article"]} />}
           {activeMenu === "study" && <StudySection theme={theme} />}

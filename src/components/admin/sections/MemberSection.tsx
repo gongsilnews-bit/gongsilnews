@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminSectionProps } from "./types";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
-import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminApproveRealtorApplication, adminRejectRealtorApplication, adminApproveBusinessApplication, adminRejectBusinessApplication } from "@/app/admin/actions";
+import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminApproveRealtorApplication, adminRejectRealtorApplication, adminApproveBusinessApplication, adminRejectBusinessApplication, adminGetLimitPolicies, adminUpdateLimitPolicies } from "@/app/admin/actions";
 
 interface MemberSectionProps extends AdminSectionProps {
   activeSubmenu: string;
@@ -141,21 +141,23 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
       </div>
 
       {/* 필터 (상단으로 분리) */}
-      <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", padding: "16px 24px", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원번호</label>
-          <input type="text" value={searchMemberId} onChange={e => setSearchMemberId(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword }); if (searchMemberId || searchKeyword || searchRole !== "전체") onSubmenuChange?.("members_list"); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
+      {currentTab !== "policy" && (
+        <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", padding: "16px 24px", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원번호</label>
+            <input type="text" value={searchMemberId} onChange={e => setSearchMemberId(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword }); if (searchMemberId || searchKeyword || searchRole !== "전체") onSubmenuChange?.("members_list"); } }} placeholder="번호 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 130 }} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원구분</label>
+            <select value={searchRole} onChange={e => setSearchRole(e.target.value)} style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
+              <option value="전체">전체</option><option value="최고관리자">최고관리자</option><option value="부동산회원">부동산회원</option><option value="비즈니스회원">비즈니스회원</option><option value="일반회원">일반회원</option>
+            </select>
+          </div>
+          <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword }); if (searchMemberId || searchKeyword || searchRole !== "전체") onSubmenuChange?.("members_list"); } }} placeholder="이름 또는 이메일 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
+          <button onClick={() => { setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword }); if (searchMemberId || searchKeyword || searchRole !== "전체") onSubmenuChange?.("members_list"); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
+          <button onClick={() => { setSearchMemberId(""); setSearchRole("전체"); setSearchKeyword(""); setActiveFilters({ memberId: "", role: "전체", keyword: "" }); onSubmenuChange?.("members_list"); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원구분</label>
-          <select value={searchRole} onChange={e => setSearchRole(e.target.value)} style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", minWidth: 80 }}>
-            <option value="전체">전체</option><option value="최고관리자">최고관리자</option><option value="부동산회원">부동산회원</option><option value="비즈니스회원">비즈니스회원</option><option value="일반회원">일반회원</option>
-          </select>
-        </div>
-        <input type="text" value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') { setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword }); if (searchMemberId || searchKeyword || searchRole !== "전체") onSubmenuChange?.("members_list"); } }} placeholder="이름 또는 이메일 검색" style={{ height: 36, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: darkMode ? "#2c2d31" : "#fff", outline: "none", flex: 1, minWidth: 180 }} />
-        <button onClick={() => { setActiveFilters({ memberId: searchMemberId, role: searchRole, keyword: searchKeyword }); if (searchMemberId || searchKeyword || searchRole !== "전체") onSubmenuChange?.("members_list"); }} style={{ height: 36, padding: "0 18px", background: darkMode ? "#2c2d31" : "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>검색</button>
-        <button onClick={() => { setSearchMemberId(""); setSearchRole("전체"); setSearchKeyword(""); setActiveFilters({ memberId: "", role: "전체", keyword: "" }); onSubmenuChange?.("members_list"); }} style={{ height: 36, padding: "0 14px", background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>초기화</button>
-      </div>
+      )}
 
       {/* 서브메뉴 탭 */}
       <div style={{ display: "flex", borderBottom: `1px solid ${border}`, marginBottom: 20, gap: 24 }}>
@@ -164,7 +166,8 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
           { key: "approved", label: "승인완료", count: counts.approved, color: "#10b981", activeColor: "#059669" },
           { key: "pending", label: "승인대기", count: counts.pending, color: "#8b5cf6", activeColor: "#7c3aed" },
           { key: "rejected", label: "서류보완", count: counts.rejected, color: "#ef4444", activeColor: "#dc2626" },
-          { key: "dormant", label: "휴지통", count: counts.dormant, color: "#6b7280", activeColor: "#4b5563" }
+          { key: "dormant", label: "휴지통", count: counts.dormant, color: "#6b7280", activeColor: "#4b5563" },
+          { key: "policy", label: "등급별 한도 설정", color: "#6b7280", activeColor: "#4b5563" }
         ].map(tab => (
           <button
             key={tab.key}
@@ -187,18 +190,23 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
             }}
           >
             {tab.label}
-            <span style={{
-              background: tab.key === "all" && currentTab !== "all" ? (darkMode ? "#333" : "#e5e7eb") : tab.color,
-              color: tab.key === "all" && currentTab !== "all" ? textSecondary : "#fff",
-              padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 800, transition: "all 0.2s"
-            }}>
-              {tab.count}
-            </span>
+            {tab.count !== undefined && (
+              <span style={{
+                background: tab.key === "all" && currentTab !== "all" ? (darkMode ? "#333" : "#e5e7eb") : tab.color,
+                color: tab.key === "all" && currentTab !== "all" ? textSecondary : "#fff",
+                padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 800, transition: "all 0.2s"
+              }}>
+                {tab.count}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
-      <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+      {currentTab === "policy" ? (
+        <MemberPolicySettings theme={theme} darkMode={darkMode} />
+      ) : (
+        <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
         {/* 액션 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
           {isDormant ? (
@@ -379,11 +387,11 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
             </tbody>
           </table>
         </div>
-
         <div style={{ padding: "16px 24px", display: "flex", justifyContent: "center", gap: 4, borderTop: `1px solid ${border}` }}>
           <button style={{ width: 32, height: 32, border: "none", borderRadius: 4, background: "#4b5563", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>1</button>
         </div>
       </div>
+    )}
       
 
       {/* 반려 사유 모달 */}
@@ -430,6 +438,185 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
           100% { opacity: 0.6; }
         }
       `}</style>
+    </div>
+  );
+}
+
+function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boolean }) {
+  const { cardBg, textPrimary, textSecondary, border } = theme;
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [applyToExisting, setApplyToExisting] = useState(false);
+  const [formData, setFormData] = useState({
+    LIMIT_USER_VACANCY: 10,
+    LIMIT_USER_ARTICLE: 0,
+    LIMIT_REALTOR_FREE_VACANCY: 10,
+    LIMIT_REALTOR_FREE_ARTICLE: 0,
+    LIMIT_REALTOR_NEWS_VACANCY: 20,
+    LIMIT_REALTOR_NEWS_ARTICLE: 10,
+    LIMIT_REALTOR_VACANCY_VACANCY: 50,
+    LIMIT_REALTOR_VACANCY_ARTICLE: 20,
+    LIMIT_BIZ_VACANCY: 0,
+    LIMIT_BIZ_ARTICLE: 10,
+  });
+
+  useEffect(() => {
+    setLoading(true);
+    adminGetLimitPolicies().then(res => {
+      if (res.success && res.policies) {
+        setFormData(res.policies);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const handleChange = (key: string, value: number) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const res = await adminUpdateLimitPolicies(formData, applyToExisting);
+    setSaving(false);
+    if (res.success) {
+      alert("등급별 한도 정책이 성공적으로 저장 및 적용되었습니다.");
+    } else {
+      alert("오류가 발생했습니다: " + res.error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "60px 0", color: textSecondary }}>
+        정책 데이터를 불러오는 중...
+      </div>
+    );
+  }
+
+  const inputStyle = {
+    height: 38,
+    padding: "0 12px",
+    border: `1px solid ${border}`,
+    borderRadius: 6,
+    fontSize: 14,
+    color: textPrimary,
+    background: darkMode ? "#2c2d31" : "#fff",
+    outline: "none",
+    width: 100,
+    textAlign: "right" as const,
+  };
+
+  const labelStyle = {
+    fontSize: 14,
+    fontWeight: 600,
+    color: textSecondary,
+    width: 250,
+  };
+
+  const sectionStyle = {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 16,
+    padding: "20px 0",
+    borderBottom: `1px solid ${border}`,
+  };
+
+  const rowStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: 16,
+  };
+
+  return (
+    <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: `1px solid ${border}`, padding: 28 }}>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, margin: "0 0 8px 0" }}>회원 등급별 기본 한도 설정</h2>
+      <p style={{ fontSize: 13, color: textSecondary, margin: "0 0 24px 0" }}>
+        신규 회원가입 및 승인 시 적용되는 각 회원 등급별 기본 등록 한도를 관리합니다.
+      </p>
+
+      <div style={sectionStyle}>
+        <div style={rowStyle}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary, width: 250 }}>회원 구분 / 요금제</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 100, textAlign: "center" }}>최대 공실 등록</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 100, textAlign: "center" }}>월간 최대 기사 작성</span>
+        </div>
+      </div>
+
+      {/* 일반회원 */}
+      <div style={sectionStyle}>
+        <div style={rowStyle}>
+          <span style={labelStyle}>일반회원</span>
+          <input type="number" value={formData.LIMIT_USER_VACANCY} onChange={e => handleChange("LIMIT_USER_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_USER_ARTICLE} onChange={e => handleChange("LIMIT_USER_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+        </div>
+      </div>
+
+      {/* 부동산회원 (무료) */}
+      <div style={sectionStyle}>
+        <div style={rowStyle}>
+          <span style={labelStyle}>부동산회원 (무료)</span>
+          <input type="number" value={formData.LIMIT_REALTOR_FREE_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_FREE_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_REALTOR_FREE_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_FREE_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+        </div>
+      </div>
+
+      {/* 부동산회원 (공실뉴스 요금제) */}
+      <div style={sectionStyle}>
+        <div style={rowStyle}>
+          <span style={labelStyle}>부동산회원 (공실뉴스 Premium 요금제)</span>
+          <input type="number" value={formData.LIMIT_REALTOR_NEWS_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_NEWS_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_REALTOR_NEWS_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+        </div>
+      </div>
+
+      {/* 부동산회원 (공실등록 요금제) */}
+      <div style={sectionStyle}>
+        <div style={rowStyle}>
+          <span style={labelStyle}>부동산회원 (공실등록 Premium 요금제)</span>
+          <input type="number" value={formData.LIMIT_REALTOR_VACANCY_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_VACANCY_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_REALTOR_VACANCY_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_VACANCY_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+        </div>
+      </div>
+
+      {/* 비즈니스회원 */}
+      <div style={sectionStyle}>
+        <div style={rowStyle}>
+          <span style={labelStyle}>비즈니스회원</span>
+          <input type="number" value={formData.LIMIT_BIZ_VACANCY} onChange={e => handleChange("LIMIT_BIZ_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_BIZ_ARTICLE} onChange={e => handleChange("LIMIT_BIZ_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+        </div>
+      </div>
+
+      {/* 옵션 및 저장 버튼 */}
+      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: textPrimary, cursor: "pointer" }}>
+          <input type="checkbox" checked={applyToExisting} onChange={e => setApplyToExisting(e.target.checked)} style={{ accentColor: "#3b82f6", width: 16, height: 16 }} />
+          저장 시 기존에 등록된 모든 회원에게도 새로운 기본 한도를 소급 적용합니다.
+        </label>
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            alignSelf: "flex-start",
+            height: 42,
+            padding: "0 24px",
+            background: "#3b82f6",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: saving ? "not-allowed" : "pointer",
+            opacity: saving ? 0.7 : 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          {saving ? "저장 중..." : "설정 저장 및 일괄 적용"}
+        </button>
+      </div>
     </div>
   );
 }

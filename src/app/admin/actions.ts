@@ -90,13 +90,32 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.profile_image_url !== undefined) dbUpdates.profile_image_url = updates.profile_image_url;
 
     if (updates.role === 'USER') {
+      const { policies } = await adminGetLimitPolicies();
       dbUpdates.plan_type = 'free';
-      dbUpdates.max_vacancies = 10;
-      dbUpdates.max_articles_per_month = 0;
+      if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_USER_VACANCY;
+      if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_USER_ARTICLE;
       
       // Update agencies and business_profiles status to REJECTED
       await supabaseAdmin.from('agencies').update({ status: 'REJECTED', reject_reason: '관리자에 의한 일반회원 전환' }).eq('owner_id', memberId);
       await supabaseAdmin.from('business_profiles').update({ status: 'REJECTED', rejection_reason: '관리자에 의한 일반회원 전환', updated_at: new Date().toISOString() }).eq('user_id', memberId);
+    } else if (updates.role === 'BIZ') {
+      const { policies } = await adminGetLimitPolicies();
+      dbUpdates.plan_type = 'biz_premium';
+      if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_BIZ_VACANCY;
+      if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_BIZ_ARTICLE;
+    } else if (updates.role === 'REALTOR') {
+      const { policies } = await adminGetLimitPolicies();
+      const plan = updates.plan_type || 'free';
+      if (plan === 'news_premium') {
+        if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_REALTOR_NEWS_VACANCY;
+        if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_REALTOR_NEWS_ARTICLE;
+      } else if (plan === 'vacancy_premium') {
+        if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_REALTOR_VACANCY_VACANCY;
+        if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_REALTOR_VACANCY_ARTICLE;
+      } else {
+        if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_REALTOR_FREE_VACANCY;
+        if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_REALTOR_FREE_ARTICLE;
+      }
     }
 
     const { error } = await supabaseAdmin.from('members').update(dbUpdates).eq('id', memberId);
@@ -175,15 +194,16 @@ export async function adminApproveRealtorApplication(memberId: string) {
       .single();
 
     const planType = member?.plan_type || 'free';
-    let maxVacancies = 10;
-    let maxArticles = 0;
+    const { policies } = await adminGetLimitPolicies();
+    let maxVacancies = policies.LIMIT_REALTOR_FREE_VACANCY;
+    let maxArticles = policies.LIMIT_REALTOR_FREE_ARTICLE;
 
     if (planType === 'news_premium') {
-      maxVacancies = 20;
-      maxArticles = 10;
+      maxVacancies = policies.LIMIT_REALTOR_NEWS_VACANCY;
+      maxArticles = policies.LIMIT_REALTOR_NEWS_ARTICLE;
     } else if (planType === 'vacancy_premium') {
-      maxVacancies = 50;
-      maxArticles = 20;
+      maxVacancies = policies.LIMIT_REALTOR_VACANCY_VACANCY;
+      maxArticles = policies.LIMIT_REALTOR_VACANCY_ARTICLE;
     }
 
     const { error: memberError } = await supabaseAdmin
@@ -556,12 +576,15 @@ export async function adminApproveBusinessApplication(memberId: string) {
       .eq('user_id', memberId);
     if (bizError) return { success: false, error: bizError.message };
 
-    // 2. members.role을 BIZ로 변경, 비즈니스 요금제 적용
+    // 2. members.role을 BIZ로 변경, 비즈니스 요금제 및 한도 적용
+    const { policies } = await adminGetLimitPolicies();
     const { error: memberError } = await supabaseAdmin
       .from('members')
       .update({
         role: 'BIZ',
-        plan_type: 'biz_premium'
+        plan_type: 'biz_premium',
+        max_vacancies: policies.LIMIT_BIZ_VACANCY,
+        max_articles_per_month: policies.LIMIT_BIZ_ARTICLE
       })
       .eq('id', memberId);
     if (memberError) return { success: false, error: memberError.message };
@@ -581,6 +604,89 @@ export async function adminRejectBusinessApplication(memberId: string, reason: s
       .update({ status: 'REJECTED', rejection_reason: reason, updated_at: new Date().toISOString() })
       .eq('user_id', memberId);
     if (error) return { success: false, error: error.message };
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+const DEFAULT_LIMIT_POLICIES = {
+  LIMIT_USER_VACANCY: 10,
+  LIMIT_USER_ARTICLE: 0,
+  LIMIT_REALTOR_FREE_VACANCY: 10,
+  LIMIT_REALTOR_FREE_ARTICLE: 0,
+  LIMIT_REALTOR_NEWS_VACANCY: 20,
+  LIMIT_REALTOR_NEWS_ARTICLE: 10,
+  LIMIT_REALTOR_VACANCY_VACANCY: 50,
+  LIMIT_REALTOR_VACANCY_ARTICLE: 20,
+  LIMIT_BIZ_VACANCY: 0,
+  LIMIT_BIZ_ARTICLE: 10,
+};
+
+export async function adminGetLimitPolicies() {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const keys = Object.keys(DEFAULT_LIMIT_POLICIES);
+    const { data, error } = await supabaseAdmin
+      .from('point_settings')
+      .select('key, value')
+      .in('key', keys);
+
+    const policies = { ...DEFAULT_LIMIT_POLICIES };
+    if (data) {
+      data.forEach((row: any) => {
+        if (row.key in policies) {
+          (policies as any)[row.key] = Number(row.value);
+        }
+      });
+    }
+    return { success: true, policies };
+  } catch (error: any) {
+    return { success: false, error: error.message, policies: DEFAULT_LIMIT_POLICIES };
+  }
+}
+
+export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_POLICIES, applyToExisting: boolean = false) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const rows = Object.entries(policies).map(([key, value]) => ({
+      key,
+      value
+    }));
+
+    const { error: upsertError } = await supabaseAdmin
+      .from('point_settings')
+      .upsert(rows, { onConflict: 'key' });
+
+    if (upsertError) return { success: false, error: upsertError.message };
+
+    if (applyToExisting) {
+      await supabaseAdmin.from('members').update({
+        max_vacancies: policies.LIMIT_USER_VACANCY,
+        max_articles_per_month: policies.LIMIT_USER_ARTICLE
+      }).eq('role', 'USER');
+
+      await supabaseAdmin.from('members').update({
+        max_vacancies: policies.LIMIT_BIZ_VACANCY,
+        max_articles_per_month: policies.LIMIT_BIZ_ARTICLE
+      }).eq('role', 'BIZ');
+
+      await supabaseAdmin.from('members').update({
+        max_vacancies: policies.LIMIT_REALTOR_FREE_VACANCY,
+        max_articles_per_month: policies.LIMIT_REALTOR_FREE_ARTICLE
+      }).eq('role', 'REALTOR').eq('plan_type', 'free');
+
+      await supabaseAdmin.from('members').update({
+        max_vacancies: policies.LIMIT_REALTOR_NEWS_VACANCY,
+        max_articles_per_month: policies.LIMIT_REALTOR_NEWS_ARTICLE
+      }).eq('role', 'REALTOR').eq('plan_type', 'news_premium');
+
+      await supabaseAdmin.from('members').update({
+        max_vacancies: policies.LIMIT_REALTOR_VACANCY_VACANCY,
+        max_articles_per_month: policies.LIMIT_REALTOR_VACANCY_ARTICLE
+      }).eq('role', 'REALTOR').eq('plan_type', 'vacancy_premium');
+    }
 
     return { success: true };
   } catch (error: any) {

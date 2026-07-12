@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember, adminUpdateBusinessProfile } from "@/app/admin/actions";
+import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember, adminUpdateBusinessProfile, adminGetLimitPolicies } from "@/app/admin/actions";
 import { geocodeAddress } from "@/app/actions/geocode";
 
 interface MemberRegisterFormProps {
@@ -15,6 +15,16 @@ interface MemberRegisterFormProps {
 export default function MemberRegisterForm({ onBack, darkMode = false, editMemberId = null, isAdmin = false, initialTab = 0 }: MemberRegisterFormProps) {
   const [loading, setLoading] = useState(false);
   const [initialFetchDone, setInitialFetchDone] = useState(!editMemberId);
+  const [policies, setPolicies] = useState<any>(null);
+
+  useEffect(() => {
+    adminGetLimitPolicies().then(res => {
+      if (res.success && res.policies) {
+        setPolicies(res.policies);
+      }
+    });
+  }, []);
+
   const [formData, setFormData] = useState({
     email: "",
     name: "",
@@ -284,16 +294,52 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     
     setFormData((prev) => {
       const next = { ...prev, [e.target.name]: val };
-      if (e.target.name === "plan_type") {
-        if (val === "free") {
-          next.max_vacancies = 10;
-          next.max_articles_per_month = 0;
-        } else if (val === "news_premium") {
-          next.max_vacancies = 20;
-          next.max_articles_per_month = 10;
-        } else if (val === "vacancy_premium") {
-          next.max_vacancies = 50;
-          next.max_articles_per_month = 20;
+      const currentPolicies = policies || {
+        LIMIT_USER_VACANCY: 10,
+        LIMIT_USER_ARTICLE: 0,
+        LIMIT_REALTOR_FREE_VACANCY: 10,
+        LIMIT_REALTOR_FREE_ARTICLE: 0,
+        LIMIT_REALTOR_NEWS_VACANCY: 20,
+        LIMIT_REALTOR_NEWS_ARTICLE: 10,
+        LIMIT_REALTOR_VACANCY_VACANCY: 50,
+        LIMIT_REALTOR_VACANCY_ARTICLE: 20,
+        LIMIT_BIZ_VACANCY: 0,
+        LIMIT_BIZ_ARTICLE: 10,
+      };
+
+      if (e.target.name === "role") {
+        if (val === "일반회원") {
+          next.plan_type = "free";
+          next.max_vacancies = currentPolicies.LIMIT_USER_VACANCY;
+          next.max_articles_per_month = currentPolicies.LIMIT_USER_ARTICLE;
+        } else if (val === "비즈니스회원") {
+          next.plan_type = "biz_premium";
+          next.max_vacancies = currentPolicies.LIMIT_BIZ_VACANCY;
+          next.max_articles_per_month = currentPolicies.LIMIT_BIZ_ARTICLE;
+        } else if (val === "부동산회원") {
+          next.plan_type = "free";
+          next.max_vacancies = currentPolicies.LIMIT_REALTOR_FREE_VACANCY;
+          next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_FREE_ARTICLE;
+        }
+      } else if (e.target.name === "plan_type") {
+        if (next.role === "일반회원") {
+          next.max_vacancies = currentPolicies.LIMIT_USER_VACANCY;
+          next.max_articles_per_month = currentPolicies.LIMIT_USER_ARTICLE;
+        } else if (next.role === "비즈니스회원") {
+          next.max_vacancies = currentPolicies.LIMIT_BIZ_VACANCY;
+          next.max_articles_per_month = currentPolicies.LIMIT_BIZ_ARTICLE;
+        } else {
+          // REALTOR
+          if (val === "free") {
+            next.max_vacancies = currentPolicies.LIMIT_REALTOR_FREE_VACANCY;
+            next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_FREE_ARTICLE;
+          } else if (val === "news_premium") {
+            next.max_vacancies = currentPolicies.LIMIT_REALTOR_NEWS_VACANCY;
+            next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_NEWS_ARTICLE;
+          } else if (val === "vacancy_premium") {
+            next.max_vacancies = currentPolicies.LIMIT_REALTOR_VACANCY_VACANCY;
+            next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_VACANCY_ARTICLE;
+          }
         }
       }
       return next;
