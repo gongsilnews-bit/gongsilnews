@@ -278,6 +278,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const handleMemberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     let val = e.target.value;
     if (e.target.name === "phone") val = formatPhone(val);
+    if (e.target.name === "role" && val === "일반회원") {
+      setActiveTab(0);
+    }
     
     setFormData((prev) => {
       const next = { ...prev, [e.target.name]: val };
@@ -609,7 +612,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         {formData.role === "비즈니스회원" && (
           <button onClick={() => setActiveTab(3)} style={{ flex: 1, padding: "14px", background: activeTab === 3 ? (darkMode ? "#8b5cf6" : "#7c3aed") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 3 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 3 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 3 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>비즈니스정보</button>
         )}
-        <button onClick={() => setActiveTab(2)} style={{ flex: 1, padding: "14px", background: activeTab === 2 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 2 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 2 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 2 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>마케팅정보</button>
+        {formData.role !== "일반회원" && (
+          <button onClick={() => setActiveTab(2)} style={{ flex: 1, padding: "14px", background: activeTab === 2 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 2 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 2 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 2 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>마케팅정보</button>
+        )}
       </div>
 
       {activeTab === 0 && (
