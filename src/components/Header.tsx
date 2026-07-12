@@ -234,12 +234,12 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 cursor: 'pointer',
                 fontSize: '11px',
               }} onClick={() => { 
-                if (agencyStatus === 'REJECTED') window.open('/realty_admin?menu=settings&tab=agency', '_blank');
+                if (userRole === 'REALTOR' && agencyStatus === 'REJECTED') window.open('/realty_admin?menu=settings&tab=agency', '_blank');
                 else if (userRole === 'ADMIN') router.push('/admin'); 
                 else if (userRole === 'REALTOR') router.push('/realty_admin');
                 else router.push('/user_admin');
               }}>
-                {userRole === 'ADMIN' ? '최고관리자 >>' : agencyStatus === 'REJECTED' ? '서류보완 >>' : userRole === 'REALTOR' ? '부동산회원 >>' : '일반회원 >>'}
+                {userRole === 'ADMIN' ? '최고관리자 >>' : (userRole === 'REALTOR' && agencyStatus === 'REJECTED') ? '서류보완 >>' : userRole === 'REALTOR' ? '부동산회원 >>' : '일반회원 >>'}
               </div>
               <div style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} onClick={async () => {
                 const supabase = createClient();
