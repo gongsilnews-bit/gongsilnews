@@ -227,7 +227,7 @@ function StudyReadContent() {
     setActiveTab(id);
     const el = document.getElementById(id);
     if (el) {
-      const y = el.getBoundingClientRect().top + window.scrollY - 210;
+      const y = el.getBoundingClientRect().top + window.scrollY - 130;
       window.scrollTo({ top: y, behavior: "smooth" });
     }
   };
@@ -428,7 +428,7 @@ function StudyReadContent() {
             </div>
 
             {/* Sticky Tab */}
-            <div className="sticky bg-white z-50 flex border-b transition-colors" style={{ position: "sticky", top: 136, borderColor: "#f0f0f0", marginBottom: 48 }}>
+            <div className="sticky bg-white z-50 flex border-b transition-colors" style={{ position: "sticky", top: 77, borderColor: "#f0f0f0", marginBottom: 48 }}>
               {["introduce", "curriculum", "review", "creator"].map((tabId) => {
                 const labels: any = { introduce: "특강 소개", curriculum: "커리큘럼", creator: "크리에이터", review: `리뷰 ${lecture.review_count || reviews.length}` };
                 const isActive = activeTab === tabId;
