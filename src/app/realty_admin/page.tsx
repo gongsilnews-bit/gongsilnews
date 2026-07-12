@@ -196,7 +196,13 @@ function RealtyAdminContent() {
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
             <span style={{ fontWeight: 800, fontSize: 17, color: theme.textPrimary }}>{userName}</span>
             <span style={{ fontSize: 14, color: darkMode ? "#aaa" : "#666" }}>{userEmail || "로딩중..."}</span>
-            {planType === 'free' ? (
+            {userRole === 'ADMIN' ? (
+              <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#111827", color: "#fff" }}>최고관리자</span>
+            ) : userRole === 'BIZ' ? (
+              <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#f5f3ff", color: "#7c3aed" }}>비즈니스회원</span>
+            ) : userRole === 'USER' ? (
+              <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#f3f4f6", color: "#4b5563" }}>일반회원</span>
+            ) : planType === 'free' ? (
               <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#f3f4f6", color: "#4b5563" }}>무료부동산(Free)</span>
             ) : (
               <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#ebf5ff", color: "#3b82f6" }}>
