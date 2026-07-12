@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminSectionProps } from "./types";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminApproveRealtorApplication, adminRejectRealtorApplication, adminApproveBusinessApplication, adminRejectBusinessApplication } from "@/app/admin/actions";
@@ -15,8 +16,12 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const [dbMembers, setDbMembers] = useState<any[]>(initialData || []);
   const [checkedMemberIds, setCheckedMemberIds] = useState<string[]>([]);
-  const [showMemberRegister, setShowMemberRegister] = useState(false);
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("editId");
+
+  const showMemberRegister = !!editId;
+  const selectedMemberId = editId && editId !== "new" ? editId : null;
 
   const [searchMemberId, setSearchMemberId] = useState("");
   const [rejectModalFor, setRejectModalFor] = useState<string | null>(null);
@@ -27,8 +32,10 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
   const [activeFilters, setActiveFilters] = useState({ memberId: "", role: "전체", keyword: "" });
 
   useEffect(() => {
-    if (!initialData) adminGetMembers().then(res => { if (res?.success && res.data) setDbMembers(res.data); });
-  }, []);
+    if (!editId) {
+      adminGetMembers().then(res => { if (res?.success && res.data) setDbMembers(res.data); });
+    }
+  }, [editId]);
 
   if (showMemberRegister) {
     return (
@@ -37,9 +44,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
         editMemberId={selectedMemberId}
         isAdmin={true}
         onBack={() => {
-          setShowMemberRegister(false);
-          setSelectedMemberId(null);
-          adminGetMembers().then(res => setDbMembers(res.data || []));
+          router.push("?menu=members");
         }}
       />
     );
@@ -208,7 +213,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
             }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>재등록</button>
           ) : (
             <>
-              <button onClick={() => { setSelectedMemberId(null); setShowMemberRegister(true); }} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ 회원등록</button>
+              <button onClick={() => router.push("?menu=members&editId=new")} style={{ height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ 회원등록</button>
             </>
           )}
           <button onClick={async () => {
@@ -284,7 +289,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                       <a href="#" style={{ fontSize: 15, fontWeight: 600, color: textSecondary, textDecoration: "none", cursor: "pointer" }}
                         onMouseOver={(e) => (e.currentTarget.style.textDecoration = "underline")}
                         onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
-                        onClick={(e) => { e.preventDefault(); setSelectedMemberId(member.id); setShowMemberRegister(true); }}>{member.email}</a>
+                        onClick={(e) => { e.preventDefault(); router.push(`?menu=members&editId=${member.id}`); }}>{member.email}</a>
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>{member.name || '-'}</td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{member.phone || '-'}</td>
@@ -292,7 +297,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{createdDate}</td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14 }}>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, justifyContent: "center" }}>
-                        <span onClick={() => { setSelectedMemberId(member.id); setShowMemberRegister(true); }}
+                        <span onClick={() => router.push(`?menu=members&editId=${member.id}`)}
                           style={{ display: "inline-block", padding: "4px 8px", borderRadius: 4, background: statusBg, color: statusColor, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{displayStatus}</span>
                         {member.isLongTermPending && (
                           <span style={{ 
@@ -321,7 +326,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                     <td></td>
                     <td style={{ padding: "16px 10px", textAlign: "right", verticalAlign: "middle" }}>
                       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                        <button onClick={() => { setSelectedMemberId(member.id); setShowMemberRegister(true); }} style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                        <button onClick={() => router.push(`?menu=members&editId=${member.id}`)} style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                           수정
                         </button>
