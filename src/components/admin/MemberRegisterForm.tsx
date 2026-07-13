@@ -766,16 +766,6 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
                     onMouseLeave={(e) => e.currentTarget.style.background = "#f59e0b"}>
                       부동산회원 전환 신청 ✨
                     </button>
-                    <button type="button" onClick={() => {
-                      if(confirm("비즈니스회원으로 전환을 신청하시겠습니까?\n\n전환 후 생성되는 '비즈니스정보' 탭에서 업체 정보와 사업자등록증을 입력하고 저장하셔야 승인 처리가 시작됩니다.")) {
-                         setFormData({...formData, role: "비즈니스회원"});
-                         setActiveTab(3);
-                      }
-                    }} style={{ padding: "6px 12px", fontSize: 13, fontWeight: 600, color: "#fff", background: "#8b5cf6", border: "none", borderRadius: 6, cursor: "pointer", transition: "background 0.2s" }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "#7c3aed"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "#8b5cf6"}>
-                      비즈니스회원 전환 신청 🏢
-                    </button>
                   </>
                 )}
               </div>
