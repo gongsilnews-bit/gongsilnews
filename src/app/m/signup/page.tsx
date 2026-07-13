@@ -488,7 +488,7 @@ export default function MobileSignupPage() {
               🏢 전국 <strong style={{ color: "#F59E0B" }}>11만</strong> 부동산 공실뉴스
             </div>
             <h1 className="m-hero-title">
-              중개업소 가입 및 요금제 안내
+              공실을 뉴스로 전달하다!
             </h1>
             <p className="m-hero-desc">
               높은 이용료나 카르텔 가입 장벽 없이, 100% 평생 무료로 전국 매물 검색과 지역 공실 뉴스를 마음껏 누리세요.
