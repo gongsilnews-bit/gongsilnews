@@ -289,7 +289,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
             <div style={{ display: "flex", alignItems: isSmallHeader ? "center" : "flex-end", gap: isSmallHeader ? "16px" : "20px", flex: 1, minWidth: 0 }}>
               {/* 1. 로고 (isSmallHeader에 따라 크기만 변경) */}
               <div style={{ display: "flex", alignItems: "flex-end", cursor: "pointer", flexShrink: 0 }} onClick={() => window.location.href = "/"}>
-                <img src="/logo.png" style={{ height: isSmallHeader ? "45px" : "70px", transition: "height 0.3s ease" }} alt="부동산 정보채널 공실뉴스" />
+                <img src="/logo.png" style={{ height: isSmallHeader ? "40px" : "70px", transition: "height 0.3s ease" }} alt="부동산 정보채널 공실뉴스" />
               </div>
 
               {/* 2. 메인 메뉴 또는 기사 제목 (Indication Bar) */}
@@ -305,7 +305,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   whiteSpace: "nowrap",
                   paddingBottom: isSmallHeader ? "0" : "5px",
                   flex: 1,
-                  fontSize: isSmallHeader ? "14.5px" : "17px"
+                  fontSize: isSmallHeader ? "15.5px" : "17px"
                 }}>
                   <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""}>우리동네뉴스</Link>
                   <Link href="/news_gongsil" className={pathname === "/news_gongsil" ? "active" : ""}>공실뉴스</Link>
@@ -360,7 +360,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
 
             {/* === [Sticky State] 스크롤 시 나타나는 우측 액션 버튼들 === */}
             {isSmallHeader && (
-              <div style={{ display: "flex", alignItems: "center", gap: isSmallHeader ? "10px" : "16px", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: isSmallHeader ? "8px" : "16px", flexShrink: 0 }}>
                 {currentUser ? (
                   <div style={{ color: "#333", cursor: "pointer", fontSize: "14px", fontWeight: "700" }} onClick={() => router.push(userRole === 'ADMIN' ? '/admin' : userRole === 'REALTOR' ? '/realty_admin' : '/user_admin')}>
                     내정보
