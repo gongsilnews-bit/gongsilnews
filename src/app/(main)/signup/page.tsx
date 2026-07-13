@@ -72,30 +72,57 @@ const landlordFeatures = [
   },
 ];
 
-const comparisonData = [
+const brokerComparisonData = [
   { feature: "가입비 & 가입 절차", legacy: "가입비 발생 & 승인 대기", gongsil: "100% 무료 & 즉시 가입/승인" },
   { feature: "월 고정 이용료", legacy: "매월 10~30만원 지출", gongsil: "평생 0원 (수수료 제로)" },
-  { feature: "매물 등록 광고비", legacy: "건당 추가 비용 발생", gongsil: "무제한 등록 & 무료 노출" },
+  { feature: "공동중개 광고망", legacy: "광고 건당 추가 비용 발생", gongsil: "무제한 등록 & 무료 노출" },
   { feature: "중개 실무 교육/특강", legacy: "유료 아카데미 결제", gongsil: "전문가 특강 전면 무료" },
-  { feature: "매물 매칭 지원", legacy: "수동 검색 및 연락", gongsil: "AI 실시간 추천 및 자동 매칭" },
+  { feature: "매물 매칭 지원", legacy: "수동 검색 및 직접 연락", gongsil: "AI 실시간 추천 및 자동 매칭" },
 ];
 
-const faqs = [
+const landlordComparisonData = [
+  { feature: "공실 등록 수수료", legacy: "등록 대행 수수료 청구", gongsil: "평생 0원 (100% 무료)" },
+  { feature: "중개망 동시 노출", legacy: "직접 여러 부동산 방문", gongsil: "클릭 한 번으로 11만 중개업소 동시 노출" },
+  { feature: "매물 홍보 콘텐츠 지원", legacy: "본인 촬영 또는 유료 대행", gongsil: "드론 촬영 및 무료 매물 홍보물 지원" },
+  { feature: "공실 해결 속도", legacy: "평균 1~3개월 소요", gongsil: "매칭 알고리즘으로 즉각적인 거래 중개" },
+  { feature: "지역 시세 리포트", legacy: "유료 리포트 구매 필요", gongsil: "지역 실거래 시세 리포트 상시 무료" },
+];
+
+const brokerFaqs = [
   {
     q: "가입비나 이용료가 정말 없나요?",
-    a: "네, 맞습니다. 공실뉴스는 중개사와 임대인을 위한 상생 플랫폼으로 가입비, 월 고정 이용료, 수수료가 평생 100% 무료입니다.",
+    a: "네, 맞습니다. 공실뉴스는 중개사님과의 상생을 최우선으로 하여, 가입비, 월 고정 이용료, 수수료가 평생 100% 무료입니다.",
   },
   {
-    q: "공동중개/공실 등록 서류는?",
-    a: "일반 개인 회원은 인증만으로 간편 가입이 가능합니다. 다만 공인중개사 회원으로 활동하시려면 사업자등록증 또는 개설등록증 등의 자격 서류 업로드가 필요합니다.",
+    q: "회원 인증 및 가입 승인 절차는 어떻게 되나요?",
+    a: "공인중개사 회원으로 활동하시려면 사업자등록증 또는 개설등록증 등의 자격 서류 업로드가 필요하며, 확인 후 신속하게 승인 처리가 완료됩니다.",
   },
   {
-    q: "매물 매칭은 어떻게 되나요?",
-    a: "임대인이 등록한 공실 정보는 즉시 인근 지역의 11만 중개사 회원에게 전송되어 실시간 거래를 유도하고 자동으로 빠르게 매칭합니다.",
+    q: "공동중개 매물은 안전하게 보호되나요?",
+    a: "네, 당사의 정보망은 검증된 개업 공인중개사 간에만 공유되며, 강력한 보안 프로토콜 및 실명제를 통해 안전하게 중개 활동을 진행하실 수 있습니다.",
   },
   {
-    q: "무료 특강/뉴스 구독 요건은?",
-    a: "회원가입만 완료하시면 세무, 부동산 마케팅, 실무 트렌드 분석 리포트 및 부동산 뉴스를 아무런 제한 없이 전면 무료로 이용하실 수 있습니다.",
+    q: "무료 특강 및 실무 콘텐츠 구독은 어떻게 이용하나요?",
+    a: "가입 완료 후 별도의 추가 결제 없이 세무, 법률, 부동산 마케팅 등 실무 트렌드 아카데미 전체 강의를 언제 어디서나 전면 무료로 시청하실 수 있습니다.",
+  },
+];
+
+const landlordFaqs = [
+  {
+    q: "공실 등록 광고비나 수수료가 전혀 없나요?",
+    a: "네, 임대인 회원님께서는 가입비, 매물 등록비, 광고 노출비 등이 평생 전면 무료이며, 계약 성공 시 중개보수 외의 별도 수수료 또한 일절 청구되지 않습니다.",
+  },
+  {
+    q: "매물을 등록하면 어떻게 11만 중개업소에 동시에 알려지나요?",
+    a: "임대인님이 매물을 등록하는 순간, 해당 지역 인근의 공인중개사 회원 전용 중개망에 즉각 알림 전송 및 정보 노출이 이루어져 가장 빠르게 매칭이 시작됩니다.",
+  },
+  {
+    q: "드론 항공 촬영 및 홍보물 무료 지원은 어떻게 받나요?",
+    a: "상가, 토지, 건물 등의 대형 공실을 등록하신 후 고객센터 또는 드론 촬영 신청 메뉴를 통해 접수하시면, 무료 촬영 및 온라인 홍보물 제작을 지원해 드립니다.",
+  },
+  {
+    q: "일반 주택 소유자나 개인 회원도 가입해서 이용할 수 있나요?",
+    a: "네, 당연합니다. 상가나 빌딩뿐만 아니라 아파트, 오피스텔, 원룸 등 모든 유형의 주택 소유주 및 세입자(임차인)분들도 누구나 일반 회원으로 가입하여 공실 매칭 서비스를 무료로 이용하실 수 있습니다.",
   },
 ];
 
@@ -107,6 +134,29 @@ export default function SignupPage() {
 
   const currentStats = activeTab === "broker" ? brokerStats : landlordStats;
   const currentFeatures = activeTab === "broker" ? brokerFeatures : landlordFeatures;
+  const currentComparison = activeTab === "broker" ? brokerComparisonData : landlordComparisonData;
+  const currentFaqs = activeTab === "broker" ? brokerFaqs : landlordFaqs;
+
+  const bottomCtaContent = {
+    broker: {
+      title: (
+        <>
+          부동산 상생 네트워크,<br />공실뉴스에 동참하세요.
+        </>
+      ),
+      desc: "가입비 및 수수료 없이 강력한 정보 혜택을 제공받으실 수 있습니다.",
+      buttonText: "무료 회원가입 바로가기",
+    },
+    landlord: {
+      title: (
+        <>
+          비어 있는 내 공실,<br />가장 빠르게 채우는 비결!
+        </>
+      ),
+      desc: "수수료와 광고비 걱정 없이 전국 11만 중개망에 즉시 무료 등록해 보세요.",
+      buttonText: "무료 공실 등록하고 가입하기",
+    }
+  };
 
   const heroContent = {
     broker: {
@@ -631,15 +681,33 @@ export default function SignupPage() {
                 <tr>
                   <th style={{ width: "34%" }}>구분</th>
                   <th style={{ width: "33%" }}>기존 유료망</th>
-                  <th style={{ width: "33%", color: "#3f37c9" }} className="pc-comp-highlight">공실뉴스</th>
+                  <th 
+                    style={{ 
+                      width: "33%", 
+                      color: activeTab === "broker" ? "#3f37c9" : "#7209b7" 
+                    }} 
+                    className="pc-comp-highlight"
+                  >
+                    공실뉴스
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {comparisonData.map((row, idx) => (
+                {currentComparison.map((row, idx) => (
                   <tr key={idx}>
                     <td style={{ fontWeight: 700, textAlign: "left", paddingLeft: "30px" }}>{row.feature}</td>
                     <td style={{ color: "#64748b" }}>{row.legacy}</td>
-                    <td className="pc-comp-highlight">{row.gongsil}</td>
+                    <td 
+                      className="pc-comp-highlight"
+                      style={{
+                        color: activeTab === "broker" ? "#3f37c9" : "#7209b7",
+                        background: activeTab === "broker" 
+                          ? "rgba(63, 87, 201, 0.03)" 
+                          : "rgba(114, 9, 183, 0.03)"
+                      }}
+                    >
+                      {row.gongsil}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -651,8 +719,8 @@ export default function SignupPage() {
         <section className="pc-faq-sec">
           <h2 className="pc-sec-title" style={{ textAlign: "center" }}>자주 묻는 질문</h2>
           <div className="pc-faq-container">
-            {faqs.map((faq, i) => (
-              <div key={i} className="pc-faq-card" style={{ borderColor: openFaq === i ? "#3f37c9" : "#e2e8f0" }}>
+            {currentFaqs.map((faq, i) => (
+              <div key={i} className="pc-faq-card" style={{ borderColor: openFaq === i ? (activeTab === "broker" ? "#3f37c9" : "#7209b7") : "#e2e8f0" }}>
                 <button className="pc-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
                   <span>{faq.q}</span>
                   <span style={{ transform: openFaq === i ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
@@ -666,17 +734,28 @@ export default function SignupPage() {
         </section>
 
         {/* ===== CTA ===== */}
-        <section className="pc-cta-sec">
+        <section 
+          className="pc-cta-sec"
+          style={{
+            background: activeTab === "broker"
+              ? "radial-gradient(circle at bottom right, #1e1b4b 0%, #020617 100%)"
+              : "radial-gradient(circle at bottom right, #2e1042 0%, #020617 100%)",
+            transition: "background 0.5s ease"
+          }}
+        >
           <PlayLogo size={56} />
-          <h2 className="pc-cta-title">부동산 상생 네트워크,<br />공실뉴스에 동참하세요.</h2>
-          <p className="pc-cta-desc">가입비 및 수수료 없이 강력한 정보 혜택을 제공받으실 수 있습니다.</p>
-          <button className="pc-cta-btn" onClick={() => {
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('signup_member_type', activeTab === 'broker' ? 'broker' : 'landlord');
-            }
-            setIsAuthModalOpen(true);
-          }}>
-            무료 회원가입 바로가기
+          <h2 className="pc-cta-title">{bottomCtaContent[activeTab].title}</h2>
+          <p className="pc-cta-desc">{bottomCtaContent[activeTab].desc}</p>
+          <button 
+            className={`pc-hero-cta-btn ${activeTab}`} 
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('signup_member_type', activeTab === 'broker' ? 'broker' : 'landlord');
+              }
+              setIsAuthModalOpen(true);
+            }}
+          >
+            {bottomCtaContent[activeTab].buttonText}
           </button>
         </section>
       </div>
