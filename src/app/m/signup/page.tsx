@@ -33,19 +33,38 @@ const landlordStats = [
 
 const brokerFeatures = [
   {
-    icon: "🤝",
+    icon: (
+      <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
+    ),
     title: "공동중개 무료 등록 및 열람\n(2건 평생 무료 등록)",
     desc: "공실뉴스 부동산 회원이 되시면 공동중개 물건을 2건까지 평생 무료로 등록할 수 있으며, 다른 회원들이 올린 공동중개 매물 역시 무료로 편리하게 열람할 수 있습니다.",
     color: "#3f37c9",
   },
   {
-    icon: "📱",
+    icon: (
+      <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="5" y="2" width="14" height="20" rx="3" />
+        <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth="2.5" />
+        <path d="M12 6a3 3 0 0 0-3 3c0 2.2 3 5 3 5s3-2.8 3-5a3 3 0 0 0-3-3z" fill="currentColor" fillOpacity="0.1" />
+        <circle cx="12" cy="9" r="1.5" fill="currentColor" />
+      </svg>
+    ),
     title: "모바일 지원 및\n지도 기반 매물 실시간 검색",
     desc: "야외 현장이나 이동 중에도 스마트폰 모바일을 통해 언제 어디서나 지도 기반으로 주변의 공동중개 물건을 한눈에 조회하고 신속하게 확인할 수 있습니다.",
     color: "#4361ee",
   },
   {
-    icon: "🔍",
+    icon: (
+      <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <path d="M14 2v6h6" />
+        <circle cx="11" cy="13" r="3" />
+        <line x1="13.5" y1="15.5" x2="18" y2="20" />
+      </svg>
+    ),
     title: "전국 경매·공매 무료 열람 및\n부동산 정보 기사 무료 구독",
     desc: "별도의 유료 결제 없이 전국 경매 및 공매 물건 상세 정보를 무료로 열람하고, 신뢰성 높은 최신 부동산 정보 뉴스를 매일 무료로 받아보실 수 있습니다.",
     color: "#10b981",
@@ -54,19 +73,39 @@ const brokerFeatures = [
 
 const landlordFeatures = [
   {
-    icon: "🏠",
+    icon: (
+      <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <line x1="12" y1="11" x2="12" y2="17" />
+        <line x1="9" y1="14" x2="15" y2="14" />
+      </svg>
+    ),
     title: "내 소중한 매물 무료 등록 및\n중개 의뢰 (2건 평생 무료)",
     desc: "소유하신 상가, 주택 등 소중한 매물 정보를 수수료나 광고 등록비 없이 최대 2건까지 평생 무료로 등록하여 인근의 11만 부동산 회원들에게 중개 의뢰할 수 있습니다.",
     color: "#7209b7",
   },
   {
-    icon: "📱",
+    icon: (
+      <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="5" y="2" width="14" height="20" rx="3" />
+        <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth="2.5" />
+        <path d="M12 6a3 3 0 0 0-3 3c0 2.2 3 5 3 5s3-2.8 3-5a3 3 0 0 0-3-3z" fill="currentColor" fillOpacity="0.1" />
+        <circle cx="12" cy="9" r="1.5" fill="currentColor" />
+      </svg>
+    ),
     title: "모바일 및 지도 기반\n편리한 등록 및 관리",
     desc: "모바일 페이지를 통해 밖에서도 스마트폰으로 간편하게 매물 위치를 지도에서 확인하고 매물 상세 정보를 업로드 및 모니터링할 수 있어 관리가 편리합니다.",
     color: "#3f37c9",
   },
   {
-    icon: "🔍",
+    icon: (
+      <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <path d="M14 2v6h6" />
+        <circle cx="11" cy="13" r="3" />
+        <line x1="13.5" y1="15.5" x2="18" y2="20" />
+      </svg>
+    ),
     title: "전국 경매·공매 무료 열람 및\n부동산 정보 기사 무료 구독",
     desc: "전국 경매/공매 진행 물건 정보를 평생 비용 없이 무료로 직접 열람하고, 매일 업데이트되는 부동산 시세 뉴스 및 트렌드 기사를 무료로 구독하실 수 있습니다.",
     color: "#4361ee",
@@ -604,7 +643,7 @@ export default function MobileSignupPage() {
 
           {currentFeatures.map((f, i) => (
             <div key={i} className="m-feature-card">
-              <div className="m-feature-icon-wrap" style={{ background: `${f.color}10`, color: f.color }}>
+              <div className="m-feature-icon-wrap" style={{ background: "transparent", color: f.color }}>
                 {f.icon}
               </div>
               <h3 className="m-feature-title">{f.title}</h3>
