@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthModal from "@/components/AuthModal";
+import { createClient } from "@/utils/supabase/client";
+import { submitInquiry } from "@/app/actions/inquiry";
 
 const PlayLogo = ({ size = 64 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
@@ -56,10 +58,80 @@ const brokerFaqs = [
   },
 ];
 
-export default function MobileSignupPage() {
+export default function MobileNewsRealtyPage() {
   const router = useRouter();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  const [user, setUser] = useState<any>(null);
+  const [isApplicationOpen, setIsApplicationOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    agencyName: "",
+    targetComplex: "",
+    bizRegion: "",
+    category: "아파트 전문",
+    memo: ""
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAppliedSuccessfully, setIsAppliedSuccessfully] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser(user);
+      }
+    });
+  }, []);
+
+  const handleApplyClick = (selectedComplex?: string, selectedRegion?: string, selectedCategory?: string) => {
+    setFormData(prev => ({
+      ...prev,
+      targetComplex: selectedComplex || prev.targetComplex || "",
+      bizRegion: selectedRegion || prev.bizRegion || "",
+      category: selectedCategory || prev.category || "아파트 전문"
+    }));
+
+    if (!user) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("signup_member_type", "broker");
+      }
+      setIsAuthModalOpen(true);
+    } else {
+      setIsApplicationOpen(true);
+    }
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.agencyName.trim() || !formData.targetComplex.trim() || !formData.bizRegion.trim()) {
+      alert("모든 필수 입력 항목을 채워주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await submitInquiry({
+        name: user.user_metadata?.name || user.email?.split("@")[0] || "기자단 신청자",
+        phone: user.user_metadata?.phone || "010-0000-0000",
+        email: user.email,
+        category: "기자단 신청",
+        title: `[기자단 신청] ${formData.agencyName}`,
+        content: `상호명: ${formData.agencyName}\n희망단지: ${formData.targetComplex}\n활동지역: ${formData.bizRegion}\n주력물건: ${formData.category}\n신청 메모: ${formData.memo || "없음"}`,
+        userId: user.id,
+      });
+
+      if (res.success) {
+        setIsAppliedSuccessfully(true);
+      } else {
+        alert("신청 중 오류가 발생했습니다: " + res.message);
+      }
+    } catch (err: any) {
+      alert("시스템 오류: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -451,6 +523,130 @@ export default function MobileSignupPage() {
           .m-footer {
             background: #0b0f19; padding: 36px 16px; text-align: center; border-top: 1px solid #1e293b;
           }
+
+          /* ===== Application Modal ===== */
+          .application-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 99999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+          }
+          .application-modal {
+            background: #ffffff;
+            width: 100%;
+            max-width: 480px;
+            border-radius: 20px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            overflow: hidden;
+            animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+          @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(15px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          .modal-header {
+            padding: 20px 24px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            position: relative;
+          }
+          .modal-close-btn {
+            position: absolute;
+            top: 16px; right: 16px;
+            background: none; border: none;
+            font-size: 20px; color: #94a3b8;
+            cursor: pointer;
+          }
+          .modal-title { font-size: 16px; font-weight: 900; color: #0f172a; margin: 0; }
+          .modal-body {
+            padding: 16px 24px 24px;
+            overflow-y: auto;
+            flex: 1;
+          }
+          .form-group {
+            margin-bottom: 12px;
+          }
+          .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 4px;
+          }
+          .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 13.5px;
+            outline: none;
+            box-sizing: border-box;
+            background: #fff;
+          }
+          .form-input:focus { border-color: #d97706; }
+          .form-input.readonly { background: #f8fafc; color: #64748b; cursor: not-allowed; }
+          .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 13.5px;
+            outline: none;
+            background: #fff;
+            box-sizing: border-box;
+          }
+          .form-textarea {
+            width: 100%;
+            height: 70px;
+            padding: 8px 12px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 13.5px;
+            outline: none;
+            resize: none;
+            box-sizing: border-box;
+            font-family: inherit;
+          }
+          
+          .bank-info-box {
+            background: #fffbeb;
+            border: 1.5px dashed #fcd34d;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+          }
+          .bank-title {
+            font-size: 12.5px;
+            font-weight: 800;
+            color: #b45309;
+            margin: 0 0 2px 0;
+          }
+          .bank-text {
+            font-size: 11.5px;
+            color: #78350f;
+            line-height: 1.5;
+            margin: 0;
+          }
+          .submit-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            color: #ffffff;
+            font-size: 14.5px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(217,119,6,0.2);
+          }
+          .submit-btn:disabled { background: #94a3b8; cursor: not-allowed; }
         `}</style>
 
         {/* ===== Header ===== */}
@@ -577,9 +773,7 @@ export default function MobileSignupPage() {
               
               <button 
                 className="m-pricing-card-btn free-btn"
-                onClick={() => {
-                  router.push('/m/newsrealty');
-                }}
+                onClick={() => handleApplyClick()}
               >
                 공실뉴스부동산 신청하기
               </button>
@@ -740,7 +934,7 @@ export default function MobileSignupPage() {
           ))}
         </section>
 
-        {/* ===== CTA ===== */}
+        {/* ===== FAQ ===== */}
         <section 
           className="m-cta-sec"
           style={{
@@ -776,6 +970,130 @@ export default function MobileSignupPage() {
         </footer>
 
       </div>
+
+      {/* ===== Application Overlay & Modal ===== */}
+      {isApplicationOpen && (
+        <div className="application-overlay" onClick={() => setIsApplicationOpen(false)}>
+          <div className="application-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <button className="modal-close-btn" onClick={() => setIsApplicationOpen(false)}>✕</button>
+              <h2 className="modal-title">📰 공실뉴스부동산 가입 신청 (대표 심사)</h2>
+            </div>
+            
+            <div className="modal-body">
+              {isAppliedSuccessfully ? (
+                <div style={{ textAlign: "center", padding: "10px 0" }}>
+                  <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>🎉</span>
+                  <h3 style={{ fontSize: 16, fontWeight: 900, color: "#111", margin: "0 0 8px" }}>기자단 신청 완료!</h3>
+                  <p style={{ fontSize: 12.5, color: "#475569", lineHeight: 1.5, marginBottom: 16, wordBreak: "keep-all" }}>
+                    제출해 주신 주력 단지 및 구역의 중복 신청 여부와 중개인 정보 확인 후 24시간 이내에 승인 문자가 발송됩니다.
+                  </p>
+                  
+                  <div className="bank-info-box">
+                    <h4 className="bank-title">💳 입금 계좌</h4>
+                    <p className="bank-text">
+                      <strong>신한은행 110-482-123456</strong><br/>
+                      예금주: <strong>(주)공실뉴스</strong><br/>
+                      금액: <strong>30,000원</strong> (월 회비)<br/>
+                    </p>
+                  </div>
+                  
+                  <button 
+                    className="submit-btn" 
+                    onClick={() => {
+                      setIsApplicationOpen(false);
+                      setIsAppliedSuccessfully(false);
+                      window.location.reload();
+                    }}
+                  >
+                    확인 및 닫기
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleFormSubmit}>
+                  <div className="form-group">
+                    <label className="form-label">신청자 이메일</label>
+                    <input className="form-input readonly" type="text" value={user?.email || ""} readOnly />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">부동산 상호명 <span style={{ color: "#ef4444" }}>*</span></label>
+                    <input 
+                      className="form-input" 
+                      type="text" 
+                      placeholder="예: 공실뉴스 공인중개사사무소" 
+                      value={formData.agencyName}
+                      onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">주력 아파트 단지명 <span style={{ color: "#ef4444" }}>*</span></label>
+                    <input 
+                      className="form-input" 
+                      type="text" 
+                      placeholder="예: 마포 래미안 푸르지오 단지" 
+                      value={formData.targetComplex}
+                      onChange={(e) => setFormData({ ...formData, targetComplex: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">주요 활동 지역 <span style={{ color: "#ef4444" }}>*</span></label>
+                    <input 
+                      className="form-input" 
+                      type="text" 
+                      placeholder="예: 서울 마포구 아현동" 
+                      value={formData.bizRegion}
+                      onChange={(e) => setFormData({ ...formData, bizRegion: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">주력 물건 카테고리 <span style={{ color: "#ef4444" }}>*</span></label>
+                    <select 
+                      className="form-select"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    >
+                      <option value="아파트 전문">아파트 전문</option>
+                      <option value="상가/사무실 전문">상가/사무실 전문</option>
+                      <option value="원룸/오피스텔 전문">원룸/오피스텔 전문</option>
+                      <option value="토지/빌딩 전문">토지/빌딩 전문</option>
+                      <option value="분양/재개발 전문">분양/재개발 전문</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">신청 메모 (기타 요청사항)</label>
+                    <textarea 
+                      className="form-textarea" 
+                      placeholder="기타 요청사항을 남겨주세요." 
+                      value={formData.memo}
+                      onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="bank-info-box">
+                    <h4 className="bank-title">💳 월 회비 결제 안내</h4>
+                    <p className="bank-text">
+                      <strong>금액: 월 30,000원</strong><br/>
+                      <strong>신한은행 110-482-123456</strong> (예금주: 주식회사 공실뉴스)<br/>
+                    </p>
+                  </div>
+
+                  <button className="submit-btn" type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "신청 처리 중..." : "독점 권한 심사 및 신청하기 ✨"}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

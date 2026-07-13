@@ -23,7 +23,7 @@ export default function MenuPage() {
       try {
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
-        let user = session?.user;
+        let user: any = session?.user;
         if (!user) {
           const { data } = await supabase.auth.getUser();
           user = data?.user;
@@ -155,6 +155,7 @@ export default function MenuPage() {
 
   const serviceMenus = [
     { name: "공실열람", path: "/m/gongsil" },
+    { name: "공실뉴스부동산", path: "/m/newsrealty" },
     { name: "부동산특강", path: "/m/study" },
     { name: "드론영상", path: "/m/board?id=drone" },
     { name: "APP(앱)", path: "/m/board?id=app" },

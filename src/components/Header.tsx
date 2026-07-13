@@ -225,6 +225,10 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
 
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
+              <Link href="/newsrealty" style={{ color: "#F59E0B", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
+                공실뉴스부동산 ✨
+              </Link>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
               <div style={{
                 background: userRole === 'ADMIN' ? '#111827' : '#ef4444',
                 color: '#fff',
@@ -250,7 +254,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", paddingRight: "4px" }}>
               <div
-                onClick={() => { setAuthTab('login'); setIsAuthModalOpen(true); }}
+                onClick={() => { router.push('/login?returnTo=' + encodeURIComponent('/realty_admin?menu=gongsil&action=write')); }}
                 style={{
                   background: "#ef4444", color: "#fff",
                   padding: "4px 10px", borderRadius: "4px",
@@ -260,11 +264,15 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               >
                 공실등록 &gt;&gt;
               </div>
-              <Link href="/signup" style={{ color: "#F59E0B", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
-                무료 회원가입
+
+               <Link href="/newsrealty" style={{ color: "#F59E0B", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
+                공실뉴스부동산
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
-              <div style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} onClick={() => { setAuthTab('login'); setIsAuthModalOpen(true); }}>
+              <div 
+                style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} 
+                onClick={() => { router.push('/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search)); }}
+              >
                 로그인
               </div>
             </div>
@@ -360,18 +368,27 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
 
             {/* === [Sticky State] 스크롤 시 나타나는 우측 액션 버튼들 === */}
             {isSmallHeader && (
-              <div style={{ display: "flex", alignItems: "center", gap: isSmallHeader ? "8px" : "16px", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: isSmallHeader ? "8px" : "12px", flexShrink: 0 }}>
                 {currentUser ? (
-                  <div style={{ color: "#333", cursor: "pointer", fontSize: "14px", fontWeight: "700" }} onClick={() => router.push(userRole === 'ADMIN' ? '/admin' : userRole === 'REALTOR' ? '/realty_admin' : '/user_admin')}>
-                    내정보
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Link href="/newsrealty" style={{ color: "#F59E0B", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
+                      공실뉴스부동산 ✨
+                    </Link>
+                    <span style={{ color: "#ddd", fontSize: "13px" }}>|</span>
+                    <div style={{ color: "#333", cursor: "pointer", fontSize: "13px", fontWeight: "700" }} onClick={() => router.push(userRole === 'ADMIN' ? '/admin' : userRole === 'REALTOR' ? '/realty_admin' : '/user_admin')}>
+                      내정보
+                    </div>
                   </div>
                 ) : (
                   <>
-                    <Link href="/signup" style={{ color: "#ef4444", fontSize: "14px", fontWeight: "700", textDecoration: "none" }}>
-                      무료 회원가입
+                    <Link href="/newsrealty" style={{ color: "#F59E0B", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
+                      공실뉴스부동산
                     </Link>
-                    <span style={{ color: "#ddd", fontSize: "14px" }}>|</span>
-                    <div style={{ color: "#333", cursor: "pointer", fontSize: "14px", fontWeight: "700" }} onClick={() => { setAuthTab('login'); setIsAuthModalOpen(true); }}>
+                    <span style={{ color: "#ddd", fontSize: "13px" }}>|</span>
+                    <div 
+                      style={{ color: "#333", cursor: "pointer", fontSize: "13px", fontWeight: "700" }} 
+                      onClick={() => { router.push('/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search)); }}
+                    >
                       로그인
                     </div>
                   </>
@@ -387,8 +404,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
 
                 <button onClick={() => {
                   if (!currentUser) {
-                    setAuthTab('login');
-                    setIsAuthModalOpen(true);
+                    router.push('/login?returnTo=' + encodeURIComponent('/realty_admin?menu=gongsil&action=write'));
                   } else {
                     if (userRole === 'ADMIN') router.push('/admin?menu=gongsil&action=write');
                     else if (userRole === 'REALTOR') router.push('/realty_admin?menu=gongsil&action=write');
