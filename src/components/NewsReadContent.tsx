@@ -1025,7 +1025,8 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                 <div className="sb-widget">
                   <div className="sb-title">추천 공실</div>
                   {visibleVacancies.map((prop, i) => {
-                  const cardMasked = prop.exposure_type === '부동산노출' && viewerRole !== 'REALTOR' && viewerRole !== 'ADMIN';
+                  const cardMasked = prop.exposure_type === '부동산노출' &&
+                    (prop.trade_type === '경매' || prop.trade_type === '공매' ? viewerRole === null : (viewerRole !== 'REALTOR' && viewerRole !== 'ADMIN'));
                   const cardAddr = prop.building_name || prop.detail_addr || "이름없는 공실";
                   const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
                   

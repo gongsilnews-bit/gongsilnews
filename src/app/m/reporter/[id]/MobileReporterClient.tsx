@@ -557,7 +557,7 @@ export default function MobileReporterClient({
 
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {vacancies.filter(v => realtorTradeType === "전체" || v.trade_type === realtorTradeType).map((prop, i) => {
-                  const cardMasked = prop.exposure_type === '부동산노출' && userLevel < 2;
+                  const cardMasked = prop.exposure_type === '부동산노출' && (prop.trade_type === '경매' || prop.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
                   const cardAddr = prop.building_name || [prop.dong, prop.sigungu].filter(Boolean).join(" ") || "이름없는 공실";
                   const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
 

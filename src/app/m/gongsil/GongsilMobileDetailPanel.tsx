@@ -98,7 +98,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
   showCommission,
 }) => {
   const isMyProperty = currentUser && selectedVacancy && selectedVacancy.owner_id === currentUser.id;
-  const detailMasked = selectedVacancy.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
+  const detailMasked = selectedVacancy.exposure_type === '부동산노출' && (selectedVacancy.trade_type === '경매' || selectedVacancy.trade_type === '공매' ? userLevel < 1 : userLevel < 2) && !isMyProperty;
   const detailAddr = getCleanAddrText(selectedVacancy);
 
   const meta = selectedVacancy?.metadata || {};

@@ -121,7 +121,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
       <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
         {renderList?.map((v: any) => {
           const isMyProperty = currentUser && v && v.owner_id === currentUser.id;
-          const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
+          const cardMasked = v.exposure_type === '부동산노출' && (v.trade_type === '경매' || v.trade_type === '공매' ? userLevel < 1 : userLevel < 2) && !isMyProperty;
           const cardAddr = getCleanAddrText(v);
 
           // 경공매 데이터 파싱

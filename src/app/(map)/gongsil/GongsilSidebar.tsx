@@ -337,7 +337,9 @@ export default function GongsilSidebar({
             const priceText = isAuctionMode ? `감정가 ${formatAmount(appraisalPrice)}` : getPriceText(prop);
             // 마스킹 판별: 부동산노출 전용 + 부동산회원 미만 (본인 등록 매물 제외)
             const isMyProperty = currentUser && prop && prop.owner_id === currentUser.id;
-            const isMasked = prop.exposure_type === "부동산노출" && userLevel < 2 && !isMyProperty;
+            const isMasked = prop.exposure_type === "부동산노출" &&
+              (prop.trade_type === "경매" || prop.trade_type === "공매" ? userLevel < 1 : userLevel < 2) &&
+              !isMyProperty;
             const showCommission = userLevel >= 2; // 중개보수는 부동산회원 이상만
 
             return (

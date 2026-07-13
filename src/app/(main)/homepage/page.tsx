@@ -825,7 +825,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
             ) : (
               <div>
                 {paged.map((v, idx) => {
-                  const isMasked = v.exposure_type === '부동산노출' && userLevel < 2;
+                  const isMasked = v.exposure_type === '부동산노출' && (v.trade_type === '경매' || v.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
                   const showCommission = userLevel >= 2;
                   const addrText = v.building_name || `${v.sigungu || ""} ${v.dong || ""} 공실광고`;
                   

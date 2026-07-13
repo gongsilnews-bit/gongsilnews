@@ -1606,7 +1606,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           {searchTab === 'vacancy' && (
             <div style={{ background: "#f9fafb", padding: "8px 16px 20px" }}>
               {vacancyList.map((v: any) => {
-                const cardMasked = v.exposure_type === '부동산노출' && userLevel < 2;
+                const cardMasked = v.exposure_type === '부동산노출' && (v.trade_type === '경매' || v.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
                 const showCommission = userLevel >= 2;
                 const baseAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
                 const cardAddr = cardMasked ? (baseAddr || "주소 없음").replace(/[^\s]/g, "X") : baseAddr;

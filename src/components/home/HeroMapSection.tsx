@@ -436,7 +436,7 @@ export default function HeroMapSection() {
               const addrText = [item.dong, item.building_name, item.hosu].filter(Boolean).join(" ") || item.address || item.title || "공실광고";
               const optionsStr = [`룸 ${item.room_count || 0}개`, `욕실 ${item.bath_count || 0}개`, ...(item.options || [])].filter(Boolean).join(", ");
               // 마스킹 판별: 공실열람(GongsilClient)과 동일한 규칙
-              const isMasked = item.exposure_type === '부동산노출' && userLevel < 2;
+              const isMasked = item.exposure_type === '부동산노출' && (item.trade_type === '경매' || item.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
               const showCommission = userLevel >= 2;
               
               return (
