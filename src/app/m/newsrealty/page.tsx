@@ -701,10 +701,6 @@ export default function MobileNewsRealtyPage() {
               <h3 className="m-pricing-card-title">부동산회원</h3>
               <p className="m-pricing-card-sub">가입비부터 월정액 이용료까지 평생 단 1원도 들지 않는 기본 회원</p>
               
-              <div className="m-pricing-card-price">
-                0원 <span>/ 평생 무료</span>
-              </div>
-              
               <div className="m-pricing-card-divider" />
               
               <ul className="m-pricing-card-features">
@@ -726,6 +722,10 @@ export default function MobileNewsRealtyPage() {
                 </li>
               </ul>
               
+              <div className="m-pricing-card-price" style={{ marginTop: 12 }}>
+                0원 <span>/ 평생 무료</span>
+              </div>
+              
               <button 
                 className="m-pricing-card-btn free-btn"
                 style={{ background: "#0284c7", boxShadow: "0 8px 20px rgba(2, 132, 199, 0.3)" }}
@@ -745,10 +745,6 @@ export default function MobileNewsRealtyPage() {
               <span className="m-price-badge free">강력 추천</span>
               <h3 className="m-pricing-card-title">공실뉴스부동산</h3>
               <p className="m-pricing-card-sub">단지 및 지역의 대표 부동산 권한과 스마트 AI 유튜브 매물 마케팅 솔루션</p>
-              
-              <div className="m-pricing-card-price" style={{ color: "#e11d48" }}>
-                30,000원 <span>/ 월 (VAT 별도)</span>
-              </div>
               
               <div className="m-pricing-card-divider" />
               
@@ -771,43 +767,15 @@ export default function MobileNewsRealtyPage() {
                 </li>
               </ul>
               
+              <div className="m-pricing-card-price" style={{ color: "#e11d48", marginTop: 12 }}>
+                30,000원 <span>/ 월 (VAT 별도)</span>
+              </div>
+              
               <button 
                 className="m-pricing-card-btn free-btn"
                 onClick={() => handleApplyClick()}
               >
                 공실뉴스부동산 신청하기
-              </button>
-            </div>
-
-            {/* Card 3: Other Services */}
-            <div className="m-pricing-card">
-              <span className="m-price-badge legacy-badge">타사 서비스 비교</span>
-              <h3 className="m-pricing-card-title">타사 유료/공동중개</h3>
-              <p className="m-pricing-card-sub">매월 부과되는 비싼 고정비 회비와 폐쇄적인 지역 카르텔 진입 장벽</p>
-              
-              <div className="m-pricing-card-price">
-                100,000원~ <span>/ 월 (평균 회비 부담)</span>
-              </div>
-              
-              <div className="m-pricing-card-divider" />
-              
-              <ul className="m-pricing-card-features">
-                <li className="m-pricing-card-feature-item">
-                  <WarnIcon />
-                  <span style={{ color: "#64748b" }}>매월 10만 ~ 30만원 고정 회비 지출</span>
-                </li>
-                <li className="m-pricing-card-feature-item">
-                  <WarnIcon />
-                  <span style={{ color: "#64748b" }}>지역 카르텔(친목회)로 인한 신규 가입 차단</span>
-                </li>
-                <li className="m-pricing-card-feature-item">
-                  <WarnIcon />
-                  <span style={{ color: "#64748b" }}>매물 추가 및 정보 열람 시 별도 비용 청구</span>
-                </li>
-              </ul>
-              
-              <button className="m-pricing-card-btn legacy-btn" disabled>
-                비싼 고정비 및 가입 제한 발생
               </button>
             </div>
           </div>
