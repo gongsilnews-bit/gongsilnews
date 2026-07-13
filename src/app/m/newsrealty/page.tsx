@@ -717,13 +717,13 @@ export default function MobileNewsRealtyPage() {
             {/* Row 1 */}
             <div className="m-detail-row">
               <div className="m-detail-img-wrap">
-                <img src="/signup_map.png" alt="공동중개 지도 검색" />
+                <img src="/signup_map.png" alt="유튜브 매물 홍보 자동화" />
               </div>
               <div className="m-detail-text-wrap">
-                <span className="m-detail-sub">01. 네트워크 한계가 없는 공동중개</span>
-                <h3 className="m-detail-row-title">전국 11만 개업 중개사망 연동 공동중개 매물 실시간 무제한 무료 열람</h3>
+                <span className="m-detail-sub">01. 유튜브 매물 홍보 자동화 솔루션</span>
+                <h3 className="m-detail-row-title">원클릭 유튜브 매물 스마트 홍보 & 자동 동영상 브리핑 카드 지원</h3>
                 <p className="m-detail-row-desc">
-                  가입 승인 즉시 평생 무료로 타 중개업소들이 등록한 방대한 매물을 지도 기반으로 검색하고 즉시 공동중개를 매칭할 수 있습니다. 물건 등록 역시 2건까지 평생 무료로 지원하여 신규 개업 중개사님들의 정착을 확실하게 돕습니다.
+                  등록한 매물 정보를 기반으로 전문적인 동영상 브리핑 카드와 쇼츠 콘텐츠를 자동으로 생성하고 유튜브 채널에 간편하게 연동하여 꾸준한 채널 마케팅과 매물 노출을 성공시킵니다.
                 </p>
               </div>
             </div>
@@ -731,13 +731,13 @@ export default function MobileNewsRealtyPage() {
             {/* Row 2 */}
             <div className="m-detail-row">
               <div className="m-detail-img-wrap">
-                <img src="/signup_news.png" alt="지역 공실 뉴스" />
+                <img src="/signup_news.png" alt="AI 물건/매매 보고서 생성" />
               </div>
               <div className="m-detail-text-wrap">
-                <span className="m-detail-sub">02. 지역 밀착형 실시간 부동산 정보</span>
-                <h3 className="m-detail-row-title">관심 지역의 핵심 공실 속보와 정부 규제 정책 실시간 무료 구독</h3>
+                <span className="m-detail-sub">02. 1초 완성 AI 솔루션</span>
+                <h3 className="m-detail-row-title">AI 물건/매매 보고서 무제한 생성으로 고객 상담 신뢰도 및 계약 전환율 상승</h3>
                 <p className="m-detail-row-desc">
-                  성공적인 중개 영업은 한발 앞선 정보에서 시작됩니다. 관심 지역을 설정하면 해당 지역의 실시간 공실 뉴스와 최신 부동산 법률·시장 트렌드 분석 기사를 상시 제한 없이 무료로 받아보실 수 있습니다.
+                  지번만 입력하면 1초 만에 깔끔하고 세련된 디자인의 AI 부동산 보고서 PDF를 생성합니다. 권리 분석, 시세 추이, 매물 특징 등 복잡한 정보를 직관적으로 정리해 즉시 브리핑할 수 있습니다.
                 </p>
               </div>
             </div>
@@ -745,13 +745,13 @@ export default function MobileNewsRealtyPage() {
             {/* Row 3 */}
             <div className="m-detail-row">
               <div className="m-detail-img-wrap">
-                <img src="/signup_auction.png" alt="법원 경공매 정보" />
+                <img src="/signup_auction.png" alt="공식 파트너 독점 권한" />
               </div>
               <div className="m-detail-text-wrap">
-                <span className="m-detail-sub">03. 경매·공매 권리분석 무료 제공</span>
-                <h3 className="m-detail-row-title">고가의 구독료 지불 없이 전국 법원 경/공매 정보 실시간 무료 조회</h3>
+                <span className="m-detail-sub">03. 공식 파트너 독점 권한</span>
+                <h3 className="m-detail-row-title">아파트 대단지 및 주력 지역 상단 노출과 포털 뉴스 기사 송출권을 활용한 전속 매물 확보</h3>
                 <p className="m-detail-row-desc">
-                  매달 고가의 월정액을 내야만 열람할 수 있었던 전국 법원의 경매 및 캠코 공매 정보를 무제한 무료로 제공합니다. 지도 기반 매물 위치와 상세 매각 기일, 정밀한 권리분석 정보까지 투명하게 공개됩니다.
+                  해당 단지 및 행정구역의 '공식 파트너 부동산' 자격을 선점하여 상단 검색에 단독 노출됩니다. 또한 본사 포털 뉴스 기사 송출권을 지원받아 소유주들의 신뢰를 얻고 전속 매물을 독점으로 확보할 수 있습니다.
                 </p>
               </div>
             </div>
