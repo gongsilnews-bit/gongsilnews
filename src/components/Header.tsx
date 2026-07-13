@@ -299,12 +299,13 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 </div>
               ) : (
                 <nav className="gnb-new" style={{ 
-                  display: "flex", alignItems: "center", gap: "14px", 
+                  display: "flex", alignItems: "center", gap: isSmallHeader ? "8px" : "14px", 
                   justifyContent: "flex-start",
                   transition: "all 0.3s ease",
                   whiteSpace: "nowrap",
                   paddingBottom: isSmallHeader ? "0" : "5px",
-                  flex: 1
+                  flex: 1,
+                  fontSize: isSmallHeader ? "14.5px" : "17px"
                 }}>
                   <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""}>우리동네뉴스</Link>
                   <Link href="/news_gongsil" className={pathname === "/news_gongsil" ? "active" : ""}>공실뉴스</Link>
@@ -359,7 +360,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
 
             {/* === [Sticky State] 스크롤 시 나타나는 우측 액션 버튼들 === */}
             {isSmallHeader && (
-              <div style={{ display: "flex", alignItems: "center", gap: "16px", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: isSmallHeader ? "10px" : "16px", flexShrink: 0 }}>
                 {currentUser ? (
                   <div style={{ color: "#333", cursor: "pointer", fontSize: "14px", fontWeight: "700" }} onClick={() => router.push(userRole === 'ADMIN' ? '/admin' : userRole === 'REALTOR' ? '/realty_admin' : '/user_admin')}>
                     내정보
