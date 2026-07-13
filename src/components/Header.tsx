@@ -226,7 +226,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
               <Link href="/newsrealty" style={{ color: "#fbbf24", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
-                공실뉴스부동산 ✨
+                ✨ 공실뉴스부동산
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
               <div style={{
@@ -266,7 +266,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               </div>
 
                <Link href="/newsrealty" style={{ color: "#fbbf24", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
-                공실뉴스부동산
+                ✨ 공실뉴스부동산
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
               <div 
@@ -372,7 +372,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 {currentUser ? (
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <Link href="/newsrealty" style={{ color: "#ef4444", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
-                      공실뉴스부동산 ✨
+                      ✨ 공실뉴스부동산
                     </Link>
                     <span style={{ color: "#ddd", fontSize: "13px" }}>|</span>
                     <div style={{ color: "#333", cursor: "pointer", fontSize: "13px", fontWeight: "700" }} onClick={() => router.push(userRole === 'ADMIN' ? '/admin' : userRole === 'REALTOR' ? '/realty_admin' : '/user_admin')}>
@@ -382,7 +382,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 ) : (
                   <>
                     <Link href="/newsrealty" style={{ color: "#ef4444", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
-                      공실뉴스부동산
+                      ✨ 공실뉴스부동산
                     </Link>
                     <span style={{ color: "#ddd", fontSize: "13px" }}>|</span>
                     <div 

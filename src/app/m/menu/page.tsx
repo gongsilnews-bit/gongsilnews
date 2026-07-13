@@ -155,7 +155,7 @@ export default function MenuPage() {
 
   const serviceMenus = [
     { name: "공실열람", path: "/m/gongsil" },
-    { name: "공실뉴스부동산", path: "/m/newsrealty" },
+    { name: "✨ 공실뉴스부동산", path: "/m/newsrealty" },
     { name: "부동산특강", path: "/m/study" },
     { name: "드론영상", path: "/m/board?id=drone" },
     { name: "APP(앱)", path: "/m/board?id=app" },
