@@ -260,6 +260,10 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               >
                 공실등록 &gt;&gt;
               </div>
+              <Link href="/signup" style={{ color: "#F59E0B", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
+                무료 회원가입
+              </Link>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
               <div style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} onClick={() => { setAuthTab('login'); setIsAuthModalOpen(true); }}>
                 로그인
               </div>
@@ -361,9 +365,15 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                     내정보
                   </div>
                 ) : (
-                  <div style={{ color: "#333", cursor: "pointer", fontSize: "14px", fontWeight: "700" }} onClick={() => { setAuthTab('login'); setIsAuthModalOpen(true); }}>
-                    로그인
-                  </div>
+                  <>
+                    <Link href="/signup" style={{ color: "#ef4444", fontSize: "14px", fontWeight: "700", textDecoration: "none" }}>
+                      무료 회원가입
+                    </Link>
+                    <span style={{ color: "#ddd", fontSize: "14px" }}>|</span>
+                    <div style={{ color: "#333", cursor: "pointer", fontSize: "14px", fontWeight: "700" }} onClick={() => { setAuthTab('login'); setIsAuthModalOpen(true); }}>
+                      로그인
+                    </div>
+                  </>
                 )}
 
                 <button onClick={() => setIsSearchActive(true)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: 0 }}>
