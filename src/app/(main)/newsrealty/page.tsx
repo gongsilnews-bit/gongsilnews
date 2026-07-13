@@ -863,6 +863,29 @@ export default function NewsRealtyPage() {
           </div>
         </section>
 
+        {/* ===== CTA ===== */}
+        <section 
+          className="pc-cta-sec"
+          style={{
+            background: "radial-gradient(circle at bottom right, #311019 0%, #020617 100%)"
+          }}
+        >
+          <PlayLogo size={56} />
+          <h2 className="pc-cta-title">11만 부동산을 위한 무료 정보 채널, 공실뉴스</h2>
+          <p className="pc-cta-desc">가입 제한이나 비싼 회비 부담 없이, 지금 공실뉴스에서 무료로 가입하고 활발하게 교류하세요.</p>
+          <button 
+            className="pc-hero-cta-btn" 
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('signup_member_type', 'broker');
+              }
+              setIsAuthModalOpen(true);
+            }}
+          >
+            지금 무료로 가입하기
+          </button>
+        </section>
+
         {/* ===== Pricing Section ===== */}
         <section className="pc-pricing-sec">
           <div className="pc-pricing-grid">
@@ -958,29 +981,6 @@ export default function NewsRealtyPage() {
               </button>
             </div>
           </div>
-        </section>
-
-        {/* ===== CTA ===== */}
-        <section 
-          className="pc-cta-sec"
-          style={{
-            background: "radial-gradient(circle at bottom right, #311019 0%, #020617 100%)"
-          }}
-        >
-          <PlayLogo size={56} />
-          <h2 className="pc-cta-title">11만 부동산을 위한 무료 정보 채널, 공실뉴스</h2>
-          <p className="pc-cta-desc">가입 제한이나 비싼 회비 부담 없이, 지금 공실뉴스에서 무료로 가입하고 활발하게 교류하세요.</p>
-          <button 
-            className="pc-hero-cta-btn" 
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('signup_member_type', 'broker');
-              }
-              setIsAuthModalOpen(true);
-            }}
-          >
-            지금 무료로 가입하기
-          </button>
         </section>
       </div>
 

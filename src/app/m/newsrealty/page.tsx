@@ -814,6 +814,31 @@ export default function MobileNewsRealtyPage() {
           ))}
         </section>
 
+        {/* ===== CTA (labelled FAQ in comment) ===== */}
+        <section 
+          className="m-cta-sec"
+          style={{
+            background: "radial-gradient(circle at bottom right, #311019 0%, #020617 100%)"
+          }}
+        >
+          <PlayLogo size={44} />
+          <h2 className="m-cta-title">11만 부동산을 위한 무료 정보 채널, 공실뉴스</h2>
+          <p className="m-cta-desc">매월 부과되던 비싼 고정비 회비를 아끼고 스마트한 중개 비즈니스를 시작해 보세요.</p>
+          <div className="m-cta-btn-wrapper">
+            <button 
+              className="m-cta-main-btn" 
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('signup_member_type', 'broker');
+                }
+                setIsAuthModalOpen(true);
+              }}
+            >
+              지금 무료로 가입하기
+            </button>
+          </div>
+        </section>
+
         {/* ===== Pricing Section ===== */}
         <section className="m-pricing-sec">
           <div className="m-pricing-grid">
@@ -900,31 +925,6 @@ export default function MobileNewsRealtyPage() {
                 공실뉴스부동산 신청하기
               </button>
             </div>
-          </div>
-        </section>
-
-        {/* ===== FAQ ===== */}
-        <section 
-          className="m-cta-sec"
-          style={{
-            background: "radial-gradient(circle at bottom right, #311019 0%, #020617 100%)"
-          }}
-        >
-          <PlayLogo size={44} />
-          <h2 className="m-cta-title">11만 부동산을 위한 무료 정보 채널, 공실뉴스</h2>
-          <p className="m-cta-desc">매월 부과되던 비싼 고정비 회비를 아끼고 스마트한 중개 비즈니스를 시작해 보세요.</p>
-          <div className="m-cta-btn-wrapper">
-            <button 
-              className="m-cta-main-btn" 
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem('signup_member_type', 'broker');
-                }
-                setIsAuthModalOpen(true);
-              }}
-            >
-              지금 무료로 가입하기
-            </button>
           </div>
         </section>
 
