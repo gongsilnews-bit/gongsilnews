@@ -539,104 +539,6 @@ export default function SignupPage() {
           </div>
         </section>
 
-        {/* ===== Pricing Section ===== */}
-        <section className="pc-pricing-sec">
-          <div className="pc-pricing-grid">
-            {/* Card 1: Free Realtor Member */}
-            <div className="pc-pricing-card">
-              <span className="pc-price-badge free" style={{ background: "#e0f2fe", color: "#0284c7" }}>100% 무료</span>
-              <h3 className="pc-pricing-card-title">부동산회원</h3>
-              <p className="pc-pricing-card-sub">가입비부터 월정액 이용료까지 평생 단 1원도 들지 않는 기본 회원</p>
-              
-              <div className="pc-pricing-card-divider" />
-              
-              <ul className="pc-pricing-card-features">
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>가입 승인 즉시 평생 100% 무료 제공</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>공동중개 물건 등록 2건 무료</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>공동중개 물건 무제한 무료 열람</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>전국 법원 경매 및 공매 정보 실시간 무료 열람</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>지역별 공실 뉴스 및 부동산 기사 무료 열람</strong>
-                </li>
-              </ul>
-              
-              <div className="pc-pricing-card-price" style={{ marginTop: 12 }}>
-                0원 <span>/ 평생 무료</span>
-              </div>
-              
-              <button 
-                className="pc-pricing-card-btn free-btn"
-                style={{ background: "#0284c7", boxShadow: "0 10px 25px rgba(2, 132, 199, 0.3)" }}
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem('signup_member_type', 'broker');
-                  }
-                  setIsAuthModalOpen(true);
-                }}
-              >
-                무료 회원가입 바로가기
-              </button>
-            </div>
-
-            {/* Card 2: Gongsilnews Realtor (MIDDLE PREMIUM) */}
-            <div className="pc-pricing-card premium">
-              <span className="pc-price-badge free">강력 추천</span>
-              <h3 className="pc-pricing-card-title">공실뉴스부동산</h3>
-              <p className="pc-pricing-card-sub">단지 및 지역의 대표 부동산 권한과 스마트 AI 유튜브 매물 마케팅 솔루션</p>
-              
-              <div className="pc-pricing-card-divider" />
-              
-              <ul className="pc-pricing-card-features">
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>[유튜브/홍보] 유튜브 매물 스마트 홍보 & 브리핑 카드 지원</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>[AI 솔루션] 1초 완성 'AI 물건보고서' 무제한 생성</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>[독점 권한] 주력 아파트 단지 상단 '공식 파트너' 우선 단독 노출</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>[매물 확보] 포털 뉴스 기사 송출권을 활용한 전속 매물 확보</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>부동산회원 혜택 모두 포함</strong>
-                </li>
-              </ul>
-              
-              <div className="pc-pricing-card-price" style={{ color: "#e11d48", marginTop: 12 }}>
-                30,000원 <span>/ 월 (VAT 별도)</span>
-              </div>
-              
-              <button 
-                className="pc-pricing-card-btn free-btn"
-                onClick={() => {
-                  router.push('/newsrealty');
-                }}
-              >
-                공실뉴스부동산 신청하기
-              </button>
-            </div>
-          </div>
-        </section>
 
         {/* ===== Stats ===== */}
         <div className="pc-stats-outer">
@@ -760,6 +662,105 @@ export default function SignupPage() {
                 )}
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* ===== Pricing Section ===== */}
+        <section className="pc-pricing-sec">
+          <div className="pc-pricing-grid">
+            {/* Card 1: Free Realtor Member */}
+            <div className="pc-pricing-card">
+              <span className="pc-price-badge free" style={{ background: "#e0f2fe", color: "#0284c7" }}>100% 무료</span>
+              <h3 className="pc-pricing-card-title">부동산회원</h3>
+              <p className="pc-pricing-card-sub">가입비부터 월정액 이용료까지 평생 단 1원도 들지 않는 기본 회원</p>
+              
+              <div className="pc-pricing-card-divider" />
+              
+              <ul className="pc-pricing-card-features">
+                <li className="pc-pricing-card-feature-item">
+                  <CheckIcon />
+                  <strong>가입 승인 즉시 평생 100% 무료 제공</strong>
+                </li>
+                <li className="pc-pricing-card-feature-item">
+                  <CheckIcon />
+                  <strong>공동중개 물건 등록 2건 무료</strong>
+                </li>
+                <li className="pc-pricing-card-feature-item">
+                  <CheckIcon />
+                  <strong>공동중개 물건 무제한 무료 열람</strong>
+                </li>
+                <li className="pc-pricing-card-feature-item">
+                  <CheckIcon />
+                  <strong>전국 법원 경매 및 공매 정보 실시간 무료 열람</strong>
+                </li>
+                <li className="pc-pricing-card-feature-item">
+                  <CheckIcon />
+                  <strong>지역별 공실 뉴스 및 부동산 기사 무료 열람</strong>
+                </li>
+              </ul>
+              
+              <div className="pc-pricing-card-price" style={{ marginTop: 12 }}>
+                0원 <span>/ 평생 무료</span>
+              </div>
+              
+              <button 
+                className="pc-pricing-card-btn free-btn"
+                style={{ background: "#0284c7", boxShadow: "0 10px 25px rgba(2, 132, 199, 0.3)" }}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('signup_member_type', 'broker');
+                  }
+                  setIsAuthModalOpen(true);
+                }}
+              >
+                무료 회원가입 바로가기
+              </button>
+            </div>
+
+            {/* Card 2: Gongsilnews Realtor (MIDDLE PREMIUM) */}
+            <div className="pc-pricing-card premium">
+              <span className="pc-price-badge free">강력 추천</span>
+              <h3 className="pc-pricing-card-title">공실뉴스부동산</h3>
+              <p className="pc-pricing-card-sub">단지 및 지역의 대표 부동산 권한과 스마트 AI 유튜브 매물 마케팅 솔루션</p>
+              
+              <div className="pc-pricing-card-divider" />
+              
+              <ul className="pc-pricing-card-features">
+                <li className="pc-pricing-card-feature-item">
+                  <CheckIcon />
+                  <strong>[유튜브/홍보] 유튜브 매물 스마트 홍보 & 브리핑 카드 지원</strong>
+                </li>
+                <li className="pc-pricing-card-feature-item">
+                  <CheckIcon />
+                  <strong>[AI 솔루션] 1초 완성 'AI 물건보고서' 무제한 생성</strong>
+                </li>
+                <li className="pc-pricing-card-feature-item">
+                  <CheckIcon />
+                  <strong>[독점 권한] 주력 아파트 단지 상단 '공식 파트너' 우선 단독 노출</strong>
+                </li>
+                <li className="pc-pricing-card-feature-item">
+                  <CheckIcon />
+                  <strong>[매물 확보] 포털 뉴스 기사 송출권을 활용한 전속 매물 확보</strong>
+                </li>
+                <li className="pc-pricing-card-feature-item">
+                  <CheckIcon />
+                  <strong>부동산회원 혜택 모두 포함</strong>
+                </li>
+              </ul>
+              
+              <div className="pc-pricing-card-price" style={{ color: "#e11d48", marginTop: 12 }}>
+                30,000원 <span>/ 월 (VAT 별도)</span>
+              </div>
+              
+              <button 
+                className="pc-pricing-card-btn free-btn"
+                onClick={() => {
+                  router.push('/newsrealty');
+                }}
+              >
+                공실뉴스부동산 신청하기
+              </button>
+            </div>
           </div>
         </section>
 
