@@ -109,6 +109,41 @@ export default function MobileSignupPage() {
   const currentStats = activeTab === "broker" ? brokerStats : landlordStats;
   const currentFeatures = activeTab === "broker" ? brokerFeatures : landlordFeatures;
 
+  const heroContent = {
+    broker: {
+      badge: (
+        <>
+          🏢 전국 <strong style={{ color: "#F59E0B" }}>11만</strong> 중개망 무료 상생 플랫폼
+        </>
+      ),
+      title: (
+        <>
+          수수료 없는 부동산 매칭,<br />
+          <span style={{ color: "#F59E0B" }}>공실뉴스</span>와 함께하세요
+        </>
+      ),
+      desc: "공실 지도, 공동중개망, AI 교육 특강까지 모든 정보가 평생 조건 없이 100% 무료로 제공됩니다.",
+      placeholder: "이메일을 입력해 빠르게 시작",
+      buttonText: "지금 가입하기",
+    },
+    landlord: {
+      badge: (
+        <>
+          🏠 내 건물/상가/주택 <strong style={{ color: "#f472b6" }}>100% 무료</strong> 공실 매칭 플랫폼
+        </>
+      ),
+      title: (
+        <>
+          광고비 0원! 소중한 내 공실,<br />
+          <span style={{ color: "#f472b6" }}>가장 빠르게</span> 해결하는 비결
+        </>
+      ),
+      desc: "단 한 번의 무료 등록으로 인근 11만 중개업소에 즉시 노출되고, 드론 촬영 홍보물 제작까지 평생 무료 지원!",
+      placeholder: "이메일을 입력하고 무료 공실 등록하기",
+      buttonText: "무료 등록 시작하기",
+    }
+  };
+
   const handleQuickSignup = (e: React.FormEvent) => {
     e.preventDefault();
     if (typeof window !== 'undefined') {
@@ -163,13 +198,20 @@ export default function MobileSignupPage() {
             content: "";
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-image: url("/handshake_bg.png");
             background-size: cover;
             background-position: center;
             filter: blur(6px);
-            opacity: 0.25;
             z-index: 0;
             pointer-events: none;
+            transition: background-image 0.5s ease, opacity 0.5s ease;
+          }
+          .m-signup-hero.broker::before {
+            background-image: url("/handshake_bg.png");
+            opacity: 0.25;
+          }
+          .m-signup-hero.landlord::before {
+            background-image: url("/landlord_bg.png");
+            opacity: 0.35;
           }
           .m-hero-badge {
             display: inline-flex;
@@ -415,17 +457,24 @@ export default function MobileSignupPage() {
         </header>
 
         {/* ===== Hero ===== */}
-        <section className="m-signup-hero">
+        <section 
+          className={`m-signup-hero ${activeTab}`}
+          style={{
+            background: activeTab === "broker"
+              ? "radial-gradient(circle at top right, #1e1b4b 0%, #0f172a 60%, #020617 100%)"
+              : "radial-gradient(circle at top right, #2e1042 0%, #0f172a 60%, #020617 100%)",
+            transition: "background 0.5s ease"
+          }}
+        >
           <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <div className="m-hero-badge">
-              🏢 전국 <strong style={{ color: "#F59E0B" }}>11만</strong> 중개망 무료 상생 플랫폼
+              {heroContent[activeTab].badge}
             </div>
             <h1 className="m-hero-title">
-              수수료 없는 부동산 매칭,<br />
-              <span style={{ color: "#F59E0B" }}>공실뉴스</span>와 함께하세요
+              {heroContent[activeTab].title}
             </h1>
             <p className="m-hero-desc">
-              공실 지도, 공동중개망, AI 교육 특강까지 모든 정보가 평생 조건 없이 100% 무료로 제공됩니다.
+              {heroContent[activeTab].desc}
             </p>
 
             {/* Tab Switcher */}
@@ -442,13 +491,13 @@ export default function MobileSignupPage() {
             <form className="m-quick-signup-form" onSubmit={handleQuickSignup}>
               <input 
                 type="email" 
-                placeholder="이메일을 입력해 빠르게 시작" 
+                placeholder={heroContent[activeTab].placeholder}
                 className="m-quick-signup-input"
                 value={emailInput}
                 onChange={e => setEmailInput(e.target.value)}
                 required
               />
-              <button type="submit" className="m-quick-signup-btn">지금 가입하기</button>
+              <button type="submit" className="m-quick-signup-btn">{heroContent[activeTab].buttonText}</button>
             </form>
           </div>
         </section>
