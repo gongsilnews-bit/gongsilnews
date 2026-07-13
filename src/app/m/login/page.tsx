@@ -246,6 +246,33 @@ function MobileLoginClient() {
       <div style={{ marginTop: 32, paddingTop: 14, borderTop: '1px solid #f1f5f9', textAlign: 'center', fontSize: 12, color: '#cbd5e1' }}>
         공실뉴스 고객센터
       </div>
+
+      {/* ===== Membership Guide & Workflow (Light Theme) ===== */}
+      <div style={{ marginTop: 20 }}>
+        <div style={{ 
+          background: '#f8fafc', 
+          border: '1px solid #e2e8f0', 
+          borderRadius: 12, 
+          padding: '14px 16px', 
+          fontSize: '12px', 
+          lineHeight: '1.6', 
+          color: '#334155' 
+        }}>
+          <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ background: '#64748b', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: 4, flexShrink: 0 }}>일반회원</span>
+            <span style={{ color: '#475569' }}>공실등록 3건 무료, 경공매 열람 가능, <strong style={{ color: '#ef4444' }}>공동중개 열람 불가</strong></span>
+          </div>
+          <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ background: '#3b82f6', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: 4, flexShrink: 0 }}>부동산회원</span>
+            <span style={{ color: '#475569' }}>공동중개 3건 등록 무료, 경공매 열람 가능, <strong style={{ color: '#10b981' }}>공동중개 열람 가능</strong></span>
+          </div>
+          
+          <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: 8, fontSize: '10.5px', color: '#64748b', wordBreak: 'keep-all' }}>
+            <strong style={{ color: '#1e293b', marginRight: 4 }}>부동산 회원가입 절차:</strong><br />
+            회원가입 ➔ 관리자 ➔ 내 정보 ➔ 중개소 가입 및 서류 제출 ➔ 승인완료
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
