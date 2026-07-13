@@ -33,11 +33,21 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
   });
   const [expandedTerms, setExpandedTerms] = useState<string | null>(null);
 
+  const [memberType, setMemberType] = useState<'broker' | 'landlord' | null>(null);
+
   React.useEffect(() => {
     setMounted(true);
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       setFormData(prev => ({ ...prev, email: email || '', name: name || '' }));
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('signup_member_type') as any;
+        if (saved === 'broker' || saved === 'landlord') {
+          setMemberType(saved);
+        } else {
+          setMemberType(null);
+        }
+      }
     } else {
       document.body.style.overflow = '';
     }
@@ -119,25 +129,94 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
         <div style={{ position: 'relative', background: '#fff', width: 520, maxWidth: '100%', borderRadius: 14, boxShadow: '0 25px 60px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden' }}>
           <div style={{ overflowY: 'auto', padding: '40px 36px 36px', flex: 1, textAlign: 'center' }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
-            <h2 style={{ fontSize: 24, fontWeight: 900, color: '#111', margin: '0 0 16px 0' }}>가입이 완료되었습니다!</h2>
-            <p style={{ fontSize: 15, color: '#444', lineHeight: 1.6, marginBottom: 28, wordBreak: 'keep-all' }}>환영합니다! 이제 공실뉴스의 일반회원 서비스를 이용하실 수 있습니다.</p>
-            <div style={{ background: '#f4f6fa', borderRadius: 12, padding: '24px 20px', marginBottom: 28 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1e56a0', marginTop: 0, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                혹시 부동산(중개사)이신가요? 🏡
-              </h3>
-              <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6, margin: 0, wordBreak: 'keep-all' }}>
-                부동산회원으로 전환하시고 승인 신청을 하시면<br/>
-                <strong style={{color: '#111'}}>100% 무료 공동중개 공실광고 등록</strong> 등<br/>
-                중개사를 위한 특별한 혜택을 누리실 수 있습니다!
-              </p>
-            </div>
+            <h2 style={{ fontSize: 24, fontWeight: 900, color: '#111', margin: '0 0 16px 0' }}>
+              {memberType === 'broker' ? '부동산 회원 승인 신청' : '가입이 완료되었습니다!'}
+            </h2>
+            <p style={{ fontSize: 15, color: '#444', lineHeight: 1.6, marginBottom: 28, wordBreak: 'keep-all' }}>
+              {memberType === 'broker' ? (
+                '가입을 환영합니다! 공동중개망 이용 및 100% 무료 공실 광고를 등록하기 위해 부동산 회원 승인이 필요합니다.'
+              ) : memberType === 'landlord' ? (
+                '환영합니다! 이제 임대인/일반 회원으로 공실뉴스 서비스를 마음껏 이용하실 수 있습니다.'
+              ) : (
+                '환영합니다! 이제 공실뉴스의 일반회원 서비스를 이용하실 수 있습니다.'
+              )}
+            </p>
+
+            {memberType === 'broker' ? (
+              <div style={{ background: '#f4f6fa', borderRadius: 12, padding: '24px 20px', marginBottom: 28 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1e56a0', marginTop: 0, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  필수 서류 제출 안내 🏡
+                </h3>
+                <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6, margin: 0, wordBreak: 'keep-all' }}>
+                  정상적인 공동중개 권한 부여를 위해<br/>
+                  <strong style={{color: '#111'}}>사업자등록증</strong> 또는 <strong style={{color: '#111'}}>개설등록증</strong> 서류가 필요합니다.<br/>
+                  제출하시면 신속히 확인하여 승인해 드립니다!
+                </p>
+              </div>
+            ) : memberType === 'landlord' ? (
+              <div style={{ background: '#f0fdf4', borderRadius: 12, padding: '24px 20px', marginBottom: 28, border: '1px solid #bbf7d0' }}>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#166534', marginTop: 0, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  100% 무료 공실 등록 🏠
+                </h3>
+                <p style={{ fontSize: 14, color: '#14532d', lineHeight: 1.6, margin: 0, wordBreak: 'keep-all' }}>
+                  수수료 제로! 지금 바로 공실을 등록해 보세요.<br/>
+                  등록하신 매물은 전국 <strong style={{color: '#166534'}}>11만 중개사 회원</strong>에게<br/>
+                  즉시 노출되어 가장 빠르게 계약을 성사시켜 드립니다.
+                </p>
+              </div>
+            ) : (
+              <div style={{ background: '#f4f6fa', borderRadius: 12, padding: '24px 20px', marginBottom: 28 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1e56a0', marginTop: 0, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  혹시 부동산(중개사)이신가요? 🏡
+                </h3>
+                <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6, margin: 0, wordBreak: 'keep-all' }}>
+                  부동산회원으로 전환하시고 승인 신청을 하시면<br/>
+                  <strong style={{color: '#111'}}>100% 무료 공동중개 공실광고 등록</strong> 등<br/>
+                  중개사를 위한 특별한 혜택을 누리실 수 있습니다!
+                </p>
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <button onClick={() => { onClose(); router.push(isMobile ? '/m/admin/settings' : '/user_admin?menu=settings'); }} style={{ width: '100%', padding: '16px 0', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 800, cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 4px 6px rgba(245,158,11,0.2)' }} onMouseEnter={(e) => e.currentTarget.style.background = "#d97706"} onMouseLeave={(e) => e.currentTarget.style.background = "#f59e0b"}>
-                부동산회원 전환 신청하기 ✨
-              </button>
-              <button onClick={() => { onClose(); window.location.reload(); }} style={{ width: '100%', padding: '16px 0', background: '#f5f5f5', color: '#666', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = "#ebebeb"} onMouseLeave={(e) => e.currentTarget.style.background = "#f5f5f5"}>
-                다음에 할게요 (홈으로 가기)
-              </button>
+              {memberType === 'landlord' ? (
+                <>
+                  <button 
+                    onClick={() => { onClose(); router.push(isMobile ? '/m/admin/vacancy/write' : '/user_admin?menu=gongsil&action=write'); }} 
+                    style={{ width: '100%', padding: '16px 0', background: '#3f37c9', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 800, cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 4px 6px rgba(63,55,201,0.2)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#2b22b2"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "#3f37c9"}
+                  >
+                    지금 무료로 공실 등록하기 ✨
+                  </button>
+                  <button 
+                    onClick={() => { onClose(); window.location.reload(); }} 
+                    style={{ width: '100%', padding: '16px 0', background: '#f5f5f5', color: '#666', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s' }} 
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#ebebeb"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "#f5f5f5"}
+                  >
+                    공실뉴스 둘러보기 (홈으로 가기)
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => { onClose(); router.push(isMobile ? '/m/admin/settings' : '/user_admin?menu=settings'); }} 
+                    style={{ width: '100%', padding: '16px 0', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 800, cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 4px 6px rgba(245,158,11,0.2)' }} 
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#d97706"} 
+                    onMouseLeave={(e) => e.currentTarget.style.background = "#f59e0b"}
+                  >
+                    {memberType === 'broker' ? '지금 사업자등록증 제출하러 가기 ✨' : '부동산회원 전환 신청하기 ✨'}
+                  </button>
+                  <button 
+                    onClick={() => { onClose(); window.location.reload(); }} 
+                    style={{ width: '100%', padding: '16px 0', background: '#f5f5f5', color: '#666', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s' }} 
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#ebebeb"} 
+                    onMouseLeave={(e) => e.currentTarget.style.background = "#f5f5f5"}
+                  >
+                    {memberType === 'broker' ? '다음에 제출할게요 (홈으로 가기)' : '다음에 할게요 (홈으로 가기)'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

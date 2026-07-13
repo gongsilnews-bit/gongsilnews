@@ -19,6 +19,18 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
   const [findPhone, setFindPhone] = useState('');
   const [findResult, setFindResult] = useState<{ found: boolean; email?: string; provider?: string } | null>(null);
   const [findLoading, setFindLoading] = useState(false);
+  const [memberType, setMemberType] = useState<'broker' | 'landlord' | null>(null);
+
+  useEffect(() => {
+    if (isOpen && typeof window !== 'undefined') {
+      const saved = localStorage.getItem('signup_member_type') as any;
+      if (saved === 'broker' || saved === 'landlord') {
+        setMemberType(saved);
+      } else {
+        setMemberType(null);
+      }
+    }
+  }, [isOpen]);
 
   const handleOAuthLogin = async (providerName: 'google' | 'kakao' | 'naver') => {
     try {
@@ -166,22 +178,34 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signup', onGo
               </div>
 
               <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111', textAlign: 'center', margin: '0 0 8px 0', letterSpacing: '-0.3px' }}>
-                <span style={{ color: '#1e56a0' }}>11만</span> 부동산 무료 정보채널
+                {memberType === 'landlord' ? (
+                  <>수수료 제로! <span style={{ color: '#3f37c9' }}>임대인</span> 무료 서비스</>
+                ) : (
+                  <><span style={{ color: '#1e56a0' }}>11만</span> 부동산 무료 정보채널</>
+                )}
               </h3>
               
               <p style={{ fontSize: 13, color: '#888', textAlign: 'center', lineHeight: 1.6, margin: '0 0 26px 0' }}>
-                단 한 번의 가입으로 중개 실무에 꼭 필요한<br />특별한 혜택들을 모두 무료로 누려보세요.
+                {memberType === 'landlord' ? (
+                  <>단 한 번의 가입으로 내 공실을 전국 11만 중개사 회원에게<br />수수료 부담 없이 무제한으로 광고해보세요.</>
+                ) : (
+                  <>단 한 번의 가입으로 중개 실무에 꼭 필요한<br />특별한 혜택들을 모두 무료로 누려보세요.</>
+                )}
               </p>
 
               {/* 혜택 리스트 */}
               <ul style={{ width: '100%', listStyle: 'none', margin: '0 0 28px 0', background: '#f4f6fa', borderRadius: '10px', padding: '18px 20px', border: '1px solid #eef0f5' }}>
-                {[
+                {(memberType === 'landlord' ? [
+                  <><strong style={{color: '#111', fontWeight: 800}}>수수료 평생 0원!</strong> 무료 공실 무제한 등록</>,
+                  <><strong style={{color: '#111', fontWeight: 800}}>전국 11만 중개사 회원에게</strong> 등록 즉시 매물 자동 노출</>,
+                  <><strong style={{color: '#111', fontWeight: 800}}>직거래 및 최적 중개사</strong> 실시간 자동 매칭 지원</>
+                ] : [
                   <><strong style={{color: '#111', fontWeight: 800}}>로컬 부동산이 직접 전달하는</strong> 시세 현황 뉴스</>,
                   <><strong style={{color: '#111', fontWeight: 800}}>중개사에게 꼭 필요한</strong> AI 유튜브 특강 시청</>,
                   <><strong style={{color: '#111', fontWeight: 800}}>대한민국 부동산 누구나 가입하는</strong> 100% 무료 공동중개망</>
-                ].map((item, i) => (
+                ]).map((item, i) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#555', marginBottom: i < 2 ? 14 : 0, letterSpacing: '-0.3px' }}>
-                    <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#1e56a0', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>✓</div>
+                    <div style={{ width: 18, height: 18, borderRadius: '50%', background: memberType === 'landlord' ? '#3f37c9' : '#1e56a0', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>✓</div>
                     <span style={{ lineHeight: 1.4 }}>{item}</span>
                   </li>
                 ))}

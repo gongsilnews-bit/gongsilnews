@@ -110,6 +110,9 @@ export default function SignupPage() {
 
   const handleQuickSignup = (e: React.FormEvent) => {
     e.preventDefault();
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('signup_member_type', activeTab === 'broker' ? 'broker' : 'landlord');
+    }
     setIsAuthModalOpen(true);
   };
 
@@ -577,7 +580,12 @@ export default function SignupPage() {
           <PlayLogo size={56} />
           <h2 className="pc-cta-title">부동산 상생 네트워크,<br />공실뉴스에 동참하세요.</h2>
           <p className="pc-cta-desc">가입비 및 수수료 없이 강력한 정보 혜택을 제공받으실 수 있습니다.</p>
-          <button className="pc-cta-btn" onClick={() => setIsAuthModalOpen(true)}>
+          <button className="pc-cta-btn" onClick={() => {
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('signup_member_type', activeTab === 'broker' ? 'broker' : 'landlord');
+            }
+            setIsAuthModalOpen(true);
+          }}>
             무료 회원가입 바로가기
           </button>
         </section>

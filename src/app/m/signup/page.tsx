@@ -111,6 +111,9 @@ export default function MobileSignupPage() {
 
   const handleQuickSignup = (e: React.FormEvent) => {
     e.preventDefault();
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('signup_member_type', activeTab === 'broker' ? 'broker' : 'landlord');
+    }
     setIsAuthModalOpen(true);
   };
 
@@ -398,7 +401,12 @@ export default function MobileSignupPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Link href="/m" style={{ fontSize: 13, fontWeight: 600, color: "#475569", textDecoration: "none" }}>홈</Link>
             <button 
-              onClick={() => setIsAuthModalOpen(true)} 
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('signup_member_type', activeTab === 'broker' ? 'broker' : 'landlord');
+                }
+                setIsAuthModalOpen(true);
+              }} 
               style={{ background: "#3f37c9", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 700 }}
             >
               무료 회원가입
@@ -524,7 +532,12 @@ export default function MobileSignupPage() {
           <PlayLogo size={44} />
           <h2 className="m-cta-title">부동산 상생 네트워크,<br />공실뉴스에 동참하세요.</h2>
           <p className="m-cta-desc">가입비 및 수수료 없이 강력한 정보 혜택을 제공받으실 수 있습니다.</p>
-          <button className="m-quick-signup-btn" style={{ width: "100%", maxWidth: "260px", margin: "0 auto" }} onClick={() => setIsAuthModalOpen(true)}>
+          <button className="m-quick-signup-btn" style={{ width: "100%", maxWidth: "260px", margin: "0 auto" }} onClick={() => {
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('signup_member_type', activeTab === 'broker' ? 'broker' : 'landlord');
+            }
+            setIsAuthModalOpen(true);
+          }}>
             무료 회원가입 바로가기
           </button>
         </section>
