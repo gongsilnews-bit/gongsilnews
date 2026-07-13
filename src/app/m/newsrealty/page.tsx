@@ -687,7 +687,7 @@ export default function MobileNewsRealtyPage() {
               공실을 뉴스로 전달하다!
             </h1>
             <p className="m-hero-desc">
-              높은 이용료나 카르텔 가입 장벽 없이, 100% 평생 무료로 전국 매물 검색과 지역 공실 뉴스를 마음껏 누리세요.
+              내 지역/단지 공실홍보 및 유튜브 채널 운영을 꾸준히 할 수 있습니다.
             </p>
           </div>
         </section>
