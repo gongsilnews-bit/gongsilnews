@@ -147,7 +147,7 @@ function MobileLoginClient() {
               <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="24" cy="24" r="24" fill="#222222" />
                 <circle cx="24" cy="24" r="16" fill="#FFFFFF" />
-                <path d="M19 15.34L34 24L19 32.66Z" fill="#F59E0B" stroke="#222222" strokeWidth="3" />
+                <path d="M19 15.34L34 24L19 32.66Z" fill="#fbbf24" stroke="#222222" strokeWidth="3" />
               </svg>
             </div>
 

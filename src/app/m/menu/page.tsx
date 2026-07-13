@@ -193,7 +193,7 @@ export default function MenuPage() {
             <div style={{ padding: '30px 20px 20px', backgroundColor: '#fff', borderBottom: '8px solid #f4f5f7' }}>
               <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                 <div style={{ width: 64, height: 64, borderRadius: '50%', border: '1px solid #eee', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, boxShadow: '0 2px 6px rgba(0,0,0,0.06)', overflow: 'hidden', margin: '0 auto 16px' }}>
-                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#222"/><circle cx="24" cy="24" r="16" fill="#FFF"/><path d="M19 15.34L34 24L19 32.66Z" fill="#F59E0B" stroke="#222" strokeWidth="3" strokeLinejoin="round"/></svg>
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#222"/><circle cx="24" cy="24" r="16" fill="#FFF"/><path d="M19 15.34L34 24L19 32.66Z" fill="#fbbf24" stroke="#222" strokeWidth="3" strokeLinejoin="round"/></svg>
                 </div>
                 <h3 style={{ fontSize: 18, fontWeight: 900, color: '#111', margin: '0 0 6px 0' }}>
                   <span style={{ color: '#1e56a0' }}>11만</span> 부동산 무료 정보채널

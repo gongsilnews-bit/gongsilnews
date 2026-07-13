@@ -80,7 +80,7 @@ function LoginClient() {
             <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
               <circle cx="24" cy="24" r="24" fill="#222" />
               <circle cx="24" cy="24" r="16" fill="#FFF" />
-              <path d="M19 15.34L34 24L19 32.66Z" fill="#F59E0B" stroke="#222" strokeWidth="3" />
+              <path d="M19 15.34L34 24L19 32.66Z" fill="#fbbf24" stroke="#222" strokeWidth="3" />
             </svg>
             <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.5px', color: '#fff' }}>공실뉴스</span>
           </div>

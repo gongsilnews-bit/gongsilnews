@@ -9,7 +9,7 @@ const PlayLogo = ({ size = 64 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
     <circle cx="24" cy="24" r="24" fill="#111827" />
     <circle cx="24" cy="24" r="16" fill="#FFFFFF" />
-    <path d="M19 15.34L34 24L19 32.66Z" fill="#F59E0B" stroke="#111827" strokeWidth="3" strokeLinejoin="round" />
+    <path d="M19 15.34L34 24L19 32.66Z" fill="#fbbf24" stroke="#111827" strokeWidth="3" strokeLinejoin="round" />
   </svg>
 );
 
