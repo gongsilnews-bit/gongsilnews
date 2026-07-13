@@ -225,7 +225,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
 
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
-              <Link href="/newsrealty" style={{ color: "#F59E0B", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
+              <Link href="/newsrealty" style={{ color: "#fbbf24", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
                 공실뉴스부동산 ✨
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
@@ -265,7 +265,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 공실등록 &gt;&gt;
               </div>
 
-               <Link href="/newsrealty" style={{ color: "#F59E0B", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
+               <Link href="/newsrealty" style={{ color: "#fbbf24", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
                 공실뉴스부동산
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
@@ -371,7 +371,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               <div style={{ display: "flex", alignItems: "center", gap: isSmallHeader ? "8px" : "12px", flexShrink: 0 }}>
                 {currentUser ? (
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Link href="/newsrealty" style={{ color: "#F59E0B", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
+                    <Link href="/newsrealty" style={{ color: "#fbbf24", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
                       공실뉴스부동산 ✨
                     </Link>
                     <span style={{ color: "#ddd", fontSize: "13px" }}>|</span>
@@ -381,7 +381,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   </div>
                 ) : (
                   <>
-                    <Link href="/newsrealty" style={{ color: "#F59E0B", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
+                    <Link href="/newsrealty" style={{ color: "#fbbf24", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
                       공실뉴스부동산
                     </Link>
                     <span style={{ color: "#ddd", fontSize: "13px" }}>|</span>
