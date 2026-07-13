@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import AuthModal from "@/components/AuthModal";
 import { createClient } from "@/utils/supabase/client";
 import { getMySubscriptions } from "@/app/actions/subscription";
 import { getMyEnrollments } from "@/app/actions/lecture";
@@ -10,7 +9,6 @@ export default function QuickFloatingMenu() {
   const [isOpen, setIsOpen] = useState(true);
   const [isSubOpen, setIsSubOpen] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [subscribedReporters, setSubscribedReporters] = useState<any[]>([]);
   const [myEnrollments, setMyEnrollments] = useState<any[]>([]);
@@ -39,7 +37,7 @@ export default function QuickFloatingMenu() {
 
   const handleAuthClick = (href: string) => {
     if (!isLoggedIn) {
-      setIsAuthModalOpen(true);
+      window.location.href = `/login?returnTo=${encodeURIComponent(href)}`;
       return;
     }
     if (href.startsWith("http")) {
@@ -280,7 +278,6 @@ export default function QuickFloatingMenu() {
         TOP
       </div>
     </div>
-    {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
     {toastMessage && (
       <div style={{ position: "fixed", top: "25%", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.85)", color: "#fff", padding: "14px 32px", borderRadius: 10, fontSize: 16, fontWeight: "bold", zIndex: 999999, boxShadow: "0 4px 20px rgba(0,0,0,0.3)", whiteSpace: "nowrap", animation: "toastFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
         {toastMessage}
