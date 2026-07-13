@@ -98,7 +98,7 @@ function LoginClient() {
             지금 가입하시면, 공동중개 3건 등록/열람, AI물건보고서, 그리고 전국 법원 경공매 정보를 무료로 열람하실 수 있습니다.
           </p>
 
-          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px 28px' }}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px 28px' }}>
             {[
               <><strong style={{color: '#fff', fontWeight: 800}}>전국 부동산 누구나 가입하는</strong> 100% 무료 공동중개망</>,
               <><strong style={{color: '#fff', fontWeight: 800}}>중개사에게 꼭 필요한</strong> 1초 완성 AI 물건보고서 3건 무료</>,
@@ -112,6 +112,21 @@ function LoginClient() {
               </li>
             ))}
           </ul>
+
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '24px', fontSize: '13px', lineHeight: '1.7', color: '#94a3b8' }}>
+            <div style={{ marginBottom: 6, display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1', flexShrink: 0 }}>· 일반회원 :</span>
+              <span>공실등록 3건 무료, 경공매 열람 가능, <span style={{ color: '#64748b' }}>공동중개 열람 불가</span></span>
+            </div>
+            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1', flexShrink: 0 }}>· 부동산회원 :</span>
+              <span>공동중개 3건 등록 무료, 경공매 열람 가능, <span style={{ color: '#fbbf24', fontWeight: 600 }}>공동중개 열람 가능</span></span>
+            </div>
+            <div style={{ fontSize: '12px', color: '#64748b', wordBreak: 'keep-all', borderTop: '1px dashed rgba(255,255,255,0.06)', paddingTop: '12px' }}>
+              <strong style={{ color: '#cbd5e1', marginRight: 4 }}>부동산 회원가입 절차:</strong><br />
+              회원가입 ➔ 관리자 ➔ 내 정보 ➔ 중개소 가입 및 서류 제출 ➔ 승인완료
+            </div>
+          </div>
         </div>
 
         {/* Mockup Image representation */}
@@ -300,33 +315,6 @@ function LoginClient() {
 
           <div style={{ borderTop: '1px solid #f1f5f9', marginTop: 40, paddingTop: 16, textAlign: 'center', fontSize: 13, color: '#94a3b8' }}>
             공실뉴스 고객센터
-          </div>
-
-          {/* ===== Membership Guide & Workflow (Clean & Premium Theme) ===== */}
-          <div style={{ marginTop: 24 }}>
-            <div style={{ 
-              background: '#f8fafc', 
-              border: '1px solid #e2e8f0', 
-              borderRadius: 12, 
-              padding: '16px 20px', 
-              fontSize: '12.5px', 
-              lineHeight: '1.6', 
-              color: '#475569' 
-            }}>
-              <div style={{ marginBottom: 6, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                <span style={{ fontSize: '12px', fontWeight: 800, color: '#1e293b', flexShrink: 0 }}>· 일반회원 :</span>
-                <span>공실등록 3건 무료, 경공매 열람 가능, <span style={{ fontWeight: 600, color: '#64748b' }}>공동중개 열람 불가</span></span>
-              </div>
-              <div style={{ marginBottom: 12, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                <span style={{ fontSize: '12px', fontWeight: 800, color: '#1e293b', flexShrink: 0 }}>· 부동산회원 :</span>
-                <span>공동중개 3건 등록 무료, 경공매 열람 가능, <span style={{ fontWeight: 600, color: '#1e293b' }}>공동중개 열람 가능</span></span>
-              </div>
-              
-              <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: 8, fontSize: '11px', color: '#64748b', wordBreak: 'keep-all' }}>
-                <strong style={{ color: '#1e293b', marginRight: 4 }}>부동산 회원가입 절차:</strong><br />
-                회원가입 ➔ 관리자 ➔ 내 정보 ➔ 중개소 가입 및 서류 제출 ➔ 승인완료
-              </div>
-            </div>
           </div>
 
         </div>

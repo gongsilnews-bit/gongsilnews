@@ -21,13 +21,6 @@ const CheckIcon = () => (
   </svg>
 );
 
-const WarnIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-    <circle cx="12" cy="12" r="12" fill="#ef4444" fillOpacity="0.1" />
-    <path d="M8 8l8 8M16 8l-8 8" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 const brokerStats = [
   { label: "전국 가입 부동산", value: "11만+", sub: "대규모 네트워크 인프라" },
   { label: "공동중개 매물 공유", value: "실시간 조회", sub: "지도 기반 편리한 확인" },
@@ -41,7 +34,7 @@ const brokerFaqs = [
   },
   {
     q: "타 사이트 및 지역 공동중개망과의 가장 큰 차이점은 무엇인가요?",
-    a: "타사 공실 사이트는 높은 월정액을 요구하고, 기존 지역 공동중개 사이트(친목회 등)는 텃세와 카르텔로 신규 가입을 제한하거나 수백만 원의 가입비를 요구합니다. 반면 공실뉴스는 가입 제한 장벽이 전혀 없으며, 전국 11만 중개망을 평생 무료로 활용할 수 있습니다. 또한 지역의 상세 공실 소식และ 전문 부동산 뉴스까지 무료 개방하여 중개사님들의 정착을 지원합니다.",
+    a: "타사 공실 사이트는 높은 월정액을 요구하고, 기존 지역 공동중개 사이트(친목회 등)는 텃세와 카르텔로 신규 가입을 제한하거나 수백만 원의 가입비를 요구합니다. 반면 공실뉴스는 가입 제한 장벽이 전혀 없으며, 전국 11만 중개망을 평생 무료로 활용할 수 있습니다. 또한 지역의 상세 공실 소식 및 전문 부동산 뉴스까지 무료 개방하여 중개사님들의 정착을 지원합니다.",
   },
   {
     q: "지역 공실 뉴스와 부동산 기사는 어떻게 열람하나요?",
@@ -453,12 +446,128 @@ export default function NewsRealtyPage() {
             margin: 8px 0 0;
             word-break: keep-all;
           }
+          .pc-benefit-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+          }
+          .pc-benefit-tag {
+            background: #f8fafc;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+          }
+
+          /* ===== Recommended Target Section ===== */
+          .pc-target-sec {
+            background: #f8fafc;
+            padding: 90px 20px;
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .pc-target-container {
+            max-width: 1100px;
+            margin: 0 auto;
+          }
+          .pc-target-flex {
+            display: flex;
+            gap: 60px;
+            align-items: center;
+          }
+          @media (max-width: 900px) {
+            .pc-target-flex {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 40px;
+            }
+          }
+          .pc-target-left {
+            flex: 0.8;
+          }
+          .pc-target-badge {
+            font-size: 12px;
+            font-weight: 800;
+            color: #e11d48;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            display: inline-block;
+          }
+          .pc-target-title-main {
+            font-size: 32px;
+            font-weight: 900;
+            color: #0f172a;
+            line-height: 1.3;
+            margin: 0 0 16px;
+            letter-spacing: -1px;
+          }
+          .pc-target-desc-main {
+            font-size: 15.5px;
+            color: #64748b;
+            line-height: 1.6;
+            margin: 0;
+            word-break: keep-all;
+          }
+          .pc-target-right {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+          }
+          .pc-target-list-item {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px 24px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            gap: 18px;
+            align-items: flex-start;
+            transition: all 0.25s ease;
+          }
+          .pc-target-list-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(225, 29, 72, 0.03);
+            border-color: #fca5a5;
+          }
+          .pc-target-list-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+            background: #ffe4e6;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .pc-target-list-text {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+          }
+          .pc-target-list-text h4 {
+            margin: 0;
+            font-size: 15.5px;
+            font-weight: 800;
+            color: #0f172a;
+          }
+          .pc-target-list-text p {
+            margin: 0;
+            font-size: 13.5px;
+            color: #475569;
+            line-height: 1.5;
+            word-break: keep-all;
+          }
 
           /* ===== Recommendations Section ===== */
           .pc-recom-sec {
-            background: #f8fafc;
+            background: #ffffff;
             padding: 80px 20px;
-            border-top: 1px solid #e2e8f0;
             border-bottom: 1px solid #e2e8f0;
           }
           .pc-recom-container {
@@ -549,52 +658,6 @@ export default function NewsRealtyPage() {
           }
           .pc-faq-card.active-border {
             border-color: #e11d48 !important;
-          }
-
-          /* ===== CTA Section ===== */
-          .pc-cta-sec {
-            max-width: 1000px;
-            margin: 80px auto 0;
-            border-radius: 30px;
-            padding: 80px 40px;
-            background: radial-gradient(circle at bottom right, #311019 0%, #020617 100%);
-            text-align: center;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
-          }
-          .pc-cta-title {
-            font-size: 36px; font-weight: 900; color: #ffffff; line-height: 1.3;
-            margin: 24px 0 14px; letter-spacing: -1px;
-          }
-          .pc-cta-desc {
-            font-size: 16px; color: #94a3b8; margin: 0 0 36px;
-          }
-          
-          /* ===== Quick CTA Button ===== */
-          .pc-hero-cta-btn {
-            color: #ffffff;
-            border: none;
-            border-radius: 14px;
-            padding: 18px 64px;
-            font-size: 18px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: inherit;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
-            box-shadow: 0 10px 25px rgba(225, 29, 72, 0.4);
-          }
-          .pc-hero-cta-btn:hover {
-            transform: translateY(-3px);
-            filter: brightness(1.08);
-            box-shadow: 0 14px 30px rgba(225, 29, 72, 0.5);
-          }
-          .pc-hero-cta-btn:active {
-            transform: translateY(-1px);
           }
 
           /* ===== Application Modal ===== */
@@ -728,17 +791,12 @@ export default function NewsRealtyPage() {
             <div className="pc-hero-badge">
               🏢 전국 <strong style={{ color: "#F59E0B", marginLeft: "4px", marginRight: "4px" }}>11만</strong> 부동산이 함께하는 공실뉴스
             </div>
-            <h1 className="pc-hero-title">
-              공실을 뉴스로 전달하다!
-            </h1>
-            <p className="pc-hero-desc">
-              내 지역/단지 공실홍보 및 유튜브 채널 운영을 꾸준히 할 수 있습니다.
-            </p>
+            <h1 className="pc-hero-title">공실을 뉴스로 전달하다!</h1>
+            <p className="pc-hero-desc">내 지역/단지 공실홍보 및 유튜브 채널 운영을 꾸준히 할 수 있습니다.</p>
           </div>
         </section>
 
-
-        {/* ===== Stats ===== */}
+        {/* ===== Stats Section ===== */}
         <div className="pc-stats-outer">
           <div className="pc-stats-container">
             {brokerStats.map((s, i) => (
@@ -751,53 +809,126 @@ export default function NewsRealtyPage() {
           </div>
         </div>
 
-        {/* ===== Detail Rows (Landing Page Style) ===== */}
+        {/* ===== Detailed Benefits Section ===== */}
         <section className="pc-detail-sec">
           <div className="pc-sec-header">
-            <h2 className="pc-sec-title">부동산회원 상세 혜택</h2>
-            <p className="pc-sec-desc">중개사님의 성공적인 파트너로서 제공하는 핵심 솔루션입니다.</p>
+            <h2 className="pc-sec-title">공실뉴스부동산 파트너 상세 혜택</h2>
+            <p className="pc-sec-desc">가입 제한이나 장벽 없이 제공받는 대표 회원님만을 위한 특급 솔루션입니다.</p>
           </div>
-          
+
           <div className="pc-detail-rows">
-            {/* Row 1 */}
+            {/* Benefit Row 1: AI 물건 보고서 작성 */}
             <div className="pc-detail-row">
               <div className="pc-detail-img-wrap">
-                <img src="/signup_map.png" alt="유튜브 매물 홍보 자동화" />
+                <img src="/signup_news.png" alt="AI 물건/매매 보고서 작성" />
               </div>
               <div className="pc-detail-text-wrap">
-                <span className="pc-detail-sub">01. 유튜브 매물 홍보 자동화 솔루션</span>
-                <h3 className="pc-detail-row-title">원클릭 유튜브 매물 스마트 홍보 &<br/>자동 동영상 브리핑 카드 지원</h3>
+                <span className="pc-detail-sub">01. 1초 완성 AI 물건 보고서 솔루션</span>
+                <h3 className="pc-detail-row-title">상담의 격을 바꾸고 계약 확률을 높이는<br />지능형 실시간 물건 보고서 자동 생성</h3>
                 <p className="pc-detail-row-desc">
-                  등록한 매물 정보를 기반으로 전문적인 동영상 브리핑 카드와 쇼츠 콘텐츠를 자동으로 생성하고 유튜브 채널에 간편하게 연동하여 꾸준한 채널 마케팅과 매물 노출을 성공시킵니다.
+                  지번만 입력하면 1초 만에 깔끔하고 전문적인 부동산 분석 보고서와 매매 보고서 PDF가 완성됩니다. 모바일 터치 한 번으로 고객에게 카카오톡/문자 즉시 전송이 가능하며 유튜브/블로그 링크 연동 및 유리창 홍보 출력까지 한 번에 지원합니다.
                 </p>
+                <div className="pc-benefit-tags">
+                  <span className="pc-benefit-tag">카톡/문자 전송</span>
+                  <span className="pc-benefit-tag">유튜브/블로그 연동</span>
+                  <span className="pc-benefit-tag">유리창 홍보 출력</span>
+                  <span className="pc-benefit-tag">매매보고서 PDF</span>
+                </div>
               </div>
             </div>
 
-            {/* Row 2 (Alternated) */}
+            {/* Benefit Row 2: 유튜브/블로그 대본 초안 작성 */}
             <div className="pc-detail-row reverse">
               <div className="pc-detail-img-wrap">
-                <img src="/signup_news.png" alt="AI 물건/매매 보고서 생성" />
+                <img src="/signup_map.png" alt="유튜브/블로그 대본 자동 생성" />
               </div>
               <div className="pc-detail-text-wrap">
-                <span className="pc-detail-sub">02. 1초 완성 AI 솔루션</span>
-                <h3 className="pc-detail-row-title">AI 물건/매매 보고서 무제한 생성으로<br/>고객 상담 신뢰도 및 계약 전환율 상승</h3>
+                <span className="pc-detail-sub">02. 유튜브 / 블로그 콘텐츠 기획 자동화</span>
+                <h3 className="pc-detail-row-title">
+                  글쓰기 걱정 끝! 클릭 한번으로 완성되는<br />마케팅 스크립트 &amp; 포스팅 원고 자동 생성
+                </h3>
                 <p className="pc-detail-row-desc">
-                  지번만 입력하면 1초 만에 깔끔하고 세련된 디자인의 AI 부동산 보고서 PDF를 생성합니다. 권리 분석, 시세 추이, 매물 특징 등 복잡한 정보를 직관적으로 정리해 즉시 브리핑할 수 있습니다.
+                  매번 번거로운 글쓰기 고민을 날려버리세요. 물건 정보 기반으로 유튜브 영상 스크립트, 블로그 포스팅 원고, 포털 뉴스 송출용 기사는 물론 AI 이미지 생성 프롬프트까지 자동으로 설계하여 1분 만에 초안을 빌드해 드립니다.
                 </p>
+                <div className="pc-benefit-tags">
+                  <span className="pc-benefit-tag">블로그 포스팅</span>
+                  <span className="pc-benefit-tag">유튜브 대본</span>
+                  <span className="pc-benefit-tag">포털 뉴스 기사</span>
+                  <span className="pc-benefit-tag">AI 이미지 프롬프트</span>
+                </div>
               </div>
             </div>
 
-            {/* Row 3 */}
+            {/* Benefit Row 3: 부동산 유튜브 아카데미 */}
             <div className="pc-detail-row">
               <div className="pc-detail-img-wrap">
-                <img src="/signup_auction.png" alt="공식 파트너 독점 권한" />
+                <img src="/signup_auction.png" alt="부동산 유튜브 전문 아카데미" />
               </div>
               <div className="pc-detail-text-wrap">
-                <span className="pc-detail-sub">03. 공식 파트너 독점 권한</span>
-                <h3 className="pc-detail-row-title">아파트 대단지 및 주력 지역 상단 노출과<br/>포털 뉴스 기사 송출권을 활용한 전속 매물 확보</h3>
+                <span className="pc-detail-sub">03. 실전 부동산 유튜브 &amp; 촬영 아카데미</span>
+                <h3 className="pc-detail-row-title">
+                  방송국 PD 출신 편집장 직강 솔루션과<br />1년 내내 업데이트되는 무제한 비디오 자료실
+                </h3>
                 <p className="pc-detail-row-desc">
-                  해당 단지 및 행정구역의 '공식 파트너 부동산' 자격을 선점하여 상단 검색에 단독 노출됩니다. 또한 본사 포털 뉴스 기사 송출권을 지원받아 소유주들의 신뢰를 얻고 전속 매물을 독점으로 확보할 수 있습니다.
+                  방송국 PD 출신의 편집장이 알려주는 손님 콜(Call) 유도 매물 촬영법부터 매주 업데이트되는 실무 동영상 강의를 제공합니다. 질문 해결을 위한 전용 Q&amp;A 게시판 운영과 드론 및 고화질 영상 리소스 무제한 다운로드를 평생 무료로 활용해 보세요.
                 </p>
+                <div className="pc-benefit-tags">
+                  <span className="pc-benefit-tag">방송국 PD 직강</span>
+                  <span className="pc-benefit-tag">매주 강의 업데이트</span>
+                  <span className="pc-benefit-tag">실전 촬영 노하우</span>
+                  <span className="pc-benefit-tag">드론/영상 소스 무제한</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== Recommended Target Section (Flex Layout) ===== */}
+        <section className="pc-target-sec">
+          <div className="pc-target-container">
+            <div className="pc-target-flex">
+              <div className="pc-target-left">
+                <span className="pc-target-badge">RECOMMENDED FOR</span>
+                <h2 className="pc-target-title-main">이런 중개사님께<br />강력하게 추천합니다.</h2>
+                <p className="pc-target-desc-main">불필요한 고비용과 시간 낭비에서 벗어나, 트렌디한 AI 마케팅을 경험해 보세요.</p>
+              </div>
+
+              <div className="pc-target-right">
+                {/* Item 1 */}
+                <div className="pc-target-list-item">
+                  <div className="pc-target-list-icon">🎥</div>
+                  <div className="pc-target-list-text">
+                    <h4>유튜브 채널을 꾸준히 활성화하고 싶은 부동산</h4>
+                    <p>매물 대본 작성부터 촬영 구도, 1년 강의까지 영상 마케팅의 모든 것을 제공합니다.</p>
+                  </div>
+                </div>
+
+                {/* Item 2 */}
+                <div className="pc-target-list-item">
+                  <div className="pc-target-list-icon">📢</div>
+                  <div className="pc-target-list-text">
+                    <h4>손님 광고 및 매물 브리핑 신뢰도를 높이고 싶은 부동산</h4>
+                    <p>카톡 전속 보고서 공유와 전문 매매 보고서 출력으로 당일 계약 체결률을 높입니다.</p>
+                  </div>
+                </div>
+
+                {/* Item 3 */}
+                <div className="pc-target-list-item">
+                  <div className="pc-target-list-icon">💸</div>
+                  <div className="pc-target-list-text">
+                    <h4>고정 광고비가 아깝고 절약하고 싶은 부동산</h4>
+                    <p>월 3만 원의 합리적인 비용으로 광고 대행사 수준의 고품질 콘텐츠를 무제한 생산합니다.</p>
+                  </div>
+                </div>
+
+                {/* Item 4 */}
+                <div className="pc-target-list-item">
+                  <div className="pc-target-list-icon">🏆</div>
+                  <div className="pc-target-list-text">
+                    <h4>지역 내 친목회 텃세를 극복하고 독점 매물을 잡고 싶은 부동산</h4>
+                    <p>내 단지 공실 등록 20건 상향 혜택과 언론 보도 송출권으로 전속 매물을 확보합니다.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -812,7 +943,7 @@ export default function NewsRealtyPage() {
             </div>
             
             <div className="pc-recom-grid">
-              {/* Recom Card 1 */}
+              {/* Card 1 */}
               <div className="pc-recom-card">
                 <img className="pc-recom-avatar" src="/signup_broker1.png" alt="대박 공인중개사사무소" />
                 <h4 className="pc-recom-title">대박 공인중개사사무소</h4>
@@ -822,7 +953,7 @@ export default function NewsRealtyPage() {
                 </p>
               </div>
 
-              {/* Recom Card 2 */}
+              {/* Card 2 */}
               <div className="pc-recom-card">
                 <img className="pc-recom-avatar" src="/signup_broker2.png" alt="골드밸리 공인중개사사무소" />
                 <h4 className="pc-recom-title">골드밸리 공인중개사사무소</h4>
@@ -832,7 +963,7 @@ export default function NewsRealtyPage() {
                 </p>
               </div>
 
-              {/* Recom Card 3 */}
+              {/* Card 3 */}
               <div className="pc-recom-card">
                 <img className="pc-recom-avatar" src="/signup_broker3.png" alt="에이스 공인중개사사무소" />
                 <h4 className="pc-recom-title">에이스 공인중개사사무소</h4>
@@ -863,7 +994,7 @@ export default function NewsRealtyPage() {
           </div>
         </section>
 
-        {/* ===== CTA ===== */}
+        {/* ===== CTA Section ===== */}
         <section 
           className="pc-cta-sec"
           style={{
@@ -874,7 +1005,7 @@ export default function NewsRealtyPage() {
           <h2 className="pc-cta-title">11만 부동산을 위한 무료 정보 채널, 공실뉴스</h2>
           <p className="pc-cta-desc">가입 제한이나 비싼 회비 부담 없이, 지금 공실뉴스에서 무료로 가입하고 활발하게 교류하세요.</p>
           <button 
-            className="pc-hero-cta-btn" 
+            className="pc-hero-cta-btn"
             onClick={() => {
               if (typeof window !== 'undefined') {
                 localStorage.setItem('signup_member_type', 'broker');
@@ -938,7 +1069,7 @@ export default function NewsRealtyPage() {
               </button>
             </div>
 
-            {/* Card 2: Gongsilnews Realtor (MIDDLE PREMIUM) */}
+            {/* Card 2: Gongsilnews Realtor (Premium Member) */}
             <div className="pc-pricing-card premium">
               <span className="pc-price-badge free">강력 추천</span>
               <h3 className="pc-pricing-card-title">공실뉴스부동산</h3>
@@ -949,19 +1080,19 @@ export default function NewsRealtyPage() {
               <ul className="pc-pricing-card-features">
                 <li className="pc-pricing-card-feature-item">
                   <CheckIcon />
-                  <strong>[유튜브/홍보] 유튜브 매물 스마트 홍보 & 브리핑 카드 지원</strong>
+                  <strong>[AI 보고서] 1초 완성 AI 물건/매매 보고서 무제한 생성 &amp; 출력</strong>
                 </li>
                 <li className="pc-pricing-card-feature-item">
                   <CheckIcon />
-                  <strong>[AI 솔루션] 1초 완성 'AI 물건보고서' 무제한 생성</strong>
+                  <strong>[대본 초안] 유튜브 대본 &amp; 블로그 포스팅 글 자동 작성</strong>
                 </li>
                 <li className="pc-pricing-card-feature-item">
                   <CheckIcon />
-                  <strong>[독점 권한] 주력 아파트 단지 상단 '공식 파트너' 우선 단독 노출</strong>
+                  <strong>[유튜브 아카데미] PD 출신 편집장의 부동산 유튜브 직강 &amp; 자료실 제공</strong>
                 </li>
                 <li className="pc-pricing-card-feature-item">
                   <CheckIcon />
-                  <strong>[매물 확보] 포털 뉴스 기사 송출권을 활용한 전속 매물 확보</strong>
+                  <strong>[독점 권한] 내 지역/단지 공실 등록 20건 상향</strong>
                 </li>
                 <li className="pc-pricing-card-feature-item">
                   <CheckIcon />
