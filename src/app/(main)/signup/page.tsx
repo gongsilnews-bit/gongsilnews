@@ -498,6 +498,45 @@ export default function SignupPage() {
             opacity: 0.95;
             transform: translateY(-2px);
           }
+          
+          /* ===== Quick CTA Button ===== */
+          .pc-hero-cta-btn {
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            padding: 18px 64px;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+          }
+          .pc-hero-cta-btn.broker {
+            background: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+            box-shadow: 0 10px 25px rgba(67, 97, 238, 0.4);
+          }
+          .pc-hero-cta-btn.landlord {
+            background: linear-gradient(135deg, #7209b7 0%, #3f37c9 100%);
+            box-shadow: 0 10px 25px rgba(114, 9, 183, 0.4);
+          }
+          .pc-hero-cta-btn:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.08);
+          }
+          .pc-hero-cta-btn.broker:hover {
+            box-shadow: 0 14px 30px rgba(67, 97, 238, 0.5);
+          }
+          .pc-hero-cta-btn.landlord:hover {
+            box-shadow: 0 14px 30px rgba(114, 9, 183, 0.5);
+          }
+          .pc-hero-cta-btn:active {
+            transform: translateY(-1px);
+          }
         `}</style>
 
         {/* ===== Hero Section ===== */}
@@ -531,18 +570,20 @@ export default function SignupPage() {
               </button>
             </div>
 
-            {/* Quick Input Form */}
-            <form className="pc-quick-signup-form" onSubmit={handleQuickSignup}>
-              <input 
-                type="email" 
-                placeholder={heroContent[activeTab].placeholder}
-                className="pc-quick-signup-input"
-                value={emailInput}
-                onChange={e => setEmailInput(e.target.value)}
-                required
-              />
-              <button type="submit" className="pc-quick-signup-btn">{heroContent[activeTab].buttonText}</button>
-            </form>
+            {/* Large Free Signup Button */}
+            <div style={{ marginTop: '10px' }}>
+              <button 
+                className={`pc-hero-cta-btn ${activeTab}`}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('signup_member_type', activeTab === 'broker' ? 'broker' : 'landlord');
+                  }
+                  setIsAuthModalOpen(true);
+                }}
+              >
+                무료 회원가입
+              </button>
+            </div>
           </div>
         </section>
 

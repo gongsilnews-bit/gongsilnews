@@ -308,6 +308,38 @@ export default function MobileSignupPage() {
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
           }
+          
+          /* ===== Quick CTA Button ===== */
+          .m-hero-cta-btn {
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 48px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 260px;
+            margin: 0 auto;
+          }
+          .m-hero-cta-btn.broker {
+            background: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+            box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4);
+          }
+          .m-hero-cta-btn.landlord {
+            background: linear-gradient(135deg, #7209b7 0%, #3f37c9 100%);
+            box-shadow: 0 6px 16px rgba(114, 9, 183, 0.4);
+          }
+          .m-hero-cta-btn:active {
+            transform: scale(0.98);
+          }
 
           /* ===== Stats ===== */
           .m-stats-container {
@@ -487,18 +519,20 @@ export default function MobileSignupPage() {
               </button>
             </div>
 
-            {/* Quick Input Form */}
-            <form className="m-quick-signup-form" onSubmit={handleQuickSignup}>
-              <input 
-                type="email" 
-                placeholder={heroContent[activeTab].placeholder}
-                className="m-quick-signup-input"
-                value={emailInput}
-                onChange={e => setEmailInput(e.target.value)}
-                required
-              />
-              <button type="submit" className="m-quick-signup-btn">{heroContent[activeTab].buttonText}</button>
-            </form>
+            {/* Large Free Signup Button */}
+            <div style={{ marginTop: '10px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+              <button 
+                className={`m-hero-cta-btn ${activeTab}`}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('signup_member_type', activeTab === 'broker' ? 'broker' : 'landlord');
+                  }
+                  setIsAuthModalOpen(true);
+                }}
+              >
+                무료 회원가입
+              </button>
+            </div>
           </div>
         </section>
 
