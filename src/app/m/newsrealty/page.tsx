@@ -17,7 +17,7 @@ const PlayLogo = ({ size = 64 }: { size?: number }) => (
 
 const CheckIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-    <circle cx="12" cy="12" r="12" fill="#e11d48" />
+    <circle cx="12" cy="12" r="12" fill="#475569" />
     <path d="M7 12l3 3 7-7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
@@ -170,7 +170,7 @@ export default function MobileNewsRealtyPage() {
           /* ===== Hero ===== */
           .m-signup-hero {
             background: radial-gradient(circle at top right, #311019 0%, #0f172a 65%, #020617 100%);
-            padding: 50px 16px 80px;
+            padding: 50px 16px 120px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -208,7 +208,7 @@ export default function MobileNewsRealtyPage() {
           /* ===== Pricing Section ===== */
           .m-pricing-sec {
             padding: 0 16px 40px;
-            margin-top: -40px;
+            margin-top: 40px;
             position: relative;
             z-index: 10;
           }
@@ -230,21 +230,21 @@ export default function MobileNewsRealtyPage() {
             position: relative;
           }
           .m-pricing-card.premium {
-            border-color: #fca5a5;
-            background: linear-gradient(180deg, #ffffff 0%, #fffcfc 100%);
+            border-color: #cbd5e1;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
           }
           .m-pricing-card.premium::before {
             content: "강력 추천";
             position: absolute;
             top: -12px;
             right: 24px;
-            background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+            background: #475569;
             color: #ffffff;
             font-size: 11px;
             font-weight: 800;
             padding: 4px 12px;
             border-radius: 99px;
-            box-shadow: 0 4px 10px rgba(225, 29, 72, 0.25);
+            box-shadow: 0 4px 10px rgba(71, 85, 105, 0.2);
           }
           .m-price-badge {
             display: inline-block;
@@ -256,8 +256,8 @@ export default function MobileNewsRealtyPage() {
             width: fit-content;
           }
           .m-price-badge.free {
-            background: #ffe4e6;
-            color: #e11d48;
+            background: #f1f5f9;
+            color: #475569;
           }
           .m-price-badge.legacy-badge {
             background: #f1f5f9;
@@ -331,9 +331,9 @@ export default function MobileNewsRealtyPage() {
             cursor: not-allowed;
           }
           .m-pricing-card-btn.free-btn {
-            background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+            background: #475569;
             color: #ffffff;
-            box-shadow: 0 6px 16px rgba(225, 29, 72, 0.2);
+            box-shadow: 0 6px 16px rgba(71, 85, 105, 0.15);
           }
 
           /* ===== Stats ===== */
@@ -408,6 +408,75 @@ export default function MobileNewsRealtyPage() {
             color: #475569;
             line-height: 1.6;
             margin: 4px 0 0;
+            word-break: keep-all;
+          }
+
+          /* ===== Mobile Target Section ===== */
+          .m-target-sec {
+            padding: 50px 16px;
+            background: #ffffff;
+            border-top: 1px solid #f1f5f9;
+          }
+          .m-target-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+          }
+          .m-target-badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            color: #e11d48;
+            background: #ffe4e6;
+            padding: 4px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+          }
+          .m-target-title-main {
+            font-size: 22px;
+            font-weight: 900;
+            color: #0f172a;
+            margin: 0 0 6px 0;
+            line-height: 1.3;
+          }
+          .m-target-desc-main {
+            font-size: 13.5px;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.5;
+            word-break: keep-all;
+          }
+          .m-target-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+          }
+          .m-target-list-item {
+            display: flex;
+            gap: 14px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #f1f5f9;
+          }
+          .m-target-list-icon {
+            font-size: 20px;
+            line-height: 1;
+            flex-shrink: 0;
+          }
+          .m-target-list-text h4 {
+            font-size: 14.5px;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 4px 0;
+            word-break: keep-all;
+          }
+          .m-target-list-text p {
+            font-size: 12.5px;
+            color: #475569;
+            margin: 0;
+            line-height: 1.5;
             word-break: keep-all;
           }
 
@@ -647,6 +716,25 @@ export default function MobileNewsRealtyPage() {
             box-shadow: 0 4px 8px rgba(217,119,6,0.2);
           }
           .submit-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+          
+          /* ===== New CTA Section (Full Width Banner) ===== */
+          .m-new-cta-sec {
+            width: 100%;
+            background: #ffffff;
+            padding: 50px 16px 30px;
+            text-align: center;
+          }
+          .m-new-cta-container {
+            max-width: 480px;
+            margin: 0 auto;
+          }
+          .m-new-cta-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+          }
         `}</style>
 
         {/* ===== Header ===== */}
@@ -676,54 +764,83 @@ export default function MobileNewsRealtyPage() {
           className="m-signup-hero"
           style={{
             background: "radial-gradient(circle at top right, #311019 0%, #0f172a 65%, #020617 100%)",
-            padding: "50px 16px 80px"
+            padding: "50px 16px 120px"
           }}
         >
           <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
             <div className="m-hero-badge">
               🏢 전국 <strong style={{ color: "#F59E0B" }}>11만</strong> 부동산 공실뉴스
             </div>
-            <h1 className="m-hero-title">
-              공실을 뉴스로 전달하다!
+            <h1 className="m-hero-title" style={{ fontSize: "28px", lineHeight: "1.4", wordBreak: "keep-all", textAlign: "center" }}>
+              내 지역 공실을 <span style={{ color: "#fbbf24" }}>등록만 하세요!</span><br />
+              부동산 마케팅이 <span style={{ color: "#fbbf24" }}>자동</span>으로 시작됩니다.
             </h1>
-            <p className="m-hero-desc">
-              내 지역/단지 공실홍보 및 유튜브 채널 운영을 꾸준히 할 수 있습니다.
+            <p className="m-hero-desc" style={{ fontSize: "14px", marginTop: "12px", textAlign: "center", wordBreak: "keep-all" }}>
+              공실만 입력하면 완성되는 온/오프라인 AI 매매 보고서와 유튜브/블로그 포스팅,<br />
+              AI 실무 부동산 유튜브 특강(드론영상 저작권 무료) 까지,,<br />
+              부동산 마케팅이 쉬워집니다.
             </p>
+            <div style={{ marginTop: "28px", display: "flex", justifyContent: "center", width: "100%", maxWidth: "480px" }}>
+              <div style={{ width: "100%", aspectRatio: "16/9", borderRadius: "12px", overflow: "hidden", boxShadow: "0 15px 30px rgba(0, 0, 0, 0.4)" }}>
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src="https://www.youtube.com/embed/4a3_M6-Crew"
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </div>
           </div>
         </section>
 
 
         {/* ===== Stats ===== */}
         <div style={{ background: "#ffffff" }}>
-          <div className="m-stats-container">
-            {brokerStats.map((s, i) => (
-              <div key={i} className="m-stat-card">
-                <div className="m-stat-label">{s.label}</div>
-                <div className="m-stat-val">{s.value}</div>
-                <div className="m-stat-sub">{s.sub}</div>
-              </div>
-            ))}
+          <div className="m-stats-container" style={{ gap: "12px", marginTop: "-30px", position: "relative", zIndex: 10 }}>
+            {/* Card 1 */}
+            <div className="m-stat-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "18px 12px" }}>
+              <div className="m-stat-label" style={{ fontSize: "11px", fontWeight: "bold" }}>Point 01</div>
+              <div className="m-stat-val" style={{ fontSize: "20px", fontWeight: "900", margin: "4px 0" }}>AI 매매 보고서</div>
+              <div className="m-stat-sub" style={{ fontSize: "12px", color: "#475569" }}>지번 입력 즉시 1초 자동 완성</div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="m-stat-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "18px 12px" }}>
+              <div className="m-stat-label" style={{ fontSize: "11px", fontWeight: "bold" }}>Point 02</div>
+              <div className="m-stat-val" style={{ fontSize: "20px", fontWeight: "900", margin: "4px 0" }}>유튜브/블로그 기사</div>
+              <div className="m-stat-sub" style={{ fontSize: "12px", color: "#475569" }}>원클릭 스크립트 &amp; 원고 완성</div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="m-stat-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "18px 12px" }}>
+              <div className="m-stat-label" style={{ fontSize: "11px", fontWeight: "bold" }}>Point 03</div>
+              <div className="m-stat-val" style={{ fontSize: "20px", fontWeight: "900", margin: "4px 0" }}>유튜브 특강 &amp; 드론</div>
+              <div className="m-stat-sub" style={{ fontSize: "12px", color: "#475569" }}>영상 저작권 무료 다운로드</div>
+            </div>
           </div>
         </div>
 
         {/* ===== Detail Rows (Mobile Landing Page Style) ===== */}
         <section className="m-detail-sec">
           <div style={{ textAlign: "center", marginBottom: 30 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#0f172a", margin: "0 0 6px", letterSpacing: "-0.5px" }}>부동산회원 상세 혜택</h2>
-            <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>중개사님의 성공적인 파트너로서 제공하는 핵심 솔루션입니다.</p>
+            <h2 style={{ fontSize: 22, fontWeight: 900, color: "#0f172a", margin: "0 0 6px", letterSpacing: "-0.5px" }}>공실뉴스부동산이 되면 좋은점!!</h2>
+            <p style={{ fontSize: 13, color: "#e11d48", fontWeight: 800, margin: 0 }}>내 지역 공실을 등록만 하세요. 마케팅이 자동으로 해결됩니다.</p>
           </div>
 
           <div className="m-detail-rows">
             {/* Row 1 */}
             <div className="m-detail-row">
               <div className="m-detail-img-wrap">
-                <img src="/signup_map.png" alt="유튜브 매물 홍보 자동화" />
+                <img src="/signup_news.png" alt="AI 물건/매매 보고서 생성" />
               </div>
               <div className="m-detail-text-wrap">
-                <span className="m-detail-sub">01. 유튜브 매물 홍보 자동화 솔루션</span>
-                <h3 className="m-detail-row-title">원클릭 유튜브 매물 스마트 홍보 & 자동 동영상 브리핑 카드 지원</h3>
+                <span className="m-detail-sub">POINT 01</span>
+                <h3 className="m-detail-row-title">1, 온/오프라인 AI 매매 보고서 자동 생성</h3>
                 <p className="m-detail-row-desc">
-                  등록한 매물 정보를 기반으로 전문적인 동영상 브리핑 카드와 쇼츠 콘텐츠를 자동으로 생성하고 유튜브 채널에 간편하게 연동하여 꾸준한 채널 마케팅과 매물 노출을 성공시킵니다.
+                  지번만 입력하면 1초 만에 온/오프라인 매매 보고서 PDF가 자동 완성됩니다. 카카오톡 전송 및 유리창 출력을 터치 한 번으로 끝내세요.
                 </p>
               </div>
             </div>
@@ -731,13 +848,13 @@ export default function MobileNewsRealtyPage() {
             {/* Row 2 */}
             <div className="m-detail-row">
               <div className="m-detail-img-wrap">
-                <img src="/signup_news.png" alt="AI 물건/매매 보고서 생성" />
+                <img src="/signup_map.png" alt="유튜브/블로그 기사 자동 생성" />
               </div>
               <div className="m-detail-text-wrap">
-                <span className="m-detail-sub">02. 1초 완성 AI 솔루션</span>
-                <h3 className="m-detail-row-title">AI 물건/매매 보고서 무제한 생성으로 고객 상담 신뢰도 및 계약 전환율 상승</h3>
+                <span className="m-detail-sub">POINT 02</span>
+                <h3 className="m-detail-row-title">2, 유튜브/블로그 기사 자동 생성</h3>
                 <p className="m-detail-row-desc">
-                  지번만 입력하면 1초 만에 깔끔하고 세련된 디자인의 AI 부동산 보고서 PDF를 생성합니다. 권리 분석, 시세 추이, 매물 특징 등 복잡한 정보를 직관적으로 정리해 즉시 브리핑할 수 있습니다.
+                  글쓰기 고민 없이 클릭 한 번으로 유튜브 대본, 쇼츠 스크립트, 포스팅 원고, 포털 송출용 기사를 1분 만에 추출해 드립니다.
                 </p>
               </div>
             </div>
@@ -745,14 +862,63 @@ export default function MobileNewsRealtyPage() {
             {/* Row 3 */}
             <div className="m-detail-row">
               <div className="m-detail-img-wrap">
-                <img src="/signup_auction.png" alt="공식 파트너 독점 권한" />
+                <img src="/signup_auction.png" alt="유튜브 특강 및 드론 영상 소스" />
               </div>
               <div className="m-detail-text-wrap">
-                <span className="m-detail-sub">03. 공식 파트너 독점 권한</span>
-                <h3 className="m-detail-row-title">아파트 대단지 및 주력 지역 상단 노출과 포털 뉴스 기사 송출권을 활용한 전속 매물 확보</h3>
+                <span className="m-detail-sub">POINT 03</span>
+                <h3 className="m-detail-row-title">3, AI 유튜브 무료 특강 (드론영상저작권무료)</h3>
                 <p className="m-detail-row-desc">
-                  해당 단지 및 행정구역의 '공식 파트너 부동산' 자격을 선점하여 상단 검색에 단독 노출됩니다. 또한 본사 포털 뉴스 기사 송출권을 지원받아 소유주들의 신뢰를 얻고 전속 매물을 독점으로 확보할 수 있습니다.
+                  방송국 PD 출신의 유튜브 노하우 특강은 물론 저작권이 완전 해결된 드론/고화질 영상 소스를 무제한 지원합니다.
                 </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== Recommended Target Section ===== */}
+        <section className="m-target-sec">
+          <div className="m-target-container">
+            <div>
+              <span className="m-target-badge">RECOMMENDED FOR</span>
+              <h2 className="m-target-title-main">이런 부동산에 추천!</h2>
+              <p className="m-target-desc-main">부동산 마케팅 때문에 고민이 깊으신 대표님들을 위한 최적의 솔루션입니다.</p>
+            </div>
+
+            <div className="m-target-list">
+              {/* Item 1 */}
+              <div className="m-target-list-item">
+                <div className="m-target-list-icon">😭</div>
+                <div className="m-target-list-text">
+                  <h4>부동산마케팅 혼자하기 힘든 부동산</h4>
+                  <p>기사 작성, 홍보물 제작, 고객 브리핑까지 AI가 자동으로 알아서 처리해 드립니다.</p>
+                </div>
+              </div>
+
+              {/* Item 2 */}
+              <div className="m-target-list-item">
+                <div className="m-target-list-icon">🎬</div>
+                <div className="m-target-list-text">
+                  <h4>유튜브 매번 포기하는 부동산</h4>
+                  <p>영상 촬영 구도부터 1년 강의, 드론/영상 소스 무료 다운로드로 지속가능한 채널 운영을 돕습니다.</p>
+                </div>
+              </div>
+
+              {/* Item 3 */}
+              <div className="m-target-list-item">
+                <div className="m-target-list-icon">💸</div>
+                <div className="m-target-list-text">
+                  <h4>비싼 고정 광고비가 부담되는 부동산</h4>
+                  <p>월 3만 원의 합리적인 비용으로 광고 대행업체 수준의 전문적인 퀄리티를 유지할 수 있습니다.</p>
+                </div>
+              </div>
+
+              {/* Item 4 */}
+              <div className="m-target-list-item">
+                <div className="m-target-list-icon">🏆</div>
+                <div className="m-target-list-text">
+                  <h4>지역 내 공동중개망 텃세를 넘고 독점 매물을 잡고 싶은 부동산</h4>
+                  <p>공실 등록 수 20건 보장 및 AI 분석 브리핑 혜택으로 임대인과 임차인의 신뢰를 독점합니다.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -795,47 +961,6 @@ export default function MobileNewsRealtyPage() {
                 "매월 고가의 비용을 지불하던 경공매 정보를 실시간 무료로 보니 부담이 없고, 관심 지역 공실 뉴스 알림 덕분에 매일 고객 관리가 수월해졌습니다."
               </p>
             </div>
-          </div>
-        </section>
-
-        {/* ===== FAQ ===== */}
-        <section className="m-faq-sec">
-          <h2 style={{ textAlign: "center", fontSize: 22, fontWeight: 900, color: "#0f172a", margin: "0 0 20px" }}>자주 묻는 질문</h2>
-          {brokerFaqs.map((faq, i) => (
-            <div key={i} className={`m-faq-card ${openFaq === i ? 'active-border' : ''}`}>
-              <button className="m-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                <span>{faq.q}</span>
-                <span style={{ transform: openFaq === i ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
-              </button>
-              {openFaq === i && (
-                <div className="m-faq-a">{faq.a}</div>
-              )}
-            </div>
-          ))}
-        </section>
-
-        {/* ===== CTA (labelled FAQ in comment) ===== */}
-        <section 
-          className="m-cta-sec"
-          style={{
-            background: "radial-gradient(circle at bottom right, #311019 0%, #020617 100%)"
-          }}
-        >
-          <PlayLogo size={44} />
-          <h2 className="m-cta-title">11만 부동산을 위한 무료 정보 채널, 공실뉴스</h2>
-          <p className="m-cta-desc">매월 부과되던 비싼 고정비 회비를 아끼고 스마트한 중개 비즈니스를 시작해 보세요.</p>
-          <div className="m-cta-btn-wrapper">
-            <button 
-              className="m-cta-main-btn" 
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem('signup_member_type', 'broker');
-                }
-                setIsAuthModalOpen(true);
-              }}
-            >
-              지금 무료로 가입하기
-            </button>
           </div>
         </section>
 
@@ -914,7 +1039,7 @@ export default function MobileNewsRealtyPage() {
                 </li>
               </ul>
               
-              <div className="m-pricing-card-price" style={{ color: "#e11d48", marginTop: 12 }}>
+              <div className="m-pricing-card-price" style={{ color: "#0f172a", marginTop: 12 }}>
                 30,000원 <span>/ 월 (VAT 별도)</span>
               </div>
               
@@ -926,6 +1051,45 @@ export default function MobileNewsRealtyPage() {
               </button>
             </div>
           </div>
+        </section>
+
+        {/* ===== CTA Section ===== */}
+        <section className="m-new-cta-sec">
+          <div className="m-new-cta-container">
+            <h2 className="m-new-cta-title">공실뉴스 부동산이 되세요</h2>
+            <div 
+              className="m-new-cta-banner"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('signup_member_type', 'broker');
+                }
+                setIsAuthModalOpen(true);
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              <img 
+                src="/signup_cta_bg.png" 
+                alt="공실뉴스 부동산이 되세요" 
+                style={{ width: "100%", height: "auto", display: "block", borderRadius: "14px", boxShadow: "0 8px 20px rgba(0, 0, 0, 0.06)" }} 
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ===== FAQ ===== */}
+        <section className="m-faq-sec">
+          <h2 style={{ textAlign: "center", fontSize: 22, fontWeight: 900, color: "#0f172a", margin: "0 0 20px" }}>자주 묻는 질문</h2>
+          {brokerFaqs.map((faq, i) => (
+            <div key={i} className={`m-faq-card ${openFaq === i ? 'active-border' : ''}`}>
+              <button className="m-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                <span>{faq.q}</span>
+                <span style={{ transform: openFaq === i ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
+              </button>
+              {openFaq === i && (
+                <div className="m-faq-a">{faq.a}</div>
+              )}
+            </div>
+          ))}
         </section>
 
         {/* ===== Footer ===== */}

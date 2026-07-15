@@ -141,7 +141,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
               <div
                 key={v.id}
                 className="v-card"
-                onClick={() => { if (cardMasked) { setIsAuthModalOpen(true); return; } handleVacancyClick(v); }}
+                onClick={() => { if (cardMasked) { window.location.href = "/m/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); return; } handleVacancyClick(v); }}
                 style={{ display: "flex", gap: "12px", padding: "16px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -155,7 +155,11 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                         New
                       </span>
                     )}
-                    {cardMasked && <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>🔒 부동산회원 무료열람</span>}
+                    {cardMasked && (
+                      <span onClick={(e) => { e.stopPropagation(); window.location.href = "/m/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>
+                        {v.trade_type === '경매' || v.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 무료열람'}
+                      </span>
+                    )}
                   </div>
 
                   {/* 주소 (타이틀) */}
@@ -211,7 +215,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
             <div
               key={v.id}
               className="v-card"
-              onClick={() => { if (cardMasked) { setIsAuthModalOpen(true); return; } handleVacancyClick(v); }}
+              onClick={() => { if (cardMasked) { window.location.href = "/m/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); return; } handleVacancyClick(v); }}
               style={{ display: "flex", gap: "12px", padding: "14px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -220,7 +224,11 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                   {showCommission && (v.realtor_commission || v.commission_type) && <span style={{ fontSize: "12px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "1px 6px", borderRadius: "3px" }}>{v.realtor_commission || v.commission_type}</span>}
                   <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
                   <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
-                  {cardMasked && <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>🔒 부동산회원 무료열람</span>}
+                  {cardMasked && (
+                    <span onClick={(e) => { e.stopPropagation(); window.location.href = "/m/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>
+                      {v.trade_type === '경매' || v.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 무료열람'}
+                    </span>
+                  )}
                 </div>
 
                 {/* Title */}

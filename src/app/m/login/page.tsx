@@ -271,7 +271,7 @@ function MobileLoginClient() {
           
           <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: 8, fontSize: '10.5px', color: '#64748b', wordBreak: 'keep-all' }}>
             <strong style={{ color: '#1e293b', marginRight: 4 }}>부동산 회원가입 절차:</strong><br />
-            회원가입 ➔ 관리자 ➔ 내 정보 ➔ 중개소 가입 및 서류 제출 ➔ 승인완료
+            회원가입 ➔ 관리자페이지 ➔ 정보설정 ➔ 중개소 가입 및 서류 제출 ➔ 승인완료
           </div>
         </div>
       </div>

@@ -47,7 +47,7 @@ export default function MarketingPage() {
         .marketing-hero {
           position: relative;
           height: 600px;
-          background-image: url('https://digitalspecial.joongang.co.kr/_o/img/newsroom/2020/0715_marketing/images/main-bg@2x.jpg');
+          background-image: url('/marketing_hero_bg.png');
           background-position: center;
           background-size: cover;
           background-repeat: no-repeat;

@@ -16,7 +16,7 @@ const PlayLogo = ({ size = 64 }: { size?: number }) => (
 
 const CheckIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-    <circle cx="12" cy="12" r="12" fill="#e11d48" />
+    <circle cx="12" cy="12" r="12" fill="#475569" />
     <path d="M7 12l3 3 7-7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
@@ -141,7 +141,7 @@ export default function NewsRealtyPage() {
           /* ===== Hero Section ===== */
           .pc-signup-hero {
             background: radial-gradient(circle at top right, #311019 0%, #0f172a 65%, #020617 100%);
-            padding: 100px 20px 160px;
+            padding: 100px 20px 100px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -183,7 +183,7 @@ export default function NewsRealtyPage() {
           /* ===== Pricing Grid Section ===== */
           .pc-pricing-sec {
             max-width: 1200px;
-            margin: -80px auto 0;
+            margin: 80px auto 0;
             padding: 0 20px;
             position: relative;
             z-index: 10;
@@ -207,9 +207,9 @@ export default function NewsRealtyPage() {
             transition: all 0.3s ease;
           }
           .pc-pricing-card.premium {
-            border-color: #fca5a5;
-            background: linear-gradient(180deg, #ffffff 0%, #fffcfc 100%);
-            box-shadow: 0 15px 50px rgba(225, 29, 72, 0.08);
+            border-color: #cbd5e1;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 15px 50px rgba(15, 23, 42, 0.05);
             transform: scale(1.03);
             z-index: 2;
           }
@@ -218,13 +218,13 @@ export default function NewsRealtyPage() {
             position: absolute;
             top: -14px;
             right: 30px;
-            background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+            background: #475569;
             color: #ffffff;
             font-size: 11px;
             font-weight: 800;
             padding: 5px 14px;
             border-radius: 99px;
-            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+            box-shadow: 0 4px 12px rgba(71, 85, 105, 0.2);
           }
           .pc-price-badge {
             display: inline-block;
@@ -236,8 +236,8 @@ export default function NewsRealtyPage() {
             width: fit-content;
           }
           .pc-price-badge.free {
-            background: #ffe4e6;
-            color: #e11d48;
+            background: #f1f5f9;
+            color: #475569;
           }
           .pc-price-badge.legacy-badge {
             background: #f1f5f9;
@@ -309,14 +309,14 @@ export default function NewsRealtyPage() {
             cursor: not-allowed;
           }
           .pc-pricing-card-btn.free-btn {
-            background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+            background: #475569;
             color: #ffffff;
-            box-shadow: 0 6px 20px rgba(225, 29, 72, 0.25);
+            box-shadow: 0 6px 20px rgba(71, 85, 105, 0.15);
           }
           .pc-pricing-card-btn.free-btn:hover {
             transform: translateY(-2px);
-            filter: brightness(1.05);
-            box-shadow: 0 8px 24px rgba(225, 29, 72, 0.35);
+            background: #334155;
+            box-shadow: 0 8px 24px rgba(71, 85, 105, 0.25);
           }
           .pc-pricing-card-btn.free-btn:active {
             transform: translateY(0);
@@ -324,7 +324,7 @@ export default function NewsRealtyPage() {
 
           /* ===== Stats ===== */
           .pc-stats-outer {
-            margin-top: 80px;
+            margin-top: 0;
             background: #f8fafc;
             padding: 60px 20px;
             border-top: 1px solid #f1f5f9;
@@ -783,6 +783,31 @@ export default function NewsRealtyPage() {
             box-shadow: 0 4px 10px rgba(217,119,6,0.2);
           }
           .submit-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+          
+          /* ===== New CTA Section (Full Width Banner) ===== */
+          .pc-new-cta-sec {
+            width: 100%;
+            background: #ffffff;
+            padding: 80px 20px 40px;
+            text-align: center;
+          }
+          .pc-new-cta-container {
+            max-width: 1000px;
+            margin: 0 auto;
+          }
+          .pc-new-cta-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 24px;
+            letter-spacing: -0.5px;
+          }
+          .pc-new-cta-banner {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+          }
+          .pc-new-cta-banner:hover {
+            transform: translateY(-4px);
+          }
         `}</style>
 
         {/* ===== Hero Section ===== */}
@@ -791,29 +816,62 @@ export default function NewsRealtyPage() {
             <div className="pc-hero-badge">
               🏢 전국 <strong style={{ color: "#F59E0B", marginLeft: "4px", marginRight: "4px" }}>11만</strong> 부동산이 함께하는 공실뉴스
             </div>
-            <h1 className="pc-hero-title">공실을 뉴스로 전달하다!</h1>
-            <p className="pc-hero-desc">내 지역/단지 공실홍보 및 유튜브 채널 운영을 꾸준히 할 수 있습니다.</p>
+            <h1 className="pc-hero-title" style={{ fontSize: "46px", lineHeight: "1.4", wordBreak: "keep-all" }}>
+              내 지역 공실을 <span style={{ color: "#fbbf24" }}>등록만 하세요!</span><br />
+              부동산 마케팅이 <span style={{ color: "#fbbf24" }}>자동</span>으로 시작됩니다.
+            </h1>
+            <p className="pc-hero-desc" style={{ fontSize: "18px", marginTop: "16px" }}>
+              공실만 입력하면 완성되는 온/오프라인 AI 매매 보고서와 유튜브/블로그 포스팅,<br />
+              AI 실무 부동산 유튜브 특강(드론영상 저작권 무료) 까지,,<br />
+              부동산 마케팅이 쉬워집니다.
+            </p>
+            <div style={{ marginTop: "40px", display: "flex", justifyContent: "center" }}>
+              <div style={{ width: "100%", maxWidth: "720px", aspectRatio: "16/9", borderRadius: "16px", overflow: "hidden", boxShadow: "0 20px 40px rgba(0, 0, 0, 0.45)" }}>
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src="https://www.youtube.com/embed/4a3_M6-Crew"
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* ===== Stats Section ===== */}
-        <div className="pc-stats-outer">
+        {/* ===== Stats Section (Benefit Cards) ===== */}
+        <div className="pc-stats-outer" style={{ background: "#f8fafc", paddingTop: "50px", paddingBottom: "50px", marginTop: 0 }}>
           <div className="pc-stats-container">
-            {brokerStats.map((s, i) => (
-              <div key={i} className="pc-stat-card">
-                <div className="pc-stat-label">{s.label}</div>
-                <div className="pc-stat-val">{s.value}</div>
-                <div className="pc-stat-sub">{s.sub}</div>
-              </div>
-            ))}
+            {/* Card 1 */}
+            <div className="pc-stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "170px", padding: "24px" }}>
+              <div className="pc-stat-label" style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "8px" }}>Point 01</div>
+              <div className="pc-stat-val" style={{ fontSize: "24px", fontWeight: "900", margin: "4px 0", letterSpacing: "-0.5px" }}>AI 매매 보고서</div>
+              <div className="pc-stat-sub" style={{ fontSize: "13.5px", color: "#475569", marginTop: "4px", fontWeight: 500 }}>지번 입력 즉시 1초 자동 생성</div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="pc-stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "170px", padding: "24px" }}>
+              <div className="pc-stat-label" style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "8px" }}>Point 02</div>
+              <div className="pc-stat-val" style={{ fontSize: "24px", fontWeight: "900", margin: "4px 0", letterSpacing: "-0.5px" }}>유튜브/블로그 기사</div>
+              <div className="pc-stat-sub" style={{ fontSize: "13.5px", color: "#475569", marginTop: "4px", fontWeight: 500 }}>원클릭 스크립트 &amp; 원고 완성</div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="pc-stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "170px", padding: "24px" }}>
+              <div className="pc-stat-label" style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "8px" }}>Point 03</div>
+              <div className="pc-stat-val" style={{ fontSize: "24px", fontWeight: "900", margin: "4px 0", letterSpacing: "-0.5px" }}>유튜브 특강 &amp; 드론</div>
+              <div className="pc-stat-sub" style={{ fontSize: "13.5px", color: "#475569", marginTop: "4px", fontWeight: 500 }}>영상 저작권 무료 다운로드</div>
+            </div>
           </div>
         </div>
 
         {/* ===== Detailed Benefits Section ===== */}
         <section className="pc-detail-sec">
           <div className="pc-sec-header">
-            <h2 className="pc-sec-title">공실뉴스부동산 파트너 상세 혜택</h2>
-            <p className="pc-sec-desc">가입 제한이나 장벽 없이 제공받는 대표 회원님만을 위한 특급 솔루션입니다.</p>
+            <h2 className="pc-sec-title">공실뉴스부동산이 되면 좋은점!!</h2>
+            <p className="pc-sec-desc" style={{ fontSize: "18px", color: "#e11d48", fontWeight: 800 }}>내 지역 공실을 등록만하세요. 공실을 등록하면 부동산 마케팅이 자동으로 진행됩니다!</p>
           </div>
 
           <div className="pc-detail-rows">
@@ -823,16 +881,16 @@ export default function NewsRealtyPage() {
                 <img src="/signup_news.png" alt="AI 물건/매매 보고서 작성" />
               </div>
               <div className="pc-detail-text-wrap">
-                <span className="pc-detail-sub">01. 1초 완성 AI 물건 보고서 솔루션</span>
-                <h3 className="pc-detail-row-title">상담의 격을 바꾸고 계약 확률을 높이는<br />지능형 실시간 물건 보고서 자동 생성</h3>
+                <span className="pc-detail-sub">POINT 01</span>
+                <h3 className="pc-detail-row-title">1, 온/오프라인 AI 매매 보고서 자동 생성</h3>
                 <p className="pc-detail-row-desc">
-                  지번만 입력하면 1초 만에 깔끔하고 전문적인 부동산 분석 보고서와 매매 보고서 PDF가 완성됩니다. 모바일 터치 한 번으로 고객에게 카카오톡/문자 즉시 전송이 가능하며 유튜브/블로그 링크 연동 및 유리창 홍보 출력까지 한 번에 지원합니다.
+                  지번만 입력하면 1초 만에 깔끔하고 전문적인 부동산 분석 보고서와 온/오프라인 매매 보고서 PDF가 완성됩니다. 모바일 터치 한 번으로 고객에게 카카오톡/문자 즉시 전송이 가능하며 유리창 홍보 출력까지 한 번에 지원합니다.
                 </p>
                 <div className="pc-benefit-tags">
-                  <span className="pc-benefit-tag">카톡/문자 전송</span>
-                  <span className="pc-benefit-tag">유튜브/블로그 연동</span>
+                  <span className="pc-benefit-tag">카톡/문자 브리핑</span>
                   <span className="pc-benefit-tag">유리창 홍보 출력</span>
                   <span className="pc-benefit-tag">매매보고서 PDF</span>
+                  <span className="pc-benefit-tag">실시간 정보 조회</span>
                 </div>
               </div>
             </div>
@@ -843,18 +901,18 @@ export default function NewsRealtyPage() {
                 <img src="/signup_map.png" alt="유튜브/블로그 대본 자동 생성" />
               </div>
               <div className="pc-detail-text-wrap">
-                <span className="pc-detail-sub">02. 유튜브 / 블로그 콘텐츠 기획 자동화</span>
+                <span className="pc-detail-sub">POINT 02</span>
                 <h3 className="pc-detail-row-title">
-                  글쓰기 걱정 끝! 클릭 한번으로 완성되는<br />마케팅 스크립트 &amp; 포스팅 원고 자동 생성
+                  2, 유튜브/블로그 기사 자동 생성
                 </h3>
                 <p className="pc-detail-row-desc">
-                  매번 번거로운 글쓰기 고민을 날려버리세요. 물건 정보 기반으로 유튜브 영상 스크립트, 블로그 포스팅 원고, 포털 뉴스 송출용 기사는 물론 AI 이미지 생성 프롬프트까지 자동으로 설계하여 1분 만에 초안을 빌드해 드립니다.
+                  매번 번거로운 유튜브 스크립트 작성이나 블로그 글쓰기 고민을 완전히 날려버리세요. 등록된 공실 물건 정보를 분석하여 유튜브 쇼츠 스크립트, 블로그 포스팅 원고, 포털 뉴스 송출용 기사를 1분 만에 자동으로 빌드해 드립니다.
                 </p>
                 <div className="pc-benefit-tags">
-                  <span className="pc-benefit-tag">블로그 포스팅</span>
-                  <span className="pc-benefit-tag">유튜브 대본</span>
+                  <span className="pc-benefit-tag">블로그 원고 자동화</span>
+                  <span className="pc-benefit-tag">유튜브 쇼츠 대본</span>
                   <span className="pc-benefit-tag">포털 뉴스 기사</span>
-                  <span className="pc-benefit-tag">AI 이미지 프롬프트</span>
+                  <span className="pc-benefit-tag">AI 마케팅 스크립트</span>
                 </div>
               </div>
             </div>
@@ -865,18 +923,18 @@ export default function NewsRealtyPage() {
                 <img src="/signup_auction.png" alt="부동산 유튜브 전문 아카데미" />
               </div>
               <div className="pc-detail-text-wrap">
-                <span className="pc-detail-sub">03. 실전 부동산 유튜브 &amp; 촬영 아카데미</span>
+                <span className="pc-detail-sub">POINT 03</span>
                 <h3 className="pc-detail-row-title">
-                  방송국 PD 출신 편집장 직강 솔루션과<br />1년 내내 업데이트되는 무제한 비디오 자료실
+                  3, AI 유튜브 무료 특강 (드론영상저작권무료)
                 </h3>
                 <p className="pc-detail-row-desc">
-                  방송국 PD 출신의 편집장이 알려주는 손님 콜(Call) 유도 매물 촬영법부터 매주 업데이트되는 실무 동영상 강의를 제공합니다. 질문 해결을 위한 전용 Q&amp;A 게시판 운영과 드론 및 고화질 영상 리소스 무제한 다운로드를 평생 무료로 활용해 보세요.
+                  방송국 PD 출신의 편집장이 알려주는 손님 콜(Call) 유도 매물 촬영법부터 매주 업데이트되는 AI 유튜브 실무 무료 특강을 제공합니다. 또한 홍보 영상 제작 시 유용하게 쓸 수 있는 고화질 드론 영상 소스와 저작권 프리 리소스를 무제한 다운로드하여 자유롭게 활용할 수 있습니다.
                 </p>
                 <div className="pc-benefit-tags">
-                  <span className="pc-benefit-tag">방송국 PD 직강</span>
-                  <span className="pc-benefit-tag">매주 강의 업데이트</span>
-                  <span className="pc-benefit-tag">실전 촬영 노하우</span>
-                  <span className="pc-benefit-tag">드론/영상 소스 무제한</span>
+                  <span className="pc-benefit-tag">PD 직강 유튜브 특강</span>
+                  <span className="pc-benefit-tag">드론 촬영 영상 제공</span>
+                  <span className="pc-benefit-tag">저작권 걱정 무료</span>
+                  <span className="pc-benefit-tag">비디오 자료실 제공</span>
                 </div>
               </div>
             </div>
@@ -889,26 +947,26 @@ export default function NewsRealtyPage() {
             <div className="pc-target-flex">
               <div className="pc-target-left">
                 <span className="pc-target-badge">RECOMMENDED FOR</span>
-                <h2 className="pc-target-title-main">이런 중개사님께<br />강력하게 추천합니다.</h2>
-                <p className="pc-target-desc-main">불필요한 고비용과 시간 낭비에서 벗어나, 트렌디한 AI 마케팅을 경험해 보세요.</p>
+                <h2 className="pc-target-title-main">이런 부동산에 추천!</h2>
+                <p className="pc-target-desc-main">부동산 마케팅 때문에 고민이 깊으신 대표님들을 위한 최적의 솔루션입니다.</p>
               </div>
 
               <div className="pc-target-right">
                 {/* Item 1 */}
                 <div className="pc-target-list-item">
-                  <div className="pc-target-list-icon">🎥</div>
+                  <div className="pc-target-list-icon">😭</div>
                   <div className="pc-target-list-text">
-                    <h4>유튜브 채널을 꾸준히 활성화하고 싶은 부동산</h4>
-                    <p>매물 대본 작성부터 촬영 구도, 1년 강의까지 영상 마케팅의 모든 것을 제공합니다.</p>
+                    <h4>부동산마케팅 혼자하기 힘든 부동산</h4>
+                    <p>기사 작성, 홍보물 제작, 고객 브리핑까지 AI가 자동으로 알아서 처리해 드립니다.</p>
                   </div>
                 </div>
 
                 {/* Item 2 */}
                 <div className="pc-target-list-item">
-                  <div className="pc-target-list-icon">📢</div>
+                  <div className="pc-target-list-icon">🎬</div>
                   <div className="pc-target-list-text">
-                    <h4>손님 광고 및 매물 브리핑 신뢰도를 높이고 싶은 부동산</h4>
-                    <p>카톡 전속 보고서 공유와 전문 매매 보고서 출력으로 당일 계약 체결률을 높입니다.</p>
+                    <h4>유튜브 매번 포기하는 부동산</h4>
+                    <p>영상 촬영 구도부터 1년 강의, 드론/영상 소스 무료 다운로드로 지속가능한 채널 운영을 돕습니다.</p>
                   </div>
                 </div>
 
@@ -916,8 +974,8 @@ export default function NewsRealtyPage() {
                 <div className="pc-target-list-item">
                   <div className="pc-target-list-icon">💸</div>
                   <div className="pc-target-list-text">
-                    <h4>고정 광고비가 아깝고 절약하고 싶은 부동산</h4>
-                    <p>월 3만 원의 합리적인 비용으로 광고 대행사 수준의 고품질 콘텐츠를 무제한 생산합니다.</p>
+                    <h4>비싼 고정 광고비가 부담되는 부동산</h4>
+                    <p>월 3만 원의 합리적인 비용으로 광고 대행업체 수준의 전문적인 퀄리티를 유지할 수 있습니다.</p>
                   </div>
                 </div>
 
@@ -925,8 +983,8 @@ export default function NewsRealtyPage() {
                 <div className="pc-target-list-item">
                   <div className="pc-target-list-icon">🏆</div>
                   <div className="pc-target-list-text">
-                    <h4>지역 내 친목회 텃세를 극복하고 독점 매물을 잡고 싶은 부동산</h4>
-                    <p>내 단지 공실 등록 20건 상향 혜택과 언론 보도 송출권으로 전속 매물을 확보합니다.</p>
+                    <h4>지역 내 공동중개망 텃세를 넘고 독점 매물을 잡고 싶은 부동산</h4>
+                    <p>공실 등록 수 20건 보장 및 AI 분석 브리핑 혜택으로 임대인과 임차인의 신뢰를 독점합니다.</p>
                   </div>
                 </div>
               </div>
@@ -974,47 +1032,6 @@ export default function NewsRealtyPage() {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* ===== FAQ ===== */}
-        <section className="pc-faq-sec">
-          <h2 className="pc-sec-title" style={{ textAlign: "center" }}>자주 묻는 질문</h2>
-          <div className="pc-faq-container">
-            {brokerFaqs.map((faq, i) => (
-              <div key={i} className={`pc-faq-card ${openFaq === i ? 'active-border' : ''}`}>
-                <button className="pc-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                  <span>{faq.q}</span>
-                  <span style={{ transform: openFaq === i ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
-                </button>
-                {openFaq === i && (
-                  <div className="pc-faq-a">{faq.a}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ===== CTA Section ===== */}
-        <section 
-          className="pc-cta-sec"
-          style={{
-            background: "radial-gradient(circle at bottom right, #311019 0%, #020617 100%)"
-          }}
-        >
-          <PlayLogo size={56} />
-          <h2 className="pc-cta-title">11만 부동산을 위한 무료 정보 채널, 공실뉴스</h2>
-          <p className="pc-cta-desc">가입 제한이나 비싼 회비 부담 없이, 지금 공실뉴스에서 무료로 가입하고 활발하게 교류하세요.</p>
-          <button 
-            className="pc-hero-cta-btn"
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('signup_member_type', 'broker');
-              }
-              setIsAuthModalOpen(true);
-            }}
-          >
-            지금 무료로 가입하기
-          </button>
         </section>
 
         {/* ===== Pricing Section ===== */}
@@ -1100,7 +1117,7 @@ export default function NewsRealtyPage() {
                 </li>
               </ul>
               
-              <div className="pc-pricing-card-price" style={{ color: "#e11d48", marginTop: 12 }}>
+              <div className="pc-pricing-card-price" style={{ color: "#0f172a", marginTop: 12 }}>
                 30,000원 <span>/ 월 (VAT 별도)</span>
               </div>
               
@@ -1111,6 +1128,47 @@ export default function NewsRealtyPage() {
                 공실뉴스부동산 신청하기
               </button>
             </div>
+          </div>
+        </section>
+
+        {/* ===== CTA Section ===== */}
+        <section className="pc-new-cta-sec">
+          <div className="pc-new-cta-container">
+            <h2 className="pc-new-cta-title">공실뉴스 부동산이 되세요</h2>
+            <div 
+              className="pc-new-cta-banner"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('signup_member_type', 'broker');
+                }
+                setIsAuthModalOpen(true);
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              <img 
+                src="/signup_cta_bg.png" 
+                alt="공실뉴스 부동산이 되세요" 
+                style={{ width: "100%", height: "auto", display: "block", borderRadius: "20px", boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)" }} 
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ===== FAQ ===== */}
+        <section className="pc-faq-sec">
+          <h2 className="pc-sec-title" style={{ textAlign: "center" }}>자주 묻는 질문</h2>
+          <div className="pc-faq-container">
+            {brokerFaqs.map((faq, i) => (
+              <div key={i} className={`pc-faq-card ${openFaq === i ? 'active-border' : ''}`}>
+                <button className="pc-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                  <span>{faq.q}</span>
+                  <span style={{ transform: openFaq === i ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
+                </button>
+                {openFaq === i && (
+                  <div className="pc-faq-a">{faq.a}</div>
+                )}
+              </div>
+            ))}
           </div>
         </section>
       </div>

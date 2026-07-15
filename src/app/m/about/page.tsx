@@ -219,9 +219,6 @@ export default function MobileAboutPage() {
               감사합니다.
             </p>
 
-            <div style={{ margin: "32px 0 24px", textAlign: "center" }}>
-              <img src="/about_illustration.png" alt="공실뉴스 브랜드 일러스트" style={{ maxWidth: "240px", width: "100%", height: "auto", display: "block", margin: "0 auto" }} />
-            </div>
             
             <div className="m-signature">
               공실뉴스 <span className="m-signature-name">임직원 일동</span>

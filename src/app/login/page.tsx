@@ -118,21 +118,14 @@ function LoginClient() {
               <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1', flexShrink: 0 }}>· 일반회원 :</span>
               <span>공실등록 3건 무료, 경공매 열람 가능, <span style={{ color: '#64748b' }}>공동중개 열람 불가</span></span>
             </div>
-            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
               <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1', flexShrink: 0 }}>· 부동산회원 :</span>
               <span>공동중개 3건 등록 무료, 경공매 열람 가능, <span style={{ color: '#fbbf24', fontWeight: 600 }}>공동중개 열람 가능</span></span>
-            </div>
-            <div style={{ fontSize: '12px', color: '#64748b', wordBreak: 'keep-all', borderTop: '1px dashed rgba(255,255,255,0.06)', paddingTop: '12px' }}>
-              <strong style={{ color: '#cbd5e1', marginRight: 4 }}>부동산 회원가입 절차:</strong><br />
-              회원가입 ➔ 관리자 ➔ 내 정보 ➔ 중개소 가입 및 서류 제출 ➔ 승인완료
             </div>
           </div>
         </div>
 
-        {/* Mockup Image representation */}
-        <div style={{ position: 'absolute', bottom: -50, right: -50, width: '450px', opacity: 0.25, zIndex: 1, pointerEvents: 'none' }}>
-          <img src="/reporter_hero_bg.png" alt="Promo Mockup" style={{ width: '100%', height: 'auto', borderRadius: '20px' }} />
-        </div>
+
       </div>
 
       {/* ━━━ Right Column: Login Card Container ━━━ */}
@@ -313,8 +306,22 @@ function LoginClient() {
             </div>
           )}
 
-          <div style={{ borderTop: '1px solid #f1f5f9', marginTop: 40, paddingTop: 16, textAlign: 'center', fontSize: 13, color: '#94a3b8' }}>
-            공실뉴스 고객센터
+          <div style={{ borderTop: '1px solid #f1f5f9', marginTop: 40, paddingTop: 16, textAlign: 'center' }}>
+            <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 12 }}>공실뉴스 고객센터</div>
+            <div style={{ fontSize: 11, color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px', width: '100%', boxSizing: 'border-box' }}>
+              <div style={{ fontWeight: 800, color: '#475569', marginBottom: 6, fontSize: 11.5, textAlign: 'left' }}>부동산 회원가입 절차</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, color: '#64748b' }}>
+                <span>회원가입</span>
+                <span style={{ color: '#cbd5e1' }}>➔</span>
+                <span>관리자페이지</span>
+                <span style={{ color: '#cbd5e1' }}>➔</span>
+                <span>정보설정</span>
+                <span style={{ color: '#cbd5e1' }}>➔</span>
+                <span style={{ fontWeight: 600 }}>중개소 가입/서류제출</span>
+                <span style={{ color: '#cbd5e1' }}>➔</span>
+                <span style={{ fontWeight: 800, color: '#2563eb' }}>승인완료</span>
+              </div>
+            </div>
           </div>
 
         </div>

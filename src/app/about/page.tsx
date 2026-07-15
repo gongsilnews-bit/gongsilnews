@@ -92,10 +92,8 @@ export default function AboutPage() {
           padding: 100px 40px 120px;
         }
         .content-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 80px;
-          align-items: center;
+          max-width: 800px;
+          margin: 0 auto;
         }
         .text-paragraph {
           font-size: 17px;
@@ -224,10 +222,7 @@ export default function AboutPage() {
               공실뉴스 <span className="signature-name">임직원 일동</span>
             </div>
           </div>
-          
-          <div style={{ textAlign: "center" }}>
-            <img src="/about_illustration.png" alt="공실뉴스 브랜드 일러스트" style={{ maxWidth: "360px", width: "100%", height: "auto", display: "block", margin: "0 auto" }} />
-          </div>
+
         </div>
       </main>
 

@@ -1616,7 +1616,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     className="v-card"
                     onClick={() => {
                         if (cardMasked) {
-                            setIsAuthModalOpen(true);
+                            window.location.href = "/m/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
                             return;
                         }
                         setSelectedVacancyId(v.id);
@@ -1633,7 +1633,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                         )}
                         <span style={{ fontSize: "13px", fontWeight: 700, color: "#508bf5" }}>{v.vacancy_no || '-'}</span>
                         <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
-                        {cardMasked && <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>🔒 부동산회원 무료열람</span>}
+                        {cardMasked && (
+                          <span onClick={(e) => { e.stopPropagation(); window.location.href = "/m/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>
+                            {v.trade_type === '경매' || v.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 무료열람'}
+                          </span>
+                        )}
                       </div>
 
                       {/* Title */}

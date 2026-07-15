@@ -576,11 +576,12 @@ export async function getVacanciesForMap(options?: {
   dong?: string;
   is_auction?: boolean; // 🚀 경공매 모드 스위치 지원을 위한 옵션 정의
   limit?: number; // ⚡️ 로딩 성능 비약적 향상을 위한 limit 파라미터 추가
+  ownerId?: string; // 🏢 특정 중개사 매물 필터링용 옵션 추가
 }) {
   const supabase = getAdminClient();
   try {
     // 1. 캐시 활용 (특정 범위/조건이 없는 메인페이지의 전체 로딩인 경우)
-    const isGlobalFetch = !options?.bbox && !options?.sido && !options?.sigungu && !options?.dong && options?.is_auction === undefined;
+    const isGlobalFetch = !options?.bbox && !options?.sido && !options?.sigungu && !options?.dong && options?.is_auction === undefined && !options?.ownerId;
     if (isGlobalFetch) {
       if (_serverMapCache && (Date.now() - _serverMapCacheTime < SERVER_MAP_CACHE_TTL)) {
         return { success: true, data: _serverMapCache };
@@ -600,6 +601,10 @@ export async function getVacanciesForMap(options?: {
         .eq('status', 'ACTIVE')
         .not('lat', 'is', null)
         .not('lng', 'is', null);
+
+      if (options?.ownerId) {
+        pageQuery = pageQuery.eq('owner_id', options.ownerId);
+      }
 
       if (options?.is_auction !== undefined) {
         if (options.is_auction) {

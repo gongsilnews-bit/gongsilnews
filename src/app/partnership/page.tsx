@@ -96,7 +96,7 @@ export default function PartnershipPage() {
           align-items: center;
           gap: 10px;
           background: #111;
-          color: #fff;
+          color: #fff !important;
           padding: 18px 40px;
           border-radius: 30px;
           font-size: 18px;
@@ -258,10 +258,10 @@ export default function PartnershipPage() {
             대한민국 대표 부동산 미디어 채널 공실뉴스와 함께<br/>
             새로운 비즈니스 기회를 만들어갈 혁신적인 제안을 기다립니다.
           </p>
-          <a href="mailto:partner@gongsilnews.com" className="hero-cta">
+          <Link href="/board?id=inquiry" className="hero-cta">
             제휴 제안하기
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-          </a>
+          </Link>
         </div>
       </section>
 

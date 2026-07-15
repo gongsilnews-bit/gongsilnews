@@ -346,9 +346,8 @@ export default function GongsilSidebar({
               <div
                 key={prop.id}
                 onClick={() => {
-                  // 비공개 물건(부동산노출)은 부동산회원만 열람 가능
                   if (isMasked) {
-                    setIsAuthModalOpen(true);
+                    window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
                     return;
                   }
                   if (isActiveAndShowing) {
@@ -447,7 +446,7 @@ export default function GongsilSidebar({
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
-                            setIsAuthModalOpen(true);
+                            window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
                           }}
                           style={{
                             fontSize: 11,
@@ -459,7 +458,7 @@ export default function GongsilSidebar({
                             cursor: "pointer",
                           }}
                         >
-                          🔒 가입 시 무료 열람
+                          {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 가입 시 무료 열람'}
                         </span>
                       )}
                     </div>

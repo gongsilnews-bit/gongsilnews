@@ -154,7 +154,7 @@ const getScaleIndex = (val: number | null, scale: number[], isMax: boolean) => {
   return closestIdx;
 };
 
-export default function GongsilClient({ initialVacancies }: { initialVacancies: any[] }) {
+export default function GongsilClient({ initialVacancies, ownerId }: { initialVacancies: any[]; ownerId?: string }) {
   /* ── State & Refs ── */
   const searchParams = useSearchParams();
   const [dbVacancies, setDbVacancies] = useState<any[]>(() => {
@@ -480,7 +480,8 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
 
         // Server Action 호출하여 범위 내 매물만 초고속 fetch
         const res = await getVacanciesForMap({
-          bbox: { swLat, swLng, neLat, neLng }
+          bbox: { swLat, swLng, neLat, neLng },
+          ownerId
         });
 
         if (res.success && res.data) {
@@ -2385,9 +2386,9 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         border: "1px solid #ccc",
                         borderRadius: 10,
                         boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                        padding: 18,
+                        padding: 24,
                         zIndex: 1200,
-                        minWidth: 436,
+                        minWidth: 560,
                         animation: "dropdownFadeIn 0.15s ease",
                         transform: `translate(${filterOffset.x}px, ${filterOffset.y}px)`,
                         cursor: isDraggingFilter ? "grabbing" : "grab",
@@ -2455,7 +2456,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                         </svg>
                       </button>
                       {f === "거래유형" && (
-                        <div style={{ display: "flex", flexDirection: "column", width: "400px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", width: "510px" }}>
                           {/* Dedicated elegant grab bar at the very top */}
                           <div
                             style={{
@@ -2684,7 +2685,7 @@ export default function GongsilClient({ initialVacancies }: { initialVacancies: 
                           {/* Scrollable area */}
                           <div
                             id="popover-scroll-container"
-                            style={{ maxHeight: "420px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}
+                            style={{ maxHeight: "560px", overflowY: "auto", paddingRight: "8px", paddingBottom: "10px" }}
                             onScroll={(e) => {
                               const container = e.currentTarget;
                               if (scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);

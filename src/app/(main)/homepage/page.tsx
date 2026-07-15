@@ -832,7 +832,10 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                   return (
                     <div key={v.id} style={{ borderBottom: "1px solid #e5e7eb", background: "#fff" }}>
                       <div onClick={() => { 
-                        if (isMasked) { setIsAuthModalOpen(true); return; }
+                        if (isMasked) {
+                          window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
+                          return;
+                        }
                         setExpandedIds(prev => prev.includes(v.id) ? prev.filter(x => x !== v.id) : [...prev, v.id]); 
                       }} style={{ display: "flex", padding: "16px 0", alignItems: "center", cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                       
@@ -893,7 +896,9 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                                 {v.owner_role === 'REALTOR' || v.members?.role === 'REALTOR' ? '부동산' : '일반'}
                               </span>
                               {isMasked && (
-                                <span onClick={(e) => { e.stopPropagation(); setIsAuthModalOpen(true); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>🔒 부동산회원 가입 시 무료 열람</span>
+                                <span onClick={(e) => { e.stopPropagation(); window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>
+                                  {v.trade_type === '경매' || v.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 가입 시 무료 열람'}
+                                </span>
                               )}
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>

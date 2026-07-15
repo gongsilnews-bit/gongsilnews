@@ -1066,7 +1066,8 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                       onClick={(e) => {
                         if (cardMasked) {
                           e.preventDefault();
-                          setIsAuthModalOpen(true);
+                          const loginUrl = isMobile ? "/m/login" : "/login";
+                          window.location.href = loginUrl + "?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
                           return;
                         }
                         if (isMobile) {
@@ -1080,7 +1081,11 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                         <div className="prop-info" style={{ minWidth: 0, overflow: "hidden", flex: 1, display: "flex", flexDirection: "column" }}>
                           <div className="prop-title" style={{ fontSize: 16, fontWeight: 700, color: cardMasked ? "#bbb" : "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: cardMasked ? 1 : 0 }}>
                             {title}
-                            {cardMasked && <span style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", marginLeft: "8px", verticalAlign: "middle" }}>🔒 가입 시 무료 열람</span>}
+                            {cardMasked && (
+                              <span style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", marginLeft: "8px", verticalAlign: "middle" }}>
+                                {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 가입 시 무료 열람'}
+                              </span>
+                            )}
                           </div>
                           <div className="prop-price" style={{ color: "#1a73e8", fontWeight: 800, fontSize: 20, marginBottom: 6 }}>{price}</div>
                           <div className="prop-meta" style={{ fontSize: 14, color: "#666", marginBottom: 3 }}>

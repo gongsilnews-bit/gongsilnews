@@ -741,7 +741,7 @@ export default function KakaoMapView({
         }}
       >
         <span
-          onClick={() => window.location.href = '/homepage'}
+          onClick={() => alert('준비중입니다')}
           style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", cursor: "pointer" }}
         >
           리스트검색
