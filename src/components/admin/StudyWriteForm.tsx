@@ -199,6 +199,31 @@ export default function StudyWriteForm() {
     }
   };
 
+  /* ── 에디터 내 이미지 삭제 클릭 핸들러 (이벤트 위임) ── */
+  const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const wrapper = target.closest('.inserted-photo') as HTMLElement | null;
+    if (wrapper) {
+      const rect = wrapper.getBoundingClientRect();
+      const clickXFromRight = rect.right - e.clientX;
+      const clickYFromTop = e.clientY - rect.top;
+
+      // ✕ 버튼은 top: 8px, right: 8px, size: 26px이므로 대략 우측 상단 40px 영역 클릭 시 동작
+      if (clickXFromRight >= 0 && clickXFromRight <= 40 && clickYFromTop >= 0 && clickYFromTop <= 40) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // 뒤의 br 제거
+        const nextSib = wrapper.nextSibling;
+        if (nextSib && nextSib.nodeName === 'BR') {
+          nextSib.remove();
+        }
+        wrapper.remove();
+        syncEditorContent();
+      }
+    }
+  };
+
   /* ── 에디터 내 이미지 삽입 (WebP 압축 → 업로드 → URL 삽입) ── */
   const handleEditorImageInsert = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -516,6 +541,7 @@ export default function StudyWriteForm() {
                   onInput={syncEditorContent}
                   onMouseUp={saveSelection}
                   onKeyUp={saveSelection}
+                  onClick={handleEditorClick}
                   onPaste={async (e) => {
                     // 클립보드 이미지 붙여넣기 지원
                     const items = e.clipboardData?.items;
