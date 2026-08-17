@@ -6,7 +6,7 @@ import RealtorApprovalNotice from '@/components/RealtorApprovalNotice';
 import ComingSoon from "@/components/common/ComingSoon";
 
 export const metadata = {
-  title: "공실뉴스 (모바일)",
+  title: "공실뉴스",
   description: "대한민국 대표 부동산 공실 플랫폼",
 };
 

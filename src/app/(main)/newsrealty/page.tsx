@@ -462,105 +462,174 @@ export default function NewsRealtyPage() {
             border: 1px solid #e2e8f0;
           }
 
-          /* ===== Recommended Target Section ===== */
+          /* ===== Recommended Target Section (Luxurious Dark Style) ===== */
           .pc-target-sec {
-            background: #f8fafc;
+            background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
             padding: 90px 20px;
-            border-top: 1px solid #e2e8f0;
-            border-bottom: 1px solid #e2e8f0;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            border-top: 1px solid #1e293b;
+            border-bottom: 1px solid #1e293b;
+          }
+          .pc-target-sec::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, rgba(0,0,0,0) 70%);
+            pointer-events: none;
           }
           .pc-target-container {
-            max-width: 1100px;
+            max-width: 1000px;
             margin: 0 auto;
+            position: relative;
+            z-index: 2;
           }
-          .pc-target-flex {
-            display: flex;
-            gap: 60px;
+          .pc-lux-header {
+            text-align: center;
+            margin-bottom: 50px;
+          }
+          .pc-lux-badge {
+            display: inline-flex;
             align-items: center;
-          }
-          @media (max-width: 900px) {
-            .pc-target-flex {
-              flex-direction: column;
-              align-items: flex-start;
-              gap: 40px;
-            }
-          }
-          .pc-target-left {
-            flex: 0.8;
-          }
-          .pc-target-badge {
+            gap: 6px;
             font-size: 12px;
             font-weight: 800;
-            color: #e11d48;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            padding: 6px 16px;
+            border-radius: 50px;
+            letter-spacing: 1.5px;
             margin-bottom: 16px;
-            display: inline-block;
           }
-          .pc-target-title-main {
-            font-size: 32px;
+          .pc-lux-title {
+            font-size: 34px;
             font-weight: 900;
-            color: #0f172a;
+            color: #ffffff;
+            margin: 0 0 14px;
+            letter-spacing: -1.5px;
             line-height: 1.3;
-            margin: 0 0 16px;
-            letter-spacing: -1px;
           }
-          .pc-target-desc-main {
-            font-size: 15.5px;
-            color: #64748b;
-            line-height: 1.6;
+          .pc-lux-title span {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          }
+          .pc-lux-desc {
+            font-size: 16px;
+            color: #94a3b8;
             margin: 0;
             word-break: keep-all;
           }
-          .pc-target-right {
-            flex: 1.2;
+          .pc-lux-grid {
             display: flex;
             flex-direction: column;
             gap: 20px;
-            width: 100%;
           }
-          .pc-target-list-item {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 20px 24px;
-            border: 1px solid #e2e8f0;
-            display: flex;
-            gap: 18px;
-            align-items: flex-start;
-            transition: all 0.25s ease;
+          .pc-lux-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 24px 28px;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           }
-          .pc-target-list-item:hover {
+          .pc-lux-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(251, 191, 36, 0.4);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(245, 158, 11, 0.08);
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(225, 29, 72, 0.03);
-            border-color: #fca5a5;
           }
-          .pc-target-list-icon {
-            font-size: 24px;
-            flex-shrink: 0;
-            background: #ffe4e6;
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
+          .pc-lux-card-top {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
           }
-          .pc-target-list-text {
+          .pc-lux-num {
+            font-size: 12.5px;
+            font-weight: 900;
+            color: #fbbf24;
+            letter-spacing: 2px;
+          }
+          .pc-lux-category {
+            font-size: 12.5px;
+            color: #64748b;
+            font-weight: 600;
+          }
+          .pc-lux-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-items: stretch;
+          }
+          @media (max-width: 800px) {
+            .pc-lux-body {
+              grid-template-columns: 1fr;
+            }
+          }
+          .pc-lux-before {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 14px;
+            padding: 18px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            justify-content: center;
           }
-          .pc-target-list-text h4 {
+          .pc-lux-before-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: #f87171;
+            margin-bottom: 6px;
+            display: block;
+            letter-spacing: 0.5px;
+          }
+          .pc-lux-before-text {
+            font-size: 14px;
+            color: #cbd5e1;
             margin: 0;
+            line-height: 1.5;
+            word-break: keep-all;
+          }
+          .pc-lux-after {
+            background: rgba(251, 191, 36, 0.06);
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: inset 0 0 20px rgba(251, 191, 36, 0.03);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
+          .pc-lux-after-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: #fbbf24;
+            margin-bottom: 6px;
+            display: block;
+            letter-spacing: 0.5px;
+          }
+          .pc-lux-after-text {
             font-size: 15.5px;
             font-weight: 800;
-            color: #0f172a;
+            color: #ffffff;
+            margin: 0 0 4px;
+            line-height: 1.45;
+            word-break: keep-all;
           }
-          .pc-target-list-text p {
+          .pc-lux-after-sub {
+            font-size: 13px;
+            color: #94a3b8;
             margin: 0;
-            font-size: 13.5px;
-            color: #475569;
-            line-height: 1.5;
+            line-height: 1.45;
             word-break: keep-all;
           }
 
@@ -941,50 +1010,106 @@ export default function NewsRealtyPage() {
           </div>
         </section>
 
-        {/* ===== Recommended Target Section (Flex Layout) ===== */}
+        {/* ===== Recommended Target Section (Luxurious Modern Style) ===== */}
         <section className="pc-target-sec">
           <div className="pc-target-container">
-            <div className="pc-target-flex">
-              <div className="pc-target-left">
-                <span className="pc-target-badge">RECOMMENDED FOR</span>
-                <h2 className="pc-target-title-main">이런 부동산에 추천!</h2>
-                <p className="pc-target-desc-main">부동산 마케팅 때문에 고민이 깊으신 대표님들을 위한 최적의 솔루션입니다.</p>
+            <div className="pc-lux-header">
+              <div className="pc-lux-badge">
+                ✨ WHY GONGSILNEWS
+              </div>
+              <h2 className="pc-lux-title">
+                공실뉴스부동산 <span>도입 전 vs 도입 후</span>
+              </h2>
+              <p className="pc-lux-desc">
+                부동산 마케팅과 매물 수주 때문에 고민 깊으신 대표님들의 영업 환경이 180도 달라집니다.
+              </p>
+            </div>
+
+            <div className="pc-lux-grid">
+              {/* Card 1: 마케팅 & 글작성 고민 */}
+              <div className="pc-lux-card">
+                <div className="pc-lux-card-top">
+                  <span className="pc-lux-num">01 / MARKETING</span>
+                  <span className="pc-lux-category">마케팅 &amp; 콘텐츠 생성</span>
+                </div>
+                <div className="pc-lux-body">
+                  <div className="pc-lux-before">
+                    <span className="pc-lux-before-label">😭 BEFORE (현재의 고민)</span>
+                    <p className="pc-lux-before-text">
+                      "블로그 글 쓰고 유튜브 영상 편집하느라 정작 중개 영업을 못 해요."<br />
+                      <span style={{ fontSize: 12.5, color: "#94a3b8", display: "inline-block", marginTop: 4 }}>- 원고 작성 및 영상 편집 부담으로 일상 업무 마비</span>
+                    </p>
+                  </div>
+                  <div className="pc-lux-after">
+                    <span className="pc-lux-after-label">✨ AFTER (공실뉴스 도입 후)</span>
+                    <h4 className="pc-lux-after-text">지번만 넣으면 AI가 1초 만에 매매보고서 &amp; 원고 자동 완성!</h4>
+                    <p className="pc-lux-after-sub">유튜브 쇼츠 대본, 블로그 글, 포털 기사까지 클릭 한 번으로 무제한 자동 생성됩니다.</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="pc-target-right">
-                {/* Item 1 */}
-                <div className="pc-target-list-item">
-                  <div className="pc-target-list-icon">😭</div>
-                  <div className="pc-target-list-text">
-                    <h4>부동산마케팅 혼자하기 힘든 부동산</h4>
-                    <p>기사 작성, 홍보물 제작, 고객 브리핑까지 AI가 자동으로 알아서 처리해 드립니다.</p>
+              {/* Card 2: 고정 비용 부담 */}
+              <div className="pc-lux-card">
+                <div className="pc-lux-card-top">
+                  <span className="pc-lux-num">02 / COST SAVING</span>
+                  <span className="pc-lux-category">광고비 &amp; 고정 지출 절감</span>
+                </div>
+                <div className="pc-lux-body">
+                  <div className="pc-lux-before">
+                    <span className="pc-lux-before-label">💸 BEFORE (현재의 고민)</span>
+                    <p className="pc-lux-before-text">
+                      "매달 나가는 포털 광고비, 사설 공실망 수십만 원 고정 비용이 너무 부담돼요."<br />
+                      <span style={{ fontSize: 12.5, color: "#94a3b8", display: "inline-block", marginTop: 4 }}>- 높은 광고 비용 대비 아쉬운 가성비와 수익 구조</span>
+                    </p>
+                  </div>
+                  <div className="pc-lux-after">
+                    <span className="pc-lux-after-label">💰 AFTER (공실뉴스 도입 후)</span>
+                    <h4 className="pc-lux-after-text">월 3만 원 단 하나의 비용으로 대행사급 AI 마케팅 + 드론/강의 무제한!</h4>
+                    <p className="pc-lux-after-sub">월 고정 비용 90% 절감! 부담 없는 비용으로 압도적인 광고 마케팅 효과를 누리세요.</p>
                   </div>
                 </div>
+              </div>
 
-                {/* Item 2 */}
-                <div className="pc-target-list-item">
-                  <div className="pc-target-list-icon">🎬</div>
-                  <div className="pc-target-list-text">
-                    <h4>유튜브 매번 포기하는 부동산</h4>
-                    <p>영상 촬영 구도부터 1년 강의, 드론/영상 소스 무료 다운로드로 지속가능한 채널 운영을 돕습니다.</p>
+              {/* Card 3: 텃세 & 매물 독점 */}
+              <div className="pc-lux-card">
+                <div className="pc-lux-card-top">
+                  <span className="pc-lux-num">03 / EXCLUSIVE NETWORK</span>
+                  <span className="pc-lux-category">지역 텃세 극복 &amp; 매물 독점</span>
+                </div>
+                <div className="pc-lux-body">
+                  <div className="pc-lux-before">
+                    <span className="pc-lux-before-label">😭 BEFORE (현재의 고민)</span>
+                    <p className="pc-lux-before-text">
+                      "신규 개업 후 지역 친목회 텃세 때문에 단독 매물 확보와 영업이 힘들어요."<br />
+                      <span style={{ fontSize: 12.5, color: "#94a3b8", display: "inline-block", marginTop: 4 }}>- 기존 친목 카르텔 장벽으로 매물 수주 한계</span>
+                    </p>
+                  </div>
+                  <div className="pc-lux-after">
+                    <span className="pc-lux-after-label">👑 AFTER (공실뉴스 도입 후)</span>
+                    <h4 className="pc-lux-after-text">텃세 상관없이 전국 11만 중개망 &amp; 20건 독점 공실 등록으로 매물 싹쓸이!</h4>
+                    <p className="pc-lux-after-sub">주력 단지 대표 권한 확보로 임대인/임차인 신뢰와 알짜 매물을 선점합니다.</p>
                   </div>
                 </div>
+              </div>
 
-                {/* Item 3 */}
-                <div className="pc-target-list-item">
-                  <div className="pc-target-list-icon">💸</div>
-                  <div className="pc-target-list-text">
-                    <h4>비싼 고정 광고비가 부담되는 부동산</h4>
-                    <p>월 3만 원의 합리적인 비용으로 광고 대행업체 수준의 전문적인 퀄리티를 유지할 수 있습니다.</p>
-                  </div>
+              {/* Card 4: 브리핑 & 계약 성사율 */}
+              <div className="pc-lux-card">
+                <div className="pc-lux-card-top">
+                  <span className="pc-lux-num">04 / CLOSING RATE</span>
+                  <span className="pc-lux-category">전문 브리핑 &amp; 계약 체결율</span>
                 </div>
-
-                {/* Item 4 */}
-                <div className="pc-target-list-item">
-                  <div className="pc-target-list-icon">🏆</div>
-                  <div className="pc-target-list-text">
-                    <h4>지역 내 공동중개망 텃세를 넘고 독점 매물을 잡고 싶은 부동산</h4>
-                    <p>공실 등록 수 20건 보장 및 AI 분석 브리핑 혜택으로 임대인과 임차인의 신뢰를 독점합니다.</p>
+                <div className="pc-lux-body">
+                  <div className="pc-lux-before">
+                    <span className="pc-lux-before-label">😭 BEFORE (현재의 고민)</span>
+                    <p className="pc-lux-before-text">
+                      "손님이나 집주인에게 보여줄 차별화된 매물 브리핑 자료가 부족해요."<br />
+                      <span style={{ fontSize: 12.5, color: "#94a3b8", display: "inline-block", marginTop: 4 }}>- 단순 구두 브리핑으로 신뢰 형성 및 마감 지연</span>
+                    </p>
+                  </div>
+                  <div className="pc-lux-after">
+                    <span className="pc-lux-after-label">📊 AFTER (공실뉴스 도입 후)</span>
+                    <h4 className="pc-lux-after-text">카톡 전송용 PDF &amp; 유리창 출력용 AI 보고서로 계약 성공률 200% 상승!</h4>
+                    <p className="pc-lux-after-sub">모바일 원터치 브리핑 전송으로 차원이 다른 비주얼 분석과 신뢰를 선사합니다.</p>
                   </div>
                 </div>
               </div>

@@ -293,6 +293,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
 
   // YouTube 추출 유틸리티
   const extractYoutubeIdInfo = (article: Article) => {
+    if (!article) return { id: null, hasVideo: false };
     // 1순위: 명시적 유튜브 URL
     if (article.youtube_url) {
       const match = article.youtube_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
@@ -308,6 +309,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
 
   // 썸네일 URL 결정
   const getThumbnailSrc = (article: Article, ytInfo: { id: string | null; hasVideo: boolean }) => {
+    if (!article) return null;
     if (article.thumbnail_url) {
       if (article.thumbnail_url.includes('maxresdefault.jpg')) {
         return article.thumbnail_url.replace('maxresdefault.jpg', 'hqdefault.jpg');
@@ -815,6 +817,7 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
   };
 
   const getThumbnailSrc = (item: Article) => {
+    if (!item) return null;
     if (item.thumbnail_url) {
       if (item.thumbnail_url.includes('maxresdefault.jpg')) {
         return item.thumbnail_url.replace('maxresdefault.jpg', 'hqdefault.jpg');
@@ -857,7 +860,8 @@ function PremiumSplitRecommend({ articles, memberName, mentalText }: { articles:
     setActiveIndex((prev) => (prev === articles.length - 1 ? 0 : prev + 1));
   };
 
-  const activeArticle = articles[activeIndex];
+  const activeArticle = articles[activeIndex] || articles[0];
+  if (!activeArticle) return null;
   const activeThumb = getThumbnailSrc(activeArticle);
   const activeYtInfo = extractYoutubeIdInfo(activeArticle.youtube_url) || extractYoutubeIdInfo(activeArticle.content);
 

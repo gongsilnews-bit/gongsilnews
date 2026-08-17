@@ -166,21 +166,21 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
 
     // 개별 마커 생성
     const size = 32;
+    const fillColor = "#1a4282";
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+      <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${fillColor}" stroke="white" stroke-width="2"/>
+      <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text>
+    </svg>`;
+    const sharedMarkerImage = new kakao.maps.MarkerImage(
+      `data:image/svg+xml,${encodeURIComponent(svg)}`,
+      new kakao.maps.Size(size, size),
+      { offset: new kakao.maps.Point(size / 2, size / 2) }
+    );
+
     const newMarkers = withCoords.map((v) => {
-      const fillColor = "#1a4282";
-
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-        <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${fillColor}" stroke="white" stroke-width="2"/>
-        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text>
-      </svg>`;
-
       const marker = new kakao.maps.Marker({
         position: new kakao.maps.LatLng(v.lat, v.lng),
-        image: new kakao.maps.MarkerImage(
-          `data:image/svg+xml,${encodeURIComponent(svg)}`,
-          new kakao.maps.Size(size, size),
-          { offset: new kakao.maps.Point(size / 2, size / 2) }
-        ),
+        image: sharedMarkerImage,
       });
 
       kakao.maps.event.addListener(marker, 'click', () => {

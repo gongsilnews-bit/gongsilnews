@@ -223,24 +223,32 @@ export default function HeroMapSection() {
     const kakao = (window as any).kakao;
     const map = kakaoMapRef.current;
 
+    const size = 36;
+    const color = "%231a4282";
+    const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${color}" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+    const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="${color}" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="${color}" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+
+    const normalMarkerImage = new kakao.maps.MarkerImage(
+      `data:image/svg+xml,${normalSvg}`,
+      new kakao.maps.Size(size, size),
+      { offset: new kakao.maps.Point(size / 2, size / 2) }
+    );
+    const activeMarkerImage = new kakao.maps.MarkerImage(
+      `data:image/svg+xml,${activeSvg}`,
+      new kakao.maps.Size(size, size),
+      { offset: new kakao.maps.Point(size / 2, size / 2) }
+    );
+
     const newMarkers: any[] = [];
     filteredVacancies.forEach(prop => {
       if (!prop.lat || !prop.lng) return;
       const position = new kakao.maps.LatLng(prop.lat, prop.lng);
-      const size = 36;
       const strId = String(prop.id);
       const isSelected = selectedClusterIdsRef.current?.includes(strId);
 
-      const isAuction = prop.trade_type === "경매" || prop.is_auction === true;
-      const color = "%231a4282";
-
-      const normalSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${color}" stroke="white" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-      const activeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="white" stroke="${color}" stroke-width="2"/><text x="50%25" y="50%25" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="${color}" font-size="14" font-weight="bold" font-family="sans-serif">1</text></svg>`;
-      const svgStr = isSelected ? activeSvg : normalSvg;
-
       const marker = new kakao.maps.Marker({
         position,
-        image: new kakao.maps.MarkerImage(`data:image/svg+xml,${svgStr}`, new kakao.maps.Size(size, size), { offset: new kakao.maps.Point(size / 2, size / 2) }),
+        image: isSelected ? activeMarkerImage : normalMarkerImage,
         title: strId
       });
       markerIdMapRef.current.set(marker, strId);

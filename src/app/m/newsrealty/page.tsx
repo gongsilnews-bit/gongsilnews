@@ -411,72 +411,137 @@ export default function MobileNewsRealtyPage() {
             word-break: keep-all;
           }
 
-          /* ===== Mobile Target Section ===== */
+          /* ===== Mobile Recommended Target Section (Luxurious Dark Style) ===== */
           .m-target-sec {
-            padding: 50px 16px;
-            background: #ffffff;
-            border-top: 1px solid #f1f5f9;
+            padding: 60px 16px;
+            background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+            color: #ffffff;
+            border-top: 1px solid #1e293b;
+            border-bottom: 1px solid #1e293b;
+            position: relative;
+            overflow: hidden;
           }
           .m-target-container {
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 20px;
           }
-          .m-target-badge {
-            display: inline-block;
+          .m-lux-header {
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          .m-lux-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
             font-size: 11px;
             font-weight: 800;
-            color: #e11d48;
-            background: #ffe4e6;
-            padding: 4px 8px;
-            border-radius: 6px;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            padding: 4px 12px;
+            border-radius: 50px;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
           }
-          .m-target-title-main {
+          .m-lux-title {
             font-size: 22px;
             font-weight: 900;
-            color: #0f172a;
+            color: #ffffff;
             margin: 0 0 6px 0;
             line-height: 1.3;
           }
-          .m-target-desc-main {
-            font-size: 13.5px;
-            color: #64748b;
+          .m-lux-title span {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          }
+          .m-lux-desc {
+            font-size: 13px;
+            color: #94a3b8;
             margin: 0;
             line-height: 1.5;
             word-break: keep-all;
           }
-          .m-target-list {
+          .m-lux-grid {
             display: flex;
             flex-direction: column;
             gap: 16px;
           }
-          .m-target-list-item {
-            display: flex;
-            gap: 14px;
+          .m-lux-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
             padding: 16px;
-            background: #f8fafc;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
+          .m-lux-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          }
+          .m-lux-num {
+            font-size: 11px;
+            font-weight: 900;
+            color: #fbbf24;
+            letter-spacing: 1.5px;
+          }
+          .m-lux-category {
+            font-size: 11.5px;
+            color: #64748b;
+            font-weight: 600;
+          }
+          .m-lux-before {
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.15);
             border-radius: 12px;
-            border: 1px solid #f1f5f9;
+            padding: 12px;
           }
-          .m-target-list-icon {
-            font-size: 20px;
-            line-height: 1;
-            flex-shrink: 0;
-          }
-          .m-target-list-text h4 {
-            font-size: 14.5px;
+          .m-lux-before-label {
+            font-size: 10.5px;
             font-weight: 800;
-            color: #0f172a;
-            margin: 0 0 4px 0;
+            color: #f87171;
+            margin-bottom: 4px;
+            display: block;
+          }
+          .m-lux-before-text {
+            font-size: 12.5px;
+            color: #cbd5e1;
+            margin: 0;
+            line-height: 1.45;
             word-break: keep-all;
           }
-          .m-target-list-text p {
-            font-size: 12.5px;
-            color: #475569;
+          .m-lux-after {
+            background: rgba(251, 191, 36, 0.06);
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            border-radius: 12px;
+            padding: 12px;
+          }
+          .m-lux-after-label {
+            font-size: 10.5px;
+            font-weight: 800;
+            color: #fbbf24;
+            margin-bottom: 4px;
+            display: block;
+          }
+          .m-lux-after-text {
+            font-size: 13.5px;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 0 0 4px;
+            line-height: 1.4;
+            word-break: keep-all;
+          }
+          .m-lux-after-sub {
+            font-size: 11.5px;
+            color: #94a3b8;
             margin: 0;
-            line-height: 1.5;
+            line-height: 1.4;
             word-break: keep-all;
           }
 
@@ -875,49 +940,95 @@ export default function MobileNewsRealtyPage() {
           </div>
         </section>
 
-        {/* ===== Recommended Target Section ===== */}
+        {/* ===== Recommended Target Section (Luxurious Modern Style) ===== */}
         <section className="m-target-sec">
           <div className="m-target-container">
-            <div>
-              <span className="m-target-badge">RECOMMENDED FOR</span>
-              <h2 className="m-target-title-main">이런 부동산에 추천!</h2>
-              <p className="m-target-desc-main">부동산 마케팅 때문에 고민이 깊으신 대표님들을 위한 최적의 솔루션입니다.</p>
+            <div className="m-lux-header">
+              <div className="m-lux-badge">
+                ✨ WHY GONGSILNEWS
+              </div>
+              <h2 className="m-lux-title">
+                공실뉴스부동산 <span>도입 전 vs 도입 후</span>
+              </h2>
+              <p className="m-lux-desc">
+                부동산 마케팅과 매물 수주 고민이 180도 달라집니다.
+              </p>
             </div>
 
-            <div className="m-target-list">
-              {/* Item 1 */}
-              <div className="m-target-list-item">
-                <div className="m-target-list-icon">😭</div>
-                <div className="m-target-list-text">
-                  <h4>부동산마케팅 혼자하기 힘든 부동산</h4>
-                  <p>기사 작성, 홍보물 제작, 고객 브리핑까지 AI가 자동으로 알아서 처리해 드립니다.</p>
+            <div className="m-lux-grid">
+              {/* Card 1 */}
+              <div className="m-lux-card">
+                <div className="m-lux-card-top">
+                  <span className="m-lux-num">01 / MARKETING</span>
+                  <span className="m-lux-category">마케팅 &amp; 콘텐츠 생성</span>
+                </div>
+                <div className="m-lux-before">
+                  <span className="m-lux-before-label">😭 BEFORE (현재의 고민)</span>
+                  <p className="m-lux-before-text">
+                    "블로그 글 쓰고 유튜브 영상 편집하느라 정작 중개 영업을 못 해요."
+                  </p>
+                </div>
+                <div className="m-lux-after">
+                  <span className="m-lux-after-label">✨ AFTER (공실뉴스 도입 후)</span>
+                  <h4 className="m-lux-after-text">지번만 넣으면 AI가 1초 만에 매매보고서 &amp; 원고 자동 완성!</h4>
+                  <p className="m-lux-after-sub">유튜브 쇼츠 대본, 블로그 글, 포털 기사까지 무제한 자동 빌드됩니다.</p>
                 </div>
               </div>
 
-              {/* Item 2 */}
-              <div className="m-target-list-item">
-                <div className="m-target-list-icon">🎬</div>
-                <div className="m-target-list-text">
-                  <h4>유튜브 매번 포기하는 부동산</h4>
-                  <p>영상 촬영 구도부터 1년 강의, 드론/영상 소스 무료 다운로드로 지속가능한 채널 운영을 돕습니다.</p>
+              {/* Card 2 */}
+              <div className="m-lux-card">
+                <div className="m-lux-card-top">
+                  <span className="m-lux-num">02 / COST SAVING</span>
+                  <span className="m-lux-category">광고비 &amp; 고정 지출 절감</span>
+                </div>
+                <div className="m-lux-before">
+                  <span className="m-lux-before-label">💸 BEFORE (현재의 고민)</span>
+                  <p className="m-lux-before-text">
+                    "매달 나가는 포털 광고비, 사설 공실망 수십만 원 고정 비용이 부담돼요."
+                  </p>
+                </div>
+                <div className="m-lux-after">
+                  <span className="m-lux-after-label">💰 AFTER (공실뉴스 도입 후)</span>
+                  <h4 className="m-lux-after-text">월 3만 원 단 하나의 비용으로 대행사급 AI 마케팅 + 드론/강의 무제한!</h4>
+                  <p className="m-lux-after-sub">월 고정 비용 90% 절감! 부담 없는 비용으로 마케팅 효과를 누리세요.</p>
                 </div>
               </div>
 
-              {/* Item 3 */}
-              <div className="m-target-list-item">
-                <div className="m-target-list-icon">💸</div>
-                <div className="m-target-list-text">
-                  <h4>비싼 고정 광고비가 부담되는 부동산</h4>
-                  <p>월 3만 원의 합리적인 비용으로 광고 대행업체 수준의 전문적인 퀄리티를 유지할 수 있습니다.</p>
+              {/* Card 3 */}
+              <div className="m-lux-card">
+                <div className="m-lux-card-top">
+                  <span className="m-lux-num">03 / EXCLUSIVE NETWORK</span>
+                  <span className="m-lux-category">지역 텃세 극복 &amp; 매물 독점</span>
+                </div>
+                <div className="m-lux-before">
+                  <span className="m-lux-before-label">😭 BEFORE (현재의 고민)</span>
+                  <p className="m-lux-before-text">
+                    "신규 개업 후 지역 친목회 텃세 때문에 단독 매물 확보와 영업이 힘들어요."
+                  </p>
+                </div>
+                <div className="m-lux-after">
+                  <span className="m-lux-after-label">👑 AFTER (공실뉴스 도입 후)</span>
+                  <h4 className="m-lux-after-text">텃세 상관없이 전국 11만 중개망 &amp; 20건 독점 공실 등록으로 매물 싹쓸이!</h4>
+                  <p className="m-lux-after-sub">주력 단지 대표 권한 확보로 임대인/임차인 신뢰와 매물을 선점합니다.</p>
                 </div>
               </div>
 
-              {/* Item 4 */}
-              <div className="m-target-list-item">
-                <div className="m-target-list-icon">🏆</div>
-                <div className="m-target-list-text">
-                  <h4>지역 내 공동중개망 텃세를 넘고 독점 매물을 잡고 싶은 부동산</h4>
-                  <p>공실 등록 수 20건 보장 및 AI 분석 브리핑 혜택으로 임대인과 임차인의 신뢰를 독점합니다.</p>
+              {/* Card 4 */}
+              <div className="m-lux-card">
+                <div className="m-lux-card-top">
+                  <span className="m-lux-num">04 / CLOSING RATE</span>
+                  <span className="m-lux-category">전문 브리핑 &amp; 계약 체결율</span>
+                </div>
+                <div className="m-lux-before">
+                  <span className="m-lux-before-label">😭 BEFORE (현재의 고민)</span>
+                  <p className="m-lux-before-text">
+                    "손님이나 집주인에게 보여줄 차별화된 매물 브리핑 자료가 부족해요."
+                  </p>
+                </div>
+                <div className="m-lux-after">
+                  <span className="m-lux-after-label">📊 AFTER (공실뉴스 도입 후)</span>
+                  <h4 className="m-lux-after-text">카톡 전송용 PDF &amp; 유리창 출력용 AI 보고서로 계약 성공률 200% 상승!</h4>
+                  <p className="m-lux-after-sub">모바일 원터치 브리핑 전송으로 차원이 다른 분석과 신뢰를 선사합니다.</p>
                 </div>
               </div>
             </div>
