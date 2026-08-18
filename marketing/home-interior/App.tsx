@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { DesignInputs, ImageFile, SimulationResult } from './types';
 import { generateRemodelingSimulation } from './services/geminiService';
@@ -6,6 +5,8 @@ import Header from './components/Header';
 import ImageUploader from './components/ImageUploader';
 import DesignForm from './components/DesignForm';
 import ResultDisplay from './components/ResultDisplay';
+import SaveProjectModal from './components/SaveProjectModal';
+import ProjectLoadModal from './components/ProjectLoadModal';
 import { ROOM_OPTIONS, INTERIOR_STYLES, CEILING_STYLES, FLOOR_MATERIALS, WALL_MATERIALS, LIGHTING_MOODS, FURNITURE_TONES } from './constants';
 
 const App: React.FC = () => {
@@ -25,9 +26,15 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Cloud Save / Load States
+  const [showSaveModal, setShowSaveModal] = useState<boolean>(false);
+  const [showLoadModal, setShowLoadModal] = useState<boolean>(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string | undefined>(undefined);
+  const [currentProjectTitle, setCurrentProjectTitle] = useState<string>('');
+
   const handleGenerate = async () => {
     if (imageFiles.length === 0) {
-      setError('최소 1장의 건물 사진을 업로드해주세요.');
+      setError('최소 1장의 아파트 내부 사진을 업로드해주세요.');
       return;
     }
     setError(null);
@@ -45,9 +52,56 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLoadProject = (projectData: any, title: string, id: string) => {
+    if (!projectData) return;
+    setCurrentProjectId(id);
+    setCurrentProjectTitle(title);
+    if (projectData.imageFiles) setImageFiles(projectData.imageFiles);
+    if (projectData.designInputs) setDesignInputs(projectData.designInputs);
+    if (projectData.results) setResults(projectData.results);
+  };
+
+  const allRenderedImages = results.map(r => r.imageUrl).filter(Boolean);
+  const primaryThumbnail = allRenderedImages[0] || (imageFiles[0]?.previewUrl);
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-300">
-      <Header />
+      <Header
+        onOpenSave={() => setShowSaveModal(true)}
+        onOpenLoad={() => setShowLoadModal(true)}
+        canSave={imageFiles.length > 0 || results.length > 0}
+      />
+
+      {/* Cloud Save Modal */}
+      <SaveProjectModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        appType="home-interior"
+        currentProjectId={currentProjectId}
+        defaultTitle={currentProjectTitle || (imageFiles[0]?.file?.name ? `홈인테리어_${imageFiles[0].file.name.split('.')[0]}` : '')}
+        thumbnailUrl={primaryThumbnail}
+        imageUrls={allRenderedImages}
+        projectData={{
+          version: '1.0',
+          appType: 'home-interior',
+          imageFiles,
+          designInputs,
+          results,
+        }}
+        onSaved={(id, title) => {
+          setCurrentProjectId(id);
+          setCurrentProjectTitle(title);
+        }}
+      />
+
+      {/* Cloud Load Modal */}
+      <ProjectLoadModal
+        isOpen={showLoadModal}
+        onClose={() => setShowLoadModal(false)}
+        appType="home-interior"
+        onLoadProject={handleLoadProject}
+      />
+
       <main className="container mx-auto p-4 md:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-12">
           {/* Left Column: Inputs */}

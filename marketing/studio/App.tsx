@@ -63,9 +63,13 @@ import {
   Maximize2,
   FileImage,
   FolderUp,
-  Film
+  Film,
+  Bookmark,
+  FolderOpen
 } from 'lucide-react';
 import VideoPlayerModal from './components/VideoPlayerModal';
+import SaveProjectModal from './components/SaveProjectModal';
+import ProjectLoadModal from './components/ProjectLoadModal';
 
 const ImagePreviewModal: React.FC<{ url: string; onClose: () => void }> = ({ url, onClose }) => {
   return (
@@ -361,6 +365,25 @@ const App: React.FC = () => {
 
   // Video Player Modal State
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+
+  // Cloud Save & Load States
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showLoadModal, setShowLoadModal] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string | undefined>(undefined);
+  const [currentProjectTitle, setCurrentProjectTitle] = useState<string>('');
+
+  const handleLoadProject = (projectData: any, title: string, id: string) => {
+    if (!projectData) return;
+    setCurrentProjectId(id);
+    setCurrentProjectTitle(title);
+    if (projectData.script) setScript(projectData.script);
+    if (projectData.segments) setSegments(projectData.segments);
+    if (projectData.selectedStyle) setSelectedStyle(projectData.selectedStyle);
+    if (projectData.selectedVoice) setSelectedVoice(projectData.selectedVoice);
+    if (projectData.selectedSpeed) setSelectedSpeed(projectData.selectedSpeed);
+    if (projectData.aspectRatio) setAspectRatio(projectData.aspectRatio);
+    if (projectData.segmentationMode) setSegmentationMode(projectData.segmentationMode);
+  };
 
   const isAnyGenerating = segments.some(s => s.isGenerating || s.isGeneratingAudio || s.isGeneratingPrompt || s.isGeneratingVideoPrompt) || isParsing || isExporting || isGeneratingFullAudio;
   const isReadyToExport = segments.length > 0 && segments.every(s => s.generatedImageUrl && s.generatedAudioUrl);
@@ -882,6 +905,40 @@ const App: React.FC = () => {
         initialAspectRatio={aspectRatio}
       />
 
+      {/* Cloud Save Modal */}
+      <SaveProjectModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        appType="studio"
+        currentProjectId={currentProjectId}
+        defaultTitle={currentProjectTitle || (segments[0]?.narrative ? segments[0].narrative.substring(0, 20) + '...' : '')}
+        thumbnailUrl={segments.find(s => s.generatedImageUrl)?.generatedImageUrl}
+        imageUrls={segments.map(s => s.generatedImageUrl).filter(Boolean) as string[]}
+        projectData={{
+          version: '1.0',
+          appType: 'studio',
+          script,
+          segments,
+          selectedStyle,
+          selectedVoice,
+          selectedSpeed,
+          aspectRatio,
+          segmentationMode
+        }}
+        onSaved={(id, title) => {
+          setCurrentProjectId(id);
+          setCurrentProjectTitle(title);
+        }}
+      />
+
+      {/* Cloud Load Modal */}
+      <ProjectLoadModal
+        isOpen={showLoadModal}
+        onClose={() => setShowLoadModal(false)}
+        appType="studio"
+        onLoadProject={handleLoadProject}
+      />
+
       {/* ... (Navbar and Main content) ... */}
       <nav className="sticky top-0 z-50 glass-effect border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -991,6 +1048,27 @@ const App: React.FC = () => {
                   >
                     {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderDown className="w-4 h-4" />}
                     통합 저장
+                  </button>
+
+                  {/* Cloud Save and Load Buttons */}
+                  <div className="w-px h-8 bg-gray-300 mx-1 self-center"></div>
+                  <button 
+                    onClick={() => setShowLoadModal(true)} 
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-full font-bold text-xs shadow-sm transition active:scale-95"
+                    title="내 계정에 저장된 프로젝트 목록 열기"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5 text-[#f4a71b]" />
+                    <span>내 보관함</span>
+                  </button>
+
+                  <button 
+                    onClick={() => setShowSaveModal(true)} 
+                    disabled={segments.length === 0}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-gray-900 hover:bg-black text-white rounded-full font-bold text-xs shadow-sm transition active:scale-95 border border-gray-700 disabled:opacity-40"
+                    title="현재 작업을 내 계정 클라우드에 영구 저장"
+                  >
+                    <Bookmark className="w-3.5 h-3.5 text-[#f4a71b]" />
+                    <span>저장</span>
                   </button>
 
                   {/* Automated Video Player & Render Button */}
