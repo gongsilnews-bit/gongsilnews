@@ -1,0 +1,6 @@
+{
+  "name": "[이미지제작] 아파트 내부 인테리어 예측 시뮬레이터 ARE1.0",
+  "description": "An AI-powered simulator that generates realistic interior design predictions for apartments based on user-uploaded photos and design specifications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

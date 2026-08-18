@@ -51,6 +51,14 @@ const nextConfig: NextConfig = {
           source: '/marketing/remodeling/:path*',
           destination: 'http://localhost:3007/marketing/remodeling/:path*',
         },
+        {
+          source: '/marketing/home-interior',
+          destination: 'http://localhost:3008/marketing/home-interior/',
+        },
+        {
+          source: '/marketing/home-interior/:path*',
+          destination: 'http://localhost:3008/marketing/home-interior/:path*',
+        },
       ];
     }
     return [
@@ -77,6 +85,14 @@ const nextConfig: NextConfig = {
       {
         source: '/marketing/remodeling/',
         destination: '/marketing/remodeling/index.html',
+      },
+      {
+        source: '/marketing/home-interior',
+        destination: '/marketing/home-interior/index.html',
+      },
+      {
+        source: '/marketing/home-interior/',
+        destination: '/marketing/home-interior/index.html',
       },
     ];
   },

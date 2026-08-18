@@ -44,6 +44,8 @@ next-env.d.ts
 /public/marketing/report/assets/
 /public/marketing/ai-detail/assets/
 /public/marketing/remodeling/assets/
+/public/marketing/home-interior/assets/
+
 
 # scratch and temp files
 /scratch/
