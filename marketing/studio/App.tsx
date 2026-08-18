@@ -62,8 +62,10 @@ import {
   FileAudio,
   Maximize2,
   FileImage,
-  FolderUp
+  FolderUp,
+  Film
 } from 'lucide-react';
+import VideoPlayerModal from './components/VideoPlayerModal';
 
 const ImagePreviewModal: React.FC<{ url: string; onClose: () => void }> = ({ url, onClose }) => {
   return (
@@ -356,6 +358,9 @@ const App: React.FC = () => {
 
   // Preview Image State
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Video Player Modal State
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
 
   const isAnyGenerating = segments.some(s => s.isGenerating || s.isGeneratingAudio || s.isGeneratingPrompt || s.isGeneratingVideoPrompt) || isParsing || isExporting || isGeneratingFullAudio;
   const isReadyToExport = segments.length > 0 && segments.every(s => s.generatedImageUrl && s.generatedAudioUrl);
@@ -869,6 +874,14 @@ const App: React.FC = () => {
       {/* Preview Image Modal */}
       {previewImage && <ImagePreviewModal url={previewImage} onClose={() => setPreviewImage(null)} />}
 
+      {/* Video Player Modal */}
+      <VideoPlayerModal
+        isOpen={showVideoPlayer}
+        onClose={() => setShowVideoPlayer(false)}
+        segments={segments}
+        initialAspectRatio={aspectRatio}
+      />
+
       {/* ... (Navbar and Main content) ... */}
       <nav className="sticky top-0 z-50 glass-effect border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -978,6 +991,17 @@ const App: React.FC = () => {
                   >
                     {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderDown className="w-4 h-4" />}
                     통합 저장
+                  </button>
+
+                  {/* Automated Video Player & Render Button */}
+                  <button 
+                    onClick={() => setShowVideoPlayer(true)} 
+                    disabled={!segments.some(s => s.generatedImageUrl)}
+                    className="flex items-center gap-2 px-5 py-2 rounded-full font-black text-sm shadow-lg transition-all bg-gradient-to-r from-[#f4a71b] to-amber-500 hover:from-amber-400 hover:to-amber-500 text-black border border-amber-300 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    title="전체 클립을 하나로 묶어 완제품 동영상 렌더링 & 미리보기"
+                  >
+                    <Film className="w-4 h-4" />
+                    <span>🎬 동영상 렌더링</span>
                   </button>
                 </div>
               </>
