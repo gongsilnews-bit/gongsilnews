@@ -225,8 +225,11 @@ export async function getAgentCostSummary(startDate?: string, endDate?: string) 
   const supabase = getAdminClient();
   let query = supabase
     .from("agent_chats")
-    .select("channel_id, cost_krw, total_tokens, role")
-    .eq("role", "agent");
+    .select("channel_id, cost_krw, total_tokens, input_tokens, output_tokens, role, created_at")
+    .eq("role", "agent")
+    .neq("channel_id", "onbid_sync_log")
+    .order("created_at", { ascending: false })
+    .limit(10000);
 
   if (startDate) query = query.gte("created_at", startDate);
   if (endDate) query = query.lte("created_at", endDate);
@@ -251,6 +254,27 @@ export async function getAgentCostSummary(startDate?: string, endDate?: string) 
 
   return { totalCost: Math.round(totalCost * 100) / 100, totalTokens, perAgent };
 }
+
+/**
+ * 실시간 AI 호출 이력을 조회합니다.
+ */
+export async function getRecentAgentCallLogs(limit: number = 30) {
+  const supabase = getAdminClient();
+  const { data, error } = await supabase
+    .from("agent_chats")
+    .select("id, channel_id, content, input_tokens, output_tokens, total_tokens, cost_krw, created_at")
+    .eq("role", "agent")
+    .neq("channel_id", "onbid_sync_log")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("getRecentAgentCallLogs error:", error);
+    return { success: false, data: [] };
+  }
+  return { success: true, data: data || [] };
+}
+
 
 /**
  * 에이전트별 실제 업무 처리 현황을 조회합니다.

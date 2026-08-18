@@ -43,6 +43,14 @@ const nextConfig: NextConfig = {
           source: '/marketing/report/:path*',
           destination: 'http://localhost:3006/marketing/report/:path*',
         },
+        {
+          source: '/marketing/remodeling',
+          destination: 'http://localhost:3007/marketing/remodeling/',
+        },
+        {
+          source: '/marketing/remodeling/:path*',
+          destination: 'http://localhost:3007/marketing/remodeling/:path*',
+        },
       ];
     }
     return [
@@ -61,6 +69,14 @@ const nextConfig: NextConfig = {
       {
         source: '/marketing/report/',
         destination: '/marketing/report/index.html',
+      },
+      {
+        source: '/marketing/remodeling',
+        destination: '/marketing/remodeling/index.html',
+      },
+      {
+        source: '/marketing/remodeling/',
+        destination: '/marketing/remodeling/index.html',
       },
     ];
   },

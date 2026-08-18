@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import type { AdminTheme } from "@/components/admin/sections/types";
-import { getAgentCostSummary, getAgentWorkStats, generateDailyReport, loadDailyReports, getOnbidCount, getOnbidHistoryStats } from "@/app/actions/agentChat";
+import { getAgentCostSummary, getAgentWorkStats, generateDailyReport, loadDailyReports, getOnbidCount, getOnbidHistoryStats, getRecentAgentCallLogs } from "@/app/actions/agentChat";
 
 /* ── 에이전트 정의 ── */
 const DEFAULT_AGENTS = [
@@ -84,6 +84,8 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
   const [editValue, setEditValue] = useState("");
   const [period, setPeriod] = useState<Period>("all");
   const [loadingStats, setLoadingStats] = useState(false);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(new Date());
+  const [recentLogs, setRecentLogs] = useState<any[]>([]);
 
   // Current stats
   const [agentStats, setAgentStats] = useState<Record<string, { totalTokens: number; costKrw: number; messageCount: number }>>({});
@@ -113,17 +115,18 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
   const [reportHistory, setReportHistory] = useState<{ id: string; content: string; created_at: string }[]>([]);
   const [selectedReportIdx, setSelectedReportIdx] = useState<number>(0);
 
-  // Fetch Stats when period changes
-  useEffect(() => {
-    const fetchStats = async () => {
-      setLoadingStats(true);
-      const dates = getPeriodDates(period);
-      
-      const [costRes, workRes, onbidRes, historyRes] = await Promise.all([
+  // Fetch Stats
+  const fetchStats = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoadingStats(true);
+    const dates = getPeriodDates(period);
+    
+    try {
+      const [costRes, workRes, onbidRes, historyRes, callLogsRes] = await Promise.all([
         getAgentCostSummary(dates.start || undefined, dates.end || undefined),
         getAgentWorkStats(dates.start || undefined, dates.end || undefined),
         getOnbidCount(),
         getOnbidHistoryStats(),
+        getRecentAgentCallLogs(25),
       ]);
       setAgentStats(costRes.perAgent || {});
       setWorkStats(workRes);
@@ -131,6 +134,10 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
       if (historyRes.success) {
         setOnbidHistory(historyRes);
       }
+      if (callLogsRes.success) {
+        setRecentLogs(callLogsRes.data || []);
+      }
+      setLastRefreshedAt(new Date());
 
       if (dates.prevStart) {
         const [pCostRes, pWorkRes] = await Promise.all([
@@ -143,10 +150,21 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
         setPrevAgentStats({});
         setPrevWorkStats(null);
       }
-      setLoadingStats(false);
-    };
-    fetchStats();
+    } catch (err) {
+      console.error("fetchStats error:", err);
+    } finally {
+      if (!isSilent) setLoadingStats(false);
+    }
   }, [period]);
+
+  useEffect(() => {
+    fetchStats(false);
+    // 15초마다 실시간 자동 갱신
+    const timer = setInterval(() => {
+      fetchStats(true);
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [fetchStats]);
 
   // DB에서 저장된 보고서 불러오기
   useEffect(() => {
@@ -198,8 +216,28 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, position: "relative" }}>
       
-      {/* ── 상단 필터 ── */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -10 }}>
+      {/* ── 상단 필터 & 실시간 새로고침 ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: -6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={() => fetchStats(false)}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+              background: theme.darkMode ? "#2c2d33" : "#e2e8f0",
+              color: theme.textPrimary, border: `1px solid ${theme.border}`,
+              cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s"
+            }}
+            title="실시간 새로고침"
+          >
+            🔄 새로고침
+          </button>
+          <span style={{ fontSize: 12, color: theme.textSecondary, display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#10b981" }}></span>
+            실시간 연동 중 (갱신: {lastRefreshedAt.toLocaleTimeString("ko-KR")})
+          </span>
+        </div>
+
         <div style={{ display: "flex", background: theme.darkMode ? "#1a1b1e" : "#f1f5f9", borderRadius: 8, padding: 4 }}>
           {[
             { id: "today", label: "오늘" },
@@ -608,6 +646,94 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             </div>
           );
         })}
+      </div>
+
+      {/* ── ⚡ 실시간 AI 호출 및 크레딧 소모 로그 ── */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 20 }}>⚡</span>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>
+              실시간 AI 호출 및 크레딧 소모 내역
+            </h3>
+            <span style={{ fontSize: 12, color: theme.textSecondary, marginLeft: 4 }}>
+              (최근 {recentLogs.length}건)
+            </span>
+          </div>
+          <button
+            onClick={() => fetchStats(false)}
+            style={{
+              padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 700,
+              background: theme.darkMode ? "#2c2d33" : "#f1f5f9",
+              color: "#2563eb", border: `1px solid ${theme.border}`,
+              cursor: "pointer", fontFamily: "inherit"
+            }}
+          >
+            새로고침
+          </button>
+        </div>
+
+        {recentLogs.length > 0 ? (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: `2px solid ${theme.border}`, textAlign: "left", color: theme.textSecondary }}>
+                  <th style={{ padding: "10px 12px", fontWeight: 700 }}>시각 (KST)</th>
+                  <th style={{ padding: "10px 12px", fontWeight: 700 }}>기능 / 에이전트</th>
+                  <th style={{ padding: "10px 12px", fontWeight: 700 }}>작업 내용 요약</th>
+                  <th style={{ padding: "10px 12px", fontWeight: 700, textAlign: "right" }}>입력 / 출력 토큰</th>
+                  <th style={{ padding: "10px 12px", fontWeight: 700, textAlign: "right" }}>총 토큰</th>
+                  <th style={{ padding: "10px 12px", fontWeight: 700, textAlign: "right" }}>소모 크레딧 (원)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentLogs.map((log) => {
+                  const date = new Date(log.created_at);
+                  const timeStr = date.toLocaleTimeString("ko-KR", { timeZone: "Asia/Seoul", hour12: false });
+                  const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+                  
+                  const agentObj = DEFAULT_AGENTS.find(a => a.id === log.channel_id);
+                  const agentTitle = agentObj ? `${agentObj.emoji} ${agentNames[agentObj.id] || agentObj.defaultName}` : log.channel_id;
+
+                  const cost = Number(log.cost_krw || 0);
+
+                  return (
+                    <tr key={log.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                      <td style={{ padding: "10px 12px", color: theme.textSecondary, whiteSpace: "nowrap", fontSize: 12 }}>
+                        {dateStr} {timeStr}
+                      </td>
+                      <td style={{ padding: "10px 12px", fontWeight: 700, color: theme.textPrimary, whiteSpace: "nowrap" }}>
+                        <span style={{
+                          padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700,
+                          background: theme.darkMode ? "#2c2d33" : "#eff6ff",
+                          color: "#2563eb",
+                        }}>
+                          {agentTitle}
+                        </span>
+                      </td>
+                      <td style={{ padding: "10px 12px", color: theme.textPrimary, maxWidth: 350, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={log.content}>
+                        {log.content?.length > 70 ? log.content.substring(0, 70) + "..." : log.content}
+                      </td>
+                      <td style={{ padding: "10px 12px", textAlign: "right", color: theme.textSecondary, fontSize: 12 }}>
+                        {log.input_tokens?.toLocaleString() || 0} / {log.output_tokens?.toLocaleString() || 0}
+                      </td>
+                      <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: theme.textPrimary }}>
+                        {log.total_tokens?.toLocaleString() || 0}
+                      </td>
+                      <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: cost > 0 ? "#f59e0b" : theme.textSecondary }}>
+                        ₩{cost.toFixed(2)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ textAlign: "center", padding: "30px 0", color: theme.textSecondary, fontSize: 13 }}>
+            기록된 AI 호출 내역이 없습니다.
+          </div>
+        )}
       </div>
 
       {/* ── 일간보고 ── */}

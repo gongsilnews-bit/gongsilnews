@@ -13,26 +13,24 @@ export async function generatePropertyDescription(data: any) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 2. 최고관리자(ADMIN_EMAIL)의 마케팅 정보에서 공용 Gemini API Key 가져오기
-    const { data: adminData, error } = await supabaseAdmin
-      .from("members")
-      .select("sns_links")
-      .eq("email", ADMIN_EMAIL)
-      .single();
-
-    if (error || !adminData) {
-      console.error("최고관리자 계정을 찾을 수 없습니다:", error);
-      return { success: false, error: "관리자 계정 정보를 불러올 수 없습니다." };
+    // 2. 최고관리자 공용 Gemini API Key 가져오기 (환경변수 우선, DB fallback)
+    let apiKey = process.env.GEMINI_API_KEY || "";
+    if (!apiKey) {
+      const { data: adminData } = await supabaseAdmin
+        .from("members")
+        .select("sns_links")
+        .eq("email", ADMIN_EMAIL)
+        .single();
+      const apiList = adminData?.sns_links?.api_list || [];
+      const geminiApi = apiList.find((api: any) => api.provider === "구글" || api.provider === "구글 (Gemini)");
+      if (geminiApi?.key_value) {
+        apiKey = geminiApi.key_value.trim();
+      }
     }
 
-    const apiList = adminData.sns_links?.api_list || [];
-    const geminiApi = apiList.find((api: any) => api.provider === "구글" || api.provider === "구글 (Gemini)");
-
-    if (!geminiApi || !geminiApi.key_value) {
+    if (!apiKey) {
       return { success: false, error: "AI 기능이 아직 설정되지 않았습니다. 관리자에게 문의하세요." };
     }
-
-    const apiKey = geminiApi.key_value;
 
     // 3. Gemini 처리를 위한 프롬프트 가공
     const prompt = `
@@ -72,7 +70,7 @@ ${data.realtorInfo ? `
 `;
 
     // 4. Gemini API 호출 (최신 모델부터 폴백)
-    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    const models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash", "gemini-1.5-flash"];
     const errors: string[] = [];
 
     for (const model of models) {
@@ -195,23 +193,24 @@ export async function generateMarketingDrafts(params: {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 1. 최고관리자 공용 Gemini API Key 가져오기
-    const { data: adminData, error: adminErr } = await supabaseAdmin
-      .from("members")
-      .select("sns_links")
-      .eq("email", ADMIN_EMAIL)
-      .single();
-
-    if (adminErr || !adminData) {
-      return { success: false, error: "공용 AI 설정을 찾을 수 없습니다." };
+    // 1. 최고관리자 공용 Gemini API Key 가져오기 (환경변수 우선, DB fallback)
+    let apiKey = process.env.GEMINI_API_KEY || "";
+    if (!apiKey) {
+      const { data: adminData } = await supabaseAdmin
+        .from("members")
+        .select("sns_links")
+        .eq("email", ADMIN_EMAIL)
+        .single();
+      const apiList = adminData?.sns_links?.api_list || [];
+      const geminiApi = apiList.find((api: any) => api.provider === "구글" || api.provider === "구글 (Gemini)");
+      if (geminiApi?.key_value) {
+        apiKey = geminiApi.key_value.trim();
+      }
     }
 
-    const apiList = adminData.sns_links?.api_list || [];
-    const geminiApi = apiList.find((api: any) => api.provider === "구글" || api.provider === "구글 (Gemini)");
-    if (!geminiApi || !geminiApi.key_value) {
+    if (!apiKey) {
       return { success: false, error: "Gemini API 키가 구성되지 않았습니다." };
     }
-    const apiKey = geminiApi.key_value;
 
     // 2. 매물 정보 불러오기 (연동 또는 수동 입력)
     let propertyMaterial = "";
@@ -364,7 +363,7 @@ JSON 구조는 다음과 같아야 한다:
 `;
 
     // 5. API 직접 호출 (최신 모델 폴백)
-    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    const models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash", "gemini-1.5-flash"];
     const errors: string[] = [];
     let generatedRawText = "";
 

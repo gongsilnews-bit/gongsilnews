@@ -1,0 +1,6 @@
+{
+  "name": "[부동산마케팅] 공실뉴스 건물 외관 리모델링 예측 시뮬레이터 RE1.0",
+  "description": "An AI-powered simulator that generates realistic remodeling predictions for building exteriors based on user-uploaded photos and design specifications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

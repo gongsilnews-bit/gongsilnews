@@ -22,24 +22,23 @@ export async function extractPropertyInfoFromImage(base64Data: string, mimeType:
       return { success: false, error: "인증 정보(ownerId)가 부족합니다." };
     }
 
-    // 2. 최고관리자(ADMIN_EMAIL)의 마케팅 정보에서 공용 Gemini API Key 가져오기
-    const { data: adminData, error: adminError } = await supabase.from('members')
-      .select('sns_links')
-      .eq('email', ADMIN_EMAIL)
-      .single();
-
-    if (adminError || !adminData) {
-      return { success: false, error: "관리자 계정 정보를 불러올 수 없습니다. 관리자에게 문의하세요." };
+    // 2. 공용 Gemini API Key 가져오기 (환경변수 우선, DB fallback)
+    let apiKey = process.env.GEMINI_API_KEY || "";
+    if (!apiKey) {
+      const { data: adminData } = await supabase.from('members')
+        .select('sns_links')
+        .eq('email', ADMIN_EMAIL)
+        .single();
+      const apiList = adminData?.sns_links?.api_list || [];
+      const geminiApi = apiList.find((api: any) => api.provider === "구글" || api.provider === "구글 (Gemini)");
+      if (geminiApi?.key_value) {
+        apiKey = geminiApi.key_value.trim();
+      }
     }
 
-    const apiList = adminData.sns_links?.api_list || [];
-    const geminiApi = apiList.find((api: any) => api.provider === "구글" || api.provider === "구글 (Gemini)");
-    
-    if (!geminiApi || !geminiApi.key_value) {
+    if (!apiKey) {
       return { success: false, error: "AI 이미지 분석 기능이 아직 설정되지 않았습니다. 관리자에게 문의하세요." };
     }
-
-    const apiKey = geminiApi.key_value;
 
     // 3. 공용 프롬프트 준비
     const prompt = `
@@ -74,8 +73,8 @@ JSON 구조:
   "description": "매물의 특징 및 장점을 2~3문장으로 요약 작성"
 }`;
 
-    // 4. REST API 직접 호출 (폐기된 SDK 대신 네이티브 fetch 사용)
-    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    // 4. REST API 직접 호출
+    const models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash", "gemini-1.5-flash"];
     const errors: string[] = [];
     let parsedData = null;
 
