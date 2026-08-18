@@ -41,6 +41,14 @@ try {
   console.log('Building home-interior...');
   execSync('npm run build', { cwd: homeInteriorDir, stdio: 'inherit' });
   console.log('Home-interior build completed successfully! (Vite outputs directly to public)');
+
+  console.log('=== STARTING SUBPROJECT BUILD (marketing/studio) ===');
+  const studioDir = path.join(__dirname, '../marketing/studio');
+  console.log('Installing studio dependencies...');
+  execSync('npm install', { cwd: studioDir, stdio: 'inherit' });
+  console.log('Building studio...');
+  execSync('npm run build', { cwd: studioDir, stdio: 'inherit' });
+  console.log('Studio build completed successfully! (Vite outputs directly to public)');
   
   // 6. Run Next.js build
   console.log('=== RUNNING NEXT.JS BUILD ===');
