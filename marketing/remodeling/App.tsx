@@ -122,8 +122,8 @@ const App: React.FC = () => {
     if (projectData.results) setResults(projectData.results);
   };
 
-  const allRenderedImages = results.map(r => r.imageUrl).filter(Boolean);
-  const primaryThumbnail = allRenderedImages[0] || (imageFiles[0]?.previewUrl);
+  const allRenderedImages = results.map(r => r.image).filter(Boolean);
+  const primaryThumbnail = allRenderedImages[0] || (imageFiles[0]?.previewUrl) || (imageFiles[0]?.base64 ? `data:${imageFiles[0]?.type || 'image/jpeg'};base64,${imageFiles[0]?.base64}` : undefined);
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-300">

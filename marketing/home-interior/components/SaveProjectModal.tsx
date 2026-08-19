@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { saveProjectToCloud } from '../services/cloudProjectService';
-import { Bookmark, CheckCircle, Loader2, X, AlertCircle } from 'lucide-react';
+import { convertToWebP } from '../services/imageUtils';
+import { Bookmark, CheckCircle, Loader2, X, AlertCircle, Sparkles } from 'lucide-react';
 
 interface SaveProjectModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export const SaveProjectModal: React.FC<SaveProjectModalProps> = ({
 }) => {
   const [title, setTitle] = useState(defaultTitle || `홈인테리어_${new Date().toLocaleDateString('ko-KR')} ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`);
   const [isSaving, setIsSaving] = useState(false);
+  const [savingStatus, setSavingStatus] = useState<string>('저장 중...');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -41,15 +43,62 @@ export const SaveProjectModal: React.FC<SaveProjectModalProps> = ({
 
     setIsSaving(true);
     setError(null);
+    setSavingStatus('WebP 초경량 압축 최적화 중...');
 
     try {
+      // 1. Convert simulation results to WebP (0.85)
+      const rawResults = projectData?.results || [];
+      const compressedResults = await Promise.all(
+        rawResults.map(async (r: any) => {
+          if (r.image) {
+            const webpImage = await convertToWebP(r.image, 0.85);
+            return { ...r, image: webpImage };
+          }
+          return r;
+        })
+      );
+
+      // 2. Convert input imageFiles to WebP
+      const rawImageFiles = projectData?.imageFiles || [];
+      const compressedImageFiles = await Promise.all(
+        rawImageFiles.map(async (f: any) => {
+          if (f.base64) {
+            const dataUrl = f.base64.startsWith('data:') ? f.base64 : `data:${f.type || 'image/jpeg'};base64,${f.base64}`;
+            const webpUrl = await convertToWebP(dataUrl, 0.85);
+            const match = webpUrl.match(/^data:(.+);base64,(.+)$/);
+            return {
+              ...f,
+              type: match ? match[1] : (f.type || 'image/jpeg'),
+              base64: match ? match[2] : f.base64,
+              previewUrl: webpUrl,
+            };
+          }
+          return f;
+        })
+      );
+
+      // 3. Convert thumbnail and preview image list
+      const rawThumb = thumbnailUrl || (compressedResults[0]?.image) || (compressedImageFiles[0]?.previewUrl);
+      const compressedThumbnail = rawThumb ? await convertToWebP(rawThumb, 0.85, 800) : undefined;
+      const compressedImageUrls = await Promise.all(
+        (imageUrls.length > 0 ? imageUrls : compressedResults.map((r: any) => r.image).filter(Boolean)).map(
+          (u: string) => convertToWebP(u, 0.85, 1200)
+        )
+      );
+
+      setSavingStatus('클라우드 DB에 안전하게 보관 중...');
+
       const res = await saveProjectToCloud({
         id: currentProjectId,
         app_type: appType,
         title: title.trim(),
-        thumbnail_url: thumbnailUrl,
-        image_urls: imageUrls,
-        project_data: projectData,
+        thumbnail_url: compressedThumbnail,
+        image_urls: compressedImageUrls,
+        project_data: {
+          ...projectData,
+          results: compressedResults,
+          imageFiles: compressedImageFiles,
+        },
       });
 
       if (res.success && res.id) {
@@ -144,7 +193,7 @@ export const SaveProjectModal: React.FC<SaveProjectModalProps> = ({
                 className="flex-1 py-2.5 px-4 bg-[#f4a71b] hover:bg-[#d9900d] text-black text-sm font-bold rounded-xl transition flex items-center justify-center gap-2 disabled:bg-gray-700 disabled:text-gray-500"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bookmark className="w-4 h-4 fill-current" />}
-                {isSaving ? '저장 중...' : '저장 완료'}
+                {isSaving ? savingStatus : '저장 완료'}
               </button>
             </div>
           </form>
