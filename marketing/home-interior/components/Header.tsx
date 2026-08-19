@@ -48,11 +48,12 @@ const Header: React.FC<HeaderProps> = ({ onOpenSave, onOpenLoad, canSave, vacanc
             title="공실뉴스 홈으로 이동"
           >
             <img
-              src="/logo.png"
+              src="/logo_dark.png"
               alt="공실뉴스"
               className="h-7 md:h-8 object-contain"
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
+                // Fallback to default logo if logo_dark not found
+                e.currentTarget.src = '/logo.png';
               }}
             />
           </a>
