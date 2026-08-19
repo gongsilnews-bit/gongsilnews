@@ -123,7 +123,7 @@ const generateImage = async (imageFiles: ImageFile[], prompt: string, aspectRati
     `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
+    model: 'gemini-3.1-flash-image',
     contents: { parts: [...imageParts, { text: finalPrompt }] },
     config: {
       responseModalities: [Modality.IMAGE],

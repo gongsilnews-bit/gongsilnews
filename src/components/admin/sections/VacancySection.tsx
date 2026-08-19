@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import VacancyDetailPanel from "./VacancyDetailPanel";
+import VacancyMarketingPanel from "./VacancyMarketingPanel";
 import { getVacancies, updateVacancyStatus, updateVacancy, deleteVacancy, getVacancyDetail } from "@/app/actions/vacancy";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -238,6 +239,27 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
         onEdit={() => {
           const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
           router.push(`${path}?menu=gongsil&action=write&id=${editId}`);
+        }}
+        onMarketing={() => {
+          const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
+          router.push(`${path}?menu=gongsil&action=marketing&id=${editId}`);
+        }}
+      />
+    );
+  }
+
+  if (action === "marketing" && editId) {
+    return (
+      <VacancyMarketingPanel
+        vacancyId={editId}
+        darkMode={darkMode}
+        onBack={() => {
+          const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
+          router.push(`${path}?menu=gongsil`);
+        }}
+        onViewDetail={() => {
+          const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
+          router.push(`${path}?menu=gongsil&action=detail&id=${editId}`);
         }}
       />
     );
@@ -560,19 +582,18 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                     )}
                                     
                                     <button 
-                                      onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, '_blank')}
+                                      onClick={() => {
+                                        const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
+                                        router.push(`${path}?menu=gongsil&action=marketing&id=${row.id}`);
+                                      }}
                                       style={{ 
                                         height: 30, 
                                         padding: "0 10px", 
-                                        background: hasFlyer 
-                                          ? (darkMode ? "#059669" : "#10b981") 
-                                          : (darkMode ? "#2a2d35" : "#f3f4f6"), 
-                                        color: hasFlyer 
-                                          ? "#fff" 
-                                          : (darkMode ? "#7c8ba1" : "#8a94a6"), 
-                                        border: hasFlyer 
-                                          ? "none" 
-                                          : `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, 
+                                        background: darkMode 
+                                          ? "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" 
+                                          : "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)", 
+                                        color: "#fff", 
+                                        border: "none", 
                                         borderRadius: 4, 
                                         fontSize: 12, 
                                         fontWeight: 700, 
@@ -582,21 +603,23 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                         gap: 4, 
                                         whiteSpace: "nowrap", 
                                         flexShrink: 0,
+                                        boxShadow: "0 1px 3px rgba(99, 102, 241, 0.25)",
                                         transition: "all 0.15s"
                                       }}
                                       onMouseEnter={(e) => { 
-                                        e.currentTarget.style.background = hasFlyer 
-                                          ? (darkMode ? "#047857" : "#059669") 
-                                          : (darkMode ? "#343842" : "#e5e7eb"); 
+                                        e.currentTarget.style.opacity = "0.9";
+                                        e.currentTarget.style.transform = "translateY(-1px)";
                                       }}
                                       onMouseLeave={(e) => { 
-                                        e.currentTarget.style.background = hasFlyer 
-                                          ? (darkMode ? "#059669" : "#10b981") 
-                                          : (darkMode ? "#2a2d35" : "#f3f4f6"); 
+                                        e.currentTarget.style.opacity = "1";
+                                        e.currentTarget.style.transform = "none";
                                       }}
-                                      title={hasFlyer ? "AI 온라인전단지 완성됨 (클릭하여 편집/수정)" : "AI 온라인전단지 미작성 (클릭하여 제작)"}
+                                      title="공실마케팅 센터 (외관 리모델링, 내부 인테리어, 전단지 등)"
                                     >
-                                      AI온라인전단지
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                                      </svg>
+                                      공실마케팅
                                     </button>
                                   </div>
                                 );

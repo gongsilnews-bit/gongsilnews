@@ -32,6 +32,60 @@ const App: React.FC = () => {
   const [currentProjectId, setCurrentProjectId] = useState<string | undefined>(undefined);
   const [currentProjectTitle, setCurrentProjectTitle] = useState<string>('');
 
+  // Auto load vacancy photos from URL query ?vacancy_id=...
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get('vacancy_id');
+    if (!vacancyId) return;
+
+    async function loadVacancyImages(id: string) {
+      try {
+        const res = await fetch(`/api/vacancy/detail?id=${id}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.success && json.data) {
+          const v = json.data;
+          const photos = json.photos || v.vacancy_photos || [];
+          if (photos.length > 0) {
+            const loadedImages: ImageFile[] = [];
+            for (let i = 0; i < Math.min(photos.length, 3); i++) {
+              const photoUrl = photos[i].url;
+              try {
+                const imgRes = await fetch(photoUrl);
+                const blob = await imgRes.blob();
+                const base64 = await new Promise<string>((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const dataUrl = reader.result as string;
+                    resolve(dataUrl.split(',')[1]);
+                  };
+                  reader.onerror = reject;
+                  reader.readAsDataURL(blob);
+                });
+                loadedImages.push({
+                  id: `vac_${i}_${Date.now()}`,
+                  file: new File([blob], `vacancy_photo_${i + 1}.jpg`, { type: blob.type || 'image/jpeg' }),
+                  previewUrl: photoUrl,
+                  base64: base64,
+                  type: blob.type || 'image/jpeg'
+                });
+              } catch (e) {
+                console.warn("Failed to convert photo url to base64:", photoUrl, e);
+              }
+            }
+            if (loadedImages.length > 0) {
+              setImageFiles(loadedImages);
+              setCurrentProjectTitle(`${v.building_name || '공실매물'} 내부 인테리어`);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Auto load vacancy failed:", err);
+      }
+    }
+    loadVacancyImages(vacancyId);
+  }, []);
+
   const handleGenerate = async () => {
     if (imageFiles.length === 0) {
       setError('최소 1장의 아파트 내부 사진을 업로드해주세요.');
@@ -44,9 +98,9 @@ const App: React.FC = () => {
     try {
       const simulationResults = await generateRemodelingSimulation(imageFiles, designInputs);
       setResults(simulationResults);
-    } catch (err) {
-      console.error(err);
-      setError('시뮬레이션 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } catch (err: any) {
+      console.error("Simulation generation error:", err);
+      setError(err?.message ? `오류: ${err.message}` : '시뮬레이션 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
     }
