@@ -31,6 +31,7 @@ const App: React.FC = () => {
   const [showLoadModal, setShowLoadModal] = useState<boolean>(false);
   const [currentProjectId, setCurrentProjectId] = useState<string | undefined>(undefined);
   const [currentProjectTitle, setCurrentProjectTitle] = useState<string>('');
+  const [vacancyInfo, setVacancyInfo] = useState<{ id: string; buildingName?: string; address?: string; tradeType?: string } | null>(null);
 
   // Auto load vacancy photos from URL query ?vacancy_id=...
   React.useEffect(() => {
@@ -45,6 +46,12 @@ const App: React.FC = () => {
         const json = await res.json();
         if (json.success && json.data) {
           const v = json.data;
+          setVacancyInfo({
+            id: vacancyId,
+            buildingName: v.building_name,
+            address: v.road_address || v.address,
+            tradeType: v.trade_type,
+          });
           const photos = json.photos || v.vacancy_photos || [];
           if (photos.length > 0) {
             const loadedImages: ImageFile[] = [];
@@ -124,6 +131,7 @@ const App: React.FC = () => {
         onOpenSave={() => setShowSaveModal(true)}
         onOpenLoad={() => setShowLoadModal(true)}
         canSave={imageFiles.length > 0 || results.length > 0}
+        vacancyInfo={vacancyInfo}
       />
 
       {/* Cloud Save Modal */}
