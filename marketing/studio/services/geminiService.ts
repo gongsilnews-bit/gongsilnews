@@ -4,6 +4,19 @@ import { NewsSegment, ImageStyle, SegmentationMode, AspectRatio, VisualPromptTyp
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
+async function callServerGemini(action: string, payload: any) {
+  const res = await fetch('/api/marketing/gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const data = await res.json();
+  if (!data.success) {
+    throw new Error(data.error || 'Server Gemini call failed');
+  }
+  return data;
+}
+
 function decodeBase64(base64: string): Uint8Array {
   const binaryString = atob(base64);
   const bytes = new Uint8Array(binaryString.length);
@@ -292,46 +305,55 @@ export const generateSegmentImage = async (
   aspectRatio: AspectRatio = "16:9",
   referenceImageBase64?: string
 ): Promise<string> => {
-  const ai = getAI();
-  
   const finalPrompt = constructFullPrompt(prompt, style);
-  
   const parts: any[] = [];
+  const imageParts: { data: string; mimeType: string }[] = [];
 
-  // If reference image exists, add it to parts for image-to-image or editing
   if (referenceImageBase64) {
-      // Parse base64. Expecting format "data:image/png;base64,..."
-      const match = referenceImageBase64.match(/^data:(.+);base64,(.+)$/);
-      if (match) {
-          parts.push({
-              inlineData: {
-                  mimeType: match[1],
-                  data: match[2]
-              }
-          });
-      }
-  }
-
-  parts.push({ text: finalPrompt });
-
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
-    contents: {
-      parts: parts,
-    },
-    config: {
-      imageConfig: {
-        aspectRatio: aspectRatio,
-      },
-    },
-  });
-
-  for (const part of response.candidates?.[0]?.content?.parts || []) {
-    if (part.inlineData) {
-      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    const match = referenceImageBase64.match(/^data:(.+);base64,(.+)$/);
+    if (match) {
+      parts.push({
+        inlineData: {
+          mimeType: match[1],
+          data: match[2]
+        }
+      });
+      imageParts.push({ mimeType: match[1], data: match[2] });
     }
   }
 
+  if (process.env.API_KEY) {
+    try {
+      const ai = getAI();
+      parts.push({ text: finalPrompt });
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts },
+        config: {
+          imageConfig: { aspectRatio },
+        },
+      });
+
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData) {
+          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        }
+      }
+    } catch (clientErr) {
+      console.warn("Client generateSegmentImage failed, falling back to server API:", clientErr);
+    }
+  }
+
+  const serverRes = await callServerGemini("generateImage", {
+    prompt: finalPrompt,
+    imageParts,
+    aspectRatio,
+    model: "gemini-2.5-flash-image",
+  });
+
+  if (serverRes.base64) {
+    return `data:${serverRes.mimeType || 'image/png'};base64,${serverRes.base64}`;
+  }
   throw new Error("Failed to generate image part in response");
 };
 
@@ -340,28 +362,41 @@ export const generateSegmentAudio = async (
   voiceName: string,
   speed: number = 1.0
 ): Promise<string> => {
-  const ai = getAI();
-  // We use the prompt to guide the speaking rate for the TTS model
-  const speedInstruction = speed === 1.0 ? "" : ` Read this at exactly ${speed}x speed.`;
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-preview-tts",
-    contents: [{ parts: [{ text: `Read this news segment professionally.${speedInstruction}\n\nSegment: ${text}` }] }],
-    config: {
-      responseModalities: [Modality.AUDIO],
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: { voiceName },
+  if (process.env.API_KEY) {
+    try {
+      const ai = getAI();
+      const speedInstruction = speed === 1.0 ? "" : ` Read this at exactly ${speed}x speed.`;
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: `Read this news segment professionally.${speedInstruction}\n\nSegment: ${text}` }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName },
+            },
+          },
         },
-      },
-    },
-  });
+      });
 
-  const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  if (!base64Audio) throw new Error("No audio data received from Gemini TTS");
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        const pcmBytes = decodeBase64(base64Audio);
+        const wavBlob = createWavBlob(pcmBytes, 24000);
+        return URL.createObjectURL(wavBlob);
+      }
+    } catch (clientErr) {
+      console.warn("Client generateSegmentAudio failed, falling back to server API:", clientErr);
+    }
+  }
 
-  const pcmBytes = decodeBase64(base64Audio);
-  const wavBlob = createWavBlob(pcmBytes, 24000);
-  return URL.createObjectURL(wavBlob);
+  const serverRes = await callServerGemini("generateTTS", { text, voiceName, speed });
+  if (serverRes.base64Audio) {
+    const pcmBytes = decodeBase64(serverRes.base64Audio);
+    const wavBlob = createWavBlob(pcmBytes, 24000);
+    return URL.createObjectURL(wavBlob);
+  }
+  throw new Error("No audio data received from Gemini TTS");
 };
 
 export const transcribeAudioToSegments = async (base64Audio: string, mimeType: string): Promise<any[]> => {

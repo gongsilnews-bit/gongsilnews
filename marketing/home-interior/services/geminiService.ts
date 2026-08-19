@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import type { DesignInputs, ImageFile, SimulationResult, TextualData } from '../types';
 
@@ -11,12 +10,20 @@ async function fileToBase64(file: File): Promise<string> {
   });
 }
 
-const generateTextualOutput = async (inputs: DesignInputs): Promise<Omit<TextualData, 'versionDiffKo'>> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set");
+async function callServerGemini(action: string, payload: any) {
+  const res = await fetch('/api/marketing/gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const data = await res.json();
+  if (!data.success) {
+    throw new Error(data.error || 'Server Gemini call failed');
   }
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return data;
+}
 
+const generateTextualOutput = async (inputs: DesignInputs): Promise<Omit<TextualData, 'versionDiffKo'>> => {
   const prompt = `
     역할: 당신은 '아파트 내부 인테리어 예측 시뮬레이터'의 수석 인테리어 디자이너입니다.
     목표: 사용자가 제공한 공간 정보와 설계 조건을 바탕으로, 사실적인 "인테리어 예측 렌더" 이미지를 생성하기 위한 상세한 지시사항과 요약 정보를 JSON 형식으로 생성합니다. 이 JSON의 모든 텍스트는 한국어로 작성되어야 하지만, 'imagePrompt'와 'versionDiffsEn' 필드만은 이미지 생성 모델의 성능을 위해 영어로 작성해야 합니다.
@@ -42,69 +49,77 @@ const generateTextualOutput = async (inputs: DesignInputs): Promise<Omit<Textual
     반드시 아래 스키마를 따르는 JSON 객체를 생성해주세요.
   `;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3.6-flash',
-    contents: [{ parts: [{ text: prompt }] }],
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      imagePrompt: { 
+        type: Type.STRING, 
+        description: 'Photorealistic interior design rendering of an apartment room. Key features include...'
+      },
+      constraints: { 
+        type: Type.STRING, 
+        description: '반드시 유지해야 할 창문 위치, 내력벽, 천장고 등 공간 구조 제약 사항.' 
+      },
+      designSpec: {
         type: Type.OBJECT,
         properties: {
-          imagePrompt: { 
-            type: Type.STRING, 
-            description: 'Photorealistic interior design rendering of an apartment room. Key features include...'
-          },
-          constraints: { 
-            type: Type.STRING, 
-            description: '반드시 유지해야 할 창문 위치, 내력벽, 천장고 등 공간 구조 제약 사항.' 
-          },
-          designSpec: {
-            type: Type.OBJECT,
-            properties: {
-              roomType: { type: Type.STRING, description: '대상 공간 유형.' },
-              style: { type: Type.STRING, description: '적용된 인테리어 스타일.' },
-              ceiling: { type: Type.STRING, description: '천장 마감 및 스타일.' },
-              floor: { type: Type.STRING, description: '바닥재 사양.' },
-              wall: { type: Type.STRING, description: '벽면 마감 사양.' },
-              lighting: { type: Type.STRING, description: '조명 및 분위기.' },
-              furniture: { type: Type.STRING, description: '주요 가구 및 소재 톤.' },
-            },
-          },
-          versionDiffsEn: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: `각 버전을 차별화할 핵심 변경사항 (가구 배치, 포인트 컬러, 조명 변화 등)을 ${inputs.versions}개 항목으로 요약. 이 내용은 기본 imagePrompt에 추가되어 사용됩니다. (영어로 작성)`,
-          },
-          versionDiffsKo: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: `versionDiffsEn의 각 항목을 자연스러운 한국어로 번역한 내용. ${inputs.versions}개의 항목으로 요약. 이 내용은 사용자에게 표시됩니다. (한국어로 작성)`,
-          },
-          disclaimer: { 
-            type: Type.STRING, 
-            description: '결과물은 개념 시뮬레이션이며, 실제 시공 가능 여부 및 견적과는 차이가 있을 수 있다는 주의 문구.' 
-          },
+          roomType: { type: Type.STRING, description: '대상 공간 유형.' },
+          style: { type: Type.STRING, description: '적용된 인테리어 스타일.' },
+          ceiling: { type: Type.STRING, description: '천장 마감 및 스타일.' },
+          floor: { type: Type.STRING, description: '바닥재 사양.' },
+          wall: { type: Type.STRING, description: '벽면 마감 사양.' },
+          lighting: { type: Type.STRING, description: '조명 및 분위기.' },
+          furniture: { type: Type.STRING, description: '주요 가구 및 소재 톤.' },
         },
-        required: ["imagePrompt", "constraints", "designSpec", "versionDiffsEn", "versionDiffsKo", "disclaimer"]
+      },
+      versionDiffsEn: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING },
+        description: `각 버전을 차별화할 핵심 변경사항 (가구 배치, 포인트 컬러, 조명 변화 등)을 ${inputs.versions}개 항목으로 요약. 이 내용은 기본 imagePrompt에 추가되어 사용됩니다. (영어로 작성)`,
+      },
+      versionDiffsKo: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING },
+        description: `versionDiffsEn의 각 항목을 자연스러운 한국어로 번역한 내용. ${inputs.versions}개의 항목으로 요약. 이 내용은 사용자에게 표시됩니다. (한국어로 작성)`,
+      },
+      disclaimer: { 
+        type: Type.STRING, 
+        description: '결과물은 개념 시뮬레이션이며, 실제 시공 가능 여부 및 견적과는 차이가 있을 수 있다는 주의 문구.' 
       },
     },
-  });
+    required: ["imagePrompt", "constraints", "designSpec", "versionDiffsEn", "versionDiffsKo", "disclaimer"]
+  };
 
-  const jsonText = response.text.trim();
-  return JSON.parse(jsonText);
+  if (process.env.API_KEY) {
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        },
+      });
+      const jsonText = response.text.trim();
+      return JSON.parse(jsonText);
+    } catch (clientErr) {
+      console.warn("Client-side Gemini text call failed, falling back to server API:", clientErr);
+    }
+  }
+
+  const serverRes = await callServerGemini("generateText", {
+    prompt,
+    responseSchema: schema,
+    model: "gemini-3.6-flash",
+  });
+  return JSON.parse(serverRes.text.trim());
 };
 
 const generateImage = async (imageFiles: ImageFile[], prompt: string, aspectRatio: string): Promise<string> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set");
-  }
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
   const imageParts = imageFiles.map(img => ({
-    inlineData: {
-      data: img.base64,
-      mimeType: img.type,
-    },
+    data: img.base64,
+    mimeType: img.type,
   }));
 
   const finalPrompt = `
@@ -122,18 +137,42 @@ const generateImage = async (imageFiles: ImageFile[], prompt: string, aspectRati
     7.  **No Korean Text:** Do NOT render any Korean text (Hangul) in the image. Any posters or books should have English or abstract text.
     `;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3.1-flash-image',
-    contents: { parts: [...imageParts, { text: finalPrompt }] },
-    config: {
-      responseModalities: [Modality.IMAGE],
-    },
+  if (process.env.API_KEY) {
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const sdkParts = imageParts.map(img => ({
+        inlineData: {
+          data: img.data,
+          mimeType: img.mimeType,
+        },
+      }));
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-flash-image',
+        contents: { parts: [...sdkParts, { text: finalPrompt }] },
+        config: {
+          responseModalities: [Modality.IMAGE],
+        },
+      });
+
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          return part.inlineData.data;
+        }
+      }
+    } catch (clientErr) {
+      console.warn("Client-side Gemini image call failed, falling back to server API:", clientErr);
+    }
+  }
+
+  const serverRes = await callServerGemini("generateImage", {
+    prompt: finalPrompt,
+    imageParts,
+    aspectRatio,
+    model: "gemini-3.1-flash-image",
   });
 
-  for (const part of response.candidates[0].content.parts) {
-    if (part.inlineData) {
-      return part.inlineData.data;
-    }
+  if (serverRes.base64) {
+    return serverRes.base64;
   }
   throw new Error('Image generation failed, no image data returned.');
 };
