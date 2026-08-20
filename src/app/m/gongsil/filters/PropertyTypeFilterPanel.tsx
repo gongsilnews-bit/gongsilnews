@@ -128,20 +128,26 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
 
         {/* 4대 대분류 그리드 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
-          {PROPERTY_TYPES.map(g => (
-            <button
-              key={g.group}
-              type="button"
-              onClick={() => handleSelectGroup(g.group)}
-              style={mainTabStyle(activeGroup === g.group)}
-            >
-              {g.group === "아파트·오피스텔" && "🏢 "}
-              {g.group === "빌라·주택" && "🏡 "}
-              {g.group === "원룸·투룸(풀옵션)" && "🛏️ "}
-              {g.group === "상가·사무실·공장·토지" && "🏬 "}
-              {g.group}
-            </button>
-          ))}
+          {PROPERTY_TYPES.map(g => {
+            const isSelected = activeGroup === "전체" 
+              ? g.items.some(item => filters.propertyTypes.includes(item))
+              : activeGroup === g.group;
+
+            return (
+              <button
+                key={g.group}
+                type="button"
+                onClick={() => handleSelectGroup(g.group)}
+                style={mainTabStyle(isSelected)}
+              >
+                {g.group === "아파트·오피스텔" && "🏢 "}
+                {g.group === "빌라·주택" && "🏡 "}
+                {g.group === "원룸·투룸(풀옵션)" && "🛏️ "}
+                {g.group === "상가·사무실·공장·토지" && "🏬 "}
+                {g.group} {isSelected && "✓"}
+              </button>
+            );
+          })}
         </div>
       </div>
 
