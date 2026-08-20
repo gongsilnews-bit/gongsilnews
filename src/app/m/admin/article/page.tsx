@@ -192,24 +192,17 @@ function MobileArticleAdmin() {
     }
   };
 
-  // AI 반려 및 재작성 처리
-  const handleAiRevise = async () => {
+  // AI 반려 및 재작성 처리 (비동기 즉시 반려)
+  const handleAiRevise = () => {
     if (!rejectTargetId) return;
     const finalReason = rejectReason === "기타 사유 (직접 입력)" ? rejectCustom : rejectReason;
     if (!finalReason.trim()) {
-      alert("반려 및 수정 지시 사유를 입력해주세요.");
+      alert("반려 사유를 입력해주세요.");
       return;
     }
-    setIsRevising(true);
-    const res = await adminReviseArticleWithFeedback(rejectTargetId, finalReason);
-    setIsRevising(false);
     setShowRejectModal(false);
-    if (res.success) {
-      alert("🎉 반려 사유를 반영하여 기사가 재작성되었으며 [승인대기]로 이동했습니다!");
-      await refreshArticles();
-    } else {
-      alert("오류: " + res.error);
-    }
+    setArticles(prev => prev.map(a => a.id === rejectTargetId ? { ...a, status: 'REJECTED', reject_reason: finalReason } : a));
+    adminUpdateArticleStatus([rejectTargetId], "REJECTED", finalReason);
   };
 
   const handleDelete = async (id: string) => {

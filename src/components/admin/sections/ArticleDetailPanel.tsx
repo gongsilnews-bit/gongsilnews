@@ -402,39 +402,21 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
 
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
               <button 
-                disabled={isRevising}
                 onClick={() => setShowRejectModal(false)} 
                 style={{ padding: "9px 15px", background: "#f3f4f6", color: "#4b5563", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 취소
               </button>
 
               <button 
-                disabled={isRevising}
-                onClick={async () => {
+                onClick={() => {
                   const finalReason = rejectReason || "기사 내용 및 사진 보완 요망";
-                  setIsRevising(true);
-                  setToastMessage({ text: "🤖 기사를 반려하고 2대 AI 에이전트(기사+사진)가 재작성 중입니다...", type: "info" });
-                  
-                  const res = await adminReviseArticleWithFeedback(article.id, finalReason);
-                  setIsRevising(false);
-                  
-                  if (res.success) {
-                    setArticle({
-                      ...article,
-                      title: res.revisedTitle || article.title,
-                      subtitle: res.revisedSubtitle || article.subtitle,
-                      content: res.revisedContent || article.content,
-                      status: 'PENDING',
-                      reject_reason: `[AI 재작성 완료] ${finalReason}`
-                    });
-                    setShowRejectModal(false);
-                    setToastMessage({ text: "🎉 반려 사유를 반영하여 기사 및 사진 재작성 완료! [승인대기]로 이동했습니다.", type: "success" });
-                  } else {
-                    alert("재작성 오류: " + res.error);
-                  }
+                  setShowRejectModal(false);
+                  setArticle({ ...article, status: 'REJECTED', reject_reason: finalReason });
+                  setToastMessage({ text: "기사가 반려되었습니다. AI 에이전트가 백그라운드에서 기사와 사진을 재작성 후 승인대기로 올려놓습니다.", type: "info" });
+                  adminUpdateArticleStatus([article.id], 'REJECTED', finalReason);
                 }} 
-                style={{ padding: "9px 18px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: isRevising ? "not-allowed" : "pointer" }}>
-                {isRevising ? "⏳ AI 재작성 중..." : "반려 처리"}
+                style={{ padding: "9px 18px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                반려 처리
               </button>
             </div>
           </div>

@@ -466,20 +466,13 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 24 }}>
               <button onClick={() => setShowRejectModal(false)} style={{ padding: "10px 16px", background: darkMode ? "#4b5563" : "#f3f4f6", color: darkMode ? "#fff" : "#4b5563", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>취소</button>
               
-              <button onClick={async () => {
+              <button onClick={() => {
                 const finalReason = rejectReason || "기사 내용 및 사진 보완 요망";
                 setShowRejectModal(false);
-                setToastMessage({ text: "🤖 기사를 반려하고 2대 AI 에이전트(기사+사진)가 재작성 중입니다...", type: "info" });
-                
-                let successCount = 0;
-                for (const articleId of selectedArticleIdsForReject) {
-                  const res = await adminReviseArticleWithFeedback(articleId, finalReason);
-                  if (res.success) successCount++;
-                }
-                
+                setDbArticles(prev => prev.map(a => selectedArticleIdsForReject.includes(a.id) ? { ...a, status: 'REJECTED', reject_reason: finalReason } : a));
+                setToastMessage({ text: "선택한 기사가 반려되었습니다. AI 에이전트가 백그라운드에서 재작성 후 승인대기로 올려놓습니다.", type: "info" });
+                adminUpdateArticleStatus(selectedArticleIdsForReject, 'REJECTED', finalReason);
                 setCheckedArticleIds([]);
-                loadData();
-                setToastMessage({ text: `🎉 ${successCount}건의 기사가 반려 사유를 반영하여 재작성되었으며 [승인대기]로 이동했습니다!`, type: "success" });
               }} style={{ padding: "10px 18px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>반려 처리</button>
             </div>
           </div>
