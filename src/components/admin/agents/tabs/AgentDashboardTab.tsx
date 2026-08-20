@@ -543,6 +543,259 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
         </div>
       </div>
 
+      {/* ── ⚡ 실시간 AI 상세 호출 및 크레딧 소모 내역 (포인트 관리와 동일한 깔끔한 UI) ── */}
+      <div id="ai-usage-table-section" style={{
+        background: cardBg,
+        borderRadius: 14,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+        overflow: "hidden",
+        border: `1px solid ${border}`
+      }}>
+        {/* 헤더 타이틀 */}
+        <div style={{ padding: "18px 24px 12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 20 }}>📋</span>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: textPrimary }}>
+              실시간 AI 상세 호출 및 크레딧 소모 내역
+            </h3>
+            <span style={{ fontSize: 12, color: textSecondary, marginLeft: 4 }}>
+              (총 {recentLogs.length}건)
+            </span>
+          </div>
+          <button
+            onClick={() => fetchStats(false)}
+            style={{
+              padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700,
+              background: darkMode ? "#2c2d33" : "#f1f5f9",
+              color: "#2563eb", border: `1px solid ${border}`,
+              cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4
+            }}
+          >
+            🔄 새로고침
+          </button>
+        </div>
+
+        {/* ── 포인트 관리 스타일 상단 필터 탭 ── */}
+        <div style={{
+          padding: "0 24px 16px 24px",
+          borderBottom: `1px solid ${border}`,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 12
+        }}>
+          {/* 상단 탭 알약 버튼 */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {[
+              { id: "all", label: "전체" },
+              { id: "photoCuration", label: "나노바나나" },
+              { id: "article", label: "기사작성" },
+              { id: "remodeling", label: "리모델링" },
+              { id: "homeInterior", label: "인테리어" },
+              { id: "marketingDraft", label: "마케팅초안" },
+              { id: "propertyDescription", label: "매물설명" },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setSelectedChannelFilter(f.id)}
+                style={{
+                  padding: "6px 16px",
+                  border: `1px solid ${selectedChannelFilter === f.id ? "#3b82f6" : border}`,
+                  borderRadius: 20,
+                  background: selectedChannelFilter === f.id ? "#3b82f6" : "transparent",
+                  color: selectedChannelFilter === f.id ? "#fff" : textSecondary,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* 검색창 */}
+          <div style={{ display: "flex", alignItems: "center", position: "relative", width: 260 }}>
+            <span style={{ position: "absolute", left: 10, fontSize: 13, color: textSecondary }}>🔍</span>
+            <input
+              type="text"
+              placeholder="회원명, 내용 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && fetchStats(false)}
+              style={{
+                width: "100%",
+                padding: "6px 28px 6px 30px",
+                borderRadius: 20,
+                fontSize: 12,
+                border: `1px solid ${border}`,
+                background: darkMode ? "#1a1b1e" : "#f8fafc",
+                color: textPrimary,
+                outline: "none",
+                fontFamily: "inherit",
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => { setSearchQuery(""); }}
+                style={{
+                  position: "absolute", right: 8, background: "none", border: "none",
+                  cursor: "pointer", color: textSecondary, fontSize: 11,
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ── 일목요연한 텍스트 테이블 ── */}
+        {recentLogs.length > 0 ? (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, whiteSpace: "nowrap" }}>
+              <thead>
+                <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>일시</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>회원</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>유형</th>
+                  <th style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>금액</th>
+                  <th style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>출력 토큰</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>사유</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>모델</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>상대</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentLogs.map((log) => {
+                  const date = new Date(log.created_at);
+                  const dateStr = date.toLocaleString("ko-KR");
+                  
+                  const cost = Number(log.cost_krw || 0);
+
+                  // 사용자 정보 및 요약 파싱
+                  const raw = log.content || "";
+                  let userEmail = log.user_email || "SYSTEM";
+                  let cleanContent = raw;
+                  const match = raw.match(/^\[(.*?)\]\s*(.*)$/);
+                  if (match) {
+                    userEmail = match[1];
+                    cleanContent = match[2];
+                  }
+
+                  const isAdmin = userEmail.toLowerCase().includes("gongsilnews@gmail.com") || userEmail.toLowerCase().includes("admin");
+                  const isSystem = userEmail.toUpperCase().includes("SYSTEM");
+                  const isImage = raw.includes("(이미지)") || raw.includes("나노바나나") || raw.includes("gemini-3.1-flash-image") || raw.includes("실사") || log.channel_id === "photoCuration" || log.channel_id === "remodeling" || log.channel_id === "homeInterior";
+
+                  // 회원명 포맷: 공실뉴스(gongsilnews@gmail.com) 또는 김동현(gongsilmarketing@gmail.com)
+                  let memberDisplay = "공실뉴스(gongsilnews@gmail.com)";
+                  if (isAdmin || isSystem || userEmail.toLowerCase().includes("gongsilnews")) {
+                    memberDisplay = "공실뉴스(gongsilnews@gmail.com)";
+                  } else if (userEmail.toLowerCase().includes("gongsilmarketing")) {
+                    memberDisplay = "김동현(gongsilmarketing@gmail.com)";
+                  } else if (log.user_name) {
+                    memberDisplay = `${log.user_name}(${userEmail})`;
+                  } else {
+                    memberDisplay = `${userEmail.split("@")[0]}(${userEmail})`;
+                  }
+
+                  // 유형 라벨 & 뱃지 스타일
+                  let typeLabel = "기사작성";
+                  let typeBg = "#dbeafe";
+                  let typeColor = "#1e40af";
+
+                  if (log.channel_id === "photoCuration" || isImage) {
+                    typeLabel = "나노바나나";
+                    typeBg = "#fef3c7";
+                    typeColor = "#92400e";
+                  } else if (log.channel_id === "remodeling") {
+                    typeLabel = "리모델링";
+                    typeBg = "#e0e7ff";
+                    typeColor = "#3730a3";
+                  } else if (log.channel_id === "homeInterior") {
+                    typeLabel = "인테리어";
+                    typeBg = "#fae8ff";
+                    typeColor = "#86198f";
+                  } else if (log.channel_id === "marketingDraft") {
+                    typeLabel = "마케팅초안";
+                    typeBg = "#fee2e2";
+                    typeColor = "#b91c1c";
+                  } else if (log.channel_id === "propertyDescription") {
+                    typeLabel = "매물설명";
+                    typeBg = "#d1fae5";
+                    typeColor = "#065f46";
+                  } else if (log.channel_id === "articleReview") {
+                    typeLabel = "기사심사";
+                    typeBg = "#f1f5f9";
+                    typeColor = "#475569";
+                  }
+
+                  // 모델 및 사용량 추출
+                  const modelMatch = cleanContent.match(/-\s*(gemini-[a-zA-Z0-9.\-_]+)/i);
+                  const modelName = modelMatch ? modelMatch[1] : (isImage ? "gemini-3.1-flash-image" : "gemini-3.6-flash");
+                  const displayReason = cleanContent.replace(/-\s*gemini-[a-zA-Z0-9.\-_]+/i, "").replace(/\(이미지\)/g, "").trim();
+
+                  return (
+                    <tr key={log.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}` }}>
+                      {/* 1. 일시 */}
+                      <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
+                        {dateStr}
+                      </td>
+
+                      {/* 2. 회원: 공실뉴스(gongsilnews@gmail.com) 형태 */}
+                      <td style={{ padding: "12px 14px", fontWeight: 600, color: textPrimary }}>
+                        {memberDisplay}
+                      </td>
+
+                      {/* 3. 유형 (포인트 관리와 동일한 컴팩트 뱃지) */}
+                      <td style={{ padding: "12px 14px" }}>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
+                          background: typeBg,
+                          color: typeColor,
+                        }}>
+                          {typeLabel}
+                        </span>
+                      </td>
+
+                      {/* 4. 금액 (크레딧) */}
+                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 800, color: "#ef4444" }}>
+                        {cost > 0 ? `-${cost.toFixed(2)} 원` : "0.00 원"}
+                      </td>
+
+                      {/* 5. 출력 토큰 */}
+                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: textPrimary, fontSize: 12 }}>
+                        {log.output_tokens > 0 ? `${log.output_tokens.toLocaleString()} 토큰` : "-"}
+                      </td>
+
+                      {/* 6. 사유 */}
+                      <td style={{ padding: "12px 14px", color: textPrimary, maxWidth: 340, overflow: "hidden", textOverflow: "ellipsis" }} title={displayReason}>
+                        {displayReason || "-"}
+                      </td>
+
+                      {/* 7. 모델 */}
+                      <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
+                        {modelName}
+                      </td>
+
+                      {/* 8. 상대 */}
+                      <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
+                        구글 AI (Gemini)
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ padding: "40px 0", textAlign: "center", color: textSecondary, fontSize: 13 }}>
+            기록된 AI 호출 내역이 없습니다.
+          </div>
+        )}
+      </div>
+
       {/* ── 에이전트별 상세 카드 ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
         {DEFAULT_AGENTS.map((agent) => {
@@ -893,235 +1146,6 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             </div>
           );
         })}
-      </div>
-
-      {/* ── ⚡ 실시간 AI 호출 및 크레딧 소모 로그 (포인트 관리와 동일한 깔끔한 UI) ── */}
-      <div style={{
-        background: cardBg,
-        borderRadius: 14,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-        overflow: "hidden",
-        border: `1px solid ${border}`
-      }}>
-        {/* ── 포인트 관리 스타일 상단 필터 탭 ── */}
-        <div style={{
-          padding: "16px 24px",
-          borderBottom: `1px solid ${border}`,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 12
-        }}>
-          {/* 상단 탭 알약 버튼 */}
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {[
-              { id: "all", label: "전체" },
-              { id: "photoCuration", label: "나노바나나" },
-              { id: "article", label: "기사작성" },
-              { id: "remodeling", label: "리모델링" },
-              { id: "homeInterior", label: "인테리어" },
-              { id: "marketingDraft", label: "마케팅초안" },
-              { id: "propertyDescription", label: "매물설명" },
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setSelectedChannelFilter(f.id)}
-                style={{
-                  padding: "6px 16px",
-                  border: `1px solid ${selectedChannelFilter === f.id ? "#3b82f6" : border}`,
-                  borderRadius: 20,
-                  background: selectedChannelFilter === f.id ? "#3b82f6" : "transparent",
-                  color: selectedChannelFilter === f.id ? "#fff" : textSecondary,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          {/* 검색창 */}
-          <div style={{ display: "flex", alignItems: "center", position: "relative", width: 260 }}>
-            <span style={{ position: "absolute", left: 10, fontSize: 13, color: textSecondary }}>🔍</span>
-            <input
-              type="text"
-              placeholder="회원명, 내용 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && fetchStats(false)}
-              style={{
-                width: "100%",
-                padding: "6px 28px 6px 30px",
-                borderRadius: 20,
-                fontSize: 12,
-                border: `1px solid ${border}`,
-                background: darkMode ? "#1a1b1e" : "#f8fafc",
-                color: textPrimary,
-                outline: "none",
-                fontFamily: "inherit",
-              }}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => { setSearchQuery(""); }}
-                style={{
-                  position: "absolute", right: 8, background: "none", border: "none",
-                  cursor: "pointer", color: textSecondary, fontSize: 11,
-                }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* ── 일목요연한 텍스트 테이블 ── */}
-        {recentLogs.length > 0 ? (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, whiteSpace: "nowrap" }}>
-              <thead>
-                <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>일시</th>
-                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>회원</th>
-                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>유형</th>
-                  <th style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>금액</th>
-                  <th style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>출력 토큰</th>
-                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>사유</th>
-                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>모델</th>
-                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>상대</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentLogs.map((log) => {
-                  const date = new Date(log.created_at);
-                  const dateStr = date.toLocaleString("ko-KR");
-                  
-                  const cost = Number(log.cost_krw || 0);
-
-                  // 사용자 정보 및 요약 파싱
-                  const raw = log.content || "";
-                  let userEmail = log.user_email || "SYSTEM";
-                  let cleanContent = raw;
-                  const match = raw.match(/^\[(.*?)\]\s*(.*)$/);
-                  if (match) {
-                    userEmail = match[1];
-                    cleanContent = match[2];
-                  }
-
-                  const isAdmin = userEmail.toLowerCase().includes("gongsilnews@gmail.com") || userEmail.toLowerCase().includes("admin");
-                  const isSystem = userEmail.toUpperCase().includes("SYSTEM");
-                  const isImage = raw.includes("(이미지)") || raw.includes("나노바나나") || raw.includes("gemini-3.1-flash-image") || raw.includes("실사") || log.channel_id === "photoCuration" || log.channel_id === "remodeling" || log.channel_id === "homeInterior";
-
-                  // 회원명 포맷: 공실뉴스(gongsilnews@gmail.com) 또는 김동현(gongsilmarketing@gmail.com)
-                  let memberDisplay = "공실뉴스(gongsilnews@gmail.com)";
-                  if (isAdmin || isSystem || userEmail.toLowerCase().includes("gongsilnews")) {
-                    memberDisplay = "공실뉴스(gongsilnews@gmail.com)";
-                  } else if (userEmail.toLowerCase().includes("gongsilmarketing")) {
-                    memberDisplay = "김동현(gongsilmarketing@gmail.com)";
-                  } else if (log.user_name) {
-                    memberDisplay = `${log.user_name}(${userEmail})`;
-                  } else {
-                    memberDisplay = `${userEmail.split("@")[0]}(${userEmail})`;
-                  }
-
-                  // 유형 라벨 & 뱃지 스타일
-                  let typeLabel = "기사작성";
-                  let typeBg = "#dbeafe";
-                  let typeColor = "#1e40af";
-
-                  if (log.channel_id === "photoCuration" || isImage) {
-                    typeLabel = "나노바나나";
-                    typeBg = "#fef3c7";
-                    typeColor = "#92400e";
-                  } else if (log.channel_id === "remodeling") {
-                    typeLabel = "리모델링";
-                    typeBg = "#e0e7ff";
-                    typeColor = "#3730a3";
-                  } else if (log.channel_id === "homeInterior") {
-                    typeLabel = "인테리어";
-                    typeBg = "#fae8ff";
-                    typeColor = "#86198f";
-                  } else if (log.channel_id === "marketingDraft") {
-                    typeLabel = "마케팅초안";
-                    typeBg = "#fee2e2";
-                    typeColor = "#b91c1c";
-                  } else if (log.channel_id === "propertyDescription") {
-                    typeLabel = "매물설명";
-                    typeBg = "#d1fae5";
-                    typeColor = "#065f46";
-                  } else if (log.channel_id === "articleReview") {
-                    typeLabel = "기사심사";
-                    typeBg = "#f1f5f9";
-                    typeColor = "#475569";
-                  }
-
-                  // 모델 및 사용량 추출
-                  const modelMatch = cleanContent.match(/-\s*(gemini-[a-zA-Z0-9.\-_]+)/i);
-                  const modelName = modelMatch ? modelMatch[1] : (isImage ? "gemini-3.1-flash-image" : "gemini-3.6-flash");
-                  const displayReason = cleanContent.replace(/-\s*gemini-[a-zA-Z0-9.\-_]+/i, "").replace(/\(이미지\)/g, "").trim();
-
-                  return (
-                    <tr key={log.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}` }}>
-                      {/* 1. 일시 */}
-                      <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
-                        {dateStr}
-                      </td>
-
-                      {/* 2. 회원: 공실뉴스(gongsilnews@gmail.com) 형태 */}
-                      <td style={{ padding: "12px 14px", fontWeight: 600, color: textPrimary }}>
-                        {memberDisplay}
-                      </td>
-
-                      {/* 3. 유형 (포인트 관리와 동일한 컴팩트 뱃지) */}
-                      <td style={{ padding: "12px 14px" }}>
-                        <span style={{
-                          fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
-                          background: typeBg,
-                          color: typeColor,
-                        }}>
-                          {typeLabel}
-                        </span>
-                      </td>
-
-                      {/* 4. 금액 (크레딧) */}
-                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 800, color: "#ef4444" }}>
-                        {cost > 0 ? `-${cost.toFixed(2)} 원` : "0.00 원"}
-                      </td>
-
-                      {/* 5. 출력 토큰 */}
-                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: textPrimary, fontSize: 12 }}>
-                        {log.output_tokens > 0 ? `${log.output_tokens.toLocaleString()} 토큰` : "-"}
-                      </td>
-
-                      {/* 6. 사유 */}
-                      <td style={{ padding: "12px 14px", color: textPrimary, maxWidth: 340, overflow: "hidden", textOverflow: "ellipsis" }} title={displayReason}>
-                        {displayReason || "-"}
-                      </td>
-
-                      {/* 7. 모델 */}
-                      <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
-                        {modelName}
-                      </td>
-
-                      {/* 8. 상대 */}
-                      <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
-                        구글 AI (Gemini)
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={{ padding: "40px 0", textAlign: "center", color: textSecondary, fontSize: 13 }}>
-            기록된 AI 호출 내역이 없습니다.
-          </div>
-        )}
       </div>
 
       {/* ── 일간보고 ── */}
