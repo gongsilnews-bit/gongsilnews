@@ -46,13 +46,13 @@ export async function getGcpAccessToken(): Promise<string | null> {
       iat,
     };
 
-    const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64url');
-    const unsignedToken = ${b64(header)}.;
+    const b64 = (obj: any) => Buffer.from(JSON.stringify(obj)).toString("base64url");
+    const unsignedToken = b64(header) + "." + b64(claimSet);
 
-    const signer = crypto.createSign('RSA-SHA256');
+    const signer = crypto.createSign("RSA-SHA256");
     signer.update(unsignedToken);
-    const signature = signer.sign(sa.private_key, 'base64url');
-    const jwt = ${unsignedToken}.;
+    const signature = signer.sign(sa.private_key, "base64url");
+    const jwt = unsignedToken + "." + signature;
 
     const res = await fetch(sa.token_uri || 'https://oauth2.googleapis.com/token', {
       method: 'POST',
