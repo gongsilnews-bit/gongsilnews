@@ -2,10 +2,17 @@
 
 import React, { useState, useEffect } from "react";
 import "./article-detail.css";
-import { getArticleDetail, deleteArticle, adminUpdateArticleStatus } from "@/app/actions/article";
+import { getArticleDetail, deleteArticle, adminUpdateArticleStatus, adminReviseArticleWithFeedback } from "@/app/actions/article";
 import { getComments } from "@/app/actions/comment";
 import { getArticleReactions } from "@/app/actions/reaction";
 import { createClient } from "@/utils/supabase/client";
+
+const REJECT_REASONS = [
+  "사진 화질 불량 또는 이미지 누락",
+  "제목 및 본문 오타 수정 요망",
+  "사실 확인 필요 (내용 불충분)",
+  "기타 사유 (직접 입력)"
+];
 
 interface ArticleDetailPanelProps {
   articleId: string;
@@ -22,6 +29,9 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
   const [comments, setComments] = useState<any[]>([]);
   const [reactionCounts, setReactionCounts] = useState<any>({ INFO: 0, INTERESTING: 0, AGREE: 0, ANALYSIS: 0, RECOMMEND: 0 });
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [isRevising, setIsRevising] = useState(false);
 
   // Sidebar memo
   const [memo, setMemo] = useState("");
@@ -214,8 +224,9 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
             <button className="adp-toolbar-btn" onClick={() => window.open(articleUrl)}>💻 미리보기</button>
             {isAdmin ? (
               <>
-                {!isPublished && <button className="adp-toolbar-btn adp-green" onClick={() => handleStatusChange('APPROVED')}>✓ 승인</button>}
-                {!isPublished && <button className="adp-toolbar-btn adp-red" onClick={() => handleStatusChange('REJECTED')}>🚫 반려</button>}
+                {!isPublished && <button className="adp-toolbar-btn adp-green" onClick={() => handleStatusChange('APPROVED')}>✓ 즉시 승인(발행)</button>}
+                {!isPublished && <button className="adp-toolbar-btn" style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", color: "#fff", border: "none", fontWeight: 700 }} onClick={() => setShowRejectModal(true)}>🤖 반려 & AI 재작성</button>}
+                {!isPublished && <button className="adp-toolbar-btn adp-red" onClick={() => handleStatusChange('REJECTED')}>🚫 단순 반려</button>}
               </>
             ) : (
               <>
@@ -365,6 +376,86 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
           ))}
         </div>
       </div>
+
+      {/* 반려 및 AI 자동 재작성 모달 */}
+      {showRejectModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.55)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", width: 440, borderRadius: 14, padding: "24px", boxShadow: "0 12px 30px rgba(0,0,0,0.25)" }}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 18, color: "#111827", fontWeight: 800 }}>기사 반려 및 AI 재작성 지시</h3>
+            <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+              반려 사유를 선택하거나 구체적인 수정 요청사항을 입력해주세요.<br/>
+              <b>[🤖 반려 & AI 재작성]</b>을 누르면 AI가 즉시 피드백을 반영해 기사를 고쳐 씁니다.
+            </p>
+            
+            <select value={REJECT_REASONS.includes(rejectReason) ? rejectReason : "기타 사유 (직접 입력)"} onChange={(e) => setRejectReason(e.target.value === "기타 사유 (직접 입력)" ? "" : e.target.value)}
+              style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, marginBottom: 12, outline: "none" }}>
+              {REJECT_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+
+            {(!REJECT_REASONS.includes(rejectReason) || rejectReason === "기타 사유 (직접 입력)") && (
+              <textarea 
+                value={rejectReason === "기타 사유 (직접 입력)" ? "" : rejectReason} 
+                onChange={e => setRejectReason(e.target.value)} 
+                placeholder="예: 소제목에 구체적 통계를 넣어줘, 시장전망을 2단락으로 보강해줘 등"
+                style={{ width: "100%", height: 90, padding: 12, border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, resize: "none", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} 
+              />
+            )}
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20, flexWrap: "wrap" }}>
+              <button 
+                disabled={isRevising}
+                onClick={() => setShowRejectModal(false)} 
+                style={{ padding: "9px 15px", background: "#f3f4f6", color: "#4b5563", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                취소
+              </button>
+              
+              <button 
+                disabled={isRevising}
+                onClick={async () => {
+                  const finalReason = rejectReason || "내용 보완 요망";
+                  const res = await adminUpdateArticleStatus([article.id], 'REJECTED', finalReason);
+                  if (res.success) {
+                    setArticle({ ...article, status: 'REJECTED', reject_reason: finalReason });
+                    setShowRejectModal(false);
+                    setToastMessage({ text: "기사가 반려 처리되었습니다.", type: "info" });
+                  }
+                }} 
+                style={{ padding: "9px 15px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                🚫 단순 반려
+              </button>
+
+              <button 
+                disabled={isRevising}
+                onClick={async () => {
+                  const finalReason = rejectReason || "기사 내용 및 표현 보완 요망";
+                  setIsRevising(true);
+                  setToastMessage({ text: "🤖 AI 수석 편집국장이 반려 사유를 반영하여 기사를 재작성 중입니다...", type: "info" });
+                  
+                  const res = await adminReviseArticleWithFeedback(article.id, finalReason);
+                  setIsRevising(false);
+                  
+                  if (res.success) {
+                    setArticle({
+                      ...article,
+                      title: res.revisedTitle || article.title,
+                      subtitle: res.revisedSubtitle || article.subtitle,
+                      content: res.revisedContent || article.content,
+                      status: 'PENDING',
+                      reject_reason: `[AI 재작성 완료] ${finalReason}`
+                    });
+                    setShowRejectModal(false);
+                    setToastMessage({ text: "🎉 반려 사유를 완벽 반영하여 기사 재작성 완료! [승인대기]로 이동했습니다.", type: "success" });
+                  } else {
+                    alert("재작성 오류: " + res.error);
+                  }
+                }} 
+                style={{ padding: "9px 16px", background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: isRevising ? "not-allowed" : "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}>
+                {isRevising ? "⏳ AI 재작성 중..." : "🤖 반려 & AI 재작성 (승인대기 이동)"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

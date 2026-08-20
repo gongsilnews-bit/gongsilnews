@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { getMyArticles, getArticles, adminUpdateArticleStatus, deleteArticle } from "@/app/actions/article";
+import { getMyArticles, getArticles, adminUpdateArticleStatus, deleteArticle, adminReviseArticleWithFeedback } from "@/app/actions/article";
 
 const REJECT_REASONS = [
   "사진 화질 불량 또는 이미지 누락",
@@ -189,6 +189,26 @@ function MobileArticleAdmin() {
     if (!res.success) {
       alert("오류: " + res.error);
       await refreshArticles();
+    }
+  };
+
+  // AI 반려 및 재작성 처리
+  const handleAiRevise = async () => {
+    if (!rejectTargetId) return;
+    const finalReason = rejectReason === "기타 사유 (직접 입력)" ? rejectCustom : rejectReason;
+    if (!finalReason.trim()) {
+      alert("반려 및 수정 지시 사유를 입력해주세요.");
+      return;
+    }
+    setIsRevising(true);
+    const res = await adminReviseArticleWithFeedback(rejectTargetId, finalReason);
+    setIsRevising(false);
+    setShowRejectModal(false);
+    if (res.success) {
+      alert("🎉 반려 사유를 반영하여 기사가 재작성되었으며 [승인대기]로 이동했습니다!");
+      await refreshArticles();
+    } else {
+      alert("오류: " + res.error);
     }
   };
 
@@ -484,25 +504,37 @@ function MobileArticleAdmin() {
             )}
 
             {/* 버튼 */}
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <button
-                onClick={() => setShowRejectModal(false)}
+                onClick={handleAiRevise}
                 style={{
-                  flex: 1, height: 44, background: "#f3f4f6", color: "#4b5563",
-                  border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer",
-                }}
-              >
-                취소
-              </button>
-              <button
-                onClick={handleReject}
-                style={{
-                  flex: 1, height: 44, background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff",
+                  width: "100%", height: 46, background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", color: "#fff",
                   border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer",
+                  boxShadow: "0 4px 12px rgba(59,130,246,0.3)"
                 }}
               >
-                반려 처리
+                🤖 반려 사유 반영 AI 재작성 (승인대기 이동)
               </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => setShowRejectModal(false)}
+                  style={{
+                    flex: 1, height: 42, background: "#f3f4f6", color: "#4b5563",
+                    border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  }}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleReject}
+                  style={{
+                    flex: 1, height: 42, background: "#ef4444", color: "#fff",
+                    border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  }}
+                >
+                  🚫 단순 반려
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -151,7 +151,7 @@ export async function GET(req: Request) {
 
       // 하단 원문 참고 링크는 완전히 제거하고 순수 독창적 기사 본문만 저장
       const finalContent = aiResult.content;
-      const isAutoPublish = config.autoPublish !== false; // 기본값: 자동 즉시 승인/발행
+      const isAutoPublish = config.autoPublish === true; // 기본값: 최고관리자 검수를 위해 '승인대기(PENDING)'로 입고
       const nowISO = new Date().toISOString();
 
       const { data: article, error } = await supabase
@@ -162,7 +162,7 @@ export async function GET(req: Request) {
           content: finalContent,
           section1: item.section1,
           section2: item.section2,
-          status: isAutoPublish ? 'APPROVED' : 'DRAFT',
+          status: isAutoPublish ? 'APPROVED' : 'PENDING',
           published_at: isAutoPublish ? nowISO : null,
           thumbnail_url: media.thumbnailUrl || null,
           youtube_url: media.youtubeUrl || null,

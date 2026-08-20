@@ -553,6 +553,117 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
   }
 }
 
+/* ── 최고관리자 반려 사유를 반영한 AI 기사 자동 재작성 및 승인대기 이동 ── */
+export async function adminReviseArticleWithFeedback(articleId: string, feedback: string) {
+  const supabase = getAdminClient();
+
+  try {
+    const { data: article, error: fetchErr } = await supabase
+      .from("articles")
+      .select("*")
+      .eq("id", articleId)
+      .single();
+
+    if (fetchErr || !article) {
+      return { success: false, error: "기사를 찾을 수 없습니다." };
+    }
+
+    const { generateWithGemini } = await import("@/lib/gemini");
+
+    const prompt = `너는 대한민국 1등 경제·부동산 종합 언론사 '공실뉴스'의 [수석 편집국장 AI]야.
+방금 작성된 기사에 대해 최고관리자(발행인)로부터 다음과 같은 [반려 사유 및 수정 지시사항]이 접수되었다.
+
+[기존 기사 정보]
+- 카테고리: [${article.section2 || article.section1 || '부동산·경제'}]
+- 기존 제목: "${article.title}"
+- 기존 부제목: "${article.subtitle || ''}"
+- 기존 본문:
+${article.content}
+
+[최고관리자 반려 사유 및 필수 보완 지시사항]
+"${feedback}"
+
+[재작성 및 수정 지침 - ★필수 준수★]
+1. **최고관리자의 지적 및 요구사항을 100% 철저하게 반영**하여 기사를 전문적이고 완성도 높게 재구성하라.
+2. 기존 기사의 팩트와 구조를 살리면서, 지적된 미흡한 부분(예: 구체적 통계 수치 보강, 법적/세무 쟁점 상세화, 시장 영향 분석 심화 등)을 완벽히 보완하라.
+3. **공실뉴스 시그니처 포맷 유지**:
+   - 3줄 핵심 요약 부제목 (각 줄은 줄바꿈 \\n으로 구분)
+   - 본문 내 3개의 맞춤형 소제목 (<b>■ ...</b>)
+   - 본문 최하단에 [■ 공실뉴스 시장전망 & 체크포인트] 심층 분석 박스 포함
+4. 타 언론사 명칭 및 외부 링크는 일체 기재하지 않는다.
+
+출력 포맷: 반드시 아래 JSON 형식으로만 순수 JSON을 출력하라:
+\`\`\`json
+{
+  "title": "수정 및 고도화된 메인 헤드라인",
+  "subtitle": "수정된 3줄 부제목 1행\\n수정된 3줄 부제목 2행\\n수정된 3줄 부제목 3행",
+  "content": "<p>수정된 기사 본문 문단들...</p><p><b>■ 소제목 1</b><br>문단 내용...</p><p><b>■ 소제목 2</b><br>문단 내용...</p><p><b>■ 소제목 3</b><br>문단 내용...</p><div style=\\"margin-top:28px;padding:20px;background:#f8fafc;border-left:4px solid #3b82f6;border-radius:8px;\\"><h4 style=\\"margin:0 0 10px 0;font-size:15px;color:#1e293b;font-weight:800;\\">■ 공실뉴스 시장전망 & 체크포인트</h4><p style=\\"margin:0;font-size:13.5px;line-height:1.7;color:#475569;\\">수정된 시장 전망 및 전문가 체크포인트 분석 내용...</p></div>"
+}
+\`\`\``;
+
+    const res = await generateWithGemini(prompt, { temperature: 0.3 });
+    const text = res.text;
+
+    let parsed: any = null;
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.warn("JSON parse failed, fallback to raw text", e);
+    }
+
+    const newTitle = parsed?.title || article.title;
+    const newSubtitle = parsed?.subtitle || article.subtitle;
+    const newContent = parsed?.content || text;
+
+    // Supabase DB 업데이트: 수정된 내용 반영 및 상태를 다시 'PENDING'(승인대기)으로 전환
+    const { error: updateErr } = await supabase
+      .from("articles")
+      .update({
+        title: newTitle,
+        subtitle: newSubtitle,
+        content: newContent,
+        status: "PENDING", // 승인대기로 이동!
+        reject_reason: `[AI 재작성 완료] 반려 사유 반영됨: ${feedback.slice(0, 50)}...`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", articleId);
+
+    if (updateErr) {
+      return { success: false, error: updateErr.message };
+    }
+
+    // AI 로깅 (agent_chats)
+    const tokens = res.usage?.totalTokens || 0;
+    const costKrw = Math.round((tokens * 0.00000045) * 1380 * 100) / 100;
+    await supabase.from("agent_chats").insert({
+      channel_id: "article",
+      role: "agent",
+      content: `[반려 사유 반영 AI 기사 재작성] "${newTitle}" (피드백: ${feedback.slice(0, 40)})`,
+      input_tokens: res.usage?.inputTokens || 0,
+      output_tokens: res.usage?.outputTokens || 0,
+      total_tokens: tokens,
+      cost_krw: costKrw,
+    });
+
+    // @ts-ignore
+    revalidateTag("articles");
+    revalidatePath("/", "layout");
+
+    return {
+      success: true,
+      revisedTitle: newTitle,
+      revisedSubtitle: newSubtitle,
+      revisedContent: newContent,
+      message: "반려 사유를 반영하여 기사가 성공적으로 재작성되었으며, [승인대기]로 이동했습니다."
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 /* ── 관리자 기사 노출 유형(광고) 일괄 수정 ── */
 export async function adminUpdateArticleFlags(articleId: string, isImportant: boolean, isHeadline: boolean) {
   const supabase = getAdminClient();
