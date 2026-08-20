@@ -318,3 +318,253 @@ export function ThemeFilterPanel({ filters, onFilterChange, presets }: ThemeProp
     </div>
   );
 }
+
+// ── 방 / 욕실수 패널 (PC 동일) ──
+export function RoomBathFilterPanel({ filters, onFilterChange }: Props) {
+  const ROOMS = [
+    { label: "전체", val: null },
+    { label: "1개+", val: 1 },
+    { label: "2개+", val: 2 },
+    { label: "3개+", val: 3 },
+    { label: "4개+", val: 4 },
+  ];
+  const BATHS = [
+    { label: "전체", val: null },
+    { label: "1개+", val: 1 },
+    { label: "2개+", val: 2 },
+    { label: "3개+", val: 3 },
+  ];
+
+  return (
+    <div>
+      <div style={{ marginBottom: "20px" }}>
+        <div style={{ fontSize: "14px", fontWeight: 700, color: "#111", marginBottom: "8px" }}>방 개수</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px" }}>
+          {ROOMS.map((r) => (
+            <button
+              key={r.label}
+              type="button"
+              onClick={() => onFilterChange({ roomCount: r.val })}
+              style={gridBtnStyle(filters.roomCount === r.val)}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: "20px" }}>
+        <div style={{ fontSize: "14px", fontWeight: 700, color: "#111", marginBottom: "8px" }}>욕실 개수</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px" }}>
+          {BATHS.map((b) => (
+            <button
+              key={b.label}
+              type="button"
+              onClick={() => onFilterChange({ bathCount: b.val })}
+              style={gridBtnStyle(filters.bathCount === b.val)}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ roomCount: null, bathCount: null })}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── 방향 패널 (PC 동일) ──
+export function DirectionFilterPanel({ filters, onFilterChange }: Props) {
+  const DIRS = ["전체", "동향", "서향", "남향", "북향", "남동향", "남서향", "북동향", "북서향"];
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        {DIRS.map((d) => {
+          const isSel = (d === "전체" && !filters.direction) || filters.direction === d;
+          return (
+            <button
+              key={d}
+              type="button"
+              onClick={() => onFilterChange({ direction: d === "전체" ? null : d })}
+              style={gridBtnStyle(isSel)}
+            >
+              {d}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ direction: null })}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── 세대수 패널 (PC 동일) ──
+export function UnitsFilterPanel({ filters, onFilterChange }: Props) {
+  const UNITS = [
+    { label: "전체", val: null },
+    { label: "50세대+", val: 50 },
+    { label: "100세대+", val: 100 },
+    { label: "300세대+", val: 300 },
+    { label: "500세대+", val: 500 },
+    { label: "1,000세대+", val: 1000 },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        {UNITS.map((u) => (
+          <button
+            key={u.label}
+            type="button"
+            onClick={() => onFilterChange({ unitsMin: u.val })}
+            style={gridBtnStyle(filters.unitsMin === u.val)}
+          >
+            {u.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ unitsMin: null })}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── 관리비 패널 (PC 동일) ──
+export function MaintFilterPanel({ filters, onFilterChange }: Props) {
+  const MAINTO_PRESETS = [
+    { label: "전체", val: null },
+    { label: "5만 이하", val: 50000 },
+    { label: "10만 이하", val: 100000 },
+    { label: "20만 이하", val: 200000 },
+    { label: "30만 이하", val: 300000 },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        {MAINTO_PRESETS.map((m) => (
+          <button
+            key={m.label}
+            type="button"
+            onClick={() => onFilterChange({ maintMax: m.val })}
+            style={gridBtnStyle(filters.maintMax === m.val)}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ maintMax: null })}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── 주차 패널 (PC 동일) ──
+export function ParkingFilterPanel({ filters, onFilterChange }: Props) {
+  const PARKING = ["전체", "주차가능", "자주식", "기계식", "무료주차"];
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        {PARKING.map((p) => {
+          const isSel = (p === "전체" && !filters.parking) || filters.parking === p;
+          return (
+            <button
+              key={p}
+              type="button"
+              onClick={() => onFilterChange({ parking: p === "전체" ? null : p })}
+              style={gridBtnStyle(isSel)}
+            >
+              {p}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ parking: null })}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── 기타옵션 패널 (카테고리별 1:1 맞춤 옵션, PC 동일) ──
+interface OptionsProps {
+  filters: FilterState;
+  onFilterChange: (filters: Partial<FilterState>) => void;
+  optionsList: string[];
+}
+
+export function OptionsFilterPanel({ filters, onFilterChange, optionsList }: OptionsProps) {
+  const toggleOption = (opt: string) => {
+    const arr = filters.options;
+    const newArr = arr.includes(opt) ? arr.filter((x) => x !== opt) : [...arr, opt];
+    onFilterChange({ options: newArr });
+  };
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        {optionsList.map((opt) => {
+          const isSel = filters.options.includes(opt);
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => toggleOption(opt)}
+              style={gridBtnStyle(isSel)}
+            >
+              {opt} {isSel && "✓"}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ options: [] })}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}

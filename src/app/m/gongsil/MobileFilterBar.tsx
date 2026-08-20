@@ -6,7 +6,19 @@ import PropertyTypeFilterPanel from "./filters/PropertyTypeFilterPanel";
 import TradeTypeFilterPanel from "./filters/TradeTypeFilterPanel";
 import PriceFilterPanel from "./filters/PriceFilterPanel";
 import AreaFilterPanel from "./filters/AreaFilterPanel";
-import { FloorFilterPanel, YearFilterPanel, OwnerRoleFilterPanel, CommissionFilterPanel, ThemeFilterPanel } from "./filters/SubFilterPanels";
+import { 
+  FloorFilterPanel, 
+  YearFilterPanel, 
+  OwnerRoleFilterPanel, 
+  CommissionFilterPanel, 
+  ThemeFilterPanel,
+  RoomBathFilterPanel,
+  DirectionFilterPanel,
+  UnitsFilterPanel,
+  MaintFilterPanel,
+  ParkingFilterPanel,
+  OptionsFilterPanel
+} from "./filters/SubFilterPanels";
 
 interface MobileFilterBarProps {
   vacancies: any[];
@@ -49,6 +61,28 @@ const getSelectedGroup = (propertyTypes: string[]) => {
   return "NONE";
 };
 
+// 🚀 [PC 동일] 카테고리별 맞춤 기타옵션 목록 생성기
+const getCategoryOptions = (types: string[]) => {
+  const hasApart = types.some(p => ["아파트", "오피스텔", "기타"].includes(p));
+  const hasOne = types.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
+  const hasVilla = types.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
+  const hasBiz = types.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
+
+  if (hasApart) {
+    return ["시스템에어컨", "세탁기", "건조기", "빌트인냉장고", "식기세척기", "인덕션", "붙박이장", "침대", "TV", "비데", "도어락", "무인택배함"];
+  }
+  if (hasOne) {
+    return ["에어컨", "세탁기", "냉장고", "가스레인지/인덕션", "전자레인지", "침대", "옷장", "책상", "신발장", "도어락"];
+  }
+  if (hasVilla) {
+    return ["에어컨", "세탁기", "냉장고", "가스레인지/인덕션", "전자레인지", "침대", "옷장", "책상", "신발장", "도어락", "무인택배함", "CCTV", "엘리베이터"];
+  }
+  if (hasBiz) {
+    return ["천장형에어컨", "내부화장실", "탕비실", "엘리베이터", "개별난방", "테라스", "주차가능", "창고", "환풍시설", "시스템에어컨", "호이스트", "화물엘리베이터", "동력넉넉", "높은층고(5m이상)", "마당넓음", "대형차량진입", "사무동있음", "기숙사", "크린룸"];
+  }
+  return ["시스템에어컨", "세탁기", "냉장고", "도어락", "엘리베이터", "주차가능"];
+};
+
 export default function MobileFilterBar({ vacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, kakaoMapRef, locLabel, setLocLabel, activeMode }: MobileFilterBarProps) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
@@ -73,12 +107,41 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   // Temp filters for full filter panel
   const [tempFilters, setTempFilters] = useState<FilterState>(filters);
 
-  const tempGroup = getSelectedGroup(tempFilters.propertyTypes);
-  const showTempPrice = tempGroup === "RESIDENTIAL" || tempGroup === "COMMERCIAL" || tempGroup === "LAND";
-  const showTempArea = tempGroup === "RESIDENTIAL" || tempGroup === "COMMERCIAL" || tempGroup === "LAND";
-  const showTempFloor = tempGroup === "RESIDENTIAL" || tempGroup === "COMMERCIAL";
-  const showTempYear = tempGroup === "RESIDENTIAL" || tempGroup === "COMMERCIAL";
-  const showTempTheme = tempGroup === "RESIDENTIAL" || tempGroup === "COMMERCIAL" || tempGroup === "LAND";
+  // 🚀 [PC 동일] 카테고리별 동적 상세 필터 조건 판별기
+  const isApartmentGroup = tempFilters.propertyTypes.some(p => ["아파트", "오피스텔", "기타"].includes(p));
+  const isVillaGroup = tempFilters.propertyTypes.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
+  const isOneRoomGroup = tempFilters.propertyTypes.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
+  const isCommercialGroup = tempFilters.propertyTypes.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
+
+  const showTempPrice = true;
+  const showTempArea = true;
+  const showTempFloor = isCommercialGroup || isOneRoomGroup;
+  const showTempYear = isApartmentGroup || isVillaGroup;
+  const showTempUnits = isApartmentGroup || (isVillaGroup && tempFilters.propertyTypes.includes("빌라/연립"));
+  const showTempRoomBath = isApartmentGroup || isVillaGroup || isOneRoomGroup;
+  const showTempDirection = isApartmentGroup || isVillaGroup || isOneRoomGroup;
+  const showTempMaint = isOneRoomGroup || isCommercialGroup;
+  const showTempParking = isCommercialGroup;
+  const showTempOptions = true;
+  const showTempTheme = true;
+
+  // 바깥 스크롤바용 판별기
+  const extIsApart = filters.propertyTypes.some(p => ["아파트", "오피스텔", "기타"].includes(p));
+  const extIsVilla = filters.propertyTypes.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
+  const extIsOne = filters.propertyTypes.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
+  const extIsBiz = filters.propertyTypes.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
+
+  const showPricePill = true;
+  const showAreaPill = true;
+  const showFloorPill = extIsBiz || extIsOne;
+  const showYearPill = extIsApart || extIsVilla;
+  const showUnitsPill = extIsApart || (extIsVilla && filters.propertyTypes.includes("빌라/연립"));
+  const showRoomBathPill = extIsApart || extIsVilla || extIsOne;
+  const showDirectionPill = extIsApart || extIsVilla || extIsOne;
+  const showMaintPill = extIsOne || extIsBiz;
+  const showParkingPill = extIsBiz;
+  const showOptionsPill = true;
+  const showThemePill = true;
 
   useEffect(() => { setTempFilters(filters); }, [filters]);
   useEffect(() => { if (searchOpen && searchInputRef.current) searchInputRef.current.focus(); }, [searchOpen]);
@@ -114,87 +177,115 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     filters.areaMin !== null || filters.areaMax !== null ||
     filters.yearMin !== null || filters.yearMax !== null ||
     filters.floor !== null ||
+    filters.roomCount !== null ||
+    filters.bathCount !== null ||
+    filters.direction !== null ||
+    filters.unitsMin !== null ||
+    filters.maintMax !== null ||
+    filters.parking !== null ||
+    filters.options.length > 0 ||
     filters.ownerRole !== null ||
-    filters.commissionType !== null ||
     filters.commissionType !== null ||
     filters.themes.length > 0;
 
   const currentYear = new Date().getFullYear();
-  const yearLabel = filters.yearMin === currentYear - 1 ? "1년 이내" :
-    filters.yearMin === currentYear - 5 ? "5년 이내" :
-    filters.yearMin === currentYear - 10 ? "10년 이내" :
-    filters.yearMin === currentYear - 15 ? "15년 이내" :
-    filters.yearMax === currentYear - 15 ? "15년 이상" :
-    "사용승인일";
 
-  const currentGroup = getSelectedGroup(filters.propertyTypes);
-  const showPricePill = currentGroup === "RESIDENTIAL" || currentGroup === "COMMERCIAL" || currentGroup === "LAND";
-  const showAreaPill = currentGroup === "RESIDENTIAL" || currentGroup === "COMMERCIAL" || currentGroup === "LAND";
-  const showFloorPill = currentGroup === "RESIDENTIAL" || currentGroup === "COMMERCIAL";
-  const showYearPill = currentGroup === "RESIDENTIAL" || currentGroup === "COMMERCIAL";
-  const showThemePill = currentGroup === "RESIDENTIAL" || currentGroup === "COMMERCIAL" || currentGroup === "LAND";
-
-  const ownerLabel = filters.ownerRole === 'USER' ? '일반인 ▾' : filters.ownerRole === 'REALTOR' ? '부동산 ▾' : filters.ownerRole === 'NONE' ? '선택없음 ▾' : '등록자 ▾';
-  const commissionLabel = filters.commissionType === '공동중개' ? '공동중개 ▾' : filters.commissionType === '100' ? '100%(법정) ▾' : filters.commissionType === 'NONE' ? '선택없음 ▾' : filters.commissionType ? `${filters.commissionType}%~ ▾` : '중개보수 ▾';
-  const themeLabel = filters.themes.length > 0 ? `테마 ${filters.themes.length}개 ▾` : '테마 ▾';
-
-  const priceLabel = (filters.priceMin !== null || filters.priceMax !== null) ? `${filters.priceMin !== null ? `${filters.priceMin >= 10000 ? `${filters.priceMin / 10000}억` : `${filters.priceMin}만`}` : ""}~${filters.priceMax !== null ? `${filters.priceMax >= 10000 ? `${filters.priceMax / 10000}억` : `${filters.priceMax}만`}` : ""} ▾` : "가격대 ▾";
-  const areaLabel = (filters.areaMin !== null || filters.areaMax !== null) ? `${filters.areaMin !== null ? filters.areaMin : ""}~${filters.areaMax !== null ? filters.areaMax : ""}평 ▾` : "면적 ▾";
-
-  const pillStyle = (active: boolean): React.CSSProperties => ({
-    padding: "8px 16px",
-    borderRadius: "20px",
-    fontSize: "13px",
-    fontWeight: active ? 800 : 500, // 활성화 시 800으로 찐하게!
-    whiteSpace: "nowrap",
-    flexShrink: 0,
-    border: active ? "2px solid #1a73e8" : "1px solid #d1d5db", // 활성화 시 2px solid #1a73e8 로 더 굵고 진하게!
-    background: active ? "#f0f7ff" : "#fff",
-    color: active ? "#1a73e8" : "#4b5563", // 활성화 시 고대비 파란색!
-    cursor: "pointer",
-    transition: "all 0.15s ease",
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-    boxShadow: active ? "0 2px 8px rgba(26, 115, 232, 0.15)" : "none"
-  });
-
-  // Bottom sheet renderer
-  const renderSheet = (title: string, content: React.ReactNode, customZIndex?: number) => {
-    const zBase = customZIndex || 9990;
-    return (
-      <>
-        <div onClick={() => setActivePanel(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: zBase, transition: "opacity 0.2s" }} />
-        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 448, background: "#fff", borderRadius: "16px 16px 0 0", zIndex: zBase + 1, maxHeight: "55vh", display: "flex", flexDirection: "column", animation: "sheetUp 0.3s ease-out" }}>
-          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "16px", fontWeight: 800, color: "#111" }}>{title}</span>
-            <button onClick={() => setActivePanel(null)} style={{ background: "none", border: "none", fontSize: "22px", color: "#9ca3af", cursor: "pointer", padding: "4px" }}>✕</button>
-          </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 24px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>{content}</div>
-        </div>
-      </>
-    );
+  const formatPriceVal = (val: number | null) => {
+    if (val === null) return "";
+    if (val >= 10000) {
+      const eok = Math.floor(val / 10000);
+      const rem = val % 10000;
+      return rem > 0 ? `${eok}억 ${rem}만` : `${eok}억`;
+    }
+    return `${val}만`;
   };
 
-  const gridBtnStyle = (active: boolean): React.CSSProperties => ({
-    padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: active ? 700 : 500, textAlign: "center",
-    border: active ? "1.5px solid #4b89ff" : "1px solid #e5e7eb",
-    background: active ? "#eef4ff" : "#fff", color: active ? "#4b89ff" : "#374151",
-    cursor: "pointer", transition: "all 0.15s",
+  const priceLabel = (() => {
+    if (filters.priceMin === null && filters.priceMax === null) return "가격 ▾";
+    if (filters.priceMin !== null && filters.priceMax !== null) {
+      return `${formatPriceVal(filters.priceMin)} ~ ${formatPriceVal(filters.priceMax)}`;
+    }
+    if (filters.priceMin !== null) return `${formatPriceVal(filters.priceMin)} 이상`;
+    return `${formatPriceVal(filters.priceMax)} 이하`;
+  })();
+
+  const areaLabel = (() => {
+    if (filters.areaMin === null && filters.areaMax === null) return "면적 ▾";
+    if (filters.areaMin !== null && filters.areaMax !== null) {
+      return `${filters.areaMin}평 ~ ${filters.areaMax}평`;
+    }
+    if (filters.areaMin !== null) return `${filters.areaMin}평 이상`;
+    return `${filters.areaMax}평 이하`;
+  })();
+
+  const yearLabel = (() => {
+    if (filters.yearMin === null && filters.yearMax === null) return "연식";
+    if (filters.yearMin !== null && filters.yearMax !== null) {
+      return `${filters.yearMin}~${filters.yearMax}년`;
+    }
+    if (filters.yearMin !== null) return `${filters.yearMin}년 이후`;
+    return `${filters.yearMax}년 이전`;
+  })();
+
+  const ownerLabel = (() => {
+    if (filters.ownerRole === null || filters.ownerRole === 'NONE') return "등록자 ▾";
+    if (filters.ownerRole === 'USER') return "일반인";
+    if (filters.ownerRole === 'REALTOR') return "부동산";
+    return "등록자 ▾";
+  })();
+
+  const commissionLabel = (() => {
+    if (filters.commissionType === null || filters.commissionType === 'NONE') return "중개보수 ▾";
+    if (filters.commissionType === '공동중개') return "공동중개";
+    return `${filters.commissionType}%~`;
+  })();
+
+  const themeLabel = (() => {
+    if (filters.themes.length === 0) return "테마 ▾";
+    if (filters.themes.length === 1) return `#${filters.themes[0]}`;
+    return `#${filters.themes[0]} +${filters.themes.length - 1}`;
+  })();
+
+  const pillStyle = (active: boolean) => ({
+    padding: "6px 12px",
+    borderRadius: "20px",
+    fontSize: "13px",
+    fontWeight: active ? 700 : 500,
+    backgroundColor: active ? "#eef4ff" : "#fff",
+    border: `1px solid ${active ? "#4b89ff" : "#d1d5db"}`,
+    color: active ? "#4b89ff" : "#374151",
+    whiteSpace: "nowrap" as const,
+    cursor: "pointer",
+    flexShrink: 0,
+    transition: "all 0.15s",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px"
   });
+
+  const renderSheet = (title: string, children: React.ReactNode) => (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 10000, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={() => setActivePanel(null)} style={{ flex: 1 }} />
+      <div style={{ background: "#fff", borderTopLeftRadius: "16px", borderTopRightRadius: "16px", maxHeight: "85vh", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
+          <span style={{ fontSize: "16px", fontWeight: 700 }}>{title}</span>
+          <button onClick={() => setActivePanel(null)} style={{ background: "none", border: "none", fontSize: "20px", color: "#6b7280", cursor: "pointer" }}>✕</button>
+        </div>
+        <div style={{ padding: "20px", overflowY: "auto", flex: 1, WebkitOverflowScrolling: "touch" }}>
+          {children}
+        </div>
+        <div style={{ padding: "12px 20px 24px", borderTop: "1px solid #e5e7eb", background: "#fff" }}>
+          <button onClick={() => { setActivePanel(null); if (onShowList) onShowList("filter"); }} style={{ width: "100%", padding: "14px", background: "#4b89ff", border: "none", borderRadius: "8px", fontSize: "15px", fontWeight: 700, color: "#fff", cursor: "pointer" }}>
+            {filteredCount}개 공실광고 보기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <>
-      <style>{`
-        @keyframes sheetUp { from { transform: translateX(-50%) translateY(100%); } to { transform: translateX(-50%) translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .filter-scroll::-webkit-scrollbar { display: none; }
-        .filter-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
-
-      {/* ═══ 필터 바 ═══ */}
-      <div style={{ display: "flex", alignItems: "center", background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "8px 0 8px 0", flexShrink: 0, width: "100%" }}>
-        {/* ≡ 통합필터 버튼 */}
+      <div style={{ width: "100%", height: "46px", background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", position: "relative", zIndex: 50 }}>
         {activeMode !== "경매" && (
           <>
             <button onClick={() => setFullFilterOpen(true)} style={{ flexShrink: 0, width: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", position: "relative" }}>
@@ -204,176 +295,126 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             <div style={{ width: 1, height: 20, background: "#e5e7eb", flexShrink: 0 }} />
           </>
         )}
-
-        {/* 수평 스크롤 필 버튼들 */}
-        <div style={{ position: "relative", flex: 1, minWidth: 0, overflow: "hidden" }}>
-          <div className="filter-scroll" style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px 0 12px", WebkitOverflowScrolling: "touch" as any }}>
-            <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "위치")}>📍 {locLabel} ▾</button>
-            <button onClick={() => setActivePanel(activePanel === "prop" ? null : "prop")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>
-              {filters.propertyTypes.length === PROPERTY_TYPES.flatMap(g => g.items).length 
-                ? "전체유형" 
-                : filters.propertyTypes.length > 0 
-                ? filters.propertyTypes.slice(0,2).join(", ") + (filters.propertyTypes.length > 2 ? ` +${filters.propertyTypes.length-2}` : "") 
-                : activeMode === "경매" ? "경공매유형" : "공실광고유형"} ▾
+        <div style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", flex: 1, scrollbarWidth: "none" }}>
+          <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "위치")}>📍 {locLabel}</button>
+          <button onClick={() => setActivePanel(activePanel === "prop" ? null : "prop")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>유형</button>
+          {activeMode !== "경매" && (
+            <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
+              {filters.tradeTypes.length === TRADE_TYPES.length ? "전체거래" : filters.tradeTypes.length === 0 ? "거래방식" : filters.tradeTypes.join(", ")}
             </button>
-            {activeMode !== "경매" && (
-              <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
-                {filters.tradeTypes.length === TRADE_TYPES.length
-                  ? "전체거래" 
-                  : filters.tradeTypes.length === 0
-                  ? "선택없음"
-                  : filters.tradeTypes.join(", ")} ▾
-              </button>
-            )}
-
-            {/* 동적 단축 필터 버튼들 */}
-            {activeMode !== "경매" && showPricePill && (
-              <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null)}>
-                {priceLabel}
-              </button>
-            )}
-            {activeMode !== "경매" && showAreaPill && (
-              <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null)}>
-                {areaLabel}
-              </button>
-            )}
-            {activeMode !== "경매" && showFloorPill && (
-              <button onClick={() => setActivePanel(activePanel === "floor" ? null : "floor")} style={pillStyle(activePanel === "floor" || filters.floor !== null)}>
-                {filters.floor ? `${filters.floor}` : "층수 ▾"}
-              </button>
-            )}
-            {activeMode !== "경매" && showYearPill && (
-              <button onClick={() => setActivePanel(activePanel === "year" ? null : "year")} style={pillStyle(activePanel === "year" || filters.yearMin !== null || filters.yearMax !== null)}>
-                {yearLabel} ▾
-              </button>
-            )}
-            {activeMode !== "경매" && (
-              <button onClick={() => setActivePanel(activePanel === "owner" ? null : "owner")} style={pillStyle(activePanel === "owner" || filters.ownerRole !== 'NONE')}>
-                {ownerLabel}
-              </button>
-            )}
-            {activeMode !== "경매" && (
-              <button onClick={() => setActivePanel(activePanel === "commission" ? null : "commission")} style={pillStyle(activePanel === "commission" || filters.commissionType !== 'NONE')}>
-                {commissionLabel}
-              </button>
-            )}
-            {activeMode !== "경매" && showThemePill && (
-              <button onClick={() => setActivePanel(activePanel === "theme" ? null : "theme")} style={pillStyle(activePanel === "theme" || filters.themes.length > 0)}>
-                {themeLabel}
-              </button>
-            )}
-
-            {activeMode !== "경매" && (
-              <button 
-                onClick={() => setFullFilterOpen(true)} 
-                style={{
-                  ...pillStyle(fullFilterOpen || hasActiveFilters),
-                  backgroundColor: hasActiveFilters ? "#eef4ff" : "#fff",
-                  borderColor: hasActiveFilters ? "#4b89ff" : "#d1d5db",
-                  color: hasActiveFilters ? "#4b89ff" : "#374151",
-                }}
-              >
-                🎛️ 상세필터 ▾
-                {hasActiveFilters && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", marginLeft: "2px" }} />}
-              </button>
-            )}
-            {/* 오른쪽 패딩 확보 */}
-            <div style={{ flexShrink: 0, width: "8px" }} />
-          </div>
-          {/* 오른쪽 페이드 그라데이션 힌트 */}
-          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "24px", background: "linear-gradient(to right, transparent, #fff)", pointerEvents: "none" }} />
+          )}
+          {activeMode !== "경매" && showPricePill && (
+            <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null)}>
+              {priceLabel}
+            </button>
+          )}
+          {activeMode !== "경매" && showAreaPill && (
+            <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null)}>
+              {areaLabel}
+            </button>
+          )}
+          {activeMode !== "경매" && showRoomBathPill && (
+            <button onClick={() => setActivePanel(activePanel === "room_bath" ? null : "room_bath")} style={pillStyle(activePanel === "room_bath" || filters.roomCount !== null || filters.bathCount !== null)}>
+              {filters.roomCount ? `방 ${filters.roomCount}개+` : "방/욕실 ▾"}
+            </button>
+          )}
+          {activeMode !== "경매" && showDirectionPill && (
+            <button onClick={() => setActivePanel(activePanel === "direction" ? null : "direction")} style={pillStyle(activePanel === "direction" || filters.direction !== null)}>
+              {filters.direction ? `${filters.direction}` : "방향 ▾"}
+            </button>
+          )}
+          {activeMode !== "경매" && showUnitsPill && (
+            <button onClick={() => setActivePanel(activePanel === "units" ? null : "units")} style={pillStyle(activePanel === "units" || filters.unitsMin !== null)}>
+              {filters.unitsMin ? `${filters.unitsMin}세대+` : "세대수 ▾"}
+            </button>
+          )}
+          {activeMode !== "경매" && showFloorPill && (
+            <button onClick={() => setActivePanel(activePanel === "floor" ? null : "floor")} style={pillStyle(activePanel === "floor" || filters.floor !== null)}>
+              {filters.floor ? `${filters.floor}` : "층수 ▾"}
+            </button>
+          )}
+          {activeMode !== "경매" && showMaintPill && (
+            <button onClick={() => setActivePanel(activePanel === "maint" ? null : "maint")} style={pillStyle(activePanel === "maint" || filters.maintMax !== null)}>
+              {filters.maintMax ? `관리비 ${Math.round(filters.maintMax/10000)}만 이하` : "관리비 ▾"}
+            </button>
+          )}
+          {activeMode !== "경매" && showParkingPill && (
+            <button onClick={() => setActivePanel(activePanel === "parking" ? null : "parking")} style={pillStyle(activePanel === "parking" || filters.parking !== null)}>
+              {filters.parking ? `${filters.parking}` : "주차 ▾"}
+            </button>
+          )}
+          {activeMode !== "경매" && showYearPill && (
+            <button onClick={() => setActivePanel(activePanel === "year" ? null : "year")} style={pillStyle(activePanel === "year" || filters.yearMin !== null || filters.yearMax !== null)}>
+              {yearLabel} ▾
+            </button>
+          )}
+          {activeMode !== "경매" && showOptionsPill && (
+            <button onClick={() => setActivePanel(activePanel === "options" ? null : "options")} style={pillStyle(activePanel === "options" || filters.options.length > 0)}>
+              {filters.options.length > 0 ? `옵션 +${filters.options.length}` : "기타옵션 ▾"}
+            </button>
+          )}
+          {activeMode !== "경매" && (
+            <button onClick={() => setActivePanel(activePanel === "owner" ? null : "owner")} style={pillStyle(activePanel === "owner" || filters.ownerRole !== 'NONE')}>
+              {ownerLabel}
+            </button>
+          )}
+          {activeMode !== "경매" && (
+            <button onClick={() => setActivePanel(activePanel === "commission" ? null : "commission")} style={pillStyle(activePanel === "commission" || filters.commissionType !== 'NONE')}>
+              {commissionLabel}
+            </button>
+          )}
+          {activeMode !== "경매" && showThemePill && (
+            <button onClick={() => setActivePanel(activePanel === "theme" ? null : "theme")} style={pillStyle(activePanel === "theme" || filters.themes.length > 0)}>
+              {themeLabel}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* ═══ 위치 검색 시트 ═══ */}
-      {activePanel === "loc" && renderSheet("📍 위치 검색", (
-        <LocationFilterPanel 
-          onLocationMove={onLocationMove} 
-          onFilterChange={onFilterChange}
-          onClose={() => setActivePanel(null)} 
-          locLabel={locLabel} 
-          setLocLabel={setLocLabel} 
-        />
-      ))}
-
-      {/* ═══ 공실광고유형 시트 ═══ */}
-      {activePanel === "prop" && renderSheet("공실광고유형", (
-        <PropertyTypeFilterPanel filters={filters} onFilterChange={onFilterChange} PROPERTY_TYPES={PROPERTY_TYPES} />
-      ))}
-
-      {/* ═══ 거래방식 시트 ═══ */}
-      {activePanel === "trade" && renderSheet("거래방식", (
-        <TradeTypeFilterPanel filters={filters} onFilterChange={onFilterChange} TRADE_TYPES={TRADE_TYPES.filter(t => !(filters.propertyTypes.length > 0 && filters.propertyTypes.every(p => p === "원룸" || p === "투룸") && t === "매매"))} />
-      ))}
-
-      {/* ═══ 가격 시트 ═══ */}
-      {activePanel === "price" && renderSheet("매매가/전세가/보증금", (
-        <PriceFilterPanel filters={filters} onFilterChange={onFilterChange} />
-      ))}
-
-      {/* ═══ 면적 시트 ═══ */}
-      {activePanel === "area" && renderSheet("면적", (
-        <AreaFilterPanel filters={filters} onFilterChange={onFilterChange} />
-      ))}
-
-      {/* ═══ 층수 시트 ═══ */}
+      {activePanel === "loc" && renderSheet("위치", <LocationFilterPanel onLocationMove={onLocationMove} onFilterChange={onFilterChange} onClose={() => setActivePanel(null)} locLabel={locLabel} setLocLabel={setLocLabel} />)}
+      {activePanel === "prop" && renderSheet("공실광고유형", <PropertyTypeFilterPanel filters={filters} onFilterChange={onFilterChange} PROPERTY_TYPES={PROPERTY_TYPES} />)}
+      {activePanel === "trade" && renderSheet("거래방식", <TradeTypeFilterPanel filters={filters} onFilterChange={onFilterChange} TRADE_TYPES={TRADE_TYPES} />)}
+      {activePanel === "price" && renderSheet("가격", <PriceFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {activePanel === "area" && renderSheet("면적", <AreaFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {activePanel === "room_bath" && renderSheet("방 / 욕실수", <RoomBathFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {activePanel === "direction" && renderSheet("방향", <DirectionFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {activePanel === "units" && renderSheet("세대수", <UnitsFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {activePanel === "maint" && renderSheet("관리비", <MaintFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {activePanel === "parking" && renderSheet("주차", <ParkingFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "floor" && renderSheet("층수", <FloorFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-
-      {/* ═══ 사용승인일 시트 ═══ */}
       {activePanel === "year" && renderSheet("사용승인일 (연식)", <YearFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-
-      {/* ═══ 등록자 시트 ═══ */}
+      {activePanel === "options" && renderSheet("기타옵션 (특화 맞춤)", <OptionsFilterPanel filters={filters} onFilterChange={onFilterChange} optionsList={getCategoryOptions(filters.propertyTypes)} />)}
       {activePanel === "owner" && renderSheet("등록자 유형", <OwnerRoleFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-
-      {/* ═══ 중개보수 시트 ═══ */}
       {activePanel === "commission" && renderSheet("중개보수", <CommissionFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-
-      {/* ═══ 테마 시트 ═══ */}
       {activePanel === "theme" && (() => {
         const currentGroup = getSelectedGroup(filters.propertyTypes);
-        const presets = 
-          currentGroup === "RESIDENTIAL" ? RESIDENTIAL_THEMES :
-          currentGroup === "COMMERCIAL" ? COMMERCIAL_THEMES :
-          currentGroup === "LAND" ? LAND_THEMES : undefined;
+        const presets = currentGroup === "RESIDENTIAL" ? RESIDENTIAL_THEMES : currentGroup === "COMMERCIAL" ? COMMERCIAL_THEMES : currentGroup === "LAND" ? LAND_THEMES : undefined;
         return renderSheet("테마 키워드", <ThemeFilterPanel filters={filters} onFilterChange={onFilterChange} presets={presets} />);
       })()}
 
-      {/* ═══ 풀스크린 통합 필터 ═══ */}
       {fullFilterOpen && (
         <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 10001, display: "flex", flexDirection: "column", animation: "fadeIn 0.2s" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid #e5e7eb" }}>
-            <span style={{ fontSize: "17px", fontWeight: 800 }}>필터</span>
+            <span style={{ fontSize: "17px", fontWeight: 800 }}>상세 필터</span>
             <button onClick={() => { setTempFilters(filters); setFullFilterOpen(false); }} style={{ background: "none", border: "none", fontSize: "22px", color: "#6b7280", cursor: "pointer" }}>✕</button>
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 100px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>
-            {/* 위치 검색 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>위치 (시/구/동)</div>
-              <LocationFilterPanel 
-                variant="inline"
-                tempFilters={tempFilters}
-                onLocationMove={onLocationMove} 
-                onFilterChange={handleTempFilterChange}
-                onClose={() => {}} 
-                locLabel={locLabel} 
-                setLocLabel={setLocLabel} 
-              />
+              <LocationFilterPanel variant="inline" tempFilters={tempFilters} onLocationMove={onLocationMove} onFilterChange={handleTempFilterChange} onClose={() => {}} locLabel={locLabel} setLocLabel={setLocLabel} />
             </div>
 
-            {/* 공실광고유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>공실광고유형</div>
               <PropertyTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} PROPERTY_TYPES={PROPERTY_TYPES} />
             </div>
 
-            {/* 거래유형 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래유형</div>
-              <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES.filter(t => !(tempFilters.propertyTypes.length > 0 && tempFilters.propertyTypes.every(p => p === "원룸" || p === "투룸") && t === "매매"))} />
+              <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES} />
             </div>
             
-            {/* 가격 */}
             {showTempPrice && (
               <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                 <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>가격</div>
@@ -381,7 +422,6 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               </div>
             )}
 
-            {/* 면적 */}
             {showTempArea && (
               <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                 <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>면적</div>
@@ -389,15 +429,6 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               </div>
             )}
 
-            {/* 층수 */}
-            {showTempFloor && (
-              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>층수</div>
-                <FloorFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
-              </div>
-            )}
-
-            {/* 사용승인일 */}
             {showTempYear && (
               <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                 <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>사용승인일 (연식)</div>
@@ -405,45 +436,82 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               </div>
             )}
 
-            {/* 등록자 유형 */}
+            {showTempUnits && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>세대수</div>
+                <UnitsFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+              </div>
+            )}
+
+            {showTempRoomBath && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>방 / 욕실수</div>
+                <RoomBathFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+              </div>
+            )}
+
+            {showTempDirection && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>방향</div>
+                <DirectionFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+              </div>
+            )}
+
+            {showTempFloor && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>층수</div>
+                <FloorFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+              </div>
+            )}
+
+            {showTempMaint && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>관리비</div>
+                <MaintFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+              </div>
+            )}
+
+            {showTempParking && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>주차</div>
+                <ParkingFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+              </div>
+            )}
+
+            {showTempOptions && (
+              <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>기타옵션</div>
+                <OptionsFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} optionsList={getCategoryOptions(tempFilters.propertyTypes)} />
+              </div>
+            )}
+
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>등록자 유형</div>
               <OwnerRoleFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
 
-            {/* 중개보수 */}
             <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>중개보수</div>
               <CommissionFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
             </div>
 
-            {/* 테마 */}
             {showTempTheme && (
               <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                 <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>테마 키워드</div>
-                <ThemeFilterPanel 
-                  filters={tempFilters} 
-                  onFilterChange={handleTempFilterChange} 
-                  presets={
-                    tempGroup === "RESIDENTIAL" ? RESIDENTIAL_THEMES :
-                    tempGroup === "COMMERCIAL" ? COMMERCIAL_THEMES :
-                    tempGroup === "LAND" ? LAND_THEMES : undefined
-                  }
-                />
+                <ThemeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} presets={getCategoryOptions(tempFilters.propertyTypes) ? RESIDENTIAL_THEMES : undefined} />
               </div>
             )}
           </div>
 
-          {/* 하단 CTA */}
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 20px 24px", display: "flex", gap: "12px" }}>
             <button 
               onClick={() => {
                 const allPropTypes = PROPERTY_TYPES.flatMap(g => g.items);
-                const empty = { propertyTypes: allPropTypes, tradeTypes: TRADE_TYPES, keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null, locationSearchType: 'map' };
+                const empty = { propertyTypes: allPropTypes, tradeTypes: TRADE_TYPES, keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, roomCount: null, bathCount: null, direction: null, unitsMin: null, maintMax: null, parking: null, options: [], ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null, locationSearchType: 'map' as const };
                 setTempFilters(empty);
                 setLocLabel("위치");
               }} 
-              style={{ padding: "14px 20px", background: "#f3f4f6", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+              style={{ padding: "14px 20px", background: "#f3f4f6", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer" }}
             >
               ↻ 초기화
             </button>

@@ -11,6 +11,13 @@ export interface FilterState {
   yearMin: number | null;
   yearMax: number | null;
   floor: string | null;
+  roomCount: number | null;        // 방 개수 (1, 2, 3, 4)
+  bathCount: number | null;        // 욕실 개수 (1, 2, 3)
+  direction: string | null;        // 방향 (남향, 동향 등)
+  unitsMin: number | null;         // 세대수 (50, 100, 300, 500, 1000)
+  maintMax: number | null;         // 관리비 최대금액
+  parking: string | null;          // 주차 (주차가능, 자주식, 기계식 등)
+  options: string[];               // 기타옵션 다중선택
   ownerRole: string | null;        // 'USER' | 'REALTOR' | null(전체)
   commissionType: string | null;   // '법정수수료' | '공동수수료' 등
   themes: string[];                // 테마 키워드 (다중 선택)
@@ -38,6 +45,13 @@ export const initialFilterState: FilterState = {
   yearMin: null,
   yearMax: null,
   floor: null,
+  roomCount: null,
+  bathCount: null,
+  direction: null,
+  unitsMin: null,
+  maintMax: null,
+  parking: null,
+  options: [],
   ownerRole: null,
   commissionType: null,
   themes: [],
@@ -206,6 +220,54 @@ export function useVacancyFilters(initialVacancies: any[]) {
         if (filters.floor === '2층이상' && (parseInt(v.floor, 10) < 2 || v.floor.includes('B'))) return false;
         if (filters.floor === '반지하/지하' && !v.floor.includes('B')) return false;
         if (filters.floor === '옥탑' && v.floor !== '옥탑') return false;
+      }
+
+      // 6.1 방 개수 (PC 동일)
+      if (filters.roomCount !== null) {
+        const rooms = v.room_count || (v.rooms ? parseInt(v.rooms, 10) : 0);
+        if (rooms < filters.roomCount) return false;
+      }
+
+      // 6.2 욕실 개수 (PC 동일)
+      if (filters.bathCount !== null) {
+        const baths = v.bath_count || (v.bathrooms ? parseInt(v.bathrooms, 10) : 0);
+        if (baths < filters.bathCount) return false;
+      }
+
+      // 6.3 방향 (PC 동일)
+      if (filters.direction && filters.direction !== "전체") {
+        const dir = v.direction || v.main_direction || "";
+        if (!dir.includes(filters.direction)) return false;
+      }
+
+      // 6.4 세대수 (PC 동일)
+      if (filters.unitsMin !== null) {
+        const units = parseInt(v.total_units, 10) || 0;
+        if (units < filters.unitsMin) return false;
+      }
+
+      // 6.5 관리비 (PC 동일)
+      if (filters.maintMax !== null) {
+        const maint = v.maintenance_fee || v.maintenance_cost || v.maint_fee || 0;
+        if (maint > filters.maintMax) return false;
+      }
+
+      // 6.6 주차 (PC 동일)
+      if (filters.parking && filters.parking !== "전체") {
+        const park = v.parking || "";
+        if (!park.includes(filters.parking)) return false;
+      }
+
+      // 6.7 기타옵션 (PC 동일)
+      if (filters.options && filters.options.length > 0) {
+        const rawOpts = v.options || v.facilities || [];
+        const allOpts: string[] = Array.isArray(rawOpts)
+          ? rawOpts.map(s => String(s).trim())
+          : typeof rawOpts === 'string'
+          ? rawOpts.split(',').map(s => s.trim())
+          : [];
+        const hasAllOpts = filters.options.every(opt => allOpts.some(o => o.includes(opt)));
+        if (!hasAllOpts) return false;
       }
 
       // 7. 등록자 유형 (일반인 / 부동산)
