@@ -1094,19 +1094,6 @@ export async function getGcpBillingAndUsageStats(): Promise<GcpBillingSummary> {
   const gcpCreditBalance = Math.max(0, Math.round((baseCreditBalance - deltaCostSinceSync) * 100) / 100);
   const gcpMonthSpend = Math.min(gcpPrepaidTotal, Math.round((baseMonthSpend + deltaCostSinceSync) * 100) / 100);
 
-  try {
-    const { fetchLiveGcpBillingInfo } = await import("@/lib/gcp/billingClient");
-    const liveGcp = await fetchLiveGcpBillingInfo("014C95-E62B99-958C3B");
-    if (liveGcp) {
-      // live data exists
-      if (liveGcp.displayName) {
-        // Connected!
-      }
-    }
-  } catch (err) {
-    console.warn("Live GCP Billing fetch error:", err);
-  }
-
   return {
     success: true,
     gcpProject: "gongsil",

@@ -149,7 +149,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
     const dates = getPeriodDates(period);
     
     try {
-      const [costRes, workRes, onbidRes, historyRes, callLogsRes, gcpRes] = await Promise.all([
+      const results = await Promise.allSettled([
         getAgentCostSummary(dates.start || undefined, dates.end || undefined),
         getAgentWorkStats(dates.start || undefined, dates.end || undefined),
         getOnbidCount(),
@@ -163,13 +163,27 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
         }),
         getGcpBillingAndUsageStats(),
       ]);
-      setAgentStats(costRes.perAgent || {});
-      setWorkStats(workRes);
-      setOnbidCount(onbidRes);
-      if (historyRes.success) {
+
+      const costRes = results[0].status === "fulfilled" ? results[0].value : null;
+      const workRes = results[1].status === "fulfilled" ? results[1].value : null;
+      const onbidRes = results[2].status === "fulfilled" ? results[2].value : 0;
+      const historyRes = results[3].status === "fulfilled" ? results[3].value : null;
+      const callLogsRes = results[4].status === "fulfilled" ? results[4].value : null;
+      const gcpRes = results[5].status === "fulfilled" ? results[5].value : null;
+
+      if (costRes && costRes.perAgent) {
+        setAgentStats(costRes.perAgent);
+      }
+      if (workRes) {
+        setWorkStats(workRes);
+      }
+      if (typeof onbidRes === "number") {
+        setOnbidCount(onbidRes);
+      }
+      if (historyRes && historyRes.success) {
         setOnbidHistory(historyRes);
       }
-      if (callLogsRes.success) {
+      if (callLogsRes && callLogsRes.success) {
         setRecentLogs(callLogsRes.data || []);
       }
       if (gcpRes && gcpRes.success) {
@@ -178,12 +192,14 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
       setLastRefreshedAt(new Date());
 
       if (dates.prevStart) {
-        const [pCostRes, pWorkRes] = await Promise.all([
+        const prevResults = await Promise.allSettled([
           getAgentCostSummary(dates.prevStart, dates.prevEnd!),
           getAgentWorkStats(dates.prevStart, dates.prevEnd!),
         ]);
-        setPrevAgentStats(pCostRes.perAgent || {});
-        setPrevWorkStats(pWorkRes);
+        const pCostRes = prevResults[0].status === "fulfilled" ? prevResults[0].value : null;
+        const pWorkRes = prevResults[1].status === "fulfilled" ? prevResults[1].value : null;
+        setPrevAgentStats(pCostRes?.perAgent || {});
+        setPrevWorkStats(pWorkRes || null);
       } else {
         setPrevAgentStats({});
         setPrevWorkStats(null);
