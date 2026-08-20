@@ -210,6 +210,36 @@ export class PhotoCurationAgent {
   }
 
   /**
+   * Unsplash API 실시간 검색 (중복 사진 배제)
+   */
+  private static async searchFreshStockPhoto(query: string, usedUrls: Set<string>): Promise<string | null> {
+    const accessKey = process.env.UNSPLASH_ACCESS_KEY;
+    if (!accessKey) return null;
+
+    try {
+      const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=12&orientation=landscape&client_id=${accessKey}`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+
+      const data = await res.json();
+      if (data.results && data.results.length > 0) {
+        for (const item of data.results) {
+          const rawUrl = item.urls?.regular || item.urls?.small;
+          if (rawUrl) {
+            const cleanUrl = `${rawUrl.split("?")[0]}?auto=format&fit=crop&q=80&w=800`;
+            if (!usedUrls.has(cleanUrl)) {
+              return cleanUrl;
+            }
+          }
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * 🍌 나노바나나 AI 이미지 전용 정밀 비주얼 프롬프트 생성기 (기사 내용 100% 일치)
    */
   private static async generateNanoBananaVisualPrompt(title: string, category: string, subtitle?: string, content?: string): Promise<string> {
