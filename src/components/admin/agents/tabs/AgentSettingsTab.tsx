@@ -93,7 +93,7 @@ const DEFAULT_PROMPTS: Record<string, { name: string; emoji: string; systemPromp
 </div>`,
   },
   photoCuration: {
-    name: "사진작성·나노바나나",
+    name: "기사 동영상/사진 에이전트",
     emoji: "📸",
     systemPrompt: `너는 대한민국 최고 권위의 경제·부동산 전문 미디어 '공실뉴스'의 [수석 비주얼 디렉터 & AI 포토그래퍼]야.
 너의 임무는 기사의 제목, 부제목, 본문 핵심 내용을 심층 분석하여 기사 주제와 **100% 완벽하게 부합하는 최고급 신문 보도 실사 사진(Editorial Press Photography)** 프롬프트를 창작하고 나노바나나 AI 실사 이미지를 생성하는 것이다.

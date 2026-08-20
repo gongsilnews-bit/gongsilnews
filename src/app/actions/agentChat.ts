@@ -888,7 +888,7 @@ export interface GcpBillingSummary {
 }
 
 const GCP_CHANNEL_INFO_MAP: Record<string, { name: string; emoji: string }> = {
-  photoCuration: { name: "나노바나나 AI 실사", emoji: "🍌" },
+  photoCuration: { name: "기사 동영상/사진 에이전트", emoji: "📸" },
   article: { name: "뉴스 기사작성 에이전트", emoji: "📰" },
   marketingDraft: { name: "마케팅 초안 마법사", emoji: "✍️" },
   remodeling: { name: "건물 리모델링 AI", emoji: "🏢" },

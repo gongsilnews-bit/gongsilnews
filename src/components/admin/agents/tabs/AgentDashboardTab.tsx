@@ -18,7 +18,7 @@ import {
 const DEFAULT_AGENTS = [
   { id: "verify", emoji: "🛡️", defaultName: "회원승인 에이전트", description: "부동산 중개사 서류를 자동 검증합니다.", status: "running" as const },
   { id: "article", emoji: "📰", defaultName: "기사작성 에이전트", description: "부동산 뉴스 기사 초안을 작성합니다.", status: "running" as const },
-  { id: "photoCuration", emoji: "📸", defaultName: "사진큐레이션·나노바나나", description: "기사 맞춤형 실사 사진 매칭 및 AI 이미지를 생성합니다.", status: "running" as const },
+  { id: "photoCuration", emoji: "📸", defaultName: "기사 동영상/사진 에이전트", description: "기사 맞춤형 동영상·실사 사진 큐레이션 및 AI 이미지를 생성합니다.", status: "running" as const },
   { id: "remodeling", emoji: "🏢", defaultName: "건물 리모델링 AI", description: "건물 외관 리모델링 시뮬레이션 및 렌더링을 생성합니다.", status: "running" as const },
   { id: "homeInterior", emoji: "🎨", defaultName: "홈 인테리어 AI", description: "실내 인테리어 공간 시뮬레이션을 생성합니다.", status: "running" as const },
   { id: "studio", emoji: "🎬", defaultName: "AI 숏폼 스튜디오", description: "부동산 쇼츠 영상 대본 및 음성을 생성합니다.", status: "running" as const },
@@ -635,7 +635,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[
               { id: "all", label: "전체" },
-              { id: "photoCuration", label: "나노바나나" },
+              { id: "photoCuration", label: "동영상/사진" },
               { id: "article", label: "기사작성" },
               { id: "remodeling", label: "리모델링" },
               { id: "homeInterior", label: "인테리어" },
@@ -752,7 +752,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   let typeColor = "#1e40af";
 
                   if (log.channel_id === "photoCuration" || isImage) {
-                    typeLabel = "나노바나나";
+                    typeLabel = "동영상/사진";
                     typeBg = "#fef3c7";
                     typeColor = "#92400e";
                   } else if (log.channel_id === "remodeling") {
