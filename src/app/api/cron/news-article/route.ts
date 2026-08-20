@@ -20,14 +20,25 @@ const parser = new Parser({
 });
 
 const FULL_CATEGORY_MAP = [
-  { section1: "부동산·경제", section2: "부동산정책/정치", keyword: "부동산 정책 OR 부동산 동향 OR 아파트 분양" },
-  { section1: "부동산·경제", section2: "세무/법률/기타", keyword: "부동산 세금 OR 취득세 OR 종부세 OR 부동산 판례 OR 전세사기" },
-  { section1: "부동산·경제", section2: "경제/재테크/주식", keyword: "금리 인하 OR 주식 시장 OR 경제 전망 OR 재테크" },
-  { section1: "AI마케팅", section2: "AI/NEWS", keyword: "생성형 AI OR 챗GPT OR 프롭테크" },
+  // 1. 부동산·경제
+  { section1: "부동산·경제", section2: "부동산정책/정치", keyword: "부동산 정책 OR 부동산 동향 OR 아파트 분양 OR 재건축 재개발" },
+  { section1: "부동산·경제", section2: "경제/재테크/주식", keyword: "금리 인하 OR 주식 시장 OR 경제 전망 OR 재테크 OR 환율" },
+  { section1: "부동산·경제", section2: "세무/법률/기타", keyword: "부동산 세금 OR 취득세 OR 종부세 OR 양도세 OR 부동산 판례 OR 전세사기" },
+
+  // 2. AI마케팅
+  { section1: "AI마케팅", section2: "AI/NEWS", keyword: "생성형 AI OR 챗GPT OR 프롭테크 OR 인공지능 신기술" },
   { section1: "AI마케팅", section2: "부동산유튜브/블로그", keyword: "site:youtube.com 부동산 마케팅 OR site:blog.naver.com 공인중개사 마케팅" },
-  { section1: "라이프·오피니언", section2: "맛집/여행/건강", keyword: "site:blog.naver.com 국내 여행 OR site:blog.naver.com 맛집 추천 OR 건강 관리" },
-  { section1: "라이프·오피니언", section2: "IT/가전/가구", keyword: "스마트폰 출시 OR IT 신제품 OR 스마트홈" },
-  { section1: "라이프·오피니언", section2: "스포츠/연예/Car", keyword: "프로야구 OR K리그 OR 연예계 이슈 OR 신차 출시" }
+  { section1: "AI마케팅", section2: "공실/임대관리", keyword: "상가 공실 OR 임대차 시장 OR 임대 수익률 OR 빌딩 관리" },
+
+  // 3. 라이프·오피니언
+  { section1: "라이프·오피니언", section2: "인물/인터뷰", keyword: "부동산 전문가 인터뷰 OR 경제인 인터뷰 OR CEO 리더십" },
+  { section1: "라이프·오피니언", section2: "중개실무/인테리어Tip", keyword: "상가 인테리어 OR 아파트 리모델링 OR 홈스타일링 OR 중개 실무" },
+  { section1: "라이프·오피니언", section2: "맛집/여행/건강", keyword: "국내 여행 명소 OR 지역 맛집 탐방 OR 건강 관리 라이프" },
+  { section1: "라이프·오피니언", section2: "스포츠/연예/기타", keyword: "프로야구 OR K리그 OR 연예계 이슈 OR 신차 출시 OR 문화 트렌드" },
+
+  // 4. 공실뉴스
+  { section1: "공실뉴스", section2: "신축/분양/경매", keyword: "신축 아파트 분양 OR 오피스텔 분양 OR 부동산 법원 경매" },
+  { section1: "공실뉴스", section2: "상가/사무실/공장/토지", keyword: "상가 분양 OR 지식산업센터 임대 OR 오피스 빌딩 공실률" },
 ];
 
 export async function GET(req: Request) {
