@@ -14,6 +14,8 @@ export interface NewsArticleResult {
   youtubeSearchQuery?: string;
   mediaType?: "image" | "video";
   sourceUrl?: string;
+  isHeadline?: boolean;
+  isImportant?: boolean;
   usage?: {
     inputTokens: number;
     outputTokens: number;
@@ -24,7 +26,7 @@ export interface NewsArticleResult {
 export class NewsArticleAgent {
   /**
    * 뉴스 카테고리와 성격에 맞춰 3단계 맞춤형(실무형 / 시장분석형 / 라이프스타일형) 
-   * 최적의 결론 포맷을 적용한 프리미엄 기사를 작성합니다.
+   * 최적의 결론 포맷 및 [헤드라인/중요기사] 광고 노출 등급을 자동 설정하여 작성합니다.
    */
   static async writeArticle(req: NewsArticleRequest): Promise<NewsArticleResult> {
     const category = req.category;
@@ -103,6 +105,11 @@ export class NewsArticleAgent {
 4. ■ 관련 정책 및 데이터 분석: 제도적 맥락, 통계 자료 또는 전문가 시각을 접목한 심층 설명.
 ${conclusionInstruction}
 
+[광고/노출 등급 판정 (중요기사 및 헤드라인)]
+- isHeadline: 정부 주요 부동산/금융 종합 대책, 기준금리 결정, 전국적 파급력이 큰 특종/주요 이슈인 경우 true, 그 외 false
+- isImportant: 임대인/중개사에게 필수적인 세무/법률/공실/핵심 지표 분석 기사이거나 시장 주요 분석인 경우 true, 그 외 false
+- 일반 일상/단신 기사는 둘 다 false
+
 [출력 JSON 형식]
 응답은 반드시 마크다운 백틱 없는 순수 JSON 형식으로만 출력할 것.
 
@@ -114,6 +121,8 @@ ${conclusionInstruction}
   "imageKeyword": "기사 주제와 어울리는 고품질 스톡 사진 검색용 영어 키워드 2~4단어 (예: 'modern office building seoul', 'korean finance stock market', 'traditional food gourmet restaurant')",
   "youtubeSearchQuery": "관련 유튜브 영상 검색용 한국어 키워드 (예: '부동산 시장 전망', '생성형 AI 기술')",
   "mediaType": "video 또는 image (카테고리가 '부동산유튜브/블로그'이거나 영상이 어울리면 video, 그 외는 image)",
+  "isHeadline": true 또는 false,
+  "isImportant": true 또는 false,
   "sourceUrl": "선택한 원본 기사의 URL"
 }`;
 
@@ -136,6 +145,8 @@ ${conclusionInstruction}
         imageKeyword: parsed.imageKeyword,
         youtubeSearchQuery: parsed.youtubeSearchQuery,
         mediaType: parsed.mediaType,
+        isHeadline: parsed.isHeadline === true,
+        isImportant: parsed.isImportant === true || parsed.isHeadline === true,
         sourceUrl: parsed.sourceUrl,
         usage: result.usage,
       };

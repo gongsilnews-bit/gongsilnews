@@ -165,6 +165,8 @@ export async function GET(req: Request) {
           published_at: isAutoPublish ? nowISO : null,
           thumbnail_url: media.thumbnailUrl || null,
           youtube_url: media.youtubeUrl || null,
+          is_headline: aiResult.isHeadline || false,
+          is_important: aiResult.isImportant || (aiResult.isHeadline ? true : false),
           author_id: admin?.id || null,
           author_name: admin?.name || '공실뉴스 AI 비서',
           author_email: admin?.email || 'gongsilnews@gmail.com',
