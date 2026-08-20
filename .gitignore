@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+credentials.json
+src/lib/gcp/credentials.json
 
 # debug
 npm-debug.log*

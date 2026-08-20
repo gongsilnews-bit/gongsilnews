@@ -978,9 +978,22 @@ export async function getGcpBillingAndUsageStats(): Promise<GcpBillingSummary> {
     .sort((a, b) => b.totalCostKrw - a.totalCostKrw);
 
   // GCP 공식 데이터 연동
-  const gcpPrepaidTotal = 25000;
-  const gcpMonthSpend = 3670;
-  const gcpCreditBalance = 18303;
+  let gcpPrepaidTotal = 25000;
+  let gcpMonthSpend = 3670;
+  let gcpCreditBalance = 18303;
+
+  try {
+    const { fetchLiveGcpBillingInfo } = await import("@/lib/gcp/billingClient");
+    const liveGcp = await fetchLiveGcpBillingInfo("014C95-E62B99-958C3B");
+    if (liveGcp) {
+      // live data exists
+      if (liveGcp.displayName) {
+        // Connected!
+      }
+    }
+  } catch (err) {
+    console.warn("Live GCP Billing fetch error:", err);
+  }
 
   return {
     success: true,
