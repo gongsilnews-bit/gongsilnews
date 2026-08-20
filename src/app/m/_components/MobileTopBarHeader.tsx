@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -25,6 +25,16 @@ interface Props {
 export default function MobileTopBarHeader({ activeTab }: Props) {
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollContainerRef.current && activeTab) {
+      const activeEl = scrollContainerRef.current.querySelector<HTMLElement>('[data-active="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      }
+    }
+  }, [activeTab]);
 
   return (
     <>
@@ -62,6 +72,7 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
 
         {/* 중앙 스크롤 메뉴 */}
         <div
+          ref={scrollContainerRef}
           className="hide-scrollbar"
           style={{
             flex: 1,
@@ -76,6 +87,7 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
           {CATEGORIES.map((cat) => (
             <button
               key={cat.key}
+              data-active={activeTab === cat.key ? "true" : "false"}
               onClick={() => { 
                 router.push(cat.path);
               }}

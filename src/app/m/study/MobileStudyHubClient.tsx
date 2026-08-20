@@ -53,7 +53,7 @@ export default function MobileStudyHubClient({ lectures }: any) {
 
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '56px' }}>
-      <MobileTopBarHeader />
+      <MobileTopBarHeader activeTab="study" />
       <StudySubMenuBar activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* ── 특강 콘텐츠 ── */}

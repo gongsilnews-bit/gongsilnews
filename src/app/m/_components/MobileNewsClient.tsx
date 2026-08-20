@@ -589,6 +589,16 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const clusterModeRef = useRef(false);
   const suppressIdleRef = useRef(false);
   const detailPanelRef = useRef<HTMLDivElement>(null);
+  const tabBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (tabBarRef.current && activeTab) {
+      const activeEl = tabBarRef.current.querySelector<HTMLElement>('[data-active="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      }
+    }
+  }, [activeTab]);
 
   // ── 우리동네뉴스 위치 필터 상태 ──
   const [locActivePanel, setLocActivePanel] = useState<string | null>(null);

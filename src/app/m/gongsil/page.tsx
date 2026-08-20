@@ -927,7 +927,7 @@ function MobileGongsilContent() {
         />
       )}
       {!isEmbedded && (
-        <MobileTopBarHeader />
+        <MobileTopBarHeader activeTab="gongsil" />
       )}
       
       <style>{`

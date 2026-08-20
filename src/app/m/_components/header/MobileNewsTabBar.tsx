@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -27,6 +27,15 @@ export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const tabBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (tabBarRef.current && activeTab) {
+      const activeEl = tabBarRef.current.querySelector<HTMLElement>('[data-active="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      }
+    }
+  }, [activeTab]);
 
   return (
     <>
