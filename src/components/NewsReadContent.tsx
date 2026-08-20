@@ -547,7 +547,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
         />
       )}
 
-      <main className="container px-20" style={{ position: "relative" }}>
+      <main className="container px-20 news-detail-page-container" style={{ position: "relative" }}>
         <div className="news-layout">
           {/* 본문 영역 */}
           <div className="news-read-area">
