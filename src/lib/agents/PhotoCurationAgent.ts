@@ -404,19 +404,36 @@ export class PhotoCurationAgent {
   }
 
   /**
-   * ⭐️ [메인 실행 함수]
-   * 1. 실물 보도사진 탐색 -> 2. 고품질 스톡 검색 -> 3. 없으면 🍌 나노바나나 AI 실사 생성 -> 4. 큐레이션 풀
+   * ⭐️ [미디어 매칭 4단계 우선순위 파이프라인]
+   * 1순위: 회사/기사 제공 실물 사진 탐색
+   * 2순위: 기사 관련 유튜브 영상/링크 탐색
+   * 3순위: 고품질 스톡 사진 탐색 (Unsplash)
+   * 4순위: 적당한 사진이 없을 때 🍌 나노바나나 AI 실사 이미지 생성
    */
   static async resolvePhoto(req: PhotoCurationRequest): Promise<PhotoCurationResult> {
-    console.log(`[PhotoCurationAgent] 📸 Resolving photo for: "${req.articleTitle}" (Category: ${req.category})`);
+    console.log(`[PhotoCurationAgent] 📸 Resolving media for: "${req.articleTitle}" (Category: ${req.category})`);
 
     const usedUrls = await this.getRecentUsedImages();
 
-    // [영상 특화] 유튜브 카테고리일 때
-    if (req.mediaType === "video" || req.category === "부동산유튜브/블로그") {
+    // ── 🥇 1순위: 회사/기사 제공 실제 보도·현장 사진 최우선 탐색 ──
+    if (req.sourceUrl) {
+      const realPhoto = await this.extractRealPressPhoto(req.sourceUrl);
+      if (realPhoto && !usedUrls.has(realPhoto)) {
+        console.log(`  -> [1순위] 회사/보도 제공 실제 사진 채택: ${realPhoto.slice(0, 60)}...`);
+        return {
+          thumbnailUrl: realPhoto,
+          mediaType: "image",
+          sourceType: "press_photo",
+        };
+      }
+    }
+
+    // ── 🥈 2순위: 기사 관련 유튜브 영상/링크 탐색 ──
+    if (req.mediaType === "video" || req.category === "부동산유튜브/블로그" || req.youtubeSearchQuery) {
       const ytQuery = req.youtubeSearchQuery || `${req.category} ${req.articleTitle.slice(0, 20)}`;
       const ytResult = await this.searchYouTubeMedia(ytQuery);
       if (ytResult) {
+        console.log(`  -> [2순위] 관련 유튜브 영상 채택: ${ytResult.videoUrl}`);
         return {
           thumbnailUrl: ytResult.thumbnailUrl,
           youtubeUrl: ytResult.videoUrl,
@@ -426,22 +443,11 @@ export class PhotoCurationAgent {
       }
     }
 
-    // 1단계: 실제 언론사/건설사 배포 원문 보도 사진 1순위 추출
-    const realPhoto = await this.extractRealPressPhoto(req.sourceUrl);
-    if (realPhoto && !usedUrls.has(realPhoto)) {
-      console.log(`  -> [1순위] 실제 보도/현장 사진 채택: ${realPhoto.slice(0, 60)}...`);
-      return {
-        thumbnailUrl: realPhoto,
-        mediaType: "image",
-        sourceType: "press_photo",
-      };
-    }
-
-    // 2단계: 한국형 최적화 비주얼 검색어로 신선한 스톡 사진 탐색
+    // ── 🥉 3순위: 신선한 고화질 스톡 사진 탐색 (Unsplash) ──
     const visualPrompt = await this.generateVisualSearchPrompt(req.articleTitle, req.category, req.articleSubtitle);
     const freshStock = await this.searchFreshStockPhoto(visualPrompt, usedUrls);
     if (freshStock) {
-      console.log(`  -> [2순위] 정밀 스톡 사진 매칭 성공: ${freshStock.slice(0, 60)}...`);
+      console.log(`  -> [3순위] 고품질 스톡 실사 매칭 성공: ${freshStock.slice(0, 60)}...`);
       return {
         thumbnailUrl: freshStock,
         mediaType: "stock_image",
@@ -450,7 +456,8 @@ export class PhotoCurationAgent {
       };
     }
 
-    // 3단계: 🍌 [나노바나나] 적합한 사진이 없을 때 기사 맥락에 100% 맞춘 포토리얼리스틱 실사 이미지 생성!
+    // ── 🍌 4순위: 적당한 사진/영상이 없을 때 나노바나나 기사 맥락 100% 맞춤형 AI 실사 생성! ──
+    console.log(`  -> [4순위] 적합한 실물이 없어 🍌 나노바나나 맞춤형 AI 실사 생성 가동`);
     const nanoBananaUrl = await this.generateWithNanoBanana(
       req.articleTitle,
       req.category,
@@ -459,6 +466,7 @@ export class PhotoCurationAgent {
       req.articleContent
     );
     if (nanoBananaUrl) {
+      console.log(`  -> [4순위] 🍌 나노바나나 AI 실사 생성 완료: ${nanoBananaUrl.slice(0, 60)}...`);
       return {
         thumbnailUrl: nanoBananaUrl,
         mediaType: "image",
@@ -467,9 +475,9 @@ export class PhotoCurationAgent {
       };
     }
 
-    // 4단계: 큐레이션 풀 대체 사진 매칭
+    // ── 5순위: 큐레이션 풀 대체 사진 (최후 안전망) ──
     const fallbackPhoto = this.getFallbackPhoto(req.category, usedUrls);
-    console.log(`  -> [4순위] 큐레이션 풀 대체 사진 매칭: ${fallbackPhoto.slice(0, 60)}...`);
+    console.log(`  -> [5순위] 큐레이션 풀 대체 사진 매칭: ${fallbackPhoto.slice(0, 60)}...`);
     return {
       thumbnailUrl: fallbackPhoto,
       mediaType: "stock_image",
