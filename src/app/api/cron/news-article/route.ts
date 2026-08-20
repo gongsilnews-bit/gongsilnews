@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Parser from 'rss-parser';
 import { NewsArticleAgent } from '@/lib/agents/NewsArticleAgent';
+import { resolveArticleMedia } from '@/lib/agents/mediaHelper';
 import { createClient } from '@supabase/supabase-js';
 import { kstHour, kstTodayStart } from '@/utils/kst';
 
@@ -49,6 +50,7 @@ export async function GET(req: Request) {
   // 설정값이 없으면 기본값 적용
   const config = configData?.settings || {
     isActive: true,
+    autoPublish: true, // 자동 즉시 승인/발행 기본 활성화
     hours: [8, 14, 23],
     categories: FULL_CATEGORY_MAP.map(c => c.section2)
   };
@@ -119,17 +121,26 @@ export async function GET(req: Request) {
         ? `\n\n[⚠️ 오늘 이미 작성된 기사 제목 목록 - 아래 주제와 겹치는 뉴스는 절대 선택하지 마라]\n${todayTitles.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n`
         : '';
 
-      // 에이전트(편집국장)에게 10개 던져주고 1개 골라서 쓰라고 요청
+      // 에이전트(편집국장)에게 10개 던져주고 1개 골라서 고품격 전문 기사로 작성하도록 요청
       const aiResult = await NewsArticleAgent.writeArticle({
         sourceText: candidateNews + existingTitlesContext,
         category: item.section2
       });
 
-      // AI가 선택한 뉴스의 원문 출처(URL) 추가
-      let finalContent = aiResult.content;
-      if (aiResult.sourceUrl && aiResult.sourceUrl.startsWith('http')) {
-        finalContent += `\n<p style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:13px;color:#6b7280;">📎 원문 참고: <a href="${aiResult.sourceUrl}" target="_blank" rel="noopener noreferrer">${aiResult.sourceUrl}</a></p>`;
-      }
+      // ── 미디어 자동 매칭 (1단계: 기업 배포 사진, 2단계: 유튜브 영상, 3단계: 무료 스톡 사진) ──
+      const media = await resolveArticleMedia({
+        category: item.section2,
+        mediaType: aiResult.mediaType,
+        sourceUrl: aiResult.sourceUrl,
+        imageKeyword: aiResult.imageKeyword,
+        youtubeSearchQuery: aiResult.youtubeSearchQuery,
+        articleTitle: aiResult.title,
+      });
+
+      // 하단 원문 참고 링크는 완전히 제거하고 순수 독창적 기사 본문만 저장
+      const finalContent = aiResult.content;
+      const isAutoPublish = config.autoPublish !== false; // 기본값: 자동 즉시 승인/발행
+      const nowISO = new Date().toISOString();
 
       const { data: article, error } = await supabase
         .from('articles')
@@ -139,7 +150,10 @@ export async function GET(req: Request) {
           content: finalContent,
           section1: item.section1,
           section2: item.section2,
-          status: 'DRAFT',
+          status: isAutoPublish ? 'APPROVED' : 'DRAFT',
+          published_at: isAutoPublish ? nowISO : null,
+          thumbnail_url: media.thumbnailUrl || null,
+          youtube_url: media.youtubeUrl || null,
           author_id: admin?.id || null,
           author_name: admin?.name || '공실뉴스 AI 비서',
           author_email: admin?.email || 'gongsilnews@gmail.com',
@@ -160,14 +174,22 @@ export async function GET(req: Request) {
         }
       }
 
-      results.push({ category: item.section2, status: 'success', articleId: article?.id, title: aiResult.title });
+      results.push({ 
+        category: item.section2, 
+        status: 'success', 
+        articleId: article?.id, 
+        title: aiResult.title,
+        published: isAutoPublish,
+        mediaType: media.youtubeUrl ? 'youtube' : 'stock_image',
+        thumbnailUrl: media.thumbnailUrl
+      });
 
     } catch (err: any) {
       console.error(`[Cron News - ${item.section2}] Error:`, err);
       results.push({ category: item.section2, status: 'error', message: err.message });
     }
     
-    // 구글 Gemini AI의 무료 티어 제한(분당 30회) 방지를 위해 카테고리당 8초씩 대기
+    // 구글 Gemini AI의 분당 요청 제한 방지를 위해 카테고리당 8초씩 대기
     await delay(8000);
   }
 

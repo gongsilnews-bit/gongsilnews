@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import Parser from 'rss-parser';
 import { PressReleaseAgent } from '@/lib/agents/PressReleaseAgent';
+import { resolveArticleMedia } from '@/lib/agents/mediaHelper';
 import { createClient } from '@supabase/supabase-js';
 
-// Vercel Cron은 최대 15초(Hobby) ~ 5분(Pro) 실행 가능합니다.
 export const maxDuration = 120;
 
 function getAdminClient() {
@@ -23,20 +23,22 @@ const RSS_FEEDS = [
   {
     name: "국토교통부 보도자료",
     url: "https://www.molit.go.kr/dev/board/board_rss.jsp?rss_id=NEWS",
+    section1: "부동산·경제",
+    section2: "부동산정책/정치",
   },
   {
     name: "한국은행 보도자료",
     url: "https://www.bok.or.kr/portal/rss/bbs/P0000559.xml",
+    section1: "부동산·경제",
+    section2: "경제/재테크/주식",
   }
 ];
 
 export async function GET(req: Request) {
-  // 인증 체크 (Vercel Cron 또는 수동 실행 키)
   const authHeader = req.headers.get('authorization');
   const isVercelCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
-  const isManualRun = req.url.includes('manual=true'); // 단순 확인용
+  const isManualRun = req.url.includes('manual=true');
   
-  // 보안: Cron Secret이 없으면 (설정 전) 수동 실행은 허용
   if (!isVercelCron && process.env.CRON_SECRET && !isManualRun) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -44,7 +46,6 @@ export async function GET(req: Request) {
   const supabase = getAdminClient();
   const results = [];
 
-  // 멤버 테이블에서 작성자(어드민) 정보 가져오기
   const { data: admin } = await supabase
     .from('members')
     .select('id, name, email')
@@ -57,15 +58,14 @@ export async function GET(req: Request) {
       
       if (!feed.items || feed.items.length === 0) continue;
 
-      // 가장 최신 글 1개만 가져옵니다 (필요시 늘릴 수 있음)
       const latestItem = feed.items[0];
       const sourceUrl = latestItem.link || feedInfo.url;
 
-      // DB에 이미 같은 출처 URL의 기사가 있는지 확인 (중복 생성 방지)
+      // DB에 이미 같은 제목의 기사가 있는지 확인 (중복 생성 방지)
       const { data: existingArticle } = await supabase
         .from('articles')
         .select('id')
-        .like('content', `%${sourceUrl}%`)
+        .eq('title', latestItem.title)
         .limit(1);
 
       if (existingArticle && existingArticle.length > 0) {
@@ -81,20 +81,27 @@ export async function GET(req: Request) {
         sourceUrl: sourceUrl,
       });
 
-      // 출처 링크 추가
-      let finalContent = aiResult.content;
-      finalContent += `\n<p style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:13px;color:#6b7280;">📎 출처: <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer">${sourceUrl}</a></p>`;
+      // 미디어 자동 매칭 (1단계: 보도자료 배포 사진, 2단계: 고화질 스톡 이미지)
+      const media = await resolveArticleMedia({
+        category: feedInfo.section2,
+        sourceUrl: sourceUrl,
+        articleTitle: aiResult.title,
+      });
 
-      // DB 저장
+      const nowISO = new Date().toISOString();
+
+      // DB 저장 (자동 승인/발행)
       const { data: article, error } = await supabase
         .from('articles')
         .insert({
           title: aiResult.title,
           subtitle: aiResult.subtitle,
-          content: finalContent,
-          section1: "부동산·주식·재테크",
-          section2: aiResult.section2 || "일반",
-          status: 'DRAFT',
+          content: aiResult.content,
+          section1: feedInfo.section1,
+          section2: feedInfo.section2,
+          status: 'APPROVED',
+          published_at: nowISO,
+          thumbnail_url: media.thumbnailUrl || null,
           author_id: admin?.id || null,
           author_name: admin?.name || '공실뉴스 AI 비서',
           author_email: admin?.email || 'gongsilnews@gmail.com',
@@ -104,7 +111,13 @@ export async function GET(req: Request) {
 
       if (error) throw error;
 
-      results.push({ name: feedInfo.name, status: 'success', articleId: article?.id });
+      results.push({ 
+        name: feedInfo.name, 
+        status: 'success', 
+        articleId: article?.id,
+        title: aiResult.title,
+        thumbnailUrl: media.thumbnailUrl
+      });
 
     } catch (err: any) {
       console.error(`[Cron - ${feedInfo.name}] Error:`, err);
@@ -112,7 +125,6 @@ export async function GET(req: Request) {
     }
   }
 
-  // Next.js 캐시 강제 무효화
   const { revalidateTag } = require('next/cache');
   revalidateTag('articles');
 
