@@ -30,9 +30,12 @@ function safeJsonParse(rawText: string): any {
   if (firstBrace !== -1 && lastBrace !== -1) {
     text = text.substring(firstBrace, lastBrace + 1);
   }
+  
+  // 1차 시도: 표준 파싱
   try {
     return JSON.parse(text);
-  } catch (err) {
+  } catch {
+    // 2차 시도: 개행 및 제어 문자 보정 파싱
     try {
       const sanitized = text.replace(/[\u0000-\u001F]+/g, (match) => {
         if (match === '\n') return '\\n';
@@ -42,7 +45,39 @@ function safeJsonParse(rawText: string): any {
       });
       return JSON.parse(sanitized);
     } catch {
-      throw err;
+      // 3차 시도: 정규식 기반 안전 추출 (따옴표 충돌 완벽 방어)
+      const extractField = (key: string): string => {
+        const regex = new RegExp(`"${key}"\\s*:\\s*"([\\s\\S]*?)"(?=\\s*,\\s*"[a-zA-Z]+"\\s*:|\\s*}\\s*$)`, 'i');
+        const match = text.match(regex);
+        return match ? match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
+      };
+
+      const title = extractField('title') || '공실뉴스 부동산 전문 리포트';
+      const subtitle = extractField('subtitle') || '';
+      const content = extractField('content') || '';
+      const keywords = extractField('keywords') || '부동산,경제,공실뉴스';
+      const imageKeyword = extractField('imageKeyword') || 'korean real estate';
+      const youtubeSearchQuery = extractField('youtubeSearchQuery') || '';
+      const mediaType = text.includes('"mediaType": "video"') ? 'video' : 'image';
+      const isHeadline = text.includes('"isHeadline": true');
+      const isImportant = text.includes('"isImportant": true') || isHeadline;
+      const sourceUrl = extractField('sourceUrl') || '';
+
+      if (title && content) {
+        return {
+          title,
+          subtitle,
+          content,
+          keywords,
+          imageKeyword,
+          youtubeSearchQuery,
+          mediaType,
+          isHeadline,
+          isImportant,
+          sourceUrl
+        };
+      }
+      throw new Error("JSON 파싱 복구 실패");
     }
   }
 }
@@ -96,6 +131,7 @@ export class NewsArticleAgent {
 2. 팩트와 수치 추출: 날짜, 금액, 퍼센트(%), 지역, 정책명 등 '객관적 핵심 수치/팩트'만 추출하여 새로운 논리로 재배치하라.
 3. 타사 출처 배제: "OO일보에 따르면", "OO뉴스 보도에 의하면" 등 타사 언론사 명칭은 절대 언급하지 마라.
 4. 원문 링크 본문 부착 금지: 기사 본문에 원문 링크나 출처 URL을 절대 쓰지 마라. (sourceUrl 필드에만 기입)
+5. JSON 내 따옴표 주의: 제목(title)이나 본문(content) 안에서 강조할 때는 쌍따옴표(") 대신 반드시 작은따옴표(')를 사용하라.
 
 [문체 (Tone & Manner)]
 - 네가 작성할 기사의 카테고리는 [${category}]야.
@@ -107,7 +143,7 @@ export class NewsArticleAgent {
 - '■ 현황 및 핵심 지표', '■ 원인 및 파급 효과', '■ 관련 정책 및 데이터 분석' 같은 **기계적이고 고정된 틀(박제된 라벨)을 절대 쓰지 마라!**
 - 대신 **기사 본문 내용의 핵심 수치, 사건 팩트, 현장 목소리가 생생하게 살아있는 [맞춤형 소제목 3개]**를 스스로 창작하여 <b> 태그로 달아라.
   - 예시 1: <b>■ 전용 84㎡ 분양가 27억 돌파… '강남 뺨치는' 고분양가 논란</b><br>
-  - 예시 2: <b>■ "지금 안 사면 더 뛴다"… 공급 가뭄 공포에 쏠린 청약</b><br>
+  - 예시 2: <b>■ '지금 안 사면 더 뛴다'… 공급 가뭄 공포에 쏠린 청약</b><br>
   - 예시 3: <b>■ 대출 규제 조이자 '현금 부자' 잔치… 당첨 양극화 심화</b><br>
 
 [기사 본문 구조]
@@ -129,7 +165,7 @@ ${conclusionInstruction}
 - 일반 일상/단신 기사는 둘 다 false
 
 [출력 JSON 형식]
-응답은 반드시 마크다운 백틱 없는 순수 JSON 형식으로만 출력할 것.
+응답은 반드시 마크다운 백틱 없는 순수 JSON 형식으로만 출력할 것. (문자열 내부 따옴표는 작은따옴표 사용)
 
 {
   "title": "시선을 사로잡으면서도 신뢰감을 주는 전문적인 기사 제목 (최대 32자)",
