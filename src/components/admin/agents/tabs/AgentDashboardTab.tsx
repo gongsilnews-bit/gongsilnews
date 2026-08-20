@@ -757,8 +757,9 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>회원</th>
                   <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>유형</th>
                   <th style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>금액</th>
+                  <th style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>출력 토큰</th>
                   <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>사유</th>
-                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>모델 / 사용량</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>모델</th>
                   <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>상대</th>
                 </tr>
               </thead>
@@ -854,22 +855,31 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         </span>
                       </td>
 
-                      {/* 4. 금액 (크레딧) - 포인트 관리의 -2,100 P 스타일 */}
+                      {/* 4. 금액 (크레딧) */}
                       <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 800, color: "#ef4444" }}>
                         {cost > 0 ? `-${cost.toFixed(2)} 원` : "0.00 원"}
                       </td>
 
-                      {/* 5. 사유 */}
-                      <td style={{ padding: "12px 14px", color: textPrimary, maxWidth: 360, overflow: "hidden", textOverflow: "ellipsis" }} title={displayReason}>
+                      {/* 5. 출력 토큰 (신규 추가) */}
+                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: textPrimary, fontSize: 12 }}>
+                        {isImage ? (
+                          <span style={{ color: "#d97706", fontWeight: 700 }}>1장 (실사)</span>
+                        ) : (
+                          `${(log.output_tokens || 0).toLocaleString()} 토큰`
+                        )}
+                      </td>
+
+                      {/* 6. 사유 */}
+                      <td style={{ padding: "12px 14px", color: textPrimary, maxWidth: 340, overflow: "hidden", textOverflow: "ellipsis" }} title={displayReason}>
                         {displayReason || "-"}
                       </td>
 
-                      {/* 6. 모델 / 사용량 */}
+                      {/* 7. 모델 */}
                       <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
-                        {modelName} ({isImage ? "1장" : `${(log.total_tokens || (log.input_tokens + log.output_tokens) || 0).toLocaleString()} 토큰`})
+                        {modelName}
                       </td>
 
-                      {/* 7. 상대 */}
+                      {/* 8. 상대 */}
                       <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
                         구글 AI (Gemini)
                       </td>
