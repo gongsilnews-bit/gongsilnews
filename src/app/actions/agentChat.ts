@@ -642,12 +642,67 @@ export async function loadAgentModeConfig(): Promise<AgentModeConfig> {
     } catch { /* ignore */ }
   }
 
-  // 기본값: 승인과장 자동, 심사과장 자동, 기사작성 수동
+  // 기본값: 승인과장 자동, 심사과장 자동, 기사작성 수동, 사진작성 자동
   return {
     verify: { mode: "auto" },
     articleReview: { mode: "auto" },
     article: { mode: "manual" },
+    photoCuration: { mode: "auto" },
+    pressRelease: { mode: "manual" },
   };
+}
+
+/**
+ * 에이전트 프롬프트 및 규칙 설정을 저장합니다.
+ */
+export async function saveAgentPromptsConfig(prompts: Record<string, { systemPrompt: string; examples: string }>) {
+  const supabase = getAdminClient();
+  if (!supabase) return { success: false };
+
+  try {
+    await supabase
+      .from("agent_chats")
+      .delete()
+      .eq("channel_id", "agent_prompts_config")
+      .eq("role", "system");
+
+    await supabase.from("agent_chats").insert({
+      channel_id: "agent_prompts_config",
+      role: "system",
+      content: JSON.stringify(prompts),
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error("saveAgentPromptsConfig error:", err);
+    return { success: false };
+  }
+}
+
+/**
+ * 에이전트 프롬프트 및 규칙 설정을 불러옵니다.
+ */
+export async function loadAgentPromptsConfig(): Promise<Record<string, { systemPrompt: string; examples: string }> | null> {
+  const supabase = getAdminClient();
+  if (!supabase) return null;
+
+  try {
+    const { data } = await supabase
+      .from("agent_chats")
+      .select("content")
+      .eq("channel_id", "agent_prompts_config")
+      .eq("role", "system")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (data?.content) {
+      return JSON.parse(data.content);
+    }
+  } catch (err) {
+    console.warn("loadAgentPromptsConfig error:", err);
+  }
+  return null;
 }
 
 /**

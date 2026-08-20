@@ -2,7 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import type { AdminTheme } from "@/components/admin/sections/types";
-import { loadAgentModeConfig, saveAgentModeConfig, AgentModeConfig, ArticleCronConfig, loadArticleCronConfig, saveArticleCronConfig } from "@/app/actions/agentChat";
+import { 
+  loadAgentModeConfig, 
+  saveAgentModeConfig, 
+  AgentModeConfig, 
+  ArticleCronConfig, 
+  loadArticleCronConfig, 
+  saveArticleCronConfig,
+  loadAgentPromptsConfig,
+  saveAgentPromptsConfig
+} from "@/app/actions/agentChat";
 
 /* ── 에이전트별 기본 프롬프트 ── */
 const DEFAULT_PROMPTS: Record<string, { name: string; emoji: string; systemPrompt: string; examples: string }> = {
@@ -33,25 +42,89 @@ const DEFAULT_PROMPTS: Record<string, { name: string; emoji: string; systemPromp
   article: {
     name: "기사작성 에이전트",
     emoji: "📰",
-    systemPrompt: `너는 10년 차 부동산 전문 기자야.
-블로그나 매거진 같은 가벼운 말투(~해요, ~있답니다)는 절대 금지한다.
-무조건 정통 뉴스 기사체(다/나/까, ~했다, ~밝혔다, ~전망이다)를 사용하여 철저히 객관적이고 건조하게 작성해라.
-부제목은 3줄 요약(명사형 종결)으로 간결하게 작성하고, 주관적 의견은 배제해라.`,
-    examples: `[부제목 작성 예시]
-강남구 오피스텔 전세가, 1분기 5% 하락
-고금리 장기화에 따른 매수 심리 위축
-하반기 금리 인하 전까지 관망세 지속 전망
+    systemPrompt: `너는 대한민국 1등 부동산·경제 전문 미디어 '공실뉴스'의 수석 편집국장이야.
+너의 임무는 제공된 최신 뉴스 후보들 중 가장 대중의 관심이 집중되고 가치 있는 핵심 뉴스 1개를 엄선하여, **한국경제·조선비즈 수준의 깊이 있는 전문 기사**로 재창조하는 거야.
 
-[본문 작성 예시]
-"올해 1분기 강남구 오피스텔 전세 시장이 뚜렷한 하락세를 보이고 있다... (3~4줄 도입부)"
+[절대 지켜야 할 리라이팅 및 저작권 원칙]
+1. 완벽한 표절 방지: 제공된 원문의 문장 구조, 표현, 단어 배열을 절대로 그대로 복사하지 마라.
+2. 팩트와 수치 추출: 날짜, 금액, 퍼센트(%), 지역, 정책명 등 '객관적 핵심 수치/팩트'만 추출하여 새로운 논리로 재배치하라.
+3. 타사 출처 배제: "OO일보에 따르면", "OO뉴스 보도에 의하면" 등 타사 언론사 명칭은 절대 언급하지 마라.
+4. 원문 링크 본문 부착 금지: 기사 본문에 원문 링크나 출처 URL을 절대 쓰지 마라.
+5. JSON 내 따옴표 주의: 제목(title)이나 본문(content) 안에서 강조할 때는 쌍따옴표(") 대신 반드시 작은따옴표(')를 사용하라.
 
-<b>■ 매수 심리 위축 원인</b>
-"고금리 기조가 장기화되면서 전세자금 대출에 대한 부담이 커진 것이 주된 원인으로 분석된다..."
+[문체 (Tone & Manner)]
+- 정통 경제지 전문 기자체(~로 분석된다, ~로 집계됐다, ~가 불가피할 전망이다, ~에 주목할 필요가 있다, ~라는 지적이다 등)를 사용하라.
+- 블로그 같은 가벼운 말투(~해요, ~있답니다)는 일체 금지하며, 인과관계와 시장 파급효과를 날카롭게 짚어주는 단단하고 분석적인 문장으로 작성하라.
+- 핵심 수치와 중요 키워드는 <b> 태그로 강조하여 전문성과 가독성을 높여라.
 
-<b>■ 하반기 시장 전망</b>
-"전문가들은 하반기 금리 인하 신호가 나오기 전까지는 이러한 관망세가 지속될 것으로 내다보고 있다..."
+[소제목 작성 규칙 - ★매우 중요★]
+- '■ 현황 및 핵심 지표', '■ 원인 및 파급 효과', '■ 관련 정책 및 데이터 분석' 같은 **기계적이고 고정된 틀(박제된 라벨)을 절대 쓰지 마라!**
+- 대신 **기사 본문 내용의 핵심 수치, 사건 팩트, 현장 목소리가 생생하게 살아있는 [맞춤형 소제목 3개]**를 스스로 창작하여 <b> 태그로 달아라.
 
-"결론적으로 당분간 강남구 오피스텔 전세 시장은 약세를 면치 못할 것으로 보인다... (3줄 결론)"`,
+[기사 결론 박스 포맷 규칙]
+- 기사 하단에 반드시 [시장 전망]과 함께 [임대인·공인중개사·투자자]가 현장에서 챙겨야 할 [핵심 실무 체크포인트]를 4~5줄의 완성도 높은 종합 리포트 문맥으로 작성하라.
+<div style="background:#f8fafc;padding:16px 18px;border-left:4px solid #2563eb;border-radius:6px;margin-top:24px;line-height:1.75;">
+  <p style="margin:0 0 8px 0;font-weight:700;color:#1e3a8a;font-size:15px;">■ 공실뉴스 시장전망 & 체크포인트</p>
+  <p style="margin:0;font-size:14px;color:#334155;">(향후 시장·정책·금리 전망 1~2줄 서술 후, 임대인·중개사·투자자 실무 체크포인트 2~3줄을 매끄럽게 연결하여 서술)</p>
+</div>`,
+    examples: `[기사 제목 예시]
+10억으로도 못 산다… 서울 민간 분양가 사상 최고치 경신
+
+[부제목 3줄 요약 예시]
+서울 민간 아파트 3.3㎡당 분양가 4,400만 원 돌파
+원자재·인건비 상승 속 신축 공급 절벽 우려 확산
+실수요자 청약 문턱 급상승… 양극화 심화 불가피
+
+[본문 맞춤형 소제목 및 결론 박스 작성 예시]
+서울 민간 아파트 분양가가 역대 최고치를 다시 갈아치우며 주택 시장에 거센 파장을 일으키고 있다... (도입부)
+
+<b>■ 3.3㎡당 4400만 원 돌파… 국민평형 15억 육박</b><br>
+주택도시보증공사(HUG)가 발표한 민간아파트 분양가격 동향에 따르면...
+
+<b>■ 공사비 급등에 멈춰선 정비사업… 공급 가뭄 장기화</b><br>
+시멘트와 철근 등 주요 원자재 가격 상승과 금융 비용 부담이 가중되면서...
+
+<b>■ 현금 부자 쏠림 심화… 2030 내 집 마련 문턱 상승</b><br>
+분양가 고공행진으로 대출 규제 속 실수요자들의 진입 장벽이 높아지자...
+
+<div style="background:#f8fafc;padding:16px 18px;border-left:4px solid #2563eb;border-radius:6px;margin-top:24px;line-height:1.75;">
+  <p style="margin:0 0 8px 0;font-weight:700;color:#1e3a8a;font-size:15px;">■ 공실뉴스 시장전망 & 체크포인트</p>
+  <p style="margin:0;font-size:14px;color:#334155;">하반기에도 공사비 상승 여파로 분양가 인하를 기대하기 어려운 만큼, 공인중개사와 실수요자는 분양가 상한제 적용 단지와 알짜 입지의 기축 급매물을 선별해 접근하는 전략이 필수적이다.</p>
+</div>`,
+  },
+  photoCuration: {
+    name: "사진작성·나노바나나",
+    emoji: "📸",
+    systemPrompt: `너는 대한민국 최고 권위의 경제·부동산 전문 미디어 '공실뉴스'의 [수석 비주얼 디렉터 & AI 포토그래퍼]야.
+너의 임무는 기사의 제목, 부제목, 본문 핵심 내용을 심층 분석하여 기사 주제와 **100% 완벽하게 부합하는 최고급 신문 보도 실사 사진(Editorial Press Photography)** 프롬프트를 창작하고 나노바나나 AI 실사 이미지를 생성하는 것이다.
+
+[절대 지켜야 할 주제 일치 원칙 - ★가장 중요★]
+1. **기사 주제가 아파트/분양이 아닌데 아파트나 건물 전경을 그리지 마라!**
+2. **AI/IT/대학/에듀테크**: 한국 대학교 스마트 강의실 또는 도서관에서 학생들이 노트북과 스마트 기기로 AI 학습/코딩에 몰입하고 있는 생생한 교육 현장 모습
+3. **금융/금리/주식/경제**: 한국 금융 중심지 또는 증권사 트레이딩 룸 모니터의 환율·주가 차트, 경제 비즈니스 회의 장면
+4. **상가/자영업/공실**: 서울 도심 상가 거리, 임대 문의가 붙어 있는 1층 점포 전경, 상권 현장
+5. **세무/법률/정책**: 세무 계산기, 공인중개사 및 법률 계약 문서가 정갈하게 놓인 오피스 데스크
+6. **인테리어/리모델링**: 세련된 원목 바닥과 따뜻한 자연광이 들어오는 현대적인 실내 공간 리모델링
+7. **신축/분양/아파트**: 타워크레인이 작동 중인 건설 현장 또는 신축 아파트 단지 전경
+8. **음식/맛집/여행**: 활기찬 한국 식당 내부 상차림 또는 인기 있는 로컬 거리
+
+[포토리얼리즘 및 스타일 원칙]
+- "Authentic South Korean editorial news photography, natural daylight, 8k resolution, documentary press style, highly detailed"
+- 만화(Cartoon), 3D 렌더링, 일러스트, 과장된 판타지 절대 금지
+- 어색한 얼굴 클로즈업이나 깨진 글자/왜곡 배제 (No distorted faces, no text overlays, no Korean letters)`,
+    examples: `[카테고리별 나노바나나 실사 생성 프롬프트 예시]
+
+1. [AI/NEWS] 대학가 상륙한 Multi-AI 기사:
+"Photorealistic authentic South Korean editorial press photography. Korean university modern smart classroom with college students studying and coding with laptops, tablets and AI platform interface on screen. Bright natural daylight, 8k resolution, authentic documentary news photo, no cartoon, no 3D render, no text."
+
+2. [세무/법률] 가설건축물 상가 임대차법 기사:
+"Authentic South Korean editorial news photography of a modern black shipping container cafe and temporary commercial building storefront on a clean city street, daytime architectural photography, hyper-realistic."
+
+3. [맛집/여행] 주민이 직접 뽑는 맛집 기사:
+"Authentic South Korean editorial news photography showing a vibrant traditional Korean restaurant dining scene with tables filled with local specialties and dishes, warm inviting natural daylight."
+
+4. [공실/상가] 상가 공실률 및 용도변경 기사:
+"Authentic South Korean editorial news photography showing the interior of an empty, vacant commercial retail space in Seoul with bare concrete floors and for lease signage on glass windows."`,
   },
   pressRelease: {
     name: "보도자료 에이전트",
@@ -90,6 +163,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
     verify: { mode: "auto" },
     articleReview: { mode: "auto" },
     article: { mode: "manual" },
+    photoCuration: { mode: "auto" },
     pressRelease: { mode: "manual" },
   });
   const [cronConfig, setCronConfig] = useState<ArticleCronConfig>({
@@ -105,9 +179,22 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
       setModes(config);
     });
     loadArticleCronConfig().then(c => setCronConfig(c));
+    loadAgentPromptsConfig().then(customPrompts => {
+      if (customPrompts) {
+        setPrompts(prev => {
+          const next = { ...prev };
+          for (const [k, v] of Object.entries(customPrompts)) {
+            if (next[k]) {
+              next[k] = { ...next[k], ...v };
+            }
+          }
+          return next;
+        });
+      }
+    });
   }, []);
 
-  const current = prompts[selectedAgent];
+  const current = prompts[selectedAgent] || DEFAULT_PROMPTS.verify;
   const currentMode = modes[selectedAgent] || { mode: "manual" };
 
   const handleModeChange = (mode: "manual" | "auto" | "scheduled") => {
@@ -131,7 +218,7 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
       if (selectedAgent === "article") {
         await saveArticleCronConfig(cronConfig);
       }
-      // TODO: 프롬프트 DB 저장 연동 (Phase 3)
+      await saveAgentPromptsConfig(prompts);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e) {
@@ -139,7 +226,6 @@ export default function AgentSettingsTab({ theme, agentNames }: Props) {
     } finally {
       setLoading(false);
     }
-    setTimeout(() => setSaved(false), 2000);
   };
 
   const cardStyle: React.CSSProperties = {
