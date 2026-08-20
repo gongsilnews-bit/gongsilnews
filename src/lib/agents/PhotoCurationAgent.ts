@@ -20,6 +20,7 @@ export interface PhotoCurationRequest {
   mediaType?: "image" | "video";
   youtubeSearchQuery?: string;
   userEmail?: string;
+  userFeedback?: string; // 최고관리자 반려 사유 및 이미지 요청사항
 }
 
 export interface PhotoCurationResult {
@@ -290,17 +291,27 @@ export class PhotoCurationAgent {
   }
 
   /**
-   * 🍌 나노바나나 AI 이미지 전용 정밀 비주얼 프롬프트 생성기 (기사 본문 내용 100% 밀착 분석)
+   * 🍌 나노바나나 AI 이미지 전용 정밀 비주얼 프롬프트 생성기 (기사 본문 내용 & 반려 피드백 100% 밀착 분석)
    */
-  private static async generateNanoBananaVisualPrompt(title: string, category: string, subtitle?: string, content?: string): Promise<string> {
+  private static async generateNanoBananaVisualPrompt(
+    title: string,
+    category: string,
+    subtitle?: string,
+    content?: string,
+    feedback?: string
+  ): Promise<string> {
     const cleanContent = (content || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 1000);
 
-    const prompt = `너는 대한민국 1등 경제·부동산 종합 언론사 '공실뉴스'의 [수석 보도사진 에디터 & 비주얼 디렉터 AI]야.
-너의 임무는 제공된 기사의 [제목], [부제목], 그리고 특히 **[본문 전문]**을 철저하게 읽고 분석하여, 기사에서 다루는 구체적인 사건, 사물, 사람, 장소, 상황에 **100% 밀착된 생생한 신문 1면 보도 실사 사진(Editorial Press Photography)**을 위한 [상세한 영어 비주얼 묘사 2~3문장]을 작성하는 것이다.
+    const feedbackInstruction = feedback 
+      ? `\n[★ 최고관리자 특별 이미지 요청 및 반려 피드백 ★]\n"${feedback}"\n-> 위 관리자의 특별 이미지 요청(예: 합성, 특정 소재 변경 등)을 100% 최우선으로 반영하여 상세한 영어 비주얼 묘사를 작성하라.\n`
+      : "";
 
+    const prompt = `너는 대한민국 1등 경제·부동산 종합 언론사 '공실뉴스'의 [수석 보도사진 에디터 & 비주얼 디렉터 AI]야.
+너의 임무는 제공된 기사의 [제목], [부제목], 그리고 특히 **[본문 전문]**과 **[최고관리자 피드백]**을 철저하게 읽고 분석하여, 기사에서 다루는 구체적인 사건, 사물, 사람, 장소, 상황에 **100% 밀착된 생생한 신문 1면 보도 실사 사진(Editorial Press Photography)**을 위한 [상세한 영어 비주얼 묘사 2~3문장]을 작성하는 것이다.
+${feedbackInstruction}
 [절대 지켜야 할 맞춤형 비주얼 원칙 - ★가장 중요★]
 1. **박제된 고정 템플릿 금지**: 카테고리에 얽매여 뻔한 아파트나 도심 전경을 기계적으로 그리지 마라.
-2. **기사 본문 내용 1:1 밀착 묘사**: 본문에서 다루는 구체적인 핵심 소재(예: 컨테이너 가설건축물, 영상 편집 모니터, 대학교 코딩 실습, 전통시장 노포 식당 상차림, 텅 빈 1층 상가 임대문의, 리모델링 공사 현장, 병원 AI, 법률 계약서 데스크 등)를 정확하게 포착하여 **기사 본문 스토리와 1:1로 일치하는 실제 현장 장면**을 묘사하라.
+2. **기사 본문 내용 및 관리자 피드백 1:1 밀착 묘사**: 본문에서 다루는 구체적인 핵심 소재 및 관리자가 요구한 피드백(예: AI와 부동산 결합, 정부와 부동산 합성, 주식 트레이딩 데스크 등)을 정확하게 포착하여 **기사 본문 스토리와 1:1로 일치하는 실제 현장 장면**을 묘사하라.
 3. **사실적인 한국 현장감 (Authentic South Korea)**: 한국의 실제 도시 거리, 상권, 사무실, 강의실, 실내 공간의 리얼한 분위기와 자연광(natural daylight)을 반영하라.
 4. **포토리얼리즘 (Press Photography Quality)**:
    - "Authentic South Korean editorial news photography, natural daylight, 8k resolution, documentary press photo, highly detailed, realistic textures"
@@ -313,7 +324,7 @@ export class PhotoCurationAgent {
 - 부제목: "${subtitle || ''}"
 - 본문 내용: "${cleanContent}"
 
-출력: 다른 부가 설명 없이 오직 나노바나나 이미지 모델에 전달할 **[기사 본문에 100% 맞춤화된 고품질 영어 비주얼 묘사 2~3문장]**만 출력할 것.`;
+출력: 다른 부가 설명 없이 오직 나노바나나 이미지 모델에 전달할 **[기사 본문 및 피드백에 100% 맞춤화된 고품질 영어 비주얼 묘사 2~3문장]**만 출력할 것.`;
 
     try {
       const res = await generateWithGemini(prompt, { temperature: 0.3 });
@@ -336,17 +347,18 @@ export class PhotoCurationAgent {
     category: string,
     userEmail?: string,
     subtitle?: string,
-    content?: string
+    content?: string,
+    feedback?: string
   ): Promise<string | null> {
     const apiKey = process.env.GEMINI_API_KEY;
     const supabase = getSupabaseClient();
     if (!apiKey || !supabase) return null;
 
     try {
-      console.log(`[PhotoCurationAgent] 🍌 Generating custom photorealistic news image with Nano Banana for: "${title}" (${category})`);
+      console.log(`[PhotoCurationAgent] 🍌 Generating custom photorealistic news image with Nano Banana for: "${title}" (${category}) [Feedback: ${feedback || 'none'}]`);
 
-      // 기사 맥락에 100% 맞춘 정밀 영어 비주얼 묘사 생성
-      const visualDesc = await this.generateNanoBananaVisualPrompt(title, category, subtitle, content);
+      // 기사 맥락 및 피드백에 100% 맞춘 정밀 영어 비주얼 묘사 생성
+      const visualDesc = await this.generateNanoBananaVisualPrompt(title, category, subtitle, content, feedback);
       console.log(`  -> 🍌 [Nano Banana Prompt]: ${visualDesc.slice(0, 100)}...`);
 
       const prompt = `Photorealistic editorial press photography. ${visualDesc}. Highly detailed, 8k resolution, authentic South Korean setting, natural daylight, hyper-realistic documentary photo, no cartoon, no 3D render, no text.`;
@@ -450,15 +462,38 @@ export class PhotoCurationAgent {
 
   /**
    * ⭐️ [미디어 매칭 4단계 우선순위 파이프라인]
+   * 0순위: 최고관리자의 특정 사진 반려 피드백이 있는 경우 최우선 생성!
    * 1순위: 회사/기사 제공 실물 사진 탐색
    * 2순위: 기사 관련 유튜브 영상/링크 탐색
    * 3순위: 고품질 스톡 사진 탐색 (Unsplash)
    * 4순위: 적당한 사진이 없을 때 🍌 나노바나나 AI 실사 이미지 생성
    */
   static async resolvePhoto(req: PhotoCurationRequest): Promise<PhotoCurationResult> {
-    console.log(`[PhotoCurationAgent] 📸 Resolving media for: "${req.articleTitle}" (Category: ${req.category})`);
+    console.log(`[PhotoCurationAgent] 📸 Resolving media for: "${req.articleTitle}" (Category: ${req.category}) [Feedback: ${req.userFeedback || 'none'}]`);
 
     const usedUrls = await this.getRecentUsedImages();
+
+    // ── 🍌 0순위: 최고관리자 특정 사진/이미지 피드백 감지 시 나노바나나 즉시 생성! ──
+    const isExplicitPhotoFeedback = !!req.userFeedback && /사진|이미지|그림|생성|합성|만들어|바꿔|교체/i.test(req.userFeedback);
+    if (isExplicitPhotoFeedback) {
+      console.log(`  -> [0순위] 최고관리자 맞춤 사진 피드백 감지: "${req.userFeedback}"`);
+      const customNanoBanana = await this.generateWithNanoBanana(
+        req.articleTitle,
+        req.category,
+        req.userEmail,
+        req.articleSubtitle,
+        req.articleContent,
+        req.userFeedback
+      );
+      if (customNanoBanana) {
+        return {
+          thumbnailUrl: customNanoBanana,
+          mediaType: "image",
+          sourceType: "nano_banana_ai",
+          promptUsed: req.userFeedback,
+        };
+      }
+    }
 
     // ── 🥇 1순위: 회사/기사 제공 실제 보도·현장 사진 최우선 탐색 ──
     if (req.sourceUrl) {

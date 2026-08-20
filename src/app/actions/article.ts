@@ -547,6 +547,14 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
     // @ts-ignore
     revalidateTag("articles");
     revalidatePath("/", "layout");
+
+    // 반려(REJECTED)와 동시에 반려 사유가 있으면 기사작성 + 사진 에이전트가 즉시 재작성하여 [승인대기]로 자동 이동
+    if (status === 'REJECTED' && reject_reason && reject_reason.trim()) {
+      for (const id of articleIds) {
+        adminReviseArticleWithFeedback(id, reject_reason).catch(e => console.error("Auto revise on reject error:", e));
+      }
+    }
+
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -568,7 +576,7 @@ export async function adminReviseArticleWithFeedback(articleId: string, feedback
       return { success: false, error: "기사를 찾을 수 없습니다." };
     }
 
-    const { generateWithGemini } = await import("@/lib/gemini");
+    const { generateWithGemini } = await import("@/lib/agents/core");
 
     const prompt = `너는 대한민국 1등 경제·부동산 종합 언론사 '공실뉴스'의 [수석 편집국장 AI]야.
 방금 작성된 기사에 대해 최고관리자(발행인)로부터 다음과 같은 [반려 사유 및 수정 지시사항]이 접수되었다.
@@ -618,15 +626,44 @@ ${article.content}
     const newSubtitle = parsed?.subtitle || article.subtitle;
     const newContent = parsed?.content || text;
 
-    // Supabase DB 업데이트: 수정된 내용 반영 및 상태를 다시 'PENDING'(승인대기)으로 전환
+    // 2. 기사 동영상/사진 에이전트 가동 (반려 사유에 사진/이미지 요청사항이 있으면 나노바나나 AI 실사 즉시 생성 및 교체)
+    let newThumbnailUrl = article.thumbnail_url;
+    let newMediaType = article.media_type;
+    let newYoutubeUrl = article.youtube_url;
+
+    try {
+      const { PhotoCurationAgent } = await import("@/lib/agents/PhotoCurationAgent");
+      const media = await PhotoCurationAgent.resolvePhoto({
+        category: article.section2 || article.section1 || "부동산·경제",
+        articleTitle: newTitle,
+        articleSubtitle: newSubtitle,
+        articleContent: newContent,
+        sourceUrl: article.source_url || article.sourceUrl,
+        mediaType: article.media_type,
+        userFeedback: feedback,
+        userEmail: article.author_email || "gongsilnews@gmail.com",
+      });
+
+      if (media?.thumbnailUrl) {
+        newThumbnailUrl = media.thumbnailUrl;
+        newMediaType = media.mediaType || "image";
+        if (media.youtubeUrl) newYoutubeUrl = media.youtubeUrl;
+      }
+    } catch (mediaErr) {
+      console.warn("Photo revision failed, keeping existing photo:", mediaErr);
+    }
+
+    // Supabase DB 업데이트: 수정된 기사 + 새 사진 반영 및 상태를 다시 'PENDING'(승인대기)으로 전환
     const { error: updateErr } = await supabase
       .from("articles")
       .update({
         title: newTitle,
         subtitle: newSubtitle,
         content: newContent,
+        thumbnail_url: newThumbnailUrl,
+        youtube_url: newYoutubeUrl || null,
         status: "PENDING", // 승인대기로 이동!
-        reject_reason: `[AI 재작성 완료] 반려 사유 반영됨: ${feedback.slice(0, 50)}...`,
+        reject_reason: `[AI 기사 & 사진 재작성 완료] ${feedback.slice(0, 50)}...`,
         updated_at: new Date().toISOString(),
       })
       .eq("id", articleId);
