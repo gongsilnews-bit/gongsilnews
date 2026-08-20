@@ -1065,8 +1065,8 @@ export async function getGcpBillingAndUsageStats(): Promise<GcpBillingSummary> {
 
   // GCP 공식 데이터 연동 (Google AI Studio 선불 ₩25,000 충전 기준 실시간 잔액 동기화)
   const gcpPrepaidTotal = 25000;
-  // Google AI Studio 현재 실시간 크레딧 잔액: ₩17,422 (당월 총 소모액: ₩7,578)
-  const gcpCreditBalance = 17422;
+  // Google AI Studio 최신 정산 잔액: ₩16,180 (당월 총 소모액: ₩8,820)
+  const gcpCreditBalance = 16180;
   const gcpMonthSpend = gcpPrepaidTotal - gcpCreditBalance;
 
   try {
