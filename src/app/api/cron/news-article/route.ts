@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import Parser from 'rss-parser';
 import { NewsArticleAgent } from '@/lib/agents/NewsArticleAgent';
-import { resolveArticleMedia } from '@/lib/agents/mediaHelper';
+import { PhotoCurationAgent } from '@/lib/agents/PhotoCurationAgent';
 import { createClient } from '@supabase/supabase-js';
 import { kstHour, kstTodayStart } from '@/utils/kst';
 
@@ -138,14 +138,15 @@ export async function GET(req: Request) {
         category: item.section2
       });
 
-      // ── 미디어 자동 매칭 (1단계: 기업 배포 사진, 2단계: 유튜브 영상, 3단계: 무료 스톡 사진) ──
-      const media = await resolveArticleMedia({
+      // ── 사진 전문 에이전트(PhotoCurationAgent) 가동: 맥락 분석 + 실물 보도사진 + 중복 방지 ──
+      const media = await PhotoCurationAgent.resolvePhoto({
         category: item.section2,
-        mediaType: aiResult.mediaType,
-        sourceUrl: aiResult.sourceUrl,
-        imageKeyword: aiResult.imageKeyword,
-        youtubeSearchQuery: aiResult.youtubeSearchQuery,
         articleTitle: aiResult.title,
+        articleSubtitle: aiResult.subtitle,
+        articleContent: aiResult.content,
+        sourceUrl: aiResult.sourceUrl,
+        mediaType: aiResult.mediaType,
+        youtubeSearchQuery: aiResult.youtubeSearchQuery,
       });
 
       // 하단 원문 참고 링크는 완전히 제거하고 순수 독창적 기사 본문만 저장
