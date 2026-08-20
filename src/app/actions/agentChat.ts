@@ -271,6 +271,42 @@ export async function getRecentAgentCallLogs(params?: {
   const options = typeof params === "number" ? { limit: params } : (params || {});
   const limit = options.limit || 50;
 
+  // 회원 정보 조회하여 사용자 이름/직책 매핑
+  const { data: memberList } = await supabase
+    .from("members")
+    .select("email, name, role");
+
+  const memberMap = new Map<string, { name: string; role: string }>();
+  const memberSearchEmails: string[] = [];
+
+  (memberList || []).forEach((m: any) => {
+    if (m.email) {
+      const emailLower = m.email.toLowerCase().trim();
+      memberMap.set(emailLower, {
+        name: m.name || "",
+        role: m.role || "",
+      });
+
+      if (options.search && options.search.trim()) {
+        const q = options.search.trim().toLowerCase();
+        if ((m.name && m.name.toLowerCase().includes(q)) || emailLower.includes(q)) {
+          memberSearchEmails.push(emailLower);
+        }
+      }
+    }
+  });
+
+  // 특수 관리자/이메일 별칭 매핑
+  if (options.search && options.search.trim()) {
+    const q = options.search.trim().toLowerCase();
+    if ("공실뉴스".includes(q) || "관리자".includes(q)) {
+      memberSearchEmails.push("gongsilnews@gmail.com");
+    }
+    if ("김동현".includes(q) || "마케팅".includes(q)) {
+      memberSearchEmails.push("gongsilmarketing@gmail.com");
+    }
+  }
+
   let query = supabase
     .from("agent_chats")
     .select("id, channel_id, content, input_tokens, output_tokens, total_tokens, cost_krw, created_at")
@@ -289,7 +325,17 @@ export async function getRecentAgentCallLogs(params?: {
     query = query.lte("created_at", options.endDate);
   }
   if (options.search && options.search.trim()) {
-    query = query.ilike("content", `%${options.search.trim()}%`);
+    const cleanSearch = options.search.trim();
+    if (memberSearchEmails.length > 0) {
+      // 검색어가 회원명과 매치되면 해당 이메일들을 포함하여 OR 검색
+      const conditions = [
+        `content.ilike.%${cleanSearch}%`,
+        ...memberSearchEmails.map((e) => `content.ilike.%[${e}%`),
+      ];
+      query = query.or(conditions.join(","));
+    } else {
+      query = query.ilike("content", `%${cleanSearch}%`);
+    }
   }
 
   const { data, error } = await query;
@@ -298,21 +344,6 @@ export async function getRecentAgentCallLogs(params?: {
     console.error("getRecentAgentCallLogs error:", error);
     return { success: false, data: [] };
   }
-
-  // 회원 정보 조회하여 사용자 이름/직책 매핑
-  const { data: memberList } = await supabase
-    .from("members")
-    .select("email, name, role");
-
-  const memberMap = new Map<string, { name: string; role: string }>();
-  (memberList || []).forEach((m: any) => {
-    if (m.email) {
-      memberMap.set(m.email.toLowerCase().trim(), {
-        name: m.name || "",
-        role: m.role || "",
-      });
-    }
-  });
 
   const enrichedLogs = data.map((row: any) => {
     const raw = row.content || "";

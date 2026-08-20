@@ -245,6 +245,52 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
     return <span style={{ fontSize: 11, color: "#3b82f6", marginLeft: 6 }}>▼ {format}</span>;
   };
 
+  // ── 실시간 검색 및 채널 필터링 (0ms 즉시 반응) ──
+  const displayLogs = useMemo(() => {
+    return recentLogs.filter((log: any) => {
+      // 1. 채널 필터
+      if (selectedChannelFilter !== "all") {
+        if (log.channel_id !== selectedChannelFilter) return false;
+      }
+
+      // 2. 검색어 필터 (회원명, 이메일, 사유, 모델, 유형)
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase().trim();
+
+      const raw = (log.content || "").toLowerCase();
+      const userEmail = (log.user_email || "").toLowerCase();
+      const userName = (log.user_name || "").toLowerCase();
+      const channelId = (log.channel_id || "").toLowerCase();
+
+      // 회원명 / 이메일 매칭
+      const isGongsil = (userEmail.includes("gongsilnews") || userName.includes("공실뉴스")) && ("공실뉴스".includes(q) || "gongsilnews".includes(q) || "관리자".includes(q) || "최고관리자".includes(q));
+      const isDonghyun = (userEmail.includes("gongsilmarketing") || userName.includes("김동현")) && ("김동현".includes(q) || "gongsilmarketing".includes(q) || "마케팅".includes(q));
+
+      if (isGongsil || isDonghyun) return true;
+      if (userEmail.includes(q) || userName.includes(q)) return true;
+      if (raw.includes(q) || channelId.includes(q)) return true;
+
+      // 유형 한글 라벨 매칭
+      if (q.includes("나노") || q.includes("실사") || q.includes("이미지") || q.includes("사진")) {
+        if (log.channel_id === "photoCuration" || raw.includes("이미지") || raw.includes("실사")) return true;
+      }
+      if (q.includes("기사")) {
+        if (log.channel_id === "article") return true;
+      }
+      if (q.includes("마케팅")) {
+        if (log.channel_id === "marketingDraft") return true;
+      }
+      if (q.includes("리모델링")) {
+        if (log.channel_id === "remodeling") return true;
+      }
+      if (q.includes("인테리어")) {
+        if (log.channel_id === "homeInterior") return true;
+      }
+
+      return false;
+    });
+  }, [recentLogs, selectedChannelFilter, searchQuery]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, position: "relative" }}>
       
@@ -559,7 +605,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
               실시간 AI 상세 호출 및 크레딧 소모 내역
             </h3>
             <span style={{ fontSize: 12, color: textSecondary, marginLeft: 4 }}>
-              (총 {recentLogs.length}건)
+              (총 {displayLogs.length}건{searchQuery ? ` / 전체 ${recentLogs.length}건` : ""})
             </span>
           </div>
           <button
@@ -621,7 +667,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             <span style={{ position: "absolute", left: 10, fontSize: 13, color: textSecondary }}>🔍</span>
             <input
               type="text"
-              placeholder="회원명, 내용 검색..."
+              placeholder="회원명, 이메일, 내용 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && fetchStats(false)}
@@ -652,7 +698,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
         </div>
 
         {/* ── 일목요연한 텍스트 테이블 ── */}
-        {recentLogs.length > 0 ? (
+        {displayLogs.length > 0 ? (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, whiteSpace: "nowrap" }}>
               <thead>
@@ -668,7 +714,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                 </tr>
               </thead>
               <tbody>
-                {recentLogs.map((log) => {
+                {displayLogs.map((log) => {
                   const date = new Date(log.created_at);
                   const dateStr = date.toLocaleString("ko-KR");
                   
@@ -779,8 +825,8 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         {modelName}
                       </td>
 
-                      {/* 8. 상대 */}
-                      <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
+                      {/* 8. 상태 */}
+                      <td style={{ padding: "12px 14px", color: "#10b981", fontWeight: 700, fontSize: 12 }}>
                         구글 AI (Gemini)
                       </td>
                     </tr>
@@ -790,8 +836,23 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             </table>
           </div>
         ) : (
-          <div style={{ padding: "40px 0", textAlign: "center", color: textSecondary, fontSize: 13 }}>
-            기록된 AI 호출 내역이 없습니다.
+          <div style={{ padding: "48px 24px", textAlign: "center", color: textSecondary }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>검색 결과가 없습니다.</div>
+            <div style={{ fontSize: 12, marginTop: 4 }}>
+              {searchQuery ? `"${searchQuery}"에 일치하는 회원명이나 호출 내역을 찾을 수 없습니다.` : "해당 분류의 호출 내역이 없습니다."}
+            </div>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                style={{
+                  marginTop: 12, padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                  background: "#3b82f6", color: "#fff", border: "none", cursor: "pointer"
+                }}
+              >
+                전체 목록 보기
+              </button>
+            )}
           </div>
         )}
       </div>
