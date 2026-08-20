@@ -79,19 +79,16 @@ export const normalizeSido = (sido: string | null): string => {
   return clean.substring(0, 2);
 };
 
-export function useVacancyFilters(initialVacancies: any[]) {
-  const [filters, setFilters] = useState<FilterState>(initialFilterState);
+export function filterVacanciesList(vacancies: any[], filters: FilterState): any[] {
+  const filterSidoNorm = normalizeSido(filters.sido);
+  const filterSigunguNorm = filters.sigungu?.trim() || "";
+  const filterDongNorm = filters.dong?.trim() || "";
 
-  const filteredVacancies = useMemo(() => {
-    const filterSidoNorm = normalizeSido(filters.sido);
-    const filterSigunguNorm = filters.sigungu?.trim() || "";
-    const filterDongNorm = filters.dong?.trim() || "";
-
-    return initialVacancies.filter(v => {
-      // 1. 공실광고 유형 - 아무것도 선택하지 않으면 아무것도 노출하지 않습니다. (대표님 지침)
-      if (filters.propertyTypes.length === 0) return false;
-      
-      let isPropMatch = false;
+  return vacancies.filter(v => {
+    // 1. 공실광고 유형 - 아무것도 선택하지 않으면 아무것도 노출하지 않습니다. (대표님 지침)
+    if (filters.propertyTypes.length === 0) return false;
+    
+    let isPropMatch = false;
 
       if (v.trade_type === "경매") {
         // 🚀 [대표님 지침] 법원 경공매 모드 전용 6대 자산 분류 고성능 해석 엔진 (PC 동일)
@@ -339,6 +336,13 @@ export function useVacancyFilters(initialVacancies: any[]) {
 
       return true;
     });
+}
+
+export function useVacancyFilters(initialVacancies: any[]) {
+  const [filters, setFilters] = useState<FilterState>(initialFilterState);
+
+  const filteredVacancies = useMemo(() => {
+    return filterVacanciesList(initialVacancies, filters);
   }, [initialVacancies, filters]);
 
   const updateFilter = (newFilters: Partial<FilterState>) => {

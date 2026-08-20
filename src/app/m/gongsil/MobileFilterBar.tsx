@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import { FilterState } from "./filters/useVacancyFilters";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { FilterState, filterVacanciesList } from "./filters/useVacancyFilters";
 import LocationFilterPanel from "./filters/LocationFilterPanel";
 import PropertyTypeFilterPanel from "./filters/PropertyTypeFilterPanel";
 import TradeTypeFilterPanel from "./filters/TradeTypeFilterPanel";
@@ -106,6 +106,11 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
 
   // Temp filters for full filter panel
   const [tempFilters, setTempFilters] = useState<FilterState>(filters);
+
+  // 🚀 [대표님 지침] 옵션 선택 시 실시간 매물 개수 즉시 계산
+  const tempFilteredCount = useMemo(() => {
+    return filterVacanciesList(vacancies, tempFilters).length;
+  }, [vacancies, tempFilters]);
 
   // 🚀 [PC 동일] 카테고리별 동적 상세 필터 조건 판별기
   const isApartmentGroup = tempFilters.propertyTypes.some(p => ["아파트", "오피스텔", "기타"].includes(p));
@@ -519,7 +524,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               onFilterChange(tempFilters); 
               setFullFilterOpen(false); 
               if (onShowList) onShowList("filter"); 
-            }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>{filteredCount}개 공실광고 보기</button>
+            }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>{tempFilteredCount}개 공실광고 보기</button>
           </div>
 
         </div>
