@@ -499,7 +499,6 @@ function MobileArticleAdmin() {
             {/* 버튼 */}
             <div style={{ display: "flex", gap: 8 }}>
               <button
-                disabled={isRevising}
                 onClick={() => setShowRejectModal(false)}
                 style={{
                   flex: 1, height: 44, background: "#f3f4f6", color: "#4b5563",
@@ -509,14 +508,13 @@ function MobileArticleAdmin() {
                 취소
               </button>
               <button
-                disabled={isRevising}
                 onClick={handleAiRevise}
                 style={{
                   flex: 1, height: 44, background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff",
-                  border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: isRevising ? "not-allowed" : "pointer",
+                  border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer",
                 }}
               >
-                {isRevising ? "⏳ AI 재작성 중..." : "반려 처리"}
+                반려 처리
               </button>
             </div>
           </div>
