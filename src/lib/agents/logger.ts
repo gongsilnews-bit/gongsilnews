@@ -32,7 +32,7 @@ export async function logAiUsage(params: LogAiUsageParams): Promise<void> {
     const supabase = getAdminClient();
     if (!supabase) return;
 
-    const userEmail = params.userEmail || "SYSTEM (자동 크론)";
+    const userEmail = params.userEmail || "gongsilnews@gmail.com";
     const model = params.model || "gemini-3.6-flash";
     const type = params.type || "text";
 

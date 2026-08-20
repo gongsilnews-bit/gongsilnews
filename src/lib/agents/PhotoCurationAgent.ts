@@ -301,7 +301,7 @@ export class PhotoCurationAgent {
       // AI 비서실 현황판 실시간 로그 기록 (나노바나나 이미지 생성)
       await logAiUsage({
         channelId: "photoCuration",
-        userEmail: userEmail || "SYSTEM (나노바나나)",
+        userEmail: userEmail || "gongsilnews@gmail.com",
         summary: `[나노바나나 AI 실사 생성] "${title.slice(0, 30)}"`,
         model: "gemini-3.1-flash-image",
         type: "image",

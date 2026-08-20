@@ -783,14 +783,16 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   const isSystem = userEmail.toUpperCase().includes("SYSTEM");
                   const isImage = raw.includes("(이미지)") || raw.includes("나노바나나") || raw.includes("gemini-3.1-flash-image") || raw.includes("실사") || log.channel_id === "photoCuration" || log.channel_id === "remodeling" || log.channel_id === "homeInterior";
 
-                  // 회원명 (깔끔한 텍스트)
-                  let memberName = log.user_name || "";
-                  if (isAdmin) {
-                    memberName = "공실뉴스";
-                  } else if (isSystem) {
-                    memberName = "SYSTEM";
-                  } else if (!memberName) {
-                    memberName = userEmail.includes("gongsilmarketing") ? "김동현" : userEmail.split("@")[0];
+                  // 회원명 포맷: 공실뉴스(gongsilnews@gmail.com) 또는 김동현(gongsilmarketing@gmail.com)
+                  let memberDisplay = "공실뉴스(gongsilnews@gmail.com)";
+                  if (isAdmin || isSystem || userEmail.toLowerCase().includes("gongsilnews")) {
+                    memberDisplay = "공실뉴스(gongsilnews@gmail.com)";
+                  } else if (userEmail.toLowerCase().includes("gongsilmarketing")) {
+                    memberDisplay = "김동현(gongsilmarketing@gmail.com)";
+                  } else if (log.user_name) {
+                    memberDisplay = `${log.user_name}(${userEmail})`;
+                  } else {
+                    memberDisplay = `${userEmail.split("@")[0]}(${userEmail})`;
                   }
 
                   // 유형 라벨 & 뱃지 스타일
@@ -836,9 +838,9 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         {dateStr}
                       </td>
 
-                      {/* 2. 회원 (깔끔한 텍스트) */}
+                      {/* 2. 회원: 공실뉴스(gongsilnews@gmail.com) 형태 */}
                       <td style={{ padding: "12px 14px", fontWeight: 600, color: textPrimary }}>
-                        {memberName}
+                        {memberDisplay}
                       </td>
 
                       {/* 3. 유형 (포인트 관리와 동일한 컴팩트 뱃지) */}
@@ -869,7 +871,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
 
                       {/* 7. 상대 */}
                       <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
-                        {isAdmin ? "시스템" : "공실뉴스"}
+                        구글 AI (Gemini)
                       </td>
                     </tr>
                   );

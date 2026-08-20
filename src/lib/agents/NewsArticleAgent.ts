@@ -191,7 +191,7 @@ ${conclusionInstruction}
       // AI 비서실 현황판 실시간 로그 기록
       await logAiUsage({
         channelId: "article",
-        userEmail: req.userEmail || "SYSTEM (크론 자동수집)",
+        userEmail: req.userEmail || "gongsilnews@gmail.com",
         summary: `[기사 작성] "${(parsed.title || '').slice(0, 30)}"`,
         model: "gemini-3.6-flash",
         type: "text",
