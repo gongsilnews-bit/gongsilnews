@@ -34,20 +34,34 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
 
   return (
     <div>
-      {PROPERTY_TYPES.map((g, idx) => {
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+        <span style={{ fontSize: "14px", fontWeight: 700, color: "#111" }}>공실광고유형 선택</span>
+        <button
+          type="button"
+          onClick={handleToggleAll}
+          style={{
+            padding: "5px 12px",
+            borderRadius: "6px",
+            fontSize: "13px",
+            fontWeight: 700,
+            border: isAllSelected ? "1.5px solid #4b89ff" : "1px solid #d1d5db",
+            background: isAllSelected ? "#eef4ff" : "#f9fafb",
+            color: isAllSelected ? "#4b89ff" : "#4b5563",
+            cursor: "pointer",
+          }}
+        >
+          {isAllSelected ? "✓ 전체해제" : "✓ 전체선택"}
+        </button>
+      </div>
+
+      {PROPERTY_TYPES.map((g) => {
         return (
-          <div key={g.group} style={{ marginBottom: "16px" }}>
-            <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280", marginBottom: "8px" }}>{g.group}</div>
+          <div key={g.group} style={{ marginBottom: "18px" }}>
+            <div style={{ fontSize: "13px", fontWeight: 700, color: "#102c57", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+              <span style={{ width: "4px", height: "13px", background: "#102c57", borderRadius: "2px", display: "inline-block" }}></span>
+              <span>{g.group}</span>
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-              {idx === 0 && (
-                <button 
-                  type="button" 
-                  onClick={handleToggleAll} 
-                  style={{ ...gridBtnStyle(isAllSelected), fontSize: "14px" }}
-                >
-                  {isAllSelected ? "✓ 전체해제" : "✓ 전체선택"}
-                </button>
-              )}
               {g.items.map(item => (
                 <button 
                   type="button" 

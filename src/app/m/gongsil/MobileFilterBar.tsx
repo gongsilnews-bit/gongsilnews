@@ -23,8 +23,8 @@ interface MobileFilterBarProps {
 
 const TRADE_TYPES = ["매매", "전세", "월세", "단기"];
 
-const RESIDENTIAL_TYPES = ["아파트", "빌라/연립", "빌라/주택", "빌라·주택", "오피스텔", "원룸", "1.5룸", "투룸", "단독/다가구", "전원주택", "상가주택"];
-const COMMERCIAL_TYPES = ["상가", "사무실", "빌딩/사무실", "건물", "공장/창고", "지식산업센터"];
+const RESIDENTIAL_TYPES = ["아파트", "오피스텔", "기타", "빌라/연립", "단독/다가구", "전원주택", "원룸", "1.5룸", "투룸", "빌라/주택"];
+const COMMERCIAL_TYPES = ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "빌딩/사무실"];
 const LAND_TYPES = ["토지"];
 
 const RESIDENTIAL_THEMES = ['급매', '추천공실광고', '신축급', '올수리', '한강뷰', '역세권', '풀옵션', '가성비', '단기임대', '주차편리', '대로변안전', '여성안심', '애완견가능', '복층', '마당있음', '투자용'];
@@ -53,14 +53,16 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
 
-  // 🚀 [대표님 지침] 법원 경공매 모드 진입 시 PC와 똑같은 8대 카테고리 구성으로 지능형 전격 치환!
+  // 🚀 PC GongsilClient.tsx 기준 100% 동일 대분류 & 소분류(알약) 구조
   const PROPERTY_TYPES = activeMode === "경매" ? [
     { group: "주거", items: ["아파트", "단독/다가구", "빌라/주택"] },
     { group: "상업·업무", items: ["빌딩/사무실", "공장/창고"] },
     { group: "토지", items: ["토지"] }
   ] : [
-    { group: "주거", items: ["아파트", "빌라/연립", "오피스텔", "원룸", "1.5룸", "투룸", "단독/다가구", "전원주택", "상가주택"] },
-    { group: "상가·업무·토지", items: ["상가", "사무실", "토지", "건물", "공장/창고", "지식산업센터"] },
+    { group: "아파트·오피스텔", items: ["아파트", "오피스텔", "기타"] },
+    { group: "빌라·주택", items: ["빌라/연립", "단독/다가구", "전원주택"] },
+    { group: "원룸·투룸(풀옵션)", items: ["원룸", "1.5룸", "투룸"] },
+    { group: "상가·사무실·공장·토지", items: ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지"] },
   ];
 
   // Text search

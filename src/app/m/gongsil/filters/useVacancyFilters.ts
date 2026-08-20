@@ -21,9 +21,10 @@ export interface FilterState {
 }
 
 const ALL_PROPERTY_TYPES = [
-  "아파트", "빌라/연립", "오피스텔", "원룸", "1.5룸", "투룸", "단독/다가구",
-  "전원주택", "상가주택", "재건축", "재개발",
-  "상가", "사무실", "토지", "건물", "공장/창고", "지식산업센터"
+  "아파트", "오피스텔", "기타",
+  "빌라/연립", "단독/다가구", "전원주택",
+  "원룸", "1.5룸", "투룸",
+  "상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지"
 ];
 
 export const initialFilterState: FilterState = {
@@ -79,7 +80,7 @@ export function useVacancyFilters(initialVacancies: any[]) {
       let isPropMatch = false;
 
       if (v.trade_type === "경매") {
-        // 🚀 [대표님 지침] 법원 경공매 모드 전용 8대 카테고리 고성능 해석 엔진!
+        // 🚀 [대표님 지침] 법원 경공매 모드 전용 6대 자산 분류 고성능 해석 엔진 (PC 동일)
         const meta = v.metadata || {};
         const mcls = meta.cltrUsgMclsCtgrNm || "";
         const scls = meta.cltrUsgSclsCtgrNm || "";
@@ -107,18 +108,63 @@ export function useVacancyFilters(initialVacancies: any[]) {
           return false;
         });
       } else {
-        // 일반 공실 매물 필터링
-        isPropMatch = filters.propertyTypes.includes(v.sub_category) || filters.propertyTypes.includes(v.property_type);
-        
-        // 🚀 [대표님 지침] 원룸/투룸 초강력 매칭 및 건물 예외 보정 장치
-        if (!isPropMatch) {
-          if (v.property_type === "원룸·투룸(풀옵션)") {
-            isPropMatch = filters.propertyTypes.includes("원룸") || filters.propertyTypes.includes("1.5룸") || filters.propertyTypes.includes("투룸");
+        // 🚀 일반 공실 매물 필터링 (PC GongsilClient.tsx 100% 동일 매칭 로직)
+        isPropMatch = filters.propertyTypes.some((pill) => {
+          // ① 아파트·오피스텔
+          if (pill === "아파트") {
+            return v.sub_category === "아파트" || (v.property_type === "아파트·오피스텔" && (!v.sub_category || v.sub_category === "아파트"));
           }
-          if (filters.propertyTypes.includes("건물") && (v.sub_category === "빌딩/건물" || v.sub_category === "건물/빌딩")) {
-            isPropMatch = true;
+          if (pill === "오피스텔") {
+            return v.sub_category === "오피스텔" || (v.property_type === "아파트·오피스텔" && v.sub_category === "오피스텔") || (v.themes && Array.isArray(v.themes) && v.themes.includes("오피스텔"));
           }
-        }
+          if (pill === "기타") {
+            return ["아파트분양권", "재건축", "오피스텔분양권", "재개발"].includes(v.sub_category);
+          }
+
+          // ② 빌라·주택
+          if (pill === "빌라/연립") {
+            return v.sub_category === "빌라/연립" || v.sub_category === "빌라" || v.sub_category === "연립" || v.sub_category === "다세대";
+          }
+          if (pill === "단독/다가구") {
+            return v.sub_category === "단독/다가구" || v.sub_category === "단독" || v.sub_category === "다가구" || v.sub_category === "상가주택";
+          }
+          if (pill === "전원주택") {
+            return v.sub_category === "전원주택";
+          }
+
+          // ③ 원룸·투룸(풀옵션)
+          if (pill === "원룸") {
+            return v.sub_category === "원룸" || (v.property_type === "원룸·투룸(풀옵션)" && (!v.sub_category || v.sub_category === "원룸"));
+          }
+          if (pill === "1.5룸") {
+            return v.sub_category === "1.5룸";
+          }
+          if (pill === "투룸") {
+            return v.sub_category === "투룸";
+          }
+
+          // ④ 상가·사무실·공장·토지
+          if (pill === "상가") {
+            return v.sub_category === "상가" || v.sub_category === "근린상가" || v.sub_category === "상가건물";
+          }
+          if (pill === "사무실") {
+            return v.sub_category === "사무실" || v.sub_category === "업무시설";
+          }
+          if (pill === "지식산업센터") {
+            return v.sub_category === "지식산업센터" || v.sub_category === "아파트형공장";
+          }
+          if (pill === "건물/빌딩") {
+            return v.sub_category === "건물/빌딩" || v.sub_category === "건물" || v.sub_category === "빌딩/건물" || v.sub_category === "빌딩";
+          }
+          if (pill === "공장/창고") {
+            return v.sub_category === "공장/창고" || v.sub_category === "공장" || v.sub_category === "창고";
+          }
+          if (pill === "토지") {
+            return v.sub_category === "토지" || v.sub_category === "대지" || v.sub_category === "임야";
+          }
+
+          return v.sub_category === pill || v.property_type === pill;
+        });
       }
       
       if (!isPropMatch) return false;
@@ -126,12 +172,14 @@ export function useVacancyFilters(initialVacancies: any[]) {
       // 2. 거래 방식
       if (v.trade_type !== "경매" && !filters.tradeTypes.includes(v.trade_type)) return false;
       
-      // 3. 가격 (만원 단위) - 월세의 경우 보증금(deposit_price), 그 외는 매매가/전세가(trade_price)
+      // 3. 가격 (만원 단위 / 원 단위 스마트 비교)
       if (filters.priceMin !== null || filters.priceMax !== null) {
-        const price = v.trade_type === '월세' ? v.deposit_price : v.trade_price;
-        if (price == null) return false;
-        if (filters.priceMin !== null && price < filters.priceMin) return false;
-        if (filters.priceMax !== null && price > filters.priceMax) return false;
+        const rawPrice = v.deposit != null ? v.deposit : (v.trade_type === '월세' ? v.deposit_price : v.trade_price);
+        if (rawPrice == null) return false;
+        // DB에 원 단위(예: 300,000,000)로 저장된 경우 만원 단위로 환산
+        const priceInManwon = rawPrice > 100000 ? Math.round(rawPrice / 10000) : rawPrice;
+        if (filters.priceMin !== null && priceInManwon < filters.priceMin) return false;
+        if (filters.priceMax !== null && priceInManwon > filters.priceMax) return false;
       }
 
       // 4. 면적 (전용면적 exclusive_area, ㎡ 기준, 1평 ≈ 3.3058㎡)
