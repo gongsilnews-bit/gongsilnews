@@ -811,9 +811,12 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
 
                   let userDisplayName = userEmail;
                   if (isAdmin) {
-                    userDisplayName = `${userEmail} 최고관리자 공실뉴스`;
+                    userDisplayName = `${userEmail} (최고관리자 공실뉴스)`;
+                  } else if (isSystem) {
+                    userDisplayName = userEmail;
                   } else if (log.user_name) {
-                    userDisplayName = `${userEmail} ${log.user_name}`;
+                    const rolePrefix = log.user_role === "REALTOR" ? "부동산 " : "";
+                    userDisplayName = `${userEmail} (${rolePrefix}${log.user_name})`;
                   }
 
                   return (

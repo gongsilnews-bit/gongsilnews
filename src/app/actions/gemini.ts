@@ -108,10 +108,11 @@ ${data.realtorInfo ? `
             const inT = um.promptTokenCount || 0;
             const outT = um.candidatesTokenCount || 0;
             const costKrw = (inT * 0.075 / 1000000 * 1400) + (outT * 0.3 / 1000000 * 1400);
+            const userEmail = data.userEmail || data.realtorInfo?.email || "gongsilmarketing@gmail.com";
             await supabaseAdmin.from("agent_chats").insert({
               channel_id: "propertyDescription",
               role: "agent",
-              content: `[매물 설명 생성] ${data.propertyType || ''} ${data.tradeType || ''} - ${model}`,
+              content: `[${userEmail}] [매물 설명 생성] ${data.propertyType || ''} ${data.tradeType || ''} - ${model}`,
               input_tokens: inT, output_tokens: outT, total_tokens: um.totalTokenCount || 0, cost_krw: costKrw,
             });
           }
@@ -420,10 +421,21 @@ JSON 구조는 다음과 같아야 한다:
               const inT = um.promptTokenCount || 0;
               const outT = um.candidatesTokenCount || 0;
               const costKrw = (inT * 0.075 / 1000000 * 1400) + (outT * 0.3 / 1000000 * 1400);
+
+              let userEmail = "gongsilmarketing@gmail.com";
+              if (params.memberId) {
+                const { data: mem } = await supabaseAdmin
+                  .from("members")
+                  .select("email")
+                  .eq("id", params.memberId)
+                  .single();
+                if (mem?.email) userEmail = mem.email;
+              }
+
               await supabaseAdmin.from("agent_chats").insert({
                 channel_id: "marketingDraft",
                 role: "agent",
-                content: `[마케팅 초안 생성] ${tone} / ${audience} - ${model}`,
+                content: `[${userEmail}] [마케팅 초안 생성] ${tone} / ${audience} - ${model}`,
                 input_tokens: inT, output_tokens: outT, total_tokens: um.totalTokenCount || 0, cost_krw: costKrw,
               });
             }
