@@ -384,7 +384,23 @@ const getArticleDetailCached = unstable_cache(
   { tags: ["articles"], revalidate: 3600 }
 );
 
-export async function getArticleDetail(articleId: string) {
+export async function getArticleDetail(articleId: string, noCache: boolean = false) {
+  if (noCache) {
+    const supabase = getAdminClient();
+    let query = supabase
+      .from("articles")
+      .select("*, article_keywords(keyword), article_media(*)");
+      
+    if (/^[0-9]+$/.test(articleId)) {
+      query = query.eq("article_no", parseInt(articleId, 10));
+    } else {
+      query = query.eq("id", articleId);
+    }
+    
+    const { data, error } = await query.single();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
+  }
   return await getArticleDetailCached(articleId);
 }
 
