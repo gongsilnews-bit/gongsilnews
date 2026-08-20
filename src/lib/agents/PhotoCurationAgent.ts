@@ -290,38 +290,33 @@ export class PhotoCurationAgent {
   }
 
   /**
-   * 🍌 나노바나나 AI 이미지 전용 정밀 비주얼 프롬프트 생성기 (기사 내용 100% 일치)
+   * 🍌 나노바나나 AI 이미지 전용 정밀 비주얼 프롬프트 생성기 (기사 본문 내용 100% 밀착 분석)
    */
   private static async generateNanoBananaVisualPrompt(title: string, category: string, subtitle?: string, content?: string): Promise<string> {
-    const prompt = `너는 대한민국 최고 언론사의 [수석 비주얼 디렉터 & AI 포토그래퍼]야.
-다음 뉴스 기사의 주제와 핵심 내용을 분석하여, 기사에 **100% 완벽하게 부합하는 최고급 신문 보도 실사 사진(Editorial Press Photography)**을 생성하기 위한 [상세한 영어 비주얼 묘사]를 작성해라.
+    const cleanContent = (content || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 1000);
 
-[절대 지켜야 할 원칙 - ★매우 중요★]
-1. 주제 일치성:
-   - **기사 주제가 아파트/분양이 아닌데 아파트나 건물 전경을 그리지 마라!**
-   - **AI/IT/대학/에듀테크**: 한국 대학교 강의실 또는 도서관에서 학생들이 노트북과 스마트 기기로 AI 학습/과제에 몰입하고 있는 생생한 교육 현장 모습
-   - **금융/금리/주식/경제**: 한국 금융 중심지 또는 증권사 모니터의 환율·주가 차트, 경제 비즈니스 회의 장면
-   - **상가/자영업/공실**: 서울 도심 상가 거리, 임대 문의가 붙어 있는 1층 점포 전경, 상권 현장
-   - **세무/법률/정책**: 세무 계산기, 공인중개사 및 법률 계약 문서가 정갈하게 놓인 오피스 데스크
-   - **인테리어/리모델링**: 세련된 원목 바닥과 따뜻한 자연광이 들어오는 현대적인 실내 공간
-   - **신축/분양/아파트**: 타워크레인이 작동 중인 건설 현장 또는 신축 아파트 단지 전경
-   - **음식/맛집/여행**: 활기찬 한국 식당 내부 또는 인기 있는 로컬 거리
+    const prompt = `너는 대한민국 1등 경제·부동산 종합 언론사 '공실뉴스'의 [수석 보도사진 에디터 & 비주얼 디렉터 AI]야.
+너의 임무는 제공된 기사의 [제목], [부제목], 그리고 특히 **[본문 전문]**을 철저하게 읽고 분석하여, 기사에서 다루는 구체적인 사건, 사물, 사람, 장소, 상황에 **100% 밀착된 생생한 신문 1면 보도 실사 사진(Editorial Press Photography)**을 위한 [상세한 영어 비주얼 묘사 2~3문장]을 작성하는 것이다.
 
-2. 포토리얼리즘 및 스타일:
-   - "Authentic South Korean editorial news photography, natural daylight, 8k resolution, documentary press style, highly detailed"
-   - 만화, 3D 렌더링, 일러스트 절대 금지 (No cartoon, no 3D render)
-   - 어색한 얼굴 클로즈업이나 깨진 글자 배제 (No distorted faces, no text overlays, no Korean letters)
+[절대 지켜야 할 맞춤형 비주얼 원칙 - ★가장 중요★]
+1. **박제된 고정 템플릿 금지**: 카테고리에 얽매여 뻔한 아파트나 도심 전경을 기계적으로 그리지 마라.
+2. **기사 본문 내용 1:1 밀착 묘사**: 본문에서 다루는 구체적인 핵심 소재(예: 컨테이너 가설건축물, 영상 편집 모니터, 대학교 코딩 실습, 전통시장 노포 식당 상차림, 텅 빈 1층 상가 임대문의, 리모델링 공사 현장, 병원 AI, 법률 계약서 데스크 등)를 정확하게 포착하여 **기사 본문 스토리와 1:1로 일치하는 실제 현장 장면**을 묘사하라.
+3. **사실적인 한국 현장감 (Authentic South Korea)**: 한국의 실제 도시 거리, 상권, 사무실, 강의실, 실내 공간의 리얼한 분위기와 자연광(natural daylight)을 반영하라.
+4. **포토리얼리즘 (Press Photography Quality)**:
+   - "Authentic South Korean editorial news photography, natural daylight, 8k resolution, documentary press photo, highly detailed, realistic textures"
+   - 만화(Cartoon), 3D 렌더링, 판타지, 일러스트 절대 금지 (No cartoon, no 3D render, no CGI)
+   - 어색한 얼굴 클로즈업이나 깨진 글자/문자 배제 (No distorted faces, no text overlays, no letters)
 
-[입력 기사]
+[입력 기사 데이터]
 - 카테고리: [${category}]
 - 제목: "${title}"
 - 부제목: "${subtitle || ''}"
-- 본문 요약: "${(content || '').slice(0, 300)}"
+- 본문 내용: "${cleanContent}"
 
-출력: 다른 잡담 없이, 오직 이미지 생성 모델에 전달할 **[영어 비주얼 묘사 2~3문장]**만 출력할 것.`;
+출력: 다른 부가 설명 없이 오직 나노바나나 이미지 모델에 전달할 **[기사 본문에 100% 맞춤화된 고품질 영어 비주얼 묘사 2~3문장]**만 출력할 것.`;
 
     try {
-      const res = await generateWithGemini(prompt, { temperature: 0.4 });
+      const res = await generateWithGemini(prompt, { temperature: 0.3 });
       const visual = res.text.replace(/["\n\r]/g, " ").trim();
       if (visual && visual.length > 20) {
         return visual;
@@ -330,7 +325,7 @@ export class PhotoCurationAgent {
       console.warn("[PhotoCurationAgent] Visual prompt error:", err);
     }
 
-    return `Authentic South Korean editorial news photography of ${title}, ${category} context, natural daylight, photorealistic documentary style.`;
+    return `Authentic South Korean editorial news photography representing "${title}", authentic documentary style, natural daylight, highly detailed.`;
   }
 
   /**
