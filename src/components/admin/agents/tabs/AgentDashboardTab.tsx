@@ -764,9 +764,9 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         {cost > 0 ? `-${cost.toFixed(2)} 원` : "0.00 원"}
                       </td>
 
-                      {/* 5. 출력 토큰 */}
-                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: textPrimary, fontSize: 12 }}>
-                        {log.output_tokens > 0 ? `${log.output_tokens.toLocaleString()} 토큰` : "-"}
+                      {/* 5. 출력 토큰 / 이미지 장수 */}
+                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: isImage ? "#b45309" : textPrimary, fontSize: 12 }}>
+                        {log.output_tokens > 0 ? `${log.output_tokens.toLocaleString()} 토큰` : (isImage ? "1장 (실사)" : "-")}
                       </td>
 
                       {/* 6. 사유 */}
