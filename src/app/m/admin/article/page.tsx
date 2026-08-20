@@ -504,37 +504,27 @@ function MobileArticleAdmin() {
             )}
 
             {/* 버튼 */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8 }}>
               <button
-                onClick={handleAiRevise}
+                disabled={isRevising}
+                onClick={() => setShowRejectModal(false)}
                 style={{
-                  width: "100%", height: 46, background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", color: "#fff",
-                  border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer",
-                  boxShadow: "0 4px 12px rgba(59,130,246,0.3)"
+                  flex: 1, height: 44, background: "#f3f4f6", color: "#4b5563",
+                  border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer",
                 }}
               >
-                🤖 반려 사유 반영 AI 재작성 (승인대기 이동)
+                취소
               </button>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  onClick={() => setShowRejectModal(false)}
-                  style={{
-                    flex: 1, height: 42, background: "#f3f4f6", color: "#4b5563",
-                    border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer",
-                  }}
-                >
-                  취소
-                </button>
-                <button
-                  onClick={handleReject}
-                  style={{
-                    flex: 1, height: 42, background: "#ef4444", color: "#fff",
-                    border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                  }}
-                >
-                  🚫 단순 반려
-                </button>
-              </div>
+              <button
+                disabled={isRevising}
+                onClick={handleAiRevise}
+                style={{
+                  flex: 1, height: 44, background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff",
+                  border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: isRevising ? "not-allowed" : "pointer",
+                }}
+              >
+                {isRevising ? "⏳ AI 재작성 중..." : "반려 처리"}
+              </button>
             </div>
           </div>
         </div>

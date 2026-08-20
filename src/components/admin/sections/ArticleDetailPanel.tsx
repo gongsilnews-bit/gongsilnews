@@ -224,9 +224,8 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
             <button className="adp-toolbar-btn" onClick={() => window.open(articleUrl)}>💻 미리보기</button>
             {isAdmin ? (
               <>
-                {!isPublished && <button className="adp-toolbar-btn adp-green" onClick={() => handleStatusChange('APPROVED')}>✓ 즉시 승인(발행)</button>}
-                {!isPublished && <button className="adp-toolbar-btn" style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", color: "#fff", border: "none", fontWeight: 700 }} onClick={() => setShowRejectModal(true)}>🤖 반려 & AI 재작성</button>}
-                {!isPublished && <button className="adp-toolbar-btn adp-red" onClick={() => handleStatusChange('REJECTED')}>🚫 단순 반려</button>}
+                {!isPublished && <button className="adp-toolbar-btn adp-green" onClick={() => handleStatusChange('APPROVED')}>✓ 승인</button>}
+                {!isPublished && <button className="adp-toolbar-btn adp-red" onClick={() => setShowRejectModal(true)}>🚫 반려</button>}
               </>
             ) : (
               <>
@@ -401,35 +400,20 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
               />
             )}
 
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
               <button 
                 disabled={isRevising}
                 onClick={() => setShowRejectModal(false)} 
                 style={{ padding: "9px 15px", background: "#f3f4f6", color: "#4b5563", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 취소
               </button>
-              
-              <button 
-                disabled={isRevising}
-                onClick={async () => {
-                  const finalReason = rejectReason || "내용 보완 요망";
-                  const res = await adminUpdateArticleStatus([article.id], 'REJECTED', finalReason);
-                  if (res.success) {
-                    setArticle({ ...article, status: 'REJECTED', reject_reason: finalReason });
-                    setShowRejectModal(false);
-                    setToastMessage({ text: "기사가 반려 처리되었습니다.", type: "info" });
-                  }
-                }} 
-                style={{ padding: "9px 15px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                🚫 단순 반려
-              </button>
 
               <button 
                 disabled={isRevising}
                 onClick={async () => {
-                  const finalReason = rejectReason || "기사 내용 및 표현 보완 요망";
+                  const finalReason = rejectReason || "기사 내용 및 사진 보완 요망";
                   setIsRevising(true);
-                  setToastMessage({ text: "🤖 AI 수석 편집국장이 반려 사유를 반영하여 기사를 재작성 중입니다...", type: "info" });
+                  setToastMessage({ text: "🤖 기사를 반려하고 2대 AI 에이전트(기사+사진)가 재작성 중입니다...", type: "info" });
                   
                   const res = await adminReviseArticleWithFeedback(article.id, finalReason);
                   setIsRevising(false);
@@ -444,13 +428,13 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
                       reject_reason: `[AI 재작성 완료] ${finalReason}`
                     });
                     setShowRejectModal(false);
-                    setToastMessage({ text: "🎉 반려 사유를 완벽 반영하여 기사 재작성 완료! [승인대기]로 이동했습니다.", type: "success" });
+                    setToastMessage({ text: "🎉 반려 사유를 반영하여 기사 및 사진 재작성 완료! [승인대기]로 이동했습니다.", type: "success" });
                   } else {
                     alert("재작성 오류: " + res.error);
                   }
                 }} 
-                style={{ padding: "9px 16px", background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: isRevising ? "not-allowed" : "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}>
-                {isRevising ? "⏳ AI 재작성 중..." : "🤖 반려 & AI 재작성 (승인대기 이동)"}
+                style={{ padding: "9px 18px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: isRevising ? "not-allowed" : "pointer" }}>
+                {isRevising ? "⏳ AI 재작성 중..." : "반려 처리"}
               </button>
             </div>
           </div>

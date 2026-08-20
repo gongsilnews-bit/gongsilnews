@@ -463,25 +463,13 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               <textarea value={rejectReason === "기타 사유 (직접 입력)" ? "" : rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="상세 반려 사유를 직접 입력하세요."
                 style={{ width: "100%", height: 80, padding: 12, border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, resize: "none", outline: "none", color: textPrimary, background: darkMode ? "#374151" : "#fff", boxSizing: "border-box" }} />
             )}
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 24, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 24 }}>
               <button onClick={() => setShowRejectModal(false)} style={{ padding: "10px 16px", background: darkMode ? "#4b5563" : "#f3f4f6", color: darkMode ? "#fff" : "#4b5563", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>취소</button>
               
               <button onClick={async () => {
-                const finalReason = rejectReason || "내용 보완 요망";
-                setDbArticles(prev => prev.map(a => selectedArticleIdsForReject.includes(a.id) ? { ...a, status: 'REJECTED', reject_reason: finalReason } : a));
-                const res = await adminUpdateArticleStatus(selectedArticleIdsForReject, 'REJECTED', finalReason);
-                if (res.success) { 
-                  setCheckedArticleIds([]); 
-                  setShowRejectModal(false); 
-                  loadData();
-                }
-                else { alert("처리 실패: " + res.error); getArticles().then(r => setDbArticles(r.data || [])); }
-              }} style={{ padding: "10px 16px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>🚫 단순 반려</button>
-
-              <button onClick={async () => {
-                const finalReason = rejectReason || "기사 내용 및 표현 보완 요망";
+                const finalReason = rejectReason || "기사 내용 및 사진 보완 요망";
                 setShowRejectModal(false);
-                setToastMessage({ text: "🤖 AI 에이전트가 반려 사유를 반영하여 기사를 재작성 중입니다...", type: "info" });
+                setToastMessage({ text: "🤖 기사를 반려하고 2대 AI 에이전트(기사+사진)가 재작성 중입니다...", type: "info" });
                 
                 let successCount = 0;
                 for (const articleId of selectedArticleIdsForReject) {
@@ -492,7 +480,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                 setCheckedArticleIds([]);
                 loadData();
                 setToastMessage({ text: `🎉 ${successCount}건의 기사가 반려 사유를 반영하여 재작성되었으며 [승인대기]로 이동했습니다!`, type: "success" });
-              }} style={{ padding: "10px 16px", background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}>🤖 반려 & AI 재작성 (승인대기 이동)</button>
+              }} style={{ padding: "10px 18px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>반려 처리</button>
             </div>
           </div>
         </div>
