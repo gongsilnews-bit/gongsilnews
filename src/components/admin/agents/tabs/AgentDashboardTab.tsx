@@ -860,13 +860,9 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         {cost > 0 ? `-${cost.toFixed(2)} 원` : "0.00 원"}
                       </td>
 
-                      {/* 5. 출력 토큰 (신규 추가) */}
+                      {/* 5. 출력 토큰 */}
                       <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: textPrimary, fontSize: 12 }}>
-                        {isImage ? (
-                          <span style={{ color: "#d97706", fontWeight: 700 }}>1장 (실사)</span>
-                        ) : (
-                          `${(log.output_tokens || 0).toLocaleString()} 토큰`
-                        )}
+                        {isImage ? "1장" : `${(log.output_tokens || 0).toLocaleString()} 토큰`}
                       </td>
 
                       {/* 6. 사유 */}
