@@ -238,9 +238,9 @@ export async function getArticles(filters?: {
       .eq("is_deleted", false);
 
     if (filters?.orderBy === "updated_at") {
-      query = query.order("updated_at", { ascending: false, nullsFirst: false });
-    } else if (filters?.orderBy === "created_at") {
-      query = query.order("created_at", { ascending: false, nullsFirst: false });
+      query = query.order("updated_at", { ascending: false });
+    } else if (filters?.orderBy === "created_at" || filters?.status === "PENDING" || filters?.status === "DRAFT" || filters?.status === "REJECTED") {
+      query = query.order("created_at", { ascending: false });
     } else {
       query = query.order("published_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
     }
