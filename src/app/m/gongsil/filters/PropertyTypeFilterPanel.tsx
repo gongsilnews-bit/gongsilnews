@@ -109,20 +109,34 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
 
   return (
     <div>
-      {/* 1단계: 대분류 선택 탭 (전체 + 4대 대분류, PC 100% 동일) */}
+      {/* 1단계: 대분류 선택 (우측 상단 전체선택/전체해제 버튼) */}
       <div style={{ marginBottom: "16px" }}>
-        <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280", marginBottom: "8px" }}>
-          1. 매물 대분류 선택
-        </div>
-        
-        {/* '전체' 탭 상단 배치 */}
-        <div style={{ marginBottom: "8px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280" }}>
+            1. 매물 대분류 선택
+          </span>
           <button
             type="button"
-            onClick={() => handleSelectGroup("전체")}
-            style={{ ...mainTabStyle(activeGroup === "전체"), width: "100%", padding: "12px 10px" }}
+            onClick={() => {
+              if (isAllItemsSelected) {
+                onFilterChange({ propertyTypes: [] });
+              } else {
+                onFilterChange({ propertyTypes: allItems });
+              }
+            }}
+            style={{
+              padding: "4px 10px",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: 600,
+              background: isAllItemsSelected ? "#eef4ff" : "#fff",
+              color: isAllItemsSelected ? "#4b89ff" : "#6b7280",
+              border: isAllItemsSelected ? "1px solid #c7d2fe" : "1px solid #d1d5db",
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
           >
-            🌐 전체 매물
+            {isAllItemsSelected ? "✓ 전체해제" : "✓ 전체선택"}
           </button>
         </div>
 
