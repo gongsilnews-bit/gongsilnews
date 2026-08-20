@@ -256,17 +256,43 @@ export async function getAgentCostSummary(startDate?: string, endDate?: string) 
 }
 
 /**
- * 실시간 AI 호출 이력을 조회합니다.
+ * 실시간 AI 호출 이력을 조회합니다 (검색어, 채널별, 기간별 필터링 지원).
  */
-export async function getRecentAgentCallLogs(limit: number = 30) {
+export async function getRecentAgentCallLogs(params?: {
+  limit?: number;
+  search?: string;
+  channelId?: string;
+  startDate?: string;
+  endDate?: string;
+} | number) {
   const supabase = getAdminClient();
-  const { data, error } = await supabase
+  
+  // 하위 호환성 지원 (숫자 인자 전달 시 limit으로 처리)
+  const options = typeof params === "number" ? { limit: params } : (params || {});
+  const limit = options.limit || 50;
+
+  let query = supabase
     .from("agent_chats")
     .select("id, channel_id, content, input_tokens, output_tokens, total_tokens, cost_krw, created_at")
     .eq("role", "agent")
     .neq("channel_id", "onbid_sync_log")
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  if (options.channelId && options.channelId !== "all") {
+    query = query.eq("channel_id", options.channelId);
+  }
+  if (options.startDate) {
+    query = query.gte("created_at", options.startDate);
+  }
+  if (options.endDate) {
+    query = query.lte("created_at", options.endDate);
+  }
+  if (options.search && options.search.trim()) {
+    query = query.ilike("content", `%${options.search.trim()}%`);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("getRecentAgentCallLogs error:", error);

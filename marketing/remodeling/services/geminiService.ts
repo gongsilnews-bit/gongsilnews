@@ -11,10 +11,20 @@ async function fileToBase64(file: File): Promise<string> {
 }
 
 async function callServerGemini(action: string, payload: any) {
+  let userEmail = "gongsilnews@gmail.com";
+  try {
+    const stored = localStorage.getItem("gongsil_user") || localStorage.getItem("sb-aijfktzqtnwhfotfwcka-auth-token");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.email) userEmail = parsed.email;
+      else if (parsed.user?.email) userEmail = parsed.user.email;
+    }
+  } catch {}
+
   const res = await fetch('/api/marketing/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...payload }),
+    body: JSON.stringify({ action, channelId: 'remodeling', userEmail, ...payload }),
   });
   const data = await res.json();
   if (!data.success) {

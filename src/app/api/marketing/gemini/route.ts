@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI, Modality } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
+import { logAiUsage } from "@/lib/agents/logger";
 
 const ADMIN_EMAIL = "gongsilnews@gmail.com";
 
@@ -46,7 +47,8 @@ export async function POST(request: NextRequest) {
 
     const ai = new GoogleGenAI({ apiKey });
     const body = await request.json();
-    const { action } = body;
+    const { action, channelId, userEmail, summary } = body;
+    const currentUserEmail = userEmail || ADMIN_EMAIL;
 
     if (action === "generateText") {
       const { prompt, systemInstruction, responseSchema, model = "gemini-3.6-flash" } = body;
@@ -61,6 +63,18 @@ export async function POST(request: NextRequest) {
         model,
         contents: [{ parts: [{ text: prompt }] }],
         config,
+      });
+
+      // AI 비서실 실시간 로깅
+      await logAiUsage({
+        channelId: channelId || "marketingDraft",
+        userEmail: currentUserEmail,
+        summary: summary || `[마케팅 AI 생성] ${(prompt || "").slice(0, 35)}...`,
+        model,
+        type: "text",
+        inputTokens: response.usageMetadata?.promptTokenCount || 0,
+        outputTokens: response.usageMetadata?.candidatesTokenCount || 0,
+        totalTokens: response.usageMetadata?.totalTokenCount || 0,
       });
 
       return NextResponse.json({
@@ -98,6 +112,17 @@ export async function POST(request: NextRequest) {
 
           for (const part of response.candidates?.[0]?.content?.parts || []) {
             if (part.inlineData?.data) {
+              // AI 비서실 실시간 로깅 (리모델링 / 인테리어 이미지 생성)
+              await logAiUsage({
+                channelId: channelId || "remodeling",
+                userEmail: currentUserEmail,
+                summary: summary || `[리모델링·인테리어 AI 실사] ${(prompt || "").slice(0, 35)}...`,
+                model: m,
+                type: "image",
+                imageCount: 1,
+                costKrw: 40.0,
+              });
+
               return NextResponse.json({
                 success: true,
                 base64: part.inlineData.data,
@@ -139,6 +164,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: "No audio data received" }, { status: 500 });
       }
 
+      // AI 비서실 실시간 로깅
+      await logAiUsage({
+        channelId: channelId || "studio",
+        userEmail: currentUserEmail,
+        summary: `[AI 스튜디오 음성합성] ${(text || "").slice(0, 35)}...`,
+        model: "gemini-2.5-flash-tts",
+        type: "text",
+        costKrw: 10.0,
+      });
+
       return NextResponse.json({
         success: true,
         base64Audio,
@@ -148,6 +183,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 });
   } catch (err: any) {
     console.error("Error in /api/marketing/gemini:", err);
-    return NextResponse.json({ success: false, error: err.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: err.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }

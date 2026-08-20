@@ -1,8 +1,10 @@
 import { generateWithGemini } from "./core";
+import { logAiUsage } from "./logger";
 
 export interface NewsArticleRequest {
   sourceText: string; // 검색된 여러 기사들의 원문이나 요약본 (팩트 덩어리)
   category: string;   // 예: "부동산정책/정치", "AI/NEWS", "인물/인터뷰", "맛집/여행/건강" 등
+  userEmail?: string; // 호출한 사용자 이메일 (기본: SYSTEM)
 }
 
 export interface NewsArticleResult {
@@ -185,6 +187,18 @@ ${conclusionInstruction}
     try {
       const result = await generateWithGemini(`${systemPrompt}\n\n${userPrompt}`, { temperature: 0.7 });
       const parsed = safeJsonParse(result.text);
+
+      // AI 비서실 현황판 실시간 로그 기록
+      await logAiUsage({
+        channelId: "article",
+        userEmail: req.userEmail || "SYSTEM (크론 자동수집)",
+        summary: `[기사 작성] "${(parsed.title || '').slice(0, 30)}"`,
+        model: "gemini-3.6-flash",
+        type: "text",
+        inputTokens: result.usage?.inputTokens || 0,
+        outputTokens: result.usage?.outputTokens || 0,
+        totalTokens: result.usage?.totalTokens || 0,
+      });
 
       return {
         title: parsed.title,

@@ -1,5 +1,6 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { generateWithGemini } from "./core";
+import { logAiUsage } from "./logger";
 import { createClient } from "@supabase/supabase-js";
 
 // Supabase 클라이언트
@@ -18,6 +19,7 @@ export interface PhotoCurationRequest {
   sourceUrl?: string;
   mediaType?: "image" | "video";
   youtubeSearchQuery?: string;
+  userEmail?: string;
 }
 
 export interface PhotoCurationResult {
@@ -237,7 +239,7 @@ export class PhotoCurationAgent {
   /**
    * 🍌 3순위 (나노바나나): 적합한 사진이 없을 때, Gemini Image Generation으로 기사 맞춤형 실사 이미지를 생성하고 Supabase에 업로드
    */
-  private static async generateWithNanoBanana(title: string, category: string): Promise<string | null> {
+  private static async generateWithNanoBanana(title: string, category: string, userEmail?: string): Promise<string | null> {
     const apiKey = process.env.GEMINI_API_KEY;
     const supabase = getSupabaseClient();
     if (!apiKey || !supabase) return null;
@@ -295,6 +297,18 @@ export class PhotoCurationAgent {
 
       const { data: publicData } = supabase.storage.from("news-images").getPublicUrl(fileName);
       console.log(`  -> 🍌 [Nano Banana] Successfully created & uploaded unique image: ${publicData.publicUrl}`);
+
+      // AI 비서실 현황판 실시간 로그 기록 (나노바나나 이미지 생성)
+      await logAiUsage({
+        channelId: "photoCuration",
+        userEmail: userEmail || "SYSTEM (나노바나나)",
+        summary: `[나노바나나 AI 실사 생성] "${title.slice(0, 30)}"`,
+        model: "gemini-3.1-flash-image",
+        type: "image",
+        imageCount: 1,
+        costKrw: 40.0,
+      });
+
       return publicData.publicUrl;
 
     } catch (genErr: any) {
@@ -392,7 +406,7 @@ export class PhotoCurationAgent {
     }
 
     // 3단계: 🍌 [나노바나나] 적합한 사진이 없을 때 기사 맥락에 맞춘 포토리얼리스틱 실사 이미지 즉시 생성!
-    const nanoBananaUrl = await this.generateWithNanoBanana(req.articleTitle, req.category);
+    const nanoBananaUrl = await this.generateWithNanoBanana(req.articleTitle, req.category, req.userEmail);
     if (nanoBananaUrl) {
       return {
         thumbnailUrl: nanoBananaUrl,
