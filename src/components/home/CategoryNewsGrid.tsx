@@ -52,6 +52,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   const videoScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollVideoLeft, setCanScrollVideoLeft] = useState(false);
   const [canScrollVideoRight, setCanScrollVideoRight] = useState(true);
+  const [isVideoHovered, setIsVideoHovered] = useState(false);
 
   const checkVideoScroll = () => {
     if (videoScrollRef.current) {
@@ -90,6 +91,26 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
     window.addEventListener("resize", checkVideoScroll);
     return () => window.removeEventListener("resize", checkVideoScroll);
   }, [gongsilArts]);
+
+  // 공실뉴스 영상 캐러셀 3.8초 간격 자동 롤링 (마우스 오버 시 일시정지)
+  useEffect(() => {
+    if (gongsilArts.length <= 3 || isVideoHovered) return;
+
+    const interval = setInterval(() => {
+      if (!videoScrollRef.current) return;
+      const { scrollLeft, scrollWidth, clientWidth } = videoScrollRef.current;
+      const scrollStep = clientWidth / 3 + 20;
+
+      if (scrollLeft + clientWidth >= scrollWidth - 15) {
+        videoScrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        videoScrollRef.current.scrollBy({ left: scrollStep, behavior: "smooth" });
+      }
+      setTimeout(checkVideoScroll, 400);
+    }, 3800);
+
+    return () => clearInterval(interval);
+  }, [gongsilArts.length, isVideoHovered]);
 
   // 날짜 포맷팅
   const formatDate = (dateStr: string) => {
@@ -267,7 +288,11 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
             <Link href="/news_gongsil" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}><svg width="28" height="20" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg><h2 className="sec-title" style={{ color: "#fff", margin: 0 }}>공실뉴스 &gt;</h2></Link>
           </div>
 
-          <div style={{ position: "relative" }}>
+          <div 
+            style={{ position: "relative" }}
+            onMouseEnter={() => setIsVideoHovered(true)}
+            onMouseLeave={() => setIsVideoHovered(false)}
+          >
             {/* 화살표 버튼 */}
             {canScrollVideoLeft && (
               <button 

@@ -8,6 +8,7 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
 
   const checkScroll = () => {
     if (scrollRef.current) {
@@ -22,6 +23,26 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
     window.addEventListener("resize", checkScroll);
     return () => window.removeEventListener("resize", checkScroll);
   }, [posts]);
+
+  // 3.8초 간격 자동 롤링 (마우스 오버 시 일시정지, 끝 도달 시 처음으로 부드럽게 복귀)
+  useEffect(() => {
+    if (posts.length <= 4 || isHovered) return;
+
+    const interval = setInterval(() => {
+      if (!scrollRef.current) return;
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      const scrollStep = 240 + 20; // 카드 1개 너비 + gap
+
+      if (scrollLeft + clientWidth >= scrollWidth - 15) {
+        scrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        scrollRef.current.scrollBy({ left: scrollStep, behavior: "smooth" });
+      }
+      setTimeout(checkScroll, 400);
+    }, 3800);
+
+    return () => clearInterval(interval);
+  }, [posts.length, isHovered]);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -48,7 +69,11 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div 
+      style={{ position: "relative" }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* 화살표 버튼 */}
       {canScrollLeft && (
         <button 
