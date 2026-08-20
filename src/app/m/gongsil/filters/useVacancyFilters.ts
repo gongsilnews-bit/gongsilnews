@@ -25,6 +25,15 @@ export interface FilterState {
   sigungu: string | null;          // 시/군/구 필터
   dong: string | null;             // 읍/면/동 필터
   locationSearchType?: 'map' | 'filter'; // 검색 유형 (A스타일: map, B스타일: filter)
+
+  // 🔨 [PC 100% 동일] 경·공매 전용 상세 필터
+  auctionAppraisalMin: number | null; // 감정가 최소 (원 단위)
+  auctionAppraisalMax: number | null; // 감정가 최대 (원 단위)
+  auctionBidPriceMin: number | null;  // 최저입찰가 최소 (원 단위)
+  auctionBidPriceMax: number | null;  // 최저입찰가 최대 (원 단위)
+  auctionDiscount: number;            // 할인율 (0: 전체, 10, 20, 30, 50)
+  auctionBidCount: number;            // 유찰 횟수 (0: 전체, 1, 2, 3)
+  auctionStartDate: string;           // 입찰 시작일 ("all", "1w", "2w", "1m", "1_3m", "over_3m")
 }
 
 const ALL_PROPERTY_TYPES = [
@@ -59,6 +68,14 @@ export const initialFilterState: FilterState = {
   sigungu: null,
   dong: null,
   locationSearchType: 'map',
+
+  auctionAppraisalMin: null,
+  auctionAppraisalMax: null,
+  auctionBidPriceMin: null,
+  auctionBidPriceMax: null,
+  auctionDiscount: 0,
+  auctionBidCount: 0,
+  auctionStartDate: "all",
 };
 
 export const normalizeSido = (sido: string | null): string => {
@@ -183,7 +200,52 @@ export function filterVacanciesList(vacancies: any[], filters: FilterState): any
       
       if (!isPropMatch) return false;
       
-      // 2. 거래 방식
+      // 🚀 경매 전용 상세 필터 (PC GongsilClient.tsx 100% 동일)
+      if (v.trade_type === "경매") {
+        const meta = (v as any).metadata || {};
+        const appraisal = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || 0;
+        const bidPrice = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+
+        // 1) 감정가 필터
+        if (filters.auctionAppraisalMin !== null && appraisal < filters.auctionAppraisalMin) return false;
+        if (filters.auctionAppraisalMax !== null && appraisal > filters.auctionAppraisalMax) return false;
+
+        // 2) 최저입찰가 필터
+        if (filters.auctionBidPriceMin !== null && bidPrice < filters.auctionBidPriceMin) return false;
+        if (filters.auctionBidPriceMax !== null && bidPrice > filters.auctionBidPriceMax) return false;
+
+        // 3) 할인율 필터
+        if (filters.auctionDiscount > 0) {
+          if (!appraisal || !bidPrice) return false;
+          const discountRate = ((appraisal - bidPrice) / appraisal) * 100;
+          if (discountRate < filters.auctionDiscount) return false;
+        }
+
+        // 4) 유찰 횟수 필터
+        if (filters.auctionBidCount > 0) {
+          const bidCount = meta.bid_count || meta.pbctCnt || 0;
+          if (bidCount < filters.auctionBidCount) return false;
+        }
+
+        // 5) 입찰 시작일 필터
+        if (filters.auctionStartDate && filters.auctionStartDate !== "all") {
+          const now = new Date();
+          const dateStr = meta.pbctBegnDtm || meta.pblctBgnDtm || meta.bid_start_date || "";
+          if (!dateStr) return false;
+          const bidDate = new Date(dateStr);
+          const diffDays = (bidDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+          switch (filters.auctionStartDate) {
+            case "1w": if (!(diffDays >= -7 && diffDays <= 7)) return false; break;
+            case "2w": if (!(diffDays >= -14 && diffDays <= 14)) return false; break;
+            case "1m": if (!(diffDays >= -30 && diffDays <= 30)) return false; break;
+            case "1_3m": if (!(diffDays >= 30 && diffDays <= 90)) return false; break;
+            case "over_3m": if (!(diffDays > 90)) return false; break;
+            default: break;
+          }
+        }
+      }
+
+      // 2. 거래 방식 (일반 공실)
       if (v.trade_type !== "경매" && !filters.tradeTypes.includes(v.trade_type)) return false;
       
       // 3. 가격 (만원 단위 / 원 단위 스마트 비교)

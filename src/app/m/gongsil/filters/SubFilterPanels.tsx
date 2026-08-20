@@ -568,3 +568,202 @@ export function OptionsFilterPanel({ filters, onFilterChange, optionsList }: Opt
     </div>
   );
 }
+
+// ══════════════════════════════════════════════════════════════
+// 🔨 [PC 100% 동일] 법원 경·공매 전용 맞춤 상세 필터 패널들
+// ══════════════════════════════════════════════════════════════
+
+// 1. 감정가 패널 (PC 동일: 최소 ~ 1억 ~ 5억 ~ 15억 ~ 최대)
+export function AuctionAppraisalFilterPanel({ filters, onFilterChange }: Props) {
+  const PRESETS = [
+    { label: "전체", min: null, max: null },
+    { label: "1억 이하", min: null, max: 100000000 },
+    { label: "3억 이하", min: null, max: 300000000 },
+    { label: "5억 이하", min: null, max: 500000000 },
+    { label: "10억 이하", min: null, max: 1000000000 },
+    { label: "15억 이하", min: null, max: 1500000000 },
+    { label: "15억 이상", min: 1500000000, max: null },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        {PRESETS.map((p) => {
+          const isSel = filters.auctionAppraisalMin === p.min && filters.auctionAppraisalMax === p.max;
+          return (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => onFilterChange({ auctionAppraisalMin: p.min, auctionAppraisalMax: p.max })}
+              style={gridBtnStyle(isSel)}
+            >
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ auctionAppraisalMin: null, auctionAppraisalMax: null })}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 2. 최저입찰가 패널 (PC 동일)
+export function AuctionBidPriceFilterPanel({ filters, onFilterChange }: Props) {
+  const PRESETS = [
+    { label: "전체", min: null, max: null },
+    { label: "5천 이하", min: null, max: 50000000 },
+    { label: "1억 이하", min: null, max: 100000000 },
+    { label: "3억 이하", min: null, max: 300000000 },
+    { label: "5억 이하", min: null, max: 500000000 },
+    { label: "10억 이하", min: null, max: 1000000000 },
+    { label: "15억 이하", min: null, max: 1500000000 },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        {PRESETS.map((p) => {
+          const isSel = filters.auctionBidPriceMin === p.min && filters.auctionBidPriceMax === p.max;
+          return (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => onFilterChange({ auctionBidPriceMin: p.min, auctionBidPriceMax: p.max })}
+              style={gridBtnStyle(isSel)}
+            >
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ auctionBidPriceMin: null, auctionBidPriceMax: null })}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 3. 할인율 패널 (PC 동일: [전체] [▼10%↑] [▼20%↑] [▼30%↑] [▼50%↑])
+export function AuctionDiscountFilterPanel({ filters, onFilterChange }: Props) {
+  const DISCOUNTS = [
+    { label: "전체", val: 0 },
+    { label: "▼10%↑", val: 10 },
+    { label: "▼20%↑", val: 20 },
+    { label: "▼30%↑", val: 30 },
+    { label: "▼50%↑", val: 50 },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px", marginBottom: "20px" }}>
+        {DISCOUNTS.map((d) => (
+          <button
+            key={d.label}
+            type="button"
+            onClick={() => onFilterChange({ auctionDiscount: d.val })}
+            style={gridBtnStyle(filters.auctionDiscount === d.val)}
+          >
+            {d.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ auctionDiscount: 0 })}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 4. 유찰 횟수 패널 (PC 동일: [전체] [1회↑] [2회↑] [3회↑])
+export function AuctionBidCountFilterPanel({ filters, onFilterChange }: Props) {
+  const COUNTS = [
+    { label: "전체", val: 0 },
+    { label: "1회↑", val: 1 },
+    { label: "2회↑", val: 2 },
+    { label: "3회↑", val: 3 },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px", marginBottom: "20px" }}>
+        {COUNTS.map((c) => (
+          <button
+            key={c.label}
+            type="button"
+            onClick={() => onFilterChange({ auctionBidCount: c.val })}
+            style={gridBtnStyle(filters.auctionBidCount === c.val)}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ auctionBidCount: 0 })}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 5. 입찰 시작일 패널 (PC 동일: [전체] [1주 이내] [2주 이내] [1달 이내] [1~3개월] [3개월 이후])
+export function AuctionStartDateFilterPanel({ filters, onFilterChange }: Props) {
+  const DATES = [
+    { label: "전체", val: "all" },
+    { label: "1주 이내", val: "1w" },
+    { label: "2주 이내", val: "2w" },
+    { label: "1달 이내", val: "1m" },
+    { label: "1~3개월", val: "1_3m" },
+    { label: "3개월 이후", val: "over_3m" },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        {DATES.map((d) => (
+          <button
+            key={d.label}
+            type="button"
+            onClick={() => onFilterChange({ auctionStartDate: d.val })}
+            style={gridBtnStyle((filters.auctionStartDate || "all") === d.val)}
+          >
+            {d.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ auctionStartDate: "all" })}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}
