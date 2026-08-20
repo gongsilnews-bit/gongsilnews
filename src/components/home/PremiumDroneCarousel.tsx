@@ -109,41 +109,71 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
             <Link 
               key={item.id} 
               href={`/board_read?id=${item.id}`} 
-              className="prem-card"
+              className="prem-card drone-interactive-card"
               style={{ 
                 flex: "0 0 calc(25% - 15px)", 
                 minWidth: "220px", 
                 scrollSnapAlign: "start",
                 textDecoration: "none",
-                display: "block"
+                display: "block",
+                transition: "all 0.25s cubic-bezier(0.2, 0, 0.2, 1)",
+                borderRadius: "10px",
+                overflow: "hidden"
               }}
             >
               <div 
-                className="prem-img" 
+                className="prem-img drone-thumb-box" 
                 style={{ 
-                  backgroundImage: `url(${thumb})`, 
-                  backgroundSize: "cover", 
-                  backgroundPosition: "center",
-                  position: "relative"
+                  position: "relative",
+                  height: "170px",
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                  marginBottom: "12px",
+                  background: "#1e293b"
                 }}
               >
+                <div 
+                  className="drone-bg-img"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    backgroundImage: `url(${thumb})`, 
+                    backgroundSize: "cover", 
+                    backgroundPosition: "center",
+                    transition: "transform 0.4s cubic-bezier(0.2, 0, 0.2, 1), filter 0.3s ease"
+                  }}
+                />
                 {/* 비디오 아이콘 */}
                 {(ytUrl || drUrl) && (
-                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
+                  <div 
+                    className="drone-play-icon"
+                    style={{ 
+                      position: "absolute", 
+                      top: "50%", 
+                      left: "50%", 
+                      transform: "translate(-50%, -50%)",
+                      transition: "all 0.25s cubic-bezier(0.2, 0, 0.2, 1)",
+                      zIndex: 2
+                    }}
+                  >
                     <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="24" cy="24" r="24" fill="rgba(0, 0, 0, 0.5)" />
+                      <circle cx="24" cy="24" r="24" fill="rgba(0, 0, 0, 0.6)" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
                       <path d="M20 15L33 24L20 33V15Z" fill="#FFFFFF" />
                     </svg>
                   </div>
                 )}
+                {/* 하단 그라디언트 */}
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)", pointerEvents: "none" }} />
               </div>
-              <div className="prem-title" style={{ color: "#fff" }}>{item.title}</div>
+              <div className="prem-title drone-title" style={{ color: "#fff", transition: "color 0.2s ease" }}>{item.title}</div>
               <div className="prem-desc" style={{ 
                 display: "-webkit-box", 
                 WebkitLineClamp: 2, 
                 WebkitBoxOrient: "vertical", 
                 overflow: "hidden",
-                color: "#aaa"
+                color: "#94a3b8",
+                fontSize: "13px",
+                lineHeight: "1.5"
               }}>
                 {item.subtitle || "드론 영상 자료실입니다."}
               </div>
