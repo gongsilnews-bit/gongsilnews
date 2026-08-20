@@ -72,7 +72,23 @@ const DEFAULT_IMAGES = [
 
 // 단순 로고 또는 제외할 기본 썸네일 패턴
 const EXCLUDE_IMAGE_PATTERNS = [
-  "logo", "favicon", "default", "blank.gif", "placeholder", "icon", "banner", "btn_", "common", "og_default"
+  "googleusercontent.com",
+  "google.com",
+  "gstatic.com",
+  "daumcdn.net/thumb",
+  "sstatic.naver.net",
+  "logo",
+  "favicon",
+  "default",
+  "blank.gif",
+  "placeholder",
+  "icon",
+  "banner",
+  "btn_",
+  "common",
+  "og_default",
+  "no_image",
+  "empty"
 ];
 
 /**
@@ -80,6 +96,8 @@ const EXCLUDE_IMAGE_PATTERNS = [
  */
 export async function extractSourceOgImage(url: string): Promise<string | null> {
   if (!url || !url.startsWith("http")) return null;
+  // 구글 뉴스 RSS 리다이렉트 링크는 구글 로고가 반환되므로 스킵하고 스톡/유튜브로 대체
+  if (url.includes("news.google.com") || url.includes("google.com")) return null;
 
   try {
     const res = await fetch(url, {
