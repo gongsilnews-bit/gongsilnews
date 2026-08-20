@@ -23,6 +23,30 @@ export interface NewsArticleResult {
   };
 }
 
+function safeJsonParse(rawText: string): any {
+  let text = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1) {
+    text = text.substring(firstBrace, lastBrace + 1);
+  }
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    try {
+      const sanitized = text.replace(/[\u0000-\u001F]+/g, (match) => {
+        if (match === '\n') return '\\n';
+        if (match === '\r') return '';
+        if (match === '\t') return '\\t';
+        return '';
+      });
+      return JSON.parse(sanitized);
+    } catch {
+      throw err;
+    }
+  }
+}
+
 export class NewsArticleAgent {
   /**
    * 고정된 틀(현황/원인 등)을 탈피하여, 
@@ -124,12 +148,7 @@ ${conclusionInstruction}
 
     try {
       const result = await generateWithGemini(`${systemPrompt}\n\n${userPrompt}`, { temperature: 0.7 });
-      let text = result.text;
-
-      // JSON 파싱을 위한 전처리 (마크다운 제거)
-      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-      const parsed = JSON.parse(text);
+      const parsed = safeJsonParse(result.text);
 
       return {
         title: parsed.title,
