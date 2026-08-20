@@ -862,7 +862,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
 
                       {/* 5. 출력 토큰 */}
                       <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: textPrimary, fontSize: 12 }}>
-                        {isImage ? "1장" : `${(log.output_tokens || 0).toLocaleString()} 토큰`}
+                        {log.output_tokens > 0 ? `${log.output_tokens.toLocaleString()} 토큰` : "-"}
                       </td>
 
                       {/* 6. 사유 */}
