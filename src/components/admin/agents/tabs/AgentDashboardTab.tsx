@@ -663,7 +663,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
         })}
       </div>
 
-      {/* ── ⚡ 실시간 AI 호출 및 크레딧 소모 로그 (포인트 관리 스타일) ── */}
+      {/* ── ⚡ 실시간 AI 호출 및 크레딧 소모 로그 (포인트 관리와 동일한 깔끔한 UI) ── */}
       <div style={{
         background: cardBg,
         borderRadius: 14,
@@ -671,65 +671,40 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
         overflow: "hidden",
         border: `1px solid ${border}`
       }}>
-        {/* 헤더 타이틀 */}
-        <div style={{ padding: "18px 24px 12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 20 }}>⚡</span>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: textPrimary }}>
-              실시간 AI 호출 및 크레딧 소모 내역
-            </h3>
-            <span style={{ fontSize: 12, color: textSecondary, marginLeft: 4 }}>
-              (총 {recentLogs.length}건)
-            </span>
-          </div>
-          <button
-            onClick={() => fetchStats(false)}
-            style={{
-              padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700,
-              background: darkMode ? "#2c2d33" : "#f1f5f9",
-              color: "#2563eb", border: `1px solid ${border}`,
-              cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4
-            }}
-          >
-            🔄 새로고침
-          </button>
-        </div>
-
-        {/* ── 포인트 관리 스타일 상단 필터 버튼 & 검색 바 ── */}
+        {/* ── 포인트 관리 스타일 상단 필터 탭 ── */}
         <div style={{
-          padding: "0 24px 16px 24px",
+          padding: "16px 24px",
+          borderBottom: `1px solid ${border}`,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: 12,
-          borderBottom: `1px solid ${border}`
+          gap: 12
         }}>
-          {/* 유형별 탭 알약 버튼 (포인트 관리 UI와 동일) */}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {/* 상단 탭 알약 버튼 */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[
               { id: "all", label: "전체" },
-              { id: "photoCuration", label: "🍌 나노바나나·실사" },
-              { id: "article", label: "📰 기사작성" },
-              { id: "remodeling", label: "🏢 리모델링" },
-              { id: "homeInterior", label: "🎨 인테리어" },
-              { id: "marketingDraft", label: "✍️ 마케팅초안" },
-              { id: "propertyDescription", label: "🏠 매물설명" },
+              { id: "photoCuration", label: "나노바나나" },
+              { id: "article", label: "기사작성" },
+              { id: "remodeling", label: "리모델링" },
+              { id: "homeInterior", label: "인테리어" },
+              { id: "marketingDraft", label: "마케팅초안" },
+              { id: "propertyDescription", label: "매물설명" },
             ].map((f) => (
               <button
                 key={f.id}
                 onClick={() => setSelectedChannelFilter(f.id)}
                 style={{
-                  padding: "5px 14px",
+                  padding: "6px 16px",
                   border: `1px solid ${selectedChannelFilter === f.id ? "#3b82f6" : border}`,
                   borderRadius: 20,
-                  background: selectedChannelFilter === f.id ? "#3b82f6" : (darkMode ? "#2c2d33" : "transparent"),
+                  background: selectedChannelFilter === f.id ? "#3b82f6" : "transparent",
                   color: selectedChannelFilter === f.id ? "#fff" : textSecondary,
-                  fontSize: 12,
-                  fontWeight: selectedChannelFilter === f.id ? 700 : 500,
+                  fontSize: 13,
+                  fontWeight: 600,
                   cursor: "pointer",
                   fontFamily: "inherit",
-                  transition: "all 0.15s",
                 }}
               >
                 {f.label}
@@ -737,12 +712,12 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             ))}
           </div>
 
-          {/* 실시간 사용자/키워드 검색창 */}
-          <div style={{ display: "flex", alignItems: "center", position: "relative", width: 280 }}>
+          {/* 검색창 */}
+          <div style={{ display: "flex", alignItems: "center", position: "relative", width: 260 }}>
             <span style={{ position: "absolute", left: 10, fontSize: 13, color: textSecondary }}>🔍</span>
             <input
               type="text"
-              placeholder="회원명, 이메일, 내용 검색..."
+              placeholder="회원명, 내용 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && fetchStats(false)}
@@ -772,37 +747,26 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
           </div>
         </div>
 
-        {/* ── 일목요연한 테이블 ── */}
+        {/* ── 일목요연한 텍스트 테이블 ── */}
         {recentLogs.length > 0 ? (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, whiteSpace: "nowrap" }}>
               <thead>
                 <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                  <th style={{ padding: "12px 16px", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, textAlign: "left" }}>일시</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, textAlign: "left" }}>회원</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, textAlign: "left" }}>유형</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, textAlign: "right" }}>금액 (크레딧)</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, textAlign: "left" }}>사유 / 작업내용</th>
-                  <th style={{ padding: "12px 16px", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, textAlign: "left" }}>AI 모델 / 사용량</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>일시</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>회원</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>유형</th>
+                  <th style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>금액</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>사유</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>모델 / 사용량</th>
+                  <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>상대</th>
                 </tr>
               </thead>
               <tbody>
                 {recentLogs.map((log) => {
                   const date = new Date(log.created_at);
-                  const dateStr = date.toLocaleString("ko-KR", {
-                    timeZone: "Asia/Seoul",
-                    year: "numeric",
-                    month: "numeric",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "numeric",
-                    second: "numeric",
-                    hour12: true
-                  });
+                  const dateStr = date.toLocaleString("ko-KR");
                   
-                  const agentObj = DEFAULT_AGENTS.find(a => a.id === log.channel_id);
-                  const agentTitle = agentObj ? `${agentObj.emoji} ${agentNames[agentObj.id] || agentObj.defaultName}` : log.channel_id;
-
                   const cost = Number(log.cost_krw || 0);
 
                   // 사용자 정보 및 요약 파싱
@@ -819,66 +783,93 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   const isSystem = userEmail.toUpperCase().includes("SYSTEM");
                   const isImage = raw.includes("(이미지)") || raw.includes("나노바나나") || raw.includes("gemini-3.1-flash-image") || raw.includes("실사") || log.channel_id === "photoCuration" || log.channel_id === "remodeling" || log.channel_id === "homeInterior";
 
-                  // 회원 표시 이름
+                  // 회원명 (깔끔한 텍스트)
                   let memberName = log.user_name || "";
                   if (isAdmin) {
-                    memberName = "공실뉴스 (최고관리자)";
+                    memberName = "공실뉴스";
                   } else if (isSystem) {
-                    memberName = "SYSTEM (자동 크론)";
+                    memberName = "SYSTEM";
                   } else if (!memberName) {
                     memberName = userEmail.includes("gongsilmarketing") ? "김동현" : userEmail.split("@")[0];
                   }
 
-                  // 모델 추출
+                  // 유형 라벨 & 뱃지 스타일
+                  let typeLabel = "기사작성";
+                  let typeBg = "#dbeafe";
+                  let typeColor = "#1e40af";
+
+                  if (log.channel_id === "photoCuration" || isImage) {
+                    typeLabel = "나노바나나";
+                    typeBg = "#fef3c7";
+                    typeColor = "#92400e";
+                  } else if (log.channel_id === "remodeling") {
+                    typeLabel = "리모델링";
+                    typeBg = "#e0e7ff";
+                    typeColor = "#3730a3";
+                  } else if (log.channel_id === "homeInterior") {
+                    typeLabel = "인테리어";
+                    typeBg = "#fae8ff";
+                    typeColor = "#86198f";
+                  } else if (log.channel_id === "marketingDraft") {
+                    typeLabel = "마케팅초안";
+                    typeBg = "#fee2e2";
+                    typeColor = "#b91c1c";
+                  } else if (log.channel_id === "propertyDescription") {
+                    typeLabel = "매물설명";
+                    typeBg = "#d1fae5";
+                    typeColor = "#065f46";
+                  } else if (log.channel_id === "articleReview") {
+                    typeLabel = "기사심사";
+                    typeBg = "#f1f5f9";
+                    typeColor = "#475569";
+                  }
+
+                  // 모델 및 사용량 추출
                   const modelMatch = cleanContent.match(/-\s*(gemini-[a-zA-Z0-9.\-_]+)/i);
                   const modelName = modelMatch ? modelMatch[1] : (isImage ? "gemini-3.1-flash-image" : "gemini-3.6-flash");
-                  const displaySummary = cleanContent.replace(/-\s*gemini-[a-zA-Z0-9.\-_]+/i, "").replace(/\(이미지\)/g, "").trim();
+                  const displayReason = cleanContent.replace(/-\s*gemini-[a-zA-Z0-9.\-_]+/i, "").replace(/\(이미지\)/g, "").trim();
 
                   return (
                     <tr key={log.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}` }}>
-                      {/* 1. 일시 (포인트 관리와 동일) */}
-                      <td style={{ padding: "12px 16px", color: textSecondary, fontSize: 12 }}>
+                      {/* 1. 일시 */}
+                      <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
                         {dateStr}
                       </td>
 
-                      {/* 2. 회원 (이름 + 이메일) */}
-                      <td style={{ padding: "12px 16px" }}>
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ fontWeight: 700, color: textPrimary, fontSize: 13 }}>
-                            {isAdmin ? "👑 " : (isSystem ? "⚙️ " : "👤 ")}{memberName}
-                          </span>
-                          {!isSystem && (
-                            <span style={{ fontSize: 11, color: textSecondary }}>
-                              {userEmail}
-                            </span>
-                          )}
-                        </div>
+                      {/* 2. 회원 (깔끔한 텍스트) */}
+                      <td style={{ padding: "12px 14px", fontWeight: 600, color: textPrimary }}>
+                        {memberName}
                       </td>
 
-                      {/* 3. 유형 (포인트 관리 뱃지 스타일) */}
-                      <td style={{ padding: "12px 16px" }}>
+                      {/* 3. 유형 (포인트 관리와 동일한 컴팩트 뱃지) */}
+                      <td style={{ padding: "12px 14px" }}>
                         <span style={{
-                          fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 4,
-                          background: isImage ? "#fef3c7" : (log.channel_id === "article" ? "#eff6ff" : (log.channel_id === "remodeling" ? "#e0e7ff" : (log.channel_id === "homeInterior" ? "#fae8ff" : "#f1f5f9"))),
-                          color: isImage ? "#b45309" : (log.channel_id === "article" ? "#1d4ed8" : (log.channel_id === "remodeling" ? "#4338ca" : (log.channel_id === "homeInterior" ? "#86198f" : "#475569"))),
+                          fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
+                          background: typeBg,
+                          color: typeColor,
                         }}>
-                          {agentTitle}
+                          {typeLabel}
                         </span>
                       </td>
 
                       {/* 4. 금액 (크레딧) - 포인트 관리의 -2,100 P 스타일 */}
-                      <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 800, color: cost >= 10 ? "#ef4444" : "#f59e0b" }}>
+                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 800, color: "#ef4444" }}>
                         {cost > 0 ? `-${cost.toFixed(2)} 원` : "0.00 원"}
                       </td>
 
-                      {/* 5. 사유 / 작업내용 */}
-                      <td style={{ padding: "12px 16px", color: textPrimary, maxWidth: 360, overflow: "hidden", textOverflow: "ellipsis" }} title={displaySummary}>
-                        {displaySummary || "-"}
+                      {/* 5. 사유 */}
+                      <td style={{ padding: "12px 14px", color: textPrimary, maxWidth: 360, overflow: "hidden", textOverflow: "ellipsis" }} title={displayReason}>
+                        {displayReason || "-"}
                       </td>
 
-                      {/* 6. AI 모델 / 사용량 */}
-                      <td style={{ padding: "12px 16px", color: textSecondary, fontSize: 12 }}>
-                        {modelName} · {isImage ? "1장" : `${(log.total_tokens || (log.input_tokens + log.output_tokens) || 0).toLocaleString()} 토큰`}
+                      {/* 6. 모델 / 사용량 */}
+                      <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
+                        {modelName} ({isImage ? "1장" : `${(log.total_tokens || (log.input_tokens + log.output_tokens) || 0).toLocaleString()} 토큰`})
+                      </td>
+
+                      {/* 7. 상대 */}
+                      <td style={{ padding: "12px 14px", color: textSecondary, fontSize: 12 }}>
+                        {isAdmin ? "시스템" : "공실뉴스"}
                       </td>
                     </tr>
                   );
@@ -887,7 +878,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             </table>
           </div>
         ) : (
-          <div style={{ textAlign: "center", padding: "40px 0", color: textSecondary, fontSize: 13 }}>
+          <div style={{ padding: "40px 0", textAlign: "center", color: textSecondary, fontSize: 13 }}>
             기록된 AI 호출 내역이 없습니다.
           </div>
         )}
