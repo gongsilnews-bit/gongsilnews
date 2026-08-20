@@ -19,7 +19,7 @@ export default async function MobileHomePage() {
     droneRes,
   ] = await Promise.all([
     getArticles({ status: "APPROVED", is_headline: true, limit: 8 }),
-    getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 6 }),
+    getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 30 }),
     getArticles({ status: "APPROVED", section1: "부동산·경제", limit: 6 }),
     getArticles({ status: "APPROVED", section1: "AI마케팅", limit: 6 }),
     getArticles({ status: "APPROVED", section1: "라이프·오피니언", limit: 6 }),
