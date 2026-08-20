@@ -84,6 +84,7 @@ function getPeriodDates(period: Period) {
 }
 
 export default function AgentDashboardTab({ theme, agentNames, onNameChange }: Props) {
+  const { bg, cardBg, textPrimary, textSecondary, border, darkMode } = theme;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [period, setPeriod] = useState<Period>("all");
