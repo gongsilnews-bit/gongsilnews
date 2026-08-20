@@ -20,25 +20,25 @@ const parser = new Parser({
 });
 
 const FULL_CATEGORY_MAP = [
-  // 1. 부동산·경제
-  { section1: "부동산·경제", section2: "부동산정책/정치", keyword: "부동산 정책 OR 부동산 동향 OR 아파트 분양 OR 재건축 재개발" },
-  { section1: "부동산·경제", section2: "경제/재테크/주식", keyword: "금리 인하 OR 주식 시장 OR 경제 전망 OR 재테크 OR 환율" },
-  { section1: "부동산·경제", section2: "세무/법률/기타", keyword: "부동산 세금 OR 취득세 OR 종부세 OR 양도세 OR 부동산 판례 OR 전세사기" },
+  // 1. 부동산·경제 (정책, 절세, 금융)
+  { section1: "부동산·경제", section2: "부동산정책/정치", keyword: "국토교통부 임대차보호법 OR 부동산 규제 완화 OR 분양가 상한제 OR 재건축 패스트트랙 OR 대출 규제" },
+  { section1: "부동산·경제", section2: "경제/재테크/주식", keyword: "기준금리 대출이자 OR 상가 투자수익률 OR 주택연금 OR 부동산 펀드 리츠 OR 경제 지표" },
+  { section1: "부동산·경제", section2: "세무/법률/기타", keyword: "임대소득세 절세 OR 상가 사업포괄양수도 OR 권리금 분쟁 판례 OR 중개사고 손해배상 OR 종부세 합산배제" },
 
-  // 2. AI마케팅
-  { section1: "AI마케팅", section2: "AI/NEWS", keyword: "생성형 AI OR 챗GPT OR 프롭테크 OR 인공지능 신기술" },
-  { section1: "AI마케팅", section2: "부동산유튜브/블로그", keyword: "site:youtube.com 부동산 마케팅 OR site:blog.naver.com 공인중개사 마케팅" },
-  { section1: "AI마케팅", section2: "공실/임대관리", keyword: "상가 공실 OR 임대차 시장 OR 임대 수익률 OR 빌딩 관리" },
+  // 2. AI마케팅 (프롭테크, 중개 마케팅, 임대 관리)
+  { section1: "AI마케팅", section2: "AI/NEWS", keyword: "생성형 AI 프롭테크 OR 챗GPT 업무자동화 OR 부동산 AI 시세 OR AI 건축 설계" },
+  { section1: "AI마케팅", section2: "부동산유튜브/블로그", keyword: "site:youtube.com 공인중개사 마케팅 OR site:blog.naver.com 부동산 매물 브리핑 OR 상가 임대 유튜브" },
+  { section1: "AI마케팅", section2: "공실/임대관리", keyword: "상가 공실률 렌트프리 OR 오피스 임대차 계약 OR 꼬마빌딩 밸류업 리모델링 OR 프롭테크 임대관리" },
 
-  // 3. 라이프·오피니언
-  { section1: "라이프·오피니언", section2: "인물/인터뷰", keyword: "부동산 전문가 인터뷰 OR 경제인 인터뷰 OR CEO 리더십" },
-  { section1: "라이프·오피니언", section2: "중개실무/인테리어Tip", keyword: "상가 인테리어 OR 아파트 리모델링 OR 홈스타일링 OR 중개 실무" },
-  { section1: "라이프·오피니언", section2: "맛집/여행/건강", keyword: "국내 여행 명소 OR 지역 맛집 탐방 OR 건강 관리 라이프" },
-  { section1: "라이프·오피니언", section2: "스포츠/연예/기타", keyword: "프로야구 OR K리그 OR 연예계 이슈 OR 신차 출시 OR 문화 트렌드" },
+  // 3. 라이프·오피니언 (전문가 인터뷰, 인테리어/실무, 상권 트렌드)
+  { section1: "라이프·오피니언", section2: "인물/인터뷰", keyword: "부동산 자산관리 전문가 인터뷰 OR 스타 공인중개사 인터뷰 OR 프롭테크 대표 인터뷰 OR 건축가" },
+  { section1: "라이프·오피니언", section2: "중개실무/인테리어Tip", keyword: "상가 인테리어 견적 절감 OR 노후 주택 리모델링 팁 OR 중개대상물 확인설명서 작성 OR 가계약금 특약" },
+  { section1: "라이프·오피니언", section2: "맛집/여행/건강", keyword: "상권 핫플레이스 F&B 맛집 OR 지역 명소 관광 상권 분석 OR 워케이션 트렌드" },
+  { section1: "라이프·오피니언", section2: "스포츠/연예/기타", keyword: "프로스포츠 구단 상권 마케팅 OR 연예인 빌딩 매입 매각 OR 팝업스토어 상권 유치" },
 
-  // 4. 공실뉴스
-  { section1: "공실뉴스", section2: "신축/분양/경매", keyword: "신축 아파트 분양 OR 오피스텔 분양 OR 부동산 법원 경매" },
-  { section1: "공실뉴스", section2: "상가/사무실/공장/토지", keyword: "상가 분양 OR 지식산업센터 임대 OR 오피스 빌딩 공실률" },
+  // 4. 공실뉴스 (현장 분양, 상가/빌딩 매물 동향)
+  { section1: "공실뉴스", section2: "신축/분양/경매", keyword: "신축 아파트 분양가 OR 오피스텔 청약 경쟁률 OR 법원 경매 상가 낙찰가율" },
+  { section1: "공실뉴스", section2: "상가/사무실/공장/토지", keyword: "지식산업센터 공실률 OR 역세권 상가 매매 OR 대형 오피스 임대료 지수 OR 토지 거래" },
 ];
 
 export async function GET(req: Request) {
