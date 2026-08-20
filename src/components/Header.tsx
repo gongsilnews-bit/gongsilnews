@@ -326,7 +326,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   <div style={{ position: "relative", marginLeft: !isSmallHeader ? "auto" : "0", display: "flex", alignItems: "center" }}>
                     <Link href="/gongsil" style={{ color: "#102c57", fontWeight: 800, display: "block" }}>공실열람</Link>
                   </div>
-                  <Link href="/#special-lecture">부동산특강</Link>
+                  <Link href="/study" className={pathname === "/study" || pathname?.startsWith("/study_read") ? "active" : ""}>부동산특강</Link>
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
                     <Link href="/board">자료실</Link>
                     <div className="gnb-dropdown">
