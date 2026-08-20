@@ -35,7 +35,7 @@ const ALL_PROPERTY_TYPES = [
 ];
 
 export const initialFilterState: FilterState = {
-  propertyTypes: ALL_PROPERTY_TYPES,
+  propertyTypes: ["아파트", "오피스텔", "기타"],
   tradeTypes: ["매매", "전세", "월세", "단기"],
   keyword: "",
   priceMin: null,
