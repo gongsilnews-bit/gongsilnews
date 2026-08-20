@@ -347,12 +347,17 @@ const ArticleRow = React.memo(({ a, activeTab, formatDate, stripHtml, extractYou
       style={{
         display: "flex",
         gap: "14px",
-        padding: "16px",
+        padding: "16px 12px",
+        margin: "0 4px",
         borderBottom: "1px solid #f0f0f0",
         cursor: "pointer",
         background: "#fff",
-        transition: "background 0.15s ease",
+        borderRadius: "8px",
+        transition: "transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.12s ease",
         WebkitTapHighlightColor: "transparent",
+        willChange: "transform",
+        textDecoration: "none",
+        color: "inherit",
       }}
     >
       {/* 왼쪽 썸네일 (존재할 경우) */}
@@ -1730,6 +1735,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                           <Link
                             href={`/m/news/${a.article_no || a.id}`}
                             key={`popular-${a.id}`}
+                            className="article-row"
                             onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
                             style={{
                               display: "flex",
@@ -1737,7 +1743,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                               gap: "12px",
                               textDecoration: "none",
                               cursor: "pointer",
-                              padding: "4px 0"
+                              padding: "8px 10px",
+                              margin: "0 -4px",
+                              borderRadius: "8px",
+                              transition: "transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.12s ease",
+                              WebkitTapHighlightColor: "transparent",
+                              willChange: "transform",
                             }}
                           >
                             <span
@@ -2015,8 +2026,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         .news-detail-panel.open { transform: translateX(0); }
         .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        .article-row { -webkit-user-select: none; user-select: none; }
-        .article-row:active { background: #f3f4f6 !important; }
+        .article-row { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; border-radius: 8px; transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.12s ease; will-change: transform; }
+        .article-row:active { background-color: #F4F6F8 !important; transform: scale(0.985); }
         .slide-out-left { animation: slideOutLeft 0.15s ease forwards; }
         .slide-out-right { animation: slideOutRight 0.15s ease forwards; }
         .slide-in-left { animation: slideInLeft 0.2s ease forwards; }

@@ -401,14 +401,14 @@ export default function MobileHomeClient(props: Props) {
       <style>{`
         .no-scrollbar::-webkit-scrollbar{display:none;}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
-        .tap{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
-        .tap:active{background:#f3f4f6 !important;}
+        .tap{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;transition:transform 0.12s cubic-bezier(0.2,0.8,0.2,1),background-color 0.12s ease;will-change:transform;}
+        .tap:active{background-color:#F4F6F8 !important;transform:scale(0.985);}
         .sec-hd{display:flex;align-items:center;justify-content:space-between;padding:20px 16px 14px;}
         .sec-hd h2{font-size:18px;font-weight:800;color:#333333;margin:0;letter-spacing:-0.5px;}
         .sec-hd a{font-size:15px;color:#999999;text-decoration:none;display:flex;align-items:center;gap:2px;letter-spacing:-0.2px;}
-        .art-row{display:flex;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid #f0f0f0;transition:background 0.15s ease;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;text-decoration:none;}
+        .art-row{display:flex;gap:12px;padding:12px 14px;margin:0 4px;cursor:pointer;border-bottom:1px solid #f0f0f0;border-radius:8px;transition:transform 0.12s cubic-bezier(0.2,0.8,0.2,1),background-color 0.12s ease;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;text-decoration:none;will-change:transform;}
         .art-row:last-child{border-bottom:none;}
-        .art-row:active{background:#f3f4f6 !important;}
+        .art-row:active{background-color:#F4F6F8 !important;transform:scale(0.985);}
         .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
         @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
       `}</style>
@@ -471,7 +471,7 @@ function NewsSection({ title, href, articles, onArticleClick }: { title: string;
       </div>
       {/* 메인 기사 (큰 썸네일) */}
       <Link href={`/m/news/${main.article_no || main.id}`} className="tap art-row" onClick={onArticleClick}
-        style={{ padding: "14px 16px", cursor: "pointer", borderBottom: "1px solid #f0f0f0", display: "block" }}>
+        style={{ padding: "14px 12px", cursor: "pointer", borderBottom: "1px solid #f0f0f0", display: "block" }}>
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ flex: 1 }}>
             <h3 style={{ fontSize: 17, fontWeight: 700, color: "#333333", lineHeight: 1.5, marginBottom: 6, wordBreak: "keep-all", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", margin: "0 0 6px", letterSpacing: "-0.5px" }}>{main.title}</h3>
