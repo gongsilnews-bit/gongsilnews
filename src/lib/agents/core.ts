@@ -97,6 +97,22 @@ export async function generateWithGemini(prompt: string, options?: { temperature
         totalTokens: usageMeta.totalTokenCount || 0,
       } : undefined;
 
+      // AI 비서실 현황판 실시간 비용 로깅
+      if (usage) {
+        import("./logger").then(({ logAiUsage }) => {
+          logAiUsage({
+            channelId: "article",
+            userEmail: "gongsilnews@gmail.com",
+            summary: `[Gemini API 호출] ${prompt.slice(0, 35).replace(/\n/g, ' ')}...`,
+            model: model,
+            type: "text",
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            totalTokens: usage.totalTokens,
+          }).catch(e => console.warn("Auto AI logger error:", e));
+        }).catch(() => {});
+      }
+
       console.log(`[Core] Success with Gemini model: ${model}`);
       return { text, usage };
     } catch (err: any) {

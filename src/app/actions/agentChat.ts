@@ -1063,18 +1063,31 @@ export async function getGcpBillingAndUsageStats(): Promise<GcpBillingSummary> {
     }))
     .sort((a, b) => b.totalCostKrw - a.totalCostKrw);
 
-  // GCP 공식 데이터 연동 (Google AI Studio 선불 ₩25,000 충전 기준 실시간 잔액 동기화)
-  const gcpPrepaidTotal = 25000;
-  // Google AI Studio 8월 20일 14:55 실측 콘솔 정산 잔액: ₩15,282 (당월 총 소모액: ₩9,718)
-  const baseSyncTime = new Date("2026-08-20T14:55:00+09:00").getTime();
-  const baseCreditBalance = 15282;
-  const baseMonthSpend = gcpPrepaidTotal - baseCreditBalance; // 9,718원
+  // GCP 공식 데이터 연동 (DB 저장 기준점 또는 기본값 로드)
+  let baseSyncTime = new Date("2026-08-20T14:55:00+09:00").getTime();
+  let baseCreditBalance = 15282;
+  let gcpPrepaidTotal = 25000;
 
-  // 기준 시각(14:55) 이후 발생한 실시간 증분 소모액(토큰/이미지) 계산
+  const { data: adminData } = await supabase
+    .from("members")
+    .select("sns_links")
+    .eq("email", "gongsilnews@gmail.com")
+    .single();
+
+  if (adminData?.sns_links?.ai_credit_baseline) {
+    const base = adminData.sns_links.ai_credit_baseline;
+    if (base.balance !== undefined) baseCreditBalance = Number(base.balance);
+    if (base.prepaidTotal !== undefined) gcpPrepaidTotal = Number(base.prepaidTotal);
+    if (base.updatedAt) baseSyncTime = new Date(base.updatedAt).getTime();
+  }
+
+  const baseMonthSpend = gcpPrepaidTotal - baseCreditBalance;
+
+  // 기준 시각 이후 발생한 실시간 증분 소모액(토큰/이미지) 계산
   let deltaCostSinceSync = 0;
-  for (const log of (recentLogs || [])) {
+  for (const log of (rawLogs || [])) {
     if (log.created_at && new Date(log.created_at).getTime() > baseSyncTime) {
-      deltaCostSinceSync += (log.cost_krw || 0);
+      deltaCostSinceSync += Number(log.cost_krw || 0);
     }
   }
 
@@ -1107,5 +1120,38 @@ export async function getGcpBillingAndUsageStats(): Promise<GcpBillingSummary> {
     userStats,
     channelStats,
   };
+}
+
+/**
+ * 최고관리자가 구글 AI 스튜디오의 최신 결제 잔액을 기준으로 동기화/보정합니다.
+ */
+export async function updateAiCreditBaseline(balance: number, prepaidTotal: number = 25000) {
+  const supabase = getAdminClient();
+  try {
+    const { data: adminUser } = await supabase
+      .from("members")
+      .select("id, sns_links")
+      .eq("email", "gongsilnews@gmail.com")
+      .single();
+
+    if (!adminUser) return { success: false, error: "관리자 정보를 찾을 수 없습니다." };
+
+    const currentSns = adminUser.sns_links || {};
+    currentSns.ai_credit_baseline = {
+      balance: Number(balance) || 0,
+      prepaidTotal: Number(prepaidTotal) || 25000,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from("members")
+      .update({ sns_links: currentSns })
+      .eq("id", adminUser.id);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
 }
 

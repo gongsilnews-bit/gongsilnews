@@ -11,6 +11,7 @@ import {
   getOnbidHistoryStats, 
   getRecentAgentCallLogs,
   getGcpBillingAndUsageStats,
+  updateAiCreditBaseline,
   type GcpBillingSummary
 } from "@/app/actions/agentChat";
 
@@ -106,10 +107,15 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedChannelFilter, setSelectedChannelFilter] = useState("all");
 
-  // Current stats
   const [agentStats, setAgentStats] = useState<Record<string, { totalTokens: number; costKrw: number; messageCount: number }>>({});
   const [workStats, setWorkStats] = useState<any>(null);
   const [onbidCount, setOnbidCount] = useState<number>(0);
+  
+  // ⚙️ 구글 AI Studio 잔액 기준점 수동 동기화 모달
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncBalanceInput, setSyncBalanceInput] = useState("15282");
+  const [syncPrepaidInput, setSyncPrepaidInput] = useState("25000");
+  const [isUpdatingBaseline, setIsUpdatingBaseline] = useState(false);
   const [onbidHistory, setOnbidHistory] = useState<{
     todayRegistered: number;
     todayExpired: number;
@@ -411,6 +417,22 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             >
               💳 GCP 결제 계정 관리 ↗
             </a>
+            <button
+              onClick={() => {
+                setSyncBalanceInput(gcpBilling?.currentCreditBalance?.toString() || "15282");
+                setSyncPrepaidInput(gcpBilling?.prepaidCreditTotal?.toString() || "25000");
+                setShowSyncModal(true);
+              }}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700,
+                background: darkMode ? "#1e293b" : "#f1f5f9",
+                color: textPrimary, border: `1px solid ${darkMode ? "#334155" : "#cbd5e1"}`,
+                cursor: "pointer"
+              }}
+            >
+              ⚙️ 잔액 기준점 보정
+            </button>
           </div>
         </div>
 
@@ -1307,6 +1329,74 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
           </div>
         )}
       </div>
+
+      {/* ⚙️ 구글 AI Studio 잔액 기준점 동기화 모달 */}
+      {showSyncModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: darkMode ? "#1f2023" : "#fff", borderRadius: 16, maxWidth: 440, width: "100%", padding: 24, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)" }}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 18, fontWeight: 800, color: textPrimary }}>⚙️ 구글 AI Studio 잔액 기준점 동기화</h3>
+            <p style={{ fontSize: 13, color: textSecondary, lineHeight: 1.5, margin: "0 0 16px 0" }}>
+              Google AI Studio 결제 콘솔(aistudio.google.com/billing)의 현재 실측 잔액을 입력하시면, 지금 이 순간부터 1초 단위 실시간 자동 차감이 이어집니다.
+            </p>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>
+                구글 콘솔 현재 잔액 (원)
+              </label>
+              <input
+                type="number"
+                value={syncBalanceInput}
+                onChange={e => setSyncBalanceInput(e.target.value)}
+                placeholder="예: 15282"
+                style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${border}`, background: darkMode ? "#2c2d33" : "#fff", color: textPrimary, fontSize: 15, fontWeight: 700, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>
+                선불 충전 총액 (원)
+              </label>
+              <input
+                type="number"
+                value={syncPrepaidInput}
+                onChange={e => setSyncPrepaidInput(e.target.value)}
+                placeholder="예: 25000"
+                style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${border}`, background: darkMode ? "#2c2d33" : "#fff", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowSyncModal(false)}
+                style={{ padding: "10px 16px", borderRadius: 8, border: "none", background: darkMode ? "#333" : "#f3f4f6", color: textPrimary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              >
+                취소
+              </button>
+              <button
+                disabled={isUpdatingBaseline}
+                onClick={async () => {
+                  const bal = parseFloat(syncBalanceInput);
+                  const prep = parseFloat(syncPrepaidInput);
+                  if (isNaN(bal)) { alert("올바른 잔액을 입력해주세요."); return; }
+                  setIsUpdatingBaseline(true);
+                  const res = await updateAiCreditBaseline(bal, prep || 25000);
+                  setIsUpdatingBaseline(false);
+                  if (res.success) {
+                    setShowSyncModal(false);
+                    fetchStats();
+                    alert("🎉 구글 AI Studio 잔액 기준점이 성공적으로 동기화되었습니다!");
+                  } else {
+                    alert("오류: " + res.error);
+                  }
+                }}
+                style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 700, cursor: isUpdatingBaseline ? "not-allowed" : "pointer" }}
+              >
+                {isUpdatingBaseline ? "저장 중..." : "동기화 적용"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
