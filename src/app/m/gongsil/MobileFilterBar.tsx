@@ -293,6 +293,30 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     }
   })();
 
+  // 🏢 매물 유형 라벨 (전체매물, 아파트, 빌라, 원룸, 상가 등 구체적 명시)
+  const propertyTypeLabel = (() => {
+    const allPropTypes = PROPERTY_TYPES.flatMap(g => g.items);
+    if (filters.propertyTypes.length === 0) return activeMode === "경매" ? "자산유형 ▾" : "전체매물 ▾";
+    if (filters.propertyTypes.length >= allPropTypes.length) {
+      return activeMode === "경매" ? "전체자산 ▾" : "전체매물 ▾";
+    }
+
+    // 대분류 전체와 1:1 일치하는지 확인
+    for (const group of PROPERTY_TYPES) {
+      if (group.items.length === filters.propertyTypes.length && group.items.every(it => filters.propertyTypes.includes(it))) {
+        return `${group.group} ▾`;
+      }
+    }
+
+    if (filters.propertyTypes.length === 1) {
+      return `${filters.propertyTypes[0]} ▾`;
+    }
+    if (filters.propertyTypes.length === 2) {
+      return `${filters.propertyTypes[0]}, ${filters.propertyTypes[1]} ▾`;
+    }
+    return `${filters.propertyTypes[0]} 외 ${filters.propertyTypes.length - 1} ▾`;
+  })();
+
   const pillStyle = (active: boolean) => ({
     padding: "6px 12px",
     borderRadius: "20px",
@@ -344,7 +368,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         <div style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", flex: 1, scrollbarWidth: "none" }}>
           <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "위치")}>📍 {locLabel}</button>
           <button onClick={() => setActivePanel(activePanel === "prop" ? null : "prop")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>
-            {activeMode === "경매" ? "자산유형" : "유형"}
+            {propertyTypeLabel}
           </button>
 
           {/* 🔨 경매 모드 전용 필터 버튼들 (PC 100% 동일) */}
