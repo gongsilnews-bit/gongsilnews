@@ -1065,9 +1065,21 @@ export async function getGcpBillingAndUsageStats(): Promise<GcpBillingSummary> {
 
   // GCP 공식 데이터 연동 (Google AI Studio 선불 ₩25,000 충전 기준 실시간 잔액 동기화)
   const gcpPrepaidTotal = 25000;
-  // Google AI Studio 최신 정산 잔액: ₩16,180 (당월 총 소모액: ₩8,820)
-  const gcpCreditBalance = 16180;
-  const gcpMonthSpend = gcpPrepaidTotal - gcpCreditBalance;
+  // Google AI Studio 8월 20일 14:55 실측 콘솔 정산 잔액: ₩15,282 (당월 총 소모액: ₩9,718)
+  const baseSyncTime = new Date("2026-08-20T14:55:00+09:00").getTime();
+  const baseCreditBalance = 15282;
+  const baseMonthSpend = gcpPrepaidTotal - baseCreditBalance; // 9,718원
+
+  // 기준 시각(14:55) 이후 발생한 실시간 증분 소모액(토큰/이미지) 계산
+  let deltaCostSinceSync = 0;
+  for (const log of (recentLogs || [])) {
+    if (log.created_at && new Date(log.created_at).getTime() > baseSyncTime) {
+      deltaCostSinceSync += (log.cost_krw || 0);
+    }
+  }
+
+  const gcpCreditBalance = Math.max(0, Math.round((baseCreditBalance - deltaCostSinceSync) * 100) / 100);
+  const gcpMonthSpend = Math.min(gcpPrepaidTotal, Math.round((baseMonthSpend + deltaCostSinceSync) * 100) / 100);
 
   try {
     const { fetchLiveGcpBillingInfo } = await import("@/lib/gcp/billingClient");
