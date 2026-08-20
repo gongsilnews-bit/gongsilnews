@@ -1,4 +1,4 @@
-﻿import crypto from 'crypto';
+import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 
@@ -82,7 +82,7 @@ export async function getGcpAccessToken(): Promise<string | null> {
 /**
  * GCP Cloud Billing 계정 정보를 실시간으로 조회합니다.
  */
-export async function fetchLiveGcpBillingInfo(billingAccountId = '014C95-E62B99-958C3B') {
+export async function fetchLiveGcpBillingInfo(billingAccountId = '014C95-E82B99-958C3B') {
   const token = await getGcpAccessToken();
   if (!token) return null;
 
@@ -97,6 +97,29 @@ export async function fetchLiveGcpBillingInfo(billingAccountId = '014C95-E62B99-
     }
   } catch (err) {
     console.error('fetchLiveGcpBillingInfo error:', err);
+  }
+
+  return null;
+}
+
+/**
+ * GCP 프로젝트의 결제 연동 활성화 상태를 실시간으로 조회합니다.
+ */
+export async function fetchLiveGcpProjectBillingInfo(projectId = 'gen-lang-client-0768562072') {
+  const token = await getGcpAccessToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch(`https://cloudbilling.googleapis.com/v1/projects/${projectId}/billingInfo`, {
+      headers: { Authorization: 'Bearer ' + token },
+      cache: 'no-store',
+    });
+
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.error('fetchLiveGcpProjectBillingInfo error:', err);
   }
 
   return null;
