@@ -112,11 +112,14 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     return filterVacanciesList(vacancies, tempFilters).length;
   }, [vacancies, tempFilters]);
 
-  // 🚀 [PC 동일] 카테고리별 동적 상세 필터 조건 판별기
-  const isApartmentGroup = tempFilters.propertyTypes.some(p => ["아파트", "오피스텔", "기타"].includes(p));
-  const isVillaGroup = tempFilters.propertyTypes.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
-  const isOneRoomGroup = tempFilters.propertyTypes.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
-  const isCommercialGroup = tempFilters.propertyTypes.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
+  // 🚀 [PC 동일] 카테고리별 동적 상세 필터 조건 판별기 (전체 선택 시에는 기본 공통 조건만 노출)
+  const allPropTypesList = PROPERTY_TYPES.flatMap(g => g.items);
+  const isTempAll = tempFilters.propertyTypes.length >= allPropTypesList.length || tempFilters.propertyTypes.length === 0;
+
+  const isApartmentGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["아파트", "오피스텔", "기타"].includes(p));
+  const isVillaGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
+  const isOneRoomGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
+  const isCommercialGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
 
   const showTempPrice = true;
   const showTempArea = true;
@@ -127,14 +130,15 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const showTempFloor = isCommercialGroup;
   const showTempMaint = isOneRoomGroup || isCommercialGroup;
   const showTempParking = isCommercialGroup;
-  const showTempOptions = true;
+  const showTempOptions = isApartmentGroup || isVillaGroup || isOneRoomGroup || isCommercialGroup;
   const showTempTheme = true;
 
-  // 바깥 스크롤바용 판별기
-  const extIsApart = filters.propertyTypes.some(p => ["아파트", "오피스텔", "기타"].includes(p));
-  const extIsVilla = filters.propertyTypes.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
-  const extIsOne = filters.propertyTypes.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
-  const extIsBiz = filters.propertyTypes.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
+  // 바깥 스크롤바용 판별기 (전체 선택 시에는 공통 단축 필터만 노출)
+  const isExtAll = filters.propertyTypes.length >= allPropTypesList.length || filters.propertyTypes.length === 0;
+  const extIsApart = !isExtAll && filters.propertyTypes.some(p => ["아파트", "오피스텔", "기타"].includes(p));
+  const extIsVilla = !isExtAll && filters.propertyTypes.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
+  const extIsOne = !isExtAll && filters.propertyTypes.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
+  const extIsBiz = !isExtAll && filters.propertyTypes.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
 
   const showPricePill = true;
   const showAreaPill = true;
@@ -145,7 +149,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const showFloorPill = extIsBiz;
   const showMaintPill = extIsOne || extIsBiz;
   const showParkingPill = extIsBiz;
-  const showOptionsPill = true;
+  const showOptionsPill = extIsApart || extIsVilla || extIsOne || extIsBiz;
   const showThemePill = true;
 
   useEffect(() => { setTempFilters(filters); }, [filters]);
