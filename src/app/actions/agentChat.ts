@@ -347,16 +347,16 @@ export async function getRecentAgentCallLogs(params?: {
 
   const enrichedLogs = data.map((row: any) => {
     const raw = row.content || "";
-    let userEmail = "SYSTEM (자동 크론)";
+    let userEmail = "gongsilnews@gmail.com";
     const match = raw.match(/^\[(.*?)\]/);
-    if (match) {
+    if (match && match[1].includes("@")) {
       userEmail = match[1];
     }
     const mem = memberMap.get(userEmail.toLowerCase().trim());
     return {
       ...row,
       user_email: userEmail,
-      user_name: mem?.name || (userEmail.includes("gongsilnews") ? "공실뉴스" : ""),
+      user_name: mem?.name || (userEmail.includes("gongsilnews") ? "공실뉴스" : userEmail.split("@")[0]),
       user_role: mem?.role || (userEmail.includes("gongsilnews") ? "ADMIN" : ""),
     };
   });
@@ -983,10 +983,9 @@ export async function getGcpBillingAndUsageStats(): Promise<GcpBillingSummary> {
     const raw = log.content || "";
     let userEmail = "gongsilnews@gmail.com";
     const match = raw.match(/^\[(.*?)\]/);
-    if (match) {
+    if (match && match[1].includes("@")) {
       userEmail = match[1];
-    }
-    if (userEmail.toUpperCase().includes("SYSTEM")) {
+    } else {
       userEmail = "gongsilnews@gmail.com";
     }
 

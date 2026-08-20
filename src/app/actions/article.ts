@@ -696,7 +696,7 @@ ${article.content}
     await supabase.from("agent_chats").insert({
       channel_id: "article",
       role: "agent",
-      content: `[반려 사유 반영 AI 기사 재작성 및 재발행] "${newTitle}" (피드백: ${feedback.slice(0, 40)})`,
+      content: `[gongsilnews@gmail.com] [반려 사유 반영 AI 기사 재작성 및 재발행] "${newTitle}" (피드백: ${feedback.slice(0, 40)}) - gemini-3.6-flash`,
       input_tokens: res.usage?.inputTokens || 0,
       output_tokens: res.usage?.outputTokens || 0,
       total_tokens: tokens,

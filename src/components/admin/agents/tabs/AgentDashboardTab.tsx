@@ -760,21 +760,24 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
 
                   // 사용자 정보 및 요약 파싱
                   const raw = log.content || "";
-                  let userEmail = log.user_email || "SYSTEM";
+                  let userEmail = "gongsilnews@gmail.com";
                   let cleanContent = raw;
                   const match = raw.match(/^\[(.*?)\]\s*(.*)$/);
-                  if (match) {
+                  if (match && match[1].includes("@")) {
                     userEmail = match[1];
                     cleanContent = match[2];
+                  } else if (match && !match[1].includes("@")) {
+                    userEmail = "gongsilnews@gmail.com";
+                    cleanContent = raw;
                   }
 
-                  const isAdmin = userEmail.toLowerCase().includes("gongsilnews@gmail.com") || userEmail.toLowerCase().includes("admin");
+                  const isAdmin = userEmail.toLowerCase().includes("gongsilnews@gmail.com") || userEmail.toLowerCase().includes("admin") || !userEmail.includes("@");
                   const isSystem = userEmail.toUpperCase().includes("SYSTEM");
                   const isImage = raw.includes("(이미지)") || raw.includes("나노바나나") || raw.includes("gemini-3.1-flash-image") || raw.includes("실사") || log.channel_id === "photoCuration" || log.channel_id === "remodeling" || log.channel_id === "homeInterior";
 
                   // 회원명 포맷: 공실뉴스(gongsilnews@gmail.com) 또는 김동현(gongsilmarketing@gmail.com)
                   let memberDisplay = "공실뉴스(gongsilnews@gmail.com)";
-                  if (isAdmin || isSystem || userEmail.toLowerCase().includes("gongsilnews")) {
+                  if (isAdmin || isSystem || userEmail.toLowerCase().includes("gongsilnews") || !userEmail.includes("@")) {
                     memberDisplay = "공실뉴스(gongsilnews@gmail.com)";
                   } else if (userEmail.toLowerCase().includes("gongsilmarketing")) {
                     memberDisplay = "김동현(gongsilmarketing@gmail.com)";
