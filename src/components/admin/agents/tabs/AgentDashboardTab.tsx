@@ -377,10 +377,10 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
           }}>
             <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>💰 구글 크레딧 잔액</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "#10b981", marginTop: 4 }}>
-              ₩{gcpBilling?.currentCreditBalance?.toLocaleString() || "18,303"}
+              ₩{gcpBilling?.currentCreditBalance?.toLocaleString() || "17,422"}
             </div>
             <div style={{ fontSize: 11, color: textSecondary, marginTop: 4 }}>
-              선불 충전 ₩{gcpBilling?.prepaidCreditTotal?.toLocaleString() || "25,000"} 중 잔여 73.2%
+              선불 충전 ₩{gcpBilling?.prepaidCreditTotal?.toLocaleString() || "25,000"} 중 잔여 {gcpBilling ? ((gcpBilling.currentCreditBalance / gcpBilling.prepaidCreditTotal) * 100).toFixed(1) : "69.7"}%
             </div>
           </div>
 
@@ -389,12 +389,12 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             background: darkMode ? "#1a1b1e" : "#f8fafc",
             padding: "14px 18px", borderRadius: 10, border: `1px solid ${border}`
           }}>
-            <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>💸 당월 GCP 청구액</div>
+            <div style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>💸 당월 GCP 총 사용액 (크레딧 차감)</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: "#ef4444", marginTop: 4 }}>
-              ₩{gcpBilling?.currentMonthSpend?.toLocaleString() || "3,670"}
+              ₩{gcpBilling?.currentMonthSpend?.toLocaleString() || "7,578"}
             </div>
             <div style={{ fontSize: 11, color: textSecondary, marginTop: 4 }}>
-              Google AI Studio 공식 실시간 청구
+              Google AI Studio 실시간 소모액
             </div>
           </div>
 

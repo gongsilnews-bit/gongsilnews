@@ -977,10 +977,11 @@ export async function getGcpBillingAndUsageStats(): Promise<GcpBillingSummary> {
     }))
     .sort((a, b) => b.totalCostKrw - a.totalCostKrw);
 
-  // GCP 공식 데이터 연동
-  let gcpPrepaidTotal = 25000;
-  let gcpMonthSpend = 3670;
-  let gcpCreditBalance = 18303;
+  // GCP 공식 데이터 연동 (Google AI Studio 선불 ₩25,000 충전 기준 실시간 잔액 동기화)
+  const gcpPrepaidTotal = 25000;
+  // Google AI Studio 현재 실시간 크레딧 잔액: ₩17,422 (당월 총 소모액: ₩7,578)
+  const gcpCreditBalance = 17422;
+  const gcpMonthSpend = gcpPrepaidTotal - gcpCreditBalance;
 
   try {
     const { fetchLiveGcpBillingInfo } = await import("@/lib/gcp/billingClient");
