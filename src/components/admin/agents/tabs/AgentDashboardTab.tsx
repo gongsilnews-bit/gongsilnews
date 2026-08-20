@@ -775,8 +775,8 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${theme.border}`, textAlign: "left", color: theme.textSecondary }}>
+                  <th style={{ padding: "10px 12px", fontWeight: 700 }}>회원 ID (사용자)</th>
                   <th style={{ padding: "10px 12px", fontWeight: 700 }}>시각 (KST)</th>
-                  <th style={{ padding: "10px 12px", fontWeight: 700 }}>사용자 ID (계정)</th>
                   <th style={{ padding: "10px 12px", fontWeight: 700 }}>기능 / 에이전트</th>
                   <th style={{ padding: "10px 12px", fontWeight: 700 }}>작업 내용 요약</th>
                   <th style={{ padding: "10px 12px", fontWeight: 700, textAlign: "right" }}>사용량 (토큰/장수)</th>
@@ -797,7 +797,7 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
 
                   // 사용자 정보 및 요약 파싱
                   const raw = log.content || "";
-                  let userEmail = "SYSTEM (자동 크론)";
+                  let userEmail = log.user_email || "SYSTEM (자동 크론)";
                   let cleanContent = raw;
                   const match = raw.match(/^\[(.*?)\]\s*(.*)$/);
                   if (match) {
@@ -809,27 +809,35 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                   const isSystem = userEmail.toUpperCase().includes("SYSTEM");
                   const isImage = raw.includes("(이미지)") || raw.includes("나노바나나") || raw.includes("gemini-3.1-flash-image") || raw.includes("실사") || log.channel_id === "photoCuration" || log.channel_id === "remodeling" || log.channel_id === "homeInterior";
 
+                  let userDisplayName = userEmail;
+                  if (isAdmin) {
+                    userDisplayName = `${userEmail} 최고관리자 공실뉴스`;
+                  } else if (log.user_name) {
+                    userDisplayName = `${userEmail} ${log.user_name}`;
+                  }
+
                   return (
                     <tr key={log.id} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                      {/* 1. 회원 ID (계정) - 맨 앞 */}
+                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 5,
+                          padding: "4px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700,
+                          background: isAdmin ? "#fef3c7" : (isSystem ? (theme.darkMode ? "#2c2d33" : "#f1f5f9") : "#e0e7ff"),
+                          color: isAdmin ? "#92400e" : (isSystem ? theme.textSecondary : "#3730a3"),
+                          border: `1px solid ${isAdmin ? "#fde68a" : (isSystem ? theme.border : "#c7d2fe")}`,
+                        }}>
+                          {isAdmin ? "👑 " : (isSystem ? "⚙️ " : "👤 ")}
+                          {userDisplayName}
+                        </span>
+                      </td>
+
+                      {/* 2. 시각 */}
                       <td style={{ padding: "10px 12px", color: theme.textSecondary, whiteSpace: "nowrap", fontSize: 12 }}>
                         {dateStr} {timeStr}
                       </td>
 
-                      {/* 사용자 ID (계정) */}
-                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
-                        <span style={{
-                          display: "inline-flex", alignItems: "center", gap: 4,
-                          padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700,
-                          background: isAdmin ? "#fef3c7" : (isSystem ? (theme.darkMode ? "#2c2d33" : "#f1f5f9") : "#e0e7ff"),
-                          color: isAdmin ? "#b45309" : (isSystem ? theme.textSecondary : "#3730a3"),
-                          border: `1px solid ${isAdmin ? "#fde68a" : (isSystem ? theme.border : "#c7d2fe")}`,
-                        }}>
-                          {isAdmin ? "👑 " : (isSystem ? "⚙️ " : "👤 ")}
-                          {userEmail}
-                        </span>
-                      </td>
-
-                      {/* 기능 / 에이전트 */}
+                      {/* 3. 기능 / 에이전트 */}
                       <td style={{ padding: "10px 12px", fontWeight: 700, color: theme.textPrimary, whiteSpace: "nowrap" }}>
                         <span style={{
                           padding: "3px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700,
@@ -840,12 +848,12 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                         </span>
                       </td>
 
-                      {/* 작업 내용 요약 */}
-                      <td style={{ padding: "10px 12px", color: theme.textPrimary, maxWidth: 350, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={cleanContent}>
-                        {cleanContent?.length > 60 ? cleanContent.substring(0, 60) + "..." : cleanContent}
+                      {/* 4. 작업 내용 요약 */}
+                      <td style={{ padding: "10px 12px", color: theme.textPrimary, maxWidth: 320, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={cleanContent}>
+                        {cleanContent?.length > 55 ? cleanContent.substring(0, 55) + "..." : cleanContent}
                       </td>
 
-                      {/* 토큰 / 장수 */}
+                      {/* 5. 사용량 (토큰/장수) */}
                       <td style={{ padding: "10px 12px", textAlign: "right", color: theme.textSecondary, fontSize: 12 }}>
                         {isImage ? (
                           <span style={{ color: "#d97706", fontWeight: 700 }}>🖼️ 1장 (실사)</span>
@@ -853,11 +861,13 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
                           `${log.input_tokens?.toLocaleString() || 0} / ${log.output_tokens?.toLocaleString() || 0}`
                         )}
                       </td>
+
+                      {/* 6. 총 사용량 */}
                       <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: theme.textPrimary }}>
                         {isImage ? "1장" : (log.total_tokens?.toLocaleString() || 0)}
                       </td>
 
-                      {/* 소모 크레딧 */}
+                      {/* 7. 소모 크레딧 */}
                       <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: cost >= 10 ? "#ea580c" : (cost > 0 ? "#f59e0b" : theme.textSecondary) }}>
                         ₩{cost.toFixed(2)}
                       </td>

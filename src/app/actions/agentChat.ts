@@ -294,11 +294,43 @@ export async function getRecentAgentCallLogs(params?: {
 
   const { data, error } = await query;
 
-  if (error) {
+  if (error || !data) {
     console.error("getRecentAgentCallLogs error:", error);
     return { success: false, data: [] };
   }
-  return { success: true, data: data || [] };
+
+  // 회원 정보 조회하여 사용자 이름/직책 매핑
+  const { data: memberList } = await supabase
+    .from("members")
+    .select("email, name, role");
+
+  const memberMap = new Map<string, { name: string; role: string }>();
+  (memberList || []).forEach((m: any) => {
+    if (m.email) {
+      memberMap.set(m.email.toLowerCase().trim(), {
+        name: m.name || "",
+        role: m.role || "",
+      });
+    }
+  });
+
+  const enrichedLogs = data.map((row: any) => {
+    const raw = row.content || "";
+    let userEmail = "SYSTEM (자동 크론)";
+    const match = raw.match(/^\[(.*?)\]/);
+    if (match) {
+      userEmail = match[1];
+    }
+    const mem = memberMap.get(userEmail.toLowerCase().trim());
+    return {
+      ...row,
+      user_email: userEmail,
+      user_name: mem?.name || (userEmail.includes("gongsilnews") ? "공실뉴스" : ""),
+      user_role: mem?.role || (userEmail.includes("gongsilnews") ? "ADMIN" : ""),
+    };
+  });
+
+  return { success: true, data: enrichedLogs };
 }
 
 
