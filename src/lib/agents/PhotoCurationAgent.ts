@@ -177,89 +177,104 @@ export class PhotoCurationAgent {
   }
 
   /**
-   * 2순위: 기사 맥락에 맞는 한국 부동산 최적화 영어 검색어 생성
+   * 2순위: 기사 맥락에 맞는 한국형 최적화 영어 스톡 검색어 생성
    */
-  private static async generateVisualSearchPrompt(title: string, category: string): Promise<string> {
-    const prompt = `너는 대한민국 최고 언론사의 [수석 사진 에디터 AI]야.
-다음 기사의 제목과 카테고리를 분석하여, 고품질 스톡 사진 검색에 가장 완벽하게 어울리는 **영어 검색어 3~5단어**를 생성해라.
+  private static async generateVisualSearchPrompt(title: string, category: string, subtitle?: string): Promise<string> {
+    const prompt = `너는 대한민국 최고 권위의 뉴스 미디어 '공실뉴스'의 [수석 사진 에디터 AI]야.
+다음 기사의 제목, 부제목, 카테고리를 정밀 분석하여, 기사 내용과 **100% 일치하는 고품질 스톡 사진 검색용 [영어 검색 키워드 3~5단어]**를 생성해라.
 
-[절대 지켜야 할 규칙]
-1. 아파트, 분양, 청약, 재개발 기사인 경우: **'modern apartment complex seoul korea residential'** 또는 **'apartment construction site crane'**으로 검색하라.
-2. 상가, 권리금, 로드숍 기사인 경우: **'modern retail shop storefront seoul street'** 또는 **'store interior commercial'**로 검색하라.
-3. 지식산업센터, 오피스 공실 기사인 경우: **'modern industrial tech office building'**으로 검색하라.
-4. 인물/인터뷰 기사인 경우: **'corporate headquarters modern boardroom'** 또는 **'executive office interior'**로 검색하라.
-5. 세무/법률 기사인 경우: **'tax invoice calculator legal document contract'**로 검색하라.
+[절대 지켜야 할 원칙]
+1. 아파트/건설 기사가 아닌데 'apartment'나 'building'을 넣지 마라!
+2. AI/IT/에듀테크/대학 기사: **'korean university students AI classroom tech laptop'**
+3. 금리/환율/주식/금융 기사: **'financial stock market trading desk charts'**
+4. 상가/창업/자영업/공실 기사: **'seoul retail storefront street commercial'**
+5. 세무/법률/계약 기사: **'tax legal contract documents calculator business'**
+6. 인테리어/리모델링 기사: **'modern interior design renovation living room'**
+7. 신축/분양/아파트 기사: **'modern apartment residential complex seoul'**
+8. 맛집/상권/여행 기사: **'korean restaurant dining street food seoul'**
 
 [입력 정보]
 - 카테고리: [${category}]
 - 기사 제목: "${title}"
+- 부제목: "${subtitle || ''}"
 
-출력은 다른 부가 설명 없이 오직 [영어 검색 키워드 3~5단어]만 출력할 것.`;
+출력 형식: 다른 부가 설명 없이 오직 [영어 검색 키워드 3~5단어]만 출력할 것.`;
 
     try {
       const res = await generateWithGemini(prompt, { temperature: 0.3 });
-      return res.text.replace(/["\n\r]/g, "").trim();
+      const cleaned = res.text.replace(/["\n\r]/g, " ").trim();
+      return cleaned || `${category} editorial news`;
     } catch {
-      return category.includes("아파트") || category.includes("분양")
-        ? "modern apartment complex residential"
-        : "modern architecture city building";
+      return `${category} editorial news photography`;
     }
   }
 
   /**
-   * Unsplash API 실시간 검색 (중복 사진 배제)
+   * 🍌 나노바나나 AI 이미지 전용 정밀 비주얼 프롬프트 생성기 (기사 내용 100% 일치)
    */
-  private static async searchFreshStockPhoto(query: string, usedUrls: Set<string>): Promise<string | null> {
-    const accessKey = process.env.UNSPLASH_ACCESS_KEY;
-    if (!accessKey) return null;
+  private static async generateNanoBananaVisualPrompt(title: string, category: string, subtitle?: string, content?: string): Promise<string> {
+    const prompt = `너는 대한민국 최고 언론사의 [수석 비주얼 디렉터 & AI 포토그래퍼]야.
+다음 뉴스 기사의 주제와 핵심 내용을 분석하여, 기사에 **100% 완벽하게 부합하는 최고급 신문 보도 실사 사진(Editorial Press Photography)**을 생성하기 위한 [상세한 영어 비주얼 묘사]를 작성해라.
+
+[절대 지켜야 할 원칙 - ★매우 중요★]
+1. 주제 일치성:
+   - **기사 주제가 아파트/분양이 아닌데 아파트나 건물 전경을 그리지 마라!**
+   - **AI/IT/대학/에듀테크**: 한국 대학교 강의실 또는 도서관에서 학생들이 노트북과 스마트 기기로 AI 학습/과제에 몰입하고 있는 생생한 교육 현장 모습
+   - **금융/금리/주식/경제**: 한국 금융 중심지 또는 증권사 모니터의 환율·주가 차트, 경제 비즈니스 회의 장면
+   - **상가/자영업/공실**: 서울 도심 상가 거리, 임대 문의가 붙어 있는 1층 점포 전경, 상권 현장
+   - **세무/법률/정책**: 세무 계산기, 공인중개사 및 법률 계약 문서가 정갈하게 놓인 오피스 데스크
+   - **인테리어/리모델링**: 세련된 원목 바닥과 따뜻한 자연광이 들어오는 현대적인 실내 공간
+   - **신축/분양/아파트**: 타워크레인이 작동 중인 건설 현장 또는 신축 아파트 단지 전경
+   - **음식/맛집/여행**: 활기찬 한국 식당 내부 또는 인기 있는 로컬 거리
+
+2. 포토리얼리즘 및 스타일:
+   - "Authentic South Korean editorial news photography, natural daylight, 8k resolution, documentary press style, highly detailed"
+   - 만화, 3D 렌더링, 일러스트 절대 금지 (No cartoon, no 3D render)
+   - 어색한 얼굴 클로즈업이나 깨진 글자 배제 (No distorted faces, no text overlays, no Korean letters)
+
+[입력 기사]
+- 카테고리: [${category}]
+- 제목: "${title}"
+- 부제목: "${subtitle || ''}"
+- 본문 요약: "${(content || '').slice(0, 300)}"
+
+출력: 다른 잡담 없이, 오직 이미지 생성 모델에 전달할 **[영어 비주얼 묘사 2~3문장]**만 출력할 것.`;
 
     try {
-      const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=12&orientation=landscape&client_id=${accessKey}`;
-      const res = await fetch(url);
-      if (!res.ok) return null;
-
-      const data = await res.json();
-      if (data.results && data.results.length > 0) {
-        for (const item of data.results) {
-          const rawUrl = item.urls?.regular || item.urls?.small;
-          if (rawUrl) {
-            const cleanUrl = `${rawUrl.split("?")[0]}?auto=format&fit=crop&q=80&w=800`;
-            if (!usedUrls.has(cleanUrl)) {
-              return cleanUrl;
-            }
-          }
-        }
+      const res = await generateWithGemini(prompt, { temperature: 0.4 });
+      const visual = res.text.replace(/["\n\r]/g, " ").trim();
+      if (visual && visual.length > 20) {
+        return visual;
       }
-      return null;
-    } catch {
-      return null;
+    } catch (err) {
+      console.warn("[PhotoCurationAgent] Visual prompt error:", err);
     }
+
+    return `Authentic South Korean editorial news photography of ${title}, ${category} context, natural daylight, photorealistic documentary style.`;
   }
 
   /**
-   * 🍌 3순위 (나노바나나): 적합한 사진이 없을 때, Gemini Image Generation으로 기사 맞춤형 실사 이미지를 생성하고 Supabase에 업로드
+   * 🍌 3순위 (나노바나나): 기사 맥락에 100% 맞춤형 실사 이미지를 생성하고 Supabase에 업로드
    */
-  private static async generateWithNanoBanana(title: string, category: string, userEmail?: string): Promise<string | null> {
+  private static async generateWithNanoBanana(
+    title: string,
+    category: string,
+    userEmail?: string,
+    subtitle?: string,
+    content?: string
+  ): Promise<string | null> {
     const apiKey = process.env.GEMINI_API_KEY;
     const supabase = getSupabaseClient();
     if (!apiKey || !supabase) return null;
 
     try {
-      console.log(`[PhotoCurationAgent] 🍌 Generating custom photorealistic news image with Nano Banana for: "${title}"`);
+      console.log(`[PhotoCurationAgent] 🍌 Generating custom photorealistic news image with Nano Banana for: "${title}" (${category})`);
 
-      // 기사 맞춤형 생성 프롬프트 정교화
-      let subjectDesc = "South Korean modern high-rise residential apartment complex in Seoul, daytime architectural photography";
-      if (category.includes("상가") || category.includes("임대") || category.includes("공실")) {
-        subjectDesc = "Modern commercial retail store street in Seoul with lease signage, realistic street view, architectural photography";
-      } else if (category.includes("지식산업센터") || category.includes("사무실")) {
-        subjectDesc = "Modern high-tech business office building in Seoul tech valley, glass facade, bright sunlight";
-      } else if (category.includes("세무") || category.includes("법률")) {
-        subjectDesc = "Korean business desk with tax documents, financial calculator, neat paperwork, corporate ambiance";
-      } else if (category.includes("인물") || category.includes("인터뷰")) {
-        subjectDesc = "Modern executive corporate headquarters boardroom and glass office interior, high-end business setting";
-      }
+      // 기사 맥락에 100% 맞춘 정밀 영어 비주얼 묘사 생성
+      const visualDesc = await this.generateNanoBananaVisualPrompt(title, category, subtitle, content);
+      console.log(`  -> 🍌 [Nano Banana Prompt]: ${visualDesc.slice(0, 100)}...`);
 
-      const prompt = `Photorealistic editorial news photography. ${subjectDesc}. Highly detailed, 8k resolution, authentic South Korean real estate context, natural daylight, no people faces, no Korean text, no cartoon, hyper-realistic.`;
+      const prompt = `Photorealistic editorial press photography. ${visualDesc}. Highly detailed, 8k resolution, authentic South Korean setting, natural daylight, hyper-realistic documentary photo, no cartoon, no 3D render, no text.`;
 
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
@@ -392,8 +407,8 @@ export class PhotoCurationAgent {
       };
     }
 
-    // 2단계: 한국 부동산 맥락 비주얼 검색어로 신선한 스톡 사진 탐색
-    const visualPrompt = await this.generateVisualSearchPrompt(req.articleTitle, req.category);
+    // 2단계: 한국형 최적화 비주얼 검색어로 신선한 스톡 사진 탐색
+    const visualPrompt = await this.generateVisualSearchPrompt(req.articleTitle, req.category, req.articleSubtitle);
     const freshStock = await this.searchFreshStockPhoto(visualPrompt, usedUrls);
     if (freshStock) {
       console.log(`  -> [2순위] 정밀 스톡 사진 매칭 성공: ${freshStock.slice(0, 60)}...`);
@@ -405,8 +420,14 @@ export class PhotoCurationAgent {
       };
     }
 
-    // 3단계: 🍌 [나노바나나] 적합한 사진이 없을 때 기사 맥락에 맞춘 포토리얼리스틱 실사 이미지 즉시 생성!
-    const nanoBananaUrl = await this.generateWithNanoBanana(req.articleTitle, req.category, req.userEmail);
+    // 3단계: 🍌 [나노바나나] 적합한 사진이 없을 때 기사 맥락에 100% 맞춘 포토리얼리스틱 실사 이미지 생성!
+    const nanoBananaUrl = await this.generateWithNanoBanana(
+      req.articleTitle,
+      req.category,
+      req.userEmail,
+      req.articleSubtitle,
+      req.articleContent
+    );
     if (nanoBananaUrl) {
       return {
         thumbnailUrl: nanoBananaUrl,
