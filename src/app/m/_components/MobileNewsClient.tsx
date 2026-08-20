@@ -49,10 +49,15 @@ const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
 const CATEGORIES = [
+  { key: "local", label: "우리동네뉴스", path: "/m/news_map" },
   { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil", section1: "공실뉴스" },
   { key: "news_politics", label: "부동산·경제", path: "/m/news_politics", section1: "부동산·경제" },
   { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing", section1: "AI마케팅" },
   { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc", section1: "라이프·오피니언" },
+  { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
+  { key: "study", label: "부동산특강", path: "/m/study" },
+  { key: "board_archive", label: "자료실", path: "/m/board?id=drone" },
+  { key: "board_community", label: "커뮤니티", path: "/m/board?id=free" },
 ];
 
 const KEY_TO_SECTION1: Record<string, string> = {
