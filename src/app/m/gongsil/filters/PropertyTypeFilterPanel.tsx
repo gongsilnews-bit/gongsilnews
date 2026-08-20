@@ -8,43 +8,65 @@ interface Props {
 }
 
 export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPERTY_TYPES }: Props) {
-  // 현재 선택된 대분류 그룹 찾기 (기본값: 첫 번째 그룹 또는 선택된 아이템이 포함된 그룹)
-  const currentGroup = PROPERTY_TYPES.find(g => 
-    g.items.some(item => filters.propertyTypes.includes(item))
-  )?.group || PROPERTY_TYPES[0]?.group || "아파트·오피스텔";
+  const allItems = PROPERTY_TYPES.flatMap(g => g.items);
+  const isAllItemsSelected = allItems.length > 0 && allItems.every(item => filters.propertyTypes.includes(item));
 
-  const [activeGroup, setActiveGroup] = useState<string>(currentGroup);
+  // 현재 선택된 대분류 그룹 판별
+  // 만약 모든 아이템이 선택되었거나 여러 그룹의 아이템이 섞여 있으면 "전체"로 설정
+  const getInitialActiveGroup = () => {
+    if (filters.propertyTypes.length === 0 || isAllItemsSelected) return "전체";
+    const matched = PROPERTY_TYPES.filter(g => g.items.some(item => filters.propertyTypes.includes(item)));
+    if (matched.length > 1) return "전체";
+    if (matched.length === 1) return matched[0].group;
+    return "전체";
+  };
+
+  const [activeGroup, setActiveGroup] = useState<string>(getInitialActiveGroup);
 
   useEffect(() => {
-    const matched = PROPERTY_TYPES.find(g => 
-      g.items.some(item => filters.propertyTypes.includes(item))
-    )?.group;
-    if (matched) setActiveGroup(matched);
-  }, [filters.propertyTypes, PROPERTY_TYPES]);
+    if (filters.propertyTypes.length === 0 || isAllItemsSelected) {
+      setActiveGroup("전체");
+    } else {
+      const matched = PROPERTY_TYPES.filter(g => g.items.some(item => filters.propertyTypes.includes(item)));
+      if (matched.length === 1) {
+        setActiveGroup(matched[0].group);
+      } else {
+        setActiveGroup("전체");
+      }
+    }
+  }, [filters.propertyTypes, PROPERTY_TYPES, isAllItemsSelected]);
 
-  const selectedGroupObj = PROPERTY_TYPES.find(g => g.group === activeGroup) || PROPERTY_TYPES[0];
-  const groupItems = selectedGroupObj?.items || [];
+  const selectedGroupObj = PROPERTY_TYPES.find(g => g.group === activeGroup);
+  const groupItems = activeGroup === "전체" ? allItems : (selectedGroupObj?.items || []);
   const isAllGroupSelected = groupItems.length > 0 && groupItems.every(item => filters.propertyTypes.includes(item));
 
   // 대분류 탭 전환 시: 해당 대분류의 모든 세부항목으로 설정 (PC 동일)
   const handleSelectGroup = (groupName: string) => {
     setActiveGroup(groupName);
-    const targetGroup = PROPERTY_TYPES.find(g => g.group === groupName);
-    if (targetGroup) {
-      onFilterChange({ propertyTypes: targetGroup.items });
+    if (groupName === "전체") {
+      onFilterChange({ propertyTypes: allItems });
+    } else {
+      const targetGroup = PROPERTY_TYPES.find(g => g.group === groupName);
+      if (targetGroup) {
+        onFilterChange({ propertyTypes: targetGroup.items });
+      }
     }
   };
 
   // 소분류 알약 개별 토글
   const toggleProp = (item: string) => {
     const arr = filters.propertyTypes;
-    const isCurrentGroupOnly = arr.filter(x => groupItems.includes(x));
     let newArr: string[];
 
-    if (isCurrentGroupOnly.includes(item)) {
-      newArr = isCurrentGroupOnly.filter(x => x !== item);
+    if (activeGroup === "전체") {
+      newArr = arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
     } else {
-      newArr = [...isCurrentGroupOnly, item];
+      const isCurrentGroupOnly = arr.filter(x => groupItems.includes(x));
+      if (isCurrentGroupOnly.includes(item)) {
+        newArr = isCurrentGroupOnly.filter(x => x !== item);
+      } else {
+        newArr = [...isCurrentGroupOnly, item];
+      }
     }
     onFilterChange({ propertyTypes: newArr });
   };
@@ -59,7 +81,7 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
   };
 
   const mainTabStyle = (active: boolean): React.CSSProperties => ({
-    padding: "12px 10px",
+    padding: "11px 8px",
     borderRadius: "10px",
     fontSize: "14px",
     fontWeight: active ? 800 : 600,
@@ -73,9 +95,9 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
   });
 
   const subPillStyle = (active: boolean): React.CSSProperties => ({
-    padding: "10px 6px",
+    padding: "10px 4px",
     borderRadius: "8px",
-    fontSize: "14px",
+    fontSize: "13px",
     fontWeight: active ? 700 : 500,
     textAlign: "center",
     border: active ? "1.5px solid #4b89ff" : "1px solid #e5e7eb",
@@ -87,11 +109,24 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
 
   return (
     <div>
-      {/* 1단계: 4대 대분류 선택 탭 (PC 100% 동일) */}
+      {/* 1단계: 대분류 선택 탭 (전체 + 4대 대분류, PC 100% 동일) */}
       <div style={{ marginBottom: "16px" }}>
         <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280", marginBottom: "8px" }}>
           1. 매물 대분류 선택
         </div>
+        
+        {/* '전체' 탭 상단 배치 */}
+        <div style={{ marginBottom: "8px" }}>
+          <button
+            type="button"
+            onClick={() => handleSelectGroup("전체")}
+            style={{ ...mainTabStyle(activeGroup === "전체"), width: "100%", padding: "12px 10px" }}
+          >
+            🌐 전체 매물
+          </button>
+        </div>
+
+        {/* 4대 대분류 그리드 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
           {PROPERTY_TYPES.map(g => (
             <button
@@ -134,18 +169,42 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
           </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-          {groupItems.map(item => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => toggleProp(item)}
-              style={subPillStyle(filters.propertyTypes.includes(item))}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
+        {activeGroup === "전체" ? (
+          <div>
+            {PROPERTY_TYPES.map(g => (
+              <div key={g.group} style={{ marginBottom: "12px" }}>
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "#4b5563", marginBottom: "6px" }}>
+                  {g.group}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px" }}>
+                  {g.items.map(item => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => toggleProp(item)}
+                      style={subPillStyle(filters.propertyTypes.includes(item))}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+            {groupItems.map(item => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => toggleProp(item)}
+                style={subPillStyle(filters.propertyTypes.includes(item))}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

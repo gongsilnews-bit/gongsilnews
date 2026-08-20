@@ -511,7 +511,8 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 20px 24px", display: "flex", gap: "12px" }}>
             <button 
               onClick={() => {
-                const empty = { propertyTypes: ["아파트", "오피스텔", "기타"], tradeTypes: TRADE_TYPES, keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, roomCount: null, bathCount: null, direction: null, unitsMin: null, maintMax: null, parking: null, options: [], ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null, locationSearchType: 'map' as const };
+                const allPropTypes = PROPERTY_TYPES.flatMap(g => g.items);
+                const empty = { propertyTypes: allPropTypes, tradeTypes: TRADE_TYPES, keyword: "", priceMin: null, priceMax: null, areaMin: null, areaMax: null, yearMin: null, yearMax: null, floor: null, roomCount: null, bathCount: null, direction: null, unitsMin: null, maintMax: null, parking: null, options: [], ownerRole: null, commissionType: null, themes: [], sido: null, sigungu: null, dong: null, locationSearchType: 'map' as const };
                 setTempFilters(empty);
                 setLocLabel("위치");
               }} 
