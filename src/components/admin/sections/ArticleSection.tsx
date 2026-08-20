@@ -90,23 +90,25 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       }
     }
 
+    params.noCache = true;
+
     const res = await getArticles(params);
     if (res.success) {
       setDbArticles(res.data || []);
       setTotalCount(res.count || 0);
     }
 
-    // Fetch tab counts via server action (admin client, bypasses RLS)
+    // Fetch tab counts via server action (admin client, bypasses RLS, real-time noCache)
     const [allRes, pendingRes, approvedRes, scheduledRes, draftRes, rejectedRes, headlineRes, importantRes, regularRes] = await Promise.all([
-      getArticles({ limit: 1 }),
-      getArticles({ status: "PENDING", limit: 1 }),
-      getArticles({ status: "APPROVED", limit: 1 }),
-      getArticles({ status: "SCHEDULED", limit: 1 }),
-      getArticles({ status: "DRAFT", limit: 1 }),
-      getArticles({ status: "REJECTED", limit: 1 }),
-      getArticles({ status: "APPROVED", is_headline: true, limit: 1 }),
-      getArticles({ status: "APPROVED", is_important: true, limit: 1 }),
-      getArticles({ status: "APPROVED", is_headline: false, is_important: false, limit: 1 }),
+      getArticles({ limit: 1, noCache: true }),
+      getArticles({ status: "PENDING", limit: 1, noCache: true }),
+      getArticles({ status: "APPROVED", limit: 1, noCache: true }),
+      getArticles({ status: "SCHEDULED", limit: 1, noCache: true }),
+      getArticles({ status: "DRAFT", limit: 1, noCache: true }),
+      getArticles({ status: "REJECTED", limit: 1, noCache: true }),
+      getArticles({ status: "APPROVED", is_headline: true, limit: 1, noCache: true }),
+      getArticles({ status: "APPROVED", is_important: true, limit: 1, noCache: true }),
+      getArticles({ status: "APPROVED", is_headline: false, is_important: false, limit: 1, noCache: true }),
     ]);
     setCounts({
       전체: allRes.count || 0,

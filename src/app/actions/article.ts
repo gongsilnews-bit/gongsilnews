@@ -228,86 +228,92 @@ export async function getArticles(filters?: {
   articleNo?: string;
   searchKeyword?: string;
   orderBy?: "published_at" | "updated_at" | "created_at";
+  noCache?: boolean;
 }) {
-  const cacheKey = JSON.stringify(filters || {});
-  
-  const fetcher = unstable_cache(
-    async () => {
-      const supabase = getAdminClient();
-      let query = supabase
-        .from("articles")
-        .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)", { count: "exact" })
-        .eq("is_deleted", false);
+  const executeQuery = async () => {
+    const supabase = getAdminClient();
+    let query = supabase
+      .from("articles")
+      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)", { count: "exact" })
+      .eq("is_deleted", false);
 
-      if (filters?.orderBy === "updated_at") {
-        query = query.order("updated_at", { ascending: false, nullsFirst: false });
-      } else if (filters?.orderBy === "created_at") {
-        query = query.order("created_at", { ascending: false, nullsFirst: false });
+    if (filters?.orderBy === "updated_at") {
+      query = query.order("updated_at", { ascending: false, nullsFirst: false });
+    } else if (filters?.orderBy === "created_at") {
+      query = query.order("created_at", { ascending: false, nullsFirst: false });
+    } else {
+      query = query.order("published_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
+    }
+
+    if (filters?.status) {
+      if (filters.status === "SCHEDULED") {
+        query = query.eq("status", "APPROVED");
+        query = query.gt("published_at", new Date().toISOString());
+      } else if (filters.status === "APPROVED") {
+        query = query.eq("status", "APPROVED");
+        query = query.or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`);
       } else {
-        query = query.order("published_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
+        query = query.eq("status", filters.status);
       }
+    }
+    if (filters?.section1) query = query.eq("section1", filters.section1);
+    if (filters?.section2) {
+      if (Array.isArray(filters.section2)) {
+        query = query.in("section2", filters.section2);
+      } else {
+        query = query.eq("section2", filters.section2);
+      }
+    }
+    if (filters?.is_important !== undefined) query = query.eq("is_important", filters.is_important);
+    if (filters?.is_headline !== undefined) query = query.eq("is_headline", filters.is_headline);
+    if (filters?.author_name) query = query.eq("author_name", filters.author_name);
+    if (filters?.author_id) query = query.eq("author_id", filters.author_id);
+    
+    if (filters?.articleNo) {
+      query = query.eq("article_no", parseInt(filters.articleNo, 10));
+    }
+    if (filters?.searchKeyword) {
+      const p = `%${filters.searchKeyword}%`;
+      query = query.or(`title.ilike.${p},author_name.ilike.${p}`);
+    }
 
-      if (filters?.status) {
-        if (filters.status === "SCHEDULED") {
-          query = query.eq("status", "APPROVED");
-          query = query.gt("published_at", new Date().toISOString());
-        } else if (filters.status === "APPROVED") {
-          query = query.eq("status", "APPROVED");
-          query = query.or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`);
-        } else {
-          query = query.eq("status", filters.status);
-        }
+    if (filters?.keyword) {
+      // 키워드로 검색된 article_id 목록 추출
+      const { data: kwData, error: kwError } = await supabase
+        .from("article_keywords")
+        .select("article_id")
+        .eq("keyword", filters.keyword);
+        
+      if (!kwError && kwData && kwData.length > 0) {
+        query = query.in("id", kwData.map((k: any) => k.article_id));
+      } else {
+        // 일치하는 키워드가 없는 경우 빈 배열 즉시 리턴
+        return { success: true, data: [], count: 0 };
       }
-      if (filters?.section1) query = query.eq("section1", filters.section1);
-      if (filters?.section2) {
-        if (Array.isArray(filters.section2)) {
-          query = query.in("section2", filters.section2);
-        } else {
-          query = query.eq("section2", filters.section2);
-        }
-      }
-      if (filters?.is_important !== undefined) query = query.eq("is_important", filters.is_important);
-      if (filters?.is_headline !== undefined) query = query.eq("is_headline", filters.is_headline);
-      if (filters?.author_name) query = query.eq("author_name", filters.author_name);
-      if (filters?.author_id) query = query.eq("author_id", filters.author_id);
-      
-      if (filters?.articleNo) {
-        query = query.eq("article_no", parseInt(filters.articleNo, 10));
-      }
-      if (filters?.searchKeyword) {
-        const p = `%${filters.searchKeyword}%`;
-        query = query.or(`title.ilike.${p},author_name.ilike.${p}`);
-      }
+    }
 
-      if (filters?.keyword) {
-        // 키워드로 검색된 article_id 목록 추출
-        const { data: kwData, error: kwError } = await supabase
-          .from("article_keywords")
-          .select("article_id")
-          .eq("keyword", filters.keyword);
-          
-        if (!kwError && kwData && kwData.length > 0) {
-          query = query.in("id", kwData.map((k: any) => k.article_id));
-        } else {
-          // 일치하는 키워드가 없는 경우 빈 배열 즉시 리턴
-          return { success: true, data: [], count: 0 };
-        }
-      }
+    if (filters?.page && filters?.limit) {
+      const from = (filters.page - 1) * filters.limit;
+      const to = from + filters.limit - 1;
+      query = query.range(from, to);
+    } else if (filters?.limit) {
+      query = query.limit(filters.limit);
+    }
 
-      if (filters?.page && filters?.limit) {
-        const from = (filters.page - 1) * filters.limit;
-        const to = from + filters.limit - 1;
-        query = query.range(from, to);
-      } else if (filters?.limit) {
-        query = query.limit(filters.limit);
-      }
+    const { data, error, count } = await query;
+    if (error) return { success: false, error: error.message };
+    return { success: true, data, count: count || 0 };
+  };
 
-      const { data, error, count } = await query;
-      if (error) return { success: false, error: error.message };
-      return { success: true, data, count: count || 0 };
-    },
+  if (filters?.noCache) {
+    return await executeQuery();
+  }
+
+  const cacheKey = JSON.stringify(filters || {});
+  const fetcher = unstable_cache(
+    executeQuery,
     ["articles-list", cacheKey],
-    { tags: ["articles"], revalidate: 300 } // 5분 캐시
+    { tags: ["articles"], revalidate: 60 }
   );
 
   return await fetcher();
