@@ -90,7 +90,10 @@ export function filterVacanciesList(vacancies: any[], filters: FilterState): any
     
     let isPropMatch = false;
 
-      if (v.trade_type === "경매") {
+    // 🚀 [대표님 지침] '전체 매물' 선택 시 모든 매물 100% 매칭
+    if (filters.propertyTypes.length >= ALL_PROPERTY_TYPES.length) {
+      isPropMatch = true;
+    } else if (v.trade_type === "경매") {
         // 🚀 [대표님 지침] 법원 경공매 모드 전용 6대 자산 분류 고성능 해석 엔진 (PC 동일)
         const meta = v.metadata || {};
         const mcls = meta.cltrUsgMclsCtgrNm || "";
