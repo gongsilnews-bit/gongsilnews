@@ -210,33 +210,44 @@ export class PhotoCurationAgent {
   }
 
   /**
-   * Unsplash API 실시간 검색 (중복 사진 배제)
+   * 3순위: Unsplash API 및 고화질 스톡 사진 실시간 검색 (중복 사진 배제)
    */
-  private static async searchFreshStockPhoto(query: string, usedUrls: Set<string>): Promise<string | null> {
+  private static async searchFreshStockPhoto(query: string, usedUrls: Set<string>, category?: string): Promise<string | null> {
     const accessKey = process.env.UNSPLASH_ACCESS_KEY;
-    if (!accessKey) return null;
-
-    try {
-      const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=12&orientation=landscape&client_id=${accessKey}`;
-      const res = await fetch(url);
-      if (!res.ok) return null;
-
-      const data = await res.json();
-      if (data.results && data.results.length > 0) {
-        for (const item of data.results) {
-          const rawUrl = item.urls?.regular || item.urls?.small;
-          if (rawUrl) {
-            const cleanUrl = `${rawUrl.split("?")[0]}?auto=format&fit=crop&q=80&w=800`;
-            if (!usedUrls.has(cleanUrl)) {
-              return cleanUrl;
+    if (accessKey) {
+      try {
+        const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=12&orientation=landscape&client_id=${accessKey}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.results && data.results.length > 0) {
+            for (const item of data.results) {
+              const rawUrl = item.urls?.regular || item.urls?.small;
+              if (rawUrl) {
+                const cleanUrl = `${rawUrl.split("?")[0]}?auto=format&fit=crop&q=80&w=800`;
+                if (!usedUrls.has(cleanUrl)) {
+                  return cleanUrl;
+                }
+              }
             }
           }
         }
+      } catch {
+        // Unsplash API 에러 시 스톡 풀로 전환
       }
-      return null;
-    } catch {
-      return null;
     }
+
+    // Unsplash API 키가 없거나 호출 초과 시, 카테고리별 검증된 고화질 무료 실사 스톡 풀에서 최적 매칭
+    if (category && CURATED_CATEGORY_POOLS[category]) {
+      const pool = CURATED_CATEGORY_POOLS[category];
+      for (const photoUrl of pool) {
+        if (!usedUrls.has(photoUrl)) {
+          return photoUrl;
+        }
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -445,7 +456,7 @@ export class PhotoCurationAgent {
 
     // ── 🥉 3순위: 신선한 고화질 스톡 사진 탐색 (Unsplash) ──
     const visualPrompt = await this.generateVisualSearchPrompt(req.articleTitle, req.category, req.articleSubtitle);
-    const freshStock = await this.searchFreshStockPhoto(visualPrompt, usedUrls);
+    const freshStock = await this.searchFreshStockPhoto(visualPrompt, usedUrls, req.category);
     if (freshStock) {
       console.log(`  -> [3순위] 고품질 스톡 실사 매칭 성공: ${freshStock.slice(0, 60)}...`);
       return {
