@@ -151,7 +151,7 @@ export async function GET(req: Request) {
 
       // 하단 원문 참고 링크는 완전히 제거하고 순수 독창적 기사 본문만 저장
       const finalContent = aiResult.content;
-      const isAutoPublish = config.autoPublish === true; // 기본값: 최고관리자 검수를 위해 '승인대기(PENDING)'로 입고
+      const isAutoPublish = config.autoPublish !== false; // 기본값: 즉시 승인 및 자동 발행(APPROVED)
       const nowISO = new Date().toISOString();
 
       const { data: article, error } = await supabase

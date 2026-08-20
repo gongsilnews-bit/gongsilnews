@@ -653,7 +653,8 @@ ${article.content}
       console.warn("Photo revision failed, keeping existing photo:", mediaErr);
     }
 
-    // Supabase DB 업데이트: 수정된 기사 + 새 사진 반영 및 상태를 다시 'PENDING'(승인대기)으로 전환
+    // Supabase DB 업데이트: 수정된 기사 + 새 사진 반영 및 상태를 'APPROVED'(정식 발행)으로 즉시 재발행
+    const nowIso = new Date().toISOString();
     const { error: updateErr } = await supabase
       .from("articles")
       .update({
@@ -662,9 +663,10 @@ ${article.content}
         content: newContent,
         thumbnail_url: newThumbnailUrl,
         youtube_url: newYoutubeUrl || null,
-        status: "PENDING", // 승인대기로 이동!
-        reject_reason: `[AI 기사 & 사진 재작성 완료] ${feedback.slice(0, 50)}...`,
-        updated_at: new Date().toISOString(),
+        status: "APPROVED", // 수정 완료 후 즉시 정식 발행!
+        published_at: nowIso,
+        reject_reason: null,
+        updated_at: nowIso,
       })
       .eq("id", articleId);
 
@@ -678,7 +680,7 @@ ${article.content}
     await supabase.from("agent_chats").insert({
       channel_id: "article",
       role: "agent",
-      content: `[반려 사유 반영 AI 기사 재작성] "${newTitle}" (피드백: ${feedback.slice(0, 40)})`,
+      content: `[반려 사유 반영 AI 기사 재작성 및 재발행] "${newTitle}" (피드백: ${feedback.slice(0, 40)})`,
       input_tokens: res.usage?.inputTokens || 0,
       output_tokens: res.usage?.outputTokens || 0,
       total_tokens: tokens,
@@ -694,7 +696,7 @@ ${article.content}
       revisedTitle: newTitle,
       revisedSubtitle: newSubtitle,
       revisedContent: newContent,
-      message: "반려 사유를 반영하여 기사가 성공적으로 재작성되었으며, [승인대기]로 이동했습니다."
+      message: "반려 사유를 반영하여 기사 및 사진이 성공적으로 재작성되었으며, 메인 뉴스에 즉시 재발행되었습니다."
     };
   } catch (err: any) {
     return { success: false, error: err.message };
