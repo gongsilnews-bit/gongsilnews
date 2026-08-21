@@ -164,7 +164,6 @@ export default function MobileNewsRealtyPage() {
             지금 가입하시면, 공동중개 3건 등록/열람, AI물건보고서, 그리고 전국 법원 경공매 정보를 무료로 열람하실 수 있습니다.
           </p>
 
-          {/* 유튜브 비디오 프레임 */}
           <div style={{ width: "100%", aspectRatio: "16/9", borderRadius: 12, overflow: "hidden", border: "1px solid #1e3a8a", marginBottom: 16, boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
             <iframe
               width="100%"
@@ -175,30 +174,6 @@ export default function MobileNewsRealtyPage() {
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
-          </div>
-
-          {/* 3대 핵심 혜택 카드 */}
-          <div style={{ background: "rgba(15,23,42,0.6)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "14px 16px", textAlign: "left", marginBottom: 14 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 12.5, color: "#f8fafc", fontWeight: 700 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#fbbf24" }}>✓</span>
-                <span><strong>전국 부동산 누구나</strong> 100% 무료 공동중개망</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#fbbf24" }}>✓</span>
-                <span><strong>중개사 필수</strong> 1초 완성 AI 물건보고서 3건 무료</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#fbbf24" }}>✓</span>
-                <span><strong>실시간 업데이트</strong> 전국 법원 경공매 무료 열람</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 회원 유형 안내 */}
-          <div style={{ fontSize: 11.5, color: "#94a3b8", lineHeight: 1.6, marginBottom: 18, textAlign: "left", padding: "0 4px" }}>
-            <div>· <strong>일반회원</strong> : 공실등록 3건 무료, 경공매 열람 가능, 공동중개 열람 불가</div>
-            <div>· <strong>부동산회원</strong> : 공동중개 3건 등록 무료, 경공매 열람 가능, <span style={{ color: "#fbbf24", fontWeight: 800 }}>공동중개 열람 가능</span></div>
           </div>
 
           <button
@@ -220,7 +195,19 @@ export default function MobileNewsRealtyPage() {
           </button>
         </section>
 
-        {/* ━━━ 2. 5대 핵심 무료 시스템 ━━━ */}
+        {/* ━━━ 2. 3대 핵심 수치 (히어로 직하단) ━━━ */}
+        <section style={{ padding: "20px 16px", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+            {brokerStats.map((st, i) => (
+              <div key={i} style={{ background: "#ffffff", padding: "14px 6px", borderRadius: 10, border: "1px solid #e2e8f0", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.02)" }}>
+                <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginBottom: 2 }}>{st.label}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: "#0f172a" }}>{st.value}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ━━━ 3. 5대 핵심 무료 시스템 ━━━ */}
         <section style={{ padding: "36px 16px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
           <div style={{ textAlign: "center", marginBottom: 20 }}>
             <span style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb" }}>100% FREE BENEFITS</span>
@@ -251,8 +238,13 @@ export default function MobileNewsRealtyPage() {
             </div>
 
             <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>💬 5. 전국 11만 커뮤니티 무료</div>
-              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>지역 텃세 없이 전국 11만 중개사들과 실전 특약 서식 및 정보 무료 교류</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>💬 5. 11만 부동산 커뮤니티 무료</div>
+              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>전국 공인중개사와 소통하며 비공개 특급 매물 정보를 자유롭게 교환</div>
+            </div>
+
+            <div style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #091e3a 100%)", color: "#ffffff", padding: "14px", borderRadius: 10, border: "1px solid #3b82f6" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#fbbf24", marginBottom: 4 }}>⚖️ [특별 보너스] 전국 경·공매 권리분석 무료</div>
+              <div style={{ fontSize: 12, color: "#bae6fd", lineHeight: 1.5 }}>법원 실시간 경매 물건 및 권리분석 서식을 추가 비용 없이 100% 무료 제공</div>
             </div>
           </div>
         </section>
@@ -303,19 +295,7 @@ export default function MobileNewsRealtyPage() {
           </div>
         </section>
 
-        {/* ━━━ 4. 3대 핵심 수치 ━━━ */}
-        <section style={{ padding: "28px 16px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-            {brokerStats.map((st, i) => (
-              <div key={i} style={{ background: "#f8fafc", padding: "14px 8px", borderRadius: 10, border: "1px solid #e2e8f0", textAlign: "center" }}>
-                <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginBottom: 2 }}>{st.label}</div>
-                <div style={{ fontSize: 17, fontWeight: 900, color: "#0f172a" }}>{st.value}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ━━━ 5. FAQ ━━━ */}
+        {/* ━━━ 5. 3대 핵심 혜택 및 회원 안내 (FAQ 상단) ━━━ */}
         <section style={{ padding: "36px 16px", backgroundColor: "#f8fafc" }}>
           <div style={{ fontSize: 16, fontWeight: 900, color: "#0f172a", marginBottom: 14 }}>
             자주 묻는 질문 FAQ
