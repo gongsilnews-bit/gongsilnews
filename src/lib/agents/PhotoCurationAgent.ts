@@ -221,20 +221,23 @@ export class PhotoCurationAgent {
   }
 
   /**
-   * 1순위: 기사 원문 페이지에서 실제 보도/현장 사진(조감도, 현장 사진 등) 추출
+   * 1순위: 기사 원문 페이지에서 실제 보도/현장 사진(조감도, 현장 사진, 인포그래픽 등) 정밀 추출
    */
   private static async extractRealPressPhoto(sourceUrl?: string): Promise<string | null> {
     if (!sourceUrl || !sourceUrl.startsWith("http")) return null;
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 4000);
+      const timeout = setTimeout(() => controller.abort(), 6000);
 
       const res = await fetch(sourceUrl, {
         signal: controller.signal,
+        redirect: "follow",
         headers: {
           "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+          "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
         },
       });
       clearTimeout(timeout);
@@ -242,33 +245,52 @@ export class PhotoCurationAgent {
       if (!res.ok) return null;
       const html = await res.text();
 
-      // og:image 태그 추출
-      const ogMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
-                      html.match(/<meta\s+content=["']([^"']+)["']\s+property=["']og:image["']/i);
+      // 구글 뉴스 리다이렉트 페이지인 경우 실제 목적지 URL 추출하여 재시도
+      if (res.url.includes("news.google.com") || html.includes("Opening your link")) {
+        const destMatch = html.match(/href="([^"]+)"/i) || html.match(/url='([^']+)'/i);
+        if (destMatch && destMatch[1] && destMatch[1].startsWith("http") && !destMatch[1].includes("google.com")) {
+          return await this.extractRealPressPhoto(destMatch[1]);
+        }
+      }
 
-      if (ogMatch && ogMatch[1]) {
-        let imgUrl = ogMatch[1].trim();
+      // 1. 주요 메타태그에서 고화질 원본 보도 사진 탐색
+      const metaCandidates = [
+        html.match(/<meta\s+[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1],
+        html.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i)?.[1],
+        html.match(/<meta\s+[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)?.[1],
+        html.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:image["']/i)?.[1],
+        html.match(/<link\s+[^>]*rel=["']image_src["'][^>]*href=["']([^"']+)["']/i)?.[1],
+      ];
+
+      for (const rawImg of metaCandidates) {
+        if (!rawImg) continue;
+        let imgUrl = rawImg.trim();
         if (imgUrl.startsWith("//")) imgUrl = "https:" + imgUrl;
+        else if (imgUrl.startsWith("/")) {
+          try {
+            const urlObj = new URL(res.url);
+            imgUrl = `${urlObj.origin}${imgUrl}`;
+          } catch {
+            continue;
+          }
+        }
 
-        // 구글 뉴스 로고 및 포털 아이콘 철저히 배제
-        const bannedDomains = [
-          "googleusercontent.com",
-          "news.google.com",
-          "gstatic.com",
-          "daumcdn.net/top",
-          "pstatic.net/static",
-          "favicon",
-          "logo",
-          "icon",
-          "default",
-          "blank",
-        ];
-
-        const isBanned = bannedDomains.some((b) => imgUrl.toLowerCase().includes(b));
-        if (!isBanned && imgUrl.startsWith("http")) {
+        if (this.isValidPressPhoto(imgUrl)) {
           return imgUrl;
         }
       }
+
+      // 2. 기사 본문 영역 내 실제 보도사진 태그 탐색
+      const bodyImgMatches = html.matchAll(/<img\s+[^>]*src=["']([^"']+)["'][^>]*>/gi);
+      for (const m of bodyImgMatches) {
+        let imgUrl = m[1]?.trim();
+        if (!imgUrl) continue;
+        if (imgUrl.startsWith("//")) imgUrl = "https:" + imgUrl;
+        if (this.isValidPressPhoto(imgUrl) && (imgUrl.includes("article") || imgUrl.includes("photo") || imgUrl.includes("news") || imgUrl.includes("upload") || imgUrl.includes("img"))) {
+          return imgUrl;
+        }
+      }
+
       return null;
     } catch {
       return null;
@@ -276,7 +298,38 @@ export class PhotoCurationAgent {
   }
 
   /**
-   * 2순위: 기사 맥락에 맞는 한국형 최적화 영어 스톡 검색어 생성
+   * 포털 아이콘, 배너, 트래커 등 불량 이미지 필터링
+   */
+  private static isValidPressPhoto(imgUrl: string): boolean {
+    if (!imgUrl || !imgUrl.startsWith("http")) return false;
+    const lower = imgUrl.toLowerCase();
+    const bannedPatterns = [
+      "googleusercontent.com",
+      "news.google.com",
+      "gstatic.com",
+      "daumcdn.net/top",
+      "pstatic.net/static",
+      "favicon",
+      "logo",
+      "icon",
+      "default",
+      "blank",
+      "banner",
+      "btn_",
+      "button",
+      "avatar",
+      "profile",
+      "ad_",
+      "advertisement",
+      "1x1",
+      "pixel",
+      "thumb_default"
+    ];
+    return !bannedPatterns.some((b) => lower.includes(b));
+  }
+
+  /**
+   * 스톡 사진 검색용 키워드 생성 (최후 안전망 전용)
    */
   private static async generateVisualSearchPrompt(title: string, category: string, subtitle?: string): Promise<string> {
     const prompt = `너는 대한민국 최고 권위의 뉴스 미디어 '공실뉴스'의 [수석 사진 에디터 AI]야.
@@ -309,7 +362,7 @@ export class PhotoCurationAgent {
   }
 
   /**
-   * 3순위: Unsplash API 및 고화질 스톡 사진 실시간 검색 (중복 사진 배제)
+   * 고화질 스톡 사진 실시간 검색 (최후 안전망 전용)
    */
   private static async searchFreshStockPhoto(query: string, usedUrls: Set<string>, category?: string): Promise<string | null> {
     const accessKey = process.env.UNSPLASH_ACCESS_KEY;
@@ -336,12 +389,11 @@ export class PhotoCurationAgent {
       }
     }
 
-    // Unsplash API 키가 없거나 호출 초과 시, 카테고리별 검증된 고화질 무료 실사 스톡 풀에서 최적 매칭 (중복 완벽 방지)
+    // 카테고리별 검증된 고화질 무료 실사 스톡 풀에서 최적 매칭
     if (category && CURATED_CATEGORY_POOLS[category]) {
       const pool = CURATED_CATEGORY_POOLS[category];
       const available = pool.filter(url => !usedUrls.has(url));
       if (available.length > 0) {
-        // 기사 검색어 해시를 기반으로 항상 다양하고 신선한 스톡 사진 분산 선택
         const hash = Array.from(query).reduce((acc, char) => acc + char.charCodeAt(0), 0);
         const selected = available[hash % available.length];
         return selected;
@@ -371,8 +423,8 @@ export class PhotoCurationAgent {
 너의 임무는 제공된 기사의 [제목], [부제목], 그리고 특히 **[본문 전문]**과 **[최고관리자 피드백]**을 철저하게 읽고 분석하여, 기사에서 다루는 구체적인 사건, 사물, 사람, 장소, 상황에 **100% 밀착된 생생한 신문 1면 보도 실사 사진(Editorial Press Photography)**을 위한 [상세한 영어 비주얼 묘사 2~3문장]을 작성하는 것이다.
 ${feedbackInstruction}
 [절대 지켜야 할 맞춤형 비주얼 원칙 - ★가장 중요★]
-1. **박제된 고정 템플릿 금지**: 카테고리에 얽매여 뻔한 아파트나 도심 전경을 기계적으로 그리지 마라.
-2. **기사 본문 내용 및 관리자 피드백 1:1 밀착 묘사**: 본문에서 다루는 구체적인 핵심 소재 및 관리자가 요구한 피드백(예: AI와 부동산 결합, 정부와 부동산 합성, 주식 트레이딩 데스크 등)을 정확하게 포착하여 **기사 본문 스토리와 1:1로 일치하는 실제 현장 장면**을 묘사하라.
+1. **박제된 고정 템플릿 금지**: 카테고리에 얽매여 뻔한 아파트나 서양 사무실 전경을 기계적으로 그리지 마라.
+2. **기사 본문 내용 및 관리자 피드백 1:1 밀착 묘사**: 본문에서 다루는 구체적인 핵심 소재(예: 한국 공실 상가 현수막, 정부 청사 브리핑, 한국 세무 상담 창구, 서울 신축 아파트 단지, AI 중개 앱 화면 등)를 정확하게 포착하여 **기사 본문 스토리와 1:1로 일치하는 실제 한국 현장 장면**을 묘사하라.
 3. **사실적인 한국 현장감 (Authentic South Korea)**: 한국의 실제 도시 거리, 상권, 사무실, 강의실, 실내 공간의 리얼한 분위기와 자연광(natural daylight)을 반영하라.
 4. **포토리얼리즘 (Press Photography Quality)**:
    - "Authentic South Korean editorial news photography, natural daylight, 8k resolution, documentary press photo, highly detailed, realistic textures"
@@ -401,7 +453,7 @@ ${feedbackInstruction}
   }
 
   /**
-   * 🍌 3순위 (나노바나나): 기사 맥락에 100% 맞춤형 실사 이미지를 생성하고 Supabase에 업로드
+   * 🍌 나노바나나: 기사 맥락에 100% 맞춤형 한국형 실사 이미지를 생성하고 Supabase에 업로드
    */
   private static async generateWithNanoBanana(
     title: string,
@@ -481,7 +533,7 @@ ${feedbackInstruction}
   }
 
   /**
-   * 4순위: 카테고리별 고화질 큐레이션 풀에서 중복 없는 사진 선택
+   * 5순위: 카테고리별 고화질 큐레이션 풀에서 중복 없는 사진 선택 (최후 안전망)
    */
   private static getFallbackPhoto(category: string, usedUrls: Set<string>): string {
     const pool = CURATED_CATEGORY_POOLS[category] || CURATED_CATEGORY_POOLS["부동산정책/정치"];
@@ -522,12 +574,13 @@ ${feedbackInstruction}
   }
 
   /**
-   * ⭐️ [미디어 매칭 4단계 우선순위 파이프라인]
+   * ⭐️ [미디어 매칭 4단계 우선순위 파이프라인 - 대표님 2안 승인 반영]
    * 0순위: 최고관리자의 특정 사진 반려 피드백이 있는 경우 최우선 생성!
-   * 1순위: 회사/기사 제공 실물 사진 탐색
-   * 2순위: 기사 관련 유튜브 영상/링크 탐색
-   * 3순위: 고품질 스톡 사진 탐색 (Unsplash)
-   * 4순위: 적당한 사진이 없을 때 🍌 나노바나나 AI 실사 이미지 생성
+   * 1순위: 언론사/보도자료 원문 실제 보도·현장 사진 최우선 탐색
+   * 2순위: 기사 관련 유튜브 영상/링크 탐색 (영상 중심 카테고리)
+   * 3순위 (핵심 승격): 🍌 나노바나나 기사 본문 1:1 맞춤형 한국형 AI 보도 실사 생성 (스톡 사진 완전 대체)
+   * 4순위: AI 생성 실패 시 고품질 스톡 사진 (최후 안전망)
+   * 5순위: 카테고리 기본 풀 (최후 보루)
    */
   static async resolvePhoto(req: PhotoCurationRequest): Promise<PhotoCurationResult> {
     console.log(`[PhotoCurationAgent] 📸 Resolving media for: "${req.articleTitle}" (Category: ${req.category}) [Feedback: ${req.userFeedback || 'none'}]`);
@@ -556,11 +609,11 @@ ${feedbackInstruction}
       }
     }
 
-    // ── 🥇 1순위: 회사/기사 제공 실제 보도·현장 사진 최우선 탐색 ──
+    // ── 🥇 1순위: 언론사/보도자료 원문 제공 실제 보도·현장 사진 최우선 탐색 ──
     if (req.sourceUrl) {
       const realPhoto = await this.extractRealPressPhoto(req.sourceUrl);
       if (realPhoto && !usedUrls.has(realPhoto)) {
-        console.log(`  -> [1순위] 회사/보도 제공 실제 사진 채택: ${realPhoto.slice(0, 60)}...`);
+        console.log(`  -> [1순위] 언론사/보도자료 실제 보도사진 채택: ${realPhoto.slice(0, 60)}...`);
         return {
           thumbnailUrl: realPhoto,
           mediaType: "image",
@@ -569,12 +622,12 @@ ${feedbackInstruction}
       }
     }
 
-    // ── 🥈 2순위: 기사 관련 유튜브 영상/링크 탐색 ──
+    // ── 🥈 2순위: 기사 관련 유튜브 영상/링크 탐색 (영상 중심 기사) ──
     if (req.mediaType === "video" || req.category === "부동산유튜브/블로그" || req.youtubeSearchQuery) {
       const ytQuery = req.youtubeSearchQuery || `${req.category} ${req.articleTitle.slice(0, 20)}`;
       const ytResult = await this.searchYouTubeMedia(ytQuery);
       if (ytResult) {
-        console.log(`  -> [2순위] 관련 유튜브 영상 채택: ${ytResult.videoUrl}`);
+        console.log(`  -> [2순위] 관련 유튜브 공식 영상 채택: ${ytResult.videoUrl}`);
         return {
           thumbnailUrl: ytResult.thumbnailUrl,
           youtubeUrl: ytResult.videoUrl,
@@ -584,21 +637,8 @@ ${feedbackInstruction}
       }
     }
 
-    // ── 🥉 3순위: 신선한 고화질 스톡 사진 탐색 (Unsplash) ──
-    const visualPrompt = await this.generateVisualSearchPrompt(req.articleTitle, req.category, req.articleSubtitle);
-    const freshStock = await this.searchFreshStockPhoto(visualPrompt, usedUrls, req.category);
-    if (freshStock) {
-      console.log(`  -> [3순위] 고품질 스톡 실사 매칭 성공: ${freshStock.slice(0, 60)}...`);
-      return {
-        thumbnailUrl: freshStock,
-        mediaType: "stock_image",
-        sourceType: "curated_stock",
-        promptUsed: visualPrompt,
-      };
-    }
-
-    // ── 🍌 4순위: 적당한 사진/영상이 없을 때 나노바나나 기사 맥락 100% 맞춤형 AI 실사 생성! ──
-    console.log(`  -> [4순위] 적합한 실물이 없어 🍌 나노바나나 맞춤형 AI 실사 생성 가동`);
+    // ── 🍌 3순위 (핵심 승격!): 실제 사진이 없을 때 나노바나나 한국형 AI 실사 즉시 가동! (스톡 완전 배제) ──
+    console.log(`  -> [3순위 승격] 실제 언론사 사진 부재 ➔ 🍌 나노바나나 기사 본문 1:1 맞춤형 한국형 AI 실사 생성 가동`);
     const nanoBananaUrl = await this.generateWithNanoBanana(
       req.articleTitle,
       req.category,
@@ -607,16 +647,30 @@ ${feedbackInstruction}
       req.articleContent
     );
     if (nanoBananaUrl) {
-      console.log(`  -> [4순위] 🍌 나노바나나 AI 실사 생성 완료: ${nanoBananaUrl.slice(0, 60)}...`);
+      console.log(`  -> [3순위] 🍌 나노바나나 한국형 AI 실사 생성 및 업로드 완료: ${nanoBananaUrl.slice(0, 60)}...`);
       return {
         thumbnailUrl: nanoBananaUrl,
         mediaType: "image",
         sourceType: "nano_banana_ai",
+        promptUsed: `Photorealistic Korean press photo for: ${req.articleTitle}`,
+      };
+    }
+
+    // ── 🥉 4순위: AI 생성까지 오류 발생 시 최후 안전망 스톡 사진 (Unsplash) ──
+    console.log(`  -> [4순위 안전망] AI 생성 예외 발생으로 스톡 사진 안전망 가동`);
+    const visualPrompt = await this.generateVisualSearchPrompt(req.articleTitle, req.category, req.articleSubtitle);
+    const freshStock = await this.searchFreshStockPhoto(visualPrompt, usedUrls, req.category);
+    if (freshStock) {
+      console.log(`  -> [4순위] 스톡 사진 안전망 채택: ${freshStock.slice(0, 60)}...`);
+      return {
+        thumbnailUrl: freshStock,
+        mediaType: "stock_image",
+        sourceType: "curated_stock",
         promptUsed: visualPrompt,
       };
     }
 
-    // ── 5순위: 큐레이션 풀 대체 사진 (최후 안전망) ──
+    // ── 5순위: 큐레이션 풀 대체 사진 (최후 보루) ──
     const fallbackPhoto = this.getFallbackPhoto(req.category, usedUrls);
     console.log(`  -> [5순위] 큐레이션 풀 대체 사진 매칭: ${fallbackPhoto.slice(0, 60)}...`);
     return {
