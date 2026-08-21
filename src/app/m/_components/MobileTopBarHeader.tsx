@@ -186,7 +186,7 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
                   <line x1="8" y1="2" x2="8" y2="18"></line>
                   <line x1="16" y1="6" x2="16" y2="22"></line>
                 </svg>
-                <span>지도에서 기사보기</span>
+                <span>지도기사</span>
               </button>
             )
           )}
