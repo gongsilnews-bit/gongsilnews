@@ -177,29 +177,26 @@ export default function Footer() {
       <div className="footer-sitemap-wrap">
         <div className="footer-sitemap-inner">
           <div className="sitemap-col">
-            <h4 className="sitemap-title">공실뉴스</h4>
-            <Link href="/news_gongsil" className="sitemap-link">아파트/오피스텔</Link>
-            <Link href="/news_gongsil" className="sitemap-link">빌라/주택</Link>
-            <Link href="/news_gongsil" className="sitemap-link">원룸/투룸(풀옵션)</Link>
-            <Link href="/news_gongsil" className="sitemap-link">상가/사무실/공장/토지</Link>
+            <h4 className="sitemap-title">공실현장</h4>
             <Link href="/news_gongsil" className="sitemap-link">신축/분양/경매</Link>
+            <Link href="/news_gongsil" className="sitemap-link">상가/사무실/공장/토지</Link>
+            <Link href="/news_gongsil" className="sitemap-link">공실/임대관리</Link>
           </div>
           <div className="sitemap-col">
-            <h4 className="sitemap-title">부동산 경제</h4>
+            <h4 className="sitemap-title">정책시장</h4>
             <Link href="/news_politics" className="sitemap-link">부동산정책/정치</Link>
             <Link href="/news_politics" className="sitemap-link">경제/재테크/주식</Link>
             <Link href="/news_politics" className="sitemap-link">세무/법률/기타</Link>
           </div>
           <div className="sitemap-col">
-            <h4 className="sitemap-title">AI마케팅</h4>
+            <h4 className="sitemap-title">AI중개실무</h4>
             <Link href="/news_marketing" className="sitemap-link">AI/NEWS</Link>
             <Link href="/news_marketing" className="sitemap-link">부동산유튜브/블로그</Link>
-            <Link href="/news_marketing" className="sitemap-link">공실/임대관리</Link>
+            <Link href="/news_marketing" className="sitemap-link">중개실무/인테리어Tip</Link>
           </div>
           <div className="sitemap-col">
-            <h4 className="sitemap-title">라이프·오피니언</h4>
+            <h4 className="sitemap-title">기타</h4>
             <Link href="/news_etc" className="sitemap-link">인물/인터뷰</Link>
-            <Link href="/news_etc" className="sitemap-link">중개실무/인테리어Tip</Link>
             <Link href="/news_etc" className="sitemap-link">맛집/여행/건강</Link>
             <Link href="/news_etc" className="sitemap-link">스포츠/연예/기타</Link>
           </div>

@@ -5,9 +5,9 @@ export const dynamic = "force-dynamic";
 
 export default async function NewsLocalPage() {
   const [articlesRes, popularRes, importantRes] = await Promise.all([
-    getArticles({ status: "APPROVED", section1: "공실뉴스" }),
-    getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 50 }),
-    getArticles({ status: "APPROVED", is_important: true, section1: "공실뉴스", limit: 15 })
+    getArticles({ status: "APPROVED", section1: "공실현장" }),
+    getArticles({ status: "APPROVED", section1: "공실현장", limit: 50 }),
+    getArticles({ status: "APPROVED", is_important: true, section1: "공실현장", limit: 15 })
   ]);
 
   const articles = articlesRes.success ? (articlesRes.data || []) : [];
@@ -16,11 +16,11 @@ export default async function NewsLocalPage() {
     : [];
   const importantArticles = importantRes.success ? (importantRes.data || []) : [];
 
-  const subCategories = ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"];
+  const subCategories = ["신축/분양/경매", "상가/사무실/공장/토지", "공실/임대관리"];
 
   return <NewsListLayout 
-    category="공실뉴스" 
-    title="공실뉴스" 
+    category="공실현장" 
+    title="공실현장" 
     initialArticles={articles} 
     initialPopular={popular} 
     importantArticles={importantArticles} 

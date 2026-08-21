@@ -4,11 +4,11 @@ import { getArticles } from "@/app/actions/article";
 export const dynamic = "force-dynamic";
 
 export default async function NewsPoliticsPage() {
-  // Fetch all articles for section1 = '부동산·경제'
+  // Fetch all articles for section1 = '정책시장'
   const [articlesRes, popularRes, importantRes] = await Promise.all([
-    getArticles({ status: "APPROVED", section1: "부동산·경제" }),
-    getArticles({ status: "APPROVED", section1: "부동산·경제", limit: 50 }),
-    getArticles({ status: "APPROVED", is_important: true, section1: "부동산·경제", limit: 15 })
+    getArticles({ status: "APPROVED", section1: "정책시장" }),
+    getArticles({ status: "APPROVED", section1: "정책시장", limit: 50 }),
+    getArticles({ status: "APPROVED", is_important: true, section1: "정책시장", limit: 15 })
   ]);
 
   const articles = articlesRes.success ? (articlesRes.data || []) : [];
@@ -20,8 +20,8 @@ export default async function NewsPoliticsPage() {
   const subCategories = ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타"];
 
   return <NewsListLayout 
-    category="부동산·경제" 
-    title="부동산·경제" 
+    category="정책시장" 
+    title="정책시장" 
     initialArticles={articles} 
     initialPopular={popular} 
     importantArticles={importantArticles} 
