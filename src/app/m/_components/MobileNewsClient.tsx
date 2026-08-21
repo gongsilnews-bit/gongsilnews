@@ -12,6 +12,7 @@ import AuthorProfileHeader from "../_components/AuthorProfileHeader";
 import AuthModal from "@/components/AuthModal";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
+import { formatSection1 } from "@/utils/formatCategory";
 
 function formatPrice(v: any): string {
   const formatValue = (val: number) => {
@@ -1718,7 +1719,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   style={{ display: "flex", flexDirection: "column", padding: "20px 16px", borderBottom: "1px solid #f0f0f0", cursor: "pointer", background: "#fff" }}
                 >
                   <div style={{ display: "inline-flex", alignItems: "center", fontSize: "11px", fontWeight: 700, color: "#ea580c", border: "1px solid #fed7aa", padding: "2px 6px", borderRadius: "2px", marginBottom: "8px", alignSelf: "flex-start" }}>
-                    {article.section1 || "공실뉴스"} {article.section2 && `> ${article.section2}`}
+                    {formatSection1(article.section1)} {article.section2 && `> ${article.section2}`}
                   </div>
                   <div style={{ fontSize: "17px", fontWeight: 800, color: "#111", lineHeight: 1.35, marginBottom: "10px", wordBreak: "keep-all" }}>{article.title}</div>
                   <div style={{ fontSize: "14px", color: "#666", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginBottom: "14px" }}>
@@ -2276,7 +2277,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           <div style={{ padding: "0 20px 40px", backgroundColor: "#fff" }}>
             {/* 섹션 */}
             <div style={{ fontSize: "13px", color: "#666", marginBottom: "10px", marginTop: "16px" }}>
-              [{articleDetail.section1 || "뉴스"} &gt; {articleDetail.section2 || "전체"}]
+              [{formatSection1(articleDetail.section1)} &gt; {articleDetail.section2 || "전체"}]
             </div>
             {/* 제목 */}
             <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#111", lineHeight: 1.4, marginBottom: "16px", wordBreak: "keep-all" }}>

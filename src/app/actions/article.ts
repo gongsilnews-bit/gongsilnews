@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { unstable_cache, revalidateTag } from "next/cache";
 import { getEffectivePlan } from "@/utils/planCheck";
+import { formatSection1 } from "@/utils/formatCategory";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -314,7 +315,11 @@ export async function getArticles(filters?: {
 
     const { data, error, count } = await query;
     if (error) return { success: false, error: error.message };
-    return { success: true, data, count: count || 0 };
+    const normalizedData = (data || []).map((a: any) => ({
+      ...a,
+      section1: formatSection1(a.section1)
+    }));
+    return { success: true, data: normalizedData, count: count || 0 };
   };
 
   if (filters?.noCache) {
@@ -348,7 +353,11 @@ export async function searchArticles(query: string) {
       .limit(100);
 
     if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    const normalizedData = (data || []).map((a: any) => ({
+      ...a,
+      section1: formatSection1(a.section1)
+    }));
+    return { success: true, data: normalizedData };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -367,7 +376,11 @@ export async function getMyArticles(authorId: string) {
       .order("created_at", { ascending: false });
 
     if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    const normalizedData = (data || []).map((a: any) => ({
+      ...a,
+      section1: formatSection1(a.section1)
+    }));
+    return { success: true, data: normalizedData };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -390,7 +403,10 @@ const getArticleDetailCached = unstable_cache(
     
     const { data, error } = await query.single();
     if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return {
+      success: true,
+      data: data ? { ...data, section1: formatSection1(data.section1) } : null
+    };
   },
   ["article-detail"],
   { tags: ["articles"], revalidate: 3600 }
@@ -411,7 +427,10 @@ export async function getArticleDetail(articleId: string, noCache: boolean = fal
     
     const { data, error } = await query.single();
     if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return {
+      success: true,
+      data: data ? { ...data, section1: formatSection1(data.section1) } : null
+    };
   }
   return await getArticleDetailCached(articleId);
 }

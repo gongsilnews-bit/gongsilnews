@@ -18,31 +18,28 @@ function getAdminClient() {
 
 // 마이그레이션 매핑 테이블
 const MIGRATION_RULES = [
-  // 1. section1: 우리동네부동산 → 공실뉴스 (section2 유지)
+  // 1. 공실현장 → 공실뉴스 (section2 유지)
+  { oldSection1: "공실현장", newSection1: "공실뉴스", section2Map: null },
   { oldSection1: "우리동네부동산", newSection1: "공실뉴스", section2Map: null },
 
-  // 2. 뉴스/칼럼 > 부동산마케팅 → AI마케팅 > AI/NEWS
+  // 2. 정책시장 → 부동산·경제 (section2 유지)
+  { oldSection1: "정책시장", newSection1: "부동산·경제", section2Map: null },
+  { oldSection1: "부동산정책", newSection1: "부동산·경제", section2Map: null },
+
+  // 3. AI중개실무 → AI마케팅 (section2 유지)
+  { oldSection1: "AI중개실무", newSection1: "AI마케팅", section2Map: null },
+
+  // 4. 기타 → 라이프·오피니언 (section2 유지)
+  { oldSection1: "기타", newSection1: "라이프·오피니언", section2Map: null },
+
+  // 5. 구 뉴스/칼럼 레거시 매핑
   { oldSection1: "뉴스/칼럼", oldSection2: "부동산마케팅", newSection1: "AI마케팅", newSection2: "AI/NEWS" },
-
-  // 3. 뉴스/칼럼 > 부동산·주식·재테크 → 부동산·경제 > 경제/재테크/주식
   { oldSection1: "뉴스/칼럼", oldSection2: "부동산·주식·재테크", newSection1: "부동산·경제", newSection2: "경제/재테크/주식" },
-
-  // 4. 뉴스/칼럼 > 정치·경제·사회 → 부동산·경제 > 부동산정책/정치
   { oldSection1: "뉴스/칼럼", oldSection2: "정치·경제·사회", newSection1: "부동산·경제", newSection2: "부동산정책/정치" },
- 
-  // 5. 뉴스/칼럼 > 세무·법률 → 부동산·경제 > 세무/법률/기타
   { oldSection1: "뉴스/칼럼", oldSection2: "세무·법률", newSection1: "부동산·경제", newSection2: "세무/법률/기타" },
-
-  // 6. 뉴스/칼럼 > 여행·건강·생활 → 라이프·오피니언 > 맛집/여행/건강
   { oldSection1: "뉴스/칼럼", oldSection2: "여행·건강·생활", newSection1: "라이프·오피니언", newSection2: "맛집/여행/건강" },
-
-  // 7. 뉴스/칼럼 > IT·가전·가구 → 라이프·오피니언 > 스포츠/연예/기타
   { oldSection1: "뉴스/칼럼", oldSection2: "IT·가전·가구", newSection1: "라이프·오피니언", newSection2: "스포츠/연예/기타" },
-
-  // 8. 뉴스/칼럼 > 스포츠·연예·Car → 라이프·오피니언 > 스포츠/연예/기타
   { oldSection1: "뉴스/칼럼", oldSection2: "스포츠·연예·Car", newSection1: "라이프·오피니언", newSection2: "스포츠/연예/기타" },
-
-  // 9. 뉴스/칼럼 > 인물·미션·기타 → 라이프·오피니언 > 인물/인터뷰
   { oldSection1: "뉴스/칼럼", oldSection2: "인물·미션·기타", newSection1: "라이프·오피니언", newSection2: "인물/인터뷰" },
 ];
 

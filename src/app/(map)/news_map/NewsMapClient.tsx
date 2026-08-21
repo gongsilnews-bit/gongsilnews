@@ -6,6 +6,7 @@ import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actio
 import MapSearchBar from "@/components/MapSearchBar";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
+import { formatSection1 } from "@/utils/formatCategory";
 
 export default function NewsMapClient({ initialArticles, initialPopularArticles }: { initialArticles: any[], initialPopularArticles: any[] }) {
   /* ── 상태 ── */
@@ -649,7 +650,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
                 >
                   <div style={{ fontSize: 11, color: "#ff8e15", fontWeight: "bold", marginBottom: 5, display: "flex", alignItems: "center", gap: 4 }}>
                     <span style={{ background: "#fff7ed", padding: "2px 6px", borderRadius: 3, border: "1px solid #ffdfb8" }}>
-                      {item.section1 || "뉴스"} &gt; {item.section2 || "전체"}
+                      {formatSection1(item.section1)} &gt; {item.section2 || "전체"}
                     </span>
                     {item.section1 === "뉴스/칼럼" && <span style={{ color: "#ef4444" }}>NEWS</span>}
                     {item.location_name && <span style={{ color: "#999", fontSize: 10 }}>📍{item.location_name}</span>}
@@ -704,7 +705,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
               <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 40px 40px", position: "relative" }}>
 
                 <div style={{ fontSize: 14, color: "#666", marginBottom: 8, fontWeight: 600 }}>
-                  [{articleDetail.section1 || "뉴스"} &gt; {articleDetail.section2 || "전체"}]
+                  [{formatSection1(articleDetail.section1)} &gt; {articleDetail.section2 || "전체"}]
                 </div>
 
                 <h1 style={{ fontSize: 34, fontWeight: 800, color: "#111", lineHeight: 1.3, marginBottom: 16, letterSpacing: -1.5, wordBreak: "keep-all" }}>{articleDetail.title}</h1>

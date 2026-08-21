@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { formatSection1 } from "@/utils/formatCategory";
 
 const formatPrice = (val: any) => {
   const deposit = val.deposit || 0;
@@ -142,7 +143,7 @@ export default function SearchClient({ query, articles, vacancies, vacancyCount 
                           </div>
                           <div className="an-meta">
                             <span style={{ color: "#508bf5", fontWeight: "bold", marginRight: 8 }}>
-                              [{article.section1 || "뉴스"} &gt; {article.section2 || "전체"}]
+                              [{formatSection1(article.section1)} &gt; {article.section2 || "전체"}]
                             </span>
                             {formatDate(article.published_at || article.created_at)} · {article.author_name || "공실뉴스"}
                           </div>

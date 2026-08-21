@@ -6,6 +6,7 @@ import { getArticleDetail, deleteArticle, adminUpdateArticleStatus, adminReviseA
 import { getComments } from "@/app/actions/comment";
 import { getArticleReactions } from "@/app/actions/reaction";
 import { createClient } from "@/utils/supabase/client";
+import { formatSection1 } from "@/utils/formatCategory";
 
 const REJECT_REASONS = [
   "사진 화질 불량 또는 이미지 누락",
@@ -192,7 +193,7 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
         <div className={`adp-frame adp-${device}`}>
           {/* Breadcrumb — same as public page */}
           <div className="detail-breadcrumb">
-            [{article.section1 || '뉴스'} &gt; {article.section2 || '전체'}]
+            [{formatSection1(article.section1)} &gt; {article.section2 || '전체'}]
           </div>
 
           {/* Title — same as public page */}

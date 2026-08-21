@@ -14,6 +14,7 @@ import { toggleArticleBookmark, getArticleBookmarks } from "@/app/actions/bookma
 import AuthModal from "./AuthModal";
 import BannerSlot from "./BannerSlot";
 import BookmarkCategoryModal from "./BookmarkCategoryModal";
+import { formatSection1 } from "@/utils/formatCategory";
 
 interface NewsReadContentProps {
   article: any;
@@ -433,7 +434,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
       objectType: "feed",
       content: {
         title: article.title,
-        description: article.subtitle || `${article.section1 || "뉴스"} | 공실뉴스`,
+        description: article.subtitle || `${formatSection1(article.section1)} | 공실뉴스`,
         imageUrl: article.thumbnail_url || "",
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
       },
@@ -552,7 +553,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
           {/* 본문 영역 */}
           <div className="news-read-area">
             <div className="detail-breadcrumb">
-              [{article.section1 || "뉴스"} &gt; {article.section2 || "전체"}]
+              [{formatSection1(article.section1)} &gt; {article.section2 || "전체"}]
             </div>
             <h1 className="detail-title" style={{ fontSize: `${currentFontSize + 10}px`, lineHeight: 1.35, transition: "font-size 0.2s ease" }}>{article.title}</h1>
             

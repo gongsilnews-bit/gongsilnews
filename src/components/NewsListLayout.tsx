@@ -9,6 +9,7 @@ import { createClient } from "@/utils/supabase/client";
 import { getArticleBookmarks, getBookmarkCategories } from "@/app/actions/bookmark";
 import AuthModal from "./AuthModal";
 import BookmarkCategoryModal from "./BookmarkCategoryModal";
+import { formatSection1 } from "@/utils/formatCategory";
 
 interface Article {
   id: string;
@@ -593,7 +594,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                         </div>
                         <div className="an-meta">
                           <span style={{ color: "#1a4282", fontWeight: "bold", marginRight: 8 }}>
-                            [{article.section1 || "뉴스"} &gt; {article.section2 || "전체"}]
+                            [{formatSection1(article.section1)} &gt; {article.section2 || "전체"}]
                           </span>
                           {formatDate(article.published_at || article.created_at || "")} {article.updated_at ? `(수정: ${formatDate(article.updated_at)})` : ""} · {article.author_name || "공실뉴스"}
                         </div>
