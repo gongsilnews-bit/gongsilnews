@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import FooterAuthButtons from "./FooterAuthButtons";
+import RealEstateInfoBanner from "@/components/RealEstateInfoBanner";
 
 const CATEGORIES = [
   { label: "우리동네뉴스", href: "/m/news_map" },
@@ -23,6 +24,9 @@ export default function MobileFooter() {
         fontFamily: "'Pretendard', 'Malgun Gothic', sans-serif",
       }}
     >
+      {/* ── 14대 공식 브랜드 및 공공기관 실물 배너 ── */}
+      <RealEstateInfoBanner />
+
       {/* ── 로고 ── */}
       <div style={{ padding: "24px 16px 16px", borderBottom: "1px solid #ececec", textAlign: "center" }}>
         <span style={{ fontSize: 18, fontWeight: 900, color: "#222", letterSpacing: -0.5 }}>
