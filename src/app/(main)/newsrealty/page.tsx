@@ -1,30 +1,54 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthModal from "@/components/AuthModal";
 import { createClient } from "@/utils/supabase/client";
 import { submitInquiry } from "@/app/actions/inquiry";
 
-const PlayLogo = ({ size = 64 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-    <circle cx="24" cy="24" r="24" fill="#111827" />
-    <circle cx="24" cy="24" r="16" fill="#FFFFFF" />
-    <path d="M19 15.34L34 24L19 32.66Z" fill="#fbbf24" stroke="#111827" strokeWidth="3" strokeLinejoin="round" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-    <circle cx="12" cy="12" r="12" fill="#475569" />
-    <path d="M7 12l3 3 7-7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 const brokerStats = [
   { label: "전국 가입 부동산", value: "11만+", sub: "대규모 네트워크 인프라" },
   { label: "공동중개 매물 공유", value: "실시간 조회", sub: "지도 기반 편리한 확인" },
   { label: "전국 경/공매 정보", value: "평생 무료", sub: "권리분석/뉴스 무료 열람" },
+];
+
+const PROOF_STORIES = [
+  {
+    role: "소속공인중개사 1년차",
+    quote: "“블로그 글 1개 쓰는데 반나절 걸리던 제가, 공실뉴스 AI 프롬프트 쓰고 5분 만에 상위노출 글 3개를 뚝딱 완성했어요.”",
+    author: "마포구 소속공인중개사 이OO 실장",
+    image: "/images/study/avatar_realtor_female.jpg",
+    imagePosition: "left",
+  },
+  {
+    role: "50대 개업공인중개사",
+    quote: "“컴맹이라 AI는 남 이야기인 줄 알았는데, 클릭 몇 번으로 매물 쇼츠 만들었더니 유튜브 보고 젊은 임차인 문의가 3배 폭증했네요.”",
+    author: "강남구 개업공인중개사 박OO 대표",
+    image: "/images/study/avatar_realtor_male.jpg",
+    imagePosition: "right",
+  },
+  {
+    role: "상가 건물주 / 임대인",
+    quote: "“1년 넘게 공실이던 3층 통상가, 공실스터디에서 배운 타깃 마케팅과 AI 제안서로 2주 만에 우량 프랜차이즈 임대 맞췄습니다.”",
+    author: "판교 상가 건물주 정OO 대표",
+    image: "/images/study/avatar_landlord_male.jpg",
+    imagePosition: "left",
+  },
+  {
+    role: "부동산 유튜버 크리에이터",
+    quote: "“고가 카메라 장비 없이 스마트폰과 AI 음성으로 부동산 브리핑 채널 시작해 구독자 1만 명 돌파하고 전속 매물 쏟아집니다.”",
+    author: "유튜브 부동산 채널 운영자 김OO 대표",
+    image: "/images/study/avatar_creator_male.jpg",
+    imagePosition: "right",
+  },
+  {
+    role: "경매 & 특수물건 실무자",
+    quote: "“어려운 유찰 물건 권리분석부터 특약 작성까지, 1년 스터디 실무 서식 원본 덕분에 실수 없이 안전하게 계약 체결했어요.”",
+    author: "경기 분당구 공인중개사 최OO 대표",
+    image: "/images/study/avatar_senior_female.jpg",
+    imagePosition: "left",
+  },
 ];
 
 const brokerFaqs = [
@@ -62,7 +86,7 @@ export default function NewsRealtyPage() {
     targetComplex: "",
     bizRegion: "",
     category: "아파트 전문",
-    memo: ""
+    memo: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAppliedSuccessfully, setIsAppliedSuccessfully] = useState(false);
@@ -77,11 +101,11 @@ export default function NewsRealtyPage() {
   }, []);
 
   const handleApplyClick = (selectedComplex?: string, selectedRegion?: string, selectedCategory?: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       targetComplex: selectedComplex || prev.targetComplex || "",
       bizRegion: selectedRegion || prev.bizRegion || "",
-      category: selectedCategory || prev.category || "아파트 전문"
+      category: selectedCategory || prev.category || "아파트 전문",
     }));
 
     if (!user) {
@@ -129,1295 +153,389 @@ export default function NewsRealtyPage() {
     <>
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="signup" />
 
-      <div className="pc-signup-container">
-        <style>{`
-          .pc-signup-container {
-            font-family: 'Pretendard Variable', -apple-system, sans-serif;
-            background: #ffffff;
-            color: #1f2937;
-            padding-bottom: 80px;
-          }
-
-          /* ===== Hero Section ===== */
-          .pc-signup-hero {
-            background: radial-gradient(circle at top right, #311019 0%, #0f172a 65%, #020617 100%);
-            padding: 100px 20px 100px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-          }
-          .hero-inner {
-            max-width: 800px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 2;
-          }
-          .pc-hero-badge {
-            display: inline-flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 8px 18px;
-            border-radius: 50px;
-            font-size: 13px;
-            color: #ffffff;
-            margin-bottom: 24px;
-            letter-spacing: -0.2px;
-          }
-          .pc-hero-title {
-            font-size: 44px;
-            font-weight: 900;
-            color: #ffffff;
-            line-height: 1.3;
-            margin: 0 0 20px;
-            letter-spacing: -1.5px;
-          }
-          .pc-hero-desc {
-            font-size: 17px;
-            color: #94a3b8;
-            line-height: 1.7;
-            margin: 0;
-            word-break: keep-all;
-          }
-
-          /* ===== Pricing Grid Section ===== */
-          .pc-pricing-sec {
-            max-width: 1200px;
-            margin: 80px auto 0;
-            padding: 0 20px;
-            position: relative;
-            z-index: 10;
-          }
-          .pc-pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            max-width: 800px;
-            margin: 0 auto;
-            gap: 24px;
-          }
-          .pc-pricing-card {
-            background: #ffffff;
-            border-radius: 28px;
-            padding: 40px 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
-            border: 2px solid #f1f5f9;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            transition: all 0.3s ease;
-          }
-          .pc-pricing-card.premium {
-            border-color: #cbd5e1;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-            box-shadow: 0 15px 50px rgba(15, 23, 42, 0.05);
-            transform: scale(1.03);
-            z-index: 2;
-          }
-          .pc-pricing-card.premium::before {
-            content: "강력 추천";
-            position: absolute;
-            top: -14px;
-            right: 30px;
-            background: #475569;
-            color: #ffffff;
-            font-size: 11px;
-            font-weight: 800;
-            padding: 5px 14px;
-            border-radius: 99px;
-            box-shadow: 0 4px 12px rgba(71, 85, 105, 0.2);
-          }
-          .pc-price-badge {
-            display: inline-block;
-            font-size: 11px;
-            font-weight: 800;
-            padding: 4px 10px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            width: fit-content;
-          }
-          .pc-price-badge.free {
-            background: #f1f5f9;
-            color: #475569;
-          }
-          .pc-price-badge.legacy-badge {
-            background: #f1f5f9;
-            color: #64748b;
-          }
-          .pc-pricing-card-title {
-            font-size: 21px;
-            font-weight: 900;
-            color: #0f172a;
-            margin: 0 0 10px;
-            letter-spacing: -0.5px;
-          }
-          .pc-pricing-card-sub {
-            font-size: 13.5px;
-            color: #64748b;
-            margin: 0 0 24px;
-            line-height: 1.5;
-            min-height: 60px;
-          }
-          .pc-pricing-card-price {
-            font-size: 32px;
-            font-weight: 900;
-            color: #0f172a;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-          }
-          .pc-pricing-card-price span {
-            font-size: 14px;
-            color: #64748b;
-            font-weight: 600;
-          }
-          .pc-pricing-card-divider {
-            height: 1px;
-            background: #e2e8f0;
-            margin: 0 0 24px;
-          }
-          .pc-pricing-card-features {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 32px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            flex-grow: 1;
-          }
-          .pc-pricing-card-feature-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            font-size: 14px;
-            color: #334155;
-            line-height: 1.4;
-          }
-          .pc-pricing-card-btn {
-            width: 100%;
-            border: none;
-            border-radius: 12px;
-            padding: 15px;
-            font-size: 14.5px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: all 0.2s ease;
-          }
-          .pc-pricing-card-btn.legacy-btn {
-            background: #f1f5f9;
-            color: #94a3b8;
-            cursor: not-allowed;
-          }
-          .pc-pricing-card-btn.free-btn {
-            background: #475569;
-            color: #ffffff;
-            box-shadow: 0 6px 20px rgba(71, 85, 105, 0.15);
-          }
-          .pc-pricing-card-btn.free-btn:hover {
-            transform: translateY(-2px);
-            background: #334155;
-            box-shadow: 0 8px 24px rgba(71, 85, 105, 0.25);
-          }
-          .pc-pricing-card-btn.free-btn:active {
-            transform: translateY(0);
-          }
-
-          /* ===== Stats ===== */
-          .pc-stats-outer {
-            margin-top: 0;
-            background: #f8fafc;
-            padding: 60px 20px;
-            border-top: 1px solid #f1f5f9;
-            border-bottom: 1px solid #f1f5f9;
-          }
-          .pc-stats-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-          }
-          .pc-stat-card {
-            background: #ffffff;
-            border-radius: 20px;
-            padding: 30px 20px;
-            text-align: center;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.01);
-          }
-          .pc-stat-label {
-            font-size: 14px;
-            color: #64748b;
-            margin-bottom: 8px;
-            font-weight: 600;
-          }
-          .pc-stat-val {
-            font-size: 32px;
-            font-weight: 900;
-            color: #0f172a;
-            margin-bottom: 6px;
-            letter-spacing: -0.5px;
-          }
-          .pc-stat-sub {
-            font-size: 13px;
-            color: #94a3b8;
-          }
-
-          /* ===== Detail Rows (Landing Page Style) ===== */
-          .pc-detail-sec {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 80px 20px;
-          }
-          .pc-sec-header {
-            text-align: center;
-            margin-bottom: 60px;
-          }
-          .pc-sec-title {
-            font-size: 32px;
-            font-weight: 900;
-            color: #0f172a;
-            margin: 0 0 12px;
-            letter-spacing: -1px;
-          }
-          .pc-sec-desc {
-            font-size: 16px;
-            color: #64748b;
-            margin: 0;
-          }
-          .pc-detail-rows {
-            display: flex;
-            flex-direction: column;
-            gap: 80px;
-          }
-          .pc-detail-row {
-            display: flex;
-            align-items: center;
-            gap: 60px;
-          }
-          .pc-detail-row.reverse {
-            flex-direction: row-reverse;
-          }
-          .pc-detail-img-wrap {
-            flex: 1.1;
-            border-radius: 24px;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
-            border: 1px solid #f1f5f9;
-            background: #f8fafc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          .pc-detail-img-wrap img {
-            width: 100%;
-            height: auto;
-            display: block;
-            object-fit: cover;
-            transition: transform 0.5s ease;
-          }
-          .pc-detail-img-wrap:hover img {
-            transform: scale(1.02);
-          }
-          .pc-detail-text-wrap {
-            flex: 0.9;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-          }
-          .pc-detail-sub {
-            font-size: 13.5px;
-            font-weight: 800;
-            color: #e11d48;
-            letter-spacing: 0.5px;
-          }
-          .pc-detail-row-title {
-            font-size: 26px;
-            font-weight: 900;
-            color: #0f172a;
-            line-height: 1.35;
-            letter-spacing: -1px;
-            margin: 0;
-          }
-          .pc-detail-row-desc {
-            font-size: 15px;
-            color: #475569;
-            line-height: 1.7;
-            margin: 8px 0 0;
-            word-break: keep-all;
-          }
-          .pc-benefit-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 16px;
-          }
-          .pc-benefit-tag {
-            background: #f8fafc;
-            color: #475569;
-            font-size: 13px;
-            font-weight: 700;
-            padding: 6px 12px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-          }
-
-          /* ===== Recommended Target Section (Luxurious Dark Style) ===== */
-          .pc-target-sec {
-            background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
-            padding: 90px 20px;
-            color: #ffffff;
-            position: relative;
-            overflow: hidden;
-            border-top: 1px solid #1e293b;
-            border-bottom: 1px solid #1e293b;
-          }
-          .pc-target-sec::before {
-            content: '';
-            position: absolute;
-            top: -20%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 800px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, rgba(0,0,0,0) 70%);
-            pointer-events: none;
-          }
-          .pc-target-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 2;
-          }
-          .pc-lux-header {
-            text-align: center;
-            margin-bottom: 50px;
-          }
-          .pc-lux-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            font-weight: 800;
-            color: #fbbf24;
-            background: rgba(251, 191, 36, 0.1);
-            border: 1px solid rgba(251, 191, 36, 0.25);
-            padding: 6px 16px;
-            border-radius: 50px;
-            letter-spacing: 1.5px;
-            margin-bottom: 16px;
-          }
-          .pc-lux-title {
-            font-size: 34px;
-            font-weight: 900;
-            color: #ffffff;
-            margin: 0 0 14px;
-            letter-spacing: -1.5px;
-            line-height: 1.3;
-          }
-          .pc-lux-title span {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-          }
-          .pc-lux-desc {
-            font-size: 16px;
-            color: #94a3b8;
-            margin: 0;
-            word-break: keep-all;
-          }
-          .pc-lux-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-          }
-          .pc-lux-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 24px 28px;
-            backdrop-filter: blur(12px);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-          }
-          .pc-lux-card:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(251, 191, 36, 0.4);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(245, 158, 11, 0.08);
-            transform: translateY(-2px);
-          }
-          .pc-lux-card-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-          }
-          .pc-lux-num {
-            font-size: 12.5px;
-            font-weight: 900;
-            color: #fbbf24;
-            letter-spacing: 2px;
-          }
-          .pc-lux-category {
-            font-size: 12.5px;
-            color: #64748b;
-            font-weight: 600;
-          }
-          .pc-lux-body {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            align-items: stretch;
-          }
-          @media (max-width: 800px) {
-            .pc-lux-body {
-              grid-template-columns: 1fr;
-            }
-          }
-          .pc-lux-before {
-            background: rgba(239, 68, 68, 0.05);
-            border: 1px solid rgba(239, 68, 68, 0.15);
-            border-radius: 14px;
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-          }
-          .pc-lux-before-label {
-            font-size: 11px;
-            font-weight: 800;
-            color: #f87171;
-            margin-bottom: 6px;
-            display: block;
-            letter-spacing: 0.5px;
-          }
-          .pc-lux-before-text {
-            font-size: 14px;
-            color: #cbd5e1;
-            margin: 0;
-            line-height: 1.5;
-            word-break: keep-all;
-          }
-          .pc-lux-after {
-            background: rgba(251, 191, 36, 0.06);
-            border: 1px solid rgba(251, 191, 36, 0.25);
-            border-radius: 14px;
-            padding: 18px;
-            box-shadow: inset 0 0 20px rgba(251, 191, 36, 0.03);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-          }
-          .pc-lux-after-label {
-            font-size: 11px;
-            font-weight: 800;
-            color: #fbbf24;
-            margin-bottom: 6px;
-            display: block;
-            letter-spacing: 0.5px;
-          }
-          .pc-lux-after-text {
-            font-size: 15.5px;
-            font-weight: 800;
-            color: #ffffff;
-            margin: 0 0 4px;
-            line-height: 1.45;
-            word-break: keep-all;
-          }
-          .pc-lux-after-sub {
-            font-size: 13px;
-            color: #94a3b8;
-            margin: 0;
-            line-height: 1.45;
-            word-break: keep-all;
-          }
-
-          /* ===== Recommendations Section ===== */
-          .pc-recom-sec {
-            background: #ffffff;
-            padding: 80px 20px;
-            border-bottom: 1px solid #e2e8f0;
-          }
-          .pc-recom-container {
-            max-width: 1100px;
-            margin: 0 auto;
-          }
-          .pc-recom-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 28px;
-            margin-top: 40px;
-          }
-          .pc-recom-card {
-            background: #ffffff;
-            border-radius: 20px;
-            padding: 36px 30px;
-            border: 1px solid #e2e8f0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.01);
-          }
-          .pc-recom-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 30px rgba(225, 29, 72, 0.08);
-            border-color: #fca5a5;
-          }
-          .pc-recom-avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid #ffffff;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-          }
-          .pc-recom-title {
-            font-size: 19px;
-            font-weight: 900;
-            color: #0f172a;
-            margin: 0 0 4px;
-          }
-          .pc-recom-sub {
-            font-size: 13.5px;
-            color: #e11d48;
-            font-weight: 800;
-            margin-bottom: 18px;
-          }
-          .pc-recom-desc {
-            font-size: 14.5px;
-            color: #475569;
-            line-height: 1.6;
-            margin: 0;
-            word-break: keep-all;
-          }
-
-          /* ===== FAQ ===== */
-          .pc-faq-sec {
-            background: #ffffff;
-            padding: 80px 20px;
-          }
-          .pc-faq-container {
-            max-width: 800px;
-            margin: 40px auto 0;
-          }
-          .pc-faq-card {
-            background: #ffffff;
-            border-radius: 16px;
-            margin-bottom: 14px;
-            border: 1px solid #e2e8f0;
-            overflow: hidden;
-            transition: border-color 0.2s, box-shadow 0.2s;
-          }
-          .pc-faq-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-          }
-          .pc-faq-q {
-            width: 100%; padding: 22px 28px; background: none; border: none; cursor: pointer;
-            display: flex; align-items: center; justify-content: space-between;
-            font-size: 16px; font-weight: 700; color: #0f172a; text-align: left;
-            font-family: inherit;
-          }
-          .pc-faq-a {
-            padding: 0 28px 24px; font-size: 15px; color: #475569; line-height: 1.7; word-break: keep-all;
-            border-top: 1px solid #f8fafc;
-          }
-          .pc-faq-card.active-border {
-            border-color: #e11d48 !important;
-          }
-
-          /* ===== Application Modal ===== */
-          .application-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            z-index: 99999999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-          }
-          .application-modal {
-            background: #ffffff;
-            width: 500px;
-            max-width: 100%;
-            border-radius: 20px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
-            display: flex;
-            flex-direction: column;
-            max-height: 90vh;
-            overflow: hidden;
-            animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-          }
-          @keyframes modalFadeIn {
-            from { opacity: 0; transform: translateY(15px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-          }
-          .modal-header {
-            padding: 24px 28px 12px;
-            border-bottom: 1px solid #f1f5f9;
-            position: relative;
-          }
-          .modal-close-btn {
-            position: absolute;
-            top: 20px; right: 20px;
-            background: none; border: none;
-            font-size: 20px; color: #94a3b8;
-            cursor: pointer;
-          }
-          .modal-title { font-size: 18px; font-weight: 900; color: #0f172a; margin: 0; }
-          .modal-body {
-            padding: 20px 28px 28px;
-            overflow-y: auto;
-            flex: 1;
-          }
-          .form-group {
-            margin-bottom: 16px;
-          }
-          .form-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 700;
-            color: #334155;
-            margin-bottom: 5px;
-          }
-          .form-input {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
-            box-sizing: border-box;
-            background: #fff;
-          }
-          .form-input:focus { border-color: #d97706; }
-          .form-input.readonly { background: #f8fafc; color: #64748b; cursor: not-allowed; }
-          .form-select {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
-            background: #fff;
-            box-sizing: border-box;
-          }
-          .form-textarea {
-            width: 100%;
-            height: 80px;
-            padding: 10px 14px;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
-            resize: none;
-            box-sizing: border-box;
-            font-family: inherit;
-          }
-          
-          .bank-info-box {
-            background: #fffbeb;
-            border: 1.5px dashed #fcd34d;
-            border-radius: 10px;
-            padding: 14px 16px;
-            margin-bottom: 20px;
-          }
-          .bank-title {
-            font-size: 13.5px;
-            font-weight: 800;
-            color: #b45309;
-            margin: 0 0 4px 0;
-          }
-          .bank-text {
-            font-size: 12.5px;
-            color: #78350f;
-            line-height: 1.5;
-            margin: 0;
-          }
-          .submit-btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-            color: #ffffff;
-            font-size: 15px;
-            font-weight: 800;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(217,119,6,0.2);
-          }
-          .submit-btn:disabled { background: #94a3b8; cursor: not-allowed; }
-          
-          /* ===== New CTA Section (Full Width Banner) ===== */
-          .pc-new-cta-sec {
-            width: 100%;
-            background: #ffffff;
-            padding: 80px 20px 40px;
-            text-align: center;
-          }
-          .pc-new-cta-container {
-            max-width: 1000px;
-            margin: 0 auto;
-          }
-          .pc-new-cta-title {
-            font-size: 32px;
-            font-weight: 800;
-            color: #0f172a;
-            margin-bottom: 24px;
-            letter-spacing: -0.5px;
-          }
-          .pc-new-cta-banner {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-          }
-          .pc-new-cta-banner:hover {
-            transform: translateY(-4px);
-          }
-        `}</style>
-
-        {/* ===== Hero Section ===== */}
-        <section className="pc-signup-hero">
-          <div className="hero-inner">
-            <div className="pc-hero-badge">
-              🏢 전국 <strong style={{ color: "#F59E0B", marginLeft: "4px", marginRight: "4px" }}>11만</strong> 부동산이 함께하는 공실뉴스
+      <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", paddingBottom: 100 }}>
+        
+        {/* ━━━ 1. HERO BANNER (윤자동 딥 포레스트 그린 테마) ━━━ */}
+        <section style={{ backgroundColor: "#062326", color: "#ffffff", padding: "80px 24px 70px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+          <div style={{ maxWidth: 860, margin: "0 auto", position: "relative", zIndex: 2 }}>
+            
+            {/* 뱃지 */}
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", padding: "6px 18px", borderRadius: 30, fontSize: 13.5, fontWeight: 700, color: "#6ee7b7", marginBottom: 24 }}>
+              <span>🏢</span>
+              <span>전국 <strong style={{ color: "#34d399" }}>11만</strong> 공인중개사가 함께하는 공실뉴스</span>
             </div>
-            <h1 className="pc-hero-title" style={{ fontSize: "46px", lineHeight: "1.4", wordBreak: "keep-all" }}>
-              내 지역 공실을 <span style={{ color: "#fbbf24" }}>등록만 하세요!</span><br />
-              부동산 마케팅이 <span style={{ color: "#fbbf24" }}>자동</span>으로 시작됩니다.
+
+            {/* 메인 헤드라인 */}
+            <h1 style={{ fontSize: 44, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-1.5px", margin: "0 0 18px 0" }}>
+              내 지역 공실을 <span style={{ color: "#34d399" }}>등록만 하세요!</span><br />
+              부동산 마케팅이 <span style={{ color: "#34d399" }}>자동</span>으로 시작됩니다.
             </h1>
-            <p className="pc-hero-desc" style={{ fontSize: "18px", marginTop: "16px" }}>
+
+            <p style={{ fontSize: 17, color: "#a7f3d0", lineHeight: 1.7, margin: "0 0 36px 0", wordBreak: "keep-all" }}>
               공실만 입력하면 완성되는 온/오프라인 AI 매매 보고서와 유튜브/블로그 포스팅,<br />
-              AI 실무 부동산 유튜브 특강(드론영상 저작권 무료) 까지,,<br />
+              AI 실무 부동산 유튜브 특강(드론영상 저작권 무료) 까지,<br />
               부동산 마케팅이 쉬워집니다.
             </p>
-            <div style={{ marginTop: "40px", display: "flex", justifyContent: "center" }}>
-              <div style={{ width: "100%", maxWidth: "720px", aspectRatio: "16/9", borderRadius: "16px", overflow: "hidden", boxShadow: "0 20px 40px rgba(0, 0, 0, 0.45)" }}>
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src="https://www.youtube.com/embed/4a3_M6-Crew"
-                  title="YouTube video player"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                ></iframe>
-              </div>
+
+            {/* 유튜브 영상 프레임 */}
+            <div style={{ maxWidth: 740, margin: "0 auto 36px", width: "100%", aspectRatio: "16/9", borderRadius: 16, overflow: "hidden", boxShadow: "0 25px 60px rgba(0,0,0,0.5)", border: "1px solid #134e4a" }}>
+              <iframe
+                width="100%"
+                height="100%"
+                src="https://www.youtube.com/embed/14Ug16MNNh8?rel=0"
+                title="공실뉴스부동산 소개 영상"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
             </div>
+
+            {/* 4대 혜택 체크리스트 */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 20, flexWrap: "wrap", fontSize: 14, color: "#d1fae5", fontWeight: 700 }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ color: "#34d399" }}>✓</span> 평생 100% 무료 회원
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ color: "#34d399" }}>✓</span> 실시간 공동중개망 연동
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ color: "#34d399" }}>✓</span> AI 매물 보고서 자동 생성
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ color: "#34d399" }}>✓</span> 전국 경·공매 권리분석 무료
+              </span>
+            </div>
+
+            {/* CTA 버튼 */}
+            <div style={{ marginTop: 36 }}>
+              <button
+                onClick={() => handleApplyClick()}
+                style={{
+                  padding: "16px 36px",
+                  background: "#059669",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: 12,
+                  fontSize: 17,
+                  fontWeight: 900,
+                  cursor: "pointer",
+                  boxShadow: "0 6px 20px rgba(5,150,105,0.4)",
+                  transition: "all 0.2s",
+                }}
+              >
+                ✨ 무료 공실뉴스부동산 신청하기 →
+              </button>
+            </div>
+
           </div>
         </section>
 
-        {/* ===== Stats Section (Benefit Cards) ===== */}
-        <div className="pc-stats-outer" style={{ background: "#f8fafc", paddingTop: "50px", paddingBottom: "50px", marginTop: 0 }}>
-          <div className="pc-stats-container">
-            {/* Card 1 */}
-            <div className="pc-stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "170px", padding: "24px" }}>
-              <div className="pc-stat-label" style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "8px" }}>Point 01</div>
-              <div className="pc-stat-val" style={{ fontSize: "24px", fontWeight: "900", margin: "4px 0", letterSpacing: "-0.5px" }}>AI 매매 보고서</div>
-              <div className="pc-stat-sub" style={{ fontSize: "13.5px", color: "#475569", marginTop: "4px", fontWeight: 500 }}>지번 입력 즉시 1초 자동 생성</div>
-            </div>
-
-            {/* Card 2 */}
-            <div className="pc-stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "170px", padding: "24px" }}>
-              <div className="pc-stat-label" style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "8px" }}>Point 02</div>
-              <div className="pc-stat-val" style={{ fontSize: "24px", fontWeight: "900", margin: "4px 0", letterSpacing: "-0.5px" }}>유튜브/블로그 기사</div>
-              <div className="pc-stat-sub" style={{ fontSize: "13.5px", color: "#475569", marginTop: "4px", fontWeight: 500 }}>원클릭 스크립트 &amp; 원고 완성</div>
-            </div>
-
-            {/* Card 3 */}
-            <div className="pc-stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "170px", padding: "24px" }}>
-              <div className="pc-stat-label" style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "8px" }}>Point 03</div>
-              <div className="pc-stat-val" style={{ fontSize: "24px", fontWeight: "900", margin: "4px 0", letterSpacing: "-0.5px" }}>유튜브 특강 &amp; 드론</div>
-              <div className="pc-stat-sub" style={{ fontSize: "13.5px", color: "#475569", marginTop: "4px", fontWeight: 500 }}>영상 저작권 무료 다운로드</div>
-            </div>
-          </div>
-        </div>
-
-        {/* ===== Detailed Benefits Section ===== */}
-        <section className="pc-detail-sec">
-          <div className="pc-sec-header">
-            <h2 className="pc-sec-title">공실뉴스부동산이 되면 좋은점!!</h2>
-            <p className="pc-sec-desc" style={{ fontSize: "18px", color: "#e11d48", fontWeight: 800 }}>내 지역 공실을 등록만하세요. 공실을 등록하면 부동산 마케팅이 자동으로 진행됩니다!</p>
-          </div>
-
-          <div className="pc-detail-rows">
-            {/* Benefit Row 1: AI 물건 보고서 작성 */}
-            <div className="pc-detail-row">
-              <div className="pc-detail-img-wrap">
-                <img src="/signup_news.png" alt="AI 물건/매매 보고서 작성" />
-              </div>
-              <div className="pc-detail-text-wrap">
-                <span className="pc-detail-sub">POINT 01</span>
-                <h3 className="pc-detail-row-title">1, 온/오프라인 AI 매매 보고서 자동 생성</h3>
-                <p className="pc-detail-row-desc">
-                  지번만 입력하면 1초 만에 깔끔하고 전문적인 부동산 분석 보고서와 온/오프라인 매매 보고서 PDF가 완성됩니다. 모바일 터치 한 번으로 고객에게 카카오톡/문자 즉시 전송이 가능하며 유리창 홍보 출력까지 한 번에 지원합니다.
-                </p>
-                <div className="pc-benefit-tags">
-                  <span className="pc-benefit-tag">카톡/문자 브리핑</span>
-                  <span className="pc-benefit-tag">유리창 홍보 출력</span>
-                  <span className="pc-benefit-tag">매매보고서 PDF</span>
-                  <span className="pc-benefit-tag">실시간 정보 조회</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Benefit Row 2: 유튜브/블로그 대본 초안 작성 */}
-            <div className="pc-detail-row reverse">
-              <div className="pc-detail-img-wrap">
-                <img src="/signup_map.png" alt="유튜브/블로그 대본 자동 생성" />
-              </div>
-              <div className="pc-detail-text-wrap">
-                <span className="pc-detail-sub">POINT 02</span>
-                <h3 className="pc-detail-row-title">
-                  2, 유튜브/블로그 기사 자동 생성
-                </h3>
-                <p className="pc-detail-row-desc">
-                  매번 번거로운 유튜브 스크립트 작성이나 블로그 글쓰기 고민을 완전히 날려버리세요. 등록된 공실 물건 정보를 분석하여 유튜브 쇼츠 스크립트, 블로그 포스팅 원고, 포털 뉴스 송출용 기사를 1분 만에 자동으로 빌드해 드립니다.
-                </p>
-                <div className="pc-benefit-tags">
-                  <span className="pc-benefit-tag">블로그 원고 자동화</span>
-                  <span className="pc-benefit-tag">유튜브 쇼츠 대본</span>
-                  <span className="pc-benefit-tag">포털 뉴스 기사</span>
-                  <span className="pc-benefit-tag">AI 마케팅 스크립트</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Benefit Row 3: 부동산 유튜브 아카데미 */}
-            <div className="pc-detail-row">
-              <div className="pc-detail-img-wrap">
-                <img src="/signup_auction.png" alt="부동산 유튜브 전문 아카데미" />
-              </div>
-              <div className="pc-detail-text-wrap">
-                <span className="pc-detail-sub">POINT 03</span>
-                <h3 className="pc-detail-row-title">
-                  3, AI 유튜브 무료 특강 (드론영상저작권무료)
-                </h3>
-                <p className="pc-detail-row-desc">
-                  방송국 PD 출신의 편집장이 알려주는 손님 콜(Call) 유도 매물 촬영법부터 매주 업데이트되는 AI 유튜브 실무 무료 특강을 제공합니다. 또한 홍보 영상 제작 시 유용하게 쓸 수 있는 고화질 드론 영상 소스와 저작권 프리 리소스를 무제한 다운로드하여 자유롭게 활용할 수 있습니다.
-                </p>
-                <div className="pc-benefit-tags">
-                  <span className="pc-benefit-tag">PD 직강 유튜브 특강</span>
-                  <span className="pc-benefit-tag">드론 촬영 영상 제공</span>
-                  <span className="pc-benefit-tag">저작권 걱정 무료</span>
-                  <span className="pc-benefit-tag">비디오 자료실 제공</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ===== Recommended Target Section (Luxurious Modern Style) ===== */}
-        <section className="pc-target-sec">
-          <div className="pc-target-container">
-            <div className="pc-lux-header">
-              <div className="pc-lux-badge">
-                ✨ WHY GONGSILNEWS
-              </div>
-              <h2 className="pc-lux-title">
-                공실뉴스부동산 <span>도입 전 vs 도입 후</span>
+        {/* ━━━ 2. 3D PASTEL AVATARS: 나이가 많아서요? 코딩/컴퓨터를 못해서요? (윤자동 증명 섹션) ━━━ */}
+        <section style={{ padding: "80px 0 75px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
+          <div style={{ maxWidth: 880, margin: "0 auto", padding: "0 24px" }}>
+            
+            <div style={{ textAlign: "center", marginBottom: 44 }}>
+              <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#062828", margin: "0 0 10px 0", letterSpacing: "-0.5px", lineHeight: 1.35 }}>
+                나이가 많아서요? 컴퓨터를 잘 못 다뤄서요?<br />
+                <span style={{ color: "#059669" }}>초보라서 AI 마케팅이 어렵다고요?</span>
               </h2>
-              <p className="pc-lux-desc">
-                부동산 마케팅과 매물 수주 때문에 고민 깊으신 대표님들의 영업 환경이 180도 달라집니다.
+              <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.6, margin: "0 0 4px 0" }}>
+                그 걱정, 이제 내려놓으셔도 됩니다.
+              </p>
+              <p style={{ fontSize: "14px", color: "#64748b", margin: 0 }}>
+                공실만 등록하면 AI가 브리핑 영상부터 블로그 글, 매물 보고서까지 100% 자동으로 완성해 드립니다.
               </p>
             </div>
 
-            <div className="pc-lux-grid">
-              {/* Card 1: 마케팅 & 글작성 고민 */}
-              <div className="pc-lux-card">
-                <div className="pc-lux-card-top">
-                  <span className="pc-lux-num">01 / MARKETING</span>
-                  <span className="pc-lux-category">마케팅 &amp; 콘텐츠 생성</span>
-                </div>
-                <div className="pc-lux-body">
-                  <div className="pc-lux-before">
-                    <span className="pc-lux-before-label">😭 BEFORE (현재의 고민)</span>
-                    <p className="pc-lux-before-text">
-                      "블로그 글 쓰고 유튜브 영상 편집하느라 정작 중개 영업을 못 해요."<br />
-                      <span style={{ fontSize: 12.5, color: "#94a3b8", display: "inline-block", marginTop: 4 }}>- 원고 작성 및 영상 편집 부담으로 일상 업무 마비</span>
-                    </p>
-                  </div>
-                  <div className="pc-lux-after">
-                    <span className="pc-lux-after-label">✨ AFTER (공실뉴스 도입 후)</span>
-                    <h4 className="pc-lux-after-text">지번만 넣으면 AI가 1초 만에 매매보고서 &amp; 원고 자동 완성!</h4>
-                    <p className="pc-lux-after-sub">유튜브 쇼츠 대본, 블로그 글, 포털 기사까지 클릭 한 번으로 무제한 자동 생성됩니다.</p>
-                  </div>
-                </div>
-              </div>
+            {/* 5대 3D 아바타 교차 카드 리스트 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              {PROOF_STORIES.map((item, idx) => {
+                const isLeftImage = item.imagePosition === "left";
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      background: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 16,
+                      padding: "24px 30px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 32,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+                    }}
+                  >
+                    {/* 이미지 좌측 배치 */}
+                    {isLeftImage && (
+                      <div style={{ width: 160, height: 160, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <img
+                          src={item.image}
+                          alt={item.role}
+                          style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 12 }}
+                        />
+                      </div>
+                    )}
 
-              {/* Card 2: 고정 비용 부담 */}
-              <div className="pc-lux-card">
-                <div className="pc-lux-card-top">
-                  <span className="pc-lux-num">02 / COST SAVING</span>
-                  <span className="pc-lux-category">광고비 &amp; 고정 지출 절감</span>
-                </div>
-                <div className="pc-lux-body">
-                  <div className="pc-lux-before">
-                    <span className="pc-lux-before-label">💸 BEFORE (현재의 고민)</span>
-                    <p className="pc-lux-before-text">
-                      "매달 나가는 포털 광고비, 사설 공실망 수십만 원 고정 비용이 너무 부담돼요."<br />
-                      <span style={{ fontSize: 12.5, color: "#94a3b8", display: "inline-block", marginTop: 4 }}>- 높은 광고 비용 대비 아쉬운 가성비와 수익 구조</span>
-                    </p>
-                  </div>
-                  <div className="pc-lux-after">
-                    <span className="pc-lux-after-label">💰 AFTER (공실뉴스 도입 후)</span>
-                    <h4 className="pc-lux-after-text">월 3만 원 단 하나의 비용으로 대행사급 AI 마케팅 + 드론/강의 무제한!</h4>
-                    <p className="pc-lux-after-sub">월 고정 비용 90% 절감! 부담 없는 비용으로 압도적인 광고 마케팅 효과를 누리세요.</p>
-                  </div>
-                </div>
-              </div>
+                    {/* 본문 텍스트 */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "inline-block", background: "#ecfdf5", color: "#047857", fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 6, marginBottom: 10 }}>
+                        {item.role}
+                      </div>
+                      <p style={{ fontSize: 16, fontWeight: 800, color: "#062828", lineHeight: 1.55, margin: "0 0 10px 0", letterSpacing: "-0.2px" }}>
+                        {item.quote}
+                      </p>
+                      <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>
+                        {item.author}
+                      </span>
+                    </div>
 
-              {/* Card 3: 텃세 & 매물 독점 */}
-              <div className="pc-lux-card">
-                <div className="pc-lux-card-top">
-                  <span className="pc-lux-num">03 / EXCLUSIVE NETWORK</span>
-                  <span className="pc-lux-category">지역 텃세 극복 &amp; 매물 독점</span>
-                </div>
-                <div className="pc-lux-body">
-                  <div className="pc-lux-before">
-                    <span className="pc-lux-before-label">😭 BEFORE (현재의 고민)</span>
-                    <p className="pc-lux-before-text">
-                      "신규 개업 후 지역 친목회 텃세 때문에 단독 매물 확보와 영업이 힘들어요."<br />
-                      <span style={{ fontSize: 12.5, color: "#94a3b8", display: "inline-block", marginTop: 4 }}>- 기존 친목 카르텔 장벽으로 매물 수주 한계</span>
-                    </p>
+                    {/* 이미지 우측 배치 */}
+                    {!isLeftImage && (
+                      <div style={{ width: 160, height: 160, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <img
+                          src={item.image}
+                          alt={item.role}
+                          style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 12 }}
+                        />
+                      </div>
+                    )}
                   </div>
-                  <div className="pc-lux-after">
-                    <span className="pc-lux-after-label">👑 AFTER (공실뉴스 도입 후)</span>
-                    <h4 className="pc-lux-after-text">텃세 상관없이 전국 11만 중개망 &amp; 20건 독점 공실 등록으로 매물 싹쓸이!</h4>
-                    <p className="pc-lux-after-sub">주력 단지 대표 권한 확보로 임대인/임차인 신뢰와 알짜 매물을 선점합니다.</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 4: 브리핑 & 계약 성사율 */}
-              <div className="pc-lux-card">
-                <div className="pc-lux-card-top">
-                  <span className="pc-lux-num">04 / CLOSING RATE</span>
-                  <span className="pc-lux-category">전문 브리핑 &amp; 계약 체결율</span>
-                </div>
-                <div className="pc-lux-body">
-                  <div className="pc-lux-before">
-                    <span className="pc-lux-before-label">😭 BEFORE (현재의 고민)</span>
-                    <p className="pc-lux-before-text">
-                      "손님이나 집주인에게 보여줄 차별화된 매물 브리핑 자료가 부족해요."<br />
-                      <span style={{ fontSize: 12.5, color: "#94a3b8", display: "inline-block", marginTop: 4 }}>- 단순 구두 브리핑으로 신뢰 형성 및 마감 지연</span>
-                    </p>
-                  </div>
-                  <div className="pc-lux-after">
-                    <span className="pc-lux-after-label">📊 AFTER (공실뉴스 도입 후)</span>
-                    <h4 className="pc-lux-after-text">카톡 전송용 PDF &amp; 유리창 출력용 AI 보고서로 계약 성공률 200% 상승!</h4>
-                    <p className="pc-lux-after-sub">모바일 원터치 브리핑 전송으로 차원이 다른 비주얼 분석과 신뢰를 선사합니다.</p>
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
+
           </div>
         </section>
 
-        {/* ===== Recommendations Section ===== */}
-        <section className="pc-recom-sec">
-          <div className="pc-recom-container">
-            <div className="pc-sec-header">
-              <h2 className="pc-sec-title">실제 가입 중개사님이 강력 추천합니다!</h2>
-              <p className="pc-sec-desc">전국 수많은 개업 중개사사무소에서 공실뉴스를 통해 고정 비용을 절감하고 있습니다.</p>
-            </div>
+        {/* ━━━ 3. 4대 마케팅 자동화 시스템 (상세 카드) ━━━ */}
+        <section style={{ padding: "75px 0", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
             
-            <div className="pc-recom-grid">
-              {/* Card 1 */}
-              <div className="pc-recom-card">
-                <img className="pc-recom-avatar" src="/signup_broker1.png" alt="대박 공인중개사사무소" />
-                <h4 className="pc-recom-title">대박 공인중개사사무소</h4>
-                <span className="pc-recom-sub">김대박 소장 (서울 강남구)</span>
-                <p className="pc-recom-desc">
-                  "매월 15만 원씩 나가던 사설 공실 사이트 비용을 아끼고 공실뉴스로 완전히 정착했습니다. 지도 검색 기능도 직관적이고 매칭 속도가 아주 빠릅니다."
+            <div style={{ textAlign: "center", marginBottom: 44 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
+                AUTOMATIC MARKETING
+              </span>
+              <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#062828", margin: "8px 0 10px 0", letterSpacing: "-0.5px" }}>
+                공실 등록 시 100% 자동 완성되는 4대 시스템
+              </h2>
+              <p style={{ fontSize: "15px", color: "#64748b", margin: 0 }}>
+                어려운 마케팅 작업은 AI에게 맡기고, 대표님은 계약과 중개에만 집중하세요.
+              </p>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20 }}>
+              
+              <div style={{ background: "#ffffff", padding: "26px 24px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
+                  📄
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 8px 0" }}>1. AI 매매·임대 보고서 자동 생성</h3>
+                <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0 }}>
+                  매물 주소와 조건만 입력하면 고객 브리핑용 고품격 PDF 및 모바일 리포트가 즉시 생성됩니다.
                 </p>
               </div>
 
-              {/* Card 2 */}
-              <div className="pc-recom-card">
-                <img className="pc-recom-avatar" src="/signup_broker2.png" alt="골드밸리 공인중개사사무소" />
-                <h4 className="pc-recom-title">골드밸리 공인중개사사무소</h4>
-                <span className="pc-recom-sub">이밸리 소장 (경기 분당)</span>
-                <p className="pc-recom-desc">
-                  "지역 친목회 카르텔 텃세에 고민이 많았는데, 공실뉴스는 가입 장벽 없이 전국 11만 부동산망과 자유롭게 공동중개할 수 있어서 영업 활로가 뚫렸습니다."
+              <div style={{ background: "#ffffff", padding: "26px 24px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
+                  🎬
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 8px 0" }}>2. 유튜브 매물 쇼츠 & 드론 영상</h3>
+                <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0 }}>
+                  저작권 걱정 없는 드론 항공 영상과 AI 보이스로 1분 만에 유튜브 쇼츠와 릴스를 완성합니다.
                 </p>
               </div>
 
-              {/* Card 3 */}
-              <div className="pc-recom-card">
-                <img className="pc-recom-avatar" src="/signup_broker3.png" alt="에이스 공인중개사사무소" />
-                <h4 className="pc-recom-title">에이스 공인중개사사무소</h4>
-                <span className="pc-recom-sub">박에이스 소장 (부산 해운대)</span>
-                <p className="pc-recom-desc">
-                  "매월 고가의 비용을 지불하던 경공매 정보를 실시간 무료로 보니 부담이 없고, 관심 지역 공실 뉴스 알림 덕분에 매일 고객 관리가 수월해졌습니다."
+              <div style={{ background: "#ffffff", padding: "26px 24px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
+                  ✍️
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 8px 0" }}>3. 네이버 블로그 상위노출 포스팅</h3>
+                <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0 }}>
+                  지역 키워드와 단지 특성을 완벽 분석한 전문 홍보 원고를 클릭 한 번으로 작성 및 배포합니다.
                 </p>
               </div>
-            </div>
-          </div>
-        </section>
 
-        {/* ===== Pricing Section ===== */}
-        <section className="pc-pricing-sec">
-          <div className="pc-pricing-grid">
-            {/* Card 1: Free Realtor Member */}
-            <div className="pc-pricing-card">
-              <span className="pc-price-badge free" style={{ background: "#e0f2fe", color: "#0284c7" }}>100% 무료</span>
-              <h3 className="pc-pricing-card-title">부동산회원</h3>
-              <p className="pc-pricing-card-sub">가입비부터 월정액 이용료까지 평생 단 1원도 들지 않는 기본 회원</p>
-              
-              <div className="pc-pricing-card-divider" />
-              
-              <ul className="pc-pricing-card-features">
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>가입 승인 즉시 평생 100% 무료 제공</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>공동중개 물건 등록 2건 무료</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>공동중개 물건 무제한 무료 열람</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>전국 법원 경매 및 공매 정보 실시간 무료 열람</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>지역별 공실 뉴스 및 부동산 기사 무료 열람</strong>
-                </li>
-              </ul>
-              
-              <div className="pc-pricing-card-price" style={{ marginTop: 12 }}>
-                0원 <span>/ 평생 무료</span>
+              <div style={{ background: "#ffffff", padding: "26px 24px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
+                  🤝
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 8px 0" }}>4. 전국 11만 공동중개망 실시간 매칭</h3>
+                <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0 }}>
+                  등록 즉시 전국의 매칭 공인중개사에게 알림이 전송되어 공동중개 계약 성사율이 극대화됩니다.
+                </p>
               </div>
-              
-              <button 
-                className="pc-pricing-card-btn free-btn"
-                style={{ background: "#0284c7", boxShadow: "0 10px 25px rgba(2, 132, 199, 0.3)" }}
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem('signup_member_type', 'broker');
-                  }
-                  setIsAuthModalOpen(true);
-                }}
-              >
-                무료 회원가입 바로가기
-              </button>
+
             </div>
 
-            {/* Card 2: Gongsilnews Realtor (Premium Member) */}
-            <div className="pc-pricing-card premium">
-              <span className="pc-price-badge free">강력 추천</span>
-              <h3 className="pc-pricing-card-title">공실뉴스부동산</h3>
-              <p className="pc-pricing-card-sub">단지 및 지역의 대표 부동산 권한과 스마트 AI 유튜브 매물 마케팅 솔루션</p>
-              
-              <div className="pc-pricing-card-divider" />
-              
-              <ul className="pc-pricing-card-features">
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>[AI 보고서] 1초 완성 AI 물건/매매 보고서 무제한 생성 &amp; 출력</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>[대본 초안] 유튜브 대본 &amp; 블로그 포스팅 글 자동 작성</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>[유튜브 아카데미] PD 출신 편집장의 부동산 유튜브 직강 &amp; 자료실 제공</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>[독점 권한] 내 지역/단지 공실 등록 20건 상향</strong>
-                </li>
-                <li className="pc-pricing-card-feature-item">
-                  <CheckIcon />
-                  <strong>부동산회원 혜택 모두 포함</strong>
-                </li>
-              </ul>
-              
-              <div className="pc-pricing-card-price" style={{ color: "#0f172a", marginTop: 12 }}>
-                30,000원 <span>/ 월 (VAT 별도)</span>
-              </div>
-              
-              <button 
-                className="pc-pricing-card-btn free-btn"
-                onClick={() => handleApplyClick()}
-              >
-                공실뉴스부동산 신청하기
-              </button>
-            </div>
           </div>
         </section>
 
-        {/* ===== CTA Section ===== */}
-        <section className="pc-new-cta-sec">
-          <div className="pc-new-cta-container">
-            <h2 className="pc-new-cta-title">공실뉴스 부동산이 되세요</h2>
-            <div 
-              className="pc-new-cta-banner"
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem('signup_member_type', 'broker');
-                }
-                setIsAuthModalOpen(true);
-              }}
-              style={{ cursor: "pointer" }}
-            >
-              <img 
-                src="/signup_cta_bg.png" 
-                alt="공실뉴스 부동산이 되세요" 
-                style={{ width: "100%", height: "auto", display: "block", borderRadius: "20px", boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)" }} 
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* ===== FAQ ===== */}
-        <section className="pc-faq-sec">
-          <h2 className="pc-sec-title" style={{ textAlign: "center" }}>자주 묻는 질문</h2>
-          <div className="pc-faq-container">
-            {brokerFaqs.map((faq, i) => (
-              <div key={i} className={`pc-faq-card ${openFaq === i ? 'active-border' : ''}`}>
-                <button className="pc-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                  <span>{faq.q}</span>
-                  <span style={{ transform: openFaq === i ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
-                </button>
-                {openFaq === i && (
-                  <div className="pc-faq-a">{faq.a}</div>
-                )}
+        {/* ━━━ 4. 3대 핵심 수치 STATS ━━━ */}
+        <section style={{ padding: "50px 0", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
+          <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 24px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+            {brokerStats.map((st, i) => (
+              <div key={i} style={{ background: "#f8fafc", padding: "24px 20px", borderRadius: 14, border: "1px solid #e2e8f0", textAlign: "center" }}>
+                <div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginBottom: 6 }}>{st.label}</div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: "#062828", marginBottom: 4 }}>{st.value}</div>
+                <div style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>{st.sub}</div>
               </div>
             ))}
           </div>
         </section>
+
+        {/* ━━━ 5. FAQ 아코디언 ━━━ */}
+        <section style={{ padding: "75px 0", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+          <div style={{ maxWidth: 840, margin: "0 auto", padding: "0 24px" }}>
+            
+            <div style={{ textAlign: "center", marginBottom: 40 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
+                FAQ
+              </span>
+              <h2 style={{ fontSize: "26px", fontWeight: 900, color: "#062828", margin: "6px 0 0 0" }}>
+                자주 묻는 질문
+              </h2>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {brokerFaqs.map((faq, i) => {
+                const isOpen = openFaq === i;
+                return (
+                  <div key={i} style={{ background: "#ffffff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+                    <button
+                      onClick={() => setOpenFaq(isOpen ? null : i)}
+                      style={{ width: "100%", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", textAlign: "left", cursor: "pointer" }}
+                    >
+                      <span style={{ fontSize: 15, fontWeight: 800, color: "#062828" }}>Q. {faq.q}</span>
+                      <span style={{ fontSize: 13, color: "#059669", fontWeight: 800 }}>{isOpen ? "▲" : "▼"}</span>
+                    </button>
+                    {isOpen && (
+                      <div style={{ padding: "0 20px 18px", fontSize: 14, color: "#475569", lineHeight: 1.7, borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
+                        {faq.a}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+        </section>
+
+        {/* ━━━ 6. 하단 CTA 배너 ━━━ */}
+        <section style={{ padding: "70px 24px", backgroundColor: "#062326", color: "#ffffff", textAlign: "center" }}>
+          <div style={{ maxWidth: 700, margin: "0 auto" }}>
+            <h2 style={{ fontSize: 30, fontWeight: 900, margin: "0 0 12px 0", letterSpacing: "-0.5px" }}>
+              내 지역 공실등록, 지금 바로 시작하세요
+            </h2>
+            <p style={{ fontSize: 15.5, color: "#a7f3d0", lineHeight: 1.6, margin: "0 0 28px 0" }}>
+              가입비 0원, 월정액 0원으로 전국 11만 부동산 네트워크와 AI 자동 마케팅을 누려보세요.
+            </p>
+            <button
+              onClick={() => handleApplyClick()}
+              style={{
+                padding: "16px 36px",
+                background: "#059669",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: 12,
+                fontSize: 16.5,
+                fontWeight: 900,
+                cursor: "pointer",
+                boxShadow: "0 4px 16px rgba(5,150,105,0.4)",
+              }}
+            >
+              무료 공실뉴스부동산 신청하기 →
+            </button>
+          </div>
+        </section>
+
       </div>
 
-      {/* ===== Application Overlay & Modal ===== */}
+      {/* ━━━ 신청 모달 ━━━ */}
       {isApplicationOpen && (
-        <div className="application-overlay" onClick={() => setIsApplicationOpen(false)}>
-          <div className="application-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <button className="modal-close-btn" onClick={() => setIsApplicationOpen(false)}>✕</button>
-              <h2 className="modal-title">📰 공실뉴스부동산 가입 신청 (대표 심사)</h2>
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ width: "100%", maxWidth: 480, background: "#ffffff", borderRadius: 16, padding: "28px", boxShadow: "0 10px 40px rgba(0,0,0,0.2)", position: "relative" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: 0 }}>
+                공실뉴스부동산 신청서
+              </h3>
+              <button onClick={() => setIsApplicationOpen(false)} style={{ background: "none", border: "none", fontSize: 20, color: "#94a3b8", cursor: "pointer" }}>✕</button>
             </div>
-            
-            <div className="modal-body">
-              {isAppliedSuccessfully ? (
-                <div style={{ textAlign: "center", padding: "10px 0" }}>
-                  <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>🎉</span>
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#111", margin: "0 0 8px" }}>기자단 신청 완료!</h3>
-                  <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.5, marginBottom: 20, wordBreak: "keep-all" }}>
-                    제출해 주신 주력 단지 및 구역의 중복 신청 여부와 중개인 정보 확인 후 24시간 이내에 승인 문자가 발송됩니다.
-                  </p>
-                  
-                  <div className="bank-info-box">
-                    <h4 className="bank-title">💳 입금 계좌</h4>
-                    <p className="bank-text">
-                      <strong>신한은행 110-482-123456</strong><br/>
-                      예금주: <strong>(주)공실뉴스</strong><br/>
-                      금액: <strong>30,000원</strong> (월 회비)<br/>
-                    </p>
-                  </div>
-                  
-                  <button 
-                    className="submit-btn" 
-                    onClick={() => {
-                      setIsApplicationOpen(false);
-                      setIsAppliedSuccessfully(false);
-                      window.location.reload();
-                    }}
+
+            {isAppliedSuccessfully ? (
+              <div style={{ textAlign: "center", padding: "30px 10px" }}>
+                <div style={{ fontSize: 44, marginBottom: 12 }}>🎉</div>
+                <h4 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 8px 0" }}>신청이 정상 접수되었습니다!</h4>
+                <p style={{ fontSize: 14, color: "#64748b", margin: "0 0 20px 0" }}>담당자가 확인 후 빠른 시일 내에 안내 연락을 드리겠습니다.</p>
+                <button onClick={() => { setIsApplicationOpen(false); setIsAppliedSuccessfully(false); }} style={{ padding: "10px 24px", background: "#059669", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
+                  확인
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleFormSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 4 }}>중개업소 상호명 *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="예: 공실뉴스공인중개사사무소"
+                    value={formData.agencyName}
+                    onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, boxSizing: "border-box" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 4 }}>주요 활동 지역 *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="예: 서울 강남구 역삼동"
+                    value={formData.bizRegion}
+                    onChange={(e) => setFormData({ ...formData, bizRegion: e.target.value })}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, boxSizing: "border-box" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 4 }}>희망 대표 단지/건물명 *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="예: 래미안역삼단지 또는 테헤란빌딩"
+                    value={formData.targetComplex}
+                    onChange={(e) => setFormData({ ...formData, targetComplex: e.target.value })}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, boxSizing: "border-box" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 4 }}>주력 물건 유형</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, boxSizing: "border-box" }}
                   >
-                    확인 및 닫기
+                    <option value="아파트 전문">아파트 전문</option>
+                    <option value="상가/오피스 전문">상가/오피스 전문</option>
+                    <option value="원룸/오피스텔 전문">원룸/오피스텔 전문</option>
+                    <option value="토지/공장/창고 전문">토지/공장/창고 전문</option>
+                    <option value="경·공매 전문">경·공매 전문</option>
+                  </select>
+                </div>
+
+                <div style={{ marginTop: 10 }}>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    style={{ width: "100%", padding: "12px 0", background: "#059669", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 800, cursor: "pointer" }}
+                  >
+                    {isSubmitting ? "신청서 접수 중..." : "무료 신청서 제출하기"}
                   </button>
                 </div>
-              ) : (
-                <form onSubmit={handleFormSubmit}>
-                  <div className="form-group">
-                    <label className="form-label">신청자 이메일</label>
-                    <input className="form-input readonly" type="text" value={user?.email || ""} readOnly />
-                  </div>
+              </form>
+            )}
 
-                  <div className="form-group">
-                    <label className="form-label">부동산 상호명 <span style={{ color: "#ef4444" }}>*</span></label>
-                    <input 
-                      className="form-input" 
-                      type="text" 
-                      placeholder="예: 공실뉴스 공인중개사사무소" 
-                      value={formData.agencyName}
-                      onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">주력 아파트 단지명 <span style={{ color: "#ef4444" }}>*</span></label>
-                    <input 
-                      className="form-input" 
-                      type="text" 
-                      placeholder="예: 마포 래미안 푸르지오 단지" 
-                      value={formData.targetComplex}
-                      onChange={(e) => setFormData({ ...formData, targetComplex: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">주요 활동 지역 <span style={{ color: "#ef4444" }}>*</span></label>
-                    <input 
-                      className="form-input" 
-                      type="text" 
-                      placeholder="예: 서울 마포구 아현동" 
-                      value={formData.bizRegion}
-                      onChange={(e) => setFormData({ ...formData, bizRegion: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">주력 물건 카테고리 <span style={{ color: "#ef4444" }}>*</span></label>
-                    <select 
-                      className="form-select"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    >
-                      <option value="아파트 전문">아파트 전문</option>
-                      <option value="상가/사무실 전문">상가/사무실 전문</option>
-                      <option value="원룸/오피스텔 전문">원룸/오피스텔 전문</option>
-                      <option value="토지/빌딩 전문">토지/빌딩 전문</option>
-                      <option value="분양/재개발 전문">분양/재개발 전문</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">신청 메모 (기타 요청사항)</label>
-                    <textarea 
-                      className="form-textarea" 
-                      placeholder="기타 요청사항을 남겨주세요." 
-                      value={formData.memo}
-                      onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="bank-info-box">
-                    <h4 className="bank-title">💳 월 회비 결제 안내</h4>
-                    <p className="bank-text">
-                      <strong>금액: 월 30,000원</strong><br/>
-                      <strong>신한은행 110-482-123456</strong> (예금주: 주식회사 공실뉴스)<br/>
-                    </p>
-                  </div>
-
-                  <button className="submit-btn" type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "신청 처리 중..." : "독점 권한 심사 및 신청하기 ✨"}
-                  </button>
-                </form>
-              )}
-            </div>
           </div>
         </div>
       )}
