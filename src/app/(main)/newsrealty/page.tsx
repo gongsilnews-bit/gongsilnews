@@ -212,16 +212,63 @@ export default function NewsRealtyPage() {
           </div>
         </section>
 
-        {/* ━━━ 2. 3대 핵심 수치 STATS (히어로 직하단) ━━━ */}
-        <section style={{ padding: "40px 0", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-          <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 24px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
-            {brokerStats.map((st, i) => (
-              <div key={i} style={{ background: "#ffffff", padding: "24px 20px", borderRadius: 14, border: "1px solid #e2e8f0", textAlign: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.03)" }}>
-                <div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginBottom: 6 }}>{st.label}</div>
-                <div style={{ fontSize: 28, fontWeight: 900, color: "#0f172a", marginBottom: 4 }}>{st.value}</div>
-                <div style={{ fontSize: 12, color: "#2563eb", fontWeight: 700 }}>{st.sub}</div>
+        {/* ━━━ 2. 3대 핵심 혜택 카드 (히어로 직하단) ━━━ */}
+        <section style={{ padding: "40px 0 35px", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+          <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18, marginBottom: 18 }}>
+              
+              {/* 1. 무료 공동중개망 */}
+              <div style={{ background: "#ffffff", padding: "24px 20px", borderRadius: 14, border: "1px solid #e2e8f0", textAlign: "left", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#eff6ff", color: "#2563eb", padding: "4px 10px", borderRadius: 6, fontSize: 12, fontWeight: 800, marginBottom: 12 }}>
+                    <span>✓</span> 전국 부동산 누구나 가입하는
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", lineHeight: 1.4, marginBottom: 6 }}>
+                    100% 무료 공동중개망
+                  </div>
+                  <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
+                    타사 월 10~20만원 회비 ZERO! 전국 11만 부동산 실매물 평생 무료 열람
+                  </div>
+                </div>
               </div>
-            ))}
+
+              {/* 2. AI 물건보고서 */}
+              <div style={{ background: "#ffffff", padding: "24px 20px", borderRadius: 14, border: "1px solid #e2e8f0", textAlign: "left", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fef3c7", color: "#d97706", padding: "4px 10px", borderRadius: 6, fontSize: 12, fontWeight: 800, marginBottom: 12 }}>
+                    <span>✓</span> 중개사에게 꼭 필요한
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", lineHeight: 1.4, marginBottom: 6 }}>
+                    1초 완성 AI 물건보고서 3건 무료
+                  </div>
+                  <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
+                    지번만 입력하면 고객 브리핑용 고품격 매매·임대 제안서 1초 완성
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. 경공매 무료 열람 */}
+              <div style={{ background: "#ffffff", padding: "24px 20px", borderRadius: 14, border: "1px solid #e2e8f0", textAlign: "left", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#ecfdf5", color: "#059669", padding: "4px 10px", borderRadius: 6, fontSize: 12, fontWeight: 800, marginBottom: 12 }}>
+                    <span>✓</span> 실시간 업데이트
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", lineHeight: 1.4, marginBottom: 6 }}>
+                    전국 법원 경공매 물건 무료 열람
+                  </div>
+                  <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
+                    법원 실시간 경매·공매 물건 정보 및 권리분석 서식 100% 무료 제공
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* 회원 유형 안내 */}
+            <div style={{ background: "#f1f5f9", borderRadius: 10, padding: "12px 18px", fontSize: 13, color: "#475569", lineHeight: 1.7, display: "flex", justifyContent: "center", gap: 24, flexWrap: "wrap", textAlign: "center" }}>
+              <div>· <strong>일반회원</strong> : 공실등록 3건 무료, 경공매 열람 가능, 공동중개 열람 불가</div>
+              <div>· <strong>부동산회원</strong> : 공동중개 3건 등록 무료, 경공매 열람 가능, <strong style={{ color: "#2563eb" }}>공동중개 열람 가능</strong></div>
+            </div>
           </div>
         </section>
 
@@ -400,67 +447,7 @@ export default function NewsRealtyPage() {
           </div>
         </section>
 
-        {/* ━━━ 5. 3대 핵심 혜택 및 회원 권한 안내 (FAQ 상단) ━━━ */}
-        <section style={{ padding: "70px 24px", backgroundColor: "#091e3a", color: "#ffffff", textAlign: "center" }}>
-          <div style={{ maxWidth: 720, margin: "0 auto" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(251, 191, 36, 0.15)", border: "1px solid rgba(251, 191, 36, 0.35)", padding: "5px 18px", borderRadius: 30, fontSize: 13.5, fontWeight: 800, color: "#fbbf24", marginBottom: 18 }}>
-              <span>✨</span>
-              <span>공실뉴스 스마트 중개망</span>
-            </div>
-
-            <h2 style={{ fontSize: 32, fontWeight: 900, margin: "0 0 12px 0", letterSpacing: "-0.5px" }}>
-              부동산이세요?<br />
-              <span style={{ color: "#fbbf24" }}>공동중개 등록/열람 평생 무료!</span>
-            </h2>
-
-            <p style={{ fontSize: 16, color: "#bae6fd", lineHeight: 1.65, margin: "0 0 28px 0" }}>
-              지금 가입하시면, 공동중개 3건 등록/열람, AI물건보고서, 그리고 전국 법원 경공매 정보를 무료로 열람하실 수 있습니다.
-            </p>
-
-            {/* 3대 핵심 혜택 카드 */}
-            <div style={{ background: "rgba(15, 23, 42, 0.75)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 16, padding: "24px 28px", textAlign: "left", marginBottom: 18, boxShadow: "0 10px 30px rgba(0,0,0,0.3)" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 14, fontSize: 15, color: "#f8fafc", fontWeight: 700 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ color: "#fbbf24", fontSize: 18 }}>✓</span>
-                  <span><strong>전국 부동산 누구나 가입하는</strong> 100% 무료 공동중개망</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ color: "#fbbf24", fontSize: 18 }}>✓</span>
-                  <span><strong>중개사에게 꼭 필요한</strong> 1초 완성 AI 물건보고서 3건 무료</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ color: "#fbbf24", fontSize: 18 }}>✓</span>
-                  <span><strong>실시간 업데이트</strong> 전국 법원 경공매 물건 무료 열람</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 회원 유형 안내 */}
-            <div style={{ fontSize: 13.5, color: "#94a3b8", lineHeight: 1.8, marginBottom: 28 }}>
-              <div>· <strong>일반회원</strong> : 공실등록 3건 무료, 경공매 열람 가능, 공동중개 열람 불가</div>
-              <div>· <strong>부동산회원</strong> : 공동중개 3건 등록 무료, 경공매 열람 가능, <span style={{ color: "#fbbf24", fontWeight: 800 }}>공동중개 열람 가능</span></div>
-            </div>
-
-            <button
-              onClick={() => handleApplyClick()}
-              style={{
-                padding: "16px 38px",
-                background: "#2563eb",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: 12,
-                fontSize: 16.5,
-                fontWeight: 900,
-                cursor: "pointer",
-                boxShadow: "0 4px 16px rgba(37,99,235,0.4)",
-              }}
-            >
-              무료 공실뉴스부동산 신청하기 →
-            </button>
-          </div>
-        </section>
-
-        {/* ━━━ 6. FAQ 아코디언 ━━━ */}
+        {/* ━━━ 5. FAQ 아코디언 ━━━ */}
         <section style={{ padding: "75px 0", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
           <div style={{ maxWidth: 840, margin: "0 auto", padding: "0 24px" }}>
             
