@@ -76,16 +76,12 @@ const SECTION1_TO_KEY: Record<string, string> = {
   "기타": "news_etc"
 };
 
-// PC와 동일한 2차 카테고리 맵
+// 4대 표준 1차/2차 카테고리 맵
 const SECTION2_MAP: Record<string, string[]> = {
   "공실현장": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
-  "공실뉴스": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
-  "정책시장": ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타"],
-  "부동산·경제": ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타"],
-  "AI중개실무": ["AI/NEWS", "부동산유튜브/블로그", "공실/임대관리"],
-  "AI마케팅": ["AI/NEWS", "부동산유튜브/블로그", "공실/임대관리"],
-  "기타": ["인물/인터뷰", "중개실무/인테리어Tip", "맛집/여행/건강", "스포츠/연예/기타"],
-  "라이프·오피니언": ["인물/인터뷰", "중개실무/인테리어Tip", "맛집/여행/건강", "스포츠/연예/기타"],
+  "정책시장": ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타", "공실/임대관리"],
+  "AI중개실무": ["AI/NEWS", "부동산유튜브/블로그", "중개실무/인테리어Tip", "인물/인터뷰"],
+  "기타": ["맛집/여행/건강", "스포츠/연예/기타"],
 };
 
 // Icons removed as per user request (transformed to pill menus)
@@ -1458,10 +1454,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   </button>
                   <select value={section1Filter} onChange={(e) => { setSection1Filter(e.target.value); setSection2Filter(""); }} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section1Filter ? "1.5px solid #508bf5" : "1px solid #d1d5db", background: section1Filter ? "#f0f6ff" : "#fff", color: section1Filter ? "#508bf5" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
                     <option value="">1차섹션 전체</option>
-                    <option value="공실뉴스">공실뉴스</option>
-                    <option value="부동산·경제">부동산·경제</option>
-                    <option value="AI마케팅">AI마케팅</option>
-                    <option value="라이프·오피니언">라이프·오피니언</option>
+                    <option value="공실현장">공실현장</option>
+                    <option value="정책시장">정책시장</option>
+                    <option value="AI중개실무">AI중개실무</option>
+                    <option value="기타">기타</option>
                   </select>
                   <select value={section2Filter} onChange={(e) => setSection2Filter(e.target.value)} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section2Filter ? "1.5px solid #508bf5" : "1px solid #d1d5db", background: section2Filter ? "#f0f6ff" : "#fff", color: section2Filter ? "#508bf5" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
                     <option value="">2차섹션 전체</option>

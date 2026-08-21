@@ -304,13 +304,13 @@ export default function MobileHomeClient(props: Props) {
       </div>
 
 
-      {/* ② 공실뉴스 (텍스트 기사 5건) */}
-      <NewsSection title="공실뉴스" href="/m/news_gongsil" articles={gongsilTextArticles.length > 0 ? gongsilTextArticles : gongsilArticles.slice(0, 5)} onArticleClick={saveHomeScroll} />
+      {/* ② 공실현장 (텍스트 기사 5건) */}
+      <NewsSection title="공실현장" href="/m/news_gongsil" articles={gongsilTextArticles.length > 0 ? gongsilTextArticles : gongsilArticles.slice(0, 5)} onArticleClick={saveHomeScroll} />
 
-      {/* ③ 부동산·경제 */}
-      <NewsSection title="부동산·경제" href="/m/news_politics" articles={realestateArticles} onArticleClick={saveHomeScroll} />
+      {/* ③ 정책시장 */}
+      <NewsSection title="정책시장" href="/m/news_politics" articles={realestateArticles} onArticleClick={saveHomeScroll} />
 
-      {/* ④ 공실뉴스 영상 (PC 검은배경 VideoGrid 모바일 버전 - 3.8초 자동 슬라이드) */}
+      {/* ④ 공실현장 영상 (PC 검은배경 VideoGrid 모바일 버전 - 3.8초 자동 슬라이드) */}
       {gongsilVideoArticles.length > 0 && (
         <div 
           style={{ background: "#111", marginBottom: 12 }}
@@ -320,7 +320,7 @@ export default function MobileHomeClient(props: Props) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 16px 14px" }}>
             <Link href="/m/news_gongsil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
               <svg width="24" height="17" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg>
-              <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>공실뉴스 &gt;</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>공실현장 &gt;</span>
             </Link>
             <Link href="/m/news_gongsil" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>더보기 ›</Link>
           </div>
@@ -360,11 +360,11 @@ export default function MobileHomeClient(props: Props) {
         </div>
       )}
 
-      {/* ⑤ AI마케팅 */}
-      <NewsSection title="AI마케팅" href="/m/news_marketing" articles={marketingArticles} onArticleClick={saveHomeScroll} />
+      {/* ⑤ AI중개실무 */}
+      <NewsSection title="AI중개실무" href="/m/news_marketing" articles={marketingArticles} onArticleClick={saveHomeScroll} />
 
-      {/* ⑥ 라이프·오피니언 */}
-      <NewsSection title="라이프·오피니언" href="/m/news_etc" articles={lifeArticles} onArticleClick={saveHomeScroll} />
+      {/* ⑥ 기타 */}
+      <NewsSection title="기타" href="/m/news_etc" articles={lifeArticles} onArticleClick={saveHomeScroll} />
 
       {/* ⑨ 부동산특강 (PC SpecialLectureBanner 대응) */}
       {lectures.length > 0 && (
