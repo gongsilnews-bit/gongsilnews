@@ -140,32 +140,32 @@ export default function MobileNewsRealtyPage() {
       <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", paddingBottom: 80, paddingTop: 50 }}>
         
         {/* ── 고정 상단 헤더 ── */}
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: 50, background: "#062326", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", zIndex: 50, borderBottom: "1px solid #134e4a", boxSizing: "border-box" }}>
-          <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "#a7f3d0", padding: "4px", cursor: "pointer", display: "flex", alignItems: "center" }}>
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: 50, background: "#091e3a", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", zIndex: 50, borderBottom: "1px solid #1e3a8a", boxSizing: "border-box" }}>
+          <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "#bae6fd", padding: "4px", cursor: "pointer", display: "flex", alignItems: "center" }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
           </button>
           <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>공실뉴스부동산</div>
           <div style={{ width: 24 }} />
         </div>
 
-        {/* ━━━ 1. 모바일 히어로 배너 (딥 포레스트 그린) ━━━ */}
-        <section style={{ backgroundColor: "#062326", color: "#ffffff", padding: "28px 16px 36px", textAlign: "center" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, color: "#6ee7b7", marginBottom: 14 }}>
+        {/* ━━━ 1. 모바일 히어로 배너 (블루 & 딥 네이비) ━━━ */}
+        <section style={{ backgroundColor: "#091e3a", color: "#ffffff", padding: "28px 16px 36px", textAlign: "center" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.35)", padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, color: "#38bdf8", marginBottom: 14 }}>
             <span>🏢</span>
-            <span>전국 <strong style={{ color: "#34d399" }}>11만</strong> 부동산과 함께하는 공실뉴스</span>
+            <span>전국 <strong style={{ color: "#60a5fa" }}>11만</strong> 부동산과 함께하는 공실뉴스</span>
           </div>
 
           <h1 style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 12px 0" }}>
-            내 지역 공실을 <span style={{ color: "#34d399" }}>등록만 하세요!</span><br />
-            부동산 마케팅이 <span style={{ color: "#34d399" }}>자동</span>으로 시작됩니다.
+            내 지역 공실을 <span style={{ color: "#38bdf8" }}>등록만 하세요!</span><br />
+            부동산 마케팅이 <span style={{ color: "#38bdf8" }}>자동</span>으로 시작됩니다.
           </h1>
 
-          <p style={{ fontSize: 13, color: "#a7f3d0", lineHeight: 1.55, margin: "0 0 22px 0", wordBreak: "keep-all" }}>
+          <p style={{ fontSize: 13, color: "#bae6fd", lineHeight: 1.55, margin: "0 0 22px 0", wordBreak: "keep-all" }}>
             공실만 입력하면 완성되는 온/오프라인 AI 매매 보고서와 유튜브/블로그 포스팅, AI 실무 부동산 특강까지 무료로 제공됩니다.
           </p>
 
           {/* 유튜브 비디오 프레임 */}
-          <div style={{ width: "100%", aspectRatio: "16/9", borderRadius: 12, overflow: "hidden", border: "1px solid #134e4a", marginBottom: 20, boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+          <div style={{ width: "100%", aspectRatio: "16/9", borderRadius: 12, overflow: "hidden", border: "1px solid #1e3a8a", marginBottom: 20, boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
             <iframe
               width="100%"
               height="100%"
@@ -182,26 +182,26 @@ export default function MobileNewsRealtyPage() {
             style={{
               width: "100%",
               padding: "14px 0",
-              background: "#059669",
+              background: "#2563eb",
               color: "#ffffff",
               border: "none",
               borderRadius: 10,
               fontSize: 15.5,
               fontWeight: 800,
               cursor: "pointer",
-              boxShadow: "0 4px 14px rgba(5,150,105,0.4)",
+              boxShadow: "0 4px 14px rgba(37,99,235,0.4)",
             }}
           >
             ✨ 무료 공실뉴스부동산 신청하기
           </button>
         </section>
 
-        {/* ━━━ 2. 3D 파스텔 아바타 후기 섹션 ━━━ */}
+        {/* ━━━ 2. 3D 파스텔 아바타 후기 섹션 (블루 톤) ━━━ */}
         <section style={{ padding: "36px 16px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
           <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 900, color: "#062828", margin: "0 0 6px 0", lineHeight: 1.35 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 6px 0", lineHeight: 1.35 }}>
               나이가 많아서요? 컴맹이라서요?<br />
-              <span style={{ color: "#059669" }}>초보라서 못 할 것 같다고요?</span>
+              <span style={{ color: "#2563eb" }}>초보라서 못 할 것 같다고요?</span>
             </h2>
             <p style={{ fontSize: 12.5, color: "#64748b", margin: 0, lineHeight: 1.5 }}>
               그 걱정, 이제 내려놓으셔도 됩니다.<br />먼저 해내신 분들이 증명했거든요.
@@ -227,10 +227,10 @@ export default function MobileNewsRealtyPage() {
                   <img src={item.image} alt={item.role} style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 8 }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: "inline-block", background: "#ecfdf5", color: "#047857", fontSize: 10.5, fontWeight: 800, padding: "2px 6px", borderRadius: 4, marginBottom: 4 }}>
+                  <span style={{ display: "inline-block", background: "#eff6ff", color: "#1d4ed8", fontSize: 10.5, fontWeight: 800, padding: "2px 6px", borderRadius: 4, marginBottom: 4 }}>
                     {item.role}
                   </span>
-                  <p style={{ fontSize: 12.5, fontWeight: 700, color: "#062828", lineHeight: 1.45, margin: "0 0 4px 0" }}>
+                  <p style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", lineHeight: 1.45, margin: "0 0 4px 0" }}>
                     {item.quote}
                   </p>
                   <span style={{ fontSize: 11, color: "#64748b" }}>
@@ -242,33 +242,33 @@ export default function MobileNewsRealtyPage() {
           </div>
         </section>
 
-        {/* ━━━ 3. 4대 마케팅 자동화 시스템 ━━━ */}
+        {/* ━━━ 3. 4대 마케팅 자동화 시스템 (블루) ━━━ */}
         <section style={{ padding: "36px 16px", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
           <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 800, color: "#059669" }}>AUTOMATIC MARKETING</span>
-            <h2 style={{ fontSize: 18, fontWeight: 900, color: "#062828", margin: "4px 0 0 0" }}>
+            <span style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb" }}>AUTOMATIC MARKETING</span>
+            <h2 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "4px 0 0 0" }}>
               공실 등록 시 100% 자동 완성
             </h2>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ background: "#ffffff", padding: "16px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14.5, fontWeight: 800, color: "#062828", marginBottom: 4 }}>📄 1. AI 매매·임대 보고서 자동 생성</div>
+              <div style={{ fontSize: 14.5, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>📄 1. AI 매매·임대 보고서 자동 생성</div>
               <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.5 }}>매물 입력 시 고객 브리핑용 고품격 PDF/모바일 리포트 즉시 완성</div>
             </div>
 
             <div style={{ background: "#ffffff", padding: "16px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14.5, fontWeight: 800, color: "#062828", marginBottom: 4 }}>🎬 2. 유튜브 매물 쇼츠 & 드론 영상</div>
+              <div style={{ fontSize: 14.5, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>🎬 2. 유튜브 매물 쇼츠 & 드론 영상</div>
               <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.5 }}>저작권 무료 드론 영상과 AI 보이스로 1분 만에 매물 쇼츠 제작</div>
             </div>
 
             <div style={{ background: "#ffffff", padding: "16px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14.5, fontWeight: 800, color: "#062828", marginBottom: 4 }}>✍️ 3. 블로그 상위노출 원클릭 포스팅</div>
+              <div style={{ fontSize: 14.5, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>✍️ 3. 블로그 상위노출 원클릭 포스팅</div>
               <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.5 }}>지역 키워드 최적화 전문 원고를 AI가 자동 작성 및 배포</div>
             </div>
 
             <div style={{ background: "#ffffff", padding: "16px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14.5, fontWeight: 800, color: "#062828", marginBottom: 4 }}>🤝 4. 전국 11만 공동중개망 실시간 매칭</div>
+              <div style={{ fontSize: 14.5, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>🤝 4. 전국 11만 공동중개망 실시간 매칭</div>
               <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.5 }}>전국 중개사 네트워크로 매물이 즉시 공유되어 빠른 계약 성사</div>
             </div>
           </div>
@@ -280,7 +280,7 @@ export default function MobileNewsRealtyPage() {
             {brokerStats.map((st, i) => (
               <div key={i} style={{ background: "#f8fafc", padding: "14px 8px", borderRadius: 10, border: "1px solid #e2e8f0", textAlign: "center" }}>
                 <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, marginBottom: 2 }}>{st.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: "#062828" }}>{st.value}</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "#0f172a" }}>{st.value}</div>
               </div>
             ))}
           </div>
@@ -288,7 +288,7 @@ export default function MobileNewsRealtyPage() {
 
         {/* ━━━ 5. FAQ ━━━ */}
         <section style={{ padding: "36px 16px", backgroundColor: "#f8fafc" }}>
-          <div style={{ fontSize: 16, fontWeight: 900, color: "#062828", marginBottom: 14 }}>
+          <div style={{ fontSize: 16, fontWeight: 900, color: "#0f172a", marginBottom: 14 }}>
             자주 묻는 질문 FAQ
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -300,8 +300,8 @@ export default function MobileNewsRealtyPage() {
                     onClick={() => setOpenFaq(isOpen ? null : i)}
                     style={{ width: "100%", padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", textAlign: "left", cursor: "pointer" }}
                   >
-                    <span style={{ fontSize: 13.5, fontWeight: 700, color: "#062828" }}>Q. {faq.q}</span>
-                    <span style={{ fontSize: 12, color: "#059669" }}>{isOpen ? "▲" : "▼"}</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>Q. {faq.q}</span>
+                    <span style={{ fontSize: 12, color: "#2563eb" }}>{isOpen ? "▲" : "▼"}</span>
                   </button>
                   {isOpen && (
                     <div style={{ padding: "0 14px 12px", fontSize: 12.5, color: "#475569", lineHeight: 1.6, borderTop: "1px solid #f1f5f9", paddingTop: 8 }}>
@@ -321,7 +321,7 @@ export default function MobileNewsRealtyPage() {
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ width: "100%", maxWidth: 360, background: "#ffffff", borderRadius: 14, padding: "20px", position: "relative" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#062828", margin: 0 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: 0 }}>
                 공실뉴스부동산 신청서
               </h3>
               <button onClick={() => setIsApplicationOpen(false)} style={{ background: "none", border: "none", fontSize: 18, color: "#94a3b8" }}>✕</button>
@@ -330,9 +330,9 @@ export default function MobileNewsRealtyPage() {
             {isAppliedSuccessfully ? (
               <div style={{ textAlign: "center", padding: "20px 0" }}>
                 <div style={{ fontSize: 36, marginBottom: 8 }}>🎉</div>
-                <h4 style={{ fontSize: 16, fontWeight: 800, color: "#062828", margin: "0 0 6px 0" }}>신청이 접수되었습니다!</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: "0 0 6px 0" }}>신청이 접수되었습니다!</h4>
                 <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 16px 0" }}>확인 후 신속히 연락드리겠습니다.</p>
-                <button onClick={() => { setIsApplicationOpen(false); setIsAppliedSuccessfully(false); }} style={{ padding: "8px 20px", background: "#059669", color: "#fff", border: "none", borderRadius: 6, fontWeight: 700 }}>
+                <button onClick={() => { setIsApplicationOpen(false); setIsAppliedSuccessfully(false); }} style={{ padding: "8px 20px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontWeight: 700 }}>
                   확인
                 </button>
               </div>
@@ -393,7 +393,7 @@ export default function MobileNewsRealtyPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    style={{ width: "100%", padding: "10px 0", background: "#059669", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 800, cursor: "pointer" }}
+                    style={{ width: "100%", padding: "10px 0", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 800, cursor: "pointer" }}
                   >
                     {isSubmitting ? "신청 중..." : "무료 신청서 제출"}
                   </button>

@@ -155,30 +155,30 @@ export default function NewsRealtyPage() {
 
       <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", paddingBottom: 100 }}>
         
-        {/* ━━━ 1. HERO BANNER (윤자동 딥 포레스트 그린 테마) ━━━ */}
-        <section style={{ backgroundColor: "#062326", color: "#ffffff", padding: "80px 24px 70px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        {/* ━━━ 1. HERO BANNER (블루 & 딥 네이비 테마) ━━━ */}
+        <section style={{ backgroundColor: "#091e3a", color: "#ffffff", padding: "80px 24px 70px", textAlign: "center", position: "relative", overflow: "hidden" }}>
           <div style={{ maxWidth: 860, margin: "0 auto", position: "relative", zIndex: 2 }}>
             
             {/* 뱃지 */}
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", padding: "6px 18px", borderRadius: 30, fontSize: 13.5, fontWeight: 700, color: "#6ee7b7", marginBottom: 24 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(56, 189, 248, 0.15)", border: "1px solid rgba(56, 189, 248, 0.35)", padding: "6px 18px", borderRadius: 30, fontSize: 13.5, fontWeight: 700, color: "#38bdf8", marginBottom: 24 }}>
               <span>🏢</span>
-              <span>전국 <strong style={{ color: "#34d399" }}>11만</strong> 공인중개사가 함께하는 공실뉴스</span>
+              <span>전국 <strong style={{ color: "#60a5fa" }}>11만</strong> 공인중개사가 함께하는 공실뉴스</span>
             </div>
 
             {/* 메인 헤드라인 */}
             <h1 style={{ fontSize: 44, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-1.5px", margin: "0 0 18px 0" }}>
-              내 지역 공실을 <span style={{ color: "#34d399" }}>등록만 하세요!</span><br />
-              부동산 마케팅이 <span style={{ color: "#34d399" }}>자동</span>으로 시작됩니다.
+              내 지역 공실을 <span style={{ color: "#38bdf8" }}>등록만 하세요!</span><br />
+              부동산 마케팅이 <span style={{ color: "#38bdf8" }}>자동</span>으로 시작됩니다.
             </h1>
 
-            <p style={{ fontSize: 17, color: "#a7f3d0", lineHeight: 1.7, margin: "0 0 36px 0", wordBreak: "keep-all" }}>
+            <p style={{ fontSize: 17, color: "#bae6fd", lineHeight: 1.7, margin: "0 0 36px 0", wordBreak: "keep-all" }}>
               공실만 입력하면 완성되는 온/오프라인 AI 매매 보고서와 유튜브/블로그 포스팅,<br />
               AI 실무 부동산 유튜브 특강(드론영상 저작권 무료) 까지,<br />
               부동산 마케팅이 쉬워집니다.
             </p>
 
             {/* 유튜브 영상 프레임 */}
-            <div style={{ maxWidth: 740, margin: "0 auto 36px", width: "100%", aspectRatio: "16/9", borderRadius: 16, overflow: "hidden", boxShadow: "0 25px 60px rgba(0,0,0,0.5)", border: "1px solid #134e4a" }}>
+            <div style={{ maxWidth: 740, margin: "0 auto 36px", width: "100%", aspectRatio: "16/9", borderRadius: 16, overflow: "hidden", boxShadow: "0 25px 60px rgba(0,0,0,0.5)", border: "1px solid #1e3a8a" }}>
               <iframe
                 width="100%"
                 height="100%"
@@ -191,18 +191,18 @@ export default function NewsRealtyPage() {
             </div>
 
             {/* 4대 혜택 체크리스트 */}
-            <div style={{ display: "flex", justifyContent: "center", gap: 20, flexWrap: "wrap", fontSize: 14, color: "#d1fae5", fontWeight: 700 }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 20, flexWrap: "wrap", fontSize: 14, color: "#e0f2fe", fontWeight: 700 }}>
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#34d399" }}>✓</span> 평생 100% 무료 회원
+                <span style={{ color: "#38bdf8" }}>✓</span> 평생 100% 무료 회원
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#34d399" }}>✓</span> 실시간 공동중개망 연동
+                <span style={{ color: "#38bdf8" }}>✓</span> 실시간 공동중개망 연동
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#34d399" }}>✓</span> AI 매물 보고서 자동 생성
+                <span style={{ color: "#38bdf8" }}>✓</span> AI 매물 보고서 자동 생성
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#34d399" }}>✓</span> 전국 경·공매 권리분석 무료
+                <span style={{ color: "#38bdf8" }}>✓</span> 전국 경·공매 권리분석 무료
               </span>
             </div>
 
@@ -212,14 +212,14 @@ export default function NewsRealtyPage() {
                 onClick={() => handleApplyClick()}
                 style={{
                   padding: "16px 36px",
-                  background: "#059669",
+                  background: "#2563eb",
                   color: "#ffffff",
                   border: "none",
                   borderRadius: 12,
                   fontSize: 17,
                   fontWeight: 900,
                   cursor: "pointer",
-                  boxShadow: "0 6px 20px rgba(5,150,105,0.4)",
+                  boxShadow: "0 6px 20px rgba(37,99,235,0.4)",
                   transition: "all 0.2s",
                 }}
               >
@@ -230,14 +230,14 @@ export default function NewsRealtyPage() {
           </div>
         </section>
 
-        {/* ━━━ 2. 3D PASTEL AVATARS: 나이가 많아서요? 코딩/컴퓨터를 못해서요? (윤자동 증명 섹션) ━━━ */}
+        {/* ━━━ 2. 3D PASTEL AVATARS: 나이가 많아서요? 코딩/컴퓨터를 못해서요? (블루 톤 윤자동 증명 섹션) ━━━ */}
         <section style={{ padding: "80px 0 75px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
           <div style={{ maxWidth: 880, margin: "0 auto", padding: "0 24px" }}>
             
             <div style={{ textAlign: "center", marginBottom: 44 }}>
-              <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#062828", margin: "0 0 10px 0", letterSpacing: "-0.5px", lineHeight: 1.35 }}>
+              <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#0f172a", margin: "0 0 10px 0", letterSpacing: "-0.5px", lineHeight: 1.35 }}>
                 나이가 많아서요? 컴퓨터를 잘 못 다뤄서요?<br />
-                <span style={{ color: "#059669" }}>초보라서 AI 마케팅이 어렵다고요?</span>
+                <span style={{ color: "#2563eb" }}>초보라서 AI 마케팅이 어렵다고요?</span>
               </h2>
               <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.6, margin: "0 0 4px 0" }}>
                 그 걱정, 이제 내려놓으셔도 됩니다.
@@ -278,10 +278,10 @@ export default function NewsRealtyPage() {
 
                     {/* 본문 텍스트 */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "inline-block", background: "#ecfdf5", color: "#047857", fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 6, marginBottom: 10 }}>
+                      <div style={{ display: "inline-block", background: "#eff6ff", color: "#1d4ed8", fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 6, marginBottom: 10 }}>
                         {item.role}
                       </div>
-                      <p style={{ fontSize: 16, fontWeight: 800, color: "#062828", lineHeight: 1.55, margin: "0 0 10px 0", letterSpacing: "-0.2px" }}>
+                      <p style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", lineHeight: 1.55, margin: "0 0 10px 0", letterSpacing: "-0.2px" }}>
                         {item.quote}
                       </p>
                       <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>
@@ -312,10 +312,10 @@ export default function NewsRealtyPage() {
           <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
             
             <div style={{ textAlign: "center", marginBottom: 44 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#2563eb", letterSpacing: "1px", textTransform: "uppercase" }}>
                 AUTOMATIC MARKETING
               </span>
-              <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#062828", margin: "8px 0 10px 0", letterSpacing: "-0.5px" }}>
+              <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#0f172a", margin: "8px 0 10px 0", letterSpacing: "-0.5px" }}>
                 공실 등록 시 100% 자동 완성되는 4대 시스템
               </h2>
               <p style={{ fontSize: "15px", color: "#64748b", margin: 0 }}>
@@ -326,40 +326,40 @@ export default function NewsRealtyPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20 }}>
               
               <div style={{ background: "#ffffff", padding: "26px 24px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
                   📄
                 </div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 8px 0" }}>1. AI 매매·임대 보고서 자동 생성</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: "0 0 8px 0" }}>1. AI 매매·임대 보고서 자동 생성</h3>
                 <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0 }}>
                   매물 주소와 조건만 입력하면 고객 브리핑용 고품격 PDF 및 모바일 리포트가 즉시 생성됩니다.
                 </p>
               </div>
 
               <div style={{ background: "#ffffff", padding: "26px 24px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
                   🎬
                 </div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 8px 0" }}>2. 유튜브 매물 쇼츠 & 드론 영상</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: "0 0 8px 0" }}>2. 유튜브 매물 쇼츠 & 드론 영상</h3>
                 <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0 }}>
                   저작권 걱정 없는 드론 항공 영상과 AI 보이스로 1분 만에 유튜브 쇼츠와 릴스를 완성합니다.
                 </p>
               </div>
 
               <div style={{ background: "#ffffff", padding: "26px 24px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
                   ✍️
                 </div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 8px 0" }}>3. 네이버 블로그 상위노출 포스팅</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: "0 0 8px 0" }}>3. 네이버 블로그 상위노출 포스팅</h3>
                 <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0 }}>
                   지역 키워드와 단지 특성을 완벽 분석한 전문 홍보 원고를 클릭 한 번으로 작성 및 배포합니다.
                 </p>
               </div>
 
               <div style={{ background: "#ffffff", padding: "26px 24px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#ecfdf5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
                   🤝
                 </div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 8px 0" }}>4. 전국 11만 공동중개망 실시간 매칭</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: "0 0 8px 0" }}>4. 전국 11만 공동중개망 실시간 매칭</h3>
                 <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0 }}>
                   등록 즉시 전국의 매칭 공인중개사에게 알림이 전송되어 공동중개 계약 성사율이 극대화됩니다.
                 </p>
@@ -376,8 +376,8 @@ export default function NewsRealtyPage() {
             {brokerStats.map((st, i) => (
               <div key={i} style={{ background: "#f8fafc", padding: "24px 20px", borderRadius: 14, border: "1px solid #e2e8f0", textAlign: "center" }}>
                 <div style={{ fontSize: 13, color: "#64748b", fontWeight: 700, marginBottom: 6 }}>{st.label}</div>
-                <div style={{ fontSize: 28, fontWeight: 900, color: "#062828", marginBottom: 4 }}>{st.value}</div>
-                <div style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>{st.sub}</div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: "#0f172a", marginBottom: 4 }}>{st.value}</div>
+                <div style={{ fontSize: 12, color: "#2563eb", fontWeight: 700 }}>{st.sub}</div>
               </div>
             ))}
           </div>
@@ -388,10 +388,10 @@ export default function NewsRealtyPage() {
           <div style={{ maxWidth: 840, margin: "0 auto", padding: "0 24px" }}>
             
             <div style={{ textAlign: "center", marginBottom: 40 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#2563eb", letterSpacing: "1px", textTransform: "uppercase" }}>
                 FAQ
               </span>
-              <h2 style={{ fontSize: "26px", fontWeight: 900, color: "#062828", margin: "6px 0 0 0" }}>
+              <h2 style={{ fontSize: "26px", fontWeight: 900, color: "#0f172a", margin: "6px 0 0 0" }}>
                 자주 묻는 질문
               </h2>
             </div>
@@ -405,8 +405,8 @@ export default function NewsRealtyPage() {
                       onClick={() => setOpenFaq(isOpen ? null : i)}
                       style={{ width: "100%", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", textAlign: "left", cursor: "pointer" }}
                     >
-                      <span style={{ fontSize: 15, fontWeight: 800, color: "#062828" }}>Q. {faq.q}</span>
-                      <span style={{ fontSize: 13, color: "#059669", fontWeight: 800 }}>{isOpen ? "▲" : "▼"}</span>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>Q. {faq.q}</span>
+                      <span style={{ fontSize: 13, color: "#2563eb", fontWeight: 800 }}>{isOpen ? "▲" : "▼"}</span>
                     </button>
                     {isOpen && (
                       <div style={{ padding: "0 20px 18px", fontSize: 14, color: "#475569", lineHeight: 1.7, borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
@@ -421,27 +421,27 @@ export default function NewsRealtyPage() {
           </div>
         </section>
 
-        {/* ━━━ 6. 하단 CTA 배너 ━━━ */}
-        <section style={{ padding: "70px 24px", backgroundColor: "#062326", color: "#ffffff", textAlign: "center" }}>
+        {/* ━━━ 6. 하단 CTA 배너 (딥 네이비) ━━━ */}
+        <section style={{ padding: "70px 24px", backgroundColor: "#091e3a", color: "#ffffff", textAlign: "center" }}>
           <div style={{ maxWidth: 700, margin: "0 auto" }}>
             <h2 style={{ fontSize: 30, fontWeight: 900, margin: "0 0 12px 0", letterSpacing: "-0.5px" }}>
               내 지역 공실등록, 지금 바로 시작하세요
             </h2>
-            <p style={{ fontSize: 15.5, color: "#a7f3d0", lineHeight: 1.6, margin: "0 0 28px 0" }}>
+            <p style={{ fontSize: 15.5, color: "#bae6fd", lineHeight: 1.6, margin: "0 0 28px 0" }}>
               가입비 0원, 월정액 0원으로 전국 11만 부동산 네트워크와 AI 자동 마케팅을 누려보세요.
             </p>
             <button
               onClick={() => handleApplyClick()}
               style={{
                 padding: "16px 36px",
-                background: "#059669",
+                background: "#2563eb",
                 color: "#ffffff",
                 border: "none",
                 borderRadius: 12,
                 fontSize: 16.5,
                 fontWeight: 900,
                 cursor: "pointer",
-                boxShadow: "0 4px 16px rgba(5,150,105,0.4)",
+                boxShadow: "0 4px 16px rgba(37,99,235,0.4)",
               }}
             >
               무료 공실뉴스부동산 신청하기 →
@@ -456,7 +456,7 @@ export default function NewsRealtyPage() {
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div style={{ width: "100%", maxWidth: 480, background: "#ffffff", borderRadius: 16, padding: "28px", boxShadow: "0 10px 40px rgba(0,0,0,0.2)", position: "relative" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: 0 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>
                 공실뉴스부동산 신청서
               </h3>
               <button onClick={() => setIsApplicationOpen(false)} style={{ background: "none", border: "none", fontSize: 20, color: "#94a3b8", cursor: "pointer" }}>✕</button>
@@ -465,9 +465,9 @@ export default function NewsRealtyPage() {
             {isAppliedSuccessfully ? (
               <div style={{ textAlign: "center", padding: "30px 10px" }}>
                 <div style={{ fontSize: 44, marginBottom: 12 }}>🎉</div>
-                <h4 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 8px 0" }}>신청이 정상 접수되었습니다!</h4>
+                <h4 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: "0 0 8px 0" }}>신청이 정상 접수되었습니다!</h4>
                 <p style={{ fontSize: 14, color: "#64748b", margin: "0 0 20px 0" }}>담당자가 확인 후 빠른 시일 내에 안내 연락을 드리겠습니다.</p>
-                <button onClick={() => { setIsApplicationOpen(false); setIsAppliedSuccessfully(false); }} style={{ padding: "10px 24px", background: "#059669", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
+                <button onClick={() => { setIsApplicationOpen(false); setIsAppliedSuccessfully(false); }} style={{ padding: "10px 24px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
                   확인
                 </button>
               </div>
@@ -528,7 +528,7 @@ export default function NewsRealtyPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    style={{ width: "100%", padding: "12px 0", background: "#059669", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 800, cursor: "pointer" }}
+                    style={{ width: "100%", padding: "12px 0", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 800, cursor: "pointer" }}
                   >
                     {isSubmitting ? "신청서 접수 중..." : "무료 신청서 제출하기"}
                   </button>
