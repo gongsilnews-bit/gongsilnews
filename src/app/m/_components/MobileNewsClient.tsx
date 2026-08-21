@@ -49,31 +49,31 @@ const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
 const CATEGORIES = [
-  { key: "news", label: "뉴스", path: "/m/news_gongsil", section1: "공실뉴스" },
+  { key: "news", label: "뉴스", path: "/m/news_gongsil", section1: "공실현장" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
   { key: "study", label: "스터디", path: "/m/study" },
 ];
 
 const NEWS_PILL_TABS = [
   { key: "all", label: "전체", path: "/m/news_gongsil?sec=all" },
-  { key: "news_gongsil", label: "공실·현장", path: "/m/news_gongsil" },
-  { key: "news_politics", label: "정책·시장", path: "/m/news_politics" },
-  { key: "news_marketing", label: "AI·중개실무", path: "/m/news_marketing" },
+  { key: "news_gongsil", label: "공실현장", path: "/m/news_gongsil" },
+  { key: "news_politics", label: "정책시장", path: "/m/news_politics" },
+  { key: "news_marketing", label: "AI중개실무", path: "/m/news_marketing" },
   { key: "news_etc", label: "기타", path: "/m/news_etc" },
 ];
 
 const KEY_TO_SECTION1: Record<string, string> = {
-  "news_gongsil": "공실뉴스",
-  "news_politics": "부동산·경제",
-  "news_marketing": "AI마케팅",
-  "news_etc": "라이프·오피니언"
+  "news_gongsil": "공실현장",
+  "news_politics": "정책시장",
+  "news_marketing": "AI중개실무",
+  "news_etc": "기타"
 };
 
 const SECTION1_TO_KEY: Record<string, string> = {
-  "공실뉴스": "news_gongsil",
-  "부동산·경제": "news_politics",
-  "AI마케팅": "news_marketing",
-  "라이프·오피니언": "news_etc"
+  "공실현장": "news_gongsil",
+  "정책시장": "news_politics",
+  "AI중개실무": "news_marketing",
+  "기타": "news_etc"
 };
 
 // PC와 동일한 2차 카테고리 맵
