@@ -413,7 +413,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   const [activeTab, setActiveTab] = useState(initialTab);
   const [articles, setArticles] = useState<any[]>(initialArticles);
-  const [localArticles, setLocalArticles] = useState<any[]>([]);
+  const [localArticles, setLocalArticles] = useState<any[]>(() => {
+    if (initialArticles && initialArticles.length > 0) {
+      return initialArticles.filter((a: any) => a.lat && a.lng);
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -786,7 +791,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   // 우리동네뉴스 (lat/lng 있는 기사) 로드
   useEffect(() => {
     const loadLocalArticles = async () => {
-      const res = await getArticles({ status: "APPROVED", limit: 100 });
+      const res = await getArticles({ status: "APPROVED" });
       if (res.success && res.data) {
         const withLocation = res.data.filter((a: any) => a.lat && a.lng);
         setLocalArticles(withLocation);
