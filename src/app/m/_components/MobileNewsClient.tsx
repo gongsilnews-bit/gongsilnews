@@ -96,21 +96,21 @@ const SECTION2_MAP: Record<string, string[]> = {
 // Icons removed as per user request (transformed to pill menus)
 const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
   "news_gongsil": {
-    "전체": "현장 중개사가 직접 전하는 공실 소식",
-    "아파트/오피스텔": "동네 전문 부동산의 아파트·오피스텔 추천",
-    "빌라/주택": "직접 확인하고 작성한 빌라·주택 소식",
-    "원룸/투룸(풀옵션)": "지역 대표님이 짚어주는 원룸·투룸 트렌드",
-    "상가/사무실/공장/토지": "실무 전문가가 분석한 상가·사무실 정보",
-    "신축/분양/경매": "발로 뛰어 찾은 신축·분양 & 경공매"
+    "전체": "공동중개 열람 무료! 임대인 공실등록 무료!",
+    "아파트/오피스텔": "100% 실매물 아파트·오피스텔 무료 공동중개",
+    "빌라/주택": "현장 확인 완료 빌라·주택 무료 공실 소식",
+    "원룸/투룸(풀옵션)": "임대인 직등록 원룸·투룸 실시간 무료 공유",
+    "상가/사무실/공장/토지": "상가·사무실·토지 무료 공동중개 네트워크",
+    "신축/분양/경매": "전국 신축 분양 & 경·공매 무료 권리분석"
   },
   "news_politics": {
-    "전체": "부동산 & 임대인을 위한 현업 실무 브리핑",
-    "부동산정책/정치": "상담 & 자산 관리에 꼭 필요한 정책 분석",
+    "전체": "11만 부동산 & 임대인을 위한 무료 정책 브리핑",
+    "부동산정책/정치": "상담 & 자산 관리에 꼭 필요한 최신 정책 분석",
     "경제/재테크/주식": "현업에서 활용하는 경제 흐름 & 투자 팁",
     "세무/법률/기타": "전문가가 알려주는 절세 & 법률 솔루션"
   },
   "news_marketing": {
-    "전체": "공실을 줄이는 부동산 마케팅 & 실무 노하우",
+    "전체": "공실을 줄이는 AI 부동산 마케팅 무료 가이드",
     "AI/NEWS": "스마트한 중개 & 관리를 위한 AI 활용법",
     "부동산유튜브/블로그": "매물 홍보 & 임차인 유입을 위한 채널 마케팅",
     "공실/임대관리": "체계적인 공실 방지 & 임대관리 솔루션"
@@ -1786,7 +1786,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             })}
           </div>
 
-          {/* 2줄 프리미엄 개인화 헤더 카드 */}
+          {/* 2줄 프리미엄 무료 강조 개인화 헤더 카드 및 비주얼 배너 */}
           {(() => {
             const isKeywordSearch = !!(initialKeyword || searchParams.get("keyword"));
             const isAuthorView = !!(authorProfile || initialAuthorName);
@@ -1794,20 +1794,72 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
             const isAll = searchParams.get("sec") === "all";
             const mentalText = isAll
-              ? "부동산 전체 핵심 브리핑"
-              : (PERSONALIZED_MENTAL_MAP[activeTab]?.["전체"] || PERSONALIZED_MENTAL_MAP[activeTab]?.[section2Tab] || "현장 중개사가 직접 전하는 공실 소식");
+              ? "공동중개 열람 무료! 임대인 공실등록 무료!"
+              : (PERSONALIZED_MENTAL_MAP[activeTab]?.["전체"] || PERSONALIZED_MENTAL_MAP[activeTab]?.[section2Tab] || "공동중개 열람 무료 · 임대인 공실등록 무료");
             const displayName = memberName || "부동산";
 
             return (
-              <div style={{ padding: "20px 16px 12px", backgroundColor: "#fff" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", letterSpacing: "-0.3px" }}>
-                    <span style={{ fontWeight: 800, color: "#111", background: "linear-gradient(180deg, transparent 50%, rgba(254, 240, 138, 0.9) 50%)", padding: "2px 4px", borderRadius: "2px" }}>{displayName} 대표님</span>을 위한
-                  </span>
-                  <h2 style={{ fontSize: "19px", fontWeight: 900, color: "#1a4282", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.3 }}>
-                    {mentalText} <span style={{ color: "#111", fontWeight: "normal" }}>News</span>
+              <div style={{ padding: "16px 16px 14px", backgroundColor: "#fff" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 800, color: "#1d4ed8", background: "#eff6ff", border: "1px solid #bfdbfe", padding: "2px 8px", borderRadius: "12px" }}>
+                      ✨ 전국 11만 부동산 &amp; 임대인 무료
+                    </span>
+                    <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>
+                      <span style={{ fontWeight: 800, color: "#111" }}>{displayName} 대표님</span>을 위한
+                    </span>
+                  </div>
+                  <h2 style={{ fontSize: "18px", fontWeight: 900, color: "#1a4282", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.35 }}>
+                    {mentalText}
                   </h2>
+                  <p style={{ fontSize: "12px", color: "#64748b", margin: 0, lineHeight: 1.4 }}>
+                    가입비·월회비 ZERO! 11만 공인중개사와 임대인이 함께하는 100% 무료 실매물
+                  </p>
                 </div>
+
+                {/* 11만 무료 공동중개 & 공실등록 비주얼 바로가기 배너 */}
+                <Link
+                  href="/m/newsrealty"
+                  style={{
+                    display: "block",
+                    marginTop: "12px",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    position: "relative",
+                    textDecoration: "none",
+                    boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+                    aspectRatio: "21/9",
+                    background: "#091e3a",
+                  }}
+                >
+                  <img
+                    src="/images/banners/free_network_banner.jpg"
+                    alt="11만 부동산 무료 공동중개 네트워크"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "linear-gradient(to right, rgba(9,30,58,0.92) 0%, rgba(9,30,58,0.65) 50%, rgba(9,30,58,0.1) 100%)",
+                      padding: "12px 14px",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      color: "#ffffff",
+                    }}
+                  >
+                    <span style={{ fontSize: "10px", fontWeight: 800, color: "#38bdf8", letterSpacing: "0.5px", marginBottom: "2px" }}>
+                      100% 평생 무료 실매물망
+                    </span>
+                    <div style={{ fontSize: "14.5px", fontWeight: 900, lineHeight: 1.25, letterSpacing: "-0.3px" }}>
+                      내 지역 공실등록 &amp; 11만 공동중개 →
+                    </div>
+                    <div style={{ fontSize: "11px", color: "#bae6fd", marginTop: "3px" }}>
+                      지도 기반 무료 열람 · AI 보고서 자동생성
+                    </div>
+                  </div>
+                </Link>
               </div>
             );
           })()}
