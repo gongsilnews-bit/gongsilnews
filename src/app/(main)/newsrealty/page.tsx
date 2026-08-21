@@ -284,7 +284,7 @@ export default function NewsRealtyPage() {
                 대한민국 11만 부동산을 위한 5대 핵심 무료 혜택
               </h2>
               <p style={{ fontSize: "15px", color: "#64748b", margin: 0 }}>
-                가입비 0원, 월정액 0원! 부동산 대표님과 임대인을 위해 100% 무료로 개방됩니다.
+                가입비 0원, 월정액 0원! 부동산 대표님들을 위해 100% 무료로 개방됩니다.
               </p>
             </div>
 
@@ -303,15 +303,15 @@ export default function NewsRealtyPage() {
                 </p>
               </div>
 
-              {/* 2. 임대인 공실 등록 무료 */}
+              {/* 2. 공동중개 등록 3건 무료 */}
               <div style={{ background: "#f8fafc", padding: "26px 22px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
                 <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
-                  🏢
+                  📝
                 </div>
                 <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 02</div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>임대인 공실 등록 무료</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>공동중개 등록 3건 무료</h3>
                 <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                  건물주·임대인 누구나 등록비 0원으로 공실 직등록! 등록 즉시 지역 내 수천 명의 중개사에게 실시간 공유되어 빠르게 임대 완료됩니다.
+                  보유 매물을 전국 11만 부동산망에 즉시 노출! 3건까지 등록비 ZERO로 자유롭게 공동중개 등록하여 빠른 계약을 성사시키세요.
                 </p>
               </div>
 

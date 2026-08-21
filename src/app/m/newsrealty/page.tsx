@@ -261,8 +261,8 @@ export default function MobileNewsRealtyPage() {
             </div>
 
             <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>🏢 2. 임대인 공실 등록 무료</div>
-              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>건물주·임대인 누구나 등록비 0원으로 공실 직등록 및 빠른 임차 매칭</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>📝 2. 공동중개 등록 3건 무료</div>
+              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>보유 매물을 전국 11만 부동산망에 즉시 노출! 3건까지 등록비 ZERO로 자유롭게 등록</div>
             </div>
 
             <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
