@@ -156,8 +156,8 @@ export default function MobileNewsRealtyPage() {
           </div>
 
           <h1 style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>
-            공동중개 열람 무료!<br />
-            임대인 공실등록 무료!
+            공동중개 열람 무료! 임대인 공실등록 무료!<br />
+            <span style={{ color: "#38bdf8", fontSize: 17 }}>11만 부동산과 임대인을 위한 무료 열람 공동중개 채널!</span>
           </h1>
 
           <p style={{ fontSize: 13, color: "#bae6fd", lineHeight: 1.55, margin: "0 0 20px 0", wordBreak: "keep-all" }}>
