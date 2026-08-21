@@ -2096,7 +2096,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               ? [...regularArticles].sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
               : regularArticles;
             
-            const currentCatLabel = section2Tab || (NEWS_PILL_TABS.find(p => p.key === activeTab)?.label || "공실현장");
+            const isAll = searchParams.get("sec") === "all";
+            const currentCatLabel = isAll ? "공실뉴스" : (section2Tab || (NEWS_PILL_TABS.find(p => p.key === activeTab)?.label || "공실뉴스"));
             const popularArticles = [...filteredBySection2]
               .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
               .slice(0, 5);
@@ -2184,7 +2185,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 {/* 일반 뉴스 리스트 정렬 필터 (모노크롬 미니멀 스타일) */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6" }}>
                   <span style={{ fontSize: "13px", fontWeight: 700, color: "#18181b", letterSpacing: "-0.3px" }}>
-                    {KEY_TO_SECTION1[activeTab] || "공실뉴스"} <span style={{ color: "#a1a1aa", fontWeight: 400, margin: "0 2px" }}>&gt;</span> {section2Tab || "전체"}
+                    {isAll ? "공실뉴스" : (KEY_TO_SECTION1[activeTab] || "공실뉴스")} <span style={{ color: "#a1a1aa", fontWeight: 400, margin: "0 2px" }}>&gt;</span> {section2Tab || "전체"}
                   </span>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <button 

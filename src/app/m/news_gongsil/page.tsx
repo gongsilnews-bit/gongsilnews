@@ -7,13 +7,17 @@ export const revalidate = 60;
 export default async function MobileNewsPage({
   searchParams,
 }: {
-  searchParams: { author_name?: string; keyword?: string };
+  searchParams: { author_name?: string; keyword?: string; sec?: string };
 }) {
   const resolvedParams = await Promise.resolve(searchParams);
   const authorMatch = resolvedParams.author_name;
   const keywordMatch = resolvedParams.keyword;
+  const isAll = resolvedParams.sec === "all";
   
-  const filters: any = { status: "APPROVED", limit: 30, section1: "공실현장" };
+  const filters: any = { status: "APPROVED", limit: 30 };
+  if (!isAll) {
+    filters.section1 = "공실현장";
+  }
   if (authorMatch) filters.author_name = authorMatch;
   if (keywordMatch) filters.keyword = keywordMatch;
 
