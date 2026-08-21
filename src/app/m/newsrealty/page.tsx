@@ -40,7 +40,7 @@ const PROOF_STORIES = [
   },
   {
     role: "상가·오피스 전문 중개법인",
-    quote: "“법원 등기소·토지대장 연동과 무료 경·공매 권리분석 덕분에 대형 통사옥 임대차 특약까지 한 치의 오차 없이 깔끔하게 계약 체결했습니다.”",
+    quote: "“법원 등기소·토지대장 연동과 실시간 경·공매 물건 무료 열람 덕분에 대형 통사옥 임대차 특약까지 한 치의 오차 없이 깔끔하게 계약 체결했습니다.”",
     author: "강남 테헤란로 중개법인 최OO 이사",
     image: "/images/realty/avatar_corporate_broker.jpg",
   },
@@ -261,8 +261,8 @@ export default function MobileNewsRealtyPage() {
             </div>
 
             <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>📝 2. 공동중개 등록 3건 무료</div>
-              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>보유 매물을 전국 11만 부동산망에 즉시 노출! 3건까지 등록비 ZERO로 자유롭게 등록</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>📄 2. 매매 보고서 3건 무료</div>
+              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>지번만 넣으면 AI가 고객 브리핑용 고품격 매매/임대 제안서 1초 만에 완성</div>
             </div>
 
             <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
@@ -271,8 +271,8 @@ export default function MobileNewsRealtyPage() {
             </div>
 
             <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>📄 4. 매매 보고서 자동 작성</div>
-              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>지번만 넣으면 AI가 고객 브리핑용 고품격 매매/임대 제안서 1초 만에 완성</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>📝 4. 공동중개 등록 3건 무료</div>
+              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>보유 매물을 전국 11만 부동산망에 즉시 노출! 3건까지 등록비 ZERO로 자유롭게 등록</div>
             </div>
 
             <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
@@ -281,8 +281,8 @@ export default function MobileNewsRealtyPage() {
             </div>
 
             <div style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #091e3a 100%)", color: "#ffffff", padding: "14px", borderRadius: 10, border: "1px solid #3b82f6" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#fbbf24", marginBottom: 4 }}>⚖️ [특별 보너스] 전국 경·공매 권리분석 무료</div>
-              <div style={{ fontSize: 12, color: "#bae6fd", lineHeight: 1.5 }}>법원 실시간 경매 물건 및 권리분석 서식을 추가 비용 없이 100% 무료 제공</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#fbbf24", marginBottom: 4 }}>⚖️ [특별 보너스] 전국 경·공매 물건 무료 열람</div>
+              <div style={{ fontSize: 12, color: "#bae6fd", lineHeight: 1.5 }}>법원 실시간 경매·공매 물건 정보를 추가 비용 없이 100% 무료 제공</div>
             </div>
           </div>
         </section>

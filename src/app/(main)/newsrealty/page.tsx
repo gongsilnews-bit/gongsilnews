@@ -44,7 +44,7 @@ const PROOF_STORIES = [
   },
   {
     role: "상가·오피스 전문 중개법인",
-    quote: "“법원 등기소·토지대장 연동과 무료 경·공매 권리분석 덕분에 대형 통사옥 임대차 특약까지 한 치의 오차 없이 깔끔하게 계약 체결했습니다.”",
+    quote: "“법원 등기소·토지대장 연동과 실시간 경·공매 물건 무료 열람 덕분에 대형 통사옥 임대차 특약까지 한 치의 오차 없이 깔끔하게 계약 체결했습니다.”",
     author: "강남 테헤란로 중개법인 최OO 이사",
     image: "/images/realty/avatar_corporate_broker.jpg",
     imagePosition: "left",
@@ -303,15 +303,15 @@ export default function NewsRealtyPage() {
                 </p>
               </div>
 
-              {/* 2. 공동중개 등록 3건 무료 */}
+              {/* 2. AI 매매 보고서 3건 무료 */}
               <div style={{ background: "#f8fafc", padding: "26px 22px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
                 <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
-                  📝
+                  📄
                 </div>
                 <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 02</div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>공동중개 등록 3건 무료</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>매매 보고서 3건 무료</h3>
                 <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                  보유 매물을 전국 11만 부동산망에 즉시 노출! 3건까지 등록비 ZERO로 자유롭게 공동중개 등록하여 빠른 계약을 성사시키세요.
+                  지번과 조건만 간단히 입력하면 AI가 고객 브리핑용 고품격 매매/임대 제안서와 리포트 3건을 1초 만에 깔끔하게 자동 완성합니다.
                 </p>
               </div>
 
@@ -327,15 +327,15 @@ export default function NewsRealtyPage() {
                 </p>
               </div>
 
-              {/* 4. 매매 보고서 자동 작성 */}
+              {/* 4. 공동중개 등록 3건 무료 */}
               <div style={{ background: "#f8fafc", padding: "26px 22px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
                 <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
-                  📄
+                  📝
                 </div>
                 <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 04</div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>매매 보고서 자동 작성</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>공동중개 등록 3건 무료</h3>
                 <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                  지번과 조건만 간단히 입력하면 AI가 고객 브리핑용 고품격 매매/임대 제안서와 유리창 부착용 리포트를 1초 만에 깔끔하게 자동 완성합니다.
+                  보유 매물을 전국 11만 부동산망에 즉시 노출! 3건까지 등록비 ZERO로 자유롭게 공동중개 등록하여 빠른 계약을 성사시키세요.
                 </p>
               </div>
 
@@ -351,16 +351,16 @@ export default function NewsRealtyPage() {
                 </p>
               </div>
 
-              {/* 보너스: 경공매 권리분석 무료 */}
+              {/* 보너스: 전국 법원 경·공매 물건 무료 열람 */}
               <div style={{ background: "linear-gradient(135deg, #091e3a 0%, #1e3a8a 100%)", color: "#ffffff", padding: "26px 22px", borderRadius: 14, boxShadow: "0 4px 16px rgba(15,23,42,0.15)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                 <div>
                   <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(56,189,248,0.2)", color: "#38bdf8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
                     ⚖️
                   </div>
                   <div style={{ fontSize: 11.5, fontWeight: 800, color: "#38bdf8", marginBottom: 4 }}>SPECIAL BONUS</div>
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#ffffff", margin: "0 0 8px 0" }}>전국 경·공매 권리분석 무료</h3>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#ffffff", margin: "0 0 8px 0" }}>경공매 물건 무료 열람</h3>
                   <p style={{ fontSize: 13.5, color: "#bae6fd", lineHeight: 1.6, margin: 0 }}>
-                    법원 및 캠코 공식 데이터 기반 전국 경·공매 유찰 물건 분석과 실무 특약 정보를 무료 열람할 수 있습니다.
+                    법원 및 캠코 공식 데이터 기반 전국 경·공매 실시간 물건 정보를 추가 비용 없이 100% 무료로 열람할 수 있습니다.
                   </p>
                 </div>
               </div>
