@@ -1400,8 +1400,8 @@ function MobileGongsilContent() {
 
       {/* 상세 패널 */}
       <div ref={detailPanelRef} className={`detail-panel ${selectedVacancy ? "open" : ""} ${isDirectView ? "direct-view" : ""}`} onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* 상단 헤더 (경매 모드에서만 표시하여 일반 공실과 분리) */}
-        {selectedVacancy?.trade_type === "경매" && (
+        {/* 상단 헤더 (모든 모바일 상세 뷰 공통 뒤로가기 & 주소 & 찜/공유 헤더) */}
+        {selectedVacancy && (
           <div style={{ zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", position: "sticky", top: 0 }}>
             <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
