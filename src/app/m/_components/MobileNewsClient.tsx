@@ -2091,23 +2091,28 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
           {/* 실 기사 리스트 */}
           {searchTab === 'article' && (() => {
-            const regularArticles = filteredBySection2.filter(a => !a.is_important);
-            const sortedRegularArticles = sortBy === 'popular'
-              ? [...regularArticles].sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
-              : regularArticles;
-            
             const isAll = searchParams.get("sec") === "all";
             const currentCatLabel = isAll ? "공실뉴스" : (section2Tab || (NEWS_PILL_TABS.find(p => p.key === activeTab)?.label || "공실뉴스"));
+            
+            // 하단 기사 목록은 전체 기사(중요 기사 포함)를 최신순/인기순으로 전부 노출
+            const sortedRegularArticles = sortBy === 'popular'
+              ? [...filteredBySection2].sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+              : filteredBySection2;
+
             const popularArticles = [...filteredBySection2]
               .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
               .slice(0, 5);
             
+            const carouselArticles = importantArticles.length > 0
+              ? importantArticles.slice(0, 8)
+              : filteredBySection2.slice(0, 5);
+            
             return (
               <div>
-                {/* 중요 뉴스 슬라이딩 캐러셀 (추천) */}
-                {importantArticles.length > 0 && (
+                {/* 중요 뉴스 슬라이딩 캐러셀 (추천 - 상위 최대 8개) */}
+                {carouselArticles.length > 0 && (
                   <RecommendedNewsCarousel 
-                    importantArticles={importantArticles}
+                    importantArticles={carouselArticles}
                     currentCatLabel={currentCatLabel}
                     activeTab={activeTab}
                     extractYoutubeId={extractYoutubeId}

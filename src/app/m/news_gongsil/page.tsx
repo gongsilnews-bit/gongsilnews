@@ -14,7 +14,7 @@ export default async function MobileNewsPage({
   const keywordMatch = resolvedParams.keyword;
   const isAll = resolvedParams.sec === "all";
   
-  const filters: any = { status: "APPROVED", limit: 30 };
+  const filters: any = { status: "APPROVED", limit: 50 };
   if (!isAll) {
     filters.section1 = "공실현장";
   }
