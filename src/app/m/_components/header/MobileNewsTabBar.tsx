@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { createClient } from "@/utils/supabase/client";
 
 const SearchOverlay = dynamic(() => import("@/app/m/_components/header/SearchOverlay"), { ssr: false });
 
@@ -21,6 +22,20 @@ export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const tabBarRef = useRef<HTMLDivElement>(null);
+
+  const handleVacancyAdminClick = async () => {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/m/signup?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
+      } else {
+        router.push("/m/admin/vacancy");
+      }
+    } catch {
+      router.push("/m/signup?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
+    }
+  };
 
   useEffect(() => {
     if (tabBarRef.current && activeTab) {
@@ -195,7 +210,7 @@ export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
           {/* 2. 공실열람 탭: 지도기사 스타일의 '공실관리' 버튼 */}
           {activeTab === "gongsil" && (
             <button
-              onClick={() => router.push("/m/admin/vacancy")}
+              onClick={handleVacancyAdminClick}
               style={{
                 display: "flex",
                 alignItems: "center",
