@@ -9,7 +9,7 @@ const CATEGORIES = [
   { label: "AI마케팅", href: "/m/news_marketing" },
   { label: "라이프·오피니언", href: "/m/news_etc" },
   { label: "공실열람", href: "/m/gongsil" },
-  { label: "부동산특강", href: "/m/study" },
+  { label: "공실스터디", href: "/m/study" },
   { label: "자료실", href: "/m/board?id=drone" },
   { label: "커뮤니티", href: "/m/board?id=free" },
 ];

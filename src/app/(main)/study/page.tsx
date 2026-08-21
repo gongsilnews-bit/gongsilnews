@@ -5,8 +5,8 @@ import StudyHubClient from "./StudyHubClient";
 export const revalidate = 60;
 
 export const metadata = {
-  title: "부동산특강 | 공실뉴스",
-  description: "11만 부동산 실무자와 투자자를 위한 프리미엄 부동산 특강 및 실무 교육 허브",
+  title: "공실스터디 | 공실뉴스",
+  description: "11만 부동산 실무자와 투자자를 위한 1년 AI 실무 및 공실스터디 허브",
 };
 
 export default async function StudyPage({

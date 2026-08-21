@@ -88,7 +88,7 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
       {/* 1. 최상단 메인 헤더 */}
       <HomeHeader 
         bgColor="#16a34a" 
-        logoText="부동산특강"
+        logoText="공실스터디"
         sloganPrefix="AI시대 부동산중개에 필요한 "
         sloganHighlight="마케팅 특강"
         highlightColor="#fcd34d"

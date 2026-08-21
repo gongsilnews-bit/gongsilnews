@@ -196,7 +196,7 @@ function StudyReadContent() {
       objectType: "feed",
       content: {
         title: lecture.title,
-        description: lecture.category || "부동산 특강 | 공실뉴스",
+        description: lecture.category || "공실스터디 | 공실뉴스",
         imageUrl: slideImages[0] || "",
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
       },
@@ -347,7 +347,7 @@ function StudyReadContent() {
       <main className="w-full px-4 md:px-6" style={{ maxWidth: 1200, margin: "0 auto", paddingBottom: 120, paddingTop: 40 }}>
         {/* Breadcrumb */}
         <div className="flex items-center font-medium" style={{ fontSize: 13, color: "#858a8d", marginBottom: 24, gap: 8 }}>
-          <span className="cursor-pointer hover:text-black transition-colors">부동산 특강</span>
+          <Link href="/study" className="cursor-pointer hover:text-black transition-colors">공실스터디</Link>
           <span className="text-gray-300">&gt;</span>
           <span className="cursor-pointer hover:text-black transition-colors">{lecture.category || "중개실무"}</span>
         </div>

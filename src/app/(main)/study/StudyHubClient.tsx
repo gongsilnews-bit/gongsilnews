@@ -562,7 +562,7 @@ export default function StudyHubClient({
                                 }}
                               >
                                 <span style={{ fontSize: 22, marginBottom: 4 }}>🎓</span>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: "#6ee7b7" }}>{item.category || "부동산특강"}</span>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: "#6ee7b7" }}>{item.category || "공실스터디"}</span>
                               </div>
                             )}
                           </div>

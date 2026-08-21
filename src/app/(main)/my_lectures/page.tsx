@@ -51,12 +51,12 @@ export default function MyLecturesPage() {
                     지금 바로 공실뉴스의 유익한 특강을 만나보세요!
                   </div>
                   <button
-                    onClick={() => router.push("/study_read")}
+                    onClick={() => router.push("/study")}
                     style={{ marginTop: 24, padding: "12px 32px", background: "#059669", color: "#fff", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 800, cursor: "pointer", transition: "all 0.2s", boxShadow: "0 4px 12px rgba(5, 150, 105, 0.2)" }}
                     onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
                     onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
                   >
-                    부동산특강 둘러보기
+                    공실스터디 둘러보기
                   </button>
                 </div>
               </div>

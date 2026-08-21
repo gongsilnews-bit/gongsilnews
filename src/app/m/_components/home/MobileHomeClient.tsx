@@ -363,11 +363,11 @@ export default function MobileHomeClient(props: Props) {
       {/* ⑥ 라이프·오피니언 */}
       <NewsSection title="라이프·오피니언" href="/m/news_etc" articles={lifeArticles} onArticleClick={saveHomeScroll} />
 
-      {/* ⑨ 부동산특강 (PC SpecialLectureBanner 대응) */}
+      {/* ⑨ 공실스터디 (PC SpecialLectureBanner 대응) */}
       {lectures.length > 0 && (
         <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0" }}>
           <div className="sec-hd">
-            <h2>부동산특강</h2>
+            <h2>공실스터디</h2>
             <Link href="/m/study" style={{ fontSize: 15, color: "#6b7280", textDecoration: "none" }}>더보기 ›</Link>
           </div>
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>

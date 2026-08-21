@@ -161,7 +161,7 @@ function MobileBottomNavContent() {
       ),
     },
     {
-      name: "부동산특강", path: "/m/study",
+      name: "공실스터디", path: "/m/study",
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>,
       iconFilled: <svg width="24" height="24" viewBox="0 0 24 24"><path d="M2 10l10-5 10 5-10 5z" fill="currentColor"/><path d="M6 12v5c3 3 9 3 12 0v-5L12 15 6 12z" fill="currentColor" opacity=".6"/><rect x="21" y="10" width="2" height="6" rx="1" fill="currentColor"/></svg>,
     },
@@ -202,7 +202,7 @@ function MobileBottomNavContent() {
           })();
 
           const activeColor = isActive
-            ? ((item.name === "홈" || item.name === "공실") ? '#1a73e8' : (item.name === "부동산특강" ? '#1a2e50' : '#ea580c'))
+            ? ((item.name === "홈" || item.name === "공실") ? '#1a73e8' : (item.name === "공실스터디" ? '#059669' : '#ea580c'))
             : '#333';
 
           return item.name === "마이" ? (

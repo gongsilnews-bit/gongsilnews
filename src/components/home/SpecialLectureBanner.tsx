@@ -42,7 +42,7 @@ export default function SpecialLectureBanner({ initialLectures }: { initialLectu
   return (
     <div className="container px-20 mt-50 mb-50">
       <div className="sec-title-wrap">
-        <h2 className="sec-title" id="special-lecture" style={{ scrollMarginTop: 150 }}>부동산특강</h2>
+        <h2 className="sec-title" id="special-lecture" style={{ scrollMarginTop: 150 }}>공실스터디</h2>
       </div>
       <div className="lecture-grid mb-50">
         {lectures.map((item, i) => (
