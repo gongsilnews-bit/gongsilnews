@@ -280,9 +280,9 @@ export default function MobileNewsRealtyPage() {
               <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>전국 공인중개사와 소통하며 비공개 특급 매물 정보를 자유롭게 교환</div>
             </div>
 
-            <div style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #091e3a 100%)", color: "#ffffff", padding: "14px", borderRadius: 10, border: "1px solid #3b82f6" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#fbbf24", marginBottom: 4 }}>⚖️ [특별 보너스] 전국 경·공매 물건 무료 열람</div>
-              <div style={{ fontSize: 12, color: "#bae6fd", lineHeight: 1.5 }}>법원 실시간 경매·공매 물건 정보를 추가 비용 없이 100% 무료 제공</div>
+            <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>⚖️ 6. 경공매 물건 무료 열람</div>
+              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>법원 실시간 경매·공매 물건 정보를 추가 비용 없이 100% 무료 제공</div>
             </div>
           </div>
         </section>

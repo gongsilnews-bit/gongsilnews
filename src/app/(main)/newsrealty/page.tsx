@@ -289,77 +289,114 @@ export default function NewsRealtyPage() {
             </div>
 
             {/* 5대 무료 카드 그리드 */}
+            <style>{`
+              .realty-benefit-card {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 14px;
+                padding: 26px 22px;
+                transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+                cursor: pointer;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+              }
+              .realty-benefit-card:hover {
+                transform: translateY(-7px);
+                background: #ffffff;
+                border-color: #2563eb;
+                box-shadow: 0 16px 36px rgba(37, 99, 235, 0.14);
+              }
+              .realty-benefit-card:hover .benefit-icon-box {
+                transform: scale(1.1);
+                background: #2563eb;
+                color: #ffffff;
+              }
+              .benefit-icon-box {
+                width: 44px;
+                height: 44px;
+                border-radius: 10px;
+                background: #eff6ff;
+                color: #2563eb;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                margin-bottom: 14px;
+                transition: all 0.28s ease;
+              }
+            `}</style>
+
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
               
               {/* 1. 공동중개 열람 무료 */}
-              <div style={{ background: "#f8fafc", padding: "26px 22px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
-                  🤝
+              <div className="realty-benefit-card">
+                <div>
+                  <div className="benefit-icon-box">🤝</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 01</div>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>공동중개 열람 무료</h3>
+                  <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
+                    타사 월 10~20만원 유료 회비 부담 ZERO! 전국 11만 공인중개사의 실매물 공동중개 정보를 평생 100% 무료로 무제한 열람합니다.
+                  </p>
                 </div>
-                <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 01</div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>공동중개 열람 무료</h3>
-                <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                  타사 월 10~20만원 유료 회비 부담 ZERO! 전국 11만 공인중개사의 실매물 공동중개 정보를 평생 100% 무료로 무제한 열람합니다.
-                </p>
               </div>
 
               {/* 2. AI 매매 보고서 3건 무료 */}
-              <div style={{ background: "#f8fafc", padding: "26px 22px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
-                  📄
+              <div className="realty-benefit-card">
+                <div>
+                  <div className="benefit-icon-box">📄</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 02</div>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>매매 보고서 3건 무료</h3>
+                  <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
+                    지번과 조건만 간단히 입력하면 AI가 고객 브리핑용 고품격 매매/임대 제안서와 리포트 3건을 1초 만에 깔끔하게 자동 완성합니다.
+                  </p>
                 </div>
-                <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 02</div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>매매 보고서 3건 무료</h3>
-                <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                  지번과 조건만 간단히 입력하면 AI가 고객 브리핑용 고품격 매매/임대 제안서와 리포트 3건을 1초 만에 깔끔하게 자동 완성합니다.
-                </p>
               </div>
 
               {/* 3. 지도기반 모바일 등록/열람 */}
-              <div style={{ background: "#f8fafc", padding: "26px 22px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
-                  📍
+              <div className="realty-benefit-card">
+                <div>
+                  <div className="benefit-icon-box">📍</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 03</div>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>지도기반 모바일 등록/열람</h3>
+                  <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
+                    현장 어디서든 스마트폰 실시간 지도로 내 주변 공실과 공동중개 매물을 즉시 확인하고, 원터치 등록 및 중개사 전화 연결이 가능합니다.
+                  </p>
                 </div>
-                <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 03</div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>지도기반 모바일 등록/열람</h3>
-                <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                  현장 어디서든 스마트폰 실시간 지도로 내 주변 공실과 공동중개 매물을 즉시 확인하고, 원터치 등록 및 중개사 전화 연결이 가능합니다.
-                </p>
               </div>
 
               {/* 4. 공동중개 등록 3건 무료 */}
-              <div style={{ background: "#f8fafc", padding: "26px 22px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
-                  📝
+              <div className="realty-benefit-card">
+                <div>
+                  <div className="benefit-icon-box">📝</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 04</div>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>공동중개 등록 3건 무료</h3>
+                  <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
+                    보유 매물을 전국 11만 부동산망에 즉시 노출! 3건까지 등록비 ZERO로 자유롭게 공동중개 등록하여 빠른 계약을 성사시키세요.
+                  </p>
                 </div>
-                <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 04</div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>공동중개 등록 3건 무료</h3>
-                <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                  보유 매물을 전국 11만 부동산망에 즉시 노출! 3건까지 등록비 ZERO로 자유롭게 공동중개 등록하여 빠른 계약을 성사시키세요.
-                </p>
               </div>
 
               {/* 5. 커뮤니티 무료 */}
-              <div style={{ background: "#f8fafc", padding: "26px 22px", borderRadius: 14, border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
-                  💬
+              <div className="realty-benefit-card">
+                <div>
+                  <div className="benefit-icon-box">💬</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 05</div>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>전국 11만 커뮤니티 무료</h3>
+                  <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
+                    지역 텃세 없이 전국 11만 부동산 전문가들과 실전 계약 노하우, 특약 서식 원본, 정책 분석 및 공동중개 네트워크를 자유롭게 교류하세요.
+                  </p>
                 </div>
-                <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 05</div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>전국 11만 커뮤니티 무료</h3>
-                <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                  지역 텃세 없이 전국 11만 부동산 전문가들과 실전 계약 노하우, 특약 서식 원본, 정책 분석 및 공동중개 네트워크를 자유롭게 교류하세요.
-                </p>
               </div>
 
-              {/* 보너스: 전국 법원 경·공매 물건 무료 열람 */}
-              <div style={{ background: "linear-gradient(135deg, #091e3a 0%, #1e3a8a 100%)", color: "#ffffff", padding: "26px 22px", borderRadius: 14, boxShadow: "0 4px 16px rgba(15,23,42,0.15)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              {/* 6. 경공매 물건 무료 열람 (동일한 화이트 카드 & 호버 애니메이션) */}
+              <div className="realty-benefit-card">
                 <div>
-                  <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(56,189,248,0.2)", color: "#38bdf8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 14 }}>
-                    ⚖️
-                  </div>
-                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#38bdf8", marginBottom: 4 }}>SPECIAL BONUS</div>
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#ffffff", margin: "0 0 8px 0" }}>경공매 물건 무료 열람</h3>
-                  <p style={{ fontSize: 13.5, color: "#bae6fd", lineHeight: 1.6, margin: 0 }}>
+                  <div className="benefit-icon-box" style={{ background: "#fef3c7", color: "#d97706" }}>⚖️</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#d97706", marginBottom: 4 }}>SPECIAL BONUS</div>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>경공매 물건 무료 열람</h3>
+                  <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
                     법원 및 캠코 공식 데이터 기반 전국 경·공매 실시간 물건 정보를 추가 비용 없이 100% 무료로 열람할 수 있습니다.
                   </p>
                 </div>
