@@ -297,8 +297,122 @@ export default function StudyHubClient({
             </div>
           </section>
 
+          {/* ━━━ 3D PASTEL AVATARS: 나이가 많아서요? 코딩/컴퓨터를 못해서요? (윤자동 증명 섹션) ━━━ */}
+          <section style={{ padding: "80px 0 75px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
+            <div style={{ maxWidth: 880, margin: "0 auto", padding: "0 24px" }}>
+              
+              {/* 섹션 헤딩 */}
+              <div style={{ textAlign: "center", marginBottom: 44 }}>
+                <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#062828", margin: "0 0 10px 0", letterSpacing: "-0.5px", lineHeight: 1.35 }}>
+                  나이가 많아서요? 컴퓨터를 잘 못 다뤄서요?<br />
+                  <span style={{ color: "#059669" }}>비전공자·초보라서 못 할 것 같다고요?</span>
+                </h2>
+                <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.6, margin: "0 0 4px 0" }}>
+                  그 걱정, 이제 내려놓으셔도 됩니다.
+                </p>
+                <p style={{ fontSize: "14px", color: "#64748b", margin: 0 }}>
+                  나이도, IT 지식도 상관없이 전부 하실 수 있어요. 먼저 해내신 분들이 증명했거든요.
+                </p>
+              </div>
+
+              {/* 5대 3D 아바타 교차 카드 리스트 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                {[
+                  {
+                    role: "소속공인중개사 1년차",
+                    quote: "“블로그 글 1개 쓰는데 반나절 걸리던 제가, 공실뉴스 AI 프롬프트 쓰고 5분 만에 상위노출 글 3개를 뚝딱 완성했어요.”",
+                    author: "마포구 소속공인중개사 이OO 실장",
+                    image: "/images/study/avatar_realtor_female.jpg",
+                    imagePosition: "left",
+                  },
+                  {
+                    role: "50대 개업공인중개사",
+                    quote: "“컴맹이라 AI는 남 이야기인 줄 알았는데, 클릭 몇 번으로 매물 쇼츠 만들었더니 유튜브 보고 젊은 임차인 문의가 3배 폭증했네요.”",
+                    author: "강남구 개업공인중개사 박OO 대표",
+                    image: "/images/study/avatar_realtor_male.jpg",
+                    imagePosition: "right",
+                  },
+                  {
+                    role: "상가 건물주 / 임대인",
+                    quote: "“1년 넘게 공실이던 3층 통상가, 공실스터디에서 배운 타깃 마케팅과 AI 제안서로 2주 만에 우량 프랜차이즈 임대 맞췄습니다.”",
+                    author: "판교 상가 건물주 정OO 대표",
+                    image: "/images/study/avatar_landlord_male.jpg",
+                    imagePosition: "left",
+                  },
+                  {
+                    role: "부동산 유튜버 크리에이터",
+                    quote: "“고가 카메라 장비 없이 스마트폰과 AI 음성으로 부동산 브리핑 채널 시작해 구독자 1만 명 돌파하고 전속 매물 쏟아집니다.”",
+                    author: "유튜브 부동산 채널 운영자 김OO 대표",
+                    image: "/images/study/avatar_creator_male.jpg",
+                    imagePosition: "right",
+                  },
+                  {
+                    role: "경매 & 특수물건 실무자",
+                    quote: "“어려운 유찰 물건 권리분석부터 특약 작성까지, 1년 스터디 실무 서식 원본 덕분에 실수 없이 안전하게 계약 체결했어요.”",
+                    author: "경기 분당구 공인중개사 최OO 대표",
+                    image: "/images/study/avatar_senior_female.jpg",
+                    imagePosition: "left",
+                  },
+                ].map((item, idx) => {
+                  const isLeftImage = item.imagePosition === "left";
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        background: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: 16,
+                        padding: "24px 30px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 32,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+                      }}
+                    >
+                      {/* 이미지 좌측 배치 */}
+                      {isLeftImage && (
+                        <div style={{ width: 160, height: 160, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <img
+                            src={item.image}
+                            alt={item.role}
+                            style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 12 }}
+                          />
+                        </div>
+                      )}
+
+                      {/* 본문 텍스트 */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "inline-block", background: "#ecfdf5", color: "#047857", fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 6, marginBottom: 10 }}>
+                          {item.role}
+                        </div>
+                        <p style={{ fontSize: 16, fontWeight: 800, color: "#062828", lineHeight: 1.55, margin: "0 0 10px 0", letterSpacing: "-0.2px" }}>
+                          {item.quote}
+                        </p>
+                        <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>
+                          {item.author}
+                        </span>
+                      </div>
+
+                      {/* 이미지 우측 배치 */}
+                      {!isLeftImage && (
+                        <div style={{ width: 160, height: 160, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <img
+                            src={item.image}
+                            alt={item.role}
+                            style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 12 }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+            </div>
+          </section>
+
           {/* ━━━ 3. 12-MONTH ANNUAL ROADMAP (1년 4단계 성장 로드맵) ━━━ */}
-          <section style={{ padding: "70px 0 65px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
+          <section style={{ padding: "70px 0 65px", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
             <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
               
               <div style={{ textAlign: "center", marginBottom: 44 }}>
