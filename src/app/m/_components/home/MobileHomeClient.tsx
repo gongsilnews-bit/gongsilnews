@@ -62,7 +62,6 @@ const CATEGORIES = [
   { key: "home", label: "홈", path: "/m" },
   { key: "news", label: "뉴스", path: "/m/news_gongsil" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
-  { key: "admin_vacancy", label: "공실관리", path: "/m/admin/vacancy" },
   { key: "study", label: "스터디", path: "/m/study" },
 ];
 

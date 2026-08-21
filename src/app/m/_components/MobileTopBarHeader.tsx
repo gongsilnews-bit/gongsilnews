@@ -9,7 +9,6 @@ const SearchOverlay = dynamic(() => import("./header/SearchOverlay"), { ssr: fal
 const CATEGORIES = [
   { key: "news", label: "뉴스", path: "/m/news_gongsil" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
-  { key: "admin_vacancy", label: "공실관리", path: "/m/admin/vacancy" },
   { key: "study", label: "스터디", path: "/m/study" },
 ];
 
@@ -82,7 +81,7 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
           {CATEGORIES.map((cat) => {
             const isActive = (cat.key === "news" || cat.key === "news_gongsil")
               ? (!activeTab || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc" || activeTab === "local")
-              : (cat.key === "study" ? (activeTab === "study" || activeTab?.startsWith("board_")) : (cat.key === "admin_vacancy" ? (activeTab === "admin_vacancy" || activeTab === "vacancy_admin" || activeTab === "vacancy") : activeTab === cat.key));
+              : (cat.key === "study" ? (activeTab === "study" || activeTab?.startsWith("board_")) : activeTab === cat.key);
             return (
               <button
                 key={cat.key}
@@ -115,7 +114,7 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
             );
           })}
           {/* 검색 및 버튼에 가려지지 않도록 끝부분 여백 추가 */}
-          <div style={{ flexShrink: 0, width: (activeTab === "local" || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc") ? "155px" : "48px" }} />
+          <div style={{ flexShrink: 0, width: (activeTab === "local" || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc" || activeTab === "gongsil") ? "155px" : "48px" }} />
         </div>
         
         {/* 우측 상단 버튼 영역 — 고정 */}
@@ -132,7 +131,7 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
             paddingLeft: "6px",
           }}
         >
-          {/* 오직 뉴스 탭 및 우리동네 지도 뷰에서만 지도/목록 토글 버튼 노출 (공실열람, 스터디에서는 미노출) */}
+          {/* 1. 뉴스 탭 및 우리동네 지도 뷰: 지도기사/목록보기 토글 */}
           {(activeTab === "local" || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc") && (
             activeTab === "local" ? (
               <button
@@ -190,6 +189,37 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
                 <span>지도기사</span>
               </button>
             )
+          )}
+
+          {/* 2. 공실열람 탭: 지도기사 스타일의 '공실관리' 버튼 */}
+          {activeTab === "gongsil" && (
+            <button
+              onClick={() => router.push("/m/admin/vacancy")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "5px 9px",
+                borderRadius: "16px",
+                background: "#F0F4FF",
+                border: "1px solid #D0E0FF",
+                color: "#1a4282",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                letterSpacing: "-0.3px",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a4282" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                <line x1="9" y1="22" x2="9" y2="16" />
+                <line x1="15" y1="22" x2="15" y2="16" />
+                <line x1="9" y1="16" x2="15" y2="16" />
+                <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
+              </svg>
+              <span>공실관리</span>
+            </button>
           )}
 
           <button
