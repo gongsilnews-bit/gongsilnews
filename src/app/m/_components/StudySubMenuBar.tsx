@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 
-export type StudyTab = "lecture" | "applications" | "classroom";
+export type StudyTab = "lecture" | "applications";
 
 interface Props {
   activeTab: StudyTab;
@@ -16,7 +16,6 @@ export default function StudySubMenuBar({ activeTab, onTabChange }: Props) {
   const tabs: { key: StudyTab; label: string; icon: string }[] = [
     { key: "lecture", label: "특강 목록", icon: "🎓" },
     { key: "applications", label: "내 수강신청", icon: "📋" },
-    { key: "classroom", label: "나의 강의실", icon: "🎬" },
   ];
 
   return (
