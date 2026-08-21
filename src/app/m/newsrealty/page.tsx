@@ -169,7 +169,7 @@ export default function MobileNewsRealtyPage() {
             <iframe
               width="100%"
               height="100%"
-              src="https://www.youtube.com/embed/14Ug16MNNh8?rel=0"
+              src="https://www.youtube.com/embed/4a3_M6-Crew?rel=0"
               title="소개 영상"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
