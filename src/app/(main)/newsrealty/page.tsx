@@ -160,20 +160,19 @@ export default function NewsRealtyPage() {
           <div style={{ maxWidth: 900, margin: "0 auto", position: "relative", zIndex: 2 }}>
             
             {/* 핵심 메인 배지 */}
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(56, 189, 248, 0.15)", border: "1px solid rgba(56, 189, 248, 0.35)", padding: "6px 20px", borderRadius: 30, fontSize: 14, fontWeight: 800, color: "#38bdf8", marginBottom: 22 }}>
-              <span>🏢</span>
-              <span>대한민국 <strong style={{ color: "#60a5fa" }}>11만 부동산</strong>을 위한 무료 공동중개 네트워크</span>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(251, 191, 36, 0.15)", border: "1px solid rgba(251, 191, 36, 0.35)", padding: "6px 20px", borderRadius: 30, fontSize: 14, fontWeight: 800, color: "#fbbf24", marginBottom: 22 }}>
+              <span>✨</span>
+              <span>공실뉴스 스마트 중개망</span>
             </div>
 
             {/* 메인 헤드라인 */}
             <h1 style={{ fontSize: 44, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-1.5px", margin: "0 0 18px 0" }}>
-              11만 부동산과 임대인을 위한<br />
-              <span style={{ color: "#38bdf8" }}>무료 공동중개 채널!</span>
+              부동산이세요?<br />
+              <span style={{ color: "#fbbf24" }}>공동중개 등록/열람 평생 무료!</span>
             </h1>
 
             <p style={{ fontSize: 17, color: "#bae6fd", lineHeight: 1.7, margin: "0 0 32px 0", wordBreak: "keep-all" }}>
-              가입비 Zero! 열람비 Zero!<br />
-              빠른 계약을 원할땐, 스마트폰과 PC에서 편하게 공실등록하세요!
+              지금 가입하시면, 공동중개 3건 등록/열람, AI물건보고서, 그리고 전국 법원 경공매 정보를 무료로 열람하실 수 있습니다.
             </p>
 
             {/* 유튜브 영상 프레임 */}
@@ -189,23 +188,28 @@ export default function NewsRealtyPage() {
               />
             </div>
 
-            {/* 5대 핵심 무료 체크리스트 */}
-            <div style={{ display: "flex", justifyContent: "center", gap: "10px 18px", flexWrap: "wrap", fontSize: 13.5, color: "#e0f2fe", fontWeight: 800 }}>
-              <span style={{ background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)", padding: "5px 12px", borderRadius: 20, display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ color: "#38bdf8" }}>✓</span> 1. 공동중개 열람 무료
-              </span>
-              <span style={{ background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)", padding: "5px 12px", borderRadius: 20, display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ color: "#38bdf8" }}>✓</span> 2. 임대인 공실 등록 무료
-              </span>
-              <span style={{ background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)", padding: "5px 12px", borderRadius: 20, display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ color: "#38bdf8" }}>✓</span> 3. 지도기반 모바일 등록/열람
-              </span>
-              <span style={{ background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)", padding: "5px 12px", borderRadius: 20, display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ color: "#38bdf8" }}>✓</span> 4. 매매 보고서 자동 작성
-              </span>
-              <span style={{ background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)", padding: "5px 12px", borderRadius: 20, display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ color: "#38bdf8" }}>✓</span> 5. 커뮤니티 무료
-              </span>
+            {/* 3대 핵심 혜택 카드 */}
+            <div style={{ maxWidth: 600, margin: "0 auto 20px", background: "rgba(15, 23, 42, 0.6)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: "20px 24px", textAlign: "left" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, fontSize: 14.5, color: "#f8fafc", fontWeight: 700 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#fbbf24", fontSize: 16 }}>✓</span>
+                  <span><strong>전국 부동산 누구나 가입하는</strong> 100% 무료 공동중개망</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#fbbf24", fontSize: 16 }}>✓</span>
+                  <span><strong>중개사에게 꼭 필요한</strong> 1초 완성 AI 물건보고서 3건 무료</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#fbbf24", fontSize: 16 }}>✓</span>
+                  <span><strong>실시간 업데이트</strong> 전국 법원 경공매 물건 무료 열람</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 회원 유형 안내 */}
+            <div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.8, marginBottom: 10 }}>
+              <div>· <strong>일반회원</strong> : 공실등록 3건 무료, 경공매 열람 가능, 공동중개 열람 불가</div>
+              <div>· <strong>부동산회원</strong> : 공동중개 3건 등록 무료, 경공매 열람 가능, <span style={{ color: "#fbbf24", fontWeight: 800 }}>공동중개 열람 가능</span></div>
             </div>
 
             {/* CTA 버튼 */}
