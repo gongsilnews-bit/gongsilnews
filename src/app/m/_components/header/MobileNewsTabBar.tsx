@@ -37,6 +37,20 @@ export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
     }
   };
 
+  const handleMyLecturesClick = async () => {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/m/login?returnTo=" + encodeURIComponent("/m/my_lectures"));
+      } else {
+        router.push("/m/my_lectures");
+      }
+    } catch {
+      router.push("/m/login?returnTo=" + encodeURIComponent("/m/my_lectures"));
+    }
+  };
+
   useEffect(() => {
     if (tabBarRef.current && activeTab) {
       const activeEl = tabBarRef.current.querySelector<HTMLElement>('[data-active="true"]');
@@ -235,6 +249,34 @@ export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
                 <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
               </svg>
               <span>공실관리</span>
+            </button>
+          )}
+
+          {/* 3. 스터디 탭: 지도기사/공실관리 스타일의 '내 강의실' 버튼 */}
+          {activeTab === "study" && (
+            <button
+              onClick={handleMyLecturesClick}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "5px 9px",
+                borderRadius: "16px",
+                background: "#F0F4FF",
+                border: "1px solid #D0E0FF",
+                color: "#1a4282",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                letterSpacing: "-0.3px",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a4282" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              </svg>
+              <span>내 강의실</span>
             </button>
           )}
 

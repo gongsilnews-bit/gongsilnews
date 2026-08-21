@@ -15,7 +15,7 @@ export default function MyLecturesPage() {
     const load = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/m"); return; }
+      if (!user) { router.push("/m/login?returnTo=" + encodeURIComponent("/m/my_lectures")); return; }
 
       const res = await getMyEnrollments(user.id);
       if (res.success) setEnrollments(res.data);
@@ -31,7 +31,7 @@ export default function MyLecturesPage() {
         <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>내 수강특강</h1>
+        <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>내 강의실</h1>
       </div>
 
       {/* 로딩 */}
