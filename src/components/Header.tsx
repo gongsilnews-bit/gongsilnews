@@ -541,9 +541,11 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               <div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>공실현장</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>신축/분양/경매</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>상가/사무실/공장/토지</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실/임대관리</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("아파트/오피스텔")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>아파트/오피스텔</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("빌라/주택")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>빌라/주택</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("원룸/투룸(풀옵션)")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>원룸/투룸(풀옵션)</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("상가/사무실/공장/토지")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>상가/사무실/공장/토지</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("신축/분양/경매")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>신축/분양/경매</a></li>
                 </ul>
               </div>
 
@@ -551,9 +553,9 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               <div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>정책시장</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산정책/정치</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>경제/재테크/주식</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>세무/법률/기타</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics?section2=" + encodeURIComponent("부동산정책/정치")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산정책/정치</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics?section2=" + encodeURIComponent("경제/재테크/주식")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>경제/재테크/주식</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics?section2=" + encodeURIComponent("세무/법률/기타")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>세무/법률/기타</a></li>
                 </ul>
               </div>
 
@@ -561,9 +563,9 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               <div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>AI중개실무</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_marketing"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>AI/NEWS</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_marketing"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산유튜브/블로그</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_marketing"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>중개실무/인테리어Tip</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_marketing?section2=" + encodeURIComponent("AI/NEWS")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>AI/NEWS</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_marketing?section2=" + encodeURIComponent("부동산유튜브/블로그")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산유튜브/블로그</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_marketing?section2=" + encodeURIComponent("공실/임대관리")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실/임대관리</a></li>
                 </ul>
               </div>
 
@@ -571,9 +573,10 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               <div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>기타</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>인물/인터뷰</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>맛집/여행/건강</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>스포츠/연예/기타</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc?section2=" + encodeURIComponent("인물/인터뷰")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>인물/인터뷰</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc?section2=" + encodeURIComponent("중개실무/인테리어Tip")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>중개실무/인테리어Tip</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc?section2=" + encodeURIComponent("맛집/여행/건강")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>맛집/여행/건강</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc?section2=" + encodeURIComponent("스포츠/연예/기타")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>스포츠/연예/기타</a></li>
                 </ul>
               </div>
               

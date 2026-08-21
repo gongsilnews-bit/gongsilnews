@@ -16,7 +16,7 @@ export default async function NewsEtcPage() {
     : [];
   const importantArticles = importantRes.success ? (importantRes.data || []) : [];
 
-  const subCategories = ["인물/인터뷰", "맛집/여행/건강", "스포츠/연예/기타"];
+  const subCategories = ["인물/인터뷰", "중개실무/인테리어Tip", "맛집/여행/건강", "스포츠/연예/기타"];
 
   return <NewsListLayout 
     category="기타" 

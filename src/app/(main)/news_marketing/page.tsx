@@ -17,7 +17,7 @@ export default async function NewsMarketingPage() {
     : [];
   const importantArticles = importantRes.success ? (importantRes.data || []) : [];
 
-  const subCategories = ["AI/NEWS", "부동산유튜브/블로그", "중개실무/인테리어Tip"];
+  const subCategories = ["AI/NEWS", "부동산유튜브/블로그", "공실/임대관리"];
 
   return <NewsListLayout 
     category="AI중개실무" 
