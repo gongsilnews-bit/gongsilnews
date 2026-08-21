@@ -131,11 +131,11 @@ function StudyWatchContent() {
 
   /* ── 수강 완료 → 다음 레슨 ── */
   const handleCompleteAndNext = () => {
-    if (!activeLessonId || !lectureId) return;
+    if (!activeLessonId || !lecture?.id) return;
     const next = new Set(completed);
     next.add(activeLessonId);
     setCompleted(next);
-    saveProgress(lectureId, next);
+    saveProgress(lecture.id, next);
     if (activeLessonIndex < allLessons.length - 1) {
       setActiveLessonId(allLessons[activeLessonIndex + 1].id);
     }
@@ -149,7 +149,7 @@ function StudyWatchContent() {
 
   if (loading) {
     return (
-      <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
         수강 환경을 불러오는 중입니다...
       </div>
     );
@@ -157,7 +157,7 @@ function StudyWatchContent() {
 
   if (!lecture) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: 16 }}>
         <div style={{ fontSize: 48 }}>📭</div>
         <div style={{ fontSize: 18, fontWeight: 700, color: "#1e293b" }}>강의 정보를 찾을 수 없습니다.</div>
         <Link href="/study" style={{ padding: "10px 24px", background: "#059669", color: "#fff", textDecoration: "none", borderRadius: 8, fontWeight: 700 }}>
@@ -171,11 +171,13 @@ function StudyWatchContent() {
   const nextLesson = activeLessonIndex < allLessons.length - 1 ? allLessons[activeLessonIndex + 1] : null;
 
   return (
-    <div style={{ backgroundColor: "#ffffff", height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#1e293b" }}>
+    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#1e293b" }}>
       
-      {/* ━━━ 1. TOP MINIMAL NAVBAR (윤자동 Learn 스타일) ━━━ */}
+      {/* ━━━ 1. TOP MINIMAL NAVBAR (윤자동 Learn 스타일 - 화면 상단 고정) ━━━ */}
       <header
         style={{
+          position: "sticky",
+          top: 0,
           height: 54,
           minHeight: 54,
           backgroundColor: "#ffffff",
@@ -217,17 +219,17 @@ function StudyWatchContent() {
           <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>
             진도 <strong style={{ color: "#062828" }}>{completedCount}/{totalLessons}강</strong> ({progressPercent}%)
           </span>
-          <div style={{ width: 100, height: 6, background: "#e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ width: 110, height: 6, background: "#e2e8f0", borderRadius: 10, overflow: "hidden" }}>
             <div style={{ width: `${progressPercent}%`, height: "100%", background: "#059669", borderRadius: 10, transition: "width 0.3s" }} />
           </div>
         </div>
       </header>
 
-      {/* ━━━ 2. MAIN 2-COLUMN LAYOUT (윤자동 Learn 스타일) ━━━ */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      {/* ━━━ 2. MAIN 2-COLUMN LAYOUT (윤자동 자연 스크롤 + 우측 Sticky 사이드바) ━━━ */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", maxWidth: 1560, margin: "0 auto", width: "100%", alignItems: "start", boxSizing: "border-box" }}>
         
-        {/* ── 좌측: 비디오 플레이어 & 강의 설명 ── */}
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", background: "#ffffff" }}>
+        {/* ── 좌측: 비디오 플레이어 & 본문 설명 (자연스러운 전체 스크롤) ── */}
+        <div style={{ display: "flex", flexDirection: "column", background: "#ffffff", minWidth: 0, paddingBottom: 80 }}>
           
           {/* 비디오 컨테이너 */}
           <div style={{ width: "100%", background: "#062326", display: "flex", justifyContent: "center" }}>
@@ -250,7 +252,7 @@ function StudyWatchContent() {
           </div>
 
           {/* 영상 하단 상세 영역 */}
-          <div style={{ maxWidth: 1100, width: "100%", margin: "0 auto", padding: "28px 24px 60px", boxSizing: "border-box" }}>
+          <div style={{ maxWidth: 1100, width: "100%", margin: "0 auto", padding: "28px 24px 0", boxSizing: "border-box" }}>
             
             {/* 레슨 뱃지 & 타이틀 */}
             <div style={{ marginBottom: 20 }}>
@@ -399,30 +401,31 @@ function StudyWatchContent() {
           </div>
         </div>
 
-        {/* ── 우측: 윤자동 스타일 커리큘럼 사이드바 (360px) ── */}
+        {/* ── 우측: 윤자동 스타일 Sticky 커리큘럼 사이드바 (화면 우측 고정) ── */}
         <aside
           style={{
-            width: 360,
-            minWidth: 360,
+            position: "sticky",
+            top: 54,
+            maxHeight: "calc(100vh - 54px)",
+            overflowY: "auto",
             backgroundColor: "#f8fafc",
             borderLeft: "1px solid #e2e8f0",
             display: "flex",
             flexDirection: "column",
-            overflowY: "auto",
           }}
         >
           {/* 사이드바 헤더 */}
-          <div style={{ padding: "18px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff" }}>
+          <div style={{ padding: "18px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff", position: "sticky", top: 0, zIndex: 10 }}>
             <span style={{ fontSize: 15, fontWeight: 800, color: "#062828" }}>커리큘럼</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>{completedCount}/{totalLessons}강</span>
           </div>
 
-          <div style={{ padding: "10px 18px 6px", fontSize: 12, fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>
+          <div style={{ padding: "12px 18px 6px", fontSize: 12, fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>
             전체강의
           </div>
 
           {/* 레슨 리스트 */}
-          <div style={{ flex: 1, padding: "0 10px 20px" }}>
+          <div style={{ flex: 1, padding: "0 12px 30px" }}>
             {allLessons.map((les: any, idx: number) => {
               const isActive = activeLessonId === les.id;
               const isDone = completed.has(les.id);
@@ -447,7 +450,7 @@ function StudyWatchContent() {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
-                    {/* 번호 / 재생 아이콘 */}
+                    {/* 번호 / 완료 아이콘 */}
                     <div
                       style={{
                         width: 22,
