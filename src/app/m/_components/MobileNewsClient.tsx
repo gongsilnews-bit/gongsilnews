@@ -1794,7 +1794,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             const displayName = memberName || "부동산";
 
             return (
-              <div style={{ padding: "20px 16px 12px", backgroundColor: "#fff", borderBottom: "8px solid #f4f6f8" }}>
+              <div style={{ padding: "20px 16px 12px", backgroundColor: "#fff" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <span style={{ fontSize: "13px", fontWeight: 600, color: "#6b7280", letterSpacing: "-0.3px" }}>
                     <span style={{ fontWeight: 800, color: "#111", background: "linear-gradient(180deg, transparent 50%, rgba(254, 240, 138, 0.9) 50%)", padding: "2px 4px", borderRadius: "2px" }}>{displayName} 대표님</span>을 위한
@@ -1802,6 +1802,156 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   <h2 style={{ fontSize: "19px", fontWeight: 900, color: "#1a4282", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.3 }}>
                     {mentalText} <span style={{ color: "#111", fontWeight: "normal" }}>News</span>
                   </h2>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── 2차 카테고리 픽토그램 메뉴 바 (상단형 Option 1) ── */}
+          {(() => {
+            const isAllSelected = searchParams.get("sec") === "all";
+            if (isAllSelected) return null;
+            const currentSection1 = KEY_TO_SECTION1[activeTab] || "";
+            const subs = currentSection1 ? SECTION2_MAP[currentSection1] : null;
+            if (!subs || subs.length === 0) return null;
+
+            return (
+              <div
+                style={{
+                  padding: "0 16px 14px",
+                  backgroundColor: "#fff",
+                  borderBottom: "8px solid #f4f6f8"
+                }}
+              >
+                <div
+                  className="hide-scrollbar"
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchEnd={(e) => e.stopPropagation()}
+                  style={{
+                    display: "flex",
+                    gap: "12px",
+                    overflowX: "auto",
+                    WebkitOverflowScrolling: "touch",
+                    paddingBottom: "4px",
+                    alignItems: "flex-start"
+                  }}
+                >
+                  {/* '전체' 픽토그램 버튼 */}
+                  {(() => {
+                    const isActive = section2Tab === "";
+                    return (
+                      <button
+                        onClick={() => handleSection2Click("")}
+                        style={{
+                          flexShrink: 0,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "6px",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 0,
+                          width: "60px"
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "52px",
+                            height: "52px",
+                            borderRadius: "16px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: isActive ? "#eef4ff" : "#f8fafc",
+                            border: isActive ? "2px solid #1a4282" : "1px solid #e5e7eb",
+                            color: isActive ? "#1a4282" : "#64748b",
+                            boxShadow: isActive ? "0 3px 8px rgba(26,66,130,0.18)" : "none",
+                            transition: "all 0.18s ease"
+                          }}
+                        >
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="3" width="7" height="7"/>
+                            <rect x="14" y="3" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/>
+                          </svg>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: isActive ? 800 : 500,
+                            color: isActive ? "#1a4282" : "#374151",
+                            letterSpacing: "-0.3px",
+                            whiteSpace: "nowrap"
+                          }}
+                        >
+                          전체
+                        </span>
+                      </button>
+                    );
+                  })()}
+
+                  {/* 세부 2차 카테고리 픽토그램 버튼들 */}
+                  {subs.map((sub) => {
+                    const isActive = section2Tab === sub;
+                    const picto = SUB_CATEGORY_PICTOGRAMS[sub] || {
+                      label: sub,
+                      icon: (
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                      )
+                    };
+
+                    return (
+                      <button
+                        key={sub}
+                        onClick={() => handleSection2Click(sub)}
+                        style={{
+                          flexShrink: 0,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "6px",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 0,
+                          width: "62px"
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "52px",
+                            height: "52px",
+                            borderRadius: "16px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: isActive ? "#eef4ff" : "#f8fafc",
+                            border: isActive ? "2px solid #1a4282" : "1px solid #e5e7eb",
+                            color: isActive ? "#1a4282" : "#64748b",
+                            boxShadow: isActive ? "0 3px 8px rgba(26,66,130,0.18)" : "none",
+                            transition: "all 0.18s ease"
+                          }}
+                        >
+                          {picto.icon}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: isActive ? 800 : 500,
+                            color: isActive ? "#1a4282" : "#374151",
+                            letterSpacing: "-0.3px",
+                            whiteSpace: "nowrap"
+                          }}
+                        >
+                          {picto.label}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -2030,156 +2180,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     </div>
                   </div>
                 )}
-
-                {/* ── 2차 카테고리 픽토그램 메뉴 바 (많이 본 뉴스와 전체 기사 목록 사이) ── */}
-                {(() => {
-                  const isAllSelected = searchParams.get("sec") === "all";
-                  if (isAllSelected) return null;
-                  const currentSection1 = KEY_TO_SECTION1[activeTab] || "";
-                  const subs = currentSection1 ? SECTION2_MAP[currentSection1] : null;
-                  if (!subs || subs.length === 0) return null;
-
-                  return (
-                    <div
-                      style={{
-                        padding: "16px 16px 14px",
-                        backgroundColor: "#fff",
-                        borderBottom: "8px solid #f4f6f8"
-                      }}
-                    >
-                      <div
-                        className="hide-scrollbar"
-                        onTouchStart={(e) => e.stopPropagation()}
-                        onTouchEnd={(e) => e.stopPropagation()}
-                        style={{
-                          display: "flex",
-                          gap: "12px",
-                          overflowX: "auto",
-                          WebkitOverflowScrolling: "touch",
-                          paddingBottom: "4px",
-                          alignItems: "flex-start"
-                        }}
-                      >
-                        {/* '전체' 픽토그램 버튼 */}
-                        {(() => {
-                          const isActive = section2Tab === "";
-                          return (
-                            <button
-                              onClick={() => handleSection2Click("")}
-                              style={{
-                                flexShrink: 0,
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                gap: "6px",
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: 0,
-                                width: "60px"
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: "52px",
-                                  height: "52px",
-                                  borderRadius: "16px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  background: isActive ? "#eef4ff" : "#f8fafc",
-                                  border: isActive ? "2px solid #1a4282" : "1px solid #e5e7eb",
-                                  color: isActive ? "#1a4282" : "#64748b",
-                                  boxShadow: isActive ? "0 3px 8px rgba(26,66,130,0.18)" : "none",
-                                  transition: "all 0.18s ease"
-                                }}
-                              >
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <rect x="3" y="3" width="7" height="7"/>
-                                  <rect x="14" y="3" width="7" height="7"/>
-                                  <rect x="14" y="14" width="7" height="7"/>
-                                  <rect x="3" y="14" width="7" height="7"/>
-                                </svg>
-                              </div>
-                              <span
-                                style={{
-                                  fontSize: "12px",
-                                  fontWeight: isActive ? 800 : 500,
-                                  color: isActive ? "#1a4282" : "#374151",
-                                  letterSpacing: "-0.3px",
-                                  whiteSpace: "nowrap"
-                                }}
-                              >
-                                전체
-                              </span>
-                            </button>
-                          );
-                        })()}
-
-                        {/* 세부 2차 카테고리 픽토그램 버튼들 */}
-                        {subs.map((sub) => {
-                          const isActive = section2Tab === sub;
-                          const picto = SUB_CATEGORY_PICTOGRAMS[sub] || {
-                            label: sub,
-                            icon: (
-                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="10"/>
-                              </svg>
-                            )
-                          };
-
-                          return (
-                            <button
-                              key={sub}
-                              onClick={() => handleSection2Click(sub)}
-                              style={{
-                                flexShrink: 0,
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                gap: "6px",
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: 0,
-                                width: "62px"
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: "52px",
-                                  height: "52px",
-                                  borderRadius: "16px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  background: isActive ? "#eef4ff" : "#f8fafc",
-                                  border: isActive ? "2px solid #1a4282" : "1px solid #e5e7eb",
-                                  color: isActive ? "#1a4282" : "#64748b",
-                                  boxShadow: isActive ? "0 3px 8px rgba(26,66,130,0.18)" : "none",
-                                  transition: "all 0.18s ease"
-                                }}
-                              >
-                                {picto.icon}
-                              </div>
-                              <span
-                                style={{
-                                  fontSize: "12px",
-                                  fontWeight: isActive ? 800 : 500,
-                                  color: isActive ? "#1a4282" : "#374151",
-                                  letterSpacing: "-0.3px",
-                                  whiteSpace: "nowrap"
-                                }}
-                              >
-                                {picto.label}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
                 
                 {/* 일반 뉴스 리스트 정렬 필터 (모노크롬 미니멀 스타일) */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6" }}>
