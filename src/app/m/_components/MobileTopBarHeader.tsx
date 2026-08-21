@@ -9,6 +9,7 @@ const SearchOverlay = dynamic(() => import("./header/SearchOverlay"), { ssr: fal
 const CATEGORIES = [
   { key: "news", label: "뉴스", path: "/m/news_gongsil" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
+  { key: "admin_vacancy", label: "공실관리", path: "/m/admin/vacancy" },
   { key: "study", label: "스터디", path: "/m/study" },
 ];
 
@@ -81,7 +82,7 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
           {CATEGORIES.map((cat) => {
             const isActive = (cat.key === "news" || cat.key === "news_gongsil")
               ? (!activeTab || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc" || activeTab === "local")
-              : (cat.key === "study" ? (activeTab === "study" || activeTab?.startsWith("board_")) : activeTab === cat.key);
+              : (cat.key === "study" ? (activeTab === "study" || activeTab?.startsWith("board_")) : (cat.key === "admin_vacancy" ? (activeTab === "admin_vacancy" || activeTab === "vacancy_admin" || activeTab === "vacancy") : activeTab === cat.key));
             return (
               <button
                 key={cat.key}
