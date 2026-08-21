@@ -161,7 +161,8 @@ export default function MobileNewsRealtyPage() {
           </h1>
 
           <p style={{ fontSize: 13, color: "#bae6fd", lineHeight: 1.55, margin: "0 0 20px 0", wordBreak: "keep-all" }}>
-            비싼 가입비·월회비 ZERO! 11만 공인중개사와 임대인이 함께하는 100% 무료 실매물 플랫폼
+            가입비 Zero! 열람비 Zero!<br />
+            빠른 계약을 원할땐, 스마트폰과 PC에서 편하게 공실등록하세요!
           </p>
 
           {/* 유튜브 비디오 프레임 */}

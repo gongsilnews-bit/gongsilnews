@@ -172,8 +172,8 @@ export default function NewsRealtyPage() {
             </h1>
 
             <p style={{ fontSize: 17, color: "#bae6fd", lineHeight: 1.7, margin: "0 0 32px 0", wordBreak: "keep-all" }}>
-              비싼 가입비·월회비 ZERO! 임대인도 무료, 공인중개사도 무료!<br />
-              스마트폰 지도 열람부터 AI 매매 보고서, 실전 마케팅까지 전부 무료로 누리세요.
+              가입비 Zero! 열람비 Zero!<br />
+              빠른 계약을 원할땐, 스마트폰과 PC에서 편하게 공실등록하세요!
             </p>
 
             {/* 유튜브 영상 프레임 */}
