@@ -152,7 +152,7 @@ export default function MobileNewsRealtyPage() {
         <section style={{ backgroundColor: "#091e3a", color: "#ffffff", padding: "28px 16px 36px", textAlign: "center" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.35)", padding: "4px 12px", borderRadius: 20, fontSize: 11.5, fontWeight: 800, color: "#fbbf24", marginBottom: 14 }}>
             <span>✨</span>
-            <span>공실뉴스 스마트 중개망</span>
+            <span>공실뉴스 부동산이 되세요!</span>
           </div>
 
           <h1 style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>

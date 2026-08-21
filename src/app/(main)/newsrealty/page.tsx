@@ -162,7 +162,7 @@ export default function NewsRealtyPage() {
             {/* 핵심 메인 배지 */}
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(251, 191, 36, 0.15)", border: "1px solid rgba(251, 191, 36, 0.35)", padding: "6px 20px", borderRadius: 30, fontSize: 14, fontWeight: 800, color: "#fbbf24", marginBottom: 22 }}>
               <span>✨</span>
-              <span>공실뉴스 스마트 중개망</span>
+              <span>공실뉴스 부동산이 되세요!</span>
             </div>
 
             {/* 메인 헤드라인 */}
