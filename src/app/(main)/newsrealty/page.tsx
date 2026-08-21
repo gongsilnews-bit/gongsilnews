@@ -15,37 +15,37 @@ const brokerStats = [
 
 const PROOF_STORIES = [
   {
-    role: "소속공인중개사 1년차",
-    quote: "“블로그 글 1개 쓰는데 반나절 걸리던 제가, 공실뉴스 AI 프롬프트 쓰고 5분 만에 상위노출 글 3개를 뚝딱 완성했어요.”",
+    role: "개업공인중개사 7년차",
+    quote: "“매달 15만 원씩 나가던 타사 유료 공실망 해지하고 공실뉴스 무료 공동중개로 갈아탔는데, 첫 달 만에 아파트 전세 공동중개 2건 바로 맞췄습니다.”",
+    author: "서울 송파구 개업공인중개사 박OO 대표",
+    image: "/images/study/avatar_realtor_male.jpg",
+    imagePosition: "left",
+  },
+  {
+    role: "상가·원룸 건물주 / 임대인",
+    quote: "“수수료나 등록비 없이 스마트폰으로 공실 올렸더니, 그날 오후에 동네 부동산 대표님 3분에게 바로 연락 와서 주말에 계약 끝냈습니다.”",
+    author: "경기 수원시 원룸 통건물주 정OO 대표",
+    image: "/images/study/avatar_landlord_male.jpg",
+    imagePosition: "right",
+  },
+  {
+    role: "소속공인중개사 2년차",
+    quote: "“손님 모시고 임장 나갔을 때 모바일 지도로 주변 공실 실시간 확인하고, AI 매매 보고서 뽑아서 카톡 브리핑하니 고객 신뢰도가 급상승하더군요.”",
     author: "마포구 소속공인중개사 이OO 실장",
     image: "/images/study/avatar_realtor_female.jpg",
     imagePosition: "left",
   },
   {
-    role: "50대 개업공인중개사",
-    quote: "“컴맹이라 AI는 남 이야기인 줄 알았는데, 클릭 몇 번으로 매물 쇼츠 만들었더니 유튜브 보고 젊은 임차인 문의가 3배 폭증했네요.”",
-    author: "강남구 개업공인중개사 박OO 대표",
-    image: "/images/study/avatar_realtor_male.jpg",
-    imagePosition: "right",
-  },
-  {
-    role: "상가 건물주 / 임대인",
-    quote: "“1년 넘게 공실이던 3층 통상가, 공실스터디에서 배운 타깃 마케팅과 AI 제안서로 2주 만에 우량 프랜차이즈 임대 맞췄습니다.”",
-    author: "판교 상가 건물주 정OO 대표",
-    image: "/images/study/avatar_landlord_male.jpg",
-    imagePosition: "left",
-  },
-  {
-    role: "부동산 유튜버 크리에이터",
-    quote: "“고가 카메라 장비 없이 스마트폰과 AI 음성으로 부동산 브리핑 채널 시작해 구독자 1만 명 돌파하고 전속 매물 쏟아집니다.”",
-    author: "유튜브 부동산 채널 운영자 김OO 대표",
+    role: "신규 개업 공인중개사",
+    quote: "“기존 지역 친목회 가입비 수백만 원과 텃세 때문에 막막했는데, 공실뉴스 전국 11만 망 덕분에 타 지역 매물까지 자유롭게 공동중개 중입니다.”",
+    author: "인천 연수구 개업공인중개사 김OO 대표",
     image: "/images/study/avatar_creator_male.jpg",
     imagePosition: "right",
   },
   {
-    role: "경매 & 특수물건 실무자",
-    quote: "“어려운 유찰 물건 권리분석부터 특약 작성까지, 1년 스터디 실무 서식 원본 덕분에 실수 없이 안전하게 계약 체결했어요.”",
-    author: "경기 분당구 공인중개사 최OO 대표",
+    role: "상가·오피스 전문 중개법인",
+    quote: "“법원 등기소·토지대장 연동과 무료 경·공매 권리분석 덕분에 대형 통사옥 임대차 특약까지 한 치의 오차 없이 깔끔하게 계약 체결했습니다.”",
+    author: "강남 테헤란로 중개법인 최OO 이사",
     image: "/images/study/avatar_senior_female.jpg",
     imagePosition: "left",
   },
@@ -330,20 +330,20 @@ export default function NewsRealtyPage() {
           </div>
         </section>
 
-        {/* ━━━ 3. 3D PASTEL AVATARS: 나이가 많아서요? 코딩/컴퓨터를 못해서요? (블루 톤 윤자동 증명 섹션) ━━━ */}
+        {/* ━━━ 3. 3D PASTEL AVATARS: 11만 부동산 & 임대인 실제 성공 증명 섹션 ━━━ */}
         <section style={{ padding: "80px 0 75px", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
           <div style={{ maxWidth: 880, margin: "0 auto", padding: "0 24px" }}>
             
             <div style={{ textAlign: "center", marginBottom: 44 }}>
               <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#0f172a", margin: "0 0 10px 0", letterSpacing: "-0.5px", lineHeight: 1.35 }}>
-                나이가 많아서요? 컴퓨터를 잘 못 다뤄서요?<br />
-                <span style={{ color: "#2563eb" }}>초보라서 AI 마케팅이 어렵다고요?</span>
+                비싼 사설 공실망 월회비, 아직도 내고 계신가요?<br />
+                <span style={{ color: "#2563eb" }}>11만 부동산과 임대인이 직접 증명합니다</span>
               </h2>
               <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.6, margin: "0 0 4px 0" }}>
-                그 걱정, 이제 내려놓으셔도 됩니다.
+                가입비 0원, 월정액 0원!
               </p>
               <p style={{ fontSize: "14px", color: "#64748b", margin: 0 }}>
-                공실만 등록하면 AI가 브리핑 영상부터 블로그 글, 매물 보고서까지 100% 자동으로 완성해 드립니다.
+                100% 무료 실매물 공동중개 네트워크로 가장 빠르게 계약을 성사시킨 실제 현장 이야기입니다.
               </p>
             </div>
 
