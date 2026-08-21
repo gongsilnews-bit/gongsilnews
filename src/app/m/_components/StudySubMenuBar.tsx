@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 
-export type StudyTab = "lecture" | "applications";
+export type StudyTab = "lecture" | "applications" | "board";
 
 interface Props {
   activeTab: StudyTab;
@@ -16,6 +16,7 @@ export default function StudySubMenuBar({ activeTab, onTabChange }: Props) {
   const tabs: { key: StudyTab; label: string; icon: string }[] = [
     { key: "lecture", label: "특강 목록", icon: "🎓" },
     { key: "applications", label: "내 수강신청", icon: "📋" },
+    { key: "board", label: "자료실", icon: "📁" },
   ];
 
   return (
@@ -54,8 +55,8 @@ export default function StudySubMenuBar({ activeTab, onTabChange }: Props) {
               fontSize: "14px",
               fontWeight: isSel ? 700 : 500,
               color: isSel ? "#ffffff" : "#4b5563",
-              backgroundColor: isSel ? "#1a2e50" : "#f3f4f6",
-              border: isSel ? "1px solid #1a2e50" : "1px solid #e5e7eb",
+              backgroundColor: isSel ? "#062828" : "#f3f4f6",
+              border: isSel ? "1px solid #062828" : "1px solid #e5e7eb",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
