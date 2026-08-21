@@ -255,34 +255,70 @@ export default function MobileNewsRealtyPage() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>🤝 1. 공동중개 열람 무료</div>
-              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>타사 월정액 ZERO! 전국 11만 부동산 실매물 정보를 평생 무료 열람</div>
+            {/* 1. 공동중개 열람 무료 */}
+            <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 12, border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, overflow: "hidden", flexShrink: 0, border: "1px solid #f1f5f9", boxShadow: "0 2px 5px rgba(0,0,0,0.04)" }}>
+                <img src="/images/realty/icons/icon_key_unlock.jpg" alt="공동중개 열람 무료" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 2 }}>1. 공동중개 열람 무료</div>
+                <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.45 }}>타사 월정액 ZERO! 전국 11만 부동산 실매물 정보를 평생 무료 열람</div>
+              </div>
             </div>
 
-            <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>📄 2. 매매 보고서 3건 무료</div>
-              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>지번만 넣으면 AI가 고객 브리핑용 고품격 매매/임대 제안서 1초 만에 완성</div>
+            {/* 2. 매매 보고서 3건 무료 */}
+            <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 12, border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, overflow: "hidden", flexShrink: 0, border: "1px solid #f1f5f9", boxShadow: "0 2px 5px rgba(0,0,0,0.04)" }}>
+                <img src="/images/realty/icons/icon_doc_chart.jpg" alt="매매 보고서 3건 무료" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 2 }}>2. 매매 보고서 3건 무료</div>
+                <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.45 }}>지번만 넣으면 AI가 고객 브리핑용 고품격 매매/임대 제안서 1초 만에 완성</div>
+              </div>
             </div>
 
-            <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>📍 3. 지도기반 모바일 등록/열람</div>
-              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>야외 현장에서도 스마트폰 지도로 주변 공실 확인 및 원터치 전화 연결</div>
+            {/* 3. 지도기반 모바일 등록/열람 */}
+            <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 12, border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, overflow: "hidden", flexShrink: 0, border: "1px solid #f1f5f9", boxShadow: "0 2px 5px rgba(0,0,0,0.04)" }}>
+                <img src="/images/realty/icons/icon_map_pin.jpg" alt="지도기반 모바일 등록/열람" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 2 }}>3. 지도기반 모바일 등록/열람</div>
+                <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.45 }}>야외 현장에서도 스마트폰 지도로 주변 공실 확인 및 원터치 전화 연결</div>
+              </div>
             </div>
 
-            <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>📝 4. 공동중개 등록 3건 무료</div>
-              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>보유 매물을 전국 11만 부동산망에 즉시 노출! 3건까지 등록비 ZERO로 자유롭게 등록</div>
+            {/* 4. 공동중개 등록 3건 무료 */}
+            <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 12, border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, overflow: "hidden", flexShrink: 0, border: "1px solid #f1f5f9", boxShadow: "0 2px 5px rgba(0,0,0,0.04)" }}>
+                <img src="/images/realty/icons/icon_house_plus.jpg" alt="공동중개 등록 3건 무료" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 2 }}>4. 공동중개 등록 3건 무료</div>
+                <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.45 }}>보유 매물을 전국 11만 부동산망에 즉시 노출! 3건까지 등록비 ZERO로 자유롭게 등록</div>
+              </div>
             </div>
 
-            <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>💬 5. 11만 부동산 커뮤니티 무료</div>
-              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>전국 공인중개사와 소통하며 비공개 특급 매물 정보를 자유롭게 교환</div>
+            {/* 5. 커뮤니티 무료 */}
+            <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 12, border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, overflow: "hidden", flexShrink: 0, border: "1px solid #f1f5f9", boxShadow: "0 2px 5px rgba(0,0,0,0.04)" }}>
+                <img src="/images/realty/icons/icon_chat_bubbles.jpg" alt="전국 11만 커뮤니티 무료" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 2 }}>5. 11만 부동산 커뮤니티 무료</div>
+                <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.45 }}>전국 공인중개사와 소통하며 비공개 특급 매물 정보를 자유롭게 교환</div>
+              </div>
             </div>
 
-            <div style={{ background: "#f8fafc", padding: "14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 4 }}>⚖️ 6. 경공매 물건 무료 열람</div>
-              <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>법원 실시간 경매·공매 물건 정보를 추가 비용 없이 100% 무료 제공</div>
+            {/* 6. 경공매 물건 무료 열람 */}
+            <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 12, border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, overflow: "hidden", flexShrink: 0, border: "1px solid #f1f5f9", boxShadow: "0 2px 5px rgba(0,0,0,0.04)" }}>
+                <img src="/images/realty/icons/icon_auction_gavel.jpg" alt="경공매 물건 무료 열람" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", marginBottom: 2 }}>6. 경공매 물건 무료 열람</div>
+                <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.45 }}>법원 실시간 경매·공매 물건 정보를 추가 비용 없이 100% 무료 제공</div>
+              </div>
             </div>
           </div>
         </section>

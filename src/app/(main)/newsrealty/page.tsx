@@ -291,12 +291,12 @@ export default function NewsRealtyPage() {
             {/* 5대 무료 카드 그리드 */}
             <style>{`
               .realty-benefit-card {
-                background: #f8fafc;
+                background: #ffffff;
                 border: 1px solid #e2e8f0;
-                border-radius: 14px;
+                border-radius: 16px;
                 padding: 26px 22px;
                 transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-                box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+                box-shadow: 0 2px 10px rgba(0,0,0,0.03);
                 cursor: pointer;
                 display: flex;
                 flex-direction: column;
@@ -306,25 +306,29 @@ export default function NewsRealtyPage() {
                 transform: translateY(-7px);
                 background: #ffffff;
                 border-color: #2563eb;
-                box-shadow: 0 16px 36px rgba(37, 99, 235, 0.14);
+                box-shadow: 0 16px 36px rgba(37, 99, 235, 0.13);
               }
-              .realty-benefit-card:hover .benefit-icon-box {
-                transform: scale(1.1);
-                background: #2563eb;
-                color: #ffffff;
+              .realty-benefit-card:hover .benefit-3d-icon {
+                transform: scale(1.08) rotate(2deg);
               }
-              .benefit-icon-box {
-                width: 44px;
-                height: 44px;
-                border-radius: 10px;
-                background: #eff6ff;
-                color: #2563eb;
+              .benefit-3d-icon-wrap {
+                width: 60px;
+                height: 60px;
+                border-radius: 14px;
+                background: #f8fafc;
+                border: 1px solid #f1f5f9;
+                overflow: hidden;
+                margin-bottom: 16px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 20px;
-                margin-bottom: 14px;
-                transition: all 0.28s ease;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.04);
+              }
+              .benefit-3d-icon {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
               }
             `}</style>
 
@@ -333,7 +337,9 @@ export default function NewsRealtyPage() {
               {/* 1. 공동중개 열람 무료 */}
               <div className="realty-benefit-card">
                 <div>
-                  <div className="benefit-icon-box">🤝</div>
+                  <div className="benefit-3d-icon-wrap">
+                    <img src="/images/realty/icons/icon_key_unlock.jpg" alt="공동중개 열람 무료" className="benefit-3d-icon" />
+                  </div>
                   <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 01</div>
                   <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>공동중개 열람 무료</h3>
                   <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
@@ -345,7 +351,9 @@ export default function NewsRealtyPage() {
               {/* 2. AI 매매 보고서 3건 무료 */}
               <div className="realty-benefit-card">
                 <div>
-                  <div className="benefit-icon-box">📄</div>
+                  <div className="benefit-3d-icon-wrap">
+                    <img src="/images/realty/icons/icon_doc_chart.jpg" alt="매매 보고서 3건 무료" className="benefit-3d-icon" />
+                  </div>
                   <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 02</div>
                   <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>매매 보고서 3건 무료</h3>
                   <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
@@ -357,7 +365,9 @@ export default function NewsRealtyPage() {
               {/* 3. 지도기반 모바일 등록/열람 */}
               <div className="realty-benefit-card">
                 <div>
-                  <div className="benefit-icon-box">📍</div>
+                  <div className="benefit-3d-icon-wrap">
+                    <img src="/images/realty/icons/icon_map_pin.jpg" alt="지도기반 모바일 등록/열람" className="benefit-3d-icon" />
+                  </div>
                   <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 03</div>
                   <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>지도기반 모바일 등록/열람</h3>
                   <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
@@ -369,7 +379,9 @@ export default function NewsRealtyPage() {
               {/* 4. 공동중개 등록 3건 무료 */}
               <div className="realty-benefit-card">
                 <div>
-                  <div className="benefit-icon-box">📝</div>
+                  <div className="benefit-3d-icon-wrap">
+                    <img src="/images/realty/icons/icon_house_plus.jpg" alt="공동중개 등록 3건 무료" className="benefit-3d-icon" />
+                  </div>
                   <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 04</div>
                   <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>공동중개 등록 3건 무료</h3>
                   <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
@@ -381,7 +393,9 @@ export default function NewsRealtyPage() {
               {/* 5. 커뮤니티 무료 */}
               <div className="realty-benefit-card">
                 <div>
-                  <div className="benefit-icon-box">💬</div>
+                  <div className="benefit-3d-icon-wrap">
+                    <img src="/images/realty/icons/icon_chat_bubbles.jpg" alt="전국 11만 커뮤니티 무료" className="benefit-3d-icon" />
+                  </div>
                   <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 05</div>
                   <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>전국 11만 커뮤니티 무료</h3>
                   <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
@@ -390,10 +404,12 @@ export default function NewsRealtyPage() {
                 </div>
               </div>
 
-              {/* 6. 경공매 물건 무료 열람 (동일한 화이트 카드 & 호버 애니메이션) */}
+              {/* 6. 경공매 물건 무료 열람 */}
               <div className="realty-benefit-card">
                 <div>
-                  <div className="benefit-icon-box" style={{ background: "#fef3c7", color: "#d97706" }}>⚖️</div>
+                  <div className="benefit-3d-icon-wrap">
+                    <img src="/images/realty/icons/icon_auction_gavel.jpg" alt="경공매 물건 무료 열람" className="benefit-3d-icon" />
+                  </div>
                   <div style={{ fontSize: 11.5, fontWeight: 800, color: "#d97706", marginBottom: 4 }}>SPECIAL BONUS</div>
                   <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>경공매 물건 무료 열람</h3>
                   <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
