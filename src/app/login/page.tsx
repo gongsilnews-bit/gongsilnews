@@ -9,6 +9,17 @@ function LoginClient() {
   const searchParams = useSearchParams();
   const returnToParam = searchParams.get('returnTo') || '/';
 
+  // 🚀 모바일 기기/브라우저 접속 시 모바일 전용 로그인 페이지(/m/login)로 즉시 자동 리다이렉트
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+      if (isMobile) {
+        const target = returnToParam.startsWith('/m') ? returnToParam : `/m${returnToParam === '/' ? '' : returnToParam}`;
+        router.replace(`/m/login?returnTo=${encodeURIComponent(target)}`);
+      }
+    }
+  }, [router, returnToParam]);
+
   const [showFindAccount, setShowFindAccount] = useState(false);
   const [findName, setFindName] = useState('');
   const [findPhone, setFindPhone] = useState('');
@@ -59,87 +70,101 @@ function LoginClient() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: '#f8fafc' }}>
-      
-      {/* ━━━ Left Column: Premium Branding Promo ━━━ */}
-      <div 
-        style={{
-          flex: 1.2,
-          background: 'radial-gradient(circle at top right, #1e1b4b 0%, #090d16 100%)',
-          color: '#ffffff',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          padding: '60px 80px',
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-      >
-        <div style={{ position: 'absolute', top: 40, left: 60, cursor: 'pointer' }} onClick={() => router.push('/')}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="24" fill="#222" />
-              <circle cx="24" cy="24" r="16" fill="#FFF" />
-              <path d="M19 15.34L34 24L19 32.66Z" fill="#fbbf24" stroke="#222" strokeWidth="3" />
-            </svg>
-            <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.5px', color: '#fff' }}>공실뉴스</span>
-          </div>
-        </div>
-
-        <div style={{ maxWidth: 520, zIndex: 2, marginTop: 40 }}>
-          <span style={{ display: 'inline-block', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 50, padding: '6px 14px', fontSize: 13, color: '#fbbf24', fontWeight: 800, marginBottom: 20 }}>
-            ✨ 공실뉴스 스마트 중개망
-          </span>
-          <h1 style={{ fontSize: 36, fontWeight: 900, lineHeight: 1.35, marginBottom: 24, wordBreak: 'keep-all', letterSpacing: '-1px' }}>
-            부동산이세요?<br />
-            <span style={{ color: '#fbbf24' }}>공동중개 등록/열람 평생 무료!</span>
-          </h1>
-          <p style={{ fontSize: 16, color: '#94a3b8', lineHeight: 1.6, marginBottom: 40, wordBreak: 'keep-all' }}>
-            지금 가입하시면, 공동중개 3건 등록/열람, AI물건보고서, 그리고 전국 법원 경공매 정보를 무료로 열람하실 수 있습니다.
-          </p>
-
-          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px 28px' }}>
-            {[
-              <><strong style={{color: '#fff', fontWeight: 800}}>전국 부동산 누구나 가입하는</strong> 100% 무료 공동중개망</>,
-              <><strong style={{color: '#fff', fontWeight: 800}}>중개사에게 꼭 필요한</strong> 1초 완성 AI 물건보고서 3건 무료</>,
-              <><strong style={{color: '#fff', fontWeight: 800}}>실시간 업데이트</strong> 전국 법원 경공매 물건 무료 열람</>
-            ].map((item, i) => (
-              <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 14, color: '#cbd5e1', marginBottom: i < 2 ? 18 : 0 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '24px', fontSize: '13px', lineHeight: '1.7', color: '#94a3b8' }}>
-            <div style={{ marginBottom: 6, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1', flexShrink: 0 }}>· 일반회원 :</span>
-              <span>공실등록 3건 무료, 경공매 열람 가능, <span style={{ color: '#64748b' }}>공동중개 열람 불가</span></span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1', flexShrink: 0 }}>· 부동산회원 :</span>
-              <span>공동중개 3건 등록 무료, 경공매 열람 가능, <span style={{ color: '#fbbf24', fontWeight: 600 }}>공동중개 열람 가능</span></span>
+    <>
+      <style>{`
+        @media (max-width: 960px) {
+          .login-left-banner {
+            display: none !important;
+          }
+          .login-right-container {
+            padding: 40px 20px !important;
+            background: #ffffff !important;
+          }
+        }
+      `}</style>
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100%', fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: '#f8fafc' }}>
+        
+        {/* ━━━ Left Column: Premium Branding Promo ━━━ */}
+        <div 
+          className="login-left-banner"
+          style={{
+            flex: 1.2,
+            background: 'radial-gradient(circle at top right, #1e1b4b 0%, #090d16 100%)',
+            color: '#ffffff',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            padding: '60px 80px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          <div style={{ position: 'absolute', top: 40, left: 60, cursor: 'pointer' }} onClick={() => router.push('/')}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="24" r="24" fill="#222" />
+                <circle cx="24" cy="24" r="16" fill="#FFF" />
+                <path d="M19 15.34L34 24L19 32.66Z" fill="#fbbf24" stroke="#222" strokeWidth="3" />
+              </svg>
+              <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.5px', color: '#fff' }}>공실뉴스</span>
             </div>
           </div>
+
+          <div style={{ maxWidth: 520, zIndex: 2, marginTop: 40 }}>
+            <span style={{ display: 'inline-block', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 50, padding: '6px 14px', fontSize: 13, color: '#fbbf24', fontWeight: 800, marginBottom: 20 }}>
+              ✨ 공실뉴스 스마트 중개망
+            </span>
+            <h1 style={{ fontSize: 36, fontWeight: 900, lineHeight: 1.35, marginBottom: 24, wordBreak: 'keep-all', letterSpacing: '-1px' }}>
+              부동산이세요?<br />
+              <span style={{ color: '#fbbf24' }}>공동중개 등록/열람 평생 무료!</span>
+            </h1>
+            <p style={{ fontSize: 16, color: '#94a3b8', lineHeight: 1.6, marginBottom: 40, wordBreak: 'keep-all' }}>
+              지금 가입하시면, 공동중개 3건 등록/열람, AI물건보고서, 그리고 전국 법원 경공매 정보를 무료로 열람하실 수 있습니다.
+            </p>
+
+            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px 28px' }}>
+              {[
+                <><strong style={{color: '#fff', fontWeight: 800}}>전국 부동산 누구나 가입하는</strong> 100% 무료 공동중개망</>,
+                <><strong style={{color: '#fff', fontWeight: 800}}>중개사에게 꼭 필요한</strong> 1초 완성 AI 물건보고서 3건 무료</>,
+                <><strong style={{color: '#fff', fontWeight: 800}}>실시간 업데이트</strong> 전국 법원 경공매 물건 무료 열람</>
+              ].map((item, i) => (
+                <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 14, color: '#cbd5e1', marginBottom: i < 2 ? 18 : 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '24px', fontSize: '13px', lineHeight: '1.7', color: '#94a3b8' }}>
+              <div style={{ marginBottom: 6, display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1', flexShrink: 0 }}>· 일반회원 :</span>
+                <span>공실등록 3건 무료, 경공매 열람 가능, <span style={{ color: '#64748b' }}>공동중개 열람 불가</span></span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1', flexShrink: 0 }}>· 부동산회원 :</span>
+                <span>공동중개 3건 등록 무료, 경공매 열람 가능, <span style={{ color: '#fbbf24', fontWeight: 600 }}>공동중개 열람 가능</span></span>
+              </div>
+            </div>
+          </div>
+
+
         </div>
 
-
-      </div>
-
-      {/* ━━━ Right Column: Login Card Container ━━━ */}
-      <div 
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '60px 40px',
-          background: '#ffffff'
-        }}
-      >
+        {/* ━━━ Right Column: Login Card Container ━━━ */}
+        <div 
+          className="login-right-container"
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '60px 40px',
+            background: '#ffffff'
+          }}
+        >
         <div style={{ width: '100%', maxWidth: 400 }}>
           
           {showFindAccount ? (
@@ -328,6 +353,7 @@ function LoginClient() {
       </div>
 
     </div>
+    </>
   );
 }
 

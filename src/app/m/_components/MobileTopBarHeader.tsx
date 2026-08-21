@@ -27,12 +27,12 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/m/signup?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
+        router.push("/m/login?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
       } else {
         router.push("/m/admin/vacancy");
       }
     } catch {
-      router.push("/m/signup?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
+      router.push("/m/login?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
     }
   };
 
