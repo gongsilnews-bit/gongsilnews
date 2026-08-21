@@ -7,6 +7,16 @@ import { getLectureDetail, createLectureReview, enrollLecture, checkEnrollment }
 import { getPointBalance } from "@/app/actions/point";
 import { createClient } from "@/utils/supabase/client";
 
+/* ── YouTube URL → embed URL ── */
+const toEmbedUrl = (url: string): string => {
+  if (!url) return "";
+  const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]+)/i);
+  if (youtubeMatch && youtubeMatch[1]) {
+    return `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&rel=0`;
+  }
+  return url;
+};
+
 export default function MobileStudyReadClient({ initialLecture }: { initialLecture: any }) {
   const router = useRouter();
 
@@ -96,6 +106,16 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
     setEnrolling(false);
   };
 
+  const openPreview = (videoUrl: string, title: string) => {
+    const url = videoUrl || lecture?.chapters?.[0]?.lessons?.[0]?.video_url || lecture?.video_url;
+    if (!url) {
+      alert("미리보기 영상이 준비 중입니다.");
+      return;
+    }
+    setPreviewUrl(url);
+    setPreviewTitle(title || "미리보기 영상");
+  };
+
   const handleKakaoShare = () => {
     const Kakao = (window as any).Kakao;
     if (!Kakao || !Kakao.isInitialized()) {
@@ -166,14 +186,17 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
       {/* ── 미리보기 모달 ── */}
       {previewUrl && (
         <div onClick={() => setPreviewUrl(null)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 500, background: "#000", borderRadius: 12, overflow: "hidden" }}>
-            <div style={{ padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#111", color: "#fff" }}>
-              <span style={{ fontSize: 13.5, fontWeight: 700 }}>{previewTitle || "미리보기 영상"}</span>
-              <button onClick={() => setPreviewUrl(null)} style={{ background: "none", border: "none", color: "#fff", fontSize: 18, cursor: "pointer" }}>✕</button>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 500, background: "#062326", borderRadius: 12, overflow: "hidden", border: "1px solid #134e4a", boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
+            <div style={{ padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#062326", color: "#fff", borderBottom: "1px solid #134e4a" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ background: "#059669", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 6px", borderRadius: 4 }}>미리보기 VOD</span>
+                <span style={{ fontSize: 13.5, fontWeight: 700 }}>{previewTitle || "미리보기 영상"}</span>
+              </div>
+              <button onClick={() => setPreviewUrl(null)} style={{ background: "none", border: "none", color: "#a7f3d0", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
-            {previewUrl.includes("youtube.com") || previewUrl.includes("youtu.be") ? (
+            {toEmbedUrl(previewUrl).includes("youtube.com/embed") ? (
               <div style={{ width: "100%", aspectRatio: "16/9" }}>
-                <iframe src={previewUrl.replace("watch?v=", "embed/")} title="preview" style={{ width: "100%", height: "100%", border: "none" }} allowFullScreen />
+                <iframe src={toEmbedUrl(previewUrl)} title="preview" style={{ width: "100%", height: "100%", border: "none" }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
               </div>
             ) : (
               <video src={previewUrl} controls autoPlay style={{ width: "100%", height: "100%", background: "#000" }} />
@@ -208,6 +231,33 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
         <span style={{ position: "absolute", top: 12, left: 12, background: "#059669", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>
           VOD
         </span>
+
+        {/* 썸네일 중앙 미리보기 버튼 */}
+        {chapters?.[0]?.lessons?.[0]?.video_url && (
+          <button
+            onClick={() => openPreview(chapters[0].lessons[0].video_url, chapters[0].lessons[0].title || "1강. 미리보기")}
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              padding: "8px 16px",
+              borderRadius: 24,
+              background: "rgba(6, 35, 38, 0.85)",
+              color: "#ffffff",
+              border: "1px solid rgba(52, 211, 153, 0.4)",
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span style={{ color: "#34d399", fontSize: 12 }}>▶</span>
+            <span>미리보기 재생</span>
+          </button>
+        )}
       </div>
 
       {/* ── 2. 강의 제목 및 메타 정보 ── */}
