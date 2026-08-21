@@ -477,10 +477,10 @@ function MobileArticleWrite() {
               }}
             >
               <option value="" disabled style={{ color: "#9ca3af" }}>카테고리 선택</option>
-              <option value="공실현장">공실현장</option>
-              <option value="정책시장">정책시장</option>
-              <option value="AI중개실무">AI중개실무</option>
-              <option value="기타">기타</option>
+              <option value="공실뉴스">공실뉴스</option>
+              <option value="부동산·경제">부동산·경제</option>
+              <option value="AI마케팅">AI마케팅</option>
+              <option value="라이프·오피니언">라이프·오피니언</option>
             </select>
             <select
               value={section2}
@@ -492,30 +492,33 @@ function MobileArticleWrite() {
               }}
             >
               <option value="">세부 분류 (선택사항)</option>
-              {section1 === "공실현장" && (
+              {(section1 === "공실뉴스" || section1 === "공실현장") && (
                 <>
-                  <option value="신축/분양/경매">신축/분양/경매</option>
+                  <option value="아파트/오피스텔">아파트/오피스텔</option>
+                  <option value="빌라/주택">빌라/주택</option>
+                  <option value="원룸/투룸(풀옵션)">원룸/투룸(풀옵션)</option>
                   <option value="상가/사무실/공장/토지">상가/사무실/공장/토지</option>
-                  <option value="공실/임대관리">공실/임대관리</option>
+                  <option value="신축/분양/경매">신축/분양/경매</option>
                 </>
               )}
-              {section1 === "정책시장" && (
+              {(section1 === "부동산·경제" || section1 === "정책시장") && (
                 <>
                   <option value="부동산정책/정치">부동산정책/정치</option>
                   <option value="경제/재테크/주식">경제/재테크/주식</option>
                   <option value="세무/법률/기타">세무/법률/기타</option>
+                  <option value="공실/임대관리">공실/임대관리</option>
                 </>
               )}
-              {section1 === "AI중개실무" && (
+              {(section1 === "AI마케팅" || section1 === "AI중개실무") && (
                 <>
                   <option value="AI/NEWS">AI/NEWS</option>
                   <option value="부동산유튜브/블로그">부동산유튜브/블로그</option>
                   <option value="중개실무/인테리어Tip">중개실무/인테리어Tip</option>
+                  <option value="인물/인터뷰">인물/인터뷰</option>
                 </>
               )}
-              {section1 === "기타" && (
+              {(section1 === "라이프·오피니언" || section1 === "기타") && (
                 <>
-                  <option value="인물/인터뷰">인물/인터뷰</option>
                   <option value="맛집/여행/건강">맛집/여행/건강</option>
                   <option value="스포츠/연예/기타">스포츠/연예/기타</option>
                 </>

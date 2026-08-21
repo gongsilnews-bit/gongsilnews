@@ -177,7 +177,7 @@ export default function Footer() {
       <div className="footer-sitemap-wrap">
         <div className="footer-sitemap-inner">
           <div className="sitemap-col">
-            <h4 className="sitemap-title">공실현장</h4>
+            <h4 className="sitemap-title">공실뉴스</h4>
             <Link href="/news_gongsil?section2=%EC%95%84%ED%8C%8C%ED%8A%B8%2F%EC%98%A4%ED%84%B0%EC%8A%A4%ED%85%94" className="sitemap-link">아파트/오피스텔</Link>
             <Link href="/news_gongsil?section2=%EB%B9%8C%EB%9D%BC%2F%EC%A3%BC%ED%83%9D" className="sitemap-link">빌라/주택</Link>
             <Link href="/news_gongsil?section2=%EC%9B%90%EB%A3%B8%2F%ED%88%AC%EB%A3%B8%28%ED%92%80%EC%98%B5%EC%85%98%29" className="sitemap-link">원룸/투룸(풀옵션)</Link>
@@ -185,19 +185,19 @@ export default function Footer() {
             <Link href="/news_gongsil?section2=%EC%8B%A0%EC%B6%95%2F%EB%B6%84%EC%96%91%2F%EA%B2%BD%EB%A7%A4" className="sitemap-link">신축/분양/경매</Link>
           </div>
           <div className="sitemap-col">
-            <h4 className="sitemap-title">정책시장</h4>
+            <h4 className="sitemap-title">부동산·경제</h4>
             <Link href="/news_politics?section2=%EB%B6%80%EB%8F%99%EC%82%B0%EC%A0%95%EC%B1%85%2F%EC%A0%95%EC%B9%98" className="sitemap-link">부동산정책/정치</Link>
             <Link href="/news_politics?section2=%EA%B2%BD%EC%A0%9C%2F%EC%9E%AC%ED%85%8C%ED%81%AC%2F%EC%A3%BC%EC%8B%9D" className="sitemap-link">경제/재테크/주식</Link>
             <Link href="/news_politics?section2=%EC%84%B8%EB%AC%B4%2F%EB%B2%95%EB%A5%A0%2F%EA%B8%B0%ED%83%80" className="sitemap-link">세무/법률/기타</Link>
           </div>
           <div className="sitemap-col">
-            <h4 className="sitemap-title">AI중개실무</h4>
+            <h4 className="sitemap-title">AI마케팅</h4>
             <Link href="/news_marketing?section2=AI%2FNEWS" className="sitemap-link">AI/NEWS</Link>
             <Link href="/news_marketing?section2=%EB%B6%80%EB%8F%99%EC%82%B0%EC%9C%A0%ED%8A%9C%EB%B8%8C%2F%EB%B8%94%EB%A1%9C%EA%B7%B8" className="sitemap-link">부동산유튜브/블로그</Link>
             <Link href="/news_marketing?section2=%EA%B3%B5%EC%8B%A4%2F%EC%9E%84%EB%8C%80%EA%B4%80%EB%A6%AC" className="sitemap-link">공실/임대관리</Link>
           </div>
           <div className="sitemap-col">
-            <h4 className="sitemap-title">기타</h4>
+            <h4 className="sitemap-title">라이프·오피니언</h4>
             <Link href="/news_etc?section2=%EC%9D%B8%EB%AC%BC%2F%EC%9D%B8%ED%84%B0%EB%B7%B0" className="sitemap-link">인물/인터뷰</Link>
             <Link href="/news_etc?section2=%EC%A4%91%EA%B0%9C%EC%8B%A4%EB%AC%B4%2F%EC%9D%B8%ED%85%8C%EB%A6%AC%EC%96%B4Tip" className="sitemap-link">중개실무/인테리어Tip</Link>
             <Link href="/news_etc?section2=%EB%A7%9B%EC%A7%91%2F%EC%97%AC%ED%96%89%2F%EA%B1%B4%EA%B0%95" className="sitemap-link">맛집/여행/건강</Link>

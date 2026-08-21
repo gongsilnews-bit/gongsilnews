@@ -316,10 +316,10 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   fontSize: isSmallHeader ? "15.5px" : "17px"
                 }}>
                   <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""}>우리동네뉴스</Link>
-                  <Link href="/news_gongsil" className={pathname === "/news_gongsil" ? "active" : ""}>공실현장</Link>
-                  <Link href="/news_politics" className={pathname === "/news_politics" ? "active" : ""}>정책시장</Link>
-                  <Link href="/news_marketing" className={pathname === "/news_marketing" ? "active" : ""}>AI중개실무</Link>
-                  <Link href="/news_etc" className={pathname === "/news_etc" ? "active" : ""}>기타</Link>
+                  <Link href="/news_gongsil" className={pathname === "/news_gongsil" ? "active" : ""}>공실뉴스</Link>
+                  <Link href="/news_politics" className={pathname === "/news_politics" ? "active" : ""}>부동산·경제</Link>
+                  <Link href="/news_marketing" className={pathname === "/news_marketing" ? "active" : ""}>AI마케팅</Link>
+                  <Link href="/news_etc" className={pathname === "/news_etc" ? "active" : ""}>라이프·오피니언</Link>
 
                   {isSmallHeader && <span className="divider" style={{ width: 1, height: 16, backgroundColor: "#ddd", margin: "0 4px" }}></span>}
                   
@@ -537,9 +537,9 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
 
             <h2 style={{ fontSize: 32, fontWeight: 900, marginBottom: 40, borderBottom: "4px solid #111", paddingBottom: 20, color: "#111", paddingRight: 50 }}>전체 서비스</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 40 }}>
-              {/* 1. 공실현장 */}
+              {/* 1. 공실뉴스 */}
               <div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>공실현장</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>공실뉴스</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("아파트/오피스텔")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>아파트/오피스텔</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_gongsil?section2=" + encodeURIComponent("빌라/주택")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>빌라/주택</a></li>
@@ -549,9 +549,9 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 </ul>
               </div>
 
-              {/* 2. 정책시장 */}
+              {/* 2. 부동산·경제 */}
               <div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>정책시장</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>부동산·경제</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics?section2=" + encodeURIComponent("부동산정책/정치")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산정책/정치</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_politics?section2=" + encodeURIComponent("경제/재테크/주식")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>경제/재테크/주식</a></li>
@@ -559,9 +559,9 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 </ul>
               </div>
 
-              {/* 3. AI중개실무 */}
+              {/* 3. AI마케팅 */}
               <div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>AI중개실무</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>AI마케팅</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_marketing?section2=" + encodeURIComponent("AI/NEWS")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>AI/NEWS</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_marketing?section2=" + encodeURIComponent("부동산유튜브/블로그")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>부동산유튜브/블로그</a></li>
@@ -569,9 +569,9 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 </ul>
               </div>
 
-              {/* 4. 기타 */}
+              {/* 4. 라이프·오피니언 */}
               <div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>기타</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#111", marginBottom: 20 }}>라이프·오피니언</div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc?section2=" + encodeURIComponent("인물/인터뷰")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>인물/인터뷰</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_etc?section2=" + encodeURIComponent("중개실무/인테리어Tip")); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>중개실무/인테리어Tip</a></li>

@@ -20,25 +20,28 @@ const parser = new Parser({
 });
 
 const FULL_CATEGORY_MAP = [
-  // 1. 공실현장
-  { section1: "공실현장", section2: "신축/분양/경매", keyword: "신축 아파트 분양 청약 OR 법원 경매 낙찰가율 OR 오피스텔 분양" },
-  { section1: "공실현장", section2: "상가/사무실/공장/토지", keyword: "지식산업센터 공실 OR 상가 매매 동향 OR 오피스 빌딩 매매 OR 토지 거래" },
-  { section1: "공실현장", section2: "공실/임대관리", keyword: "상가 공실률 OR 오피스 임대료 OR 꼬마빌딩 리모델링 OR 임대관리" },
+  // 1. 공실뉴스
+  { section1: "공실뉴스", section2: "아파트/오피스텔", keyword: "아파트 매매 전세 OR 오피스텔 분양 임대" },
+  { section1: "공실뉴스", section2: "빌라/주택", keyword: "빌라 다세대 전세 OR 단독주택 매매" },
+  { section1: "공실뉴스", section2: "원룸/투룸(풀옵션)", keyword: "원룸 투룸 월세 임대차" },
+  { section1: "공실뉴스", section2: "상가/사무실/공장/토지", keyword: "지식산업센터 공실 OR 상가 매매 동향 OR 오피스 빌딩 매매 OR 토지 거래" },
+  { section1: "공실뉴스", section2: "신축/분양/경매", keyword: "신축 아파트 분양 청약 OR 법원 경매 낙찰가율 OR 오피스텔 분양" },
 
-  // 2. 정책시장
-  { section1: "정책시장", section2: "부동산정책/정치", keyword: "국토교통부 부동산 정책 OR 아파트 분양가 OR 재건축 규제 OR 부동산 대출" },
-  { section1: "정책시장", section2: "경제/재테크/주식", keyword: "기준금리 부동산 OR 주식 시장 전망 OR 부동산 펀드 리츠 OR 채권 금리" },
-  { section1: "정책시장", section2: "세무/법률/기타", keyword: "부동산 세금 OR 부동산 판례 OR 종부세 OR 취득세 OR 상가 임대차" },
+  // 2. 부동산·경제
+  { section1: "부동산·경제", section2: "부동산정책/정치", keyword: "국토교통부 부동산 정책 OR 아파트 분양가 OR 재건축 규제 OR 부동산 대출" },
+  { section1: "부동산·경제", section2: "경제/재테크/주식", keyword: "기준금리 부동산 OR 주식 시장 전망 OR 부동산 펀드 리츠 OR 채권 금리" },
+  { section1: "부동산·경제", section2: "세무/법률/기타", keyword: "부동산 세금 OR 부동산 판례 OR 종부세 OR 취득세 OR 상가 임대차" },
+  { section1: "부동산·경제", section2: "공실/임대관리", keyword: "상가 공실률 OR 오피스 임대료 OR 꼬마빌딩 리모델링 OR 임대관리" },
 
-  // 3. AI중개실무
-  { section1: "AI중개실무", section2: "AI/NEWS", keyword: "생성형 AI 프롭테크 OR 챗GPT 인공지능 OR 부동산 AI" },
-  { section1: "AI중개실무", section2: "부동산유튜브/블로그", keyword: "공인중개사 마케팅 OR 부동산 유튜브 채널 OR 매물 홍보" },
-  { section1: "AI중개실무", section2: "중개실무/인테리어Tip", keyword: "상가 인테리어 OR 아파트 인테리어 OR 리모델링 OR 공인중개사" },
+  // 3. AI마케팅
+  { section1: "AI마케팅", section2: "AI/NEWS", keyword: "생성형 AI 프롭테크 OR 챗GPT 인공지능 OR 부동산 AI" },
+  { section1: "AI마케팅", section2: "부동산유튜브/블로그", keyword: "공인중개사 마케팅 OR 부동산 유튜브 채널 OR 매물 홍보" },
+  { section1: "AI마케팅", section2: "중개실무/인테리어Tip", keyword: "상가 인테리어 OR 아파트 인테리어 OR 리모델링 OR 공인중개사" },
+  { section1: "AI마케팅", section2: "인물/인터뷰", keyword: "부동산 전문가 인터뷰 OR CEO 리더십 인터뷰 OR 프롭테크 대표" },
 
-  // 4. 기타
-  { section1: "기타", section2: "인물/인터뷰", keyword: "부동산 전문가 인터뷰 OR CEO 리더십 인터뷰 OR 프롭테크 대표" },
-  { section1: "기타", section2: "맛집/여행/건강", keyword: "맛집 추천 OR 국내 여행지 OR 건강 관리" },
-  { section1: "기타", section2: "스포츠/연예/기타", keyword: "프로야구 OR K리그 OR 연예 이슈 OR 신차 출시" },
+  // 4. 라이프·오피니언
+  { section1: "라이프·오피니언", section2: "맛집/여행/건강", keyword: "맛집 추천 OR 국내 여행지 OR 건강 관리" },
+  { section1: "라이프·오피니언", section2: "스포츠/연예/기타", keyword: "프로야구 OR K리그 OR 연예 이슈 OR 신차 출시" },
 ];
 
 export async function GET(req: Request) {

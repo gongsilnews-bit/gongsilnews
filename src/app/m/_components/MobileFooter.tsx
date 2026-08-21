@@ -4,10 +4,10 @@ import FooterAuthButtons from "./FooterAuthButtons";
 
 const CATEGORIES = [
   { label: "우리동네뉴스", href: "/m/news_map" },
-  { label: "공실현장", href: "/m/news_gongsil" },
-  { label: "정책시장", href: "/m/news_politics" },
-  { label: "AI중개실무", href: "/m/news_marketing" },
-  { label: "기타", href: "/m/news_etc" },
+  { label: "공실뉴스", href: "/m/news_gongsil" },
+  { label: "부동산·경제", href: "/m/news_politics" },
+  { label: "AI마케팅", href: "/m/news_marketing" },
+  { label: "라이프·오피니언", href: "/m/news_etc" },
   { label: "공실열람", href: "/m/gongsil" },
   { label: "부동산특강", href: "/m/study" },
   { label: "자료실", href: "/m/board?id=drone" },

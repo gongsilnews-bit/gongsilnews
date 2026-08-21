@@ -49,38 +49,46 @@ const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
 const CATEGORIES = [
-  { key: "news", label: "뉴스", path: "/m/news_gongsil", section1: "공실현장" },
+  { key: "news", label: "뉴스", path: "/m/news_gongsil", section1: "공실뉴스" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
   { key: "study", label: "스터디", path: "/m/study" },
 ];
 
 const NEWS_PILL_TABS = [
   { key: "all", label: "전체", path: "/m/news_gongsil?sec=all" },
-  { key: "news_gongsil", label: "공실현장", path: "/m/news_gongsil" },
-  { key: "news_politics", label: "정책시장", path: "/m/news_politics" },
-  { key: "news_marketing", label: "AI중개실무", path: "/m/news_marketing" },
-  { key: "news_etc", label: "기타", path: "/m/news_etc" },
+  { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil" },
+  { key: "news_politics", label: "부동산·경제", path: "/m/news_politics" },
+  { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing" },
+  { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc" },
 ];
 
 const KEY_TO_SECTION1: Record<string, string> = {
-  "news_gongsil": "공실현장",
-  "news_politics": "정책시장",
-  "news_marketing": "AI중개실무",
-  "news_etc": "기타"
+  "news_gongsil": "공실뉴스",
+  "news_politics": "부동산·경제",
+  "news_marketing": "AI마케팅",
+  "news_etc": "라이프·오피니언"
 };
 
 const SECTION1_TO_KEY: Record<string, string> = {
+  "공실뉴스": "news_gongsil",
   "공실현장": "news_gongsil",
+  "부동산·경제": "news_politics",
   "정책시장": "news_politics",
+  "AI마케팅": "news_marketing",
   "AI중개실무": "news_marketing",
+  "라이프·오피니언": "news_etc",
   "기타": "news_etc"
 };
 
 // 4대 표준 1차/2차 카테고리 맵
 const SECTION2_MAP: Record<string, string[]> = {
+  "공실뉴스": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
   "공실현장": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
+  "부동산·경제": ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타", "공실/임대관리"],
   "정책시장": ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타", "공실/임대관리"],
+  "AI마케팅": ["AI/NEWS", "부동산유튜브/블로그", "중개실무/인테리어Tip", "인물/인터뷰"],
   "AI중개실무": ["AI/NEWS", "부동산유튜브/블로그", "중개실무/인테리어Tip", "인물/인터뷰"],
+  "라이프·오피니언": ["맛집/여행/건강", "스포츠/연예/기타"],
   "기타": ["맛집/여행/건강", "스포츠/연예/기타"],
 };
 
@@ -1454,10 +1462,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   </button>
                   <select value={section1Filter} onChange={(e) => { setSection1Filter(e.target.value); setSection2Filter(""); }} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section1Filter ? "1.5px solid #508bf5" : "1px solid #d1d5db", background: section1Filter ? "#f0f6ff" : "#fff", color: section1Filter ? "#508bf5" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
                     <option value="">1차섹션 전체</option>
-                    <option value="공실현장">공실현장</option>
-                    <option value="정책시장">정책시장</option>
-                    <option value="AI중개실무">AI중개실무</option>
-                    <option value="기타">기타</option>
+                    <option value="공실뉴스">공실뉴스</option>
+                    <option value="부동산·경제">부동산·경제</option>
+                    <option value="AI마케팅">AI마케팅</option>
+                    <option value="라이프·오피니언">라이프·오피니언</option>
                   </select>
                   <select value={section2Filter} onChange={(e) => setSection2Filter(e.target.value)} style={{ padding: "7px 10px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: section2Filter ? "1.5px solid #508bf5" : "1px solid #d1d5db", background: section2Filter ? "#f0f6ff" : "#fff", color: section2Filter ? "#508bf5" : "#374151", cursor: "pointer", outline: "none", flexShrink: 0, appearance: "none" as any, WebkitAppearance: "none" as any, paddingRight: "24px", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}>
                     <option value="">2차섹션 전체</option>

@@ -256,7 +256,19 @@ export async function getArticles(filters?: {
         query = query.eq("status", filters.status);
       }
     }
-    if (filters?.section1) query = query.eq("section1", filters.section1);
+    if (filters?.section1) {
+      if (filters.section1 === "공실뉴스" || filters.section1 === "공실현장") {
+        query = query.in("section1", ["공실뉴스", "공실현장"]);
+      } else if (filters.section1 === "부동산·경제" || filters.section1 === "정책시장") {
+        query = query.in("section1", ["부동산·경제", "정책시장"]);
+      } else if (filters.section1 === "AI마케팅" || filters.section1 === "AI중개실무") {
+        query = query.in("section1", ["AI마케팅", "AI중개실무"]);
+      } else if (filters.section1 === "라이프·오피니언" || filters.section1 === "기타") {
+        query = query.in("section1", ["라이프·오피니언", "기타"]);
+      } else {
+        query = query.eq("section1", filters.section1);
+      }
+    }
     if (filters?.section2) {
       if (Array.isArray(filters.section2)) {
         query = query.in("section2", filters.section2);

@@ -147,10 +147,10 @@ export default function MenuPage() {
   ];
 
   const newsMenus = [
-    { name: "공실현장", path: "/m/news_gongsil" },
-    { name: "정책시장", path: "/m/news_politics" },
-    { name: "AI중개실무", path: "/m/news_marketing" },
-    { name: "기타", path: "/m/news_etc" }
+    { name: "공실뉴스", path: "/m/news_gongsil" },
+    { name: "부동산·경제", path: "/m/news_politics" },
+    { name: "AI마케팅", path: "/m/news_marketing" },
+    { name: "라이프·오피니언", path: "/m/news_etc" }
   ];
 
   const serviceMenus = [

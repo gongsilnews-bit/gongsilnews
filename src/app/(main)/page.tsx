@@ -29,10 +29,10 @@ export default async function Home() {
     getBannersByPlacement("MAIN_BOTTOM_FULL"),
     getLectures({ status: "ACTIVE" }),
     // ✅ 카테고리별로 개별 조회하여 노출 및 성능 최적화 (초기 3개 + 더보기 5개 대응을 위해 개수 확장)
-    getArticles({ status: "APPROVED", section1: "AI중개실무", limit: 8 }),
-    getArticles({ status: "APPROVED", section1: "정책시장", limit: 8 }),
-    getArticles({ status: "APPROVED", section1: "기타", limit: 8 }),
-    getArticles({ status: "APPROVED", section1: "공실현장", limit: 40 }),
+    getArticles({ status: "APPROVED", section1: "AI마케팅", limit: 8 }),
+    getArticles({ status: "APPROVED", section1: "부동산·경제", limit: 8 }),
+    getArticles({ status: "APPROVED", section1: "라이프·오피니언", limit: 8 }),
+    getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 40 }),
     getArticles({ status: "APPROVED", limit: 30 }),
   ]);
 

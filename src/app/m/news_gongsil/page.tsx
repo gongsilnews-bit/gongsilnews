@@ -16,7 +16,7 @@ export default async function MobileNewsPage({
   
   const filters: any = { status: "APPROVED", limit: 50 };
   if (!isAll) {
-    filters.section1 = "공실현장";
+    filters.section1 = "공실뉴스";
   }
   if (authorMatch) filters.author_name = authorMatch;
   if (keywordMatch) filters.keyword = keywordMatch;

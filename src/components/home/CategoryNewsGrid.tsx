@@ -258,12 +258,12 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
         .hide-scroll::-webkit-scrollbar { display: none; }
       `}</style>
       
-      {/* 5. 공실현장 + 정책시장 */}
+      {/* 5. 공실뉴스 + 부동산·경제 */}
       <div id="row-gongsil-economy" className="mt-50 mb-50">
         <div className="hot-issue-wrap" style={{ gap: 40, marginBottom: "8px" }}>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
-              <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title">공실현장 &gt;</h2></Link>
+              <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title">공실뉴스 &gt;</h2></Link>
             </div>
             <div className="hi-list">
               {renderArticleList(gongsilListArts)}
@@ -271,7 +271,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
           </div>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
-              <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">정책시장 &gt;</h2></Link>
+              <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산·경제 &gt;</h2></Link>
             </div>
             <div className="hi-list">
               {renderArticleList(economyArts)}
@@ -281,11 +281,11 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
         {renderRowMoreButton(allGongsilList.length > 3 || allEconomy.length > 3, row1Limit, setRow1Limit, "row-gongsil-economy")}
       </div>
 
-      {/* 6. Video News: 공실현장 — 블랙 배경 */}
+      {/* 6. Video News: 공실뉴스 — 블랙 배경 */}
       <div className="video-dark-bg" style={{ background: "#111", margin: "0 -9999px", padding: "40px 9999px 48px", position: "relative" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div className="sec-title-wrap">
-            <Link href="/news_gongsil" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}><svg width="28" height="20" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg><h2 className="sec-title" style={{ color: "#fff", margin: 0 }}>공실현장 &gt;</h2></Link>
+            <Link href="/news_gongsil" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}><svg width="28" height="20" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg><h2 className="sec-title" style={{ color: "#fff", margin: 0 }}>공실뉴스 &gt;</h2></Link>
           </div>
 
           <div 
@@ -358,19 +358,19 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
                   );
                 })
               ) : (
-                <div style={{ color: "#666", padding: "40px 0", width: "100%", textAlign: "center" }}>등록된 공실현장 기사가 없습니다.</div>
+                <div style={{ color: "#666", padding: "40px 0", width: "100%", textAlign: "center" }}>등록된 공실뉴스 기사가 없습니다.</div>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* 7. AI중개실무 + 기타 */}
+      {/* 7. AI마케팅 + 라이프·오피니언 */}
       <div id="row-marketing-life" className="mt-50 mb-50">
         <div className="hot-issue-wrap" style={{ gap: 40, marginBottom: "8px" }}>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
-              <Link href="/news_marketing" style={{ textDecoration: "none" }}><h2 className="sec-title">AI중개실무 &gt;</h2></Link>
+              <Link href="/news_marketing" style={{ textDecoration: "none" }}><h2 className="sec-title">AI마케팅 &gt;</h2></Link>
             </div>
             <div className="hi-list">
               {renderArticleList(marketingArts)}
@@ -378,7 +378,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
           </div>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
-              <Link href="/news_etc" style={{ textDecoration: "none" }}><h2 className="sec-title">기타 &gt;</h2></Link>
+              <Link href="/news_etc" style={{ textDecoration: "none" }}><h2 className="sec-title">라이프·오피니언 &gt;</h2></Link>
             </div>
             <div className="hi-list">
               {renderArticleList(lifeArts)}
