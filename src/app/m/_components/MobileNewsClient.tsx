@@ -78,9 +78,13 @@ const SECTION1_TO_KEY: Record<string, string> = {
 
 // PC와 동일한 2차 카테고리 맵
 const SECTION2_MAP: Record<string, string[]> = {
+  "공실현장": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
   "공실뉴스": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
+  "정책시장": ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타"],
   "부동산·경제": ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타"],
+  "AI중개실무": ["AI/NEWS", "부동산유튜브/블로그", "공실/임대관리"],
   "AI마케팅": ["AI/NEWS", "부동산유튜브/블로그", "공실/임대관리"],
+  "기타": ["인물/인터뷰", "중개실무/인테리어Tip", "맛집/여행/건강", "스포츠/연예/기타"],
   "라이프·오피니언": ["인물/인터뷰", "중개실무/인테리어Tip", "맛집/여행/건강", "스포츠/연예/기타"],
 };
 
@@ -1559,6 +1563,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         /* 일반 뉴스 리스트 뷰 */
         <div style={{ flex: 1, paddingBottom: "20px" }}>
           {/* 2차 카테고리 알약 탭바 (전체 · 공실·현장 · 정책·시장 · AI·중개실무 · 기타 · 📍우리동네) */}
+          {/* 1단 메인 카테고리 알약 탭바 */}
           <div
             className="hide-scrollbar"
             onTouchStart={(e) => e.stopPropagation()}
@@ -1566,9 +1571,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             style={{
               display: "flex",
               gap: "8px",
-              padding: "12px 16px",
+              padding: "12px 16px 8px",
               background: "#fff",
-              borderBottom: "8px solid #f4f6f8",
               overflowX: "auto",
               WebkitOverflowScrolling: "touch",
               alignItems: "center"
@@ -1601,6 +1605,79 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               );
             })}
           </div>
+
+          {/* 2단 2차 서브 카테고리 탭바 (전체 탭이 아닐 때 선택된 카테고리의 2차 분류 노출) */}
+          {(() => {
+            const isAllSelected = searchParams.get("sec") === "all";
+            if (isAllSelected) return null;
+            const currentSection1 = KEY_TO_SECTION1[activeTab] || "";
+            const subs = currentSection1 ? SECTION2_MAP[currentSection1] : null;
+            if (!subs || subs.length === 0) return null;
+
+            return (
+              <div
+                className="hide-scrollbar"
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
+                style={{
+                  display: "flex",
+                  gap: "6px",
+                  padding: "0 16px 10px",
+                  background: "#fff",
+                  borderBottom: "8px solid #f4f6f8",
+                  overflowX: "auto",
+                  WebkitOverflowScrolling: "touch",
+                  alignItems: "center"
+                }}
+              >
+                {/* '전체' 버튼 */}
+                <button
+                  onClick={() => handleSection2Click("")}
+                  style={{
+                    flexShrink: 0,
+                    padding: "5px 12px",
+                    borderRadius: "16px",
+                    fontSize: "13px",
+                    fontWeight: section2Tab === "" ? 700 : 500,
+                    color: section2Tab === "" ? "#1a4282" : "#6b7280",
+                    background: section2Tab === "" ? "#eef4ff" : "#f9fafb",
+                    border: section2Tab === "" ? "1.5px solid #1a4282" : "1px solid #e5e7eb",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  전체
+                </button>
+
+                {/* 각 2차 카테고리 버튼 */}
+                {subs.map(sub => {
+                  const isActive = section2Tab === sub;
+                  return (
+                    <button
+                      key={sub}
+                      onClick={() => handleSection2Click(sub)}
+                      style={{
+                        flexShrink: 0,
+                        padding: "5px 12px",
+                        borderRadius: "16px",
+                        fontSize: "13px",
+                        fontWeight: isActive ? 700 : 500,
+                        color: isActive ? "#1a4282" : "#6b7280",
+                        background: isActive ? "#eef4ff" : "#f9fafb",
+                        border: isActive ? "1.5px solid #1a4282" : "1px solid #e5e7eb",
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {sub}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* 2줄 프리미엄 개인화 헤더 카드 */}
           {(() => {
@@ -1767,7 +1844,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               ? [...regularArticles].sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
               : regularArticles;
             
-            const currentCatLabel = section2Tab || (CATEGORIES.find(c => c.key === activeTab)?.label || "공실뉴스");
+            const currentCatLabel = section2Tab || (NEWS_PILL_TABS.find(p => p.key === activeTab)?.label || "공실현장");
             const popularArticles = [...filteredBySection2]
               .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
               .slice(0, 5);
