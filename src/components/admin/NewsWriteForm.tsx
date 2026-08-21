@@ -1836,19 +1836,19 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                     <option value="부동산정책/정치">부동산정책/정치</option>
                     <option value="경제/재테크/주식">경제/재테크/주식</option>
                     <option value="세무/법률/기타">세무/법률/기타</option>
-                    <option value="공실/임대관리">공실/임대관리</option>
                   </>
                 )}
                 {(section1 === "AI마케팅" || section1 === "AI중개실무") && (
                   <>
                     <option value="AI/NEWS">AI/NEWS</option>
                     <option value="부동산유튜브/블로그">부동산유튜브/블로그</option>
-                    <option value="중개실무/인테리어Tip">중개실무/인테리어Tip</option>
-                    <option value="인물/인터뷰">인물/인터뷰</option>
+                    <option value="공실/임대관리">공실/임대관리</option>
                   </>
                 )}
                 {(section1 === "라이프·오피니언" || section1 === "기타") && (
                   <>
+                    <option value="인물/인터뷰">인물/인터뷰</option>
+                    <option value="중개실무/인테리어Tip">중개실무/인테리어Tip</option>
                     <option value="맛집/여행/건강">맛집/여행/건강</option>
                     <option value="스포츠/연예/기타">스포츠/연예/기타</option>
                   </>
