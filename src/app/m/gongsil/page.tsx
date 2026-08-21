@@ -83,6 +83,7 @@ function MobileGongsilContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [vacancies, setVacancies] = useState<any[]>([]);
+  const [allVacancies, setAllVacancies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
@@ -500,6 +501,30 @@ function MobileGongsilContent() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [selectedVacancy, selectedCluster, isEmbedded, showListView, showGalleryFullscreen]);
 
+  // 💡 [전국 매물 풀 로드] 상세검색 시 전국 매물 개수를 정확하게 계산하기 위한 전체 데이터셋 캐싱
+  useEffect(() => {
+    const fetchAllVacancies = async () => {
+      try {
+        const res = await getVacanciesForMap({
+          is_auction: activeMode === "경매",
+          limit: 10000
+        });
+        if (res && res.success && res.data) {
+          const withImages = res.data.map((v: any) => ({
+            ...v,
+            images: v.vacancy_photos
+              ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+              : [],
+          }));
+          setAllVacancies(withImages);
+        }
+      } catch (e) {
+        console.error("Failed to fetch all vacancies:", e);
+      }
+    };
+    fetchAllVacancies();
+  }, [activeMode]);
+
   // 💡 [대표님 지침] Bbox(지도의 화면 영역) 변화 또는 필터 기반(B스타일) 행정구역 검색 시 Supabase에서 실시간으로 범위 내/지역 내 매물 패치!
   useEffect(() => {
     // A스타일(map)인데 mapBounds가 없으면 조회를 대기
@@ -510,8 +535,8 @@ function MobileGongsilContent() {
       try {
         let res;
 
-        if (filters.locationSearchType === 'filter' && (filters.sido || filters.sigungu || filters.dong)) {
-          // B스타일: 행정구역 텍스트 기반 전체 데이터 쿼리
+        if (filters.locationSearchType === 'filter') {
+          // B스타일: 행정구역 텍스트 기반 전체 데이터 쿼리 (전국 포함)
           res = await getVacanciesForMap({
             sido: filters.sido || undefined,
             sigungu: filters.sigungu || undefined,
@@ -519,6 +544,19 @@ function MobileGongsilContent() {
             is_auction: activeMode === "경매",
             limit: 10000
           });
+
+          // '전국' 선택 시 지도를 대한민국 전역(level: 12)으로 자동 줌아웃
+          if (!filters.sido && !filters.sigungu && !filters.dong) {
+            const kakao = (window as any).kakao;
+            if (kakaoMapRef.current && kakao) {
+              skipGeocodingSyncRef.current = true;
+              kakaoMapRef.current.setCenter(new kakao.maps.LatLng(36.3, 127.8));
+              kakaoMapRef.current.setLevel(12);
+              setTimeout(() => {
+                skipGeocodingSyncRef.current = false;
+              }, 1200);
+            }
+          }
         } else {
           // A스타일: 지도 영역(Bbox) 기반 쿼리
           if (!mapBounds) return;
@@ -1045,6 +1083,7 @@ function MobileGongsilContent() {
         {!isEmbedded && !isDirectView && (
           <MobileFilterBar
             vacancies={vacancies}
+            allVacancies={allVacancies}
             filteredCount={filteredVacancies.length}
             filters={filters}
             onFilterChange={updateFilter}

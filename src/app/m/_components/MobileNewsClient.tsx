@@ -49,15 +49,17 @@ const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
 const CATEGORIES = [
-  { key: "local", label: "우리동네뉴스", path: "/m/news_map" },
-  { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil", section1: "공실뉴스" },
-  { key: "news_politics", label: "부동산·경제", path: "/m/news_politics", section1: "부동산·경제" },
-  { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing", section1: "AI마케팅" },
-  { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc", section1: "라이프·오피니언" },
+  { key: "news", label: "뉴스", path: "/m/news_gongsil", section1: "공실뉴스" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
-  { key: "study", label: "부동산특강", path: "/m/study" },
-  { key: "board_archive", label: "자료실", path: "/m/board?id=drone" },
-  { key: "board_community", label: "커뮤니티", path: "/m/board?id=free" },
+  { key: "study", label: "스터디", path: "/m/study" },
+];
+
+const NEWS_PILL_TABS = [
+  { key: "all", label: "전체", path: "/m/news_gongsil?sec=all" },
+  { key: "news_gongsil", label: "공실·현장", path: "/m/news_gongsil" },
+  { key: "news_politics", label: "정책·시장", path: "/m/news_politics" },
+  { key: "news_marketing", label: "AI·중개실무", path: "/m/news_marketing" },
+  { key: "news_etc", label: "기타", path: "/m/news_etc" },
 ];
 
 const KEY_TO_SECTION1: Record<string, string> = {
@@ -775,18 +777,23 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   // 탭 전환 시 해당 카테고리 기사를 클라이언트에서 직접 fetch (SPA 전환으로 서버 컴포넌트가 안 돌 때 대비)
   useEffect(() => {
-    if (activeTab === initialTab || activeTab === "local") return;
-    const cat = CATEGORIES.find(c => c.key === activeTab);
-    if (!cat || !cat.section1) return;
+    if (activeTab === "local") return;
+    const isAll = searchParams.get("sec") === "all";
+    const targetSection1 = isAll ? undefined : (KEY_TO_SECTION1[activeTab] || undefined);
 
     const fetchCategoryArticles = async () => {
       setLoading(true);
-      const res = await getArticles({ status: "APPROVED", limit: 30, section1: cat.section1 });
+      const params: any = { status: "APPROVED", limit: 30 };
+      if (targetSection1) params.section1 = targetSection1;
+      const res = await getArticles(params);
       if (res.success && res.data) setArticles(res.data);
       setLoading(false);
     };
-    fetchCategoryArticles();
-  }, [activeTab, initialTab]);
+
+    if (isAll || activeTab !== initialTab) {
+      fetchCategoryArticles();
+    }
+  }, [activeTab, initialTab, searchParams]);
 
   // 우리동네뉴스 (lat/lng 있는 기사) 로드
   useEffect(() => {
@@ -1116,61 +1123,135 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 scrollBehavior: "smooth",
               }}
             >
-              {CATEGORIES.map((cat) => (
+              {CATEGORIES.map((cat) => {
+                const isActive = (cat.key === "news" || cat.key === "news_gongsil")
+                  ? (!activeTab || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc" || activeTab === "local")
+                  : (cat.key === "study" ? (activeTab === "study" || activeTab?.startsWith("board_")) : activeTab === cat.key);
+                return (
+                  <button
+                    key={cat.key}
+                    data-active={isActive ? "true" : "false"}
+                    onClick={() => { 
+                      router.push(cat.path);
+                    }}
+                    style={{
+                      flexShrink: 0,
+                      padding: "0 14px 0",
+                      fontSize: "17px",
+                      fontWeight: isActive ? 700 : 500,
+                      color: isActive ? "#1a4282" : "#222222",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "color 0.2s",
+                      whiteSpace: "nowrap",
+                      letterSpacing: "-0.3px",
+                    }}
+                  >
+                    <span style={{
+                      display: "inline-block",
+                      paddingBottom: "3px",
+                      borderBottom: isActive ? "3px solid #1a4282" : "3px solid transparent",
+                    }}>
+                      {cat.label}
+                    </span>
+                  </button>
+                );
+              })}
+              {/* 검색 및 버튼에 가려지지 않도록 끝부분 여백 추가 */}
+              <div style={{ flexShrink: 0, width: "155px" }} />
+            </div>
+
+            {/* 우측 지도에서 기사보기/목록보기 토글 & 검색 버튼 — 고정 */}
+            <div
+              style={{
+                position: "absolute",
+                right: "6px",
+                top: "0",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                background: "#ffffff",
+                paddingLeft: "6px",
+              }}
+            >
+              {activeTab === "local" ? (
                 <button
-                  key={cat.key}
-                  data-active={activeTab === cat.key ? "true" : "false"}
-                  onClick={() => { 
-                    router.push(cat.path);
-                  }}
+                  onClick={() => router.push("/m/news_gongsil")}
                   style={{
-                    flexShrink: 0,
-                    padding: "0 14px 0",
-                    fontSize: "17px",
-                    fontWeight: activeTab === cat.key ? 700 : 500,
-                    color: activeTab === cat.key ? "#1a4282" : "#222222",
-                    background: "none",
-                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "5px 9px",
+                    borderRadius: "16px",
+                    background: "#F0F4FF",
+                    border: "1px solid #D0E0FF",
+                    color: "#1a4282",
+                    fontSize: "12px",
+                    fontWeight: 700,
                     cursor: "pointer",
-                    transition: "color 0.2s",
                     whiteSpace: "nowrap",
                     letterSpacing: "-0.3px",
                   }}
                 >
-                  <span style={{
-                    display: "inline-block",
-                    paddingBottom: "3px",
-                    borderBottom: activeTab === cat.key ? "3px solid #1a4282" : "3px solid transparent",
-                  }}>
-                    {cat.label}
-                  </span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a4282" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                  <span>목록보기</span>
                 </button>
-              ))}
-              {/* 검색 버튼에 가려지지 않도록 끝부분 여백 추가 */}
-              <div style={{ flexShrink: 0, width: "40px" }} />
+              ) : (
+                <button
+                  onClick={() => router.push("/m/news_map")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "5px 9px",
+                    borderRadius: "16px",
+                    background: "#F0F4FF",
+                    border: "1px solid #D0E0FF",
+                    color: "#1a4282",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    letterSpacing: "-0.3px",
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a4282" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                    <line x1="8" y1="2" x2="8" y2="18"></line>
+                    <line x1="16" y1="6" x2="16" y2="22"></line>
+                  </svg>
+                  <span>지도에서 기사보기</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                style={{
+                  height: "36px",
+                  width: "36px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a2e50" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
             </div>
-            {/* 우측 검색 버튼 — 고정 */}
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              style={{
-                position: "absolute",
-                right: "0",
-                top: "0",
-                height: "100%",
-                width: "48px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#ffffff",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#1a2e50" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </button>
 
           </div>
 
@@ -1477,78 +1558,49 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       ) : (
         /* 일반 뉴스 리스트 뷰 */
         <div style={{ flex: 1, paddingBottom: "20px" }}>
-          {/* 2차 카테고리 탭바 (PC와 동일) */}
-          {(() => {
-            const cat = CATEGORIES.find(c => c.key === activeTab);
-            const subs = cat?.section1 ? SECTION2_MAP[cat.section1] : null;
-            if (!subs || subs.length === 0) return null;
-            return (
-              <div
-                className="hide-scrollbar"
-                onTouchStart={(e) => e.stopPropagation()}
-                onTouchEnd={(e) => e.stopPropagation()}
-                style={{
-                  display: "flex",
-                  gap: "8px",
-                  padding: "12px 16px",
-                  background: "#fff",
-                  borderBottom: "8px solid #f4f6f8",
-                  overflowX: "auto",
-                  WebkitOverflowScrolling: "touch",
-                  alignItems: "center"
-                }}
-              >
-                {/* '전체' 버튼 */}
-                {(() => {
-                  const isActive = section2Tab === "";
-                  return (
-                    <button
-                      onClick={() => handleSection2Click("")}
-                      style={{
-                        flexShrink: 0,
-                        padding: "8px 16px",
-                        borderRadius: "24px",
-                        fontSize: "14px",
-                        fontWeight: isActive ? 700 : 500,
-                        color: isActive ? "#fff" : "#374151",
-                        background: isActive ? "#1a4282" : "#fff",
-                        border: isActive ? "1px solid #1a4282" : "1px solid #d1d5db",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}
-                    >
-                      전체
-                    </button>
-                  );
-                })()}
-                
-                {/* 각 2차 카테고리 버튼 */}
-                {subs.map(sub => {
-                  const isActive = section2Tab === sub;
-                  return (
-                    <button
-                      key={sub}
-                      onClick={() => handleSection2Click(sub)}
-                      style={{
-                        flexShrink: 0,
-                        padding: "8px 16px",
-                        borderRadius: "24px",
-                        fontSize: "14px",
-                        fontWeight: isActive ? 700 : 500,
-                        color: isActive ? "#fff" : "#374151",
-                        background: isActive ? "#1a4282" : "#fff",
-                        border: isActive ? "1px solid #1a4282" : "1px solid #d1d5db",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}
-                    >
-                      {sub}
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })()}
+          {/* 2차 카테고리 알약 탭바 (전체 · 공실·현장 · 정책·시장 · AI·중개실무 · 기타 · 📍우리동네) */}
+          <div
+            className="hide-scrollbar"
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+            style={{
+              display: "flex",
+              gap: "8px",
+              padding: "12px 16px",
+              background: "#fff",
+              borderBottom: "8px solid #f4f6f8",
+              overflowX: "auto",
+              WebkitOverflowScrolling: "touch",
+              alignItems: "center"
+            }}
+          >
+            {NEWS_PILL_TABS.map((pill) => {
+              const isAllSelected = searchParams.get("sec") === "all";
+              const isActive = pill.key === "all" ? isAllSelected : (!isAllSelected && activeTab === pill.key);
+              return (
+                <button
+                  key={pill.key}
+                  onClick={() => router.push(pill.path)}
+                  style={{
+                    flexShrink: 0,
+                    padding: "8px 16px",
+                    borderRadius: "24px",
+                    fontSize: "14px",
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? "#fff" : "#374151",
+                    background: isActive ? "#1a4282" : "#fff",
+                    border: isActive ? "1px solid #1a4282" : "1px solid #d1d5db",
+                    boxShadow: isActive ? "0 2px 6px rgba(26,66,130,0.2)" : "none",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {pill.label}
+                </button>
+              );
+            })}
+          </div>
 
           {/* 2줄 프리미엄 개인화 헤더 카드 */}
           {(() => {
@@ -1556,8 +1608,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             const isAuthorView = !!(authorProfile || initialAuthorName);
             if (isKeywordSearch || isAuthorView) return null;
 
-            const activeSub = section2Tab || "전체";
-            const mentalText = PERSONALIZED_MENTAL_MAP[activeTab]?.[activeSub] || "추천 뉴스";
+            const isAll = searchParams.get("sec") === "all";
+            const mentalText = isAll
+              ? "부동산 전체 핵심 브리핑"
+              : (PERSONALIZED_MENTAL_MAP[activeTab]?.["전체"] || PERSONALIZED_MENTAL_MAP[activeTab]?.[section2Tab] || "현장 중개사가 직접 전하는 공실 소식");
             const displayName = memberName || "부동산";
 
             return (

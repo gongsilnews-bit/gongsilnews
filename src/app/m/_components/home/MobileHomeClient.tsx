@@ -60,15 +60,9 @@ interface Props {
 
 const CATEGORIES = [
   { key: "home", label: "홈", path: "/m" },
-  { key: "local", label: "우리동네뉴스", path: "/m/news_map" },
-  { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil" },
-  { key: "news_politics", label: "부동산·경제", path: "/m/news_politics" },
-  { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing" },
-  { key: "news_etc", label: "라이프·오피니언", path: "/m/news_etc" },
+  { key: "news", label: "뉴스", path: "/m/news_gongsil" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
-  { key: "study", label: "부동산특강", path: "/m/study" },
-  { key: "board_archive", label: "자료실", path: "/m/board?id=drone" },
-  { key: "board_community", label: "커뮤니티", path: "/m/board?id=free" },
+  { key: "study", label: "스터디", path: "/m/study" },
 ];
 
 export default function MobileHomeClient(props: Props) {

@@ -6,24 +6,9 @@ interface Props {
   onFilterChange: (filters: Partial<FilterState>) => void;
 }
 
-const YEAR_PRESETS = [
-  { label: '1년 이내', min: new Date().getFullYear() - 1, max: null },
-  { label: '5년 이내', min: new Date().getFullYear() - 5, max: null },
-  { label: '10년 이내', min: new Date().getFullYear() - 10, max: null },
-  { label: '15년 이내', min: new Date().getFullYear() - 15, max: null },
-  { label: '15년 이상', min: null, max: new Date().getFullYear() - 15 },
-];
-
 const FLOOR_PRESETS = ['1층', '2층이상', '반지하/지하', '옥탑'];
 
-const OWNER_PRESETS = [
-  { label: '전체', value: null },
-  { label: '일반인', value: 'USER' },
-  { label: '부동산', value: 'REALTOR' },
-];
-
 const COMMISSION_PRESETS = [
-  { label: '전체', value: null },
   { label: '공동중개', value: '공동중개' },
   { label: '수수료25%~', value: '25' },
   { label: '50%~', value: '50' },
@@ -39,14 +24,14 @@ const THEME_PRESETS = [
 ];
 
 const gridBtnStyle = (active: boolean): React.CSSProperties => ({
-  padding: "10px 4px", borderRadius: "8px", fontSize: "16px", fontWeight: active ? 700 : 500, textAlign: "center",
+  padding: "10px 4px", borderRadius: "8px", fontSize: "15px", fontWeight: active ? 700 : 500, textAlign: "center",
   border: active ? "1.5px solid #4b89ff" : "1px solid #e5e7eb",
   background: active ? "#eef4ff" : "#fff", color: active ? "#4b89ff" : "#000",
   cursor: "pointer", transition: "all 0.15s",
 });
 
 const themeBtnStyle = (active: boolean): React.CSSProperties => ({
-  padding: "7px 12px", borderRadius: "16px", fontSize: "15px", fontWeight: active ? 700 : 500,
+  padding: "7px 12px", borderRadius: "16px", fontSize: "14px", fontWeight: active ? 700 : 500,
   border: active ? "1.5px solid #10b981" : "1px solid #e5e7eb",
   background: active ? "#d1fae5" : "#f9fafb", color: active ? "#065f46" : "#000",
   cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap" as const,
@@ -67,10 +52,8 @@ export function OwnerRoleFilterPanel({ filters, onFilterChange }: Props) {
 
   const toggleUser = () => {
     if (filters.ownerRole === null) {
-      onFilterChange({ ownerRole: 'REALTOR' });
+      onFilterChange({ ownerRole: 'USER' });
     } else if (filters.ownerRole === 'USER') {
-      onFilterChange({ ownerRole: 'NONE' });
-    } else if (filters.ownerRole === 'REALTOR') {
       onFilterChange({ ownerRole: null });
     } else {
       onFilterChange({ ownerRole: 'USER' });
@@ -79,10 +62,8 @@ export function OwnerRoleFilterPanel({ filters, onFilterChange }: Props) {
 
   const toggleRealtor = () => {
     if (filters.ownerRole === null) {
-      onFilterChange({ ownerRole: 'USER' });
+      onFilterChange({ ownerRole: 'REALTOR' });
     } else if (filters.ownerRole === 'REALTOR') {
-      onFilterChange({ ownerRole: 'NONE' });
-    } else if (filters.ownerRole === 'USER') {
       onFilterChange({ ownerRole: null });
     } else {
       onFilterChange({ ownerRole: 'REALTOR' });
@@ -104,14 +85,14 @@ export function OwnerRoleFilterPanel({ filters, onFilterChange }: Props) {
           onClick={toggleUser} 
           style={gridBtnStyle(isUserActive)}
         >
-          일반인
+          일반인 {isUserActive && "✓"}
         </button>
         <button 
           type="button" 
           onClick={toggleRealtor} 
           style={gridBtnStyle(isRealtorActive)}
         >
-          부동산
+          부동산 {isRealtorActive && "✓"}
         </button>
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -140,7 +121,7 @@ export function CommissionFilterPanel({ filters, onFilterChange }: Props) {
     if (filters.commissionType === null) {
       onFilterChange({ commissionType: val });
     } else if (filters.commissionType === val) {
-      onFilterChange({ commissionType: 'NONE' });
+      onFilterChange({ commissionType: null });
     } else {
       onFilterChange({ commissionType: val });
     }
@@ -148,7 +129,7 @@ export function CommissionFilterPanel({ filters, onFilterChange }: Props) {
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px", marginBottom: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
         <button 
           type="button" 
           onClick={handleToggleAll} 
@@ -156,16 +137,19 @@ export function CommissionFilterPanel({ filters, onFilterChange }: Props) {
         >
           {isAllSelected ? "✓ 전체해제" : "✓ 전체선택"}
         </button>
-        {COMMISSION_PRESETS.filter(p => p.value !== null).map(p => (
-          <button 
-            type="button" 
-            key={p.label} 
-            onClick={() => toggleOption(p.value!)} 
-            style={gridBtnStyle(isOptionActive(p.value!))}
-          >
-            {p.label}
-          </button>
-        ))}
+        {COMMISSION_PRESETS.map(p => {
+          const active = isOptionActive(p.value);
+          return (
+            <button 
+              type="button" 
+              key={p.label} 
+              onClick={() => toggleOption(p.value)} 
+              style={gridBtnStyle(active)}
+            >
+              {p.label} {active && "✓"}
+            </button>
+          );
+        })}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button type="button" onClick={() => onFilterChange({ commissionType: 'NONE' })} style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>↻ 조건삭제</button>
@@ -175,14 +159,30 @@ export function CommissionFilterPanel({ filters, onFilterChange }: Props) {
 }
 
 export function FloorFilterPanel({ filters, onFilterChange }: Props) {
+  const isAll = filters.floor === null;
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", marginBottom: "20px" }}>
-        {FLOOR_PRESETS.map(f => (
-          <button type="button" key={f} onClick={() => onFilterChange({ floor: filters.floor === f ? null : f })} style={gridBtnStyle(filters.floor === f)}>
-            {f}
-          </button>
-        ))}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ floor: isAll ? FLOOR_PRESETS[0] : null })}
+          style={{ ...gridBtnStyle(isAll), fontSize: "14px" }}
+        >
+          {isAll ? "✓ 전체해제" : "✓ 전체선택"}
+        </button>
+        {FLOOR_PRESETS.map(f => {
+          const active = isAll || filters.floor === f;
+          return (
+            <button 
+              type="button" 
+              key={f} 
+              onClick={() => onFilterChange({ floor: filters.floor === f ? null : f })} 
+              style={gridBtnStyle(active)}
+            >
+              {f} {active && "✓"}
+            </button>
+          );
+        })}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button type="button" onClick={() => onFilterChange({ floor: null })} style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>↻ 조건삭제</button>
@@ -290,14 +290,9 @@ export function YearFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-interface ThemeProps {
-  filters: FilterState;
-  onFilterChange: (filters: Partial<FilterState>) => void;
-  presets?: string[];
-}
-
 export function ThemeFilterPanel({ filters, onFilterChange, presets }: ThemeProps) {
   const finalPresets = presets || THEME_PRESETS;
+
   const toggleTheme = (t: string) => {
     const arr = filters.themes;
     const newArr = arr.includes(t) ? arr.filter(x => x !== t) : [...arr, t];
@@ -306,11 +301,14 @@ export function ThemeFilterPanel({ filters, onFilterChange, presets }: ThemeProp
   return (
     <div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "20px" }}>
-        {finalPresets.map(t => (
-          <button type="button" key={t} onClick={() => toggleTheme(t)} style={themeBtnStyle(filters.themes.includes(t))}>
-            # {t} {filters.themes.includes(t) && "✓"}
-          </button>
-        ))}
+        {finalPresets.map(t => {
+          const isSel = filters.themes.includes(t);
+          return (
+            <button key={t} type="button" onClick={() => toggleTheme(t)} style={themeBtnStyle(isSel)}>
+              # {t} {isSel && "✓"}
+            </button>
+          );
+        })}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button type="button" onClick={() => onFilterChange({ themes: [] })} style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>↻ 조건삭제</button>
@@ -319,53 +317,74 @@ export function ThemeFilterPanel({ filters, onFilterChange, presets }: ThemeProp
   );
 }
 
-// ── 방 / 욕실수 패널 (PC 동일) ──
+// ── 방 / 욕실수 패널 (전체선택 시 모든 방/욕실 버튼 활성화) ──
 export function RoomBathFilterPanel({ filters, onFilterChange }: Props) {
   const ROOMS = [
-    { label: "전체", val: null },
     { label: "1개+", val: 1 },
     { label: "2개+", val: 2 },
     { label: "3개+", val: 3 },
     { label: "4개+", val: 4 },
   ];
   const BATHS = [
-    { label: "전체", val: null },
     { label: "1개+", val: 1 },
     { label: "2개+", val: 2 },
     { label: "3개+", val: 3 },
   ];
 
+  const isRoomAll = filters.roomCount === null;
+  const isBathAll = filters.bathCount === null;
+
   return (
     <div>
       <div style={{ marginBottom: "20px" }}>
         <div style={{ fontSize: "14px", fontWeight: 700, color: "#111", marginBottom: "8px" }}>방 개수</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px" }}>
-          {ROOMS.map((r) => (
-            <button
-              key={r.label}
-              type="button"
-              onClick={() => onFilterChange({ roomCount: r.val })}
-              style={gridBtnStyle(filters.roomCount === r.val)}
-            >
-              {r.label}
-            </button>
-          ))}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px" }}>
+          <button
+            type="button"
+            onClick={() => onFilterChange({ roomCount: isRoomAll ? 1 : null })}
+            style={{ ...gridBtnStyle(isRoomAll), fontSize: "14px" }}
+          >
+            {isRoomAll ? "✓ 전체해제" : "✓ 전체선택"}
+          </button>
+          {ROOMS.map((r) => {
+            const active = isRoomAll || filters.roomCount === r.val;
+            return (
+              <button
+                key={r.label}
+                type="button"
+                onClick={() => onFilterChange({ roomCount: filters.roomCount === r.val ? null : r.val })}
+                style={gridBtnStyle(active)}
+              >
+                {r.label} {active && "✓"}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <div style={{ marginBottom: "20px" }}>
         <div style={{ fontSize: "14px", fontWeight: 700, color: "#111", marginBottom: "8px" }}>욕실 개수</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px" }}>
-          {BATHS.map((b) => (
-            <button
-              key={b.label}
-              type="button"
-              onClick={() => onFilterChange({ bathCount: b.val })}
-              style={gridBtnStyle(filters.bathCount === b.val)}
-            >
-              {b.label}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => onFilterChange({ bathCount: isBathAll ? 1 : null })}
+            style={{ ...gridBtnStyle(isBathAll), fontSize: "14px" }}
+          >
+            {isBathAll ? "✓ 전체해제" : "✓ 전체선택"}
+          </button>
+          {BATHS.map((b) => {
+            const active = isBathAll || filters.bathCount === b.val;
+            return (
+              <button
+                key={b.label}
+                type="button"
+                onClick={() => onFilterChange({ bathCount: filters.bathCount === b.val ? null : b.val })}
+                style={gridBtnStyle(active)}
+              >
+                {b.label} {active && "✓"}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -382,23 +401,31 @@ export function RoomBathFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-// ── 방향 패널 (PC 동일) ──
+// ── 방향 패널 (전체선택 시 모든 방향 활성화) ──
 export function DirectionFilterPanel({ filters, onFilterChange }: Props) {
-  const DIRS = ["전체", "동향", "서향", "남향", "북향", "남동향", "남서향", "북동향", "북서향"];
+  const DIRS = ["동향", "서향", "남향", "북향", "남동향", "남서향", "북동향", "북서향"];
+  const isAll = !filters.direction;
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ direction: isAll ? DIRS[0] : null })}
+          style={{ ...gridBtnStyle(isAll), fontSize: "14px" }}
+        >
+          {isAll ? "✓ 전체해제" : "✓ 전체선택"}
+        </button>
         {DIRS.map((d) => {
-          const isSel = (d === "전체" && !filters.direction) || filters.direction === d;
+          const isSel = isAll || filters.direction === d;
           return (
             <button
               key={d}
               type="button"
-              onClick={() => onFilterChange({ direction: d === "전체" ? null : d })}
+              onClick={() => onFilterChange({ direction: filters.direction === d ? null : d })}
               style={gridBtnStyle(isSel)}
             >
-              {d}
+              {d} {isSel && "✓"}
             </button>
           );
         })}
@@ -416,30 +443,40 @@ export function DirectionFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-// ── 세대수 패널 (PC 동일) ──
+// ── 세대수 패널 (전체선택 시 모든 세대수 활성화) ──
 export function UnitsFilterPanel({ filters, onFilterChange }: Props) {
   const UNITS = [
-    { label: "전체", val: null },
     { label: "50세대+", val: 50 },
     { label: "100세대+", val: 100 },
     { label: "300세대+", val: 300 },
     { label: "500세대+", val: 500 },
     { label: "1,000세대+", val: 1000 },
   ];
+  const isAll = filters.unitsMin === null;
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
-        {UNITS.map((u) => (
-          <button
-            key={u.label}
-            type="button"
-            onClick={() => onFilterChange({ unitsMin: u.val })}
-            style={gridBtnStyle(filters.unitsMin === u.val)}
-          >
-            {u.label}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => onFilterChange({ unitsMin: isAll ? UNITS[0].val : null })}
+          style={{ ...gridBtnStyle(isAll), fontSize: "14px" }}
+        >
+          {isAll ? "✓ 전체해제" : "✓ 전체선택"}
+        </button>
+        {UNITS.map((u) => {
+          const active = isAll || filters.unitsMin === u.val;
+          return (
+            <button
+              key={u.label}
+              type="button"
+              onClick={() => onFilterChange({ unitsMin: filters.unitsMin === u.val ? null : u.val })}
+              style={gridBtnStyle(active)}
+            >
+              {u.label} {active && "✓"}
+            </button>
+          );
+        })}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button
@@ -454,29 +491,39 @@ export function UnitsFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-// ── 관리비 패널 (PC 동일) ──
+// ── 관리비 패널 (전체선택 시 모든 관리비 활성화) ──
 export function MaintFilterPanel({ filters, onFilterChange }: Props) {
   const MAINTO_PRESETS = [
-    { label: "전체", val: null },
     { label: "5만 이하", val: 50000 },
     { label: "10만 이하", val: 100000 },
     { label: "20만 이하", val: 200000 },
     { label: "30만 이하", val: 300000 },
   ];
+  const isAll = filters.maintMax === null;
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
-        {MAINTO_PRESETS.map((m) => (
-          <button
-            key={m.label}
-            type="button"
-            onClick={() => onFilterChange({ maintMax: m.val })}
-            style={gridBtnStyle(filters.maintMax === m.val)}
-          >
-            {m.label}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => onFilterChange({ maintMax: isAll ? MAINTO_PRESETS[0].val : null })}
+          style={{ ...gridBtnStyle(isAll), fontSize: "14px" }}
+        >
+          {isAll ? "✓ 전체해제" : "✓ 전체선택"}
+        </button>
+        {MAINTO_PRESETS.map((m) => {
+          const active = isAll || filters.maintMax === m.val;
+          return (
+            <button
+              key={m.label}
+              type="button"
+              onClick={() => onFilterChange({ maintMax: filters.maintMax === m.val ? null : m.val })}
+              style={gridBtnStyle(active)}
+            >
+              {m.label} {active && "✓"}
+            </button>
+          );
+        })}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button
@@ -491,23 +538,31 @@ export function MaintFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-// ── 주차 패널 (PC 동일) ──
+// ── 주차 패널 (전체선택 시 모든 주차옵션 활성화) ──
 export function ParkingFilterPanel({ filters, onFilterChange }: Props) {
-  const PARKING = ["전체", "주차가능", "자주식", "기계식", "무료주차"];
+  const PARKING = ["주차가능", "자주식", "기계식", "무료주차"];
+  const isAll = !filters.parking;
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ parking: isAll ? PARKING[0] : null })}
+          style={{ ...gridBtnStyle(isAll), fontSize: "14px" }}
+        >
+          {isAll ? "✓ 전체해제" : "✓ 전체선택"}
+        </button>
         {PARKING.map((p) => {
-          const isSel = (p === "전체" && !filters.parking) || filters.parking === p;
+          const isSel = isAll || filters.parking === p;
           return (
             <button
               key={p}
               type="button"
-              onClick={() => onFilterChange({ parking: p === "전체" ? null : p })}
+              onClick={() => onFilterChange({ parking: filters.parking === p ? null : p })}
               style={gridBtnStyle(isSel)}
             >
-              {p}
+              {p} {isSel && "✓"}
             </button>
           );
         })}
@@ -523,13 +578,6 @@ export function ParkingFilterPanel({ filters, onFilterChange }: Props) {
       </div>
     </div>
   );
-}
-
-// ── 기타옵션 패널 (카테고리별 1:1 맞춤 옵션, PC 동일) ──
-interface OptionsProps {
-  filters: FilterState;
-  onFilterChange: (filters: Partial<FilterState>) => void;
-  optionsList: string[];
 }
 
 export function OptionsFilterPanel({ filters, onFilterChange, optionsList }: OptionsProps) {
@@ -573,10 +621,9 @@ export function OptionsFilterPanel({ filters, onFilterChange, optionsList }: Opt
 // 🔨 [PC 100% 동일] 법원 경·공매 전용 맞춤 상세 필터 패널들
 // ══════════════════════════════════════════════════════════════
 
-// 1. 감정가 패널 (PC 동일: 최소 ~ 1억 ~ 5억 ~ 15억 ~ 최대)
+// 1. 감정가 패널 (전체선택 시 모든 프리셋 활성화)
 export function AuctionAppraisalFilterPanel({ filters, onFilterChange }: Props) {
   const PRESETS = [
-    { label: "전체", min: null, max: null },
     { label: "1억 이하", min: null, max: 100000000 },
     { label: "3억 이하", min: null, max: 300000000 },
     { label: "5억 이하", min: null, max: 500000000 },
@@ -584,20 +631,28 @@ export function AuctionAppraisalFilterPanel({ filters, onFilterChange }: Props) 
     { label: "15억 이하", min: null, max: 1500000000 },
     { label: "15억 이상", min: 1500000000, max: null },
   ];
+  const isAll = filters.auctionAppraisalMin === null && filters.auctionAppraisalMax === null;
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ auctionAppraisalMin: isAll ? PRESETS[0].min : null, auctionAppraisalMax: isAll ? PRESETS[0].max : null })}
+          style={{ ...gridBtnStyle(isAll), fontSize: "14px" }}
+        >
+          {isAll ? "✓ 전체해제" : "✓ 전체선택"}
+        </button>
         {PRESETS.map((p) => {
-          const isSel = filters.auctionAppraisalMin === p.min && filters.auctionAppraisalMax === p.max;
+          const isSel = isAll || (filters.auctionAppraisalMin === p.min && filters.auctionAppraisalMax === p.max);
           return (
             <button
               key={p.label}
               type="button"
-              onClick={() => onFilterChange({ auctionAppraisalMin: p.min, auctionAppraisalMax: p.max })}
+              onClick={() => onFilterChange({ auctionAppraisalMin: filters.auctionAppraisalMin === p.min ? null : p.min, auctionAppraisalMax: filters.auctionAppraisalMax === p.max ? null : p.max })}
               style={gridBtnStyle(isSel)}
             >
-              {p.label}
+              {p.label} {isSel && "✓"}
             </button>
           );
         })}
@@ -615,10 +670,9 @@ export function AuctionAppraisalFilterPanel({ filters, onFilterChange }: Props) 
   );
 }
 
-// 2. 최저입찰가 패널 (PC 동일)
+// 2. 최저입찰가 패널 (전체선택 시 모든 프리셋 활성화)
 export function AuctionBidPriceFilterPanel({ filters, onFilterChange }: Props) {
   const PRESETS = [
-    { label: "전체", min: null, max: null },
     { label: "5천 이하", min: null, max: 50000000 },
     { label: "1억 이하", min: null, max: 100000000 },
     { label: "3억 이하", min: null, max: 300000000 },
@@ -626,20 +680,28 @@ export function AuctionBidPriceFilterPanel({ filters, onFilterChange }: Props) {
     { label: "10억 이하", min: null, max: 1000000000 },
     { label: "15억 이하", min: null, max: 1500000000 },
   ];
+  const isAll = filters.auctionBidPriceMin === null && filters.auctionBidPriceMax === null;
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ auctionBidPriceMin: isAll ? PRESETS[0].min : null, auctionBidPriceMax: isAll ? PRESETS[0].max : null })}
+          style={{ ...gridBtnStyle(isAll), fontSize: "14px" }}
+        >
+          {isAll ? "✓ 전체해제" : "✓ 전체선택"}
+        </button>
         {PRESETS.map((p) => {
-          const isSel = filters.auctionBidPriceMin === p.min && filters.auctionBidPriceMax === p.max;
+          const isSel = isAll || (filters.auctionBidPriceMin === p.min && filters.auctionBidPriceMax === p.max);
           return (
             <button
               key={p.label}
               type="button"
-              onClick={() => onFilterChange({ auctionBidPriceMin: p.min, auctionBidPriceMax: p.max })}
+              onClick={() => onFilterChange({ auctionBidPriceMin: filters.auctionBidPriceMin === p.min ? null : p.min, auctionBidPriceMax: filters.auctionBidPriceMax === p.max ? null : p.max })}
               style={gridBtnStyle(isSel)}
             >
-              {p.label}
+              {p.label} {isSel && "✓"}
             </button>
           );
         })}
@@ -657,29 +719,39 @@ export function AuctionBidPriceFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-// 3. 할인율 패널 (PC 동일: [전체] [▼10%↑] [▼20%↑] [▼30%↑] [▼50%↑])
+// 3. 할인율 패널 (전체선택 시 모든 할인율 활성화)
 export function AuctionDiscountFilterPanel({ filters, onFilterChange }: Props) {
   const DISCOUNTS = [
-    { label: "전체", val: 0 },
     { label: "▼10%↑", val: 10 },
     { label: "▼20%↑", val: 20 },
     { label: "▼30%↑", val: 30 },
     { label: "▼50%↑", val: 50 },
   ];
+  const isAll = filters.auctionDiscount === 0;
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px", marginBottom: "20px" }}>
-        {DISCOUNTS.map((d) => (
-          <button
-            key={d.label}
-            type="button"
-            onClick={() => onFilterChange({ auctionDiscount: d.val })}
-            style={gridBtnStyle(filters.auctionDiscount === d.val)}
-          >
-            {d.label}
-          </button>
-        ))}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ auctionDiscount: isAll ? DISCOUNTS[0].val : 0 })}
+          style={{ ...gridBtnStyle(isAll), fontSize: "14px" }}
+        >
+          {isAll ? "✓ 전체해제" : "✓ 전체선택"}
+        </button>
+        {DISCOUNTS.map((d) => {
+          const active = isAll || filters.auctionDiscount === d.val;
+          return (
+            <button
+              key={d.label}
+              type="button"
+              onClick={() => onFilterChange({ auctionDiscount: filters.auctionDiscount === d.val ? 0 : d.val })}
+              style={gridBtnStyle(active)}
+            >
+              {d.label} {active && "✓"}
+            </button>
+          );
+        })}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button
@@ -694,28 +766,38 @@ export function AuctionDiscountFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-// 4. 유찰 횟수 패널 (PC 동일: [전체] [1회↑] [2회↑] [3회↑])
+// 4. 유찰 횟수 패널 (전체선택 시 모든 유찰횟수 활성화)
 export function AuctionBidCountFilterPanel({ filters, onFilterChange }: Props) {
   const COUNTS = [
-    { label: "전체", val: 0 },
     { label: "1회↑", val: 1 },
     { label: "2회↑", val: 2 },
     { label: "3회↑", val: 3 },
   ];
+  const isAll = filters.auctionBidCount === 0;
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px", marginBottom: "20px" }}>
-        {COUNTS.map((c) => (
-          <button
-            key={c.label}
-            type="button"
-            onClick={() => onFilterChange({ auctionBidCount: c.val })}
-            style={gridBtnStyle(filters.auctionBidCount === c.val)}
-          >
-            {c.label}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => onFilterChange({ auctionBidCount: isAll ? COUNTS[0].val : 0 })}
+          style={{ ...gridBtnStyle(isAll), fontSize: "14px" }}
+        >
+          {isAll ? "✓ 전체해제" : "✓ 전체선택"}
+        </button>
+        {COUNTS.map((c) => {
+          const active = isAll || filters.auctionBidCount === c.val;
+          return (
+            <button
+              key={c.label}
+              type="button"
+              onClick={() => onFilterChange({ auctionBidCount: filters.auctionBidCount === c.val ? 0 : c.val })}
+              style={gridBtnStyle(active)}
+            >
+              {c.label} {active && "✓"}
+            </button>
+          );
+        })}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button
@@ -730,30 +812,40 @@ export function AuctionBidCountFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-// 5. 입찰 시작일 패널 (PC 동일: [전체] [1주 이내] [2주 이내] [1달 이내] [1~3개월] [3개월 이후])
+// 5. 입찰 시작일 패널 (전체선택 시 모든 입찰시작일 활성화)
 export function AuctionStartDateFilterPanel({ filters, onFilterChange }: Props) {
   const DATES = [
-    { label: "전체", val: "all" },
     { label: "1주 이내", val: "1w" },
     { label: "2주 이내", val: "2w" },
     { label: "1달 이내", val: "1m" },
     { label: "1~3개월", val: "1_3m" },
     { label: "3개월 이후", val: "over_3m" },
   ];
+  const isAll = !filters.auctionStartDate || filters.auctionStartDate === "all";
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
-        {DATES.map((d) => (
-          <button
-            key={d.label}
-            type="button"
-            onClick={() => onFilterChange({ auctionStartDate: d.val })}
-            style={gridBtnStyle((filters.auctionStartDate || "all") === d.val)}
-          >
-            {d.label}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => onFilterChange({ auctionStartDate: isAll ? DATES[0].val : "all" })}
+          style={{ ...gridBtnStyle(isAll), fontSize: "14px" }}
+        >
+          {isAll ? "✓ 전체해제" : "✓ 전체선택"}
+        </button>
+        {DATES.map((d) => {
+          const active = isAll || (filters.auctionStartDate || "all") === d.val;
+          return (
+            <button
+              key={d.label}
+              type="button"
+              onClick={() => onFilterChange({ auctionStartDate: (filters.auctionStartDate || "all") === d.val ? "all" : d.val })}
+              style={gridBtnStyle(active)}
+            >
+              {d.label} {active && "✓"}
+            </button>
+          );
+        })}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button
