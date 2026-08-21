@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLectureDetail, checkEnrollment } from "@/app/actions/lecture";
 import { createClient } from "@/utils/supabase/client";
@@ -9,7 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 const toEmbed = (url: string): string => {
   if (!url) return "";
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
-  if (m) return `https://www.youtube.com/embed/${m[1]}?rel=0`;
+  if (m) return `https://www.youtube.com/embed/${m[1]}?rel=0&autoplay=1`;
   return url;
 };
 
@@ -19,7 +20,9 @@ const getProgress = (lectureId: string): Set<string> => {
   try {
     const raw = localStorage.getItem(`${PROGRESS_KEY}_${lectureId}`);
     return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch { return new Set(); }
+  } catch {
+    return new Set();
+  }
 };
 const saveProgress = (lectureId: string, completed: Set<string>) => {
   localStorage.setItem(`${PROGRESS_KEY}_${lectureId}`, JSON.stringify([...completed]));
@@ -27,7 +30,7 @@ const saveProgress = (lectureId: string, completed: Set<string>) => {
 
 export default function StudyWatchPage() {
   return (
-    <Suspense fallback={<div style={{ padding: "100px", textAlign: "center", color: "#6b7280" }}>수강 환경을 불러오는 중입니다...</div>}>
+    <Suspense fallback={<div style={{ padding: "100px", textAlign: "center", color: "#64748b" }}>수강 환경을 불러오는 중입니다...</div>}>
       <StudyWatchContent />
     </Suspense>
   );
@@ -41,23 +44,26 @@ function StudyWatchContent() {
 
   const [lecture, setLecture] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<"notes" | "qna">("notes");
-  const [expandedChapters, setExpandedChapters] = useState<Record<number, boolean>>({});
+  const [activeTab, setActiveTab] = useState<"desc" | "files" | "qna">("desc");
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [activeLessonId, setActiveLessonId] = useState<string>("");
 
   /* ── 데이터 로드 ── */
   useEffect(() => {
     const fetchData = async () => {
-      if (!lectureId) { setLoading(false); return; }
+      if (!lectureId) {
+        setLoading(false);
+        return;
+      }
       const res = await getLectureDetail(lectureId);
       if (res.success && res.data) {
         setLecture(res.data);
-        
-        // 권한 체크: 수강생 본인, 혹은 관리자, 혹은 작성자인지 확인
+
+        // 권한 체크
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) {
           alert("로그인이 필요합니다.");
           router.replace(`/study_read?id=${lectureId}`);
@@ -74,11 +80,10 @@ function StudyWatchContent() {
         } else {
           if (enrollRes.error) {
             errorMessage = `수강 정보 확인 오류: ${enrollRes.error}`;
-            console.error("Enrollment check error:", enrollRes.error);
           }
-          // 작성자 또는 관리자인지 확인
+          // 관리자/작성자 체크
           const { data: member } = await supabase.from("members").select("role").eq("id", user.id).single();
-          if (res.data.author_id === user.id || member?.role === "ADMIN") {
+          if (res.data.author_id === user.id || member?.role === "ADMIN" || isFree) {
             hasAccess = true;
           }
         }
@@ -89,15 +94,12 @@ function StudyWatchContent() {
           return;
         }
 
-        const exp: Record<number, boolean> = {};
-        (res.data.chapters || []).forEach((_: any, i: number) => { exp[i] = true; });
-        setExpandedChapters(exp);
         setCompleted(getProgress(lectureId));
-        const allLessons = (res.data.chapters || []).flatMap((ch: any) => ch.lessons || []);
+        const allLessonsList = (res.data.chapters || []).flatMap((ch: any) => ch.lessons || []);
         if (lessonParam) {
           setActiveLessonId(lessonParam);
-        } else if (allLessons.length > 0) {
-          setActiveLessonId(allLessons[0].id);
+        } else if (allLessonsList.length > 0) {
+          setActiveLessonId(allLessonsList[0].id);
         }
       }
       setLoading(false);
@@ -109,20 +111,26 @@ function StudyWatchContent() {
   const allLessons = useMemo(() => {
     if (!lecture) return [];
     return (lecture.chapters || []).flatMap((ch: any) =>
-      (ch.lessons || []).map((ls: any) => ({ ...ls, chapterTitle: ch.title, chapterNo: ch.chapter_no }))
+      (ch.lessons || []).map((ls: any) => ({
+        ...ls,
+        chapterTitle: ch.title,
+        chapterNo: ch.chapter_no,
+      }))
     );
   }, [lecture]);
 
-  const activeLesson = allLessons.find((l: any) => l.id === activeLessonId);
+  const activeLesson = allLessons.find((l: any) => l.id === activeLessonId) || allLessons[0];
   const activeLessonIndex = allLessons.findIndex((l: any) => l.id === activeLessonId);
   const totalLessons = allLessons.length;
   const completedCount = completed.size;
   const progressPercent = totalLessons ? Math.round((completedCount / totalLessons) * 100) : 0;
 
-  const playLesson = useCallback((lessonId: string) => { setActiveLessonId(lessonId); }, []);
+  const playLesson = useCallback((lessonId: string) => {
+    setActiveLessonId(lessonId);
+  }, []);
 
   /* ── 수강 완료 → 다음 레슨 ── */
-  const handleComplete = () => {
+  const handleCompleteAndNext = () => {
     if (!activeLessonId || !lectureId) return;
     const next = new Set(completed);
     next.add(activeLessonId);
@@ -133,259 +141,361 @@ function StudyWatchContent() {
     }
   };
 
-  /* ── 스타일 ── */
-  const bg = darkMode ? "#1a1b1e" : "#ffffff";
-  const textPrimary = darkMode ? "#e5e7eb" : "#1e293b";
-  const textSecondary = darkMode ? "#9ca3af" : "#64748b";
-  const sidebarBg = darkMode ? "#111827" : "#f8fafc";
-  const borderColor = darkMode ? "#374151" : "#e2e8f0";
-  const accent = "#f59e0b";
+  const handlePrevLesson = () => {
+    if (activeLessonIndex > 0) {
+      setActiveLessonId(allLessons[activeLessonIndex - 1].id);
+    }
+  };
 
   if (loading) {
     return (
-      <div style={{ height: "100vh", background: bg }} />
+      <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
+        수강 환경을 불러오는 중입니다...
+      </div>
     );
   }
 
   if (!lecture) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: bg, fontFamily: "'Pretendard Variable', sans-serif", gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", gap: 16 }}>
         <div style={{ fontSize: 48 }}>📭</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: textPrimary }}>강의를 찾을 수 없습니다.</div>
-        <button onClick={() => router.back()} style={{ padding: "10px 24px", background: accent, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>뒤로가기</button>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "#1e293b" }}>강의 정보를 찾을 수 없습니다.</div>
+        <Link href="/study" style={{ padding: "10px 24px", background: "#059669", color: "#fff", textDecoration: "none", borderRadius: 8, fontWeight: 700 }}>
+          공실스터디 목록으로 돌아가기
+        </Link>
       </div>
     );
   }
 
   const embedUrl = activeLesson?.video_url ? toEmbed(activeLesson.video_url) : "";
+  const nextLesson = activeLessonIndex < allLessons.length - 1 ? allLessons[activeLessonIndex + 1] : null;
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", background: darkMode ? "#000" : "#f1f5f9", height: "100vh", overflow: "hidden", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
-      <div style={{ width: "100%", maxWidth: 1500, display: "flex", flexDirection: "column", background: bg, boxShadow: darkMode ? "0 0 40px rgba(0,0,0,0.5)" : "0 0 40px rgba(0,0,0,0.08)", position: "relative" }}>
-
-      {/* ═══ 상단 헤더 ═══ */}
-      <header style={{
-        height: 56, minHeight: 56, background: darkMode ? "#111827" : "#fff",
-        borderBottom: `1px solid ${borderColor}`,
-        display: "flex", alignItems: "center", padding: "0 20px", gap: 16,
-        position: "sticky", top: 0, zIndex: 50,
-      }}>
-        <button onClick={() => router.push(`/study_read?id=${lectureId}`)}
-          style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 14, color: textSecondary, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 500, padding: 0 }}
-          onMouseOver={(e) => (e.currentTarget.style.color = textPrimary)}
-          onMouseOut={(e) => (e.currentTarget.style.color = textSecondary)}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-          뒤로가기
-        </button>
-        <div style={{ width: 1, height: 20, background: borderColor }} />
-        <div style={{ flex: 1, fontSize: 15, fontWeight: 700, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {lecture.title}
+    <div style={{ backgroundColor: "#ffffff", height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#1e293b" }}>
+      
+      {/* ━━━ 1. TOP MINIMAL NAVBAR (윤자동 Learn 스타일) ━━━ */}
+      <header
+        style={{
+          height: 54,
+          minHeight: 54,
+          backgroundColor: "#ffffff",
+          borderBottom: "1px solid #e2e8f0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 24px",
+          zIndex: 50,
+        }}
+      >
+        {/* Left: Back Link & Title */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, maxWidth: "60%" }}>
+          <button
+            onClick={() => router.push(`/study_read?id=${lectureId}`)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13.5,
+              fontWeight: 700,
+              color: "#059669",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            ← 강의 소개
+          </button>
+          <span style={{ color: "#cbd5e1" }}>|</span>
+          <span style={{ fontSize: 15, fontWeight: 800, color: "#062828", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {lecture.title}
+          </span>
         </div>
-        <button onClick={() => setDarkMode(!darkMode)}
-          style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid ${borderColor}`, background: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: textSecondary }}>
-          {darkMode ? "☀️" : "🌙"}
-        </button>
+
+        {/* Right: Progress Indicator */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>
+            진도 <strong style={{ color: "#062828" }}>{completedCount}/{totalLessons}강</strong> ({progressPercent}%)
+          </span>
+          <div style={{ width: 100, height: 6, background: "#e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+            <div style={{ width: `${progressPercent}%`, height: "100%", background: "#059669", borderRadius: 10, transition: "width 0.3s" }} />
+          </div>
+        </div>
       </header>
 
-      {/* ═══ 메인 ═══ */}
+      {/* ━━━ 2. MAIN 2-COLUMN LAYOUT (윤자동 Learn 스타일) ━━━ */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-
-        {/* ── 좌측: 비디오 + 정보 ── */}
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-          {/* 비디오 */}
-          <div style={{ width: "100%", position: "relative", background: "#000", flexShrink: 0 }}>
-            <div style={{ paddingTop: "56.25%", position: "relative" }}>
+        
+        {/* ── 좌측: 비디오 플레이어 & 강의 설명 ── */}
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", background: "#ffffff" }}>
+          
+          {/* 비디오 컨테이너 */}
+          <div style={{ width: "100%", background: "#062326", display: "flex", justifyContent: "center" }}>
+            <div style={{ width: "100%", maxWidth: 1100, aspectRatio: "16/9", position: "relative" }}>
               {embedUrl ? (
                 <iframe
                   key={activeLessonId}
                   src={embedUrl}
-                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                  style={{ width: "100%", height: "100%", border: "none" }}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
               ) : (
-                <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#666", gap: 12 }}>
-                  <div style={{ fontSize: 48 }}>🎬</div>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>영상 URL이 등록되지 않았습니다.</div>
+                <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#a7f3d0", gap: 10 }}>
+                  <span style={{ fontSize: 44 }}>🎬</span>
+                  <span style={{ fontSize: 16, fontWeight: 700 }}>등록된 강의 영상이 없습니다.</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* 강의 정보 영역 */}
-          <div style={{ padding: "24px 32px" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, marginBottom: 8 }}>
-              <div>
-                <div style={{ fontSize: 12, color: accent, fontWeight: 700, marginBottom: 4 }}>
-                  {activeLesson ? `Chapter ${activeLesson.chapterNo} · ${activeLesson.chapterTitle}` : ""}
-                </div>
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "0 0 6px 0", lineHeight: 1.4 }}>
-                  {activeLesson ? `${activeLesson.chapterNo}-${activeLesson.lesson_no}. ${activeLesson.title}` : "강의를 선택하세요"}
-                </h2>
+          {/* 영상 하단 상세 영역 */}
+          <div style={{ maxWidth: 1100, width: "100%", margin: "0 auto", padding: "28px 24px 60px", boxSizing: "border-box" }}>
+            
+            {/* 레슨 뱃지 & 타이틀 */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ background: "#ecfdf5", color: "#047857", fontSize: 12, fontWeight: 800, padding: "3px 8px", borderRadius: 4 }}>
+                  {activeLessonIndex + 1}강
+                </span>
+                {activeLesson?.is_preview && (
+                  <span style={{ background: "#f0fdf4", color: "#059669", border: "1px solid #d1fae5", fontSize: 11.5, fontWeight: 700, padding: "2px 7px", borderRadius: 4 }}>
+                    미리보기
+                  </span>
+                )}
+                <span style={{ fontSize: 12.5, color: "#64748b" }}>
+                  {activeLesson?.duration_minutes ? `${activeLesson.duration_minutes}분` : "8:04"}
+                </span>
               </div>
-              <button onClick={handleComplete}
+              <h2 style={{ fontSize: 22, fontWeight: 900, color: "#062828", margin: 0, lineHeight: 1.4 }}>
+                {activeLesson ? `${activeLessonIndex + 1}강. ${activeLesson.title}` : "강의를 선택해 주세요"}
+              </h2>
+            </div>
+
+            {/* 서브 탭 바 */}
+            <div style={{ display: "flex", gap: 24, borderBottom: "1px solid #e2e8f0", marginBottom: 24 }}>
+              <button
+                onClick={() => setActiveTab("desc")}
                 style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  padding: "12px 24px", borderRadius: 8, border: "none", cursor: "pointer",
-                  background: completed.has(activeLessonId) ? "#10b981" : accent,
-                  color: "#fff", fontSize: 14, fontWeight: 700, fontFamily: "inherit",
-                  whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.2s",
-                  boxShadow: `0 2px 8px ${completed.has(activeLessonId) ? "rgba(16,185,129,0.3)" : "rgba(245,158,11,0.3)"}`,
+                  padding: "10px 0",
+                  background: "none",
+                  border: "none",
+                  borderBottom: activeTab === "desc" ? "2.5px solid #059669" : "2.5px solid transparent",
+                  fontSize: 14.5,
+                  fontWeight: activeTab === "desc" ? 800 : 600,
+                  color: activeTab === "desc" ? "#062828" : "#64748b",
+                  cursor: "pointer",
                 }}
-                onMouseOver={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-                onMouseOut={(e) => (e.currentTarget.style.transform = "none")}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                {completed.has(activeLessonId)
-                  ? "✅ 수강 완료"
-                  : activeLessonIndex < allLessons.length - 1
-                    ? "수강 완료 및 다음"
-                    : "수강 완료"
-                }
+              >
+                강의 설명
+              </button>
+              <button
+                onClick={() => setActiveTab("files")}
+                style={{
+                  padding: "10px 0",
+                  background: "none",
+                  border: "none",
+                  borderBottom: activeTab === "files" ? "2.5px solid #059669" : "2.5px solid transparent",
+                  fontSize: 14.5,
+                  fontWeight: activeTab === "files" ? 800 : 600,
+                  color: activeTab === "files" ? "#062828" : "#64748b",
+                  cursor: "pointer",
+                }}
+              >
+                자료 및 서식
+              </button>
+              <button
+                onClick={() => setActiveTab("qna")}
+                style={{
+                  padding: "10px 0",
+                  background: "none",
+                  border: "none",
+                  borderBottom: activeTab === "qna" ? "2.5px solid #059669" : "2.5px solid transparent",
+                  fontSize: 14.5,
+                  fontWeight: activeTab === "qna" ? 800 : 600,
+                  color: activeTab === "qna" ? "#062828" : "#64748b",
+                  cursor: "pointer",
+                }}
+              >
+                질문하기
               </button>
             </div>
 
-            {/* 탭 메뉴 */}
-            <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${borderColor}`, marginTop: 24 }}>
-              <button onClick={() => setActiveTab("notes")}
-                style={{ padding: "12px 20px", fontSize: 14, fontWeight: activeTab === "notes" ? 700 : 500, color: activeTab === "notes" ? accent : textSecondary, background: "none", border: "none", borderBottom: activeTab === "notes" ? `2px solid ${accent}` : "2px solid transparent", cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>
-                📝 강의 노트 & 자료
-              </button>
-              <button onClick={() => setActiveTab("qna")}
-                style={{ padding: "12px 20px", fontSize: 14, fontWeight: activeTab === "qna" ? 700 : 500, color: activeTab === "qna" ? accent : textSecondary, background: "none", border: "none", borderBottom: activeTab === "qna" ? `2px solid ${accent}` : "2px solid transparent", cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>
-                💬 질문 & 답변 (Q&A)
-              </button>
-            </div>
+            {/* 탭 내용 */}
+            <div style={{ minHeight: 120, fontSize: 14.5, color: "#334155", lineHeight: 1.7, marginBottom: 36 }}>
+              {activeTab === "desc" && (
+                <div>
+                  {activeLesson?.description ? (
+                    <p style={{ margin: 0 }}>{activeLesson.description}</p>
+                  ) : (
+                    <p style={{ color: "#94a3b8", margin: 0 }}>본 강의에 대한 설명이 등록되어 있습니다. 영상을 시청하며 실습을 진행해 보세요.</p>
+                  )}
+                </div>
+              )}
 
-            <div style={{ padding: "40px 0", minHeight: 200 }}>
-              {activeTab === "notes" ? (
-                <>
-                  {(lecture.materials && lecture.materials.length > 0) ? (
-                    <div>
-                      <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 12px 0", color: textPrimary }}>📑 참고 자료 / 첨부 파일</h3>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                        {lecture.materials.map((mat: any, idx: number) => {
-                          let icon = "🔗";
-                          switch(mat.type) {
-                            case "YOUTUBE": icon = "🎬"; break;
-                            case "DRIVE": icon = "📁"; break;
-                            case "FILE": icon = "📎"; break;
-                            case "LINK": icon = "🔗"; break;
-                          }
-                          return (
-                            <a key={idx} href={mat.url} target="_blank" rel="noopener noreferrer"
-                              style={{
-                                display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 14px",
-                                background: darkMode ? "#1f2937" : "#f8fafc",
-                                border: `1px solid ${borderColor}`, borderRadius: 8,
-                                textDecoration: "none", color: textPrimary,
-                                transition: "all 0.2s",
-                                maxWidth: 300, minWidth: 200
-                              }}
-                              onMouseOver={(e) => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)"; }}
-                              onMouseOut={(e) => { e.currentTarget.style.borderColor = borderColor; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
-                            >
-                              <span style={{ fontSize: 18 }}>{icon}</span>
-                              <span style={{ fontSize: 13, fontWeight: 700, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{mat.label || (mat.type === "FILE" ? "첨부파일" : "참고자료")}</span>
-                              <span style={{ fontSize: 11, color: accent, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: darkMode ? "#422006" : "#fef3c7", whiteSpace: "nowrap" }}>
-                                {mat.type === "FILE" ? "다운로드" : "열기"}
-                              </span>
-                            </a>
-                          );
-                        })}
-                      </div>
+              {activeTab === "files" && (
+                <div>
+                  {lecture.materials && lecture.materials.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {lecture.materials.map((mat: any, idx: number) => (
+                        <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                          <span style={{ fontWeight: 600, color: "#062828" }}>📎 {mat.label || "실습 자료 및 계약서 양식"}</span>
+                          <a href={mat.url} target="_blank" rel="noreferrer" style={{ padding: "6px 14px", background: "#059669", color: "#fff", textDecoration: "none", borderRadius: 6, fontSize: 12.5, fontWeight: 700 }}>
+                            다운로드
+                          </a>
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    <div style={{ textAlign: "center", color: textSecondary, fontSize: 14 }}>등록된 강의 노트나 자료가 아직 없습니다.</div>
+                    <p style={{ color: "#94a3b8", margin: 0 }}>본 강의에 등록된 별도 첨부파일이 없습니다.</p>
                   )}
-                </>
-              ) : (
-                <div style={{ textAlign: "center", color: textSecondary, fontSize: 14 }}>등록된 질문이 없습니다. 첫 질문을 남겨보세요!</div>
+                </div>
+              )}
+
+              {activeTab === "qna" && (
+                <div>
+                  <p style={{ color: "#94a3b8", margin: 0 }}>강의 내용 중 궁금한 점을 질문해 주시면 강사진이 답변해 드립니다.</p>
+                </div>
               )}
             </div>
+
+            {/* 하단 이전/다음 네비게이션 */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 20, borderTop: "1px solid #e2e8f0" }}>
+              <button
+                onClick={handlePrevLesson}
+                disabled={activeLessonIndex <= 0}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 8,
+                  background: activeLessonIndex > 0 ? "#f1f5f9" : "#f8fafc",
+                  color: activeLessonIndex > 0 ? "#334155" : "#cbd5e1",
+                  border: "1px solid #e2e8f0",
+                  fontSize: 13.5,
+                  fontWeight: 700,
+                  cursor: activeLessonIndex > 0 ? "pointer" : "default",
+                }}
+              >
+                ← 이전 강의
+              </button>
+
+              <button
+                onClick={handleCompleteAndNext}
+                style={{
+                  padding: "11px 24px",
+                  borderRadius: 8,
+                  background: "#059669",
+                  color: "#ffffff",
+                  border: "none",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(5,150,105,0.25)",
+                }}
+              >
+                {nextLesson ? `${nextLesson.lesson_no || activeLessonIndex + 2}강. ${nextLesson.title} →` : "✓ 수강 완료"}
+              </button>
+            </div>
+
           </div>
         </div>
 
-        {/* ── 우측: 사이드바 (커리큘럼) ── */}
-        <aside style={{
-          width: 380, minWidth: 380, background: sidebarBg,
-          borderLeft: `1px solid ${borderColor}`,
-          display: "flex", flexDirection: "column", overflowY: "auto",
-        }}>
-          {/* 진도율 */}
-          <div style={{ padding: "20px 24px", borderBottom: `1px solid ${borderColor}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>전체 진도율</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: progressPercent === 100 ? "#10b981" : accent }}>
-                {progressPercent}% ({completedCount} / {totalLessons}강)
-              </span>
-            </div>
-            <div style={{ height: 6, background: darkMode ? "#374151" : "#e2e8f0", borderRadius: 100, overflow: "hidden" }}>
-              <div style={{ width: `${progressPercent}%`, height: "100%", background: progressPercent === 100 ? "#10b981" : `linear-gradient(90deg, ${accent}, #d97706)`, borderRadius: 100, transition: "width 0.5s ease" }} />
-            </div>
+        {/* ── 우측: 윤자동 스타일 커리큘럼 사이드바 (360px) ── */}
+        <aside
+          style={{
+            width: 360,
+            minWidth: 360,
+            backgroundColor: "#f8fafc",
+            borderLeft: "1px solid #e2e8f0",
+            display: "flex",
+            flexDirection: "column",
+            overflowY: "auto",
+          }}
+        >
+          {/* 사이드바 헤더 */}
+          <div style={{ padding: "18px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff" }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "#062828" }}>커리큘럼</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>{completedCount}/{totalLessons}강</span>
           </div>
 
-          {/* 커리큘럼 리스트 */}
-          <div style={{ flex: 1 }}>
-            {(lecture.chapters || []).map((chapter: any, ci: number) => (
-              <div key={chapter.id || ci}>
-                <button onClick={() => setExpandedChapters(prev => ({ ...prev, [ci]: !prev[ci] }))}
-                  style={{
-                    width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "16px 24px", background: "none", border: "none", borderBottom: `1px solid ${borderColor}`,
-                    cursor: "pointer", fontFamily: "inherit",
-                  }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: accent, background: darkMode ? "#422006" : "#fef3c7", padding: "2px 8px", borderRadius: 4 }}>
-                      Ch.{chapter.chapter_no}
-                    </span>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: textPrimary }}>{chapter.title}</span>
-                  </div>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    style={{ transition: "transform 0.2s", transform: expandedChapters[ci] ? "rotate(180deg)" : "rotate(0)" }}>
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
+          <div style={{ padding: "10px 18px 6px", fontSize: 12, fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>
+            전체강의
+          </div>
 
-                {expandedChapters[ci] && (chapter.lessons || []).map((lesson: any) => {
-                  const isActive = activeLessonId === lesson.id;
-                  const isDone = completed.has(lesson.id);
-                  return (
-                    <button key={lesson.id} onClick={() => playLesson(lesson.id)}
+          {/* 레슨 리스트 */}
+          <div style={{ flex: 1, padding: "0 10px 20px" }}>
+            {allLessons.map((les: any, idx: number) => {
+              const isActive = activeLessonId === les.id;
+              const isDone = completed.has(les.id);
+
+              return (
+                <div
+                  key={les.id || idx}
+                  onClick={() => playLesson(les.id)}
+                  style={{
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    marginBottom: 6,
+                    cursor: "pointer",
+                    backgroundColor: isActive ? "#062326" : isDone ? "#ffffff" : "#ffffff",
+                    color: isActive ? "#ffffff" : "#1e293b",
+                    border: isActive ? "1px solid #062326" : "1px solid #e2e8f0",
+                    transition: "all 0.15s",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                    {/* 번호 / 재생 아이콘 */}
+                    <div
                       style={{
-                        width: "100%", display: "flex", alignItems: "center", gap: 12,
-                        padding: "14px 24px", background: isActive ? (darkMode ? "#422006" : "#fffbeb") : "transparent",
-                        border: "none", borderLeft: isActive ? `4px solid ${accent}` : "4px solid transparent",
-                        borderBottom: `1px solid ${borderColor}`, cursor: "pointer", fontFamily: "inherit",
-                        transition: "all 0.15s",
+                        width: 22,
+                        height: 22,
+                        borderRadius: "50%",
+                        background: isActive ? "#059669" : isDone ? "#ecfdf5" : "#f1f5f9",
+                        color: isActive ? "#fff" : isDone ? "#047857" : "#64748b",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 11,
+                        fontWeight: 800,
+                        flexShrink: 0,
                       }}
-                      onMouseOver={(e) => { if (!isActive) e.currentTarget.style.background = darkMode ? "#1f2937" : "#f1f5f9"; }}
-                      onMouseOut={(e) => { if (!isActive) e.currentTarget.style.background = isActive ? (darkMode ? "#422006" : "#fffbeb") : "transparent"; }}>
-                      <div style={{
-                        width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        background: isDone ? "#10b981" : isActive ? accent : (darkMode ? "#374151" : "#e2e8f0"),
-                        color: isDone || isActive ? "#fff" : textSecondary,
-                      }}>
-                        {isDone ? (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                        ) : (
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-                        )}
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, textAlign: "left", color: isActive ? accent : isDone ? "#10b981" : textPrimary, flex: 1 }}>
-                        {lesson.title}
+                    >
+                      {isDone ? "✓" : idx + 1}
+                    </div>
+
+                    <span
+                      style={{
+                        fontSize: 13.5,
+                        fontWeight: isActive ? 800 : 600,
+                        color: isActive ? "#ffffff" : "#1e293b",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {idx + 1}강. {les.title}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    {les.is_preview && !isActive && (
+                      <span style={{ fontSize: 10.5, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "#ecfdf5", color: "#047857" }}>
+                        미리보기
                       </span>
-                      {lesson.duration && (
-                        <span style={{ fontSize: 11, color: textSecondary, flexShrink: 0 }}>{lesson.duration}</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
+                    )}
+                    <span style={{ fontSize: 11.5, color: isActive ? "#a7f3d0" : "#94a3b8" }}>
+                      {les.duration_minutes ? `${les.duration_minutes}분` : "8:04"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </aside>
-      </div>
+
       </div>
     </div>
   );
