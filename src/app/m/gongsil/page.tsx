@@ -108,16 +108,18 @@ function MobileGongsilContent() {
   const [activeMode, setActiveMode] = useState<"공실" | "경매">(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
+      if (params.get("mode") === "gongsil") return "공실";
       if (params.get("mode") === "auction") return "경매";
     }
-    return "공실";
+    return "경매"; // 🚀 대표님 지침: 모바일 공실열람 접속 시 법원 경·공매가 기본 먼저 활성화!
   });
   const [isAuctionMode, setIsAuctionMode] = useState(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      return params.get("mode") === "auction";
+      if (params.get("mode") === "gongsil") return false;
+      if (params.get("mode") === "auction") return true;
     }
-    return false;
+    return true; // 🚀 법원 경·공매 기본
   });
   
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -206,8 +208,13 @@ function MobileGongsilContent() {
 
   // 마지막 검색 조건 및 모드 복구
   useEffect(() => {
-    // URL에 mode가 명시된 경우 로컬스토리지를 통한 복구를 우회하고 강제로 적용
+    // URL에 mode가 명시된 경우 로컬스토리지를 통한 복구를 우회하고 최우선 적용
     const modeParam = searchParams.get("mode");
+    if (modeParam === "gongsil") {
+      setActiveMode("공실");
+      setIsAuctionMode(false);
+      return;
+    }
     if (modeParam === "auction") {
       setActiveMode("경매");
       setIsAuctionMode(true);
@@ -226,12 +233,17 @@ function MobileGongsilContent() {
           if (parsed.activeMode) {
             setActiveMode(parsed.activeMode);
             setIsAuctionMode(parsed.activeMode === "경매");
+            return;
           }
         } catch (e) {
           console.error("Failed to restore search filters:", e);
         }
       }
     }
+
+    // 기본 모드는 항상 '경매'
+    setActiveMode("경매");
+    setIsAuctionMode(true);
   }, [currentUser, searchParams]);
 
   // 지도 객체 로드 완료 시 마지막 위치 복구
