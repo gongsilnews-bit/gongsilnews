@@ -118,13 +118,14 @@ function RealtyAdminContent() {
       setPlanType(member.plan_type || "free");
       setUserRole(member.role || "USER");
 
-      const { data: agencyData } = await supabase.from("agencies").select("status, biz_cert_url, reg_cert_url, reject_reason").eq("owner_id", member.id).single();
+      const { data: agencyList } = await supabase.from("agencies").select("status, biz_cert_url, reg_cert_url, reject_reason").eq("owner_id", member.id).limit(1);
+      const agencyData = agencyList && agencyList.length > 0 ? agencyList[0] : null;
       if (agencyData && agencyData.status) {
         setAgencyStatus(agencyData.status);
         if (agencyData.reject_reason) setRejectionReason(agencyData.reject_reason);
         if (!agencyData.biz_cert_url && agencyData.status !== 'APPROVED' && member.role === 'REALTOR') setShowDocWarning(true);
       } else {
-        // 등록증 심사가 완료되지 않은 회원은 승인대기 상태로 기본 노출
+        // 등록증 심사가 완료되지 않은 회원은 서류 검토중 상태로 기본 노출
         setAgencyStatus("PENDING");
       }
 
@@ -215,7 +216,7 @@ function RealtyAdminContent() {
               </span>
             )}
             {agencyStatus === "REJECTED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#be123c", background: "#fee2e2", border: "1px solid #ef4444", display: "inline-flex", alignItems: "center", gap: 4 }}>🚨 보완요청 확인요망</span>}
-            {agencyStatus === "PENDING" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" }}>⏳ 부동산 승인대기</span>}
+            {agencyStatus === "PENDING" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" }}>⏳ 서류 검토중</span>}
             {agencyStatus === "APPROVED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#166534", background: "#dcfce7", border: "1px solid #bbf7d0" }}>✅ 정상승인</span>}
             {agencyStatus !== "APPROVED" && showDocWarning && <span onClick={() => { setActiveMenu("settings"); router.push('?menu=settings&tab=agency'); }} style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, padding: "4px 12px", borderRadius: 20, marginLeft: 8, color: "#c53030", background: "#fff5f5", border: "1px solid #fed7d7" }}>⚠️ 소장님! 아직 필수 서류(사업자등록증)를 내시지 않았어요! 👉 (여기를 클릭해서 서류를 제출해주세요)</span>}
           </div>
