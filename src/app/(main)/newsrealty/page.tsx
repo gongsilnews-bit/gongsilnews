@@ -159,7 +159,7 @@ export default function NewsRealtyPage() {
             {/* 핵심 메인 배지 */}
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(251, 191, 36, 0.15)", border: "1px solid rgba(251, 191, 36, 0.35)", padding: "6px 20px", borderRadius: 30, fontSize: 14, fontWeight: 800, color: "#fbbf24", marginBottom: 22 }}>
               <span>✨</span>
-              <span>무료 중개업소 등록하고 혜택받기!</span>
+              <span>공실뉴스에 무료 등록하세요!</span>
             </div>
 
             {/* 메인 헤드라인 */}
@@ -410,7 +410,7 @@ export default function NewsRealtyPage() {
             
             <div style={{ textAlign: "center", marginBottom: 44 }}>
               <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#0f172a", margin: "0 0 10px 0", letterSpacing: "-0.5px", lineHeight: 1.35 }}>
-                빠른 계약을 원할땐, 이제 공실뉴스부동산이 되세요!<br />
+                빠른 계약을 원할땐, 공실뉴스에 무료 등록하세요!<br />
                 <span style={{ color: "#2563eb" }}>부동산은 누구나 무료!!</span>
               </h2>
               <p style={{ fontSize: "16px", color: "#334155", lineHeight: 1.6, margin: "0 0 4px 0", fontWeight: 800 }}>

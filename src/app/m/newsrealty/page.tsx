@@ -154,7 +154,7 @@ export default function MobileNewsRealtyPage() {
         <section style={{ backgroundColor: "#091e3a", color: "#ffffff", padding: "28px 16px 36px", textAlign: "center" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.35)", padding: "4px 12px", borderRadius: 20, fontSize: 11.5, fontWeight: 800, color: "#fbbf24", marginBottom: 14 }}>
             <span>✨</span>
-            <span>무료 중개업소 등록하고 혜택받기!</span>
+            <span>공실뉴스에 무료 등록하세요!</span>
           </div>
 
           <h1 style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>
@@ -372,7 +372,7 @@ export default function MobileNewsRealtyPage() {
         <section style={{ padding: "36px 16px", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
           <div style={{ textAlign: "center", marginBottom: 20 }}>
             <h2 style={{ fontSize: 17.5, fontWeight: 900, color: "#0f172a", margin: "0 0 6px 0", lineHeight: 1.35 }}>
-              빠른 계약을 원할땐, 이제 공실뉴스부동산이 되세요!<br />
+              빠른 계약을 원할땐, 공실뉴스에 무료 등록하세요!<br />
               <span style={{ color: "#2563eb" }}>부동산은 누구나 무료!!</span>
             </h2>
             <p style={{ fontSize: 13, color: "#1e293b", margin: "0 0 2px 0", fontWeight: 800 }}>
