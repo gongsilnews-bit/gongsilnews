@@ -9,68 +9,65 @@ import { submitInquiry } from "@/app/actions/inquiry";
 
 const brokerStats = [
   { label: "전국 가입 부동산", value: "11만+", sub: "대규모 네트워크 인프라" },
-  { label: "공동중개 실매물 공유", value: "100% 무료", sub: "지도 기반 실시간 열람" },
-  { label: "임대인 공실 등록비", value: "평생 0원", sub: "누구나 무료 직등록" },
+  { label: "공동중개 실매물 열람", value: "100% 무료", sub: "빠른 계약을 위한 무료 개방" },
+  { label: "공동중개 물건 등록", value: "3건 무료", sub: "부동산 기본 무료 등록" },
 ];
 
-const PROOF_STORIES = [
+const RECOMMENDED_TARGETS = [
   {
-    role: "개업공인중개사 7년차",
-    quote: "“매달 15만 원씩 나가던 타사 유료 공실망 해지하고 공실뉴스 무료 공동중개로 갈아탔는데, 첫 달 만에 아파트 전세 공동중개 2건 바로 맞췄습니다.”",
-    author: "서울 송파구 개업공인중개사 박OO 대표",
+    role: "개업공인중개사 대표님",
+    title: "빠른 전월세·매매 공동중개 매칭이 필요하신 대표님",
+    desc: "전국 11만 부동산 실매물망을 100% 무료로 열람하여 내 고객에게 딱 맞는 물건을 빠르게 찾아 공동중개를 성사시킬 수 있습니다.",
+    tag: "추천 대상: 매물망을 넓히고 빠른 계약 성사를 원하는 개업공인중개사",
     image: "/images/realty/avatar_broker_success.jpg",
-    imagePosition: "left",
+    imagePosition: "left" as const,
   },
   {
-    role: "상가·원룸 건물주 / 임대인",
-    quote: "“수수료나 등록비 없이 스마트폰으로 공실 올렸더니, 그날 오후에 동네 부동산 대표님 3분에게 바로 연락 와서 주말에 계약 끝냈습니다.”",
-    author: "경기 수원시 원룸 통건물주 정OO 대표",
-    image: "/images/realty/avatar_landlord_success.jpg",
-    imagePosition: "right",
-  },
-  {
-    role: "소속공인중개사 2년차",
-    quote: "“손님 모시고 임장 나갔을 때 모바일 지도로 주변 공실 실시간 확인하고, AI 매매 보고서 뽑아서 카톡 브리핑하니 고객 신뢰도가 급상승하더군요.”",
-    author: "마포구 소속공인중개사 이OO 실장",
+    role: "현장 실무 & 임장 중개사",
+    title: "현장에서 즉시 브리핑 제안서와 주변 공실을 확인하고 싶을 때",
+    desc: "야외에서도 스마트폰 지도로 주변 공실을 실시간 확인하고, 지번만 넣으면 1초 만에 깔끔한 고객 브리핑용 AI 제안서를 바로 출력할 수 있습니다.",
+    tag: "추천 대상: 고객 브리핑 퀄리티를 높이고 현장 미팅이 잦은 소속·개업 중개사",
     image: "/images/realty/avatar_realtor_mobile.jpg",
-    imagePosition: "left",
+    imagePosition: "right" as const,
   },
   {
     role: "신규 개업 공인중개사",
-    quote: "“기존 지역 친목회 가입비 수백만 원과 텃세 때문에 막막했는데, 공실뉴스 전국 11만 망 덕분에 타 지역 매물까지 자유롭게 공동중개 중입니다.”",
-    author: "인천 연수구 개업공인중개사 김OO 대표",
+    title: "초기 고정비 부담 없이 전국 매물 네트워크가 필요한 신규 대표님",
+    desc: "가입비나 월정액 비용 없이 전국 11만 부동산 매물망을 즉시 확보하여 개업 초기부터 경쟁력 있는 공동중개를 시작할 수 있습니다.",
+    tag: "추천 대상: 텃세 없는 오픈 네트워크에서 빠르게 자리를 잡고 싶은 신규 개업 중개사",
     image: "/images/realty/avatar_young_broker.jpg",
-    imagePosition: "right",
+    imagePosition: "left" as const,
   },
   {
-    role: "상가·오피스 전문 중개법인",
-    quote: "“법원 등기소·토지대장 연동과 실시간 경·공매 물건 무료 열람 덕분에 대형 통사옥 임대차 특약까지 한 치의 오차 없이 깔끔하게 계약 체결했습니다.”",
-    author: "강남 테헤란로 중개법인 최OO 이사",
+    role: "상가·오피스·토지 전문 중개법인",
+    title: "법원 경·공매 및 권리분석 데이터까지 원스톱으로 필요한 전문가",
+    desc: "실시간 법원 경매·공매 물건 정보와 기본 권리분석 데이터까지 무료로 열람하여 고난도 특수물건 중개와 고객 컨설팅에 즉시 활용할 수 있습니다.",
+    tag: "추천 대상: 경공매 및 수익형 부동산 전문 컨설팅 역량을 강화하려는 중개법인",
     image: "/images/realty/avatar_corporate_broker.jpg",
-    imagePosition: "left",
+    imagePosition: "right" as const,
   },
 ];
 
 const brokerFaqs = [
   {
+    q: "공동중개 열람과 물건 등록은 어떻게 무료인가요?",
+    a: "대한민국 부동산 대표님이라면 전국 11만 공동중개 실매물 열람은 100% 평생 무료(무제한)이며, 내 매물을 올려 다른 부동산에 알리는 공동중개 물건 등록도 3건까지 무료로 제공됩니다.",
+  },
+  {
     q: "공실뉴스는 정말 평생 무료인가요?",
-    a: "네, 그렇습니다. 공실뉴스부동산은 가입비, 연회비, 월정액 이용료가 전혀 없는 100% 무료 서비스입니다. 타사 공실 사이트들의 월 10만원 이상 고정 회비 부담에서 벗어나 무료로 공동중개를 활성화하세요.",
+    a: "네, 그렇습니다. 공실뉴스부동산은 가입비나 월정액 이용료가 전혀 없는 100% 무료 서비스입니다. 빠른 계약을 위해 대한민국 공인중개사 대표님 누구라도 100% 무료로 실매물을 열람하고 공동중개에 참여하실 수 있습니다.",
   },
   {
-    q: "임대인(건물주)도 무료로 공실을 등록할 수 있나요?",
-    a: "네, 100% 무료입니다! 임대인 누구나 등록비 0원으로 공실을 등록하시면, 해당 지역의 수천 명의 개업공인중개사들에게 실시간으로 매칭되어 가장 빠르게 임차인을 찾을 수 있습니다.",
+    q: "어떤 매물과 정보를 무료로 열람할 수 있나요?",
+    a: "전국 11만 부동산의 실시간 공동중개 실매물망부터 실시간 법원 경·공매 정보 및 기본 권리분석 데이터까지, 빠른 계약에 필요한 모든 정보를 부동산 누구라도 제한 없이 무료로 열람하실 수 있습니다.",
   },
   {
-    q: "타 사이트 및 지역 공동중개망과의 가장 큰 차이점은 무엇인가요?",
-    a: "타사 공실 사이트는 높은 월정액을 요구하고, 기존 지역 친목회는 텃세와 카르텔로 수백만 원의 가입비를 요구합니다. 반면 공실뉴스는 가입 제한 장벽이 전혀 없으며, 전국 11만 중개망을 평생 무료로 활용할 수 있습니다.",
+    q: "스마트폰 모바일이나 외부 현장에서도 무료 열람이 가능한가요?",
+    a: "네, 스마트폰 모바일 화면에 완벽히 최적화되어 있어, 현장이나 임장 중에도 실시간 지도 기반으로 주변 공실 및 공동중개 물건을 누구나 무료로 열람하고 담당 중개사와 바로 연결됩니다.",
   },
   {
-    q: "스마트폰 모바일이나 외부 현장에서도 지도 열람이 가능한가요?",
-    a: "네, 스마트폰 모바일 화면에 최적화되어 있으므로, 야외 현장에 나가 계시더라도 실시간 지도 기반으로 주변 공동중개 물건을 즉시 검색하고 중개사 연락처를 확인하실 수 있습니다.",
-  },
-  {
-    q: "AI 매매 보고서는 어떻게 출력하고 활용하나요?",
-    a: "매물 주소와 간단한 조건만 입력하면 1초 만에 고객 브리핑용 고품격 PDF 및 모바일 리포트가 완성되며, 인쇄하여 사무실 유리창 부착 및 고객 카톡 전송용으로 즉시 활용할 수 있습니다.",
+    q: "고객 브리핑용 AI 제안서도 무료로 지원되나요?",
+    a: "네, 빠른 계약 성사를 돕기 위해 지번만 입력하면 1초 만에 완성되는 깔끔한 고객 브리핑용 AI 제안서 3건이 무료로 즉시 지원됩니다.",
   },
 ];
 
@@ -192,133 +189,103 @@ export default function NewsRealtyPage() {
             <div>
               <button
                 onClick={() => handleApplyClick()}
-                style={{
-                  padding: "16px 38px",
-                  background: "#2563eb",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: 12,
-                  fontSize: 17,
-                  fontWeight: 900,
-                  cursor: "pointer",
-                  boxShadow: "0 6px 20px rgba(37,99,235,0.4)",
-                  transition: "all 0.2s",
-                }}
+                className="realty-cta-btn"
               >
-                ✨ 무료 공실뉴스부동산 신청하기 →
+                ✨ 공실뉴스 부동산 무료 신청하기 →
               </button>
             </div>
 
           </div>
         </section>
 
-        {/* ━━━ 2. 3대 핵심 혜택 카드 (히어로 직하단) ━━━ */}
-        <section style={{ padding: "40px 0 35px", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-          <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 24px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18, marginBottom: 18 }}>
-              
-              {/* 1. 무료 공동중개망 */}
-              <div style={{ background: "#ffffff", padding: "24px 20px", borderRadius: 14, border: "1px solid #e2e8f0", textAlign: "left", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#eff6ff", color: "#2563eb", padding: "4px 10px", borderRadius: 6, fontSize: 12, fontWeight: 800, marginBottom: 12 }}>
-                    <span>✓</span> 전국 부동산 누구나 가입하는
-                  </div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", lineHeight: 1.4, marginBottom: 6 }}>
-                    100% 무료 공동중개망
-                  </div>
-                  <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
-                    타사 월 10~20만원 회비 ZERO! 전국 11만 부동산 실매물 평생 무료 열람
-                  </div>
-                </div>
-              </div>
-
-              {/* 2. AI 물건보고서 */}
-              <div style={{ background: "#ffffff", padding: "24px 20px", borderRadius: 14, border: "1px solid #e2e8f0", textAlign: "left", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fef3c7", color: "#d97706", padding: "4px 10px", borderRadius: 6, fontSize: 12, fontWeight: 800, marginBottom: 12 }}>
-                    <span>✓</span> 중개사에게 꼭 필요한
-                  </div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", lineHeight: 1.4, marginBottom: 6 }}>
-                    1초 완성 AI 물건보고서 3건 무료
-                  </div>
-                  <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
-                    지번만 입력하면 고객 브리핑용 고품격 매매·임대 제안서 1초 완성
-                  </div>
-                </div>
-              </div>
-
-              {/* 3. 경공매 무료 열람 */}
-              <div style={{ background: "#ffffff", padding: "24px 20px", borderRadius: 14, border: "1px solid #e2e8f0", textAlign: "left", boxShadow: "0 4px 12px rgba(0,0,0,0.03)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#ecfdf5", color: "#059669", padding: "4px 10px", borderRadius: 6, fontSize: 12, fontWeight: 800, marginBottom: 12 }}>
-                    <span>✓</span> 실시간 업데이트
-                  </div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", lineHeight: 1.4, marginBottom: 6 }}>
-                    전국 법원 경공매 물건 무료 열람
-                  </div>
-                  <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
-                    법원 실시간 경매·공매 물건 정보 및 권리분석 서식 100% 무료 제공
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* 회원 유형 안내 */}
-            <div style={{ background: "#f1f5f9", borderRadius: 10, padding: "12px 18px", fontSize: 13, color: "#475569", lineHeight: 1.7, display: "flex", justifyContent: "center", gap: 24, flexWrap: "wrap", textAlign: "center" }}>
-              <div>· <strong>일반회원</strong> : 공실등록 3건 무료, 경공매 열람 가능, 공동중개 열람 불가</div>
-              <div>· <strong>부동산회원</strong> : 공동중개 3건 등록 무료, 경공매 열람 가능, <strong style={{ color: "#2563eb" }}>공동중개 열람 가능</strong></div>
-            </div>
-          </div>
-        </section>
-
-        {/* ━━━ 3. 5대 핵심 무료 혜택 상세 카드 (공실뉴스부동산 메인 가치) ━━━ */}
-        <section style={{ padding: "75px 0", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
+        {/* ━━━ 2. 3대 핵심 무료 혜택 카드 (100% 무료 개방) ━━━ */}
+        <section style={{ padding: "60px 0 50px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
+          <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 24px" }}>
             
-            <div style={{ textAlign: "center", marginBottom: 44 }}>
+            <div style={{ textAlign: "center", marginBottom: 36 }}>
               <span style={{ fontSize: 13, fontWeight: 800, color: "#2563eb", letterSpacing: "1px", textTransform: "uppercase" }}>
                 100% FREE BENEFITS
               </span>
               <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#0f172a", margin: "8px 0 10px 0", letterSpacing: "-0.5px" }}>
-                대한민국 11만 부동산을 위한 5대 핵심 무료 혜택
+                대한민국 11만 부동산을 위한 무료 공실 채널
               </h2>
               <p style={{ fontSize: "15px", color: "#64748b", margin: 0 }}>
                 가입비 0원, 월정액 0원! 부동산 대표님들을 위해 100% 무료로 개방됩니다.
               </p>
             </div>
 
-            {/* 5대 무료 카드 그리드 */}
+            {/* 3대 핵심 무료 카드 그리드 & 모션 스타일 */}
             <style>{`
+              .realty-cta-btn {
+                padding: 16px 38px;
+                background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+                color: #ffffff;
+                border: none;
+                border-radius: 12px;
+                font-size: 17px;
+                font-weight: 900;
+                cursor: pointer;
+                box-shadow: 0 6px 20px rgba(37,99,235,0.4);
+                transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                animation: ctaFloating 3.5s ease-in-out infinite;
+              }
+              .realty-cta-btn:hover {
+                transform: translateY(-5px) scale(1.03);
+                box-shadow: 0 14px 32px rgba(37,99,235,0.55);
+                filter: brightness(1.08);
+              }
+              .realty-cta-btn:active {
+                transform: translateY(-1px) scale(0.99);
+              }
+              @keyframes ctaFloating {
+                0%, 100% { transform: translateY(0); box-shadow: 0 6px 20px rgba(37,99,235,0.4); }
+                50% { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(37,99,235,0.52); }
+              }
+
+              /* 3대 핵심 무료 혜택 카드 */
               .realty-benefit-card {
                 background: #ffffff;
                 border: 1px solid #e2e8f0;
                 border-radius: 16px;
-                padding: 26px 22px;
-                transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+                padding: 28px 24px;
+                transition: all 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
                 box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-                cursor: pointer;
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
+                cursor: pointer;
               }
               .realty-benefit-card:hover {
-                transform: translateY(-7px);
-                background: #ffffff;
+                transform: translateY(-8px);
                 border-color: #2563eb;
-                box-shadow: 0 16px 36px rgba(37, 99, 235, 0.13);
+                box-shadow: 0 18px 36px rgba(37, 99, 235, 0.14);
               }
               .realty-benefit-card:hover .benefit-3d-icon {
-                transform: scale(1.08) rotate(2deg);
+                transform: scale(1.15) rotate(4deg);
+              }
+              .realty-benefit-card .benefit-card-title {
+                font-size: 19px;
+                font-weight: 900;
+                color: #0f172a;
+                margin: 0 0 8px 0;
+                transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+              }
+              .realty-benefit-card:hover .benefit-card-title {
+                color: #2563eb;
+                transform: translateX(3px);
               }
               .benefit-3d-icon-wrap {
-                width: 60px;
-                height: 60px;
+                width: 64px;
+                height: 64px;
                 border-radius: 14px;
                 background: #f8fafc;
                 border: 1px solid #f1f5f9;
                 overflow: hidden;
-                margin-bottom: 16px;
+                margin-bottom: 18px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -328,96 +295,120 @@ export default function NewsRealtyPage() {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
-                transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+                transition: all 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+              }
+
+              /* 추천 대상(사례) 카드 마우스 호버 모션 */
+              .realty-target-card {
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
+                padding: 24px 30px;
+                display: flex;
+                align-items: center;
+                gap: 32px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+                transition: all 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+                cursor: pointer;
+              }
+              .realty-target-card:hover {
+                transform: translateY(-7px);
+                border-color: #3b82f6;
+                box-shadow: 0 18px 36px rgba(37, 99, 235, 0.13);
+                background: #ffffff;
+              }
+              .realty-target-card .target-avatar-img {
+                transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+              }
+              .realty-target-card:hover .target-avatar-img {
+                transform: scale(1.12) rotate(2deg) translateY(-2px);
+              }
+              .realty-target-card .target-card-title {
+                font-size: 17.5px;
+                font-weight: 900;
+                color: #0f172a;
+                margin: 0 0 6px 0;
+                letter-spacing: -0.2px;
+                transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+              }
+              .realty-target-card:hover .target-card-title {
+                color: #2563eb;
+                transform: translateX(4px);
+              }
+              .realty-target-card .target-role-badge {
+                display: inline-block;
+                background: #eff6ff;
+                color: #1d4ed8;
+                font-size: 12px;
+                font-weight: 800;
+                padding: 3px 10px;
+                border-radius: 6px;
+                margin-bottom: 8px;
+                transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+              }
+              .realty-target-card:hover .target-role-badge {
+                background: #dbeafe;
+                color: #1e40af;
+                transform: scale(1.05);
               }
             `}</style>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 24 }}>
               
-              {/* 1. 공동중개 열람 무료 */}
+              {/* 1. 무료 공동중개망 */}
               <div className="realty-benefit-card">
                 <div>
                   <div className="benefit-3d-icon-wrap">
-                    <img src="/images/realty/icons/icon_key_unlock.jpg" alt="공동중개 열람 무료" className="benefit-3d-icon" />
+                    <img src="/images/realty/icons/icon_key_unlock.jpg" alt="100% 무료 공동중개망" className="benefit-3d-icon" />
                   </div>
-                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 01</div>
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>공동중개 열람 무료</h3>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#eff6ff", color: "#2563eb", padding: "4px 9px", borderRadius: 6, fontSize: 12, fontWeight: 800, marginBottom: 10 }}>
+                    <span>✓</span> 전국 부동산 누구나 가입하는
+                  </div>
+                  <h3 className="benefit-card-title">100% 무료 공동중개망</h3>
                   <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                    타사 월 10~20만원 유료 회비 부담 ZERO! 전국 11만 공인중개사의 실매물 공동중개 정보를 평생 100% 무료로 무제한 열람합니다.
+                    빠른 공실 계약을 위해 11만 부동산 실매물 열람은 100% 무료! 공동중개 물건 등록도 3건까지 무료로 제공됩니다.
                   </p>
                 </div>
               </div>
 
-              {/* 2. AI 매매 보고서 3건 무료 */}
+              {/* 2. AI 물건보고서 3건 무료 */}
               <div className="realty-benefit-card">
                 <div>
                   <div className="benefit-3d-icon-wrap">
-                    <img src="/images/realty/icons/icon_doc_chart.jpg" alt="매매 보고서 3건 무료" className="benefit-3d-icon" />
+                    <img src="/images/realty/icons/icon_doc_chart.jpg" alt="1초 완성 AI 물건보고서 3건 무료" className="benefit-3d-icon" />
                   </div>
-                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 02</div>
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>매매 보고서 3건 무료</h3>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#fef3c7", color: "#d97706", padding: "4px 9px", borderRadius: 6, fontSize: 12, fontWeight: 800, marginBottom: 10 }}>
+                    <span>✓</span> 중개사에게 꼭 필요한
+                  </div>
+                  <h3 className="benefit-card-title">1초 완성 AI 물건보고서 3건 무료</h3>
                   <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                    지번과 조건만 간단히 입력하면 AI가 고객 브리핑용 고품격 매매/임대 제안서와 리포트 3건을 1초 만에 깔끔하게 자동 완성합니다.
+                    지번만 입력하면 고객 브리핑용 매매·임대 제안서를 1초 만에 깔끔하게 만들어 드립니다.
                   </p>
                 </div>
               </div>
 
-              {/* 3. 지도기반 모바일 등록/열람 */}
+              {/* 3. 전국 법원 경공매 물건 무료 열람 */}
               <div className="realty-benefit-card">
                 <div>
                   <div className="benefit-3d-icon-wrap">
-                    <img src="/images/realty/icons/icon_map_pin.jpg" alt="지도기반 모바일 등록/열람" className="benefit-3d-icon" />
+                    <img src="/images/realty/icons/icon_auction_gavel.jpg" alt="전국 법원 경공매 물건 무료 열람" className="benefit-3d-icon" />
                   </div>
-                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 03</div>
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>지도기반 모바일 등록/열람</h3>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#ecfdf5", color: "#059669", padding: "4px 9px", borderRadius: 6, fontSize: 12, fontWeight: 800, marginBottom: 10 }}>
+                    <span>✓</span> 실시간 업데이트
+                  </div>
+                  <h3 className="benefit-card-title">전국 법원 경공매 물건 무료 열람</h3>
                   <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                    현장 어디서든 스마트폰 실시간 지도로 내 주변 공실과 공동중개 매물을 즉시 확인하고, 원터치 등록 및 중개사 전화 연결이 가능합니다.
+                    법원 실시간 경매·공매 물건 정보 및 기본권리분석 정보를 무료로 열람할 수 있습니다.
                   </p>
                 </div>
               </div>
 
-              {/* 4. 공동중개 등록 3건 무료 */}
-              <div className="realty-benefit-card">
-                <div>
-                  <div className="benefit-3d-icon-wrap">
-                    <img src="/images/realty/icons/icon_house_plus.jpg" alt="공동중개 등록 3건 무료" className="benefit-3d-icon" />
-                  </div>
-                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 04</div>
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>공동중개 등록 3건 무료</h3>
-                  <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                    보유 매물을 전국 11만 부동산망에 즉시 노출! 3건까지 등록비 ZERO로 자유롭게 공동중개 등록하여 빠른 계약을 성사시키세요.
-                  </p>
-                </div>
-              </div>
+            </div>
 
-              {/* 5. 커뮤니티 무료 */}
-              <div className="realty-benefit-card">
-                <div>
-                  <div className="benefit-3d-icon-wrap">
-                    <img src="/images/realty/icons/icon_chat_bubbles.jpg" alt="전국 11만 커뮤니티 무료" className="benefit-3d-icon" />
-                  </div>
-                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", marginBottom: 4 }}>FREE BENEFIT 05</div>
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>전국 11만 커뮤니티 무료</h3>
-                  <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                    지역 텃세 없이 전국 11만 부동산 전문가들과 실전 계약 노하우, 특약 서식 원본, 정책 분석 및 공동중개 네트워크를 자유롭게 교류하세요.
-                  </p>
-                </div>
-              </div>
-
-              {/* 6. 경공매 물건 무료 열람 */}
-              <div className="realty-benefit-card">
-                <div>
-                  <div className="benefit-3d-icon-wrap">
-                    <img src="/images/realty/icons/icon_auction_gavel.jpg" alt="경공매 물건 무료 열람" className="benefit-3d-icon" />
-                  </div>
-                  <div style={{ fontSize: 11.5, fontWeight: 800, color: "#d97706", marginBottom: 4 }}>SPECIAL BONUS</div>
-                  <h3 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0" }}>경공매 물건 무료 열람</h3>
-                  <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: 0 }}>
-                    법원 및 캠코 공식 데이터 기반 전국 경·공매 실시간 물건 정보를 추가 비용 없이 100% 무료로 열람할 수 있습니다.
-                  </p>
-                </div>
-              </div>
-
+            {/* 회원 유형 안내 */}
+            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 20px", fontSize: 13.5, color: "#475569", lineHeight: 1.7, display: "flex", justifyContent: "center", gap: 28, flexWrap: "wrap", textAlign: "center" }}>
+              <div>· <strong>일반회원</strong> : 공실등록 3건 무료, 경공매 열람 가능, 공동중개 열람 불가</div>
+              <div>· <strong>부동산회원</strong> : <strong style={{ color: "#2563eb" }}>공동중개 열람 100% 무료</strong>, <strong>공동중개 물건등록 3건 무료</strong>, 경공매 열람 가능</div>
             </div>
 
           </div>
@@ -429,41 +420,33 @@ export default function NewsRealtyPage() {
             
             <div style={{ textAlign: "center", marginBottom: 44 }}>
               <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#0f172a", margin: "0 0 10px 0", letterSpacing: "-0.5px", lineHeight: 1.35 }}>
-                비싼 사설 공실망 월회비, 아직도 내고 계신가요?<br />
-                <span style={{ color: "#2563eb" }}>11만 부동산과 임대인이 직접 증명합니다</span>
+                빠른 계약을 원할땐, 이제 공실뉴스부동산이 되세요!<br />
+                <span style={{ color: "#2563eb" }}>부동산은 누구나 무료!!</span>
               </h2>
-              <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.6, margin: "0 0 4px 0" }}>
-                가입비 0원, 월정액 0원!
+              <p style={{ fontSize: "16px", color: "#334155", lineHeight: 1.6, margin: "0 0 4px 0", fontWeight: 800 }}>
+                💡 이런 부동산 대표님께 적극 추천합니다
               </p>
               <p style={{ fontSize: "14px", color: "#64748b", margin: 0 }}>
-                100% 무료 실매물 공동중개 네트워크로 가장 빠르게 계약을 성사시킨 실제 현장 이야기입니다.
+                가입비 0원, 월정액 0! 100% 무료 실매물 공동중개망으로 중개 업무의 효율을 극대화하세요.
               </p>
             </div>
 
-            {/* 5대 3D 아바타 교차 카드 리스트 */}
+            {/* 4대 3D 아바타 추천 대상 교차 카드 리스트 */}
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-              {PROOF_STORIES.map((item, idx) => {
+              {RECOMMENDED_TARGETS.map((item, idx) => {
                 const isLeftImage = item.imagePosition === "left";
                 return (
                   <div
                     key={idx}
-                    style={{
-                      background: "#ffffff",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: 16,
-                      padding: "24px 30px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 32,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
-                    }}
+                    className="realty-target-card"
                   >
                     {/* 이미지 좌측 배치 */}
                     {isLeftImage && (
-                      <div style={{ width: 160, height: 160, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ width: 140, height: 140, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <img
                           src={item.image}
                           alt={item.role}
+                          className="target-avatar-img"
                           style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 12 }}
                         />
                       </div>
@@ -471,23 +454,27 @@ export default function NewsRealtyPage() {
 
                     {/* 본문 텍스트 */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "inline-block", background: "#eff6ff", color: "#1d4ed8", fontSize: 12, fontWeight: 800, padding: "3px 10px", borderRadius: 6, marginBottom: 10 }}>
+                      <div className="target-role-badge">
                         {item.role}
                       </div>
-                      <p style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", lineHeight: 1.55, margin: "0 0 10px 0", letterSpacing: "-0.2px" }}>
-                        {item.quote}
+                      <h4 className="target-card-title">
+                        {item.title}
+                      </h4>
+                      <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: "0 0 8px 0" }}>
+                        {item.desc}
                       </p>
-                      <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>
-                        {item.author}
+                      <span style={{ fontSize: 12.5, color: "#2563eb", fontWeight: 700 }}>
+                        {item.tag}
                       </span>
                     </div>
 
                     {/* 이미지 우측 배치 */}
                     {!isLeftImage && (
-                      <div style={{ width: 160, height: 160, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ width: 140, height: 140, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <img
                           src={item.image}
                           alt={item.role}
+                          className="target-avatar-img"
                           style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 12 }}
                         />
                       </div>
@@ -549,19 +536,9 @@ export default function NewsRealtyPage() {
             </p>
             <button
               onClick={() => handleApplyClick()}
-              style={{
-                padding: "16px 38px",
-                background: "#2563eb",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: 12,
-                fontSize: 16.5,
-                fontWeight: 900,
-                cursor: "pointer",
-                boxShadow: "0 4px 16px rgba(37,99,235,0.4)",
-              }}
+              className="realty-cta-btn"
             >
-              무료 공실뉴스부동산 신청하기 →
+              공실뉴스 부동산 무료 신청하기 →
             </button>
           </div>
         </section>

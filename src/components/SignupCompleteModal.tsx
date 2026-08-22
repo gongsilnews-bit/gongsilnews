@@ -237,7 +237,7 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
       >
         <div style={{ overflowY: 'auto', padding: '36px 36px 24px', flex: 1 }}>
           <h2 style={{ fontSize: 22, fontWeight: 900, color: '#111', textAlign: 'center', margin: '0 0 6px 0' }}>
-            공실뉴스 진입!
+            공실뉴스 무료가입
           </h2>
           <p style={{ fontSize: 13, color: '#888', textAlign: 'center', margin: '0 0 28px 0', lineHeight: 1.5 }}>
             원활한 서비스 이용을 위해 필수 정보를 입력해 주세요.
@@ -254,7 +254,7 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
 
           {/* ━━━ 약관 동의 ━━━ */}
           <div style={{ borderTop: '1px solid #eee', paddingTop: 20 }}>
-            <label onClick={handleAgreeAll} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: 12, paddingBottom: 14, borderBottom: '2px solid #x' }}>
+            <label onClick={handleAgreeAll} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: 12, paddingBottom: 14, borderBottom: '2px solid #f1f5f9' }}>
               <input type="checkbox" checked={agreeAll} onChange={() => {}} style={{ width: 18, height: 18, accentColor: '#1e56a0', cursor: 'pointer', marginTop: 2, flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#111' }}>모두 동의합니다.</div>
@@ -265,18 +265,56 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
             </label>
 
             {[
-              { key: 'terms', label: '[필수] 이용약관동의', content: '공실뉴스 이용약관입니다.' },
-              { key: 'privacy', label: '[필수] 개인정보 수집 및 이용', content: '개인정보 처리 방침 정보입니다.' },
+              {
+                key: 'terms',
+                label: '[필수] 이용약관 동의',
+                content: `제1조 (목적)
+본 약관은 (주)공실뉴스(이하 "회사")가 운영하는 인터넷 사이트 "공실뉴스"(https://gongsil.net)에서 제공하는 부동산 정보 서비스, 공실 열람, 공동중개망 서비스, 뉴스 콘텐츠 및 관련 제반 서비스(이하 "서비스")의 이용 조건 및 절차에 관한 사항을 규정함을 목적으로 합니다.
+
+제2조 (정의)
+1. "서비스"란 회사가 제공하는 부동산 뉴스, 공실 열람, 공실광고 등록, 공동중개, 포인트 거래, 자료실, 특강 등 일체의 서비스를 말합니다.
+2. "회원"이란 사이트에 회원가입을 한 자로서, 회사가 제공하는 서비스를 이용할 수 있는 자를 말합니다.
+3. "부동산 회원"이란 공인중개사 자격을 보유하고 별도 인증을 거쳐 공동중개망을 이용하는 회원을 말합니다.
+
+제3조 (이용 계약의 체결)
+이용 계약은 이용자가 회원가입 시 본 약관에 동의하고, 회사가 이를 승낙함으로써 체결됩니다. 소셜 로그인 방식으로 진행되며 회사는 이름, 연락처 등의 필수 정보를 요청합니다.
+
+제4조 (이용자의 의무)
+회원은 타인의 정보를 도용하거나 허위 공실·매물 정보를 등록해서는 안 되며, 공인중개사법 및 관계 법령을 준수해야 합니다.`,
+              },
+              {
+                key: 'privacy',
+                label: '[필수] 개인정보 수집 및 이용 동의',
+                content: `1. 개인정보 수집 항목
+- 필수항목: 이름, 이메일(소셜 계정 식별자), 휴대폰 번호, (부동산회원의 경우) 중개업소 상호명, 사업자/개설등록 정보
+
+2. 개인정보의 수집 및 이용 목적
+- 회원 가입 의사 확인, 회원 식별 및 본인 확인
+- 공실 및 공동중개 매칭 알림 서비스 제공
+- 고객 상담 및 민원 처리, 부정 이용 방지
+
+3. 개인정보의 보유 및 이용 기간
+- 회원 탈퇴 시까지 (단, 전자상거래 등 관계 법령에 따라 보존할 필요가 있는 경우 해당 법령이 정한 기간 동안 보관)
+
+※ 귀하는 개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있으나, 미동의 시 회원가입 및 서비스 이용이 제한됩니다.`,
+              },
             ].map(item => (
               <div key={item.key} style={{ marginBottom: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <input type="checkbox" checked={agreements[item.key as keyof typeof agreements]} onChange={() => handleAgreement(item.key as keyof typeof agreements)} style={{ width: 16, height: 16, accentColor: '#1e56a0', cursor: 'pointer', flexShrink: 0 }} />
                   <span style={{ fontSize: 13, color: '#444', flex: 1 }}>{item.label}</span>
-                  <button onClick={() => toggleExpand(item.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e56a0', fontSize: 16, padding: '0 4px', fontFamily: 'inherit' }}>▼</button>
+                  <button onClick={() => toggleExpand(item.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e56a0', fontSize: 13, fontWeight: 700, padding: '0 4px', fontFamily: 'inherit' }}>
+                    {expandedTerms === item.key ? '닫기 ▲' : '내용보기 ▼'}
+                  </button>
                 </div>
                 {expandedTerms === item.key && (
-                  <div style={{ marginTop: 8, marginLeft: 26, padding: '12px 14px', background: '#f9f9f9', border: '1px solid #eee', borderRadius: 6, fontSize: 12, color: '#666', lineHeight: 1.7 }}>
+                  <div style={{ marginTop: 8, marginLeft: 26, padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 11.5, color: '#475569', lineHeight: 1.65, maxHeight: 140, overflowY: 'auto', whiteSpace: 'pre-line' }}>
                     {item.content}
+                    <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
+                      <a href={item.key === 'terms' ? '/terms' : '/com/privacy.html'} target="_blank" rel="noreferrer" style={{ color: '#1e56a0', textDecoration: 'underline', fontWeight: 700, fontSize: 11.5 }}>
+                        전문 전체보기 ↗
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>
@@ -294,7 +332,7 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
               border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s'
             }}
           >
-            {loading ? '처리 중...' : '공실뉴스 시작하기 ✨'}
+            {loading ? '처리 중...' : '공실뉴스 무료로 시작하기 ✨'}
           </button>
         </div>
       </div>
