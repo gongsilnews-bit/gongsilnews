@@ -89,9 +89,9 @@ export default function NewsRealtyPage() {
       localStorage.setItem("signup_member_type", "broker");
     }
     if (!user) {
-      window.location.href = "/login?returnTo=" + encodeURIComponent("/realty_admin?menu=settings&tab=agency");
+      window.location.href = "/login?returnTo=" + encodeURIComponent("/realty_admin?menu=settings");
     } else {
-      window.location.href = "/realty_admin?menu=settings&tab=agency";
+      window.location.href = "/realty_admin?menu=settings";
     }
   };
 

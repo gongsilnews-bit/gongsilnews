@@ -586,7 +586,14 @@ export default function GongsilDetailPanel({
             <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 300 }}>
               <button
                 onClick={() => {
-                  window.location.href = "/newsrealty";
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("signup_member_type", "broker");
+                  }
+                  if (!currentUser) {
+                    window.location.href = "/login?returnTo=" + encodeURIComponent("/realty_admin?menu=settings");
+                  } else {
+                    window.location.href = "/realty_admin?menu=settings";
+                  }
                 }}
                 style={{
                   width: "100%",

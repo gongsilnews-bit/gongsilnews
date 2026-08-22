@@ -910,7 +910,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
       </div>
       )}
 
-      {activeTab === 1 && formData.role === "부동산회원" && (
+      {activeTab === 1 && (
         <div style={{ background: darkMode ? "#2c2d31" : "#fff", borderBottomLeftRadius: 12, borderBottomRightRadius: 12, border: `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderTop: "none", overflow: "hidden", marginBottom: 24 }}>
 
           {/* 승인 상태 Step Indicator */}
