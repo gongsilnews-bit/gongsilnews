@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthModal from "@/components/AuthModal";
 import { createClient } from "@/utils/supabase/client";
-import { submitInquiry } from "@/app/actions/inquiry";
 
 const brokerStats = [
   { label: "전국 가입 부동산", value: "11만+", sub: "대규모 네트워크 인프라" },
@@ -73,16 +72,6 @@ export default function MobileNewsRealtyPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const [user, setUser] = useState<any>(null);
-  const [isApplicationOpen, setIsApplicationOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    agencyName: "",
-    targetComplex: "",
-    bizRegion: "",
-    category: "아파트 전문",
-    memo: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAppliedSuccessfully, setIsAppliedSuccessfully] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -94,44 +83,13 @@ export default function MobileNewsRealtyPage() {
   }, []);
 
   const handleApplyClick = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("signup_member_type", "broker");
+    }
     if (!user) {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("signup_member_type", "broker");
-      }
-      setIsAuthModalOpen(true);
+      window.location.href = "/m/login?returnTo=" + encodeURIComponent("/m/admin/settings?tab=agency");
     } else {
-      setIsApplicationOpen(true);
-    }
-  };
-
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.agencyName.trim() || !formData.targetComplex.trim() || !formData.bizRegion.trim()) {
-      alert("모든 필수 입력 항목을 채워주세요.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const res = await submitInquiry({
-        name: user.user_metadata?.name || user.email?.split("@")[0] || "기자단 신청자",
-        phone: user.user_metadata?.phone || "010-0000-0000",
-        email: user.email,
-        category: "기자단 신청",
-        title: `[기자단 신청] ${formData.agencyName}`,
-        content: `상호명: ${formData.agencyName}\n희망단지: ${formData.targetComplex}\n활동지역: ${formData.bizRegion}\n주력물건: ${formData.category}\n신청 메모: ${formData.memo || "없음"}`,
-        userId: user.id,
-      });
-
-      if (res.success) {
-        setIsAppliedSuccessfully(true);
-      } else {
-        alert("신청 중 오류가 발생했습니다: " + res.message);
-      }
-    } catch (err: any) {
-      alert("시스템 오류: " + err.message);
-    } finally {
-      setIsSubmitting(false);
+      window.location.href = "/m/admin/settings?tab=agency";
     }
   };
 
@@ -440,95 +398,6 @@ export default function MobileNewsRealtyPage() {
         </section>
 
       </div>
-
-      {/* ━━━ 신청 모달 ━━━ */}
-      {isApplicationOpen && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div style={{ width: "100%", maxWidth: 360, background: "#ffffff", borderRadius: 14, padding: "20px", position: "relative" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: 0 }}>
-                무료 중개업소 등록 신청서
-              </h3>
-              <button onClick={() => setIsApplicationOpen(false)} style={{ background: "none", border: "none", fontSize: 18, color: "#94a3b8" }}>✕</button>
-            </div>
-
-            {isAppliedSuccessfully ? (
-              <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <div style={{ fontSize: 36, marginBottom: 8 }}>🎉</div>
-                <h4 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: "0 0 6px 0" }}>신청이 접수되었습니다!</h4>
-                <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 16px 0" }}>확인 후 신속히 연락드리겠습니다.</p>
-                <button onClick={() => { setIsApplicationOpen(false); setIsAppliedSuccessfully(false); }} style={{ padding: "8px 20px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontWeight: 700 }}>
-                  확인
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleFormSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 3 }}>중개업소 상호명 (또는 성명) *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="예: 공실뉴스공인중개사"
-                    value={formData.agencyName}
-                    onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
-                    style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 13, boxSizing: "border-box" }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 3 }}>주요 활동 지역 *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="예: 서울 강남구 역삼동"
-                    value={formData.bizRegion}
-                    onChange={(e) => setFormData({ ...formData, bizRegion: e.target.value })}
-                    style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 13, boxSizing: "border-box" }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 3 }}>희망 대표 단지/건물명 *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="예: 래미안역삼 또는 테헤란빌딩"
-                    value={formData.targetComplex}
-                    onChange={(e) => setFormData({ ...formData, targetComplex: e.target.value })}
-                    style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 13, boxSizing: "border-box" }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 3 }}>주력 물건 유형</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 13, boxSizing: "border-box" }}
-                  >
-                    <option value="아파트 전문">아파트 전문</option>
-                    <option value="상가/오피스 전문">상가/오피스 전문</option>
-                    <option value="원룸/오피스텔 전문">원룸/오피스텔 전문</option>
-                    <option value="토지/공장/창고 전문">토지/공장/창고 전문</option>
-                    <option value="경·공매 전문">경·공매 전문</option>
-                  </select>
-                </div>
-
-                <div style={{ marginTop: 6 }}>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    style={{ width: "100%", padding: "10px 0", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 800, cursor: "pointer" }}
-                  >
-                    {isSubmitting ? "신청 중..." : "무료 신청서 제출"}
-                  </button>
-                </div>
-              </form>
-            )}
-
-          </div>
-        </div>
-      )}
     </>
   );
 }
