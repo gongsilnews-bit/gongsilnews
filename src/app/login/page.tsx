@@ -20,6 +20,16 @@ function LoginClient() {
     }
   }, [router, returnToParam]);
 
+  // 🚀 이미 로그인된 사용자가 뒤로가기 등으로 로그인 페이지에 진입한 경우 즉시 원래 페이지/홈으로 자동 이동
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) {
+        router.replace(returnToParam || '/');
+      }
+    });
+  }, [router, returnToParam]);
+
   const [showFindAccount, setShowFindAccount] = useState(false);
   const [findName, setFindName] = useState('');
   const [findPhone, setFindPhone] = useState('');

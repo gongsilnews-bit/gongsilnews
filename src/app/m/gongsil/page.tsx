@@ -943,7 +943,8 @@ function MobileGongsilContent() {
 
   const goBack = () => {
     if (vacancyStackRef.current.length > 0) {
-      window.history.back();
+      const prev = vacancyStackRef.current.pop();
+      setSelectedVacancy(prev || null);
       return;
     }
     if (isEmbedded) {
@@ -954,13 +955,25 @@ function MobileGongsilContent() {
     if (isDirectView) {
       if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
       setTimeout(() => {
-        if (window.opener) window.close();
-        else window.history.back();
+        if (window.opener) {
+          window.close();
+        } else {
+          setIsDirectView(false);
+          setSelectedVacancy(null);
+          window.history.replaceState({}, "", "/m/gongsil");
+        }
       }, 350);
       return;
     }
-    if (selectedVacancy) { window.history.back(); return; }
-    if (selectedCluster) { window.history.back(); return; }
+    if (selectedVacancy) {
+      if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
+      setTimeout(() => {
+        setSelectedVacancy(null);
+        window.history.replaceState({}, "", "/m/gongsil");
+      }, 350);
+      return;
+    }
+    if (selectedCluster) { setSelectedCluster(null); return; }
     if (showListView) { setShowListView(false); return; }
   };
 

@@ -15,6 +15,16 @@ function MobileLoginClient() {
   const [findResult, setFindResult] = useState<{ found: boolean; email?: string; provider?: string } | null>(null);
   const [findLoading, setFindLoading] = useState(false);
 
+  // 🚀 이미 로그인된 사용자가 뒤로가기 등으로 로그인 페이지에 진입한 경우 즉시 원래 페이지/공실로 자동 이동
+  React.useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) {
+        router.replace(returnToParam || '/m/gongsil');
+      }
+    });
+  }, [router, returnToParam]);
+
   const handleOAuthLogin = async (providerName: 'google' | 'kakao' | 'naver') => {
     try {
       const supabase = createClient();
