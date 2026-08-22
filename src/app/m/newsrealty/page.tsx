@@ -244,11 +244,6 @@ export default function MobileNewsRealtyPage() {
             font-weight: 900;
             color: #0f172a;
             margin-bottom: 3px;
-            transition: all 0.25s ease;
-          }
-          .m-benefit-card:hover .m-benefit-title {
-            color: #2563eb;
-            transform: translateX(2px);
           }
 
           .m-target-card {
@@ -280,11 +275,6 @@ export default function MobileNewsRealtyPage() {
             color: #0f172a;
             line-height: 1.4;
             margin-bottom: 4px;
-            transition: all 0.25s ease;
-          }
-          .m-target-card:hover .m-target-title {
-            color: #2563eb;
-            transform: translateX(3px);
           }
           .m-target-card .m-role-badge {
             display: inline-block;

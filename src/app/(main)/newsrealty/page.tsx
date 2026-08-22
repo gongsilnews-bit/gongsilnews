@@ -272,11 +272,6 @@ export default function NewsRealtyPage() {
                 font-weight: 900;
                 color: #0f172a;
                 margin: 0 0 8px 0;
-                transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-              }
-              .realty-benefit-card:hover .benefit-card-title {
-                color: #2563eb;
-                transform: translateX(3px);
               }
               .benefit-3d-icon-wrap {
                 width: 64px;
@@ -329,11 +324,6 @@ export default function NewsRealtyPage() {
                 color: #0f172a;
                 margin: 0 0 6px 0;
                 letter-spacing: -0.2px;
-                transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-              }
-              .realty-target-card:hover .target-card-title {
-                color: #2563eb;
-                transform: translateX(4px);
               }
               .realty-target-card .target-role-badge {
                 display: inline-block;
