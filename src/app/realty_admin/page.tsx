@@ -146,7 +146,7 @@ function RealtyAdminContent() {
   const [saving] = useState(false);
 
   const theme = computeTheme(darkMode);
-  const sidebarBg = "linear-gradient(180deg, #1e3a8a 0%, #1e40af 50%, #172554 100%)";
+  const sidebarBg = darkMode ? "#1e2a42" : "#1a3a6b";
 
   // 🔐 인증 확인 전까지 빈 화면 (깜빡임 방지)
   if (!authChecked) {
