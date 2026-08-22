@@ -961,6 +961,9 @@ function MobileGongsilContent() {
           setIsDirectView(false);
           setSelectedVacancy(null);
           window.history.replaceState({}, "", "/m/gongsil");
+          // 🚀 [대표님 지침] 상세페이지에서 뒤로가기 시 지도로 빠지지 않고, 매물 리스트(목록) 화면으로 복귀!
+          setShowListView(true);
+          setListViewMode("map");
         }
       }, 350);
       return;
@@ -970,6 +973,11 @@ function MobileGongsilContent() {
       setTimeout(() => {
         setSelectedVacancy(null);
         window.history.replaceState({}, "", "/m/gongsil");
+        // 🚀 [대표님 지침] 상세페이지에서 뒤로가기 시 지도로 나가지 않고, 매물 리스트(목록) 뷰를 유지/오픈!
+        if (!selectedCluster) {
+          setShowListView(true);
+          setListViewMode("map");
+        }
       }, 350);
       return;
     }
