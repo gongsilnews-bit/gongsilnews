@@ -1026,8 +1026,8 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                 <div className="sb-widget">
                   <div className="sb-title">추천 공실</div>
                   {visibleVacancies.map((prop, i) => {
-                  const cardMasked = prop.exposure_type === '부동산노출' &&
-                    (prop.trade_type === '경매' || prop.trade_type === '공매' ? viewerRole === null : (viewerRole !== 'REALTOR' && viewerRole !== 'ADMIN'));
+                  // 마스킹 판별: 비로그인(viewerRole === null)일 때만 로그인 안내 (일반회원 이상은 정상 열람)
+                  const cardMasked = viewerRole === null;
                   const cardAddr = prop.building_name || prop.detail_addr || "이름없는 공실";
                   const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
                   
@@ -1084,7 +1084,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                             {title}
                             {cardMasked && (
                               <span style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", marginLeft: "8px", verticalAlign: "middle" }}>
-                                {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 가입 시 무료 열람'}
+                                🔒 로그인 시 무료 열람
                               </span>
                             )}
                           </div>
