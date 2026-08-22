@@ -1039,12 +1039,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   }, [filteredVacancies, selectedClusterIds, mapBounds, activeCategory, selectedRegion]);
 
   const showArticleOnMap = useCallback((prop: any) => {
-    if (!kakaoMapRef.current) return;
-    const coords = getJitteredCoords(prop, true);
-    if (!coords.lat || !coords.lng) return;
-    const kakao = (window as any).kakao;
-    const position = new kakao.maps.LatLng(coords.lat, coords.lng);
-    kakaoMapRef.current.panTo(position);
+    // 대표님 지침: 리스트/매물 선택 시 지도가 강제로 움직이지 않도록 완전 고정
   }, []);
 
   // 보류된 지도 이동 좌표 (비동기 핸들러 → 지도 로딩 후 실행용, useState로 re-render 트리거)
