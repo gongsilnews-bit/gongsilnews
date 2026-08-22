@@ -469,7 +469,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         if (!updateRes.success) throw new Error(updateRes.error || "회원 수정에 실패했습니다.");
       }
 
-      if (formData.role === "부동산회원" && memberId) {
+      let finalStatus = isAdmin ? agencyData.status : "PENDING";
+      let agencySaved = false;
+
+      if ((formData.role === "부동산회원" || agencyData.name || files.biz_cert || files.reg_cert) && memberId) {
         let regCertUrl = filePreviews.reg_cert?.startsWith("http") ? filePreviews.reg_cert : null;
         let bizCertUrl = filePreviews.biz_cert?.startsWith("http") ? filePreviews.biz_cert : null;
 
@@ -489,7 +492,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           if (uploadRes.success) bizCertUrl = uploadRes.url || null;
         }
 
-        let finalStatus = isAdmin ? agencyData.status : "PENDING";
+        finalStatus = isAdmin ? agencyData.status : "PENDING";
 
         // --- 백그라운드 AI 서류 참고 검증 (관리자 심사용 참고 메모 생성) ---
         let aiReason: string | null = null;
@@ -545,6 +548,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           throw new Error("중개업소 정보 저장에 실패했습니다: " + agencyRes.error);
         }
 
+        agencySaved = true;
+
         if (finalStatus === "APPROVED") {
           const { adminApproveRealtorApplication } = await import("@/app/admin/actions");
           await adminApproveRealtorApplication(memberId);
@@ -586,7 +591,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         }
       }
 
-      if (!isAdmin && formData.role === "부동산회원") {
+      if (!isAdmin && (formData.role === "부동산회원" || agencySaved)) {
         if (finalStatus === "APPROVED") {
           alert("🎉 정보가 저장되었으며, 서류 검증이 완료되어 즉시 [정상승인] 처리되었습니다!");
         } else {
