@@ -392,6 +392,24 @@ export default function MobileNewsRealtyPage() {
           </div>
         </section>
 
+        {/* ━━━ 6. 모바일 하단 CTA 배너 (PC와 동일한 딥 네이비 스타일) ━━━ */}
+        <section style={{ padding: "40px 16px 45px", backgroundColor: "#091e3a", color: "#ffffff", textAlign: "center" }}>
+          <div style={{ maxWidth: 500, margin: "0 auto" }}>
+            <h2 style={{ fontSize: 20, fontWeight: 900, margin: "0 0 10px 0", letterSpacing: "-0.5px", wordBreak: "keep-all" }}>
+              내 지역 공실등록, 지금 바로 무료로 시작하세요
+            </h2>
+            <p style={{ fontSize: 13, color: "#bae6fd", lineHeight: 1.55, margin: "0 0 22px 0", wordBreak: "keep-all" }}>
+              가입비 0원, 월정액 0원으로 전국 11만 부동산 네트워크와 100% 무료 공동중개를 누려보세요.
+            </p>
+            <button
+              onClick={handleApplyClick}
+              className="m-realty-cta-btn"
+            >
+              ✨ 무료 중개업소 등록하기 →
+            </button>
+          </div>
+        </section>
+
       </div>
   );
 }
