@@ -590,7 +590,7 @@ export default function GongsilDetailPanel({
                     localStorage.setItem("signup_member_type", "broker");
                   }
                   if (!currentUser) {
-                    window.location.href = "/login?returnTo=" + encodeURIComponent("/realty_admin?menu=settings");
+                    window.location.href = "/login?returnTo=" + encodeURIComponent(`/gongsil?id=${selectedVacancy.id}`);
                   } else {
                     window.location.href = "/realty_admin?menu=settings";
                   }
@@ -614,7 +614,7 @@ export default function GongsilDetailPanel({
               {!currentUser && (
                 <button
                   onClick={() => {
-                    window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
+                    window.location.href = "/login?returnTo=" + encodeURIComponent(`/gongsil?id=${selectedVacancy.id}`);
                   }}
                   style={{
                     width: "100%",

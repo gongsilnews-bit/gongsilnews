@@ -919,7 +919,7 @@ function MobileGongsilContent() {
   // 상세 조회
   const handleVacancyClick = async (v: any, isDirect: boolean = false) => {
     if (!isDirect) {
-      window.history.pushState({ panel: "detail", t: Date.now() }, "");
+      window.history.pushState({ panel: "detail", id: v.id, t: Date.now() }, "", "/m/gongsil?id=" + v.id);
     }
     if (detailScrollRef.current) {
       detailScrollRef.current.scrollTop = 0;
