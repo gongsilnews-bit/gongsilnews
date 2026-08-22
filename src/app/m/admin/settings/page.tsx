@@ -507,7 +507,7 @@ function MobileSettings() {
               <Field label="상호(사업장명)" value={agencyName} onChange={setAgencyName} required />
               <Field label="대표자명" value={ceoName} onChange={setCeoName} required />
               <Field label="대표자 연락처" value={cell} onChange={v => setCell(formatPhone(v))} placeholder="010-0000-0000" required />
-              <Field label="사무실 전화" value={officePhone} onChange={v => setOfficePhone(formatPhone(v))} required />
+              <Field label="사무실 전화 (선택)" value={officePhone} onChange={v => setOfficePhone(formatPhone(v))} placeholder="02-000-0000" />
             </div>
 
             {/* 주소 */}
@@ -600,7 +600,7 @@ function MobileSettings() {
         <div style={{ marginTop: 32, marginBottom: 16 }}>
           {tab === "agency" && (!isRealtor || agencyStatus === "REJECTED") ? (
             <button onClick={() => {
-              if (!agencyName || !ceoName || !cell || !officePhone || !address || !intro || !bizNum || !regNum || (!bizCertPreview && !bizCertFile) || (!regCertPreview && !regCertFile)) {
+              if (!agencyName || !ceoName || !cell || !address || !bizNum || !regNum || (!bizCertPreview && !bizCertFile) || (!regCertPreview && !regCertFile)) {
                 alert("필수 정보를 모두 입력하고 사업자등록증과 중개사무소 등록증을 첨부해야 승인 신청이 가능합니다.");
                 return;
               }
