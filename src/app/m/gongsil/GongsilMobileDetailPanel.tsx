@@ -206,9 +206,9 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   localStorage.setItem("signup_member_type", "broker");
                 }
                 if (!currentUser) {
-                  window.location.href = "/m/login?returnTo=" + encodeURIComponent("/realty_admin?menu=settings");
+                  window.location.href = "/m/login?returnTo=" + encodeURIComponent("/m/admin/settings?tab=agency");
                 } else {
-                  window.location.href = "/realty_admin?menu=settings";
+                  window.location.href = "/m/admin/settings?tab=agency";
                 }
               }}
               style={{
@@ -230,7 +230,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
             {!currentUser && (
               <button
                 onClick={() => {
-                  window.location.href = "/m/login?returnTo=" + encodeURIComponent("/realty_admin?menu=settings");
+                  window.location.href = "/m/login?returnTo=" + encodeURIComponent("/m/admin/settings?tab=agency");
                 }}
                 style={{
                   width: "100%",

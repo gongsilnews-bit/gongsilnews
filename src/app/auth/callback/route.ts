@@ -39,14 +39,19 @@ export async function GET(request: Request) {
       const baseRedirectPath = from === 'mobile' ? defaultMobilePath : defaultPcPath;
       let redirectPath = returnTo ? returnTo : baseRedirectPath;
       
-      // PC 버전 회원가입(/signup)을 통해 가입/로그인 한 경우 자동으로 부동산회원(REALTOR) 처리
+      // 모바일에서 PC용 관리자 주소가 넘어왔을 경우 모바일 관리자 주소로 자동 변환
+      if (from === 'mobile' && redirectPath.startsWith('/realty_admin')) {
+        redirectPath = redirectPath.replace('/realty_admin?menu=settings', '/m/admin/settings');
+      }
+
+      // 회원가입(/signup)을 통해 가입/로그인 한 경우 자동으로 부동산회원(REALTOR) 처리
       if (returnTo && returnTo.includes('/signup')) {
         const { data: member } = await supabase.from('members').select('role').eq('id', sessionData.user.id).single();
         if (member && member.role === 'USER') {
           await supabase.from('members').update({ role: 'REALTOR' }).eq('id', sessionData.user.id);
         }
         // 바로 정보설정(부동산정보 입력) 페이지로 이동
-        redirectPath = '/realty_admin?menu=settings&tab=agency';
+        redirectPath = from === 'mobile' ? '/m/admin/settings?tab=agency' : '/realty_admin?menu=settings&tab=agency';
       }
       
       return NextResponse.redirect(`${origin}${redirectPath}`)
