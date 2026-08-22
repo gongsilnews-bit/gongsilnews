@@ -1084,19 +1084,83 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               )}
             </div>
             <div style={{ ...contentStyle, gap: 16 }}>
-              {filePreviews.reg_cert && (
-                <div style={{ position: "relative", display: "inline-block" }}>
-                  <img 
-                    src={filePreviews.reg_cert} 
-                    alt="등록증 원본" 
-                    style={{ width: 60, height: 40, objectFit: "cover", borderRadius: 4, cursor: "pointer", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
-                    onClick={() => setPreviewImage(filePreviews.reg_cert!)}
-                  />
-                  <button onClick={() => handleFileRemove("reg_cert")} style={{ position: "absolute", top: -8, right: -8, width: 22, height: 22, borderRadius: "50%", background: "#ef4444", color: "#fff", border: "2px solid #fff", fontSize: 13, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", lineHeight: 1 }}>&times;</button>
+              {filePreviews.reg_cert ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 16, background: darkMode ? "#25262b" : "#f8fafc", padding: "12px 16px", borderRadius: 10, border: `1px solid ${darkMode ? "#444" : "#e2e8f0"}` }}>
+                  <div style={{ position: "relative", width: 90, height: 64, borderRadius: 6, overflow: "hidden", border: `1px solid ${darkMode ? "#555" : "#cbd5e1"}`, background: "#fff", flexShrink: 0 }}>
+                    <img 
+                      src={filePreviews.reg_cert} 
+                      alt="등록증 사본" 
+                      style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }}
+                      onClick={() => setPreviewImage(filePreviews.reg_cert!)}
+                      title="클릭하여 원본 확대보기"
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ background: "#ecfdf5", color: "#059669", fontSize: 11.5, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>
+                        ✓ 등록증 첨부 완료
+                      </span>
+                      <button 
+                        type="button"
+                        onClick={() => setPreviewImage(filePreviews.reg_cert!)}
+                        style={{ background: "none", border: "none", color: "#2563eb", fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 0 }}
+                      >
+                        🔍 크게보기
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 12px", background: darkMode ? "#374151" : "#fff", border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`, borderRadius: 6, fontSize: 12, fontWeight: 600, color: darkMode ? "#e5e7eb" : "#374151", cursor: "pointer" }}>
+                        🔄 파일 변경
+                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, "reg_cert")} style={{ display: "none" }} />
+                      </label>
+                      <button 
+                        type="button"
+                        onClick={() => handleFileRemove("reg_cert")}
+                        style={{ padding: "5px 12px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                      >
+                        🗑️ 삭제
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              )}
-              {!filePreviews.reg_cert && (
-                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, "reg_cert")} style={{ fontSize: 14 }} />
+              ) : (
+                <label 
+                  style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: 14, 
+                    padding: "14px 18px", 
+                    background: darkMode ? "#25262b" : "#f8fafc", 
+                    border: `2px dashed ${darkMode ? "#4b5563" : "#cbd5e1"}`, 
+                    borderRadius: 10, 
+                    cursor: "pointer",
+                    width: "100%",
+                    maxWidth: 440,
+                    transition: "all 0.2s ease",
+                    boxSizing: "border-box"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "#2563eb";
+                    e.currentTarget.style.background = darkMode ? "#1e293b" : "#eff6ff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = darkMode ? "#4b5563" : "#cbd5e1";
+                    e.currentTarget.style.background = darkMode ? "#25262b" : "#f8fafc";
+                  }}
+                >
+                  <div style={{ width: 42, height: 42, borderRadius: 10, background: "#dbeafe", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
+                    📄
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13.5, fontWeight: 800, color: darkMode ? "#f1f5f9" : "#1e293b", marginBottom: 2 }}>
+                      중개사무소 등록증 사진 첨부하기
+                    </div>
+                    <div style={{ fontSize: 11.5, color: darkMode ? "#94a3b8" : "#64748b" }}>
+                      클릭하여 사진을 선택해주세요 (JPG, PNG, WebP)
+                    </div>
+                  </div>
+                  <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, "reg_cert")} style={{ display: "none" }} />
+                </label>
               )}
             </div>
           </div>
@@ -1121,19 +1185,83 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               )}
             </div>
             <div style={{ ...contentStyle, gap: 16 }}>
-              {filePreviews.biz_cert && (
-                <div style={{ position: "relative", display: "inline-block" }}>
-                  <img 
-                    src={filePreviews.biz_cert} 
-                    alt="사업자 사본 원본" 
-                    style={{ width: 60, height: 40, objectFit: "cover", borderRadius: 4, cursor: "pointer", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
-                    onClick={() => setPreviewImage(filePreviews.biz_cert!)}
-                  />
-                  <button onClick={() => handleFileRemove("biz_cert")} style={{ position: "absolute", top: -8, right: -8, width: 22, height: 22, borderRadius: "50%", background: "#ef4444", color: "#fff", border: "2px solid #fff", fontSize: 13, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", lineHeight: 1 }}>&times;</button>
+              {filePreviews.biz_cert ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 16, background: darkMode ? "#25262b" : "#f8fafc", padding: "12px 16px", borderRadius: 10, border: `1px solid ${darkMode ? "#444" : "#e2e8f0"}` }}>
+                  <div style={{ position: "relative", width: 90, height: 64, borderRadius: 6, overflow: "hidden", border: `1px solid ${darkMode ? "#555" : "#cbd5e1"}`, background: "#fff", flexShrink: 0 }}>
+                    <img 
+                      src={filePreviews.biz_cert} 
+                      alt="사업자 사본" 
+                      style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }}
+                      onClick={() => setPreviewImage(filePreviews.biz_cert!)}
+                      title="클릭하여 원본 확대보기"
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ background: "#ecfdf5", color: "#059669", fontSize: 11.5, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>
+                        ✓ 사업자등록증 첨부 완료
+                      </span>
+                      <button 
+                        type="button"
+                        onClick={() => setPreviewImage(filePreviews.biz_cert!)}
+                        style={{ background: "none", border: "none", color: "#2563eb", fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 0 }}
+                      >
+                        🔍 크게보기
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 12px", background: darkMode ? "#374151" : "#fff", border: `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`, borderRadius: 6, fontSize: 12, fontWeight: 600, color: darkMode ? "#e5e7eb" : "#374151", cursor: "pointer" }}>
+                        🔄 파일 변경
+                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, "biz_cert")} style={{ display: "none" }} />
+                      </label>
+                      <button 
+                        type="button"
+                        onClick={() => handleFileRemove("biz_cert")}
+                        style={{ padding: "5px 12px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                      >
+                        🗑️ 삭제
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              )}
-              {!filePreviews.biz_cert && (
-                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, "biz_cert")} style={{ fontSize: 14 }} />
+              ) : (
+                <label 
+                  style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: 14, 
+                    padding: "14px 18px", 
+                    background: darkMode ? "#25262b" : "#f8fafc", 
+                    border: `2px dashed ${darkMode ? "#4b5563" : "#cbd5e1"}`, 
+                    borderRadius: 10, 
+                    cursor: "pointer",
+                    width: "100%",
+                    maxWidth: 440,
+                    transition: "all 0.2s ease",
+                    boxSizing: "border-box"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "#2563eb";
+                    e.currentTarget.style.background = darkMode ? "#1e293b" : "#eff6ff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = darkMode ? "#4b5563" : "#cbd5e1";
+                    e.currentTarget.style.background = darkMode ? "#25262b" : "#f8fafc";
+                  }}
+                >
+                  <div style={{ width: 42, height: 42, borderRadius: 10, background: "#fef3c7", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
+                    🏢
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13.5, fontWeight: 800, color: darkMode ? "#f1f5f9" : "#1e293b", marginBottom: 2 }}>
+                      사업자등록증 사진 첨부하기
+                    </div>
+                    <div style={{ fontSize: 11.5, color: darkMode ? "#94a3b8" : "#64748b" }}>
+                      클릭하여 사진을 선택해주세요 (JPG, PNG, WebP)
+                    </div>
+                  </div>
+                  <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, "biz_cert")} style={{ display: "none" }} />
+                </label>
               )}
             </div>
           </div>
