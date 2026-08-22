@@ -459,7 +459,6 @@ export default function GongsilDetailPanel({
         borderRight: "1px solid #eee",
         zIndex: 1100,
         boxShadow: "5px 0 15px rgba(0,0,0,0.15)",
-        position: "relative",
       }}
     >
       {/* 닫기 버튼 */}
