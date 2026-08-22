@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import AuthModal from "@/components/AuthModal";
 import { createClient } from "@/utils/supabase/client";
 
 const brokerStats = [
@@ -72,7 +71,6 @@ const brokerFaqs = [
 
 export default function NewsRealtyPage() {
   const router = useRouter();
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const [user, setUser] = useState<any>(null);
@@ -98,10 +96,7 @@ export default function NewsRealtyPage() {
   };
 
   return (
-    <>
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="signup" />
-
-      <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", paddingBottom: 100 }}>
+    <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", paddingBottom: 100 }}>
         
         {/* ━━━ 1. HERO BANNER (대한민국 11만 부동산을 위한 무료 공동중개 네트워크) ━━━ */}
         <section style={{ backgroundColor: "#091e3a", color: "#ffffff", padding: "80px 24px 70px", textAlign: "center", position: "relative", overflow: "hidden" }}>
@@ -485,6 +480,5 @@ export default function NewsRealtyPage() {
         </section>
 
       </div>
-    </>
   );
 }

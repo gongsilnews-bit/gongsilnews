@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import AuthModal from "@/components/AuthModal";
 import { createClient } from "@/utils/supabase/client";
 
 const brokerStats = [
@@ -68,7 +67,6 @@ const brokerFaqs = [
 
 export default function MobileNewsRealtyPage() {
   const router = useRouter();
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const [user, setUser] = useState<any>(null);
@@ -94,10 +92,7 @@ export default function MobileNewsRealtyPage() {
   };
 
   return (
-    <>
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="signup" />
-
-      <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", paddingBottom: 80, paddingTop: 50 }}>
+    <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", paddingBottom: 80, paddingTop: 50 }}>
         
         {/* ── 고정 상단 헤더 ── */}
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: 50, background: "#091e3a", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", zIndex: 50, borderBottom: "1px solid #1e3a8a", boxSizing: "border-box" }}>
@@ -398,6 +393,5 @@ export default function MobileNewsRealtyPage() {
         </section>
 
       </div>
-    </>
   );
 }
