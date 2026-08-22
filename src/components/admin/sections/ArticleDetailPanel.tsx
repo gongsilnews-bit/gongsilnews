@@ -231,7 +231,7 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
             ) : (
               <>
                 {article.status === 'PENDING' && (
-                  <span style={{ padding: '6px 14px', background: '#8b5cf6', color: '#fff', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>승인대기</span>
+                  <span style={{ padding: '6px 14px', background: '#f59e0b', color: '#fff', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>승인대기</span>
                 )}
                 {article.status === 'REJECTED' && (
                   <span style={{ padding: '6px 14px', background: '#ef4444', color: '#fff', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>반려됨</span>

@@ -147,7 +147,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
 
   const statusBadge = (status: string) => {
     const map: Record<string, { bg: string; label: string }> = {
-      PENDING: { bg: "#8b5cf6", label: "승인대기" },
+      PENDING: { bg: "#f59e0b", label: "승인대기" },
       APPROVED: { bg: "#10b981", label: "발행됨" },
       REJECTED: { bg: "#ef4444", label: "반려됨" },
       DRAFT: { bg: "#9ca3af", label: "작성중" },
@@ -225,7 +225,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
                 style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: filter === tab ? 800 : 600, color: filter === tab ? "#3b82f6" : textSecondary, borderBottom: filter === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {tab}
                 <span style={{ 
-                  background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#8b5cf6" : tab === "발행됨" ? "#10b981" : tab === "예약됨" ? "#f59e0b" : tab === "작성중" ? "#9ca3af" : "#ef4444",
+                  background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#f59e0b" : tab === "발행됨" ? "#10b981" : tab === "예약됨" ? "#f59e0b" : tab === "작성중" ? "#9ca3af" : "#ef4444",
                   color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
                 }}>{count}</span>
               </button>

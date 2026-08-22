@@ -164,7 +164,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
         {[
           { key: "all", label: "전체", count: counts.all, color: "#3b82f6", activeColor: "#2563eb" },
           { key: "approved", label: "승인완료", count: counts.approved, color: "#10b981", activeColor: "#059669" },
-          { key: "pending", label: "승인대기", count: counts.pending, color: "#8b5cf6", activeColor: "#7c3aed" },
+          { key: "pending", label: "승인대기", count: counts.pending, color: "#f59e0b", activeColor: "#d97706" },
           { key: "rejected", label: "서류보완", count: counts.rejected, color: "#ef4444", activeColor: "#dc2626" },
           { key: "dormant", label: "휴지통", count: counts.dormant, color: "#6b7280", activeColor: "#4b5563" },
           { key: "policy", label: "등급별 한도 설정", color: "#6b7280", activeColor: "#4b5563" }

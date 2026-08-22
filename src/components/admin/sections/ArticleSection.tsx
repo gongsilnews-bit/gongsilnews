@@ -223,7 +223,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                   style={{ border: "none", background: "none", padding: "16px 20px", fontSize: 14, fontWeight: articleFilter === tab ? 800 : 600, color: articleFilter === tab ? "#3b82f6" : textSecondary, borderBottom: articleFilter === tab ? "3px solid #3b82f6" : "3px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                   {tab}
                   <span style={{ 
-                    background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#8b5cf6" : tab === "발행됨" ? "#10b981" : tab === "예약됨" ? "#f59e0b" : tab === "작성중" ? "#9ca3af" : "#ef4444",
+                    background: tab === "전체" ? "#e5e7eb" : tab === "승인대기" ? "#f59e0b" : tab === "발행됨" ? "#10b981" : tab === "예약됨" ? "#f59e0b" : tab === "작성중" ? "#9ca3af" : "#ef4444",
                     color: tab === "전체" ? "#4b5563" : "#fff", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700 
                   }}>{count}</span>
                 </button>
@@ -313,7 +313,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                     {a.article_no || '-'}
                   </td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
-                    {a.status === 'PENDING' && <span style={{ padding: "4px 8px", background: "#8b5cf6", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>승인대기</span>}
+                    {a.status === 'PENDING' && <span style={{ padding: "4px 8px", background: "#f59e0b", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>승인대기</span>}
                     {a.status === 'APPROVED' && <span style={{ padding: "4px 8px", background: "#10b981", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>발행됨</span>}
                     {a.status === 'REJECTED' && <span style={{ padding: "4px 8px", background: "#ef4444", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>반려됨</span>}
                     {a.status === 'DRAFT' && <span style={{ padding: "4px 8px", background: "#9ca3af", color: "#fff", borderRadius: 4, fontSize: 12, fontWeight: 700 }}>작성중</span>}
