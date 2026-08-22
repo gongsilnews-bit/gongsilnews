@@ -355,6 +355,9 @@ export default function GongsilSidebar({
                     setActiveDetailTab(prop.trade_type === "경매" ? "auction_detail" : "info");
                     setGalleryIndex(0);
                     showArticleOnMap(prop);
+                    if (typeof window !== "undefined") {
+                      window.history.pushState({ id: prop.id }, "", "/gongsil?id=" + prop.id);
+                    }
                   }
                 }}
                 style={{

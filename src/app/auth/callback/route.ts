@@ -44,14 +44,25 @@ export async function GET(request: Request) {
         redirectPath = redirectPath.replace('/realty_admin?menu=settings', '/m/admin/settings');
       }
 
+      // 회원 정보 조회
+      const { data: member } = await supabase
+        .from('members')
+        .select('role, agencies(status)')
+        .eq('id', sessionData.user.id)
+        .single();
+      
+      const isApprovedRealtor = member && (member.role === 'REALTOR' || member.role === 'ADMIN') && member.agencies?.[0]?.status === 'APPROVED';
+
       // 회원가입(/signup)을 통해 가입/로그인 한 경우 자동으로 부동산회원(REALTOR) 처리
       if (returnTo && returnTo.includes('/signup')) {
-        const { data: member } = await supabase.from('members').select('role').eq('id', sessionData.user.id).single();
         if (member && member.role === 'USER') {
           await supabase.from('members').update({ role: 'REALTOR' }).eq('id', sessionData.user.id);
         }
         // 바로 정보설정(부동산정보 입력) 페이지로 이동
         redirectPath = from === 'mobile' ? '/m/admin/settings?tab=agency' : '/realty_admin?menu=settings&tab=agency';
+      } else if (isApprovedRealtor && returnTo && (returnTo.includes('/admin/settings') || returnTo.includes('/realty_admin?menu=settings'))) {
+        // 이미 승인 완료된 부동산회원이 회원수정/환경설정으로 잘못 가려는 경우 메인 공실열람으로 이동
+        redirectPath = from === 'mobile' ? '/m/gongsil' : '/gongsil';
       }
       
       return NextResponse.redirect(`${origin}${redirectPath}`)
