@@ -403,8 +403,7 @@ export default function PCReporterClient({
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   {vacancies.filter(v => realtorTradeType === "전체" || v.trade_type === realtorTradeType).map((prop: any, i: number) => {
-                    // 마스킹 판별: 비로그인(userLevel < 1)일 때만 로그인 안내 (일반회원 이상은 정상 열람)
-                    const cardMasked = userLevel < 1;
+                    const cardMasked = prop.exposure_type === '부동산노출' && (prop.trade_type === '경매' || prop.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
                     const cardAddr = prop.building_name || [prop.dong, prop.sigungu].filter(Boolean).join(" ") || "이름없는 공실";
                     const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
 
@@ -441,7 +440,7 @@ export default function PCReporterClient({
                               {title}
                               {cardMasked && (
                                 <span style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", marginLeft: "8px", verticalAlign: "middle" }}>
-                                  🔒 로그인 시 무료 열람
+                                  {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 가입 시 무료 열람'}
                                 </span>
                               )}
                             </div>

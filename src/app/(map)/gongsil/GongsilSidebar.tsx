@@ -335,9 +335,11 @@ export default function GongsilSidebar({
               meta.lowstBidPrcIndctCont === "비공개" ? "비공개" : lowestBidPrice > 0 ? formatAmount(lowestBidPrice) : "";
             const cardDiscountRate = appraisalPrice > 0 ? Math.round(((appraisalPrice - lowestBidPrice) / appraisalPrice) * 100) : 0;
             const priceText = isAuctionMode ? `감정가 ${formatAmount(appraisalPrice)}` : getPriceText(prop);
-            // 마스킹 판별: 비로그인(userLevel < 1)일 때만 로그인 필요 마스킹 (일반회원 이상은 정상 열람)
+            // 마스킹 판별: 부동산노출 전용 + 부동산회원 미만 (본인 등록 매물 제외)
             const isMyProperty = currentUser && prop && prop.owner_id === currentUser.id;
-            const isMasked = userLevel < 1 && !isMyProperty;
+            const isMasked = prop.exposure_type === "부동산노출" &&
+              (prop.trade_type === "경매" || prop.trade_type === "공매" ? userLevel < 1 : userLevel < 2) &&
+              !isMyProperty;
             const showCommission = userLevel >= 2; // 중개보수는 부동산회원 이상만
 
             return (
@@ -456,7 +458,7 @@ export default function GongsilSidebar({
                             cursor: "pointer",
                           }}
                         >
-                          🔒 로그인 시 무료 열람
+                          {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 가입 시 무료 열람'}
                         </span>
                       )}
                     </div>

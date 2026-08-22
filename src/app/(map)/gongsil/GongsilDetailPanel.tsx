@@ -1340,19 +1340,17 @@ export default function GongsilDetailPanel({
                       fields.push({ label: "개발가능", value: meta.development_potential });
                     }
 
-                    // 20-2. 중개보수/수수료 (부동산회원 이상만 노출)
-                    if (userLevel >= 2) {
-                      const commParts = [];
-                      const baseComm = v.realtor_commission || v.commission_type;
-                      if (baseComm) commParts.push(baseComm);
-                      if (v.commission_amount) commParts.push(`${v.commission_amount}만원`);
-                      if (v.commission_etc) commParts.push(`(${v.commission_etc})`);
-                      if (commParts.length > 0) {
-                        fields.push({
-                          label: "중개보수",
-                          value: commParts.join(" ")
-                        });
-                      }
+                    // 20-2. 중개보수/수수료
+                    const commParts = [];
+                    const baseComm = v.realtor_commission || v.commission_type;
+                    if (baseComm) commParts.push(baseComm);
+                    if (v.commission_amount) commParts.push(`${v.commission_amount}만원`);
+                    if (v.commission_etc) commParts.push(`(${v.commission_etc})`);
+                    if (commParts.length > 0) {
+                      fields.push({
+                        label: "중개보수",
+                        value: commParts.join(" ")
+                      });
                     }
 
 const filteredFields = fields.filter(field => {

@@ -825,8 +825,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
             ) : (
               <div>
                 {paged.map((v, idx) => {
-                  // 마스킹 판별: 비로그인(userLevel < 1)일 때만 로그인 안내 (일반회원 이상은 정상 열람)
-                  const isMasked = userLevel < 1;
+                  const isMasked = v.exposure_type === '부동산노출' && (v.trade_type === '경매' || v.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
                   const showCommission = userLevel >= 2;
                   const addrText = v.building_name || `${v.sigungu || ""} ${v.dong || ""} 공실광고`;
                   
@@ -898,7 +897,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                               </span>
                               {isMasked && (
                                 <span onClick={(e) => { e.stopPropagation(); window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>
-                                  🔒 로그인 시 무료 열람
+                                  {v.trade_type === '경매' || v.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 가입 시 무료 열람'}
                                 </span>
                               )}
                             </div>

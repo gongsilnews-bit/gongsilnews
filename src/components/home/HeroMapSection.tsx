@@ -443,8 +443,8 @@ export default function HeroMapSection() {
               const photoUrl = item.photos?.[0] || null;
               const addrText = [item.dong, item.building_name, item.hosu].filter(Boolean).join(" ") || item.address || item.title || "공실광고";
               const optionsStr = [`룸 ${item.room_count || 0}개`, `욕실 ${item.bath_count || 0}개`, ...(item.options || [])].filter(Boolean).join(", ");
-              // 마스킹 판별: 비로그인(userLevel < 1)일 때만 로그인 안내 (일반회원 이상은 정상 열람)
-              const isMasked = userLevel < 1;
+              // 마스킹 판별: 공실열람(GongsilClient)과 동일한 규칙
+              const isMasked = item.exposure_type === '부동산노출' && (item.trade_type === '경매' || item.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
               const showCommission = userLevel >= 2;
               
               return (
@@ -478,7 +478,7 @@ export default function HeroMapSection() {
                     <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: "bold" }}>
                       {item.trade_type === "경매" ? (
                         <span style={{ color: "#e74c3c", border: "1px solid #e74c3c", padding: "1px 4px", borderRadius: 2, fontSize: 10, whiteSpace: "nowrap", letterSpacing: "-0.5px" }}>
-                           경매/공매
+                          경매/공매
                         </span>
                       ) : showCommission && (item.realtor_commission || item.commission_type) && (
                         <span style={{ color: "#e74c3c", border: "1px solid #e74c3c", padding: "1px 4px", borderRadius: 2, fontSize: 10, whiteSpace: "nowrap", letterSpacing: "-0.5px" }}>
@@ -488,7 +488,7 @@ export default function HeroMapSection() {
                       <span style={{ fontSize: 13, color: "#aaa" }}>{new Date(item.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
                       {isMasked && (
                         <span onClick={(e) => { e.stopPropagation(); window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>
-                          🔒 로그인 시 무료 열람
+                          {item.trade_type === '경매' || item.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 가입 시 무료 열람'}
                         </span>
                       )}
                     </div>
