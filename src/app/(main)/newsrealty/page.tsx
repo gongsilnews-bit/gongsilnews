@@ -159,7 +159,7 @@ export default function NewsRealtyPage() {
             {/* 핵심 메인 배지 */}
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(251, 191, 36, 0.15)", border: "1px solid rgba(251, 191, 36, 0.35)", padding: "6px 20px", borderRadius: 30, fontSize: 14, fontWeight: 800, color: "#fbbf24", marginBottom: 22 }}>
               <span>✨</span>
-              <span>공실뉴스 부동산이 되세요!</span>
+              <span>무료 중개업소 등록하고 혜택받기!</span>
             </div>
 
             {/* 메인 헤드라인 */}
@@ -178,7 +178,7 @@ export default function NewsRealtyPage() {
                 width="100%"
                 height="100%"
                 src="https://www.youtube.com/embed/4a3_M6-Crew?rel=0"
-                title="공실뉴스부동산 소개 영상"
+                title="무료 중개업소 등록 소개 영상"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -191,7 +191,7 @@ export default function NewsRealtyPage() {
                 onClick={() => handleApplyClick()}
                 className="realty-cta-btn"
               >
-                ✨ 공실뉴스 부동산 무료 신청하기 →
+                ✨ 무료 중개업소 등록하기 →
               </button>
             </div>
 
@@ -528,7 +528,7 @@ export default function NewsRealtyPage() {
               onClick={() => handleApplyClick()}
               className="realty-cta-btn"
             >
-              공실뉴스 부동산 무료 신청하기 →
+              ✨ 무료 중개업소 등록하기 →
             </button>
           </div>
         </section>
@@ -541,7 +541,7 @@ export default function NewsRealtyPage() {
           <div style={{ width: "100%", maxWidth: 480, background: "#ffffff", borderRadius: 16, padding: "28px", boxShadow: "0 10px 40px rgba(0,0,0,0.2)", position: "relative" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>
-                공실뉴스부동산 무료 신청서
+                무료 중개업소 등록 신청서
               </h3>
               <button onClick={() => setIsApplicationOpen(false)} style={{ background: "none", border: "none", fontSize: 20, color: "#94a3b8", cursor: "pointer" }}>✕</button>
             </div>

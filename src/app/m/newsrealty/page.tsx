@@ -146,7 +146,7 @@ export default function MobileNewsRealtyPage() {
           <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "#bae6fd", padding: "4px", cursor: "pointer", display: "flex", alignItems: "center" }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
           </button>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>공실뉴스부동산</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>무료 중개업소 등록</div>
           <div style={{ width: 24 }} />
         </div>
 
@@ -154,7 +154,7 @@ export default function MobileNewsRealtyPage() {
         <section style={{ backgroundColor: "#091e3a", color: "#ffffff", padding: "28px 16px 36px", textAlign: "center" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.35)", padding: "4px 12px", borderRadius: 20, fontSize: 11.5, fontWeight: 800, color: "#fbbf24", marginBottom: 14 }}>
             <span>✨</span>
-            <span>공실뉴스 부동산이 되세요!</span>
+            <span>무료 중개업소 등록하고 혜택받기!</span>
           </div>
 
           <h1 style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>
@@ -182,7 +182,7 @@ export default function MobileNewsRealtyPage() {
             onClick={handleApplyClick}
             className="m-realty-cta-btn"
           >
-            ✨ 공실뉴스 부동산 무료 신청하기
+            ✨ 무료 중개업소 등록하기
           </button>
         </section>
 
@@ -447,7 +447,7 @@ export default function MobileNewsRealtyPage() {
           <div style={{ width: "100%", maxWidth: 360, background: "#ffffff", borderRadius: 14, padding: "20px", position: "relative" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: 0 }}>
-                공실뉴스부동산 무료 신청서
+                무료 중개업소 등록 신청서
               </h3>
               <button onClick={() => setIsApplicationOpen(false)} style={{ background: "none", border: "none", fontSize: 18, color: "#94a3b8" }}>✕</button>
             </div>
