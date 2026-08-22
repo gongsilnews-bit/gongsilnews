@@ -1127,7 +1127,6 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
               setPendingPan({ lat: target.lat, lng: target.lng });
             }
           }
-          setSelectedClusterIds([String(target.id)]);
         }
       };
 
