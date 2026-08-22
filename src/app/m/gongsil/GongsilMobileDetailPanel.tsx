@@ -230,7 +230,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
             {!currentUser && (
               <button
                 onClick={() => {
-                  setIsAuthModalOpen(true);
+                  window.location.href = "/m/login?returnTo=" + encodeURIComponent(`/m/gongsil?id=${selectedVacancy.id}`);
                 }}
                 style={{
                   width: "100%",

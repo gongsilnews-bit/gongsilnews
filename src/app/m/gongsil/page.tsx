@@ -633,31 +633,6 @@ function MobileGongsilContent() {
         };
         setSelectedVacancy(detail);
         setDetailTab("info");
-
-        // 🚀 [대표님 지침] 매물의 성격(공실 vs 경매)에 맞춰 시스템 모드 동기화
-        const isAuction = detail.trade_type === '경매' || detail.trade_type === '공매' || detail.is_auction;
-        if (!isAuction) {
-          setActiveMode("공실");
-          setIsAuctionMode(false);
-        } else {
-          setActiveMode("경매");
-          setIsAuctionMode(true);
-        }
-
-        // 🚀 세션에 저장된 직전 리스트가 있으면 그 리스트를 복원!
-        try {
-          const savedListStr = sessionStorage.getItem('m_gongsil_last_list');
-          if (savedListStr) {
-            const saved = JSON.parse(savedListStr);
-            if (saved.cluster && Array.isArray(saved.cluster) && saved.cluster.length > 0) {
-              setSelectedCluster(saved.cluster);
-            } else if (saved.items && Array.isArray(saved.items) && saved.items.length > 0) {
-              setSelectedCluster(saved.items);
-            }
-          }
-        } catch (e) {
-          console.error("Failed to restore list from session:", e);
-        }
       }
       setLoading(false);
     };
@@ -755,171 +730,103 @@ function MobileGongsilContent() {
     if (!kakaoMapRef.current || !mapLoaded) return;
     const kakao = (window as any).kakao;
     const map = kakaoMapRef.current;
+    const currentLevel = map.getLevel();
 
-    // 기존 마커 및 클러스터러 초기화
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
+    // 🚀 모드 전환 시 기존 클러스터러 스타일 동적 갱신
     if (clustererRef.current) {
       clustererRef.current.clear();
+      clustererRef.current.setStyles([
+        { width: '56px', height: '56px', background: activeMode === "경매" ? "#1a4282" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: activeMode === "경매" ? '0 4px 12px rgba(26,66,130,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
+      ]);
     }
+    markersRef.current.forEach((m: any) => m.setMap(null));
+    markersRef.current = [];
 
-    // 마커 클러스터러 생성 (줌 레벨 6 이상에서 클러스터링)
-    const clusterer = new kakao.maps.MarkerClusterer({
-      map: map,
-      averageCenter: true,
-      minLevel: 6,
-      disableClickZoom: true,
-      calculator: [10, 30, 50],
-      styles: [
-        {
-          width: "48px",
-          height: "48px",
-          background: "rgba(26, 115, 232, 0.9)",
-          borderRadius: "24px",
-          color: "#fff",
-          textAlign: "center",
-          fontWeight: "bold",
-          lineHeight: "48px",
-          fontSize: "15px",
-          boxShadow: "0 4px 12px rgba(26, 115, 232, 0.4)",
-          border: "2px solid #fff",
-        },
-        {
-          width: "56px",
-          height: "56px",
-          background: "rgba(26, 115, 232, 0.95)",
-          borderRadius: "28px",
-          color: "#fff",
-          textAlign: "center",
-          fontWeight: "bold",
-          lineHeight: "56px",
-          fontSize: "16px",
-          boxShadow: "0 6px 16px rgba(26, 115, 232, 0.45)",
-          border: "2px solid #fff",
-        },
-        {
-          width: "64px",
-          height: "64px",
-          background: "rgba(26, 115, 232, 1)",
-          borderRadius: "32px",
-          color: "#fff",
-          textAlign: "center",
-          fontWeight: "bold",
-          lineHeight: "64px",
-          fontSize: "17px",
-          boxShadow: "0 8px 20px rgba(26, 115, 232, 0.5)",
-          border: "2px solid #fff",
-        },
-      ],
-    });
+    // [대표님 지침] 줌아웃 레벨 9 이상에서는 모바일 렌더링 부하를 막기 위해 마커 생성을 전면 생략!
+    if (currentLevel >= 9) return;
+    if (vacancies.length === 0) return;
 
-    clustererRef.current = clusterer;
-
-    // 클러스터 클릭 시 해당 묶음의 매물들을 하단 리스트로 표출 (확대하지 않음)
-    kakao.maps.event.addListener(clusterer, "clusterclick", (cluster: any) => {
-      const markers = cluster.getMarkers();
-      const clusterVacancies = markers.map((m: any) => m.vacancyData).filter(Boolean);
-      vacancyStackRef.current = [];
-      setSelectedCluster(clusterVacancies);
-      setSelectedVacancy(null);
-    });
-
-    // 개별 마커 생성
-    const markers: any[] = [];
-    const isZoomedIn = zoomLevel <= 5;
-
-    filteredVacancies.forEach((v) => {
-      const coords = getJitteredCoords(v, isZoomedIn);
-      if (!coords.lat || !coords.lng) return;
-
-      const pos = new kakao.maps.LatLng(coords.lat, coords.lng);
-      const isAuction = v.trade_type === "경매";
-      const info = isAuction ? getAuctionInfo(v) : null;
-      
-      const dims = getMarkerDimensions(zoomLevel);
-      const fontSize = dims.fontSize;
-      const subFontSize = dims.subFontSize;
-      const padding = dims.padding;
-
-      // 마커 HTML 생성
-      let content = "";
-      if (isAuction && info) {
-        content = `
-          <div style="
-            background: linear-gradient(135deg, #1a4282 0%, #0f172a 100%);
-            color: #fff;
-            padding: ${padding};
-            border-radius: 8px;
-            font-size: ${fontSize};
-            font-weight: 800;
-            box-shadow: 0 4px 12px rgba(26,66,130,0.4);
-            border: 1.5px solid #60a5fa;
-            white-space: nowrap;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            transform: translate(-50%, -50%);
-          ">
-            <span style="font-size:${subFontSize};color:#93c5fd;margin-bottom:1px;">${info.badge}</span>
-            <span>${info.priceText}</span>
-          </div>
-        `;
-      } else {
-        const price = formatPrice(v);
-        content = `
-          <div style="
-            background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
-            color: #fff;
-            padding: ${padding};
-            border-radius: 8px;
-            font-size: ${fontSize};
-            font-weight: 800;
-            box-shadow: 0 4px 12px rgba(26,115,232,0.35);
-            border: 1.5px solid #fff;
-            white-space: nowrap;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            transform: translate(-50%, -50%);
-          ">
-            <span style="font-size:${subFontSize};color:#e0e7ff;margin-bottom:1px;">${v.property_type || "매물"}</span>
-            <span>${price}</span>
-          </div>
-        `;
-      }
-
-      const customOverlay = new kakao.maps.CustomOverlay({
-        position: pos,
-        content: content,
-        yAnchor: 0.5,
-        xAnchor: 0.5,
+    if (!clustererRef.current) {
+      clustererRef.current = new kakao.maps.MarkerClusterer({
+        map: map,
+        averageCenter: true,
+        minLevel: 4,
+        gridSize: 60,
+        disableClickZoom: true,
+        calculator: [10, 30, 50],
+        texts: (count: number) => count.toString(),
+        styles: [
+          { width: '56px', height: '56px', background: activeMode === "경매" ? "#1a4282" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: activeMode === "경매" ? '0 4px 12px rgba(26,66,130,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
+        ]
       });
 
-      // 클릭 이벤트 바인딩
-      const overlayEl = document.createElement("div");
-      overlayEl.innerHTML = content.trim();
-      const clickTarget = overlayEl.firstChild as HTMLElement;
-      if (clickTarget) {
-        clickTarget.onclick = (e) => {
-          e.stopPropagation();
-          vacancyStackRef.current = [];
-          setSelectedCluster([v]);
-          setSelectedVacancy(null);
-        };
-        customOverlay.setContent(clickTarget);
-      }
+      kakao.maps.event.addListener(clustererRef.current, 'clusterclick', (cluster: any) => {
+        const mks = cluster.getMarkers();
+        const items = mks.flatMap((m: any) => m.customData || []);
+        window.history.pushState({ panel: "cluster" }, "");
+        setSelectedVacancy(null);
+        setSelectedCluster(items);
+      });
 
-      (customOverlay as any).vacancyData = v;
-      markers.push(customOverlay);
-      customOverlay.setMap(map);
+      kakao.maps.event.addListener(clustererRef.current, 'clustered', (clusters: any[]) => {
+        clusters.forEach((cluster) => {
+          const markers = cluster.getMarkers();
+          const totalCount = markers.reduce((sum, m) => sum + (m.customData ? m.customData.length : 1), 0);
+          const overlay = cluster.getClusterMarker().getContent();
+          if (overlay) {
+            overlay.innerText = totalCount.toString();
+          }
+        });
+      });
+    }
+
+    // Group vacancies by unique coordinate
+    const isZoomedIn = zoomLevel <= 5;
+    const coordinateGroups = new Map<string, any[]>();
+    filteredVacancies.forEach((v) => {
+      const coords = getJitteredCoords(v, isZoomedIn);
+      if (coords.lat && coords.lng) {
+        const key = `${coords.lat.toFixed(6)}_${coords.lng.toFixed(6)}`;
+        if (!coordinateGroups.has(key)) {
+          coordinateGroups.set(key, []);
+        }
+        coordinateGroups.get(key)!.push({ ...v, lat: coords.lat, lng: coords.lng });
+      }
     });
 
-    markersRef.current = markers;
-    if (zoomLevel >= 6) {
-      clusterer.addMarkers(markers);
-    }
+    coordinateGroups.forEach((group) => {
+      if (group.length === 0) return;
+      const v = group[0];
+      const count = group.length;
+
+      const { size, fontSize } = getMarkerDimensions(count);
+      const color = activeMode === "경매" ? "#1a4282" : "#1a73e8";
+
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+        <circle cx="${size/2}" cy="${size/2}" r="${size/2-3}" fill="${color}" stroke="white" stroke-width="3"/>
+        <text x="50%" y="50%" dy="1px" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${fontSize}" font-weight="bold" font-family="sans-serif">${count}</text>
+      </svg>`;
+
+      const img = new kakao.maps.MarkerImage(
+        `data:image/svg+xml,${encodeURIComponent(svg)}`,
+        new kakao.maps.Size(size, size),
+        { offset: new kakao.maps.Point(size / 2, size / 2) }
+      );
+      const marker = new kakao.maps.Marker({
+        position: new kakao.maps.LatLng(v.lat, v.lng),
+        image: img,
+      });
+      marker.customData = group;
+
+      kakao.maps.event.addListener(marker, "click", () => {
+        window.history.pushState({ panel: "cluster" }, "");
+        setSelectedVacancy(null);
+        setSelectedCluster(group);
+      });
+      markersRef.current.push(marker);
+    });
+
+    clustererRef.current.addMarkers(markersRef.current);
   }, [filteredVacancies, mapLoaded, zoomLevel, activeMode]);
 
   // 지도 범위 내 공실광고 개수 업데이트 및 지도 변화(이벤트) 연동
@@ -1014,24 +921,6 @@ function MobileGongsilContent() {
     if (!isDirect) {
       window.history.pushState({ panel: "detail", id: v.id, t: Date.now() }, "", "/m/gongsil?id=" + v.id);
     }
-    // 🚀 [대표님 지침] 사용자가 직전에 보고 있던 리스트 상태(클러스터 목록 또는 검색 목록)를 세션에 즉시 안전 백업 (0.0001초)
-    if (typeof window !== "undefined") {
-      try {
-        const currentList = selectedCluster || (showListView ? (listViewMode === 'map' ? visibleVacancies : filteredVacancies) : []);
-        if (currentList && currentList.length > 0) {
-          sessionStorage.setItem('m_gongsil_last_list', JSON.stringify({
-            cluster: selectedCluster ? selectedCluster : null,
-            showListView: showListView,
-            listViewMode: listViewMode,
-            activeMode: activeMode,
-            items: currentList
-          }));
-        }
-      } catch (e) {
-        console.error("Failed to backup list state:", e);
-      }
-    }
-
     if (detailScrollRef.current) {
       detailScrollRef.current.scrollTop = 0;
     }
@@ -1054,8 +943,7 @@ function MobileGongsilContent() {
 
   const goBack = () => {
     if (vacancyStackRef.current.length > 0) {
-      const prev = vacancyStackRef.current.pop();
-      setSelectedVacancy(prev || null);
+      window.history.back();
       return;
     }
     if (isEmbedded) {
@@ -1063,64 +951,16 @@ function MobileGongsilContent() {
       setTimeout(() => window.parent.postMessage({ type: 'CLOSE_VACANCY_OVERLAY' }, '*'), 350);
       return;
     }
-
-    const restorePreviousList = () => {
-      setSelectedVacancy(null);
-      setIsDirectView(false);
-      window.history.replaceState({}, "", "/m/gongsil");
-
-      // 🚀 [대표님 지침] 직전에 보고 있던 리스트를 세션에서 1:1 완벽 복원
-      try {
-        const savedListStr = sessionStorage.getItem('m_gongsil_last_list');
-        if (savedListStr) {
-          const saved = JSON.parse(savedListStr);
-          if (saved.activeMode) {
-            setActiveMode(saved.activeMode);
-            setIsAuctionMode(saved.activeMode === "경매");
-          }
-          if (saved.cluster && Array.isArray(saved.cluster) && saved.cluster.length > 0) {
-            setSelectedCluster(saved.cluster);
-            setShowListView(false);
-            return;
-          } else if (saved.items && Array.isArray(saved.items) && saved.items.length > 0) {
-            setSelectedCluster(saved.items);
-            setShowListView(false);
-            return;
-          } else {
-            setShowListView(true);
-            setListViewMode(saved.listViewMode || "map");
-            return;
-          }
-        }
-      } catch (e) {
-        console.error("Failed to restore list from session in goBack:", e);
-      }
-
-      if (!selectedCluster) {
-        setShowListView(true);
-        setListViewMode("map");
-      }
-    };
-
     if (isDirectView) {
       if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
       setTimeout(() => {
-        if (window.opener) {
-          window.close();
-        } else {
-          restorePreviousList();
-        }
+        if (window.opener) window.close();
+        else window.history.back();
       }, 350);
       return;
     }
-    if (selectedVacancy) {
-      if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
-      setTimeout(() => {
-        restorePreviousList();
-      }, 350);
-      return;
-    }
-    if (selectedCluster) { setSelectedCluster(null); return; }
+    if (selectedVacancy) { window.history.back(); return; }
+    if (selectedCluster) { window.history.back(); return; }
     if (showListView) { setShowListView(false); return; }
   };
 
