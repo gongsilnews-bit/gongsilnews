@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { NewsArticleAgent } from '@/lib/agents/NewsArticleAgent';
 import { PhotoCurationAgent } from '@/lib/agents/PhotoCurationAgent';
 import { createClient } from '@supabase/supabase-js';
@@ -52,10 +52,34 @@ export async function GET() {
     .eq('email', 'gongsilnews@gmail.com')
     .single();
 
+  // ── 최근 14일간 이미 작성된 기사 목록 가져오기 (중복 방지) ──
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recentArticles } = await supabase
+    .from('articles')
+    .select('title, created_at')
+    .gte('created_at', fourteenDaysAgo)
+    .order('created_at', { ascending: false });
+  
+  const existingTitles = (recentArticles || []).map(a => a.title).filter(Boolean);
+
+  const cleanText = (t: string) =>
+    t.replace(/\[.*?\]|\(.*?\)|<.*?>/g, ' ').replace(/[^\w\s가-힣]/g, ' ').replace(/\s+/g, ' ').trim();
+
   const results = [];
 
   for (let i = 0; i < FIVE_TOPICS.length; i++) {
     const item = FIVE_TOPICS[i];
+
+    // 이미 최근에 생성된 주제인지 확인
+    const isDup = existingTitles.some(et => {
+      const c = cleanText(et);
+      return item.sourceText.includes(c.slice(0, 10)) || c.includes(item.category);
+    });
+
+    if (isDup) {
+      results.push({ category: item.category, status: 'skipped (recent duplicate)' });
+      continue;
+    }
 
     // 1. 기사작성 에이전트
     const aiResult = await NewsArticleAgent.writeArticle({

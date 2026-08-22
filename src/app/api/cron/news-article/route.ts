@@ -96,16 +96,72 @@ export async function GET(req: Request) {
 
   const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-  // ── 오늘 이미 작성된 기사 제목 목록 가져오기 (중복 방지) ──
-  const todayStartISO = kstTodayStart();
-  const { data: todayArticles } = await supabase
+  // ── 최근 14일간 이미 작성된 기사 목록 가져오기 (중복 방지 14일 전면 확대) ──
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recentArticles } = await supabase
     .from('articles')
-    .select('title, content')
-    .gte('created_at', todayStartISO)
+    .select('title, created_at')
+    .gte('created_at', fourteenDaysAgo)
     .order('created_at', { ascending: false });
   
-  const todayTitles = (todayArticles || []).map(a => a.title).filter(Boolean);
-  const todayContents = (todayArticles || []).map(a => a.content || '').join(' ');
+  const existingTitles = (recentArticles || []).map(a => a.title).filter(Boolean);
+
+  // ── 기사 제목 유사도 및 중복 검증 함수 ──
+  const isDuplicateTopic = (candidateTitle: string, titlesPool: string[]): boolean => {
+    if (!candidateTitle || titlesPool.length === 0) return false;
+
+    const clean = (t: string) =>
+      t
+        .replace(/\[.*?\]|\(.*?\)|<.*?>/g, ' ')
+        .replace(/[^\w\s가-힣]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const cClean = clean(candidateTitle);
+    if (!cClean) return false;
+
+    const getKeywords = (t: string) => {
+      const stopWords = new Set(['대한', '통해', '위해', '관련', '지난', '올해', '내년', '이번', '오늘', '결과', '발표', '전망', '분석', '기록', '돌파', '속보', '단독', '종합']);
+      return new Set(
+        clean(t)
+          .split(' ')
+          .map(w => w.trim())
+          .filter(w => w.length >= 2 && !stopWords.has(w))
+      );
+    };
+
+    const cKeywords = getKeywords(cClean);
+    if (cKeywords.size === 0) return false;
+
+    for (const existing of titlesPool) {
+      const eClean = clean(existing);
+      if (!eClean) continue;
+
+      // 1. 완전 일치 또는 포함 관계
+      if (cClean === eClean || cClean.includes(eClean) || eClean.includes(cClean)) {
+        return true;
+      }
+
+      // 2. 핵심 키워드 유사도 및 공통 키워드 검사
+      const eKeywords = getKeywords(eClean);
+      if (eKeywords.size === 0) continue;
+
+      let matchCount = 0;
+      for (const kw of cKeywords) {
+        if (eKeywords.has(kw)) matchCount++;
+      }
+
+      const unionSize = new Set([...cKeywords, ...eKeywords]).size;
+      const similarity = unionSize > 0 ? matchCount / unionSize : 0;
+
+      // 핵심 키워드가 3개 이상 겹치거나, 유사도가 40% 이상인 경우 중복 주제로 판별
+      if (matchCount >= 3 || similarity >= 0.4 || (matchCount >= 2 && Math.min(cKeywords.size, eKeywords.size) <= 3)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
 
   for (const item of activeCategories) {
     try {
@@ -117,31 +173,37 @@ export async function GET(req: Request) {
         continue;
       }
 
-      // 상위 10개의 최신 뉴스 긁어오기 (AI에게 선택권 부여)
-      const candidateNews = feed.items.slice(0, 10).map((news, index) => {
-        return `[후보 ${index + 1}]\n제목: ${news.title}\n요약: ${news.contentSnippet || news.content || ''}\nURL: ${news.link || ''}\n`;
-      }).join('\n');
+      // ── 최근 14일간 다룬 주제와 겹치지 않는 신선한 뉴스 후보만 필터링 ──
+      const freshItems = feed.items.filter(news => !isDuplicateTopic(news.title || '', existingTitles));
 
-      // ── 원문 URL 기반 중복 체크 (이미 동일 출처로 작성한 기사가 있으면 스킵) ──
-      const candidateUrls = feed.items.slice(0, 10).map(n => n.link).filter(Boolean);
-      const allDuplicate = candidateUrls.every(url => todayContents.includes(url!));
-      if (allDuplicate && candidateUrls.length > 0) {
-        results.push({ category: item.section2, status: 'skipped (all URLs already used today)' });
+      if (freshItems.length === 0) {
+        results.push({ category: item.section2, status: 'skipped (all candidates duplicate with recent 14 days)' });
         continue;
       }
 
-      // ── 오늘 작성된 기사 제목을 AI에게 전달하여 중복 주제 회피 ──
-      const existingTitlesContext = todayTitles.length > 0
-        ? `\n\n[⚠️ 오늘 이미 작성된 기사 제목 목록 - 아래 주제와 겹치는 뉴스는 절대 선택하지 마라]\n${todayTitles.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n`
+      // 상위 10개의 최신 신선한 뉴스 후보 추출
+      const candidateNews = freshItems.slice(0, 10).map((news, index) => {
+        return `[후보 ${index + 1}]\n제목: ${news.title}\n요약: ${news.contentSnippet || news.content || ''}\nURL: ${news.link || ''}\n`;
+      }).join('\n');
+
+      // ── 최근 작성된 기사 제목을 AI에게 전달하여 중복 주제 완벽 회피 ──
+      const existingTitlesContext = existingTitles.length > 0
+        ? `\n\n[⚠️ 최근 14일간 이미 작성된 기사 제목 목록 - 아래 주제와 겹치는 뉴스는 절대 선택하지 마라]\n${existingTitles.slice(0, 30).map((t, i) => `${i + 1}. ${t}`).join('\n')}\n`
         : '';
 
-      // 에이전트(편집국장)에게 10개 던져주고 1개 골라서 고품격 전문 기사로 작성하도록 요청
+      // 에이전트(편집국장)에게 전달하여 고품격 전문 기사로 작성하도록 요청
       const aiResult = await NewsArticleAgent.writeArticle({
         sourceText: candidateNews + existingTitlesContext,
         category: item.section2
       });
 
-      // ── 사진 전문 에이전트(PhotoCurationAgent) 가동: 맥락 분석 + 실물 보도사진 + 중복 방지 ──
+      // 최종 생성된 기사 제목이 기존 기사와 중복되는지 한 번 더 안전 검증
+      if (isDuplicateTopic(aiResult.title, existingTitles)) {
+        results.push({ category: item.section2, status: 'skipped (generated title was duplicate with recent articles)' });
+        continue;
+      }
+
+      // ── 사진 전문 에이전트(PhotoCurationAgent) 가동 ──
       const media = await PhotoCurationAgent.resolvePhoto({
         category: item.section2,
         articleTitle: aiResult.title,
@@ -152,7 +214,7 @@ export async function GET(req: Request) {
         youtubeSearchQuery: aiResult.youtubeSearchQuery,
       });
 
-      // 하단 원문 참고 링크는 완전히 제거하고 순수 독창적 기사 본문만 저장
+      // 순수 독창적 기사 본문만 저장
       const finalContent = aiResult.content;
       const isAutoPublish = config.autoPublish !== false; // 기본값: 즉시 승인 및 자동 발행(APPROVED)
       const nowISO = new Date().toISOString();
@@ -179,6 +241,9 @@ export async function GET(req: Request) {
         .single();
 
       if (error) throw error;
+
+      // 이번 루프에서 작성된 기사 제목도 즉시 풀에 추가하여 다음 카테고리 기사와의 중복도 방지
+      existingTitles.unshift(aiResult.title);
 
       if (article?.id && aiResult.keywords) {
         const keywordList = aiResult.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k);

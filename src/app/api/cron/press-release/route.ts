@@ -52,6 +52,69 @@ export async function GET(req: Request) {
     .eq('email', 'gongsilnews@gmail.com')
     .single();
 
+  // ── 최근 14일간 이미 작성된 기사 목록 가져오기 (중복 방지 14일 전면 확대) ──
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recentArticles } = await supabase
+    .from('articles')
+    .select('title, created_at')
+    .gte('created_at', fourteenDaysAgo)
+    .order('created_at', { ascending: false });
+  
+  const existingTitles = (recentArticles || []).map(a => a.title).filter(Boolean);
+
+  const isDuplicateTopic = (candidateTitle: string, titlesPool: string[]): boolean => {
+    if (!candidateTitle || titlesPool.length === 0) return false;
+
+    const clean = (t: string) =>
+      t
+        .replace(/\[.*?\]|\(.*?\)|<.*?>/g, ' ')
+        .replace(/[^\w\s가-힣]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const cClean = clean(candidateTitle);
+    if (!cClean) return false;
+
+    const getKeywords = (t: string) => {
+      const stopWords = new Set(['대한', '통해', '위해', '관련', '지난', '올해', '내년', '이번', '오늘', '결과', '발표', '전망', '분석', '기록', '돌파', '속보', '단독', '종합']);
+      return new Set(
+        clean(t)
+          .split(' ')
+          .map(w => w.trim())
+          .filter(w => w.length >= 2 && !stopWords.has(w))
+      );
+    };
+
+    const cKeywords = getKeywords(cClean);
+    if (cKeywords.size === 0) return false;
+
+    for (const existing of titlesPool) {
+      const eClean = clean(existing);
+      if (!eClean) continue;
+
+      if (cClean === eClean || cClean.includes(eClean) || eClean.includes(cClean)) {
+        return true;
+      }
+
+      const eKeywords = getKeywords(eClean);
+      if (eKeywords.size === 0) continue;
+
+      let matchCount = 0;
+      for (const kw of cKeywords) {
+        if (eKeywords.has(kw)) matchCount++;
+      }
+
+      const unionSize = new Set([...cKeywords, ...eKeywords]).size;
+      const similarity = unionSize > 0 ? matchCount / unionSize : 0;
+
+      if (matchCount >= 3 || similarity >= 0.4 || (matchCount >= 2 && Math.min(cKeywords.size, eKeywords.size) <= 3)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   for (const feedInfo of RSS_FEEDS) {
     try {
       const feed = await parser.parseURL(feedInfo.url);
@@ -61,15 +124,9 @@ export async function GET(req: Request) {
       const latestItem = feed.items[0];
       const sourceUrl = latestItem.link || feedInfo.url;
 
-      // DB에 이미 같은 제목의 기사가 있는지 확인 (중복 생성 방지)
-      const { data: existingArticle } = await supabase
-        .from('articles')
-        .select('id')
-        .eq('title', latestItem.title)
-        .limit(1);
-
-      if (existingArticle && existingArticle.length > 0) {
-        results.push({ name: feedInfo.name, status: 'skipped (already exists)' });
+      // 14일 이내 유사/동일 보도자료 중복 생성 방지
+      if (isDuplicateTopic(latestItem.title || '', existingTitles)) {
+        results.push({ name: feedInfo.name, status: 'skipped (already exists in recent 14 days)' });
         continue;
       }
 
@@ -80,6 +137,11 @@ export async function GET(req: Request) {
         pressReleaseText: rawText,
         sourceUrl: sourceUrl,
       });
+
+      if (isDuplicateTopic(aiResult.title, existingTitles)) {
+        results.push({ name: feedInfo.name, status: 'skipped (generated title was duplicate with recent articles)' });
+        continue;
+      }
 
       // 미디어 자동 매칭 (1단계: 보도자료 배포 사진, 2단계: 고화질 스톡 이미지)
       const media = await resolveArticleMedia({
