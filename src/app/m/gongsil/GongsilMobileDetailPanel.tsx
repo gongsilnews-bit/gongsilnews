@@ -230,7 +230,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
             {!currentUser && (
               <button
                 onClick={() => {
-                  window.location.href = "/m/login?returnTo=" + encodeURIComponent("/m/admin/settings?tab=agency");
+                  window.location.href = "/m/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
                 }}
                 style={{
                   width: "100%",
