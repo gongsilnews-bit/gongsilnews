@@ -216,7 +216,13 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         }
         setLoading(false);
         setInitialFetchDone(true);
+      }).catch((err) => {
+        console.error("adminGetMemberDetail error:", err);
+        setLoading(false);
+        setInitialFetchDone(true);
       });
+    } else {
+      setInitialFetchDone(true);
     }
 
     if (!document.getElementById("daum-postcode-script")) {
@@ -226,7 +232,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
       script.async = true;
       document.body.appendChild(script);
     }
-  }, []);
+  }, [editMemberId]);
 
   const openDaumPostcode = () => {
     if ((window as any).daum && (window as any).daum.Postcode) {
