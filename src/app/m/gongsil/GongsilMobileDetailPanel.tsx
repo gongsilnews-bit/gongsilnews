@@ -109,7 +109,164 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
   const bidEnd = meta.bid_end_date || meta.pblctClsDtm || meta.pbctClsDtm || "";
 
   return (
-    <>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+      {/* 🔒 중개업소 회원만 열람 가능 오버레이 */}
+      {detailMasked && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(255, 255, 255, 0.96)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+            zIndex: 999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "30px 20px",
+            textAlign: "center",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* 자물쇠 아이콘 */}
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
+              border: "2px solid #f59e0b",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 30,
+              marginBottom: 16,
+              boxShadow: "0 8px 20px rgba(245, 158, 11, 0.2)",
+            }}
+          >
+            🔒
+          </div>
+
+          {/* 태그 */}
+          <div
+            style={{
+              display: "inline-block",
+              background: "#eff6ff",
+              color: "#2563eb",
+              border: "1px solid #bfdbfe",
+              padding: "4px 12px",
+              borderRadius: 20,
+              fontSize: 12,
+              fontWeight: 800,
+              marginBottom: 10,
+              letterSpacing: 0.5,
+            }}
+          >
+            공인중개사 공동중개 전용
+          </div>
+
+          {/* 타이틀 */}
+          <h3
+            style={{
+              fontSize: 20,
+              fontWeight: 900,
+              color: "#0f172a",
+              margin: "0 0 10px 0",
+              letterSpacing: "-0.5px",
+              lineHeight: 1.35,
+            }}
+          >
+            중개업소 회원만<br />열람할 수 있습니다
+          </h3>
+
+          {/* 본문 안내 */}
+          <p
+            style={{
+              fontSize: 13.5,
+              color: "#64748b",
+              lineHeight: 1.6,
+              margin: "0 0 24px 0",
+              wordBreak: "keep-all",
+              maxWidth: 300,
+            }}
+          >
+            본 매물은 <strong>개업공인중개사 간의 공동중개 전용</strong> 매물입니다.<br />
+            부동산 대표님이시라면 <strong>100% 무료 중개업소 등록</strong> 후 모든 공동중개 실매물을 즉시 열람하실 수 있습니다.
+          </p>
+
+          {/* 액션 버튼 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 280 }}>
+            <button
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("signup_member_type", "broker");
+                }
+                if (!currentUser) {
+                  window.location.href = "/m/login?returnTo=" + encodeURIComponent("/realty_admin?menu=settings");
+                } else {
+                  window.location.href = "/realty_admin?menu=settings";
+                }
+              }}
+              style={{
+                width: "100%",
+                padding: "13px 0",
+                background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: 10,
+                fontSize: 14.5,
+                fontWeight: 800,
+                cursor: "pointer",
+                boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
+              }}
+            >
+              ✨ 무료 중개업소 등록하기 →
+            </button>
+
+            {!currentUser && (
+              <button
+                onClick={() => {
+                  window.location.href = "/m/login?returnTo=" + encodeURIComponent("/realty_admin?menu=settings");
+                }}
+                style={{
+                  width: "100%",
+                  padding: "11px 0",
+                  background: "#ffffff",
+                  color: "#475569",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: 10,
+                  fontSize: 13.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                🔑 중개업소 계정 로그인
+              </button>
+            )}
+
+            <button
+              onClick={goBack}
+              style={{
+                width: "100%",
+                padding: "8px 0",
+                background: "transparent",
+                color: "#94a3b8",
+                border: "none",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              닫기 (뒤로가기)
+            </button>
+          </div>
+        </div>
+      )}
+
       <div ref={detailScrollRef} style={{ flex: 1, overflowY: "auto", paddingBottom: "20px" }}>
         {/* 이미지 슬라이더 (맨 위로 이동) */}
         {selectedVacancy.images?.[0] && (
@@ -1552,7 +1709,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
           </button>
         )}
       </div>
-    </>
+    </div>
   );
 };
 

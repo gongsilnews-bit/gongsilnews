@@ -591,7 +591,7 @@ export default function MobileReporterClient({
                             {title}
                             {cardMasked && (
                               <span style={{ fontSize: "10px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "2px 6px", borderRadius: "4px", marginLeft: "6px", verticalAlign: "middle" }}>
-                                {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 무료열람'}
+                                {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 중개업소 회원 전용'}
                               </span>
                             )}
                           </div>

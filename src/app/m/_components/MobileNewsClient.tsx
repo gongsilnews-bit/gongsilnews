@@ -2090,7 +2090,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                         <span style={{ fontSize: "12px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
                         {cardMasked && (
                           <span onClick={(e) => { e.stopPropagation(); window.location.href = "/m/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); }} style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", cursor: "pointer" }}>
-                            {v.trade_type === '경매' || v.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 무료열람'}
+                            {v.trade_type === '경매' || v.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 중개업소 회원 전용'}
                           </span>
                         )}
                       </div>
