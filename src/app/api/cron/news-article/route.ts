@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Parser from 'rss-parser';
 import { NewsArticleAgent } from '@/lib/agents/NewsArticleAgent';
 import { PhotoCurationAgent } from '@/lib/agents/PhotoCurationAgent';
+import { NaverNewsScraper } from '@/lib/agents/NaverNewsScraper';
 import { createClient } from '@supabase/supabase-js';
 import { kstHour, kstTodayStart } from '@/utils/kst';
 
@@ -165,16 +166,43 @@ export async function GET(req: Request) {
 
   for (const item of activeCategories) {
     try {
+      // ── [듀얼 수집 엔진] 1. 네이버 실시간 랭킹/부동산 뉴스 & 2. 구글 뉴스 동시 수집 ──
+      const naverNewsPromise = NaverNewsScraper.getTopNewsForCategory(item.keyword, item.section2).catch(() => []);
       const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(item.keyword)}&hl=ko&gl=KR&ceid=KR:ko`;
-      const feed = await parser.parseURL(rssUrl);
-      
-      if (!feed.items || feed.items.length === 0) {
+      const googleFeedPromise = parser.parseURL(rssUrl).catch(() => ({ items: [] }));
+
+      const [naverItems, googleFeed] = await Promise.all([naverNewsPromise, googleFeedPromise]);
+
+      // 네이버 + 구글 뉴스 통합 후보 풀 구성
+      const combinedCandidates: Array<{ title: string; snippet: string; link: string; source: string }> = [];
+
+      for (const n of naverItems) {
+        combinedCandidates.push({
+          title: n.title,
+          snippet: n.snippet,
+          link: n.link,
+          source: n.source === 'naver_ranking' ? '네이버 실시간 랭킹' : '네이버 부동산/뉴스'
+        });
+      }
+
+      for (const g of (googleFeed.items || [])) {
+        if (!combinedCandidates.some(c => c.title === g.title)) {
+          combinedCandidates.push({
+            title: g.title || '',
+            snippet: g.contentSnippet || g.content || '',
+            link: g.link || '',
+            source: '구글 실시간 뉴스'
+          });
+        }
+      }
+
+      if (combinedCandidates.length === 0) {
         results.push({ category: item.section2, status: 'skipped (no news)' });
         continue;
       }
 
       // ── 최근 14일간 다룬 주제와 겹치지 않는 신선한 뉴스 후보만 필터링 ──
-      const freshItems = feed.items.filter(news => !isDuplicateTopic(news.title || '', existingTitles));
+      const freshItems = combinedCandidates.filter(news => !isDuplicateTopic(news.title || '', existingTitles));
 
       if (freshItems.length === 0) {
         results.push({ category: item.section2, status: 'skipped (all candidates duplicate with recent 14 days)' });
@@ -183,7 +211,7 @@ export async function GET(req: Request) {
 
       // 상위 10개의 최신 신선한 뉴스 후보 추출
       const candidateNews = freshItems.slice(0, 10).map((news, index) => {
-        return `[후보 ${index + 1}]\n제목: ${news.title}\n요약: ${news.contentSnippet || news.content || ''}\nURL: ${news.link || ''}\n`;
+        return `[후보 ${index + 1} (${news.source})]\n제목: ${news.title}\n요약: ${news.snippet || ''}\nURL: ${news.link || ''}\n`;
       }).join('\n');
 
       // ── 최근 작성된 기사 제목을 AI에게 전달하여 중복 주제 완벽 회피 ──
