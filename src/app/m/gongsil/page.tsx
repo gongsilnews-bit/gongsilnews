@@ -633,6 +633,18 @@ function MobileGongsilContent() {
         };
         setSelectedVacancy(detail);
         setDetailTab("info");
+
+        // 🚀 [대표님 지침] 매물의 성격(공실 vs 경매)에 맞춰 시스템 모드 및 직전 리스트를 완벽하게 자동 일치
+        const isAuction = detail.trade_type === '경매' || detail.trade_type === '공매' || detail.is_auction;
+        if (!isAuction) {
+          setActiveMode("공실");
+          setIsAuctionMode(false);
+        } else {
+          setActiveMode("경매");
+          setIsAuctionMode(true);
+        }
+        // 직전에 보던 매물 클러스터 리스트(1개 또는 해당 묶음)를 자동으로 복원
+        setSelectedCluster([detail]);
       }
       setLoading(false);
     };
