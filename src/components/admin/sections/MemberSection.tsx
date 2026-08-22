@@ -66,15 +66,15 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
       bizUpdatedAt = bp?.updated_at || bp?.created_at;
     }
     let computedStatus = m.signup_completed ? '정상' : '승인대기';
-    if (m.role === 'REALTOR') {
+    if (m.role === 'REALTOR' || agencyStatus) {
       if (agencyStatus === 'APPROVED') computedStatus = '정상';
       else if (agencyStatus === 'REJECTED') computedStatus = '서류보완';
-      else computedStatus = '승인대기';
+      else if (agencyStatus === 'PENDING') computedStatus = '승인대기';
     }
-    if (m.role === 'BIZ') {
+    if (m.role === 'BIZ' || bizStatus) {
       if (bizStatus === 'APPROVED') computedStatus = '정상';
       else if (bizStatus === 'REJECTED') computedStatus = '서류보완';
-      else computedStatus = '승인대기';
+      else if (bizStatus === 'PENDING') computedStatus = '승인대기';
     }
 
     let isLongTermPending = false;

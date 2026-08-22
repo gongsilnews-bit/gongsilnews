@@ -60,6 +60,7 @@ function UserAdminContent() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("로딩중...");
   const [userPhone, setUserPhone] = useState<string>("");
+  const [agencyStatus, setAgencyStatus] = useState<string | null>(null);
 
   /* ── 프리페치 데이터 저장소 ── */
   const [prefetchedData, setPrefetchedData] = useState<Record<string, any[]>>({});
@@ -100,6 +101,10 @@ function UserAdminContent() {
         // 공실 데이터 프리페치
         prefetchSection("gongsil", data.id);
       }
+
+      const { data: ag } = await supabase.from("agencies").select("status").eq("owner_id", user.id).single();
+      if (ag && ag.status) setAgencyStatus(ag.status);
+
       setAuthChecked(true);
     }
     fetchUser();
@@ -164,11 +169,15 @@ function UserAdminContent() {
       <main style={{ flex: 1, display: "flex", flexDirection: "column", background: theme.bg, overflow: "hidden" }}>
         <header style={{ height: 64, background: theme.headerBg, borderBottom: `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s" }}
+            onClick={() => { setActiveMenu("settings"); router.push('?menu=settings'); }}
             onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f3f4f6"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
             <span style={{ fontWeight: 800, fontSize: 17, color: theme.textPrimary }}>{userName}</span>
             <span style={{ fontSize: 14, color: darkMode ? "#aaa" : "#666" }}>{userEmail || "로딩중..."}</span>
             <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#f3f4f6", color: "#6b7280" }}>일반회원</span>
+            {agencyStatus === "REJECTED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#be123c", background: "#fee2e2", border: "1px solid #ef4444", display: "inline-flex", alignItems: "center", gap: 4 }}>🚨 보완요청 확인요망</span>}
+            {agencyStatus === "PENDING" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" }}>⏳ 부동산 승인대기</span>}
+            {agencyStatus === "APPROVED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#166534", background: "#dcfce7", border: "1px solid #bbf7d0" }}>✅ 정상승인</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <button onClick={() => setDarkMode(!darkMode)} style={{ background: darkMode ? "#2c2d31" : "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">{darkMode ? "☀️" : "🌙"}</button>
