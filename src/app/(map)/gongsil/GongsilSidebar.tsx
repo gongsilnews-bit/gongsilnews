@@ -346,10 +346,6 @@ export default function GongsilSidebar({
               <div
                 key={prop.id}
                 onClick={() => {
-                  if (isMasked) {
-                    window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
-                    return;
-                  }
                   if (isActiveAndShowing) {
                     setShowDetail(false);
                   } else {
@@ -446,7 +442,9 @@ export default function GongsilSidebar({
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
+                            setPrevPropertyId(null);
+                            setActiveProperty(prop.id);
+                            setShowDetail(true);
                           }}
                           style={{
                             fontSize: 11,
@@ -458,7 +456,7 @@ export default function GongsilSidebar({
                             cursor: "pointer",
                           }}
                         >
-                          {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 가입 시 무료 열람'}
+                          {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 중개업소 회원 전용'}
                         </span>
                       )}
                     </div>

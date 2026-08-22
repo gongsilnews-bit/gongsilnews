@@ -440,7 +440,7 @@ export default function PCReporterClient({
                               {title}
                               {cardMasked && (
                                 <span style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", marginLeft: "8px", verticalAlign: "middle" }}>
-                                  {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 가입 시 무료 열람'}
+                                  {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 중개업소 회원 전용'}
                                 </span>
                               )}
                             </div>

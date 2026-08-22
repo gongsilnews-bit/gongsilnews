@@ -897,7 +897,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                               </span>
                               {isMasked && (
                                 <span onClick={(e) => { e.stopPropagation(); window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>
-                                  {v.trade_type === '경매' || v.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 부동산회원 가입 시 무료 열람'}
+                                  {v.trade_type === '경매' || v.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 중개업소 회원 전용'}
                                 </span>
                               )}
                             </div>

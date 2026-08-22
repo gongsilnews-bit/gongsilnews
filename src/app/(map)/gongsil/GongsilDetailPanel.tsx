@@ -459,6 +459,7 @@ export default function GongsilDetailPanel({
         borderRight: "1px solid #eee",
         zIndex: 1100,
         boxShadow: "5px 0 15px rgba(0,0,0,0.15)",
+        position: "relative",
       }}
     >
       {/* 닫기 버튼 */}
@@ -485,6 +486,165 @@ export default function GongsilDetailPanel({
       >
         ×
       </button>
+
+      {/* 🔒 중개업소 회원만 열람 가능 오버레이 */}
+      {(() => {
+        const isMyProperty = currentUser && prop && prop.owner_id === currentUser.id;
+        const isRealtorOnlyMasked = prop.exposure_type === "부동산노출" &&
+          (prop.trade_type === "경매" || prop.trade_type === "공매" ? userLevel < 1 : userLevel < 2) &&
+          !isMyProperty;
+
+        if (!isRealtorOnlyMasked) return null;
+
+        return (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(255, 255, 255, 0.94)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              zIndex: 90,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "40px 24px",
+              textAlign: "center",
+              boxSizing: "border-box",
+            }}
+          >
+            {/* 자물쇠 아이콘 */}
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
+                border: "2px solid #f59e0b",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 34,
+                marginBottom: 20,
+                boxShadow: "0 10px 25px rgba(245, 158, 11, 0.2)",
+              }}
+            >
+              🔒
+            </div>
+
+            {/* 태그 */}
+            <div
+              style={{
+                display: "inline-block",
+                background: "#eff6ff",
+                color: "#2563eb",
+                border: "1px solid #bfdbfe",
+                padding: "4px 14px",
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 800,
+                marginBottom: 12,
+                letterSpacing: 0.5,
+              }}
+            >
+              공인중개사 공동중개 전용
+            </div>
+
+            {/* 타이틀 */}
+            <h3
+              style={{
+                fontSize: 22,
+                fontWeight: 900,
+                color: "#0f172a",
+                margin: "0 0 12px 0",
+                letterSpacing: "-0.5px",
+                lineHeight: 1.35,
+              }}
+            >
+              중개업소 회원만<br />열람할 수 있습니다
+            </h3>
+
+            {/* 본문 안내 */}
+            <p
+              style={{
+                fontSize: 14,
+                color: "#64748b",
+                lineHeight: 1.65,
+                margin: "0 0 28px 0",
+                wordBreak: "keep-all",
+                maxWidth: 320,
+              }}
+            >
+              본 매물은 <strong>개업공인중개사 간의 공동중개 전용</strong> 매물입니다.<br />
+              부동산 대표님이시라면 <strong>100% 무료 중개업소 등록</strong> 후 모든 공동중개 실매물을 즉시 열람하실 수 있습니다.
+            </p>
+
+            {/* 액션 버튼 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 300 }}>
+              <button
+                onClick={() => {
+                  window.location.href = "/newsrealty";
+                }}
+                style={{
+                  width: "100%",
+                  padding: "14px 0",
+                  background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: 10,
+                  fontSize: 15,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
+                }}
+              >
+                ✨ 무료 중개업소 등록하기 →
+              </button>
+
+              {!currentUser && (
+                <button
+                  onClick={() => {
+                    window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "12px 0",
+                    background: "#ffffff",
+                    color: "#475569",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: 10,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  🔑 중개업소 계정 로그인
+                </button>
+              )}
+
+              <button
+                onClick={() => setShowDetail(false)}
+                style={{
+                  width: "100%",
+                  padding: "10px 0",
+                  background: "transparent",
+                  color: "#94a3b8",
+                  border: "none",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                닫기 (다른 매물 둘러보기)
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 뒤로가기 버튼 탭 */}
       {prevPropertyId && (
