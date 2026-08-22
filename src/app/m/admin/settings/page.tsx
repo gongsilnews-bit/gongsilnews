@@ -291,7 +291,6 @@ function MobileSettings() {
             if (verifyResult.status === "APPROVED") {
               saveStatus = "APPROVED"; // AI가 검증 통과시키면 자동 승인
               setAgencyStatus("APPROVED");
-              alert("🤖 AI 서류 검증 완료!\n서류와 정보가 일치하여 자동으로 [정상승인] 처리되었습니다.");
             } else if (verifyResult.status === "NEEDS_REVIEW") {
               saveStatus = "PENDING";
               setAgencyStatus("PENDING");
@@ -299,18 +298,13 @@ function MobileSettings() {
               if (verifyResult.diff && verifyResult.diff.found) {
                 const isNameDiff = verifyResult.diff.expected?.companyName !== verifyResult.diff.found?.companyName;
                 const isRepDiff = verifyResult.diff.expected?.representative !== verifyResult.diff.found?.representative;
-                diffMsg = "[불일치 내역]\n";
-                if (isNameDiff) diffMsg += `- 상호명 (입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName})\n`;
-                if (isRepDiff) diffMsg += `- 대표자 (입력: ${verifyResult.diff.expected?.representative} / 서류: ${verifyResult.diff.found?.representative})\n`;
+                if (isNameDiff) diffMsg += `상호명 불일치(입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName}) `;
+                if (isRepDiff) diffMsg += `대표자 불일치(입력: ${verifyResult.diff.expected?.representative} / 서류: ${verifyResult.diff.found?.representative})`;
               }
-              aiReason = "🤖 AI 자동 검증 보류: 서류 내용 불일치. " + diffMsg;
-              alert("🤖 AI 검증 안내: 서류와 입력하신 정보가 일부 불일치하여 관리자 수동 검토(승인대기)로 넘어갑니다.\n\n" + diffMsg + "\n\n서류에 적힌 텍스트와 완벽히 일치하게 입력하시면 즉시 자동 승인됩니다!");
-            } else if (verifyResult.status === "ERROR") {
-              alert("🤖 AI 검증 에러: " + verifyResult.message + "\n(임시로 승인대기 처리됩니다)");
+              aiReason = diffMsg ? `AI 자동검증 참고: ${diffMsg}` : "서류 확인 필요 (관리자 검토)";
             }
           } catch (e) {
             console.error("AI Verify Error:", e);
-            // 에러 나면 기존처럼 PENDING으로 진행
           }
         }
 
@@ -321,6 +315,7 @@ function MobileSettings() {
           reg_cert_url: regUrl, biz_cert_url: bizUrl,
           lat: coords?.lat || null, lng: coords?.lng || null,
           status: saveStatus,
+          reject_reason: aiReason,
         });
 
         if (saveStatus === "APPROVED" && agencyStatus !== "APPROVED") {

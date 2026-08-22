@@ -490,9 +490,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           finalStatus = "PENDING";
         }
 
-        // --- AI 자동 승인 에이전트 연동 ---
-        // 사업자등록증 파일이 신규로 업로드되었고, 아직 APPROVED가 아닐 때만 AI 검증 실행
-        let aiReason = "";
+        // --- 백그라운드 AI 서류 자동 검증 (사용자 차단 및 경고창 없이 무소음 처리) ---
+        let aiReason: string | null = null;
         if (files.biz_cert && finalStatus !== "APPROVED") {
           try {
             const verifyFd = new FormData();
@@ -507,27 +506,16 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             const verifyResult = await verifyRes.json();
             
             if (verifyResult.status === "APPROVED") {
-              finalStatus = "APPROVED"; // 자동 승인
-              setAgencyData(prev => ({...prev, status: "APPROVED", rejection_reason: null}));
-              alert("🤖 AI 서류 검증 완료!\n서류와 정보가 일치하여 자동으로 [정상승인] 처리되었습니다.");
+              finalStatus = "APPROVED"; // 서류와 정보가 100% 일치하면 자동 승인
             } else if (verifyResult.status === "NEEDS_REVIEW") {
               let diffMsg = "";
               if (verifyResult.diff && verifyResult.diff.found) {
                 const isNameDiff = verifyResult.diff.expected?.companyName !== verifyResult.diff.found?.companyName;
                 const isRepDiff = verifyResult.diff.expected?.representative !== verifyResult.diff.found?.representative;
-                diffMsg = "[불일치 내역]\n";
-                if (isNameDiff) diffMsg += `- 상호명 (입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName})\n`;
-                if (isRepDiff) diffMsg += `- 대표자 (입력: ${verifyResult.diff.expected?.representative} / 서류: ${verifyResult.diff.found?.representative})\n`;
+                if (isNameDiff) diffMsg += `상호명 불일치(입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName}) `;
+                if (isRepDiff) diffMsg += `대표자 불일치(입력: ${verifyResult.diff.expected?.representative} / 서류: ${verifyResult.diff.found?.representative})`;
               }
-              aiReason = "🤖 AI 자동 검증 보류: 서류 내용 불일치. " + diffMsg;
-              alert("🤖 AI 검증 안내: 서류와 입력하신 정보가 일부 불일치하여 관리자 수동 검토(승인대기)로 넘어갑니다.\n\n" + diffMsg + "\n\n서류에 적힌 텍스트와 완벽히 일치하게 입력하시면 즉시 자동 승인됩니다!");
-            } else if (verifyResult.status === "ERROR") {
-              alert("🤖 AI 검증 에러: " + verifyResult.message + "\n(임시로 승인대기 처리됩니다)");
-            }
-
-            // DB 업데이트에 AI의 판단 사유를 반영합니다
-            if (aiReason) {
-              setAgencyData(prev => ({...prev, rejection_reason: aiReason}));
+              aiReason = diffMsg ? `AI 자동검증 참고: ${diffMsg}` : "서류 확인 필요 (관리자 검토)";
             }
           } catch (e) {
             console.error("AI Verify Error:", e);
@@ -535,18 +523,32 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         }
 
         const finalAgencyData = {
-          ...agencyData,
+          name: agencyData.name || '',
+          ceo_name: agencyData.ceo_name || '',
+          cell: agencyData.cell || '',
+          phone: agencyData.phone || '',
+          zipcode: agencyData.zipcode || '',
+          address: agencyData.address || '',
+          address_detail: agencyData.address_detail || '',
+          intro: agencyData.intro || '',
+          biz_num: agencyData.biz_num || '',
+          reg_num: agencyData.reg_num || '',
           reg_cert_url: regCertUrl,
           biz_cert_url: bizCertUrl,
           lat: coords?.lat || null,
           lng: coords?.lng || null,
           status: finalStatus,
-          ...(aiReason ? { rejection_reason: aiReason } : {})
+          reject_reason: aiReason,
         };
 
         const agencyRes = await adminUpdateAgency(memberId, finalAgencyData);
         if (!agencyRes.success) {
           throw new Error("중개업소 정보 저장에 실패했습니다: " + agencyRes.error);
+        }
+
+        if (finalStatus === "APPROVED") {
+          const { adminApproveRealtorApplication } = await import("@/app/admin/actions");
+          await adminApproveRealtorApplication(memberId);
         }
       }
 
@@ -585,8 +587,12 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         }
       }
 
-      if (!isAdmin && agencyData.status === "APPROVED" && formData.role === "부동산회원") {
-        alert(editMemberId ? "회원 정보 수정이 완료되었습니다." : "회원 등록이 완료되었습니다.");
+      if (!isAdmin && formData.role === "부동산회원") {
+        if (finalStatus === "APPROVED") {
+          alert("🎉 정보가 저장되었으며, 서류 검증이 완료되어 즉시 [정상승인] 처리되었습니다!");
+        } else {
+          alert("📋 부동산회원 정보가 안전하게 접수되었습니다!\n관리자 검토 후 신속히 승인해 드립니다. ✨");
+        }
       } else {
         alert(editMemberId ? "회원 정보 수정이 완료되었습니다." : "회원 등록이 완료되었습니다.");
       }
