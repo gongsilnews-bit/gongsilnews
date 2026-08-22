@@ -134,6 +134,12 @@ function RealtyAdminContent() {
       setAuthChecked(true);
     }
     fetchUser();
+
+    const handleStatusSync = (e: any) => {
+      if (e.detail) setAgencyStatus(e.detail);
+    };
+    window.addEventListener("realty_agency_status_sync", handleStatusSync);
+    return () => window.removeEventListener("realty_agency_status_sync", handleStatusSync);
   }, []);
 
   /* ── 사이드바 호버 시 프리페치 ── */

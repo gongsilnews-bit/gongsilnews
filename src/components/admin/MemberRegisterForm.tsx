@@ -181,6 +181,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               biz_num: res.agency.biz_num || "",
               status: res.agency.status || "PENDING"
             });
+            if (typeof window !== "undefined" && res.agency.status) {
+              window.dispatchEvent(new CustomEvent("realty_agency_status_sync", { detail: res.agency.status }));
+            }
             setRejectReason(res.agency.reject_reason || null);
             setOriginalAgencyData({
               name: res.agency.name || "",
@@ -549,6 +552,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         }
 
         agencySaved = true;
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("realty_agency_status_sync", { detail: finalStatus }));
+        }
 
         if (finalStatus === "APPROVED") {
           const { adminApproveRealtorApplication } = await import("@/app/admin/actions");
