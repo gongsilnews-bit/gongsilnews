@@ -119,10 +119,13 @@ function RealtyAdminContent() {
       setUserRole(member.role || "USER");
 
       const { data: agencyData } = await supabase.from("agencies").select("status, biz_cert_url, reg_cert_url, reject_reason").eq("owner_id", member.id).single();
-      if (agencyData) {
-        if (agencyData.status) setAgencyStatus(agencyData.status);
+      if (agencyData && agencyData.status) {
+        setAgencyStatus(agencyData.status);
         if (agencyData.reject_reason) setRejectionReason(agencyData.reject_reason);
         if (!agencyData.biz_cert_url && member.role === 'REALTOR') setShowDocWarning(true);
+      } else {
+        // 등록증 심사가 완료되지 않은 회원은 승인대기 상태로 기본 노출
+        setAgencyStatus("PENDING");
       }
 
       // 공실 데이터 프리페치
