@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import { completeMemberSignup } from '@/app/actions/member';
 
 interface SignupCompleteModalProps {
   isOpen: boolean;
@@ -24,13 +25,12 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
     phone: '',
   });
 
-  const [agreeAll, setAgreeAll] = useState(false);
   const [agreements, setAgreements] = useState({
     terms: false,
     privacy: false,
-    reporter: false,
-    promo: false,
   });
+  const agreeAll = agreements.terms && agreements.privacy;
+
   const [expandedTerms, setExpandedTerms] = useState<string | null>(null);
 
   const [memberType, setMemberType] = useState<'broker' | null>(null);
@@ -56,14 +56,11 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
 
   const handleAgreeAll = () => {
     const next = !agreeAll;
-    setAgreeAll(next);
-    setAgreements({ terms: next, privacy: next, reporter: next, promo: next });
+    setAgreements({ terms: next, privacy: next });
   };
 
-  const handleAgreement = (key: keyof typeof agreements) => {
-    const updated = { ...agreements, [key]: !agreements[key] };
-    setAgreements(updated);
-    setAgreeAll(updated.terms && updated.privacy && updated.reporter && updated.promo);
+  const handleAgreement = (key: 'terms' | 'privacy') => {
+    setAgreements(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const toggleExpand = (key: string) => {
@@ -85,28 +82,27 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
 
   // 폼 제출 (회원가입 최종 처리)
   const handleSubmit = async () => {
-    if (!agreeAll) return alert("약관에 모두 동의해 주세요.");
+    if (!agreements.terms || !agreements.privacy) return alert("필수 약관에 모두 동의해 주세요.");
     if (!formData.name.trim() || !formData.phone.trim()) return alert("이름과 연락처를 필수로 입력해 주세요.");
 
     setLoading(true);
-    const supabase = createClient();
 
     try {
+      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("현재 로그인된 세션이 없습니다. (새로고침 요망)");
+      if (!user) throw new Error("현재 로그인된 세션이 없습니다. 페이지를 새로고침한 후 다시 시도해 주세요.");
 
-      // 1. members 테이블 업데이트
-      const { error: memberError } = await supabase
-        .from('members')
-        .update({
-          name: formData.name.trim(),
-          phone: formData.phone.trim(),
-          role: 'USER',
-          signup_completed: true, 
-        })
-        .eq('id', user.id);
-        
-      if (memberError) throw memberError;
+      // 서버 액션으로 안전하게 members 테이블 업데이트 (RLS 권한 제약 우회)
+      const res = await completeMemberSignup({
+        userId: user.id,
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email || user.email || '',
+      });
+
+      if (!res.success) {
+        throw new Error(res.error || "가입 완료 처리에 실패했습니다.");
+      }
 
       // 2. 가입 완료 후 Step 2 화면으로 이동 (부동산 회원 전환 유도)
       setStep(2);
@@ -254,19 +250,19 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
 
           {/* ━━━ 약관 동의 ━━━ */}
           <div style={{ borderTop: '1px solid #eee', paddingTop: 20 }}>
-            <label onClick={handleAgreeAll} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: 12, paddingBottom: 14, borderBottom: '2px solid #f1f5f9' }}>
-              <input type="checkbox" checked={agreeAll} onChange={() => {}} style={{ width: 18, height: 18, accentColor: '#1e56a0', cursor: 'pointer', marginTop: 2, flexShrink: 0 }} />
+            <div onClick={handleAgreeAll} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: 12, paddingBottom: 14, borderBottom: '2px solid #f1f5f9', userSelect: 'none' }}>
+              <input type="checkbox" checked={agreeAll} onChange={() => {}} style={{ width: 18, height: 18, accentColor: '#1e56a0', cursor: 'pointer', marginTop: 2, flexShrink: 0, pointerEvents: 'none' }} />
               <div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#111' }}>모두 동의합니다.</div>
                 <div style={{ fontSize: 11, color: '#999', marginTop: 4, lineHeight: 1.5 }}>
-                  가입, 개인정보 등 필수 및 선택적 정보에 동의
+                  가입, 개인정보 등 필수 정보에 동의
                 </div>
               </div>
-            </label>
+            </div>
 
             {[
               {
-                key: 'terms',
+                key: 'terms' as const,
                 label: '[필수] 이용약관 동의',
                 content: `제1조 (목적)
 본 약관은 (주)공실뉴스(이하 "회사")가 운영하는 인터넷 사이트 "공실뉴스"(https://gongsil.net)에서 제공하는 부동산 정보 서비스, 공실 열람, 공동중개망 서비스, 뉴스 콘텐츠 및 관련 제반 서비스(이하 "서비스")의 이용 조건 및 절차에 관한 사항을 규정함을 목적으로 합니다.
@@ -283,7 +279,7 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
 회원은 타인의 정보를 도용하거나 허위 공실·매물 정보를 등록해서는 안 되며, 공인중개사법 및 관계 법령을 준수해야 합니다.`,
               },
               {
-                key: 'privacy',
+                key: 'privacy' as const,
                 label: '[필수] 개인정보 수집 및 이용 동의',
                 content: `1. 개인정보 수집 항목
 - 필수항목: 이름, 이메일(소셜 계정 식별자), 휴대폰 번호, (부동산회원의 경우) 중개업소 상호명, 사업자/개설등록 정보
@@ -301,9 +297,9 @@ export default function SignupCompleteModal({ isOpen, onClose, email = '', name 
             ].map(item => (
               <div key={item.key} style={{ marginBottom: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <input type="checkbox" checked={agreements[item.key as keyof typeof agreements]} onChange={() => handleAgreement(item.key as keyof typeof agreements)} style={{ width: 16, height: 16, accentColor: '#1e56a0', cursor: 'pointer', flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: '#444', flex: 1 }}>{item.label}</span>
-                  <button onClick={() => toggleExpand(item.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e56a0', fontSize: 13, fontWeight: 700, padding: '0 4px', fontFamily: 'inherit' }}>
+                  <input type="checkbox" checked={agreements[item.key]} onChange={() => handleAgreement(item.key)} style={{ width: 16, height: 16, accentColor: '#1e56a0', cursor: 'pointer', flexShrink: 0 }} />
+                  <span onClick={() => handleAgreement(item.key)} style={{ fontSize: 13, color: '#444', flex: 1, cursor: 'pointer', userSelect: 'none' }}>{item.label}</span>
+                  <button onClick={() => toggleExpand(item.key)} type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e56a0', fontSize: 13, fontWeight: 700, padding: '0 4px', fontFamily: 'inherit' }}>
                     {expandedTerms === item.key ? '닫기 ▲' : '내용보기 ▼'}
                   </button>
                 </div>
