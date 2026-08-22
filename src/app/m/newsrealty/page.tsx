@@ -111,8 +111,8 @@ export default function MobileNewsRealtyPage() {
           </div>
 
           <h1 style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>
-            부동산이세요?<br />
-            <span style={{ color: "#fbbf24" }}>공동중개 열람 평생 무료!</span>
+            빠른 내역을 원할땐!<br />
+            <span style={{ color: "#fbbf24" }}>무료 공실등록하세요!</span>
           </h1>
 
           <p style={{ fontSize: 13, color: "#bae6fd", lineHeight: 1.55, margin: "0 0 20px 0", wordBreak: "keep-all" }}>

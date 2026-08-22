@@ -110,8 +110,8 @@ export default function NewsRealtyPage() {
 
             {/* 메인 헤드라인 */}
             <h1 style={{ fontSize: 44, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-1.5px", margin: "0 0 18px 0" }}>
-              부동산이세요?<br />
-              <span style={{ color: "#fbbf24" }}>공동중개 열람 평생 무료!</span>
+              빠른 내역을 원할땐!<br />
+              <span style={{ color: "#fbbf24" }}>무료 공실등록하세요!</span>
             </h1>
 
             <p style={{ fontSize: 17, color: "#bae6fd", lineHeight: 1.7, margin: "0 0 32px 0", wordBreak: "keep-all" }}>
