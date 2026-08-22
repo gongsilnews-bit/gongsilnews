@@ -111,7 +111,7 @@ export default function MobileNewsRealtyPage() {
           </div>
 
           <h1 style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>
-            빠른 내역을 원할땐!<br />
+            빠른 계약을 원할땐,<br />
             <span style={{ color: "#fbbf24" }}>무료 공실등록하세요!</span>
           </h1>
 
