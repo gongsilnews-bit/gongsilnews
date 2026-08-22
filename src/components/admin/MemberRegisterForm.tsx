@@ -489,16 +489,11 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           if (uploadRes.success) bizCertUrl = uploadRes.url || null;
         }
 
-        let finalStatus = agencyData.status;
-        if (isAdmin) {
-          finalStatus = agencyData.status;
-        } else if (requestApproval) {
-          finalStatus = "PENDING";
-        }
+        let finalStatus = isAdmin ? agencyData.status : "PENDING";
 
-        // --- 백그라운드 AI 서류 자동 검증 (사용자 차단 및 경고창 없이 무소음 처리) ---
+        // --- 백그라운드 AI 서류 참고 검증 (관리자 심사용 참고 메모 생성) ---
         let aiReason: string | null = null;
-        if (files.biz_cert && finalStatus !== "APPROVED") {
+        if (files.biz_cert && !isAdmin) {
           try {
             const verifyFd = new FormData();
             verifyFd.append("file", files.biz_cert);
@@ -511,9 +506,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             });
             const verifyResult = await verifyRes.json();
             
-            if (verifyResult.status === "APPROVED") {
-              finalStatus = "APPROVED"; // 서류와 정보가 100% 일치하면 자동 승인
-            } else if (verifyResult.status === "NEEDS_REVIEW") {
+            if (verifyResult.status === "NEEDS_REVIEW" || verifyResult.status === "ERROR") {
               let diffMsg = "";
               if (verifyResult.diff && verifyResult.diff.found) {
                 const isNameDiff = verifyResult.diff.expected?.companyName !== verifyResult.diff.found?.companyName;
