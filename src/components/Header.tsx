@@ -160,8 +160,8 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
             setSignupName(data.name || user.user_metadata?.full_name || '');
             setIsSignupCompleteOpen(true);
           } else if (data.role === 'REALTOR' && agencyData) {
-            // 부동산 회원인데 서류를 제출 안했는지 체크
-            if (!agencyData.biz_cert_url) {
+            // 부동산 회원인데 서류를 제출 안했는지 체크 (승인된 회원은 절대 경고 배너 미노출)
+            if (!agencyData.biz_cert_url && agencyData.status !== 'APPROVED') {
               setShowDocWarning(true);
             }
           }
@@ -192,12 +192,12 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
         name={signupName}
       />
 
-      {/* ⚠️ 서류 미제출 부동산 소장님용 경고 배너 */}
-      {showDocWarning && (
+      {/* ⚠️ 서류 미제출 부동산 소장님용 경고 배너 (승인된 회원은 완전 미표시) */}
+      {showDocWarning && agencyStatus !== 'APPROVED' && (
         <div style={{ background: '#fff5f5', borderBottom: '1px solid #fed7d7', padding: '12px 20px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', zIndex: 100, position: 'relative' }}>
           <span style={{ fontSize: '18px' }}>🥺</span>
           <span style={{ fontSize: '14px', color: '#c53030', fontWeight: 700 }}>
-            소장님! 아직 필수 서류(사업자등록증)를 내시지 않았어요! 서류 제출하셔야 공동중계를 무료로 쓰실 수 있어요 👉 
+            소장님! 아직 필수 서류(사업자등록증)를 내시지 않았어요! 서류 제출하셔야 공동중개를 무료로 쓰실 수 있어요 👉 
           </span>
           <Link href="/realty_admin?menu=settings" style={{ textDecoration: 'underline', color: '#e53e3e', fontSize: '14px', fontWeight: 800 }}>정보설정으로 가기</Link>
           <button onClick={() => setShowDocWarning(false)} style={{ background: 'none', border: 'none', marginLeft: '10px', cursor: 'pointer', color: '#c53030' }}>✕</button>
