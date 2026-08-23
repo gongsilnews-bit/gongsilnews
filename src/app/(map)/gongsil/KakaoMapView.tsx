@@ -741,7 +741,7 @@ export default function KakaoMapView({
         }}
       >
         <span
-          onClick={() => { window.location.href = '/homepage'; }}
+          onClick={() => { alert("준비중입니다."); }}
           style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", cursor: "pointer", transition: "color 0.15s" }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "#2845B3")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "#6b7280")}
