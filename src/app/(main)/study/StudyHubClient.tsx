@@ -458,43 +458,65 @@ export default function StudyHubClient({
                 </h2>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {FAQS.map((faq, index) => {
                   const isOpen = openFaqIndex === index;
                   return (
                     <div
                       key={index}
                       style={{
-                        background: "#ffffff",
-                        borderRadius: 10,
-                        border: "1px solid #d1fae5",
+                        backgroundColor: isOpen ? "#f4fbf7" : "#ffffff",
+                        border: isOpen ? "1.5px solid #059669" : "1px solid #e2e8f0",
+                        borderRadius: 12,
                         overflow: "hidden",
+                        transition: "all 0.2s ease",
                       }}
                     >
                       <button
                         onClick={() => setOpenFaqIndex(isOpen ? null : index)}
                         style={{
                           width: "100%",
-                          padding: "16px 20px",
+                          padding: "20px 24px",
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          background: "none",
+                          backgroundColor: "transparent",
                           border: "none",
-                          textAlign: "left",
                           cursor: "pointer",
-                          fontFamily: "inherit",
+                          textAlign: "left",
+                          gap: 16,
                         }}
                       >
-                        <span style={{ fontSize: 15, fontWeight: 700, color: "#062828" }}>
+                        <span style={{ fontSize: 16, fontWeight: 700, color: isOpen ? "#064e3b" : "#1e293b", lineHeight: 1.4 }}>
                           Q. {faq.q}
                         </span>
-                        <span style={{ fontSize: 16, color: "#059669", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+                        <span
+                          style={{
+                            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                            transition: "transform 0.2s ease",
+                            color: isOpen ? "#059669" : "#94a3b8",
+                            fontSize: 14,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
                           ▼
                         </span>
                       </button>
+
                       {isOpen && (
-                        <div style={{ padding: "0 20px 18px", fontSize: 14, color: "#475569", lineHeight: 1.65, borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
+                        <div
+                          style={{
+                            padding: "0 24px 22px 24px",
+                            fontSize: 14.5,
+                            color: "#475569",
+                            lineHeight: 1.7,
+                            borderTop: "1px solid rgba(5, 150, 105, 0.1)",
+                            paddingTop: 16,
+                          }}
+                        >
                           {faq.a}
                         </div>
                       )}

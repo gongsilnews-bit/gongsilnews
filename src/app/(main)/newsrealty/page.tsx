@@ -436,20 +436,64 @@ export default function NewsRealtyPage() {
               </h2>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {brokerFaqs.map((faq, i) => {
                 const isOpen = openFaq === i;
                 return (
-                  <div key={i} style={{ background: "#ffffff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+                  <div
+                    key={i}
+                    style={{
+                      backgroundColor: isOpen ? "#eff6ff" : "#ffffff",
+                      border: isOpen ? "1.5px solid #2563eb" : "1px solid #e2e8f0",
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
                     <button
                       onClick={() => setOpenFaq(isOpen ? null : i)}
-                      style={{ width: "100%", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", textAlign: "left", cursor: "pointer" }}
+                      style={{
+                        width: "100%",
+                        padding: "20px 24px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        backgroundColor: "transparent",
+                        border: "none",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        gap: 16,
+                      }}
                     >
-                      <span style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>Q. {faq.q}</span>
-                      <span style={{ fontSize: 13, color: "#2563eb", fontWeight: 800 }}>{isOpen ? "▲" : "▼"}</span>
+                      <span style={{ fontSize: 16, fontWeight: 800, color: isOpen ? "#1e40af" : "#0f172a", lineHeight: 1.4 }}>
+                        Q. {faq.q}
+                      </span>
+                      <span
+                        style={{
+                          transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                          transition: "transform 0.2s ease",
+                          color: isOpen ? "#2563eb" : "#94a3b8",
+                          fontSize: 14,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        ▼
+                      </span>
                     </button>
                     {isOpen && (
-                      <div style={{ padding: "0 20px 18px", fontSize: 14, color: "#475569", lineHeight: 1.7, borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
+                      <div
+                        style={{
+                          padding: "0 24px 22px 24px",
+                          fontSize: 14.5,
+                          color: "#475569",
+                          lineHeight: 1.7,
+                          borderTop: "1px solid rgba(37, 99, 235, 0.12)",
+                          paddingTop: 16,
+                        }}
+                      >
                         {faq.a}
                       </div>
                     )}

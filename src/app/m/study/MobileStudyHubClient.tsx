@@ -178,20 +178,44 @@ export default function MobileStudyHubClient({ lectures }: any) {
             <div style={{ fontSize: 15, fontWeight: 800, color: "#062828", marginBottom: 12 }}>
               자주 묻는 질문 FAQ
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {FAQS.map((faq, i) => {
                 const isOpen = openFaqIndex === i;
                 return (
-                  <div key={i} style={{ background: "#ffffff", borderRadius: 8, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+                  <div
+                    key={i}
+                    style={{
+                      backgroundColor: isOpen ? "#f4fbf7" : "#ffffff",
+                      border: isOpen ? "1.5px solid #059669" : "1px solid #e2e8f0",
+                      borderRadius: 10,
+                      overflow: "hidden",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
                     <button
                       onClick={() => setOpenFaqIndex(isOpen ? null : i)}
-                      style={{ width: "100%", padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", textAlign: "left", cursor: "pointer" }}
+                      style={{
+                        width: "100%",
+                        padding: "14px 16px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        backgroundColor: "transparent",
+                        border: "none",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        gap: 10,
+                      }}
                     >
-                      <span style={{ fontSize: 13.5, fontWeight: 700, color: "#062828" }}>Q. {faq.q}</span>
-                      <span style={{ fontSize: 12, color: "#64748b" }}>{isOpen ? "▲" : "▼"}</span>
+                      <span style={{ fontSize: 13.5, fontWeight: 700, color: isOpen ? "#064e3b" : "#1e293b", lineHeight: 1.4 }}>
+                        Q. {faq.q}
+                      </span>
+                      <span style={{ color: isOpen ? "#059669" : "#94a3b8", fontSize: 12, flexShrink: 0 }}>
+                        {isOpen ? "▲" : "▼"}
+                      </span>
                     </button>
                     {isOpen && (
-                      <div style={{ padding: "0 14px 12px", fontSize: 12.5, color: "#475569", lineHeight: 1.55, borderTop: "1px solid #f1f5f9", paddingTop: 8 }}>
+                      <div style={{ padding: "0 16px 14px", fontSize: 12.5, color: "#475569", lineHeight: 1.6, borderTop: "1px solid rgba(5, 150, 105, 0.1)", paddingTop: 10 }}>
                         {faq.a}
                       </div>
                     )}
