@@ -217,6 +217,7 @@ export default function HomepagePage() {
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [userLevel, setUserLevel] = useState<number>(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isDetailFilterOpen, setIsDetailFilterOpen] = useState(false);
   const [geoData, setGeoData] = useState<any>(null);
   const [customBlocks, setCustomBlocks] = useState<any[]>([]);
   const [sigunguList, setSigunguList] = useState<string[]>([]);
@@ -747,44 +748,52 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   });
 
   return (
-    <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
-      <div style={{ maxWidth: 1200, margin: "20px auto 0", padding: "0", display: "flex", gap: 24, alignItems: "flex-start" }}>
+    <div style={{ background: "#f8fafc", minHeight: "100vh", padding: "24px 0 60px 0" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px", display: "flex", gap: 24, alignItems: "flex-start" }}>
         
         {/* ── Left Sidebar (LNB) ── */}
-        <div style={{ width: 220, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ width: 230, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
           {/* User Info Block */}
-          <div style={{ background: "#fff", border: "1px solid #e5e7eb", padding: 16, borderRadius: 8, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-            <div style={{ fontSize: 13, color: "#777", marginBottom: 8 }}>회원정보</div>
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", padding: "18px 20px", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>회원 등급</div>
             {userLevel >= 2 ? (
               <>
-                <div style={{ fontWeight: "bold", color: "#111", fontSize: 15 }}>부동산 중개회원</div>
-                <div style={{ fontSize: 12, color: "#2563eb", marginTop: 4 }}>모든 매물 열람 가능</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 800, color: "#0f172a", fontSize: 16 }}>
+                  <span>🏢</span> 부동산 중개회원
+                </div>
+                <div style={{ display: "inline-block", background: "#eff6ff", color: "#2563eb", fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginTop: 6 }}>
+                  ✓ 모든 매물 실시간 열람 가능
+                </div>
               </>
             ) : (
               <>
-                <div style={{ fontWeight: "bold", color: "#111", fontSize: 15 }}>일반회원</div>
-                <div style={{ fontSize: 12, color: "#fa5252", marginTop: 4 }}>일부 매물 열람 제한됨</div>
-                <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
-                  <button onClick={() => setIsAuthModalOpen(true)} style={{ flex: 1, background: BRAND, color: "#fff", border: "none", padding: "6px 0", fontSize: 12, borderRadius: 4, cursor: "pointer", fontWeight: "bold" }}>중개사회원 인증</button>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 800, color: "#0f172a", fontSize: 16 }}>
+                  <span>👤</span> 일반회원
                 </div>
+                <div style={{ display: "inline-block", background: "#fef2f2", color: "#ef4444", fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginTop: 6 }}>
+                  🔒 일부 매물 열람 제한
+                </div>
+                <button onClick={() => setIsAuthModalOpen(true)} style={{ width: "100%", marginTop: 12, background: BRAND, color: "#fff", border: "none", padding: "8px 0", fontSize: 12.5, borderRadius: 6, cursor: "pointer", fontWeight: 700, transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = "0.9"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                  중개사회원 인증하기
+                </button>
               </>
             )}
           </div>
 
-          {/* Quick Filters (1차 / 2차 카테고리 아코디언 체계) */}
-          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-            <div style={{ padding: "12px 16px", background: "#f8fafc", borderBottom: "1px solid #e5e7eb", fontWeight: "bold", fontSize: 14, color: "#111", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>매물종류</span>
-              <span style={{ fontSize: 11, color: "#64748b", fontWeight: 500 }}>1차 · 2차 분류</span>
+          {/* Categories Accordion */}
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+            <div style={{ padding: "14px 18px", background: "#fff", borderBottom: "1px solid #f1f5f9", fontWeight: 800, fontSize: 14.5, color: "#0f172a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>매물 카테고리</span>
+              <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>대분류 · 중분류</span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", fontSize: 13, color: "#333" }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               {HOMEPAGE_CATEGORIES.map((cat, i) => {
                 const isMainActive = mainCategory === cat.id;
                 const isExpanded = expandedMenu === cat.id;
                 const hasSubs = cat.subCategories.length > 0;
 
                 return (
-                  <div key={cat.id} style={{ borderBottom: i === HOMEPAGE_CATEGORIES.length - 1 ? "none" : "1px solid #f1f5f9" }}>
+                  <div key={cat.id} style={{ borderBottom: i === HOMEPAGE_CATEGORIES.length - 1 ? "none" : "1px solid #f8fafc" }}>
                     {/* 1차 대분류 헤더 */}
                     <div
                       onClick={() => {
@@ -803,10 +812,10 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        padding: "11px 14px",
+                        padding: "12px 18px",
                         cursor: "pointer",
-                        background: isMainActive && !subCategory ? "#eef4ff" : isMainActive ? "#f8fafc" : "#fff",
-                        borderLeft: isMainActive ? `4px solid ${BRAND}` : "4px solid transparent",
+                        background: isMainActive && !subCategory ? "#eff6ff" : isMainActive ? "#f8fafc" : "#fff",
+                        borderLeft: isMainActive ? `3px solid ${BRAND}` : "3px solid transparent",
                         transition: "all 0.15s",
                       }}
                       onMouseEnter={e => {
@@ -816,21 +825,20 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                         if (!(isMainActive && !subCategory)) e.currentTarget.style.background = isMainActive ? "#f8fafc" : "#fff";
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: isMainActive ? 800 : 600, color: isMainActive ? BRAND : "#1e293b" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: isMainActive ? 800 : 600, color: isMainActive ? BRAND : "#334155" }}>
                         <span>{cat.icon}</span>
                         <span>{cat.label}</span>
                       </div>
                       {hasSubs && (
-                        <span style={{ fontSize: 11, color: isMainActive ? BRAND : "#94a3b8", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                        <span style={{ fontSize: 10, color: isMainActive ? BRAND : "#94a3b8", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
                           ▼
                         </span>
                       )}
                     </div>
 
-                    {/* 2차 세부분류 아코디언 본문 */}
+                    {/* 2차 세부분류 본문 */}
                     {hasSubs && isExpanded && (
                       <div style={{ background: "#f8fafc", padding: "4px 0", borderTop: "1px solid #f1f5f9" }}>
-                        {/* 전체보기 서브로우 */}
                         <div
                           onClick={() => {
                             setMainCategory(cat.id);
@@ -841,9 +849,9 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            padding: "6px 14px 6px 30px",
+                            padding: "7px 18px 7px 34px",
                             cursor: "pointer",
-                            fontSize: 12,
+                            fontSize: 12.5,
                             fontWeight: isMainActive && !subCategory ? 700 : 500,
                             color: isMainActive && !subCategory ? BRAND : "#64748b",
                             background: isMainActive && !subCategory ? "#e2edff" : "transparent",
@@ -852,7 +860,6 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                           <span>• {cat.label} 전체</span>
                         </div>
 
-                        {/* 개별 2차 세부분류 목록 */}
                         {cat.subCategories.map(sub => {
                           const isSubActive = isMainActive && subCategory === sub.name;
                           return (
@@ -867,11 +874,11 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                                 display: "flex",
                                 justifyContent: "space-between",
                                 alignItems: "center",
-                                padding: "6px 12px 6px 30px",
+                                padding: "7px 16px 7px 34px",
                                 cursor: "pointer",
-                                fontSize: 12,
+                                fontSize: 12.5,
                                 fontWeight: isSubActive ? 700 : 500,
-                                color: isSubActive ? BRAND : "#334155",
+                                color: isSubActive ? BRAND : "#475569",
                                 background: isSubActive ? "#e2edff" : "transparent",
                                 transition: "background 0.1s",
                               }}
@@ -882,8 +889,8 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                                 if (!isSubActive) e.currentTarget.style.background = "transparent";
                               }}
                             >
-                              <span style={{ letterSpacing: -0.3 }}>{sub.name}</span>
-                              <div style={{ display: "flex", gap: 2 }}>
+                              <span>{sub.name}</span>
+                              <div style={{ display: "flex", gap: 3 }}>
                                 {sub.types.includes("매") && (
                                   <span
                                     onClick={e => {
@@ -893,8 +900,8 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                                       setTradeTypes(["매매"]);
                                       setCurrentPage(1);
                                     }}
-                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: "bold", background: tradeTypes.includes("매매") && isSubActive ? "#b91c1c" : "#ea4335", color: "#fff", borderRadius: 2, cursor: "pointer" }}
-                                    title="매매 바로보기"
+                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: 700, background: tradeTypes.includes("매매") && isSubActive ? "#ef4444" : "#fee2e2", color: tradeTypes.includes("매매") && isSubActive ? "#fff" : "#ef4444", borderRadius: 3, cursor: "pointer" }}
+                                    title="매매"
                                   >
                                     매
                                   </span>
@@ -908,8 +915,8 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                                       setTradeTypes(["전세"]);
                                       setCurrentPage(1);
                                     }}
-                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: "bold", background: tradeTypes.includes("전세") && isSubActive ? "#c2410c" : "#f97316", color: "#fff", borderRadius: 2, cursor: "pointer" }}
-                                    title="전세 바로보기"
+                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: 700, background: tradeTypes.includes("전세") && isSubActive ? "#f97316" : "#ffedd5", color: tradeTypes.includes("전세") && isSubActive ? "#fff" : "#f97316", borderRadius: 3, cursor: "pointer" }}
+                                    title="전세"
                                   >
                                     전
                                   </span>
@@ -923,8 +930,8 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                                       setTradeTypes(["월세"]);
                                       setCurrentPage(1);
                                     }}
-                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: "bold", background: tradeTypes.includes("월세") && isSubActive ? "#b45309" : "#f59e0b", color: "#fff", borderRadius: 2, cursor: "pointer" }}
-                                    title="월세 바로보기"
+                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: 700, background: tradeTypes.includes("월세") && isSubActive ? "#f59e0b" : "#fef3c7", color: tradeTypes.includes("월세") && isSubActive ? "#fff" : "#f59e0b", borderRadius: 3, cursor: "pointer" }}
+                                    title="월세"
                                   >
                                     월
                                   </span>
@@ -938,8 +945,8 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                                       setTradeTypes(["단기임대"]);
                                       setCurrentPage(1);
                                     }}
-                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: "bold", background: tradeTypes.includes("단기임대") && isSubActive ? "#7e22ce" : "#a855f7", color: "#fff", borderRadius: 2, cursor: "pointer" }}
-                                    title="단기임대 바로보기"
+                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: 700, background: tradeTypes.includes("단기임대") && isSubActive ? "#a855f7" : "#f3e8ff", color: tradeTypes.includes("단기임대") && isSubActive ? "#fff" : "#a855f7", borderRadius: 3, cursor: "pointer" }}
+                                    title="단기임대"
                                   >
                                     단
                                   </span>
@@ -958,289 +965,656 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
         </div>
 
         {/* ── Right Main Area ── */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
           
-          {/* ── Top Search Filter Panel ── */}
-          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <div style={{ display: "flex", alignItems: "center", marginBottom: 20, justifyContent: "space-between" }}>
-              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <span style={{ fontSize: 20, fontWeight: 800, color: "#111" }}>매물 상세검색</span>
-                <span style={{ fontSize: 13, color: "#777" }}>다양한 조건으로 원하시는 매물을 빠르게 찾아보세요.</span>
-              </div>
-              <div
+          {/* ── Top Header & Tab Switch ── */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 900, color: "#0f172a", margin: 0, letterSpacing: -0.5 }}>
+                공실 매물 검색
+              </h1>
+              <span style={{ fontSize: 13, color: "#64748b" }}>
+                다양한 맞춤 조건으로 실시간 공실을 빠르게 찾아보세요.
+              </span>
+            </div>
+
+            {/* Segmented View Switch */}
+            <div style={{ display: "flex", background: "#e2e8f0", padding: 3, borderRadius: 8 }}>
+              <button
                 style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: 10,
-                  background: "rgba(255,255,255,0.95)",
-                  padding: "8px 14px",
+                  border: "none",
+                  background: "#fff",
+                  color: BRAND,
+                  fontSize: 13,
+                  fontWeight: 800,
+                  padding: "6px 16px",
                   borderRadius: 6,
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
-                  border: "1px solid #e5e7eb",
+                  cursor: "default",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
                 }}
               >
-                <h2 style={{ fontSize: 16, fontWeight: 800, color: "#2845B3", margin: 0 }}>리스트검색</h2>
-                <span style={{ color: "#d1d5db", fontSize: 14 }}>|</span>
-                <span
-                  onClick={() => window.location.href = '/gongsil'}
-                  style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", cursor: "pointer" }}
-                >
-                  지도검색
-                </span>
-              </div>
-            </div>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                <select
-                  style={{ border: "1px solid #cbd5e1", padding: "10px 14px", borderRadius: 4, width: 170, fontSize: 14, outline: "none", color: "#333", background: "#fff" }}
-                  value={mainCategory === "all" ? "" : (subCategory ? `${mainCategory}:${subCategory}` : `${mainCategory}:all`)}
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (!val) {
-                      setMainCategory("all");
-                      setSubCategory("");
-                      setExpandedMenu(null);
-                    } else {
-                      const [m, s] = val.split(":");
-                      setMainCategory(m);
-                      setSubCategory(s === "all" ? "" : s);
-                      setExpandedMenu(m);
-                    }
-                    setCurrentPage(1);
-                  }}
-                >
-                  <option value="">물건 전체</option>
-                  {HOMEPAGE_CATEGORIES.filter(c => c.id !== "all").map(c => (
-                    <optgroup key={c.id} label={`${c.icon} ${c.label}`}>
-                      <option value={`${c.id}:all`}>{c.label} (전체)</option>
-                      {c.subCategories.map(s => (
-                        <option key={s.name} value={`${c.id}:${s.name}`}>└ {s.name}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-                <div style={{ width: 1, height: 20, background: "#e2e8f0", margin: "0 4px" }} />
-                <select style={{ border: "1px solid #cbd5e1", padding: "10px 14px", borderRadius: 4, width: 140, fontSize: 14, outline: "none", color: "#333" }} value={sido} onChange={e => setSido(e.target.value)}>
-                  {SIDO_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <select style={{ border: "1px solid #cbd5e1", padding: "10px 14px", borderRadius: 4, width: 140, fontSize: 14, outline: "none", color: "#333" }} value={sigungu} onChange={e => { setSigungu(e.target.value); setSelectedDongs([]); setCurrentPage(1); }}>
-                  <option value="">시/구/군 전체</option>
-                  {sigunguList.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <div style={{ width: 1, height: 20, background: "#e2e8f0", margin: "0 4px" }} />
-                <input type="text" placeholder="번지수 또는 건물명 입력 (예: 논현동 123)" value={keyword} onChange={e => setKeyword(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') setCurrentPage(1); }} style={{ flex: 1, minWidth: 200, border: "1px solid #cbd5e1", padding: "10px 14px", borderRadius: 4, fontSize: 14, outline: "none" }} />
-                <button onClick={() => setCurrentPage(1)} style={{ background: BRAND, color: "#fff", border: "none", padding: "10px 32px", borderRadius: 4, fontWeight: "bold", fontSize: 14, cursor: "pointer" }}>조건검색</button>
-              </div>
-
-              {/* ── Dong Selector Expanded Panel ── */}
-              {sigungu && dongsInSigungu.length > 0 && (
-                <div style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "16px", background: "#f8fafc", marginTop: -4 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: "10px" }}>
-                    {dongsInSigungu.map(dong => {
-                      const isSelected = selectedDongs.includes(dong);
-                      return (
-                        <div 
-                          key={dong} 
-                          onClick={() => {
-                            setSelectedDongs(prev => prev.includes(dong) ? prev.filter(d => d !== dong) : [...prev, dong]);
-                            setCurrentPage(1);
-                          }}
-                          style={{ 
-                            padding: "6px 12px", 
-                            fontSize: 13, 
-                            cursor: "pointer", 
-                            borderRadius: 4,
-                            background: isSelected ? "#e0e7ff" : "#fff",
-                            color: isSelected ? "#4338ca" : "#475569",
-                            border: isSelected ? "1px solid #818cf8" : "1px solid #e2e8f0",
-                            fontWeight: isSelected ? "bold" : "normal",
-                            textAlign: "center",
-                            transition: "all 0.1s"
-                          }}
-                        >
-                          {dong}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 12 }}>※ 여러 동을 중복해서 선택할 수 있습니다. 선택된 동의 매물만 표시됩니다.</div>
-                </div>
-              )}
-
-              {mainCategory === "auction" ? (
-                <div style={{ display: "flex", gap: 16, alignItems: "center", fontSize: 15.5, padding: "0 4px", flexWrap: "wrap" }}>
-                  <span style={{ fontWeight: 700, color: "#111" }}>경매/공매 필터</span>
-                  <div style={{ flex: 1 }} />
-                  <button onClick={() => { setMainCategory("all"); setSubCategory(""); setExpandedMenu(null); setTradeTypes([]); setAuctionAppraisalMin(""); setAuctionAppraisalMax(""); setAuctionBidPriceMin(""); setAuctionBidPriceMax(""); setAuctionDiscount(""); setAuctionBidCount(""); setMinArea(""); setMaxArea(""); setMinSupplyArea(""); setMaxSupplyArea(""); setKeyword(""); setSelectedDongs([]); setCurrentPage(1); }} style={{ background: "#fff", border: "1px solid #cbd5e1", color: "#555", padding: "6px 14px", borderRadius: 4, fontSize: 13, cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap" }}>옵션 초기화</button>
-                </div>
-              ) : (
-                <div style={{ display: "flex", gap: 20, alignItems: "center", fontSize: 15.5, padding: "0 4px" }}>
-                  <span style={{ fontWeight: 700, color: "#111", width: 60 }}>거래방식</span>
-                  {TRADE_OPTIONS.map(opt => (
-                    <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#111" }}>
-                      <input type="checkbox" checked={opt.value === "" ? (["매매","전세","월세","단기임대"].every(v => tradeTypes.includes(v))) : tradeTypes.includes(opt.value)} onChange={() => { if (opt.value === "") { const all = ["매매","전세","월세","단기임대"]; setTradeTypes(prev => all.every(v => prev.includes(v)) ? [] : all); } else { setTradeTypes(prev => prev.includes(opt.value) ? prev.filter(t => t !== opt.value) : [...prev, opt.value]); } setCurrentPage(1); }} style={{ zoom: 1.1 }} />
-                      {opt.label || "전체"}
-                    </label>
-                  ))}
-                  <div style={{ width: 1, height: 20, background: "#cbd5e1", margin: "0 4px" }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontWeight: 700, color: "#111" }}>등록자구분</span>
-                    <select value={registrantFilter} onChange={e => { setRegistrantFilter(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4, width: 90, outline: "none" }}><option value="">모두</option><option value="부동산">부동산</option><option value="일반인">일반인</option></select>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontWeight: 700, color: "#111" }}>법정수수료</span>
-                    <select value={commissionFilter} onChange={e => { setCommissionFilter(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4, width: 100, outline: "none" }}><option value="">모두</option><option value="공동중개">공동중개</option><option value="25">중개보수25%↑</option><option value="50">중개보수50%↑</option><option value="법정">법정수수료</option></select>
-                  </div>
-                  <div style={{ flex: 1 }} />
-                  <button onClick={() => { setMainCategory("all"); setSubCategory(""); setExpandedMenu(null); setTradeTypes([]); setMaxSalePrice(""); setMinSalePrice(""); setMaxDeposit(""); setMinDeposit(""); setMaxMonthlyRent(""); setMinMonthlyRent(""); setSelectedDongs([]); setRoomsFilter(""); setBathroomsFilter(""); setDirectionFilter(""); setFloorFilter(""); setMinArea(""); setMaxArea(""); setMinSupplyArea(""); setMaxSupplyArea(""); setKeyword(""); setThemeFilter(""); setRegistrantFilter(""); setCommissionFilter(""); setAuctionAppraisalMin(""); setAuctionAppraisalMax(""); setAuctionBidPriceMin(""); setAuctionBidPriceMax(""); setAuctionDiscount(""); setAuctionBidCount(""); setCurrentPage(1); }} style={{ background: "#fff", border: "1px solid #cbd5e1", color: "#555", padding: "6px 14px", borderRadius: 4, fontSize: 13, cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap" }}>옵션 초기화</button>
-                </div>
-              )}
-              {mainCategory === "auction" ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, fontSize: 15.5, background: "#f8fafc", padding: "16px 20px", borderRadius: 6, border: "1px solid #f1f5f9" }}>
-                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ fontWeight: 700, color: "#111", width: 60 }}>감정가</span><input type="text" style={{ width: 80, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최소" value={auctionAppraisalMin} onChange={e => setAuctionAppraisalMin(e.target.value)} /><span>~</span><input type="text" style={{ width: 80, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최대" value={auctionAppraisalMax} onChange={e => setAuctionAppraisalMax(e.target.value)} /><span style={{ fontSize: 12, color: "#111" }}>만원</span></div>
-                    <div style={{ width: 1, height: 20, background: "#cbd5e1" }} />
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ fontWeight: 700, color: "#111", width: 75 }}>최저입찰가</span><input type="text" style={{ width: 80, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최소" value={auctionBidPriceMin} onChange={e => setAuctionBidPriceMin(e.target.value)} /><span>~</span><input type="text" style={{ width: 80, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최대" value={auctionBidPriceMax} onChange={e => setAuctionBidPriceMax(e.target.value)} /><span style={{ fontSize: 12, color: "#111" }}>만원</span></div>
-                  </div>
-                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontWeight: 700, color: "#111" }}>할인율</span>{["", "10", "20", "30", "50"].map(d => (<button key={d} onClick={() => { setAuctionDiscount(d); setCurrentPage(1); }} style={{ padding: "4px 14px", fontSize: 13, borderRadius: 20, cursor: "pointer", fontWeight: 600, border: auctionDiscount === d ? `1px solid ${BRAND}` : "1px solid #d1d5db", background: auctionDiscount === d ? BRAND : "#fff", color: auctionDiscount === d ? "#fff" : "#555" }}>{d === "" ? "전체" : `▼${d}%↑`}</button>))}</div>
-                    <div style={{ width: 1, height: 20, background: "#cbd5e1" }} />
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ fontWeight: 700, color: "#111" }}>유찰횟수</span><select value={auctionBidCount} onChange={e => { setAuctionBidCount(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4, width: 80, outline: "none" }}><option value="">전체</option><option value="1">1회↑</option><option value="2">2회↑</option><option value="3">3회↑</option><option value="5">5회↑</option></select></div>
-                    <div style={{ width: 1, height: 20, background: "#cbd5e1" }} />
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ fontWeight: 700, color: "#111" }}>면적</span><input type="text" style={{ width: 55, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최소" value={minArea} onChange={e => setMinArea(e.target.value)} /><span>~</span><input type="text" style={{ width: 55, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최대" value={maxArea} onChange={e => setMaxArea(e.target.value)} /><span style={{ fontSize: 12, color: "#111" }}>㎡</span></div>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, fontSize: 15.5, background: "#f8fafc", padding: "16px 20px", borderRadius: 6, border: "1px solid #f1f5f9" }}>                {/* 1행: 가격 범위 필터 */}                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>                  {(tradeTypes.length === 0 || tradeTypes.includes("매매")) && (                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>                      <span style={{ fontWeight: 700, color: "#111", width: 50 }}>매매가</span>                      <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최소" value={minSalePrice} onChange={e => setMinSalePrice(e.target.value)} />                      <span>~</span>                      <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최대" value={maxSalePrice} onChange={e => setMaxSalePrice(e.target.value)} />                      <span style={{ fontSize: 12, color: "#111" }}>만원</span>                    </div>                  )}                  {(tradeTypes.length === 0 || tradeTypes.some(t => ["전세", "월세", "단기임대"].includes(t))) && (                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>                      <span style={{ fontWeight: 700, color: "#111", width: 50 }}>{tradeTypes.includes("전세") && !tradeTypes.some(t => ["월세", "단기임대"].includes(t)) ? "전세금" : "보증금"}</span>                      <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최소" value={minDeposit} onChange={e => setMinDeposit(e.target.value)} />                      <span>~</span>                      <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최대" value={maxDeposit} onChange={e => setMaxDeposit(e.target.value)} />                      <span style={{ fontSize: 12, color: "#111" }}>만원</span>                    </div>                  )}                  {(tradeTypes.length === 0 || tradeTypes.some(t => ["월세", "단기임대"].includes(t))) && (                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>                      <span style={{ fontWeight: 700, color: "#111", width: 35 }}>월세</span>                      <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최소" value={minMonthlyRent} onChange={e => setMinMonthlyRent(e.target.value)} />                      <span>~</span>                      <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최대" value={maxMonthlyRent} onChange={e => setMaxMonthlyRent(e.target.value)} />                      <span style={{ fontSize: 12, color: "#111" }}>만원</span>                    </div>                  )}                </div>                {/* 2행: 면적 + 카테고리별 조건 */}                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>                    <span style={{ fontWeight: 700, color: "#111" }}>공급면적</span>                    <input type="text" style={{ width: 55, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최소" value={minSupplyArea} onChange={e => setMinSupplyArea(e.target.value)} />                    <span>~</span>                    <input type="text" style={{ width: 55, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최대" value={maxSupplyArea} onChange={e => setMaxSupplyArea(e.target.value)} />                    <span style={{ fontSize: 12, color: "#111" }}>평</span>                  </div>                  <div style={{ width: 1, height: 20, background: "#cbd5e1" }} />                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>                    <span style={{ fontWeight: 700, color: "#111" }}>전용면적</span>                    <input type="text" style={{ width: 55, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최소" value={minArea} onChange={e => setMinArea(e.target.value)} />                    <span>~</span>                    <input type="text" style={{ width: 55, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4 }} placeholder="최대" value={maxArea} onChange={e => setMaxArea(e.target.value)} />                    <span style={{ fontSize: 12, color: "#111" }}>평</span>                  </div>                  <div style={{ width: 1, height: 20, background: "#cbd5e1" }} />                  {/* 주거형: 방수, 욕실, 방향 */}                  {(mainCategory === "all" || ["apart", "villa", "one"].includes(mainCategory)) && (                    <>                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>                        <span style={{ fontWeight: 700, color: "#111" }}>방수</span>                        <select value={roomsFilter} onChange={e => { setRoomsFilter(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4, width: 80, outline: "none" }}>                          <option value="">전체</option><option value="1">1개</option><option value="2">2개</option><option value="3">3개</option><option value="4">4+</option>                        </select>                      </div>                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>                        <span style={{ fontWeight: 700, color: "#111" }}>욕실</span>                        <select value={bathroomsFilter} onChange={e => { setBathroomsFilter(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4, width: 80, outline: "none" }}>                          <option value="">전체</option><option value="1">1개</option><option value="2">2개</option><option value="3">3+</option>                        </select>                      </div>                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>                        <span style={{ fontWeight: 700, color: "#111" }}>방향</span>                        <select value={directionFilter} onChange={e => { setDirectionFilter(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4, width: 80, outline: "none" }}>                          <option value="">전체</option><option value="남향">남향</option><option value="동향">동향</option><option value="서향">서향</option><option value="북향">북향</option><option value="남동향">남동향</option><option value="남서향">남서향</option>                        </select>                      </div>                    </>                  )}                  {/* 상업용: 층수 */}                  {(mainCategory === "all" || ["biz", "sale"].includes(mainCategory)) && (                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>                      <span style={{ fontWeight: 700, color: "#111" }}>층수</span>                      <select value={floorFilter} onChange={e => { setFloorFilter(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 4, width: 90, outline: "none" }}>                        <option value="">전체</option><option value="지하">지하</option><option value="1층">1층</option><option value="2층이상">2층+</option>                      </select>                    </div>                  )}                </div>                {/* 3행: 테마 + 초기화 */}                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>                    <span style={{ fontWeight: 700, color: "#111" }}>테마</span>                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>                      {["신축급", "올수리", "풀옵션", "역세권", "한강뷰", "오피스텔"].map(t => (                        <button key={t} onClick={() => { setThemeFilter(prev => prev === t ? "" : t); setCurrentPage(1); }} style={{ padding: "4px 12px", fontSize: 12, borderRadius: 20, cursor: "pointer", fontWeight: 600, border: themeFilter === t ? `1px solid ${BRAND}` : "1px solid #d1d5db", background: themeFilter === t ? BRAND : "#fff", color: themeFilter === t ? "#fff" : "#555", transition: "all 0.15s" }}>#{t}</button>                      ))}                    </div>                  </div>                  
-                </div>
-                </div>
-              )}
-
+                📋 리스트검색
+              </button>
+              <button
+                onClick={() => window.location.href = '/gongsil'}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "#64748b",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: "6px 16px",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  transition: "color 0.15s",
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = "#0f172a"}
+                onMouseLeave={e => e.currentTarget.style.color = "#64748b"}
+              >
+                🗺️ 지도검색
+              </button>
             </div>
           </div>
 
-                  {/* ── Wide Card Listings ── */}
-            <div style={{ padding: "16px 20px", borderBottom: "2px solid #1e293b", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff" }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#111" }}>총 <span style={{ color: BRAND }}>{filtered.length.toLocaleString()}</span>건의 공실 매물</div>
-              <select style={{ border: "1px solid #cbd5e1", padding: "6px 12px", fontSize: 13, borderRadius: 4, outline: "none" }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          {/* ── Top Search Filter Box (Unified Minimal Box) ── */}
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
+            
+            {/* 1행: 일체형 스마트 검색바 */}
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <select
+                style={{ border: "1px solid #cbd5e1", padding: "0 14px", height: 44, borderRadius: 8, width: 155, fontSize: 13.5, outline: "none", color: "#334155", background: "#fff" }}
+                value={mainCategory === "all" ? "" : (subCategory ? `${mainCategory}:${subCategory}` : `${mainCategory}:all`)}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (!val) {
+                    setMainCategory("all");
+                    setSubCategory("");
+                    setExpandedMenu(null);
+                  } else {
+                    const [m, s] = val.split(":");
+                    setMainCategory(m);
+                    setSubCategory(s === "all" ? "" : s);
+                    setExpandedMenu(m);
+                  }
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="">물건 전체</option>
+                {HOMEPAGE_CATEGORIES.filter(c => c.id !== "all").map(c => (
+                  <optgroup key={c.id} label={`${c.icon} ${c.label}`}>
+                    <option value={`${c.id}:all`}>{c.label} (전체)</option>
+                    {c.subCategories.map(s => (
+                      <option key={s.name} value={`${c.id}:${s.name}`}>└ {s.name}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+
+              <select
+                style={{ border: "1px solid #cbd5e1", padding: "0 14px", height: 44, borderRadius: 8, width: 130, fontSize: 13.5, outline: "none", color: "#334155", background: "#fff" }}
+                value={sido}
+                onChange={e => setSido(e.target.value)}
+              >
+                {SIDO_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+
+              <select
+                style={{ border: "1px solid #cbd5e1", padding: "0 14px", height: 44, borderRadius: 8, width: 140, fontSize: 13.5, outline: "none", color: "#334155", background: "#fff" }}
+                value={sigungu}
+                onChange={e => { setSigungu(e.target.value); setSelectedDongs([]); setCurrentPage(1); }}
+              >
+                <option value="">시/구/군 전체</option>
+                {sigunguList.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+
+              <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
+                <input
+                  type="text"
+                  placeholder="번지수 또는 건물명 입력 (예: 논현동 123, 은마아파트)"
+                  value={keyword}
+                  onChange={e => setKeyword(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') setCurrentPage(1); }}
+                  style={{ width: "100%", height: 44, border: "1px solid #cbd5e1", padding: "0 14px", borderRadius: 8, fontSize: 13.5, outline: "none", transition: "border-color 0.2s", boxSizing: "border-box" }}
+                  onFocus={e => e.currentTarget.style.borderColor = BRAND}
+                  onBlur={e => e.currentTarget.style.borderColor = "#cbd5e1"}
+                />
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(1)}
+                style={{ background: BRAND, color: "#fff", border: "none", height: 44, padding: "0 24px", borderRadius: 8, fontWeight: 800, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "opacity 0.2s" }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              >
+                <span>🔍</span> 검색
+              </button>
+            </div>
+
+            {/* 2행: 빠른 필터 알약 바 (Quick Filter Bar) */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, paddingTop: 14, borderTop: "1px solid #f1f5f9", flexWrap: "wrap", gap: 10 }}>
+              
+              {/* 거래유형 Pills */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginRight: 4 }}>거래유형:</span>
+                {[
+                  { label: "전체", value: "" },
+                  { label: "매매", value: "매매" },
+                  { label: "전세", value: "전세" },
+                  { label: "월세", value: "월세" },
+                  { label: "단기임대", value: "단기임대" },
+                ].map(opt => {
+                  const isSelected = opt.value === "" 
+                    ? (tradeTypes.length === 0 || ["매매","전세","월세","단기임대"].every(v => tradeTypes.includes(v)))
+                    : tradeTypes.includes(opt.value);
+
+                  return (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => {
+                        if (opt.value === "") {
+                          setTradeTypes([]);
+                        } else {
+                          setTradeTypes(prev => prev.includes(opt.value) ? prev.filter(t => t !== opt.value) : [...prev, opt.value]);
+                        }
+                        setCurrentPage(1);
+                      }}
+                      style={{
+                        padding: "5px 12px",
+                        fontSize: 12.5,
+                        fontWeight: isSelected ? 700 : 500,
+                        borderRadius: 20,
+                        border: isSelected ? `1px solid ${BRAND}` : "1px solid #e2e8f0",
+                        background: isSelected ? BRAND : "#fff",
+                        color: isSelected ? "#fff" : "#64748b",
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 추가 옵션 & 토글 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <select
+                  value={registrantFilter}
+                  onChange={e => { setRegistrantFilter(e.target.value); setCurrentPage(1); }}
+                  style={{ border: "1px solid #e2e8f0", padding: "5px 10px", borderRadius: 6, fontSize: 12.5, outline: "none", color: "#475569", background: "#fff" }}
+                >
+                  <option value="">등록자: 모두</option>
+                  <option value="부동산">부동산만</option>
+                  <option value="일반인">일반인만</option>
+                </select>
+
+                <select
+                  value={commissionFilter}
+                  onChange={e => { setCommissionFilter(e.target.value); setCurrentPage(1); }}
+                  style={{ border: "1px solid #e2e8f0", padding: "5px 10px", borderRadius: 6, fontSize: 12.5, outline: "none", color: "#475569", background: "#fff" }}
+                >
+                  <option value="">중개보수: 모두</option>
+                  <option value="공동중개">공동중개</option>
+                  <option value="25">수수료 25%↑</option>
+                  <option value="50">수수료 50%↑</option>
+                  <option value="법정">법정수수료</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => setIsDetailFilterOpen(prev => !prev)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: "5px 12px",
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    borderRadius: 6,
+                    border: isDetailFilterOpen ? `1px solid ${BRAND}` : "1px solid #e2e8f0",
+                    background: isDetailFilterOpen ? "#eff6ff" : "#f8fafc",
+                    color: isDetailFilterOpen ? BRAND : "#475569",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>⚙️ 상세필터</span>
+                  <span style={{ fontSize: 10 }}>{isDetailFilterOpen ? "▲" : "▼"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMainCategory("all");
+                    setSubCategory("");
+                    setExpandedMenu(null);
+                    setTradeTypes([]);
+                    setMaxSalePrice("");
+                    setMinSalePrice("");
+                    setMaxDeposit("");
+                    setMinDeposit("");
+                    setMaxMonthlyRent("");
+                    setMinMonthlyRent("");
+                    setSelectedDongs([]);
+                    setRoomsFilter("");
+                    setBathroomsFilter("");
+                    setDirectionFilter("");
+                    setFloorFilter("");
+                    setMinArea("");
+                    setMaxArea("");
+                    setMinSupplyArea("");
+                    setMaxSupplyArea("");
+                    setKeyword("");
+                    setThemeFilter("");
+                    setRegistrantFilter("");
+                    setCommissionFilter("");
+                    setAuctionAppraisalMin("");
+                    setAuctionAppraisalMax("");
+                    setAuctionBidPriceMin("");
+                    setAuctionBidPriceMax("");
+                    setAuctionDiscount("");
+                    setAuctionBidCount("");
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #e2e8f0",
+                    color: "#64748b",
+                    padding: "5px 10px",
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  🔄 초기화
+                </button>
+              </div>
+            </div>
+
+            {/* 3행: 동 선택 패널 (구/군 선택 시) */}
+            {sigungu && dongsInSigungu.length > 0 && (
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "14px 16px", background: "#f8fafc", marginTop: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 10 }}>
+                  📍 {sigungu} 상세 동 선택 (복수 선택 가능)
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: 8 }}>
+                  {dongsInSigungu.map(dong => {
+                    const isSelected = selectedDongs.includes(dong);
+                    return (
+                      <div 
+                        key={dong} 
+                        onClick={() => {
+                          setSelectedDongs(prev => prev.includes(dong) ? prev.filter(d => d !== dong) : [...prev, dong]);
+                          setCurrentPage(1);
+                        }}
+                        style={{ 
+                          padding: "5px 8px", 
+                          fontSize: 12, 
+                          cursor: "pointer", 
+                          borderRadius: 6,
+                          background: isSelected ? BRAND : "#fff",
+                          color: isSelected ? "#fff" : "#475569",
+                          border: isSelected ? `1px solid ${BRAND}` : "1px solid #e2e8f0",
+                          fontWeight: isSelected ? 700 : 500,
+                          textAlign: "center",
+                          transition: "all 0.1s"
+                        }}
+                      >
+                        {dong}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 4행: 상세 필터 아코디언 (금액/면적/옵션) */}
+            {isDetailFilterOpen && (
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "16px 20px", marginTop: 14 }}>
+                {mainCategory === "auction" ? (
+                  /* 경매 / 공매 상세 필터 */
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#334155", width: 65 }}>감정가</span>
+                        <input type="text" style={{ width: 75, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최소" value={auctionAppraisalMin} onChange={e => setAuctionAppraisalMin(e.target.value)} />
+                        <span style={{ color: "#94a3b8" }}>~</span>
+                        <input type="text" style={{ width: 75, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최대" value={auctionAppraisalMax} onChange={e => setAuctionAppraisalMax(e.target.value)} />
+                        <span style={{ fontSize: 12, color: "#64748b" }}>만원</span>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#334155", width: 75 }}>최저입찰가</span>
+                        <input type="text" style={{ width: 75, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최소" value={auctionBidPriceMin} onChange={e => setAuctionBidPriceMin(e.target.value)} />
+                        <span style={{ color: "#94a3b8" }}>~</span>
+                        <input type="text" style={{ width: 75, border: "1px solid #cbd5e1", padding: "6px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최대" value={auctionBidPriceMax} onChange={e => setAuctionBidPriceMax(e.target.value)} />
+                        <span style={{ fontSize: 12, color: "#64748b" }}>만원</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>할인율</span>
+                        {["", "10", "20", "30", "50"].map(d => (
+                          <button key={d} onClick={() => { setAuctionDiscount(d); setCurrentPage(1); }} style={{ padding: "4px 10px", fontSize: 12, borderRadius: 16, cursor: "pointer", fontWeight: 600, border: auctionDiscount === d ? `1px solid ${BRAND}` : "1px solid #cbd5e1", background: auctionDiscount === d ? BRAND : "#fff", color: auctionDiscount === d ? "#fff" : "#475569" }}>
+                            {d === "" ? "전체" : `▼${d}%↑`}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>유찰횟수</span>
+                        <select value={auctionBidCount} onChange={e => { setAuctionBidCount(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 12.5, outline: "none", background: "#fff" }}>
+                          <option value="">전체</option><option value="1">1회↑</option><option value="2">2회↑</option><option value="3">3회↑</option><option value="5">5회↑</option>
+                        </select>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>면적</span>
+                        <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최소" value={minArea} onChange={e => setMinArea(e.target.value)} />
+                        <span style={{ color: "#94a3b8" }}>~</span>
+                        <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최대" value={maxArea} onChange={e => setMaxArea(e.target.value)} />
+                        <span style={{ fontSize: 12, color: "#64748b" }}>㎡</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* 일반 매물 상세 필터 */
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {/* 금액 범위 */}
+                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+                      {(tradeTypes.length === 0 || tradeTypes.includes("매매")) && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#334155", width: 45 }}>매매가</span>
+                          <input type="text" style={{ width: 70, border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최소" value={minSalePrice} onChange={e => setMinSalePrice(e.target.value)} />
+                          <span style={{ color: "#94a3b8" }}>~</span>
+                          <input type="text" style={{ width: 70, border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최대" value={maxSalePrice} onChange={e => setMaxSalePrice(e.target.value)} />
+                          <span style={{ fontSize: 12, color: "#64748b" }}>만원</span>
+                        </div>
+                      )}
+
+                      {(tradeTypes.length === 0 || tradeTypes.some(t => ["전세", "월세", "단기임대"].includes(t))) && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#334155", width: 45 }}>{tradeTypes.includes("전세") && !tradeTypes.some(t => ["월세", "단기임대"].includes(t)) ? "전세금" : "보증금"}</span>
+                          <input type="text" style={{ width: 70, border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최소" value={minDeposit} onChange={e => setMinDeposit(e.target.value)} />
+                          <span style={{ color: "#94a3b8" }}>~</span>
+                          <input type="text" style={{ width: 70, border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최대" value={maxDeposit} onChange={e => setMaxDeposit(e.target.value)} />
+                          <span style={{ fontSize: 12, color: "#64748b" }}>만원</span>
+                        </div>
+                      )}
+
+                      {(tradeTypes.length === 0 || tradeTypes.some(t => ["월세", "단기임대"].includes(t))) && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#334155", width: 35 }}>월세</span>
+                          <input type="text" style={{ width: 70, border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최소" value={minMonthlyRent} onChange={e => setMinMonthlyRent(e.target.value)} />
+                          <span style={{ color: "#94a3b8" }}>~</span>
+                          <input type="text" style={{ width: 70, border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최대" value={maxMonthlyRent} onChange={e => setMaxMonthlyRent(e.target.value)} />
+                          <span style={{ fontSize: 12, color: "#64748b" }}>만원</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 면적 & 세부 옵션 */}
+                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>전용면적</span>
+                        <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최소" value={minArea} onChange={e => setMinArea(e.target.value)} />
+                        <span style={{ color: "#94a3b8" }}>~</span>
+                        <input type="text" style={{ width: 60, border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 13, background: "#fff" }} placeholder="최대" value={maxArea} onChange={e => setMaxArea(e.target.value)} />
+                        <span style={{ fontSize: 12, color: "#64748b" }}>평</span>
+                      </div>
+
+                      {(mainCategory === "all" || ["apart", "villa", "one"].includes(mainCategory)) && (
+                        <>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>방수</span>
+                            <select value={roomsFilter} onChange={e => { setRoomsFilter(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 12.5, outline: "none", background: "#fff" }}>
+                              <option value="">전체</option><option value="1">1개</option><option value="2">2개</option><option value="3">3개</option><option value="4개+">4개+</option>
+                            </select>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>욕실</span>
+                            <select value={bathroomsFilter} onChange={e => { setBathroomsFilter(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 12.5, outline: "none", background: "#fff" }}>
+                              <option value="">전체</option><option value="1">1개</option><option value="2">2개</option><option value="3개+">3개+</option>
+                            </select>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>방향</span>
+                            <select value={directionFilter} onChange={e => { setDirectionFilter(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 12.5, outline: "none", background: "#fff" }}>
+                              <option value="">전체</option><option value="남향">남향</option><option value="동향">동향</option><option value="서향">서향</option><option value="북향">북향</option><option value="남동향">남동향</option><option value="남서향">남서향</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
+
+                      {(mainCategory === "all" || ["biz", "sale"].includes(mainCategory)) && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>층수</span>
+                          <select value={floorFilter} onChange={e => { setFloorFilter(e.target.value); setCurrentPage(1); }} style={{ border: "1px solid #cbd5e1", padding: "5px 8px", borderRadius: 6, fontSize: 12.5, outline: "none", background: "#fff" }}>
+                            <option value="">전체</option><option value="지하">지하</option><option value="1층">1층</option><option value="2층이상">2층+</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 테마 태그 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>추천 테마</span>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {["신축급", "올수리", "풀옵션", "역세권", "한강뷰", "오피스텔"].map(t => {
+                          const isSelected = themeFilter === t;
+                          return (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => { setThemeFilter(prev => prev === t ? "" : t); setCurrentPage(1); }}
+                              style={{
+                                padding: "4px 12px",
+                                fontSize: 12,
+                                borderRadius: 16,
+                                cursor: "pointer",
+                                fontWeight: isSelected ? 700 : 500,
+                                border: isSelected ? `1px solid ${BRAND}` : "1px solid #cbd5e1",
+                                background: isSelected ? BRAND : "#fff",
+                                color: isSelected ? "#fff" : "#475569",
+                                transition: "all 0.15s",
+                              }}
+                            >
+                              #{t}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── Results Header & Sorting Bar ── */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 6px", borderBottom: "1px solid #e2e8f0" }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
+              총 <span style={{ color: BRAND, fontWeight: 900 }}>{filtered.length.toLocaleString()}</span>개의 공실 매물
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12.5, color: "#64748b" }}>정렬:</span>
+              <select
+                style={{ border: "1px solid #e2e8f0", padding: "6px 12px", fontSize: 13, borderRadius: 6, outline: "none", color: "#334155", background: "#fff" }}
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value)}
+              >
                 <option value="latest">최신 등록순</option>
                 <option value="price_asc">가격 낮은순</option>
                 <option value="price_desc">가격 높은순</option>
               </select>
             </div>
+          </div>
 
-            {loading ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 0", color: "#888" }}>
-                <span style={{ display: "inline-block", width: 28, height: 28, border: "3px solid #ddd", borderTop: `3px solid ${BRAND}`, borderRadius: "50%", animation: "spin 1s linear infinite", marginRight: 12 }}></span>
-                공실광고 데이터를 불러오고 있습니다...
-              </div>
-            ) : paged.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "80px 0", color: "#aaa" }}>
-                <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>🏠</span>
-                검색 조건에 해당하는 공실광고가 없습니다.
-              </div>
-            ) : (
-              <div>
-                {paged.map((v, idx) => {
-                  const isMasked = v.exposure_type === '부동산노출' && (v.trade_type === '경매' || v.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
-                  const showCommission = userLevel >= 2;
-                  const addrText = v.building_name || `${v.sigungu || ""} ${v.dong || ""} 공실광고`;
-                  
-                  return (
-                    <div key={v.id} style={{ borderBottom: "1px solid #e5e7eb", background: "#fff" }}>
-                      <div onClick={() => { 
+          {/* ── Listings Section ── */}
+          {loading ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 0", color: "#64748b", background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+              <div style={{ width: 32, height: 32, border: "3px solid #e2e8f0", borderTop: `3px solid ${BRAND}`, borderRadius: "50%", animation: "spin 1s linear infinite", marginBottom: 12 }} />
+              <div style={{ fontSize: 14, fontWeight: 600 }}>공실 매물 데이터를 불러오고 있습니다...</div>
+            </div>
+          ) : paged.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "80px 20px", color: "#94a3b8", background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+              <span style={{ fontSize: 48, display: "block", marginBottom: 14 }}>🏠</span>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#475569", marginBottom: 6 }}>조건에 일치하는 매물이 없습니다.</div>
+              <div style={{ fontSize: 13, color: "#94a3b8" }}>검색 조건을 변경하거나 필터를 초기화해 보세요.</div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {paged.map((v) => {
+                const isMasked = v.exposure_type === '부동산노출' && (v.trade_type === '경매' || v.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
+                const showCommission = userLevel >= 2;
+                const addrText = v.building_name || `${v.sigungu || ""} ${v.dong || ""} 공실`;
+                const isExpanded = expandedIds.includes(v.id);
+
+                return (
+                  <div
+                    key={v.id}
+                    style={{
+                      background: "#fff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      transition: "all 0.2s ease-in-out",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = "#cbd5e1";
+                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.05)";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = "#e2e8f0";
+                      e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.02)";
+                    }}
+                  >
+                    {/* Main Row */}
+                    <div
+                      onClick={() => {
                         if (isMasked) {
                           window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
                           return;
                         }
-                        setExpandedIds(prev => prev.includes(v.id) ? prev.filter(x => x !== v.id) : [...prev, v.id]); 
-                      }} style={{ display: "flex", padding: "16px 0", alignItems: "center", cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                      
+                        setExpandedIds(prev => prev.includes(v.id) ? prev.filter(x => x !== v.id) : [...prev, v.id]);
+                      }}
+                      style={{
+                        display: "flex",
+                        padding: "18px 20px",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        gap: 18,
+                      }}
+                    >
                       {/* 1. Checkbox */}
-                      <div style={{ width: 40, display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0 }}>
-                        <input type="checkbox" onClick={e => e.stopPropagation()} style={{ zoom: 1.3, cursor: "pointer" }} />
+                      <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                        <input type="checkbox" style={{ width: 16, height: 16, cursor: "pointer", accentColor: BRAND }} />
                       </div>
 
-                      {/* 2. Photo */}
-                      <div style={{ width: 140, height: 105, overflow: "hidden", flexShrink: 0, background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: 4 }}>
+                      {/* 2. Photo Thumbnail */}
+                      <div style={{ width: 140, height: 105, overflow: "hidden", flexShrink: 0, background: "#f1f5f9", borderRadius: 8, position: "relative" }}>
                         {v.photos?.length > 0 ? (
                           <img src={v.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         ) : v.lat && v.lng && mapLoaded ? (
                           <ThumbnailRoadview lat={v.lat} lng={v.lng} />
                         ) : (
-                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#bbb", fontSize: 12 }}>No Photo</div>
+                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 11, fontWeight: 600 }}>
+                            사진 없음
+                          </div>
+                        )}
+                        {v.photos?.length > 1 && (
+                          <span style={{ position: "absolute", bottom: 6, right: 6, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 4 }}>
+                            +{v.photos.length}
+                          </span>
                         )}
                       </div>
-                      
+
                       {/* 3. Main Info */}
-                      <div style={{ flex: 1, minWidth: 0, paddingLeft: 20 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         {(v.trade_type === "경매" || v.trade_type === "공매") ? (() => {
                           const meta = typeof v.metadata === "string" ? JSON.parse(v.metadata) : (v.metadata || {});
                           const auctionBadge = getAuctionInfo(v).badge || `${v.property_type || "물건"} ${v.trade_type}`;
                           const bidDate = meta.pbctBegnDtm || meta.pblctBgnDtm || meta.bid_start_date || meta.bid_date || "미정";
                           const isNew = v.created_at && (Date.now() - new Date(v.created_at).getTime()) < 3 * 24 * 60 * 60 * 1000;
+
                           return (
                             <>
-                              <div style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "center" }}>
-                                <span style={{ display: "inline-block", background: "#fff", color: "#ef4444", border: "1px solid #ef4444", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
+                              <div style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center", flexWrap: "wrap" }}>
+                                <span style={{ background: "#fee2e2", color: "#dc2626", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>
                                   {auctionBadge}
                                 </span>
-                                {isNew && <span style={{ background: "#f59e0b", color: "#fff", fontSize: 11, fontWeight: "bold", padding: "2px 6px", borderRadius: 4 }}>New</span>}
+                                {isNew && (
+                                  <span style={{ background: "#fef3c7", color: "#d97706", fontSize: 11, fontWeight: 800, padding: "2px 6px", borderRadius: 4 }}>
+                                    NEW
+                                  </span>
+                                )}
                               </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                                <span style={{ fontSize: 17, fontWeight: 800, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {addrText}
-                                </span>
+                              <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {addrText}
                               </div>
-                              <div style={{ fontSize: 14, color: "#444", lineHeight: 1.5, fontWeight: 500 }}>
-                                {getAuctionInfo(v).category || v.property_type} {v.area_m2 ? `| 면적 ${v.area_m2}m²` : ""}
+                              <div style={{ fontSize: 13, color: "#475569", fontWeight: 500 }}>
+                                {getAuctionInfo(v).category || v.property_type} {v.area_m2 ? `· 면적 ${v.area_m2}m²` : ""}
                               </div>
-                              <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-                                입찰일: {bidDate.substring(0, 10)}
-                                {meta.bid_count > 0 && ` | 유찰 ${meta.bid_count}회`}
+                              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
+                                📅 입찰일: {bidDate.substring(0, 10)} {meta.bid_count > 0 && `(유찰 ${meta.bid_count}회)`}
                               </div>
                             </>
                           );
                         })() : (
                           <>
-                            <div style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "center" }}>
+                            <div style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center", flexWrap: "wrap" }}>
+                              {/* 거래구분 배지 */}
+                              <span style={{ background: "#eff6ff", color: BRAND, fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>
+                                {v.trade_type || "임대"}
+                              </span>
+
+                              {/* 등록자 구분 배지 */}
+                              <span style={{ background: "#f1f5f9", color: "#475569", fontSize: 11, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>
+                                {v.owner_role === 'REALTOR' || v.members?.role === 'REALTOR' ? '🏢 부동산' : '👤 직거래'}
+                              </span>
+
+                              {/* 중개수수료 배지 */}
                               {showCommission && (v.realtor_commission || v.commission_type) && (
-                                <span style={{ display: "inline-block", background: "#fff", color: "#fa5252", border: "1px solid #fa5252", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>
-                                  {v.realtor_commission || v.commission_type}
+                                <span style={{ background: "#fef2f2", color: "#ef4444", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>
+                                  💰 {v.realtor_commission || v.commission_type}
                                 </span>
                               )}
-                              <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "2px 6px", fontWeight: "bold", borderRadius: 4, background: "#fff" }}>
-                                {v.owner_role === 'REALTOR' || v.members?.role === 'REALTOR' ? '부동산' : '일반'}
-                              </span>
+
+                              {/* 열람제한 배지 */}
                               {isMasked && (
-                                <span onClick={(e) => { e.stopPropagation(); window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>
-                                  {v.trade_type === '경매' || v.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 중개업소 회원 전용'}
+                                <span onClick={(e) => { e.stopPropagation(); window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); }} style={{ fontSize: 11, color: "#2563eb", fontWeight: 700, background: "#dbeafe", padding: "2px 8px", borderRadius: 4, cursor: "pointer" }}>
+                                  🔒 중개회원 전용
                                 </span>
                               )}
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                              <span style={{ fontSize: 17, fontWeight: 800, color: isMasked ? "#bbb" : "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: isMasked ? 1 : 0 }}>
-                                {isMasked ? addrText.replace(/[^s]/g, "X") : addrText} {v.property_type && `(${v.property_type})`}
-                              </span>
-                              <span style={{ background: "#fbbf24", color: "#fff", fontSize: 10, fontWeight: "bold", padding: "1px 4px", borderRadius: 2 }}>N</span>
+
+                            {/* 매물명 / 주소 */}
+                            <div style={{ fontSize: 16, fontWeight: 800, color: isMasked ? "#94a3b8" : "#0f172a", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {isMasked ? addrText.replace(/[^s]/g, "●") : addrText} {v.property_type && <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>({v.property_type})</span>}
                             </div>
-                            <div style={{ fontSize: 14, color: "#444", lineHeight: 1.5, fontWeight: 500 }}>
-                              공급 {v.area_m2 ? Math.round(v.area_m2 * 1.2) : 0}m²({v.area_m2 ? Math.round(v.area_m2 * 1.2 / 3.3) : 0}P) / 
-                              전용 {v.area_m2 || 0}m²({v.area_m2 ? Math.round(v.area_m2 / 3.3) : 0}P) 
-                              <span style={{ color: "#1a365d", marginLeft: 4, fontWeight: 700 }}>{v.property_type}{v.sub_category ? `/${v.sub_category}` : ""}</span> 공실
+
+                            {/* 면적 & 상세 스펙 */}
+                            <div style={{ fontSize: 13, color: "#475569", fontWeight: 500 }}>
+                              전용 {v.area_m2 || 0}m² ({v.area_m2 ? Math.round(v.area_m2 / 3.3) : 0}평)
+                              {v.floor && ` · ${v.floor}/${v.total_floors || ""}층`}
+                              {v.rooms ? ` · 방${v.rooms}` : ""}
+                              {v.parking_spots ? ` · 주차 ${v.parking_spots}대` : ""}
                             </div>
-                            <div style={{ fontSize: 13, color: "#777", marginTop: 4 }}>
-                              {v.floor || "해당층"}/{v.total_floors || "전체층"}, 
-                              {v.parking_spots ? ` 주차${v.parking_spots}` : " 주차불가"}, 
-                              {v.completion_year ? ` ${v.completion_year}년` : " 연식미상"}
-                              {(v.realtor_commission || v.commission_type) && `, ${v.realtor_commission || v.commission_type}`}
+
+                            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
+                              {v.move_in_date ? `입주: ${v.move_in_date}` : "즉시입주 가능"}
+                              {v.completion_year ? ` · ${v.completion_year}년 준공` : ""}
                             </div>
                           </>
                         )}
                       </div>
 
-                      {/* 4. Price */}
+                      {/* 4. Price Column */}
                       {(v.trade_type === "경매" || v.trade_type === "공매") ? (() => {
                         const meta = typeof v.metadata === "string" ? JSON.parse(v.metadata) : (v.metadata || {});
                         const appraisalPrice = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || (v.deposit && v.deposit > 100000 ? v.deposit : (v.deposit || 0) * 10000);
@@ -1265,97 +1639,132 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                           }
                           return result || "0원";
                         };
+
                         return (
-                          <div style={{ width: 190, flexShrink: 0, borderLeft: "1px solid #f1f5f9", borderRight: "1px solid #f1f5f9", padding: "0 14px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
-                            <div style={{ fontSize: 13, color: "#555", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ width: 180, flexShrink: 0, borderLeft: "1px solid #f1f5f9", paddingLeft: 18, display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+                            <div style={{ fontSize: 12, color: "#64748b", display: "flex", justifyContent: "space-between" }}>
                               <span>감정가</span>
-                              <strong style={{ color: "#111", fontSize: 15 }}>{formatPrice(appraisalPrice)}</strong>
+                              <span style={{ fontWeight: 700, color: "#334155" }}>{formatPrice(appraisalPrice)}</span>
                             </div>
-                            <div style={{ fontSize: 13, color: "#ef4444", fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <span>최저입찰가</span>
-                              <strong style={{ fontSize: 16 }}>{formatPrice(lowestBidPrice)}</strong>
+                            <div style={{ fontSize: 13, color: "#ef4444", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
+                              <span>최저가</span>
+                              <span style={{ fontSize: 16 }}>{formatPrice(lowestBidPrice)}</span>
                             </div>
                             {cardDiscountRate > 0 && (
-                              <div style={{ fontSize: 13, color: "#059669", fontWeight: "bold", textAlign: "right" }}>
-                                ▼{cardDiscountRate}%
+                              <div style={{ fontSize: 12, color: "#059669", fontWeight: 800, textAlign: "right" }}>
+                                ▼ {cardDiscountRate}% 할인
                               </div>
                             )}
                           </div>
                         );
                       })() : (
-                        <div style={{ width: 160, flexShrink: 0, textAlign: "center", borderLeft: "1px solid #f1f5f9", borderRight: "1px solid #f1f5f9", padding: "0 10px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 6 }}>
-                            {getPriceLabel(v)} {getPriceText(v)}
+                        <div style={{ width: 170, flexShrink: 0, borderLeft: "1px solid #f1f5f9", paddingLeft: 18, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                          <div style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b", marginBottom: 2 }}>
+                            {getPriceLabel(v)}
                           </div>
-                          <div style={{ fontSize: 12, color: "#888" }}>
-                            관리비 {Math.floor((v.maintenance_fee || 0)/10000)}만
+                          <div style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", letterSpacing: -0.5 }}>
+                            {getPriceText(v)}
                           </div>
+                          {v.maintenance_fee ? (
+                            <div style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 4 }}>
+                              관리비 {Math.floor(v.maintenance_fee / 10000)}만원
+                            </div>
+                          ) : null}
                         </div>
                       )}
 
-                      {/* 5. Actions */}
-                      <div style={{ width: 140, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, paddingRight: 10 }}>
-                        <button onClick={e => e.stopPropagation()} style={{ width: 110, background: "#1a365d", color: "#fff", border: "none", padding: "8px 0", fontSize: 13, fontWeight: "bold", borderRadius: 4, cursor: "pointer", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }}>
-                          연락처보기
+                      {/* 5. Action Buttons */}
+                      <div style={{ width: 120, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }} onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => router.push(`/homepage/${v.id}`)}
+                          style={{
+                            width: "100%",
+                            background: BRAND,
+                            color: "#fff",
+                            border: "none",
+                            padding: "9px 0",
+                            fontSize: 13,
+                            fontWeight: 800,
+                            cursor: "pointer",
+                            borderRadius: 6,
+                            transition: "opacity 0.15s",
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+                          onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                        >
+                          상세보기
                         </button>
-                        <div style={{ display: "flex", width: 110 }}>
-                          <button onClick={(e) => { e.stopPropagation(); router.push(`/homepage/${v.id}`); }} style={{ width: "100%", background: "#fff", color: "#555", border: "1px solid #cbd5e1", padding: "6px 0", fontSize: 12, fontWeight: 600, cursor: "pointer", borderRadius: 4 }}>
-                            상세보기
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => setExpandedIds(prev => prev.includes(v.id) ? prev.filter(x => x !== v.id) : [...prev, v.id])}
+                          style={{
+                            width: "100%",
+                            background: isExpanded ? "#eff6ff" : "#fff",
+                            color: isExpanded ? BRAND : "#64748b",
+                            border: isExpanded ? `1px solid ${BRAND}` : "1px solid #cbd5e1",
+                            padding: "7px 0",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            borderRadius: 6,
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          {isExpanded ? "▲ 정보닫기" : "▼ 펼쳐보기"}
+                        </button>
                       </div>
-                      </div>
-
-                      {/* Expanded Details */}
-                      {expandedIds.includes(v.id) && (
-                        <div style={{ padding: "0 24px 24px 40px", background: "#fff", cursor: "default" }} onClick={e => e.stopPropagation()}>
-                          <div style={{ borderTop: "1px solid #e2e8f0", borderBottom: "1px solid #e2e8f0", borderLeft: "1px solid #e2e8f0", display: "grid", gridTemplateColumns: "130px 1fr 130px 1fr", fontSize: 14 }}>
-                            {[
-                              { l1: "공실광고번호", v1: String(v.id).split('-')[0].toUpperCase(), l2: "방/욕실수", v2: `${v.rooms || 0}개 / ${v.bathrooms || 0}개` },
-                              { l1: "소재지", v1: `${v.sido} ${v.sigungu} ${v.dong} ${v.detail_addr || ""}`.trim(), l2: "방향", v2: v.direction || "남향" },
-                              { l1: "공실광고특징", v1: v.building_name || "특징 없음", l2: "주차가능 여부", v2: v.parking_spots ? `${v.parking_spots}대` : "불가" },
-                              { l1: "공급/전용면적", v1: `${Math.round((v.area_m2 || 0) * 1.3)}m² / ${v.area_m2 || 0}m²`, l2: "입주가능일", v2: v.move_in_date || "1개월 이내" },
-                              { l1: "해당층/총층", v1: `${v.floor || "해당층"} / ${v.total_floors || "전체층"}`, l2: "관리비", v2: v.maintenance_fee ? `${Math.round(v.maintenance_fee/10000)}만원` : "10만원" },
-                              { l1: "등록자명", v1: (() => {
-                                const m = v.members;
-                                if (!m) return v.client_name || "-";
-                                if (m.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].agency_name || m.name || v.client_name || "-";
-                                return m.name || v.client_name || "-";
-                              })(), l2: "연락처", v2: (() => {
-                                const m = v.members;
-                                if (!m) return v.client_phone || "-";
-                                if (m.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].phone || m.phone || v.client_phone || "-";
-                                return m.phone || v.client_phone || "-";
-                              })() }
-                            ].map((row, i, arr) => (
-                              <div key={i} style={{ display: "contents" }}>
-                                <div style={{ background: "#f8f9fa", padding: "12px 16px", fontWeight: "bold", color: "#555", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.l1}</div>
-                                <div style={{ padding: "12px 16px", color: "#111", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.v1}</div>
-                                <div style={{ background: "#f8f9fa", padding: "12px 16px", fontWeight: "bold", color: "555", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f1f5f9", borderLeft: "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.l2}</div>
-                                <div style={{ padding: "12px 16px", color: "#111", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.v2}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-{/* Pagination */}
+
+                    {/* 6. Expanded Detail Panel */}
+                    {isExpanded && (
+                      <div style={{ padding: "0 20px 20px 20px", background: "#fff", cursor: "default" }} onClick={e => e.stopPropagation()}>
+                        <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", display: "grid", gridTemplateColumns: "120px 1fr 120px 1fr", fontSize: 13 }}>
+                          {[
+                            { l1: "공실관리번호", v1: String(v.id).split('-')[0].toUpperCase(), l2: "방 / 욕실수", v2: `${v.rooms || 0}개 / ${v.bathrooms || 0}개` },
+                            { l1: "소재지 주소", v1: `${v.sido} ${v.sigungu} ${v.dong} ${v.detail_addr || ""}`.trim(), l2: "주실 방향", v2: v.direction || "남향" },
+                            { l1: "건물/단지명", v1: v.building_name || "특징 없음", l2: "주차 대수", v2: v.parking_spots ? `주차 ${v.parking_spots}대 가능` : "주차 불가" },
+                            { l1: "공급/전용면적", v1: `${Math.round((v.area_m2 || 0) * 1.3)}m² / ${v.area_m2 || 0}m²`, l2: "입주가능일", v2: v.move_in_date || "즉시입주" },
+                            { l1: "해당층 / 총층", v1: `${v.floor || "해당층"} / ${v.total_floors || "전체층"}`, l2: "월 관리비", v2: v.maintenance_fee ? `${Math.round(v.maintenance_fee/10000)}만원` : "10만원" },
+                            { l1: "등록자 / 상호", v1: (() => {
+                              const m = v.members;
+                              if (!m) return v.client_name || "-";
+                              if (m.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].agency_name || m.name || v.client_name || "-";
+                              return m.name || v.client_name || "-";
+                            })(), l2: "담당 연락처", v2: (() => {
+                              const m = v.members;
+                              if (!m) return v.client_phone || "-";
+                              if (m.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].phone || m.phone || v.client_phone || "-";
+                              return m.phone || v.client_phone || "-";
+                            })() }
+                          ].map((row, i, arr) => (
+                            <div key={i} style={{ display: "contents" }}>
+                              <div style={{ background: "#f8fafc", padding: "10px 14px", fontWeight: 700, color: "#64748b", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.l1}</div>
+                              <div style={{ padding: "10px 14px", color: "#0f172a", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.v1}</div>
+                              <div style={{ background: "#f8fafc", padding: "10px 14px", fontWeight: 700, color: "#64748b", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f1f5f9", borderLeft: "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.l2}</div>
+                              <div style={{ padding: "10px 14px", color: "#0f172a", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.v2}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Pagination ── */}
           {totalPages > 1 && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "24px 0" }}>
-              <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} style={{ ...pageBtn(false), opacity: currentPage === 1 ? 0.4 : 1 }}>«</button>
-              <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} style={{ ...pageBtn(false), opacity: currentPage === 1 ? 0.4 : 1 }}>‹</button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "28px 0" }}>
+              <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} style={{ ...pageBtn(false), opacity: currentPage === 1 ? 0.4 : 1, borderRadius: 6 }}>«</button>
+              <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} style={{ ...pageBtn(false), opacity: currentPage === 1 ? 0.4 : 1, borderRadius: 6 }}>‹</button>
               {Array.from({ length: Math.min(10, totalPages) }, (_, i) => {
                 const start = Math.max(1, Math.min(currentPage - 5, totalPages - 9));
                 const p = start + i;
                 if (p > totalPages) return null;
-                return <button key={p} onClick={() => setCurrentPage(p)} style={pageBtn(p === currentPage)}>{p}</button>;
+                return <button key={p} onClick={() => setCurrentPage(p)} style={{ ...pageBtn(p === currentPage), borderRadius: 6 }}>{p}</button>;
               })}
-              <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} style={{ ...pageBtn(false), opacity: currentPage === totalPages ? 0.4 : 1 }}>›</button>
-              <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} style={{ ...pageBtn(false), opacity: currentPage === totalPages ? 0.4 : 1 }}>»</button>
+              <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} style={{ ...pageBtn(false), opacity: currentPage === totalPages ? 0.4 : 1, borderRadius: 6 }}>›</button>
+              <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} style={{ ...pageBtn(false), opacity: currentPage === totalPages ? 0.4 : 1, borderRadius: 6 }}>»</button>
             </div>
           )}
 
