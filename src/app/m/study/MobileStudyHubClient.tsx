@@ -94,21 +94,52 @@ export default function MobileStudyHubClient({ lectures }: any) {
               </span>
             </div>
 
+            {/* 16:9 유튜브 비디오 플레이어 */}
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                aspectRatio: "16/9",
+                borderRadius: 10,
+                overflow: "hidden",
+                boxShadow: "0 6px 20px rgba(0, 0, 0, 0.35)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                background: "#000000",
+                marginBottom: 16,
+              }}
+            >
+              <iframe
+                src="https://www.youtube-nocookie.com/embed/QyClYIjPzao?rel=0"
+                title="공실스터디 안내 영상"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                }}
+              />
+            </div>
+
             <Link
               href="/m/study/about"
               style={{
                 display: "block",
                 textAlign: "center",
-                padding: "11px",
+                padding: "12px",
                 background: "#059669",
                 color: "#ffffff",
                 borderRadius: 8,
-                fontSize: "13.5px",
+                fontSize: "14px",
                 fontWeight: 800,
                 textDecoration: "none",
+                boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)",
               }}
             >
-              공실스터디 알아보기 →
+              공실스터디 자세히 보기 →
             </Link>
           </div>
 

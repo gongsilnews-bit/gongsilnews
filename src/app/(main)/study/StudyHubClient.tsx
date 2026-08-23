@@ -136,18 +136,18 @@ export default function StudyHubClient({
             <span>1년(12개월) 부동산 실무 & AI 마스터마인드</span>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 30 }}>
-            <div style={{ maxWidth: 720 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 36 }}>
+            <div style={{ flex: 1, minWidth: 320, maxWidth: 620 }}>
               <h1 style={{ fontSize: "38px", fontWeight: 900, lineHeight: 1.3, letterSpacing: "-1px", margin: "0 0 16px 0" }}>
                 AI 유튜브 시대<br />
                 <span style={{ color: "#34d399" }}>부동산중개에 꼭! 필요한 실전 마케팅 스터디</span>
               </h1>
-              <p style={{ fontSize: "16.5px", color: "#a7f3d0", opacity: 0.9, lineHeight: 1.65, margin: "0 0 28px 0", wordBreak: "keep-all" }}>
+              <p style={{ fontSize: "16.5px", color: "#a7f3d0", opacity: 0.9, lineHeight: 1.65, margin: "0 0 24px 0", wordBreak: "keep-all" }}>
                 단발성 온라인 강의로 끝나지 않습니다. 12개월 동안 매월 업데이트되는 최신 AI 마케팅 기술, 공실 해결 임대 실무, 법원 경공매 분석으로 지역 1등 부동산을 완성하세요.
               </p>
 
               {/* 4대 안심 포인트 */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 24px", fontSize: "13.5px", color: "#d1fae5", fontWeight: 600 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 24px", fontSize: "13.5px", color: "#d1fae5", fontWeight: 600, marginBottom: 26 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                   365일 무제한 수강 & 복습
@@ -165,30 +165,61 @@ export default function StudyHubClient({
                   전국 11만 중개사 스터디 크루
                 </span>
               </div>
+
+              {/* 자세히 보기 버튼 */}
+              <div>
+                <Link
+                  href="/study/about"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "13px 26px",
+                    background: "#059669",
+                    color: "#ffffff",
+                    borderRadius: 10,
+                    fontSize: 15.5,
+                    fontWeight: 800,
+                    textDecoration: "none",
+                    boxShadow: "0 4px 14px rgba(5, 150, 105, 0.35)",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  <span>공실스터디 자세히 보기</span>
+                  <span>→</span>
+                </Link>
+              </div>
             </div>
 
-            {/* Quick CTA Button */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <Link
-                href="/study/about"
+            {/* 우측 16:9 유튜브 영상 플레이어 */}
+            <div style={{ width: 460, maxWidth: "100%", flexShrink: 0 }}>
+              <div
                 style={{
-                  padding: "14px 28px",
-                  background: "#059669",
-                  color: "#ffffff",
-                  borderRadius: 10,
-                  fontSize: 15.5,
-                  fontWeight: 800,
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  boxShadow: "0 4px 16px rgba(5, 150, 105, 0.4)",
-                  transition: "all 0.2s",
+                  position: "relative",
+                  width: "100%",
+                  aspectRatio: "16/9",
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  boxShadow: "0 12px 32px rgba(0, 0, 0, 0.45)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  background: "#000000",
                 }}
               >
-                <span>공실스터디 알아보기</span>
-                <span>→</span>
-              </Link>
+                <iframe
+                  src="https://www.youtube-nocookie.com/embed/QyClYIjPzao?rel=0"
+                  title="공실스터디 안내 영상"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    border: "none",
+                  }}
+                />
+              </div>
             </div>
           </div>
 
