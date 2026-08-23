@@ -70,13 +70,13 @@ export default function MobileStudyHubClient({ lectures }: any) {
               <span>1년(12개월) 부동산 실무 & AI 마스터마인드</span>
             </div>
 
-            <h1 style={{ fontSize: "20px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>
-              AI 유튜브 시대<br />
-              <span style={{ color: "#34d399" }}>부동산중개에 꼭! 필요한 실전 마케팅 스터디</span>
+            <h1 style={{ fontSize: "19px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>
+              AI 유튜브 시대! 부동산 중개에<br />
+              <span style={{ color: "#34d399" }}>꼭! 필요한 실전 마케팅 스터디</span>
             </h1>
 
-            <p style={{ fontSize: "13px", color: "#a7f3d0", opacity: 0.9, lineHeight: 1.5, margin: "0 0 18px 0" }}>
-              단발성 인강이 아닙니다. 12개월 동안 매월 업데이트되는 최신 AI 기술과 실전 노하우로 지역 1등 부동산을 완성하세요.
+            <p style={{ fontSize: "13px", color: "#a7f3d0", opacity: 0.9, lineHeight: 1.55, margin: "0 0 16px 0", wordBreak: "keep-all" }}>
+              매월 업데이트되는 최신 AI 마케팅 기술과 실전 노하우로 지역 1등 부동산을 완성하세요.
             </p>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 12px", fontSize: "12px", color: "#d1fae5", fontWeight: 600, marginBottom: "16px" }}>
