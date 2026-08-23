@@ -721,9 +721,13 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   const getPriceLabel = (v: any) => v.trade_type === "매매" ? "매매" : v.trade_type === "전세" ? "전세" : v.trade_type === "경매" ? "경매" : "월세";
   const getPriceBg = (v: any) => v.trade_type === "매매" ? "#e53e3e" : v.trade_type === "전세" ? "#2b6cb0" : v.trade_type === "경매" ? "#ff8c00" : "#2f855a";
   const getPriceText = (v: any) => {
-    if (v.trade_type === "경매") return formatAmount(v.deposit);
+    if (v.trade_type === "경매" || v.trade_type === "공매") return formatAmount(v.deposit);
     if (v.trade_type === "매매" || v.trade_type === "전세") return formatAmount(v.deposit);
-    return `${formatAmount(v.deposit)} / ${formatAmount(v.monthly_rent)}`;
+    if (v.monthly_rent && v.monthly_rent > 0) {
+      const monthlyManwon = Math.round(v.monthly_rent / 10000);
+      return `${formatAmount(v.deposit)} / ${monthlyManwon}만`;
+    }
+    return formatAmount(v.deposit);
   };
   const fmtDate = (d: string) => { if (!d) return ""; const x = new Date(d); return `${x.getFullYear()}.${String(x.getMonth()+1).padStart(2,"0")}.${String(x.getDate()).padStart(2,"0")}`; };
 
@@ -1281,7 +1285,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                       })() : (
                         <div style={{ width: 160, flexShrink: 0, textAlign: "center", borderLeft: "1px solid #f1f5f9", borderRight: "1px solid #f1f5f9", padding: "0 10px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                           <div style={{ fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 6 }}>
-                            {getPriceLabel(v)} {getPriceText(v).replace('만', '').replace('억', '')}
+                            {getPriceLabel(v)} {getPriceText(v)}
                           </div>
                           <div style={{ fontSize: 12, color: "#888" }}>
                             관리비 {Math.floor((v.maintenance_fee || 0)/10000)}만
