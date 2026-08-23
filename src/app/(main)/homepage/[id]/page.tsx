@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getVacancies, getVacancyDetail } from "@/app/actions/vacancy";
+import { getVacancies, getVacancyDetail, getVacanciesByOwnerId } from "@/app/actions/vacancy";
+import { getMyArticles, getArticles } from "@/app/actions/article";
 import { getMaskedAddress } from "@/app/(map)/gongsil/gongsilHelpers";
 
 const BRAND = "#2845B3";
@@ -50,7 +51,11 @@ export default function HomepageViewPage() {
   const [loading, setLoading] = useState(true);
   const [photoIdx, setPhotoIdx] = useState(0);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [otherListings, setOtherListings] = useState<any[]>([]);
+  const [agencyVacancies, setAgencyVacancies] = useState<any[]>([]);
+  const [vacancyStats, setVacancyStats] = useState({ sale: 0, jeonse: 0, monthly: 0, short: 0 });
+  const [recommendedVacancies, setRecommendedVacancies] = useState<any[]>([]);
+  const [agencyArticles, setAgencyArticles] = useState<any[]>([]);
+  const [hasAuthorArticles, setHasAuthorArticles] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const roadviewRef = useRef<HTMLDivElement>(null);
   const infoRef = useRef<HTMLDivElement>(null);
@@ -431,6 +436,62 @@ export default function HomepageViewPage() {
           photos: docRes.photos ? docRes.photos.sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : []
         };
         setVacancy(found);
+
+        // 1. 해당 등록자(중개사)의 실제 매물들 조회 및 통계 계산
+        if (found.owner_id) {
+          try {
+            const ownerRes = await getVacanciesByOwnerId(found.owner_id);
+            if (ownerRes.success && ownerRes.data) {
+              const list = ownerRes.data;
+              setAgencyVacancies(list);
+              setVacancyStats({
+                sale: list.filter((v: any) => v.trade_type === '매매').length,
+                jeonse: list.filter((v: any) => v.trade_type === '전세').length,
+                monthly: list.filter((v: any) => v.trade_type === '월세').length,
+                short: list.filter((v: any) => v.trade_type === '단기임대').length,
+              });
+
+              // 현재 보고 있는 매물 제외한 등록자의 다른 매물 (최대 3개)
+              const others = list.filter((v: any) => v.id !== id).slice(0, 3);
+              if (others.length > 0) {
+                setRecommendedVacancies(others);
+              } else {
+                // 등록자의 다른 매물이 없을 경우 같은 지역(시군구)의 추천 매물 조회
+                const allRes = await getVacancies({ all: true });
+                if (allRes.success && allRes.data) {
+                  const parsed = typeof allRes.data === 'string' ? JSON.parse(allRes.data) : allRes.data;
+                  const recs = parsed.filter((v: any) => v.id !== id && (v.sigungu === found.sigungu || !found.sigungu)).slice(0, 3);
+                  setRecommendedVacancies(recs);
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Error loading agency vacancies:", e);
+          }
+
+          // 2. 이 중개사(등록자)가 등록한 실제 공실뉴스 기사 조회
+          try {
+            const myArticlesRes = await getMyArticles(found.owner_id);
+            let articlesList: any[] = [];
+            if (myArticlesRes.success && myArticlesRes.data && myArticlesRes.data.length > 0) {
+              articlesList = myArticlesRes.data.slice(0, 3);
+              setHasAuthorArticles(true);
+            } else {
+              setHasAuthorArticles(false);
+            }
+            // 만약 중개사가 등록한 기사가 부족하면 최신 공실뉴스로 채우기
+            if (articlesList.length < 3) {
+              const generalArticlesRes = await getArticles({ limit: 3 });
+              if (generalArticlesRes.success && generalArticlesRes.data) {
+                const remaining = generalArticlesRes.data.filter((a: any) => !articlesList.some((ma: any) => ma.id === a.id));
+                articlesList = [...articlesList, ...remaining].slice(0, 3);
+              }
+            }
+            setAgencyArticles(articlesList);
+          } catch (e) {
+            console.error("Error loading agency articles:", e);
+          }
+        }
       } else {
         setVacancy(null);
       }
@@ -490,8 +551,7 @@ export default function HomepageViewPage() {
       let rest = "";
       if (c > 0) rest += `${c}천`;
       if (rem > 0) rest += `${rem}`;
-      if (rest) result += result ? " " + rest : rest;
-      if (e === 0 && c === 0 && rem > 0) result += "만";
+      if (rest) result += (result ? " " : "") + rest + "만";
     }
     return result || "0";
   };
@@ -500,9 +560,13 @@ export default function HomepageViewPage() {
   const getPriceBg = (v: any) => v?.trade_type === "매매" ? "#e53e3e" : v?.trade_type === "전세" ? "#2b6cb0" : v?.trade_type === "경매" ? "#ff8c00" : "#2f855a";
   const getPriceText = (v: any) => {
     if (!v) return "";
-    if (v.trade_type === "경매") return formatAmount(v.deposit);
+    if (v.trade_type === "경매" || v.trade_type === "공매") return formatAmount(v.deposit);
     if (v.trade_type === "매매" || v.trade_type === "전세") return formatAmount(v.deposit);
-    return `${formatAmount(v.deposit)} / ${formatAmount(v.monthly_rent)}`;
+    if (v.monthly_rent && v.monthly_rent > 0) {
+      const monthlyManwon = Math.round(v.monthly_rent / 10000);
+      return `${formatAmount(v.deposit)} / ${monthlyManwon}만`;
+    }
+    return formatAmount(v.deposit);
   };
 
   if (loading) {
@@ -747,88 +811,165 @@ export default function HomepageViewPage() {
           <div style={{ width: 340, flexShrink: 0 }}>
             <div style={{ position: "sticky", top: 80 }}>
 
-              {/* 중개사무소 정보 */}
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #111", paddingBottom: 12, marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 20, color: "#111" }}>중개사무소</div>
-                  <div style={{ display: "flex", gap: 6, fontSize: 13, fontWeight: 600 }}>
-                    <span style={{ border: "1px solid #1a365d", background: "#1a365d", color: "#fff", padding: "4px 8px", cursor: "pointer", borderRadius: 2 }}>오시는길</span>
-                  </div>
-                </div>
-                
-                <div style={{ padding: "0 4px" }}>
-                  <div style={{ fontSize: 21, fontWeight: 800, color: "#111", marginBottom: 14 }}>
-                    청실두꺼비공인중개사사무소
-                  </div>
-                  
-                  <div style={{ fontSize: 16, color: "#555", lineHeight: 1.6, marginBottom: 18 }}>
-                    대표 김민경<br/>
-                    등록번호 11680-2017-00179<br/>
-                    서울특별시 강남구 남부순환로 2917 133호<br/>
-                    (대치동 626,청실상가)
-                  </div>
-                  
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 22 }}>
-                    <span style={{ fontSize: 18 }}>📞</span>
-                    02-564-7500 / 010-8456-2730
-                  </div>
-                  
-                  <div style={{ fontSize: 15, color: "#555", display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-                    <span style={{ color: "#6b7280", fontWeight: 500 }}>매매 <span style={{ color: "#374151" }}>10</span></span>
-                    <span style={{ color: "#e5e7eb" }}>|</span> 
-                    <span style={{ color: "#6b7280", fontWeight: 500 }}>전세 <span style={{ color: "#374151" }}>3</span></span>
-                    <span style={{ color: "#e5e7eb" }}>|</span> 
-                    <span style={{ color: "#6b7280", fontWeight: 500 }}>월세 <span style={{ color: "#374151" }}>9</span></span>
-                    <span style={{ color: "#e5e7eb" }}>|</span> 
-                    <span style={{ color: "#6b7280", fontWeight: 500 }}>단기 <span style={{ color: "#374151" }}>0</span></span>
-                  </div>
-                  
-                  <button onClick={() => { if (vacancy?.client_phone) window.location.href = `tel:${vacancy.client_phone}`; }} style={{ width: "100%", padding: "14px 0", background: "#f8fafc", color: "#111", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: "pointer", border: "1px solid #e2e8f0", transition: "0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "#f1f5f9"} onMouseLeave={e => e.currentTarget.style.background = "#f8fafc"}>
-                    공실내놔요
-                  </button>
-                </div>
-              </div>
+              {/* 중개사무소 / 등록자 정보 */}
+              {(() => {
+                const member = vacancy?.members;
+                const agency = member?.agencies?.[0] || null;
+                const isRealtor = member?.role === 'REALTOR' || !!agency;
+                const agencyName = agency?.agency_name || member?.name || vacancy?.client_name || "공실뉴스 부동산";
+                const ceoName = agency?.ceo_name || member?.name || vacancy?.client_name || "-";
+                const regNum = agency?.reg_number || "";
+                const agencyAddr = agency?.address || "";
+                const contactPhone = agency?.phone || agency?.mobile || member?.phone || vacancy?.client_phone || "";
 
-              {/* ── 추천 공실 ── */}
-              <div style={{ background: "#fff", marginBottom: 40 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #111", paddingBottom: 10, marginBottom: 16 }}>
-                  <h3 style={{ fontSize: 17, fontWeight: "bold", color: "#111", margin: 0 }}>추천 공실</h3>
-                  <span style={{ fontSize: 12, color: "#888", cursor: "pointer" }}>더보기 {'>'}</span>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {[
-                    { id: 1, title: "관악드림타운 132동 8층호", price: "매매 11억 5천", details: "면적 82.01m²(25.1평) / 59.83m²(18.1평)\n방 3개, 욕실 1개", badge: "공동중개" },
-                    { id: 2, title: "동부센트레빌 101동 101호", price: "전세 5천", details: "면적 84m²(25.4평) / 59m²(17.8평)\n방 3개, 욕실 1개", badge: "공동중개" }
-                  ].map(item => (
-                    <div key={item.id} style={{ display: "flex", gap: 16, cursor: "pointer", borderBottom: "1px solid #f1f5f9", paddingBottom: 16 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 15, fontWeight: "bold", color: "#111", marginBottom: 4 }}>{item.title}</div>
-                        <div style={{ fontSize: 17, fontWeight: "bold", color: "#2563eb", marginBottom: 6 }}>{item.price}</div>
-                        <div style={{ fontSize: 13, color: "#666", whiteSpace: "pre-wrap", lineHeight: 1.4, marginBottom: 6 }}>{item.details}</div>
-                        <span style={{ fontSize: 11, color: "#ea580c", border: "1px solid #fed7aa", padding: "2px 6px", borderRadius: 2, fontWeight: 600 }}>{item.badge}</span>
+                return (
+                  <div style={{ marginBottom: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: 18, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #111", paddingBottom: 10, marginBottom: 14 }}>
+                      <div style={{ fontWeight: 700, fontSize: 18, color: "#111" }}>
+                        {isRealtor ? "중개사무소" : "등록자 정보"}
                       </div>
-                      <div style={{ width: 70, height: 70, background: "#f1f5f9", borderRadius: 4, flexShrink: 0 }}></div>
+                      {agencyAddr && (
+                        <div style={{ display: "flex", gap: 6, fontSize: 12, fontWeight: 600 }}>
+                          <span
+                            onClick={() => {
+                              if (locationRef.current) {
+                                setActiveTab('location');
+                                locationRef.current.scrollIntoView({ behavior: 'smooth' });
+                              }
+                            }}
+                            style={{ border: "1px solid #1a365d", background: "#1a365d", color: "#fff", padding: "3px 8px", cursor: "pointer", borderRadius: 3 }}
+                          >
+                            위치보기
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
+                    
+                    <div>
+                      <div style={{ fontSize: 19, fontWeight: 800, color: "#111", marginBottom: 10 }}>
+                        {agencyName}
+                      </div>
+                      
+                      <div style={{ fontSize: 14, color: "#555", lineHeight: 1.6, marginBottom: 14 }}>
+                        대표 {ceoName}<br/>
+                        {regNum && regNum !== "-" && <>등록번호 {regNum}<br/></>}
+                        {agencyAddr && agencyAddr !== "-" && <>{agencyAddr}<br/></>}
+                      </div>
+                      
+                      {contactPhone && contactPhone !== "-" && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 17, fontWeight: 800, color: "#111", marginBottom: 16 }}>
+                          <span style={{ fontSize: 17 }}>📞</span>
+                          <a href={`tel:${contactPhone.replace(/[^0-9]/g, '')}`} style={{ color: "#111", textDecoration: "none" }}>{contactPhone}</a>
+                        </div>
+                      )}
+                      
+                      <div style={{ fontSize: 13, color: "#555", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, background: "#f8fafc", padding: "10px 12px", borderRadius: 6, border: "1px solid #e2e8f0" }}>
+                        <span style={{ color: "#6b7280", fontWeight: 500 }}>매매 <strong style={{ color: BRAND }}>{vacancyStats.sale}</strong></span>
+                        <span style={{ color: "#cbd5e1" }}>|</span> 
+                        <span style={{ color: "#6b7280", fontWeight: 500 }}>전세 <strong style={{ color: BRAND }}>{vacancyStats.jeonse}</strong></span>
+                        <span style={{ color: "#cbd5e1" }}>|</span> 
+                        <span style={{ color: "#6b7280", fontWeight: 500 }}>월세 <strong style={{ color: BRAND }}>{vacancyStats.monthly}</strong></span>
+                        <span style={{ color: "#cbd5e1" }}>|</span> 
+                        <span style={{ color: "#6b7280", fontWeight: 500 }}>단기 <strong style={{ color: BRAND }}>{vacancyStats.short}</strong></span>
+                      </div>
+                      
+                      <button
+                        onClick={() => {
+                          if (contactPhone && contactPhone !== "-") window.location.href = `tel:${contactPhone.replace(/[^0-9]/g, '')}`;
+                          else alert("등록된 연락처가 없습니다.");
+                        }}
+                        style={{ width: "100%", padding: "12px 0", background: "#1a365d", color: "#fff", borderRadius: 6, fontSize: 15, fontWeight: 700, cursor: "pointer", border: "none", transition: "0.2s" }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+                        onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                      >
+                        문의하기 / 공실내놔요
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
-              {/* ── 많이 본 뉴스 ── */}
-              <div style={{ background: "#fff", marginBottom: 40 }}>
-                <h3 style={{ fontSize: 17, fontWeight: "bold", color: "#111", borderBottom: "1px solid #111", paddingBottom: 10, margin: "0 0 16px 0" }}>많이 본 뉴스</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {[
-                    "“너도 에어비앤비 해볼까?”… 오피스텔·학세권 달러 겟 약올랐던 '신세자' 될 수도",
-                    "관악구 대단지 관악드림타운 네이버 전세 공실광고 0건?",
-                    "서울 아파트 공시가 18.7% 급등… '한강벨트' 보유세 50% 이상 오를 듯"
-                  ].map((news, idx) => (
-                    <div key={idx} style={{ display: "flex", gap: 12, cursor: "pointer" }}>
-                      <span style={{ fontSize: 18, fontWeight: 900, color: "#111", fontStyle: "italic" }}>{idx + 1}</span>
-                      <span style={{ fontSize: 15, color: "#333", lineHeight: 1.4, fontWeight: 600, wordBreak: "keep-all" }}>{news}</span>
-                    </div>
-                  ))}
+              {/* ── 등록자의 다른 공실 / 추천 공실 ── */}
+              {recommendedVacancies.length > 0 && (
+                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: 18, marginBottom: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #111", paddingBottom: 10, marginBottom: 14 }}>
+                    <h3 style={{ fontSize: 17, fontWeight: "bold", color: "#111", margin: 0 }}>
+                      {agencyVacancies.filter(v => v.id !== id).length > 0 ? "이 등록자의 또 다른 공실" : "추천 공실"}
+                    </h3>
+                    <span onClick={() => router.push("/homepage")} style={{ fontSize: 12, color: "#888", cursor: "pointer" }}>더보기 {'>'}</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {recommendedVacancies.map(item => {
+                      const photoUrl = item.photos?.[0] || item.images?.[0] || (item.vacancy_photos?.[0]?.url) || null;
+                      const title = item.building_name || `${item.dong || ""} ${item.sub_category || item.property_type || "공실"}`;
+                      const areaP = item.area_m2 ? Math.round(item.area_m2 / 3.3) : item.exclusive_m2 ? Math.round(item.exclusive_m2 / 3.3) : 0;
+                      const areaM = item.area_m2 || item.exclusive_m2 || 0;
+                      const badgeText = item.realtor_commission || item.commission_type || "공동중개";
+
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => router.push(`/homepage/${item.id}`)}
+                          style={{ display: "flex", gap: 12, cursor: "pointer", borderBottom: "1px solid #f1f5f9", paddingBottom: 12, alignItems: "center" }}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: "bold", color: "#111", marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {title}
+                            </div>
+                            <div style={{ fontSize: 15, fontWeight: "bold", color: BRAND, marginBottom: 3 }}>
+                              {getPriceLabel(item)} {getPriceText(item)}
+                            </div>
+                            <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>
+                              {areaM ? `${areaM}m²(${areaP}P)` : ""}{item.room_count ? ` · 방 ${item.room_count}개` : ""}
+                            </div>
+                            <span style={{ fontSize: 10, color: "#ea580c", border: "1px solid #fed7aa", padding: "1px 5px", borderRadius: 2, fontWeight: 600, background: "#fff7ed" }}>
+                              {badgeText}
+                            </span>
+                          </div>
+                          <div style={{ width: 68, height: 68, background: "#f1f5f9", borderRadius: 4, flexShrink: 0, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+                            {photoUrl ? (
+                              <img src={photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#aaa" }}>No Photo</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* ── 공실뉴스 (이 중개사가 등록한 기사 우선) ── */}
+              {agencyArticles.length > 0 && (
+                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: 18, marginBottom: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #111", paddingBottom: 10, margin: "0 0 14px 0" }}>
+                    <h3 style={{ fontSize: 17, fontWeight: "bold", color: "#111", margin: 0 }}>
+                      {hasAuthorArticles ? "이 중개사의 공실뉴스" : "주요 공실뉴스"}
+                    </h3>
+                    <span onClick={() => router.push("/news")} style={{ fontSize: 12, color: "#888", fontWeight: "normal", cursor: "pointer" }}>더보기 {'>'}</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {agencyArticles.map((art, idx) => (
+                      <div
+                        key={art.id || idx}
+                        onClick={() => router.push(`/news/${art.article_no || art.id}`)}
+                        style={{ display: "flex", gap: 10, cursor: "pointer", alignItems: "flex-start" }}
+                      >
+                        <span style={{ fontSize: 16, fontWeight: 900, color: BRAND, fontStyle: "italic", width: 16, flexShrink: 0 }}>{idx + 1}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13.5, color: "#222", lineHeight: 1.4, fontWeight: 600, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                            {art.title}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#888", marginTop: 3 }}>
+                            {art.author_name ? `${art.author_name} 기자` : "공실뉴스"} · {art.published_at || art.created_at ? new Date(art.published_at || art.created_at).toLocaleDateString("ko-KR") : ""}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
