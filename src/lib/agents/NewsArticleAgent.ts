@@ -16,6 +16,7 @@ export interface NewsArticleResult {
   youtubeSearchQuery?: string;
   mediaType?: "image" | "video";
   sourceUrl?: string;
+  chosenCandidateId?: string;
   isHeadline?: boolean;
   isImportant?: boolean;
   usage?: {
@@ -60,6 +61,7 @@ function safeJsonParse(rawText: string): any {
       const keywords = extractField('keywords') || '부동산,경제,공실뉴스';
       const imageKeyword = extractField('imageKeyword') || 'korean real estate';
       const youtubeSearchQuery = extractField('youtubeSearchQuery') || '';
+      const chosenCandidateId = extractField('chosenCandidateId') || '';
       const mediaType = text.includes('"mediaType": "video"') ? 'video' : 'image';
       const isHeadline = text.includes('"isHeadline": true');
       const isImportant = text.includes('"isImportant": true') || isHeadline;
@@ -73,6 +75,7 @@ function safeJsonParse(rawText: string): any {
           keywords,
           imageKeyword,
           youtubeSearchQuery,
+          chosenCandidateId,
           mediaType,
           isHeadline,
           isImportant,
@@ -170,6 +173,7 @@ ${conclusionInstruction}
 응답은 반드시 마크다운 백틱 없는 순수 JSON 형식으로만 출력할 것. (문자열 내부 따옴표는 작은따옴표 사용)
 
 {
+  "chosenCandidateId": "CANDIDATE_1 등 선택한 후보의 ID",
   "title": "시선을 사로잡으면서도 신뢰감을 주는 전문적인 기사 제목 (최대 32자)",
   "subtitle": "핵심 브리핑 1 (명사형 종결)\\n핵심 브리핑 2 (명사형 종결)\\n핵심 브리핑 3 (명사형 종결)\\n(반드시 3줄로 작성. 특수기호나 번호 없이 순수 텍스트만 줄바꿈. 문장 끝은 ~기록, ~돌파, ~전망, ~개최 등 간결한 명사형 종결)",
   "content": "<p>도입부...</p><p><b>■ 맞춤 소제목 1</b><br>내용...</p><p><b>■ 맞춤 소제목 2</b><br>내용...</p><p><b>■ 맞춤 소제목 3</b><br>내용...</p>...",
@@ -182,7 +186,7 @@ ${conclusionInstruction}
   "sourceUrl": "선택한 원본 기사의 URL"
 }`;
 
-    const userPrompt = `[오늘의 최신 뉴스 후보 목록]\n${req.sourceText}\n\n위 후보들 중 대중의 관심이 가장 높고 완성도 높은 1개의 뉴스를 선택하여, 기사 내용에 꼭 맞는 [생생한 맞춤형 소제목]을 적용한 [${category}] 카테고리 프리미엄 기사를 JSON으로 작성해라.`;
+    const userPrompt = `[오늘의 최신 뉴스 후보 목록]\n${req.sourceText}\n\n위 후보들 중 대중의 관심이 가장 높고 완성도 높은 1개의 뉴스를 선택하여, 반드시 해당 후보의 [ID]와 [URL]을 정확히 매칭하고, 기사 내용에 꼭 맞는 [생생한 맞춤형 소제목]을 적용한 [${category}] 카테고리 프리미엄 기사를 JSON으로 작성해라.`;
 
     try {
       const result = await generateWithGemini(`${systemPrompt}\n\n${userPrompt}`, { temperature: 0.7 });
@@ -211,6 +215,7 @@ ${conclusionInstruction}
         isHeadline: parsed.isHeadline === true,
         isImportant: parsed.isImportant === true || parsed.isHeadline === true,
         sourceUrl: parsed.sourceUrl,
+        chosenCandidateId: parsed.chosenCandidateId,
         usage: result.usage,
       };
 

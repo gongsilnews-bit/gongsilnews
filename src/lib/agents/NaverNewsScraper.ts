@@ -12,6 +12,16 @@ export class NaverNewsScraper {
   private static readonly USER_AGENT =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
+  private static readonly BANNED_KEYWORDS =
+    /실종|살인|사기|체포|구속|폭행|유족|빈소|사망|흉기|피살|성폭행|음주운전|마약|화재|참사|폭로|불륜|투신|자살|횡령|성추행|교도소|시신|백골|피의자|칼부림|비명|피해자|가해자/i;
+
+  private static isCleanNews(title: string, snippet?: string): boolean {
+    if (!title) return false;
+    if (this.BANNED_KEYWORDS.test(title)) return false;
+    if (snippet && this.BANNED_KEYWORDS.test(snippet)) return false;
+    return true;
+  }
+
   /**
    * 1. 네이버 뉴스 경제/부동산 랭킹 뉴스(가장 많이 본 뉴스) 스크랩
    */
@@ -40,7 +50,7 @@ export class NaverNewsScraper {
           const aTag = $(li).find('a');
           const title = aTag.text().trim();
           const link = aTag.attr('href') || '';
-          if (title && link) {
+          if (title && link && this.isCleanNews(title)) {
             items.push({
               title,
               link: link.startsWith('http') ? link : `https://news.naver.com${link}`,
@@ -85,7 +95,7 @@ export class NaverNewsScraper {
         const snippet = $(el).closest('.sa_text').find('.sa_text_lede').text().trim();
         const press = $(el).closest('.sa_text').find('.sa_text_press').text().trim();
 
-        if (title && link && !items.some(i => i.title === title || i.link === link)) {
+        if (title && link && this.isCleanNews(title, snippet) && !items.some(i => i.title === title || i.link === link)) {
           items.push({
             title,
             link: link.startsWith('http') ? link : `https://news.naver.com${link}`,
@@ -129,7 +139,7 @@ export class NaverNewsScraper {
         const snippet = $(wrap).find('.dsc_wrap, .news_dsc').text().trim();
         const press = $(wrap).find('.info_group a.press').text().trim();
 
-        if (title && link) {
+        if (title && link && this.isCleanNews(title, snippet)) {
           items.push({
             title,
             link,

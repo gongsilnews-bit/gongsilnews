@@ -223,7 +223,7 @@ export class PhotoCurationAgent {
   /**
    * 1순위: 기사 원문 페이지에서 실제 보도/현장 사진(조감도, 현장 사진, 인포그래픽 등) 정밀 추출
    */
-  private static async extractRealPressPhoto(sourceUrl?: string): Promise<string | null> {
+  private static async extractRealPressPhoto(sourceUrl?: string, articleTitle?: string): Promise<string | null> {
     if (!sourceUrl || !sourceUrl.startsWith("http")) return null;
 
     try {
@@ -249,7 +249,30 @@ export class PhotoCurationAgent {
       if (res.url.includes("news.google.com") || html.includes("Opening your link")) {
         const destMatch = html.match(/href="([^"]+)"/i) || html.match(/url='([^']+)'/i);
         if (destMatch && destMatch[1] && destMatch[1].startsWith("http") && !destMatch[1].includes("google.com")) {
-          return await this.extractRealPressPhoto(destMatch[1]);
+          return await this.extractRealPressPhoto(destMatch[1], articleTitle);
+        }
+      }
+
+      // ── 원문 페이지의 제목 및 내용이 사건사고/부적절한 내용인지 검증 ──
+      const pageTitleMatch = html.match(/<title>([^<]*)<\/title>/i) || html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i);
+      const pageTitle = pageTitleMatch ? pageTitleMatch[1] : "";
+      
+      const bannedNegativeWords = /실종|살인|사기|체포|구속|폭행|유족|빈소|사망|흉기|피살|성폭행|음주운전|마약|화재|참사|폭로|불륜|투신|자살|횡령|성추행|교도소|시신|백골|피의자|칼부림/i;
+      if (bannedNegativeWords.test(pageTitle)) {
+        console.warn(`[PhotoCurationAgent] ⚠️ Source page title contains negative keywords ("${pageTitle}"). Rejecting press photo.`);
+        return null;
+      }
+
+      // 기사 제목과 원문 페이지 제목의 연관성 검증 (기사 제목이 있는 경우)
+      if (articleTitle && pageTitle) {
+        const cleanWords = (t: string) => t.replace(/[^\w\s가-힣]/g, " ").split(/\s+/).filter(w => w.length >= 2);
+        const articleWords = cleanWords(articleTitle);
+        const pageWords = new Set(cleanWords(pageTitle));
+        const matched = articleWords.filter(w => pageWords.has(w));
+        // 단어가 4개 이상인데 겹치는 단어가 아예 없는 경우 엉뚱한 원문으로 판별
+        if (articleWords.length >= 4 && matched.length === 0) {
+          console.warn(`[PhotoCurationAgent] ⚠️ Mismatch between article ("${articleTitle}") and source page ("${pageTitle}"). Falling back to AI photo.`);
+          return null;
         }
       }
 
@@ -611,7 +634,7 @@ ${feedbackInstruction}
 
     // ── 🥇 1순위: 언론사/보도자료 원문 제공 실제 보도·현장 사진 최우선 탐색 ──
     if (req.sourceUrl) {
-      const realPhoto = await this.extractRealPressPhoto(req.sourceUrl);
+      const realPhoto = await this.extractRealPressPhoto(req.sourceUrl, req.articleTitle);
       if (realPhoto && !usedUrls.has(realPhoto)) {
         console.log(`  -> [1순위] 언론사/보도자료 실제 보도사진 채택: ${realPhoto.slice(0, 60)}...`);
         return {

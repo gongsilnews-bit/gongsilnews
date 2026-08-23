@@ -780,183 +780,239 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
             )}
           </div>
 
-          {/* Categories Accordion */}
+          {/* Categories Permanent Open List (No Accordion) */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
-            <div style={{ padding: "14px 18px", background: "#fff", borderBottom: "1px solid #f1f5f9", fontWeight: 800, fontSize: 14.5, color: "#0f172a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ padding: "14px 18px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontWeight: 800, fontSize: 14.5, color: "#0f172a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>매물 카테고리</span>
-              <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500 }}>대분류 · 중분류</span>
+              <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>전체 한눈에 보기</span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {HOMEPAGE_CATEGORIES.map((cat, i) => {
-                const isMainActive = mainCategory === cat.id;
-                const isExpanded = expandedMenu === cat.id;
-                const hasSubs = cat.subCategories.length > 0;
+
+            <div style={{ display: "flex", flexDirection: "column", padding: "6px 0" }}>
+              {/* 1. 전체 매물 */}
+              <div
+                onClick={() => {
+                  setMainCategory("all");
+                  setSubCategory("");
+                  setCurrentPage(1);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 18px",
+                  cursor: "pointer",
+                  fontSize: 13.5,
+                  fontWeight: mainCategory === "all" ? 800 : 600,
+                  color: mainCategory === "all" ? BRAND : "#334155",
+                  background: mainCategory === "all" ? "#eff6ff" : "transparent",
+                  borderLeft: mainCategory === "all" ? `3px solid ${BRAND}` : "3px solid transparent",
+                  transition: "all 0.1s",
+                }}
+                onMouseEnter={e => {
+                  if (mainCategory !== "all") e.currentTarget.style.background = "#f8fafc";
+                }}
+                onMouseLeave={e => {
+                  if (mainCategory !== "all") e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <span>🏠</span>
+                <span>전체매물</span>
+              </div>
+
+              {/* 2. 각 대분류 및 세부분류 상시 노출 */}
+              {HOMEPAGE_CATEGORIES.filter(c => c.id !== "all").map((cat, i) => {
+                const isGroupActive = mainCategory === cat.id;
 
                 return (
-                  <div key={cat.id} style={{ borderBottom: i === HOMEPAGE_CATEGORIES.length - 1 ? "none" : "1px solid #f8fafc" }}>
-                    {/* 1차 대분류 헤더 */}
+                  <div key={cat.id} style={{ borderTop: "1px solid #f1f5f9", marginTop: 4, paddingTop: 4 }}>
+                    {/* 대분류 헤더 (클릭 시 해당 대분류 전체 선택) */}
                     <div
                       onClick={() => {
-                        if (cat.id === "all") {
-                          setMainCategory("all");
-                          setSubCategory("");
-                          setExpandedMenu(null);
-                        } else {
-                          setMainCategory(cat.id);
-                          setSubCategory("");
-                          setExpandedMenu(isExpanded ? null : cat.id);
-                        }
+                        setMainCategory(cat.id);
+                        setSubCategory("");
                         setCurrentPage(1);
                       }}
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        padding: "12px 18px",
+                        padding: "8px 18px",
                         cursor: "pointer",
-                        background: isMainActive && !subCategory ? "#eff6ff" : isMainActive ? "#f8fafc" : "#fff",
-                        borderLeft: isMainActive ? `3px solid ${BRAND}` : "3px solid transparent",
-                        transition: "all 0.15s",
+                        fontSize: 13,
+                        fontWeight: isGroupActive && !subCategory ? 800 : 700,
+                        color: isGroupActive && !subCategory ? BRAND : "#1e293b",
+                        background: isGroupActive && !subCategory ? "#eff6ff" : "transparent",
+                        borderLeft: isGroupActive && !subCategory ? `3px solid ${BRAND}` : "3px solid transparent",
+                        transition: "all 0.1s",
                       }}
                       onMouseEnter={e => {
-                        if (!(isMainActive && !subCategory)) e.currentTarget.style.background = "#f8fafc";
+                        if (!(isGroupActive && !subCategory)) e.currentTarget.style.background = "#f8fafc";
                       }}
                       onMouseLeave={e => {
-                        if (!(isMainActive && !subCategory)) e.currentTarget.style.background = isMainActive ? "#f8fafc" : "#fff";
+                        if (!(isGroupActive && !subCategory)) e.currentTarget.style.background = "transparent";
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: isMainActive ? 800 : 600, color: isMainActive ? BRAND : "#334155" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <span>{cat.icon}</span>
                         <span>{cat.label}</span>
                       </div>
-                      {hasSubs && (
-                        <span style={{ fontSize: 10, color: isMainActive ? BRAND : "#94a3b8", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
-                          ▼
-                        </span>
-                      )}
+                      <span style={{ fontSize: 11, color: isGroupActive && !subCategory ? BRAND : "#94a3b8", fontWeight: 600 }}>
+                        전체
+                      </span>
                     </div>
 
-                    {/* 2차 세부분류 본문 */}
-                    {hasSubs && isExpanded && (
-                      <div style={{ background: "#f8fafc", padding: "4px 0", borderTop: "1px solid #f1f5f9" }}>
-                        <div
-                          onClick={() => {
-                            setMainCategory(cat.id);
-                            setSubCategory("");
-                            setCurrentPage(1);
-                          }}
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "7px 18px 7px 34px",
-                            cursor: "pointer",
-                            fontSize: 12.5,
-                            fontWeight: isMainActive && !subCategory ? 700 : 500,
-                            color: isMainActive && !subCategory ? BRAND : "#64748b",
-                            background: isMainActive && !subCategory ? "#e2edff" : "transparent",
-                          }}
-                        >
-                          <span>• {cat.label} 전체</span>
-                        </div>
-
-                        {cat.subCategories.map(sub => {
-                          const isSubActive = isMainActive && subCategory === sub.name;
-                          return (
-                            <div
-                              key={sub.name}
-                              onClick={() => {
-                                setMainCategory(cat.id);
-                                setSubCategory(sub.name);
-                                setCurrentPage(1);
-                              }}
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                padding: "7px 16px 7px 34px",
-                                cursor: "pointer",
-                                fontSize: 12.5,
-                                fontWeight: isSubActive ? 700 : 500,
-                                color: isSubActive ? BRAND : "#475569",
-                                background: isSubActive ? "#e2edff" : "transparent",
-                                transition: "background 0.1s",
-                              }}
-                              onMouseEnter={e => {
-                                if (!isSubActive) e.currentTarget.style.background = "#f1f5f9";
-                              }}
-                              onMouseLeave={e => {
-                                if (!isSubActive) e.currentTarget.style.background = "transparent";
-                              }}
-                            >
+                    {/* 세부분류 상시 노출 리스트 */}
+                    <div style={{ display: "flex", flexDirection: "column", padding: "2px 0 6px 0" }}>
+                      {cat.subCategories.map(sub => {
+                        const isSubActive = isGroupActive && subCategory === sub.name;
+                        return (
+                          <div
+                            key={sub.name}
+                            onClick={() => {
+                              setMainCategory(cat.id);
+                              setSubCategory(sub.name);
+                              setCurrentPage(1);
+                            }}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "6px 14px 6px 32px",
+                              cursor: "pointer",
+                              fontSize: 12.5,
+                              fontWeight: isSubActive ? 800 : 500,
+                              color: isSubActive ? BRAND : "#475569",
+                              background: isSubActive ? "#e2edff" : "transparent",
+                              borderLeft: isSubActive ? `3px solid ${BRAND}` : "3px solid transparent",
+                              transition: "all 0.1s",
+                            }}
+                            onMouseEnter={e => {
+                              if (!isSubActive) e.currentTarget.style.background = "#f8fafc";
+                            }}
+                            onMouseLeave={e => {
+                              if (!isSubActive) e.currentTarget.style.background = "transparent";
+                            }}
+                          >
+                            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <span style={{ color: isSubActive ? BRAND : "#cbd5e1", fontSize: 10 }}>└</span>
                               <span>{sub.name}</span>
-                              <div style={{ display: "flex", gap: 3 }}>
-                                {sub.types.includes("매") && (
-                                  <span
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      setMainCategory(cat.id);
-                                      setSubCategory(sub.name);
-                                      setTradeTypes(["매매"]);
-                                      setCurrentPage(1);
-                                    }}
-                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: 700, background: tradeTypes.includes("매매") && isSubActive ? "#ef4444" : "#fee2e2", color: tradeTypes.includes("매매") && isSubActive ? "#fff" : "#ef4444", borderRadius: 3, cursor: "pointer" }}
-                                    title="매매"
-                                  >
-                                    매
-                                  </span>
-                                )}
-                                {sub.types.includes("전") && (
-                                  <span
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      setMainCategory(cat.id);
-                                      setSubCategory(sub.name);
-                                      setTradeTypes(["전세"]);
-                                      setCurrentPage(1);
-                                    }}
-                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: 700, background: tradeTypes.includes("전세") && isSubActive ? "#f97316" : "#ffedd5", color: tradeTypes.includes("전세") && isSubActive ? "#fff" : "#f97316", borderRadius: 3, cursor: "pointer" }}
-                                    title="전세"
-                                  >
-                                    전
-                                  </span>
-                                )}
-                                {sub.types.includes("월") && (
-                                  <span
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      setMainCategory(cat.id);
-                                      setSubCategory(sub.name);
-                                      setTradeTypes(["월세"]);
-                                      setCurrentPage(1);
-                                    }}
-                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: 700, background: tradeTypes.includes("월세") && isSubActive ? "#f59e0b" : "#fef3c7", color: tradeTypes.includes("월세") && isSubActive ? "#fff" : "#f59e0b", borderRadius: 3, cursor: "pointer" }}
-                                    title="월세"
-                                  >
-                                    월
-                                  </span>
-                                )}
-                                {sub.types.includes("단") && (
-                                  <span
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      setMainCategory(cat.id);
-                                      setSubCategory(sub.name);
-                                      setTradeTypes(["단기임대"]);
-                                      setCurrentPage(1);
-                                    }}
-                                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, fontSize: 9, fontWeight: 700, background: tradeTypes.includes("단기임대") && isSubActive ? "#a855f7" : "#f3e8ff", color: tradeTypes.includes("단기임대") && isSubActive ? "#fff" : "#a855f7", borderRadius: 3, cursor: "pointer" }}
-                                    title="단기임대"
-                                  >
-                                    단
-                                  </span>
-                                )}
-                              </div>
+                            </span>
+
+                            {/* 거래유형 퀵버튼 [매][전][월][단] */}
+                            <div style={{ display: "flex", gap: 3 }}>
+                              {sub.types.includes("매") && (
+                                <span
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setMainCategory(cat.id);
+                                    setSubCategory(sub.name);
+                                    setTradeTypes(["매매"]);
+                                    setCurrentPage(1);
+                                  }}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 17,
+                                    height: 17,
+                                    fontSize: 9.5,
+                                    fontWeight: 700,
+                                    background: tradeTypes.includes("매매") && isSubActive ? "#ef4444" : "#fee2e2",
+                                    color: tradeTypes.includes("매매") && isSubActive ? "#fff" : "#ef4444",
+                                    borderRadius: 3,
+                                    cursor: "pointer",
+                                  }}
+                                  title={`${sub.name} 매매 바로보기`}
+                                >
+                                  매
+                                </span>
+                              )}
+                              {sub.types.includes("전") && (
+                                <span
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setMainCategory(cat.id);
+                                    setSubCategory(sub.name);
+                                    setTradeTypes(["전세"]);
+                                    setCurrentPage(1);
+                                  }}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 17,
+                                    height: 17,
+                                    fontSize: 9.5,
+                                    fontWeight: 700,
+                                    background: tradeTypes.includes("전세") && isSubActive ? "#f97316" : "#ffedd5",
+                                    color: tradeTypes.includes("전세") && isSubActive ? "#fff" : "#f97316",
+                                    borderRadius: 3,
+                                    cursor: "pointer",
+                                  }}
+                                  title={`${sub.name} 전세 바로보기`}
+                                >
+                                  전
+                                </span>
+                              )}
+                              {sub.types.includes("월") && (
+                                <span
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setMainCategory(cat.id);
+                                    setSubCategory(sub.name);
+                                    setTradeTypes(["월세"]);
+                                    setCurrentPage(1);
+                                  }}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 17,
+                                    height: 17,
+                                    fontSize: 9.5,
+                                    fontWeight: 700,
+                                    background: tradeTypes.includes("월세") && isSubActive ? "#f59e0b" : "#fef3c7",
+                                    color: tradeTypes.includes("월세") && isSubActive ? "#fff" : "#f59e0b",
+                                    borderRadius: 3,
+                                    cursor: "pointer",
+                                  }}
+                                  title={`${sub.name} 월세 바로보기`}
+                                >
+                                  월
+                                </span>
+                              )}
+                              {sub.types.includes("단") && (
+                                <span
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setMainCategory(cat.id);
+                                    setSubCategory(sub.name);
+                                    setTradeTypes(["단기임대"]);
+                                    setCurrentPage(1);
+                                  }}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 17,
+                                    height: 17,
+                                    fontSize: 9.5,
+                                    fontWeight: 700,
+                                    background: tradeTypes.includes("단기임대") && isSubActive ? "#a855f7" : "#f3e8ff",
+                                    color: tradeTypes.includes("단기임대") && isSubActive ? "#fff" : "#a855f7",
+                                    borderRadius: 3,
+                                    cursor: "pointer",
+                                  }}
+                                  title={`${sub.name} 단기임대 바로보기`}
+                                >
+                                  단
+                                </span>
+                              )}
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
@@ -1567,15 +1623,16 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                           );
                         })() : (
                           <>
-                            <div style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center", flexWrap: "wrap" }}>
+                            {/* 배지 목록 */}
+                            <div style={{ display: "flex", gap: 6, marginBottom: 5, alignItems: "center", flexWrap: "wrap" }}>
                               {/* 거래구분 배지 */}
                               <span style={{ background: "#eff6ff", color: BRAND, fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>
                                 {v.trade_type || "임대"}
                               </span>
 
-                              {/* 등록자 구분 배지 */}
+                              {/* 등록자 구분 배지 (부동산 / 일반인) */}
                               <span style={{ background: "#f1f5f9", color: "#475569", fontSize: 11, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>
-                                {v.owner_role === 'REALTOR' || v.members?.role === 'REALTOR' ? '🏢 부동산' : '👤 직거래'}
+                                {v.owner_role === 'REALTOR' || v.members?.role === 'REALTOR' ? '🏢 부동산' : '👤 일반인'}
                               </span>
 
                               {/* 중개수수료 배지 */}
@@ -1595,21 +1652,70 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
                             {/* 매물명 / 주소 */}
                             <div style={{ fontSize: 16, fontWeight: 800, color: isMasked ? "#94a3b8" : "#0f172a", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {isMasked ? addrText.replace(/[^s]/g, "●") : addrText} {v.property_type && <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>({v.property_type})</span>}
+                              {isMasked ? addrText.replace(/[^\s]/g, "●") : addrText} {v.property_type && <span style={{ fontSize: 13, fontWeight: 600, color: "#64748b" }}>({v.property_type})</span>}
                             </div>
 
-                            {/* 면적 & 상세 스펙 */}
-                            <div style={{ fontSize: 13, color: "#475569", fontWeight: 500 }}>
-                              전용 {v.area_m2 || 0}m² ({v.area_m2 ? Math.round(v.area_m2 / 3.3) : 0}평)
-                              {v.floor && ` · ${v.floor}/${v.total_floors || ""}층`}
-                              {v.rooms ? ` · 방${v.rooms}` : ""}
-                              {v.parking_spots ? ` · 주차 ${v.parking_spots}대` : ""}
+                            {/* 면적 (공급 / 전용) */}
+                            <div style={{ fontSize: 13, color: "#1e293b", fontWeight: 600, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 2 }}>
+                              <span style={{ color: BRAND, fontWeight: 700 }}>
+                                {v.supply_m2 && v.exclusive_m2
+                                  ? `공급 ${v.supply_m2}m² / 전용 ${v.exclusive_m2}m² (${v.exclusive_py ? `${v.exclusive_py}평` : `${(v.exclusive_m2 / 3.3058).toFixed(1)}평`})`
+                                  : v.exclusive_m2
+                                  ? `전용 ${v.exclusive_m2}m² (${v.exclusive_py ? `${v.exclusive_py}평` : `${(v.exclusive_m2 / 3.3058).toFixed(1)}평`})`
+                                  : v.area_m2
+                                  ? `면적 ${v.area_m2}m² (${(v.area_m2 / 3.3058).toFixed(1)}평)`
+                                  : "면적 정보 없음"}
+                              </span>
                             </div>
 
-                            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
-                              {v.move_in_date ? `입주: ${v.move_in_date}` : "즉시입주 가능"}
-                              {v.completion_year ? ` · ${v.completion_year}년 준공` : ""}
-                            </div>
+                            {/* 층수 · 구조 · 방향 · 주차 */}
+                            {(() => {
+                              const specs: string[] = [];
+                              if (v.current_floor || v.floor) {
+                                specs.push(v.current_floor ? (v.total_floor ? `${v.current_floor}/${v.total_floor}층` : `${v.current_floor}층`) : `${v.floor}층`);
+                              }
+                              if (v.room_count || v.rooms) {
+                                const r = v.room_count || v.rooms;
+                                const b = v.bath_count || v.bathroom_count || v.bathrooms;
+                                specs.push(b ? `방 ${r} / 욕실 ${b}` : `방 ${r}개`);
+                              }
+                              if (v.direction) specs.push(v.direction);
+                              if (v.parking) specs.push(`주차 ${v.parking}`);
+
+                              return specs.length > 0 ? (
+                                <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 500, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 2 }}>
+                                  {specs.map((item, idx) => (
+                                    <span key={idx} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                      {idx > 0 && <span style={{ color: "#cbd5e1" }}>·</span>}
+                                      <span>{item}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null;
+                            })()}
+
+                            {/* 입주 · 준공 · 소재지 */}
+                            {(() => {
+                              const meta = typeof v.metadata === "string" ? JSON.parse(v.metadata || "{}") : (v.metadata || {});
+                              const year = meta.approval_year || v.completion_year;
+                              const loc = [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ");
+                              const infos: string[] = [];
+
+                              infos.push(v.move_in_date ? `입주: ${v.move_in_date}` : "즉시입주 가능");
+                              if (year) infos.push(`${year}년 준공`);
+                              if (loc) infos.push(`📍 ${loc}`);
+
+                              return (
+                                <div style={{ fontSize: 12, color: "#94a3b8", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
+                                  {infos.map((item, idx) => (
+                                    <span key={idx} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                      {idx > 0 && <span style={{ color: "#e2e8f0" }}>·</span>}
+                                      <span>{item}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              );
+                            })()}
                           </>
                         )}
                       </div>
@@ -1719,22 +1825,64 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                       <div style={{ padding: "0 20px 20px 20px", background: "#fff", cursor: "default" }} onClick={e => e.stopPropagation()}>
                         <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", display: "grid", gridTemplateColumns: "120px 1fr 120px 1fr", fontSize: 13 }}>
                           {[
-                            { l1: "공실관리번호", v1: String(v.id).split('-')[0].toUpperCase(), l2: "방 / 욕실수", v2: `${v.rooms || 0}개 / ${v.bathrooms || 0}개` },
-                            { l1: "소재지 주소", v1: `${v.sido} ${v.sigungu} ${v.dong} ${v.detail_addr || ""}`.trim(), l2: "주실 방향", v2: v.direction || "남향" },
-                            { l1: "건물/단지명", v1: v.building_name || "특징 없음", l2: "주차 대수", v2: v.parking_spots ? `주차 ${v.parking_spots}대 가능` : "주차 불가" },
-                            { l1: "공급/전용면적", v1: `${Math.round((v.area_m2 || 0) * 1.3)}m² / ${v.area_m2 || 0}m²`, l2: "입주가능일", v2: v.move_in_date || "즉시입주" },
-                            { l1: "해당층 / 총층", v1: `${v.floor || "해당층"} / ${v.total_floors || "전체층"}`, l2: "월 관리비", v2: v.maintenance_fee ? `${Math.round(v.maintenance_fee/10000)}만원` : "10만원" },
-                            { l1: "등록자 / 상호", v1: (() => {
-                              const m = v.members;
-                              if (!m) return v.client_name || "-";
-                              if (m.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].agency_name || m.name || v.client_name || "-";
-                              return m.name || v.client_name || "-";
-                            })(), l2: "담당 연락처", v2: (() => {
-                              const m = v.members;
-                              if (!m) return v.client_phone || "-";
-                              if (m.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].phone || m.phone || v.client_phone || "-";
-                              return m.phone || v.client_phone || "-";
-                            })() }
+                            { 
+                              l1: "공실관리번호", 
+                              v1: v.vacancy_no ? `V-${v.vacancy_no}` : String(v.id).split('-')[0].toUpperCase(), 
+                              l2: "방 / 욕실수", 
+                              v2: (() => {
+                                const r = v.room_count || v.rooms || 0;
+                                const b = v.bath_count || v.bathroom_count || v.bathrooms || 0;
+                                if (r > 0 || b > 0) return `방 ${r}개 / 욕실 ${b}개`;
+                                return "해당없음 (원룸/상가)";
+                              })()
+                            },
+                            { 
+                              l1: "소재지 주소", 
+                              v1: [v.sido, v.sigungu, v.dong, v.detail_addr].filter(Boolean).join(" ") || "소재지 정보 없음", 
+                              l2: "주실 방향", 
+                              v2: v.direction || "-" 
+                            },
+                            { 
+                              l1: "건물/단지명", 
+                              v1: v.building_name || (v.property_type ? `${v.property_type}` : "단지명 없음"), 
+                              l2: "주차 대수", 
+                              v2: v.parking ? (v.parking.includes("대") || v.parking.includes("가능") || v.parking.includes("불가") ? v.parking : `주차 ${v.parking} 가능`) : (v.parking_spots ? `주차 ${v.parking_spots}대` : "주차 불가 / 협의") 
+                            },
+                            { 
+                              l1: "공급/전용면적", 
+                              v1: (() => {
+                                const sm = v.supply_m2;
+                                const em = v.exclusive_m2 || v.area_m2;
+                                const ep = v.exclusive_py ? `${v.exclusive_py}평` : (em ? `${(em / 3.3058).toFixed(1)}평` : "");
+                                const sp = v.supply_py ? `${v.supply_py}평` : (sm ? `${(sm / 3.3058).toFixed(1)}평` : "");
+                                if (sm && em) return `공급 ${sm}m² (${sp}) / 전용 ${em}m² (${ep})`;
+                                if (em) return `전용 ${em}m² (${ep})`;
+                                return "-";
+                              })(),
+                              l2: "입주가능일", 
+                              v2: v.move_in_date || "즉시입주 가능" 
+                            },
+                            { 
+                              l1: "해당층 / 총층", 
+                              v1: v.current_floor ? (v.total_floor ? `${v.current_floor} / 총 ${v.total_floor}층` : `${v.current_floor}층`) : (v.floor ? `${v.floor}층` : "-"), 
+                              l2: "월 관리비", 
+                              v2: v.maintenance_fee ? `${Math.round(v.maintenance_fee / 10000)}만원` : "없음 (0원)" 
+                            },
+                            { 
+                              l1: "등록자 / 상호", 
+                              v1: (() => {
+                                const m = v.members;
+                                if (m?.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].agency_name || m.name || v.client_name || "공실부동산";
+                                if (v.owner_role === 'REALTOR' || m?.role === 'REALTOR') return m?.name || v.client_name || "부동산 회원";
+                                return m?.name || v.client_name || "일반인 회원";
+                              })(), 
+                              l2: "담당 연락처", 
+                              v2: (() => {
+                                const m = v.members;
+                                if (m?.role === 'REALTOR' && m.agencies && m.agencies.length > 0) return m.agencies[0].phone || m.phone || v.client_phone || "-";
+                                return m?.phone || v.client_phone || "-";
+                              })() 
+                            }
                           ].map((row, i, arr) => (
                             <div key={i} style={{ display: "contents" }}>
                               <div style={{ background: "#f8fafc", padding: "10px 14px", fontWeight: 700, color: "#64748b", borderBottom: i === arr.length - 1 ? "none" : "1px solid #f1f5f9", display: "flex", alignItems: "center" }}>{row.l1}</div>
@@ -1744,6 +1892,18 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                             </div>
                           ))}
                         </div>
+
+                        {/* 부가 옵션 태그 (있을 경우) */}
+                        {v.options && Array.isArray(v.options) && v.options.length > 0 && (
+                          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", padding: "8px 12px", background: "#f8fafc", borderRadius: 6, border: "1px solid #f1f5f9" }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginRight: 4 }}>제공 옵션:</span>
+                            {v.options.map((opt: string) => (
+                              <span key={opt} style={{ fontSize: 11.5, background: "#fff", color: BRAND, border: `1px solid #dbeafe`, padding: "2px 8px", borderRadius: 4, fontWeight: 600 }}>
+                                ✓ {opt}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

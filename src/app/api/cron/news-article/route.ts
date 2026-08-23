@@ -210,8 +210,9 @@ export async function GET(req: Request) {
       }
 
       // 상위 10개의 최신 신선한 뉴스 후보 추출
-      const candidateNews = freshItems.slice(0, 10).map((news, index) => {
-        return `[후보 ${index + 1} (${news.source})]\n제목: ${news.title}\n요약: ${news.snippet || ''}\nURL: ${news.link || ''}\n`;
+      const topCandidates = freshItems.slice(0, 10);
+      const candidateNews = topCandidates.map((news, index) => {
+        return `[후보 ${index + 1}]\nID: CANDIDATE_${index + 1}\n출처: ${news.source}\n제목: ${news.title}\n요약: ${news.snippet || ''}\nURL: ${news.link || ''}\n`;
       }).join('\n');
 
       // ── 최근 작성된 기사 제목을 AI에게 전달하여 중복 주제 완벽 회피 ──
@@ -231,13 +232,32 @@ export async function GET(req: Request) {
         continue;
       }
 
+      // ── 정확한 원본 URL 매핑 검증 ──
+      let resolvedSourceUrl = aiResult.sourceUrl;
+      if (aiResult.chosenCandidateId) {
+        const matchIdx = aiResult.chosenCandidateId.match(/CANDIDATE_(\d+)/i);
+        if (matchIdx && matchIdx[1]) {
+          const idx = parseInt(matchIdx[1], 10) - 1;
+          if (topCandidates[idx]?.link) {
+            resolvedSourceUrl = topCandidates[idx].link;
+          }
+        }
+      }
+      // URL이 topCandidates에 없다면 제목 유사도로 가장 일치하는 원문 URL 매칭
+      if (!topCandidates.some(c => c.link === resolvedSourceUrl)) {
+        const bestMatch = topCandidates.find(c => aiResult.title.includes(c.title.slice(0, 8)) || c.title.includes(aiResult.title.slice(0, 8)));
+        if (bestMatch?.link) {
+          resolvedSourceUrl = bestMatch.link;
+        }
+      }
+
       // ── 사진 전문 에이전트(PhotoCurationAgent) 가동 ──
       const media = await PhotoCurationAgent.resolvePhoto({
         category: item.section2,
         articleTitle: aiResult.title,
         articleSubtitle: aiResult.subtitle,
         articleContent: aiResult.content,
-        sourceUrl: aiResult.sourceUrl,
+        sourceUrl: resolvedSourceUrl,
         mediaType: aiResult.mediaType,
         youtubeSearchQuery: aiResult.youtubeSearchQuery,
       });
