@@ -71,15 +71,15 @@ export default function MobileStudyHubClient({ lectures }: any) {
             </div>
 
             <h1 style={{ fontSize: "20px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>
-              1년 365일, 현장과 함께 달리는<br />
-              <span style={{ color: "#34d399" }}>공실뉴스 AI 실전 스터디</span>
+              AI 유튜브 시대<br />
+              <span style={{ color: "#34d399" }}>부동산중개에 꼭! 필요한 실전 마케팅 스터디</span>
             </h1>
 
             <p style={{ fontSize: "13px", color: "#a7f3d0", opacity: 0.9, lineHeight: 1.5, margin: "0 0 18px 0" }}>
               단발성 인강이 아닙니다. 12개월 동안 매월 업데이트되는 최신 AI 기술과 실전 노하우로 지역 1등 부동산을 완성하세요.
             </p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 12px", fontSize: "12px", color: "#d1fae5", fontWeight: 600 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 12px", fontSize: "12px", color: "#d1fae5", fontWeight: 600, marginBottom: "16px" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <span style={{ color: "#34d399" }}>✓</span> 365일 무제한 수강
               </span>
@@ -93,120 +93,26 @@ export default function MobileStudyHubClient({ lectures }: any) {
                 <span style={{ color: "#34d399" }}>✓</span> 11만 중개사 크루 연계
               </span>
             </div>
+
+            <Link
+              href="/m/study/about"
+              style={{
+                display: "block",
+                textAlign: "center",
+                padding: "11px",
+                background: "#059669",
+                color: "#ffffff",
+                borderRadius: 8,
+                fontSize: "13.5px",
+                fontWeight: 800,
+                textDecoration: "none",
+              }}
+            >
+              공실스터디 알아보기 →
+            </Link>
           </div>
 
-          {/* ━━━ 3D PASTEL AVATARS: 나이가 많아서요? 코딩을 못해서요? (윤자동 증명 섹션) ━━━ */}
-          <div style={{ padding: "0 16px", marginBottom: 28 }}>
-            <div style={{ textAlign: "center", marginBottom: 18 }}>
-              <h2 style={{ fontSize: "18px", fontWeight: 900, color: "#062828", margin: "0 0 6px 0", lineHeight: 1.35 }}>
-                나이가 많아서요? 컴맹이라서요?<br />
-                <span style={{ color: "#059669" }}>초보라서 못 할 것 같다고요?</span>
-              </h2>
-              <p style={{ fontSize: "12.5px", color: "#64748b", margin: 0, lineHeight: 1.5 }}>
-                그 걱정, 이제 내려놓으셔도 됩니다.<br />먼저 1년 동안 해내신 분들이 증명했거든요.
-              </p>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[
-                {
-                  role: "소속공인중개사 1년차",
-                  quote: "“블로그 글 1개 쓰는데 반나절 걸리던 제가, AI 프롬프트 쓰고 5분 만에 상위노출 글을 뚝딱 완성했어요.”",
-                  author: "마포구 소속공인중개사 이OO 실장",
-                  image: "/images/study/avatar_realtor_female.jpg",
-                },
-                {
-                  role: "50대 개업공인중개사",
-                  quote: "“컴맹이라 AI는 남 이야기인 줄 알았는데, 클릭 몇 번으로 매물 쇼츠 만들었더니 유튜브 보고 젊은 임차인 문의가 3배 폭증했네요.”",
-                  author: "강남구 개업공인중개사 박OO 대표",
-                  image: "/images/study/avatar_realtor_male.jpg",
-                },
-                {
-                  role: "상가 건물주 / 임대인",
-                  quote: "“1년 넘게 공실이던 3층 통상가, 공실스터디에서 배운 타깃 마케팅으로 2주 만에 프랜차이즈 임대 맞췄습니다.”",
-                  author: "판교 상가 건물주 정OO 대표",
-                  image: "/images/study/avatar_landlord_male.jpg",
-                },
-                {
-                  role: "부동산 유튜버 크리에이터",
-                  quote: "“고가 장비 없이 AI 음성으로 부동산 브리핑 채널 시작해 구독자 1만 명 돌파하고 전속 매물 쏟아집니다.”",
-                  author: "유튜브 채널 운영자 김OO 대표",
-                  image: "/images/study/avatar_creator_male.jpg",
-                },
-                {
-                  role: "경매 & 특수물건 실무자",
-                  quote: "“어려운 유찰 물건 권리분석부터 특약 작성까지, 1년 스터디 실무 서식 덕분에 안전하게 계약 체결했어요.”",
-                  author: "경기 분당구 공인중개사 최OO 대표",
-                  image: "/images/study/avatar_senior_female.jpg",
-                },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 14,
-                    padding: "16px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
-                  }}
-                >
-                  <div style={{ width: 80, height: 80, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <img src={item.image} alt={item.role} style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 8 }} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: "inline-block", background: "#ecfdf5", color: "#047857", fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 4, marginBottom: 4 }}>
-                      {item.role}
-                    </span>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "#062828", lineHeight: 1.45, margin: "0 0 6px 0" }}>
-                      {item.quote}
-                    </p>
-                    <span style={{ fontSize: 11.5, color: "#64748b" }}>
-                      {item.author}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 2. 12개월 마스터 로드맵 (컴팩트 카드) */}
-          <div style={{ padding: "0 16px", marginBottom: 24 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: "#062828" }}>1년 12개월 로드맵</span>
-              <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>4단계 마스터 플랜</span>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#059669", marginBottom: 4 }}>Q1 (1~3개월)</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#062828", marginBottom: 2 }}>🤖 AI 무기 장착</div>
-                <div style={{ fontSize: 11.5, color: "#64748b" }}>1분 매물 쇼츠·블로그 10배 자동화</div>
-              </div>
-
-              <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#059669", marginBottom: 4 }}>Q2 (4~6개월)</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#062828", marginBottom: 2 }}>🏢 실전 공실 해결</div>
-                <div style={{ fontSize: 11.5, color: "#64748b" }}>상가/원룸 임대 마케팅 클로징</div>
-              </div>
-
-              <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#059669", marginBottom: 4 }}>Q3 (7~9개월)</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#062828", marginBottom: 2 }}>🔨 경공매 권리분석</div>
-                <div style={{ fontSize: 11.5, color: "#64748b" }}>유찰 물건 발굴·특수물건 중개</div>
-              </div>
-
-              <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#059669", marginBottom: 4 }}>Q4 (10~12개월)</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#062828", marginBottom: 2 }}>🏆 지역 1등 안착</div>
-                <div style={{ fontSize: 11.5, color: "#64748b" }}>유튜브 채널·11만 공동중개망</div>
-              </div>
-            </div>
-          </div>
-
-          {/* 3. 특강 목록 */}
+          {/* 2. 특강 목록 */}
           <div style={{ padding: "0 16px 24px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <span style={{ fontSize: 16, fontWeight: 800, color: "#062828" }}>전체 스터디 특강</span>
