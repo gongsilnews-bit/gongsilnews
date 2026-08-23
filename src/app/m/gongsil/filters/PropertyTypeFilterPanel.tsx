@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FilterState } from './useVacancyFilters';
 
 interface Props {
@@ -11,11 +11,31 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
   const allItems = PROPERTY_TYPES.flatMap(g => g.items);
   const isAllItemsSelected = allItems.length > 0 && allItems.every(item => filters.propertyTypes.includes(item));
 
-  // 현재 2단계에서 펼쳐진 대분류 그룹 (기본값: 아파트·오피스텔 또는 첫번째 그룹)
-  const [activeGroup, setActiveGroup] = useState<string>(() => {
+  // 현재 2단계에서 펼쳐진 대분류 그룹 (현재 선택된 매물유형이 속한 그룹 우선 자동 감지)
+  const getInitialGroup = () => {
+    if (filters.propertyTypes.length > 0 && filters.propertyTypes.length < allItems.length) {
+      const matched = PROPERTY_TYPES.find(g => g.items.some(item => filters.propertyTypes.includes(item)));
+      if (matched) return matched.group;
+    }
     if (PROPERTY_TYPES.length > 0) return PROPERTY_TYPES[0].group;
     return "아파트·오피스텔";
-  });
+  };
+
+  const [activeGroup, setActiveGroup] = useState<string>(getInitialGroup);
+
+  // filters.propertyTypes 변경 시 activeGroup 자동 동기화
+  useEffect(() => {
+    if (filters.propertyTypes.length > 0 && filters.propertyTypes.length < allItems.length) {
+      const currentGroupObj = PROPERTY_TYPES.find(g => g.group === activeGroup);
+      const isCurrentGroupSelected = currentGroupObj?.items.some(item => filters.propertyTypes.includes(item));
+      if (!isCurrentGroupSelected) {
+        const matched = PROPERTY_TYPES.find(g => g.items.some(item => filters.propertyTypes.includes(item)));
+        if (matched) {
+          setActiveGroup(matched.group);
+        }
+      }
+    }
+  }, [filters.propertyTypes, PROPERTY_TYPES, allItems.length, activeGroup]);
 
   const selectedGroupObj = PROPERTY_TYPES.find(g => g.group === activeGroup) || PROPERTY_TYPES[0];
   const groupItems = selectedGroupObj?.items || [];
