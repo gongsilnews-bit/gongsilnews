@@ -54,49 +54,35 @@ export default function MobileStudyAboutClient() {
         </Link>
       </div>
 
-      {/* ── 2. 모바일 히어로 배너 ── */}
-      <div style={{ backgroundColor: "#062326", color: "#ffffff", padding: "28px 20px 24px", margin: "10px 16px 20px", borderRadius: 14, boxShadow: "0 4px 16px rgba(6,35,38,0.15)" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", padding: "4px 10px", borderRadius: 16, fontSize: 11.5, fontWeight: 700, color: "#6ee7b7", marginBottom: 12 }}>
+      {/* ── 2. 모바일 히어로 배너 (Clean & Centered YunJaDong style) ── */}
+      <div style={{ backgroundColor: "#062326", color: "#ffffff", padding: "32px 20px 28px", margin: "10px 16px 20px", borderRadius: 16, boxShadow: "0 4px 16px rgba(6,35,38,0.15)", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", padding: "4px 10px", borderRadius: 16, fontSize: 11.5, fontWeight: 700, color: "#6ee7b7", marginBottom: 16 }}>
           <span>🌿</span>
           <span>ABOUT 공실스터디</span>
         </div>
 
-        <h1 style={{ fontSize: "20px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>
-          배우고, 바로 써먹는<br />
-          <span style={{ color: "#34d399" }}>공실뉴스 AI 실전 스터디</span>
+        <h1 style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 auto 12px", color: "#ffffff" }}>
+          매주 보고 따라 하다 보면,<br />
+          AI와 유튜브가 <span style={{ color: "#34d399" }}>익숙해집니다.</span>
         </h1>
 
-        <p style={{ fontSize: "13px", color: "#a7f3d0", opacity: 0.9, lineHeight: 1.55, margin: "0 0 18px 0" }}>
-          단발성 인강이 아닙니다. 12개월 동안 매월 업데이트되는 최신 AI 기술과 실전 노하우로 지역 1등 부동산을 완성하세요.
+        <p style={{ fontSize: "13px", color: "#a7f3d0", opacity: 0.9, lineHeight: 1.6, margin: "0 auto 20px", wordBreak: "keep-all" }}>
+          공실뉴스는 매주 부동산 실무와 마케팅에 꼭 필요한 실전 특강을 제공합니다. 놓친 강의는 언제든 무제한 다시보기로 복습할 수 있어요.
         </p>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 12px", fontSize: "12px", color: "#d1fae5", fontWeight: 600, marginBottom: 18 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ color: "#34d399" }}>✓</span> 365일 무제한 수강
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ color: "#34d399" }}>✓</span> 매월 신규 VOD 추가
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ color: "#34d399" }}>✓</span> 실무 서식 100% 제공
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ color: "#34d399" }}>✓</span> 11만 중개사 크루 연계
-          </span>
-        </div>
 
         <Link
           href="/m/study"
           style={{
             display: "block",
             textAlign: "center",
-            padding: "12px",
+            padding: "13px 20px",
             background: "#059669",
             color: "#ffffff",
-            borderRadius: 8,
-            fontSize: "14px",
+            borderRadius: 10,
+            fontSize: "14.5px",
             fontWeight: 800,
             textDecoration: "none",
+            boxShadow: "0 4px 12px rgba(5, 150, 105, 0.3)",
           }}
         >
           특강 둘러보기 →

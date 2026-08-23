@@ -34,12 +34,12 @@ export default function StudyAboutClient() {
   return (
     <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#132e27", minHeight: "100vh" }}>
       
-      {/* ━━━ 1. HERO SECTION ━━━ */}
-      <section style={{ backgroundColor: "#062326", color: "#ffffff", padding: "72px 0 60px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
+      {/* ━━━ 1. HERO SECTION (Clean & Centered YunJaDong style) ━━━ */}
+      <section style={{ backgroundColor: "#062326", color: "#ffffff", padding: "80px 0 70px", borderBottom: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto", padding: "0 24px" }}>
           
           {/* Breadcrumb / Top Tag */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
             <Link
               href="/study"
               style={{
@@ -67,60 +67,34 @@ export default function StudyAboutClient() {
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 30 }}>
-            <div style={{ maxWidth: 760 }}>
-              <h1 style={{ fontSize: "40px", fontWeight: 900, lineHeight: 1.3, letterSpacing: "-1px", margin: "0 0 18px 0" }}>
-                배우고, 바로 써먹고, 실전 계약까지!<br />
-                <span style={{ color: "#34d399" }}>공실뉴스 AI 부동산 실전 스터디</span>란?
-              </h1>
-              <p style={{ fontSize: "17px", color: "#a7f3d0", opacity: 0.95, lineHeight: 1.7, margin: "0 0 28px 0", wordBreak: "keep-all" }}>
-                공실스터디는 단순한 온라인 동영상 강의가 아닙니다. 1년 365일 동안 최신 AI 마케팅 도구, 공실 해결 임대 실무, 법원 경공매 권리분석을 실제 현장에 접목하여 <strong>지역 1등 공인중개사와 성공적인 임대인</strong>으로 성장하도록 돕는 실전 마스터마인드 커뮤니티입니다.
-              </p>
+          <h1 style={{ fontSize: "44px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-1px", margin: "0 auto 20px", color: "#ffffff" }}>
+            매주 보고 따라 하다 보면,<br />
+            AI와 유튜브가 <span style={{ color: "#34d399" }}>익숙해집니다.</span>
+          </h1>
 
-              {/* 4대 안심 포인트 */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 24px", fontSize: "14px", color: "#d1fae5", fontWeight: 600 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  365일 무제한 수강 & 복습
-                </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  매월 신규 실무 VOD 업데이트
-                </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  계약서·특약·쇼츠 원본 100% 제공
-                </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  전국 11만 중개사 스터디 크루
-                </span>
-              </div>
-            </div>
+          <p style={{ fontSize: "17.5px", color: "#a7f3d0", opacity: 0.9, lineHeight: 1.7, maxWidth: 660, margin: "0 auto 32px", wordBreak: "keep-all" }}>
+            공실뉴스는 매주 부동산 실무와 마케팅에 꼭 필요한 실전 특강을 제공합니다.<br />
+            놓친 강의는 언제든 무제한 다시보기로 복습할 수 있어요.
+          </p>
 
-            {/* Quick CTA Button */}
-            <div>
-              <Link
-                href="/study"
-                style={{
-                  padding: "16px 32px",
-                  background: "#059669",
-                  color: "#ffffff",
-                  borderRadius: 12,
-                  fontSize: 16,
-                  fontWeight: 800,
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  boxShadow: "0 6px 20px rgba(5, 150, 105, 0.4)",
-                  transition: "all 0.2s",
-                }}
-              >
-                <span>특강 둘러보기</span>
-                <span>→</span>
-              </Link>
-            </div>
+          <div>
+            <Link
+              href="/study"
+              style={{
+                display: "inline-block",
+                padding: "16px 36px",
+                background: "#059669",
+                color: "#ffffff",
+                borderRadius: 12,
+                fontSize: 16.5,
+                fontWeight: 800,
+                textDecoration: "none",
+                boxShadow: "0 8px 24px rgba(5, 150, 105, 0.35)",
+                transition: "all 0.2s",
+              }}
+            >
+              특강 둘러보기 →
+            </Link>
           </div>
 
         </div>
