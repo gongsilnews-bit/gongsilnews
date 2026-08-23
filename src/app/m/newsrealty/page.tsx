@@ -376,11 +376,12 @@ export default function MobileNewsRealtyPage() {
                 <div
                   key={i}
                   style={{
-                    backgroundColor: isOpen ? "#eff6ff" : "#ffffff",
+                    backgroundColor: "#ffffff",
                     border: isOpen ? "1.5px solid #2563eb" : "1px solid #e2e8f0",
                     borderRadius: 10,
                     overflow: "hidden",
                     transition: "all 0.2s ease",
+                    boxShadow: isOpen ? "0 2px 8px rgba(37, 99, 235, 0.08)" : "none",
                   }}
                 >
                   <button
@@ -391,7 +392,7 @@ export default function MobileNewsRealtyPage() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      backgroundColor: "transparent",
+                      backgroundColor: "#ffffff",
                       border: "none",
                       textAlign: "left",
                       cursor: "pointer",
@@ -406,7 +407,7 @@ export default function MobileNewsRealtyPage() {
                     </span>
                   </button>
                   {isOpen && (
-                    <div style={{ padding: "0 16px 14px", fontSize: 12.5, color: "#475569", lineHeight: 1.6, borderTop: "1px solid rgba(37, 99, 235, 0.1)", paddingTop: 10 }}>
+                    <div style={{ padding: "0 16px 14px", fontSize: 12.5, color: "#334155", lineHeight: 1.6, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
                       {faq.a}
                     </div>
                   )}

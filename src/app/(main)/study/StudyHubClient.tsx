@@ -465,11 +465,12 @@ export default function StudyHubClient({
                     <div
                       key={index}
                       style={{
-                        backgroundColor: isOpen ? "#f4fbf7" : "#ffffff",
+                        backgroundColor: "#ffffff",
                         border: isOpen ? "1.5px solid #059669" : "1px solid #e2e8f0",
                         borderRadius: 12,
                         overflow: "hidden",
                         transition: "all 0.2s ease",
+                        boxShadow: isOpen ? "0 4px 16px rgba(5, 150, 105, 0.08)" : "none",
                       }}
                     >
                       <button
@@ -480,7 +481,7 @@ export default function StudyHubClient({
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          backgroundColor: "transparent",
+                          backgroundColor: "#ffffff",
                           border: "none",
                           cursor: "pointer",
                           textAlign: "left",
@@ -511,9 +512,9 @@ export default function StudyHubClient({
                           style={{
                             padding: "0 24px 22px 24px",
                             fontSize: 14.5,
-                            color: "#475569",
+                            color: "#334155",
                             lineHeight: 1.7,
-                            borderTop: "1px solid rgba(5, 150, 105, 0.1)",
+                            borderTop: "1px solid #f1f5f9",
                             paddingTop: 16,
                           }}
                         >
