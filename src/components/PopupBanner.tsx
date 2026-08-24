@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { getBannersByPlacement, trackBannerClick, trackBannerView } from "@/app/actions/banner";
 
 function getCookie(name: string): string | null {
@@ -16,20 +17,46 @@ function setCookie(name: string, value: string, hours: number) {
   document.cookie = `${name}=${encodeURIComponent(value)};expires=${d.toUTCString()};path=/`;
 }
 
+function getSessionClosedIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = sessionStorage.getItem("popup_session_closed_ids");
+    return new Set(raw ? raw.split(",") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function addSessionClosedId(id: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const existing = sessionStorage.getItem("popup_session_closed_ids");
+    const ids = existing ? existing.split(",") : [];
+    if (!ids.includes(id)) ids.push(id);
+    sessionStorage.setItem("popup_session_closed_ids", ids.join(","));
+  } catch {}
+}
+
 export default function PopupBanner() {
+  const pathname = usePathname();
+  const isMainPage = pathname === "/" || pathname === "/m";
+
   const [popups, setPopups] = useState<any[]>([]);
   const [closedIds, setClosedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (!isMainPage) return;
+
     async function load() {
       const res = await getBannersByPlacement("POPUP");
       if (res.success && res.data.length > 0) {
-        // 쿠키로 "오늘 하루 보지 않기" 체크된 배너 필터링
+        // 쿠키로 "오늘 하루 보지 않기" 및 이번 세션에서 닫은 배너 필터링
         const hidden = getCookie("popup_hidden_ids");
         const hiddenSet = new Set(hidden ? hidden.split(",") : []);
-        const visible = res.data.filter((b: any) => !hiddenSet.has(b.id));
+        const sessionSet = getSessionClosedIds();
+        const visible = res.data.filter((b: any) => !hiddenSet.has(b.id) && !sessionSet.has(b.id));
         console.log("[PopupBanner] Fetched banners:", res.data);
-        console.log("[PopupBanner] Visible after cookie filter:", visible);
+        console.log("[PopupBanner] Visible after cookie/session filter:", visible);
         setPopups(visible);
 
         // 노출 추적
@@ -39,9 +66,10 @@ export default function PopupBanner() {
       }
     }
     load();
-  }, []);
+  }, [isMainPage]);
 
   const handleClose = useCallback((id: string) => {
+    addSessionClosedId(id);
     setClosedIds(prev => new Set(prev).add(id));
   }, []);
 
@@ -51,6 +79,7 @@ export default function PopupBanner() {
     const ids = existing ? existing.split(",") : [];
     if (!ids.includes(id)) ids.push(id);
     setCookie("popup_hidden_ids", ids.join(","), 24);
+    addSessionClosedId(id);
     setClosedIds(prev => new Set(prev).add(id));
   }, []);
 
@@ -62,6 +91,7 @@ export default function PopupBanner() {
     }
   }, []);
 
+  if (!isMainPage) return null;
   const visiblePopups = popups.filter(p => !closedIds.has(p.id));
   if (visiblePopups.length === 0) return null;
 
