@@ -209,52 +209,44 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
         style={{ width: "100%", height: "200px", background: "#e8ecf0" }}
       />
 
-      {/* 🚀 비차단형 실시간 로딩 인디케이터 (화면 가림 0%, 조작 100% 즉시 가능) */}
+      {/* 네트워크 로딩 오버레이 */}
       {isLoading && (
-        <div
-          style={{
-            position: "absolute",
-            top: 12,
-            right: 12,
-            zIndex: 20,
-            background: "rgba(255, 255, 255, 0.92)",
-            backdropFilter: "blur(4px)",
-            color: "#1e40af",
-            borderRadius: 20,
-            padding: "5px 10px",
-            fontSize: 11,
-            fontWeight: 700,
-            boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
-            border: "1px solid rgba(37,99,235,0.15)",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            pointerEvents: "none",
-          }}
-        >
+        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(4px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 99999 }}>
           <style>{`
-            @keyframes pulseDotMini {
-              0%, 100% { transform: scale(1); opacity: 1; }
-              50% { transform: scale(1.4); opacity: 0.4; }
+            @keyframes pulseRingMini {
+              0% { transform: scale(0.8); opacity: 0.5; }
+              100% { transform: scale(1.5); opacity: 0; }
             }
           `}</style>
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "#2563eb",
-              animation: "pulseDotMini 1.2s ease-in-out infinite",
-              display: "inline-block",
-            }}
-          />
-          동기화 중...
+          <div style={{ position: "relative", width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}>
+            <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingMini 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
+            <div style={{ position: "relative", width: "24px", height: "24px", borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.12)", border: "1px solid rgba(0,0,0,0.06)" }}>
+              <style>{`
+                @keyframes spinCircleMini {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
+              <div style={{
+                width: 14,
+                height: 14,
+                border: "2px solid rgba(26, 115, 232, 0.15)",
+                borderTop: "2px solid #1a73e8",
+                borderRadius: "50%",
+                animation: "spinCircleMini 0.8s linear infinite"
+              }} />
+            </div>
+          </div>
+          <h3 style={{ fontSize: "14px", fontWeight: 800, color: "#1a2e50", margin: "0 0 4px 0" }}>네트워크 로딩 중입니다</h3>
+          <p style={{ fontSize: "11px", color: "#6b7280", textAlign: "center", lineHeight: 1.4, margin: 0 }}>
+            실시간 공실 정보를 안전하게 불러오고 있습니다.
+          </p>
         </div>
       )}
 
       {/* 공실 수 뱃지 (클릭 시 현재 위치 기반으로 이동) */}
       <div
-        onClick={() => handleNavigate()}
+        onClick={handleNavigate}
         style={{
           position: "absolute",
           top: 12,
@@ -275,7 +267,7 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
 
       {/* 더보기 버튼 (클릭 시 현재 위치 기반으로 이동) */}
       <div
-        onClick={() => handleNavigate()}
+        onClick={handleNavigate}
         style={{
           position: "absolute",
           bottom: 12,
