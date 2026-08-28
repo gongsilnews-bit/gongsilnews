@@ -69,7 +69,7 @@ export default function HeroMapSection() {
   useEffect(() => {
     const fetchData = async (showLoading = true) => {
       if (showLoading) setIsLoading(true);
-      const res = await getVacanciesForMap({ limit: 100 });
+      const res = await getVacanciesForMap({ limit: 10000 });
       if (res.success && res.data) {
         const withImages = res.data.map((v: any) => ({
           ...v,
@@ -81,7 +81,7 @@ export default function HeroMapSection() {
       if (showLoading) setIsLoading(false);
     };
 
-    fetchData(); // 초기 초고속 로딩
+    fetchData(); // 초기 로딩
 
     // 사용자가 다른 탭에 갔다가 돌아올 때 최신 데이터 갱신 (삭제된 매물 제거)
     const handleVisibility = () => {
@@ -204,32 +204,8 @@ export default function HeroMapSection() {
 
     // Initially set bounds and update on move
     setMapBounds(map.getBounds());
-    kakao.maps.event.addListener(map, 'idle', async () => {
-      const bounds = map.getBounds();
-      setMapBounds(bounds);
-      const sw = bounds.getSouthWest();
-      const ne = bounds.getNorthEast();
-      const res = await getVacanciesForMap({
-        bbox: {
-          swLat: sw.getLat(),
-          swLng: sw.getLng(),
-          neLat: ne.getLat(),
-          neLng: ne.getLng(),
-        },
-        limit: 100,
-      });
-      if (res.success && res.data && res.data.length > 0) {
-        const withImages = res.data.map((v: any) => ({
-          ...v,
-          photos: v.vacancy_photos ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [],
-        }));
-        const filtered = withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng);
-        setVacancies(prev => {
-          const existingIds = new Set(prev.map((p: any) => p.id));
-          const newItems = filtered.filter((f: any) => !existingIds.has(f.id));
-          return newItems.length > 0 ? [...prev, ...newItems] : prev;
-        });
-      }
+    kakao.maps.event.addListener(map, 'idle', () => {
+      setMapBounds(map.getBounds());
     });
   }, [mapLoaded]);
 
@@ -365,42 +341,38 @@ export default function HeroMapSection() {
       {/* Real Kakao Map */}
       <div ref={mapRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#e8e8e8" }}></div>
 
-      {/* 🚀 비차단형 실시간 로딩 인디케이터 (화면 가림 0%, 조작 100% 즉시 가능) */}
+      {/* 네트워크 로딩 오버레이 */}
       {isLoading && (
-        <div style={{
-          position: "absolute",
-          top: 15,
-          right: 15,
-          zIndex: 1000,
-          background: "rgba(255, 255, 255, 0.92)",
-          backdropFilter: "blur(4px)",
-          borderRadius: 20,
-          padding: "6px 14px",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
-          border: "1px solid rgba(37,99,235,0.15)",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          pointerEvents: "none",
-          fontSize: 12,
-          fontWeight: 700,
-          color: "#1e40af",
-        }}>
+        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(4px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 999999 }}>
           <style>{`
-            @keyframes pulseDotHero {
-              0%, 100% { transform: scale(1); opacity: 1; }
-              50% { transform: scale(1.4); opacity: 0.4; }
+            @keyframes pulseRingHero {
+              0% { transform: scale(0.8); opacity: 0.5; }
+              100% { transform: scale(1.5); opacity: 0; }
             }
           `}</style>
-          <span style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "#2563eb",
-            animation: "pulseDotHero 1.2s ease-in-out infinite",
-            display: "inline-block",
-          }} />
-          실시간 매물 동기화 중...
+          <div style={{ position: "relative", width: "60px", height: "60px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+            <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingHero 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
+            <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", border: "1px solid rgba(0,0,0,0.06)" }}>
+              <style>{`
+                @keyframes spinCircle {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
+              <div style={{
+                width: 18,
+                height: 18,
+                border: "2.5px solid rgba(26, 115, 232, 0.15)",
+                borderTop: "2.5px solid #1a73e8",
+                borderRadius: "50%",
+                animation: "spinCircle 0.8s linear infinite"
+              }} />
+            </div>
+          </div>
+          <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#1a2e50", marginBottom: "8px" }}>네트워크 로딩 중입니다</h3>
+          <p style={{ fontSize: "14px", color: "#6b7280", textAlign: "center", lineHeight: 1.5, margin: 0 }}>
+            데이터를 실시간으로 안전하게 불러오고 있습니다.<br/>잠시만 기다려 주세요.
+          </p>
         </div>
       )}
 
