@@ -470,7 +470,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
 
       // 오렌지색 원 커스텀 마커 이미지 (SVG → DataURL)
       const size = 32;
-      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%23ff8e15" stroke="white" stroke-width="2.5"/><text x="50%25" y="50%25" text-anchor="middle" dominant-baseline="central" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="%23ff8e15" stroke="white" stroke-width="2.5"/><text x="50%" y="50%" dy="0.35em" text-anchor="middle" dominant-baseline="central" fill="white" font-size="13" font-weight="bold" font-family="sans-serif">1</text></svg>`;
       const markerImage = new kakao.maps.MarkerImage(
         `data:image/svg+xml,${svgStr}`,
         new kakao.maps.Size(size, size),
@@ -484,7 +484,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
 
       // 마우스 오버 → 살짝 키운 원 마커 이미지
       const hoverSize = 40;
-      const hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%23e67300" stroke="white" stroke-width="3"/><text x="50%25" y="50%25" text-anchor="middle" dominant-baseline="central" fill="white" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
+      const hoverSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${hoverSize}" height="${hoverSize}"><circle cx="${hoverSize/2}" cy="${hoverSize/2}" r="${hoverSize/2 - 2}" fill="%23e67300" stroke="white" stroke-width="3"/><text x="50%" y="50%" dy="0.35em" text-anchor="middle" dominant-baseline="central" fill="white" font-size="15" font-weight="bold" font-family="sans-serif">1</text></svg>`;
       const hoverImage = new kakao.maps.MarkerImage(
         `data:image/svg+xml,${hoverSvg}`,
         new kakao.maps.Size(hoverSize, hoverSize),
