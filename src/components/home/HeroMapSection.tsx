@@ -556,12 +556,16 @@ export default function HeroMapSection() {
                     </div>
                   </div>
                   {photoUrl && (
-                    <div style={{ width: 80, height: 80, borderRadius: 6, flexShrink: 0, border: "1px solid #eee", overflow: "hidden", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 80, height: 80, borderRadius: 6, flexShrink: 0, border: "1px solid #eee", overflow: "hidden", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <img 
                         src={proxiedPhotoUrl} 
                         alt="" 
                         loading="lazy" 
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                        onError={(e) => {
+                          const wrapper = (e.currentTarget as HTMLImageElement).parentElement;
+                          if (wrapper) wrapper.style.display = "none";
+                        }}
                       />
                     </div>
                   )}
