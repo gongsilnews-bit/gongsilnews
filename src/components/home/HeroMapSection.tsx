@@ -67,9 +67,10 @@ export default function HeroMapSection() {
 
   // Fetch all vacancies from DB via server action on mount + tab focus refresh
   useEffect(() => {
-    const fetchData = async (showLoading = true) => {
+    const fetchData = async (bounds?: any, showLoading = true) => {
       if (showLoading) setIsLoading(true);
-      const res = await getVacanciesForMap({ limit: 10000 });
+      // 🚀 뷰포트 기준 로딩: bounds가 있으면 현재 화면 영역만 로드
+      const res = await getVacanciesForMap(bounds ? { bbox: bounds, limit: 1200 } : { limit: 1200 });
       if (res.success && res.data) {
         const withImages = res.data.map((v: any) => ({
           ...v,
@@ -81,17 +82,22 @@ export default function HeroMapSection() {
       if (showLoading) setIsLoading(false);
     };
 
-    fetchData(); // 초기 로딩
+    // 초기 로딩: bounds가 없으면 전체 범위 로드, bounds가 생기면 그 영역만 로드
+    if (mapBounds) {
+      fetchData(mapBounds, false);
+    } else {
+      fetchData(undefined, true);
+    }
 
     // 사용자가 다른 탭에 갔다가 돌아올 때 최신 데이터 갱신 (삭제된 매물 제거)
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        fetchData(false); // 로딩 스피너 없이 조용히 갱신
+        fetchData(mapBounds, false); // 로딩 스피너 없이 조용히 갱신
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+  }, [mapBounds]);
 
   // 유저 인증 상태 + 권한 레벨 감지
   useEffect(() => {

@@ -110,18 +110,22 @@ export default function MobileHomeClient(props: Props) {
     return () => clearInterval(interval);
   }, [gongsilVideoArticles.length, isVideoHovered]);
 
+  const [mapBounds, setMapBounds] = useState<any>(null);
+
   useEffect(() => {
     async function loadVacancies() {
+      if (!mapBounds) return; // bounds가 준비될 때까지 대기
       setIsMapLoading(true);
       const { getVacanciesForMap } = await import("@/app/actions/vacancy");
-      const res = await getVacanciesForMap({ limit: 10000 });
+      // 🚀 뷰포트 기준 로딩: 현재 지도 bounds 영역만 데이터 조회
+      const res = await getVacanciesForMap({ bbox: mapBounds, limit: 1200 });
       if (res.success && res.data) {
         setVacancies(res.data);
       }
       setIsMapLoading(false);
     }
     loadVacancies();
-  }, []);
+  }, [mapBounds]);
 
   useEffect(() => {
     async function getSession() {
@@ -297,7 +301,7 @@ export default function MobileHomeClient(props: Props) {
           <Link href="/m/gongsil?mode=auction" style={{ fontSize: 15, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>더보기 ›</Link>
         </div>
         <div style={{ padding: "0 16px 16px", position: "relative" }}>
-          <MiniVacancyMap vacancies={vacancies} isLoading={isMapLoading} />
+          <MiniVacancyMap vacancies={vacancies} isLoading={isMapLoading} onBoundsChange={setMapBounds} />
         </div>
       </div>
 

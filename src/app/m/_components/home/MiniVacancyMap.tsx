@@ -8,9 +8,10 @@ const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea
 interface Props {
   vacancies: any[];
   isLoading?: boolean;
+  onBoundsChange?: (bbox: { swLat: number; swLng: number; neLat: number; neLng: number }) => void;
 }
 
-export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
+export default function MiniVacancyMap({ vacancies, isLoading, onBoundsChange }: Props) {
   const router = useRouter();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInitRef = useRef(false);
@@ -62,6 +63,25 @@ export default function MiniVacancyMap({ vacancies, isLoading }: Props) {
       map.setMaxLevel(7);
 
       setMapInstance(map);
+
+      // 🚀 뷰포트 기준 로딩: 초기 bounds를 부모에 전달해 현재 화면 영역만 로드
+      const bounds = map.getBounds();
+      if (bounds && onBoundsChange) {
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        onBoundsChange({ swLat: sw.getLat(), swLng: sw.getLng(), neLat: ne.getLat(), neLng: ne.getLng() });
+      }
+
+      // 지도 이동 완료 시 bounds 변경 감지
+      const handleIdle = () => {
+        const bounds = map.getBounds();
+        if (bounds && onBoundsChange) {
+          const sw = bounds.getSouthWest();
+          const ne = bounds.getNorthEast();
+          onBoundsChange({ swLat: sw.getLat(), swLng: sw.getLng(), neLat: ne.getLat(), neLng: ne.getLng() });
+        }
+      };
+      kakao.maps.event.addListener(map, 'idle', handleIdle);
     };
 
     // Kakao SDK 로드

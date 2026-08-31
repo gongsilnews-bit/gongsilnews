@@ -589,9 +589,10 @@ export async function getVacanciesForMap(options?: {
     }
 
     const batchSize = 1000;
-    const maxLimit = options?.limit ?? 10000;
-    // 필요한 만큼만 병렬 쿼리 호출 (limit이 1000이면 1페이지만 조회하여 10배 속도 향상!)
-    const pages = Math.max(1, Math.min(10, Math.ceil(maxLimit / batchSize)));
+    const defaultMapLimit = 1200;
+    const maxLimit = Math.min(options?.limit ?? defaultMapLimit, 2000);
+    // 홈/지도 초기 로딩은 전체 10,000건 풀 로드 대신 제한된 범위만 가져와 초기 응답을 줄인다.
+    const pages = Math.max(1, Math.min(2, Math.ceil(maxLimit / batchSize)));
     const promises = [];
     
     for (let i = 0; i < pages; i++) {
