@@ -562,19 +562,6 @@ export default function HeroMapSection() {
                         alt="" 
                         loading="lazy" 
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        onError={(e) => {
-                          // 🚀 이미지 로드 실패 시 placeholder 표시
-                          const img = e.target as HTMLImageElement;
-                          img.style.display = "none";
-                          const parent = img.parentElement;
-                          if (parent && !parent.querySelector('.image-placeholder')) {
-                            const placeholder = document.createElement('div');
-                            placeholder.className = 'image-placeholder';
-                            placeholder.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:28px;';
-                            placeholder.textContent = '📷';
-                            parent.appendChild(placeholder);
-                          }
-                        }}
                       />
                     </div>
                   )}
