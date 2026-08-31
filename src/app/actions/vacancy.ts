@@ -577,6 +577,7 @@ export async function getVacanciesForMap(options?: {
   is_auction?: boolean; // 🚀 경공매 모드 스위치 지원을 위한 옵션 정의
   limit?: number; // ⚡️ 로딩 성능 비약적 향상을 위한 limit 파라미터 추가
   ownerId?: string; // 🏢 특정 중개사 매물 필터링용 옵션 추가
+  includePhotos?: boolean;
 }) {
   const supabase = getAdminClient();
   try {
@@ -594,11 +595,12 @@ export async function getVacanciesForMap(options?: {
     // 홈/지도 초기 로딩은 전체 10,000건 풀 로드 대신 제한된 범위만 가져와 초기 응답을 줄인다.
     const pages = Math.max(1, Math.min(2, Math.ceil(maxLimit / batchSize)));
     const promises = [];
+    const mapSelectFields = `id, vacancy_no, owner_id, lat, lng, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, detail_addr, building_name, hosu, exclusive_m2, supply_m2, room_count, bath_count, direction, parking, owner_role, realtor_commission, commission_type, status, themes, options, address_exposure, exposure_type, created_at, metadata${options?.includePhotos === false ? "" : ", vacancy_photos(url, sort_order)"}`;
     
     for (let i = 0; i < pages; i++) {
       let pageQuery = supabase
         .from('vacancies')
-        .select('id, vacancy_no, owner_id, lat, lng, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, detail_addr, building_name, hosu, exclusive_m2, supply_m2, room_count, bath_count, direction, parking, owner_role, realtor_commission, commission_type, status, themes, options, address_exposure, exposure_type, created_at, metadata, vacancy_photos(url, sort_order)')
+        .select(mapSelectFields)
         .eq('status', 'ACTIVE')
         .not('lat', 'is', null)
         .not('lng', 'is', null);
