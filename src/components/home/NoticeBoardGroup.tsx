@@ -63,7 +63,7 @@ export default async function NoticeBoardGroup() {
                 <Link key={i} href={`/news/${item.article_no || item.id}`} style={{ textDecoration: "none", color: "inherit", display: "block", marginBottom: 24 }}>
                   <div className="hi-item" style={{ alignItems: "flex-start", display: "flex", gap: "20px" }}>
                     <div className="hi-img" style={{ position: "relative", width: "160px", height: "100px", flexShrink: 0 }}>
-                      <img src={thumbSrc !== "https://via.placeholder.com/300x200?text=No+Image" ? thumbSrc : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 4 }} />
+                      <img src={thumbSrc !== "https://via.placeholder.com/300x200?text=No+Image" ? thumbSrc : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=600&h=337"} alt={item.title} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 4 }} />
                       {ytInfo.hasVideo && (
                         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 32, height: 32, background: "rgba(0,0,0,0.5)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="white" style={{ marginLeft: 2 }}><path d="M8 5v14l11-7z"/></svg>

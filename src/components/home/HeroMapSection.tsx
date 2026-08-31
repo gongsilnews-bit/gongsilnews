@@ -245,8 +245,10 @@ export default function HeroMapSection() {
       { offset: new kakao.maps.Point(size / 2, size / 2) }
     );
 
+    // 🚀 메인 홈 지도는 300-400개 제한 (초과하면 성능 저하, 클러스터링이 어차피 최적)
+    const limitedVacancies = filteredVacancies.slice(0, 350);
     const newMarkers: any[] = [];
-    filteredVacancies.forEach(prop => {
+    limitedVacancies.forEach(prop => {
       if (!prop.lat || !prop.lng) return;
       const position = new kakao.maps.LatLng(prop.lat, prop.lng);
       const strId = String(prop.id);
@@ -272,7 +274,7 @@ export default function HeroMapSection() {
     const clusterer = new kakao.maps.MarkerClusterer({
       map,
       markers: newMarkers,
-      gridSize: 60,
+      gridSize: 100,
       minLevel: 4,
       minClusterSize: 2,
       disableClickZoom: true,
@@ -501,7 +503,7 @@ export default function HeroMapSection() {
                   </div>
                   {photoUrl && (
                     <div style={{ width: 80, height: 80, borderRadius: 6, flexShrink: 0, border: "1px solid #eee", overflow: "hidden" }}>
-                      <img src={photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={photoUrl} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                   )}
                 </div>

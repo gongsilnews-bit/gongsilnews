@@ -52,6 +52,7 @@ export default function SpecialLectureBanner({ initialLectures }: { initialLectu
                 <img
                   src={item.thumbnail_url}
                   alt={item.title}
+                  loading="lazy"
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               ) : (

@@ -127,8 +127,8 @@ export default function MiniVacancyMap({ vacancies, isLoading, onBoundsChange }:
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
 
-    // 좌표가 유효한 매물 필터링
-    const withCoords = vacancies.filter((v) => v.lat && v.lng);
+    // 좌표가 유효한 매물 필터링 + 🚀 모바일 홈 지도는 200개 제한 (DOM 객체 감소 → 렌더링 성능 향상)
+    const withCoords = vacancies.filter((v) => v.lat && v.lng).slice(0, 200);
 
     // 지도가 드래그되거나 줌인/줌아웃될 때 현재 영역 내 노출 개수를 실시간 업데이트하는 이벤트 핸들러
     const updateVisibleCount = () => {
@@ -151,12 +151,12 @@ export default function MiniVacancyMap({ vacancies, isLoading, onBoundsChange }:
     updateVisibleCount();
     kakao.maps.event.addListener(mapInstance, "idle", updateVisibleCount);
 
-    // 정식 클러스터러 정의
+    // 정식 클러스터러 정의 + 🚀 클러스터 gridSize 증가로 병합률 개선 (gridSize: 60 → 80)
     const clusterer = new kakao.maps.MarkerClusterer({
       map: mapInstance,
       averageCenter: true,
       minLevel: 1,
-      gridSize: 60,
+      gridSize: 80,
       disableClickZoom: true,
       styles: [
         { width: "50px", height: "50px", background: "#1a4282", color: "#fff", textAlign: "center", lineHeight: "44px", borderRadius: "50%", fontWeight: "bold", fontSize: "16px", border: "3px solid #ffffff", boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }
