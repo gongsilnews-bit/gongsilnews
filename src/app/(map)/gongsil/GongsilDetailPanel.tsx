@@ -690,11 +690,15 @@ export default function GongsilDetailPanel({
       <div id="detail-scroll-container" style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
         {/* 갤러리 */}
         {prop.images && prop.images.length > 0 && prop.images[0] && (
-          <div style={{ position: "relative", width: "100%", height: 200, background: "#f0f0f0" }}>
+          <div style={{ position: "relative", width: "100%", height: 200, background: "transparent" }}>
             <img
               src={images[galleryIndex]}
               onClick={() => openGalleryModal()}
               style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }}
+              onError={(e) => {
+                const wrapper = (e.currentTarget as HTMLImageElement).parentElement;
+                if (wrapper) wrapper.style.display = "none";
+              }}
             />
             {images.length > 1 && (
               <>

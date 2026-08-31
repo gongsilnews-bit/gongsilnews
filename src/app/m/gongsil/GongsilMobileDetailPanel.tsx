@@ -271,7 +271,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
         {/* 이미지 슬라이더 (맨 위로 이동) */}
         {selectedVacancy.images?.[0] && (
           <div 
-            style={{ position: "relative", width: "100%", height: "220px", backgroundColor: "#e5e7eb", overflow: "hidden" }}
+            style={{ position: "relative", width: "100%", height: "220px", backgroundColor: "transparent", overflow: "hidden" }}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEndHandler}
@@ -281,6 +281,10 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
               alt="" 
               onClick={() => openGalleryFullscreen()}
               style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }} 
+              onError={(e) => {
+                const wrapper = (e.currentTarget as HTMLImageElement).parentElement;
+                if (wrapper) wrapper.style.display = "none";
+              }}
             />
             {selectedVacancy.images.length > 1 && (
               <>
