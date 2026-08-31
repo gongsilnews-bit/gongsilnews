@@ -164,6 +164,7 @@ export async function getLectures(filters?: {
   category?: string;
   authorId?: string;
   all?: boolean;
+  limit?: number;
 }) {
   const supabase = getAdminClient();
   try {
@@ -176,6 +177,7 @@ export async function getLectures(filters?: {
     if (filters?.status) query = query.eq("status", filters.status);
     if (filters?.category) query = query.eq("category", filters.category);
     if (filters?.authorId && !filters?.all) query = query.eq("author_id", filters.authorId);
+    if (filters?.limit) query = query.limit(filters.limit);
 
     const { data, error } = await query;
     if (error) return { success: false, error: error.message };
