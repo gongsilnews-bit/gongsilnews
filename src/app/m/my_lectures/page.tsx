@@ -15,7 +15,7 @@ export default function MyLecturesPage() {
     const load = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/m/login?returnTo=" + encodeURIComponent("/m/my_lectures")); return; }
+      if (!user) { router.replace("/m/login?returnTo=" + encodeURIComponent("/m/my_lectures")); return; }
 
       const res = await getMyEnrollments(user.id);
       if (res.success) setEnrollments(res.data);

@@ -574,7 +574,7 @@ export default function MobileReporterClient({
                       onClick={(e) => {
                         if (cardMasked) {
                           e.preventDefault();
-                          window.location.href = "/m/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
+                          window.location.replace("/m/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search));
                         }
                       }}
                     >

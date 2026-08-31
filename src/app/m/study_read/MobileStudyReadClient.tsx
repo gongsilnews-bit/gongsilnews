@@ -57,7 +57,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
   const handleEnroll = async () => {
     if (!user) {
       alert("로그인이 필요합니다.");
-      router.push(`/m/login?returnTo=/m/study_read?id=${lecture?.id}`);
+      router.replace(`/m/login?returnTo=${encodeURIComponent(`/m/study_read?id=${lecture?.id}`)}`);
       return;
     }
     if (isEnrolled) {

@@ -28,12 +28,12 @@ export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/m/login?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
+        router.replace("/m/login?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
       } else {
         router.push("/m/admin/vacancy");
       }
     } catch {
-      router.push("/m/login?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
+      router.replace("/m/login?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
     }
   };
 
@@ -42,12 +42,12 @@ export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/m/login?returnTo=" + encodeURIComponent("/m/my_lectures"));
+        router.replace("/m/login?returnTo=" + encodeURIComponent("/m/my_lectures"));
       } else {
         router.push("/m/my_lectures");
       }
     } catch {
-      router.push("/m/login?returnTo=" + encodeURIComponent("/m/my_lectures"));
+      router.replace("/m/login?returnTo=" + encodeURIComponent("/m/my_lectures"));
     }
   };
 
