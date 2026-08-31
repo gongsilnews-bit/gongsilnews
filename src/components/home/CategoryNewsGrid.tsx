@@ -6,12 +6,13 @@ import BannerSlot from "@/components/BannerSlot";
 
 interface CategoryNewsGridProps {
   allNewsArticles?: any[];
+  gongsilVideoArticles?: any[];
   mapArticles?: any[];
   issueRightBanners?: any[];
   middleIssueBanners?: any[];
 }
 
-export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [], issueRightBanners, middleIssueBanners }: CategoryNewsGridProps) {
+export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArticles = [], mapArticles = [], issueRightBanners, middleIssueBanners }: CategoryNewsGridProps) {
   // PC 홈 스크롤 복원: 기사 클릭 후 뒤로가기 시 보던 위치로 즉시 복원 (깜빡임 제거)
   useLayoutEffect(() => {
     const savedScroll = sessionStorage.getItem('pc_home_scroll');
@@ -83,8 +84,8 @@ export default function CategoryNewsGrid({ allNewsArticles = [], mapArticles = [
   const economyArts = allEconomy.slice(0, row1Limit);
   const lifeArts = allLife.slice(0, row3Limit);
   
-  // 공실현장: 영상이 있는 기사는 블랙 배경 비디오 섹션으로, 없는 기사는 하단 리스트로 분리
-  const gongsilArts = allNewsArticles.filter(a => (a.section1 === "공실현장" || a.section1 === "공실뉴스") && extractYoutubeIdInfo(a).hasVideo).slice(0, 12);
+  // 영상 목록은 최신 일반 기사 제한과 독립적으로 유지한다.
+  const gongsilArts = gongsilVideoArticles.filter(a => extractYoutubeIdInfo(a).hasVideo).slice(0, 6);
   const gongsilListArts = allGongsilList.slice(0, row1Limit);
 
   useEffect(() => {
