@@ -1213,35 +1213,6 @@ function MobileGongsilContent() {
             </div>
           )}
 
-          {/* [대표님 지침] 실시간 Supabase API 갱신 Pearl Loader 스피너 */}
-          {isFetchingVacancies && (
-            <div style={{
-              position: "absolute",
-              top: "30px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 100,
-              pointerEvents: "none"
-            }}>
-              <div style={{
-                background: "rgba(255, 255, 255, 0.85)",
-                backdropFilter: "blur(8px)",
-                borderRadius: "20px",
-                padding: "8px 12px",
-                boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
-                border: "1px solid rgba(255, 255, 255, 0.5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}>
-                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" strokeWidth="3" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="10" stroke="rgba(26,115,232,0.15)" strokeWidth="3" />
-                  <path d="M12 2a10 10 0 0 1 10 10" />
-                </svg>
-              </div>
-            </div>
-          )}
-
         {/* 지도 로딩 중 */}
         {!mapLoaded && (
           <div style={{ position: "absolute", inset: 0, background: "#e8ecf0", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
