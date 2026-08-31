@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { getArticleDetail, getArticles } from "@/app/actions/article";
 import { getVacancies } from "@/app/actions/vacancy";
 import { createClient } from "@supabase/supabase-js";
@@ -14,6 +15,10 @@ export default async function MobileNewsReadPage({ params, searchParams }: { par
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const isEmbedded = resolvedSearchParams.embed === 'true';
   const articleId = typeof resolvedParams.article_id === "string" ? resolvedParams.article_id : null;
+
+  if (!articleId) {
+    notFound();
+  }
 
   // 서버에서 미리 데이터 가져오기 — 즉시 표시!
   let article = null;

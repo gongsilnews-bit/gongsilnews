@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { getVacanciesForMap } from "@/app/actions/vacancy";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
-import { createMarkersInBatches, preloadKakaoMapSDK } from "@/utils/mapOptimization";
+import { createMarkersInBatches, preloadKakaoMapSDK, getCachedVacancies, setCachedVacancies } from "@/utils/mapOptimization";
 import AuthModal from "@/components/AuthModal";
 
 const CATEGORY_OPTIONS = [
@@ -75,7 +75,31 @@ export default function HeroMapSection() {
   useEffect(() => {
     const fetchData = async (bounds?: any, showLoading = true) => {
       if (showLoading) setIsLoading(true);
-      // 🚀 뷰포트 기준 로딩: bounds가 있으면 현재 화면 영역만 로드
+      
+      // 🚀 IndexedDB 캐싱: bounds가 있으면 먼저 캐시 확인
+      let cachedData = null;
+      if (bounds) {
+        const bbox = {
+          swLat: bounds.getSouthWest().getLat(),
+          swLng: bounds.getSouthWest().getLng(),
+          neLat: bounds.getNorthEast().getLat(),
+          neLng: bounds.getNorthEast().getLng(),
+        };
+        cachedData = await getCachedVacancies(bbox);
+        
+        if (cachedData && cachedData.length > 0) {
+          // 캐시에서 로드 (초고속)
+          const withImages = cachedData.map((v: any) => ({
+            ...v,
+            photos: v.vacancy_photos ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [],
+          }));
+          setVacancies(withImages);
+          if (showLoading) setIsLoading(false);
+          return;
+        }
+      }
+      
+      // 캐시 미스 또는 bounds 없음: 서버에서 로드
       const res = await getVacanciesForMap(bounds ? { bbox: bounds, limit: 1200 } : { limit: 1200 });
       if (res.success && res.data) {
         const withImages = res.data.map((v: any) => ({
@@ -84,6 +108,17 @@ export default function HeroMapSection() {
         }));
         const filtered = withImages.filter((v: any) => v.status === 'ACTIVE' && v.lat && v.lng);
         setVacancies(filtered);
+        
+        // 🚀 IndexedDB에 저장 (백그라운드)
+        if (bounds) {
+          const bbox = {
+            swLat: bounds.getSouthWest().getLat(),
+            swLng: bounds.getSouthWest().getLng(),
+            neLat: bounds.getNorthEast().getLat(),
+            neLng: bounds.getNorthEast().getLng(),
+          };
+          await setCachedVacancies(bbox, filtered);
+        }
       }
       if (showLoading) setIsLoading(false);
     };

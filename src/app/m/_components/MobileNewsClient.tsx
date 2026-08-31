@@ -914,7 +914,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
     const loadSearchData = async () => {
       setLoading(true);
-      const filters: any = { status: "APPROVED", limit: 30 };
+      const filters: any = { status: "APPROVED", limit: 200 };
       if (authorMatch) filters.author_name = authorMatch;
       if (keywordMatch) filters.keyword = keywordMatch;
 
@@ -966,7 +966,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
     const fetchCategoryArticles = async () => {
       setLoading(true);
-      const params: any = { status: "APPROVED", limit: 30 };
+      const params: any = { status: "APPROVED", limit: 200 };
       if (targetSection1) params.section1 = targetSection1;
       const res = await getArticles(params);
       if (res.success && res.data) setArticles(res.data);
