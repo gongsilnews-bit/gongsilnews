@@ -144,8 +144,6 @@ function AdminContent() {
     }
     fetchUser();
 
-    // 모든 데이터 섹션 병렬 프리페치
-    Promise.all(DATA_KEYS.map(k => prefetchSection(k)));
   }, []);
 
   /* ── 사이드바 호버 시 프리페치 ── */

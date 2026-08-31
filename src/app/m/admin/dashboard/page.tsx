@@ -35,11 +35,11 @@ function MobileDashboard() {
   const [agencyStatus, setAgencyStatus] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<string | null>(null);
 
-  const fetchData = useCallback(async (currentRole: string, memberId: string) => {
+  const fetchData = useCallback(async (currentRole: string, memberId: string, forceRefresh = false) => {
     setLoading(true);
     try {
       if (currentRole === "admin") {
-        const res = await adminGetDashboardData();
+        const res = await adminGetDashboardData({ noCache: forceRefresh });
         if (res.success) {
           setStats({
             vacanciesCount: res.stats?.vacanciesCount || 0,
@@ -158,7 +158,7 @@ function MobileDashboard() {
         <button onClick={async () => {
             const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
-            if (user) await fetchData(role, user.id);
+            if (user) await fetchData(role, user.id, true);
         }} disabled={loading} style={{ height: 34, padding: "0 12px", background: "none", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "#6b7280", cursor: "pointer" }}>
           {loading ? "갱신중..." : "⟳ 새로고침"}
         </button>

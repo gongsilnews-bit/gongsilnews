@@ -50,11 +50,11 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
   const [recentComments, setRecentComments] = useState<any[]>([]);
   const [lastUpdated, setLastUpdated] = useState<string>("");
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (forceRefresh = false) => {
     setLoading(true);
     try {
       if (role === "admin") {
-        const res = await adminGetDashboardData();
+        const res = await adminGetDashboardData({ noCache: forceRefresh });
         if (res.success) {
           setStats({
             vacanciesCount: res.stats?.vacanciesCount || 0,
@@ -164,7 +164,7 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
         <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#3b82f6", display: "inline-block" }} />
         모니터링 대시보드
         {lastUpdated && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 8 }}>마지막 갱신: {lastUpdated}</span>}
-        <button onClick={fetchData} disabled={loading} style={{ marginLeft: "auto", fontSize: 12, color: textSecondary, background: "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>
+        <button onClick={() => fetchData(true)} disabled={loading} style={{ marginLeft: "auto", fontSize: 12, color: textSecondary, background: "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>
           {loading ? "갱신 중..." : "⟳ 새로고침"}
         </button>
       </h1>
