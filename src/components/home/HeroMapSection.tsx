@@ -501,6 +501,8 @@ export default function HeroMapSection() {
 
             return displayVacancies.map((item) => {
               const photoUrl = item.photos?.[0] || null;
+              // 🚀 이미지 URL을 프록시로 변환 (CORS 문제 해결)
+              const proxiedPhotoUrl = photoUrl ? `/api/proxy-image?url=${encodeURIComponent(photoUrl)}` : null;
               const addrText = [item.dong, item.building_name, item.hosu].filter(Boolean).join(" ") || item.address || item.title || "공실광고";
               const optionsStr = [`룸 ${item.room_count || 0}개`, `욕실 ${item.bath_count || 0}개`, ...(item.options || [])].filter(Boolean).join(", ");
               // 마스킹 판별: 공실열람(GongsilClient)과 동일한 규칙
@@ -554,8 +556,26 @@ export default function HeroMapSection() {
                     </div>
                   </div>
                   {photoUrl && (
-                    <div style={{ width: 80, height: 80, borderRadius: 6, flexShrink: 0, border: "1px solid #eee", overflow: "hidden" }}>
-                      <img src={photoUrl} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <div style={{ width: 80, height: 80, borderRadius: 6, flexShrink: 0, border: "1px solid #eee", overflow: "hidden", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <img 
+                        src={proxiedPhotoUrl} 
+                        alt="" 
+                        loading="lazy" 
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => {
+                          // 🚀 이미지 로드 실패 시 placeholder 표시
+                          const img = e.target as HTMLImageElement;
+                          img.style.display = "none";
+                          const parent = img.parentElement;
+                          if (parent && !parent.querySelector('.image-placeholder')) {
+                            const placeholder = document.createElement('div');
+                            placeholder.className = 'image-placeholder';
+                            placeholder.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:28px;';
+                            placeholder.textContent = '📷';
+                            parent.appendChild(placeholder);
+                          }
+                        }}
+                      />
                     </div>
                   )}
                 </div>
