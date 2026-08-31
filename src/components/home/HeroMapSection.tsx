@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { getVacanciesForMap } from "@/app/actions/vacancy";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
+import { createMarkersInBatches, preloadKakaoMapSDK } from "@/utils/mapOptimization";
 import AuthModal from "@/components/AuthModal";
 
 const CATEGORY_OPTIONS = [
@@ -39,6 +40,11 @@ export default function HeroMapSection() {
   useEffect(() => {
     dbVacanciesRef.current = vacancies;
   }, [vacancies]);
+
+  // 🚀 SDK 조기 로딩 - 페이지 로드 시점에 미리 로드
+  useEffect(() => {
+    preloadKakaoMapSDK();
+  }, []);
 
   useEffect(() => {
     selectedClusterIdsRef.current = selectedClusterIds;
@@ -245,93 +251,104 @@ export default function HeroMapSection() {
       { offset: new kakao.maps.Point(size / 2, size / 2) }
     );
 
-    // 🚀 메인 홈 지도는 300-400개 제한 (초과하면 성능 저하, 클러스터링이 어차피 최적)
-    const limitedVacancies = filteredVacancies.slice(0, 350);
-    const newMarkers: any[] = [];
-    limitedVacancies.forEach(prop => {
-      if (!prop.lat || !prop.lng) return;
-      const position = new kakao.maps.LatLng(prop.lat, prop.lng);
-      const strId = String(prop.id);
-      const isSelected = selectedClusterIdsRef.current?.includes(strId);
-
-      const marker = new kakao.maps.Marker({
-        position,
-        image: isSelected ? activeMarkerImage : normalMarkerImage,
-        title: strId
-      });
-      markerIdMapRef.current.set(marker, strId);
-
-      kakao.maps.event.addListener(marker, 'click', () => {
-          setSelectedClusterIds([strId]);
-          setShowList(true);
-      });
-
-      newMarkers.push(marker);
-    });
-
-    markersRef.current = newMarkers;
-
-    const clusterer = new kakao.maps.MarkerClusterer({
-      map,
-      markers: newMarkers,
-      gridSize: 100,
-      minLevel: 4,
-      minClusterSize: 2,
-      disableClickZoom: true,
-      calculator: [10, 30, 50],
-      styles: [
-        { width: "44px", height: "44px", background: "#1a4282", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "38px", fontSize: "15px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
-        { width: "54px", height: "54px", background: "#1a4282", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "48px", fontSize: "17px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
-        { width: "64px", height: "64px", background: "#1a4282", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "58px", fontSize: "19px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
-      ],
-    });
-    clustererRef.current = clusterer;
-
-    // Cluster click -> Filter list without zooming
-    kakao.maps.event.addListener(clusterer, 'clusterclick', (cluster: any) => {
-      const markers = cluster.getMarkers();
-      const ids = markers.flatMap((m: any) => {
-          const pos = m.getPosition();
-          return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
-      });
-      setSelectedClusterIds(Array.from(new Set(ids)));
-      setShowList(true);
-    });
-
-    // Retain cluster styling
-    kakao.maps.event.addListener(clusterer, 'clustered', (clusters: any[]) => {
-        clusters.forEach(cluster => {
-          const markers = cluster.getMarkers();
-          if (markers.length < 2) return;
-          const ids = markers.flatMap((m: any) => {
-              const pos = m.getPosition();
-              return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001);
-          });
+    // 🚀 메인 홈 지도는 200개 제한으로 추가 단축 (초과하면 성능 저하, 클러스터링이 어차피 최적)
+    const limitedVacancies = filteredVacancies.slice(0, 200);
+    
+    // 🚀 배치 처리로 마커 생성 (requestAnimationFrame으로 렌더링 블로킹 방지)
+    createMarkersInBatches(
+      limitedVacancies,
+      kakao,
+      normalMarkerImage,
+      () => {}, // 클릭 핸들러는 별도로 처리
+      50 // 50개씩 배치
+    ).then((newMarkers) => {
+      // 클릭 이벤트 및 선택 상태 적용
+      newMarkers.forEach((marker: any) => {
+        const position = marker.getPosition();
+        const matchedProp = limitedVacancies.find(
+          (p: any) => Math.abs(p.lat - position.getLat()) < 0.00001 && Math.abs(p.lng - position.getLng()) < 0.00001
+        );
+        
+        if (matchedProp) {
+          const strId = String(matchedProp.id);
+          markerIdMapRef.current.set(marker, strId);
           
-          const hasStandard = ids.some((v: any) => v.trade_type !== "경매" && !v.is_auction);
-          const isMatch = selectedClusterIdsRef.current && selectedClusterIdsRef.current.length > 0 && ids.some((v: any) => v && selectedClusterIdsRef.current?.includes(String(v.id)));
-
-          const overlay = cluster.getClusterMarker().getContent();
-          if (overlay && overlay.style) {
-              if (isMatch) {
-                  overlay.style.background = '#ffffff';
-                  overlay.style.color = '#1a4282';
-                  overlay.style.border = '3px solid #1a4282';
-                  overlay.style.zIndex = '999';
-              } else {
-                  overlay.style.background = '#1a4282';
-                  overlay.style.color = '#ffffff';
-                  overlay.style.border = '3px solid rgba(255,255,255,0.8)';
-                  overlay.style.zIndex = '';
-              }
+          const isSelected = selectedClusterIdsRef.current?.includes(strId);
+          if (isSelected) {
+            marker.setImage(activeMarkerImage);
           }
-        });
-    });
+          
+          kakao.maps.event.addListener(marker, 'click', () => {
+            setSelectedClusterIds([strId]);
+            setShowList(true);
+          });
+        }
+      });
 
-    // 지도가 마커에 맞춰 강제 이동/축소되는 현상을 방지하고, 기본 설정된 강남역 중심을 무조건 고수합니다.
-    if (map) {
-      setMapBounds(map.getBounds());
-    }
+      markersRef.current = newMarkers;
+
+      const clusterer = new kakao.maps.MarkerClusterer({
+        map,
+        markers: newMarkers,
+        gridSize: 100,
+        minLevel: 4,
+        minClusterSize: 2,
+        disableClickZoom: true,
+        calculator: [10, 30, 50],
+        styles: [
+          { width: "44px", height: "44px", background: "#1a4282", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "38px", fontSize: "15px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+          { width: "54px", height: "54px", background: "#1a4282", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "48px", fontSize: "17px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+          { width: "64px", height: "64px", background: "#1a4282", borderRadius: "50%", color: "#fff", textAlign: "center", lineHeight: "58px", fontSize: "19px", fontWeight: "bold", border: "3px solid rgba(255,255,255,0.8)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" },
+        ],
+      });
+      clustererRef.current = clusterer;
+
+      // Cluster click -> Filter list without zooming
+      kakao.maps.event.addListener(clusterer, 'clusterclick', (cluster: any) => {
+        const markers = cluster.getMarkers();
+        const ids = markers.flatMap((m: any) => {
+            const pos = m.getPosition();
+            return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001).map((v: any) => String(v.id));
+        });
+        setSelectedClusterIds(Array.from(new Set(ids)));
+        setShowList(true);
+      });
+
+      // Retain cluster styling
+      kakao.maps.event.addListener(clusterer, 'clustered', (clusters: any[]) => {
+          clusters.forEach(cluster => {
+            const markers = cluster.getMarkers();
+            if (markers.length < 2) return;
+            const ids = markers.flatMap((m: any) => {
+                const pos = m.getPosition();
+                return dbVacanciesRef.current.filter((v: any) => Math.abs(v.lat - pos.getLat()) < 0.00001 && Math.abs(v.lng - pos.getLng()) < 0.00001);
+            });
+            
+            const hasStandard = ids.some((v: any) => v.trade_type !== "경매" && !v.is_auction);
+            const isMatch = selectedClusterIdsRef.current && selectedClusterIdsRef.current.length > 0 && ids.some((v: any) => v && selectedClusterIdsRef.current?.includes(String(v.id)));
+
+            const overlay = cluster.getClusterMarker().getContent();
+            if (overlay && overlay.style) {
+                if (isMatch) {
+                    overlay.style.background = '#ffffff';
+                    overlay.style.color = '#1a4282';
+                    overlay.style.border = '3px solid #1a4282';
+                    overlay.style.zIndex = '999';
+                } else {
+                    overlay.style.background = '#1a4282';
+                    overlay.style.color = '#ffffff';
+                    overlay.style.border = '3px solid rgba(255,255,255,0.8)';
+                    overlay.style.zIndex = '';
+                }
+            }
+          });
+      });
+
+      // 지도가 마커에 맞춰 강제 이동/축소되는 현상을 방지하고, 기본 설정된 강남역 중심을 무조건 고수합니다.
+      if (map) {
+        setMapBounds(map.getBounds());
+      }
+    });
   }, [filteredVacancies, mapLoaded]);
 
   const handleVacancyClick = (item: any) => {

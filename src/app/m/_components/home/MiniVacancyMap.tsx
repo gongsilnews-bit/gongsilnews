@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { createMarkersInBatches, getCachedVacancies, setCachedVacancies, preloadKakaoMapSDK } from "@/utils/mapOptimization";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
@@ -19,6 +20,12 @@ export default function MiniVacancyMap({ vacancies, isLoading, onBoundsChange }:
   const [visibleCount, setVisibleCount] = useState(0);
   const clustererRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const lastBoundsRef = useRef<any>(null);
+
+  // 🚀 SDK 조기 로딩 - 페이지 로드 시점에 미리 로드
+  useEffect(() => {
+    preloadKakaoMapSDK();
+  }, []);
 
   // 강남역(37.498095, 127.027610) 중심부 좌표 정의
   const centerLat = 37.498095;
@@ -127,8 +134,8 @@ export default function MiniVacancyMap({ vacancies, isLoading, onBoundsChange }:
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
 
-    // 좌표가 유효한 매물 필터링 + 🚀 모바일 홈 지도는 200개 제한 (DOM 객체 감소 → 렌더링 성능 향상)
-    const withCoords = vacancies.filter((v) => v.lat && v.lng).slice(0, 200);
+    // 좌표가 유효한 매물 필터링 + 🚀 모바일 홈 지도는 100개 제한으로 추가 단축 (DOM 객체 50% 감소)
+    const withCoords = vacancies.filter((v) => v.lat && v.lng).slice(0, 100);
 
     // 지도가 드래그되거나 줌인/줌아웃될 때 현재 영역 내 노출 개수를 실시간 업데이트하는 이벤트 핸들러
     const updateVisibleCount = () => {
@@ -197,22 +204,17 @@ export default function MiniVacancyMap({ vacancies, isLoading, onBoundsChange }:
       { offset: new kakao.maps.Point(size / 2, size / 2) }
     );
 
-    const newMarkers = withCoords.map((v) => {
-      const marker = new kakao.maps.Marker({
-        position: new kakao.maps.LatLng(v.lat, v.lng),
-        image: sharedMarkerImage,
-      });
-
-      kakao.maps.event.addListener(marker, 'click', () => {
-        handleNavigate(v.lat, v.lng);
-      });
-
-      marker.customData = v;
-      return marker;
+    // 🚀 배치 처리로 마커 생성 (requestAnimationFrame으로 렌더링 블로킹 방지)
+    createMarkersInBatches(
+      withCoords,
+      kakao,
+      sharedMarkerImage,
+      (v) => handleNavigate(v.lat, v.lng),
+      50 // 50개씩 배치
+    ).then((newMarkers) => {
+      markersRef.current = newMarkers;
+      clusterer.addMarkers(newMarkers);
     });
-
-    markersRef.current = newMarkers;
-    clusterer.addMarkers(newMarkers);
 
     return () => {
       kakao.maps.event.removeListener(mapInstance, "idle", updateVisibleCount);
