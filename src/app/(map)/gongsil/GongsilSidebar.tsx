@@ -616,13 +616,13 @@ export default function GongsilSidebar({
                   )}
                 </div>
                  {prop.images?.[0] && (
-                  <div style={{ flexShrink: 0, marginLeft: 5, textAlign: "center", alignSelf: isAuctionMode ? "center" : "flex-start" }}>
+                  <div data-thumb-wrapper="true" style={{ flexShrink: 0, marginLeft: 5, textAlign: "center", alignSelf: isAuctionMode ? "center" : "flex-start" }}>
                     <div style={{ width: isAuctionMode ? 130 : 110, height: isAuctionMode ? 100 : 110, borderRadius: 6, overflow: "hidden", background: "transparent" }}>
                       <img 
                         src={prop.images[0]} 
                         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                         onError={(e) => {
-                          const wrapper = (e.currentTarget as HTMLImageElement).parentElement;
+                          const wrapper = (e.currentTarget as HTMLImageElement).closest('[data-thumb-wrapper="true"]');
                           if (wrapper) wrapper.style.display = "none";
                         }}
                       />

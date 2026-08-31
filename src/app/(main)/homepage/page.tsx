@@ -1573,22 +1573,28 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                       </div>
 
                       {/* 2. Photo Thumbnail */}
-                      <div style={{ width: 140, height: 105, overflow: "hidden", flexShrink: 0, background: "#f1f5f9", borderRadius: 8, position: "relative" }}>
-                        {v.photos?.length > 0 ? (
-                          <img src={v.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        ) : v.lat && v.lng && mapLoaded ? (
-                          <ThumbnailRoadview lat={v.lat} lng={v.lng} />
-                        ) : (
-                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 11, fontWeight: 600 }}>
-                            사진 없음
-                          </div>
-                        )}
-                        {v.photos?.length > 1 && (
-                          <span style={{ position: "absolute", bottom: 6, right: 6, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 4 }}>
-                            +{v.photos.length}
-                          </span>
-                        )}
-                      </div>
+                      {v.photos?.length > 0 || (v.lat && v.lng && mapLoaded) ? (
+                        <div data-thumb-wrapper="true" style={{ width: 140, height: 105, overflow: "hidden", flexShrink: 0, background: "#f1f5f9", borderRadius: 8, position: "relative" }}>
+                          {v.photos?.length > 0 ? (
+                            <img
+                              src={v.photos[0]}
+                              alt=""
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              onError={(e) => {
+                                const wrapper = (e.currentTarget as HTMLImageElement).closest('[data-thumb-wrapper="true"]');
+                                if (wrapper) wrapper.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <ThumbnailRoadview lat={v.lat} lng={v.lng} />
+                          )}
+                          {v.photos?.length > 1 && (
+                            <span style={{ position: "absolute", bottom: 6, right: 6, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 4 }}>
+                              +{v.photos.length}
+                            </span>
+                          )}
+                        </div>
+                      ) : null}
 
                       {/* 3. Main Info */}
                       <div style={{ flex: 1, minWidth: 0 }}>

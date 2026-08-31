@@ -217,8 +217,16 @@ export default function SearchClient({ query, articles, vacancies, vacancyCount 
 
                     {/* Vacancy Image (if available) */}
                     {v.vacancy_photos && v.vacancy_photos.length > 0 && (
-                        <div style={{ width: "160px", height: "160px", flexShrink: 0, borderRadius: "12px", overflow: "hidden" }}>
-                            <img src={v.vacancy_photos[0].url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="공실" />
+                        <div data-thumb-wrapper="true" style={{ width: "160px", height: "160px", flexShrink: 0, borderRadius: "12px", overflow: "hidden" }}>
+                            <img
+                              src={v.vacancy_photos[0].url}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              alt="공실"
+                              onError={(e) => {
+                                const wrapper = (e.currentTarget as HTMLImageElement).closest('[data-thumb-wrapper="true"]');
+                                if (wrapper) wrapper.style.display = 'none';
+                              }}
+                            />
                         </div>
                     )}
                   </div>

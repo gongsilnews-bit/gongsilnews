@@ -200,9 +200,17 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
 
                 {/* 썸네일 영역 */}
                 {v.images?.[0] && (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, alignSelf: "center" }}>
+                  <div data-thumb-wrapper="true" style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, alignSelf: "center" }}>
                     <div style={{ width: "120px", height: "96px", borderRadius: "10px", overflow: "hidden", backgroundColor: "#e5e7eb" }}>
-                      <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img
+                        src={v.images[0]}
+                        alt=""
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => {
+                          const wrapper = (e.currentTarget as HTMLImageElement).closest('[data-thumb-wrapper="true"]');
+                          if (wrapper) wrapper.style.display = "none";
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -265,8 +273,16 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                 )}
               </div>
               {v.images?.[0] && (
-                <div style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "center" }}>
-                  <img src={v.images[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div data-thumb-wrapper="true" style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "center" }}>
+                  <img
+                    src={v.images[0]}
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    onError={(e) => {
+                      const wrapper = (e.currentTarget as HTMLImageElement).closest('[data-thumb-wrapper="true"]');
+                      if (wrapper) wrapper.style.display = "none";
+                    }}
+                  />
                 </div>
               )}
             </div>
