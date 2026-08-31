@@ -14,7 +14,7 @@ export default async function MobileNewsPage({
   const keywordMatch = resolvedParams.keyword;
   const isAll = resolvedParams.sec === "all";
   
-  const filters: any = { status: "APPROVED", limit: 200 };
+  const filters: any = { status: "APPROVED", limit: isAll ? 1000 : 200 };
   if (!isAll) {
     filters.section1 = "공실뉴스";
   }

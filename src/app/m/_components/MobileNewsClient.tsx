@@ -966,7 +966,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
     const fetchCategoryArticles = async () => {
       setLoading(true);
-      const params: any = { status: "APPROVED", limit: 200 };
+      const params: any = { status: "APPROVED", limit: isAll ? 1000 : 200 };
       if (targetSection1) params.section1 = targetSection1;
       const res = await getArticles(params);
       if (res.success && res.data) setArticles(res.data);
