@@ -1483,7 +1483,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             </button>
           </>
         )}
-        {formData.role === "부동산회원" && !isAdmin && agencyData.status !== "REJECTED" && agencyData.status !== "APPROVED" && !editMemberId && (
+        {formData.role === "부동산회원" && !isAdmin && agencyData.status !== "REJECTED" && agencyData.status !== "APPROVED" && agencyData.status !== "PENDING" && editMemberId && (
           <>
             <button onClick={(e) => handleSubmit(e, false)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#fff", color: "#374151", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
               {loading ? "저장 중..." : "💾 임시 저장"}
