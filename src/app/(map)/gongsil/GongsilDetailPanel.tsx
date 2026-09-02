@@ -590,7 +590,7 @@ export default function GongsilDetailPanel({
                     localStorage.setItem("signup_member_type", "broker");
                   }
                   if (!currentUser) {
-                    window.location.href = "/login?returnTo=" + encodeURIComponent(`/gongsil?id=${prop.id}`);
+                    window.location.href = "/newsrealty";
                   } else {
                     window.location.href = "/realty_admin?menu=settings";
                   }

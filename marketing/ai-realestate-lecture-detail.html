@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI 부동산 마케팅 강의 | 공실뉴스 SELECT</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif; background: #eaf4ff; color: #111; }
+  .page { max-width: 700px; margin: 0 auto; overflow: hidden; }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    background: linear-gradient(160deg, #0b1f6b 0%, #12308f 45%, #1c1345 100%);
+    padding: 64px 40px 56px;
+    color: #fff;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -120px; right: -100px;
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(124,58,237,0.35) 0%, rgba(124,58,237,0) 70%);
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    bottom: -140px; left: -80px;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(56,189,248,0.3) 0%, rgba(56,189,248,0) 70%);
+  }
+  .floating-docs {
+    position: relative;
+    height: 220px;
+    margin-bottom: 12px;
+  }
+  .doc {
+    position: absolute;
+    width: 74px; height: 96px;
+    background: linear-gradient(160deg, #ffffff 0%, #dbe9ff 100%);
+    border-radius: 6px;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.35);
+    opacity: 0.92;
+  }
+  .doc::before {
+    content: "";
+    position: absolute; inset: 14px 10px auto 10px;
+    height: 5px; background: rgba(30,58,138,0.25); border-radius: 3px;
+    box-shadow: 0 12px 0 rgba(30,58,138,0.18), 0 24px 0 rgba(30,58,138,0.14), 0 36px 0 rgba(30,58,138,0.1);
+  }
+  .doc.d1 { top: 6px; left: 12px; transform: rotate(-18deg); }
+  .doc.d2 { top: -4px; left: 90px; transform: rotate(10deg); width: 60px; height: 78px;}
+  .doc.d3 { top: 30px; right: 100px; transform: rotate(-8deg); width: 62px; height: 80px; }
+  .doc.d4 { top: 4px; right: 10px; transform: rotate(20deg); }
+  .doc.d5 { top: 90px; left: 40px; transform: rotate(24deg); width: 54px; height: 70px; opacity: 0.7;}
+  .doc.d6 { top: 96px; right: 46px; transform: rotate(-22deg); width: 54px; height: 70px; opacity: 0.7;}
+
+  .badge-circle {
+    position: absolute;
+    top: 70px;
+    width: 132px; height: 132px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900;
+  }
+  .badge-circle.left {
+    left: 6px;
+    background: radial-gradient(circle at 35% 30%, #ffffff 0%, #cfe0ff 55%, #6ea8ff 100%);
+    box-shadow: 0 0 40px rgba(120,170,255,0.55);
+  }
+  .badge-circle.left .mark {
+    width: 78px; height: 78px; border-radius: 20px;
+    background: #ff5a1f;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 34px; font-weight: 900;
+  }
+  .badge-circle.right {
+    right: 0px;
+    background: conic-gradient(from 200deg, #7c3aed, #38bdf8, #7c3aed);
+    box-shadow: 0 0 44px rgba(124,58,237,0.55);
+  }
+  .badge-circle.right .mark {
+    width: 96px; height: 96px; border-radius: 50%;
+    background: #0e1233;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 30px;
+  }
+
+  .sub-badge {
+    display: inline-block;
+    background: #d9ff3e;
+    color: #0e1233;
+    font-weight: 900;
+    font-size: 15px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-top: 8px;
+  }
+  .eyebrow { font-size: 16px; font-weight: 700; color: #9fb4ff; margin: 20px 0 6px; }
+  .headline { font-size: 32px; font-weight: 900; line-height: 1.35; letter-spacing: -0.5px; }
+  .headline b { color: #7fd7ff; }
+
+  /* ── CURRICULUM ── */
+  .curriculum {
+    background: linear-gradient(180deg, #d7ecff 0%, #bcdcff 100%);
+    padding: 56px 32px 60px;
+    text-align: center;
+  }
+  .curriculum h2 { font-size: 26px; font-weight: 900; color: #0d1b3d; margin-bottom: 14px; }
+  .curriculum p.lead { font-size: 15px; font-weight: 700; color: #1e3a8a; line-height: 1.6; margin-bottom: 36px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; }
+  .card { display: flex; flex-direction: column; }
+  .thumb {
+    width: 100%; aspect-ratio: 4/3; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 900; font-size: 20px; letter-spacing: 1px;
+    margin-bottom: 12px; position: relative; overflow: hidden;
+    box-shadow: 0 10px 24px rgba(15,40,110,0.18);
+  }
+  .thumb.t1 { background: linear-gradient(135deg, #1e293b, #334155); }
+  .thumb.t2 { background: linear-gradient(135deg, #4c1d95, #7c3aed); }
+  .thumb.t3 { background: linear-gradient(135deg, #0f172a, #1e3a8a); }
+  .thumb.t4 { background: linear-gradient(135deg, #059669, #10b981); }
+  .thumb .pill { background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.3); padding: 6px 14px; border-radius: 8px; font-size: 13px; }
+  .thumb .stack { display: flex; flex-direction: column; gap: 6px; width: 80%; }
+  .thumb .stack span { background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 6px; font-size: 11px; text-align: center; }
+
+  .card-title { font-size: 14.5px; font-weight: 700; color: #10234f; line-height: 1.5; }
+
+  .bottom-card { margin: 8px auto 0; max-width: 260px; }
+  .bottom-card .thumb { background: #0b0f1e; }
+  .bottom-card .card-title { text-align: center; }
+
+  @media (max-width: 480px) {
+    .hero { padding: 48px 24px 44px; }
+    .headline { font-size: 26px; }
+    .curriculum { padding: 44px 20px 48px; }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="floating-docs">
+        <div class="doc d1"></div>
+        <div class="doc d5"></div>
+        <div class="badge-circle left"><div class="mark">🏢</div></div>
+        <div class="doc d2"></div>
+        <div class="doc d3"></div>
+        <div class="badge-circle right"><div class="mark">🤖</div></div>
+        <div class="doc d6"></div>
+        <div class="doc d4"></div>
+      </div>
+
+      <span class="sub-badge">🏠 공실뉴스 SELECT</span>
+      <div class="eyebrow">AI &amp; 자동화 부동산 마케팅</div>
+      <h1 class="headline">AI로 완성하는 <b>매출형</b><br/>부동산 마케팅</h1>
+    </section>
+
+    <!-- CURRICULUM -->
+    <section class="curriculum">
+      <h2>이런 것을 배울 거에요</h2>
+      <p class="lead">챗GPT와 자동화 툴을 활용한<br/>수익형 부동산 마케팅 포트폴리오 제작하기</p>
+
+      <div class="grid">
+        <div class="card">
+          <div class="thumb t1"><span class="pill">🔍 매물 SEO</span></div>
+          <div class="card-title">AI로 고효율 수익형 매물<br/>키워드를 발굴하고 배치하는 전략</div>
+        </div>
+        <div class="card">
+          <div class="thumb t2">
+            <div class="stack">
+              <span>결론 · 클로징 멘트</span>
+              <span>본문 · 매물 강점</span>
+              <span>도입 · 후킹 문구</span>
+            </div>
+          </div>
+          <div class="card-title">클릭을 유도하고 끝까지 읽히는<br/>매물 전단지 기획 구조</div>
+        </div>
+        <div class="card">
+          <div class="thumb t3"><span class="pill">✨ ChatGPT</span></div>
+          <div class="card-title">챗GPT 초안 생성부터<br/>AI 이미지 제작까지의 실전 루틴</div>
+        </div>
+        <div class="card">
+          <div class="thumb t4"><span class="pill">📢 SNS 자동화</span></div>
+          <div class="card-title">블로그·인스타 등 채널 자동 발행,<br/>제휴 마케팅 수익 극대화 노하우</div>
+        </div>
+      </div>
+
+      <div class="bottom-card">
+        <div class="thumb"><span class="pill">🎬 공실뉴스 AI</span></div>
+        <div class="card-title">매물 글을 유튜브·인스타로<br/>재가공하는 효율적인 시스템</div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

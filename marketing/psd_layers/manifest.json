@@ -1,0 +1,433 @@
+{
+  "width": 700,
+  "height": 1575,
+  "layers": [
+    {
+      "group": "히어로 섹션",
+      "name": "히어로 배경 그라데이션",
+      "type": "image",
+      "file": "히어로_섹션__히어로_배경_그라데이션.png",
+      "left": 0,
+      "top": 0,
+      "right": 700,
+      "bottom": 520
+    },
+    {
+      "group": "히어로 섹션",
+      "name": "플로팅 문서 일러스트",
+      "type": "image",
+      "file": "히어로_섹션__플로팅_문서_일러스트.png",
+      "left": 0,
+      "top": 30,
+      "right": 700,
+      "bottom": 270
+    },
+    {
+      "group": "히어로 섹션",
+      "name": "부동산 배지 아이콘",
+      "type": "image",
+      "file": "히어로_섹션__부동산_배지_아이콘.png",
+      "left": 0,
+      "top": 84,
+      "right": 144,
+      "bottom": 228
+    },
+    {
+      "group": "히어로 섹션",
+      "name": "AI 배지 아이콘(원)",
+      "type": "image",
+      "file": "히어로_섹션__AI_배지_아이콘(원).png",
+      "left": 556,
+      "top": 84,
+      "right": 700,
+      "bottom": 228
+    },
+    {
+      "group": "히어로 섹션",
+      "name": "SELECT 뱃지 배경",
+      "type": "image",
+      "file": "히어로_섹션__SELECT_뱃지_배경.png",
+      "left": 34,
+      "top": 264,
+      "right": 238,
+      "bottom": 312
+    },
+    {
+      "group": "히어로 섹션",
+      "name": "AI 아이콘 텍스트",
+      "type": "text",
+      "left": 606,
+      "top": 140,
+      "right": 656,
+      "bottom": 172,
+      "text": "AI",
+      "size": 26,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "bold": true,
+      "align": "center",
+      "colored_runs": []
+    },
+    {
+      "group": "히어로 섹션",
+      "name": "SELECT 뱃지 텍스트",
+      "type": "text",
+      "left": 56,
+      "top": 278,
+      "right": 226,
+      "bottom": 300,
+      "text": "공실뉴스 SELECT",
+      "size": 15,
+      "color": [
+        14,
+        18,
+        51
+      ],
+      "bold": true,
+      "align": "left",
+      "colored_runs": []
+    },
+    {
+      "group": "히어로 섹션",
+      "name": "서브 문구",
+      "type": "text",
+      "left": 40,
+      "top": 316,
+      "right": 400,
+      "bottom": 336,
+      "text": "AI & 자동화 부동산 마케팅",
+      "size": 16,
+      "color": [
+        159,
+        180,
+        255
+      ],
+      "bold": true,
+      "align": "left",
+      "colored_runs": []
+    },
+    {
+      "group": "히어로 섹션",
+      "name": "헤드라인 텍스트",
+      "type": "text",
+      "left": 40,
+      "top": 348,
+      "right": 620,
+      "bottom": 440,
+      "text": "AI로 완성하는 매출형\n부동산 마케팅",
+      "size": 32,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "bold": true,
+      "align": "left",
+      "colored_runs": [
+        {
+          "length": 8,
+          "color": null
+        },
+        {
+          "length": 3,
+          "color": [
+            127,
+            215,
+            255
+          ]
+        }
+      ]
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "커리큘럼 배경",
+      "type": "image",
+      "file": "커리큘럼_섹션__커리큘럼_배경.png",
+      "left": 0,
+      "top": 520,
+      "right": 700,
+      "bottom": 1575
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "커리큘럼 타이틀",
+      "type": "text",
+      "left": 0,
+      "top": 556,
+      "right": 700,
+      "bottom": 592,
+      "text": "이런 것을 배울 거에요",
+      "size": 26,
+      "color": [
+        13,
+        27,
+        61
+      ],
+      "bold": true,
+      "align": "center",
+      "colored_runs": []
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "리드 문구",
+      "type": "text",
+      "left": 0,
+      "top": 606,
+      "right": 700,
+      "bottom": 652,
+      "text": "챗GPT와 자동화 툴을 활용한\n수익형 부동산 마케팅 포트폴리오 제작하기",
+      "size": 15,
+      "color": [
+        30,
+        58,
+        138
+      ],
+      "bold": true,
+      "align": "center",
+      "colored_runs": []
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드1 썸네일(매물SEO)",
+      "type": "image",
+      "file": "커리큘럼_섹션__카드1_썸네일(매물SEO).png",
+      "left": 40,
+      "top": 670,
+      "right": 340,
+      "bottom": 895
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드2 썸네일(전단지구조)",
+      "type": "image",
+      "file": "커리큘럼_섹션__카드2_썸네일(전단지구조).png",
+      "left": 360,
+      "top": 670,
+      "right": 660,
+      "bottom": 895
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드3 썸네일(ChatGPT)",
+      "type": "image",
+      "file": "커리큘럼_섹션__카드3_썸네일(ChatGPT).png",
+      "left": 40,
+      "top": 975,
+      "right": 340,
+      "bottom": 1200
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드4 썸네일(SNS자동화)",
+      "type": "image",
+      "file": "커리큘럼_섹션__카드4_썸네일(SNS자동화).png",
+      "left": 360,
+      "top": 975,
+      "right": 660,
+      "bottom": 1200
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "하단카드 썸네일",
+      "type": "image",
+      "file": "커리큘럼_섹션__하단카드_썸네일.png",
+      "left": 220,
+      "top": 1280,
+      "right": 480,
+      "bottom": 1475
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드1 배지문구",
+      "type": "text",
+      "left": 40,
+      "top": 770,
+      "right": 340,
+      "bottom": 794,
+      "text": "🔍 매물 SEO",
+      "size": 15,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "bold": true,
+      "align": "center",
+      "colored_runs": []
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드1 캡션",
+      "type": "text",
+      "left": 40,
+      "top": 907,
+      "right": 340,
+      "bottom": 955,
+      "text": "AI로 고효율 수익형 매물\n키워드를 발굴하고 배치하는 전략",
+      "size": 14,
+      "color": [
+        16,
+        35,
+        79
+      ],
+      "bold": true,
+      "align": "left",
+      "colored_runs": []
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드2 배지문구",
+      "type": "text",
+      "left": 360,
+      "top": 746,
+      "right": 660,
+      "bottom": 818,
+      "text": "결론 · 클로징 멘트\n본문 · 매물 강점\n도입 · 후킹 문구",
+      "size": 12,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "bold": true,
+      "align": "center",
+      "colored_runs": []
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드2 캡션",
+      "type": "text",
+      "left": 360,
+      "top": 907,
+      "right": 660,
+      "bottom": 955,
+      "text": "클릭을 유도하고 끝까지 읽히는\n매물 전단지 기획 구조",
+      "size": 14,
+      "color": [
+        16,
+        35,
+        79
+      ],
+      "bold": true,
+      "align": "left",
+      "colored_runs": []
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드3 배지문구",
+      "type": "text",
+      "left": 40,
+      "top": 1075,
+      "right": 340,
+      "bottom": 1099,
+      "text": "✨ ChatGPT",
+      "size": 15,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "bold": true,
+      "align": "center",
+      "colored_runs": []
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드3 캡션",
+      "type": "text",
+      "left": 40,
+      "top": 1212,
+      "right": 340,
+      "bottom": 1260,
+      "text": "챗GPT 초안 생성부터\nAI 이미지 제작까지의 실전 루틴",
+      "size": 14,
+      "color": [
+        16,
+        35,
+        79
+      ],
+      "bold": true,
+      "align": "left",
+      "colored_runs": []
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드4 배지문구",
+      "type": "text",
+      "left": 360,
+      "top": 1075,
+      "right": 660,
+      "bottom": 1099,
+      "text": "📢 SNS 자동화",
+      "size": 15,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "bold": true,
+      "align": "center",
+      "colored_runs": []
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "카드4 캡션",
+      "type": "text",
+      "left": 360,
+      "top": 1212,
+      "right": 660,
+      "bottom": 1260,
+      "text": "블로그·인스타 등 채널 자동 발행,\n제휴 마케팅 수익 극대화 노하우",
+      "size": 14,
+      "color": [
+        16,
+        35,
+        79
+      ],
+      "bold": true,
+      "align": "left",
+      "colored_runs": []
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "하단카드 배지문구",
+      "type": "text",
+      "left": 220,
+      "top": 1365,
+      "right": 480,
+      "bottom": 1389,
+      "text": "🎬 공실뉴스 AI",
+      "size": 15,
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "bold": true,
+      "align": "center",
+      "colored_runs": []
+    },
+    {
+      "group": "커리큘럼 섹션",
+      "name": "하단카드 캡션",
+      "type": "text",
+      "left": 0,
+      "top": 1487,
+      "right": 700,
+      "bottom": 1535,
+      "text": "매물 글을 유튜브·인스타로\n재가공하는 효율적인 시스템",
+      "size": 14,
+      "color": [
+        16,
+        35,
+        79
+      ],
+      "bold": true,
+      "align": "center",
+      "colored_runs": []
+    }
+  ]
+}
