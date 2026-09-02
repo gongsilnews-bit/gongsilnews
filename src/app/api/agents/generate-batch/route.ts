@@ -101,12 +101,16 @@ export async function GET() {
     });
 
     // 3. DB 등록 (최고관리자 AI 규칙: 무조건 status: 'PENDING' 승인대기로 입고!)
+    let finalContent = aiResult.content;
+    if (media.thumbnailUrl && !media.youtubeUrl) {
+      finalContent = `<div style="text-align: center;"><img src="${media.thumbnailUrl}" style="max-width: 100%; height: auto; border-radius: 8px;" /></div><br/>${finalContent}`;
+    }
     const { data: article, error } = await supabase
       .from('articles')
       .insert({
         title: aiResult.title,
         subtitle: aiResult.subtitle,
-        content: aiResult.content,
+        content: finalContent,
         section1: item.section1,
         section2: item.section2,
         thumbnail_url: media.thumbnailUrl,
@@ -119,6 +123,16 @@ export async function GET() {
       })
       .select('id, article_no')
       .single();
+
+    // 수동 작성과 동일하게 article_media에도 등록해 수정화면 "사진 첨부" 목록에 나타나도록 함
+    if (article?.id && media.thumbnailUrl && !media.youtubeUrl) {
+      await supabase.from('article_media').insert({
+        article_id: article.id,
+        media_type: 'PHOTO',
+        url: media.thumbnailUrl,
+        sort_order: 0,
+      });
+    }
 
     results.push({
       id: article?.id,

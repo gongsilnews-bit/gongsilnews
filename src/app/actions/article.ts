@@ -735,12 +735,16 @@ ${article.content}
 
     // Supabase DB 업데이트: 수정된 기사 + 새 사진 반영 및 상태를 'APPROVED'(정식 발행)으로 즉시 재발행
     const nowIso = new Date().toISOString();
+    let finalContent = newContent;
+    if (newThumbnailUrl && !newYoutubeUrl && !finalContent.includes(newThumbnailUrl)) {
+      finalContent = `<div style="text-align: center;"><img src="${newThumbnailUrl}" style="max-width: 100%; height: auto; border-radius: 8px;" /></div><br/>${finalContent}`;
+    }
     const { error: updateErr } = await supabase
       .from("articles")
       .update({
         title: newTitle,
         subtitle: newSubtitle,
-        content: newContent,
+        content: finalContent,
         thumbnail_url: newThumbnailUrl,
         youtube_url: newYoutubeUrl || null,
         status: "APPROVED", // 수정 완료 후 즉시 정식 발행!
@@ -752,6 +756,17 @@ ${article.content}
 
     if (updateErr) {
       return { success: false, error: updateErr.message };
+    }
+
+    // 수동 작성과 동일하게 article_media도 최신 사진으로 교체해 수정화면 "사진 첨부" 목록에 나타나도록 함
+    if (newThumbnailUrl && !newYoutubeUrl) {
+      await supabase.from("article_media").delete().eq("article_id", articleId).eq("media_type", "PHOTO");
+      await supabase.from("article_media").insert({
+        article_id: articleId,
+        media_type: "PHOTO",
+        url: newThumbnailUrl,
+        sort_order: 0,
+      });
     }
 
     // AI 로깅 (agent_chats)
