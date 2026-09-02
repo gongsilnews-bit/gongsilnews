@@ -37,6 +37,7 @@ export async function saveArticle(data: {
   location_name?: string;
   published_at: string | null;
   keywords: string[];
+  relatedIds?: string[];
   thumbnail_url?: string;
   reject_reason?: string;
   is_important?: boolean;
@@ -202,6 +203,23 @@ export async function saveArticle(data: {
         keyword: kw,
       }));
       await supabase.from("article_keywords").insert(keywordRows);
+    }
+
+    // 관련기사 처리: 기존 삭제 후 새로 INSERT (전달되지 않으면 건드리지 않음)
+    if (articleId && data.relatedIds !== undefined) {
+      await supabase
+        .from("article_relations")
+        .delete()
+        .eq("article_id", articleId);
+
+      if (data.relatedIds.length > 0) {
+        const relationRows = data.relatedIds
+          .filter((rid) => rid !== articleId)
+          .map((rid) => ({ article_id: articleId, related_id: rid }));
+        if (relationRows.length > 0) {
+          await supabase.from("article_relations").insert(relationRows);
+        }
+      }
     }
 
     // 캐시 무효화 (목록 및 상세 즉시 갱신)
@@ -403,9 +421,10 @@ const getArticleDetailCached = unstable_cache(
     
     const { data, error } = await query.single();
     if (error) return { success: false, error: error.message };
+    const relatedArticles = data ? await fetchRelatedArticlesFor(supabase, data.id) : [];
     return {
       success: true,
-      data: data ? { ...data, section1: formatSection1(data.section1) } : null
+      data: data ? { ...data, section1: formatSection1(data.section1), related_articles: relatedArticles } : null
     };
   },
   ["article-detail"],
@@ -427,12 +446,26 @@ export async function getArticleDetail(articleId: string, noCache: boolean = fal
     
     const { data, error } = await query.single();
     if (error) return { success: false, error: error.message };
+    const relatedArticles = data ? await fetchRelatedArticlesFor(supabase, data.id) : [];
     return {
       success: true,
-      data: data ? { ...data, section1: formatSection1(data.section1) } : null
+      data: data ? { ...data, section1: formatSection1(data.section1), related_articles: relatedArticles } : null
     };
   }
   return await getArticleDetailCached(articleId);
+}
+
+/* ── 관련기사 목록 조회 (article_relations → articles 2단계 조회) ── */
+async function fetchRelatedArticlesFor(supabase: ReturnType<typeof getAdminClient>, articleId: string) {
+  const { data: relRows } = await supabase.from("article_relations").select("related_id").eq("article_id", articleId);
+  if (!relRows || relRows.length === 0) return [];
+  const relatedIds = relRows.map((r: any) => r.related_id);
+  const { data: relArticles } = await supabase
+    .from("articles")
+    .select("id, title, section1, published_at, thumbnail_url")
+    .in("id", relatedIds)
+    .eq("is_deleted", false);
+  return relArticles || [];
 }
 
 /* ── 기사 미디어 업로드 ── */

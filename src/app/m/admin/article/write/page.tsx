@@ -61,6 +61,40 @@ function MobileArticleWrite() {
   const [youtubeInput, setYoutubeInput] = useState("");
   const photoInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const savedRangeRef = useRef<Range | null>(null);
+
+  /* ── 에디터 커서 위치 저장/복원 ── */
+  const saveEditorSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editorRef.current?.contains(sel.anchorNode)) {
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+
+  const insertHtmlAtCursor = (html: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    const sel = window.getSelection();
+    const range = savedRangeRef.current && editor.contains(savedRangeRef.current.startContainer)
+      ? savedRangeRef.current
+      : null;
+    if (sel && range) {
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else if (sel) {
+      // 저장된 위치가 없으면 맨 끝에 커서를 둔다
+      const endRange = document.createRange();
+      endRange.selectNodeContents(editor);
+      endRange.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(endRange);
+    }
+    document.execCommand("insertHTML", false, html);
+    const newSel = window.getSelection();
+    savedRangeRef.current = newSel && newSel.rangeCount ? newSel.getRangeAt(0).cloneRange() : null;
+    setContent(editor.innerHTML);
+  };
 
   /* ── 예약 노출 상태 ── */
   const [isReserved, setIsReserved] = useState(false);
@@ -105,8 +139,8 @@ function MobileArticleWrite() {
           setSubtitle(d.subtitle || "");
           setSection1(d.section1 || "");
           setSection2(d.section2 || "");
-          if (d.keywords) {
-            setKeywords(Array.isArray(d.keywords) ? d.keywords : d.keywords.split(',').map((k: string) => k.trim()).filter(Boolean));
+          if (d.article_keywords && Array.isArray(d.article_keywords)) {
+            setKeywords(d.article_keywords.map((k: any) => k.keyword).filter(Boolean));
           }
           // 영상 추출
           const vids: any[] = [];
@@ -233,13 +267,9 @@ function MobileArticleWrite() {
         const updated = [...prev, { file: compressed, preview, caption: "", isCover: prev.length === 0 && videos.length === 0 }];
         return updated;
       });
-      // 에디터에 즉시 삽입
-      if (editorRef.current) {
-        const currentHtml = editorRef.current.innerHTML;
-        const imgHtml = `<br/><div style="text-align: center;"><img src="${preview}" style="max-width: 100%; height: auto; border-radius: 8px;" /></div><br/>`;
-        editorRef.current.innerHTML = currentHtml + (currentHtml.endsWith('<br>') ? '' : '<br/>') + imgHtml;
-        setContent(editorRef.current.innerHTML);
-      }
+      // 에디터의 커서 위치에 즉시 삽입
+      const imgHtml = `<br/><div style="text-align: center;"><img src="${preview}" style="max-width: 100%; height: auto; border-radius: 8px;" /></div><br/>`;
+      insertHtmlAtCursor(imgHtml);
     }
   };
 
@@ -269,13 +299,9 @@ function MobileArticleWrite() {
     });
     setYoutubeInput("");
 
-    // 에디터에 즉시 삽입
-    if (editorRef.current) {
-      const currentHtml = editorRef.current.innerHTML;
-      const videoHtml = `<div class="inserted-video" style="margin-top: 16px;"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio: ${isShorts ? '9/16' : '16/9'}; border-radius: 8px;"></iframe></div><br/>`;
-      editorRef.current.innerHTML = currentHtml + (currentHtml.endsWith('<br>') ? '' : '<br/>') + videoHtml;
-      setContent(editorRef.current.innerHTML);
-    }
+    // 에디터의 커서 위치에 즉시 삽입
+    const videoHtml = `<div class="inserted-video" style="margin-top: 16px;"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio: ${isShorts ? '9/16' : '16/9'}; border-radius: 8px;"></iframe></div><br/>`;
+    insertHtmlAtCursor(videoHtml);
   };
 
   /* ── 영상 삭제 ── */
@@ -690,7 +716,9 @@ function MobileArticleWrite() {
             contentEditable
             suppressContentEditableWarning
             onInput={e => setContent(e.currentTarget.innerHTML || "")}
-            onBlur={e => setContent(e.currentTarget.innerHTML || "")}
+            onBlur={e => { setContent(e.currentTarget.innerHTML || ""); saveEditorSelection(); }}
+            onKeyUp={saveEditorSelection}
+            onMouseUp={saveEditorSelection}
             style={{
               width: "100%", minHeight: 260, padding: 14, border: "1px solid #d1d5db",
               borderBottomLeftRadius: 10, borderBottomRightRadius: 10, fontSize: 15, lineHeight: 1.8, outline: "none",

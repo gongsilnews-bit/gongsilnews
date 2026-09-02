@@ -522,6 +522,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               setKeywords(d.article_keywords.map((k: any) => k.keyword));
             }
 
+            if (d.related_articles) {
+              setRelatedArticles(d.related_articles.map((ra: any) => ({
+                id: ra.id,
+                title: ra.title,
+                section1: ra.section1,
+                published_at: ra.published_at
+              })));
+            }
+
             // [기존 DB 파일(사진) 불러오기]
             let existingPhotos: any[] = [];
             if (d.article_media) {
@@ -1561,6 +1570,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         lng: articleCoords?.lng,
         thumbnail_url: thumbnailUrl || undefined,
         reject_reason: overrideRejectReason || undefined,
+        relatedIds: relatedArticles.map(a => a.id),
       });
 
       if (result.success) {
@@ -1622,6 +1632,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             lng: articleCoords?.lng,
             thumbnail_url: finalThumbnailUrl || undefined,
             reject_reason: overrideRejectReason || undefined,
+            relatedIds: relatedArticles.map(a => a.id),
           });
         }
 

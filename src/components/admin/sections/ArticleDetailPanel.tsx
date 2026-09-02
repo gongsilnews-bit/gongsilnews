@@ -295,6 +295,18 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
             </div>
           )}
 
+          {/* Related Articles */}
+          {article.related_articles && article.related_articles.length > 0 && (
+            <div style={{ margin: "12px 0", padding: 14, background: "#f8f9fa", borderRadius: 8, border: "1px solid #eee" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#111", marginBottom: 8 }}>📎 관련기사</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {article.related_articles.map((ra: any) => (
+                  <span key={ra.id} style={{ fontSize: 13, color: "#333" }}>ㄴ {ra.title}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Reactions */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16, paddingTop: 16, borderTop: '1px solid #eee' }}>
             <div style={{ fontSize: 14, color: '#666', display: 'flex', gap: 16 }}>

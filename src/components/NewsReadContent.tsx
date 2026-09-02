@@ -766,6 +766,26 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
               </div>
             )}
 
+            {article.related_articles && article.related_articles.length > 0 && (
+              <div style={{ margin: "8px 0 24px", padding: 16, background: "#f8f9fa", borderRadius: 10, border: "1px solid #eee" }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 10 }}>📎 관련기사</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {article.related_articles.map((ra: any) => (
+                    <Link
+                      key={ra.id}
+                      href={isMobile ? `/m/news/${ra.id}` : `/news/${ra.id}`}
+                      style={{ fontSize: 14, color: "#333", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#3b82f6'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#333'}
+                    >
+                      <span style={{ color: "#3b82f6" }}>ㄴ</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ra.title}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="article-footer-bar" style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "stretch" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
                 <div>
