@@ -609,7 +609,7 @@ function MobileSettings() {
           ) : (
             <button onClick={() => handleSave(false)} disabled={saving}
               style={{ width: "100%", height: 56, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}>
-              {saving ? "저장 중..." : "💾 정보 수정 저장"}
+              {saving ? "처리 중..." : "입력완료"}
             </button>
           )}
         </div>

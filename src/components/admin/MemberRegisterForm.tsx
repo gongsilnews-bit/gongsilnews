@@ -1498,9 +1498,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           </>
         )}
         {/* 정상승인 또는 PENDING 상태 또는 관리자: 단일 저장 버튼 */}
-        {(isAdmin || agencyData.status === "APPROVED" || (agencyData.status === "PENDING" && editMemberId) || formData.role !== "부동산회원") && (
+        {(isAdmin || agencyData.status === "APPROVED" || agencyData.status === "PENDING" || formData.role !== "부동산회원") && (
           <button onClick={(e) => handleSubmit(e, false)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
-            {loading ? "저장 중..." : isAdmin ? "저장" : "💾 정보 수정 저장"}
+            {loading ? "처리 중..." : isAdmin ? "저장" : "입력완료"}
           </button>
         )}
         <button onClick={onBack} style={{ height: 42, padding: "0 24px", background: darkMode ? "#2c2d31" : "#fff", color: darkMode ? "#e1e4e8" : "#111827", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
