@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { saveArticle, getArticleDetail, getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
+import { saveArticle, getArticleDetail, getPhotoLibrary, togglePhotoFavorite, getMyArticles } from "@/app/actions/article";
 import { uploadArticleMediaDirect } from "@/utils/uploadDirect";
 
 import imageCompression from "browser-image-compression";
@@ -52,6 +52,13 @@ function MobileArticleWrite() {
   const [keyword, setKeyword] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  /* ── 관련기사 상태 ── */
+  const [relatedArticles, setRelatedArticles] = useState<{ id: string; title: string; section1: string; published_at: string }[]>([]);
+  const [showRelatedArticleModal, setShowRelatedArticleModal] = useState(false);
+  const [relatedArticlesDb, setRelatedArticlesDb] = useState<any[]>([]);
+  const [isRelatedArticlesLoading, setIsRelatedArticlesLoading] = useState(false);
+  const [relatedArticleSearch, setRelatedArticleSearch] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -142,6 +149,14 @@ function MobileArticleWrite() {
           if (d.article_keywords && Array.isArray(d.article_keywords)) {
             setKeywords(d.article_keywords.map((k: any) => k.keyword).filter(Boolean));
           }
+          if (d.related_articles && Array.isArray(d.related_articles)) {
+            setRelatedArticles(d.related_articles.map((ra: any) => ({
+              id: ra.id,
+              title: ra.title,
+              section1: ra.section1,
+              published_at: ra.published_at
+            })));
+          }
           // 영상 추출
           const vids: any[] = [];
           let htmlContent = d.content || "";
@@ -196,6 +211,46 @@ function MobileArticleWrite() {
     setPhotoDbTab("전체사진");
     setPhotoDbSearch("");
     fetchPhotoDb("", false);
+  };
+
+  /* ── 관련기사 검색/추가 ── */
+  const fetchRelatedArticles = async (searchKw: string = "") => {
+    setIsRelatedArticlesLoading(true);
+    if (currentUserId) {
+      const res = await getMyArticles(currentUserId);
+      if (res.success && res.data) {
+        let data = res.data.filter((a: any) => a.status === "APPROVED");
+        if (searchKw) {
+          data = data.filter((a: any) => a.title?.includes(searchKw));
+        }
+        setRelatedArticlesDb(data);
+      } else {
+        setRelatedArticlesDb([]);
+      }
+    } else {
+      setRelatedArticlesDb([]);
+    }
+    setIsRelatedArticlesLoading(false);
+  };
+
+  const openRelatedArticleModal = () => {
+    setShowRelatedArticleModal(true);
+    setRelatedArticleSearch("");
+    fetchRelatedArticles("");
+  };
+
+  const handleRelatedSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchRelatedArticles(relatedArticleSearch);
+  };
+
+  const handleSelectRelatedArticle = (article: any) => {
+    setRelatedArticles(prev => {
+      if (prev.some(a => a.id === article.id)) {
+        return prev.filter(a => a.id !== article.id);
+      }
+      return [...prev, { id: article.id, title: article.title, section1: article.section1, published_at: article.published_at }];
+    });
   };
 
   const fetchPhotoDb = async (searchStr: string, favOnly: boolean) => {
@@ -375,6 +430,7 @@ function MobileArticleWrite() {
         published_at,
         keywords,
         thumbnail_url: thumbnailUrl || undefined,
+        relatedIds: relatedArticles.map(a => a.id),
       });
 
       if (!res.success) {
@@ -429,6 +485,7 @@ function MobileArticleWrite() {
             published_at,
             keywords,
             thumbnail_url: thumbnailUrl,
+            relatedIds: relatedArticles.map(a => a.id),
           });
         }
       }
@@ -763,6 +820,29 @@ function MobileArticleWrite() {
           )}
         </div>
 
+        {/* 관련기사 */}
+        <div style={{ marginBottom: 16, background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <label style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>📎 관련기사</label>
+            <button
+              onClick={openRelatedArticleModal}
+              style={{ height: 36, padding: "0 14px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+            >
+              + 관련기사추가
+            </button>
+          </div>
+          {relatedArticles.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {relatedArticles.map((ra, i) => (
+                <div key={ra.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 10px" }}>
+                  <span style={{ fontSize: 13, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ra.title}</span>
+                  <button onClick={() => setRelatedArticles(relatedArticles.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: "#9ca3af", fontSize: 14, cursor: "pointer", padding: 0, flexShrink: 0 }}>삭제</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* 작성자 정보 */}
         <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb" }}>
           <label style={{ fontSize: 14, fontWeight: 800, color: "#111", display: "block", marginBottom: 10 }}>👤 작성자 정보</label>
@@ -851,6 +931,56 @@ function MobileArticleWrite() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 관련기사 검색 모달 ── */}
+      {showRelatedArticleModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "#fff", width: "100%", maxWidth: 500, maxHeight: "90vh", borderRadius: 16, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f9fafb" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0 }}>관련기사 검색 <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 500 }}>(전체 {relatedArticlesDb.length}건)</span></h3>
+              <button onClick={() => setShowRelatedArticleModal(false)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#9ca3af" }}>×</button>
+            </div>
+
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
+              <form onSubmit={handleRelatedSearch} style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  placeholder="기사 제목 검색"
+                  value={relatedArticleSearch}
+                  onChange={e => setRelatedArticleSearch(e.target.value)}
+                  style={{ flex: 1, padding: "0 12px", height: 40, border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
+                />
+                <button type="submit" style={{ padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>검색</button>
+              </form>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: 16, background: "#f3f4f6" }}>
+              {isRelatedArticlesLoading ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#6b7280", fontSize: 14 }}>불러오는 중...</div>
+              ) : relatedArticlesDb.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af", fontSize: 14 }}>검색 결과가 없습니다.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {relatedArticlesDb.map((article) => (
+                    <label key={article.id} style={{ display: "flex", alignItems: "center", gap: 10, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "10px 12px", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={relatedArticles.some(a => a.id === article.id)}
+                        onChange={() => handleSelectRelatedArticle(article)}
+                      />
+                      <span style={{ fontSize: 13, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{article.title}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: "12px 20px", borderTop: "1px solid #e5e7eb" }}>
+              <button onClick={() => setShowRelatedArticleModal(false)} style={{ width: "100%", height: 44, background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>완료</button>
             </div>
           </div>
         </div>
