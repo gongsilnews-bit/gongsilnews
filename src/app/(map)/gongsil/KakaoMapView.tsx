@@ -418,12 +418,13 @@ export default function KakaoMapView({
               background: "rgba(26, 66, 130, 0.85)",
               color: "#fff",
               textAlign: "center",
-              lineHeight: "34px",
+              lineHeight: "38px",
               borderRadius: "50%",
               fontWeight: "900",
               fontSize: "13px",
               border: "2px solid #ffffff",
               boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+              boxSizing: "border-box",
             },
             {
               width: "46px",
@@ -431,12 +432,13 @@ export default function KakaoMapView({
               background: "rgba(26, 66, 130, 0.85)",
               color: "#fff",
               textAlign: "center",
-              lineHeight: "42px",
+              lineHeight: "46px",
               borderRadius: "50%",
               fontWeight: "900",
               fontSize: "14px",
               border: "2px solid #ffffff",
               boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+              boxSizing: "border-box",
             },
             {
               width: "54px",
@@ -444,12 +446,13 @@ export default function KakaoMapView({
               background: "rgba(26, 66, 130, 0.85)",
               color: "#fff",
               textAlign: "center",
-              lineHeight: "50px",
+              lineHeight: "54px",
               borderRadius: "50%",
               fontWeight: "900",
               fontSize: "15px",
               border: "2px solid #ffffff",
               boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+              boxSizing: "border-box",
             },
             {
               width: "62px",
@@ -457,12 +460,13 @@ export default function KakaoMapView({
               background: "rgba(26, 66, 130, 0.85)",
               color: "#fff",
               textAlign: "center",
-              lineHeight: "58px",
+              lineHeight: "62px",
               borderRadius: "50%",
               fontWeight: "900",
               fontSize: "16px",
               border: "2px solid #ffffff",
               boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
+              boxSizing: "border-box",
             },
           ]
         : [
@@ -472,12 +476,13 @@ export default function KakaoMapView({
               background: "rgba(75, 137, 255, 0.75)",
               color: "#fff",
               textAlign: "center",
-              lineHeight: "34px",
+              lineHeight: "38px",
               borderRadius: "50%",
               fontWeight: "900",
               fontSize: "13px",
               border: "2px solid #ffffff",
               boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+              boxSizing: "border-box",
             },
             {
               width: "46px",
@@ -485,12 +490,13 @@ export default function KakaoMapView({
               background: "rgba(75, 137, 255, 0.75)",
               color: "#fff",
               textAlign: "center",
-              lineHeight: "42px",
+              lineHeight: "46px",
               borderRadius: "50%",
               fontWeight: "900",
               fontSize: "14px",
               border: "2px solid #ffffff",
               boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+              boxSizing: "border-box",
             },
             {
               width: "54px",
@@ -498,12 +504,13 @@ export default function KakaoMapView({
               background: "rgba(75, 137, 255, 0.75)",
               color: "#fff",
               textAlign: "center",
-              lineHeight: "50px",
+              lineHeight: "54px",
               borderRadius: "50%",
               fontWeight: "900",
               fontSize: "15px",
               border: "2px solid #ffffff",
               boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+              boxSizing: "border-box",
             },
             {
               width: "62px",
@@ -511,12 +518,13 @@ export default function KakaoMapView({
               background: "rgba(75, 137, 255, 0.75)",
               color: "#fff",
               textAlign: "center",
-              lineHeight: "58px",
+              lineHeight: "62px",
               borderRadius: "50%",
               fontWeight: "900",
               fontSize: "16px",
               border: "2px solid #ffffff",
               boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
+              boxSizing: "border-box",
             },
           ],
     });
@@ -577,25 +585,26 @@ export default function KakaoMapView({
 
           // Dynamically adjust cluster marker size proportional to the total property count
           let size = "38px";
-          let lh = "34px";
+          let lh = "38px";
           let fs = "13px";
           if (totalCount >= 100) {
             size = "62px";
-            lh = "58px";
+            lh = "62px";
             fs = "16px";
           } else if (totalCount >= 30) {
             size = "54px";
-            lh = "50px";
+            lh = "54px";
             fs = "15px";
           } else if (totalCount >= 10) {
             size = "46px";
-            lh = "42px";
+            lh = "46px";
             fs = "14px";
           }
           overlay.style.width = size;
           overlay.style.height = size;
           overlay.style.lineHeight = lh;
           overlay.style.fontSize = fs;
+          overlay.style.boxSizing = "border-box";
         }
 
         // Apply selected cluster styles if match
