@@ -587,7 +587,6 @@ function MobileGongsilContent() {
             dong: filters.dong || undefined,
             is_auction: activeMode === "경매",
             limit: 10000,
-            includePhotos: false
           });
 
           // '전국' 선택 시 지도를 대한민국 전역(level: 12)으로 자동 줌아웃
@@ -610,7 +609,6 @@ function MobileGongsilContent() {
           res = await getVacanciesForMap({
             bbox: { swLat: sw.getLat(), swLng: sw.getLng(), neLat: ne.getLat(), neLng: ne.getLng() },
             is_auction: activeMode === "경매",
-            includePhotos: false
           });
         }
 
