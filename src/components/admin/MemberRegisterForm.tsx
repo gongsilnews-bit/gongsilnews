@@ -50,7 +50,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     intro: "",
     reg_num: "",
     biz_num: "",
-    status: "PENDING"
+    status: ""
   });
 
   const [originalAgencyData, setOriginalAgencyData] = useState<any>(null);
@@ -134,11 +134,16 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
       adminGetMemberDetail(editMemberId).then(res => {
         if (res.success && res.member) {
           const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'BIZ': '비즈니스회원', 'USER': '일반회원' };
+          let resolvedRole = roleMap[res.member.role] || "일반회원";
+          // 무료 중개업소 등록(newsrealty) 진입 플로우: 별도 전환신청 클릭 없이 바로 부동산정보 입력
+          if (!isAdmin && resolvedRole === "일반회원" && initialTab === 1 && typeof window !== "undefined" && localStorage.getItem("signup_member_type") === "broker") {
+            resolvedRole = "부동산회원";
+          }
           setFormData({
             email: res.member.email || "",
             name: res.member.name || "",
             phone: res.member.phone || "",
-            role: roleMap[res.member.role] || "일반회원",
+            role: resolvedRole,
             created_at: res.member.created_at ? new Date(res.member.created_at).toISOString().split('T')[0] : "",
             memberNumber: res.member.memberNumber || "",
             plan_type: res.member.plan_type || "free",
