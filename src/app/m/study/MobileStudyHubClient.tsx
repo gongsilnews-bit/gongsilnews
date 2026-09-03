@@ -342,22 +342,22 @@ export default function MobileStudyHubClient({ lectures }: any) {
             <div style={{ color: "#062828", fontSize: 16, fontWeight: 800 }}>💬 커뮤니티</div>
             <div style={{ marginTop: 4, color: "#64748b", fontSize: 12 }}>공실뉴스 회원들과 소식을 나눠보세요.</div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {COMMUNITY_ITEMS.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => router.push(`/m/board?id=${item.id}`)}
-                style={{ padding: 0, overflow: "hidden", textAlign: "left", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, boxShadow: "0 2px 8px rgba(15,23,42,0.05)", cursor: "pointer" }}
+                style={{ display: "flex", alignItems: "center", gap: "14px", width: "100%", padding: "16px", textAlign: "left", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 1px 2px rgba(0,0,0,0.03)", cursor: "pointer" }}
               >
-                <div style={{ height: 92, display: "flex", alignItems: "center", justifyContent: "center", background: item.background, color: item.color, fontSize: 38 }}>
+                <div style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, borderRadius: "10px", background: item.background, color: item.color, fontSize: 24 }}>
                   {item.icon}
                 </div>
-                <div style={{ padding: "12px 11px 13px" }}>
-                  <div style={{ marginBottom: 4, color: "#0f172a", fontSize: 14, fontWeight: 800 }}>{item.name}</div>
-                  <div style={{ minHeight: 32, color: "#64748b", fontSize: 11, lineHeight: 1.45 }}>{item.desc}</div>
-                  <div style={{ marginTop: 9, color: item.color, fontSize: 11, fontWeight: 800 }}>게시판 보기 ›</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ marginBottom: "2px", color: "#062828", fontSize: "15px", fontWeight: 700 }}>{item.name}</div>
+                  <div style={{ overflow: "hidden", color: "#64748b", fontSize: "12.5px", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{item.desc}</div>
                 </div>
+                <span style={{ flexShrink: 0, color: "#9ca3af", fontSize: "20px", lineHeight: 1 }}>›</span>
               </button>
             ))}
           </div>
