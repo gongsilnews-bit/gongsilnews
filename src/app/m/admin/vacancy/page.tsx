@@ -7,6 +7,7 @@ import { getVacancies, updateVacancyStatus, deleteVacancy, updateVacancy } from 
 import { generateReportHtml, COLORS as REPORT_COLORS, LAYOUTS as REPORT_LAYOUTS } from "@/components/mobile/report-generator";
 import { generateFlyerHtml, COLORS as FLYER_COLORS, LAYOUTS as FLYER_LAYOUTS } from "@/components/mobile/flyer-generator";
 import MobileAdminLoading from "@/components/mobile/MobileAdminLoading";
+import MobileVacancyMarketingPanel from "@/components/mobile/MobileVacancyMarketingPanel";
 
 function MobileVacancyAdmin() {
   const router = useRouter();
@@ -30,6 +31,7 @@ function MobileVacancyAdmin() {
   const [vacancyPage, setVacancyPage] = useState(1);
   const [vacancyTotal, setVacancyTotal] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [marketingVacancyId, setMarketingVacancyId] = useState<string | null>(null);
 
   // 카카오 Share SDK 로드 (공유 기능용)
   useEffect(() => {
@@ -200,6 +202,15 @@ function MobileVacancyAdmin() {
     if (isLoadingMore || vacancies.length >= vacancyTotal) return;
     fetchVacancies(vacancyPage + 1, true);
   };
+
+  if (marketingVacancyId) {
+    return (
+      <MobileVacancyMarketingPanel
+        vacancyId={marketingVacancyId}
+        onBack={() => setMarketingVacancyId(null)}
+      />
+    );
+  }
 
   useEffect(() => {
     if (memberId) fetchVacancies();
@@ -759,7 +770,7 @@ function MobileVacancyAdmin() {
                       )}
 
                       <button
-                        onClick={() => window.location.href = `/realty_admin?menu=gongsil&action=marketing&id=${row.id}`}
+                        onClick={() => setMarketingVacancyId(row.id)}
                         style={{
                           flex: 1,
                           height: 38,
