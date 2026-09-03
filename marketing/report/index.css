@@ -29,6 +29,7 @@ select {
     height: auto !important;
     min-height: 0 !important;
     padding: 12px !important;
+    padding-bottom: 132px !important;
   }
 
   .report-editor-sidebar {
@@ -37,6 +38,24 @@ select {
     max-height: none !important;
     overflow: visible !important;
     order: 1;
+    position: fixed !important;
+    top: 64px;
+    right: 0;
+    bottom: 0;
+    width: min(92vw, 430px) !important;
+    z-index: 80;
+    padding: 12px;
+    background: rgba(243, 244, 246, 0.98);
+    box-shadow: -12px 0 30px rgba(15, 23, 42, 0.18);
+    transform: translateX(0);
+    transition: transform 0.28s ease, visibility 0.28s ease;
+    visibility: visible;
+  }
+
+  .report-editor-sidebar.is-closed {
+    transform: translateX(105%);
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .report-editor-sidebar > div {
@@ -50,6 +69,7 @@ select {
     min-height: 0 !important;
     order: 2;
     border-radius: 12px !important;
+    transition: width 0.28s ease;
   }
 
   .report-preview-panel > div:first-child {
@@ -92,30 +112,32 @@ select {
     gap: 8px !important;
   }
 
-  .report-action-bar > div {
-    justify-content: flex-start !important;
+  .report-action-buttons {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px !important;
-    overflow-x: auto !important;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    padding-bottom: 1px;
+    overflow: visible !important;
+    padding-bottom: 0;
   }
 
-  .report-action-bar > div::-webkit-scrollbar {
-    display: none;
+  .report-action-buttons button,
+  .report-action-buttons > div {
+    min-width: 0 !important;
+    width: 100% !important;
   }
 
-  .report-action-bar button {
-    min-height: 44px;
+  .report-action-buttons button {
+    min-height: 42px;
     flex: 0 0 auto !important;
-    padding-left: 14px !important;
-    padding-right: 14px !important;
+    padding: 8px 4px !important;
+    font-size: 11px !important;
+    gap: 4px !important;
+    white-space: nowrap;
   }
 
-  .report-action-bar > div > button:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 2;
+  .report-action-buttons button svg {
+    width: 14px !important;
+    height: 14px !important;
   }
 
   header {
@@ -126,6 +148,14 @@ select {
     font-size: 15px !important;
   }
 
+  .report-header-toggle {
+    min-height: 40px;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    font-size: 11px !important;
+    white-space: nowrap;
+  }
+
   header span {
     display: none;
   }
@@ -134,6 +164,12 @@ select {
   .report-editor-sidebar textarea,
   .report-editor-sidebar select {
     max-width: 100%;
+  }
+}
+
+@media (min-width: 768px) {
+  .report-editor-sidebar.is-closed {
+    display: none !important;
   }
 }
 

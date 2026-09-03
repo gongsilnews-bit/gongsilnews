@@ -1804,13 +1804,17 @@ ${clone.outerHTML}
 
                 </div>
             </div>
-            <div></div>
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="report-header-toggle px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 transition-all active:scale-95 text-xs flex items-center gap-1.5"
+            >
+              {isSidebarOpen ? "◀ 보고서 편집 접기" : "▶ 보고서 편집 열기"}
+            </button>
         </div>
       </header>
 
       <main className="report-editor-main print:block print:h-auto print:p-0 flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
-        {isSidebarOpen && (
-          <div className="report-editor-sidebar print:hidden col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden transition-all duration-300">
+        <div className={`report-editor-sidebar print:hidden col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'is-open' : 'is-closed'}`}>
             <FlyerForm 
               info={state.info}
               setInfo={handleInfoChange}
@@ -1840,17 +1844,10 @@ ${clone.outerHTML}
               onBackTab={handleBackTab}
               onOpenTableEditor={() => setIsTableEditorOpen(true)}
             />
-          </div>
-        )}
+        </div>
         <div className={`report-preview-panel print:col-span-12 print:border-none print:bg-white print:m-0 print:p-0 transition-all duration-300 ${isSidebarOpen ? 'col-span-12 lg:col-span-8 xl:col-span-9' : 'col-span-12'} bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col`}>
             <div className="print:hidden bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500">
                 <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 transition-all active:scale-95 text-xs flex items-center gap-1.5"
-                    >
-                        {isSidebarOpen ? "◀ 사이드바 접기" : "▶ 사이드바 펼치기"}
-                    </button>
                     <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기 에디터</span>
                 </div>
                 <span>Width: 860px (A4 가로 배율)</span>
@@ -1911,7 +1908,7 @@ ${clone.outerHTML}
         )}
 
         {/* Inner Scroll Container for buttons */}
-        <div className="w-full flex items-center justify-between gap-4 overflow-x-auto no-scrollbar">
+        <div className="report-action-buttons w-full flex items-center justify-between gap-4 overflow-x-auto no-scrollbar">
           {/* Save Button */}
           <button 
             onClick={handleSaveToStorage}

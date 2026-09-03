@@ -29,6 +29,8 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
     activeTab, setActiveTab,
     onOpenTableEditor, onBackTab
 }) => {
+    const [isDesignLayoutOpen, setIsDesignLayoutOpen] = useState(true);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setInfo({ ...info, [name]: value });
@@ -174,8 +176,22 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
   return (
     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 h-full overflow-y-auto custom-scrollbar flex flex-col">
       
-      {/* Design Theme Selection */}
-      <div className="mb-8 shrink-0">
+            {/* Design Theme Selection */}
+            <div className="mb-6 shrink-0">
+                <button
+                    type="button"
+                    onClick={() => setIsDesignLayoutOpen(prev => !prev)}
+                    className="w-full flex items-center justify-between px-3 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-sm font-black text-slate-800 transition-colors"
+                    aria-expanded={isDesignLayoutOpen}
+                >
+                    <span className="flex items-center gap-2">
+                        <RectangleGroupIcon className="w-5 h-5" />
+                        보고서 편집 디자인 레이아웃
+                    </span>
+                    <span aria-hidden="true">{isDesignLayoutOpen ? "▲" : "▼"}</span>
+                </button>
+
+                {isDesignLayoutOpen && <div className="mt-4">
         <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3">
              <SwatchIcon className="w-5 h-5" />
              디자인 색상 선택
@@ -285,6 +301,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                  placeholder="PROPERTY REPORT"
              />
         </div>
+                </div>}
       </div>
 
       <hr className="border-gray-100 mb-6 shrink-0" />
