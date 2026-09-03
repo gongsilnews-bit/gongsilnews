@@ -459,36 +459,11 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 {detailMasked ? (detailAddr || "주소 없음").replace(/[^\s]/g, "X") : detailAddr}
               </h1>
 
-              {/* Row 3: Price & Bookmark/Share */}
+              {/* Row 3: Price */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                 <p style={{ fontSize: "24px", fontWeight: 900, color: "#1a73e8", margin: 0 }}>
                   {selectedVacancy.trade_type} {formatPrice(selectedVacancy)}
                 </p>
-                <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
-                  {/* Bookmark Button */}
-                  <button onClick={toggleBookmark} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill={isBookmarked ? "#1a73e8" : "none"} stroke={isBookmarked ? "#1a73e8" : "#666"} strokeWidth="2">
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                    </svg>
-                  </button>
-                  {/* Share Button */}
-                  <div style={{ position: "relative" }}>
-                    <button onClick={(e) => { e.stopPropagation(); setShowShareDropdown(!showShareDropdown); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
-                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-                        <polyline points="16 6 12 2 8 6"/>
-                        <line x1="12" y1="2" x2="12" y2="15"/>
-                      </svg>
-                    </button>
-                    {/* Share Dropdown */}
-                    {showShareDropdown && (
-                      <div ref={shareDropdownRef} style={{ position: "absolute", top: "35px", right: 0, background: "#fff", border: "1px solid #ddd", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 100, width: "120px", overflow: "hidden" }}>
-                        <button onClick={() => { handleKakaoShare(); setShowShareDropdown(false); }} style={{ width: "100%", padding: "10px 12px", background: "none", border: "none", textAlign: "left", fontSize: "13px", cursor: "pointer", borderBottom: "1px solid #eee", color: "#333" }}>카카오톡 공유</button>
-                        <button onClick={() => { handleCopyUrl(); setShowShareDropdown(false); }} style={{ width: "100%", padding: "10px 12px", background: "none", border: "none", textAlign: "left", fontSize: "13px", cursor: "pointer", color: "#333" }}>URL 복사</button>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
 
               {/* Row 4: Specs Line 1 */}

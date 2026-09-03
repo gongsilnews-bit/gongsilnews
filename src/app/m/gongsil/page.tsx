@@ -520,6 +520,9 @@ function MobileGongsilContent() {
         vacancyStackRef.current = [];
         setSelectedVacancy(null);
         setIsDirectView(false);
+        if (e?.state?.panel === "list") {
+          setTimeout(() => setShowListView(true), 0);
+        }
         setTimeout(() => kakaoMapRef.current?.relayout(), 50);
       } else if (selectedCluster) {
         vacancyStackRef.current = [];
