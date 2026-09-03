@@ -2577,7 +2577,12 @@ const filteredFields = fields.filter(field => {
                       e.currentTarget.style.background = "#fff";
                     }}
                   >
-                    <div style={{ flex: 1, paddingRight: vp.images?.[0] ? 12 : 0, minWidth: 0 }}>
+                    {(() => {
+                      const isMasked = vp.exposure_type === "부동산노출" && userLevel < 2 && vp.owner_id !== currentUser?.id;
+                      const propertyName = vp.building_name || vp.dong || "주소 정보 없음";
+
+                      return (
+                        <div style={{ flex: 1, paddingRight: vp.images?.[0] ? 12 : 0, minWidth: 0 }}>
                       <div
                         style={{
                           fontSize: 15,
@@ -2589,7 +2594,8 @@ const filteredFields = fields.filter(field => {
                           textOverflow: "ellipsis",
                         }}
                       >
-                        {vp.building_name || vp.dong}
+                        {isMasked ? propertyName.replace(/[^\s]/g, "X") : propertyName}
+                        {isMasked && <span style={{ marginLeft: 8, fontSize: 11, color: "#2563eb", background: "#eef6ff", padding: "3px 8px", borderRadius: 4 }}>🔒 부동산회원 전용</span>}
                       </div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 4 }}>
                         {getPriceText(vp)}
@@ -2622,7 +2628,9 @@ const filteredFields = fields.filter(field => {
                           .filter(Boolean)
                           .join(", ")}
                       </div>
-                    </div>
+                        </div>
+                      );
+                    })()}
                     {vp.images?.[0] && (
                       <div
                         style={{

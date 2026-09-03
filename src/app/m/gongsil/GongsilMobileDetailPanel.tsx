@@ -1557,7 +1557,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
 
                   {/* 공실등록현황 및 리스트 */}
                   {(() => {
-                    const ownerVacancies = vacancies.filter(v => v.owner_id === selectedVacancy.owner_id);
+                    const ownerVacancies = vacancies.filter(v => v.owner_id === selectedVacancy.owner_id && v.trade_type !== "경매" && v.trade_type !== "공매");
                     const totalCnt = ownerVacancies.length;
                     const saleCnt = ownerVacancies.filter(v => v.trade_type === "매매").length;
                     const jeonseCnt = ownerVacancies.filter(v => v.trade_type === "전세").length;
@@ -1608,6 +1608,12 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                               }}
                               style={{ display: "flex", gap: "12px", padding: "16px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
                             >
+                              {(() => {
+                                const isMasked = v.exposure_type === "부동산노출" && userLevel < 2 && v.owner_id !== currentUser?.id;
+                                const propertyName = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ") || "주소 정보 없음";
+
+                                return (
+                                  <>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 {/* Badges & Date */}
                                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
@@ -1619,7 +1625,8 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                                 {/* Title */}
                                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                                   <p style={{ fontSize: "16px", fontWeight: 800, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>
-                                    {v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ")}
+                                    {isMasked ? propertyName.replace(/[^\s]/g, "X") : propertyName}
+                                    {isMasked && <span style={{ marginLeft: 8, fontSize: 11, color: "#2563eb", background: "#eef6ff", padding: "3px 8px", borderRadius: 4 }}>🔒 부동산회원 전용</span>}
                                   </p>
                                 </div>
                                 
@@ -1655,6 +1662,9 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                                 </div>
                               )}
                               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" style={{ flexShrink: 0, alignSelf: "center" }}><polyline points="9 18 15 12 9 6"/></svg>
+                                  </>
+                                );
+                              })()}
                             </div>
                           ))}
                         </div>
