@@ -25,6 +25,7 @@ export default async function MobileBoardPage({ searchParams }: { searchParams: 
   const board = boardRes.success ? boardRes.data : null;
 
   let posts = [];
+  let postCount = 0;
   let serverUser = null;
   let serverUserLevel = 0;
 
@@ -48,14 +49,16 @@ export default async function MobileBoardPage({ searchParams }: { searchParams: 
       userId: user?.id,
       isAdmin,
       limit: 20,
+      offset: 0,
     });
     posts = postsRes.success ? postsRes.data : [];
+    postCount = postsRes.count || posts.length;
   }
 
   return (
     <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#666", minHeight: "100vh", paddingTop: "100px" }}>자료실을 불러오는 중...</div>}>
       {board ? (
-        <MobileBoardClient board={board} initialPosts={posts} serverUser={serverUser} serverUserLevel={serverUserLevel} />
+        <MobileBoardClient board={board} initialPosts={posts} initialPostCount={postCount} serverUser={serverUser} serverUserLevel={serverUserLevel} />
       ) : (
         <div style={{ padding: 80, textAlign: "center", fontSize: 16, color: "#666", minHeight: "100vh", paddingTop: "100px" }}>존재하지 않는 자료실입니다.</div>
       )}

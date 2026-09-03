@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import BoardDropdownHeader from "../_components/header/BoardDropdownHeader";
+import { getBoardPosts } from "@/app/actions/board";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
 import { getPermissionLevel } from "@/utils/permissionCheck";
@@ -81,7 +82,7 @@ function hasVideoLink(p: any, skinType: string): boolean {
 }
 
 
-export default function MobileBoardClient({ board, initialPosts, serverUser, serverUserLevel }: { board: any, initialPosts: any[], serverUser?: any, serverUserLevel?: number }) {
+export default function MobileBoardClient({ board, initialPosts, initialPostCount, serverUser, serverUserLevel }: { board: any, initialPosts: any[], initialPostCount?: number, serverUser?: any, serverUserLevel?: number }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || "전체";
@@ -95,6 +96,8 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
   const [isSearching, setIsSearching] = useState(!!searchParams.get('search'));
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || "");
   const [searchInputValue, setSearchInputValue] = useState(searchParams.get('search') || "");
+  const [posts, setPosts] = useState(initialPosts);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   React.useEffect(() => {
     const searchVal = searchParams.get('search') || "";
@@ -154,8 +157,26 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
   const isListType = board.skin_type === "LIST";
   const is1to1 = board.board_type === "inquiry";
   const hasReply = (post: any) => (post.board_comments?.[0]?.count || 0) > 0;
+  const hasMorePosts = posts.length < (initialPostCount || posts.length);
 
-  const filteredPosts = initialPosts.filter(p => {
+  const loadMorePosts = async () => {
+    if (loadingMore || !hasMorePosts) return;
+    setLoadingMore(true);
+    try {
+      const result = await getBoardPosts(board.board_id, {
+        boardType: board.board_type,
+        userId: currentUser?.id,
+        isAdmin: userLevel >= 5,
+        limit: 20,
+        offset: posts.length,
+      });
+      if (result.success && result.data) setPosts((prev) => [...prev, ...result.data]);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const filteredPosts = posts.filter(p => {
     if (showMyPosts && p.author_id !== currentUser?.id) return false;
     
     // 탭 필터링
@@ -431,6 +452,11 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
               </Link>
             ))}
           </div>
+        )}
+        {hasMorePosts && (
+          <button type="button" onClick={loadMorePosts} disabled={loadingMore} style={{ width: '100%', margin: '14px 0 20px', padding: '12px', color: loadingMore ? '#94a3b8' : '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: loadingMore ? 'wait' : 'pointer' }}>
+            {loadingMore ? '게시글을 불러오는 중...' : `게시글 더 보기 (${posts.length}/${initialPostCount})`}
+          </button>
         )}
       </div>
 
