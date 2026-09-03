@@ -491,9 +491,10 @@ export default function GongsilDetailPanel({
       {/* 🔒 중개업소 회원만 열람 가능 오버레이 */}
       {(() => {
         const isMyProperty = currentUser && prop && prop.owner_id === currentUser.id;
-        const isRealtorOnlyMasked = prop.exposure_type === "부동산노출" &&
-          (prop.trade_type === "경매" || prop.trade_type === "공매" ? userLevel < 1 : userLevel < 2) &&
-          !isMyProperty;
+        const isAuctionProperty = prop.trade_type === "경매" || prop.trade_type === "공매";
+        const isRealtorOnlyMasked = isAuctionProperty
+          ? userLevel < 1
+          : prop.exposure_type === "부동산노출" && userLevel < 2 && !isMyProperty;
 
         if (!isRealtorOnlyMasked) return null;
 
@@ -566,7 +567,7 @@ export default function GongsilDetailPanel({
                 lineHeight: 1.35,
               }}
             >
-              중개업소 회원만<br />열람할 수 있습니다
+              {isAuctionProperty ? <>로그인 후<br />열람할 수 있습니다</> : <>중개업소 회원만<br />열람할 수 있습니다</>}
             </h3>
 
             {/* 본문 안내 */}
@@ -580,18 +581,24 @@ export default function GongsilDetailPanel({
                 maxWidth: 320,
               }}
             >
-              본 매물은 <strong>개업공인중개사 간의 공동중개 전용</strong> 매물입니다.<br />
-              부동산 대표님이시라면 <strong>100% 무료 중개업소 등록</strong> 후 모든 공동중개 실매물을 즉시 열람하실 수 있습니다.
+              {isAuctionProperty ? (
+                <>로그인한 회원은 경매·공매 매물을 무료로 열람할 수 있습니다.<br />로그인 후 매물 상세정보와 사진을 확인해 주세요.</>
+              ) : (
+                <>본 매물은 <strong>개업공인중개사 간의 공동중개 전용</strong> 매물입니다.<br />
+                부동산 대표님이시라면 <strong>100% 무료 중개업소 등록</strong> 후 모든 공동중개 실매물을 즉시 열람하실 수 있습니다.</>
+              )}
             </p>
 
             {/* 액션 버튼 */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 300 }}>
               <button
                 onClick={() => {
-                  if (typeof window !== "undefined") {
-                    localStorage.setItem("signup_member_type", "broker");
-                  }
-                  if (!currentUser) {
+                  if (isAuctionProperty) {
+                    window.location.href = "/login?returnTo=" + encodeURIComponent(`/gongsil?id=${prop.id}`);
+                  } else if (!currentUser) {
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("signup_member_type", "broker");
+                    }
                     window.location.href = "/newsrealty";
                   } else {
                     window.location.href = "/realty_admin?menu=settings";
@@ -610,10 +617,10 @@ export default function GongsilDetailPanel({
                   boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
                 }}
               >
-                ✨ 무료 중개업소 등록하기 →
+                {isAuctionProperty ? "로그인 후 무료로 경매·공매 매물 확인하기 →" : "✨ 무료 중개업소 등록하기 →"}
               </button>
 
-              {!currentUser && (
+              {!currentUser && !isAuctionProperty && (
                 <button
                   onClick={() => {
                     window.location.href = "/login?returnTo=" + encodeURIComponent(`/gongsil?id=${prop.id}`);

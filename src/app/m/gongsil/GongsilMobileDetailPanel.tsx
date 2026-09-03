@@ -98,7 +98,10 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
   showCommission,
 }) => {
   const isMyProperty = currentUser && selectedVacancy && selectedVacancy.owner_id === currentUser.id;
-  const detailMasked = selectedVacancy.exposure_type === '부동산노출' && (selectedVacancy.trade_type === '경매' || selectedVacancy.trade_type === '공매' ? userLevel < 1 : userLevel < 2) && !isMyProperty;
+  const isAuctionProperty = selectedVacancy.trade_type === '경매' || selectedVacancy.trade_type === '공매';
+  const detailMasked = isAuctionProperty
+    ? userLevel < 1
+    : selectedVacancy.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
   const detailAddr = getCleanAddrText(selectedVacancy);
 
   const meta = selectedVacancy?.metadata || {};
@@ -110,7 +113,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
-      {/* 🔒 중개업소 회원만 열람 가능 오버레이 */}
+      {/* 🔒 비회원 열람 제한 오버레이 */}
       {detailMasked && (
         <div
           style={{
@@ -180,7 +183,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
               lineHeight: 1.35,
             }}
           >
-            중개업소 회원만<br />열람할 수 있습니다
+            {isAuctionProperty ? <>로그인 후<br />무료로 열람할 수 있습니다</> : <>중개업소 회원만<br />열람할 수 있습니다</>}
           </h3>
 
           {/* 본문 안내 */}
@@ -194,18 +197,24 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
               maxWidth: 300,
             }}
           >
-            본 매물은 <strong>개업공인중개사 간의 공동중개 전용</strong> 매물입니다.<br />
-            부동산 대표님이시라면 <strong>100% 무료 중개업소 등록</strong> 후 모든 공동중개 실매물을 즉시 열람하실 수 있습니다.
+            {isAuctionProperty ? (
+              <>로그인한 회원은 경매·공매 매물을 <strong>무료로 열람</strong>할 수 있습니다.<br />로그인 후 매물 상세정보와 사진을 확인해 주세요.</>
+            ) : (
+              <>본 매물은 <strong>개업공인중개사 간의 공동중개 전용</strong> 매물입니다.<br />
+              부동산 대표님이시라면 <strong>100% 무료 중개업소 등록</strong> 후 모든 공동중개 실매물을 즉시 열람하실 수 있습니다.</>
+            )}
           </p>
 
           {/* 액션 버튼 */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 280 }}>
             <button
               onClick={() => {
-                if (typeof window !== "undefined") {
-                  localStorage.setItem("signup_member_type", "broker");
-                }
-                if (!currentUser) {
+                  if (isAuctionProperty) {
+                    window.location.href = "/m/login?returnTo=" + encodeURIComponent(`/m/gongsil?id=${selectedVacancy.id}`);
+                  } else if (!currentUser) {
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("signup_member_type", "broker");
+                    }
                   window.location.href = "/m/newsrealty";
                 } else {
                   window.location.href = "/m/admin/settings?tab=agency";
@@ -224,10 +233,10 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
               }}
             >
-              ✨ 무료 중개업소 등록하기 →
+              {isAuctionProperty ? "로그인 후 무료로 경매·공매 매물 확인하기 →" : "✨ 무료 중개업소 등록하기 →"}
             </button>
 
-            {!currentUser && (
+            {!currentUser && !isAuctionProperty && (
               <button
                 onClick={() => {
                   window.location.replace("/m/login?returnTo=" + encodeURIComponent(`/m/gongsil?id=${selectedVacancy.id}`));
