@@ -568,6 +568,7 @@ function MobileGongsilContent() {
       ? `${activeMode}:${mapBounds.getSouthWest().getLat().toFixed(3)},${mapBounds.getSouthWest().getLng().toFixed(3)},${mapBounds.getNorthEast().getLat().toFixed(3)},${mapBounds.getNorthEast().getLng().toFixed(3)}`
       : null;
     const cached = cacheKey ? viewportCacheRef.current.get(cacheKey) : null;
+    let loadingTimer: number | null = null;
 
     if (cached && Date.now() - cached.timestamp < 2 * 60 * 1000) {
       setVacancies(cached.data);
@@ -575,7 +576,11 @@ function MobileGongsilContent() {
     }
 
     const fetchVacanciesData = async () => {
-      if (!cached) setIsFetchingVacancies(true);
+      if (!cached) {
+        loadingTimer = window.setTimeout(() => {
+          if (!cancelled && requestId === viewportRequestRef.current) setIsFetchingVacancies(true);
+        }, 200);
+      }
       try {
         let res;
 
@@ -640,6 +645,7 @@ function MobileGongsilContent() {
       } catch (err) {
         if (!cancelled) console.error("Failed to fetch mobile vacancies:", err);
       } finally {
+        if (loadingTimer !== null) window.clearTimeout(loadingTimer);
         if (!cancelled && requestId === viewportRequestRef.current) {
           setIsFetchingVacancies(false);
           setLoading(false);
@@ -650,6 +656,7 @@ function MobileGongsilContent() {
     const timer = window.setTimeout(fetchVacanciesData, isMapSearch ? 300 : 0);
     return () => {
       cancelled = true;
+      if (loadingTimer !== null) window.clearTimeout(loadingTimer);
       window.clearTimeout(timer);
     };
   }, [mapBounds, activeMode, filters.locationSearchType, filters.sido, filters.sigungu, filters.dong]);
@@ -1057,6 +1064,10 @@ function MobileGongsilContent() {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
+        @keyframes mapLoadingDot {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+          30% { transform: translateY(-8px); opacity: 1; }
+        }
       `}</style>
       
       <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: isEmbedded ? "0" : "56px" }}>
@@ -1219,6 +1230,17 @@ function MobileGongsilContent() {
               <div style={{ fontSize: "40px", marginBottom: "12px" }}>🗺️</div>
               <p style={{ color: "#6b7280", fontSize: "14px" }}>지도를 불러오는 중...</p>
             </div>
+          </div>
+        )}
+
+        {mapLoaded && isFetchingVacancies && (
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 15, display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 14, background: "rgba(255,255,255,0.94)", boxShadow: "0 4px 16px rgba(15,23,42,0.14)", border: "1px solid rgba(226,232,240,0.9)", pointerEvents: "none" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 18 }}>
+              {[0, 1, 2].map((index) => (
+                <span key={index} style={{ width: 6, height: 6, borderRadius: "50%", background: "#2563eb", animation: `mapLoadingDot 1s ease-in-out ${index * 0.15}s infinite` }} />
+              ))}
+            </div>
+            <span style={{ color: "#334155", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>매물을 불러오는 중</span>
           </div>
         )}
 
