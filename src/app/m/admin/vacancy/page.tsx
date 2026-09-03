@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { getVacancies, updateVacancyStatus, deleteVacancy, updateVacancy } from "@/app/actions/vacancy";
 import { generateReportHtml, COLORS as REPORT_COLORS, LAYOUTS as REPORT_LAYOUTS } from "@/components/mobile/report-generator";
 import { generateFlyerHtml, COLORS as FLYER_COLORS, LAYOUTS as FLYER_LAYOUTS } from "@/components/mobile/flyer-generator";
+import MobileAdminLoading from "@/components/mobile/MobileAdminLoading";
 
 function MobileVacancyAdmin() {
   const router = useRouter();
@@ -26,6 +27,9 @@ function MobileVacancyAdmin() {
   const [shareTarget, setShareTarget] = useState<{ id: string; type: "report" | "flyer"; row: any } | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [generatingType, setGeneratingType] = useState<"report" | "flyer" | null>(null);
+  const [vacancyPage, setVacancyPage] = useState(1);
+  const [vacancyTotal, setVacancyTotal] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // 카카오 Share SDK 로드 (공유 기능용)
   useEffect(() => {
@@ -157,13 +161,16 @@ function MobileVacancyAdmin() {
     setShareTarget(null);
   };
 
-  const fetchVacancies = async () => {
+  const fetchVacancies = async (page = 1, append = false) => {
     if (!memberId) return;
-    setLoading(true);
-    const res = await getVacancies({ ownerId: memberId, excludeOnbid: true });
+    if (append) setIsLoadingMore(true);
+    else setLoading(true);
+    const res = await getVacancies({ ownerId: memberId, excludeOnbid: true, page, limit: 30 });
     if (res.success) {
       const list = Array.isArray(res.data) ? res.data : [];
-      setVacancies(list);
+      setVacancies(prev => append ? [...prev, ...list] : list);
+      setVacancyTotal(res.count || 0);
+      setVacancyPage(page);
       
       if (list.length > 0) {
         const supabase = createClient();
@@ -181,11 +188,17 @@ function MobileVacancyAdmin() {
             const hasReport = state ? (('report' in state) ? !!state.report : false) : false;
             map[f.vacancy_id] = { flyer: hasFlyer, report: hasReport };
           });
-          setFlyerMap(map);
+          setFlyerMap(prev => append ? { ...prev, ...map } : map);
         }
       }
     }
-    setLoading(false);
+    if (append) setIsLoadingMore(false);
+    else setLoading(false);
+  };
+
+  const loadMoreVacancies = () => {
+    if (isLoadingMore || vacancies.length >= vacancyTotal) return;
+    fetchVacancies(vacancyPage + 1, true);
   };
 
   useEffect(() => {
@@ -576,9 +589,7 @@ function MobileVacancyAdmin() {
       {/* 공실 카드 리스트 */}
       <div style={{ padding: "8px 8px 100px" }}>
         {loading ? (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>불러오는 중...</div>
-          </div>
+          <MobileAdminLoading label="공실을 불러오는 중" />
         ) : filtered.length === 0 ? (
           <div style={{ padding: "60px 0", textAlign: "center", color: "#9ca3af" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🏢</div>
@@ -776,6 +787,12 @@ function MobileVacancyAdmin() {
           );
         })}
       </div>
+
+      {vacancies.length < vacancyTotal && (
+        <button onClick={loadMoreVacancies} disabled={isLoadingMore} style={{ display: "block", width: "calc(100% - 16px)", height: 44, margin: "0 8px 24px", border: "1px solid #dbeafe", borderRadius: 8, background: "#eff6ff", color: "#2563eb", fontSize: 13, fontWeight: 700, cursor: isLoadingMore ? "wait" : "pointer" }}>
+          {isLoadingMore ? "불러오는 중..." : `공실 더 불러오기 (${vacancies.length}/${vacancyTotal})`}
+        </button>
+      )}
 
       {/* FAB: 공실등록 */}
       <button

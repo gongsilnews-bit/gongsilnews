@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getMyArticles, getArticles, adminUpdateArticleStatus, deleteArticle, adminReviseArticleWithFeedback } from "@/app/actions/article";
+import MobileAdminLoading from "@/components/mobile/MobileAdminLoading";
 
 const REJECT_REASONS = [
   "사진 화질 불량 또는 이미지 누락",
@@ -26,6 +27,9 @@ function MobileArticleAdmin() {
   const [activeKeyword, setActiveKeyword] = useState("");
   const [sortBy, setSortBy] = useState("published_at");
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [articlePage, setArticlePage] = useState(1);
+  const [articleTotal, setArticleTotal] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // 반려 모달
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -95,11 +99,11 @@ function MobileArticleAdmin() {
     (async () => {
       setLoading(true);
       if (isAdmin) {
-        const res = await getArticles();
-        if (res.success) setArticles(res.data || []);
+        const res = await getArticles({ page: 1, limit: 30 });
+        if (res.success) { setArticles(res.data || []); setArticleTotal(res.count || 0); setArticlePage(1); }
       } else {
         const res = await getMyArticles(memberId);
-        if (res.success) setArticles(res.data || []);
+        if (res.success) { setArticles((res.data || []).slice(0, 30)); setArticleTotal(res.data?.length || 0); setArticlePage(1); }
       }
       setLoading(false);
     })();
@@ -107,12 +111,24 @@ function MobileArticleAdmin() {
 
   const refreshArticles = async () => {
     if (isAdmin) {
-      const res = await getArticles();
-      if (res.success) setArticles(res.data || []);
+      const res = await getArticles({ page: 1, limit: 30 });
+      if (res.success) { setArticles(res.data || []); setArticleTotal(res.count || 0); setArticlePage(1); }
     } else {
       const res = await getMyArticles(memberId!);
       if (res.success) setArticles(res.data || []);
     }
+  };
+
+  const loadMoreArticles = async () => {
+    if (isLoadingMore || articles.length >= articleTotal || !isAdmin) return;
+    setIsLoadingMore(true);
+    const nextPage = articlePage + 1;
+    const res = await getArticles({ page: nextPage, limit: 30 });
+    if (res.success) {
+      setArticles(prev => [...prev, ...(res.data || [])]);
+      setArticlePage(nextPage);
+    }
+    setIsLoadingMore(false);
   };
 
   const filtered = articles.filter(a => {
@@ -329,9 +345,7 @@ function MobileArticleAdmin() {
       {/* 기사 카드 리스트 */}
       <div style={{ padding: "12px 16px 100px" }}>
         {loading ? (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>불러오는 중...</div>
-          </div>
+          <MobileAdminLoading label="기사를 불러오는 중" />
         ) : sortedArticles.length === 0 ? (
           <div style={{ padding: "60px 0", textAlign: "center", color: "#9ca3af" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
@@ -440,6 +454,12 @@ function MobileArticleAdmin() {
           );
         })}
       </div>
+
+      {isAdmin && articles.length < articleTotal && (
+        <button onClick={loadMoreArticles} disabled={isLoadingMore} style={{ display: "block", width: "calc(100% - 32px)", height: 44, margin: "0 16px 24px", border: "1px solid #dbeafe", borderRadius: 8, background: "#eff6ff", color: "#2563eb", fontSize: 13, fontWeight: 700, cursor: isLoadingMore ? "wait" : "pointer" }}>
+          {isLoadingMore ? "불러오는 중..." : `기사 더 불러오기 (${articles.length}/${articleTotal})`}
+        </button>
+      )}
 
       {/* FAB: 새 기사 작성 */}
       <button

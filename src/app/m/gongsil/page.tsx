@@ -533,6 +533,7 @@ function MobileGongsilContent() {
 
   // 💡 [전국 매물 풀 로드] 상세검색 시 전국 매물 개수를 정확하게 계산하기 위한 전체 데이터셋 캐싱
   useEffect(() => {
+    if (isEmbedded) return;
     const fetchAllVacancies = async () => {
       try {
         const res = await getVacanciesForMap({
@@ -554,10 +555,40 @@ function MobileGongsilContent() {
       }
     };
     fetchAllVacancies();
-  }, [activeMode]);
+  }, [activeMode, isEmbedded]);
 
   // 💡 [대표님 지침] Bbox(지도의 화면 영역) 변화 또는 필터 기반(B스타일) 행정구역 검색 시 Supabase에서 실시간으로 범위 내/지역 내 매물 패치!
   useEffect(() => {
+    if (isEmbedded) {
+      const idParam = searchParams.get("id");
+      if (!idParam) return;
+
+      let cancelled = false;
+      const loadPreviewVacancy = async () => {
+        setIsFetchingVacancies(true);
+        try {
+          const res = await getVacancyDetail(idParam);
+          if (cancelled || !res.success || !res.data) return;
+          const detail = {
+            ...res.data,
+            images: res.data.vacancy_photos
+              ? [...res.data.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+              : [],
+          };
+          setVacancies([detail]);
+          setSelectedVacancy(detail);
+          setIsDirectView(true);
+        } finally {
+          if (!cancelled) {
+            setIsFetchingVacancies(false);
+            setLoading(false);
+          }
+        }
+      };
+      loadPreviewVacancy();
+      return () => { cancelled = true; };
+    }
+
     // A스타일(map)인데 mapBounds가 없으면 조회를 대기
     if (filters.locationSearchType === 'map' && !mapBounds) return;
 
@@ -659,7 +690,7 @@ function MobileGongsilContent() {
       if (loadingTimer !== null) window.clearTimeout(loadingTimer);
       window.clearTimeout(timer);
     };
-  }, [mapBounds, activeMode, filters.locationSearchType, filters.sido, filters.sigungu, filters.dong]);
+  }, [mapBounds, activeMode, filters.locationSearchType, filters.sido, filters.sigungu, filters.dong, isEmbedded, searchParams]);
 
   // 💡 최초 진입 시, 만약 URL에 id 파라미터가 있어서 다이렉트 뷰 모드인 경우 1회 강제 단일 상세 로드
   useEffect(() => {
