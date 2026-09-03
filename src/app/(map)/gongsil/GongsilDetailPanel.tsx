@@ -21,6 +21,7 @@ interface GongsilDetailPanelProps {
   setPrevPropertyId: React.Dispatch<React.SetStateAction<string | number | null>>;
   setActiveProperty: React.Dispatch<React.SetStateAction<string | number | null>>;
   setShowDetail: React.Dispatch<React.SetStateAction<boolean>>;
+  onBack: () => void;
   activeDetailTab: "info" | "realtor" | "auction_detail" | "auction_property" | "auction_bid" | "auction_market";
   setActiveDetailTab: React.Dispatch<React.SetStateAction<"info" | "realtor" | "auction_detail" | "auction_property" | "auction_bid" | "auction_market">>;
   userLevel: number;
@@ -61,6 +62,7 @@ export default function GongsilDetailPanel({
   setPrevPropertyId,
   setActiveProperty,
   setShowDetail,
+  onBack,
   activeDetailTab,
   setActiveDetailTab,
   userLevel,
@@ -463,7 +465,7 @@ export default function GongsilDetailPanel({
     >
       {/* 닫기 버튼 */}
       <button
-        onClick={() => setShowDetail(false)}
+        onClick={onBack}
         style={{
           position: "absolute",
           top: 15,
@@ -633,7 +635,7 @@ export default function GongsilDetailPanel({
               )}
 
               <button
-                onClick={() => setShowDetail(false)}
+                onClick={onBack}
                 style={{
                   width: "100%",
                   padding: "10px 0",

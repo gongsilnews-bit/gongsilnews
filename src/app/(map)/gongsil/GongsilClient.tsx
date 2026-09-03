@@ -423,6 +423,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   const [mapError, setMapError] = useState<string | null>(null);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [agencyInfo, setAgencyInfo] = useState<any>(null);
+  const detailHistoryInitializedRef = useRef(false);
 
   // Lazy Loading Detail Map
   const [fullDetailsMap, setFullDetailsMap] = useState<Record<string, any>>({});
@@ -431,6 +432,39 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   const roadviewRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
   const skipNextBboxFetchRef = useRef(false);
+
+  useEffect(() => {
+    const currentState = window.history.state || {};
+    window.history.replaceState({ ...currentState, gongsilView: "list" }, "", window.location.href);
+    if (showDetail && activeProperty !== null) {
+      window.history.pushState({ gongsilView: "detail" }, "", window.location.href);
+    }
+    detailHistoryInitializedRef.current = true;
+
+    const handlePopState = (event: PopStateEvent) => {
+      const view = event.state?.gongsilView;
+      if (view === "gallery") {
+        setShowGalleryModal(false);
+        setShowDetail(true);
+      } else if (view === "detail") {
+        setShowGalleryModal(false);
+        setShowDetail(true);
+      } else {
+        setShowGalleryModal(false);
+        setShowDetail(false);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (!detailHistoryInitializedRef.current || showGalleryModal) return;
+    if (showDetail && window.history.state?.gongsilView === "list") {
+      window.history.pushState({ ...window.history.state, gongsilView: "detail" }, "", window.location.href);
+    }
+  }, [showDetail, showGalleryModal]);
 
   useEffect(() => {
     if (activeFilterDropdown === "거래유형" || activeFilterDropdown === "거래방식") {
@@ -2058,11 +2092,24 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       : "세대수";
 
   const openGalleryModal = () => {
+    window.history.pushState({ ...window.history.state, gongsilView: "gallery" }, "", window.location.href);
     setShowGalleryModal(true);
   };
 
   const closeGalleryModal = () => {
-    setShowGalleryModal(false);
+    if (window.history.state?.gongsilView === "gallery") {
+      window.history.back();
+    } else {
+      setShowGalleryModal(false);
+    }
+  };
+
+  const handleDetailBack = () => {
+    if (window.history.state?.gongsilView === "detail") {
+      window.history.back();
+    } else {
+      setShowDetail(false);
+    }
   };
 
   return (
@@ -4788,6 +4835,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           setPrevPropertyId={setPrevPropertyId}
           setActiveProperty={setActiveProperty}
           setShowDetail={setShowDetail}
+          onBack={handleDetailBack}
           activeDetailTab={activeDetailTab}
           setActiveDetailTab={setActiveDetailTab}
           userLevel={userLevel}
