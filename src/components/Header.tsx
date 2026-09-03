@@ -155,11 +155,16 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
             setAgencyStatus(agencyData.status || '');
           }
 
+          const effectiveRole = data.role === 'REALTOR' && agencyData?.status !== 'APPROVED'
+            ? 'USER'
+            : data.role;
+          setUserRole(effectiveRole);
+
           if (data.signup_completed === false) {
             setSignupEmail(data.email || user.email || '');
             setSignupName(data.name || user.user_metadata?.full_name || '');
             setIsSignupCompleteOpen(true);
-          } else if (data.role === 'REALTOR' && agencyData) {
+          } else if (effectiveRole === 'REALTOR' && agencyData) {
             // 부동산 회원인데 서류를 제출 안했는지 체크 (승인된 회원은 절대 경고 배너 미노출)
             if (!agencyData.biz_cert_url && agencyData.status !== 'APPROVED') {
               setShowDocWarning(true);
