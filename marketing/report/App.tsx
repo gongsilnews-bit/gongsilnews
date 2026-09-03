@@ -454,6 +454,9 @@ function App() {
   const touchStartXRef = useRef<number | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
   const reportHistoryReadyRef = useRef(false);
+  const editorScrollRef = useRef<HTMLDivElement>(null);
+
+  const getEditorScrollTop = () => editorScrollRef.current?.scrollTop || 0;
 
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
@@ -466,7 +469,8 @@ function App() {
     setIsSidebarOpen(prev => {
       const next = !prev;
       if (window.innerWidth < 768 && reportHistoryReadyRef.current) {
-        window.history.pushState({ reportEditor: true, sidebarOpen: next, activeTab }, "", window.location.href);
+        window.history.replaceState({ ...window.history.state, reportEditor: true, sidebarOpen: prev, activeTab, editorScrollTop: getEditorScrollTop() }, "", window.location.href);
+        window.history.pushState({ reportEditor: true, sidebarOpen: next, activeTab, editorScrollTop: 0 }, "", window.location.href);
       }
       return next;
     });
@@ -505,7 +509,8 @@ function App() {
 
   const setActiveTab = useCallback((tab: number | 'all') => {
     if (window.innerWidth < 768 && reportHistoryReadyRef.current && tab !== activeTab) {
-      window.history.pushState({ reportEditor: true, sidebarOpen: isSidebarOpen, activeTab: tab }, "", window.location.href);
+      window.history.replaceState({ ...window.history.state, reportEditor: true, sidebarOpen: isSidebarOpen, activeTab, editorScrollTop: getEditorScrollTop() }, "", window.location.href);
+      window.history.pushState({ reportEditor: true, sidebarOpen: isSidebarOpen, activeTab: tab, editorScrollTop: 0 }, "", window.location.href);
     }
     setTabHistory(prev => [...prev, tab]);
     setActiveTabInternal(tab);
@@ -513,7 +518,7 @@ function App() {
 
   useEffect(() => {
     const initialState = window.history.state || {};
-    window.history.replaceState({ ...initialState, reportEditor: true, sidebarOpen: isSidebarOpen, activeTab }, "", window.location.href);
+    window.history.replaceState({ ...initialState, reportEditor: true, sidebarOpen: isSidebarOpen, activeTab, editorScrollTop: 0 }, "", window.location.href);
     reportHistoryReadyRef.current = true;
 
     const handlePopState = (event: PopStateEvent) => {
@@ -524,6 +529,10 @@ function App() {
       if (typeof event.state.sidebarOpen === 'boolean') {
         setIsSidebarOpen(event.state.sidebarOpen);
       }
+      const scrollTop = typeof event.state.editorScrollTop === 'number' ? event.state.editorScrollTop : 0;
+      requestAnimationFrame(() => {
+        if (editorScrollRef.current) editorScrollRef.current.scrollTop = scrollTop;
+      });
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -1917,7 +1926,7 @@ ${clone.outerHTML}
       </header>
 
       <main onTouchStart={handleMobileTouchStart} onTouchEnd={handleMobileTouchEnd} className={`report-editor-main ${isSidebarOpen ? 'mobile-editor-open' : 'mobile-editor-closed'} print:block print:h-auto print:p-0 flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]`}>
-        <div className={`report-editor-sidebar print:hidden col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'is-open' : 'is-closed'}`}>
+        <div ref={editorScrollRef} className={`report-editor-sidebar print:hidden col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'is-open' : 'is-closed'}`}>
             <FlyerForm 
               info={state.info}
               setInfo={handleInfoChange}
