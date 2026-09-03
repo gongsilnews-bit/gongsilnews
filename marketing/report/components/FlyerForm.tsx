@@ -30,6 +30,15 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
     onOpenTableEditor, onBackTab
 }) => {
     const [isDesignLayoutOpen, setIsDesignLayoutOpen] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
+    const [mobileEditTab, setMobileEditTab] = useState<number>(0);
+
+    React.useEffect(() => {
+        const updateMobile = () => setIsMobile(window.innerWidth < 768);
+        updateMobile();
+        window.addEventListener('resize', updateMobile);
+        return () => window.removeEventListener('resize', updateMobile);
+    }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -333,7 +342,10 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               return (
                   <div
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                                            onClick={() => {
+                                                setActiveTab(tab.id);
+                                                if (typeof tab.id === 'number') setMobileEditTab(tab.id);
+                                            }}
                       className={`relative flex flex-col justify-center items-center h-[75px] px-2 text-xs sm:text-[13px] font-bold rounded-lg transition-all cursor-pointer ${activeTab === tab.id ? 'bg-white text-blue-700 shadow-md ring-2 ring-blue-500 z-10' : 'bg-white/60 text-gray-500 hover:bg-white ring-1 ring-gray-200/50'}`}
                   >
                       {/* Checkbox wrapper */}
@@ -373,7 +385,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto pr-2 pb-10 space-y-6">
           
-          {(activeTab === 0 || (activeTab === 'all' && (info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).includes(0))) && (
+          {(activeTab === 0 || (activeTab === 'all' && (!isMobile || mobileEditTab === 0) && (info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).includes(0))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
@@ -430,7 +442,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 1 || (activeTab === 'all' && (info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).includes(1))) && (
+          {(activeTab === 1 || (activeTab === 'all' && (!isMobile || mobileEditTab === 1) && (info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).includes(1))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
@@ -715,7 +727,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 2 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(2))) && (
+          {(activeTab === 2 || (activeTab === 'all' && (!isMobile || mobileEditTab === 2) && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(2))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
@@ -944,7 +956,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 3 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(3))) && (
+          {(activeTab === 3 || (activeTab === 'all' && (!isMobile || mobileEditTab === 3) && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(3))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
@@ -1018,7 +1030,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 4 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(4))) && (
+          {(activeTab === 4 || (activeTab === 'all' && (!isMobile || mobileEditTab === 4) && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(4))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
@@ -1072,7 +1084,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 5 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(5))) && (
+          {(activeTab === 5 || (activeTab === 'all' && (!isMobile || mobileEditTab === 5) && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(5))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
@@ -1181,7 +1193,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 6 || (activeTab === 'all' && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(6))) && (
+          {(activeTab === 6 || (activeTab === 'all' && (!isMobile || mobileEditTab === 6) && (info.visiblePages || [1, 2, 3, 4, 5, 6]).includes(6))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
@@ -1328,7 +1340,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
               </div>
           )}
 
-          {(activeTab === 7 || (activeTab === 'all' && (info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).includes(7))) && (
+          {(activeTab === 7 || (activeTab === 'all' && (!isMobile || mobileEditTab === 7) && (info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).includes(7))) && (
               <div className={`animate-fadeIn relative ${activeTab === 'all' ? 'h-[620px] overflow-hidden bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 shrink-0' : 'space-y-6'}`}>
                   <div className="space-y-6 animate-fadeIn">
                       <div className="pb-2 border-b-[3px] border-black mb-4">
