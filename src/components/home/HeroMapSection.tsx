@@ -20,7 +20,7 @@ const CATEGORY_OPTIONS = [
 export default function HeroMapSection() {
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [category, setCategory] = useState("");
   const [userLevel, setUserLevel] = useState<number>(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -32,6 +32,20 @@ export default function HeroMapSection() {
   const markersRef = useRef<any[]>([]);
   const markerIdMapRef = useRef<Map<any, string>>(new Map());
   const dbVacanciesRef = useRef<any[]>([]);
+  const loadingTimerRef = useRef<number | null>(null);
+
+  const beginLoading = () => {
+    if (loadingTimerRef.current !== null) window.clearTimeout(loadingTimerRef.current);
+    loadingTimerRef.current = window.setTimeout(() => setIsLoading(true), 200);
+  };
+
+  const endLoading = () => {
+    if (loadingTimerRef.current !== null) {
+      window.clearTimeout(loadingTimerRef.current);
+      loadingTimerRef.current = null;
+    }
+    setIsLoading(false);
+  };
 
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[] | null>(null);
   const selectedClusterIdsRef = useRef<string[] | null>(null);
@@ -74,7 +88,7 @@ export default function HeroMapSection() {
   // Fetch all vacancies from DB via server action on mount + tab focus refresh
   useEffect(() => {
     const fetchData = async (bounds?: any, showLoading = true) => {
-      if (showLoading) setIsLoading(true);
+      if (showLoading) beginLoading();
       
       // 🚀 IndexedDB 캐싱: bounds가 있으면 먼저 캐시 확인
       let cachedData = null;
@@ -94,7 +108,7 @@ export default function HeroMapSection() {
             photos: v.vacancy_photos ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url) : [],
           }));
           setVacancies(withImages);
-          if (showLoading) setIsLoading(false);
+          if (showLoading) endLoading();
           return;
         }
       }
@@ -120,7 +134,7 @@ export default function HeroMapSection() {
           await setCachedVacancies(bbox, filtered);
         }
       }
-      if (showLoading) setIsLoading(false);
+      if (showLoading) endLoading();
     };
 
     // 초기 로딩: bounds가 없으면 전체 범위 로드, bounds가 생기면 그 영역만 로드
@@ -401,38 +415,23 @@ export default function HeroMapSection() {
       {/* Real Kakao Map */}
       <div ref={mapRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", background: "#e8e8e8" }}></div>
 
-      {/* 네트워크 로딩 오버레이 */}
+      {/* 매물 조회 지연 시에만 표시하는 로딩 오버레이 */}
       {isLoading && (
-        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(4px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 999999 }}>
+        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.72)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99999 }}>
           <style>{`
-            @keyframes pulseRingHero {
-              0% { transform: scale(0.8); opacity: 0.5; }
-              100% { transform: scale(1.5); opacity: 0; }
+            @keyframes heroMapLoadingDot {
+              0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+              30% { transform: translateY(-7px); opacity: 1; }
             }
           `}</style>
-          <div style={{ position: "relative", width: "60px", height: "60px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
-            <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingHero 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
-            <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", border: "1px solid rgba(0,0,0,0.06)" }}>
-              <style>{`
-                @keyframes spinCircle {
-                  0% { transform: rotate(0deg); }
-                  100% { transform: rotate(360deg); }
-                }
-              `}</style>
-              <div style={{
-                width: 18,
-                height: 18,
-                border: "2.5px solid rgba(26, 115, 232, 0.15)",
-                borderTop: "2.5px solid #1a73e8",
-                borderRadius: "50%",
-                animation: "spinCircle 0.8s linear infinite"
-              }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,0.96)", boxShadow: "0 3px 12px rgba(15,23,42,0.14)", border: "1px solid rgba(226,232,240,0.9)" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 16 }}>
+              {[0, 1, 2].map((index) => (
+                <span key={index} style={{ width: 6, height: 6, borderRadius: "50%", background: "#2563eb", animation: `heroMapLoadingDot 1s ease-in-out ${index * 0.15}s infinite` }} />
+              ))}
             </div>
+            <span style={{ color: "#334155", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>매물을 불러오는 중</span>
           </div>
-          <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#1a2e50", marginBottom: "8px" }}>네트워크 로딩 중입니다</h3>
-          <p style={{ fontSize: "14px", color: "#6b7280", textAlign: "center", lineHeight: 1.5, margin: 0 }}>
-            데이터를 실시간으로 안전하게 불러오고 있습니다.<br/>잠시만 기다려 주세요.
-          </p>
         </div>
       )}
 

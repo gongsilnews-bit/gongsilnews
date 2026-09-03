@@ -18,9 +18,20 @@ export default function MiniVacancyMap({ vacancies, isLoading, onBoundsChange }:
   const mapInitRef = useRef(false);
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [visibleCount, setVisibleCount] = useState(0);
+  const [showLoading, setShowLoading] = useState(false);
   const clustererRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const lastBoundsRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setShowLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setShowLoading(true), 200);
+    return () => window.clearTimeout(timer);
+  }, [isLoading]);
 
   // 🚀 SDK 조기 로딩 - 페이지 로드 시점에 미리 로드
   useEffect(() => {
@@ -231,38 +242,23 @@ export default function MiniVacancyMap({ vacancies, isLoading, onBoundsChange }:
         style={{ width: "100%", height: "200px", background: "#e8ecf0" }}
       />
 
-      {/* 네트워크 로딩 오버레이 */}
-      {isLoading && (
-        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(4px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 99999 }}>
+      {/* 매물 조회 지연 시에만 표시하는 로딩 오버레이 */}
+      {showLoading && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.72)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99999 }}>
           <style>{`
-            @keyframes pulseRingMini {
-              0% { transform: scale(0.8); opacity: 0.5; }
-              100% { transform: scale(1.5); opacity: 0; }
+            @keyframes miniMapLoadingDot {
+              0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+              30% { transform: translateY(-7px); opacity: 1; }
             }
           `}</style>
-          <div style={{ position: "relative", width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "8px" }}>
-            <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingMini 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
-            <div style={{ position: "relative", width: "24px", height: "24px", borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.12)", border: "1px solid rgba(0,0,0,0.06)" }}>
-              <style>{`
-                @keyframes spinCircleMini {
-                  0% { transform: rotate(0deg); }
-                  100% { transform: rotate(360deg); }
-                }
-              `}</style>
-              <div style={{
-                width: 14,
-                height: 14,
-                border: "2px solid rgba(26, 115, 232, 0.15)",
-                borderTop: "2px solid #1a73e8",
-                borderRadius: "50%",
-                animation: "spinCircleMini 0.8s linear infinite"
-              }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,0.96)", boxShadow: "0 3px 12px rgba(15,23,42,0.14)", border: "1px solid rgba(226,232,240,0.9)" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 16 }}>
+              {[0, 1, 2].map((index) => (
+                <span key={index} style={{ width: 6, height: 6, borderRadius: "50%", background: "#2563eb", animation: `miniMapLoadingDot 1s ease-in-out ${index * 0.15}s infinite` }} />
+              ))}
             </div>
+            <span style={{ color: "#334155", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>매물을 불러오는 중</span>
           </div>
-          <h3 style={{ fontSize: "14px", fontWeight: 800, color: "#1a2e50", margin: "0 0 4px 0" }}>네트워크 로딩 중입니다</h3>
-          <p style={{ fontSize: "11px", color: "#6b7280", textAlign: "center", lineHeight: 1.4, margin: 0 }}>
-            실시간 공실 정보를 안전하게 불러오고 있습니다.
-          </p>
         </div>
       )}
 
