@@ -261,7 +261,6 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
                 transition: 'all 0.2s',
               }}
             >
-              <span>{b.icon}</span>
               <span>{b.name}</span>
             </button>
           );
