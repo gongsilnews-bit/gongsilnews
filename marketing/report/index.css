@@ -56,7 +56,7 @@ select {
     padding: 10px 12px !important;
   }
 
-  .report-preview-panel > div:first-child > div:last-child {
+  .report-preview-panel > div:first-child > span:last-child {
     display: none !important;
   }
 
@@ -66,15 +66,19 @@ select {
   }
 
   .report-canvas-shell {
-    width: 1122px !important;
-    max-width: none !important;
-    zoom: calc((100vw - 24px) / 1122);
-    transform-origin: top center;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: calc((100vw - 24px) * 0.7071) !important;
+    overflow: visible !important;
     margin: 0 auto !important;
   }
 
-  .report-preview-panel > div:nth-child(2) {
-    height: calc((100vw - 24px) * 0.7071 + 28px) !important;
+  .report-canvas-shell > div {
+    width: 1122px !important;
+    max-width: none !important;
+    transform: scale(calc((100vw - 24px) / 1122));
+    transform-origin: top left;
+    margin: 0 !important;
   }
 
   .report-action-bar {
