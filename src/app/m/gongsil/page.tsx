@@ -346,6 +346,7 @@ function MobileGongsilContent() {
   const itemMapRef = useRef<HTMLDivElement>(null);
   const roadviewRef = useRef<HTMLDivElement>(null);
   const vacancyStackRef = useRef<any[]>([]);
+  const pendingDetailIdRef = useRef<string | null>(null);
 
   // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
   const [isDirectView, setIsDirectView] = useState(searchParams.has("id"));
@@ -667,8 +668,12 @@ function MobileGongsilContent() {
             if (idParam) {
               const target = withImages.find((item: any) => item.id === idParam);
               if (target) {
-                setIsDirectView(true);
-                handleVacancyClick(target, true);
+                if (pendingDetailIdRef.current === idParam) {
+                  pendingDetailIdRef.current = null;
+                } else {
+                  setIsDirectView(true);
+                  handleVacancyClick(target, true);
+                }
               }
             }
           }
@@ -1005,6 +1010,7 @@ function MobileGongsilContent() {
   // 상세 조회
   const handleVacancyClick = async (v: any, isDirect: boolean = false) => {
     if (!isDirect) {
+      pendingDetailIdRef.current = v.id;
       window.history.pushState({ panel: "detail", id: v.id, t: Date.now() }, "", "/m/gongsil?id=" + v.id);
       setSelectedCluster(null);
       setShowListView(false);

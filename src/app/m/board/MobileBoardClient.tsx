@@ -214,7 +214,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
       >
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => router.push(`/m/study?tab=${isResource ? "board" : "community"}`)}
           aria-label={`${sectionTitle} 이전 화면으로 돌아가기`}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, padding: 0, background: 'none', border: 'none', color: '#1f2937', fontSize: 28, lineHeight: 1, cursor: 'pointer' }}
         >
