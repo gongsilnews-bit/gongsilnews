@@ -88,7 +88,7 @@ select {
   .report-canvas-shell {
     width: 100% !important;
     max-width: 100% !important;
-    height: calc(((100vw - 24px) / 1122) * 826px * var(--mobile-report-page-count)) !important;
+    height: var(--mobile-report-preview-height) !important;
     overflow: visible !important;
     margin: 0 auto !important;
   }
@@ -96,7 +96,7 @@ select {
   .report-canvas-shell > div {
     width: 1122px !important;
     max-width: none !important;
-    transform: scale(calc((100vw - 24px) / 1122));
+    transform: scale(var(--mobile-report-scale));
     transform-origin: top left;
     margin: 0 !important;
     padding: 0 !important;

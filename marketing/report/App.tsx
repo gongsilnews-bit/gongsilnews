@@ -452,6 +452,14 @@ function App() {
   const [tabHistory, setTabHistory] = useState<(number | 'all')[]>(['all']);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const touchStartXRef = useRef<number | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
+
+  useEffect(() => {
+    const updateViewportWidth = () => setViewportWidth(window.innerWidth);
+    updateViewportWidth();
+    window.addEventListener('resize', updateViewportWidth);
+    return () => window.removeEventListener('resize', updateViewportWidth);
+  }, []);
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(prev => !prev);
@@ -476,6 +484,8 @@ function App() {
   const mobilePreviewPageCount = activeTab === 'all'
     ? (state.info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).length
     : 1;
+  const mobileReportScale = viewportWidth > 0 ? Math.min(1, Math.max(0.1, (viewportWidth - 24) / 1122)) : 1;
+  const mobilePreviewHeight = mobilePreviewPageCount * 826 * mobileReportScale;
 
   const setActiveTab = useCallback((tab: number | 'all') => {
     setTabHistory(prev => [...prev, tab]);
@@ -1903,7 +1913,11 @@ ${clone.outerHTML}
                 {/* Fixed width container for editor preview */}
                 <div
                   className="report-canvas-shell w-[860px] shrink-0 print:w-[1122px] print:mx-auto print:shrink"
-                  style={{ '--mobile-report-page-count': mobilePreviewPageCount } as React.CSSProperties}
+                  style={{
+                    '--mobile-report-page-count': mobilePreviewPageCount,
+                    '--mobile-report-scale': mobileReportScale,
+                    '--mobile-report-preview-height': `${mobilePreviewHeight}px`
+                  } as React.CSSProperties}
                 >
                     <FlyerCanvas 
                       ref={flyerRef} 

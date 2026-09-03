@@ -747,63 +747,27 @@ function MobileVacancyAdmin() {
                         </button>
                       )}
 
-                      {/* AI 온라인 전단지 버튼 */}
-                      {hasFlyer ? (
-                        <button 
-                          onClick={() => {
-                            setShareTarget({ id: row.id, type: "flyer", row });
-                          }}
-                          style={{ 
-                            flex: 1, 
-                            height: 38, 
-                            background: "linear-gradient(135deg, #10b981, #059669)", 
-                            color: "#fff", 
-                            border: "none", 
-                            borderRadius: 8, 
-                            fontSize: 12, 
-                            fontWeight: 800, 
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 4,
-                            boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)"
-                          }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                          전단지 공유
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={() => handleAutoCreate(row, "flyer")}
-                          disabled={generatingId === row.id}
-                          style={{ 
-                            flex: 1, 
-                            height: 38, 
-                            background: "#ecfdf5", 
-                            color: "#10b981", 
-                            border: "1px solid #a7f3d0", 
-                            borderRadius: 8, 
-                            fontSize: 12, 
-                            fontWeight: 700, 
-                            cursor: generatingId === row.id ? "not-allowed" : "pointer",
-                            opacity: generatingId === row.id ? 0.7 : 1,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 4
-                          }}
-                        >
-                          {generatingId === row.id && generatingType === "flyer" ? (
-                            <>
-                              <span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-                              생성 중...
-                            </>
-                          ) : (
-                            "➕ 전단지 생성"
-                          )}
-                        </button>
-                      )}
+                      <button
+                        onClick={() => window.location.href = `/realty_admin?menu=gongsil&action=marketing&id=${row.id}`}
+                        style={{
+                          flex: 1,
+                          height: 38,
+                          background: "linear-gradient(135deg, #10b981, #059669)",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 8,
+                          fontSize: 12,
+                          fontWeight: 800,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                          boxShadow: "0 2px 4px rgba(16, 185, 129, 0.15)"
+                        }}
+                      >
+                        공실마케팅
+                      </button>
                     </div>
                   );
                 })()}
