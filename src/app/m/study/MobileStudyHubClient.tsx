@@ -23,6 +23,13 @@ const BOARD_ITEMS = [
   { id: "doc", name: "계약서/양식", desc: "부동산 계약서 및 실무 양식", icon: <IconDoc /> },
 ];
 
+const COMMUNITY_ITEMS = [
+  { id: "free", name: "자유게시판", desc: "공실뉴스 회원들의 자유로운 이야기", icon: "💬", color: "#2563eb", background: "linear-gradient(135deg, #dbeafe, #eff6ff)" },
+  { id: "qna", name: "Q&A게시판", desc: "부동산 실무 궁금증을 함께 해결", icon: "❓", color: "#7c3aed", background: "linear-gradient(135deg, #ede9fe, #f5f3ff)" },
+  { id: "notice", name: "공지사항", desc: "공실뉴스의 새로운 소식과 안내", icon: "📢", color: "#ea580c", background: "linear-gradient(135deg, #ffedd5, #fff7ed)" },
+  { id: "inquiry", name: "1:1 문의", desc: "공실뉴스에 궁금한 점을 문의", icon: "✉️", color: "#059669", background: "linear-gradient(135deg, #d1fae5, #ecfdf5)" },
+];
+
 const FAQS = [
   {
     q: "초보 공인중개사도 AI 쇼츠를 만들 수 있나요?",
@@ -78,10 +85,6 @@ export default function MobileStudyHubClient({ lectures }: any) {
   }, [activeTab]);
 
   const handleTabChange = (newTab: StudyTab) => {
-    if (newTab === "community") {
-      router.push("/m/board?id=free");
-      return;
-    }
     setActiveTab(newTab);
     router.replace(`/m/study?tab=${newTab}`, { scroll: false });
   };
@@ -327,6 +330,34 @@ export default function MobileStudyHubClient({ lectures }: any) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "community" && (
+        <div style={{ padding: "16px", paddingTop: "10px" }}>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ color: "#062828", fontSize: 16, fontWeight: 800 }}>💬 커뮤니티</div>
+            <div style={{ marginTop: 4, color: "#64748b", fontSize: 12 }}>공실뉴스 회원들과 소식을 나눠보세요.</div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+            {COMMUNITY_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => router.push(`/m/board?id=${item.id}`)}
+                style={{ padding: 0, overflow: "hidden", textAlign: "left", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, boxShadow: "0 2px 8px rgba(15,23,42,0.05)", cursor: "pointer" }}
+              >
+                <div style={{ height: 92, display: "flex", alignItems: "center", justifyContent: "center", background: item.background, color: item.color, fontSize: 38 }}>
+                  {item.icon}
+                </div>
+                <div style={{ padding: "12px 11px 13px" }}>
+                  <div style={{ marginBottom: 4, color: "#0f172a", fontSize: 14, fontWeight: 800 }}>{item.name}</div>
+                  <div style={{ minHeight: 32, color: "#64748b", fontSize: 11, lineHeight: 1.45 }}>{item.desc}</div>
+                  <div style={{ marginTop: 9, color: item.color, fontSize: 11, fontWeight: 800 }}>게시판 보기 ›</div>
+                </div>
               </button>
             ))}
           </div>
