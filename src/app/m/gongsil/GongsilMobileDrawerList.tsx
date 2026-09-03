@@ -273,7 +273,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                 )}
               </div>
               {v.images?.[0] && (
-                <div data-thumb-wrapper="true" style={{ width: "90px", height: "72px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "center" }}>
+                <div data-thumb-wrapper="true" style={{ width: "130px", height: "96px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "center" }}>
                   <img
                     src={v.images[0]}
                     alt=""
