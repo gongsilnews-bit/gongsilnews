@@ -35,7 +35,6 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
           
         if (data) {
           setCurrentUser(user);
-          setUserRole(data.role || 'USER');
           
           const { data: agencyData } = await supabase
             .from('agencies')
@@ -46,6 +45,8 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
           if (agencyData) {
             setAgencyStatus(agencyData.status || '');
           }
+
+          setUserRole(data.role === 'REALTOR' && agencyData?.status !== 'APPROVED' ? 'USER' : (data.role || 'USER'));
 
           if (data.signup_completed === false) {
             setSignupEmail(data.email || user.email || '');

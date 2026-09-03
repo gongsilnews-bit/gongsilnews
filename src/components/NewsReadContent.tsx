@@ -108,6 +108,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
 
   // 현재 열람자 권한 State
   const [viewerRole, setViewerRole] = useState<string | null>(null);
+  const [viewerAgencyStatus, setViewerAgencyStatus] = useState<string | null>(null);
 
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -120,8 +121,10 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
           setCurrentUserName(data.user.user_metadata?.name || data.user.email?.split("@")[0] || "익명");
 
           // 회원 권한(role) 가져오기
-          supabase.from("members").select("role").eq("id", data.user.id).single().then(res => {
+          supabase.from("members").select("role, agencies(status)").eq("id", data.user.id).single().then(res => {
             if (res.data) setViewerRole(res.data.role);
+            const agency = Array.isArray(res.data?.agencies) ? res.data.agencies[0] : res.data?.agencies;
+            setViewerAgencyStatus(agency?.status || null);
           });
         }
       });
@@ -1034,8 +1037,9 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                 <div className="sb-widget">
                   <div className="sb-title">추천 공실</div>
                   {visibleVacancies.map((prop, i) => {
-                  const cardMasked = prop.exposure_type === '부동산노출' &&
-                    (prop.trade_type === '경매' || prop.trade_type === '공매' ? viewerRole === null : (viewerRole !== 'REALTOR' && viewerRole !== 'ADMIN'));
+                  const isApprovedRealtor = viewerRole === 'REALTOR' && viewerAgencyStatus === 'APPROVED';
+                  const hasFullVacancyAccess = viewerRole === 'ADMIN' || isApprovedRealtor;
+                  const cardMasked = prop.exposure_type === '부동산노출' && !hasFullVacancyAccess;
                   const cardAddr = prop.building_name || prop.detail_addr || "이름없는 공실";
                   const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
                   
@@ -1114,7 +1118,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                             </div>
                           )}
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            {(viewerRole === 'REALTOR' || viewerRole === 'ADMIN') && (prop.realtor_commission || prop.commission_type) && (
+                            {hasFullVacancyAccess && (prop.realtor_commission || prop.commission_type) && (
                               <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
                                 {prop.realtor_commission || prop.commission_type}
                               </span>
