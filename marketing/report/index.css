@@ -42,7 +42,8 @@ select {
     display: block !important;
     width: 100% !important;
     max-height: none !important;
-    overflow: visible !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
     order: 1;
     position: fixed !important;
     top: 64px;
@@ -66,6 +67,11 @@ select {
 
   .report-editor-sidebar > div {
     max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .report-editor-sidebar .custom-scrollbar {
+    height: auto !important;
     overflow: visible !important;
   }
 
