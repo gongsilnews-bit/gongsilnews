@@ -347,7 +347,8 @@ function MobileGongsilContent() {
   const roadviewRef = useRef<HTMLDivElement>(null);
   const vacancyStackRef = useRef<any[]>([]);
   const pendingDetailIdRef = useRef<string | null>(null);
-  const detailOpenedFromListRef = useRef(false);
+  const detailOpenedFromRef = useRef<"list" | "cluster" | null>(null);
+  const detailOriginClusterRef = useRef<any[] | null>(null);
 
   // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
   const [isDirectView, setIsDirectView] = useState(searchParams.has("id"));
@@ -521,9 +522,15 @@ function MobileGongsilContent() {
         vacancyStackRef.current = [];
         setSelectedVacancy(null);
         setIsDirectView(false);
-        if (detailOpenedFromListRef.current || e?.state?.panel === "list") {
-          detailOpenedFromListRef.current = false;
-          setTimeout(() => setShowListView(true), 0);
+        const detailSource = detailOpenedFromRef.current;
+        if (detailSource || e?.state?.panel === "list" || e?.state?.panel === "cluster") {
+          detailOpenedFromRef.current = null;
+          setIsMapPreviewOpen(false);
+          if (detailSource === "cluster" || e?.state?.panel === "cluster") {
+            setSelectedCluster(detailOriginClusterRef.current);
+            detailOriginClusterRef.current = null;
+          }
+          requestAnimationFrame(() => setShowListView(true));
         }
         setTimeout(() => kakaoMapRef.current?.relayout(), 50);
       } else if (selectedCluster) {
@@ -1015,8 +1022,9 @@ function MobileGongsilContent() {
   // 상세 조회
   const handleVacancyClick = async (v: any, isDirect: boolean = false) => {
     if (!isDirect) {
-      if (!selectedVacancy && (showListView || selectedCluster)) {
-        detailOpenedFromListRef.current = showListView;
+      if (!selectedVacancy) {
+        detailOpenedFromRef.current = showListView ? "list" : selectedCluster ? "cluster" : null;
+        detailOriginClusterRef.current = selectedCluster;
       }
       pendingDetailIdRef.current = v.id;
       window.history.pushState({ panel: "detail", id: v.id, t: Date.now() }, "", "/m/gongsil?id=" + v.id);
