@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import BoardDropdownHeader from "../_components/header/BoardDropdownHeader";
-import MobileTopBarHeader from "../_components/MobileTopBarHeader";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
 import { getPermissionLevel } from "@/utils/permissionCheck";
@@ -192,15 +191,38 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
 
   const currentBoardId = board?.board_id || "";
   const isResource = RESOURCE_BOARDS.some(b => b.id === currentBoardId);
-  const activeTopTab = isResource ? "board_archive" : "board_community";
   const subBoards = isResource ? RESOURCE_BOARDS : COMMUNITY_BOARDS;
+  const sectionTitle = isResource ? "자료실" : "커뮤니티";
 
   return (
-    <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: '56px' }}>
-      {/* 1. 1차 상단 탭바 (자료실 or 커뮤니티 활성화) */}
-      <MobileTopBarHeader activeTab={activeTopTab} />
+    <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px' }}>
+      {/* 현재 영역만 남긴 독립형 상단 헤더 */}
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 40,
+          height: 56,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '0 16px',
+          backgroundColor: '#ffffff',
+          borderBottom: '1px solid #e5e7eb',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => router.back()}
+          aria-label={`${sectionTitle} 이전 화면으로 돌아가기`}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, padding: 0, background: 'none', border: 'none', color: '#1f2937', fontSize: 28, lineHeight: 1, cursor: 'pointer' }}
+        >
+          ‹
+        </button>
+        <h1 style={{ margin: 0, color: '#111827', fontSize: 17, fontWeight: 800 }}>{sectionTitle}</h1>
+      </div>
 
-      {/* 2. 2차 서브 카테고리 메뉴바 (PC 드롭다운과 100% 동일한 서브탭) */}
+      {/* 2차 카테고리 메뉴바 */}
       <div
         className="hide-scrollbar"
         style={{
