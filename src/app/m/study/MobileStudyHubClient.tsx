@@ -23,11 +23,16 @@ const BOARD_ITEMS = [
   { id: "doc", name: "계약서/양식", desc: "부동산 계약서 및 실무 양식", icon: <IconDoc /> },
 ];
 
+const IconCommunityChat = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.4 8.4 0 0 1-3.3-.7L4 20l1.4-3.8A7.4 7.4 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg>;
+const IconCommunityQuestion = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.7 1.8c-.9.7-1.5 1-1.5 2.2"/><path d="M12 16.5h.01"/></svg>;
+const IconCommunityNotice = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10v4"/><path d="M7 9.5 17 6v12L7 14.5v-5Z"/><path d="M17 10h2.5a1.5 1.5 0 0 1 0 3H17"/><path d="m9 15 1.2 4H8.5L7 14.5"/></svg>;
+const IconCommunityMail = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>;
+
 const COMMUNITY_ITEMS = [
-  { id: "free", name: "자유게시판", desc: "공실뉴스 회원들의 자유로운 이야기", icon: "💬", color: "#2563eb", background: "linear-gradient(135deg, #dbeafe, #eff6ff)" },
-  { id: "qna", name: "Q&A게시판", desc: "부동산 실무 궁금증을 함께 해결", icon: "❓", color: "#7c3aed", background: "linear-gradient(135deg, #ede9fe, #f5f3ff)" },
-  { id: "notice", name: "공지사항", desc: "공실뉴스의 새로운 소식과 안내", icon: "📢", color: "#ea580c", background: "linear-gradient(135deg, #ffedd5, #fff7ed)" },
-  { id: "inquiry", name: "1:1 문의", desc: "공실뉴스에 궁금한 점을 문의", icon: "✉️", color: "#059669", background: "linear-gradient(135deg, #d1fae5, #ecfdf5)" },
+  { id: "free", name: "자유게시판", desc: "공실뉴스 회원들의 자유로운 이야기", icon: <IconCommunityChat /> },
+  { id: "qna", name: "Q&A게시판", desc: "부동산 실무 궁금증을 함께 해결", icon: <IconCommunityQuestion /> },
+  { id: "notice", name: "공지사항", desc: "공실뉴스의 새로운 소식과 안내", icon: <IconCommunityNotice /> },
+  { id: "inquiry", name: "1:1 문의", desc: "공실뉴스에 궁금한 점을 문의", icon: <IconCommunityMail /> },
 ];
 
 const FAQS = [
@@ -350,7 +355,7 @@ export default function MobileStudyHubClient({ lectures }: any) {
                 onClick={() => router.push(`/m/board?id=${item.id}`)}
                 style={{ display: "flex", alignItems: "center", gap: "14px", width: "100%", padding: "16px", textAlign: "left", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 1px 2px rgba(0,0,0,0.03)", cursor: "pointer" }}
               >
-                <div style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, borderRadius: "10px", background: item.background, color: item.color, fontSize: 24 }}>
+                <div style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, borderRadius: "10px", background: "#ecfdf5" }}>
                   {item.icon}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
