@@ -42,7 +42,7 @@ select {
     top: 64px;
     right: 0;
     bottom: 0;
-    width: min(92vw, 430px) !important;
+    width: 100vw !important;
     z-index: 80;
     padding: 12px;
     background: rgba(243, 244, 246, 0.98);

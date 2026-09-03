@@ -451,6 +451,27 @@ function App() {
   const [activeTab, setActiveTabInternal] = useState<number | 'all'>('all');
   const [tabHistory, setTabHistory] = useState<(number | 'all')[]>(['all']);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const touchStartXRef = useRef<number | null>(null);
+
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen(prev => !prev);
+  }, []);
+
+  const handleMobileTouchStart = useCallback((event: React.TouchEvent<HTMLElement>) => {
+    if (window.innerWidth > 767) return;
+    touchStartXRef.current = event.touches[0]?.clientX ?? null;
+  }, []);
+
+  const handleMobileTouchEnd = useCallback((event: React.TouchEvent<HTMLElement>) => {
+    const startX = touchStartXRef.current;
+    touchStartXRef.current = null;
+    if (window.innerWidth > 767 || startX === null) return;
+
+    const distance = event.changedTouches[0]?.clientX - startX;
+    if (Math.abs(distance) < 60) return;
+    if (distance < 0 && !isSidebarOpen) setIsSidebarOpen(true);
+    if (distance > 0 && isSidebarOpen) setIsSidebarOpen(false);
+  }, [isSidebarOpen]);
 
   const setActiveTab = useCallback((tab: number | 'all') => {
     setTabHistory(prev => [...prev, tab]);
@@ -1477,7 +1498,8 @@ ${clone.outerHTML}
   };
 
   const downloadJpg = async (selectedIds: string[]) => {
-    if (!hiddenFlyerRef.current) return;
+    if (!hiddenFlyerRef.current || isExportingImage) return;
+    setIsExportingImage(true);
     try {
       const element = hiddenFlyerRef.current;
       
@@ -1538,11 +1560,14 @@ ${clone.outerHTML}
     } catch (err) {
       console.error(err);
       alert("이미지 다운로드 실패. 다시 시도해주세요.");
+    } finally {
+      setIsExportingImage(false);
     }
   };
 
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isExportingImage, setIsExportingImage] = useState(false);
 
   const downloadPdf = async () => {
     if (!flyerRef.current) return;
@@ -1759,6 +1784,24 @@ ${clone.outerHTML}
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col font-sans relative">
+      {isExportingImage && (
+        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-900/35 backdrop-blur-[2px]">
+          <div className="flex items-center gap-3 rounded-xl border border-white/70 bg-white/95 px-5 py-4 shadow-xl">
+            <style>{`
+              @keyframes imageExportLoadingDot {
+                0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+                30% { transform: translateY(-7px); opacity: 1; }
+              }
+            `}</style>
+            <div className="flex h-4 items-end gap-1">
+              {[0, 1, 2].map((index) => (
+                <span key={index} className="h-1.5 w-1.5 rounded-full bg-blue-600" style={{ animation: `imageExportLoadingDot 1s ease-in-out ${index * 0.15}s infinite` }} />
+              ))}
+            </div>
+            <span className="whitespace-nowrap text-sm font-bold text-slate-700">이미지를 생성중입니다</span>
+          </div>
+        </div>
+      )}
       {loadingData && (
         <div className="fixed inset-0 bg-slate-900/80 z-[200] flex flex-col items-center justify-center text-white backdrop-blur-sm">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-500 mb-6"></div>
@@ -1805,7 +1848,7 @@ ${clone.outerHTML}
                 </div>
             </div>
             <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              onClick={toggleSidebar}
               className="report-header-toggle px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 transition-all active:scale-95 text-xs flex items-center gap-1.5"
             >
               {isSidebarOpen ? "◀ 보고서 편집 접기" : "▶ 보고서 편집 열기"}
@@ -1813,7 +1856,7 @@ ${clone.outerHTML}
         </div>
       </header>
 
-      <main className="report-editor-main print:block print:h-auto print:p-0 flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
+      <main onTouchStart={handleMobileTouchStart} onTouchEnd={handleMobileTouchEnd} className="report-editor-main print:block print:h-auto print:p-0 flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
         <div className={`report-editor-sidebar print:hidden col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'is-open' : 'is-closed'}`}>
             <FlyerForm 
               info={state.info}
