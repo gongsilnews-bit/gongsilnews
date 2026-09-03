@@ -473,6 +473,10 @@ function App() {
     if (distance > 0 && isSidebarOpen) setIsSidebarOpen(false);
   }, [isSidebarOpen]);
 
+  const mobilePreviewPageCount = activeTab === 'all'
+    ? (state.info.visiblePages || [0, 1, 2, 3, 4, 5, 6, 7]).length
+    : 1;
+
   const setActiveTab = useCallback((tab: number | 'all') => {
     setTabHistory(prev => [...prev, tab]);
     setActiveTabInternal(tab);
@@ -1897,7 +1901,10 @@ ${clone.outerHTML}
             </div>
             <div ref={previewContainerRef} className="print:overflow-visible print:p-0 print:block flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
                 {/* Fixed width container for editor preview */}
-                <div className="report-canvas-shell w-[860px] shrink-0 print:w-[1122px] print:mx-auto print:shrink">
+                <div
+                  className="report-canvas-shell w-[860px] shrink-0 print:w-[1122px] print:mx-auto print:shrink"
+                  style={{ '--mobile-report-page-count': mobilePreviewPageCount } as React.CSSProperties}
+                >
                     <FlyerCanvas 
                       ref={flyerRef} 
                       data={state} 

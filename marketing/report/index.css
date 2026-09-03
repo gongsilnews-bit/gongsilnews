@@ -88,7 +88,7 @@ select {
   .report-canvas-shell {
     width: 100% !important;
     max-width: 100% !important;
-    height: calc((100vw - 24px) * 0.7071) !important;
+    height: calc(((100vw - 24px) / 1122) * 826px * var(--mobile-report-page-count)) !important;
     overflow: visible !important;
     margin: 0 auto !important;
   }
@@ -99,6 +99,8 @@ select {
     transform: scale(calc((100vw - 24px) / 1122));
     transform-origin: top left;
     margin: 0 !important;
+    padding: 0 !important;
+    align-items: flex-start !important;
   }
 
   .report-action-bar {
