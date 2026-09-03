@@ -74,37 +74,30 @@ export async function deleteBoard(boardId: string) {
 }
 
 /* ── 게시글 목록 조회 ── */
-export async function getBoardPosts(boardId: string, options?: { boardType?: string; userId?: string; isAdmin?: boolean; limit?: number; offset?: number }) {
+export async function getBoardPosts(boardId: string, options?: { boardType?: string; userId?: string; isAdmin?: boolean }) {
   let query = supabase
     .from("board_posts")
-    .select(options?.boardType === "inquiry"
-      ? "id, board_id, title, author_id, author_name, created_at, view_count, is_notice, thumbnail_url, youtube_url, drive_url, external_url, board_comments(count)"
-      : "id, board_id, title, author_id, author_name, created_at, view_count, is_notice, thumbnail_url, youtube_url, drive_url, external_url", { count: "exact" })
+    .select("id, board_id, title, author_id, author_name, created_at, view_count, is_notice, thumbnail_url, youtube_url, drive_url, external_url, board_comments(id)")
     .eq("board_id", boardId)
     .eq("is_deleted", false)
     .order("is_notice", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (options?.limit) {
-    const offset = options.offset || 0;
-    query = query.range(offset, offset + options.limit - 1);
-  }
-
   if (options?.boardType === "inquiry" && !options?.isAdmin) {
     query = query.eq("author_id", options?.userId || "anonymous");
   }
 
-  const { data, error, count } = await query;
+  const { data, error } = await query;
 
   if (error) return { success: false, error: error.message, data: [] };
-  return { success: true, data, count: count || 0 };
+  return { success: true, data };
 }
 
 /* ── 게시글 단건 조회 ── */
 export async function getBoardPost(postId: string) {
   const { data, error } = await supabase
     .from("board_posts")
-    .select("*, board_attachments(*)")
+    .select("*, board_attachments(*), board_comments(*)")
     .eq("id", postId)
     .single();
 
