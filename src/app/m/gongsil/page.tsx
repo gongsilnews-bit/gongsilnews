@@ -1051,6 +1051,30 @@ function MobileGongsilContent() {
     setDetailLoading(false);
   };
 
+  const restoreDetailOrigin = () => {
+    const origin = detailOpenedFromRef.current;
+    const originCluster = detailOriginClusterRef.current;
+    detailOpenedFromRef.current = null;
+    detailOriginClusterRef.current = null;
+    setSelectedVacancy(null);
+    setIsDirectView(false);
+    setIsMapPreviewOpen(false);
+
+    if (origin === "cluster" && originCluster) {
+      setSelectedCluster(originCluster);
+      setShowListView(false);
+    } else if (origin === "list") {
+      setSelectedCluster(null);
+      setShowListView(true);
+    } else {
+      setSelectedCluster(null);
+      setShowListView(false);
+    }
+
+    window.history.replaceState({ panel: origin === "list" ? "list" : origin === "cluster" ? "cluster" : "map" }, "", "/m/gongsil");
+    requestAnimationFrame(() => kakaoMapRef.current?.relayout());
+  };
+
   const goBack = () => {
     if (vacancyStackRef.current.length > 0) {
       window.history.back();
@@ -1069,7 +1093,14 @@ function MobileGongsilContent() {
       }, 350);
       return;
     }
-    if (selectedVacancy) { window.history.back(); return; }
+    if (selectedVacancy) {
+      if (detailOpenedFromRef.current) {
+        restoreDetailOrigin();
+      } else {
+        window.history.back();
+      }
+      return;
+    }
     if (selectedCluster) { window.history.back(); return; }
     if (showListView) { setShowListView(false); return; }
   };
