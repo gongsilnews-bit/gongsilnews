@@ -2505,7 +2505,7 @@ const filteredFields = fields.filter(field => {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", padding: "0 20px", gap: 16, fontSize: 13, color: "#666" }}>
                     {[
-                      { label: "전체", count: dbVacancies.filter((v) => v.owner_id === prop.owner_id).length },
+                      { label: "전체", count: dbVacancies.filter((v) => v.owner_id === prop.owner_id && v.trade_type !== "경매" && v.trade_type !== "공매").length },
                       {
                         label: "매매",
                         count: dbVacancies.filter((v) => v.owner_id === prop.owner_id && v.trade_type === "매매").length,
@@ -2548,7 +2548,8 @@ const filteredFields = fields.filter(field => {
               {dbVacancies
                 .filter(
                   (v) =>
-                    v.owner_id === prop.owner_id && (realtorTradeType === "전체" || v.trade_type === realtorTradeType)
+                    v.owner_id === prop.owner_id && v.trade_type !== "경매" && v.trade_type !== "공매" &&
+                    (realtorTradeType === "전체" || v.trade_type === realtorTradeType)
                 )
                 .map((vp) => (
                   <div
