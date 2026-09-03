@@ -84,6 +84,7 @@ export default function PCReporterClient({
     activeTab === "all"
       ? articles
       : articles.filter((a: any) => a.section2 === activeTab);
+  const visibleVacancies = vacancies.filter(v => v.trade_type !== '경매' && v.trade_type !== '공매');
 
   const [userLevel, setUserLevel] = React.useState<number>(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
@@ -430,9 +431,9 @@ export default function PCReporterClient({
           <button onClick={() => setMainTab('articles')} style={{ padding: '14px 24px', fontSize: '15px', fontWeight: mainTab === 'articles' ? 800 : 600, color: mainTab === 'articles' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'articles' ? '3px solid #111' : '3px solid transparent', cursor: 'pointer', marginBottom: '-2px' }}>
             전체기사 <span style={{ color: '#f97316', fontSize: '13px' }}>{articles.length}</span>
           </button>
-          {vacancies.length > 0 && (
+          {visibleVacancies.length > 0 && (
             <button onClick={() => setMainTab('vacancies')} style={{ padding: '14px 24px', fontSize: '15px', fontWeight: mainTab === 'vacancies' ? 800 : 600, color: mainTab === 'vacancies' ? '#111' : '#888', background: 'none', border: 'none', borderBottom: mainTab === 'vacancies' ? '3px solid #3b82f6' : '3px solid transparent', cursor: 'pointer', marginBottom: '-2px' }}>
-              등록공실 <span style={{ color: '#3b82f6', fontSize: '13px' }}>{vacancies.length}</span>
+              등록공실 <span style={{ color: '#3b82f6', fontSize: '13px' }}>{visibleVacancies.length}</span>
             </button>
           )}
         </div>
@@ -479,7 +480,7 @@ export default function PCReporterClient({
         ) : (
           /* 등록공실 - 공실상세보기 등록자 공실 패턴 적용 */
           <>
-            {vacancies.length > 0 ? (
+            {visibleVacancies.length > 0 ? (
               <div style={{ border: "1px solid #eee", borderRadius: "8px", overflow: "hidden", background: "#fff" }}>
                 <div style={{ display: "flex", background: "#f9f9f9", borderBottom: "1px solid #eee" }}>
                   <div style={{ flex: "none", padding: "16px 20px", fontSize: 14, fontWeight: "bold", color: "#111", borderRight: "1px solid #eee", display: "flex", alignItems: "center" }}>
@@ -487,11 +488,11 @@ export default function PCReporterClient({
                   </div>
                   <div style={{ display: "flex", alignItems: "center", padding: "0 20px", gap: 16, fontSize: 13, color: "#666", overflowX: "auto", whiteSpace: "nowrap" }}>
                     {[
-                      { label: '전체', count: vacancies.length },
-                      { label: '매매', count: vacancies.filter(v => v.trade_type === '매매').length },
-                      { label: '전세', count: vacancies.filter(v => v.trade_type === '전세').length },
-                      { label: '월세', count: vacancies.filter(v => v.trade_type === '월세').length },
-                      { label: '단기', count: vacancies.filter(v => v.trade_type === '단기').length }
+                      { label: '전체', count: visibleVacancies.length },
+                      { label: '매매', count: visibleVacancies.filter(v => v.trade_type === '매매').length },
+                      { label: '전세', count: visibleVacancies.filter(v => v.trade_type === '전세').length },
+                      { label: '월세', count: visibleVacancies.filter(v => v.trade_type === '월세').length },
+                      { label: '단기', count: visibleVacancies.filter(v => v.trade_type === '단기').length }
                     ].map((stat, i, arr) => (
                       <React.Fragment key={stat.label}>
                         <span 
@@ -511,7 +512,7 @@ export default function PCReporterClient({
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {vacancies.filter(v => realtorTradeType === "전체" || v.trade_type === realtorTradeType).map((prop: any, i: number) => {
+                  {visibleVacancies.filter(v => realtorTradeType === "전체" || v.trade_type === realtorTradeType).map((prop: any, i: number) => {
                     const cardMasked = prop.exposure_type === '부동산노출' && (prop.trade_type === '경매' || prop.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
                     const cardAddr = prop.building_name || [prop.dong, prop.sigungu].filter(Boolean).join(" ") || "이름없는 공실";
                     const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
