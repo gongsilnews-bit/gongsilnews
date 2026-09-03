@@ -1039,7 +1039,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
           <div className="news-sidebar">
             {/* 1. 추천 공실 - 부동산회원이면 등록한 공실 전체 노출 */}
             {(() => {
-              const visibleVacancies = authorVacancies;
+              const visibleVacancies = authorVacancies.filter(prop => prop.trade_type !== '경매' && prop.trade_type !== '공매');
               if (authorRole !== "REALTOR" || visibleVacancies.length === 0) return null;
               
               return (
