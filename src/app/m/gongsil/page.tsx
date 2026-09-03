@@ -1174,7 +1174,7 @@ function MobileGongsilContent() {
           {mapLoaded && zoomLevel >= 9 && (
             <div style={{
               position: "absolute",
-              top: "64px",
+              top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
               zIndex: 100,
@@ -1183,16 +1183,17 @@ function MobileGongsilContent() {
               <div style={{
                 background: "rgba(255, 255, 255, 0.95)",
                 backdropFilter: "blur(10px)",
-                borderRadius: "18px",
-                padding: "9px 14px",
+                borderRadius: "20px",
+                padding: "14px 20px",
                 boxShadow: "0 4px 16px rgba(15, 23, 42, 0.16)",
                 border: "1px solid rgba(226, 232, 240, 0.9)",
                 display: "flex",
                 alignItems: "center",
                 gap: "7px",
-                whiteSpace: "nowrap"
+                whiteSpace: "nowrap",
+                maxWidth: "calc(100vw - 32px)"
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   <line x1="11" y1="8" x2="11" y2="14" />
@@ -1200,7 +1201,7 @@ function MobileGongsilContent() {
                 </svg>
                 <span style={{
                   color: "#334155",
-                  fontSize: "13px",
+                  fontSize: "17px",
                   fontWeight: 700,
                   fontFamily: "'Pretendard', sans-serif",
                   letterSpacing: "0"
