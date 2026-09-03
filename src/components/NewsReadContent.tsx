@@ -44,7 +44,6 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
   const [commentText, setCommentText] = useState("");
   const [viewCount, setViewCount] = useState(article.view_count || 0);
   const [mounted, setMounted] = useState(false);
-  const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
 
   useEffect(() => {
     // Set article title globally for the sticky header
@@ -63,22 +62,6 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
       window.dispatchEvent(new CustomEvent('setGlobalArticleTitle', { detail: null }));
     };
   }, [article?.title]);
-
-  useEffect(() => {
-    if (selectedVacancyId) {
-      window.history.pushState({ panel: 'vacancy-overlay' }, '');
-    }
-  }, [selectedVacancyId]);
-
-  useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      if (selectedVacancyId && e.state?.panel !== 'vacancy-overlay') {
-        setSelectedVacancyId(null);
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedVacancyId]);
 
   // 별도 기능 State
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -737,7 +720,12 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                         if (urlObj.pathname === '/gongsil' || urlObj.pathname === '/m/gongsil') {
                           const id = urlObj.searchParams.get('id');
                           if (id) {
-                            setSelectedVacancyId(id);
+                            const targetPath = `${isMobile ? '/m' : ''}/gongsil?id=${encodeURIComponent(id)}`;
+                            if (isMobile) {
+                              router.push(targetPath);
+                            } else {
+                              window.open(targetPath, '_blank', 'noopener,noreferrer');
+                            }
                             return;
                           }
                         }
@@ -1088,12 +1076,13 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                         if (cardMasked) {
                           e.preventDefault();
                           const loginUrl = isMobile ? "/m/login" : "/login";
-                          window.location.href = loginUrl + "?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search);
+                          const vacancyPath = `${isMobile ? "/m" : ""}/gongsil?id=${encodeURIComponent(String(prop.id))}`;
+                          window.location.href = loginUrl + "?returnTo=" + encodeURIComponent(vacancyPath);
                           return;
                         }
                         if (isMobile) {
                           e.preventDefault();
-                          setSelectedVacancyId(prop.id);
+                          router.push(`/m/gongsil?id=${encodeURIComponent(String(prop.id))}`);
                         }
                       }}
                       style={{ textDecoration: "none", color: "inherit", display: "block" }}
@@ -1198,27 +1187,6 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
           </div>
         </div>
       )}
-
-      {/* Vacancy Iframe Overlay */}
-      <div 
-        className={`vacancy-iframe-overlay ${selectedVacancyId ? "open" : ""}`} 
-        style={{
-          position: "fixed", top: 0, left: "50%", width: "100%", maxWidth: "448px",
-          marginLeft: "-224px", height: "100dvh", background: "#fff", zIndex: 9999999,
-          transform: selectedVacancyId ? "translateX(0)" : "translateX(100vw)",
-          transition: "transform 0.35s cubic-bezier(0.25,1,0.5,1)",
-          display: "flex", flexDirection: "column"
-        }}
-      >
-        <style>{`@media (max-width: 448px) { .vacancy-iframe-overlay { margin-left: -50vw !important; } }`}</style>
-        {selectedVacancyId && (
-          <iframe 
-            src={`/m/gongsil?id=${selectedVacancyId}&embed=true`} 
-            style={{ flex: 1, border: "none", width: "100%", height: "100%" }}
-            title="vacancy-detail"
-          />
-        )}
-      </div>
 
       {/* 이미지 라이트박스 (확대 보기) */}
       {zoomImage && (
