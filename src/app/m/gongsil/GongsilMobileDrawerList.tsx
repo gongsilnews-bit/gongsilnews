@@ -20,6 +20,7 @@ interface GongsilMobileDrawerListProps {
   setIsAuthModalOpen: (open: boolean) => void;
   handleVacancyClick: (v: any) => void;
   formatPrice: (v: any) => string;
+  listScrollRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
@@ -36,6 +37,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
   setIsAuthModalOpen,
   handleVacancyClick,
   formatPrice,
+  listScrollRef,
 }) => {
   const currentList = selectedCluster || (showListView ? (listViewMode === 'map' ? visibleVacancies : filteredVacancies) : []);
   const [auctionSort, setAuctionSort] = useState<AuctionSortKey>("latest");
@@ -118,7 +120,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
           </select>
         )}
       </div>
-      <div className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
+      <div ref={listScrollRef} className="no-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
         {renderList?.map((v: any) => {
           const isMyProperty = currentUser && v && v.owner_id === currentUser.id;
           const cardMasked = v.exposure_type === '부동산노출' && (v.trade_type === '경매' || v.trade_type === '공매' ? userLevel < 1 : userLevel < 2) && !isMyProperty;

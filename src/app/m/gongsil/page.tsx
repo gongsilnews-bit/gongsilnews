@@ -90,8 +90,6 @@ function MobileGongsilContent() {
   const clustererRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const detailPanelRef = useRef<HTMLDivElement>(null);
-  const viewportCacheRef = useRef(new Map<string, { data: any[]; timestamp: number }>());
-  const viewportRequestRef = useRef(0);
 
   const [selectedCluster, setSelectedCluster] = useState<any[] | null>(null);
   const [selectedVacancy, setSelectedVacancy] = useState<any | null>(null);
@@ -295,13 +293,10 @@ function MobileGongsilContent() {
   // 현재 지도 화면 내에 보이는 공실광고 개수 상태
   const [visibleCount, setVisibleCount] = useState(0);
   const [visibleVacancies, setVisibleVacancies] = useState<any[]>([]);
-  const [isMapMoving, setIsMapMoving] = useState(false);
 
   // 일반 리스트 뷰 상태
   const [showListView, setShowListView] = useState(false);
   const [listViewMode, setListViewMode] = useState<"map" | "filter">("map");
-  const [isMapPreviewOpen, setIsMapPreviewOpen] = useState(false);
-  const mapPreviewTouchStartRef = useRef<number | null>(null);
 
   // Swipe gesture states
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -330,25 +325,11 @@ function MobileGongsilContent() {
     }
   };
 
-  const handleMapPreviewTouchStart = (event: React.TouchEvent) => {
-    mapPreviewTouchStartRef.current = event.touches[0].clientY;
-  };
-
-  const handleMapPreviewTouchEnd = (event: React.TouchEvent) => {
-    const startY = mapPreviewTouchStartRef.current;
-    if (startY === null) return;
-    const distance = event.changedTouches[0].clientY - startY;
-    if (distance < -40) setIsMapPreviewOpen(true);
-    if (distance > 40) setIsMapPreviewOpen(false);
-    mapPreviewTouchStartRef.current = null;
-  };
-
   const itemMapRef = useRef<HTMLDivElement>(null);
   const roadviewRef = useRef<HTMLDivElement>(null);
   const vacancyStackRef = useRef<any[]>([]);
-  const pendingDetailIdRef = useRef<string | null>(null);
-  const detailOpenedFromRef = useRef<"list" | "cluster" | null>(null);
-  const detailOriginClusterRef = useRef<any[] | null>(null);
+  const listScrollRef = useRef<HTMLDivElement>(null);
+  const listScrollTopRef = useRef(0);
 
   // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
   const [isDirectView, setIsDirectView] = useState(searchParams.has("id"));
@@ -522,16 +503,9 @@ function MobileGongsilContent() {
         vacancyStackRef.current = [];
         setSelectedVacancy(null);
         setIsDirectView(false);
-        const detailSource = detailOpenedFromRef.current;
-        if (detailSource || e?.state?.panel === "list" || e?.state?.panel === "cluster") {
-          detailOpenedFromRef.current = null;
-          setIsMapPreviewOpen(false);
-          if (detailSource === "cluster" || e?.state?.panel === "cluster") {
-            setSelectedCluster(detailOriginClusterRef.current);
-            detailOriginClusterRef.current = null;
-          }
-          requestAnimationFrame(() => setShowListView(true));
-        }
+        requestAnimationFrame(() => {
+          if (listScrollRef.current) listScrollRef.current.scrollTop = listScrollTopRef.current;
+        });
         setTimeout(() => kakaoMapRef.current?.relayout(), 50);
       } else if (selectedCluster) {
         vacancyStackRef.current = [];
@@ -546,13 +520,11 @@ function MobileGongsilContent() {
 
   // 💡 [전국 매물 풀 로드] 상세검색 시 전국 매물 개수를 정확하게 계산하기 위한 전체 데이터셋 캐싱
   useEffect(() => {
-    if (isEmbedded) return;
     const fetchAllVacancies = async () => {
       try {
         const res = await getVacanciesForMap({
           is_auction: activeMode === "경매",
-          limit: 10000,
-          includePhotos: false
+          limit: 10000
         });
         if (res && res.success && res.data) {
           const withImages = res.data.map((v: any) => ({
@@ -568,63 +540,15 @@ function MobileGongsilContent() {
       }
     };
     fetchAllVacancies();
-  }, [activeMode, isEmbedded]);
+  }, [activeMode]);
 
   // 💡 [대표님 지침] Bbox(지도의 화면 영역) 변화 또는 필터 기반(B스타일) 행정구역 검색 시 Supabase에서 실시간으로 범위 내/지역 내 매물 패치!
   useEffect(() => {
-    if (isEmbedded) {
-      const idParam = searchParams.get("id");
-      if (!idParam) return;
-
-      let cancelled = false;
-      const loadPreviewVacancy = async () => {
-        setIsFetchingVacancies(true);
-        try {
-          const res = await getVacancyDetail(idParam);
-          if (cancelled || !res.success || !res.data) return;
-          const detail = {
-            ...res.data,
-            images: res.data.vacancy_photos
-              ? [...res.data.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
-              : [],
-          };
-          setVacancies([detail]);
-          setSelectedVacancy(detail);
-          setIsDirectView(true);
-        } finally {
-          if (!cancelled) {
-            setIsFetchingVacancies(false);
-            setLoading(false);
-          }
-        }
-      };
-      loadPreviewVacancy();
-      return () => { cancelled = true; };
-    }
-
     // A스타일(map)인데 mapBounds가 없으면 조회를 대기
     if (filters.locationSearchType === 'map' && !mapBounds) return;
 
-    let cancelled = false;
-    const requestId = ++viewportRequestRef.current;
-    const isMapSearch = filters.locationSearchType === 'map';
-    const cacheKey = isMapSearch && mapBounds
-      ? `${activeMode}:${mapBounds.getSouthWest().getLat().toFixed(3)},${mapBounds.getSouthWest().getLng().toFixed(3)},${mapBounds.getNorthEast().getLat().toFixed(3)},${mapBounds.getNorthEast().getLng().toFixed(3)}`
-      : null;
-    const cached = cacheKey ? viewportCacheRef.current.get(cacheKey) : null;
-    let loadingTimer: number | null = null;
-
-    if (cached && Date.now() - cached.timestamp < 2 * 60 * 1000) {
-      setVacancies(cached.data);
-      setLoading(false);
-    }
-
     const fetchVacanciesData = async () => {
-      if (!cached) {
-        loadingTimer = window.setTimeout(() => {
-          if (!cancelled && requestId === viewportRequestRef.current) setIsFetchingVacancies(true);
-        }, 200);
-      }
+      setIsFetchingVacancies(true);
       try {
         let res;
 
@@ -635,7 +559,7 @@ function MobileGongsilContent() {
             sigungu: filters.sigungu || undefined,
             dong: filters.dong || undefined,
             is_auction: activeMode === "경매",
-            limit: 10000,
+            limit: 10000
           });
 
           // '전국' 선택 시 지도를 대한민국 전역(level: 12)으로 자동 줌아웃
@@ -657,11 +581,9 @@ function MobileGongsilContent() {
           const ne = mapBounds.getNorthEast();
           res = await getVacanciesForMap({
             bbox: { swLat: sw.getLat(), swLng: sw.getLng(), neLat: ne.getLat(), neLng: ne.getLng() },
-            is_auction: activeMode === "경매",
+            is_auction: activeMode === "경매"
           });
         }
-
-        if (cancelled || requestId !== viewportRequestRef.current) return;
 
         if (res && res.success && res.data) {
           const withImages = res.data.map((v: any) => ({
@@ -670,7 +592,6 @@ function MobileGongsilContent() {
               ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
               : [],
           }));
-              if (cacheKey) viewportCacheRef.current.set(cacheKey, { data: withImages, timestamp: Date.now() });
           setVacancies(withImages);
 
           // URL에 id 파라미터가 있는 경우의 다이렉트 디테일 조회 지원
@@ -680,34 +601,22 @@ function MobileGongsilContent() {
             if (idParam) {
               const target = withImages.find((item: any) => item.id === idParam);
               if (target) {
-                if (pendingDetailIdRef.current === idParam) {
-                  pendingDetailIdRef.current = null;
-                } else {
-                  setIsDirectView(true);
-                  handleVacancyClick(target, true);
-                }
+                setIsDirectView(true);
+                handleVacancyClick(target, true);
               }
             }
           }
         }
       } catch (err) {
-        if (!cancelled) console.error("Failed to fetch mobile vacancies:", err);
+        console.error("Failed to fetch mobile vacancies:", err);
       } finally {
-        if (loadingTimer !== null) window.clearTimeout(loadingTimer);
-        if (!cancelled && requestId === viewportRequestRef.current) {
-          setIsFetchingVacancies(false);
-          setLoading(false);
-        }
+        setIsFetchingVacancies(false);
+        setLoading(false);
       }
     };
 
-    const timer = window.setTimeout(fetchVacanciesData, isMapSearch ? 300 : 0);
-    return () => {
-      cancelled = true;
-      if (loadingTimer !== null) window.clearTimeout(loadingTimer);
-      window.clearTimeout(timer);
-    };
-  }, [mapBounds, activeMode, filters.locationSearchType, filters.sido, filters.sigungu, filters.dong, isEmbedded, searchParams]);
+    fetchVacanciesData();
+  }, [mapBounds, activeMode, filters.locationSearchType, filters.sido, filters.sigungu, filters.dong]);
 
   // 💡 최초 진입 시, 만약 URL에 id 파라미터가 있어서 다이렉트 뷰 모드인 경우 1회 강제 단일 상세 로드
   useEffect(() => {
@@ -878,12 +787,11 @@ function MobileGongsilContent() {
 
     // Group vacancies by unique coordinate
     const isZoomedIn = zoomLevel <= 5;
-    const markerPrecision = currentLevel >= 7 ? 2 : currentLevel >= 6 ? 3 : 6;
     const coordinateGroups = new Map<string, any[]>();
     filteredVacancies.forEach((v) => {
       const coords = getJitteredCoords(v, isZoomedIn);
       if (coords.lat && coords.lng) {
-        const key = `${coords.lat.toFixed(markerPrecision)}_${coords.lng.toFixed(markerPrecision)}`;
+        const key = `${coords.lat.toFixed(6)}_${coords.lng.toFixed(6)}`;
         if (!coordinateGroups.has(key)) {
           coordinateGroups.set(key, []);
         }
@@ -954,7 +862,6 @@ function MobileGongsilContent() {
 
     // 🚀 지도의 bounds 및 zoomLevel 변화 시 부모 상태로 동기화
     const handleMapIdle = () => {
-      setIsMapMoving(false);
       const center = map.getCenter();
       setMapBounds(map.getBounds());
       setZoomLevel(map.getLevel());
@@ -1007,14 +914,9 @@ function MobileGongsilContent() {
     updateVisibleCount();
 
     // 지도의 이동/확대축소가 끝났을 때 업데이트 등록
-    const handleMapMoveStart = () => setIsMapMoving(true);
-    kakao.maps.event.addListener(map, "dragstart", handleMapMoveStart);
-    kakao.maps.event.addListener(map, "zoom_start", handleMapMoveStart);
     kakao.maps.event.addListener(map, "idle", handleMapIdle);
 
     return () => {
-      kakao.maps.event.removeListener(map, "dragstart", handleMapMoveStart);
-      kakao.maps.event.removeListener(map, "zoom_start", handleMapMoveStart);
       kakao.maps.event.removeListener(map, "idle", handleMapIdle);
     };
   }, [filteredVacancies, mapLoaded]);
@@ -1022,14 +924,8 @@ function MobileGongsilContent() {
   // 상세 조회
   const handleVacancyClick = async (v: any, isDirect: boolean = false) => {
     if (!isDirect) {
-      if (!selectedVacancy) {
-        detailOpenedFromRef.current = showListView ? "list" : selectedCluster ? "cluster" : null;
-        detailOriginClusterRef.current = selectedCluster;
-      }
-      pendingDetailIdRef.current = v.id;
+      listScrollTopRef.current = listScrollRef.current?.scrollTop || 0;
       window.history.pushState({ panel: "detail", id: v.id, t: Date.now() }, "", "/m/gongsil?id=" + v.id);
-      setSelectedCluster(null);
-      setShowListView(false);
     }
     if (detailScrollRef.current) {
       detailScrollRef.current.scrollTop = 0;
@@ -1051,39 +947,9 @@ function MobileGongsilContent() {
     setDetailLoading(false);
   };
 
-  const restoreDetailOrigin = () => {
-    const origin = detailOpenedFromRef.current;
-    const originCluster = detailOriginClusterRef.current;
-    detailOpenedFromRef.current = null;
-    detailOriginClusterRef.current = null;
-    setSelectedVacancy(null);
-    setIsDirectView(false);
-    setIsMapPreviewOpen(false);
-
-    if (origin === "cluster" && originCluster) {
-      setSelectedCluster(originCluster);
-      setShowListView(false);
-    } else if (origin === "list") {
-      setSelectedCluster(null);
-      setShowListView(true);
-    } else {
-      setSelectedCluster(null);
-      setShowListView(false);
-    }
-
-    window.history.replaceState({ panel: origin === "list" ? "list" : origin === "cluster" ? "cluster" : "map" }, "", "/m/gongsil");
-    requestAnimationFrame(() => kakaoMapRef.current?.relayout());
-  };
-
   const goBack = () => {
     if (vacancyStackRef.current.length > 0) {
-      const prev = vacancyStackRef.current.pop();
-      if (prev?.vacancy) {
-        setSelectedVacancy(prev.vacancy);
-        setDetailTab("realtor");
-        requestAnimationFrame(() => detailScrollRef.current?.scrollTo(0, prev.scrollY || 0));
-        window.history.replaceState({ panel: "detail", id: prev.vacancy.id }, "", `/m/gongsil?id=${prev.vacancy.id}`);
-      }
+      window.history.back();
       return;
     }
     if (isEmbedded) {
@@ -1099,19 +965,9 @@ function MobileGongsilContent() {
       }, 350);
       return;
     }
-    if (selectedVacancy) {
-      restoreDetailOrigin();
-      return;
-    }
-    if (selectedCluster) {
-      setSelectedCluster(null);
-      window.history.replaceState({ panel: "map" }, "", "/m/gongsil");
-      return;
-    }
-    if (showListView) {
-      setShowListView(false);
-      window.history.replaceState({ panel: "map" }, "", "/m/gongsil");
-    }
+    if (selectedVacancy) { window.history.back(); return; }
+    if (selectedCluster) { window.history.back(); return; }
+    if (showListView) { setShowListView(false); return; }
   };
 
   return (
@@ -1152,16 +1008,17 @@ function MobileGongsilContent() {
         .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
         @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
         .v-card:active{background:#f9fafb;}
+        @keyframes pulseGlow {
+          0% { transform: translate(-50%, -50%) scale(0.96); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
+          50% { transform: translate(-50%, -50%) scale(1.02); box-shadow: 0 15px 35px rgba(96, 165, 250, 0.25); }
+          100% { transform: translate(-50%, -50%) scale(0.96); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
+        }
         .animate-spin {
           animation: spin 1s linear infinite;
         }
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
-        }
-        @keyframes mapLoadingDot {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
-          30% { transform: translateY(-8px); opacity: 1; }
         }
       `}</style>
       
@@ -1276,7 +1133,7 @@ function MobileGongsilContent() {
           {/* 카카오 지도 */}
           <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
 
-          {/* 지도 읽기 영역은 비우고, 확대 안내는 상단 상태 칩으로 표시한다. */}
+          {/* [대표님 지침] 모바일 줌인(Zoom In) 안내 오버레이 (정중앙 펄스 효과) */}
           {mapLoaded && zoomLevel >= 9 && (
             <div style={{
               position: "absolute",
@@ -1284,36 +1141,65 @@ function MobileGongsilContent() {
               left: "50%",
               transform: "translate(-50%, -50%)",
               zIndex: 100,
-              pointerEvents: "none"
+              pointerEvents: "none",
+              animation: "pulseGlow 2.5s infinite ease-in-out"
             }}>
               <div style={{
-                background: "rgba(255, 255, 255, 0.95)",
-                backdropFilter: "blur(10px)",
-                borderRadius: "20px",
-                padding: "14px 20px",
-                boxShadow: "0 4px 16px rgba(15, 23, 42, 0.16)",
-                border: "1px solid rgba(226, 232, 240, 0.9)",
+                background: "rgba(15, 23, 42, 0.92)",
+                backdropFilter: "blur(12px)",
+                borderRadius: "28px",
+                padding: "12px 24px",
+                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
                 display: "flex",
                 alignItems: "center",
-                gap: "7px",
-                whiteSpace: "nowrap",
-                maxWidth: "calc(100vw - 32px)"
+                gap: "10px",
+                whiteSpace: "nowrap"
               }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" style={{ filter: "drop-shadow(0 0 4px rgba(96,165,250,0.5))" }}>
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   <line x1="11" y1="8" x2="11" y2="14" />
                   <line x1="8" y1="11" x2="14" y2="11" />
                 </svg>
                 <span style={{
-                  color: "#334155",
-                  fontSize: "17px",
-                  fontWeight: 700,
+                  color: "#f8fafc",
+                  fontSize: "14px",
+                  fontWeight: 800,
                   fontFamily: "'Pretendard', sans-serif",
-                  letterSpacing: "0"
+                  letterSpacing: "-0.3px"
                 }}>
-                  매물을 보려면 지도를 더 확대해 주세요
+                  지도를 조금만 더 확대해 주세요
                 </span>
+              </div>
+            </div>
+          )}
+
+          {/* [대표님 지침] 실시간 Supabase API 갱신 Pearl Loader 스피너 */}
+          {isFetchingVacancies && (
+            <div style={{
+              position: "absolute",
+              top: "30px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 100,
+              pointerEvents: "none"
+            }}>
+              <div style={{
+                background: "rgba(255, 255, 255, 0.85)",
+                backdropFilter: "blur(8px)",
+                borderRadius: "20px",
+                padding: "8px 12px",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
+                border: "1px solid rgba(255, 255, 255, 0.5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" strokeWidth="3" strokeLinecap="round">
+                  <circle cx="12" cy="12" r="10" stroke="rgba(26,115,232,0.15)" strokeWidth="3" />
+                  <path d="M12 2a10 10 0 0 1 10 10" />
+                </svg>
               </div>
             </div>
           )}
@@ -1325,17 +1211,6 @@ function MobileGongsilContent() {
               <div style={{ fontSize: "40px", marginBottom: "12px" }}>🗺️</div>
               <p style={{ color: "#6b7280", fontSize: "14px" }}>지도를 불러오는 중...</p>
             </div>
-          </div>
-        )}
-
-        {mapLoaded && isFetchingVacancies && (
-          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 15, display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 14, background: "rgba(255,255,255,0.94)", boxShadow: "0 4px 16px rgba(15,23,42,0.14)", border: "1px solid rgba(226,232,240,0.9)", pointerEvents: "none" }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 18 }}>
-              {[0, 1, 2].map((index) => (
-                <span key={index} style={{ width: 6, height: 6, borderRadius: "50%", background: "#2563eb", animation: `mapLoadingDot 1s ease-in-out ${index * 0.15}s infinite` }} />
-              ))}
-            </div>
-            <span style={{ color: "#334155", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>매물을 불러오는 중</span>
           </div>
         )}
 
@@ -1352,37 +1227,89 @@ function MobileGongsilContent() {
           </div>
         )}
 
-        {/* 지도 범위 결과를 미리 보고 전체 목록으로 진입하는 바텀 시트 */}
+        {/* 🏢 하단 버튼 영역: 지도 위 공실 + 공실등록 나란히 (activeMode 연동 오렌지/블루 동적 테마 스위칭) */}
         {mapLoaded && zoomLevel < 9 && (
-          <div style={{ position: "fixed", bottom: "calc(60px + env(safe-area-inset-bottom))", left: 0, right: 0, height: isMapPreviewOpen ? "45dvh" : "72px", zIndex: 20, background: "rgba(255, 255, 255, 0.98)", borderRadius: "18px 18px 0 0", boxShadow: "0 -8px 28px rgba(15, 23, 42, 0.16)", transition: "height 0.28s cubic-bezier(0.25, 1, 0.5, 1)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <div style={{ position: "fixed", bottom: "calc(76px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", zIndex: 20, display: "flex", gap: "10px", alignItems: "center" }}>
             <button
-              type="button"
-              onClick={() => setIsMapPreviewOpen(!isMapPreviewOpen)}
-              onTouchStart={handleMapPreviewTouchStart}
-              onTouchEnd={handleMapPreviewTouchEnd}
-              style={{ background: "transparent", border: "none", cursor: "grab", padding: "9px 16px 10px", color: "#111827", flexShrink: 0 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setListViewMode("map");
+                window.history.pushState({ panel: "list" }, "");
+                setShowListView(true);
+              }}
+              style={{
+                background: activeMode === "경매" ? "linear-gradient(135deg, #1a4282, #0f172a)" : "linear-gradient(135deg, #1a73e8, #3b82f6)",
+                borderRadius: "28px",
+                padding: "14px 24px",
+                fontSize: "15px",
+                fontWeight: 800,
+                color: "#ffffff",
+                boxShadow: activeMode === "경매" ? "0 6px 20px rgba(26, 66, 130, 0.4)" : "0 6px 20px rgba(26, 115, 232, 0.4)",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                whiteSpace: "nowrap",
+                transition: "all 0.25s cubic-bezier(0.25, 1, 0.5, 1), transform 0.1s ease"
+              }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+              onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
+              onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
             >
-              <span style={{ display: "block", width: 40, height: 4, borderRadius: 2, background: "#cbd5e1", margin: "0 auto 8px" }} />
-              <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "15px", fontWeight: 800 }}>
-                <span>{isMapMoving ? "이 지역 매물 찾는 중" : activeMode === "경매" ? `이 지역 경공매 ${visibleCount}건` : `이 지역 공실 ${visibleCount}개`}</span>
-                <span style={{ color: activeMode === "경매" ? "#1a4282" : "#1a73e8", fontSize: "13px" }}>{isMapPreviewOpen ? "아래로 닫기" : "위로 올려보기"}</span>
-              </span>
+              {activeMode === "경매" ? (
+                // 🔨 경공매 전용 법률 낙찰 망치 SVG 아이콘
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="m14 13-5 5m6-6-2.5 2.5m6.5-6.5a2.5 2.5 0 0 0-3.5-3.5L8.5 8 5.7 5.2a1 1 0 0 0-1.4 0L2.8 6.6a1 1 0 0 0 0 1.4L5.6 10.8l-4.2 4.2a1 1 0 0 0 0 1.4l1.4 1.4a1 1 0 0 0 1.4 0l4.2-4.2 2.8 2.8a1 1 0 0 0 1.4 0l1.4-1.4a1 1 0 0 0 0-1.4L11.2 12l6.8-6.8a2.5 2.5 0 0 0 3.5 3.5Z" />
+                </svg>
+              ) : (
+                // 🏢 일반 공실 빌딩 SVG 아이콘
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                  <line x1="9" y1="22" x2="9" y2="16" />
+                  <line x1="15" y1="22" x2="15" y2="16" />
+                  <line x1="9" y1="16" x2="15" y2="16" />
+                  <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
+                </svg>
+              )}
+              {activeMode === "경매" ? `경공매 물건 ${visibleCount}건` : `검색된 공실 ${visibleCount}개`}
             </button>
-
-            {isMapPreviewOpen && (
-              <div style={{ minHeight: 0, flex: 1, overflowY: "auto", padding: "0 16px 16px" }}>
-                {visibleVacancies.slice(0, 3).map((vacancy) => (
-                  <button key={vacancy.id} type="button" onClick={() => handleVacancyClick(vacancy)} style={{ width: "100%", textAlign: "left", background: "#fff", border: "none", borderTop: "1px solid #eef2f7", padding: "13px 2px", cursor: "pointer", color: "#111827" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "5px" }}>
-                      <span style={{ color: activeMode === "경매" ? "#1a4282" : "#f97316", fontSize: "11px", fontWeight: 800 }}>{activeMode === "경매" ? getAuctionInfo(vacancy).badge : vacancy.trade_type}</span>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "15px", fontWeight: 800 }}>{getCleanAddrText(vacancy) || "주소 정보 없음"}</span>
-                    </div>
-                    <div style={{ color: activeMode === "경매" ? "#1a4282" : "#1a73e8", fontSize: "16px", fontWeight: 800 }}>{formatPrice(vacancy)}</div>
-                  </button>
-                ))}
-                {!isMapMoving && visibleVacancies.length === 0 && <p style={{ margin: "28px 0", textAlign: "center", color: "#64748b", fontSize: "14px" }}>현재 지도 범위에 표시할 매물이 없습니다.</p>}
-                <button type="button" onClick={() => { setListViewMode("map"); window.history.pushState({ panel: "list" }, ""); setShowListView(true); }} style={{ width: "100%", marginTop: "8px", padding: "13px", border: "1px solid #cbd5e1", borderRadius: "8px", background: "#fff", color: "#1e3a5f", fontSize: "14px", fontWeight: 800, cursor: "pointer" }}>이 지역 매물 전체 보기</button>
-          </div>
+            {activeMode !== "경매" && (
+              <button
+                onClick={() => {
+                  if (!currentUser) {
+                    alert("공실을 등록하려면 로그인이 필요합니다.");
+                    setIsAuthModalOpen(true);
+                  } else {
+                    router.push("/m/admin/vacancy/write");
+                  }
+                }}
+                style={{
+                  borderRadius: "28px",
+                  background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                  color: "#fff",
+                  border: "none",
+                  boxShadow: "0 6px 20px rgba(29, 78, 216, 0.4)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "14px 20px",
+                  gap: "4px",
+                  whiteSpace: "nowrap",
+                  transition: "all 0.25s cubic-bezier(0.25, 1, 0.5, 1), transform 0.15s ease",
+                }}
+                onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
+                onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+                onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
+                onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+              >
+                <span style={{ fontSize: "20px", fontWeight: 300, lineHeight: 1 }}>+</span>
+                <span style={{ fontSize: "15px", fontWeight: 800 }}>
+                  공실등록
+                </span>
+              </button>
             )}
           </div>
         )}
@@ -1559,6 +1486,7 @@ function MobileGongsilContent() {
             vacancyStackRef={vacancyStackRef}
             handleVacancyClick={handleVacancyClick}
             formatPrice={formatPrice}
+            listScrollRef={listScrollRef}
             showCommission={showCommission}
           />
         )}
