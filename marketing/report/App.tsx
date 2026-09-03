@@ -1946,6 +1946,7 @@ ${clone.outerHTML}
               setActiveTab={setActiveTab}
               onBackTab={handleBackTab}
               onOpenTableEditor={() => setIsTableEditorOpen(true)}
+              onSave={handleSaveToStorage}
             />
         </div>
         <div className={`report-preview-panel print:col-span-12 print:border-none print:bg-white print:m-0 print:p-0 transition-all duration-300 ${isSidebarOpen ? 'col-span-12 lg:col-span-8 xl:col-span-9' : 'col-span-12'} bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col`}>
