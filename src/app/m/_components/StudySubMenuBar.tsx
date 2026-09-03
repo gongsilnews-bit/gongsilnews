@@ -1,9 +1,8 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
 
-export type StudyTab = "lecture" | "applications" | "board";
+export type StudyTab = "lecture" | "applications" | "board" | "community";
 
 interface Props {
   activeTab: StudyTab;
@@ -12,11 +11,11 @@ interface Props {
 }
 
 export default function StudySubMenuBar({ activeTab, onTabChange }: Props) {
-  const router = useRouter();
   const tabs: { key: StudyTab; label: string; icon: string }[] = [
     { key: "lecture", label: "특강 목록", icon: "🎓" },
     { key: "applications", label: "내 수강신청", icon: "📋" },
     { key: "board", label: "자료실", icon: "📁" },
+    { key: "community", label: "커뮤니티", icon: "💬" },
   ];
 
   return (

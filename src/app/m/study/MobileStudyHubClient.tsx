@@ -41,7 +41,7 @@ const FAQS = [
 export default function MobileStudyHubClient({ lectures }: any) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const initialTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : "lecture";
+  const initialTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : tabParam === "community" ? "community" : "lecture";
   const [activeTab, setActiveTab] = useState<StudyTab>(initialTab);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [enrollments, setEnrollments] = useState<any[]>([]);
@@ -49,7 +49,7 @@ export default function MobileStudyHubClient({ lectures }: any) {
   const router = useRouter();
 
   React.useEffect(() => {
-    const currentTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : "lecture";
+    const currentTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : tabParam === "community" ? "community" : "lecture";
     setActiveTab(currentTab);
   }, [tabParam]);
 
@@ -78,6 +78,10 @@ export default function MobileStudyHubClient({ lectures }: any) {
   }, [activeTab]);
 
   const handleTabChange = (newTab: StudyTab) => {
+    if (newTab === "community") {
+      router.push("/m/board?id=free");
+      return;
+    }
     setActiveTab(newTab);
     router.replace(`/m/study?tab=${newTab}`, { scroll: false });
   };
