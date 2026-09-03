@@ -1808,9 +1808,9 @@ ${clone.outerHTML}
         </div>
       </header>
 
-      <main className="print:block print:h-auto print:p-0 flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
+      <main className="report-editor-main print:block print:h-auto print:p-0 flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
         {isSidebarOpen && (
-          <div className="print:hidden col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden transition-all duration-300">
+          <div className="report-editor-sidebar print:hidden col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden transition-all duration-300">
             <FlyerForm 
               info={state.info}
               setInfo={handleInfoChange}
@@ -1842,7 +1842,7 @@ ${clone.outerHTML}
             />
           </div>
         )}
-        <div className={`print:col-span-12 print:border-none print:bg-white print:m-0 print:p-0 transition-all duration-300 ${isSidebarOpen ? 'col-span-12 lg:col-span-8 xl:col-span-9' : 'col-span-12'} bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col`}>
+        <div className={`report-preview-panel print:col-span-12 print:border-none print:bg-white print:m-0 print:p-0 transition-all duration-300 ${isSidebarOpen ? 'col-span-12 lg:col-span-8 xl:col-span-9' : 'col-span-12'} bg-gray-200/50 rounded-xl border border-gray-300 overflow-hidden flex flex-col`}>
             <div className="print:hidden bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500">
                 <div className="flex items-center gap-3">
                     <button 
@@ -1857,7 +1857,7 @@ ${clone.outerHTML}
             </div>
             <div ref={previewContainerRef} className="print:overflow-visible print:p-0 print:block flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
                 {/* Fixed width container for editor preview */}
-                <div className="w-[860px] shrink-0 print:w-[1122px] print:mx-auto print:shrink">
+                <div className="report-canvas-shell w-[860px] shrink-0 print:w-[1122px] print:mx-auto print:shrink">
                     <FlyerCanvas 
                       ref={flyerRef} 
                       data={state} 
@@ -1880,7 +1880,7 @@ ${clone.outerHTML}
       </main>
 
       {/* Floating Bottom Action Bar */}
-      <div className="print:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95%] sm:w-auto sm:max-w-[95%] bg-white/95 backdrop-blur-md border border-gray-200/80 p-4 rounded-2xl shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] flex items-center justify-between gap-4 overflow-visible">
+      <div className="report-action-bar print:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95%] sm:w-auto sm:max-w-[95%] bg-white/95 backdrop-blur-md border border-gray-200/80 p-4 rounded-2xl shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] flex items-center justify-between gap-4 overflow-visible">
         {/* Share Dropdown Popover */}
         {showSharePopover && (
           <div className="share-popover-content absolute bottom-[72px] right-4 bg-white border border-gray-200/80 rounded-xl shadow-[0_6px_24px_rgba(0,0,0,0.15)] w-48 z-[100] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
