@@ -453,6 +453,7 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const touchStartXRef = useRef<number | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
+  const reportHistoryReadyRef = useRef(false);
 
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth);
@@ -462,7 +463,21 @@ function App() {
   }, []);
 
   const toggleSidebar = useCallback(() => {
-    setIsSidebarOpen(prev => !prev);
+    setIsSidebarOpen(prev => {
+      const next = !prev;
+      if (window.innerWidth < 768 && reportHistoryReadyRef.current) {
+        window.history.pushState({ reportEditor: true, sidebarOpen: next, activeTab }, "", window.location.href);
+      }
+      return next;
+    });
+  }, [activeTab]);
+
+  const handleReportBack = useCallback(() => {
+    if (reportHistoryReadyRef.current) {
+      window.history.back();
+    } else {
+      window.history.back();
+    }
   }, []);
 
   const handleMobileTouchStart = useCallback((event: React.TouchEvent<HTMLElement>) => {
@@ -486,10 +501,33 @@ function App() {
     : 1;
   const mobileReportScale = viewportWidth > 0 ? Math.min(1, Math.max(0.1, (viewportWidth - 24) / 1122)) : 1;
   const mobilePreviewHeight = mobilePreviewPageCount * 826 * mobileReportScale;
+  const mobilePreviewPanelHeight = mobilePreviewHeight + 68;
 
   const setActiveTab = useCallback((tab: number | 'all') => {
+    if (window.innerWidth < 768 && reportHistoryReadyRef.current && tab !== activeTab) {
+      window.history.pushState({ reportEditor: true, sidebarOpen: isSidebarOpen, activeTab: tab }, "", window.location.href);
+    }
     setTabHistory(prev => [...prev, tab]);
     setActiveTabInternal(tab);
+  }, [activeTab, isSidebarOpen]);
+
+  useEffect(() => {
+    const initialState = window.history.state || {};
+    window.history.replaceState({ ...initialState, reportEditor: true, sidebarOpen: isSidebarOpen, activeTab }, "", window.location.href);
+    reportHistoryReadyRef.current = true;
+
+    const handlePopState = (event: PopStateEvent) => {
+      if (!event.state?.reportEditor) return;
+      if (typeof event.state.activeTab === 'number' || event.state.activeTab === 'all') {
+        setActiveTabInternal(event.state.activeTab);
+      }
+      if (typeof event.state.sidebarOpen === 'boolean') {
+        setIsSidebarOpen(event.state.sidebarOpen);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const handleBackTab = useCallback(() => {
@@ -1848,10 +1886,18 @@ ${clone.outerHTML}
       <header className="print:hidden bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex items-center gap-4">
-                <img 
-                  src="/logo.png" 
-                  className="h-9 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95" 
-                  alt="공실뉴스 로고" 
+                <button
+                  type="button"
+                  onClick={handleReportBack}
+                  className="report-mobile-back hidden items-center justify-center rounded-lg border border-gray-300 bg-white p-2 text-gray-700"
+                  aria-label="보고서 편집기에서 나가기"
+                >
+                  ‹
+                </button>
+                <img
+                  src="/logo.png"
+                  className="report-header-logo h-9 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95"
+                  alt="공실뉴스 로고"
                   onClick={() => window.location.href = "/"}
                 />
                 <div className="flex items-center gap-3">
@@ -1870,7 +1916,7 @@ ${clone.outerHTML}
         </div>
       </header>
 
-      <main onTouchStart={handleMobileTouchStart} onTouchEnd={handleMobileTouchEnd} className="report-editor-main print:block print:h-auto print:p-0 flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]">
+      <main onTouchStart={handleMobileTouchStart} onTouchEnd={handleMobileTouchEnd} className={`report-editor-main ${isSidebarOpen ? 'mobile-editor-open' : 'mobile-editor-closed'} print:block print:h-auto print:p-0 flex-1 max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 h-[calc(100vh-64px)]`}>
         <div className={`report-editor-sidebar print:hidden col-span-12 lg:col-span-4 xl:col-span-3 lg:h-full lg:overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'is-open' : 'is-closed'}`}>
             <FlyerForm 
               info={state.info}
@@ -1916,7 +1962,8 @@ ${clone.outerHTML}
                   style={{
                     '--mobile-report-page-count': mobilePreviewPageCount,
                     '--mobile-report-scale': mobileReportScale,
-                    '--mobile-report-preview-height': `${mobilePreviewHeight}px`
+                    '--mobile-report-preview-height': `${mobilePreviewHeight}px`,
+                    '--mobile-report-panel-height': `${mobilePreviewPanelHeight}px`
                   } as React.CSSProperties}
                 >
                     <FlyerCanvas 
@@ -1941,7 +1988,7 @@ ${clone.outerHTML}
       </main>
 
       {/* Floating Bottom Action Bar */}
-      <div className="report-action-bar print:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95%] sm:w-auto sm:max-w-[95%] bg-white/95 backdrop-blur-md border border-gray-200/80 p-4 rounded-2xl shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] flex items-center justify-between gap-4 overflow-visible">
+      <div className={`report-action-bar ${isSidebarOpen ? 'mobile-editor-open' : 'mobile-editor-closed'} print:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95%] sm:w-auto sm:max-w-[95%] bg-white/95 backdrop-blur-md border border-gray-200/80 p-4 rounded-2xl shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] flex items-center justify-between gap-4 overflow-visible`}>
         {/* Share Dropdown Popover */}
         {showSharePopover && (
           <div className="share-popover-content absolute bottom-[72px] right-4 bg-white border border-gray-200/80 rounded-xl shadow-[0_6px_24px_rgba(0,0,0,0.15)] w-48 z-[100] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">

@@ -34,8 +34,12 @@ select {
     height: auto !important;
     min-height: 0 !important;
     padding: 12px !important;
-    padding-bottom: 132px !important;
+    padding-bottom: 24px !important;
     overscroll-behavior-y: none;
+  }
+
+  .report-editor-main.mobile-editor-closed {
+    padding-bottom: 132px !important;
   }
 
   .report-editor-sidebar {
@@ -78,7 +82,8 @@ select {
   .report-preview-panel {
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 0 !important;
+    min-height: var(--mobile-report-panel-height) !important;
+    height: var(--mobile-report-panel-height) !important;
     order: 2;
     border-radius: 12px !important;
     transition: width 0.28s ease;
@@ -94,6 +99,7 @@ select {
 
   .report-preview-panel > div:nth-child(2) {
     overflow: hidden !important;
+    flex: none !important;
     padding: 12px 0 16px !important;
   }
 
@@ -124,6 +130,10 @@ select {
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom)) !important;
     border-radius: 14px 14px 0 0 !important;
     gap: 8px !important;
+  }
+
+  .report-action-bar.mobile-editor-open {
+    display: none !important;
   }
 
   .report-action-buttons {
@@ -160,6 +170,19 @@ select {
 
   header h1 {
     font-size: 15px !important;
+  }
+
+  .report-mobile-back {
+    display: flex !important;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  .report-header-logo {
+    display: none !important;
   }
 
   .report-header-toggle {
