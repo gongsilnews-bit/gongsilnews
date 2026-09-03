@@ -203,6 +203,10 @@ function MobileVacancyAdmin() {
     fetchVacancies(vacancyPage + 1, true);
   };
 
+  useEffect(() => {
+    if (memberId) fetchVacancies();
+  }, [memberId]);
+
   if (marketingVacancyId) {
     return (
       <MobileVacancyMarketingPanel
@@ -211,10 +215,6 @@ function MobileVacancyAdmin() {
       />
     );
   }
-
-  useEffect(() => {
-    if (memberId) fetchVacancies();
-  }, [memberId]);
 
   const handleAutoCreate = async (row: any, type: "report" | "flyer") => {
     if (generatingId) return;
