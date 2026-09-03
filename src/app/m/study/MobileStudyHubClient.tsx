@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
 import StudySubMenuBar, { type StudyTab } from "../_components/StudySubMenuBar";
+import { createClient } from "@/utils/supabase/client";
+import { getMyEnrollments } from "@/app/actions/lecture";
 
 // SVG Pictogram Icons
 const IconDrone = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 5l2 2M19 5l-2 2M5 19l2-2M19 19l-2-2"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>;
@@ -39,15 +41,41 @@ const FAQS = [
 export default function MobileStudyHubClient({ lectures }: any) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const initialTab: StudyTab = tabParam === "board" ? "board" : tabParam === "community" ? "community" : "lecture";
+  const initialTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : "lecture";
   const [activeTab, setActiveTab] = useState<StudyTab>(initialTab);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const router = useRouter();
 
   React.useEffect(() => {
-    const currentTab: StudyTab = tabParam === "board" ? "board" : tabParam === "community" ? "community" : "lecture";
+    const currentTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : "lecture";
     setActiveTab(currentTab);
   }, [tabParam]);
+
+  React.useEffect(() => {
+    if (activeTab !== "applications") return;
+
+    let cancelled = false;
+    const loadEnrollments = async () => {
+      setLoadingEnrollments(true);
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          if (!cancelled) setEnrollments([]);
+          return;
+        }
+        const result = await getMyEnrollments(user.id);
+        if (!cancelled && result.success) setEnrollments(result.data || []);
+      } finally {
+        if (!cancelled) setLoadingEnrollments(false);
+      }
+    };
+
+    loadEnrollments();
+    return () => { cancelled = true; };
+  }, [activeTab]);
 
   const handleTabChange = (newTab: StudyTab) => {
     setActiveTab(newTab);
@@ -298,6 +326,35 @@ export default function MobileStudyHubClient({ lectures }: any) {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {activeTab === "applications" && (
+        <div style={{ padding: "16px", paddingTop: "10px" }}>
+          <div style={{ marginBottom: 12, color: "#062828", fontSize: 16, fontWeight: 800 }}>📋 내 수강신청 내역</div>
+          {loadingEnrollments ? (
+            <div style={{ padding: "56px 20px", textAlign: "center", color: "#64748b", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+              수강 내역을 불러오는 중...
+            </div>
+          ) : enrollments.length === 0 ? (
+            <div style={{ padding: "56px 20px", textAlign: "center", color: "#94a3b8", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+              <div style={{ fontSize: 42, marginBottom: 12 }}>📭</div>
+              <div style={{ marginBottom: 14, color: "#062828", fontSize: 15, fontWeight: 700 }}>수강 신청 내역이 없습니다</div>
+              <button type="button" onClick={() => handleTabChange("lecture")} style={{ padding: "9px 16px", color: "#fff", background: "#062326", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>특강 목록 둘러보기</button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {enrollments.map((en: any) => (
+                <div key={en.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 14, background: "#f4fbf7", border: "1px solid #d1fae5", borderRadius: 10 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ overflow: "hidden", marginBottom: 4, color: "#062828", fontSize: 14, fontWeight: 700, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{en.lecture?.title || "특강"}</div>
+                    <div style={{ color: "#64748b", fontSize: 11.5 }}>신청일: {en.created_at?.substring(0, 10) || "-"} · 결제: {(en.points_paid || 0).toLocaleString()}P</div>
+                  </div>
+                  <Link href={`/m/study_read?id=${en.lecture_id}`} style={{ flexShrink: 0, padding: "8px 10px", color: "#fff", background: "#059669", borderRadius: 6, fontSize: 11.5, fontWeight: 700, textDecoration: "none" }}>강의실 입장</Link>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
