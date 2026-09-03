@@ -185,6 +185,25 @@ export async function adminUpdateAgency(memberId: string, agencyData: any) {
   }
 }
 
+export async function normalizePendingRealtorRole(memberId: string, agencyStatus: string) {
+  if (agencyStatus !== 'PENDING' && agencyStatus !== 'REJECTED') {
+    return { success: false, error: '승인 전 상태가 아닙니다.' };
+  }
+
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { error } = await supabaseAdmin
+      .from('members')
+      .update({ role: 'USER' })
+      .eq('id', memberId)
+      .eq('role', 'REALTOR');
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // ── 부동산회원 승인 (agencies.status → APPROVED + members.role → REALTOR) ──
 export async function adminApproveRealtorApplication(memberId: string) {
   const supabaseAdmin = getAdminClient();
