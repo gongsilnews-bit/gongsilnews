@@ -153,6 +153,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
 
   const isListType = board.skin_type === "LIST";
   const is1to1 = board.board_type === "inquiry";
+  const hasReply = (post: any) => (post.board_comments?.[0]?.count || 0) > 0;
 
   const filteredPosts = initialPosts.filter(p => {
     if (showMyPosts && p.author_id !== currentUser?.id) return false;
@@ -380,8 +381,8 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
                   )}
                   <div style={{ fontSize: '16px', color: '#111827', fontWeight: 600, lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {is1to1 && (
-                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 6px', borderRadius: '4px', backgroundColor: (p.board_comments && p.board_comments.length > 0) ? '#10b981' : '#f3f4f6', color: (p.board_comments && p.board_comments.length > 0) ? '#fff' : '#6b7280', flexShrink: 0 }}>
-                        {(p.board_comments && p.board_comments.length > 0) ? '답변완료' : '답변대기'}
+                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 6px', borderRadius: '4px', backgroundColor: hasReply(p) ? '#10b981' : '#f3f4f6', color: hasReply(p) ? '#fff' : '#6b7280', flexShrink: 0 }}>
+                        {hasReply(p) ? '답변완료' : '답변대기'}
                       </span>
                     )}
                     {p.title.replace(/^\[([^\]]+)\]\s*/, "")}
@@ -415,8 +416,8 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
                     )}
                     <div style={{ fontSize: '14px', color: '#111827', fontWeight: 700, lineHeight: 1.4, marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {is1to1 && (
-                        <span style={{ display: 'inline-block', marginRight: '6px', fontSize: '10px', fontWeight: 700, padding: '2px 4px', borderRadius: '4px', backgroundColor: (p.board_comments && p.board_comments.length > 0) ? '#10b981' : '#f3f4f6', color: (p.board_comments && p.board_comments.length > 0) ? '#fff' : '#6b7280' }}>
-                          {(p.board_comments && p.board_comments.length > 0) ? '답변완료' : '답변대기'}
+                        <span style={{ display: 'inline-block', marginRight: '6px', fontSize: '10px', fontWeight: 700, padding: '2px 4px', borderRadius: '4px', backgroundColor: hasReply(p) ? '#10b981' : '#f3f4f6', color: hasReply(p) ? '#fff' : '#6b7280' }}>
+                          {hasReply(p) ? '답변완료' : '답변대기'}
                         </span>
                       )}
                       {p.title.replace(/^\[([^\]]+)\]\s*/, "")}

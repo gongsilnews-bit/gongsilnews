@@ -74,14 +74,18 @@ export async function deleteBoard(boardId: string) {
 }
 
 /* ── 게시글 목록 조회 ── */
-export async function getBoardPosts(boardId: string, options?: { boardType?: string; userId?: string; isAdmin?: boolean }) {
+export async function getBoardPosts(boardId: string, options?: { boardType?: string; userId?: string; isAdmin?: boolean; limit?: number }) {
   let query = supabase
     .from("board_posts")
-    .select("id, board_id, title, author_id, author_name, created_at, view_count, is_notice, thumbnail_url, youtube_url, drive_url, external_url, board_comments(id)")
+    .select(options?.boardType === "inquiry"
+      ? "id, board_id, title, author_id, author_name, created_at, view_count, is_notice, thumbnail_url, youtube_url, drive_url, external_url, board_comments(count)"
+      : "id, board_id, title, author_id, author_name, created_at, view_count, is_notice, thumbnail_url, youtube_url, drive_url, external_url")
     .eq("board_id", boardId)
     .eq("is_deleted", false)
     .order("is_notice", { ascending: false })
     .order("created_at", { ascending: false });
+
+  if (options?.limit) query = query.limit(options.limit);
 
   if (options?.boardType === "inquiry" && !options?.isAdmin) {
     query = query.eq("author_id", options?.userId || "anonymous");
@@ -97,7 +101,7 @@ export async function getBoardPosts(boardId: string, options?: { boardType?: str
 export async function getBoardPost(postId: string) {
   const { data, error } = await supabase
     .from("board_posts")
-    .select("*, board_attachments(*), board_comments(*)")
+    .select("*, board_attachments(*)")
     .eq("id", postId)
     .single();
 

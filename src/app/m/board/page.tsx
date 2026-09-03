@@ -12,7 +12,16 @@ export default async function MobileBoardPage({ searchParams }: { searchParams: 
   const resolvedParams = await searchParams;
   const boardId = resolvedParams.id || "drone";
 
-  const boardRes = await getBoard(boardId);
+  const [boardRes, authContext] = await Promise.all([
+    getBoard(boardId),
+    (async () => {
+      const { createClient } = await import("@/utils/supabase/server");
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      return { supabase, user };
+    })(),
+  ]);
+  const { supabase, user } = authContext;
   const board = boardRes.success ? boardRes.data : null;
 
   let posts = [];
@@ -20,11 +29,6 @@ export default async function MobileBoardPage({ searchParams }: { searchParams: 
   let serverUserLevel = 0;
 
   if (board) {
-    // Get current user auth
-    const { createClient } = await import("@/utils/supabase/server");
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
     let isAdmin = false;
     
     if (user) {
@@ -42,7 +46,8 @@ export default async function MobileBoardPage({ searchParams }: { searchParams: 
     const postsRes = await getBoardPosts(boardId, {
       boardType: board.board_type,
       userId: user?.id,
-      isAdmin
+      isAdmin,
+      limit: 20,
     });
     posts = postsRes.success ? postsRes.data : [];
   }
