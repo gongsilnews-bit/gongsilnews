@@ -1077,7 +1077,13 @@ function MobileGongsilContent() {
 
   const goBack = () => {
     if (vacancyStackRef.current.length > 0) {
-      window.history.back();
+      const prev = vacancyStackRef.current.pop();
+      if (prev?.vacancy) {
+        setSelectedVacancy(prev.vacancy);
+        setDetailTab("realtor");
+        requestAnimationFrame(() => detailScrollRef.current?.scrollTo(0, prev.scrollY || 0));
+        window.history.replaceState({ panel: "detail", id: prev.vacancy.id }, "", `/m/gongsil?id=${prev.vacancy.id}`);
+      }
       return;
     }
     if (isEmbedded) {
@@ -1094,15 +1100,18 @@ function MobileGongsilContent() {
       return;
     }
     if (selectedVacancy) {
-      if (detailOpenedFromRef.current) {
-        restoreDetailOrigin();
-      } else {
-        window.history.back();
-      }
+      restoreDetailOrigin();
       return;
     }
-    if (selectedCluster) { window.history.back(); return; }
-    if (showListView) { setShowListView(false); return; }
+    if (selectedCluster) {
+      setSelectedCluster(null);
+      window.history.replaceState({ panel: "map" }, "", "/m/gongsil");
+      return;
+    }
+    if (showListView) {
+      setShowListView(false);
+      window.history.replaceState({ panel: "map" }, "", "/m/gongsil");
+    }
   };
 
   return (
