@@ -17,6 +17,11 @@ select {
 }
 
 @media (max-width: 767px) {
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+
   body {
     overflow-x: hidden;
     background: #f3f4f6;
@@ -30,6 +35,7 @@ select {
     min-height: 0 !important;
     padding: 12px !important;
     padding-bottom: 132px !important;
+    overscroll-behavior-y: none;
   }
 
   .report-editor-sidebar {
