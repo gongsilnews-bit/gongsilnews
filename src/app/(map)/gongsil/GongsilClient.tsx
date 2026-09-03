@@ -5016,7 +5016,10 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
             }}
           >
             <button
-              onClick={() => closeGalleryModal()}
+              onClick={(e) => {
+                e.stopPropagation();
+                closeGalleryModal();
+              }}
               style={{
                 position: "absolute",
                 top: 20,
