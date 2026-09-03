@@ -2,42 +2,21 @@ import React from 'react';
 
 export default function Loading() {
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#ffffff", fontFamily: "'Pretendard', sans-serif" }}>
+    <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#ffffff", fontFamily: "'Pretendard', sans-serif" }}>
       <style>{`
-        @keyframes pulseRingHero {
-          0% { transform: scale(0.8); opacity: 0.5; }
-          100% { transform: scale(1.5); opacity: 0; }
+        @keyframes pageMapLoadingDot {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+          30% { transform: translateY(-7px); opacity: 1; }
         }
       `}</style>
-
-      {/* 🌀 스크린샷과 100% 일치하는 대형 펄싱 로케이션 마커 */}
-      <div style={{ position: "relative", width: "60px", height: "60px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "20px" }}>
-        <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#4b89ff", animation: "pulseRingHero 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite" }} />
-        <div style={{ position: "relative", width: "36px", height: "36px", borderRadius: "50%", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", border: "1px solid rgba(0,0,0,0.06)" }}>
-          <style>{`
-            @keyframes spinCircle {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
-          <div style={{
-            width: 20,
-            height: 20,
-            border: "2.5px solid rgba(26, 115, 232, 0.15)",
-            borderTop: "2.5px solid #1a73e8",
-            borderRadius: "50%",
-            animation: "spinCircle 0.8s linear infinite"
-          }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 14, background: "rgba(255,255,255,0.96)", boxShadow: "0 3px 12px rgba(15,23,42,0.14)", border: "1px solid rgba(226,232,240,0.9)" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 18 }}>
+          {[0, 1, 2].map((index) => (
+            <span key={index} style={{ width: 6, height: 6, borderRadius: "50%", background: "#2563eb", animation: `pageMapLoadingDot 1s ease-in-out ${index * 0.15}s infinite` }} />
+          ))}
         </div>
+        <span style={{ color: "#334155", fontSize: 13, fontWeight: 700 }}>매물을 불러오는 중</span>
       </div>
-
-      <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#1a2e50", marginBottom: "8px", margin: "0 0 8px 0", letterSpacing: "-0.5px" }}>
-        실시간 공실 지도 로딩 중입니다
-      </h2>
-      
-      <p style={{ fontSize: "14px", color: "#6b7280", textAlign: "center", lineHeight: 1.5, margin: 0 }}>
-        최신 공실광고 데이터를 실시간으로 동기화하고 있습니다.<br/>잠시만 기다려 주세요.
-      </p>
     </div>
   );
 }

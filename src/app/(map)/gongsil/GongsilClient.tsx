@@ -418,6 +418,20 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   const [mapCenterRegion, setMapCenterRegion] = useState<{ sido: string; gugun: string; dong: string } | null>(null);
   const [visibleCount, setVisibleCount] = useState(30);
   const [isFetchingVacancies, setIsFetchingVacancies] = useState(false);
+  const fetchingLoadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const beginFetchingIndicator = () => {
+    if (fetchingLoadingTimerRef.current) clearTimeout(fetchingLoadingTimerRef.current);
+    fetchingLoadingTimerRef.current = setTimeout(() => setIsFetchingVacancies(true), 200);
+  };
+
+  const endFetchingIndicator = () => {
+    if (fetchingLoadingTimerRef.current) {
+      clearTimeout(fetchingLoadingTimerRef.current);
+      fetchingLoadingTimerRef.current = null;
+    }
+    setIsFetchingVacancies(false);
+  };
 
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -502,7 +516,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     }
 
     const fetchBboxVacancies = async () => {
-      setIsFetchingVacancies(true);
+      beginFetchingIndicator();
       try {
         const sw = mapBounds.getSouthWest();
         const ne = mapBounds.getNorthEast();
@@ -538,7 +552,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       } catch (err) {
         console.error("Failed to fetch bbox vacancies:", err);
       } finally {
-        setIsFetchingVacancies(false);
+        endFetchingIndicator();
       }
     };
 
@@ -1882,7 +1896,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       
       // 2) 로드되어 있지 않다면 서버에서 직접 가져오기
       if (!target) {
-        setIsFetchingVacancies(true);
+        beginFetchingIndicator();
         try {
           const res = await getVacancyByVacancyNo(numVal);
           if (res.success && res.data) {
@@ -1903,7 +1917,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         } catch (err) {
           console.error("Failed to query global vacancy by number:", err);
         } finally {
-          setIsFetchingVacancies(false);
+          endFetchingIndicator();
         }
       }
 
@@ -4941,7 +4955,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           </div>
         )}
 
-        {/* 💡 실시간 공실 데이터 로딩 인디케이터 (Glassmorphism Indicator) */}
+        {/* 매물 조회 지연 시에만 표시하는 로딩 인디케이터 */}
         {isFetchingVacancies && (
           <div
             style={{
@@ -4952,41 +4966,27 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
               zIndex: 10000,
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(255, 255, 255, 0.9)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              padding: "12px",
-              borderRadius: "50%", // 동그란 미니 조약돌 모양
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
-              border: "1px solid rgba(255, 255, 255, 0.3)",
-              pointerEvents: "none", // 지도 조작 방해 금지
-              animation: "fadeIn 0.2s ease-out",
+              gap: 10,
+              padding: "10px 14px",
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.96)",
+              boxShadow: "0 3px 12px rgba(15,23,42,0.14)",
+              border: "1px solid rgba(226,232,240,0.9)",
+              pointerEvents: "none",
             }}
           >
-            {/* 🌀 애니메이션 스타일 주입 */}
             <style>{`
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-              @keyframes fadeIn {
-                from { opacity: 0; transform: translate(-50%, -45%); }
-                to { opacity: 1; transform: translate(-50%, -50%); }
+              @keyframes pcMapLoadingDot {
+                0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+                30% { transform: translateY(-7px); opacity: 1; }
               }
             `}</style>
-
-            {/* 🌀 스피너 서클 */}
-            <div
-              style={{
-                width: 24,
-                height: 24,
-                border: "3.5px solid rgba(26, 115, 232, 0.1)",
-                borderTop: "3.5px solid #1a73e8",
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 16 }}>
+              {[0, 1, 2].map((index) => (
+                <span key={index} style={{ width: 6, height: 6, borderRadius: "50%", background: "#2563eb", animation: `pcMapLoadingDot 1s ease-in-out ${index * 0.15}s infinite` }} />
+              ))}
+            </div>
+            <span style={{ color: "#334155", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>매물을 불러오는 중</span>
           </div>
         )}
       </main>
