@@ -465,7 +465,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         const updateRes = await adminUpdateMember(editMemberId, {
           name: formData.name,
           phone: formData.phone,
-          role: formData.role === '최고관리자' ? 'ADMIN' : formData.role === '부동산회원' ? 'REALTOR' : formData.role === '비즈니스회원' ? 'BIZ' : 'USER',
+          ...(isAdmin ? { role: formData.role === '최고관리자' ? 'ADMIN' : formData.role === '부동산회원' ? 'REALTOR' : formData.role === '비즈니스회원' ? 'BIZ' : 'USER' } : {}),
           sns_links: { ...snsLinks, api_list: apiList },
           plan_type: formData.plan_type,
           plan_start_date: formData.plan_start_date || null,
@@ -1468,8 +1468,14 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
 
       {/* 액션 버튼 */}
       <div style={{ display: "flex", gap: 10, paddingBottom: 60, flexWrap: "wrap", alignItems: "center" }}>
+        {activeTab === 2 && (
+          <button onClick={(e) => handleSubmit(e, false)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+            {loading ? "저장 중..." : "저장하기"}
+          </button>
+        )}
+
         {/* 부동산회원 && 비관리자: 상태별 버튼 분리 */}
-        {formData.role === "부동산회원" && !isAdmin && agencyData.status === "REJECTED" && (
+        {activeTab !== 2 && formData.role === "부동산회원" && !isAdmin && agencyData.status === "REJECTED" && (
           <>
             <button onClick={(e) => handleSubmit(e, false)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#fff", color: "#374151", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
               {loading ? "저장 중..." : "💾 임시 저장"}
@@ -1483,7 +1489,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             </button>
           </>
         )}
-        {formData.role === "부동산회원" && !isAdmin && agencyData.status !== "REJECTED" && agencyData.status !== "APPROVED" && agencyData.status !== "PENDING" && editMemberId && (
+        {activeTab !== 2 && formData.role === "부동산회원" && !isAdmin && agencyData.status !== "REJECTED" && agencyData.status !== "APPROVED" && agencyData.status !== "PENDING" && editMemberId && (
           <>
             <button onClick={(e) => handleSubmit(e, false)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#fff", color: "#374151", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
               {loading ? "저장 중..." : "💾 임시 저장"}
@@ -1498,7 +1504,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           </>
         )}
         {/* 정상승인 또는 PENDING 상태 또는 관리자: 단일 저장 버튼 */}
-        {(isAdmin || agencyData.status === "APPROVED" || agencyData.status === "PENDING" || formData.role !== "부동산회원") && (
+        {activeTab !== 2 && (isAdmin || agencyData.status === "APPROVED" || agencyData.status === "PENDING" || formData.role !== "부동산회원") && (
           <button onClick={(e) => handleSubmit(e, false)} disabled={loading} style={{ height: 42, padding: "0 24px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
             {loading ? "처리 중..." : isAdmin ? "저장" : "입력완료"}
           </button>

@@ -54,11 +54,8 @@ export async function GET(request: Request) {
           const level = getPermissionLevel(member);
           const isApprovedBroker = level >= 2;
 
-          // 회원가입(/signup)을 통해 가입/로그인 한 경우 자동으로 부동산회원(REALTOR) 처리
+          // 회원가입(/signup) 후에도 승인 전에는 일반회원(USER) 역할을 유지
           if (returnTo && returnTo.includes('/signup')) {
-            if (member && (member.role === 'USER' || member.role === '일반회원')) {
-              await supabase.from('members').update({ role: 'REALTOR' }).eq('id', sessionData.user.id);
-            }
             redirectPath = from === 'mobile' ? '/m/admin/settings?tab=agency' : '/realty_admin?menu=settings&tab=agency';
           } else if (isApprovedBroker && returnTo && (returnTo.includes('/admin/settings') || returnTo.includes('/realty_admin?menu=settings'))) {
             // 이미 승인 완료된 부동산회원이 회원수정/환경설정으로 잘못 가려는 경우 메인 공실열람으로 이동

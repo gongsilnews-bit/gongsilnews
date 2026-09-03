@@ -170,6 +170,15 @@ export async function adminUpdateAgency(memberId: string, agencyData: any) {
       const { error } = await supabaseAdmin.from('agencies').insert({ owner_id: memberId, ...agencyData });
       if (error) return { success: false, error: error.message };
     }
+
+    if (agencyData.status === 'PENDING' || agencyData.status === 'REJECTED') {
+      const { error: memberError } = await supabaseAdmin
+        .from('members')
+        .update({ role: 'USER' })
+        .eq('id', memberId);
+      if (memberError) return { success: false, error: memberError.message };
+    }
+
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -232,6 +241,12 @@ export async function adminRejectRealtorApplication(memberId: string, reason: st
       .update({ status: 'REJECTED', reject_reason: reason })
       .eq('owner_id', memberId);
     if (error) return { success: false, error: error.message };
+
+    const { error: memberError } = await supabaseAdmin
+      .from('members')
+      .update({ role: 'USER' })
+      .eq('id', memberId);
+    if (memberError) return { success: false, error: memberError.message };
 
     return { success: true };
   } catch (error: any) {
