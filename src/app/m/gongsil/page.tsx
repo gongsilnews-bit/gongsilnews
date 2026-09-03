@@ -1006,6 +1006,8 @@ function MobileGongsilContent() {
   const handleVacancyClick = async (v: any, isDirect: boolean = false) => {
     if (!isDirect) {
       window.history.pushState({ panel: "detail", id: v.id, t: Date.now() }, "", "/m/gongsil?id=" + v.id);
+      setSelectedCluster(null);
+      setShowListView(false);
     }
     if (detailScrollRef.current) {
       detailScrollRef.current.scrollTop = 0;
