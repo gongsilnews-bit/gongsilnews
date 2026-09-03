@@ -88,29 +88,21 @@ export default function MenuPage() {
   const getRoleLabel = (role?: string, agencyStatus?: string) => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return '최고관리자';
-    if (r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) {
-      if (agencyStatus === 'PENDING') return '승인대기';
-      if (agencyStatus === 'REJECTED') return '서류보완';
-      return '부동산';
-    }
-    return '일반';
+    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return '부동산회원';
+    return '일반회원';
   };
 
   const getRoleBadgeStyle = (role?: string, agencyStatus?: string): React.CSSProperties => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return { background: '#111827', color: '#fff' };
-    if (r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) {
-      if (agencyStatus === 'PENDING') return { background: '#fbbf24', color: '#78350f' };
-      if (agencyStatus === 'REJECTED') return { background: '#ef4444', color: '#fff' };
-      return { background: '#2563eb', color: '#fff' };
-    }
+    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return { background: '#2563eb', color: '#fff' };
     return { background: '#e5e7eb', color: '#374151' };
   };
 
-  const getAdminMenus = (role?: string) => {
+  const getAdminMenus = (role?: string, agencyStatus?: string) => {
     const r = role?.trim().toUpperCase() || '';
     const isAdmin = r === 'ADMIN' || r === '최고관리자' || r.includes('관리자');
-    const isRealtor = r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR');
+    const isRealtor = (r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED';
     const dashboard = { icon: '📊', label: '대시보드', href: '/m/admin/dashboard' };
     const vacancy = { icon: '🏢', label: '공실관리', href: '/m/admin/vacancy', badgeCount: isAdmin ? pendingCounts.vacancies : 0 };
     const article = { icon: '📝', label: '기사관리', href: '/m/admin/article', badgeCount: isAdmin ? pendingCounts.articles : 0 };
@@ -135,7 +127,7 @@ export default function MenuPage() {
     return [dashboard, vacancy, article, point, ...user];
   };
 
-  const menus = getAdminMenus(memberData?.role);
+  const menus = getAdminMenus(memberData?.role, memberData?.agencyStatus);
 
   const activityItems = [
     { icon: '📄', label: '내가 등록한 기사', href: '/m/admin/article', count: userActivityCounts.myArticles },
@@ -231,6 +223,12 @@ export default function MenuPage() {
                       <span style={{ ...getRoleBadgeStyle(memberData?.role || 'USER', memberData?.agencyStatus), fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px' }}>
                         {getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus)}
                       </span>
+                      {memberData?.agencyStatus === 'PENDING' && (
+                        <span style={{ background: '#fbbf24', color: '#78350f', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px' }}>서류 검토중</span>
+                      )}
+                      {memberData?.agencyStatus === 'REJECTED' && (
+                        <span style={{ background: '#ef4444', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px' }}>서류 보완</span>
+                      )}
                     </div>
                     <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>{memberData?.email || currentUser?.email}</p>
                   </div>

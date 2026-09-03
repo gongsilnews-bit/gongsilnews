@@ -85,11 +85,9 @@ function MobileDashboard() {
       }
       
       let currentRole: "admin" | "realtor" | "user" = "user";
-      if (["ADMIN", "SUPER_ADMIN", "최고관리자"].includes(data.role)) currentRole = "admin";
-      else if (["REALTOR", "부동산회원"].includes(data.role)) currentRole = "realtor";
-
-      // 부동산회원인 경우 agency 상태 조회
-      if (currentRole === "realtor") {
+      if (["ADMIN", "SUPER_ADMIN", "최고관리자"].includes(data.role)) {
+        currentRole = "admin";
+      } else {
         const { data: agency } = await supabase
           .from("agencies")
           .select("status, reject_reason")
@@ -98,6 +96,7 @@ function MobileDashboard() {
         if (agency) {
           setAgencyStatus(agency.status);
           setRejectReason(agency.reject_reason || null);
+          if (["REALTOR", "부동산회원"].includes(data.role) && agency.status === "APPROVED") currentRole = "realtor";
         }
       }
       
