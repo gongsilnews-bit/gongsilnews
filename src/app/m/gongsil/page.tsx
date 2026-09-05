@@ -1147,7 +1147,7 @@ function MobileGongsilContent() {
           {mapLoaded && zoomLevel >= 9 && (
             <div style={{
               position: "absolute",
-              top: "40%",
+              top: "70px",
               left: "50%",
               transform: "translate(-50%, -50%)",
               zIndex: 100,
