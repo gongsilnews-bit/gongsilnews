@@ -807,7 +807,7 @@ export default function KakaoMapView({
         style={{
           position: "absolute",
           right: 20,
-          top: "50%",
+          top: "30%",
           transform: "translateY(-50%)",
           zIndex: 1000,
           display: "flex",

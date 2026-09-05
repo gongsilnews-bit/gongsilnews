@@ -263,13 +263,13 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
       whiteSpace: "nowrap"
     }}>
       <style>{`
-        #wishFloatingFilter { display: flex; flex-wrap: nowrap; white-space: nowrap; background: #fff; padding: 4px 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; align-items: center; gap: 6px; font-size: 12px; color: #333; transition: box-shadow 0.2s; cursor: ${isDragActive ? 'grabbing' : 'grab'}; }
+        #wishFloatingFilter { display: flex; flex-wrap: nowrap; white-space: nowrap; background: #fff; padding: 6px 12px; border-radius: 22px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #ddd; align-items: center; gap: 8px; font-size: 15px; color: #333; transition: box-shadow 0.2s; cursor: ${isDragActive ? 'grabbing' : 'grab'}; }
         #wishFloatingFilter:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
-        .wish-select { background: none; border: none; cursor: pointer; font-weight: bold; padding: 3px 6px; white-space: nowrap; }
-        .wish-select::after { content: ' ▼'; font-size: 8px; color: #999; }
-        .region-tab { flex:1; padding:12px; background:transparent; border:none; cursor:pointer; font-weight:bold; font-size:14px; color:#666; transition:all 0.2s; border-bottom:2px solid transparent; }
+        .wish-select { background: none; border: none; cursor: pointer; font-weight: 800; padding: 5px 8px; white-space: nowrap; font-size: 15px; }
+        .wish-select::after { content: ' ▼'; font-size: 10px; color: #999; }
+        .region-tab { flex:1; padding:14px 12px; background:transparent; border:none; cursor:pointer; font-weight:bold; font-size:16px; color:#666; transition:all 0.2s; border-bottom:2px solid transparent; }
         .region-tab.active { color:${themeColor}; border-bottom:2px solid ${themeColor}; background:#fff; }
-        .reg-item-btn { padding:8px 5px; background:#fff; border:1px solid #eee; border-radius:4px; font-size:13px; color:#444; cursor:pointer; transition:all 0.2s; text-align:center; }
+        .reg-item-btn { padding:10px 6px; background:#fff; border:1px solid #eee; border-radius:4px; font-size:15px; color:#444; cursor:pointer; transition:all 0.2s; text-align:center; }
         .reg-item-btn:hover { background:${themeColor}; color:#fff; border-color:${themeColor}; }
         .region-close-btn:hover { background:#ddd !important; }
       `}</style>
@@ -298,7 +298,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
 
       {/* 지역 선택 캐스케이딩 패널 */}
       {activePanel === "region" && (
-        <div ref={regionRef} style={{ position: "absolute", top: 45, left: 0, zIndex: 101, background: "#fff", width: 380, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", overflow: "hidden" }}>
+        <div ref={regionRef} style={{ position: "absolute", top: 52, left: 0, zIndex: 101, background: "#fff", width: 420, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", overflow: "hidden" }}>
           <div style={{ display: "flex", borderBottom: "1px solid #ccc", background: "#f9f9f9" }}>
             <button className={`region-tab ${activeTab === "sido" ? "active" : ""}`} onClick={() => setActiveTab("sido")}>시/도</button>
             <button className={`region-tab ${activeTab === "gugun" ? "active" : ""}`} onClick={() => setActiveTab("gugun")}>시/군/구</button>
@@ -343,7 +343,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
               </div>
             )}
           </div>
-          <button className="region-close-btn" onClick={() => setActivePanel(null)} style={{ width: "100%", padding: 10, border: "none", background: "#eee", cursor: "pointer", fontSize: 14, color: "#555" }}>
+          <button className="region-close-btn" onClick={() => setActivePanel(null)} style={{ width: "100%", padding: 12, border: "none", background: "#eee", cursor: "pointer", fontSize: 15, color: "#555" }}>
             닫기
           </button>
         </div>
@@ -351,7 +351,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
 
       {/* 지도 검색 입력 패널 */}
       {activePanel === "search" && (
-        <div ref={searchRef} style={{ position: "absolute", top: 45, left: 0, zIndex: 101, background: "#fff", padding: 18, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", width: 460 }}>
+        <div ref={searchRef} style={{ position: "absolute", top: 52, left: 0, zIndex: 101, background: "#fff", padding: 18, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", width: 500 }}>
           <div style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "stretch" }}>
             <input 
               type="text" 
@@ -359,12 +359,12 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && executeMapKeywordSearch()}
-              style={{ flex: 1, minWidth: 0, height: 48, padding: "0 14px", border: "1px solid #b8c0cc", borderRadius: 6, outline: "none", fontSize: 16, color: "#111827" }}
+              style={{ flex: 1, minWidth: 0, height: 52, padding: "0 16px", border: "1px solid #b8c0cc", borderRadius: 6, outline: "none", fontSize: 17, color: "#111827" }}
             />
-            <button onClick={moveToCurrentLocation} style={{ height: 48, padding: "0 16px", background: "#1a4282", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: "bold", fontSize: 15, whiteSpace: "nowrap" }}>
+            <button onClick={moveToCurrentLocation} style={{ height: 52, padding: "0 18px", background: "#1a4282", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: "bold", fontSize: 16, whiteSpace: "nowrap" }}>
               내 지역
             </button>
-            <button onClick={executeMapKeywordSearch} style={{ height: 48, padding: "0 16px", background: themeColor, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: "bold", fontSize: 15, whiteSpace: "nowrap" }}>
+            <button onClick={executeMapKeywordSearch} style={{ height: 52, padding: "0 18px", background: themeColor, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: "bold", fontSize: 16, whiteSpace: "nowrap" }}>
               이동
             </button>
           </div>
