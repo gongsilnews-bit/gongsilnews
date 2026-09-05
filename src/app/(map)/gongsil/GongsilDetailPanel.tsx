@@ -9,7 +9,8 @@ import {
   getOptionSvg,
   isApartmentType,
 } from "./gongsilHelpers";
-import { getOnbidCount } from "@/app/actions/agentChat";
+import GongsilAccessOverlay from "./GongsilAccessOverlay";
+import GongsilComments from "./GongsilComments";
 
 interface GongsilDetailPanelProps {
   showDetail: boolean;
@@ -92,14 +93,6 @@ export default function GongsilDetailPanel({
   openGalleryModal,
   isAuctionMode,
 }: GongsilDetailPanelProps) {
-  const [onbidCount, setOnbidCount] = React.useState<number | null>(null);
-
-  React.useEffect(() => {
-    const selected = activeProperty ? dbVacancies.find((v) => v.id === activeProperty) : null;
-    if (selected?.trade_type !== "경매" && selected?.trade_type !== "공매") return;
-    getOnbidCount().then(setOnbidCount).catch(() => setOnbidCount(null));
-  }, [activeProperty, dbVacancies]);
-
   if (!showDetail || !activeProperty) return null;
 
   const baseProp = dbVacancies.find((v) => v.id === activeProperty);
@@ -111,350 +104,6 @@ export default function GongsilDetailPanel({
   const agencyInfo = (Array.isArray(m.agencies) ? m.agencies[0] : m.agencies) || passedAgencyInfo;
 
   const images = prop.images && prop.images.length > 0 ? prop.images : [""];
-
-  const renderCommentArea = (targetProp: any) => {
-    const rootComments = comments.filter((c) => !c.parent_id);
-    const getChildren = (parentId: string) => comments.filter((c) => c.parent_id === parentId);
-
-    const renderComment = (comment: any, depth: number = 0) => {
-      const children = getChildren(comment.id);
-      const isCommentOwner = currentUser?.id === comment.author_id;
-      const isPropertyOwner = currentUser?.id === targetProp.owner_id;
-      const canView = !comment.is_secret || isCommentOwner || isPropertyOwner;
-
-      const dateStr = new Date(comment.created_at)
-        .toLocaleString("ko-KR", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-        .replace(/\.$/, "");
-
-      return (
-        <div
-          key={comment.id}
-          id={`comment-${comment.id}`}
-          style={{
-            paddingLeft: depth > 0 ? 30 : 0,
-            paddingBottom: 20,
-            paddingTop: 20,
-            borderBottom: depth === 0 ? "1px solid #f0f0f0" : "none",
-          }}
-        >
-          {/* 작성자 정보 & 날짜 */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {depth > 0 && <span style={{ color: "#aaa", fontWeight: "bold" }}>↳</span>}
-              {/* 프로필 아바타 원형 */}
-              {comment.profile_image_url ? (
-                <img
-                  src={comment.profile_image_url}
-                  alt=""
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                    flexShrink: 0,
-                    border: "1px solid #e5e7eb",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    background: depth > 0 ? "#e8f0fe" : "#f0f4f8",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: depth > 0 ? "#508bf5" : "#666",
-                    flexShrink: 0,
-                  }}
-                >
-                  {(comment.author_name || "회")[0]}
-                </div>
-              )}
-              <span style={{ fontSize: 14, fontWeight: "bold", color: "#111" }}>
-                {comment.author_name || "회원"}
-              </span>
-              {comment.is_secret && (
-                <span
-                  style={{
-                    fontSize: 10,
-                    color: "#ef4444",
-                    border: "1px solid #fca5a5",
-                    padding: "1px 4px",
-                    borderRadius: 4,
-                    fontWeight: "bold",
-                  }}
-                >
-                  비밀글
-                </span>
-              )}
-            </div>
-            <div style={{ fontSize: 12, color: "#9ca3af" }}>{dateStr}</div>
-          </div>
-
-          {/* 댓글 내용 */}
-          <div
-            style={{
-              fontSize: 14,
-              color: canView ? "#333" : "#999",
-              lineHeight: 1.6,
-              marginBottom: 12,
-              wordBreak: "break-word",
-            }}
-          >
-            {canView ? comment.content : "등록자와 작성자만 볼 수 있는 비밀글입니다."}
-          </div>
-
-          {/* 하단 액션 버튼 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <button
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                cursor: "pointer",
-                color: "#666",
-              }}
-            >
-              <span style={{ fontSize: 14 }}>👍</span>
-              <span style={{ fontSize: 13, fontWeight: "bold" }}>0</span>
-            </button>
-            <button
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                cursor: "pointer",
-                color: "#666",
-              }}
-            >
-              <span style={{ fontSize: 14 }}>👎</span>
-              <span style={{ fontSize: 13, fontWeight: "bold" }}>0</span>
-            </button>
-            {currentUser && canView && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (replyTarget?.id === comment.id) {
-                    setReplyTarget(null);
-                  } else {
-                    setReplyTarget(comment);
-                    setIsSecret(comment.is_secret); // 부모 답글 비밀 여부 연동
-                  }
-                }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  fontSize: 13,
-                  color: "#666",
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                }}
-              >
-                답글
-              </button>
-            )}
-          </div>
-
-          {/* 인라인 답글 폼 */}
-          {replyTarget && replyTarget.id === comment.id && (
-            <div style={{ marginTop: 16, background: "#f8f9fa", borderRadius: 8, border: "1px solid #e5e7eb", padding: 16 }}>
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value.substring(0, 400))}
-                placeholder="답글을 남겨보세요"
-                style={{
-                  width: "100%",
-                  height: 80,
-                  border: "1px solid #d1d5db",
-                  borderRadius: 4,
-                  padding: "12px",
-                  fontSize: 14,
-                  outline: "none",
-                  resize: "vertical",
-                  marginBottom: 12,
-                  boxSizing: "border-box",
-                  fontFamily: "inherit",
-                }}
-              />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: "#555" }}>
-                  <input
-                    type="checkbox"
-                    checked={isSecret}
-                    onChange={(e) => setIsSecret(e.target.checked)}
-                    style={{ width: 14, height: 14 }}
-                  />
-                  비밀답글
-                </label>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    onClick={() => setReplyTarget(null)}
-                    style={{
-                      padding: "8px 16px",
-                      background: "#fff",
-                      color: "#555",
-                      border: "1px solid #d1d5db",
-                      borderRadius: 4,
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                      fontSize: 13,
-                    }}
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={handleCommentSubmit}
-                    disabled={!newComment.trim()}
-                    style={{
-                      padding: "8px 16px",
-                      background: newComment.trim() ? "#9ca3af" : "#cbd5e1",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 4,
-                      fontWeight: "bold",
-                      cursor: newComment.trim() ? "pointer" : "default",
-                      fontSize: 13,
-                    }}
-                  >
-                    답글 등록
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 대댓글 렌더링 */}
-          <div>{children.map((child) => renderComment(child, depth + 1))}</div>
-        </div>
-      );
-    };
-
-    return (
-      <div style={{ marginTop: 20, borderTop: "10px solid #f5f5f5", padding: "30px 20px 40px" }}>
-        {/* 헤더 */}
-        <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 20 }}>
-          {comments.length}개의 댓글상담
-        </div>
-
-        {/* 입력창 (일반 기사 형태) */}
-        {!replyTarget && (
-          <div
-            style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 8,
-              padding: 20,
-              marginBottom: 40,
-              background: "#fff",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: "bold",
-                color: "#111",
-                marginBottom: 12,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              {currentUser
-                ? currentUser.user_metadata?.full_name ||
-                  currentUser.user_metadata?.name ||
-                  currentUser.email?.split("@")[0] ||
-                  "회원"
-                : "비회원"}
-            </div>
-
-            <textarea
-              id="gongsil-comment-input"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value.substring(0, 400))}
-              placeholder={
-                currentUser
-                  ? "가격을 제안하거나, 궁금한 점을 남겨보세요. 등록자와의 1:1 상담입니다."
-                  : "로그인 후 이용하실 수 있습니다."
-              }
-              disabled={!currentUser}
-              style={{
-                width: "100%",
-                height: 80,
-                border: "1px solid #e5e7eb",
-                borderRadius: 6,
-                padding: "12px",
-                fontSize: 14,
-                outline: "none",
-                resize: "vertical",
-                marginBottom: 16,
-                boxSizing: "border-box",
-                fontFamily: "inherit",
-              }}
-            />
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <span style={{ fontSize: 13, color: "#666", fontWeight: "bold" }}>
-                  <span style={{ color: "#111" }}>{newComment.length}</span> / 400
-                </span>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: "#555" }}>
-                  <input
-                    type="checkbox"
-                    checked={isSecret}
-                    onChange={(e) => setIsSecret(e.target.checked)}
-                    style={{ width: 14, height: 14 }}
-                  />
-                  비밀댓글
-                </label>
-              </div>
-              <button
-                onClick={handleCommentSubmit}
-                disabled={!currentUser || !newComment.trim()}
-                style={{
-                  padding: "8px 24px",
-                  background: currentUser && newComment.trim() ? "#9ca3af" : "#cbd5e1", // 기사의 등록버튼 색상
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 4,
-                  fontWeight: "bold",
-                  cursor: currentUser && newComment.trim() ? "pointer" : "default",
-                  fontSize: 14,
-                }}
-              >
-                등록
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 댓글 리스트 */}
-        <div>
-          {comments.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 40, color: "#888", fontSize: 13 }}>아직 등록된 문의가 없습니다.</div>
-          ) : (
-            <div>{rootComments.map((c) => renderComment(c, 0))}</div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div
@@ -497,162 +146,7 @@ export default function GongsilDetailPanel({
         ×
       </button>
 
-      {/* 🔒 중개업소 회원만 열람 가능 오버레이 */}
-      {(() => {
-        const isMyProperty = currentUser && prop && prop.owner_id === currentUser.id;
-        const isAuctionProperty = prop.trade_type === "경매" || prop.trade_type === "공매";
-        const isRealtorOnlyMasked = isAuctionProperty
-          ? userLevel < 1
-          : prop.exposure_type === "부동산노출" && userLevel < 2 && !isMyProperty;
-
-        if (!isRealtorOnlyMasked) return null;
-
-        return (
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "rgba(255, 255, 255, 0.94)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              zIndex: 90,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "40px 24px",
-              textAlign: "center",
-              boxSizing: "border-box",
-            }}
-          >
-            {/* 자물쇠 아이콘 */}
-            <div
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
-                border: "2px solid #f59e0b",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 34,
-                marginBottom: 20,
-                boxShadow: "0 10px 25px rgba(245, 158, 11, 0.2)",
-              }}
-            >
-              🔒
-            </div>
-
-            {/* 타이틀 */}
-            <h3
-              style={{
-                fontSize: 22,
-                fontWeight: 900,
-                color: "#0f172a",
-                margin: "0 0 12px 0",
-                letterSpacing: "-0.5px",
-                lineHeight: 1.35,
-              }}
-            >
-              {isAuctionProperty ? <>회원가입하시면<br />무료 열람</> : <>중개업소 회원만<br />열람할 수 있습니다</>}
-            </h3>
-
-            {/* 본문 안내 */}
-            <p
-              style={{
-                fontSize: 14,
-                color: "#64748b",
-                lineHeight: 1.65,
-                margin: "0 0 28px 0",
-                wordBreak: "keep-all",
-                maxWidth: 320,
-              }}
-            >
-              {isAuctionProperty ? (
-                <>
-                  매물 최신일자로 업데이트됩니다.<br />
-                  전국 <strong style={{ color: "#dc2626" }}>{onbidCount !== null ? onbidCount.toLocaleString() : "-"}건</strong> 경매 물건 ({String(new Date().getFullYear()).slice(-2)}년{new Date().getMonth() + 1}월{new Date().getDate()}일)
-                </>
-              ) : (
-                <>부동산 대표님이시라면 <strong>100% 무료 중개업소 등록</strong> 후 실매물을 즉시 열람하실 수 있습니다.</>
-              )}
-            </p>
-
-            {/* 액션 버튼 */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 300 }}>
-              <button
-                onClick={() => {
-                  if (isAuctionProperty) {
-                    window.location.href = "/login?returnTo=" + encodeURIComponent(`/gongsil?id=${prop.id}`);
-                  } else if (!currentUser) {
-                    if (typeof window !== "undefined") {
-                      localStorage.setItem("signup_member_type", "broker");
-                    }
-                    window.location.href = "/newsrealty";
-                  } else {
-                    window.location.href = "/realty_admin?menu=settings";
-                  }
-                }}
-                style={{
-                  width: "100%",
-                  padding: "14px 0",
-                  background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: 10,
-                  fontSize: 15,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
-                }}
-              >
-                {isAuctionProperty ? "무료 회원가입하기" : "✨ 중개업소 무료 가입하기 →"}
-              </button>
-
-              {!currentUser && !isAuctionProperty && (
-                <button
-                  onClick={() => {
-                    window.location.href = "/login?returnTo=" + encodeURIComponent(`/gongsil?id=${prop.id}`);
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: "12px 0",
-                    background: "#ffffff",
-                    color: "#475569",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: 10,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  🔑 로그인
-                </button>
-              )}
-
-              <button
-                onClick={onBack}
-                style={{
-                  width: "100%",
-                  padding: "10px 0",
-                  background: "transparent",
-                  color: "#94a3b8",
-                  border: "none",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                닫기 (다른 매물 둘러보기)
-              </button>
-            </div>
-          </div>
-        );
-      })()}
+      <GongsilAccessOverlay property={prop} currentUser={currentUser} userLevel={userLevel} onBack={onBack} />
 
       {/* 뒤로가기 버튼 탭 */}
       {prevPropertyId && (
@@ -1660,7 +1154,18 @@ const filteredFields = fields.filter(field => {
             )}
 
             {/* ──── 댓글상담 ──── */}
-            {renderCommentArea(prop)}
+            <GongsilComments
+              targetProp={prop}
+              comments={comments}
+              currentUser={currentUser}
+              newComment={newComment}
+              setNewComment={setNewComment}
+              isSecret={isSecret}
+              setIsSecret={setIsSecret}
+              replyTarget={replyTarget}
+              setReplyTarget={setReplyTarget}
+              handleCommentSubmit={handleCommentSubmit}
+            />
           </>
         )}
 
@@ -2643,7 +2148,18 @@ const filteredFields = fields.filter(field => {
             </div>
 
             {/* ──── 댓글상담 (등록자정보 탭 하단) ──── */}
-            {renderCommentArea(prop)}
+            <GongsilComments
+              targetProp={prop}
+              comments={comments}
+              currentUser={currentUser}
+              newComment={newComment}
+              setNewComment={setNewComment}
+              isSecret={isSecret}
+              setIsSecret={setIsSecret}
+              replyTarget={replyTarget}
+              setReplyTarget={setReplyTarget}
+              handleCommentSubmit={handleCommentSubmit}
+            />
           </>
         )}
       </div>
