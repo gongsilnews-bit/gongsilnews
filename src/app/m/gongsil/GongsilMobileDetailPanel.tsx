@@ -169,7 +169,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
               letterSpacing: 0.5,
             }}
           >
-            공인중개사 공동중개 전용
+            중개업소
           </div>
 
           {/* 타이틀 */}
@@ -200,8 +200,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
             {isAuctionProperty ? (
               <>로그인한 회원은 경매·공매 매물을 <strong>무료로 열람</strong>할 수 있습니다.<br />로그인 후 매물 상세정보와 사진을 확인해 주세요.</>
             ) : (
-              <>본 매물은 <strong>개업공인중개사 간의 공동중개 전용</strong> 매물입니다.<br />
-              부동산 대표님이시라면 <strong>100% 무료 중개업소 등록</strong> 후 모든 공동중개 실매물을 즉시 열람하실 수 있습니다.</>
+              <>부동산 대표님이시라면 <strong>100% 무료 중개업소 등록</strong> 후 실매물을 즉시 열람하실 수 있습니다.</>
             )}
           </p>
 
@@ -233,7 +232,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
               }}
             >
-              {isAuctionProperty ? "로그인 후 무료로 경매·공매 매물 확인하기 →" : "✨ 무료 중개업소 등록하기 →"}
+              {isAuctionProperty ? "로그인 후 무료로 경매·공매 매물 확인하기 →" : "✨ 중개업소 무료 등록하기 →"}
             </button>
 
             {!currentUser && !isAuctionProperty && (
@@ -253,7 +252,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   cursor: "pointer",
                 }}
               >
-                🔑 중개업소 계정 로그인
+                🔑 그냥 로그인
               </button>
             )}
 
