@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
-import { getMyArticles, adminUpdateArticleStatus, deleteArticle } from "@/app/actions/article";
+import { getMyArticles, adminUpdateArticleStatus, checkArticleWritePermission, deleteArticle } from "@/app/actions/article";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
@@ -25,6 +25,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
+  const [writePermission, setWritePermission] = useState<{ checked: boolean; allowed: boolean; error?: string }>({ checked: false, allowed: false });
   
   const [searchArticleNo, setSearchArticleNo] = useState("");
   const [searchSection, setSearchSection] = useState("전체");
@@ -36,6 +37,22 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
   const editId = searchParams.get("id");
   const showWriteForm = action === "write";
   const showDetail = action === "detail" && editId;
+
+  const checkWritePermission = async () => {
+    const result = await checkArticleWritePermission(memberId);
+    if (!result.allowed) {
+      alert(result.error || "기사 작성 권한이 없습니다.");
+      return false;
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    if (!showWriteForm || !memberId) return;
+    checkArticleWritePermission(memberId).then(result => {
+      setWritePermission({ checked: true, allowed: result.allowed, error: result.error });
+    });
+  }, [showWriteForm, memberId]);
 
   const fetchArticles = async () => {
     setLoading(true);
@@ -166,6 +183,17 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
   }
 
   if (showWriteForm) {
+    if (!writePermission.checked) {
+      return <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: textSecondary }}>기사 작성 권한을 확인하는 중입니다...</div>;
+    }
+    if (!writePermission.allowed) {
+      return (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, color: textSecondary }}>
+          <div>{writePermission.error || "기사 작성 권한이 없습니다."}</div>
+          <button type="button" onClick={() => router.push("?menu=article")} style={{ padding: "8px 16px", border: "none", borderRadius: 6, background: "#374151", color: "#fff", cursor: "pointer" }}>기사관리로 돌아가기</button>
+        </div>
+      );
+    }
     return <NewsWriteForm />;
   }
 
@@ -235,7 +263,7 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
 
         {/* 액션 버튼 */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, alignItems: "center" }}>
-          <button onClick={() => router.push("?menu=article&action=write")} style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", gap: 6 }}>+ 새 기사 작성</button>
+          <button onClick={async () => { if (await checkWritePermission()) router.push("?menu=article&action=write"); }} style={{ display: "flex", alignItems: "center", height: 36, padding: "0 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", gap: 6 }}>+ 새 기사 작성</button>
           <button onClick={() => { handleRequestApproval(); }}
             style={{ height: 36, padding: "0 16px", background: "#8b5cf6", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
             📋 승인신청

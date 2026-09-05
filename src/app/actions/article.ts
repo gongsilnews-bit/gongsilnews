@@ -16,6 +16,47 @@ function getAdminClient() {
   });
 }
 
+export async function checkArticleWritePermission(authorId: string) {
+  const supabase = getAdminClient();
+
+  try {
+    const { data: member, error: memberError } = await supabase
+      .from("members")
+      .select("role, plan_type, plan_end_date, max_articles_per_month")
+      .eq("id", authorId)
+      .single();
+    if (memberError || !member) {
+      return { allowed: false, error: "회원 정보를 확인할 수 없습니다." };
+    }
+
+    const plan = getEffectivePlan(member);
+    if (plan === "admin") return { allowed: true };
+    if (plan !== "news_premium") {
+      return { allowed: false, error: "뉴스 기사 작성은 '공실뉴스부동산' 요금제 전용 기능입니다." };
+    }
+
+    const firstDayOfMonth = new Date();
+    firstDayOfMonth.setDate(1);
+    firstDayOfMonth.setHours(0, 0, 0, 0);
+    const { count, error: countError } = await supabase
+      .from("articles")
+      .select("id", { count: "exact", head: true })
+      .eq("author_id", authorId)
+      .gte("created_at", firstDayOfMonth.toISOString())
+      .eq("is_deleted", false);
+    if (countError) return { allowed: false, error: "기사 작성 한도 확인 중 오류가 발생했습니다." };
+
+    const maxArticles = member.max_articles_per_month || 0;
+    if (maxArticles <= 0 || (count || 0) >= maxArticles) {
+      return { allowed: false, error: `이번 달 기사 작성 한도(${maxArticles}건)를 초과했거나 한도가 설정되지 않았습니다.` };
+    }
+
+    return { allowed: true };
+  } catch (error: any) {
+    return { allowed: false, error: error.message || "기사 작성 권한을 확인할 수 없습니다." };
+  }
+}
+
 /* ── 기사 저장 (신규 + 수정 겸용) ── */
 export async function saveArticle(data: {
   id?: string;
