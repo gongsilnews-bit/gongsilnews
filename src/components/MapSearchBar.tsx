@@ -291,6 +291,24 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
         <span className="wish-select" style={{ color: themeColor }} onClick={() => setActivePanel(activePanel === "search" ? null : "search")}>
           검색 🔍
         </span>
+        <div style={{ width: 1, height: 12, background: "#ccc" }}></div>
+        <button
+          type="button"
+          onClick={moveToCurrentLocation}
+          style={{
+            border: "none",
+            borderRadius: 6,
+            background: "#1a4282",
+            color: "#fff",
+            cursor: "pointer",
+            padding: "7px 10px",
+            fontSize: 14,
+            fontWeight: 800,
+            whiteSpace: "nowrap",
+          }}
+        >
+          내 위치
+        </button>
       </div>
 
       {/* 추가 children (섹션 필터, 버튼 등) */}

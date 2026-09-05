@@ -538,24 +538,6 @@ export default function GongsilDetailPanel({
               🔒
             </div>
 
-            {/* 태그 */}
-            <div
-              style={{
-                display: "inline-block",
-                background: "#eff6ff",
-                color: "#2563eb",
-                border: "1px solid #bfdbfe",
-                padding: "4px 14px",
-                borderRadius: 20,
-                fontSize: 12,
-                fontWeight: 800,
-                marginBottom: 12,
-                letterSpacing: 0.5,
-              }}
-            >
-              중개업소
-            </div>
-
             {/* 타이틀 */}
             <h3
               style={{
@@ -616,7 +598,7 @@ export default function GongsilDetailPanel({
                   boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
                 }}
               >
-                {isAuctionProperty ? "로그인 후 무료로 경매·공매 매물 확인하기 →" : "✨ 중개업소 무료 등록하기 →"}
+                {isAuctionProperty ? "로그인 후 무료로 경매·공매 매물 확인하기 →" : "✨ 중개업소 무료 가입하기 →"}
               </button>
 
               {!currentUser && !isAuctionProperty && (
@@ -636,7 +618,7 @@ export default function GongsilDetailPanel({
                     cursor: "pointer",
                   }}
                 >
-                  🔑 그냥 로그인
+                  🔑 로그인
                 </button>
               )}
 

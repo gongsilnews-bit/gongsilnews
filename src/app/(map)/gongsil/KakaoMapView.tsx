@@ -802,7 +802,7 @@ export default function KakaoMapView({
         )}
       </div>
 
-      {/* Right Map Controls: Zoom controls (+, -) and Location Pictogram (내 위치) below it */}
+      {/* Right Map Controls: Zoom controls (+, -) */}
       <div
         style={{
           position: "absolute",
@@ -869,64 +869,6 @@ export default function KakaoMapView({
           </button>
         </div>
 
-        {/* Location Pictogram Button */}
-        <button
-          onClick={() => {
-            setSelectedClusterIds(null);
-            setSelectedRegion(null);
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                  const lat = pos.coords.latitude;
-                  const lng = pos.coords.longitude;
-                  if (kakaoMapRef.current) {
-                    const kakao = (window as any).kakao;
-                    kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
-                  }
-                },
-                (err) => {
-                  console.error("Geolocation error:", err);
-                  handleLocationPermissionDenied();
-                },
-                { enableHighAccuracy: true }
-              );
-            } else {
-              handleLocationUnavailable();
-            }
-          }}
-          style={{
-            width: 36,
-            height: 36,
-            border: "none",
-            borderRadius: 4,
-            background: "#fff",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "all 0.15s",
-          }}
-          title="내 위치로 이동"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ width: 18, height: 18, color: "#1a4282" }}
-          >
-            <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="3" fill="#1a4282" />
-            <line x1="12" y1="1" x2="12" y2="4" />
-            <line x1="12" y1="20" x2="12" y2="23" />
-            <line x1="1" y1="12" x2="4" y2="12" />
-            <line x1="20" y1="12" x2="23" y2="12" />
-          </svg>
-        </button>
       </div>
     </div>
   );

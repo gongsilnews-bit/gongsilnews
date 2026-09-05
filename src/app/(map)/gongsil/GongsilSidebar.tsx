@@ -437,27 +437,6 @@ export default function GongsilSidebar({
                           </span>
                         </>
                       )}
-                      {isMasked && (
-                        <span
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPrevPropertyId(null);
-                            setActiveProperty(prop.id);
-                            setShowDetail(true);
-                          }}
-                          style={{
-                            fontSize: 11,
-                            color: "#3b82f6",
-                            fontWeight: 700,
-                            background: "#eef6ff",
-                            padding: "3px 8px",
-                            borderRadius: 4,
-                            cursor: "pointer",
-                          }}
-                        >
-                          {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 중개업소 회원 전용'}
-                        </span>
-                      )}
                     </div>
                     {activeCategory === "wish" && wishTab === "wish" && (
                       <button
