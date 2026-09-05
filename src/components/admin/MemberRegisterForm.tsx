@@ -135,6 +135,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         if (res.success && res.member) {
           const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'BIZ': '비즈니스회원', 'USER': '일반회원' };
           let resolvedRole = roleMap[res.member.role] || "일반회원";
+          if (!isAdmin && res.agency && (res.agency.status === "PENDING" || res.agency.status === "REJECTED" || res.agency.status === "APPROVED")) {
+            resolvedRole = "부동산회원";
+          }
           // 무료 중개업소 등록(newsrealty) 진입 플로우: 별도 전환신청 클릭 없이 바로 부동산정보 입력
           if (!isAdmin && resolvedRole === "일반회원" && initialTab === 1 && typeof window !== "undefined" && localStorage.getItem("signup_member_type") === "broker") {
             resolvedRole = "부동산회원";

@@ -357,10 +357,8 @@ export async function adminGetMemberDetail(memberId: string) {
     }
 
     let agency = null;
-    if (member.role === 'REALTOR' || member.role === '부동산회원') {
-      const { data: agencyData } = await supabaseAdmin.from('agencies').select('*').eq('owner_id', memberId).single();
-      if (agencyData) agency = agencyData;
-    }
+    const { data: agencyData } = await supabaseAdmin.from('agencies').select('*').eq('owner_id', memberId).single();
+    if (agencyData) agency = agencyData;
 
     let businessProfile = null;
     if (member.role === 'BIZ' || member.role === '비즈니스회원') {
