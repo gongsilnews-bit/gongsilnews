@@ -237,12 +237,18 @@ export function filterVacancies({
     });
   } else {
     if (filterTradeTypes.length > 0) list = list.filter((v) => filterTradeTypes.includes(v.trade_type));
-    if (filterPriceMin !== null || filterPriceMax !== null) {
-      list = list.filter((v) => {
-        const dep = v.deposit || 0;
-        return !(filterPriceMin !== null && dep < filterPriceMin) && !(filterPriceMax !== null && dep > filterPriceMax);
-      });
-    }
+    list = list.filter((v) => {
+      const depositMin = v.trade_type === "매매" ? (appliedMaemaeMin ?? filterPriceMin) : appliedDepositMin ?? filterPriceMin;
+      const depositMax = v.trade_type === "매매" ? (appliedMaemaeMax ?? filterPriceMax) : appliedDepositMax ?? filterPriceMax;
+      const deposit = v.deposit || 0;
+      if (depositMin !== null && deposit < depositMin) return false;
+      if (depositMax !== null && deposit > depositMax) return false;
+      if (v.trade_type === "월세" || v.trade_type === "단기") {
+        if (appliedRentMin !== null && (v.monthly_rent || 0) < appliedRentMin) return false;
+        if (appliedRentMax !== null && (v.monthly_rent || 0) > appliedRentMax) return false;
+      }
+      return true;
+    });
   }
 
   if (filterAreaMin !== null || filterAreaMax !== null) list = list.filter((v) => {

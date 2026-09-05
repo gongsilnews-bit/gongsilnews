@@ -493,6 +493,17 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     }
   }, [activeFilterDropdown]);
 
+  // 상세검색의 임시 금액값도 슬라이더를 움직이는 즉시 실제 목록 필터에 반영한다.
+  useEffect(() => {
+    setFilterTradeTypes(tempFilterTradeTypes);
+    setAppliedMaemaeMin(tempMaemaeMin);
+    setAppliedMaemaeMax(tempMaemaeMax);
+    setAppliedDepositMin(tempDepositMin);
+    setAppliedDepositMax(tempDepositMax);
+    setAppliedRentMin(tempRentMin);
+    setAppliedRentMax(tempRentMax);
+  }, [tempFilterTradeTypes, tempMaemaeMin, tempMaemaeMax, tempDepositMin, tempDepositMax, tempRentMin, tempRentMax]);
+
   // Set initial data and ref
   useEffect(() => {
     if (initialVacancies && initialVacancies.length > 0) {
