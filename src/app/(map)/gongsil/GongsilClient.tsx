@@ -756,13 +756,14 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       filtered = filtered.filter((v) => selectedClusterIds.includes(String(v.id)));
     } else if (mapBounds && (window as any).kakao?.maps) {
       filtered = filtered.filter((v) => {
-        if (!v.lat || !v.lng) return false;
-        const pos = new (window as any).kakao.maps.LatLng(v.lat, v.lng);
+        const displayCoords = getJitteredCoords(v, zoomLevel <= 5);
+        if (!displayCoords.lat || !displayCoords.lng) return false;
+        const pos = new (window as any).kakao.maps.LatLng(displayCoords.lat, displayCoords.lng);
         return mapBounds.contain(pos);
       });
     }
     return filtered;
-  }, [filteredVacancies, selectedClusterIds, mapBounds, activeCategory, selectedRegion]);
+  }, [filteredVacancies, selectedClusterIds, mapBounds, activeCategory, selectedRegion, zoomLevel]);
 
   const showArticleOnMap = useCallback((prop: any) => {
     // 대표님 지침: 리스트/매물 선택 시 지도가 강제로 움직이지 않도록 완전 고정
