@@ -11,6 +11,7 @@ export default function MenuPage() {
   const [memberData, setMemberData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [pendingCounts, setPendingCounts] = useState({ vacancies: 0, articles: 0, members: 0 });
+  const [oauthLoading, setOauthLoading] = useState<'google' | 'kakao' | null>(null);
   const [userActivityCounts, setUserActivityCounts] = useState({
     myArticles: 0, myVacancies: 0, bookmarkedArticles: 0,
     bookmarkedVacancies: 0, subscribedReporters: 0, myLectures: 0
@@ -66,6 +67,8 @@ export default function MenuPage() {
   }, []);
 
   const handleOAuthLogin = async (providerName: 'google' | 'kakao') => {
+    if (oauthLoading) return;
+    setOauthLoading(providerName);
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
@@ -76,6 +79,7 @@ export default function MenuPage() {
     } catch (err: any) {
       console.error(err);
       alert('로그인 오류: ' + (err?.message || String(err)));
+      setOauthLoading(null);
     }
   };
 
@@ -195,13 +199,14 @@ export default function MenuPage() {
                 </p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button onClick={() => handleOAuthLogin('google')} style={{ width: '100%', padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '14px', fontWeight: 700, color: '#222', background: '#fff', border: '2px solid #4285F4', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', position: 'relative' }}>
-                  <span style={{ position: 'absolute', top: -9, right: 14, background: '#4285F4', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 10 }}>추천</span>
-                  Google 계정으로 시작
+                <button onClick={() => handleOAuthLogin('google')} disabled={!!oauthLoading} style={{ width: '100%', padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '14px', fontWeight: 700, color: '#222', background: '#fff', border: '2px solid #4285F4', borderRadius: '8px', cursor: oauthLoading ? 'not-allowed' : 'pointer', opacity: oauthLoading && oauthLoading !== 'google' ? 0.5 : 1, fontFamily: 'inherit', position: 'relative' }}>
+                  {!oauthLoading && <span style={{ position: 'absolute', top: -9, right: 14, background: '#4285F4', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 10 }}>추천</span>}
+                  {oauthLoading === 'google' ? <><span>로그인 중</span><span className="menu-oauth-dots">...</span></> : 'Google 계정으로 시작'}
                 </button>
-                <button onClick={() => handleOAuthLogin('kakao')} style={{ width: '100%', padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '14px', fontWeight: 700, color: '#000', background: '#FEE500', border: 'none', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit' }}>
-                  카카오 계정으로 3초만에 시작
+                <button onClick={() => handleOAuthLogin('kakao')} disabled={!!oauthLoading} style={{ width: '100%', padding: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontSize: '14px', fontWeight: 700, color: '#000', background: '#FEE500', border: 'none', borderRadius: '8px', cursor: oauthLoading ? 'not-allowed' : 'pointer', opacity: oauthLoading && oauthLoading !== 'kakao' ? 0.5 : 1, fontFamily: 'inherit' }}>
+                  {oauthLoading === 'kakao' ? <><span>로그인 중</span><span className="menu-oauth-dots">...</span></> : '카카오 계정으로 3초만에 시작'}
                 </button>
+                <style>{`.menu-oauth-dots { display: inline-block; width: 18px; overflow: hidden; animation: menu-dots 1.2s steps(4, end) infinite; } @keyframes menu-dots { 0% { width: 0; } 75% { width: 18px; } 100% { width: 0; } }`}</style>
               </div>
             </div>
           ) : (

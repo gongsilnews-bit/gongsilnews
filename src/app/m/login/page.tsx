@@ -210,7 +210,7 @@ function MobileLoginClient() {
               {oauthLoading === 'google' ? (
                 <>
                   <span className="oauth-spinner" style={{ borderTopColor: '#2563eb' }} />
-                  로그인 처리중...
+                  로그인 중<span className="oauth-loading-dots"><span>.</span><span>.</span><span>.</span></span>
                 </>
               ) : (
                 <>
@@ -250,7 +250,7 @@ function MobileLoginClient() {
               {oauthLoading === 'kakao' ? (
                 <>
                   <span className="oauth-spinner" style={{ borderTopColor: '#1e1e1e' }} />
-                  로그인 처리중...
+                  로그인 중<span className="oauth-loading-dots"><span>.</span><span>.</span><span>.</span></span>
                 </>
               ) : (
                 <>
