@@ -477,7 +477,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         if (!updateRes.success) throw new Error(updateRes.error || "회원 수정에 실패했습니다.");
       }
 
-      let finalStatus = isAdmin ? agencyData.status : "PENDING";
+      let finalStatus = agencyData.status === "APPROVED"
+        ? "APPROVED"
+        : isAdmin ? agencyData.status : "PENDING";
       let agencySaved = false;
 
       if ((formData.role === "부동산회원" || agencyData.name || files.biz_cert || files.reg_cert) && memberId) {
@@ -500,11 +502,13 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           if (uploadRes.success) bizCertUrl = uploadRes.url || null;
         }
 
-        finalStatus = isAdmin ? agencyData.status : "PENDING";
+        finalStatus = agencyData.status === "APPROVED"
+          ? "APPROVED"
+          : isAdmin ? agencyData.status : "PENDING";
 
         // --- 백그라운드 AI 서류 참고 검증 (관리자 심사용 참고 메모 생성) ---
         let aiReason: string | null = null;
-        if (files.biz_cert && !isAdmin) {
+        if (files.biz_cert && !isAdmin && agencyData.status !== "APPROVED") {
           try {
             const verifyFd = new FormData();
             verifyFd.append("file", files.biz_cert);

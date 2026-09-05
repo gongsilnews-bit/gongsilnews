@@ -177,6 +177,12 @@ export async function adminUpdateAgency(memberId: string, agencyData: any) {
         .update({ role: 'USER' })
         .eq('id', memberId);
       if (memberError) return { success: false, error: memberError.message };
+    } else if (agencyData.status === 'APPROVED') {
+      const { error: memberError } = await supabaseAdmin
+        .from('members')
+        .update({ role: 'REALTOR' })
+        .eq('id', memberId);
+      if (memberError) return { success: false, error: memberError.message };
     }
 
     return { success: true };
