@@ -212,7 +212,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       }
       const config = CATEGORY_CONFIG[cat];
       if (config && config.pills) {
-        return config.pills;
+        return config.pills.filter(p => p !== "오피스텔만 보기");
       }
     }
     return [];
@@ -811,7 +811,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         if (activeCategory === "apart" && activePills.includes("기타")) {
           if (["아파트분양권", "재건축", "오피스텔분양권", "재개발"].includes(v.sub_category)) return true;
         }
-        if (activeCategory === "one" && activePills.includes("오피스텔만 보기")) {
+        if (activeCategory === "one" && activePills.length === 1 && activePills.includes("오피스텔만 보기")) {
           if (v.themes && Array.isArray(v.themes) && v.themes.includes("오피스텔")) return true;
           return false;
         }
@@ -1851,7 +1851,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     }
     if (pills.length === 0) {
       const c = CATEGORY_CONFIG[newKey];
-      pills = c && c.pills ? c.pills : [];
+      pills = c && c.pills ? c.pills.filter(p => p !== "오피스텔만 보기") : [];
     }
     setActivePills(pills);
 
