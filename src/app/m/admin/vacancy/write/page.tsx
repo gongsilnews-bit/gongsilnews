@@ -337,7 +337,10 @@ function MobileVacancyWrite() {
         if (d.bath_count) setBathCount(String(d.bath_count));
         if (d.direction) setDirection(d.direction);
         if (d.metadata?.approval_year) setApprovalYear(String(d.metadata.approval_year));
-        if (d.sido) setSido(d.sido);
+        if (d.sido) {
+          setSido(d.sido);
+          setAddressSearchCompleted(true);
+        }
         if (d.sigungu) setSigungu(d.sigungu);
         if (d.dong) setDong(d.dong);
         if (d.building_name) setBuildingName(d.building_name);
@@ -563,6 +566,7 @@ function MobileVacancyWrite() {
           setSido(parsedSido);
           setSigungu(parsedSigungu);
           setDong(parsedDong);
+          setAddressSearchCompleted(true);
           setBuildingName(data.buildingName || "");
           
           let remainingAddr = data.roadAddress || data.jibunAddress || data.address || "";
@@ -1100,19 +1104,24 @@ function MobileVacancyWrite() {
         {/* 4. 주소 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>위치/주소</div>
-          <button type="button" onClick={handlePostcodeSearch} style={{ width:"100%", height:46, background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:10, fontSize:15, fontWeight:800, cursor:"pointer", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 2px 8px rgba(16,185,129,0.2)" }}>
-            🔍 주소 검색
+          <button type="button" onClick={handlePostcodeSearch} style={{ width:"100%", height:46, background:"linear-gradient(135deg,#10b981,#059669)", color:"#fff", border:"none", borderRadius:10, fontSize:15, fontWeight:800, cursor:"pointer", marginBottom: addressSearchCompleted ? 14 : 10, display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 2px 8px rgba(16,185,129,0.2)" }}>
+            🔍 주소 먼저 검색
           </button>
+          {!addressSearchCompleted && (
+            <div style={{ marginBottom:14, padding:"12px 14px", background:"#ecfdf5", border:"1px solid #a7f3d0", borderRadius:8, color:"#047857", fontSize:13, fontWeight:700, lineHeight:1.5 }}>
+              1단계: <strong>주소 먼저 검색</strong> 버튼을 눌러 주소를 선택해주세요. 선택하면 시/도와 상세 주소가 자동으로 입력됩니다.
+            </div>
+          )}
           <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-            <div style={{flex:1}}><label style={labelStyle}>시/도</label><input id="input-sido" type="text" value={sido} onChange={e=>setSido(e.target.value)} placeholder="서울" style={inputStyle}/></div>
-            <div style={{flex:1}}><label style={labelStyle}>시/군/구</label><input id="input-sigungu" type="text" value={sigungu} onChange={e=>setSigungu(e.target.value)} placeholder="강남구" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>시/도</label><input id="input-sido" type="text" value={sido} onChange={e=>setSido(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 자동입력" style={{...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>시/군/구</label><input id="input-sigungu" type="text" value={sigungu} onChange={e=>setSigungu(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 자동입력" style={{...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/></div>
           </div>
           <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-            <div style={{flex:1}}><label style={labelStyle}>동/읍/면</label><input id="input-dong" type="text" value={dong} onChange={e=>setDong(e.target.value)} placeholder="논현동" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>동/읍/면</label><input id="input-dong" type="text" value={dong} onChange={e=>setDong(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 자동입력" style={{...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/></div>
             <div style={{flex:1}}><label style={labelStyle}>건물명 {!isFieldExposed("buildingName") && isRealtor && <PrivateTag/>}</label><input type="text" value={buildingName} onChange={e=>setBuildingName(e.target.value)} placeholder="건물명" style={inputStyle}/></div>
           </div>
           <label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && isRealtor && <PrivateTag/>}</label>
-          <input id="input-detailAddr" type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} placeholder="상세주소 입력" style={{...inputStyle, marginBottom:10}}/>
+          <input id="input-detailAddr" type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 상세주소 입력" style={{...inputStyle, marginBottom:10, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/>
 
           {/* 동/호수 (아파트 또는 지식산업센터인 경우) */}
           {(propertyType === "아파트·오피스텔" || subCategory === "지식산업센터") ? (
