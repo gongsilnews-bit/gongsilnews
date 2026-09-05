@@ -438,6 +438,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                 const ownerInfo = row.members || {};
                 const agencyData = Array.isArray(ownerInfo.agencies) ? ownerInfo.agencies[0] : ownerInfo.agencies;
                 const agencyName = agencyData?.name || "";
+                const ownerRole = ownerInfo.role || row.owner_role;
                 const canToggleStatus = true; // 모든 역할에서 광고 ON/OFF 가능
 
                 return (
@@ -513,14 +514,14 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                         {ownerInfo.phone || ownerInfo.cellphone || row.client_phone || ownerPhone || "연락처 미상"}
                       </div>
                       {role === "admin" && (
-                        <div style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, display: "inline-block", background: row.owner_role === 'REALTOR' ? '#dbeafe' : row.owner_role === 'ADMIN' ? '#fce7f3' : '#f3f4f6', color: row.owner_role === 'REALTOR' ? '#1e40af' : row.owner_role === 'ADMIN' ? '#be185d' : '#374151', fontWeight: 600 }}>
-                          {row.owner_role === 'REALTOR' ? (agencyName ? `부동산 (${agencyName})` : '부동산') : row.owner_role === 'ADMIN' ? '관리자' : '일반'}
+                        <div style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, display: "inline-block", background: ownerRole === 'REALTOR' ? '#dbeafe' : ownerRole === 'ADMIN' ? '#fce7f3' : '#f3f4f6', color: ownerRole === 'REALTOR' ? '#1e40af' : ownerRole === 'ADMIN' ? '#be185d' : '#374151', fontWeight: 600 }}>
+                          {ownerRole === 'REALTOR' ? (agencyName ? `부동산 (${agencyName})` : '부동산') : ownerRole === 'ADMIN' ? '관리자' : '일반'}
                         </div>
                       )}
                     </td>
                     <td style={{ padding: "12px 10px", textAlign: "center", verticalAlign: "middle" }}>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
-                        {role === "admin" && row.owner_role === "REALTOR" ? (
+                        {role === "admin" && ownerRole === "REALTOR" ? (
                           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                             <span style={{ height: 30, padding: "0 12px", background: "#f3f4f6", color: "#9ca3af", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
                               🔒 열람불가
