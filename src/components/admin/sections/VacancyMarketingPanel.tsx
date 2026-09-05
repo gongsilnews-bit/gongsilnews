@@ -151,14 +151,14 @@ export default function VacancyMarketingPanel({
       id: "home-interior",
       title: "아파트·내부 인테리어 시뮬레이터 (ARE 1.0)",
       badge: "AI 내부 3D",
-      badgeColor: "#8b5cf6",
+      badgeColor: "#64748b",
       icon: "🛋️",
       desc: "텅 빈 공실이나 노후 실내를 모던, 호텔, 우드, 미니멀 등 최신 감성 인테리어로 3D 리디자인합니다.",
       cta: "내부 인테리어 시작하기",
       url: `/marketing/home-interior/index.html?vacancy_id=${vacancyId}`,
-      gradient: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
-      lightBg: darkMode ? "rgba(139, 92, 246, 0.08)" : "#f5f3ff",
-      borderColor: darkMode ? "rgba(139, 92, 246, 0.25)" : "#ddd6fe",
+      gradient: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
+      lightBg: darkMode ? "rgba(100, 116, 139, 0.08)" : "#f1f5f9",
+      borderColor: darkMode ? "rgba(100, 116, 139, 0.25)" : "#cbd5e1",
     },
     {
       id: "ai-detail",
@@ -246,13 +246,13 @@ export default function VacancyMarketingPanel({
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0, letterSpacing: -0.5 }}>
-                {propTitle} <span style={{ color: "#6366f1" }}>공실마케팅 센터</span>
+                {propTitle} <span style={{ color: darkMode ? "#cbd5e1" : "#475569" }}>공실마케팅 센터</span>
               </h1>
               <span
                 style={{
                   padding: "3px 8px",
-                  background: "#eef2ff",
-                  color: "#4f46e5",
+                  background: darkMode ? "#2c2d31" : "#f1f5f9",
+                  color: darkMode ? "#cbd5e1" : "#475569",
                   borderRadius: 12,
                   fontSize: 11,
                   fontWeight: 800,
@@ -343,7 +343,6 @@ export default function VacancyMarketingPanel({
       {/* ── Section: AI Marketing Tools Grid ── */}
       <div style={{ marginBottom: 36 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-          <span style={{ fontSize: 20 }}>✨</span>
           <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0 }}>AI 마케팅 솔루션 선택</h2>
         </div>
 

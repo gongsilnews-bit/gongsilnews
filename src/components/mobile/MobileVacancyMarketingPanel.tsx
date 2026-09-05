@@ -22,8 +22,8 @@ const marketingTools = [
     icon: "🛋️",
     title: "아파트·내부 인테리어",
     description: "공실 내부를 다양한 인테리어로 바꿔봅니다.",
-    color: "#7c3aed",
-    background: "#f5f3ff",
+    color: "#64748b",
+    background: "#f1f5f9",
   },
   {
     id: "ai-detail",
@@ -102,7 +102,6 @@ export default function MobileVacancyMarketingPanel({ vacancyId, onBack }: Mobil
         </section>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "24px 2px 12px" }}>
-          <span style={{ fontSize: 19 }}>✨</span>
           <h1 style={{ margin: 0, color: "#0f172a", fontSize: 18, fontWeight: 900 }}>AI 마케팅 솔루션</h1>
         </div>
 
