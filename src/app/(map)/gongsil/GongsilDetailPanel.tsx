@@ -9,6 +9,7 @@ import {
   getOptionSvg,
   isApartmentType,
 } from "./gongsilHelpers";
+import { getOnbidCount } from "@/app/actions/agentChat";
 
 interface GongsilDetailPanelProps {
   showDetail: boolean;
@@ -91,6 +92,14 @@ export default function GongsilDetailPanel({
   openGalleryModal,
   isAuctionMode,
 }: GongsilDetailPanelProps) {
+  const [onbidCount, setOnbidCount] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    const selected = activeProperty ? dbVacancies.find((v) => v.id === activeProperty) : null;
+    if (selected?.trade_type !== "경매" && selected?.trade_type !== "공매") return;
+    getOnbidCount().then(setOnbidCount).catch(() => setOnbidCount(null));
+  }, [activeProperty, dbVacancies]);
+
   if (!showDetail || !activeProperty) return null;
 
   const baseProp = dbVacancies.find((v) => v.id === activeProperty);
@@ -549,7 +558,7 @@ export default function GongsilDetailPanel({
                 lineHeight: 1.35,
               }}
             >
-              {isAuctionProperty ? <>로그인 후<br />열람할 수 있습니다</> : <>중개업소 회원만<br />열람할 수 있습니다</>}
+              {isAuctionProperty ? <>회원가입하시면<br />무료 열람</> : <>중개업소 회원만<br />열람할 수 있습니다</>}
             </h3>
 
             {/* 본문 안내 */}
@@ -564,7 +573,10 @@ export default function GongsilDetailPanel({
               }}
             >
               {isAuctionProperty ? (
-                <>로그인한 회원은 경매·공매 매물을 무료로 열람할 수 있습니다.<br />로그인 후 매물 상세정보와 사진을 확인해 주세요.</>
+                <>
+                  매물 최신일자로 업데이트됩니다.<br />
+                  전국 <strong style={{ color: "#dc2626" }}>{onbidCount !== null ? onbidCount.toLocaleString() : "-"}건</strong> 경매 물건 ({String(new Date().getFullYear()).slice(-2)}년{new Date().getMonth() + 1}월{new Date().getDate()}일)
+                </>
               ) : (
                 <>부동산 대표님이시라면 <strong>100% 무료 중개업소 등록</strong> 후 실매물을 즉시 열람하실 수 있습니다.</>
               )}
@@ -598,7 +610,7 @@ export default function GongsilDetailPanel({
                   boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
                 }}
               >
-                {isAuctionProperty ? "로그인 후 무료로 경매·공매 매물 확인하기 →" : "✨ 중개업소 무료 가입하기 →"}
+                {isAuctionProperty ? "무료 회원가입하기" : "✨ 중개업소 무료 가입하기 →"}
               </button>
 
               {!currentUser && !isAuctionProperty && (

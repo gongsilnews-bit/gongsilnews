@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import { formatAmount } from "./page";
 import { getAuctionInfo, getMaskedAddress, getCleanAddrText } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getOnbidCount } from "@/app/actions/agentChat";
 
 interface GongsilMobileDetailPanelProps {
   selectedVacancy: any;
@@ -97,8 +98,15 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
   formatPrice,
   showCommission,
 }) => {
+  const [onbidCount, setOnbidCount] = React.useState<number | null>(null);
   const isMyProperty = currentUser && selectedVacancy && selectedVacancy.owner_id === currentUser.id;
   const isAuctionProperty = selectedVacancy.trade_type === '경매' || selectedVacancy.trade_type === '공매';
+
+  React.useEffect(() => {
+    if (!isAuctionProperty) return;
+    getOnbidCount().then(setOnbidCount).catch(() => setOnbidCount(null));
+  }, [isAuctionProperty]);
+
   const detailMasked = isAuctionProperty
     ? userLevel < 1
     : selectedVacancy.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
@@ -165,7 +173,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
               lineHeight: 1.35,
             }}
           >
-            {isAuctionProperty ? <>로그인 후<br />무료로 열람할 수 있습니다</> : <>중개업소 회원만<br />열람할 수 있습니다</>}
+            {isAuctionProperty ? <>회원가입하시면<br />무료 열람</> : <>중개업소 회원만<br />열람할 수 있습니다</>}
           </h3>
 
           {/* 본문 안내 */}
@@ -180,7 +188,10 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
             }}
           >
             {isAuctionProperty ? (
-              <>로그인한 회원은 경매·공매 매물을 <strong>무료로 열람</strong>할 수 있습니다.<br />로그인 후 매물 상세정보와 사진을 확인해 주세요.</>
+              <>
+                매물 최신일자로 업데이트됩니다.<br />
+                전국 <strong style={{ color: "#dc2626" }}>{onbidCount !== null ? onbidCount.toLocaleString() : "-"}건</strong> 경매 물건 ({String(new Date().getFullYear()).slice(-2)}년{new Date().getMonth() + 1}월{new Date().getDate()}일)
+              </>
             ) : (
               <>부동산 대표님이시라면 <strong>100% 무료 중개업소 등록</strong> 후 실매물을 즉시 열람하실 수 있습니다.</>
             )}
@@ -214,7 +225,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
               }}
             >
-              {isAuctionProperty ? "로그인 후 무료로 경매·공매 매물 확인하기 →" : "✨ 중개업소 무료 가입하기 →"}
+              {isAuctionProperty ? "무료 회원가입하기" : "✨ 중개업소 무료 가입하기 →"}
             </button>
 
             {!currentUser && !isAuctionProperty && (
