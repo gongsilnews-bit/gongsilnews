@@ -601,7 +601,15 @@ function MobileGongsilContent() {
               ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
               : [],
           }));
-          setVacancies(withImages);
+          if (filters.locationSearchType === "filter") {
+            setVacancies(withImages);
+          } else {
+            setVacancies((prev) => {
+              const nextById = new Map(prev.map((item) => [String(item.id), item]));
+              withImages.forEach((item: any) => nextById.set(String(item.id), item));
+              return Array.from(nextById.values());
+            });
+          }
 
           // URL에 id 파라미터가 있는 경우의 다이렉트 디테일 조회 지원
           if (typeof window !== "undefined") {

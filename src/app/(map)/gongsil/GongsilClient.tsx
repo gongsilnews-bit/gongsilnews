@@ -540,14 +540,12 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
               ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
               : [],
           }));
-          // 현재 상세보기 중인 물건이 새 데이터에 없으면 보존 (URL 파라미터 진입 시 깜빡임 방지)
+          // Bbox 조회 결과는 교체하지 않고 기존 캐시와 병합한다.
+          // 상세주소 비공개 매물은 대표 좌표가 실제 좌표와 다를 수 있어, 줌인 시 재조회 결과에서 누락될 수 있다.
           setDbVacancies((prev) => {
-            const activeId = activeProperty ? String(activeProperty) : null;
-            const activeItem = activeId ? prev.find(v => String(v.id) === activeId) : null;
-            if (activeItem && !withImages.some((v: any) => String(v.id) === activeId)) {
-              return [...withImages, activeItem];
-            }
-            return withImages;
+            const nextById = new Map(prev.map((item) => [String(item.id), item]));
+            withImages.forEach((item: any) => nextById.set(String(item.id), item));
+            return Array.from(nextById.values());
           });
         }
       } catch (err) {
