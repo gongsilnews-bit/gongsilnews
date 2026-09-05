@@ -821,6 +821,9 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         if (activeCategory === "villa" && activePills.includes("단독/다가구")) {
           if (v.sub_category === "상가주택") return true;
         }
+        if (activeCategory === "one" && activePills.includes("원룸")) {
+          if (["원룸", "원룸/투룸", "원룸·투룸"].includes(v.sub_category) || (v.property_type === "원룸·투룸(풀옵션)" && !v.sub_category)) return true;
+        }
         return activePills.includes(v.sub_category);
       });
     }

@@ -165,7 +165,7 @@ export function filterVacanciesList(vacancies: any[], filters: FilterState): any
 
           // ③ 원룸·투룸(풀옵션)
           if (pill === "원룸") {
-            return v.sub_category === "원룸" || (v.property_type === "원룸·투룸(풀옵션)" && (!v.sub_category || v.sub_category === "원룸"));
+            return v.sub_category === "원룸" || v.sub_category === "원룸/투룸" || v.sub_category === "원룸·투룸" || (v.property_type === "원룸·투룸(풀옵션)" && !v.sub_category);
           }
           if (pill === "1.5룸") {
             return v.sub_category === "1.5룸";
