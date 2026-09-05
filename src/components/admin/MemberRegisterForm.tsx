@@ -430,6 +430,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     setLoading(true);
 
     try {
+      const wasApproved = agencyData.status === "APPROVED";
       let memberId = editMemberId;
 
       if (!editMemberId) {
@@ -611,7 +612,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
 
       if (!isAdmin && (formData.role === "부동산회원" || agencySaved)) {
         if (finalStatus === "APPROVED") {
-          alert("🎉 정보가 저장되었으며, 서류 검증이 완료되어 즉시 [정상승인] 처리되었습니다!");
+          alert(wasApproved
+            ? "✅ 정보가 저장되었습니다. 부동산회원 승인 상태가 유지됩니다."
+            : "🎉 정보가 저장되었으며, 서류 검증이 완료되어 즉시 [정상승인] 처리되었습니다!");
         } else {
           alert("📋 부동산회원 정보가 안전하게 접수되었습니다!\n관리자 검토 후 신속히 승인해 드립니다. ✨");
         }

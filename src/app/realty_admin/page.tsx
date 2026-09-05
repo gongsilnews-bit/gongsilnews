@@ -6,7 +6,7 @@ import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconBuilding, IconArticle, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage } from "@/components/admin/sections/AdminIcons";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { getVacancies } from "@/app/actions/vacancy";
-import { normalizePendingRealtorRole } from "@/app/admin/actions";
+import { adminApproveRealtorApplication, normalizePendingRealtorRole } from "@/app/admin/actions";
 import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
 
 /* ── Lazy-loaded 섹션 ── */
@@ -122,8 +122,10 @@ function RealtyAdminContent() {
       const { data: agencyList } = await supabase.from("agencies").select("status, biz_cert_url, reg_cert_url, reject_reason").eq("owner_id", member.id).limit(1);
       const agencyData = agencyList && agencyList.length > 0 ? agencyList[0] : null;
       if (agencyData && agencyData.status) {
-        const effectiveRole = agencyData.status === "APPROVED" ? member.role : "USER";
-        if (member.role === "REALTOR" && agencyData.status !== "APPROVED") {
+        const effectiveRole = agencyData.status === "APPROVED" ? "REALTOR" : "USER";
+        if (agencyData.status === "APPROVED" && member.role !== "REALTOR") {
+          await adminApproveRealtorApplication(member.id);
+        } else if (member.role === "REALTOR" && agencyData.status !== "APPROVED") {
           await normalizePendingRealtorRole(member.id, agencyData.status);
         }
         setUserRole(effectiveRole);
