@@ -113,6 +113,7 @@ function MobileVacancyWrite() {
   const [sido, setSido] = useState("");
   const [sigungu, setSigungu] = useState("");
   const [dong, setDong] = useState("");
+  const [addressSearchCompleted, setAddressSearchCompleted] = useState(false);
   const [buildingName, setBuildingName] = useState("");
   const [detailAddr, setDetailAddr] = useState("");
   const [aptDong, setAptDong] = useState("");
