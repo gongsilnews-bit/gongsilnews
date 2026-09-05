@@ -10,7 +10,7 @@ import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/uti
 import AuthModal from "@/components/AuthModal";
 import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
 import MobileFilterBar from "./MobileFilterBar";
-import { useVacancyFilters } from "./filters/useVacancyFilters";
+import { initialFilterState, useVacancyFilters } from "./filters/useVacancyFilters";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
 import { getAuctionInfo, getJitteredCoords, getMaskedAddress, getCleanAddrText, getMarkerDimensions } from "@/app/(map)/gongsil/gongsilHelpers";
 import { GongsilMobileDetailPanel } from "./GongsilMobileDetailPanel";
@@ -171,6 +171,15 @@ function MobileGongsilContent() {
 
   // 필터 State 및 필터링 로직 (Hook으로 분리)
   const { filters, filteredVacancies, updateFilter, activeFilterCount, resetFilters, setFilters } = useVacancyFilters(vacancies);
+
+  const AUCTION_PROPERTY_TYPES = ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"];
+
+  // 경매 모드에서는 저장된 이전 필터와 관계없이 처음부터 전체 자산유형을 보여준다.
+  useEffect(() => {
+    if (activeMode === "경매") {
+      setFilters({ ...initialFilterState, propertyTypes: AUCTION_PROPERTY_TYPES });
+    }
+  }, [activeMode, setFilters]);
 
   // 마지막 검색 조건 및 지도 상태 저장 헬퍼
   const saveLastSearchState = (currFilters: any, currMode: string, user: any) => {
@@ -1138,7 +1147,7 @@ function MobileGongsilContent() {
           {mapLoaded && zoomLevel >= 9 && (
             <div style={{
               position: "absolute",
-              top: "50%",
+              top: "40%",
               left: "50%",
               transform: "translate(-50%, -50%)",
               zIndex: 100,
@@ -1189,8 +1198,8 @@ function MobileGongsilContent() {
               <div style={{
                 background: "rgba(255, 255, 255, 0.85)",
                 backdropFilter: "blur(8px)",
-                borderRadius: "24px",
-                padding: "13px 20px",
+                borderRadius: "26px",
+                padding: "15px 22px",
                 boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
                 border: "1px solid rgba(255, 255, 255, 0.5)",
                 display: "flex",
@@ -1199,10 +1208,10 @@ function MobileGongsilContent() {
                 gap: 11,
                 whiteSpace: "nowrap"
               }}>
-                <span style={{ color: "#334155", fontSize: 15, fontWeight: 800 }}>매물을 불러오고 있습니다</span>
+                <span style={{ color: "#334155", fontSize: 16, fontWeight: 800 }}>매물을 불러오고 있습니다</span>
                 <span style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
                   {[0, 1, 2].map((index) => (
-                    <span key={index} style={{ width: 7, height: 7, borderRadius: "50%", background: "#2563eb", animation: `mobileVacancyLoadingDot 1s ease-in-out ${index * 0.15}s infinite` }} />
+                    <span key={index} style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563eb", animation: `mobileVacancyLoadingDot 1s ease-in-out ${index * 0.15}s infinite` }} />
                   ))}
                 </span>
               </div>

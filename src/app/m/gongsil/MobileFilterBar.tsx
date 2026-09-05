@@ -93,6 +93,30 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
 
+  const openFullFilter = () => {
+    if (fullFilterOpen) return;
+    window.history.pushState({ ...(window.history.state || {}), mobileFilter: true }, "", window.location.href);
+    setFullFilterOpen(true);
+  };
+
+  const closeFullFilter = () => {
+    if (window.history.state?.mobileFilter) {
+      window.history.back();
+    } else {
+      setFullFilterOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFilterBack = () => {
+      if (fullFilterOpen && !window.history.state?.mobileFilter) {
+        setFullFilterOpen(false);
+      }
+    };
+    window.addEventListener("popstate", handleFilterBack);
+    return () => window.removeEventListener("popstate", handleFilterBack);
+  }, [fullFilterOpen]);
+
   // 🚀 PC GongsilClient.tsx 기준 100% 동일 대분류 & 소분류(알약) 구조
   const PROPERTY_TYPES = activeMode === "경매" ? [
     { group: "경·공매 자산유형", items: ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"] }
@@ -363,7 +387,7 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
     <>
       <div style={{ width: "100%", height: "46px", background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", position: "relative", zIndex: 50 }}>
         {/* 전체 필터 아이콘 버튼 */}
-        <button onClick={() => setFullFilterOpen(true)} style={{ flexShrink: 0, width: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", position: "relative" }}>
+        <button onClick={openFullFilter} style={{ flexShrink: 0, width: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", position: "relative" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/><circle cx="16" cy="12" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/><circle cx="10" cy="18" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/></svg>
         </button>
         <div style={{ width: 1, height: 20, background: "#e5e7eb", flexShrink: 0 }} />
@@ -468,7 +492,7 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
 
           {/* 공통 상세필터 버튼 */}
           <button 
-            onClick={() => setFullFilterOpen(true)} 
+            onClick={openFullFilter}
             style={{
               ...pillStyle(fullFilterOpen || hasActiveFilters),
               backgroundColor: hasActiveFilters ? "#eef4ff" : "#fff",
@@ -520,7 +544,7 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
             <span style={{ fontSize: "17px", fontWeight: 800 }}>
               {activeMode === "경매" ? "법원 경·공매 상세 필터" : "공실열람 상세필터"}
             </span>
-            <button onClick={() => { setTempFilters(filters); setFullFilterOpen(false); }} style={{ background: "none", border: "none", fontSize: "22px", color: "#6b7280", cursor: "pointer" }}>✕</button>
+            <button onClick={() => { setTempFilters(filters); closeFullFilter(); }} style={{ background: "none", border: "none", fontSize: "22px", color: "#6b7280", cursor: "pointer" }}>✕</button>
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 100px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>
@@ -714,7 +738,7 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
                 ...tempFilters,
                 locationSearchType: 'filter'
               }); 
-              setFullFilterOpen(false); 
+              closeFullFilter();
               if (onShowList) onShowList("filter"); 
             }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>
               {tempFilteredCount}개 {activeMode === "경매" ? "경·공매 매물" : "공실 매물"} 보기
