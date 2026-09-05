@@ -1008,6 +1008,7 @@ function MobileGongsilContent() {
         .skeleton{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
         @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
         .v-card:active{background:#f9fafb;}
+        @keyframes mobileVacancyLoadingDot { 0%,60%,100% { transform: translateY(0); opacity: 0.45; } 30% { transform: translateY(-5px); opacity: 1; } }
         @keyframes pulseGlow {
           0% { transform: translate(-50%, -50%) scale(0.96); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
           50% { transform: translate(-50%, -50%) scale(1.02); box-shadow: 0 15px 35px rgba(96, 165, 250, 0.25); }
@@ -1175,31 +1176,35 @@ function MobileGongsilContent() {
             </div>
           )}
 
-          {/* [대표님 지침] 실시간 Supabase API 갱신 Pearl Loader 스피너 */}
+          {/* 실시간 매물 갱신 로딩 */}
           {isFetchingVacancies && (
             <div style={{
               position: "absolute",
-              top: "30px",
+              top: "50%",
               left: "50%",
-              transform: "translateX(-50%)",
+              transform: "translate(-50%, -50%)",
               zIndex: 100,
               pointerEvents: "none"
             }}>
               <div style={{
                 background: "rgba(255, 255, 255, 0.85)",
                 backdropFilter: "blur(8px)",
-                borderRadius: "20px",
-                padding: "8px 12px",
+                borderRadius: "24px",
+                padding: "13px 20px",
                 boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
                 border: "1px solid rgba(255, 255, 255, 0.5)",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center"
+                justifyContent: "center",
+                gap: 11,
+                whiteSpace: "nowrap"
               }}>
-                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" strokeWidth="3" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="10" stroke="rgba(26,115,232,0.15)" strokeWidth="3" />
-                  <path d="M12 2a10 10 0 0 1 10 10" />
-                </svg>
+                <span style={{ color: "#334155", fontSize: 15, fontWeight: 800 }}>매물을 불러오고 있습니다</span>
+                <span style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
+                  {[0, 1, 2].map((index) => (
+                    <span key={index} style={{ width: 7, height: 7, borderRadius: "50%", background: "#2563eb", animation: `mobileVacancyLoadingDot 1s ease-in-out ${index * 0.15}s infinite` }} />
+                  ))}
+                </span>
               </div>
             </div>
           )}
