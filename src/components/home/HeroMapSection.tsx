@@ -547,11 +547,6 @@ export default function HeroMapSection() {
                         </span>
                       )}
                       <span style={{ fontSize: 13, color: "#aaa" }}>{new Date(item.created_at).toLocaleDateString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\s/g, '')}</span>
-                      {isMasked && (
-                        <span onClick={(e) => { e.stopPropagation(); window.location.href = "/login?returnTo=" + encodeURIComponent(window.location.pathname + window.location.search); }} style={{ fontSize: 11, color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: 4, cursor: "pointer" }}>
-                          {item.trade_type === '경매' || item.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 중개업소 회원 전용'}
-                        </span>
-                      )}
                     </div>
                   </div>
                   {photoUrl && (
