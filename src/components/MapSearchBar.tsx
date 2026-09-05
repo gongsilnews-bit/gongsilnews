@@ -177,6 +177,22 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
     setActivePanel(null);
   };
 
+  const moveToCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("현재 위치 기능을 사용할 수 없습니다.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        onSearchCoord(position.coords.latitude, position.coords.longitude, 5);
+        setActivePanel(null);
+      },
+      () => alert("현재 위치를 확인할 수 없습니다. 브라우저의 위치 권한을 허용해주세요."),
+      { enableHighAccuracy: true }
+    );
+  };
+
   const [position, setPosition] = useState({ x: 20, y: 15 });
   const [hasBeenDragged, setHasBeenDragged] = useState(false);
   const isDragging = useRef(false);
@@ -335,28 +351,31 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
 
       {/* 지도 검색 입력 패널 */}
       {activePanel === "search" && (
-        <div ref={searchRef} style={{ position: "absolute", top: 45, left: 0, zIndex: 101, background: "#fff", padding: 15, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", width: 320 }}>
-          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+        <div ref={searchRef} style={{ position: "absolute", top: 45, left: 0, zIndex: 101, background: "#fff", padding: 18, borderRadius: 8, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", width: 460 }}>
+          <div style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "stretch" }}>
             <input 
               type="text" 
               placeholder="동, 읍, 면 또는 랜드마크 검색" 
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && executeMapKeywordSearch()}
-              style={{ flex: 1, padding: 8, border: "1px solid #ccc", borderRadius: 4, outline: "none", fontSize: 13 }} 
+              style={{ flex: 1, minWidth: 0, height: 48, padding: "0 14px", border: "1px solid #b8c0cc", borderRadius: 6, outline: "none", fontSize: 16, color: "#111827" }}
             />
-            <button onClick={executeMapKeywordSearch} style={{ padding: "8px 12px", background: themeColor, color: "#fff", border: "none", borderRadius: 4, cursor: "pointer", fontWeight: "bold", fontSize: 13 }}>
+            <button onClick={moveToCurrentLocation} style={{ height: 48, padding: "0 16px", background: "#1a4282", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: "bold", fontSize: 15, whiteSpace: "nowrap" }}>
+              내 지역
+            </button>
+            <button onClick={executeMapKeywordSearch} style={{ height: 48, padding: "0 16px", background: themeColor, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: "bold", fontSize: 15, whiteSpace: "nowrap" }}>
               이동
             </button>
           </div>
-          <div style={{ maxHeight: 200, overflowY: "auto", fontSize: 13, color: "#555" }}>
+          <div style={{ maxHeight: 220, overflowY: "auto", fontSize: 14, color: "#555" }}>
             {isSearching ? (
               <div style={{ padding: 10 }}>검색 중...</div>
             ) : searchResults.length > 0 ? (
               searchResults.map((item, idx) => (
                 <div key={idx} style={{ padding: 10, borderBottom: "1px solid #eee", cursor: "pointer" }} onClick={() => onSelectSearchResult(item)}>
                   <div style={{ fontWeight: "bold", color: "#333", marginBottom: 2 }}>{item.place_name || item.address_name}</div>
-                  <div style={{ fontSize: 12, color: "#888" }}>{item.address_name}</div>
+                  <div style={{ fontSize: 14, color: "#888" }}>{item.address_name}</div>
                 </div>
               ))
             ) : keyword && !isSearching ? (
