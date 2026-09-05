@@ -9,6 +9,7 @@ import BannerSlot from "./BannerSlot";
 import HeaderTextBanner from "./HeaderTextBanner";
 import { createClient } from "@/utils/supabase/client";
 import { createPortal } from "react-dom";
+import { adminApproveRealtorApplication } from "@/app/admin/actions";
 
 
 export default function Header({ topFullBanners, headerTextBanners }: { topFullBanners?: any[], headerTextBanners?: any[] }) {
@@ -153,11 +154,14 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
 
           if (agencyData) {
             setAgencyStatus(agencyData.status || '');
+            if (agencyData.status === 'APPROVED' && data.role !== 'REALTOR') {
+              await adminApproveRealtorApplication(user.id);
+            }
           }
 
-          const effectiveRole = data.role === 'REALTOR' && agencyData?.status !== 'APPROVED'
-            ? 'USER'
-            : data.role;
+          const effectiveRole = agencyData?.status === 'APPROVED'
+            ? 'REALTOR'
+            : data.role === 'REALTOR' ? 'USER' : data.role;
           setUserRole(effectiveRole);
 
           if (data.signup_completed === false) {
