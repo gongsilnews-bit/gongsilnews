@@ -149,6 +149,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [sigungu, setSigungu] = useState("");
   const [dong, setDong] = useState("");
   const [detailAddr, setDetailAddr] = useState("");
+  const [addressSearchCompleted, setAddressSearchCompleted] = useState(false);
   const [buildingName, setBuildingName] = useState("");
   const [aptDong, setAptDong] = useState("");
   const [hosu, setHosu] = useState("");
@@ -344,7 +345,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.supply_m2) { setSupplyM2(String(editData.supply_m2)); setSupplyPy((Number(editData.supply_m2) * 0.3025).toFixed(1)); }
     if (editData.exclusive_m2) { setExclusiveM2(String(editData.exclusive_m2)); setExclusivePy((Number(editData.exclusive_m2) * 0.3025).toFixed(1)); }
     if (editData.metadata?.land_share_m2) { setLandShareM2(String(editData.metadata.land_share_m2)); setLandSharePy((Number(editData.metadata.land_share_m2) * 0.3025).toFixed(1)); }
-    if (editData.sido) setSido(editData.sido);
+    if (editData.sido) {
+      setSido(editData.sido);
+      setAddressSearchCompleted(true);
+    }
     if (editData.sigungu) setSigungu(editData.sigungu);
     if (editData.dong) setDong(editData.dong);
     if (editData.metadata?.main_usage) setMainUsage(editData.metadata.main_usage);
@@ -1214,6 +1218,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                         setSido(parsedSido);
                         setSigungu(parsedSigungu);
                         setDong(parsedDong);
+                        setAddressSearchCompleted(true);
                         
                         let remainingAddr = data.roadAddress || data.jibunAddress || "";
                         const prefixes = [parsedSido, parsedSigungu, parsedDong].filter(Boolean);
@@ -1266,29 +1271,35 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   };
                   document.head.appendChild(script);
                 }
-              }} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                🔍 주소 검색
+              }} style={{ height: 42, padding: "0 18px", background: "#10b981", color: "#fff", border: "none", borderRadius: 7, fontSize: 15, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 2px 5px rgba(16,185,129,0.25)" }}>
+                🔍 주소 먼저 검색
               </button>
             </div>
+
+            {!addressSearchCompleted && (
+              <div style={{ marginBottom: 16, padding: "13px 16px", background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 8, color: "#047857", fontSize: 14, fontWeight: 700 }}>
+                1단계: 위의 <strong>주소 먼저 검색</strong> 버튼을 눌러 주소를 선택해주세요. 선택하면 시/도와 상세 주소가 자동으로 입력됩니다.
+              </div>
+            )}
 
             <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>시/도 {reqMark}</label>
-                <input type="text" placeholder="예: 서울특별시" value={sido} onChange={(e) => setSido(e.target.value)} style={inputStyle} />
+                <input type="text" placeholder="주소검색 후 자동입력" value={sido} onChange={(e) => setSido(e.target.value)} disabled={!addressSearchCompleted} style={{ ...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed" }} />
               </div>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>시/군/구 {reqMark}</label>
-                <input type="text" placeholder="예: 강남구" value={sigungu} onChange={(e) => setSigungu(e.target.value)} style={inputStyle} />
+                <input type="text" placeholder="주소검색 후 자동입력" value={sigungu} onChange={(e) => setSigungu(e.target.value)} disabled={!addressSearchCompleted} style={{ ...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed" }} />
               </div>
             </div>
             <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>읍/면/동/리 {reqMark}</label>
-                <input type="text" placeholder="예: 논현동" value={dong} onChange={(e) => setDong(e.target.value)} style={inputStyle} />
+                <input type="text" placeholder="주소검색 후 자동입력" value={dong} onChange={(e) => setDong(e.target.value)} disabled={!addressSearchCompleted} style={{ ...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed" }} />
               </div>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>나머지 주소 {!isFieldExposed("detailAddr") && userRole !== "user" && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
-                <input type="text" placeholder="예: 논현로115길 31" value={detailAddr} onChange={(e) => setDetailAddr(e.target.value)} style={inputStyle} />
+                <input type="text" placeholder="주소검색 후 상세주소 입력" value={detailAddr} onChange={(e) => setDetailAddr(e.target.value)} disabled={!addressSearchCompleted} style={{ ...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed" }} />
               </div>
             </div>
             <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
