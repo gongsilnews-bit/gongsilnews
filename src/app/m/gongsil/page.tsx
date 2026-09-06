@@ -1447,15 +1447,7 @@ function MobileGongsilContent() {
         {selectedVacancy && (
           <GongsilMobileDetailPanel
             selectedVacancy={selectedVacancy}
-            isDirectView={isDirectView}
             goBack={goBack}
-            isBookmarked={isBookmarked}
-            toggleBookmark={toggleBookmark}
-            showShareDropdown={showShareDropdown}
-            setShowShareDropdown={setShowShareDropdown}
-            shareDropdownRef={shareDropdownRef}
-            handleKakaoShare={handleKakaoShare}
-            handleCopyUrl={handleCopyUrl}
             detailScrollRef={detailScrollRef}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
@@ -1465,8 +1457,6 @@ function MobileGongsilContent() {
             openGalleryFullscreen={openGalleryFullscreen}
             currentUser={currentUser}
             userLevel={userLevel}
-            setIsAuthModalOpen={setIsAuthModalOpen}
-            activeMode={activeMode}
             detailTab={detailTab}
             setDetailTab={setDetailTab}
             activeDetailTab={activeDetailTab}
