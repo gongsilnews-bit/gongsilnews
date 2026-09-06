@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { getVacancies, getVacancyDetail, getVacanciesForMap } from "@/app/actions/vacancy";
+import { getVacancyDetail, getVacanciesForMap } from "@/app/actions/vacancy";
 import { toggleVacancyBookmark, getVacancyBookmarks } from "@/app/actions/bookmark";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
@@ -12,7 +11,7 @@ import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
 import MobileFilterBar from "./MobileFilterBar";
 import { initialFilterState, useVacancyFilters } from "./filters/useVacancyFilters";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
-import { getAuctionInfo, getJitteredCoords, getMaskedAddress, getCleanAddrText, getMarkerDimensions } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getJitteredCoords, getCleanAddrText, getMarkerDimensions } from "@/app/(map)/gongsil/gongsilHelpers";
 import { GongsilMobileDetailPanel } from "./GongsilMobileDetailPanel";
 import { GongsilMobileDrawerList } from "./GongsilMobileDrawerList";
 
@@ -38,25 +37,6 @@ export const formatAmount = (amt: number) => {
     result += (result ? " " : "") + rest + "만";
   }
   return result || "";
-};
-
-// 옵션 아이콘 헬퍼
-const OptionIcon = ({ name }: { name: string }) => {
-  const sz = 24;
-  const str = 1.8;
-  switch (name) {
-    case "에어컨": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="18" height="8" rx="2"/><path d="M7 14v4"/><path d="M17 14v4"/><path d="M12 14v4"/></svg>;
-    case "침대": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>;
-    case "도어락": case "전자도어락": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
-    case "전자렌지": case "전자레인지": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="12" rx="2"/><path d="M17 10h.01"/><path d="M17 14h.01"/><path d="M7 12h5"/></svg>;
-    case "비데": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><path d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z"/><path d="M7 12.5L10 15.5L17 8.5"/></svg>;
-    case "TV": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>;
-    case "옷장": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 2v20"/><path d="M8 12h.01"/><path d="M16 12h.01"/></svg>;
-    case "세탁기": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M8 6h.01"/><path d="M10 6h.01"/></svg>;
-    case "냉장고": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14"/><path d="M9 14v2"/><path d="M9 5v2"/></svg>;
-    case "가스레인지": case "인덕션": return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 10h16"/><circle cx="8" cy="15" r="2"/><circle cx="16" cy="15" r="2"/></svg>;
-    default: return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={str} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
-  }
 };
 
 function formatPrice(v: any): string {
@@ -111,17 +91,8 @@ function MobileGongsilContent() {
       if (params.get("mode") === "gongsil") return "공실";
       if (params.get("mode") === "auction") return "경매";
     }
-    return "경매"; // 🚀 대표님 지침: 모바일 공실열람 접속 시 법원 경·공매가 기본 먼저 활성화!
+    return "공실";
   });
-  const [isAuctionMode, setIsAuctionMode] = useState(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("mode") === "gongsil") return false;
-      if (params.get("mode") === "auction") return true;
-    }
-    return true; // 🚀 법원 경·공매 기본
-  });
-  
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -132,7 +103,7 @@ function MobileGongsilContent() {
 
   // Gallery Fullscreen Modal History management for browser back button support
   useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
+    const handlePopState = () => {
       if (showGalleryFullscreen) {
         setShowGalleryFullscreen(false);
       }
@@ -170,7 +141,7 @@ function MobileGongsilContent() {
   const showCommission = userLevel >= 2;
 
   // 필터 State 및 필터링 로직 (Hook으로 분리)
-  const { filters, filteredVacancies, updateFilter, activeFilterCount, resetFilters, setFilters } = useVacancyFilters(vacancies);
+  const { filters, filteredVacancies, updateFilter, resetFilters, setFilters } = useVacancyFilters(vacancies);
 
   const AUCTION_PROPERTY_TYPES = ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"];
 
@@ -221,12 +192,10 @@ function MobileGongsilContent() {
     const modeParam = searchParams.get("mode");
     if (modeParam === "gongsil") {
       setActiveMode("공실");
-      setIsAuctionMode(false);
       return;
     }
     if (modeParam === "auction") {
       setActiveMode("경매");
-      setIsAuctionMode(true);
       return;
     }
 
@@ -241,7 +210,6 @@ function MobileGongsilContent() {
           }
           if (parsed.activeMode) {
             setActiveMode(parsed.activeMode);
-            setIsAuctionMode(parsed.activeMode === "경매");
             return;
           }
         } catch (e) {
@@ -250,9 +218,8 @@ function MobileGongsilContent() {
       }
     }
 
-    // 기본 모드는 항상 '경매'
-    setActiveMode("경매");
-    setIsAuctionMode(true);
+    // 모드가 지정되지 않은 공실열람 진입은 실시간 공실을 기본으로 한다.
+    setActiveMode("공실");
   }, [currentUser, searchParams]);
 
   // 지도 객체 로드 완료 시 마지막 위치 복구
@@ -306,6 +273,7 @@ function MobileGongsilContent() {
   // 일반 리스트 뷰 상태
   const [showListView, setShowListView] = useState(false);
   const [listViewMode, setListViewMode] = useState<"map" | "filter">("map");
+  const [listVacanciesOverride, setListVacanciesOverride] = useState<any[] | null>(null);
 
   // Swipe gesture states
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -342,7 +310,7 @@ function MobileGongsilContent() {
 
   // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
   const [isDirectView, setIsDirectView] = useState(searchParams.has("id"));
-  const [isEmbedded, setIsEmbedded] = useState(searchParams.get("embed") === "true");
+  const [isEmbedded] = useState(searchParams.get("embed") === "true");
   const [isLocating, setIsLocating] = useState(false);
 
   // 사용자 권한 확인
@@ -793,7 +761,7 @@ function MobileGongsilContent() {
       kakao.maps.event.addListener(clustererRef.current, 'clustered', (clusters: any[]) => {
         clusters.forEach((cluster) => {
           const markers = cluster.getMarkers();
-          const totalCount = markers.reduce((sum, m) => sum + (m.customData ? m.customData.length : 1), 0);
+          const totalCount = markers.reduce((sum: number, m: any) => sum + (m.customData ? m.customData.length : 1), 0);
           const overlay = cluster.getClusterMarker().getContent();
           if (overlay) {
             overlay.innerText = totalCount.toString();
@@ -884,7 +852,8 @@ function MobileGongsilContent() {
       setZoomLevel(map.getLevel());
       updateVisibleCount();
 
-      if (skipGeocodingSyncRef.current) return; // 👈 프로그램에 의한 지도 이동 시 필터 덮어쓰기 방지
+      // 지역 필터 검색 중에는 지도 이동으로 검색 방식을 지도 범위 검색으로 덮어쓰지 않는다.
+      if (skipGeocodingSyncRef.current || filters.locationSearchType === 'filter') return;
 
       // 🚀 [대표님 기획 지침] 지도 드래그 이동 시 중심점 주소를 획득하여 상단 📍 위치 탭 및 필터 행정구역 자동 동기화
       if (geocoderRef.current) {
@@ -936,7 +905,7 @@ function MobileGongsilContent() {
     return () => {
       kakao.maps.event.removeListener(map, "idle", handleMapIdle);
     };
-  }, [filteredVacancies, mapLoaded]);
+  }, [filteredVacancies, mapLoaded, filters.locationSearchType]);
 
   // 상세 조회
   const handleVacancyClick = async (v: any, isDirect: boolean = false) => {
@@ -1051,8 +1020,8 @@ function MobileGongsilContent() {
             <div style={{ display: "flex", width: "100%", background: "#f1f5f9", borderRadius: "12px", padding: "4px" }}>
               <button
                 onClick={() => {
+                  window.history.replaceState({ ...(window.history.state || {}), mode: "gongsil" }, "", "/m/gongsil?mode=gongsil");
                   setActiveMode("공실");
-                  setIsAuctionMode(false);
                   setVacancies([]);
                   setSelectedVacancy(null);
                   setSelectedCluster(null);
@@ -1083,8 +1052,8 @@ function MobileGongsilContent() {
               </button>
               <button
                 onClick={() => {
+                  window.history.replaceState({ ...(window.history.state || {}), mode: "auction" }, "", "/m/gongsil?mode=auction");
                   setActiveMode("경매");
-                  setIsAuctionMode(true);
                   setVacancies([]);
                   setSelectedVacancy(null);
                   setSelectedCluster(null);
@@ -1134,12 +1103,14 @@ function MobileGongsilContent() {
                 }, 1200);
               }
             }}
-            onShowList={(mode) => {
+            onShowList={(mode, items) => {
+              setSelectedVacancy(null);
+              setSelectedCluster(null);
+              setListVacanciesOverride(items || null);
               setListViewMode(mode || "filter");
               window.history.pushState({ panel: "list" }, "");
               setShowListView(true);
             }}
-            kakaoMapRef={kakaoMapRef}
             locLabel={locLabel}
             setLocLabel={setLocLabel}
             activeMode={activeMode}
@@ -1508,7 +1479,6 @@ function MobileGongsilContent() {
             vacancyStackRef={vacancyStackRef}
             handleVacancyClick={handleVacancyClick}
             formatPrice={formatPrice}
-            listScrollRef={listScrollRef}
             showCommission={showCommission}
           />
         )}
@@ -1521,13 +1491,14 @@ function MobileGongsilContent() {
         activeMode={activeMode}
         listViewMode={listViewMode}
         visibleVacancies={visibleVacancies}
-        filteredVacancies={filteredVacancies}
+        filteredVacancies={listVacanciesOverride || filteredVacancies}
         currentUser={currentUser}
         userLevel={userLevel}
         showCommission={showCommission}
         setIsAuthModalOpen={setIsAuthModalOpen}
         handleVacancyClick={handleVacancyClick}
         formatPrice={formatPrice}
+        listScrollRef={listScrollRef}
       />
 
 

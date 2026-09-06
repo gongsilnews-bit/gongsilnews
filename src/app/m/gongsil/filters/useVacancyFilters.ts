@@ -1,40 +1,7 @@
 import { useState, useMemo } from 'react';
+import { FilterState } from '../search/vacancySearch.types';
 
-export interface FilterState {
-  propertyTypes: string[];
-  tradeTypes: string[];
-  keyword: string;
-  priceMin: number | null;
-  priceMax: number | null;
-  areaMin: number | null;
-  areaMax: number | null;
-  yearMin: number | null;
-  yearMax: number | null;
-  floor: string | null;
-  roomCount: number | null;        // 방 개수 (1, 2, 3, 4)
-  bathCount: number | null;        // 욕실 개수 (1, 2, 3)
-  direction: string | null;        // 방향 (남향, 동향 등)
-  unitsMin: number | null;         // 세대수 (50, 100, 300, 500, 1000)
-  maintMax: number | null;         // 관리비 최대금액
-  parking: string | null;          // 주차 (주차가능, 자주식, 기계식 등)
-  options: string[];               // 기타옵션 다중선택
-  ownerRole: string | null;        // 'USER' | 'REALTOR' | null(전체)
-  commissionType: string | null;   // '법정수수료' | '공동수수료' 등
-  themes: string[];                // 테마 키워드 (다중 선택)
-  sido: string | null;             // 시/도 필터
-  sigungu: string | null;          // 시/군/구 필터
-  dong: string | null;             // 읍/면/동 필터
-  locationSearchType?: 'map' | 'filter'; // 검색 유형 (A스타일: map, B스타일: filter)
-
-  // 🔨 [PC 100% 동일] 경·공매 전용 상세 필터
-  auctionAppraisalMin: number | null; // 감정가 최소 (원 단위)
-  auctionAppraisalMax: number | null; // 감정가 최대 (원 단위)
-  auctionBidPriceMin: number | null;  // 최저입찰가 최소 (원 단위)
-  auctionBidPriceMax: number | null;  // 최저입찰가 최대 (원 단위)
-  auctionDiscount: number;            // 할인율 (0: 전체, 10, 20, 30, 50)
-  auctionBidCount: number;            // 유찰 횟수 (0: 전체, 1, 2, 3)
-  auctionStartDate: string;           // 입찰 시작일 ("all", "1w", "2w", "1m", "1_3m", "over_3m")
-}
+export type { FilterState } from '../search/vacancySearch.types';
 
 const ALL_PROPERTY_TYPES = [
   "아파트", "오피스텔", "기타",
@@ -411,7 +378,13 @@ export function useVacancyFilters(initialVacancies: any[]) {
   }, [initialVacancies, filters]);
 
   const updateFilter = (newFilters: Partial<FilterState>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
+    setFilters(prev => {
+      const hasChanges = Object.entries(newFilters).some(([key, value]) => {
+        return prev[key as keyof FilterState] !== value;
+      });
+
+      return hasChanges ? { ...prev, ...newFilters } : prev;
+    });
   };
 
   const resetFilters = () => {

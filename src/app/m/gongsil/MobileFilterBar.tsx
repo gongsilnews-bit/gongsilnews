@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { FilterState, filterVacanciesList } from "./filters/useVacancyFilters";
+import { getVacancySearchPool } from "./search/vacancySearch.utils";
+import { VacancyRecord } from "./search/vacancySearch.types";
 import LocationFilterPanel from "./filters/LocationFilterPanel";
 import PropertyTypeFilterPanel from "./filters/PropertyTypeFilterPanel";
 import TradeTypeFilterPanel from "./filters/TradeTypeFilterPanel";
@@ -26,14 +28,13 @@ import {
 } from "./filters/SubFilterPanels";
 
 interface MobileFilterBarProps {
-  vacancies: any[];
-  allVacancies?: any[];
+  vacancies: VacancyRecord[];
+  allVacancies?: VacancyRecord[];
   filteredCount: number;
   filters: FilterState;
   onFilterChange: (filters: Partial<FilterState>) => void;
   onLocationMove: (lat: number, lng: number, zoom: number) => void;
-  onShowList?: (mode?: "map" | "filter") => void;
-  kakaoMapRef: React.MutableRefObject<any>;
+  onShowList?: (mode?: "map" | "filter", items?: VacancyRecord[]) => void;
   locLabel: string;
   setLocLabel: React.Dispatch<React.SetStateAction<string>>;
   activeMode?: "공실" | "경매";
@@ -89,7 +90,7 @@ const getCategoryOptions = (types: string[]) => {
   return ["시스템에어컨", "세탁기", "냉장고", "도어락", "엘리베이터", "주차가능"];
 };
 
-export default function MobileFilterBar({ vacancies, allVacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, kakaoMapRef, locLabel, setLocLabel, activeMode }: MobileFilterBarProps) {
+export default function MobileFilterBar({ vacancies, allVacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, locLabel, setLocLabel, activeMode }: MobileFilterBarProps) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
 
@@ -191,7 +192,7 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
     if (!filters.sido && !filters.sigungu && !filters.dong) {
       setLocLabel("위치");
     }
-  }, [filters.sido, filters.sigungu, filters.dong]);
+  }, [filters.sido, filters.sigungu, filters.dong, setLocLabel]);
 
   const handleTempFilterChange = (partial: Partial<FilterState>) => {
     setTempFilters(prev => {
@@ -232,7 +233,7 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
     filters.auctionBidPriceMin !== null || filters.auctionBidPriceMax !== null ||
     filters.auctionDiscount > 0 ||
     filters.auctionBidCount > 0 ||
-    (filters.auctionStartDate && filters.auctionStartDate !== "all");
+    filters.auctionStartDate !== "all";
 
   const formatPriceVal = (val: number | null) => {
     if (val === null) return "";
@@ -297,7 +298,8 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
       return `${formatPriceVal(Math.round(filters.auctionAppraisalMin / 10000))}~${formatPriceVal(Math.round(filters.auctionAppraisalMax / 10000))}`;
     }
     if (filters.auctionAppraisalMin !== null) return `${formatPriceVal(Math.round(filters.auctionAppraisalMin / 10000))} 이상`;
-    return `${formatPriceVal(Math.round(filters.auctionAppraisalMax / 10000))} 이하`;
+    if (filters.auctionAppraisalMax !== null) return `${formatPriceVal(Math.round(filters.auctionAppraisalMax / 10000))} 이하`;
+    return "감정가 ▾";
   })();
 
   const auctionBidPriceLabel = (() => {
@@ -306,7 +308,8 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
       return `${formatPriceVal(Math.round(filters.auctionBidPriceMin / 10000))}~${formatPriceVal(Math.round(filters.auctionBidPriceMax / 10000))}`;
     }
     if (filters.auctionBidPriceMin !== null) return `${formatPriceVal(Math.round(filters.auctionBidPriceMin / 10000))} 이상`;
-    return `${formatPriceVal(Math.round(filters.auctionBidPriceMax / 10000))} 이하`;
+    if (filters.auctionBidPriceMax !== null) return `${formatPriceVal(Math.round(filters.auctionBidPriceMax / 10000))} 이하`;
+    return "최저입찰가 ▾";
   })();
 
   const auctionDiscountLabel = filters.auctionDiscount > 0 ? `할인율 ▼${filters.auctionDiscount}%↑` : "할인율 ▾";
@@ -363,6 +366,13 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
     gap: "4px"
   });
 
+  const showFilteredList = (nextFilters: FilterState = filters) => {
+    if (!onShowList) return;
+    const targetPool = getVacancySearchPool(vacancies, allVacancies, nextFilters);
+    const matchingVacancies = filterVacanciesList(targetPool, nextFilters);
+    onShowList("filter", matchingVacancies);
+  };
+
   const renderSheet = (title: string, children: React.ReactNode) => (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 10000, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
       <div onClick={() => setActivePanel(null)} style={{ flex: 1 }} />
@@ -375,7 +385,7 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
           {children}
         </div>
         <div style={{ padding: "12px 20px 24px", borderTop: "1px solid #e5e7eb", background: "#fff" }}>
-          <button onClick={() => { setActivePanel(null); if (onShowList) onShowList("filter"); }} style={{ width: "100%", padding: "14px", background: "#4b89ff", border: "none", borderRadius: "8px", fontSize: "15px", fontWeight: 700, color: "#fff", cursor: "pointer" }}>
+          <button onClick={() => { setActivePanel(null); showFilteredList(); }} style={{ width: "100%", padding: "14px", background: "#4b89ff", border: "none", borderRadius: "8px", fontSize: "15px", fontWeight: 700, color: "#fff", cursor: "pointer" }}>
             {filteredCount}개 {activeMode === "경매" ? "경·공매 매물" : "공실 매물"} 보기
           </button>
         </div>
@@ -416,7 +426,7 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
               <button onClick={() => setActivePanel(activePanel === "auction_bid_count" ? null : "auction_bid_count")} style={pillStyle(activePanel === "auction_bid_count" || filters.auctionBidCount > 0)}>
                 {auctionBidCountLabel}
               </button>
-              <button onClick={() => setActivePanel(activePanel === "auction_start_date" ? null : "auction_start_date")} style={pillStyle(activePanel === "auction_start_date" || (filters.auctionStartDate && filters.auctionStartDate !== "all"))}>
+              <button onClick={() => setActivePanel(activePanel === "auction_start_date" ? null : "auction_start_date")} style={pillStyle(activePanel === "auction_start_date" || filters.auctionStartDate !== "all")}>
                 {auctionStartDateLabel}
               </button>
             </>
@@ -738,8 +748,8 @@ export default function MobileFilterBar({ vacancies, allVacancies, filteredCount
                 ...tempFilters,
                 locationSearchType: 'filter'
               }); 
-              closeFullFilter();
-              if (onShowList) onShowList("filter"); 
+              setFullFilterOpen(false);
+              showFilteredList({ ...tempFilters, locationSearchType: 'filter' });
             }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>
               {tempFilteredCount}개 {activeMode === "경매" ? "경·공매 매물" : "공실 매물"} 보기
             </button>
