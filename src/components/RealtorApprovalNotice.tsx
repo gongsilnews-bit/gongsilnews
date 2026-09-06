@@ -123,8 +123,9 @@ export default function RealtorApprovalNotice() {
               marginBottom: 20, border: "1px solid #bbf7d0"
             }}>
               <p style={{ fontSize: 14, color: "#166534", margin: 0, lineHeight: 1.6, fontWeight: 600 }}>
-                ✅ 공동중개 10건 무료 등록<br/>
-                ✅ 공실뉴스 기사 무료 열람
+                ✅ 공동중개 무료 열람<br/>
+                ✅ 공동중개 3건 및 AI 물건보고서 작성<br/>
+                ✅ 전국 경공매 무료 열람
               </p>
             </div>
 
