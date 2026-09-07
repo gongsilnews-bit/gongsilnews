@@ -16,6 +16,12 @@ export const initialFilterState: FilterState = {
   keyword: "",
   priceMin: null,
   priceMax: null,
+  salePriceMin: null,
+  salePriceMax: null,
+  depositMin: null,
+  depositMax: null,
+  monthlyRentMin: null,
+  monthlyRentMax: null,
   areaMin: null,
   areaMax: null,
   yearMin: null,
@@ -252,12 +258,37 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
       // 2. 거래 방식 (일반 공실)
       if (v.trade_type !== "경매" && !filters.tradeTypes.includes(v.trade_type)) return false;
       
-      // 3. 가격 (만원 단위 / 원 단위 스마트 비교)
-      if (filters.priceMin !== null || filters.priceMax !== null) {
+      // 3. 거래유형별 금액 (만원 단위 / 원 단위 스마트 비교)
+      const toManwon = (value: unknown) => {
+        const numberValue = Number(value || 0);
+        return numberValue > 100000 ? Math.round(numberValue / 10000) : numberValue;
+      };
+      const matchesRange = (value: number, min?: number | null, max?: number | null) => (
+        (min === null || min === undefined || value >= min) &&
+        (max === null || max === undefined || value <= max)
+      );
+
+      const hasTradeSpecificPrice = [
+        filters.salePriceMin, filters.salePriceMax, filters.depositMin,
+        filters.depositMax, filters.monthlyRentMin, filters.monthlyRentMax,
+      ].some(value => value !== null && value !== undefined);
+
+      if (hasTradeSpecificPrice) {
+        const tradeType = v.trade_type || "";
+        const salePrice = toManwon(v.trade_price);
+        const deposit = toManwon(v.deposit ?? v.deposit_price);
+        const monthlyRent = toManwon(v.monthly_rent);
+        const isSaleMatch = tradeType === "매매" && matchesRange(salePrice, filters.salePriceMin, filters.salePriceMax);
+        const isJeonseMatch = tradeType === "전세" && matchesRange(deposit, filters.depositMin, filters.depositMax);
+        const isMonthlyMatch = (tradeType === "월세" || tradeType === "단기") &&
+          matchesRange(deposit, filters.depositMin, filters.depositMax) &&
+          matchesRange(monthlyRent, filters.monthlyRentMin, filters.monthlyRentMax);
+        if (!isSaleMatch && !isJeonseMatch && !isMonthlyMatch) return false;
+      } else if (filters.priceMin !== null || filters.priceMax !== null) {
         const rawPrice = v.deposit != null ? v.deposit : (v.trade_type === '월세' ? v.deposit_price : v.trade_price);
         if (rawPrice == null) return false;
         // DB에 원 단위(예: 300,000,000)로 저장된 경우 만원 단위로 환산
-        const priceInManwon = rawPrice > 100000 ? Math.round(rawPrice / 10000) : rawPrice;
+        const priceInManwon = toManwon(rawPrice);
         if (filters.priceMin !== null && priceInManwon < filters.priceMin) return false;
         if (filters.priceMax !== null && priceInManwon > filters.priceMax) return false;
       }
@@ -453,6 +484,7 @@ export function useVacancyFilters(initialVacancies: VacancyLike[]) {
     if (filters.propertyTypes.length > 0) count++;
     if (filters.tradeTypes.length > 0) count++;
     if (filters.priceMin !== null || filters.priceMax !== null) count++;
+    if (filters.salePriceMin !== null || filters.salePriceMax !== null || filters.depositMin !== null || filters.depositMax !== null || filters.monthlyRentMin !== null || filters.monthlyRentMax !== null) count++;
     if (filters.areaMin !== null || filters.areaMax !== null) count++;
     if (filters.yearMin !== null || filters.yearMax !== null) count++;
     if (filters.floor !== null) count++;

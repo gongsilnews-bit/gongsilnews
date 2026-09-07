@@ -1,19 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { FilterState } from './useVacancyFilters';
 
 interface Props {
   filters: FilterState;
   onFilterChange: (filters: Partial<FilterState>) => void;
 }
-
-const PRESETS = [
-  { label: '10평', val: 10 },
-  { label: '20평', val: 20 },
-  { label: '30평', val: 30 },
-  { label: '40평', val: 40 },
-  { label: '50평', val: 50 },
-  { label: '60평~', val: 60 }
-];
 
 export default function AreaFilterPanel({ filters, onFilterChange }: Props) {
   const minVal = filters.areaMin ?? 0;
@@ -97,6 +88,31 @@ export default function AreaFilterPanel({ filters, onFilterChange }: Props) {
         <span>75평</span>
         <span>최대(100평+)</span>
       </div>
+
+      <style>{`
+        .dual-slider-thumb-left::-webkit-slider-thumb,
+        .dual-slider-thumb-right::-webkit-slider-thumb {
+          pointer-events: auto !important;
+          -webkit-appearance: none;
+          appearance: none;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #fff;
+          border: 2px solid #1a73e8;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+          cursor: pointer;
+        }
+        .dual-slider-thumb-left::-moz-range-thumb,
+        .dual-slider-thumb-right::-moz-range-thumb {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #fff;
+          border: 2px solid #1a73e8;
+          cursor: pointer;
+        }
+      `}</style>
 
       {/* 조건삭제 */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "24px" }}>

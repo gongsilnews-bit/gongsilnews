@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { FilterState } from './useVacancyFilters';
 
 interface Props {
@@ -6,154 +6,38 @@ interface Props {
   onFilterChange: (filters: Partial<FilterState>) => void;
 }
 
-const PRESETS = [
-  { label: '1천', val: 1000 }, { label: '3천', val: 3000 }, { label: '5천', val: 5000 },
-  { label: '1억', val: 10000 }, { label: '2억', val: 20000 }, { label: '3억', val: 30000 },
-  { label: '4억', val: 40000 }, { label: '5억', val: 50000 }, { label: '6억', val: 60000 },
-  { label: '7억', val: 70000 }, { label: '8억', val: 80000 }, { label: '9억', val: 90000 },
-  { label: '10억', val: 100000 }, { label: '12억', val: 120000 }, { label: '15억', val: 150000 },
-  { label: '20억', val: 200000 }, { label: '30억', val: 300000 }, { label: '30억~', val: 300001 }
-];
-
 export default function PriceFilterPanel({ filters, onFilterChange }: Props) {
-  const minVal = filters.priceMin ?? 0;
-  const maxVal = filters.priceMax ?? 100000; // 10억
+  const tradeTypes = filters.tradeTypes.filter(type => ["매매", "전세", "월세", "단기"].includes(type));
 
-  const formatPrice = (val: number): string => {
-    if (val === 0) return "최소";
-    if (val >= 100000) return "최대";
-    const uk = Math.floor(val / 10000);
-    const man = val % 10000;
-    if (uk > 0 && man > 0) {
-      return `${uk}억 ${man.toLocaleString()}만`;
-    }
-    if (uk > 0) {
-      return `${uk}억`;
-    }
-    return `${man.toLocaleString()}만`;
+  const range = (label: string, minKey: keyof FilterState, maxKey: keyof FilterState, max: number) => {
+    const min = Number(filters[minKey] ?? 0);
+    const maxValue = Number(filters[maxKey] ?? max);
+    const step = max === 10000 ? 500 : 5000;
+    const minPercent = (min / max) * 100;
+    const maxPercent = (maxValue / max) * 100;
+    const setMin = (value: number) => onFilterChange({ [minKey]: value <= 0 ? null : Math.min(value, maxValue - step) });
+    const setMax = (value: number) => onFilterChange({ [maxKey]: value >= max ? null : Math.max(value, min + step) });
+    return <div style={{ padding: "14px 0", borderBottom: "1px solid #f3f4f6" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <div style={{ fontSize: 15, fontWeight: 800 }}>{label}</div>
+        <div style={{ color: "#1a4282", fontSize: 13, fontWeight: 800 }}>{min === 0 && maxValue >= max ? "전체" : `${min.toLocaleString()}만 ~ ${maxValue >= max ? "최대" : `${maxValue.toLocaleString()}만`}`}</div>
+      </div>
+      <div style={{ position: "relative", height: 38, display: "flex", alignItems: "center" }}>
+        <div style={{ position: "absolute", left: 0, right: 0, height: 5, background: "#e5e7eb", borderRadius: 3 }} />
+        <div style={{ position: "absolute", left: `${minPercent}%`, width: `${Math.max(0, maxPercent - minPercent)}%`, height: 5, background: "#1a4282", borderRadius: 3 }} />
+        <input type="range" min={0} max={max} step={step} value={min} onChange={e => setMin(Number(e.target.value))} style={{ position: "absolute", width: "100%", pointerEvents: "none", WebkitAppearance: "none", appearance: "none", background: "none", margin: 0, zIndex: 3 }} className="mobile-price-min" />
+        <input type="range" min={0} max={max} step={step} value={maxValue} onChange={e => setMax(Number(e.target.value))} style={{ position: "absolute", width: "100%", pointerEvents: "none", WebkitAppearance: "none", appearance: "none", background: "none", margin: 0, zIndex: 4 }} className="mobile-price-max" />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b", fontWeight: 600 }}><span>최소</span><span>{max === 10000 ? "20만" : "1억"}</span><span>{max === 10000 ? "50만" : "5억"}</span><span>{max === 10000 ? "150만" : "15억"}</span><span>최대</span></div>
+    </div>;
   };
 
-  const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Math.min(Number(e.target.value), maxVal - 500);
-    onFilterChange({ priceMin: value === 0 ? null : value });
-  };
-
-  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Math.max(Number(e.target.value), minVal + 500);
-    onFilterChange({ priceMax: value >= 100000 ? null : value });
-  };
-
-  const minPercent = (minVal / 100000) * 100;
-  const maxPercent = (maxVal / 100000) * 100;
-
-  return (
-    <div style={{ padding: "10px 0" }}>
-      {/* 실시간 말풍선 라벨 */}
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-        <div style={{
-          backgroundColor: "#f0f7ff", border: "1.5px solid #1a73e8", color: "#1a73e8",
-          padding: "6px 16px", borderRadius: "20px", fontSize: "14px", fontWeight: 800,
-          boxShadow: "0 2px 8px rgba(26, 115, 232, 0.15)"
-        }}>
-          {minVal === 0 && maxVal >= 100000 ? "전체" : `${formatPrice(minVal)} ~ ${formatPrice(maxVal)}`}
-        </div>
-      </div>
-
-      {/* 이중 슬라이더 레인지 컨테이너 */}
-      <div style={{ position: "relative", width: "100%", height: "40px", display: "flex", alignItems: "center" }}>
-        {/* 기본 회색 트랙 */}
-        <div style={{ position: "absolute", left: 0, right: 0, height: "6px", backgroundColor: "#e5e7eb", borderRadius: "3px" }} />
-        
-        {/* 활성화 블루 트랙 */}
-        <div style={{
-          position: "absolute",
-          left: `${minPercent}%`,
-          width: `${maxPercent - minPercent}%`,
-          height: "6px",
-          backgroundColor: "#1a73e8",
-          borderRadius: "3px"
-        }} />
-
-        {/* 투명 레인지 인풋 2개 (겹침 배치) */}
-        <input 
-          type="range"
-          min="0"
-          max="100000"
-          step="500"
-          value={minVal}
-          onChange={handleMinChange}
-          style={{
-            position: "absolute", width: "100%", pointerEvents: "none", WebkitAppearance: "none", appearance: "none",
-            background: "none", outline: "none", margin: 0, zIndex: 3
-          }}
-          className="dual-slider-thumb-left"
-        />
-        <input 
-          type="range"
-          min="0"
-          max="100000"
-          step="500"
-          value={maxVal}
-          onChange={handleMaxChange}
-          style={{
-            position: "absolute", width: "100%", pointerEvents: "none", WebkitAppearance: "none", appearance: "none",
-            background: "none", outline: "none", margin: 0, zIndex: 4
-          }}
-          className="dual-slider-thumb-right"
-        />
-      </div>
-
-      {/* 최소/최대 축 힌트 */}
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>
-        <span>최소</span>
-        <span>5천만</span>
-        <span>2.5억</span>
-        <span>5억</span>
-        <span>최대(10억+)</span>
-      </div>
-
-      {/* CSS 스타일 주입 */}
-      <style>{`
-        .dual-slider-thumb-left::-webkit-slider-thumb {
-          pointer-events: auto !important;
-          -webkit-appearance: none;
-          appearance: none;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: #fff;
-          border: 2px solid #1a73e8;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-          cursor: pointer;
-          transition: transform 0.1s;
-        }
-        .dual-slider-thumb-left::-webkit-slider-thumb:active {
-          transform: scale(1.2);
-        }
-        .dual-slider-thumb-right::-webkit-slider-thumb {
-          pointer-events: auto !important;
-          -webkit-appearance: none;
-          appearance: none;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: #fff;
-          border: 2px solid #1a73e8;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-          cursor: pointer;
-          transition: transform 0.1s;
-        }
-        .dual-slider-thumb-right::-webkit-slider-thumb:active {
-          transform: scale(1.2);
-        }
-      `}</style>
-
-      {/* 조건삭제 */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "24px" }}>
-        <button onClick={() => onFilterChange({ priceMin: null, priceMax: null })} style={{ background: "none", border: "none", color: "#9ca3af", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
-          ↻ 조건삭제
-        </button>
-      </div>
-    </div>
-  );
+  return <div style={{ padding: "10px 0" }}>
+    {tradeTypes.length === 0 && <div style={{ color: "#9ca3af", padding: "20px 0", textAlign: "center" }}>거래유형을 먼저 선택해주세요.</div>}
+    {tradeTypes.includes("매매") && range("매매가", "salePriceMin", "salePriceMax", 100000)}
+    {(tradeTypes.includes("전세") || tradeTypes.includes("월세") || tradeTypes.includes("단기")) && range("보증금", "depositMin", "depositMax", 100000)}
+    {(tradeTypes.includes("월세") || tradeTypes.includes("단기")) && range("월세", "monthlyRentMin", "monthlyRentMax", 10000)}
+    <style>{`.mobile-price-min::-webkit-slider-thumb,.mobile-price-max::-webkit-slider-thumb{pointer-events:auto!important;-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid #1a4282;box-shadow:0 2px 6px rgba(0,0,0,.2);cursor:pointer}.mobile-price-min::-moz-range-thumb,.mobile-price-max::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid #1a4282;cursor:pointer}`}</style>
+    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 18 }}><button onClick={() => onFilterChange({ priceMin: null, priceMax: null, salePriceMin: null, salePriceMax: null, depositMin: null, depositMax: null, monthlyRentMin: null, monthlyRentMax: null })} style={{ background: "none", border: "none", color: "#9ca3af", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>↻ 조건삭제</button></div>
+  </div>;
 }

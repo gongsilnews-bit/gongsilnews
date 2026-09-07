@@ -91,9 +91,14 @@ const getCategoryOptions = (types: string[]) => {
 export default function MobileFilterBar({ vacancies, filteredCount, filters, onFilterChange, onLocationMove, onShowList, locLabel, setLocLabel, activeMode }: MobileFilterBarProps) {
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [fullFilterOpen, setFullFilterOpen] = useState(false);
+  const [filterSection, setFilterSection] = useState<string | null>(null);
 
-  const openFullFilter = () => {
-    if (fullFilterOpen) return;
+  const openFullFilter = (section?: string) => {
+    setFilterSection(section || null);
+    if (fullFilterOpen) {
+      window.setTimeout(() => document.getElementById(`mobile-filter-${section}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+      return;
+    }
     window.history.pushState({ ...(window.history.state || {}), mobileFilter: true }, "", window.location.href);
     setFullFilterOpen(true);
   };
@@ -115,6 +120,12 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     window.addEventListener("popstate", handleFilterBack);
     return () => window.removeEventListener("popstate", handleFilterBack);
   }, [fullFilterOpen]);
+
+  useEffect(() => {
+    if (!fullFilterOpen || !filterSection) return;
+    const timer = window.setTimeout(() => document.getElementById(`mobile-filter-${filterSection}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    return () => window.clearTimeout(timer);
+  }, [fullFilterOpen, filterSection]);
 
   // 🚀 PC GongsilClient.tsx 기준 100% 동일 대분류 & 소분류(알약) 구조
   const PROPERTY_TYPES = activeMode === "경매" ? [
@@ -216,6 +227,9 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     filters.tradeTypes.length > 0 || 
     filters.keyword !== "" ||
     filters.priceMin !== null || filters.priceMax !== null ||
+    filters.salePriceMin !== null || filters.salePriceMax !== null ||
+    filters.depositMin !== null || filters.depositMax !== null ||
+    filters.monthlyRentMin !== null || filters.monthlyRentMax !== null ||
     filters.areaMin !== null || filters.areaMax !== null ||
     filters.yearMin !== null || filters.yearMax !== null ||
     filters.floor !== null ||
@@ -246,6 +260,9 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   };
 
   const priceLabel = (() => {
+    if (filters.salePriceMin !== null && filters.salePriceMin !== undefined) return "매매가 설정 ▾";
+    if (filters.depositMin !== null && filters.depositMin !== undefined) return "보증금 설정 ▾";
+    if (filters.monthlyRentMin !== null && filters.monthlyRentMin !== undefined) return "월세 설정 ▾";
     if (filters.priceMin === null && filters.priceMax === null) return "전체가격 ▾";
     if (filters.priceMin !== null && filters.priceMax !== null) {
       return `${formatPriceVal(filters.priceMin)} ~ ${formatPriceVal(filters.priceMax)}`;
@@ -394,18 +411,25 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   return (
     <>
       <div style={{ width: "100%", height: "46px", background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", position: "relative", zIndex: 50 }}>
-        {/* 전체 필터 아이콘 버튼 */}
-        <button onClick={openFullFilter} style={{ flexShrink: 0, width: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", position: "relative" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/><circle cx="16" cy="12" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/><circle cx="10" cy="18" r="2" fill="#374151" stroke="#fff" strokeWidth="1.5"/></svg>
+        {/* 예전 햄버거 버튼 자리에 상세검색을 고정 */}
+        <button onClick={openFullFilter} style={{ flexShrink: 0, height: "34px", padding: "0 10px", fontSize: "13px", fontWeight: hasActiveFilters ? 700 : 600, background: "none", border: "none", color: "#374151", whiteSpace: "nowrap", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <line x1="4" y1="6" x2="20" y2="6" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="18" x2="20" y2="18" />
+            <circle cx="8" cy="6" r="2" fill="currentColor" stroke="none" />
+            <circle cx="16" cy="12" r="2" fill="currentColor" stroke="none" />
+            <circle cx="10" cy="18" r="2" fill="currentColor" stroke="none" />
+          </svg>
+          상세검색 ▼
         </button>
-        <div style={{ width: 1, height: 20, background: "#e5e7eb", flexShrink: 0 }} />
 
-        {/* 수평 스크롤 필 버튼들 */}
-        <div style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", flex: 1, scrollbarWidth: "none" }}>
+        {/* 수평 스크롤 필터 버튼들 */}
+        <div style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", flex: 1, minWidth: 0, boxSizing: "border-box", scrollbarWidth: "none", touchAction: "pan-x" }}>
           <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "위치")}>
             {locLabel === "위치" ? "지도 위치 ▾" : `${locLabel} ▾`}
           </button>
-          <button onClick={() => setActivePanel(activePanel === "prop" ? null : "prop")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>
+          <button onClick={() => openFullFilter("property")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>
             {propertyTypeLabel}
           </button>
 
@@ -431,16 +455,16 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           ) : (
             /* 일반 공실 모드 전용 필터 버튼들 */
             <>
-              <button onClick={() => setActivePanel(activePanel === "trade" ? null : "trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
+              <button onClick={() => openFullFilter("trade")} style={pillStyle(activePanel === "trade" || filters.tradeTypes.length > 0)}>
                 {filters.tradeTypes.length === TRADE_TYPES.length ? "전체거래" : filters.tradeTypes.length === 0 ? "거래방식" : filters.tradeTypes.join(", ")}
               </button>
               {showPricePill && (
-                <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null || (filters.priceMin === null && filters.priceMax === null))}>
+                <button onClick={() => openFullFilter("price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null || filters.salePriceMin !== null || filters.salePriceMax !== null || filters.depositMin !== null || filters.depositMax !== null || filters.monthlyRentMin !== null || filters.monthlyRentMax !== null || (filters.priceMin === null && filters.priceMax === null))}>
                   {priceLabel}
                 </button>
               )}
               {showAreaPill && (
-                <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null || (filters.areaMin === null && filters.areaMax === null))}>
+                <button onClick={() => openFullFilter("area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null || (filters.areaMin === null && filters.areaMax === null))}>
                   {areaLabel}
                 </button>
               )}
@@ -498,19 +522,6 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             </>
           )}
 
-          {/* 공통 상세필터 버튼 */}
-          <button 
-            onClick={openFullFilter}
-            style={{
-              ...pillStyle(fullFilterOpen || hasActiveFilters),
-              backgroundColor: hasActiveFilters ? "#eef4ff" : "#fff",
-              borderColor: hasActiveFilters ? "#4b89ff" : "#d1d5db",
-              color: hasActiveFilters ? "#4b89ff" : "#374151",
-            }}
-          >
-            🎛️ 상세필터 ▾
-            {hasActiveFilters && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", marginLeft: "2px" }} />}
-          </button>
         </div>
       </div>
 
@@ -522,8 +533,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         locLabel={locLabel}
         setLocLabel={setLocLabel}
       />)}
-      {activePanel === "prop" && renderSheet(activeMode === "경매" ? "경·공매 자산유형" : "공실열람유형", <PropertyTypeFilterPanel filters={filters} onFilterChange={onFilterChange} PROPERTY_TYPES={PROPERTY_TYPES} />)}
-      
+
       {/* 경매 모드 시트들 */}
       {activePanel === "auction_appraisal" && renderSheet("감정가", <AuctionAppraisalFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "auction_bid_price" && renderSheet("최저입찰가", <AuctionBidPriceFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
@@ -532,9 +542,6 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
       {activePanel === "auction_start_date" && renderSheet("입찰 시작일", <AuctionStartDateFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
 
       {/* 일반 공실 모드 시트들 */}
-      {activePanel === "trade" && renderSheet("거래방식", <TradeTypeFilterPanel filters={filters} onFilterChange={onFilterChange} TRADE_TYPES={TRADE_TYPES} />)}
-      {activePanel === "price" && renderSheet("가격", <PriceFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-      {activePanel === "area" && renderSheet("면적", <AreaFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "room_bath" && renderSheet("방 / 욕실수", <RoomBathFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "direction" && renderSheet("방향", <DirectionFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "units" && renderSheet("세대수", <UnitsFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
@@ -563,7 +570,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
 
           <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 100px", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}>
             {/* 자산유형 / 공실열람유형 */}
-            <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+            <div id="mobile-filter-property" style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
               <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>
                 {activeMode === "경매" ? "경·공매 자산유형" : "공실열람유형"}
               </div>
@@ -573,7 +580,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             {/* 🔨 경매 모드 전용 5대 조건 섹션 (PC와 100% 동일) */}
             {activeMode === "경매" ? (
               <>
-                <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div id="mobile-filter-trade" style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                   <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>감정가</div>
                   <AuctionAppraisalFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
                 </div>
@@ -607,14 +614,14 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                 </div>
                 
                 {showTempPrice && (
-                  <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                  <div id="mobile-filter-price" style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                     <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>가격</div>
                     <PriceFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
                   </div>
                 )}
 
                 {showTempArea && (
-                  <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                  <div id="mobile-filter-area" style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                     <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>면적</div>
                     <AreaFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
                   </div>

@@ -7,6 +7,12 @@ export interface FilterState {
   keyword: string;
   priceMin: number | null;
   priceMax: number | null;
+  salePriceMin?: number | null;
+  salePriceMax?: number | null;
+  depositMin?: number | null;
+  depositMax?: number | null;
+  monthlyRentMin?: number | null;
+  monthlyRentMax?: number | null;
   areaMin: number | null;
   areaMax: number | null;
   yearMin: number | null;
