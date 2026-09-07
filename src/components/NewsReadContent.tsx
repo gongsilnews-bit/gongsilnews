@@ -1096,21 +1096,37 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
 
                   return (
                     <Link 
-                      href={isMobile ? `/m/gongsil?id=${prop.id}` : `/gongsil?id=${prop.id}`} 
+                      href={isMobile ? `/m/gongsil?id=${prop.id}` : `/gongsil/detail/${prop.id}`} 
                       target={isMobile ? undefined : "_blank"} 
                       key={prop.id || i} 
                       onClick={(e) => {
                         if (cardMasked) {
                           e.preventDefault();
                           const loginUrl = isMobile ? "/m/login" : "/login";
-                          const vacancyPath = `${isMobile ? "/m" : ""}/gongsil?id=${encodeURIComponent(String(prop.id))}`;
+                          const vacancyPath = isMobile
+                            ? `/m/gongsil?id=${encodeURIComponent(String(prop.id))}`
+                            : `/gongsil/detail/${encodeURIComponent(String(prop.id))}`;
                           window.location.href = loginUrl + "?returnTo=" + encodeURIComponent(vacancyPath);
                           return;
                         }
                         if (isMobile) {
                           e.preventDefault();
                           router.push(`/m/gongsil?id=${encodeURIComponent(String(prop.id))}`);
+                          return;
                         }
+
+                        // PC 환경: 브라우저 팝업창으로 열기 (각 매물마다 고유한 창 이름으로 여러 개 동시 열람 가능)
+                        e.preventDefault();
+                        const popupW = 620;
+                        const popupH = 880;
+                        const left = Math.max(20, window.screen.width - popupW - 40);
+                        const top = 60;
+                        const popupFeatures = `width=${popupW},height=${popupH},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
+                        window.open(
+                          `/gongsil/detail/${prop.id}`,
+                          `gongsil_popup_${prop.id}`,
+                          popupFeatures
+                        );
                       }}
                       style={{ textDecoration: "none", color: "inherit", display: "block" }}
                     >

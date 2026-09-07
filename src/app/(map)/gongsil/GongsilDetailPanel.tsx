@@ -51,6 +51,7 @@ interface GongsilDetailPanelProps {
   setRealtorTradeType: React.Dispatch<React.SetStateAction<string>>;
   openGalleryModal: () => void;
   isAuctionMode: boolean;
+  isStandalone?: boolean;
 }
 
 export default function GongsilDetailPanel({
@@ -92,6 +93,7 @@ export default function GongsilDetailPanel({
   setRealtorTradeType,
   openGalleryModal,
   isAuctionMode,
+  isStandalone = false,
 }: GongsilDetailPanelProps) {
   if (!showDetail || !activeProperty) return null;
 
@@ -107,19 +109,36 @@ export default function GongsilDetailPanel({
 
   return (
     <div
-      style={{
-        position: "absolute",
-        left: 380,
-        top: 0,
-        width: 600,
-        height: "100%",
-        background: "#fff",
-        display: "flex",
-        flexDirection: "column",
-        borderRight: "1px solid #eee",
-        zIndex: 1100,
-        boxShadow: "5px 0 15px rgba(0,0,0,0.15)",
-      }}
+      style={
+        isStandalone
+          ? {
+              position: "relative",
+              left: 0,
+              margin: "0 auto",
+              width: 600,
+              maxWidth: "100%",
+              height: "100vh",
+              background: "#fff",
+              display: "flex",
+              flexDirection: "column",
+              borderLeft: "1px solid #e2e8f0",
+              borderRight: "1px solid #e2e8f0",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+            }
+          : {
+              position: "absolute",
+              left: 380,
+              top: 0,
+              width: 600,
+              height: "100%",
+              background: "#fff",
+              display: "flex",
+              flexDirection: "column",
+              borderRight: "1px solid #eee",
+              zIndex: 1100,
+              boxShadow: "5px 0 15px rgba(0,0,0,0.15)",
+            }
+      }
     >
       {/* 닫기 버튼 */}
       <button
