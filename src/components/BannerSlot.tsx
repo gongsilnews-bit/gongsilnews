@@ -8,26 +8,50 @@ import { matchCategory } from "@/constants/categories";
 interface BannerSlotProps {
   placement: string;
   category?: string;
+  tab?: string;
   className?: string;
   style?: React.CSSProperties;
   initialBanners?: any[];
 }
 
-export default function BannerSlot({ placement, category, className, style, initialBanners }: BannerSlotProps) {
+function filterSlotBanners(list: any[], placement: string, category?: string, tab?: string) {
+  let fetched = list;
+  if ((placement === "LIST_INLINE" || placement === "LIST_SIDEBAR") && category) {
+    fetched = fetched.filter(b => {
+      const parts = (b.link_target || "_blank").split("|");
+      if (parts.length > 1) {
+        const targets = parts[1].split(",");
+        return matchCategory(targets, category);
+      }
+      return true;
+    });
+  }
+  if (placement === "MOBILE_NEWS_TOP" && tab) {
+    fetched = fetched.filter(b => {
+      const parts = (b.link_target || "_blank").split("|");
+      if (parts.length > 1) {
+        const targets = parts[1].split(",").map((t: string) => t.trim());
+        const currentTabAliases = [
+          tab,
+          tab === "all" ? "all" : "",
+          tab === "news_gongsil" ? "gongsil" : "",
+          tab === "news_politics" ? "realty" : "",
+          tab === "news_marketing" ? "ai" : "",
+          tab === "news_etc" ? "life" : "",
+        ].filter(Boolean);
+        return targets.some((t: string) => currentTabAliases.includes(t));
+      }
+      return true;
+    });
+  }
+  return fetched;
+}
+
+export default function BannerSlot({ placement, category, tab, className, style, initialBanners }: BannerSlotProps) {
   const [banners, setBanners] = useState<any[]>(() => {
     if (!initialBanners) return [];
-    let fetched = initialBanners;
-    if ((placement === "LIST_INLINE" || placement === "LIST_SIDEBAR") && category) {
-      fetched = fetched.filter(b => {
-        const parts = (b.link_target || "_blank").split("|");
-        if (parts.length > 1) {
-          const targets = parts[1].split(",");
-          return matchCategory(targets, category);
-        }
-        return true;
-      });
-    }
-    return fetched.map(b => ({ ...b, parsed_target: (b.link_target || "_blank").split("|")[0] }));
+    const filtered = filterSlotBanners(initialBanners, placement, category, tab);
+    return filtered.map(b => ({ ...b, parsed_target: (b.link_target || "_blank").split("|")[0] }));
   });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -42,23 +66,14 @@ export default function BannerSlot({ placement, category, className, style, init
     async function load() {
       const res = await getBannersByPlacement(placement);
       if (res.success && res.data.length > 0) {
-        let fetched = res.data;
-        if ((placement === "LIST_INLINE" || placement === "LIST_SIDEBAR") && category) {
-          fetched = fetched.filter(b => {
-            const parts = (b.link_target || "_blank").split("|");
-            if (parts.length > 1) {
-              const targets = parts[1].split(",");
-              return matchCategory(targets, category);
-            }
-            return true;
-          });
-        }
-        fetched = fetched.map(b => ({ ...b, parsed_target: (b.link_target || "_blank").split("|")[0] }));
-        setBanners(fetched);
+        const filtered = filterSlotBanners(res.data, placement, category, tab);
+        setBanners(filtered.map(b => ({ ...b, parsed_target: (b.link_target || "_blank").split("|")[0] })));
+      } else {
+        setBanners([]);
       }
     }
     load();
-  }, [placement, category, initialBanners]);
+  }, [placement, category, tab, initialBanners]);
 
   /* ── 자동 롤링 ── */
   useEffect(() => {

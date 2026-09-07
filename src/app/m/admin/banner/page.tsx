@@ -17,7 +17,17 @@ const PLACEMENT_OPTIONS = [
   { value: "LIST_SIDEBAR", label: "뉴스 리스트 사이드바" },
   { value: "NEWS_DETAIL", label: "뉴스 상세하단" },
   { value: "POPUP", label: "팝업" },
+  { value: "MOBILE_NEWS_TOP", label: "모바일 뉴스 상단 배너" },
   { value: "CUSTOM", label: "기타 (직접입력)" }
+];
+
+// 모바일 뉴스 탭 목록
+const MOBILE_NEWS_TABS = [
+  { value: "all", label: "전체" },
+  { value: "gongsil", label: "공실뉴스" },
+  { value: "realty", label: "부동산·경제" },
+  { value: "ai", label: "AI마케팅" },
+  { value: "life", label: "라이프·오피니언" },
 ];
 
 const DEVICE_OPTIONS = [
@@ -71,6 +81,7 @@ function MobileBannerAdmin() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const action = searchParams.get("action");
+  const bannerId = searchParams.get("id");
   
   const [banners, setBanners] = useState<any[]>([]);
   const [filter, setFilter] = useState("전체");
@@ -82,6 +93,7 @@ function MobileBannerAdmin() {
   const [showForm, setShowForm] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [editingBanner, setEditingBanner] = useState<any>(null);
+  const [selectedTabs, setSelectedTabs] = useState<string[]>(["all"]);
   
   const [stats, setStats] = useState<any[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -90,6 +102,38 @@ function MobileBannerAdmin() {
 
   const [selectedPlacement, setSelectedPlacement] = useState("MAIN_TOP");
   const [customPlacement, setCustomPlacement] = useState("");
+
+  // URL id 파라미터로 editingBanner 복원 (새로고침 대응)
+  useEffect(() => {
+    if (action === "edit" && bannerId && banners.length > 0 && !editingBanner) {
+      const found = banners.find(item => item.id === bannerId);
+      if (found) setEditingBanner(found);
+    }
+  }, [action, bannerId, banners, editingBanner]);
+
+  // editingBanner 변경 시 selectedTabs 동기화
+  useEffect(() => {
+    if (editingBanner?.link_target) {
+      const parts = editingBanner.link_target.split("|");
+      if (parts.length > 1 && parts[1]) {
+        const saved = parts[1].split(",").filter(Boolean);
+        setSelectedTabs(saved.length > 0 ? saved : ["all"]);
+        return;
+      }
+    }
+    setSelectedTabs(["all"]);
+  }, [editingBanner]);
+
+  // 탭 토글 핸들러 (5개 탭 각각 자유롭게 선택/해제)
+  const handleTabToggle = (tabValue: string) => {
+    setSelectedTabs(prev => {
+      if (prev.includes(tabValue)) {
+        return prev.filter(t => t !== tabValue);
+      } else {
+        return [...prev, tabValue];
+      }
+    });
+  };
 
   useEffect(() => {
     async function init() {
@@ -176,6 +220,8 @@ function MobileBannerAdmin() {
     const targetCats = formData.getAll("target_categories") as string[];
     if ((selectedPlacement === "LIST_INLINE" || selectedPlacement === "LIST_SIDEBAR") && targetCats.length > 0) {
       formData.set("link_target", `${oldTarget}|${targetCats.join(",")}`);
+    } else if (selectedPlacement === "MOBILE_NEWS_TOP" && selectedTabs.length > 0) {
+      formData.set("link_target", `${oldTarget}|${selectedTabs.join(",")}`);
     } else {
       formData.set("link_target", oldTarget);
     }
@@ -322,15 +368,67 @@ function MobileBannerAdmin() {
                     </div>
                   </div>
                 )}
+
+                {selectedPlacement === "MOBILE_NEWS_TOP" && (
+                  <div style={{ marginTop: 16, padding: "16px", background: "#f0f9ff", borderRadius: 8, border: "1px solid #0ea5e9" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                      <label style={{ fontSize: 13, fontWeight: 700, color: "#0369a1", margin: 0 }}>📱 노출 탭 선택 (중복선택 가능)</label>
+                      <span style={{ fontSize: 11, color: "#0284c7" }}>
+                        {selectedTabs.length > 0 ? `${selectedTabs.length}개 탭 선택됨` : "선택된 탭 없음"}
+                      </span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {MOBILE_NEWS_TABS.map(tab => {
+                        const isChecked = selectedTabs.includes(tab.value);
+                        return (
+                          <label key={tab.value} style={{
+                            display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
+                            padding: "6px 8px", borderRadius: 6,
+                            background: isChecked ? "#e0f2fe" : "transparent",
+                            border: isChecked ? "1px solid #0ea5e9" : "1px solid transparent",
+                            transition: "all 0.15s"
+                          }}>
+                            <input
+                              type="checkbox"
+                              name="target_tabs"
+                              value={tab.value}
+                              checked={isChecked}
+                              onChange={() => handleTabToggle(tab.value)}
+                              style={{ accentColor: "#0ea5e9", width: 16, height: 16, cursor: "pointer" }}
+                            />
+                            <span style={{ fontSize: 13, fontWeight: isChecked ? 700 : 500, color: isChecked ? "#0369a1" : "#111" }}>{tab.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#111", marginBottom: 8 }}>노출 위치 확인 및 선택 *</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#111", margin: 0 }}>
+                    노출 위치 확인 {b ? "(수정 불가·고정)" : "및 선택 *"}
+                  </label>
+                  {b && (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fee2e2", padding: "2px 8px", borderRadius: 4, border: "1px solid #f87171" }}>
+                      🔒 위치 변경 불가
+                    </span>
+                  )}
+                </div>
                 <input type="hidden" name="placement_code" value={selectedPlacement === "CUSTOM" ? customPlacement : selectedPlacement} />
                 <select 
                   value={selectedPlacement} 
+                  disabled={!!b}
                   onChange={(e) => setSelectedPlacement(e.target.value)}
-                  style={{ width: "100%", padding: "12px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 12 }}
+                  style={{ 
+                    width: "100%", padding: "12px 14px", 
+                    border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, 
+                    outline: "none", boxSizing: "border-box", marginBottom: 12,
+                    background: b ? "#f3f4f6" : "#fff",
+                    color: b ? "#6b7280" : "#111",
+                    cursor: b ? "not-allowed" : "pointer"
+                  }}
                 >
                   {PLACEMENT_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -340,8 +438,8 @@ function MobileBannerAdmin() {
                 {selectedPlacement === "CUSTOM" && (
                    <div style={{ padding: "16px", background: "#f9fafb", borderRadius: 8, border: "1px solid #3b82f6" }}>
                      <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#111", marginBottom: 6 }}>Custom 코드 입력</label>
-                     <input value={customPlacement} onChange={(e) => setCustomPlacement(e.target.value)} required placeholder="예: CUSTOM_BOTTOM_1"
-                        style={{ width: "100%", padding: "12px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                     <input value={customPlacement} onChange={(e) => setCustomPlacement(e.target.value)} required disabled={!!b} placeholder="예: CUSTOM_BOTTOM_1"
+                        style={{ width: "100%", padding: "12px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", opacity: b ? 0.7 : 1, cursor: b ? "not-allowed" : "text" }} />
                    </div>
                 )}
               </div>

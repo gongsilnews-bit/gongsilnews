@@ -17,6 +17,15 @@ const PLACEMENT_OPTIONS = [
   { value: "LIST_SIDEBAR", label: "뉴스 리스트 사이드바" },
   { value: "NEWS_DETAIL", label: "뉴스 상세하단" },
   { value: "POPUP", label: "팝업" },
+  { value: "MOBILE_NEWS_TOP", label: "모바일 뉴스 상단 배너" },
+];
+
+const MOBILE_NEWS_TABS = [
+  { value: "all", label: "전체" },
+  { value: "gongsil", label: "공실뉴스" },
+  { value: "realty", label: "부동산·경제" },
+  { value: "ai", label: "AI마케팅" },
+  { value: "life", label: "라이프·오피니언" },
 ];
 
 const PLACEMENT_CARDS = [
@@ -127,6 +136,19 @@ const PLACEMENT_CARDS = [
     )
   },
   { 
+    value: "MOBILE_NEWS_TOP", label: "모바일 뉴스 상단", size: "모바일 맞춤 (600x260px)",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="30" y="4" width="40" height="67" rx="6" fill="#fff" />
+        <rect x="35" y="10" width="30" height="5" rx="1" fill="#e5e7eb" stroke="none" />
+        <rect x="35" y="20" width="30" height="16" rx="2" fill={selected ? "#0ea5e9" : "#bae6fd"} stroke="none" />
+        <line x1="35" y1="42" x2="65" y2="42" stroke="#e5e7eb" strokeWidth="2" />
+        <line x1="35" y1="48" x2="58" y2="48" stroke="#e5e7eb" strokeWidth="2" />
+        <circle cx="50" cy="62" r="3" fill="#cbd5e1" stroke="none" />
+      </svg>
+    )
+  },
+  { 
     value: "CUSTOM", label: "기타 (직접입력)", size: "자유 사이즈",
     icon: (selected: boolean) => (
       <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
@@ -191,11 +213,13 @@ export default function BannerSection({ theme }: AdminSectionProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const action = searchParams.get("action");
+  const bannerId = searchParams.get("id");
   
   const [banners, setBanners] = useState<any[]>([]);
   const [filter, setFilter] = useState("전체");
   const [showForm, setShowForm] = useState(false);
   const [editingBanner, setEditingBanner] = useState<any>(null);
+  const [selectedTabs, setSelectedTabs] = useState<string[]>(["all"]);
   const [showStats, setShowStats] = useState(false);
   const [stats, setStats] = useState<any[]>([]);
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
@@ -206,6 +230,38 @@ export default function BannerSection({ theme }: AdminSectionProps) {
   // 배너 위치 선택 처리
   const [selectedPlacement, setSelectedPlacement] = useState("MAIN_TOP");
   const [customPlacement, setCustomPlacement] = useState("");
+
+  // URL id 파라미터로 editingBanner 복원 (새로고침 대응)
+  useEffect(() => {
+    if (action === "edit" && bannerId && banners.length > 0 && !editingBanner) {
+      const found = banners.find(item => item.id === bannerId);
+      if (found) setEditingBanner(found);
+    }
+  }, [action, bannerId, banners, editingBanner]);
+
+  // editingBanner 변경 시 selectedTabs 동기화
+  useEffect(() => {
+    if (editingBanner?.link_target) {
+      const parts = editingBanner.link_target.split("|");
+      if (parts.length > 1 && parts[1]) {
+        const saved = parts[1].split(",").filter(Boolean);
+        setSelectedTabs(saved.length > 0 ? saved : ["all"]);
+        return;
+      }
+    }
+    setSelectedTabs(["all"]);
+  }, [editingBanner]);
+
+  // 탭 토글 핸들러 (전체/공실뉴스/부동산경제/AI마케팅/라이프오피니언 5개 탭 각각 자유롭게 선택/해제)
+  const handleTabToggle = (tabValue: string) => {
+    setSelectedTabs(prev => {
+      if (prev.includes(tabValue)) {
+        return prev.filter(t => t !== tabValue);
+      } else {
+        return [...prev, tabValue];
+      }
+    });
+  };
 
   useEffect(() => {
     if (showForm) {
@@ -267,11 +323,13 @@ export default function BannerSection({ theme }: AdminSectionProps) {
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    // 타겟 카테고리 데이터 병합 (우회 저장)
+    // 타겟 카테고리/탭 데이터 병합 (우회 저장)
     const oldTarget = formData.get("link_target") as string;
     const targetCats = formData.getAll("target_categories") as string[];
     if ((selectedPlacement === "LIST_INLINE" || selectedPlacement === "LIST_SIDEBAR") && targetCats.length > 0) {
       formData.set("link_target", `${oldTarget}|${targetCats.join(",")}`);
+    } else if (selectedPlacement === "MOBILE_NEWS_TOP" && selectedTabs.length > 0) {
+      formData.set("link_target", `${oldTarget}|${selectedTabs.join(",")}`);
     } else {
       formData.set("link_target", oldTarget);
     }
@@ -410,27 +468,89 @@ export default function BannerSection({ theme }: AdminSectionProps) {
                   </div>
                 </div>
               )}
+
+              {selectedPlacement === "MOBILE_NEWS_TOP" && (
+                <div style={{ marginTop: 16, padding: "16px", background: darkMode ? "#0c2a4d" : "#f0f9ff", borderRadius: 8, border: `1px solid #0ea5e9` }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <label style={{ fontSize: 13, fontWeight: 700, color: darkMode ? "#38bdf8" : "#0369a1", margin: 0 }}>
+                      📱 노출 탭 선택 (중복선택 가능)
+                    </label>
+                    <span style={{ fontSize: 11, color: darkMode ? "#93c5fd" : "#0284c7" }}>
+                      {selectedTabs.length > 0 ? `${selectedTabs.length}개 탭 선택됨` : "선택된 탭 없음"}
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {MOBILE_NEWS_TABS.map(tab => {
+                      const isChecked = selectedTabs.includes(tab.value);
+                      return (
+                        <label key={tab.value} style={{
+                          display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
+                          padding: "6px 10px", borderRadius: 6,
+                          background: isChecked ? (darkMode ? "rgba(14,165,233,0.2)" : "#e0f2fe") : "transparent",
+                          border: isChecked ? "1px solid #0ea5e9" : "1px solid transparent",
+                          transition: "all 0.15s"
+                        }}>
+                          <input
+                            type="checkbox"
+                            name="target_tabs"
+                            value={tab.value}
+                            checked={isChecked}
+                            onChange={() => handleTabToggle(tab.value)}
+                            style={{ accentColor: "#0ea5e9", width: 16, height: 16, cursor: "pointer" }}
+                          />
+                          <span style={{ fontSize: 13, fontWeight: isChecked ? 700 : 500, color: isChecked ? (darkMode ? "#38bdf8" : "#0369a1") : textPrimary }}>
+                            {tab.label}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 노출 위치 */}
             <div style={{ gridColumn: "1 / -1" }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 12 }}>노출 위치 확인 및 선택 *</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, margin: 0 }}>
+                  노출 위치 확인 {b ? "(수정 불가·고정)" : "및 선택 *"}
+                </label>
+                {b && (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", background: darkMode ? "#450a0a" : "#fee2e2", padding: "3px 10px", borderRadius: 6, border: "1px solid #f87171" }}>
+                    🔒 노출 위치는 수정할 수 없습니다 (고정)
+                  </span>
+                )}
+              </div>
               <input type="hidden" name="placement_code" value={selectedPlacement === "CUSTOM" ? customPlacement : selectedPlacement} />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
                 {PLACEMENT_CARDS.map(card => {
                   const isSelected = selectedPlacement === card.value;
+                  const isEdit = !!b;
                   return (
                     <div 
                       key={card.value}
-                      onClick={() => setSelectedPlacement(card.value)}
+                      onClick={() => {
+                        if (!isEdit) setSelectedPlacement(card.value);
+                      }}
                       style={{ 
                         border: isSelected ? `2px solid #3b82f6` : `1px solid ${border}`, 
                         background: isSelected ? (darkMode ? "#1e3a8a" : "#eff6ff") : (darkMode ? "#1a1b1e" : "#fff"),
-                        borderRadius: 10, cursor: "pointer", display: "flex", flexDirection: "column", 
+                        borderRadius: 10, 
+                        cursor: isEdit ? (isSelected ? "default" : "not-allowed") : "pointer", 
+                        opacity: isEdit && !isSelected ? 0.35 : 1,
+                        filter: isEdit && !isSelected ? "grayscale(80%)" : "none",
+                        display: "flex", flexDirection: "column", 
                         alignItems: "center", justifyContent: "center", padding: "16px",
-                        transition: "all 0.15s", boxShadow: isSelected ? "0 4px 12px rgba(59, 130, 246, 0.15)" : "none"
+                        transition: "all 0.15s", 
+                        boxShadow: isSelected ? "0 4px 12px rgba(59, 130, 246, 0.15)" : "none",
+                        position: "relative"
                       }}
                     >
+                      {isEdit && isSelected && (
+                        <div style={{ position: "absolute", top: 8, right: 8, fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "2px 6px", borderRadius: 4 }}>
+                          고정됨 🔒
+                        </div>
+                      )}
                       {card.icon(isSelected)}
                       <div style={{ fontSize: 14, fontWeight: 700, color: isSelected ? "#3b82f6" : textPrimary, marginTop: 12, textAlign: "center" }}>{card.label}</div>
                       <div style={{ fontSize: 12, color: isSelected ? "#60a5fa" : textSecondary, marginTop: 4 }}>권장: {card.size}</div>
@@ -442,8 +562,8 @@ export default function BannerSection({ theme }: AdminSectionProps) {
               {selectedPlacement === "CUSTOM" && (
                  <div style={{ marginTop: 16, padding: "16px", background: darkMode ? "#1a1b1e" : "#f9fafb", borderRadius: 8, border: `1px solid #3b82f6` }}>
                    <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>Custom 노출 위치 식별자 입력</label>
-                   <input value={customPlacement} onChange={(e) => setCustomPlacement(e.target.value)} required placeholder="예: CUSTOM_BOTTOM_1"
-                      style={{ width: "100%", padding: "12px 14px", border: `1px solid ${border}`, borderRadius: 8, fontSize: 14, color: textPrimary, background: darkMode ? "#25262b" : "#fff", outline: "none", boxSizing: "border-box" }} />
+                   <input value={customPlacement} onChange={(e) => setCustomPlacement(e.target.value)} required disabled={!!b} placeholder="예: CUSTOM_BOTTOM_1"
+                      style={{ width: "100%", padding: "12px 14px", border: `1px solid ${border}`, borderRadius: 8, fontSize: 14, color: textPrimary, background: darkMode ? "#25262b" : "#fff", outline: "none", boxSizing: "border-box", opacity: b ? 0.7 : 1, cursor: b ? "not-allowed" : "text" }} />
                    <p style={{ fontSize: 12, color: textSecondary, margin: "8px 0 0 0" }}>* 개발자와 사전에 약속된 영어 코드를 입력해 주세요.</p>
                  </div>
               )}

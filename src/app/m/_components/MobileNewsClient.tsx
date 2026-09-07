@@ -10,6 +10,7 @@ import { getVacancyCountByKeyword, getVacancyListByKeyword } from "@/app/actions
 import HomeHeader from "../_components/HomeHeader";
 import AuthorProfileHeader from "../_components/AuthorProfileHeader";
 import AuthModal from "@/components/AuthModal";
+import BannerSlot from "@/components/BannerSlot";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import { formatSection1 } from "@/utils/formatCategory";
@@ -1889,49 +1890,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   </p>
                 </div>
 
-                {/* 11만 무료 공동중개 & 공실등록 비주얼 바로가기 배너 */}
-                <Link
-                  href="/m/newsrealty"
-                  style={{
-                    display: "block",
-                    marginTop: "12px",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    position: "relative",
-                    textDecoration: "none",
-                    boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
-                    aspectRatio: "21/9",
-                    background: "#091e3a",
-                  }}
-                >
-                  <img
-                    src="/images/banners/free_network_banner.jpg"
-                    alt="11만 부동산 무료 공동중개 네트워크"
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background: "linear-gradient(to right, rgba(9,30,58,0.92) 0%, rgba(9,30,58,0.65) 50%, rgba(9,30,58,0.1) 100%)",
-                      padding: "12px 14px",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      color: "#ffffff",
-                    }}
-                  >
-                    <span style={{ fontSize: "10px", fontWeight: 800, color: "#38bdf8", letterSpacing: "0.5px", marginBottom: "2px" }}>
-                      100% 평생 무료 실매물망
-                    </span>
-                    <div style={{ fontSize: "14.5px", fontWeight: 900, lineHeight: 1.25, letterSpacing: "-0.3px" }}>
-                      내 지역 공실등록 &amp; 11만 공동중개 →
-                    </div>
-                    <div style={{ fontSize: "11px", color: "#bae6fd", marginTop: "3px" }}>
-                      지도 기반 무료 열람 · AI 보고서 자동생성
-                    </div>
-                  </div>
-                </Link>
+                {/* 최고관리자 광고관리 연동 모바일 뉴스 상단 배너 (탭별 맞춤 노출) */}
+                <BannerSlot
+                  placement="MOBILE_NEWS_TOP"
+                  tab={isAll ? "all" : activeTab}
+                  style={{ marginTop: "12px", borderRadius: "12px" }}
+                />
               </div>
             );
           })()}
