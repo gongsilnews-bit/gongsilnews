@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -1194,13 +1195,30 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
 
       {/* 이미지 라이트박스 (확대 보기) */}
       {zoomImage && (
-        <div 
-          style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100dvh", backgroundColor: "rgba(0,0,0,0.9)", zIndex: 99999999, display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out", animation: "fadeIn 0.2s ease" }}
-          onClick={() => setZoomImage(null)}
-        >
-          <img src={zoomImage} style={{ maxWidth: "95vw", maxHeight: "95dvh", objectFit: "contain", userSelect: "none" }} alt="Zoomed" />
-          <div style={{ position: "absolute", top: "20px", right: "20px", color: "white", fontSize: "36px", fontWeight: "300", cursor: "pointer", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", borderRadius: "50%", lineHeight: 1 }}>✕</div>
-        </div>
+        isMobile ? (
+          typeof document !== "undefined" ? createPortal(
+            <div style={{ position: "fixed", inset: 0, backgroundColor: "#000", zIndex: 99999999, display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "16px", display: "flex", justifyContent: "flex-end", alignItems: "center", color: "#fff" }}>
+                <button onClick={() => setZoomImage(null)} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", padding: "4px" }}>✕</button>
+              </div>
+              <div
+                style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
+                onClick={() => setZoomImage(null)}
+              >
+                <img src={zoomImage} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", userSelect: "none" }} alt="확대 이미지" />
+              </div>
+            </div>,
+            document.body
+          ) : null
+        ) : (
+          <div
+            style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100dvh", backgroundColor: "rgba(0,0,0,0.9)", zIndex: 99999999, display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out", animation: "fadeIn 0.2s ease" }}
+            onClick={() => setZoomImage(null)}
+          >
+            <img src={zoomImage} style={{ maxWidth: "95vw", maxHeight: "95dvh", objectFit: "contain", userSelect: "none" }} alt="Zoomed" />
+            <div style={{ position: "absolute", top: "20px", right: "20px", color: "white", fontSize: "36px", fontWeight: "300", cursor: "pointer", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", borderRadius: "50%", lineHeight: 1 }}>✕</div>
+          </div>
+        )
       )}
 
       <style>{`
