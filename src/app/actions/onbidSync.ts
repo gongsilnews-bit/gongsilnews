@@ -39,7 +39,61 @@ async function getCoordinates(address: string): Promise<{ lat: number; lng: numb
       }
     }
   } catch (error) {
-    console.error("좌표 변환 에러:", error);
+    // console.error("좌표 변환 에러:", error);
+  }
+  return null;
+}
+
+// ─── 스마트 다단계 주소 정제 및 좌표 폴백 ────────────────────────
+function cleanAddressCandidates(fullAddress: string, item: any): string[] {
+  const candidates: string[] = [];
+  const seen = new Set<string>();
+  const addCand = (str?: string | null) => {
+    if (!str) return;
+    const clean = str.replace(/\s+/g, " ").trim();
+    if (clean && !seen.has(clean)) {
+      seen.add(clean);
+      candidates.push(clean);
+    }
+  };
+
+  // 1단계: 용도 수식어 및 괄호 부가설명 제거
+  let base = fullAddress
+    .replace(/\s+(?:근린생활시설|아파트|오피스텔|상가|주택|대지|토지|건물|공장|빌딩|창고|사무실|단독주택|다세대주택|연립주택|도시형생활주택|주상복합|노유자시설|종교시설|숙박시설|위락시설|자동차관련시설).*$/i, "")
+    .replace(/\(.*?\)/g, "")
+    .trim();
+  addCand(base);
+
+  // 2단계: 번지/건물번호까지만 추출한 지번 주소
+  const lotMatch = base.match(/^(.+?(?:동|리|로|길)\s*(?:산\s*)?\d+(?:-\d+)?)/);
+  if (lotMatch && lotMatch[1]) {
+    addCand(lotMatch[1]);
+  }
+
+  // 3단계: "외 N필지", "제N층", "제N호", 복수 지번 제거
+  const refined = base
+    .replace(/외\s*\d+필지/g, "")
+    .replace(/제?\d+층/g, "")
+    .replace(/제?[가-힣\w\d]+호/g, "")
+    .replace(/,\s*\d+(?:-\d+)?/g, "");
+  addCand(refined);
+
+  // 4단계: 읍면동 단위 폴백 (lctnSdnm + lctnSggnm + lctnEmdNm)
+  const dongFallback = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""} ${item.lctnEmdNm || ""}`.trim();
+  addCand(dongFallback);
+
+  // 5단계: 시군구 단위 폴백 (최후의 안전망)
+  const sggFallback = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""}`.trim();
+  addCand(sggFallback);
+
+  return candidates;
+}
+
+async function getSmartCoordinates(fullAddress: string, item: any): Promise<{ lat: number; lng: number } | null> {
+  const candidates = cleanAddressCandidates(fullAddress, item);
+  for (const cand of candidates) {
+    const coords = await getCoordinates(cand);
+    if (coords) return coords;
   }
   return null;
 }
@@ -116,7 +170,7 @@ async function fetchOnbidItems(serviceKey: string, targetSido: string): Promise<
     } catch (err: any) {
       console.error(`API pageNo=${pageNo} 에러:`, err);
       hasMore = false;
-      throw err; // 에러를 상위로 전파하여 침묵하지 않도록 함
+      throw err;
     }
   }
   return items;
@@ -160,14 +214,40 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
   console.log(`🤖 [v2] 온비드 UPSERT 동기화 시작 (${targetSido})`);
 
   try {
-    // ═══ 1단계: 온비드 API에서 현재 유효 물건 전체 수집 ═══
-    const apiItems = await fetchOnbidItems(serviceKey, targetSido);
+    // ═══ 1단계: 온비드 API 호출용 시도명 변환 및 수집 ═══
+    // 온비드 API v2 규격: 광주광역시, 전라남도는 '전남광주통합특별시'로 등록되어 있음
+    const isGwangju = targetSido.includes("광주");
+    const isJeonnam = targetSido.includes("전남") || targetSido.includes("전라남도");
+    const apiSearchSido = (isGwangju || isJeonnam) ? "전남광주통합특별시" : targetSido;
+
+    let apiItems = await fetchOnbidItems(serviceKey, apiSearchSido);
+
+    if (isGwangju || isJeonnam) {
+      const GWANGJU_DISTRICTS = new Set(["동구", "서구", "남구", "북구", "광산구"]);
+      apiItems = apiItems.filter((item) => {
+        const sgg = (item.lctnSggnm || "").trim();
+        const matchesGwangju = GWANGJU_DISTRICTS.has(sgg);
+        if (isGwangju) {
+          if (matchesGwangju) {
+            item.lctnSdnm = "광주광역시";
+            return true;
+          }
+          return false;
+        } else {
+          if (!matchesGwangju) {
+            item.lctnSdnm = "전라남도";
+            return true;
+          }
+          return false;
+        }
+      });
+    }
     
     if (apiItems.length === 0) {
       console.log(`📦 ${targetSido}: API에서 가져올 물건이 없습니다.`);
-      return { success: true, inserted: 0, updated: 0, deleted: 0, skipped: 0 };
+      return { success: true, inserted: 0, updated: 0, deleted: 0, skipped: 0, elapsed: "0.1" };
     }
-    console.log(`📦 API 수집: ${apiItems.length}건`);
+    console.log(`📦 API 수집: ${apiItems.length}건 (${targetSido})`);
 
     // ═══ 2단계: API 물건을 공고번호(cltrMngNo) 기준으로 중복 제거 ═══
     // 같은 공고번호에 여러 입찰 회차가 있으면 → 가장 최근 입찰일 것만 유지
@@ -180,7 +260,6 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
       if (!existing) {
         apiMap.set(mngNo, item);
       } else {
-        // 입찰 종료일이 더 최근인 것을 유지
         const existEnd = existing.cltrBidEndDt || "";
         const newEnd = item.cltrBidEndDt || "";
         if (newEnd > existEnd) {
@@ -188,55 +267,57 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
         }
       }
     }
-    console.log(`📋 공고번호 기준 고유 물건: ${apiMap.size}건 (API ${apiItems.length}건 → 중복 제거)`);
+    console.log(`📋 공고번호 기준 고유 물건: ${apiMap.size}건 (API ${apiItems.length}건 → 고유 필터)`);
 
-    const { data: dbRows } = await supabase
-      .from("vacancies")
-      .select("id, metadata, lat, lng, building_name, detail_addr")
-      .eq("trade_type", "경매")
-      .in("sido", [targetSido, normalizeSido(targetSido)])
-      .eq("status", "ACTIVE");
+    // ═══ 3단계: DB 기존 매물 조회 (페이징으로 1,000건 제한 완벽 우회) ═══
+    const sidoFilters = [targetSido, normalizeSido(targetSido), targetSido.substring(0, 2)];
+    if (targetSido === "강원특별자치도") sidoFilters.push("강원도");
+    if (targetSido === "제주특별자치도") sidoFilters.push("제주도");
+    if (targetSido === "전북특별자치도") sidoFilters.push("전라북도");
+
+    const dbRows: any[] = [];
+    let dbPage = 0;
+    let hasMoreDb = true;
+
+    while (hasMoreDb) {
+      const { data: pageRows, error: dbErr } = await supabase
+        .from("vacancies")
+        .select("id, metadata, lat, lng, building_name, detail_addr, sido")
+        .eq("trade_type", "경매")
+        .in("sido", sidoFilters)
+        .eq("status", "ACTIVE")
+        .range(dbPage * 1000, (dbPage + 1) * 1000 - 1);
+
+      if (dbErr) {
+        console.error("DB 기존 매물 조회 에러:", dbErr.message);
+        break;
+      }
+
+      if (pageRows && pageRows.length > 0) {
+        dbRows.push(...pageRows);
+        dbPage++;
+        hasMoreDb = pageRows.length === 1000;
+      } else {
+        hasMoreDb = false;
+      }
+    }
 
     // DB의 공고번호 → vacancy ID 맵 구축
     const dbMap = new Map<string, { id: string; lat: number; lng: number }>();
     const dbMngNos = new Set<string>();
     
-    if (dbRows) {
-      for (const row of dbRows) {
-        const mngNo = (row.metadata as any)?.cltrMngNo;
-        if (mngNo) {
-          dbMap.set(String(mngNo), { id: row.id, lat: row.lat, lng: row.lng });
-          dbMngNos.add(String(mngNo));
-        }
+    for (const row of dbRows) {
+      const mngNo = (row.metadata as any)?.cltrMngNo;
+      if (mngNo) {
+        dbMap.set(String(mngNo), { id: row.id, lat: row.lat, lng: row.lng });
+        dbMngNos.add(String(mngNo));
       }
     }
-    console.log(`📋 DB 기존 매물: ${dbMap.size}건 (공고번호 보유)`);
+    console.log(`📋 DB 기존 매물: ${dbMap.size}건 (공고번호 보유, 전체 ${dbRows.length}건)`);
 
-    // sido 필터 보정 (DB에서 sido 컬럼이 "서울" vs "서울특별시" 등 차이 대응)
-    // 공고번호가 없는 레거시 매물도 조회
-    if (dbMap.size === 0 && dbRows && dbRows.length === 0) {
-      // sido 컬럼이 다를 수 있으므로 trade_type=경매 전체에서 metadata.cltrMngNo로 재조회
-      const { data: allAuctions } = await supabase
-        .from("vacancies")
-        .select("id, metadata, lat, lng, sido")
-        .eq("trade_type", "경매")
-        .eq("status", "ACTIVE");
-      
-      if (allAuctions) {
-        for (const row of allAuctions) {
-          const mngNo = (row.metadata as any)?.cltrMngNo;
-          if (mngNo) {
-            dbMap.set(String(mngNo), { id: row.id, lat: row.lat, lng: row.lng });
-            dbMngNos.add(String(mngNo));
-          }
-        }
-        console.log(`📋 (폴백) 전체 경매 매물에서 공고번호 ${dbMap.size}건 확보`);
-      }
-    }
-
-    // ═══ 4단계: INSERT / UPDATE 분류 ═══
-    const toInsert: any[] = [];  // 신규 (DB에 없는 공고번호)
-    const toUpdate: any[] = [];  // 기존 (DB에 있는 공고번호 → 가격/일자 업데이트)
+    // ═══ 4단계: INSERT / UPDATE / DELETE 분류 ═══
+    const toInsert: any[] = [];
+    const toUpdate: any[] = [];
     
     for (const [mngNo, item] of apiMap.entries()) {
       if (dbMap.has(mngNo)) {
@@ -258,8 +339,8 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
 
     console.log(`🔍 분류 완료: 신규 ${toInsert.length}건, 업데이트 ${toUpdate.length}건, 삭제 ${toDelete.length}건`);
 
-    // ═══ 5단계: 신규 매물 지오코딩 (신규만!) ═══
-    const newAddresses = new Map<string, string>(); // address → mngNo
+    // ═══ 5단계: 신규 매물 지오코딩 (스마트 5단계 폴백 병렬 캐싱) ═══
+    const newAddresses = new Map<string, any>();
     for (const { item } of toInsert) {
       let address = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""} ${item.lctnEmdNm || ""}`.trim();
       const propertyName = item.onbidCltrNm || "";
@@ -267,116 +348,59 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
         const addrMatch = propertyName.match(/^(.*?)(?:\s+(?:근린생활시설|아파트|오피스텔|상가|주택|대지|토지|건물|공장|빌딩|창고|사무실))?$/);
         if (addrMatch?.[1]) address = addrMatch[1].trim();
       }
-      if (address) newAddresses.set(address, address);
+      if (address) newAddresses.set(address, item);
     }
 
     const coordsCache = new Map<string, { lat: number; lng: number }>();
     if (newAddresses.size > 0) {
       console.log(`📍 신규 ${newAddresses.size}개 주소 지오코딩 시작...`);
-      const addrArray = Array.from(newAddresses.keys());
-      for (let i = 0; i < addrArray.length; i += 20) {
-        const chunk = addrArray.slice(i, i + 20);
-        await Promise.all(chunk.map(async (addr) => {
-          const coords = await getCoordinates(addr);
+      const addrEntries = Array.from(newAddresses.entries());
+      const CHUNK_SIZE = 20;
+      for (let i = 0; i < addrEntries.length; i += CHUNK_SIZE) {
+        const chunk = addrEntries.slice(i, i + CHUNK_SIZE);
+        await Promise.all(chunk.map(async ([addr, item]) => {
+          const coords = await getSmartCoordinates(addr, item);
           if (coords) coordsCache.set(addr, coords);
         }));
       }
-      console.log(`📍 지오코딩 완료: ${coordsCache.size}/${addrArray.length}개 좌표 확보`);
+      console.log(`📍 지오코딩 완료: ${coordsCache.size}/${addrEntries.length}개 좌표 확보`);
     }
 
     // ═══ 6단계: 관리자 ID 확보 ═══
     const ownerId = await getAdminOwnerId(supabase);
 
-    // ═══ 7단계: INSERT (신규 매물 등록) ═══
+    // ═══ 7단계: INSERT (신규 매물 등록 - 20개씩 병렬 배치) ═══
     let insertedCount = 0;
     let skippedCount = 0;
 
-    for (const { mngNo, item } of toInsert) {
-      const propertyName = item.onbidCltrNm || "";
-      let address = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""} ${item.lctnEmdNm || ""}`.trim();
-      if (propertyName) {
-        const addrMatch = propertyName.match(/^(.*?)(?:\s+(?:근린생활시설|아파트|오피스텔|상가|주택|대지|토지|건물|공장|빌딩|창고|사무실))?$/);
-        if (addrMatch?.[1]) address = addrMatch[1].trim();
-      }
-
-      const coords = coordsCache.get(address);
-      if (!coords) { skippedCount++; continue; }
-
-      const parsedAddr = parseAddress(address);
-      const propertyType = mapPropertyType(item.cltrUsgMclsCtgrNm || item.cltrUsgLclsCtgrNm, propertyName);
-      const deposit = Math.round(parseInt(item.lowstBidPrcIndctCont || "0", 10) / 10000);
-      const appraisalPrice = Math.round(parseInt(item.apslEvlAmt || "0", 10) / 10000);
-      const bidStart = formatOnbidDate(item.cltrBidBgngDt);
-      const bidEnd = formatOnbidDate(item.cltrBidEndDt);
-
-      const description = `[📢 온비드 공매 추천 매물]
-* 공고번호: ${mngNo}
-* 물건번호 (온비드 고유 ID): ${item.onbidCltrno || ""}
-* 감정평가액: ${(appraisalPrice * 10000).toLocaleString()}원
-* 최저입찰가격: ${(deposit * 10000).toLocaleString()}원
-* 입찰 기간: ${bidStart} ~ ${bidEnd}
-
-본 매물은 한국자산관리공사(KAMCO)에서 진행하는 공식 공매 물건입니다. 
-인터넷 입찰은 온비드 사이트에서 입찰 기간 내에 직접 참여하실 수 있습니다. 
-주변 시세 대비 압도적으로 합리적인 최저가로 내 집 마련 또는 투자 기회를 선점하세요!`;
-
-      const metadata: Record<string, any> = {
-        source_type: "ONBID",
-        cltrMngNo: mngNo, // ⭐ UPSERT 고유 키
-        bid_start_date: bidStart,
-        bid_end_date: bidEnd,
-        appraisal_price: appraisalPrice * 10000,
-        lowest_bid_price: deposit * 10000,
-        discount_rate: appraisalPrice > 0 ? Math.round(((appraisalPrice - deposit) / appraisalPrice) * 100) : 0,
-      };
-      for (const [key, val] of Object.entries(item)) { metadata[key] = val; }
-
-      const { data: inserted, error: insertErr } = await supabase.from("vacancies").insert({
-        owner_id: ownerId, owner_role: "ADMIN", property_type: propertyType, trade_type: "경매",
-        deposit, monthly_rent: 0, maintenance_fee: 0,
-        sido: parsedAddr.sido, sigungu: parsedAddr.sigungu, dong: parsedAddr.dong, detail_addr: parsedAddr.detail_addr,
-        building_name: propertyName, lat: coords.lat, lng: coords.lng,
-        description, status: "ACTIVE", address_exposure: "지번공개", move_in_date: "즉시입주", consent: true,
-        metadata
-      }).select("id").maybeSingle();
-
-      if (insertErr) {
-        console.error(`INSERT 실패(${propertyName}):`, insertErr.message);
-        skippedCount++;
-      } else {
-        insertedCount++;
-        // 이미지 등록
-        if (inserted?.id && item.thnlImgUrlAdr) {
-          try {
-            const highResUrl = item.thnlImgUrlAdr.replace("downloadImageKind=THNL_NM", "downloadImageKind=ORIG_NM");
-            await supabase.from("vacancy_photos").insert({ vacancy_id: inserted.id, url: highResUrl, sort_order: 1 });
-          } catch {}
+    const INSERT_CHUNK = 20;
+    for (let i = 0; i < toInsert.length; i += INSERT_CHUNK) {
+      const chunk = toInsert.slice(i, i + INSERT_CHUNK);
+      await Promise.all(chunk.map(async ({ mngNo, item }) => {
+        const propertyName = item.onbidCltrNm || "";
+        let address = `${item.lctnSdnm || ""} ${item.lctnSggnm || ""} ${item.lctnEmdNm || ""}`.trim();
+        if (propertyName) {
+          const addrMatch = propertyName.match(/^(.*?)(?:\s+(?:근린생활시설|아파트|오피스텔|상가|주택|대지|토지|건물|공장|빌딩|창고|사무실))?$/);
+          if (addrMatch?.[1]) address = addrMatch[1].trim();
         }
-      }
-    }
 
-    // ═══ 8단계: UPDATE (기존 매물 가격/입찰일 갱신) ═══
-    let updatedCount = 0;
+        const coords = coordsCache.get(address);
+        if (!coords) {
+          skippedCount++;
+          return;
+        }
 
-    for (const { mngNo, item, dbRecord } of toUpdate) {
-      const deposit = Math.round(parseInt(item.lowstBidPrcIndctCont || "0", 10) / 10000);
-      const appraisalPrice = Math.round(parseInt(item.apslEvlAmt || "0", 10) / 10000);
-      const bidStart = formatOnbidDate(item.cltrBidBgngDt);
-      const bidEnd = formatOnbidDate(item.cltrBidEndDt);
-      const propertyType = mapPropertyType(item.cltrUsgMclsCtgrNm || item.cltrUsgLclsCtgrNm, item.onbidCltrNm);
+        const parsedAddr = parseAddress(address);
+        const resolvedSido = (targetSido === "광주광역시" || targetSido === "전라남도")
+          ? targetSido
+          : (parsedAddr.sido || targetSido);
+        const propertyType = mapPropertyType(item.cltrUsgMclsCtgrNm || item.cltrUsgLclsCtgrNm, propertyName);
+        const deposit = Math.round(parseInt(item.lowstBidPrcIndctCont || "0", 10) / 10000);
+        const appraisalPrice = Math.round(parseInt(item.apslEvlAmt || "0", 10) / 10000);
+        const bidStart = formatOnbidDate(item.cltrBidBgngDt);
+        const bidEnd = formatOnbidDate(item.cltrBidEndDt);
 
-      const metadata: Record<string, any> = {
-        source_type: "ONBID",
-        cltrMngNo: mngNo,
-        bid_start_date: bidStart,
-        bid_end_date: bidEnd,
-        appraisal_price: appraisalPrice * 10000,
-        lowest_bid_price: deposit * 10000,
-        discount_rate: appraisalPrice > 0 ? Math.round(((appraisalPrice - deposit) / appraisalPrice) * 100) : 0,
-      };
-      for (const [key, val] of Object.entries(item)) { metadata[key] = val; }
-
-      const description = `[📢 온비드 공매 추천 매물]
+        const description = `[📢 온비드 공매 추천 매물]
 * 공고번호: ${mngNo}
 * 물건번호 (온비드 고유 ID): ${item.onbidCltrno || ""}
 * 감정평가액: ${(appraisalPrice * 10000).toLocaleString()}원
@@ -387,33 +411,104 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
 인터넷 입찰은 온비드 사이트에서 입찰 기간 내에 직접 참여하실 수 있습니다. 
 주변 시세 대비 압도적으로 합리적인 최저가로 내 집 마련 또는 투자 기회를 선점하세요!`;
 
-      const { error } = await supabase.from("vacancies")
-        .update({ deposit, metadata, description, property_type: propertyType })
-        .eq("id", dbRecord.id);
+        const metadata: Record<string, any> = {
+          source_type: "ONBID",
+          cltrMngNo: mngNo,
+          bid_start_date: bidStart,
+          bid_end_date: bidEnd,
+          appraisal_price: appraisalPrice * 10000,
+          lowest_bid_price: deposit * 10000,
+          discount_rate: appraisalPrice > 0 ? Math.round(((appraisalPrice - deposit) / appraisalPrice) * 100) : 0,
+        };
+        for (const [key, val] of Object.entries(item)) { metadata[key] = val; }
 
-      if (!error) updatedCount++;
+        const { data: inserted, error: insertErr } = await supabase.from("vacancies").insert({
+          owner_id: ownerId, owner_role: "ADMIN", property_type: propertyType, trade_type: "경매",
+          deposit, monthly_rent: 0, maintenance_fee: 0,
+          sido: resolvedSido, sigungu: parsedAddr.sigungu || item.lctnSggnm || "", dong: parsedAddr.dong || item.lctnEmdNm || "", detail_addr: parsedAddr.detail_addr,
+          building_name: propertyName, lat: coords.lat, lng: coords.lng,
+          description, status: "ACTIVE", address_exposure: "지번공개", move_in_date: "즉시입주", consent: true,
+          metadata
+        }).select("id").maybeSingle();
+
+        if (insertErr) {
+          console.error(`INSERT 실패(${propertyName}):`, insertErr.message);
+          skippedCount++;
+        } else {
+          insertedCount++;
+          if (inserted?.id && item.thnlImgUrlAdr) {
+            try {
+              const highResUrl = item.thnlImgUrlAdr.replace("downloadImageKind=THNL_NM", "downloadImageKind=ORIG_NM");
+              await supabase.from("vacancy_photos").insert({ vacancy_id: inserted.id, url: highResUrl, sort_order: 1 });
+            } catch {}
+          }
+        }
+      }));
     }
 
-    // ═══ 9단계: DELETE (API에 없는 매물 삭제) ═══
-    let deletedCount = 0;
+    // ═══ 8단계: UPDATE (기존 매물 가격/일자 갱신 - 25개씩 병렬 배치) ═══
+    let updatedCount = 0;
+    const UPDATE_CHUNK = 25;
+    for (let i = 0; i < toUpdate.length; i += UPDATE_CHUNK) {
+      const chunk = toUpdate.slice(i, i + UPDATE_CHUNK);
+      await Promise.all(chunk.map(async ({ mngNo, item, dbRecord }) => {
+        const deposit = Math.round(parseInt(item.lowstBidPrcIndctCont || "0", 10) / 10000);
+        const appraisalPrice = Math.round(parseInt(item.apslEvlAmt || "0", 10) / 10000);
+        const bidStart = formatOnbidDate(item.cltrBidBgngDt);
+        const bidEnd = formatOnbidDate(item.cltrBidEndDt);
+        const propertyType = mapPropertyType(item.cltrUsgMclsCtgrNm || item.cltrUsgLclsCtgrNm, item.onbidCltrNm);
 
+        const metadata: Record<string, any> = {
+          source_type: "ONBID",
+          cltrMngNo: mngNo,
+          bid_start_date: bidStart,
+          bid_end_date: bidEnd,
+          appraisal_price: appraisalPrice * 10000,
+          lowest_bid_price: deposit * 10000,
+          discount_rate: appraisalPrice > 0 ? Math.round(((appraisalPrice - deposit) / appraisalPrice) * 100) : 0,
+        };
+        for (const [key, val] of Object.entries(item)) { metadata[key] = val; }
+
+        const description = `[📢 온비드 공매 추천 매물]
+* 공고번호: ${mngNo}
+* 물건번호 (온비드 고유 ID): ${item.onbidCltrno || ""}
+* 감정평가액: ${(appraisalPrice * 10000).toLocaleString()}원
+* 최저입찰가격: ${(deposit * 10000).toLocaleString()}원
+* 입찰 기간: ${bidStart} ~ ${bidEnd}
+
+본 매물은 한국자산관리공사(KAMCO)에서 진행하는 공식 공매 물건입니다. 
+인터넷 입찰은 온비드 사이트에서 입찰 기간 내에 직접 참여하실 수 있습니다. 
+주변 시세 대비 압도적으로 합리적인 최저가로 내 집 마련 또는 투자 기회를 선점하세요!`;
+
+        const { error } = await supabase.from("vacancies")
+          .update({ deposit, metadata, description, property_type: propertyType })
+          .eq("id", dbRecord.id);
+
+        if (!error) updatedCount++;
+      }));
+    }
+
+    // ═══ 9단계: DELETE (API에 없는 매물 삭제 - 100건씩 배치) ═══
+    let deletedCount = 0;
     if (toDelete.length > 0) {
-      // 사진 먼저 삭제
-      await supabase.from("vacancy_photos").delete().in("vacancy_id", toDelete);
-      const { error: delErr } = await supabase.from("vacancies").delete().in("id", toDelete);
-      if (!delErr) {
-        deletedCount = toDelete.length;
-      } else {
-        console.error("삭제 오류:", delErr.message);
+      for (let i = 0; i < toDelete.length; i += 100) {
+        const batch = toDelete.slice(i, i + 100);
+        await supabase.from("vacancy_photos").delete().in("vacancy_id", batch);
+        const { error: delErr } = await supabase.from("vacancies").delete().in("id", batch);
+        if (!delErr) {
+          deletedCount += batch.length;
+        } else {
+          console.error("삭제 오류:", delErr.message);
+        }
       }
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`🤖 [v2] ${targetSido} 동기화 완료! (${elapsed}초) [신규: ${insertedCount}, 업데이트: ${updatedCount}, 삭제: ${deletedCount}, 스킵: ${skippedCount}]`);
 
-    // 💡 [대표님 긴급 지침] 동기화 성공 직후 즉시 중복 매물을 전량 검사하여 최신 1건만 보존하고 박멸!
+    // 💡 해당 시도 중복 매물 고속 정리
     try {
-      await deduplicateOnbidProperties();
+      await deduplicateOnbidProperties(targetSido);
     } catch (dedupErr) {
       console.error("중복 제거 실행 중 에러:", dedupErr);
     }
@@ -433,29 +528,38 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
 }
 
 /**
- * 🧹 기존 중복 매물 일괄 정리 (1회성 마이그레이션)
+ * 🧹 온비드 중복 매물 정리 (시도별 또는 전국)
  * 같은 공고번호(cltrMngNo)의 중복 레코드 중 최신 1건만 남기고 삭제
  */
-export async function deduplicateOnbidProperties() {
+export async function deduplicateOnbidProperties(targetSido?: string) {
   const supabase = getAdminClient();
-  console.log("🧹 기존 온비드 중복 매물 정리 시작...");
+  console.log(`🧹 온비드 중복 매물 정리 시작... (${targetSido || "전국"})`);
 
-  // 모든 경매 매물 조회 (페이징 적용하여 1,000건 제한 우회)
   const allAuctions: any[] = [];
   let page = 0;
   let hasMore = true;
 
+  const sidoFilters = targetSido ? [targetSido, normalizeSido(targetSido), targetSido.substring(0, 2)] : null;
+  if (targetSido === "강원특별자치도" && sidoFilters) sidoFilters.push("강원도");
+  if (targetSido === "제주특별자치도" && sidoFilters) sidoFilters.push("제주도");
+  if (targetSido === "전북특별자치도" && sidoFilters) sidoFilters.push("전라북도");
+
   while (hasMore) {
-    const { data, error } = await supabase
+    let query = supabase
       .from("vacancies")
       .select("id, description, metadata, created_at")
       .eq("trade_type", "경매")
       .eq("status", "ACTIVE")
-      .order("created_at", { ascending: false })
-      .range(page * 1000, (page + 1) * 1000 - 1);
+      .order("created_at", { ascending: false });
+
+    if (sidoFilters) {
+      query = query.in("sido", sidoFilters);
+    }
+
+    const { data, error } = await query.range(page * 1000, (page + 1) * 1000 - 1);
 
     if (error) {
-      console.error("조회 실패:", error.message);
+      console.error("중복 매물 조회 실패:", error.message);
       return { success: false, error: error.message };
     }
 
@@ -469,14 +573,11 @@ export async function deduplicateOnbidProperties() {
   }
 
   // 공고번호별로 그룹핑
-  const groups = new Map<string, string[]>(); // mngNo → [id, id, ...]
+  const groups = new Map<string, string[]>();
   let noMngNoCount = 0;
 
   for (const row of allAuctions) {
-    // metadata에서 cltrMngNo 추출
     let mngNo = (row.metadata as any)?.cltrMngNo;
-    
-    // 없으면 description에서 추출
     if (!mngNo) {
       const match = row.description?.match(/공고번호:\s*(\S+)/);
       mngNo = match?.[1];
@@ -499,15 +600,13 @@ export async function deduplicateOnbidProperties() {
   for (const [mngNo, ids] of groups.entries()) {
     if (ids.length > 1) {
       duplicateGroups++;
-      // ids[0] = 최신 (order by created_at desc), 나머지 삭제
       idsToDelete.push(...ids.slice(1));
     }
   }
 
-  console.log(`📋 분석 결과: ${groups.size}개 공고번호, ${duplicateGroups}개 중복 그룹, ${idsToDelete.length}건 삭제 대상, ${noMngNoCount}건 공고번호 없음`);
+  console.log(`📋 중복 분석 결과: ${groups.size}개 공고번호, ${duplicateGroups}개 중복 그룹, ${idsToDelete.length}건 삭제 대상`);
 
   if (idsToDelete.length > 0) {
-    // 배치 삭제 (100건씩)
     for (let i = 0; i < idsToDelete.length; i += 100) {
       const batch = idsToDelete.slice(i, i + 100);
       await supabase.from("vacancy_photos").delete().in("vacancy_id", batch);
