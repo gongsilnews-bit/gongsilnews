@@ -63,7 +63,44 @@ export const normalizeSido = (sido: string | null): string => {
   return clean.substring(0, 2);
 };
 
-export function filterVacanciesList(vacancies: any[], filters: FilterState): any[] {
+type VacancyLike = {
+  [key: string]: unknown;
+  trade_type?: string;
+  property_type?: string;
+  sub_category?: string;
+  building_name?: string | null;
+  sido?: string | null;
+  sigungu?: string | null;
+  dong?: string | null;
+  vacancy_no?: string | null;
+  deposit?: number;
+  monthly_rent?: number;
+  deposit_price?: number;
+  trade_price?: number;
+  exclusive_area?: number | null;
+  approval_date?: string | null;
+  floor?: string | null;
+  room_count?: number;
+  rooms?: string | null;
+  bath_count?: number;
+  bathrooms?: string | null;
+  direction?: string | null;
+  main_direction?: string | null;
+  total_units?: number | string | null;
+  maintenance_fee?: number | null;
+  maintenance_cost?: number | null;
+  maint_fee?: number | null;
+  parking?: string | null;
+  options?: string[] | string | null;
+  facilities?: string[] | string | null;
+  owner_role?: string | null;
+  realtor_commission?: string | null;
+  commission_type?: string | null;
+  themes?: string[] | null;
+  metadata?: Record<string, unknown> | null;
+};
+
+export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterState): VacancyLike[] {
   const filterSidoNorm = normalizeSido(filters.sido);
   const filterSigunguNorm = filters.sigungu?.trim() || "";
   const filterDongNorm = filters.dong?.trim() || "";
@@ -79,9 +116,9 @@ export function filterVacanciesList(vacancies: any[], filters: FilterState): any
       isPropMatch = true;
     } else if (v.trade_type === "경매") {
         // 🚀 [대표님 지침] 법원 경공매 모드 전용 6대 자산 분류 고성능 해석 엔진 (PC 동일)
-        const meta = v.metadata || {};
-        const mcls = meta.cltrUsgMclsCtgrNm || "";
-        const scls = meta.cltrUsgSclsCtgrNm || "";
+        const meta = (v.metadata ?? {}) as Record<string, unknown>;
+        const mcls = String(meta.cltrUsgMclsCtgrNm ?? "");
+        const scls = String(meta.cltrUsgSclsCtgrNm ?? "");
         
         isPropMatch = filters.propertyTypes.some((pill) => {
           if (pill === "아파트") return scls.includes("아파트") || scls.includes("오피스텔") || scls.includes("공동주택");
@@ -169,9 +206,9 @@ export function filterVacanciesList(vacancies: any[], filters: FilterState): any
       
       // 🚀 경매 전용 상세 필터 (PC GongsilClient.tsx 100% 동일)
       if (v.trade_type === "경매") {
-        const meta = (v as any).metadata || {};
-        const appraisal = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || 0;
-        const bidPrice = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
+        const meta = (v.metadata ?? {}) as Record<string, unknown>;
+        const appraisal = Number(meta.appraisal_price ?? (meta.apslEvlAmt ? Number(String(meta.apslEvlAmt)) : 0)) || 0;
+        const bidPrice = Number(meta.lowest_bid_price ?? (meta.lowstBidPrcIndctCont ? Number(String(meta.lowstBidPrcIndctCont)) : 0)) || 0;
 
         // 1) 감정가 필터
         if (filters.auctionAppraisalMin !== null && appraisal < filters.auctionAppraisalMin) return false;
@@ -190,14 +227,14 @@ export function filterVacanciesList(vacancies: any[], filters: FilterState): any
 
         // 4) 유찰 횟수 필터
         if (filters.auctionBidCount > 0) {
-          const bidCount = meta.bid_count || meta.pbctCnt || 0;
+          const bidCount = Number(meta.bid_count ?? meta.pbctCnt ?? 0) || 0;
           if (bidCount < filters.auctionBidCount) return false;
         }
 
         // 5) 입찰 시작일 필터
         if (filters.auctionStartDate && filters.auctionStartDate !== "all") {
           const now = new Date();
-          const dateStr = meta.pbctBegnDtm || meta.pblctBgnDtm || meta.bid_start_date || "";
+          const dateStr = String(meta.pbctBegnDtm ?? meta.pblctBgnDtm ?? meta.bid_start_date ?? "");
           if (!dateStr) return false;
           const bidDate = new Date(dateStr);
           const diffDays = (bidDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
@@ -350,8 +387,11 @@ export function filterVacanciesList(vacancies: any[], filters: FilterState): any
       }
 
       // 11. 위치 필터 (시/구/동) - [대표님 최종 개혁 지침]: 행정동 텍스트 하드 매칭을 걷어내어 화면(Bbox) 안 매물은 다 보이게 공간 연산 일원화!
-      // 단, 필터창에서 주소를 검색하여 결과 목록을 볼 때(B스타일)는 필터에서 선택한 구체적인 지역명과 매물 주소를 하드 매칭합니다.
-      if (filters.locationSearchType === 'filter') {
+      // 모바일에서는 위치 검색을 별도 필터로 두지 않고 현재 지도 영역을 기준으로 검색한다.
+      // 따라서 텍스트 기반 지역 매칭은 비활성화해 지도 범위가 우선되도록 한다.
+      if (filters.locationSearchType === 'filter' && !filters.sido && !filters.sigungu && !filters.dong) {
+        // no-op: map mode is the default for mobile searches
+      } else if (filters.locationSearchType === 'filter') {
         if (filterSidoNorm) {
           const vSidoNorm = normalizeSido(v.sido);
           if (vSidoNorm !== filterSidoNorm) return false;
@@ -370,7 +410,7 @@ export function filterVacanciesList(vacancies: any[], filters: FilterState): any
     });
 }
 
-export function useVacancyFilters(initialVacancies: any[]) {
+export function useVacancyFilters(initialVacancies: VacancyLike[]) {
   const [filters, setFilters] = useState<FilterState>(initialFilterState);
 
   const filteredVacancies = useMemo(() => {
@@ -379,11 +419,28 @@ export function useVacancyFilters(initialVacancies: any[]) {
 
   const updateFilter = (newFilters: Partial<FilterState>) => {
     setFilters(prev => {
+      const sanitizedNext = { ...prev, ...newFilters };
+
+      // 모바일은 지도 영역 기반 검색만 사용한다.
+      // 별도 행정구역 검색 상태를 유지하지 않고, 전역적으로 map mode를 강제한다.
+      const shouldKeepMapSearch =
+        newFilters.locationSearchType === 'filter' ||
+        newFilters.sido !== undefined ||
+        newFilters.sigungu !== undefined ||
+        newFilters.dong !== undefined;
+
+      if (shouldKeepMapSearch) {
+        sanitizedNext.locationSearchType = 'map';
+        sanitizedNext.sido = null;
+        sanitizedNext.sigungu = null;
+        sanitizedNext.dong = null;
+      }
+
       const hasChanges = Object.entries(newFilters).some(([key, value]) => {
         return prev[key as keyof FilterState] !== value;
       });
 
-      return hasChanges ? { ...prev, ...newFilters } : prev;
+      return hasChanges ? sanitizedNext : prev;
     });
   };
 

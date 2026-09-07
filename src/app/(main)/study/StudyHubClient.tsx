@@ -116,6 +116,13 @@ export default function StudyHubClient({
     return matchCategory && matchSearch;
   });
 
+  const formatLecturePrice = (item: any) => {
+    const value = Number(item?.price ?? 0);
+    if (!value) return "무료 수강";
+    if (value === 3000) return "3000 / 3000/m";
+    return `${value.toLocaleString()} P`;
+  };
+
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
@@ -458,7 +465,7 @@ export default function StudyHubClient({
 
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
                                 <span style={{ fontSize: 16, fontWeight: 800, color: item.price ? "#062828" : "#059669" }}>
-                                  {item.price ? `${item.price.toLocaleString()} P` : "무료 수강"}
+                                  {formatLecturePrice(item)}
                                 </span>
                                 <span style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>
                                   수강신청 ›

@@ -15,9 +15,86 @@ const CATEGORIES = [
 
 interface Props {
   activeTab?: string;
+  onLocationMove?: (lat: number, lng: number, zoom: number) => void;
 }
 
-export default function MobileTopBarHeader({ activeTab }: Props) {
+interface LocationResult {
+  id?: string;
+  place_name?: string;
+  address_name?: string;
+  road_address_name?: string;
+  y: string;
+  x: string;
+  category_name?: string;
+}
+
+interface KakaoLocationSearchApi {
+  maps?: {
+    services?: {
+      Places: new () => {
+        keywordSearch: (query: string, callback: (data: LocationResult[], status: string) => void) => void;
+      };
+      Status: { OK: string };
+    };
+  };
+}
+
+function VacancyLocationSearchOverlay({ onClose, onLocationMove }: { onClose: () => void; onLocationMove: (lat: number, lng: number, zoom: number) => void }) {
+  const [keyword, setKeyword] = useState("");
+  const [results, setResults] = useState<LocationResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const searchLocation = () => {
+    const query = keyword.trim();
+    const kakao = (window as Window & { kakao?: KakaoLocationSearchApi }).kakao;
+    if (!query || !kakao?.maps?.services) return;
+
+    setIsSearching(true);
+    const places = new kakao.maps.services.Places();
+    places.keywordSearch(query, (data: LocationResult[], status: string) => {
+      setResults(status === kakao.maps.services.Status.OK ? data : []);
+      setIsSearching(false);
+    });
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 99999, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #f3f4f6", gap: "10px" }}>
+        <button onClick={onClose} aria-label="검색 닫기" style={{ padding: "4px", background: "none", border: "none", cursor: "pointer" }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+        </button>
+        <input
+          autoFocus
+          value={keyword}
+          onChange={event => setKeyword(event.target.value)}
+          onKeyDown={event => event.key === "Enter" && searchLocation()}
+          placeholder="지역 또는 지하철역을 입력해 주세요"
+          style={{ flex: 1, padding: "11px 14px", border: "none", borderRadius: "8px", background: "#f8fafc", fontSize: "16px", outline: "none" }}
+        />
+        <button onClick={searchLocation} aria-label="지역 검색" style={{ padding: "4px", background: "none", border: "none", cursor: "pointer" }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a2e50" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+        </button>
+      </div>
+      <div style={{ padding: "18px 16px", overflowY: "auto" }}>
+        <div style={{ color: "#64748b", fontSize: "13px", marginBottom: "12px" }}>지역 또는 지하철역 검색 결과</div>
+        {isSearching && <div style={{ padding: "30px 0", textAlign: "center", color: "#94a3b8" }}>검색 중...</div>}
+        {!isSearching && keyword.trim() && results.length === 0 && <div style={{ padding: "30px 0", textAlign: "center", color: "#94a3b8" }}>검색 결과가 없습니다.</div>}
+        {results.map((result, index) => (
+          <button
+            key={result.id || `${result.x}-${result.y}-${index}`}
+            onClick={() => { onLocationMove(Number(result.y), Number(result.x), 5); onClose(); }}
+            style={{ width: "100%", padding: "13px 4px", textAlign: "left", background: "none", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer" }}
+          >
+            <div style={{ fontSize: "15px", fontWeight: 700, color: "#111827" }}>{result.place_name || result.address_name}</div>
+            <div style={{ marginTop: "4px", fontSize: "12px", color: "#64748b" }}>{result.road_address_name || result.address_name}{result.category_name ? ` · ${result.category_name}` : ""}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function MobileTopBarHeader({ activeTab, onLocationMove }: Props) {
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -301,7 +378,11 @@ export default function MobileTopBarHeader({ activeTab }: Props) {
       </div>
 
       {/* 검색 오버레이 */}
-      {isSearchOpen && <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
+      {isSearchOpen && activeTab === "gongsil" && onLocationMove ? (
+        <VacancyLocationSearchOverlay onClose={() => setIsSearchOpen(false)} onLocationMove={onLocationMove} />
+      ) : isSearchOpen ? (
+        <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      ) : null}
     </>
   );
 }

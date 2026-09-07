@@ -85,14 +85,14 @@ function MobileGongsilContent() {
   const [mapBounds, setMapBounds] = useState<any>(null);
   const [isFetchingVacancies, setIsFetchingVacancies] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(7);
-  const [activeMode, setActiveMode] = useState<"공실" | "경매">(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("mode") === "gongsil") return "공실";
-      if (params.get("mode") === "auction") return "경매";
-    }
-    return "공실";
-  });
+  // Keep the first server and client render identical; URL mode is applied after mount.
+  const [activeMode, setActiveMode] = useState<"공실" | "경매">("공실");
+  const urlMode = searchParams.get("mode");
+  const effectiveMode: "공실" | "경매" = urlMode === "auction"
+    ? "경매"
+    : urlMode === "gongsil"
+      ? "공실"
+      : activeMode;
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -147,10 +147,10 @@ function MobileGongsilContent() {
 
   // 경매 모드에서는 저장된 이전 필터와 관계없이 처음부터 전체 자산유형을 보여준다.
   useEffect(() => {
-    if (activeMode === "경매") {
+    if (effectiveMode === "경매") {
       setFilters({ ...initialFilterState, propertyTypes: AUCTION_PROPERTY_TYPES });
     }
-  }, [activeMode, setFilters]);
+  }, [effectiveMode, setFilters]);
 
   // 마지막 검색 조건 및 지도 상태 저장 헬퍼
   const saveLastSearchState = (currFilters: any, currMode: string, user: any) => {
@@ -188,6 +188,10 @@ function MobileGongsilContent() {
 
   // 마지막 검색 조건 및 모드 복구
   useEffect(() => {
+    if (urlMode === "gongsil" || urlMode === "auction") {
+      if (activeMode !== effectiveMode) setActiveMode(effectiveMode);
+      return;
+    }
     // URL에 mode가 명시된 경우 로컬스토리지를 통한 복구를 우회하고 최우선 적용
     const modeParam = searchParams.get("mode");
     if (modeParam === "gongsil") {
@@ -220,7 +224,7 @@ function MobileGongsilContent() {
 
     // 모드가 지정되지 않은 공실열람 진입은 실시간 공실을 기본으로 한다.
     setActiveMode("공실");
-  }, [currentUser, searchParams]);
+  }, [currentUser, searchParams, urlMode, activeMode, effectiveMode]);
 
   // 지도 객체 로드 완료 시 마지막 위치 복구
   useEffect(() => {
@@ -273,7 +277,6 @@ function MobileGongsilContent() {
   // 일반 리스트 뷰 상태
   const [showListView, setShowListView] = useState(false);
   const [listViewMode, setListViewMode] = useState<"map" | "filter">("map");
-  const [listVacanciesOverride, setListVacanciesOverride] = useState<any[] | null>(null);
 
   // Swipe gesture states
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -307,6 +310,7 @@ function MobileGongsilContent() {
   const vacancyStackRef = useRef<any[]>([]);
   const listScrollRef = useRef<HTMLDivElement>(null);
   const listScrollTopRef = useRef(0);
+  const lastVacancySearchKeyRef = useRef<string | null>(null);
 
   // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
   const [isDirectView, setIsDirectView] = useState(searchParams.has("id"));
@@ -500,7 +504,7 @@ function MobileGongsilContent() {
     const fetchAllVacancies = async () => {
       try {
         const res = await getVacanciesForMap({
-          is_auction: activeMode === "경매",
+          is_auction: effectiveMode === "경매",
           limit: 10000
         });
         if (res && res.success && res.data) {
@@ -517,14 +521,29 @@ function MobileGongsilContent() {
       }
     };
     fetchAllVacancies();
-  }, [activeMode]);
+  }, [effectiveMode]);
 
   // 💡 [대표님 지침] Bbox(지도의 화면 영역) 변화 또는 필터 기반(B스타일) 행정구역 검색 시 Supabase에서 실시간으로 범위 내/지역 내 매물 패치!
   useEffect(() => {
-    // A스타일(map)인데 mapBounds가 없으면 조회를 대기
-    if (filters.locationSearchType === 'map' && !mapBounds) return;
+    // 모바일은 저장된 이전 상태를 포함해 항상 현재 지도 영역만 조회한다.
+    if (filters.locationSearchType !== 'map' || filters.sido || filters.sigungu || filters.dong) {
+      updateFilter({
+        locationSearchType: 'map',
+        sido: null,
+        sigungu: null,
+        dong: null,
+      });
+      return;
+    }
+
+    if (!mapBounds) return;
 
     const fetchVacanciesData = async () => {
+      const filterSearchKey = `filter:${effectiveMode}:${filters.sido || ""}:${filters.sigungu || ""}:${filters.dong || ""}`;
+      let searchKey = filterSearchKey;
+
+      if (filters.locationSearchType === "filter" && lastVacancySearchKeyRef.current === searchKey) return;
+
       setIsFetchingVacancies(true);
       try {
         let res;
@@ -535,7 +554,7 @@ function MobileGongsilContent() {
             sido: filters.sido || undefined,
             sigungu: filters.sigungu || undefined,
             dong: filters.dong || undefined,
-            is_auction: activeMode === "경매",
+            is_auction: effectiveMode === "경매",
             limit: 10000
           });
 
@@ -556,11 +575,15 @@ function MobileGongsilContent() {
           if (!mapBounds) return;
           const sw = mapBounds.getSouthWest();
           const ne = mapBounds.getNorthEast();
+          searchKey = `map:${effectiveMode}:${sw.getLat()}:${sw.getLng()}:${ne.getLat()}:${ne.getLng()}`;
+          if (lastVacancySearchKeyRef.current === searchKey) return;
           res = await getVacanciesForMap({
             bbox: { swLat: sw.getLat(), swLng: sw.getLng(), neLat: ne.getLat(), neLng: ne.getLng() },
-            is_auction: activeMode === "경매"
+            is_auction: effectiveMode === "경매"
           });
         }
+
+        lastVacancySearchKeyRef.current = searchKey;
 
         if (res && res.success && res.data) {
           const withImages = res.data.map((v: any) => ({
@@ -601,7 +624,7 @@ function MobileGongsilContent() {
     };
 
     fetchVacanciesData();
-  }, [mapBounds, activeMode, filters.locationSearchType, filters.sido, filters.sigungu, filters.dong]);
+  }, [mapBounds, effectiveMode, filters.locationSearchType, filters.sido, filters.sigungu, filters.dong]);
 
   // 💡 최초 진입 시, 만약 URL에 id 파라미터가 있어서 다이렉트 뷰 모드인 경우 1회 강제 단일 상세 로드
   useEffect(() => {
@@ -636,9 +659,10 @@ function MobileGongsilContent() {
       const kakao = (window as any).kakao;
       if (!kakao?.maps) return;
 
-      let initialLat = 37.5665;
-      let initialLng = 126.978;
-      let initialLevel = 7;
+      // 모바일 공실/경매 첫 진입 기본 위치는 서울 강남구로 시작한다.
+      let initialLat = 37.5172;
+      let initialLng = 127.0473;
+      let initialLevel = 6;
 
       const urlLat = searchParams.get("lat");
       const urlLng = searchParams.get("lng");
@@ -649,12 +673,6 @@ function MobileGongsilContent() {
         initialLng = parseFloat(urlLng);
         if (urlLevel) {
           initialLevel = parseInt(urlLevel, 10);
-        }
-      } else if (vacancies && vacancies.length > 0) {
-        const firstValid = vacancies.find((v: any) => v.lat && v.lng);
-        if (firstValid) {
-          initialLat = firstValid.lat;
-          initialLng = firstValid.lng;
         }
       }
 
@@ -726,7 +744,7 @@ function MobileGongsilContent() {
     if (clustererRef.current) {
       clustererRef.current.clear();
       clustererRef.current.setStyles([
-        { width: '56px', height: '56px', background: activeMode === "경매" ? "#1a4282" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: activeMode === "경매" ? '0 4px 12px rgba(26,66,130,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
+        { width: '56px', height: '56px', background: effectiveMode === "경매" ? "#1a4282" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: effectiveMode === "경매" ? '0 4px 12px rgba(26,66,130,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
       ]);
     }
     markersRef.current.forEach((m: any) => m.setMap(null));
@@ -746,7 +764,7 @@ function MobileGongsilContent() {
         calculator: [10, 30, 50],
         texts: (count: number) => count.toString(),
         styles: [
-          { width: '56px', height: '56px', background: activeMode === "경매" ? "#1a4282" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: activeMode === "경매" ? '0 4px 12px rgba(26,66,130,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
+          { width: '56px', height: '56px', background: effectiveMode === "경매" ? "#1a4282" : '#1a73e8', color: '#fff', textAlign: 'center', lineHeight: '50px', borderRadius: '50%', fontWeight: 'bold', fontSize: '18px', border: '3px solid #ffffff', boxShadow: effectiveMode === "경매" ? '0 4px 12px rgba(26,66,130,0.35)' : '0 4px 12px rgba(0,0,0,0.25)' }
         ]
       });
 
@@ -790,7 +808,7 @@ function MobileGongsilContent() {
       const count = group.length;
 
       const { size, fontSize } = getMarkerDimensions(count);
-      const color = activeMode === "경매" ? "#1a4282" : "#1a73e8";
+      const color = effectiveMode === "경매" ? "#1a4282" : "#1a73e8";
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
         <circle cx="${size/2}" cy="${size/2}" r="${size/2-3}" fill="${color}" stroke="white" stroke-width="3"/>
@@ -817,7 +835,7 @@ function MobileGongsilContent() {
     });
 
     clustererRef.current.addMarkers(markersRef.current);
-  }, [filteredVacancies, mapLoaded, zoomLevel, activeMode]);
+  }, [filteredVacancies, mapLoaded, zoomLevel, effectiveMode]);
 
   // 지도 범위 내 공실광고 개수 업데이트 및 지도 변화(이벤트) 연동
   useEffect(() => {
@@ -969,7 +987,20 @@ function MobileGongsilContent() {
         />
       )}
       {!isEmbedded && (
-        <MobileTopBarHeader activeTab="gongsil" />
+        <MobileTopBarHeader
+          activeTab="gongsil"
+          onLocationMove={(lat, lng, zoom) => {
+            const kakao = (window as any).kakao;
+            if (kakaoMapRef.current && kakao) {
+              skipGeocodingSyncRef.current = true;
+              kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+              kakaoMapRef.current.setLevel(zoom);
+              setTimeout(() => {
+                skipGeocodingSyncRef.current = false;
+              }, 1200);
+            }
+          }}
+        />
       )}
       
       <style>{`
@@ -1020,7 +1051,7 @@ function MobileGongsilContent() {
             <div style={{ display: "flex", width: "100%", background: "#f1f5f9", borderRadius: "12px", padding: "4px" }}>
               <button
                 onClick={() => {
-                  window.history.replaceState({ ...(window.history.state || {}), mode: "gongsil" }, "", "/m/gongsil?mode=gongsil");
+                  router.replace("/m/gongsil?mode=gongsil", { scroll: false });
                   setActiveMode("공실");
                   setVacancies([]);
                   setSelectedVacancy(null);
@@ -1043,16 +1074,16 @@ function MobileGongsilContent() {
                   fontWeight: 800,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
-                  backgroundColor: activeMode === "공실" ? "#1a73e8" : "transparent",
-                  color: activeMode === "공실" ? "#ffffff" : "#64748b",
-                  boxShadow: activeMode === "공실" ? "0 4px 12px rgba(26,115,232,0.25)" : "none"
+                  backgroundColor: effectiveMode === "공실" ? "#1a73e8" : "transparent",
+                  color: effectiveMode === "공실" ? "#ffffff" : "#64748b",
+                  boxShadow: effectiveMode === "공실" ? "0 4px 12px rgba(26,115,232,0.25)" : "none"
                 }}
               >
                 ● 실시간 공실
               </button>
               <button
                 onClick={() => {
-                  window.history.replaceState({ ...(window.history.state || {}), mode: "auction" }, "", "/m/gongsil?mode=auction");
+                  router.replace("/m/gongsil?mode=auction", { scroll: false });
                   setActiveMode("경매");
                   setVacancies([]);
                   setSelectedVacancy(null);
@@ -1073,9 +1104,9 @@ function MobileGongsilContent() {
                   fontWeight: 800,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
-                  backgroundColor: activeMode === "경매" ? "#1a4282" : "transparent",
-                  color: activeMode === "경매" ? "#ffffff" : "#64748b",
-                  boxShadow: activeMode === "경매" ? "0 4px 12px rgba(26,66,130,0.25)" : "none"
+                  backgroundColor: effectiveMode === "경매" ? "#1a4282" : "transparent",
+                  color: effectiveMode === "경매" ? "#ffffff" : "#64748b",
+                  boxShadow: effectiveMode === "경매" ? "0 4px 12px rgba(26,66,130,0.25)" : "none"
                 }}
               >
                 🔨 법원 경·공매
@@ -1087,9 +1118,8 @@ function MobileGongsilContent() {
         {/* 필터 바 */}
         {!isEmbedded && !isDirectView && (
           <MobileFilterBar
-            vacancies={vacancies}
-            allVacancies={allVacancies}
-            filteredCount={filteredVacancies.length}
+            vacancies={visibleVacancies}
+            filteredCount={visibleVacancies.length}
             filters={filters}
             onFilterChange={updateFilter}
             onLocationMove={(lat, lng, zoom) => {
@@ -1103,17 +1133,16 @@ function MobileGongsilContent() {
                 }, 1200);
               }
             }}
-            onShowList={(mode, items) => {
+            onShowList={(mode) => {
               setSelectedVacancy(null);
               setSelectedCluster(null);
-              setListVacanciesOverride(items || null);
               setListViewMode(mode || "filter");
               window.history.pushState({ panel: "list" }, "");
               setShowListView(true);
             }}
             locLabel={locLabel}
             setLocLabel={setLocLabel}
-            activeMode={activeMode}
+            activeMode={effectiveMode}
           />
         )}
 
@@ -1231,13 +1260,13 @@ function MobileGongsilContent() {
                 setShowListView(true);
               }}
               style={{
-                background: activeMode === "경매" ? "linear-gradient(135deg, #1a4282, #0f172a)" : "linear-gradient(135deg, #1a73e8, #3b82f6)",
+                background: effectiveMode === "경매" ? "linear-gradient(135deg, #1a4282, #0f172a)" : "linear-gradient(135deg, #1a73e8, #3b82f6)",
                 borderRadius: "28px",
                 padding: "14px 24px",
                 fontSize: "15px",
                 fontWeight: 800,
                 color: "#ffffff",
-                boxShadow: activeMode === "경매" ? "0 6px 20px rgba(26, 66, 130, 0.4)" : "0 6px 20px rgba(26, 115, 232, 0.4)",
+                boxShadow: effectiveMode === "경매" ? "0 6px 20px rgba(26, 66, 130, 0.4)" : "0 6px 20px rgba(26, 115, 232, 0.4)",
                 border: "none",
                 cursor: "pointer",
                 display: "flex",
@@ -1251,7 +1280,7 @@ function MobileGongsilContent() {
               onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.95)"; }}
               onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
             >
-              {activeMode === "경매" ? (
+              {effectiveMode === "경매" ? (
                 // 🔨 경공매 전용 법률 낙찰 망치 SVG 아이콘
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                   <path d="m14 13-5 5m6-6-2.5 2.5m6.5-6.5a2.5 2.5 0 0 0-3.5-3.5L8.5 8 5.7 5.2a1 1 0 0 0-1.4 0L2.8 6.6a1 1 0 0 0 0 1.4L5.6 10.8l-4.2 4.2a1 1 0 0 0 0 1.4l1.4 1.4a1 1 0 0 0 1.4 0l4.2-4.2 2.8 2.8a1 1 0 0 0 1.4 0l1.4-1.4a1 1 0 0 0 0-1.4L11.2 12l6.8-6.8a2.5 2.5 0 0 0 3.5 3.5Z" />
@@ -1266,9 +1295,9 @@ function MobileGongsilContent() {
                   <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
                 </svg>
               )}
-              {activeMode === "경매" ? `경공매 물건 ${visibleCount}건` : `검색된 공실 ${visibleCount}개`}
+              {effectiveMode === "경매" ? `경공매 물건 ${visibleCount}건` : `검색된 공실 ${visibleCount}개`}
             </button>
-            {activeMode !== "경매" && (
+            {effectiveMode !== "경매" && (
               <button
                 onClick={() => {
                   if (!currentUser) {
@@ -1447,7 +1476,15 @@ function MobileGongsilContent() {
         {selectedVacancy && (
           <GongsilMobileDetailPanel
             selectedVacancy={selectedVacancy}
+            isDirectView={isDirectView}
             goBack={goBack}
+            isBookmarked={isBookmarked}
+            toggleBookmark={toggleBookmark}
+            showShareDropdown={showShareDropdown}
+            setShowShareDropdown={setShowShareDropdown}
+            shareDropdownRef={shareDropdownRef}
+            handleKakaoShare={handleKakaoShare}
+            handleCopyUrl={handleCopyUrl}
             detailScrollRef={detailScrollRef}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
@@ -1457,6 +1494,8 @@ function MobileGongsilContent() {
             openGalleryFullscreen={openGalleryFullscreen}
             currentUser={currentUser}
             userLevel={userLevel}
+            setIsAuthModalOpen={setIsAuthModalOpen}
+            activeMode={activeMode}
             detailTab={detailTab}
             setDetailTab={setDetailTab}
             activeDetailTab={activeDetailTab}
@@ -1478,10 +1517,10 @@ function MobileGongsilContent() {
         selectedCluster={selectedCluster}
         showListView={showListView}
         goBack={goBack}
-        activeMode={activeMode}
+        activeMode={effectiveMode}
         listViewMode={listViewMode}
         visibleVacancies={visibleVacancies}
-        filteredVacancies={listVacanciesOverride || filteredVacancies}
+        filteredVacancies={listViewMode === "filter" ? visibleVacancies : filteredVacancies}
         currentUser={currentUser}
         userLevel={userLevel}
         showCommission={showCommission}
