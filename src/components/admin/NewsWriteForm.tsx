@@ -601,6 +601,11 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [modalWatermark, setModalWatermark] = useState<number>(0);
   const [modalCaption, setModalCaption] = useState('');
   const [modalCaptionAlign, setModalCaptionAlign] = useState<'left' | 'center' | 'right'>('center');
+  const [mosaicMode, setMosaicMode] = useState(false);
+  const [mosaicStart, setMosaicStart] = useState<{ x: number; y: number } | null>(null);
+  const [mosaicRect, setMosaicRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const originalModalFileRef = React.useRef<File | null>(null);
+  const originalModalPreviewRef = React.useRef<string>("");
   const modalFileRef = React.useRef<HTMLInputElement>(null);
 
   /* ── 영상추가 모달 상태 ── */
@@ -899,6 +904,104 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     const compressed = await compressToWebP(f);
     setModalFile(compressed);
     setModalPreview(URL.createObjectURL(compressed));
+    originalModalFileRef.current = compressed;
+    originalModalPreviewRef.current = URL.createObjectURL(compressed);
+    setMosaicMode(false);
+    setMosaicStart(null);
+    setMosaicRect(null);
+  };
+
+  const resetMosaic = () => {
+    if (!originalModalFileRef.current || !originalModalPreviewRef.current) return;
+    setModalFile(originalModalFileRef.current);
+    setModalPreview(originalModalPreviewRef.current);
+    setMosaicRect(null);
+  };
+
+  const applyMosaic = async (rect: { left: number; top: number; width: number; height: number }, previewWidth: number, previewHeight: number) => {
+    if (!modalFile || !modalPreview || rect.width < 8 || rect.height < 8) return;
+
+    const image = new Image();
+    image.src = modalPreview;
+    await new Promise<void>(resolve => {
+      image.onload = () => resolve();
+      image.onerror = () => resolve();
+    });
+    if (!image.naturalWidth || !image.naturalHeight) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.drawImage(image, 0, 0);
+
+    const scaleX = image.naturalWidth / previewWidth;
+    const scaleY = image.naturalHeight / previewHeight;
+    const sourceX = Math.max(0, Math.round(rect.left * scaleX));
+    const sourceY = Math.max(0, Math.round(rect.top * scaleY));
+    const sourceWidth = Math.min(image.naturalWidth - sourceX, Math.round(rect.width * scaleX));
+    const sourceHeight = Math.min(image.naturalHeight - sourceY, Math.round(rect.height * scaleY));
+    if (sourceWidth <= 0 || sourceHeight <= 0) return;
+
+    const mosaicWidth = Math.max(2, Math.round(sourceWidth / 16));
+    const mosaicHeight = Math.max(2, Math.round(sourceHeight / 16));
+    const mosaicCanvas = document.createElement('canvas');
+    mosaicCanvas.width = mosaicWidth;
+    mosaicCanvas.height = mosaicHeight;
+    const mosaicContext = mosaicCanvas.getContext('2d');
+    if (!mosaicContext) return;
+    mosaicContext.imageSmoothingEnabled = false;
+    mosaicContext.drawImage(canvas, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, mosaicWidth, mosaicHeight);
+    context.imageSmoothingEnabled = false;
+    context.drawImage(mosaicCanvas, 0, 0, mosaicWidth, mosaicHeight, sourceX, sourceY, sourceWidth, sourceHeight);
+
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.95));
+    if (!blob) return;
+    const nextFile = new File([blob], modalFile.name.replace(/\.[^/.]+$/, '') + '.webp', { type: 'image/webp' });
+    setModalFile(nextFile);
+    setModalPreview(URL.createObjectURL(blob));
+    setMosaicRect(null);
+  };
+
+  const handleMosaicPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (!mosaicMode) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setMosaicStart({ x: event.clientX - bounds.left, y: event.clientY - bounds.top });
+    setMosaicRect(null);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleMosaicPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (!mosaicMode || !mosaicStart) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const currentX = Math.max(0, Math.min(bounds.width, event.clientX - bounds.left));
+    const currentY = Math.max(0, Math.min(bounds.height, event.clientY - bounds.top));
+    setMosaicRect({
+      left: Math.min(mosaicStart.x, currentX),
+      top: Math.min(mosaicStart.y, currentY),
+      width: Math.abs(currentX - mosaicStart.x),
+      height: Math.abs(currentY - mosaicStart.y),
+    });
+  };
+
+  const handleMosaicPointerUp = async (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (!mosaicMode || !mosaicStart) return;
+    setMosaicStart(null);
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const currentX = Math.max(0, Math.min(bounds.width, event.clientX - bounds.left));
+    const currentY = Math.max(0, Math.min(bounds.height, event.clientY - bounds.top));
+    const rect = {
+      left: Math.min(mosaicStart.x, currentX),
+      top: Math.min(mosaicStart.y, currentY),
+      width: Math.abs(currentX - mosaicStart.x),
+      height: Math.abs(currentY - mosaicStart.y),
+    };
+    setMosaicRect(rect);
+    await applyMosaic(rect, bounds.width, bounds.height);
   };
 
   /* ── 모달 확인 → 에디터 커서 위치 삽입 + 우측 사이드바 반영 ── */
@@ -2654,8 +2757,27 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   </div>
                   <p style={{ fontSize: 12, color: '#f59e0b', margin: '8px 0 0 0' }}>⚠ 허용용량 (10 Mb) / 이미지 파일(jpg, gif, png)</p>
                   {modalPreview && (
-                    <div style={{ marginTop: 12, borderRadius: 8, overflow: 'hidden', border: `1px solid ${border}`, maxWidth: 200 }}>
-                      <img src={modalPreview} alt="미리보기" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                    <div
+                      onPointerDown={handleMosaicPointerDown}
+                      onPointerMove={handleMosaicPointerMove}
+                      onPointerUp={handleMosaicPointerUp}
+                      style={{ marginTop: 12, position: 'relative', borderRadius: 8, overflow: 'hidden', border: `1px solid ${border}`, width: '100%', maxWidth: 360, cursor: mosaicMode ? 'crosshair' : 'default', touchAction: 'none', userSelect: 'none' }}
+                    >
+                      <img src={modalPreview} alt="미리보기" draggable={false} style={{ width: '100%', height: 'auto', maxWidth: '100%', display: 'block', pointerEvents: 'none', userSelect: 'none' }} />
+                      {mosaicRect && (
+                        <div style={{ position: 'absolute', left: mosaicRect.left, top: mosaicRect.top, width: mosaicRect.width, height: mosaicRect.height, border: '2px solid #ef4444', background: 'rgba(239,68,68,0.18)', pointerEvents: 'none', boxSizing: 'border-box' }} />
+                      )}
+                    </div>
+                  )}
+                  {modalPreview && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                      <button type="button" onClick={() => { setMosaicMode(prev => !prev); setMosaicRect(null); }} style={{ padding: '7px 12px', borderRadius: 6, border: mosaicMode ? '2px solid #2563eb' : `1px solid ${border}`, background: mosaicMode ? '#eff6ff' : '#fff', color: mosaicMode ? '#2563eb' : textPrimary, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                        {mosaicMode ? '모자이크 지정 중' : '모자이크'}
+                      </button>
+                      <button type="button" onClick={resetMosaic} style={{ padding: '7px 10px', borderRadius: 6, border: `1px solid ${border}`, background: '#fff', color: textSecondary, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                        모자이크 초기화
+                      </button>
+                      {mosaicMode && <span style={{ fontSize: 11, color: textMuted }}>사진 위에서 영역을 드래그하세요. 여러 번 지정할 수 있습니다.</span>}
                     </div>
                   )}
                 </div>
