@@ -102,6 +102,28 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
   // 이미지 줌(라이트박스) State
   const [zoomImage, setZoomImage] = useState<string | null>(null);
 
+  const openZoomImage = (imageUrl: string) => {
+    window.history.pushState({ modal: "news-image" }, "");
+    setZoomImage(imageUrl);
+  };
+
+  const closeZoomImage = () => {
+    if (window.history.state?.modal === "news-image") {
+      window.history.back();
+    } else {
+      setZoomImage(null);
+    }
+  };
+
+  useEffect(() => {
+    const handleImageViewerBack = () => {
+      if (zoomImage) setZoomImage(null);
+    };
+
+    window.addEventListener("popstate", handleImageViewerBack);
+    return () => window.removeEventListener("popstate", handleImageViewerBack);
+  }, [zoomImage]);
+
   // 작성자 정보 및 소속 공실 State
   const [authorRole, setAuthorRole] = useState<string | null>(initialAuthorRole);
   const [authorEmail, setAuthorEmail] = useState<string | null>(initialAuthorEmail);
@@ -680,7 +702,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                 <div className="article-img-wrap" style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden", borderRadius: "8px", marginBottom: "16px" }}>
                   <Image src={article.thumbnail_url} alt={article.title} fill style={{ objectFit: "cover" }} sizes="100vw" />
                   <button 
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setZoomImage(article.thumbnail_url!); }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openZoomImage(article.thumbnail_url!); }}
                     style={{ position: "absolute", bottom: "10px", right: "10px", width: "36px", height: "36px", background: "rgba(0,0,0,0.5)", color: "white", border: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(4px)", zIndex: 10, transition: "all 0.2s", boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}
                     onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.85)"}
                     onMouseLeave={(e) => e.currentTarget.style.background = "rgba(0,0,0,0.5)"}
@@ -710,7 +732,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                       e.stopPropagation();
                       const img = btn.previousElementSibling as HTMLImageElement;
                       if (img && img.tagName.toLowerCase() === 'img' && img.src) {
-                        setZoomImage(img.src);
+                        openZoomImage(img.src);
                       }
                       return;
                     }
@@ -1199,11 +1221,11 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
           typeof document !== "undefined" ? createPortal(
             <div style={{ position: "fixed", inset: 0, backgroundColor: "#000", zIndex: 99999999, display: "flex", flexDirection: "column" }}>
               <div style={{ padding: "16px", display: "flex", justifyContent: "flex-end", alignItems: "center", color: "#fff" }}>
-                <button onClick={() => setZoomImage(null)} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", padding: "4px" }}>✕</button>
+                <button onClick={closeZoomImage} style={{ background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", padding: "4px" }}>✕</button>
               </div>
               <div
                 style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
-                onClick={() => setZoomImage(null)}
+                onClick={closeZoomImage}
               >
                 <img src={zoomImage} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", userSelect: "none" }} alt="확대 이미지" />
               </div>
@@ -1213,7 +1235,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
         ) : (
           <div
             style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100dvh", backgroundColor: "rgba(0,0,0,0.9)", zIndex: 99999999, display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out", animation: "fadeIn 0.2s ease" }}
-            onClick={() => setZoomImage(null)}
+            onClick={closeZoomImage}
           >
             <img src={zoomImage} style={{ maxWidth: "95vw", maxHeight: "95dvh", objectFit: "contain", userSelect: "none" }} alt="Zoomed" />
             <div style={{ position: "absolute", top: "20px", right: "20px", color: "white", fontSize: "36px", fontWeight: "300", cursor: "pointer", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", borderRadius: "50%", lineHeight: 1 }}>✕</div>
