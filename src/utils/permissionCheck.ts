@@ -5,7 +5,7 @@ export function getPermissionLevel(member: {
 } | null | undefined): number {
   if (!member || !member.role) return 0; // 비회원
 
-  if (member.role === 'ADMIN' || member.role === '최고관리자') return 5;
+  if (isAdminRole(member.role)) return 5;
   
   if (member.role === 'USER' || member.role === '일반회원') return 1;
 
@@ -28,6 +28,16 @@ export function getPermissionLevel(member: {
   }
 
   return 1; // 기본적으로 인증된 사용자는 1레벨로 취급
+}
+export function isAdminRole(role?: string | null): boolean {
+  const normalizedRole = role?.trim().toUpperCase() || "";
+  return normalizedRole === "ADMIN" || normalizedRole === "SUPER_ADMIN" || normalizedRole === "최고관리자" || normalizedRole.includes("관리자");
+}
+
+export function getEffectiveMemberRole(role?: string | null, agencyStatus?: string | null): "ADMIN" | "REALTOR" | "USER" {
+  if (isAdminRole(role)) return "ADMIN";
+  if (agencyStatus === "APPROVED") return "REALTOR";
+  return role?.trim().toUpperCase() === "REALTOR" || role === "부동산회원" ? "USER" : "USER";
 }
 
 export function canAccessBoard(userLevel: number, requiredLevel: number): boolean {

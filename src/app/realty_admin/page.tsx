@@ -8,6 +8,7 @@ import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { getVacancies } from "@/app/actions/vacancy";
 import { adminApproveRealtorApplication, normalizePendingRealtorRole } from "@/app/admin/actions";
 import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
+import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
 
 /* ── Lazy-loaded 섹션 ── */
 const DashboardSection = lazy(() => import("@/components/admin/sections/DashboardSection"));
@@ -122,20 +123,19 @@ function RealtyAdminContent() {
       const { data: agencyList } = await supabase.from("agencies").select("status, biz_cert_url, reg_cert_url, reject_reason").eq("owner_id", member.id).limit(1);
       const agencyData = agencyList && agencyList.length > 0 ? agencyList[0] : null;
       if (agencyData && agencyData.status) {
-        const effectiveRole = agencyData.status === "APPROVED" ? "REALTOR" : "USER";
-        if (agencyData.status === "APPROVED" && member.role !== "REALTOR") {
+        if (agencyData.status === "APPROVED" && !isAdminRole(member.role) && member.role !== "REALTOR") {
           await adminApproveRealtorApplication(member.id);
-        } else if (member.role === "REALTOR" && agencyData.status !== "APPROVED") {
+        } else if (!isAdminRole(member.role) && member.role === "REALTOR" && agencyData.status !== "APPROVED") {
           await normalizePendingRealtorRole(member.id, agencyData.status);
         }
-        setUserRole(effectiveRole);
+        setUserRole(getEffectiveMemberRole(member.role, agencyData.status));
         setAgencyStatus(agencyData.status);
         if (agencyData.reject_reason) setRejectionReason(agencyData.reject_reason);
         if (!agencyData.biz_cert_url && agencyData.status !== 'APPROVED' && member.role === 'REALTOR') setShowDocWarning(true);
       } else {
         // 등록증 심사가 완료되지 않은 회원은 서류 검토중 상태로 기본 노출
         setAgencyStatus("PENDING");
-        setUserRole("USER");
+        setUserRole(getEffectiveMemberRole(member.role, null));
       }
 
       // 공실 데이터 프리페치
