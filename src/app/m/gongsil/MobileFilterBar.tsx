@@ -504,7 +504,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
       {/* ═══ 바텀시트 패널들 ═══ */}
       {activePanel === "loc" && renderSheet("지도 위치 이동", <LocationFilterPanel
         onLocationMove={onLocationMove}
-        onFilterChange={(partial) => onFilterChange({ ...partial, sido: null, sigungu: null, dong: null, locationSearchType: "map" })}
+        tempFilters={filters}
         onClose={() => setActivePanel(null)}
         locLabel={locLabel}
         setLocLabel={setLocLabel}

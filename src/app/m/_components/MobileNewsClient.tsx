@@ -799,6 +799,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [dongList, setDongList] = useState<any[]>([]);
   const [selSido, setSelSido] = useState("");
   const [selGugun, setSelGugun] = useState("");
+  const [selDong, setSelDong] = useState("");
   const [selSidoCode, setSelSidoCode] = useState("");
   const [selGugunCode, setSelGugunCode] = useState("");
   const [regTab, setRegTab] = useState<"sido"|"gugun"|"dong">("sido");
@@ -890,6 +891,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     setLocLabel("위치");
     setSelSido("");
     setSelGugun("");
+    setSelDong("");
     setSelSidoCode("");
     setSelGugunCode("");
     setRegTab("sido");
@@ -1565,19 +1567,19 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                         <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
                           {(["sido","gugun","dong"] as const).map(t => (
                             <button key={t} onClick={() => setRegTab(t)} style={{ flex: 1, padding: "8px 4px", fontSize: "13px", fontWeight: regTab === t ? 700 : 500, background: regTab === t ? "#508bf5" : "#f3f4f6", color: regTab === t ? "#fff" : "#6b7280", borderRadius: "6px", border: "none", cursor: "pointer" }}>
-                              {t === "sido" ? "시/도" : t === "gugun" ? "시/군/구" : "읍/면/동"}
+                              {t === "sido" ? (selSido || "시/도") : t === "gugun" ? (selGugun || "시/군/구") : (selDong || "읍/면/동")}
                             </button>
                           ))}
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", maxHeight: "200px", overflowY: "auto" }}>
                           {regTab === "sido" && (sidoList.length > 0 ? sidoList.map((c: any) => (
-                            <button key={c.code} onClick={() => { setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setRegTab("gugun"); loadGugunData(c.code); moveToLocation(c.name, 8); setLocLabel(c.name); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: selSido === c.name ? 700 : 500, textAlign: "center", border: selSido === c.name ? "1.5px solid #508bf5" : "1px solid #e5e7eb", background: selSido === c.name ? "#f0f6ff" : "#fff", color: selSido === c.name ? "#508bf5" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
+                            <button key={c.code} onClick={() => { setSelSidoCode(c.code); setSelSido(c.name); setSelGugun(""); setSelDong(""); setRegTab("gugun"); loadGugunData(c.code); moveToLocation(c.name, 8); setLocLabel(c.name); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: selSido === c.name ? 700 : 500, textAlign: "center", border: selSido === c.name ? "1.5px solid #508bf5" : "1px solid #e5e7eb", background: selSido === c.name ? "#f0f6ff" : "#fff", color: selSido === c.name ? "#508bf5" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
                           )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
                           {regTab === "gugun" && (!selSidoCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/도를 먼저 선택하세요</div> : gugunList.length > 0 ? gugunList.map((c: any) => (
-                            <button key={c.code} onClick={() => { setSelGugunCode(c.code); setSelGugun(c.name); setRegTab("dong"); loadDongData(c.code); moveToLocation(`${selSido} ${c.name}`, 6); setLocLabel(`${c.name}`); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: selGugun === c.name ? 700 : 500, textAlign: "center", border: selGugun === c.name ? "1.5px solid #508bf5" : "1px solid #e5e7eb", background: selGugun === c.name ? "#f0f6ff" : "#fff", color: selGugun === c.name ? "#508bf5" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
+                            <button key={c.code} onClick={() => { setSelGugunCode(c.code); setSelGugun(c.name); setSelDong(""); setRegTab("dong"); loadDongData(c.code); moveToLocation(`${selSido} ${c.name}`, 6); setLocLabel(`${c.name}`); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: selGugun === c.name ? 700 : 500, textAlign: "center", border: selGugun === c.name ? "1.5px solid #508bf5" : "1px solid #e5e7eb", background: selGugun === c.name ? "#f0f6ff" : "#fff", color: selGugun === c.name ? "#508bf5" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
                           )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
                           {regTab === "dong" && (!selGugunCode ? <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>시/군/구를 먼저 선택하세요</div> : dongList.length > 0 ? dongList.map((c: any) => (
-                            <button key={c.code} onClick={() => { moveToLocation(`${selSido} ${selGugun} ${c.name}`, 4); setLocLabel(`${selGugun} ${c.name}`); setLocActivePanel(null); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: 500, textAlign: "center", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
+                            <button key={c.code} onClick={() => { setSelDong(c.name); moveToLocation(`${selSido} ${selGugun} ${c.name}`, 4); setLocLabel(`${selGugun} ${c.name}`); setLocActivePanel(null); }} style={{ padding: "10px 4px", borderRadius: "8px", fontSize: "13px", fontWeight: selDong === c.name ? 700 : 500, textAlign: "center", border: selDong === c.name ? "1.5px solid #508bf5" : "1px solid #e5e7eb", background: selDong === c.name ? "#f0f6ff" : "#fff", color: selDong === c.name ? "#508bf5" : "#374151", cursor: "pointer", transition: "all 0.15s" }}>{c.name}</button>
                           )) : <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "20px", color: "#9ca3af" }}>로딩중...</div>)}
                         </div>
                       </div>

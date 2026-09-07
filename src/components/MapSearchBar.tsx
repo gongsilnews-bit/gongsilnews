@@ -32,6 +32,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
 
   const regionRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const regionMoveRequestRef = useRef(0);
 
   // Close panels on click outside
   useEffect(() => {
@@ -116,12 +117,27 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
   const moveToMapSearchByKeyword = (searchKeyword: string, zlevel: number) => {
     const kakao = (window as any).kakao;
     if (!kakao || !kakao.maps || !kakao.maps.services) return;
-    const ps = new kakao.maps.services.Places();
+    const requestId = ++regionMoveRequestRef.current;
+    const moveToResult = (result: any) => {
+      if (requestId !== regionMoveRequestRef.current) return;
+      onSearchCoord(parseFloat(result.y), parseFloat(result.x), zlevel);
+    };
 
-    ps.keywordSearch(searchKeyword, (data: any, status: any) => {
+    // 행정구역은 장소검색보다 주소검색을 우선해 인접 지역이 선택되는 문제를 막는다.
+    const geocoder = new kakao.maps.services.Geocoder();
+    geocoder.addressSearch(searchKeyword, (data: any[], status: any) => {
       if (status === kakao.maps.services.Status.OK && data.length > 0) {
-        onSearchCoord(parseFloat(data[0].y), parseFloat(data[0].x), zlevel);
+        moveToResult(data[0]);
+        return;
       }
+
+      // 주소 결과가 없는 일반 장소명 검색만 장소검색으로 보완한다.
+      const ps = new kakao.maps.services.Places();
+      ps.keywordSearch(searchKeyword, (placeData: any[], placeStatus: any) => {
+        if (placeStatus === kakao.maps.services.Status.OK && placeData.length > 0) {
+          moveToResult(placeData[0]);
+        }
+      });
     });
   };
 
