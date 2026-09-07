@@ -50,7 +50,7 @@ const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
 const CATEGORIES = [
-  { key: "news", label: "뉴스", path: "/m/news_gongsil", section1: "공실뉴스" },
+  { key: "news", label: "뉴스", path: "/m/news_gongsil?sec=all" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
   { key: "study", label: "스터디", path: "/m/study" },
 ];

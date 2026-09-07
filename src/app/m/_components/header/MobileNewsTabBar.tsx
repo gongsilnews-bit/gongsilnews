@@ -8,7 +8,7 @@ import { createClient } from "@/utils/supabase/client";
 const SearchOverlay = dynamic(() => import("@/app/m/_components/header/SearchOverlay"), { ssr: false });
 
 const CATEGORIES = [
-  { key: "news", label: "뉴스", path: "/m/news_gongsil" },
+  { key: "news", label: "뉴스", path: "/m/news_gongsil?sec=all" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
   { key: "study", label: "스터디", path: "/m/study" },
 ];
