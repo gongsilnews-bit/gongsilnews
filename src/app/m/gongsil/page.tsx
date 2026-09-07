@@ -1435,7 +1435,14 @@ function MobileGongsilContent() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {getCleanAddrText(selectedVacancy) || "공실광고 상세"}
+              {(() => {
+                const isMyProperty = currentUser?.id && selectedVacancy.owner_id === currentUser.id;
+                const isAuctionProperty = selectedVacancy.trade_type === "경매" || selectedVacancy.trade_type === "공매";
+                const isDetailMasked = isAuctionProperty
+                  ? userLevel < 1
+                  : selectedVacancy.exposure_type === "부동산노출" && userLevel < 2 && !isMyProperty;
+                return isDetailMasked ? "XX" : (getCleanAddrText(selectedVacancy) || "공실광고 상세");
+              })()}
             </h2>
             {/* Action Buttons */}
             <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
