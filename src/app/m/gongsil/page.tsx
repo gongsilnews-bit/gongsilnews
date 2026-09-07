@@ -496,7 +496,10 @@ function MobileGongsilContent() {
         requestAnimationFrame(() => {
           if (listScrollRef.current) listScrollRef.current.scrollTop = listScrollTopRef.current;
         });
-        setTimeout(() => kakaoMapRef.current?.relayout(), 50);
+        // 리스트 뷰에서 상세 진입한 경우 지도 relayout 하지 않음 (리스트가 그대로 보여야 함)
+        if (!showListView) {
+          setTimeout(() => kakaoMapRef.current?.relayout(), 50);
+        }
       } else if (selectedCluster) {
         vacancyStackRef.current = [];
         setSelectedCluster(null);
