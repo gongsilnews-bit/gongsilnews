@@ -845,13 +845,28 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const moveToLocation = (keyword: string, zoom: number) => {
     const kakao = (window as any).kakao;
     if (!kakao?.maps?.services || !kakaoMapRef.current) return;
-    const ps = new kakao.maps.services.Places();
-    ps.keywordSearch(keyword, (data: any, status: any) => {
+
+    const moveToResult = (result: any) => {
+      const latlng = new kakao.maps.LatLng(parseFloat(result.y), parseFloat(result.x));
+      kakaoMapRef.current.panTo(latlng);
+      kakaoMapRef.current.setLevel(zoom);
+    };
+
+    // 행정동 선택은 장소검색 첫 결과가 아니라 주소검색을 우선한다.
+    const geocoder = new kakao.maps.services.Geocoder();
+    geocoder.addressSearch(keyword, (data: any[], status: any) => {
       if (status === kakao.maps.services.Status.OK && data.length > 0) {
-        const latlng = new kakao.maps.LatLng(parseFloat(data[0].y), parseFloat(data[0].x));
-        kakaoMapRef.current.panTo(latlng);
-        kakaoMapRef.current.setLevel(zoom);
+        moveToResult(data[0]);
+        return;
       }
+
+      // 주소검색 결과가 없는 장소명 검색만 기존 장소검색으로 보완한다.
+      const ps = new kakao.maps.services.Places();
+      ps.keywordSearch(keyword, (placeData: any[], placeStatus: any) => {
+        if (placeStatus === kakao.maps.services.Status.OK && placeData.length > 0) {
+          moveToResult(placeData[0]);
+        }
+      });
     });
   };
 

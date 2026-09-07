@@ -40,31 +40,7 @@ interface MobileFilterBarProps {
 
 const TRADE_TYPES = ["매매", "전세", "월세", "단기"];
 
-const RESIDENTIAL_TYPES = ["아파트", "오피스텔", "기타", "빌라/연립", "단독/다가구", "전원주택", "원룸", "1.5룸", "투룸", "빌라/주택"];
-const COMMERCIAL_TYPES = ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "빌딩/사무실"];
-const LAND_TYPES = ["토지"];
-
 const RESIDENTIAL_THEMES = ['급매', '추천공실광고', '신축급', '올수리', '한강뷰', '역세권', '풀옵션', '가성비', '단기임대', '주차편리', '대로변안전', '여성안심', '애완견가능', '복층', '마당있음', '투자용'];
-const COMMERCIAL_THEMES = ['급매', '추천공실광고', '신축급', '올수리', '역세권', '가성비', '주차편리', '무권리', '코너자리', '유동인구많음', '인테리어잘됨', '층고높음', '테라스', '투자용'];
-const LAND_THEMES = ['급매', '추천공실광고', '가성비', '투자용'];
-
-const getSelectedGroup = (propertyTypes: string[]) => {
-  if (propertyTypes.length === 0) return "NONE";
-  const hasResidential = propertyTypes.some(t => RESIDENTIAL_TYPES.includes(t));
-  const hasCommercial = propertyTypes.some(t => COMMERCIAL_TYPES.includes(t));
-  const hasLand = propertyTypes.some(t => LAND_TYPES.includes(t));
-  
-  let groupCount = 0;
-  if (hasResidential) groupCount++;
-  if (hasCommercial) groupCount++;
-  if (hasLand) groupCount++;
-  
-  if (groupCount > 1) return "MIXED";
-  if (hasResidential) return "RESIDENTIAL";
-  if (hasCommercial) return "COMMERCIAL";
-  if (hasLand) return "LAND";
-  return "NONE";
-};
 
 // 🚀 [PC 동일] 카테고리별 맞춤 기타옵션 목록 생성기
 const getCategoryOptions = (types: string[]) => {
@@ -436,19 +412,19 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           {/* 🔨 경매 모드 전용 필터 버튼들 (PC 100% 동일) */}
           {activeMode === "경매" ? (
             <>
-              <button onClick={() => setActivePanel(activePanel === "auction_appraisal" ? null : "auction_appraisal")} style={pillStyle(activePanel === "auction_appraisal" || filters.auctionAppraisalMin !== null || filters.auctionAppraisalMax !== null)}>
+              <button onClick={() => openFullFilter("auction-appraisal")} style={pillStyle(true)}>
                 {auctionAppraisalLabel}
               </button>
-              <button onClick={() => setActivePanel(activePanel === "auction_bid_price" ? null : "auction_bid_price")} style={pillStyle(activePanel === "auction_bid_price" || filters.auctionBidPriceMin !== null || filters.auctionBidPriceMax !== null)}>
+              <button onClick={() => openFullFilter("auction-bid-price")} style={pillStyle(true)}>
                 {auctionBidPriceLabel}
               </button>
-              <button onClick={() => setActivePanel(activePanel === "auction_discount" ? null : "auction_discount")} style={pillStyle(activePanel === "auction_discount" || filters.auctionDiscount > 0)}>
+              <button onClick={() => openFullFilter("auction-discount")} style={pillStyle(true)}>
                 {auctionDiscountLabel}
               </button>
-              <button onClick={() => setActivePanel(activePanel === "auction_bid_count" ? null : "auction_bid_count")} style={pillStyle(activePanel === "auction_bid_count" || filters.auctionBidCount > 0)}>
+              <button onClick={() => openFullFilter("auction-bid-count")} style={pillStyle(true)}>
                 {auctionBidCountLabel}
               </button>
-              <button onClick={() => setActivePanel(activePanel === "auction_start_date" ? null : "auction_start_date")} style={pillStyle(activePanel === "auction_start_date" || filters.auctionStartDate !== "all")}>
+              <button onClick={() => openFullFilter("auction-start-date")} style={pillStyle(true)}>
                 {auctionStartDateLabel}
               </button>
             </>
@@ -508,14 +484,14 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                   {filters.options.length > 0 ? `옵션 +${filters.options.length}` : "기타옵션 ▾"}
                 </button>
               )}
-              <button onClick={() => setActivePanel(activePanel === "owner" ? null : "owner")} style={pillStyle(activePanel === "owner" || filters.ownerRole !== 'NONE')}>
+              <button onClick={() => openFullFilter("owner")} style={pillStyle(activePanel === "owner" || filters.ownerRole !== 'NONE')}>
                 {ownerLabel}
               </button>
-              <button onClick={() => setActivePanel(activePanel === "commission" ? null : "commission")} style={pillStyle(activePanel === "commission" || filters.commissionType !== 'NONE')}>
+              <button onClick={() => openFullFilter("commission")} style={pillStyle(activePanel === "commission" || filters.commissionType !== 'NONE')}>
                 {commissionLabel}
               </button>
               {showThemePill && (
-                <button onClick={() => setActivePanel(activePanel === "theme" ? null : "theme")} style={pillStyle(activePanel === "theme" || filters.themes.length > 0)}>
+                <button onClick={() => openFullFilter("theme")} style={pillStyle(activePanel === "theme" || filters.themes.length > 0)}>
                   {themeLabel}
                 </button>
               )}
@@ -535,12 +511,6 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
       />)}
 
       {/* 경매 모드 시트들 */}
-      {activePanel === "auction_appraisal" && renderSheet("감정가", <AuctionAppraisalFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-      {activePanel === "auction_bid_price" && renderSheet("최저입찰가", <AuctionBidPriceFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-      {activePanel === "auction_discount" && renderSheet("할인율 (감정가 대비)", <AuctionDiscountFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-      {activePanel === "auction_bid_count" && renderSheet("유찰 횟수", <AuctionBidCountFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-      {activePanel === "auction_start_date" && renderSheet("입찰 시작일", <AuctionStartDateFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-
       {/* 일반 공실 모드 시트들 */}
       {activePanel === "room_bath" && renderSheet("방 / 욕실수", <RoomBathFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "direction" && renderSheet("방향", <DirectionFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
@@ -550,13 +520,6 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
       {activePanel === "floor" && renderSheet("층수", <FloorFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "year" && renderSheet("사용승인일 (연식)", <YearFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "options" && renderSheet("기타옵션 (특화 맞춤)", <OptionsFilterPanel filters={filters} onFilterChange={onFilterChange} optionsList={getCategoryOptions(filters.propertyTypes)} />)}
-      {activePanel === "owner" && renderSheet("등록자 유형", <OwnerRoleFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-      {activePanel === "commission" && renderSheet("중개보수", <CommissionFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-      {activePanel === "theme" && (() => {
-        const currentGroup = getSelectedGroup(filters.propertyTypes);
-        const presets = currentGroup === "RESIDENTIAL" ? RESIDENTIAL_THEMES : currentGroup === "COMMERCIAL" ? COMMERCIAL_THEMES : currentGroup === "LAND" ? LAND_THEMES : undefined;
-        return renderSheet("테마 키워드", <ThemeFilterPanel filters={filters} onFilterChange={onFilterChange} presets={presets} />);
-      })()}
 
       {/* ═══ 풀스크린 통합 상세필터 (경매 모드 & 공실 모드 완벽 분기) ═══ */}
       {fullFilterOpen && (
@@ -580,27 +543,27 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
             {/* 🔨 경매 모드 전용 5대 조건 섹션 (PC와 100% 동일) */}
             {activeMode === "경매" ? (
               <>
-                <div id="mobile-filter-trade" style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div id="mobile-filter-auction-appraisal" style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                   <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>감정가</div>
                   <AuctionAppraisalFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
                 </div>
 
-                <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div id="mobile-filter-auction-bid-price" style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                   <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>최저입찰가</div>
                   <AuctionBidPriceFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
                 </div>
 
-                <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div id="mobile-filter-auction-discount" style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                   <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>할인율 (감정가 대비)</div>
                   <AuctionDiscountFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
                 </div>
 
-                <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div id="mobile-filter-auction-bid-count" style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                   <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>유찰 횟수</div>
                   <AuctionBidCountFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
                 </div>
 
-                <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                <div id="mobile-filter-auction-start-date" style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                   <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>입찰 시작일</div>
                   <AuctionStartDateFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
                 </div>
@@ -628,7 +591,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                 )}
 
                 {showTempYear && (
-                  <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                  <div id="mobile-filter-theme" style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
                     <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>사용승인일 (연식)</div>
                     <YearFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
                   </div>
