@@ -629,6 +629,20 @@ export async function togglePhotoFavorite(mediaId: string, isFavorite: boolean) 
   }
 }
 
+export async function updateArticleMediaCaption(mediaId: string, caption: string) {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("article_media")
+      .update({ caption: caption || null })
+      .eq("id", mediaId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 /* ── 관리자 기사 일괄 상태 수정 ── */
 export async function adminUpdateArticleStatus(articleIds: string[], status: 'APPROVED' | 'REJECTED' | 'DRAFT' | 'PENDING', reject_reason?: string) {
   const supabase = getAdminClient();

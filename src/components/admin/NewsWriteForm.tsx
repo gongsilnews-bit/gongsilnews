@@ -1,3 +1,4 @@
+import { saveArticle, getArticleDetail, getPhotoLibrary, togglePhotoFavorite, updateArticleMediaCaption, getMyArticles } from "@/app/actions/article";
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -536,6 +537,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             if (d.article_media) {
               existingPhotos = d.article_media
                 .filter((m: any) => m.media_type === "PHOTO")
+                .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
                 .map((m: any) => ({
                   file: null,
                   preview: m.url,
@@ -561,9 +563,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 };
               });
 
-              // DB photo와 DOM photo 병합 (DB 정보 우선)
-              if (existingPhotos.length === 0 && domPhotos.length > 0) {
-                existingPhotos = domPhotos;
+              // DB 메타데이터와 에디터 DOM을 URL로 병합한다. DB 캡션이 비어 있으면 본문 캡션을 사용한다.
+              if (domPhotos.length > 0) {
+                const domByPreview = new Map(domPhotos.map(photo => [photo.preview, photo]));
+                existingPhotos = existingPhotos.map(photo => ({
+                  ...photo,
+                  caption: photo.caption || domByPreview.get(photo.preview)?.caption || "",
+                }));
+                const existingPreviews = new Set(existingPhotos.map(photo => photo.preview));
+                existingPhotos.push(...domPhotos.filter(photo => !existingPreviews.has(photo.preview)));
               }
 
               const domVideos = Array.from(editorRef.current.querySelectorAll('.inserted-video')).map(wrapper => {
@@ -1711,6 +1719,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               const uploadResult = await uploadArticleMediaDirect(p.file, articleId, {
                 mediaType: 'PHOTO',
                 sortOrder: photoSortOrders.get(p.preview) ?? i,
+                caption: p.caption,
               });
               return { p, uploadResult };
             }
@@ -1734,6 +1743,12 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               if (res.p.isCover) finalThumbnailUrl = res.p.preview;
             }
           }
+
+          await Promise.all(
+            photoFiles
+              .filter(photo => photo.mediaId)
+              .map(photo => updateArticleMediaCaption(photo.mediaId!, photo.caption))
+          );
         }
 
         // 2차 저장: HTML 본문이 치환되었거나 대표사진(커버)이 새로 할당된 경우 덮어쓰기 업데이트
