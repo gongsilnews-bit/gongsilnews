@@ -123,15 +123,18 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
       onSearchCoord(parseFloat(result.y), parseFloat(result.x), zlevel);
     };
 
-    // 행정구역은 장소검색보다 주소검색을 우선해 인접 지역이 선택되는 문제를 막는다.
+    // 행정구역은 장소검색보다 주소검색을 우선하되, REGION 타입만 사용해 인접 지역 오선택 방지
     const geocoder = new kakao.maps.services.Geocoder();
     geocoder.addressSearch(searchKeyword, (data: any[], status: any) => {
-      if (status === kakao.maps.services.Status.OK && data.length > 0) {
-        moveToResult(data[0]);
+      const regionResult = (status === kakao.maps.services.Status.OK && data.length > 0)
+        ? data.find((d: any) => d.address_type === "REGION") || null
+        : null;
+      if (regionResult) {
+        moveToResult(regionResult);
         return;
       }
 
-      // 주소 결과가 없는 일반 장소명 검색만 장소검색으로 보완한다.
+      // REGION 결과 없는 일반 장소명은 장소검색으로 보완
       const ps = new kakao.maps.services.Places();
       ps.keywordSearch(searchKeyword, (placeData: any[], placeStatus: any) => {
         if (placeStatus === kakao.maps.services.Status.OK && placeData.length > 0) {

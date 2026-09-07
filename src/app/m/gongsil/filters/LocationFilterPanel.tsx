@@ -70,17 +70,22 @@ export default function LocationFilterPanel({ onLocationMove, onFilterChange, on
     const kakao = (window as any).kakao;
     if (!kakao?.maps?.services) return;
     const geocoder = new kakao.maps.services.Geocoder();
-    geocoder.addressSearch(keyword, (data: any, status: any) => {
-      if (status === kakao.maps.services.Status.OK && data.length > 0) {
-        onLocationMove(parseFloat(data[0].y), parseFloat(data[0].x), zoom);
-      } else {
-        const ps = new kakao.maps.services.Places();
-        ps.keywordSearch(keyword, (pData: any, pStatus: any) => {
-          if (pStatus === kakao.maps.services.Status.OK && pData.length > 0) {
-            onLocationMove(parseFloat(pData[0].y), parseFloat(pData[0].x), zoom);
-          }
-        });
+    geocoder.addressSearch(keyword, (data: any[], status: any) => {
+      // 행정구역(REGION) 타입 결과만 사용 → 인접 건물/도로 좌표로 잘못 이동하는 버그 방지
+      const regionResult = (status === kakao.maps.services.Status.OK && data.length > 0)
+        ? data.find((d: any) => d.address_type === "REGION") || null
+        : null;
+      if (regionResult) {
+        onLocationMove(parseFloat(regionResult.y), parseFloat(regionResult.x), zoom);
+        return;
       }
+      // REGION 결과 없을 때만 장소검색(keywordSearch)으로 폴백
+      const ps = new kakao.maps.services.Places();
+      ps.keywordSearch(keyword, (pData: any[], pStatus: any) => {
+        if (pStatus === kakao.maps.services.Status.OK && pData.length > 0) {
+          onLocationMove(parseFloat(pData[0].y), parseFloat(pData[0].x), zoom);
+        }
+      });
     });
   };
 
