@@ -806,14 +806,20 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [locKeyword, setLocKeyword] = useState("");
   const [locResults, setLocResults] = useState<any[]>([]);
   const [locTab, setLocTab] = useState<"region"|"keyword">("region");
-  const [section1Filter, setSection1Filter] = useState(searchParams.get("section1") || "");
-  const [section2Filter, setSection2Filter] = useState(searchParams.get("section2") || "");
+  const [section1Filter, setSection1Filter] = useState(initialTab === "local" ? "" : (searchParams.get("section1") || ""));
+  const [section2Filter, setSection2Filter] = useState(initialTab === "local" ? "" : (searchParams.get("section2") || ""));
 
   // URL 파라미터가 변경되면 지도 필터도 동기화 (뒤로가기/전환용)
+  // 우리동네(local) 탭에서는 1차 카테고리를 항상 전체(빈 값)로 유지
   useEffect(() => {
-    setSection1Filter(searchParams.get("section1") || "");
-    setSection2Filter(searchParams.get("section2") || "");
-  }, [searchParams]);
+    if (activeTab === "local") {
+      setSection1Filter("");
+      setSection2Filter("");
+    } else {
+      setSection1Filter(searchParams.get("section1") || "");
+      setSection2Filter(searchParams.get("section2") || "");
+    }
+  }, [searchParams, activeTab]);
 
 
 
