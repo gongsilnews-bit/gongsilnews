@@ -715,11 +715,14 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     const currentPhotos = editorRef.current.querySelectorAll('.inserted-photo');
     const currentVideos = editorRef.current.querySelectorAll('.inserted-video');
 
-    // 사진: 에디터에 없는 것들은 사이드바에서도 제거
+    // 사진: 첨부 배열 인덱스가 아니라 에디터에 실제로 남은 이미지 URL로 동기화
     setPhotoFiles(prev => {
-      if (prev.length <= currentPhotos.length) return prev;
-      // 에디터에 남은 수만큼만 유지 (앞에서부터)
-      const updated = prev.slice(0, currentPhotos.length);
+      const editorPhotoUrls = new Set(
+        Array.from(currentPhotos)
+          .map(wrapper => wrapper.querySelector('img')?.getAttribute('src'))
+          .filter((src): src is string => Boolean(src))
+      );
+      const updated = prev.filter(photo => editorPhotoUrls.has(photo.preview));
       if (updated.length > 0 && !updated.some(p => p.isCover)) {
         updated[0].isCover = true;
       }
@@ -730,6 +733,13 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       if (prev.length <= currentVideos.length) return prev;
       return prev.slice(0, currentVideos.length);
     });
+  };
+
+  const findEditorPhoto = (preview: string) => {
+    if (!editorRef.current) return null;
+    return Array.from(editorRef.current.querySelectorAll('.inserted-photo')).find(wrapper => (
+      wrapper.querySelector('img')?.getAttribute('src') === preview
+    )) as HTMLElement | null;
   };
 
   /* ── 에디터 hover 삭제 버튼 CSS 주입 ── */
@@ -1003,9 +1013,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const updatePhotoCaption = (idx: number, caption: string) => {
     setPhotoFiles(prev => prev.map((p, i) => i === idx ? { ...p, caption } : p));
     if (editorRef.current) {
-      const photos = editorRef.current.querySelectorAll('.inserted-photo');
-      if (photos[idx]) {
-        const wrapper = photos[idx] as HTMLElement;
+      const photo = photoFiles[idx];
+      const wrapper = photo ? findEditorPhoto(photo.preview) : null;
+      if (wrapper) {
         let pTag = wrapper.querySelector('p');
         if (caption) {
           if (!pTag) {
@@ -1035,9 +1045,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     setPhotoFiles(prev => prev.map((p, i) => i === idx ? { ...p, align: newAlign } : p));
     // 에디터 내 해당 이미지 정렬도 변경
     if (editorRef.current) {
-      const photos = editorRef.current.querySelectorAll('.inserted-photo');
-      if (photos[idx]) {
-        const wrapper = photos[idx] as HTMLElement;
+      const photo = photoFiles[idx];
+      const wrapper = photo ? findEditorPhoto(photo.preview) : null;
+      if (wrapper) {
         const marginCss = newAlign === 'left' ? 'margin: 16px auto 16px 0;' : newAlign === 'right' ? 'margin: 16px 0 16px auto;' : 'margin: 16px auto;';
         wrapper.style.cssText = `display: table; ${marginCss} text-align: center;`;
 
@@ -1080,9 +1090,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
     // 에디터 DOM 업데이트
     if (editorRef.current) {
-      const photos = editorRef.current.querySelectorAll('.inserted-photo');
-      if (photos[idx]) {
-        const wrapper = photos[idx] as HTMLElement;
+      const photo = photoFiles[idx];
+      const wrapper = photo ? findEditorPhoto(photo.preview) : null;
+      if (wrapper) {
         const marginCss = editAlign === 'left' ? 'margin: 16px auto 16px 0;' : editAlign === 'right' ? 'margin: 16px 0 16px auto;' : 'margin: 16px auto;';
         wrapper.style.cssText = `display: table; ${marginCss} text-align: center;`;
 
@@ -1116,12 +1126,13 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const removePhoto = (idx: number) => {
     // 에디터 내 해당 이미지도 제거
     if (editorRef.current) {
-      const photos = editorRef.current.querySelectorAll('.inserted-photo');
-      if (photos[idx]) {
+      const photo = photoFiles[idx];
+      const wrapper = photo ? findEditorPhoto(photo.preview) : null;
+      if (wrapper) {
         // 뒤에 br이 있으면 같이 제거
-        const nextSib = photos[idx].nextSibling;
+        const nextSib = wrapper.nextSibling;
         if (nextSib && nextSib.nodeName === 'BR') nextSib.remove();
-        photos[idx].remove();
+        wrapper.remove();
         setContent(editorRef.current.innerHTML || "");
       }
     }
