@@ -1876,7 +1876,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     <span style={{ fontSize: "11px", fontWeight: 800, color: "#1d4ed8", background: "#eff6ff", border: "1px solid #bfdbfe", padding: "2px 8px", borderRadius: "12px" }}>
-                      ✨ 전국 11만 부동산 &amp; 임대인 무료
+                      ✨ 전국 11만 부동산 &amp; 임대인 공실채널
                     </span>
                     <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>
                       <span style={{ fontWeight: 800, color: "#111" }}>{displayName} 대표님</span>을 위한
