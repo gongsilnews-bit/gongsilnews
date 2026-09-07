@@ -17,6 +17,7 @@ import GongsilDetailPanel from "./GongsilDetailPanel";
 import KakaoMapView from "./KakaoMapView";
 import GongsilFilterBar from "./GongsilFilterBar";
 import GongsilFilterPanel from "./GongsilFilterPanel";
+import GongsilRegisterPromoOverlay from "./GongsilRegisterPromoOverlay";
 import { filterVacancies } from "./filterVacancies";
 import { useGongsilFilterState } from "./useGongsilFilterState";
 import {
@@ -71,9 +72,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       );
       if (catEntry) return catEntry[0];
     }
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("gongsil_category") || "auction";
-    }
+    // 공실열람 메뉴 진입 시 언제나 매물이 가장 풍부한 '경매/공매' 탭이 기본으로 열림
     return "auction";
   });
   const [activePills, setActivePills] = useState<string[]>(() => {
@@ -95,18 +94,11 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         }
       }
     }
-    if (typeof window !== "undefined") {
-      const cat = localStorage.getItem("gongsil_category") || "auction";
-      const saved = sessionStorage.getItem(`gongsil_pills_${cat}`);
-      if (saved) {
-        try { return JSON.parse(saved); } catch {}
-      }
-      const config = CATEGORY_CONFIG[cat];
-      if (config && config.pills) {
-        return config.pills.filter(p => p !== "오피스텔만 보기");
-      }
+    const config = CATEGORY_CONFIG["auction"];
+    if (config && config.pills) {
+      return config.pills.filter((p) => p !== "오피스텔만 보기");
     }
-    return [];
+    return ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"];
   });
   const [activeProperty, setActiveProperty] = useState<string | number | null>(() => {
     return initialVacancies[0]?.id || null;
@@ -132,20 +124,12 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     if (first) {
       return first.trade_type === "경매";
     }
-    if (typeof window !== "undefined") {
-      const cat = localStorage.getItem("gongsil_category") || "auction";
-      return cat === "auction";
-    }
     return true;
   });
   const [activeMode, setActiveMode] = useState<"공실" | "분양" | "경매">(() => {
     const first = initialVacancies[0];
     if (first) {
       return first.trade_type === "경매" ? "경매" : "공실";
-    }
-    if (typeof window !== "undefined") {
-      const cat = localStorage.getItem("gongsil_category") || "auction";
-      return cat === "auction" ? "경매" : "공실";
     }
     return "경매";
   });
@@ -306,6 +290,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [showRegisterPromoOverlay, setShowRegisterPromoOverlay] = useState(false);
   const [agencyInfo, setAgencyInfo] = useState<any>(null);
   const detailHistoryInitializedRef = useRef(false);
 
@@ -674,7 +659,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
               }
               setActivePills(pills);
               localStorage.setItem("gongsil_pills", JSON.stringify(pills));
-              localStorage.setItem("gongsil_category", catEntry[0]);
+              sessionStorage.setItem("gongsil_category", catEntry[0]);
             }
           }
 
@@ -1350,7 +1335,10 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
 
   const handleCategoryChange = (key: string) => {
     if (activeCategory === key) {
-      // 2차 카테고리가 사라지지 않도록 더블 클릭 시 변경 방지
+      // 이미 선택된 탭을 다시 눌렀을 때도 일반 공실 탭이면 안내 오버레이 다시 노출
+      if (["apart", "villa", "one", "biz", "sale"].includes(key)) {
+        setShowRegisterPromoOverlay(true);
+      }
       return;
     }
     // 현재 탭의 pill 상태를 sessionStorage에 저장
@@ -1360,6 +1348,13 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     setActiveCategory(newKey);
     setIsAuctionMode(newKey === "auction");
     setActiveMode(newKey === "auction" ? "경매" : "공실");
+
+    // 아파트~신축분양 탭 선택 시 공실 등록 유도 오버레이 노출
+    if (["apart", "villa", "one", "biz", "sale"].includes(newKey)) {
+      setShowRegisterPromoOverlay(true);
+    } else {
+      setShowRegisterPromoOverlay(false);
+    }
     
     // sessionStorage에서 이전 pill 상태 복원, 없으면 전체선택
     const savedPills = sessionStorage.getItem(`gongsil_pills_${newKey}`);
@@ -1378,7 +1373,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     setSelectedClusterIds(null);
     setIsWizardOpen(false);
     resetAllFilters();
-    localStorage.setItem("gongsil_category", newKey);
+    sessionStorage.setItem("gongsil_category", newKey);
   };
 
   const togglePill = (p: string) => {
@@ -1480,7 +1475,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
             }
             setActivePills(pills);
             localStorage.setItem("gongsil_pills", JSON.stringify(pills));
-            localStorage.setItem("gongsil_category", catEntry[0]);
+            sessionStorage.setItem("gongsil_category", catEntry[0]);
           }
         }
 
@@ -2654,6 +2649,16 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
             </div>
             <span style={{ color: "#334155", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>매물을 불러오는 중</span>
           </div>
+        )}
+
+        {/* 일반 공실 탭 선택 시 노출되는 '내 공동중개 물건 무료 등록' 흰색 오버레이 */}
+        {showRegisterPromoOverlay && (
+          <GongsilRegisterPromoOverlay
+            categoryName={CATEGORY_CONFIG[activeCategory]?.name || "공실"}
+            onClose={() => setShowRegisterPromoOverlay(false)}
+            onGoAuction={() => handleCategoryChange("auction")}
+            currentUser={currentUser}
+          />
         )}
       </main>
 

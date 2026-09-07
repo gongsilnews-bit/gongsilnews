@@ -34,14 +34,19 @@ export default function GongsilFilterBar({
           />
         </Link>
         <span
+          onClick={() => handleCategoryChange("auction")}
           style={{
             fontSize: 26,
             fontWeight: 800,
             color: "#111",
             marginRight: 20,
             whiteSpace: "nowrap",
-            transition: "color 0.2s",
+            cursor: "pointer",
+            transition: "color 0.15s",
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#1a73e8")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#111")}
+          title="경매/공매 매물 전체보기"
         >
           공실열람
         </span>
