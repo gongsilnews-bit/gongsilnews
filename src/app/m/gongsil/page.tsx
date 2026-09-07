@@ -1010,7 +1010,7 @@ function MobileGongsilContent() {
               kakaoMapRef.current.setLevel(Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
               setTimeout(() => {
                 skipGeocodingSyncRef.current = false;
-              }, 1200);
+              }, 2500);
             }
           }}
         />
@@ -1143,7 +1143,7 @@ function MobileGongsilContent() {
                 kakaoMapRef.current.setLevel(Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
                 setTimeout(() => {
                   skipGeocodingSyncRef.current = false;
-                }, 1200);
+                }, 2500);
               }
             }}
             onShowList={(mode) => {
