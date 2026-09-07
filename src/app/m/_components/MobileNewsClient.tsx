@@ -592,12 +592,17 @@ const ArticleRow = React.memo(({ a, activeTab, formatDate, stripHtml, extractYou
 ArticleRow.displayName = "ArticleRow";
 
 function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, initialKeyword, authorProfile }: { initialTab: string, initialArticles: any[], initialAuthorName?: string, initialKeyword?: string, authorProfile?: any }) {
+  const ARTICLE_PAGE_SIZE = 12;
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
   const [activeTab, setActiveTab] = useState(initialTab);
   const [articles, setArticles] = useState<any[]>(initialArticles);
+  const [hasMoreArticles, setHasMoreArticles] = useState(initialArticles.length >= ARTICLE_PAGE_SIZE);
+  const [loadingMoreArticles, setLoadingMoreArticles] = useState(false);
+  const articlePageRef = useRef(1);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const [localArticles, setLocalArticles] = useState<any[]>(() => {
     if (initialArticles && initialArticles.length > 0) {
       return initialArticles.filter((a: any) => a.lat && a.lng);
@@ -610,6 +615,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
   const [section2Tab, setSection2Tab] = useState<string>(searchParams.get("section2") || "");
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
+
+  const replaceArticles = (nextArticles: any[]) => {
+    setArticles(nextArticles);
+    articlePageRef.current = 1;
+    setHasMoreArticles(nextArticles.length >= ARTICLE_PAGE_SIZE);
+  };
 
   // 탭 전환 시 정렬 기준을 '최신순'으로 초기화
   useEffect(() => {
@@ -914,7 +925,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
     const loadSearchData = async () => {
       setLoading(true);
-      const filters: any = { status: "APPROVED", limit: 200 };
+      const filters: any = { status: "APPROVED", limit: ARTICLE_PAGE_SIZE, page: 1 };
       if (authorMatch) filters.author_name = authorMatch;
       if (keywordMatch) filters.keyword = keywordMatch;
 
@@ -928,12 +939,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         else setVacancyCount(0);
         if (listRes.success) setVacancyList(listRes.data || []);
         else setVacancyList([]);
-        if (res.success && res.data) setArticles(res.data);
+        if (res.success && res.data) replaceArticles(res.data);
       } else {
         setVacancyCount(0);
         setVacancyList([]);
         const res = await getArticles(filters);
-        if (res.success && res.data) setArticles(res.data);
+        if (res.success && res.data) replaceArticles(res.data);
       }
       setLoading(false);
     };
@@ -941,7 +952,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     if (keywordMatch !== savedKeyword || authorMatch !== savedAuthor) {
       loadSearchData();
     } else {
-      setArticles(initialArticles);
+      replaceArticles(initialArticles);
       if (keywordMatch) {
         const loadVacanciesOnly = async () => {
           const [vRes, listRes] = await Promise.all([
@@ -966,10 +977,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
     const fetchCategoryArticles = async () => {
       setLoading(true);
-      const params: any = { status: "APPROVED", limit: isAll ? 1000 : 200 };
+      const params: any = { status: "APPROVED", limit: ARTICLE_PAGE_SIZE, page: 1 };
       if (targetSection1) params.section1 = targetSection1;
       const res = await getArticles(params);
-      if (res.success && res.data) setArticles(res.data);
+      if (res.success && res.data) replaceArticles(res.data);
       setLoading(false);
     };
 
@@ -977,6 +988,44 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       fetchCategoryArticles();
     }
   }, [activeTab, initialTab, searchParams]);
+
+  // 기사 목록 하단에 도달하면 다음 12건을 이어서 불러온다.
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || activeTab === "local") return;
+
+    const loadMoreArticles = async () => {
+      if (loadingMoreArticles || !hasMoreArticles) return;
+      setLoadingMoreArticles(true);
+
+      const nextPage = articlePageRef.current + 1;
+      const isAll = searchParams.get("sec") === "all";
+      const params: any = { status: "APPROVED", limit: ARTICLE_PAGE_SIZE, page: nextPage };
+      const targetSection1 = isAll ? undefined : (KEY_TO_SECTION1[activeTab] || undefined);
+      const keywordMatch = searchParams.get("keyword") || "";
+      const authorMatch = searchParams.get("author_name") || "";
+      if (targetSection1) params.section1 = targetSection1;
+      if (keywordMatch) params.keyword = keywordMatch;
+      if (authorMatch) params.author_name = authorMatch;
+
+      const res = await getArticles(params);
+      if (res.success && res.data) {
+        setArticles(prev => {
+          const existingIds = new Set(prev.map(article => article.id));
+          return [...prev, ...res.data.filter((article: any) => !existingIds.has(article.id))];
+        });
+        articlePageRef.current = nextPage;
+        setHasMoreArticles(res.data.length >= ARTICLE_PAGE_SIZE);
+      }
+      setLoadingMoreArticles(false);
+    };
+
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0]?.isIntersecting) loadMoreArticles();
+    }, { rootMargin: "500px" });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [activeTab, searchParams, hasMoreArticles, loadingMoreArticles]);
 
   // 우리동네뉴스 (lat/lng 있는 기사) 로드
   useEffect(() => {
@@ -2293,6 +2342,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     extractYoutubeId={extractYoutubeId}
                   />
                 ))}
+                {hasMoreArticles && (
+                  <div ref={loadMoreRef} style={{ minHeight: 48, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 12 }}>
+                    {loadingMoreArticles ? "다음 기사를 불러오는 중..." : ""}
+                  </div>
+                )}
               </div>
             );
           })()}
