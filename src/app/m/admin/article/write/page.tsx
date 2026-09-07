@@ -445,13 +445,23 @@ function MobileArticleWrite() {
       if (articleId) {
         let thumbnailUrl = coverPhoto?.preview || "";
         let htmlChanged = false;
+        const photoSortOrders = new Map(
+          photos
+            .map(photo => ({ photo, position: fullContent.indexOf(photo.preview) }))
+            .sort((a, b) => {
+              const aPosition = a.position < 0 ? Number.MAX_SAFE_INTEGER : a.position;
+              const bPosition = b.position < 0 ? Number.MAX_SAFE_INTEGER : b.position;
+              return aPosition - bPosition;
+            })
+            .map(({ photo }, index) => [photo.preview, index] as const)
+        );
 
         for (let i = 0; i < photos.length; i++) {
           const p = photos[i];
           if (p.file) {
             const uploadRes = await uploadArticleMediaDirect(p.file, articleId, {
               mediaType: "PHOTO",
-              sortOrder: i,
+              sortOrder: photoSortOrders.get(p.preview) ?? i,
               caption: p.caption,
             });
             if (uploadRes.success && uploadRes.url) {

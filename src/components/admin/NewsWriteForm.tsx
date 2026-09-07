@@ -1578,6 +1578,16 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         let finalHtml = currentHtmlContent;
         let finalThumbnailUrl = thumbnailUrl;
         let htmlChanged = false;
+        const photoSortOrders = new Map(
+          photoFiles
+            .map(photo => ({ photo, position: currentHtmlContent.indexOf(photo.preview) }))
+            .sort((a, b) => {
+              const aPosition = a.position < 0 ? Number.MAX_SAFE_INTEGER : a.position;
+              const bPosition = b.position < 0 ? Number.MAX_SAFE_INTEGER : b.position;
+              return aPosition - bPosition;
+            })
+            .map(({ photo }, index) => [photo.preview, index] as const)
+        );
 
         // 사진 첨부: 신규 파일(p.file !== null)은 업로드 진행
         if (articleId && photoFiles.length > 0) {
@@ -1586,7 +1596,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               // 클라이언트에서 Supabase Storage로 직접 업로드 (Vercel 서버 경유 X → 속도 대폭 향상)
               const uploadResult = await uploadArticleMediaDirect(p.file, articleId, {
                 mediaType: 'PHOTO',
-                sortOrder: i,
+                sortOrder: photoSortOrders.get(p.preview) ?? i,
               });
               return { p, uploadResult };
             }
