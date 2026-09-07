@@ -1886,7 +1886,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     {mentalText}
                   </h2>
                   <p style={{ fontSize: "12px", color: "#64748b", margin: 0, lineHeight: 1.4 }}>
-                    가입비·월회비 ZERO! 11만 공인중개사와 임대인이 함께하는 100% 무료 실매물
+                    가입비·월회비 ZERO! 11만 공인중개사 100% 무료 공동중개 사이트
                   </p>
                 </div>
 
