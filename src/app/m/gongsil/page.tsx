@@ -146,100 +146,239 @@ function MobileGongsilContent() {
 
   const AUCTION_PROPERTY_TYPES = ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"];
 
-  // 경매 모드에서는 저장된 이전 필터와 관계없이 처음부터 전체 자산유형을 보여준다.
-  useEffect(() => {
-    if (effectiveMode === "경매") {
-      setFilters({ ...initialFilterState, propertyTypes: AUCTION_PROPERTY_TYPES });
-    }
-  }, [effectiveMode, setFilters]);
+  const STORAGE_KEY = "m_gongsil_last_state";
 
-  // 마지막 검색 조건 및 지도 상태 저장 헬퍼
-  const saveLastSearchState = (currFilters: any, currMode: string, user: any) => {
-    if (!user || !user.id) return;
-    const storageKey = `last_gongsil_filters_${user.id}`;
-    
-    let centerLat = null;
-    let centerLng = null;
-    let mapZoom = null;
-    
-    if (kakaoMapRef.current) {
-      const center = kakaoMapRef.current.getCenter();
-      centerLat = center.getLat();
-      centerLng = center.getLng();
-      mapZoom = kakaoMapRef.current.getLevel();
+  // 실시간 공실 및 법원 경공매의 필터와 지도 위치를 각각 독립적으로 기억
+  const savedGongsilFiltersRef = useRef<any>(null);
+  const savedAuctionFiltersRef = useRef<any>(null);
+  const savedGongsilLocRef = useRef<{ centerLat: number; centerLng: number; mapZoom: number; locLabel: string } | null>(null);
+  const savedAuctionLocRef = useRef<{ centerLat: number; centerLng: number; mapZoom: number; locLabel: string } | null>(null);
+
+  // 마지막 검색 조건 및 지도 상태 저장 헬퍼 (로그인/비로그인 무관하게 로컬스토리지 보존)
+  const saveLastSearchState = (
+    currFilters?: any,
+    currMode?: string,
+    currLabel?: string,
+    customLat?: number | null,
+    customLng?: number | null,
+    customZoom?: number | null
+  ) => {
+    if (typeof window === "undefined") return;
+    if (!initialFilterRestoredRef.current) return;
+
+    const f = currFilters ?? filters;
+    const m = currMode ?? effectiveMode ?? activeMode;
+    const label = currLabel ?? locLabel;
+
+    let centerLat = customLat ?? null;
+    let centerLng = customLng ?? null;
+    let mapZoom = customZoom ?? null;
+
+    if (kakaoMapRef.current && (centerLat === null || centerLng === null)) {
+      try {
+        const center = kakaoMapRef.current.getCenter();
+        centerLat = center.getLat();
+        centerLng = center.getLng();
+        mapZoom = kakaoMapRef.current.getLevel();
+      } catch (e) {}
     }
-    
-    const stateToSave = {
-      filters: currFilters,
-      activeMode: currMode,
-      centerLat,
-      centerLng,
-      mapZoom
+
+    const currentLoc = {
+      centerLat: centerLat ?? 37.5172,
+      centerLng: centerLng ?? 127.0473,
+      mapZoom: mapZoom ?? MAX_MOBILE_MAP_LEVEL,
+      locLabel: label || "위치"
     };
-    
-    localStorage.setItem(storageKey, JSON.stringify(stateToSave));
+
+    if (m === "공실") {
+      savedGongsilFiltersRef.current = f;
+      if (centerLat) savedGongsilLocRef.current = currentLoc;
+    } else {
+      savedAuctionFiltersRef.current = f;
+      if (centerLat) savedAuctionLocRef.current = currentLoc;
+    }
+
+    const stateToSave = {
+      filters: f,
+      activeMode: m,
+      locLabel: label,
+      centerLat: currentLoc.centerLat,
+      centerLng: currentLoc.centerLng,
+      mapZoom: currentLoc.mapZoom,
+      gongsilFilters: m === "공실" ? f : (savedGongsilFiltersRef.current || initialFilterState),
+      auctionFilters: m === "경매" ? f : (savedAuctionFiltersRef.current || { ...initialFilterState, propertyTypes: AUCTION_PROPERTY_TYPES }),
+      gongsilLocation: savedGongsilLocRef.current || currentLoc,
+      auctionLocation: savedAuctionLocRef.current || currentLoc,
+      updatedAt: Date.now()
+    };
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      if (currentUser && currentUser.id) {
+        localStorage.setItem(`last_gongsil_filters_${currentUser.id}`, JSON.stringify(stateToSave));
+      }
+    } catch (e) {
+      console.error("Failed to save mobile search state:", e);
+    }
   };
 
-  // 필터 및 모드 변경 시 실시간 상태 저장
-  useEffect(() => {
-    if (currentUser && currentUser.id) {
-      saveLastSearchState(filters, activeMode, currentUser);
-    }
-  }, [filters, activeMode, currentUser]);
+  const initialFilterRestoredRef = useRef(false);
 
-  // 마지막 검색 조건 및 모드 복구
+  // 1) 마지막 검색 조건 및 모드 복구 (비회원/회원 모두 최초 마운트 시 1회 실행)
   useEffect(() => {
-    if (urlMode === "gongsil" || urlMode === "auction") {
-      if (activeMode !== effectiveMode) setActiveMode(effectiveMode);
-      return;
-    }
-    // URL에 mode가 명시된 경우 로컬스토리지를 통한 복구를 우회하고 최우선 적용
+    if (initialFilterRestoredRef.current) return;
+
     const modeParam = searchParams.get("mode");
-    if (modeParam === "gongsil") {
-      setActiveMode("공실");
-      return;
-    }
-    if (modeParam === "auction") {
-      setActiveMode("경매");
-      return;
-    }
 
-    if (currentUser && currentUser.id) {
-      const storageKey = `last_gongsil_filters_${currentUser.id}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed.filters) {
-            setFilters({
-              ...initialFilterState,
-              ...parsed.filters,
-              propertyTypes: initialFilterState.propertyTypes,
-              locationSearchType: "map",
-              sido: null,
-              sigungu: null,
-              dong: null,
-            });
-          }
-          if (parsed.activeMode) {
-            setActiveMode(parsed.activeMode);
-            return;
-          }
-        } catch (e) {
-          console.error("Failed to restore search filters:", e);
+    try {
+      const savedStr =
+        localStorage.getItem(STORAGE_KEY) ||
+        (currentUser && currentUser.id ? localStorage.getItem(`last_gongsil_filters_${currentUser.id}`) : null);
+
+      if (savedStr) {
+        const parsed = JSON.parse(savedStr);
+        if (parsed.gongsilFilters) {
+          savedGongsilFiltersRef.current = parsed.gongsilFilters;
+        }
+        if (parsed.auctionFilters) {
+          savedAuctionFiltersRef.current = parsed.auctionFilters;
+        }
+        if (parsed.gongsilLocation) {
+          savedGongsilLocRef.current = parsed.gongsilLocation;
+        }
+        if (parsed.auctionLocation) {
+          savedAuctionLocRef.current = parsed.auctionLocation;
+        }
+
+        const resolvedMode: "공실" | "경매" =
+          modeParam === "auction" ? "경매" :
+          modeParam === "gongsil" ? "공실" :
+          (parsed.activeMode === "경매" ? "경매" : "공실");
+
+        setActiveMode(resolvedMode);
+
+        const currentFilters = resolvedMode === "경매"
+          ? (parsed.auctionFilters || (parsed.activeMode === "경매" ? parsed.filters : null) || { ...initialFilterState, propertyTypes: AUCTION_PROPERTY_TYPES })
+          : (parsed.gongsilFilters || (parsed.activeMode !== "경매" ? parsed.filters : null) || initialFilterState);
+
+        setFilters({
+          ...initialFilterState,
+          ...currentFilters,
+          propertyTypes:
+            currentFilters.propertyTypes && currentFilters.propertyTypes.length > 0
+              ? currentFilters.propertyTypes
+              : (resolvedMode === "경매" ? AUCTION_PROPERTY_TYPES : initialFilterState.propertyTypes),
+          locationSearchType: "map",
+        });
+
+        const currentLoc = resolvedMode === "경매" ? (parsed.auctionLocation || parsed) : (parsed.gongsilLocation || parsed);
+        if (currentLoc && currentLoc.locLabel) {
+          setLocLabel(currentLoc.locLabel);
+        } else if (parsed.locLabel) {
+          setLocLabel(parsed.locLabel);
+        }
+      } else {
+        if (modeParam === "auction") {
+          setActiveMode("경매");
+          setFilters({ ...initialFilterState, propertyTypes: AUCTION_PROPERTY_TYPES });
+        } else {
+          setActiveMode("공실");
         }
       }
+    } catch (e) {
+      console.error("Failed to restore mobile search state:", e);
+    } finally {
+      initialFilterRestoredRef.current = true;
+    }
+  }, []);
+
+  // 2) 실시간 공실 ↔ 법원 경공매 탭 전환 시 직전 필터 및 지도 위치를 보존하고 대상 모드 필터/위치 불러오기
+  const switchMode = (newMode: "공실" | "경매") => {
+    if (effectiveMode === newMode) return;
+
+    const kakao = (window as any).kakao;
+    const currentCenter = kakaoMapRef.current?.getCenter();
+    const currentZoom = kakaoMapRef.current?.getLevel();
+
+    // 현재 모드의 필터 및 위치 저장
+    const currentLoc = {
+      centerLat: currentCenter ? currentCenter.getLat() : 37.5172,
+      centerLng: currentCenter ? currentCenter.getLng() : 127.0473,
+      mapZoom: currentZoom ?? MAX_MOBILE_MAP_LEVEL,
+      locLabel: locLabel
+    };
+
+    if (effectiveMode === "공실") {
+      savedGongsilFiltersRef.current = { ...filters };
+      savedGongsilLocRef.current = currentLoc;
+    } else {
+      savedAuctionFiltersRef.current = { ...filters };
+      savedAuctionLocRef.current = currentLoc;
     }
 
-    // 모드가 지정되지 않은 공실열람 진입은 실시간 공실을 기본으로 한다.
-    setActiveMode("공실");
-  }, [currentUser, searchParams, urlMode, activeMode, effectiveMode]);
+    // 대상 모드의 이전 필터 복원 (없으면 기본값)
+    let targetFilters: any;
+    if (newMode === "공실") {
+      targetFilters = savedGongsilFiltersRef.current || {
+        ...initialFilterState,
+        propertyTypes: [
+          "아파트", "빌라/연립", "오피스텔", "원룸", "1.5룸", "투룸", "단독/다가구",
+          "전원주택", "상가주택", "재건축", "재개발",
+          "상가", "사무실", "토지", "건물", "공장/창고", "지식산업센터"
+        ]
+      };
+    } else {
+      targetFilters = savedAuctionFiltersRef.current || {
+        ...initialFilterState,
+        propertyTypes: AUCTION_PROPERTY_TYPES
+      };
+    }
 
-  // 지도 객체 로드 완료 시 마지막 위치 복구
+    // 대상 모드의 이전 위치 복원
+    const targetLoc = newMode === "공실" ? savedGongsilLocRef.current : savedAuctionLocRef.current;
+    if (targetLoc && targetLoc.centerLat && targetLoc.centerLng && kakaoMapRef.current && kakao) {
+      skipGeocodingSyncRef.current = true;
+      kakaoMapRef.current.setCenter(new kakao.maps.LatLng(targetLoc.centerLat, targetLoc.centerLng));
+      if (targetLoc.mapZoom) {
+        kakaoMapRef.current.setLevel(Math.min(targetLoc.mapZoom, MAX_MOBILE_MAP_LEVEL));
+      }
+      setMapBounds(kakaoMapRef.current.getBounds());
+      setZoomLevel(kakaoMapRef.current.getLevel());
+      if (targetLoc.locLabel) {
+        setLocLabel(targetLoc.locLabel);
+      }
+      setTimeout(() => {
+        skipGeocodingSyncRef.current = false;
+      }, 1200);
+    }
+
+    setActiveMode(newMode);
+    setFilters(targetFilters);
+    setVacancies([]);
+    setSelectedVacancy(null);
+    setSelectedCluster(null);
+    router.replace(`/m/gongsil?mode=${newMode === "경매" ? "auction" : "gongsil"}`, { scroll: false });
+
+    saveLastSearchState(
+      targetFilters,
+      newMode,
+      targetLoc?.locLabel || locLabel,
+      targetLoc?.centerLat,
+      targetLoc?.centerLng,
+      targetLoc?.mapZoom
+    );
+  };
+
+  // 3) 필터 및 모드, 라벨 변경 시 실시간 로컬스토리지 자동 저장
+  useEffect(() => {
+    if (!initialFilterRestoredRef.current) return;
+    saveLastSearchState(filters, effectiveMode, locLabel);
+  }, [filters, effectiveMode, locLabel]);
+
+  // 4) 지도 객체 로드 완료 시 URL 좌표가 있으면 최우선 적용
   useEffect(() => {
     if (!mapLoaded || !kakaoMapRef.current) return;
 
-    // URL에 좌표가 명시된 경우 로컬스토리지 복구를 우회하고 해당 좌표를 최우선 적용
     const urlLat = searchParams.get("lat");
     const urlLng = searchParams.get("lng");
     const urlLevel = searchParams.get("level");
@@ -256,28 +395,8 @@ function MobileGongsilContent() {
         setMapBounds(kakaoMapRef.current.getBounds());
         setZoomLevel(kakaoMapRef.current.getLevel());
       }
-      return;
     }
-
-    if (currentUser && currentUser.id) {
-      const storageKey = `last_gongsil_filters_${currentUser.id}`;
-      const saved = localStorage.getItem(storageKey);
-          if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          const kakao = (window as any).kakao;
-          if (kakao && parsed.centerLat && parsed.centerLng) {
-            kakaoMapRef.current.setCenter(new kakao.maps.LatLng(parsed.centerLat, parsed.centerLng));
-            if (parsed.mapZoom) {
-              kakaoMapRef.current.setLevel(Math.min(parsed.mapZoom, MAX_MOBILE_MAP_LEVEL));
-            }
-          }
-        } catch (e) {
-          console.error("Failed to restore map location:", e);
-        }
-      }
-    }
-  }, [mapLoaded, currentUser, searchParams]);
+  }, [mapLoaded, searchParams]);
 
   // 현재 지도 화면 내에 보이는 공실광고 개수 상태
   const [visibleCount, setVisibleCount] = useState(0);
@@ -537,13 +656,10 @@ function MobileGongsilContent() {
 
   // 💡 [대표님 지침] Bbox(지도의 화면 영역) 변화 또는 필터 기반(B스타일) 행정구역 검색 시 Supabase에서 실시간으로 범위 내/지역 내 매물 패치!
   useEffect(() => {
-    // 모바일은 저장된 이전 상태를 포함해 항상 현재 지도 영역만 조회한다.
-    if (filters.locationSearchType !== 'map' || filters.sido || filters.sigungu || filters.dong) {
+    // 모바일은 항상 현재 지도 영역만 조회한다.
+    if (filters.locationSearchType !== 'map') {
       updateFilter({
         locationSearchType: 'map',
-        sido: null,
-        sigungu: null,
-        dong: null,
       });
       return;
     }
@@ -686,6 +802,25 @@ function MobileGongsilContent() {
         if (urlLevel) {
           initialLevel = Math.min(parseInt(urlLevel, 10), MAX_MOBILE_MAP_LEVEL);
         }
+      } else {
+        try {
+          const savedStr =
+            localStorage.getItem(STORAGE_KEY) ||
+            (currentUser && currentUser.id ? localStorage.getItem(`last_gongsil_filters_${currentUser.id}`) : null);
+          if (savedStr) {
+            const parsed = JSON.parse(savedStr);
+            const modeParam = searchParams.get("mode");
+            const curMode = modeParam === "auction" ? "경매" : modeParam === "gongsil" ? "공실" : (parsed.activeMode || "공실");
+            const loc = curMode === "경매" ? (parsed.auctionLocation || parsed) : (parsed.gongsilLocation || parsed);
+            if (loc && loc.centerLat && loc.centerLng) {
+              initialLat = Number(loc.centerLat);
+              initialLng = Number(loc.centerLng);
+              if (loc.mapZoom) {
+                initialLevel = Math.min(Number(loc.mapZoom), MAX_MOBILE_MAP_LEVEL);
+              }
+            }
+          }
+        } catch (e) {}
       }
 
       const map = new kakao.maps.Map(mapRef.current, {
@@ -703,8 +838,18 @@ function MobileGongsilContent() {
       setZoomLevel(map.getLevel());
       setMapBounds(map.getBounds());
 
-      // 🚀 위치 역지오코딩용 Geocoder 인스턴스 생성
-      geocoderRef.current = new kakao.maps.services.Geocoder();
+      // 🚀 위치 역지오코딩용 Geocoder 인스턴스 생성 및 초기 중심점 주소 동기화
+      const geocoder = new kakao.maps.services.Geocoder();
+      geocoderRef.current = geocoder;
+      geocoder.coord2RegionCode(initialLng, initialLat, (result: any, status: any) => {
+        if (status === kakao.maps.services.Status.OK) {
+          const region = result.find((r: any) => r.region_type === 'B') || result[0];
+          if (region) {
+            const label = [region.region_2depth_name, region.region_3depth_name].filter(Boolean).join(" ");
+            if (label) setLocLabel(label);
+          }
+        }
+      });
 
       kakaoMapRef.current = map;
       setMapLoaded(true);
@@ -910,24 +1055,20 @@ function MobileGongsilContent() {
                 locationSearchType: 'map'
               });
 
-              if (currentUser && currentUser.id) {
-                const nextFilters = {
-                  ...filters,
-                  sido: sido || null,
-                  sigungu: sigungu || null,
-                  dong: dong || null,
-                  locationSearchType: 'map'
-                };
-                saveLastSearchState(nextFilters, activeMode, currentUser);
-              }
+              const nextFilters = {
+                ...filters,
+                sido: sido || null,
+                sigungu: sigungu || null,
+                dong: dong || null,
+                locationSearchType: 'map' as const
+              };
+              saveLastSearchState(nextFilters, effectiveMode, label || "위치", center.getLat(), center.getLng(), map.getLevel());
             }
           }
         });
       }
 
-      if (currentUser && currentUser.id) {
-        saveLastSearchState(filters, activeMode, currentUser);
-      }
+      saveLastSearchState(filters, effectiveMode, locLabel, center.getLat(), center.getLng(), map.getLevel());
     };
 
     // 초기 계산
@@ -945,7 +1086,9 @@ function MobileGongsilContent() {
   const handleVacancyClick = async (v: any, isDirect: boolean = false) => {
     if (!isDirect) {
       listScrollTopRef.current = listScrollRef.current?.scrollTop || 0;
-      window.history.pushState({ panel: "detail", id: v.id, t: Date.now() }, "", "/m/gongsil?id=" + v.id);
+      const currentParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+      currentParams.set("id", v.id);
+      window.history.pushState({ panel: "detail", id: v.id, t: Date.now() }, "", "/m/gongsil?" + currentParams.toString());
     }
     if (detailScrollRef.current) {
       detailScrollRef.current.scrollTop = 0;
@@ -1011,6 +1154,9 @@ function MobileGongsilContent() {
               skipGeocodingSyncRef.current = true;
               kakaoMapRef.current.setCenter(new kakao.maps.LatLng(lat, lng));
               kakaoMapRef.current.setLevel(Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
+              setMapBounds(kakaoMapRef.current.getBounds());
+              setZoomLevel(kakaoMapRef.current.getLevel());
+              saveLastSearchState(filters, effectiveMode, locLabel, lat, lng, Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
               setTimeout(() => {
                 skipGeocodingSyncRef.current = false;
               }, 2500);
@@ -1066,21 +1212,7 @@ function MobileGongsilContent() {
           <div style={{ padding: "8px 16px", backgroundColor: "#fff", display: "flex", justifyContent: "center", borderBottom: "1px solid #f3f4f6" }}>
             <div style={{ display: "flex", width: "100%", background: "#f1f5f9", borderRadius: "12px", padding: "4px" }}>
               <button
-                onClick={() => {
-                  router.replace("/m/gongsil?mode=gongsil", { scroll: false });
-                  setActiveMode("공실");
-                  setVacancies([]);
-                  setSelectedVacancy(null);
-                  setSelectedCluster(null);
-                  // 🚀 [대표님 지침] 공실 전환 시 필터 리셋 및 전체유형 기본 선택
-                  updateFilter({
-                    propertyTypes: [
-                      "아파트", "빌라/연립", "오피스텔", "원룸", "1.5룸", "투룸", "단독/다가구",
-                      "전원주택", "상가주택", "재건축", "재개발",
-                      "상가", "사무실", "토지", "건물", "공장/창고", "지식산업센터"
-                    ]
-                  });
-                }}
+                onClick={() => switchMode("공실")}
                 style={{
                   flex: 1,
                   padding: "10px 0",
@@ -1098,19 +1230,7 @@ function MobileGongsilContent() {
                 ● 실시간 공실
               </button>
               <button
-                onClick={() => {
-                  router.replace("/m/gongsil?mode=auction", { scroll: false });
-                  setActiveMode("경매");
-                  setVacancies([]);
-                  setSelectedVacancy(null);
-                  setSelectedCluster(null);
-                  // 🚀 [대표님 지침] 경매 전환 시 필터 리셋 및 전체유형 기본 선택
-                  updateFilter({
-                    propertyTypes: [
-                      "아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"
-                    ]
-                  });
-                }}
+                onClick={() => switchMode("경매")}
                 style={{
                   flex: 1,
                   padding: "10px 0",
@@ -1144,6 +1264,9 @@ function MobileGongsilContent() {
                 skipGeocodingSyncRef.current = true;
                 kakaoMapRef.current.setCenter(new kakao.maps.LatLng(lat, lng));
                 kakaoMapRef.current.setLevel(Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
+                setMapBounds(kakaoMapRef.current.getBounds());
+                setZoomLevel(kakaoMapRef.current.getLevel());
+                saveLastSearchState(filters, effectiveMode, locLabel, lat, lng, Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
                 setTimeout(() => {
                   skipGeocodingSyncRef.current = false;
                 }, 2500);
@@ -1256,7 +1379,10 @@ function MobileGongsilContent() {
         {mapLoaded && (
           <div style={{ position: "absolute", top: "16px", left: "16px", zIndex: 20 }}>
             <button 
-              onClick={resetFilters}
+              onClick={() => {
+                resetFilters();
+                setLocLabel("위치");
+              }}
               style={{ background: "rgba(255,255,255,0.9)", borderRadius: "20px", padding: "8px 14px", border: "1px solid #ddd", fontSize: "13px", fontWeight: 700, color: "#1a73e8", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
             >
               <span style={{ fontSize: "15px", lineHeight: 1 }}>↻</span>

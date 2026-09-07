@@ -169,11 +169,6 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   useEffect(() => { setTempFilters(filters); }, [filters]);
   useEffect(() => { if (searchOpen && searchInputRef.current) searchInputRef.current.focus(); }, [searchOpen]);
 
-  useEffect(() => {
-    if (!filters.sido && !filters.sigungu && !filters.dong) {
-      setLocLabel("위치");
-    }
-  }, [filters.sido, filters.sigungu, filters.dong, setLocLabel]);
 
   const handleTempFilterChange = (partial: Partial<FilterState>) => {
     setTempFilters(prev => {
@@ -359,11 +354,6 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     gap: "4px"
   });
 
-  const showFilteredList = () => {
-    if (!onShowList) return;
-    onShowList("filter");
-  };
-
   const renderSheet = (title: string, children: React.ReactNode) => (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 10000, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
       <div onClick={() => setActivePanel(null)} style={{ flex: 1 }} />
@@ -376,8 +366,8 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           {children}
         </div>
         <div style={{ padding: "12px 20px 24px", borderTop: "1px solid #e5e7eb", background: "#fff" }}>
-          <button onClick={() => { setActivePanel(null); showFilteredList(); }} style={{ width: "100%", padding: "14px", background: "#4b89ff", border: "none", borderRadius: "8px", fontSize: "15px", fontWeight: 700, color: "#fff", cursor: "pointer" }}>
-            {filteredCount}개 {activeMode === "경매" ? "경·공매 매물" : "공실 매물"} 보기
+          <button onClick={() => setActivePanel(null)} style={{ width: "100%", padding: "14px", background: "#4b89ff", border: "none", borderRadius: "8px", fontSize: "15px", fontWeight: 700, color: "#fff", cursor: "pointer" }}>
+            적용하기
           </button>
         </div>
       </div>
@@ -388,7 +378,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     <>
       <div style={{ width: "100%", height: "46px", background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", position: "relative", zIndex: 50 }}>
         {/* 예전 햄버거 버튼 자리에 상세검색을 고정 */}
-        <button onClick={openFullFilter} style={{ flexShrink: 0, height: "34px", padding: "0 10px", fontSize: "13px", fontWeight: hasActiveFilters ? 700 : 600, background: "none", border: "none", color: "#374151", whiteSpace: "nowrap", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+        <button onClick={() => openFullFilter()} style={{ flexShrink: 0, height: "34px", padding: "0 10px", fontSize: "13px", fontWeight: hasActiveFilters ? 700 : 600, background: "none", border: "none", color: "#374151", whiteSpace: "nowrap", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <line x1="4" y1="6" x2="20" y2="6" />
             <line x1="4" y1="12" x2="20" y2="12" />
@@ -401,11 +391,11 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
         </button>
 
         {/* 수평 스크롤 필터 버튼들 */}
-        <div style={{ overflowX: "auto", display: "flex", gap: "8px", padding: "0 12px", flex: 1, minWidth: 0, boxSizing: "border-box", scrollbarWidth: "none", touchAction: "pan-x" }}>
+        <div style={{ overflowX: "auto", display: "flex", alignItems: "center", gap: "8px", padding: "0 12px", flex: 1, minWidth: 0, boxSizing: "border-box", scrollbarWidth: "none", touchAction: "pan-x" }}>
           <button onClick={() => setActivePanel(activePanel === "loc" ? null : "loc")} style={pillStyle(activePanel === "loc" || locLabel !== "위치")}>
             {locLabel === "위치" ? "지도 위치 ▾" : `${locLabel} ▾`}
           </button>
-          <button onClick={() => openFullFilter("property")} style={pillStyle(activePanel === "prop" || filters.propertyTypes.length > 0)}>
+          <button onClick={() => openFullFilter("property")} style={pillStyle(activePanel === "prop" || (!isExtAll && filters.propertyTypes.length > 0))}>
             {propertyTypeLabel}
           </button>
 
@@ -717,9 +707,8 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                 locationSearchType: 'map'
               }); 
               setFullFilterOpen(false);
-              showFilteredList();
-            }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>
-              {tempFilteredCount}개 {activeMode === "경매" ? "경·공매 매물" : "공실 매물"} 보기
+            }} style={{ flex: 1, padding: "14px", background: "#4b89ff", border: "none", borderRadius: "10px", fontSize: "16px", fontWeight: 800, color: "#fff", cursor: "pointer" }}>
+              적용하기
             </button>
           </div>
 
