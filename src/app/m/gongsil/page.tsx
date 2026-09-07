@@ -1197,7 +1197,7 @@ function MobileGongsilContent() {
           {isFetchingVacancies && (
             <div style={{
               position: "absolute",
-              top: "50%",
+              top: mapLoaded && zoomLevel >= 9 ? "138px" : "70px",
               left: "50%",
               transform: "translate(-50%, -50%)",
               zIndex: 100,
