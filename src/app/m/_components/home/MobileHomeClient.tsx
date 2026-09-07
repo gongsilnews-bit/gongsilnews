@@ -60,7 +60,7 @@ interface Props {
 
 const CATEGORIES = [
   { key: "home", label: "홈", path: "/m" },
-  { key: "news", label: "뉴스", path: "/m/news_gongsil" },
+  { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
   { key: "study", label: "스터디", path: "/m/study" },
 ];

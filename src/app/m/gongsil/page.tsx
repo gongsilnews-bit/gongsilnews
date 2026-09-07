@@ -16,6 +16,7 @@ import { GongsilMobileDetailPanel } from "./GongsilMobileDetailPanel";
 import { GongsilMobileDrawerList } from "./GongsilMobileDrawerList";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
+const MAX_MOBILE_MAP_LEVEL = 6;
 
 // 🌟 글로벌 금액 포맷터 (경공매/일반 전체 재사용)
 export const formatAmount = (amt: number) => {
@@ -210,7 +211,15 @@ function MobileGongsilContent() {
         try {
           const parsed = JSON.parse(saved);
           if (parsed.filters) {
-            setFilters(parsed.filters);
+            setFilters({
+              ...initialFilterState,
+              ...parsed.filters,
+              propertyTypes: initialFilterState.propertyTypes,
+              locationSearchType: "map",
+              sido: null,
+              sigungu: null,
+              dong: null,
+            });
           }
           if (parsed.activeMode) {
             setActiveMode(parsed.activeMode);
@@ -242,7 +251,7 @@ function MobileGongsilContent() {
         const lngVal = parseFloat(urlLng);
         kakaoMapRef.current.setCenter(new kakao.maps.LatLng(latVal, lngVal));
         if (urlLevel) {
-          kakaoMapRef.current.setLevel(parseInt(urlLevel, 10));
+          kakaoMapRef.current.setLevel(Math.min(parseInt(urlLevel, 10), MAX_MOBILE_MAP_LEVEL));
         }
         setMapBounds(kakaoMapRef.current.getBounds());
         setZoomLevel(kakaoMapRef.current.getLevel());
@@ -253,14 +262,14 @@ function MobileGongsilContent() {
     if (currentUser && currentUser.id) {
       const storageKey = `last_gongsil_filters_${currentUser.id}`;
       const saved = localStorage.getItem(storageKey);
-      if (saved) {
+          if (saved) {
         try {
           const parsed = JSON.parse(saved);
           const kakao = (window as any).kakao;
           if (kakao && parsed.centerLat && parsed.centerLng) {
             kakaoMapRef.current.setCenter(new kakao.maps.LatLng(parsed.centerLat, parsed.centerLng));
             if (parsed.mapZoom) {
-              kakaoMapRef.current.setLevel(parsed.mapZoom);
+              kakaoMapRef.current.setLevel(Math.min(parsed.mapZoom, MAX_MOBILE_MAP_LEVEL));
             }
           }
         } catch (e) {
@@ -564,7 +573,7 @@ function MobileGongsilContent() {
             if (kakaoMapRef.current && kakao) {
               skipGeocodingSyncRef.current = true;
               kakaoMapRef.current.setCenter(new kakao.maps.LatLng(36.3, 127.8));
-              kakaoMapRef.current.setLevel(12);
+              kakaoMapRef.current.setLevel(MAX_MOBILE_MAP_LEVEL);
               setTimeout(() => {
                 skipGeocodingSyncRef.current = false;
               }, 1200);
@@ -662,7 +671,7 @@ function MobileGongsilContent() {
       // 모바일 공실/경매 첫 진입 기본 위치는 서울 강남구로 시작한다.
       let initialLat = 37.5172;
       let initialLng = 127.0473;
-      let initialLevel = 6;
+      let initialLevel = MAX_MOBILE_MAP_LEVEL;
 
       const urlLat = searchParams.get("lat");
       const urlLng = searchParams.get("lng");
@@ -672,7 +681,7 @@ function MobileGongsilContent() {
         initialLat = parseFloat(urlLat);
         initialLng = parseFloat(urlLng);
         if (urlLevel) {
-          initialLevel = parseInt(urlLevel, 10);
+          initialLevel = Math.min(parseInt(urlLevel, 10), MAX_MOBILE_MAP_LEVEL);
         }
       }
 
@@ -865,6 +874,10 @@ function MobileGongsilContent() {
 
     // 🚀 지도의 bounds 및 zoomLevel 변화 시 부모 상태로 동기화
     const handleMapIdle = () => {
+      if (map.getLevel() > MAX_MOBILE_MAP_LEVEL) {
+        map.setLevel(MAX_MOBILE_MAP_LEVEL);
+        return;
+      }
       const center = map.getCenter();
       setMapBounds(map.getBounds());
       setZoomLevel(map.getLevel());
@@ -994,7 +1007,7 @@ function MobileGongsilContent() {
             if (kakaoMapRef.current && kakao) {
               skipGeocodingSyncRef.current = true;
               kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
-              kakaoMapRef.current.setLevel(zoom);
+              kakaoMapRef.current.setLevel(Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
               setTimeout(() => {
                 skipGeocodingSyncRef.current = false;
               }, 1200);
@@ -1127,7 +1140,7 @@ function MobileGongsilContent() {
               if (kakaoMapRef.current && kakao) {
                 skipGeocodingSyncRef.current = true;
                 kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
-                kakaoMapRef.current.setLevel(zoom);
+                kakaoMapRef.current.setLevel(Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
                 setTimeout(() => {
                   skipGeocodingSyncRef.current = false;
                 }, 1200);

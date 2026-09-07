@@ -246,7 +246,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   };
 
   const priceLabel = (() => {
-    if (filters.priceMin === null && filters.priceMax === null) return "가격 ▾";
+    if (filters.priceMin === null && filters.priceMax === null) return "전체가격 ▾";
     if (filters.priceMin !== null && filters.priceMax !== null) {
       return `${formatPriceVal(filters.priceMin)} ~ ${formatPriceVal(filters.priceMax)}`;
     }
@@ -255,7 +255,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   })();
 
   const areaLabel = (() => {
-    if (filters.areaMin === null && filters.areaMax === null) return "면적 ▾";
+    if (filters.areaMin === null && filters.areaMax === null) return "전체면적 ▾";
     if (filters.areaMin !== null && filters.areaMax !== null) {
       return `${filters.areaMin}평 ~ ${filters.areaMax}평`;
     }
@@ -435,12 +435,12 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                 {filters.tradeTypes.length === TRADE_TYPES.length ? "전체거래" : filters.tradeTypes.length === 0 ? "거래방식" : filters.tradeTypes.join(", ")}
               </button>
               {showPricePill && (
-                <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null)}>
+                <button onClick={() => setActivePanel(activePanel === "price" ? null : "price")} style={pillStyle(activePanel === "price" || filters.priceMin !== null || filters.priceMax !== null || (filters.priceMin === null && filters.priceMax === null))}>
                   {priceLabel}
                 </button>
               )}
               {showAreaPill && (
-                <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null)}>
+                <button onClick={() => setActivePanel(activePanel === "area" ? null : "area")} style={pillStyle(activePanel === "area" || filters.areaMin !== null || filters.areaMax !== null || (filters.areaMin === null && filters.areaMax === null))}>
                   {areaLabel}
                 </button>
               )}

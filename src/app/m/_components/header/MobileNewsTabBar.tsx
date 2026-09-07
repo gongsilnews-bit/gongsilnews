@@ -8,7 +8,7 @@ import { createClient } from "@/utils/supabase/client";
 const SearchOverlay = dynamic(() => import("@/app/m/_components/header/SearchOverlay"), { ssr: false });
 
 const CATEGORIES = [
-  { key: "news", label: "뉴스", path: "/m/news_gongsil?sec=all" },
+  { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
   { key: "study", label: "스터디", path: "/m/study" },
 ];
@@ -165,7 +165,7 @@ export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
           {(activeTab === "local" || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc") && (
             activeTab === "local" ? (
               <button
-                onClick={() => router.push("/m/news_gongsil")}
+                onClick={() => router.push("/m/news")}
                 style={{
                   display: "flex",
                   alignItems: "center",

@@ -50,13 +50,13 @@ const SearchOverlay = dynamic(() => import("../_components/header/SearchOverlay"
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 
 const CATEGORIES = [
-  { key: "news", label: "뉴스", path: "/m/news_gongsil?sec=all" },
+  { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
   { key: "study", label: "스터디", path: "/m/study" },
 ];
 
 const NEWS_PILL_TABS = [
-  { key: "all", label: "전체", path: "/m/news_gongsil?sec=all" },
+  { key: "all", label: "전체", path: "/m/news" },
   { key: "news_gongsil", label: "공실뉴스", path: "/m/news_gongsil" },
   { key: "news_politics", label: "부동산·경제", path: "/m/news_politics" },
   { key: "news_marketing", label: "AI마케팅", path: "/m/news_marketing" },
@@ -972,7 +972,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   // 탭 전환 시 해당 카테고리 기사를 클라이언트에서 직접 fetch (SPA 전환으로 서버 컴포넌트가 안 돌 때 대비)
   useEffect(() => {
     if (activeTab === "local") return;
-    const isAll = searchParams.get("sec") === "all";
+    const isAll = searchParams.get("sec") === "all" || pathname === "/m/news";
     const targetSection1 = isAll ? undefined : (KEY_TO_SECTION1[activeTab] || undefined);
 
     const fetchCategoryArticles = async () => {
@@ -999,7 +999,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       setLoadingMoreArticles(true);
 
       const nextPage = articlePageRef.current + 1;
-      const isAll = searchParams.get("sec") === "all";
+      const isAll = searchParams.get("sec") === "all" || pathname === "/m/news";
       const params: any = { status: "APPROVED", limit: ARTICLE_PAGE_SIZE, page: nextPage };
       const targetSection1 = isAll ? undefined : (KEY_TO_SECTION1[activeTab] || undefined);
       const keywordMatch = searchParams.get("keyword") || "";
@@ -1410,7 +1410,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             >
               {activeTab === "local" ? (
                 <button
-                  onClick={() => router.push("/m/news_gongsil")}
+                  onClick={() => router.push("/m/news")}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -1808,7 +1808,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             }}
           >
             {NEWS_PILL_TABS.map((pill) => {
-              const isAllSelected = searchParams.get("sec") === "all";
+              const isAllSelected = searchParams.get("sec") === "all" || pathname === "/m/news";
               const isActive = pill.key === "all" ? isAllSelected : (!isAllSelected && activeTab === pill.key);
               return (
                 <button
@@ -1841,7 +1841,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             const isAuthorView = !!(authorProfile || initialAuthorName);
             if (isKeywordSearch || isAuthorView) return null;
 
-            const isAll = searchParams.get("sec") === "all";
+            const isAll = searchParams.get("sec") === "all" || pathname === "/m/news";
             const mentalText = isAll
               ? "공동중개 열람 무료! 임대인 공실등록 무료!"
               : (PERSONALIZED_MENTAL_MAP[activeTab]?.["전체"] || PERSONALIZED_MENTAL_MAP[activeTab]?.[section2Tab] || "공동중개 열람 무료 · 임대인 공실등록 무료");
@@ -1915,7 +1915,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
           {/* ── 2차 카테고리 픽토그램 메뉴 바 (상단형 Option 1) ── */}
           {(() => {
-            const isAllSelected = searchParams.get("sec") === "all";
+            const isAllSelected = searchParams.get("sec") === "all" || pathname === "/m/news";
             if (isAllSelected) return null;
             const currentSection1 = KEY_TO_SECTION1[activeTab] || "";
             const subs = currentSection1 ? SECTION2_MAP[currentSection1] : null;
@@ -2193,7 +2193,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
           {/* 실 기사 리스트 */}
           {searchTab === 'article' && (() => {
-            const isAll = searchParams.get("sec") === "all";
+            const isAll = searchParams.get("sec") === "all" || pathname === "/m/news";
             const currentCatLabel = isAll ? "공실뉴스" : (section2Tab || (NEWS_PILL_TABS.find(p => p.key === activeTab)?.label || "공실뉴스"));
             
             // 하단 기사 목록은 전체 기사(중요 기사 포함)를 최신순/인기순으로 전부 노출
@@ -2343,8 +2343,14 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   />
                 ))}
                 {hasMoreArticles && (
-                  <div ref={loadMoreRef} style={{ minHeight: 48, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 12 }}>
-                    {loadingMoreArticles ? "다음 기사를 불러오는 중..." : ""}
+                  <div ref={loadMoreRef} style={{ minHeight: 48, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {loadingMoreArticles && (
+                      <div aria-label="다음 기사 불러오는 중" style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        {[0, 1, 2].map(index => (
+                          <span key={index} style={{ width: 7, height: 7, borderRadius: "50%", background: "#1a4282", animation: `mobileArticleLoadingDot 1s ease-in-out ${index * 0.16}s infinite` }} />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -2532,6 +2538,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         .news-detail-panel.open { transform: translateX(0); }
         .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @keyframes mobileArticleLoadingDot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }
         .article-row { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; border-radius: 8px; transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.12s ease; will-change: transform; }
         .article-row:active { background-color: #F4F6F8 !important; transform: scale(0.985); }
         .slide-out-left { animation: slideOutLeft 0.15s ease forwards; }
