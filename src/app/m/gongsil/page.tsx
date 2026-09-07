@@ -1006,7 +1006,7 @@ function MobileGongsilContent() {
             const kakao = (window as any).kakao;
             if (kakaoMapRef.current && kakao) {
               skipGeocodingSyncRef.current = true;
-              kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+              kakaoMapRef.current.setCenter(new kakao.maps.LatLng(lat, lng));
               kakaoMapRef.current.setLevel(Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
               setTimeout(() => {
                 skipGeocodingSyncRef.current = false;
@@ -1139,7 +1139,7 @@ function MobileGongsilContent() {
               const kakao = (window as any).kakao;
               if (kakaoMapRef.current && kakao) {
                 skipGeocodingSyncRef.current = true;
-                kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+                kakaoMapRef.current.setCenter(new kakao.maps.LatLng(lat, lng));
                 kakaoMapRef.current.setLevel(Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
                 setTimeout(() => {
                   skipGeocodingSyncRef.current = false;
