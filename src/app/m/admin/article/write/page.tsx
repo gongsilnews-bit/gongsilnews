@@ -147,7 +147,11 @@ function MobileArticleWrite() {
           setSection1(d.section1 || "");
           setSection2(d.section2 || "");
           if (d.article_keywords && Array.isArray(d.article_keywords)) {
-            setKeywords(d.article_keywords.map((k: any) => k.keyword).filter(Boolean));
+            const parsedKeywords = d.article_keywords.flatMap((k: any) => {
+              const val = String(k.keyword || "");
+              return val.split(/[,#\s]+/).map((s: string) => s.replace(/^#+/, "").trim()).filter(Boolean);
+            });
+            setKeywords(Array.from(new Set(parsedKeywords)));
           }
           if (d.related_articles && Array.isArray(d.related_articles)) {
             setRelatedArticles(d.related_articles.map((ra: any) => ({
@@ -303,11 +307,24 @@ function MobileArticleWrite() {
     }
   };
 
-  /* ── 키워드 추가 ── */
-  const addKeyword = () => {
-    const kw = keyword.trim();
-    if (!kw || keywords.includes(kw)) return;
-    setKeywords([...keywords, kw]);
+  /* ── 키워드 추가 (콤마, 공백, # 복수 분할 지원) ── */
+  const addKeyword = (rawText?: string) => {
+    const textToProcess = (typeof rawText === "string" ? rawText : keyword).trim();
+    if (!textToProcess) return;
+
+    // 콤마, 띄어쓰기, 해시태그(#) 기준으로 자동 분할 및 앞뒤 공백/# 제거
+    const newKeywords = textToProcess
+      .split(/[,#\s]+/)
+      .map(k => k.replace(/^#+/, "").trim())
+      .filter(Boolean);
+
+    if (newKeywords.length === 0) return;
+
+    setKeywords(prev => {
+      const existing = new Set(prev);
+      const uniqueNew = newKeywords.filter(k => !existing.has(k));
+      return [...prev, ...uniqueNew];
+    });
     setKeyword("");
   };
 
@@ -808,11 +825,19 @@ function MobileArticleWrite() {
               value={keyword}
               onChange={e => setKeyword(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addKeyword(); } }}
-              placeholder="키워드를 입력하세요"
-              style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none" }}
+              onPaste={e => {
+                const pastedData = e.clipboardData.getData("text");
+                if (/[,#\s]/.test(pastedData)) {
+                  e.preventDefault();
+                  addKeyword(pastedData);
+                }
+              }}
+              placeholder="키워드 입력 후 엔터 (#, 콤마, 띄어쓰기로 여러 개 붙여넣기 가능)"
+              style={{ flex: 1, height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, outline: "none" }}
             />
             <button
-              onClick={addKeyword}
+              type="button"
+              onClick={() => addKeyword()}
               style={{ height: 40, padding: "0 14px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
             >
               추가
