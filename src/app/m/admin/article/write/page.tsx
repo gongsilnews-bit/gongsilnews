@@ -63,9 +63,12 @@ function MobileArticleWrite() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   /* ── 미디어 상태 ── */
-  const [photos, setPhotos] = useState<{ file: File | null; preview: string; caption: string; isCover: boolean; mediaId?: string }[]>([]);
+  const [photos, setPhotos] = useState<{ file: File | null; preview: string; caption: string; isCover: boolean; align?: 'left' | 'center' | 'right'; mediaId?: string }[]>([]);
   const [videos, setVideos] = useState<{ url: string; videoId: string; isCover: boolean; isShorts: boolean }[]>([]);
   const [youtubeInput, setYoutubeInput] = useState("");
+  const [isShortsCheck, setIsShortsCheck] = useState(false);
+  const [photoCollapsed, setPhotoCollapsed] = useState(false);
+  const [videoCollapsed, setVideoCollapsed] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const savedRangeRef = useRef<Range | null>(null);
@@ -98,10 +101,49 @@ function MobileArticleWrite() {
       sel.addRange(endRange);
     }
     document.execCommand("insertHTML", false, html);
-    const newSel = window.getSelection();
-    savedRangeRef.current = newSel && newSel.rangeCount ? newSel.getRangeAt(0).cloneRange() : null;
-    setContent(editor.innerHTML);
+    setContent(editor.innerHTML || "");
   };
+
+  // 에디터 호버/터치 삭제 버튼 주입 스타일
+  useEffect(() => {
+    const styleId = "mobile-editor-media-styles";
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      .inserted-photo, .inserted-video {
+        position: relative !important;
+        display: table;
+      }
+      .inserted-photo .editor-media-delete,
+      .inserted-video .editor-media-delete {
+        display: flex;
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: rgba(239,68,68,0.95);
+        color: #fff;
+        border: 2px solid #fff;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        z-index: 20;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        touch-action: manipulation;
+      }
+      .inserted-photo .editor-media-delete:active,
+      .inserted-video .editor-media-delete:active {
+        transform: scale(1.15);
+        background: rgba(220,38,38,1);
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
 
   /* ── 예약 노출 상태 ── */
   const [isReserved, setIsReserved] = useState(false);
@@ -161,21 +203,132 @@ function MobileArticleWrite() {
               published_at: ra.published_at
             })));
           }
-          // 영상 추출
-          const vids: any[] = [];
+
           let htmlContent = d.content || "";
-          const regex = /<div[^>]*class="inserted-video"[^>]*>.*?src="https:\/\/www\.youtube\.com\/embed\/([\w-]{11})".*?<\/div>/g;
-          let match;
-          while ((match = regex.exec(htmlContent)) !== null) {
-            vids.push({
-              url: `https://www.youtube.com/watch?v=${match[1]}`,
-              videoId: match[1],
-              isCover: d.thumbnail_url?.includes(match[1]) || false,
-              isShorts: false,
-            });
+
+          // 1. 기존 DB 사진 목록 복원
+          let restoredPhotos: { file: File | null; preview: string; caption: string; isCover: boolean; align?: 'left' | 'center' | 'right'; mediaId?: string }[] = [];
+          if (d.article_media && Array.isArray(d.article_media)) {
+            restoredPhotos = d.article_media
+              .filter((m: any) => m.media_type === "PHOTO")
+              .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+              .map((m: any) => ({
+                file: null,
+                preview: m.url,
+                caption: m.caption || "",
+                isCover: d.thumbnail_url === m.url,
+                align: "center",
+                mediaId: m.id
+              }));
           }
-          // 추출 후 본문에서 영상 태그 제거 (모바일 에디터에서는 카드로 관리)
-          htmlContent = htmlContent.replace(/<div[^>]*class="inserted-video"[^>]*>.*?<\/div>/g, "");
+
+          // 2. HTML 파서로 사진 및 영상 파싱 & wrapper에 삭제 버튼 삽입
+          const tempDiv = document.createElement("div");
+          tempDiv.innerHTML = htmlContent;
+
+          // (1) 에디터 내 사진 래핑 및 삭제버튼 주입
+          const imgElements = tempDiv.querySelectorAll("img");
+          imgElements.forEach((img) => {
+            const src = img.getAttribute("src") || "";
+            if (!src) return;
+
+            // 이미 .inserted-photo 내부에 있는지 확인
+            let wrapper = img.closest(".inserted-photo") as HTMLElement | null;
+            if (!wrapper) {
+              wrapper = document.createElement("div");
+              wrapper.className = "inserted-photo";
+              wrapper.style.cssText = "position: relative; display: table; margin: 16px auto; text-align: center;";
+              wrapper.setAttribute("contenteditable", "false");
+              img.parentNode?.insertBefore(wrapper, img);
+              wrapper.appendChild(img);
+            }
+            // 삭제 버튼이 없으면 추가
+            if (!wrapper.querySelector(".editor-media-delete")) {
+              const btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "editor-media-delete";
+              btn.innerHTML = "✕";
+              btn.setAttribute("contenteditable", "false");
+              btn.title = "사진 삭제";
+              wrapper.appendChild(btn);
+            }
+
+            // DB 목록에 없는 인라인 사진도 photos 상태에 추가
+            if (!restoredPhotos.some(p => p.preview === src)) {
+              const caption = wrapper.querySelector("p")?.textContent || "";
+              restoredPhotos.push({
+                file: null,
+                preview: src,
+                caption,
+                isCover: d.thumbnail_url === src,
+                align: "center"
+              });
+            }
+          });
+
+          // (2) 영상 파싱 및 복원
+          const restoredVideos: { url: string; videoId: string; isCover: boolean; isShorts: boolean }[] = [];
+          const iframes = tempDiv.querySelectorAll("iframe");
+          iframes.forEach((iframe) => {
+            const src = iframe.getAttribute("src") || "";
+            const match = src.match(/embed\/([\w-]{11})/);
+            if (match) {
+              const vId = match[1];
+              let wrapper = iframe.closest(".inserted-video") as HTMLElement | null;
+              if (!wrapper) {
+                wrapper = document.createElement("div");
+                wrapper.className = "inserted-video";
+                wrapper.style.cssText = "position: relative; display: table; width: 100%; margin: 16px auto; text-align: center;";
+                wrapper.setAttribute("contenteditable", "false");
+                iframe.parentNode?.insertBefore(wrapper, iframe);
+                wrapper.appendChild(iframe);
+              }
+              if (!wrapper.querySelector(".editor-media-delete")) {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "editor-media-delete";
+                btn.innerHTML = "✕";
+                btn.setAttribute("contenteditable", "false");
+                btn.title = "영상 삭제";
+                wrapper.appendChild(btn);
+              }
+
+              if (!restoredVideos.some(v => v.videoId === vId)) {
+                restoredVideos.push({
+                  url: `https://www.youtube.com/watch?v=${vId}`,
+                  videoId: vId,
+                  isCover: d.thumbnail_url?.includes(vId) || false,
+                  isShorts: iframe.style.aspectRatio?.includes("9/16") || false,
+                });
+              }
+            }
+          });
+
+          if (d.youtube_url) {
+            const mainMatch = d.youtube_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/);
+            if (mainMatch && !restoredVideos.find(v => v.videoId === mainMatch[1])) {
+              restoredVideos.push({
+                url: d.youtube_url,
+                videoId: mainMatch[1],
+                isCover: d.thumbnail_url?.includes(mainMatch[1]) || false,
+                isShorts: !!d.is_shorts
+              });
+            }
+          }
+
+          // 대표 지정이 전혀 안 되어 있으면 첫 번째 사진 혹은 영상을 대표로 설정
+          if (restoredPhotos.length > 0 && !restoredPhotos.some(p => p.isCover) && !restoredVideos.some(v => v.isCover)) {
+            restoredPhotos[0].isCover = true;
+          }
+
+          setPhotos(restoredPhotos);
+          setVideos(restoredVideos);
+
+          htmlContent = tempDiv.innerHTML;
+          setContent(htmlContent);
+          if (editorRef.current) {
+            editorRef.current.innerHTML = htmlContent;
+          }
           
           if (d.published_at) {
             const dt = new Date(d.published_at);
@@ -190,20 +343,6 @@ function MobileArticleWrite() {
               setPublishTime(`${timeParts[0]}:${timeParts[1]}`);
             }
           }
-          
-          if (d.youtube_url) {
-            const mainMatch = d.youtube_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/);
-            if (mainMatch && !vids.find(v => v.videoId === mainMatch[1])) {
-               vids.push({
-                 url: d.youtube_url,
-                 videoId: mainMatch[1],
-                 isCover: d.thumbnail_url?.includes(mainMatch[1]) || false,
-                 isShorts: !!d.is_shorts
-               });
-            }
-          }
-          setVideos(vids);
-          setContent(htmlContent);
         }
       }
     })();
@@ -328,6 +467,31 @@ function MobileArticleWrite() {
     setKeyword("");
   };
 
+  /* ── 에디터 DOM 미디어 삭제 시 상태 동기화 ── */
+  const syncSidebarFromEditor = () => {
+    if (!editorRef.current) return;
+    const currentPhotos = editorRef.current.querySelectorAll('.inserted-photo');
+    const currentVideos = editorRef.current.querySelectorAll('.inserted-video');
+
+    setPhotos(prev => {
+      const editorPhotoUrls = new Set(
+        Array.from(currentPhotos)
+          .map(wrapper => wrapper.querySelector('img')?.getAttribute('src'))
+          .filter((src): src is string => Boolean(src))
+      );
+      const updated = prev.filter(photo => editorPhotoUrls.has(photo.preview));
+      if (updated.length > 0 && !updated.some(p => p.isCover)) {
+        updated[0].isCover = true;
+      }
+      return updated;
+    });
+
+    setVideos(prev => {
+      if (prev.length <= currentVideos.length) return prev;
+      return prev.slice(0, currentVideos.length);
+    });
+  };
+
   /* ── 사진 추가 ── */
   const handlePhotoAdd = async (files: FileList | null) => {
     if (!files) return;
@@ -336,22 +500,73 @@ function MobileArticleWrite() {
       const compressed = await compressToWebP(f);
       const preview = URL.createObjectURL(compressed);
       setPhotos(prev => {
-        const updated = [...prev, { file: compressed, preview, caption: "", isCover: prev.length === 0 && videos.length === 0 }];
+        const updated = [...prev, { file: compressed, preview, caption: "", isCover: prev.length === 0 && videos.length === 0, align: 'center' as const }];
         return updated;
       });
-      // 에디터의 커서 위치에 즉시 삽입
-      const imgHtml = `<br/><div style="text-align: center;"><img src="${preview}" style="max-width: 100%; height: auto; border-radius: 8px;" /></div><br/>`;
+      // 에디터의 커서 위치에 즉시 삽입 (삭제 버튼 포함된 .inserted-photo)
+      const imgHtml = `<div class="inserted-photo" contenteditable="false" style="position: relative; display: table; margin: 16px auto; text-align: center;"><button type="button" class="editor-media-delete" contenteditable="false" title="사진 삭제">✕</button><img src="${preview}" style="max-width: 100%; height: auto; border-radius: 8px; display: block;" /></div><p><br/></p>`;
       insertHtmlAtCursor(imgHtml);
     }
   };
 
   /* ── 사진 삭제 ── */
   const removePhoto = (idx: number) => {
+    const target = photos[idx];
+    if (target && editorRef.current) {
+      const wrappers = editorRef.current.querySelectorAll('.inserted-photo');
+      wrappers.forEach(w => {
+        if (w.querySelector('img')?.getAttribute('src') === target.preview) {
+          w.remove();
+        }
+      });
+      setContent(editorRef.current.innerHTML || "");
+    }
     setPhotos(prev => {
       const updated = prev.filter((_, i) => i !== idx);
       if (updated.length > 0 && !updated.some(p => p.isCover) && !videos.some(v => v.isCover)) updated[0].isCover = true;
       return updated;
     });
+  };
+
+  /* ── 사진 캡션 수정 (에디터 DOM과 양방향 반영) ── */
+  const updatePhotoCaption = (idx: number, newCaption: string) => {
+    setPhotos(prev => prev.map((p, i) => i === idx ? { ...p, caption: newCaption } : p));
+    const target = photos[idx];
+    if (target && editorRef.current) {
+      const wrappers = editorRef.current.querySelectorAll('.inserted-photo');
+      wrappers.forEach(w => {
+        if (w.querySelector('img')?.getAttribute('src') === target.preview) {
+          let capEl = w.querySelector('p');
+          if (newCaption.trim()) {
+            if (!capEl) {
+              capEl = document.createElement('p');
+              capEl.style.cssText = "display: table-caption; caption-side: bottom; font-size: 12px; color: #6b7280; margin: 6px 0 0 0; text-align: center;";
+              w.appendChild(capEl);
+            }
+            capEl.textContent = newCaption;
+          } else if (capEl) {
+            capEl.remove();
+          }
+        }
+      });
+      setContent(editorRef.current.innerHTML || "");
+    }
+  };
+
+  /* ── 사진 정렬 수정 (좌/중앙/우) ── */
+  const updatePhotoAlign = (idx: number, align: 'left' | 'center' | 'right') => {
+    setPhotos(prev => prev.map((p, i) => i === idx ? { ...p, align } : p));
+    const target = photos[idx];
+    if (target && editorRef.current) {
+      const wrappers = editorRef.current.querySelectorAll('.inserted-photo');
+      wrappers.forEach(w => {
+        if (w.querySelector('img')?.getAttribute('src') === target.preview) {
+          const marginCss = align === 'left' ? '16px auto 16px 0' : align === 'right' ? '16px 0 16px auto' : '16px auto';
+          (w as HTMLElement).style.margin = marginCss;
+        }
+      });
+      setContent(editorRef.current.innerHTML || "");
+    }
   };
 
   /* ── 영상 추가 ── */
@@ -364,20 +579,30 @@ function MobileArticleWrite() {
       return;
     }
     const videoId = match[1];
-    const isShorts = url.includes("shorts");
+    const isShorts = isShortsCheck || url.includes("shorts");
     setVideos(prev => {
       if (prev.some(v => v.videoId === videoId)) return prev;
       return [...prev, { url, videoId, isCover: false, isShorts }];
     });
     setYoutubeInput("");
 
-    // 에디터의 커서 위치에 즉시 삽입
-    const videoHtml = `<div class="inserted-video" style="margin-top: 16px;"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio: ${isShorts ? '9/16' : '16/9'}; border-radius: 8px;"></iframe></div><br/>`;
+    // 에디터의 커서 위치에 즉시 삽입 (삭제 버튼 포함된 .inserted-video)
+    const videoHtml = `<div class="inserted-video" contenteditable="false" style="position: relative; display: table; width: 100%; margin: 16px auto; text-align: center;"><button type="button" class="editor-media-delete" contenteditable="false" title="영상 삭제">✕</button><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio: ${isShorts ? '9/16' : '16/9'}; border-radius: 8px;"></iframe></div><p><br/></p>`;
     insertHtmlAtCursor(videoHtml);
   };
 
   /* ── 영상 삭제 ── */
   const removeVideo = (idx: number) => {
+    const target = videos[idx];
+    if (target && editorRef.current) {
+      const wrappers = editorRef.current.querySelectorAll('.inserted-video');
+      wrappers.forEach(w => {
+        if (w.querySelector('iframe')?.getAttribute('src')?.includes(target.videoId)) {
+          w.remove();
+        }
+      });
+      setContent(editorRef.current.innerHTML || "");
+    }
     setVideos(prev => {
       const updated = prev.filter((_, i) => i !== idx);
       if (updated.length > 0 && !updated.some(v => v.isCover) && !photos.some(p => p.isCover)) updated[0].isCover = true;
@@ -400,8 +625,9 @@ function MobileArticleWrite() {
     setSaving(true);
 
     try {
-      // 1. 기사 본문에 사진을 삽입한 HTML 생성
+      // 1. 기사 본문에 사진을 삽입한 HTML 생성 (에디터 내 삭제 버튼 태그는 본문 저장 시 완전 제거)
       let fullContent = editorRef.current ? editorRef.current.innerHTML : content;
+      fullContent = fullContent.replace(/<button[^>]*class="editor-media-delete"[^>]*>.*?<\/button>/gi, "");
       
       // 이미 content에 HTML이 포함되어 있지 않고, 순수 텍스트인 경우 p 태그로 래핑
       if (!fullContent.includes("<")) {
@@ -680,97 +906,266 @@ function MobileArticleWrite() {
         </div>
         )}
 
-        {/* 미디어 섹션 (사진/영상) */}
-        <div style={{ marginBottom: 16, background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <span style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>📷 미디어 첨부 (사진 {photos.length} / 영상 {videos.length})</span>
+        {/* ── 1. 라이브러리 섹션 ── */}
+        <div style={{ marginBottom: 14, background: "#fff", borderRadius: 14, padding: 14, border: "1px solid #e5e7eb" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>📁 라이브러리</span>
           </div>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-            <button
-              onClick={() => photoInputRef.current?.click()}
-              style={{ flex: 1, minWidth: "80px", height: 40, background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-            >
-              + 사진
-            </button>
-            <button
-              onClick={openPhotoDbModal}
-              style={{ flex: 1, minWidth: "80px", height: 40, background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-            >
-              + 포토DB
-            </button>
-            <div style={{ flex: 2, minWidth: "160px", display: "flex", gap: 6 }}>
-               <input
-                 type="url"
-                 value={youtubeInput}
-                 onChange={e => setYoutubeInput(e.target.value)}
-                 onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddVideo(); } }}
-                 placeholder="유튜브 영상 링크 입력"
-                 style={{ flex: 1, padding: "0 10px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, outline: "none" }}
-               />
-               <button
-                 onClick={handleAddVideo}
-                 style={{ padding: "0 14px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
-               >
-                 추가
-               </button>
-            </div>
+          <form onSubmit={handlePhotoDbSearch} style={{ position: "relative" }}>
             <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={e => handlePhotoAdd(e.target.files)}
-              style={{ display: "none" }}
+              type="text"
+              placeholder="포토DB 간편검색"
+              value={photoDbSearch}
+              onChange={e => setPhotoDbSearch(e.target.value)}
+              onClick={openPhotoDbModal}
+              style={{ width: "100%", height: 38, padding: "0 38px 0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, color: "#111", background: "#fff", outline: "none", boxSizing: "border-box" }}
             />
+            <button
+              type="button"
+              onClick={openPhotoDbModal}
+              style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
+          </form>
+        </div>
+
+        {/* ── 2. 사진 섹션 ── */}
+        <div style={{ marginBottom: 14, background: "#fff", borderRadius: 14, padding: 14, border: "1px solid #e5e7eb" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>📷 사진 ({photos.length})</span>
+            <button
+              type="button"
+              onClick={() => setPhotoCollapsed(!photoCollapsed)}
+              style={{ width: 26, height: 26, border: "1px solid #e5e7eb", borderRadius: 6, background: "#f9fafb", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#6b7280" }}
+            >
+              {photoCollapsed ? "+" : "−"}
+            </button>
           </div>
 
-          {photos.length === 0 && videos.length === 0 ? (
-            <div
-              onClick={() => photoInputRef.current?.click()}
-              style={{ border: "2px dashed #d1d5db", borderRadius: 10, padding: "24px 0", textAlign: "center", color: "#9ca3af", cursor: "pointer" }}
+          {!photoCollapsed && (
+            <>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={e => handlePhotoAdd(e.target.files)}
+                style={{ display: "none" }}
+              />
+              <div
+                onClick={() => photoInputRef.current?.click()}
+                style={{
+                  border: "2px dashed #d1d5db",
+                  borderRadius: 10,
+                  padding: "16px 12px",
+                  textAlign: "center",
+                  color: "#6b7280",
+                  fontSize: 12,
+                  lineHeight: 1.6,
+                  cursor: "pointer",
+                  background: "#fcfcfd",
+                  marginBottom: photos.length > 0 ? 12 : 0,
+                }}
+              >
+                📷 마우스/터치로 이미지를 끌어오거나, 클릭해주세요.<br />
+                <span style={{ fontSize: 11, color: "#9ca3af" }}>(WebP 자동 압축 · 허용용량 10MB)</span>
+              </div>
+
+              {photos.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {photos.map((p, i) => (
+                    <div
+                      key={`photo-card-${i}`}
+                      style={{
+                        background: "#f9fafb",
+                        borderRadius: 10,
+                        border: p.isCover ? "2px solid #3b82f6" : "1px solid #e5e7eb",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {/* 썸네일 + 대표라벨 + 삭제버튼 */}
+                      <div style={{ position: "relative" }}>
+                        <img src={p.preview} alt="" style={{ width: "100%", height: 130, objectFit: "cover", display: "block" }} />
+                        {p.isCover && (
+                          <div style={{ position: "absolute", top: 6, left: 6, padding: "3px 8px", background: "#3b82f6", color: "#fff", fontSize: 10, fontWeight: 800, borderRadius: 4 }}>대표</div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(i)}
+                          style={{
+                            position: "absolute", top: 6, right: 6, width: 24, height: 24,
+                            background: "rgba(239,68,68,0.95)", color: "#fff", border: "1.5px solid #fff", borderRadius: "50%",
+                            fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.3)"
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      {/* 캡션 입력 */}
+                      <div style={{ padding: "8px 8px 0 8px" }}>
+                        <input
+                          type="text"
+                          value={p.caption || ""}
+                          onChange={e => updatePhotoCaption(i, e.target.value)}
+                          placeholder="사진 설명(캡션) 입력"
+                          style={{
+                            width: "100%", padding: "7px 10px", fontSize: 12, border: "1px solid #d1d5db",
+                            borderRadius: 6, background: "#fff", color: "#111", outline: "none", boxSizing: "border-box"
+                          }}
+                        />
+                      </div>
+
+                      {/* 하단: 정렬 버튼 + 대표지정 */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px" }}>
+                        {/* 정렬 버튼 */}
+                        <div style={{ display: "flex", gap: 3 }}>
+                          {([{ k: "left" as const, icon: "◧", tip: "좌측" }, { k: "center" as const, icon: "▣", tip: "중앙" }, { k: "right" as const, icon: "◨", tip: "우측" }]).map(({ k, icon, tip }) => (
+                            <button
+                              key={k}
+                              type="button"
+                              title={tip}
+                              onClick={() => updatePhotoAlign(i, k)}
+                              style={{
+                                width: 30, height: 28, borderRadius: 6, fontSize: 14, cursor: "pointer",
+                                border: p.align === k ? "2px solid #3b82f6" : "1px solid #d1d5db",
+                                background: p.align === k ? "#dbeafe" : "#fff",
+                                color: p.align === k ? "#2563eb" : "#6b7280",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                              }}
+                            >
+                              {icon}
+                            </button>
+                          ))}
+                        </div>
+
+                        {!p.isCover && (
+                          <button
+                            type="button"
+                            onClick={() => setCover("photo", i)}
+                            style={{ padding: "4px 10px", background: "#e5e7eb", color: "#374151", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                          >
+                            대표지정
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* ── 3. 영상 섹션 ── */}
+        <div style={{ marginBottom: 14, background: "#fff", borderRadius: 14, padding: 14, border: "1px solid #e5e7eb" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>🎥 영상 ({videos.length})</span>
+            <button
+              type="button"
+              onClick={() => setVideoCollapsed(!videoCollapsed)}
+              style={{ width: 26, height: 26, border: "1px solid #e5e7eb", borderRadius: 6, background: "#f9fafb", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#6b7280" }}
             >
-              <div style={{ fontSize: 28, marginBottom: 6 }}>📁</div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>사진이나 유튜브 영상을 추가해주세요</div>
-              <div style={{ fontSize: 11, color: "#b0b5bf", marginTop: 4 }}>자동 WebP 압축 적용</div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
-              {/* 사진 목록 */}
-              {photos.map((p, idx) => (
-                <div key={`photo-${idx}`} style={{ position: "relative", flexShrink: 0, width: 100, height: 100, borderRadius: 10, overflow: "hidden", border: p.isCover ? "2px solid #3b82f6" : "1px solid #e5e7eb" }}>
-                  <img src={p.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  {p.isCover && (
-                    <div style={{ position: "absolute", top: 4, left: 4, background: "#3b82f6", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>대표</div>
-                  )}
-                  <div style={{ position: "absolute", top: 4, right: 4, display: "flex", gap: 4 }}>
-                    {!p.isCover && (
-                      <button onClick={() => setCover('photo', idx)} style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>⭐</button>
-                    )}
-                    <button onClick={() => removePhoto(idx)} style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(239,68,68,0.9)", color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
-                  </div>
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 10, textAlign: "center", padding: "2px 0" }}>사진</div>
+              {videoCollapsed ? "+" : "−"}
+            </button>
+          </div>
+
+          {!videoCollapsed && (
+            <div>
+              <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                <input
+                  type="url"
+                  value={youtubeInput}
+                  onChange={e => setYoutubeInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddVideo(); } }}
+                  placeholder="YouTube 영상 링크 입력"
+                  style={{ flex: 1, padding: "0 10px", height: 38, border: "1px solid #d1d5db", borderRadius: 8, fontSize: 12, color: "#111", background: "#fff", outline: "none" }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddVideo}
+                  style={{ padding: "0 14px", height: 38, background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                >
+                  입력하기
+                </button>
+              </div>
+
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#4b5563", cursor: "pointer", marginBottom: 10 }}>
+                <input
+                  type="checkbox"
+                  checked={isShortsCheck}
+                  onChange={e => setIsShortsCheck(e.target.checked)}
+                  style={{ accentColor: "#3b82f6" }}
+                />
+                쇼츠(세로) 영상으로 크기 맞춤
+              </label>
+
+              {/* 등록된 영상 목록 */}
+              {videos.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {videos.map((v, i) => (
+                    <div
+                      key={`video-card-${i}`}
+                      style={{
+                        background: "#f9fafb",
+                        borderRadius: 10,
+                        border: v.isCover ? "2px solid #3b82f6" : "1px solid #e5e7eb",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div style={{ position: "relative" }}>
+                        <img
+                          src={`https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`}
+                          alt=""
+                          style={{ width: "100%", height: 110, objectFit: "cover", display: "block" }}
+                        />
+                        <div
+                          style={{
+                            position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+                            width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,0.65)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><polygon points="6 3 20 12 6 21" /></svg>
+                        </div>
+                        {v.isCover && (
+                          <div style={{ position: "absolute", top: 6, left: 6, padding: "3px 8px", background: "#3b82f6", color: "#fff", fontSize: 10, fontWeight: 800, borderRadius: 4 }}>대표</div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeVideo(i)}
+                          style={{
+                            position: "absolute", top: 6, right: 6, width: 24, height: 24,
+                            background: "rgba(239,68,68,0.95)", color: "#fff", border: "1.5px solid #fff", borderRadius: "50%",
+                            fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.3)"
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px" }}>
+                        <span style={{ fontSize: 11, color: "#6b7280" }}>{v.isShorts ? "📱 쇼츠 (9:16)" : "🎬 일반 영상 (16:9)"}</span>
+                        {!v.isCover && (
+                          <button
+                            type="button"
+                            onClick={() => setCover("video", i)}
+                            style={{ padding: "4px 10px", background: "#e5e7eb", color: "#374151", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                          >
+                            대표지정
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {/* 영상 목록 */}
-              {videos.map((v, idx) => (
-                <div key={`video-${idx}`} style={{ position: "relative", flexShrink: 0, width: 100, height: 100, borderRadius: 10, overflow: "hidden", border: v.isCover ? "2px solid #3b82f6" : "1px solid #e5e7eb" }}>
-                  <img src={`https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 24, height: 24, background: "rgba(0,0,0,0.7)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                     <svg width="10" height="10" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21" /></svg>
-                  </div>
-                  {v.isCover && (
-                    <div style={{ position: "absolute", top: 4, left: 4, background: "#3b82f6", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>대표</div>
-                  )}
-                  <div style={{ position: "absolute", top: 4, right: 4, display: "flex", gap: 4 }}>
-                    {!v.isCover && (
-                      <button onClick={() => setCover('video', idx)} style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>⭐</button>
-                    )}
-                    <button onClick={() => removeVideo(idx)} style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(239,68,68,0.9)", color: "#fff", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
-                  </div>
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(220,38,38,0.8)", color: "#fff", fontSize: 10, textAlign: "center", padding: "2px 0", fontWeight: "bold" }}>영상</div>
-                </div>
-              ))}
+              )}
             </div>
           )}
         </div>
@@ -803,6 +1198,25 @@ function MobileArticleWrite() {
             onBlur={e => { setContent(e.currentTarget.innerHTML || ""); saveEditorSelection(); }}
             onKeyUp={saveEditorSelection}
             onMouseUp={saveEditorSelection}
+            onClick={e => {
+              const target = e.target as HTMLElement;
+              // 에디터 내 빨간색 ✕ 삭제 버튼 클릭 처리
+              if (target.classList.contains("editor-media-delete") || target.closest(".editor-media-delete")) {
+                e.preventDefault();
+                e.stopPropagation();
+                const wrapper = target.closest(".inserted-photo, .inserted-video");
+                if (wrapper) {
+                  // 다음 줄바꿈 제거
+                  const nextSib = wrapper.nextSibling;
+                  if (nextSib && nextSib.nodeName === "BR") nextSib.remove();
+                  wrapper.remove();
+                  if (editorRef.current) {
+                    setContent(editorRef.current.innerHTML || "");
+                  }
+                  syncSidebarFromEditor();
+                }
+              }
+            }}
             style={{
               width: "100%", minHeight: 260, padding: 14, border: "1px solid #d1d5db",
               borderBottomLeftRadius: 10, borderBottomRightRadius: 10, fontSize: 15, lineHeight: 1.8, outline: "none",
