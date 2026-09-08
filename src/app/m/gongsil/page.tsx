@@ -141,8 +141,8 @@ function MobileGongsilContent() {
   // 권한 파생 값
   const showCommission = userLevel >= 2;
 
-  // 필터 State 및 필터링 로직 (Hook으로 분리)
-  const { filters, filteredVacancies, updateFilter, resetFilters, setFilters } = useVacancyFilters(vacancies);
+  // 필터 State 및 필터링 로직 (Hook으로 분리) - 현재 활성 모드(공실/경매) 연동
+  const { filters, filteredVacancies, updateFilter, resetFilters, setFilters } = useVacancyFilters(vacancies, effectiveMode);
 
   const AUCTION_PROPERTY_TYPES = ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"];
 
@@ -352,6 +352,9 @@ function MobileGongsilContent() {
       }, 1200);
     }
 
+    // 🚀 모드 전환 시 이전 비동기 패치 즉각 무효화 및 검색 캐시키 초기화
+    currentFetchIdRef.current++;
+    lastVacancySearchKeyRef.current = null;
     setActiveMode(newMode);
     setFilters(targetFilters);
     setVacancies([]);
@@ -439,6 +442,7 @@ function MobileGongsilContent() {
   const listScrollRef = useRef<HTMLDivElement>(null);
   const listScrollTopRef = useRef(0);
   const lastVacancySearchKeyRef = useRef<string | null>(null);
+  const currentFetchIdRef = useRef<number>(0);
 
   // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
   const [isDirectView, setIsDirectView] = useState(searchParams.has("id"));
@@ -632,14 +636,20 @@ function MobileGongsilContent() {
 
   // 💡 [전국 매물 풀 로드] 상세검색 시 전국 매물 개수를 정확하게 계산하기 위한 전체 데이터셋 캐싱
   useEffect(() => {
+    let isCancelled = false;
     const fetchAllVacancies = async () => {
       try {
+        const isAuction = effectiveMode === "경매";
         const res = await getVacanciesForMap({
-          is_auction: effectiveMode === "경매",
+          is_auction: isAuction,
           limit: 10000
         });
+        if (isCancelled) return;
         if (res && res.success && res.data) {
-          const withImages = res.data.map((v: any) => ({
+          const filteredRows = res.data.filter((v: any) =>
+            isAuction ? v.trade_type === "경매" : v.trade_type !== "경매"
+          );
+          const withImages = filteredRows.map((v: any) => ({
             ...v,
             images: v.vacancy_photos
               ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
@@ -652,6 +662,9 @@ function MobileGongsilContent() {
       }
     };
     fetchAllVacancies();
+    return () => {
+      isCancelled = true;
+    };
   }, [effectiveMode]);
 
   // 💡 [대표님 지침] Bbox(지도의 화면 영역) 변화 또는 필터 기반(B스타일) 행정구역 검색 시 Supabase에서 실시간으로 범위 내/지역 내 매물 패치!
@@ -667,7 +680,10 @@ function MobileGongsilContent() {
     if (!mapBounds) return;
 
     const fetchVacanciesData = async () => {
-      const filterSearchKey = `filter:${effectiveMode}:${filters.sido || ""}:${filters.sigungu || ""}:${filters.dong || ""}`;
+      const fetchId = ++currentFetchIdRef.current;
+      const requestedMode = effectiveMode;
+      const isAuction = requestedMode === "경매";
+      const filterSearchKey = `filter:${requestedMode}:${filters.sido || ""}:${filters.sigungu || ""}:${filters.dong || ""}`;
       let searchKey = filterSearchKey;
 
       if (filters.locationSearchType === "filter" && lastVacancySearchKeyRef.current === searchKey) return;
@@ -682,7 +698,7 @@ function MobileGongsilContent() {
             sido: filters.sido || undefined,
             sigungu: filters.sigungu || undefined,
             dong: filters.dong || undefined,
-            is_auction: effectiveMode === "경매",
+            is_auction: isAuction,
             limit: 10000
           });
 
@@ -703,18 +719,27 @@ function MobileGongsilContent() {
           if (!mapBounds) return;
           const sw = mapBounds.getSouthWest();
           const ne = mapBounds.getNorthEast();
-          searchKey = `map:${effectiveMode}:${sw.getLat()}:${sw.getLng()}:${ne.getLat()}:${ne.getLng()}`;
+          searchKey = `map:${requestedMode}:${sw.getLat()}:${sw.getLng()}:${ne.getLat()}:${ne.getLng()}`;
           if (lastVacancySearchKeyRef.current === searchKey) return;
           res = await getVacanciesForMap({
             bbox: { swLat: sw.getLat(), swLng: sw.getLng(), neLat: ne.getLat(), neLng: ne.getLng() },
-            is_auction: effectiveMode === "경매"
+            is_auction: isAuction
           });
+        }
+
+        // 🚀 비동기 응답 도착 시점 검증: 다른 요청이 시작되었거나 탭이 바뀌었다면 지체 없이 폐기(Discard)
+        if (fetchId !== currentFetchIdRef.current || requestedMode !== effectiveMode) {
+          return;
         }
 
         lastVacancySearchKeyRef.current = searchKey;
 
         if (res && res.success && res.data) {
-          const withImages = res.data.map((v: any) => ({
+          // 현재 모드에 부합하는 매물만 철저히 선별
+          const filteredRows = res.data.filter((v: any) =>
+            isAuction ? v.trade_type === "경매" : v.trade_type !== "경매"
+          );
+          const withImages = filteredRows.map((v: any) => ({
             ...v,
             images: v.vacancy_photos
               ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
@@ -724,7 +749,11 @@ function MobileGongsilContent() {
             setVacancies(withImages);
           } else {
             setVacancies((prev) => {
-              const nextById = new Map(prev.map((item) => [String(item.id), item]));
+              // 🚀 이전 누적 캐시에서도 현재 모드와 다른 물건을 즉각 필터링하여 혼입 잔류 방지
+              const validPrev = prev.filter((item) =>
+                isAuction ? item.trade_type === "경매" : item.trade_type !== "경매"
+              );
+              const nextById = new Map(validPrev.map((item) => [String(item.id), item]));
               withImages.forEach((item: any) => nextById.set(String(item.id), item));
               return Array.from(nextById.values());
             });
@@ -746,8 +775,10 @@ function MobileGongsilContent() {
       } catch (err) {
         console.error("Failed to fetch mobile vacancies:", err);
       } finally {
-        setIsFetchingVacancies(false);
-        setLoading(false);
+        if (fetchId === currentFetchIdRef.current) {
+          setIsFetchingVacancies(false);
+          setLoading(false);
+        }
       }
     };
 

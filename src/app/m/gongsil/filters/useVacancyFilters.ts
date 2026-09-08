@@ -71,9 +71,9 @@ export const normalizeSido = (sido: string | null): string => {
 
 type VacancyLike = {
   [key: string]: unknown;
-  trade_type?: string;
-  property_type?: string;
-  sub_category?: string;
+  trade_type?: string | null;
+  property_type?: string | null;
+  sub_category?: string | null;
   building_name?: string | null;
   sido?: string | null;
   sigungu?: string | null;
@@ -106,12 +106,17 @@ type VacancyLike = {
   metadata?: Record<string, unknown> | null;
 };
 
-export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterState): VacancyLike[] {
+export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterState, mode: "공실" | "경매" = "공실"): VacancyLike[] {
   const filterSidoNorm = normalizeSido(filters.sido);
   const filterSigunguNorm = filters.sigungu?.trim() || "";
   const filterDongNorm = filters.dong?.trim() || "";
 
   return vacancies.filter(v => {
+    // 0. 모드(공실 vs 경매)에 따른 trade_type 철저 격리 (물건 혼입 원천 차단)
+    const isAuctionItem = v.trade_type === "경매";
+    if (mode === "공실" && isAuctionItem) return false;
+    if (mode === "경매" && !isAuctionItem) return false;
+
     // 1. 공실광고 유형 - 아무것도 선택하지 않으면 아무것도 노출하지 않습니다. (대표님 지침)
     if (filters.propertyTypes.length === 0) return false;
     
@@ -441,12 +446,12 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
     });
 }
 
-export function useVacancyFilters(initialVacancies: VacancyLike[]) {
+export function useVacancyFilters(initialVacancies: VacancyLike[], mode: "공실" | "경매" = "공실") {
   const [filters, setFilters] = useState<FilterState>(initialFilterState);
 
   const filteredVacancies = useMemo(() => {
-    return filterVacanciesList(initialVacancies, filters);
-  }, [initialVacancies, filters]);
+    return filterVacanciesList(initialVacancies, filters, mode);
+  }, [initialVacancies, filters, mode]);
 
   const updateFilter = (newFilters: Partial<FilterState>) => {
     setFilters(prev => {
