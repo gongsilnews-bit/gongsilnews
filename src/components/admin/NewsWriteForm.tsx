@@ -3000,10 +3000,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
                 {/* 기본프로필 선택 시: 실제 기사 하단에 등록되는 등록자정보 카드 실물 미리보기 */}
                 {writeAdType === "DEFAULT" && (
-                  <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ padding: "8px 12px", background: "#f8fafc", borderRadius: 8, border: `1px solid ${border}`, fontSize: 13, color: "#475569" }}>
-                      🏢 기사 하단에 아래와 같이 내 중개업소 프로필 및 실시간 공실등록현황 카드가 자동으로 노출됩니다.
-                    </div>
+                  <div style={{ marginTop: 8 }}>
                     <ArticleAuthorAdSlot
                       article={{
                         id: loadArticleId || "preview",
@@ -3012,7 +3009,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       }}
                       forceType="DEFAULT"
                       previewMode={true}
-                      style={{ margin: "4px 0 0" }}
+                      style={{ margin: "0" }}
                     />
                   </div>
                 )}
