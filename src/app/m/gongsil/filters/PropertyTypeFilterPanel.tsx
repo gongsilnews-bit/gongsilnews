@@ -162,52 +162,40 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
   }
 
   const selectAllGlobal = () => {
-    onFilterChange({ propertyTypes: ALL_PROPERTY_TYPES });
+    onFilterChange({ propertyTypes: allItems });
   };
 
+  // 1단계 대분류 선택: 오직 1개만 단일 선택 (중복 불가)
   const handleSelectGroupExclusive = (groupName: string) => {
     setActiveGroup(groupName);
     const targetGroup = PROPERTY_TYPES.find(g => g.group === groupName);
     if (!targetGroup) return;
 
-    if (isAllItemsSelected) {
-      // 전체 선택 상태에서 특정 대분류를 누르면 그 대분류만 단독 선택
-      onFilterChange({ propertyTypes: targetGroup.items });
-      return;
-    }
-
-    const currentSelected = filters.propertyTypes;
-    const hasAnyInGroup = targetGroup.items.some(it => currentSelected.includes(it));
-    let next: string[];
-    if (hasAnyInGroup) {
-      next = currentSelected.filter(it => !targetGroup.items.includes(it));
-      if (next.length === 0) next = ALL_PROPERTY_TYPES;
-    } else {
-      next = [...currentSelected, ...targetGroup.items];
-    }
-    onFilterChange({ propertyTypes: next });
+    // 🚀 [대표님 지침] 대분류는 무조건 1개만 단일 선택! 기존 다른 대분류는 완전히 빠지고 해당 대분류 항목만 설정
+    onFilterChange({ propertyTypes: targetGroup.items });
   };
 
   const selectAllGroup = () => {
-    const next = Array.from(new Set([...filters.propertyTypes, ...groupItems]));
-    onFilterChange({ propertyTypes: next });
+    // 2단계에서 전체 선택 시 현재 대분류의 모든 세부항목으로 설정
+    onFilterChange({ propertyTypes: groupItems });
   };
 
   const toggleGroupProp = (item: string) => {
     if (isAllGroupSelected) {
       // 세부분류 전체 상태에서 특정 소분류를 누르면 그 소분류만 단독 선택
-      const otherGroupItems = filters.propertyTypes.filter(x => !groupItems.includes(x));
-      onFilterChange({ propertyTypes: [...otherGroupItems, item] });
+      onFilterChange({ propertyTypes: [item] });
       return;
     }
-    const arr = filters.propertyTypes;
-    let next = arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
-    const remainingInGroup = groupItems.filter(x => next.includes(x));
-    if (remainingInGroup.length === 0) {
-      // 해당 그룹이 다 꺼지면 다시 그 그룹 전체 선택
-      next = Array.from(new Set([...next, ...groupItems]));
+    const currentInGroup = filters.propertyTypes.filter(x => groupItems.includes(x));
+    let nextInGroup = currentInGroup.includes(item)
+      ? currentInGroup.filter(x => x !== item)
+      : [...currentInGroup, item];
+
+    if (nextInGroup.length === 0) {
+      // 다 꺼지면 다시 그 그룹 전체 선택
+      nextInGroup = groupItems;
     }
-    onFilterChange({ propertyTypes: next });
+    onFilterChange({ propertyTypes: nextInGroup });
   };
 
   // 🏢 [일반 공실 모드] 4대 대분류 + 세부분류 2단계 구조
@@ -235,22 +223,21 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
           </button>
 
           {PROPERTY_TYPES.map(g => {
-            const hasSelectedItems = g.items.some(item => filters.propertyTypes.includes(item));
-            const isTabFocused = activeGroup === g.group;
-            const active = !isAllItemsSelected && (isTabFocused || hasSelectedItems);
+            const isGroupActive = !isAllItemsSelected && activeGroup === g.group;
 
             return (
               <button
                 key={g.group}
                 type="button"
                 onClick={() => handleSelectGroupExclusive(g.group)}
-                style={mainTabStyle(active)}
+                style={mainTabStyle(isGroupActive)}
               >
                 {g.group === "아파트·오피스텔" && "🏢 "}
                 {g.group === "빌라·주택" && "🏡 "}
                 {g.group === "원룸·투룸(풀옵션)" && "🛏️ "}
                 {g.group === "상가·사무실·공장·토지" && "🏬 "}
-                {g.group} {!isAllItemsSelected && hasSelectedItems && "✓"}
+                {g.group === "신축분양" && "✨ "}
+                {g.group} {isGroupActive && "✓"}
               </button>
             );
           })}

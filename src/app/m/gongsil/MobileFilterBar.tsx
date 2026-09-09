@@ -62,6 +62,10 @@ const getCategoryOptions = (types: string[]) => {
   if (hasBiz) {
     return ["천장형에어컨", "내부화장실", "탕비실", "엘리베이터", "개별난방", "테라스", "주차가능", "창고", "환풍시설", "시스템에어컨", "호이스트", "화물엘리베이터", "동력넉넉", "높은층고(5m이상)", "마당넓음", "대형차량진입", "사무동있음", "기숙사", "크린룸"];
   }
+  const hasSale = types.some(p => ["도시형생활주택", "생활숙박시설", "상가/업무"].includes(p));
+  if (hasSale) {
+    return ["시스템에어컨", "빌트인냉장고", "발코니확장", "중문", "도어락", "엘리베이터", "CCTV", "주차가능"];
+  }
   return ["시스템에어컨", "세탁기", "냉장고", "도어락", "엘리베이터", "주차가능"];
 };
 
@@ -112,6 +116,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     { group: "빌라·주택", items: ["빌라/연립", "단독/다가구", "전원주택"] },
     { group: "원룸·투룸(풀옵션)", items: ["원룸", "1.5룸", "투룸"] },
     { group: "상가·사무실·공장·토지", items: ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지"] },
+    { group: "신축분양", items: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"] },
   ];
 
   // Text search
@@ -135,6 +140,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const isVillaGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
   const isOneRoomGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
   const isCommercialGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
+  const isSaleGroup = !isTempAll && tempFilters.propertyTypes.some(p => ["도시형생활주택", "생활숙박시설", "상가/업무"].includes(p));
 
   const showTempPrice = true;
   const showTempArea = true;
@@ -146,7 +152,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const showTempMaint = isOneRoomGroup || isCommercialGroup;
   const showTempParking = true; // 🚀 [대표님 지침] 주차여부는 모든 카테고리에서 항상 노출
   const showTempMoveInDate = true; // 🚀 [대표님 지침] 사용가능일(입주가능일) 항상 노출
-  const showTempOptions = isApartmentGroup || isVillaGroup || isOneRoomGroup || isCommercialGroup;
+  const showTempOptions = isApartmentGroup || isVillaGroup || isOneRoomGroup || isCommercialGroup || isSaleGroup;
   const showTempTheme = true;
 
   // 바깥 스크롤바용 판별기 (전체 선택 시에는 공통 단축 필터만 노출)
@@ -155,6 +161,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const extIsVilla = !isExtAll && filters.propertyTypes.some(p => ["빌라/연립", "단독/다가구", "전원주택"].includes(p));
   const extIsOne = !isExtAll && filters.propertyTypes.some(p => ["원룸", "1.5룸", "투룸"].includes(p));
   const extIsBiz = !isExtAll && filters.propertyTypes.some(p => ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지", "빌딩/사무실"].includes(p));
+  const extIsSale = !isExtAll && filters.propertyTypes.some(p => ["도시형생활주택", "생활숙박시설", "상가/업무"].includes(p));
 
   const showPricePill = true;
   const showAreaPill = true;
