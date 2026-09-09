@@ -314,30 +314,6 @@ export default function ArticleAuthorAdSlot({
                   >
                     {agencyName}
                   </Link>
-
-                  {/* 미니홈피 뱃지 (미니홈피 스타일) */}
-                  <Link
-                    href={miniHomeUrl}
-                    onClick={(e) => {
-                      if (previewMode) e.preventDefault();
-                    }}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      background: "#eff6ff",
-                      padding: "2px 7px",
-                      borderRadius: 10,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: "#2563eb",
-                      border: "1px solid #dbeafe",
-                      textDecoration: "none",
-                    }}
-                  >
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                    미니홈피
-                  </Link>
                 </div>
                 <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
                   <span>
@@ -408,46 +384,6 @@ export default function ArticleAuthorAdSlot({
                 </a>
               )}
 
-              {/* 2) 미니홈피 바로가기 (동그란 원형 버튼) */}
-              <Link
-                href={miniHomeUrl}
-                onClick={(e) => {
-                  if (previewMode) {
-                    e.preventDefault();
-                    alert("기사 작성 중 미리보기 상태입니다. 실제 기사에서는 해당 기자의 미니홈피로 연결됩니다.");
-                  }
-                }}
-                title="기자/부동산 미니홈피 바로가기"
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "50%",
-                  background: "#f8fafc",
-                  border: "1px solid #cbd5e1",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textDecoration: "none",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.08)";
-                  e.currentTarget.style.borderColor = "#94a3b8";
-                  e.currentTarget.style.background = "#eff6ff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.borderColor = "#cbd5e1";
-                  e.currentTarget.style.background = "#f8fafc";
-                }}
-              >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                </svg>
-              </Link>
-
               {/* 3) 미니홈피 등록 SNS 아이콘들 (동그란 원형 버튼들) */}
               {activeSnsKeys.length > 0 &&
                 activeSnsKeys.slice(0, 5).map((key) => {
@@ -513,45 +449,6 @@ export default function ArticleAuthorAdSlot({
                     </a>
                   );
                 })}
-
-              {/* 4) 공유 버튼 (동그란 원형 버튼) */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (typeof window !== "undefined") {
-                    const shareUrl = `${window.location.origin}${miniHomeUrl}`;
-                    navigator.clipboard?.writeText(shareUrl).then(() => {
-                      alert("부동산 미니홈피 주소가 복사되었습니다!");
-                    }).catch(() => {
-                      alert(`미니홈피 주소: ${shareUrl}`);
-                    });
-                  }
-                }}
-                title="미니홈피 주소 공유하기"
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "50%",
-                  border: "1px solid #cbd5e1",
-                  background: "#f8fafc",
-                  color: "#475569",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.08)";
-                  e.currentTarget.style.borderColor = "#94a3b8";
-                  e.currentTarget.style.background = "#eff6ff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.borderColor = "#cbd5e1";
-                  e.currentTarget.style.background = "#f8fafc";
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
