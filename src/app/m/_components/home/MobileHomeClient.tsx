@@ -575,7 +575,7 @@ export default function MobileHomeClient(props: Props) {
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
       )}
 
-      {/* 🚀 네이버 뉴스 스타일 줌인 익스팬딩(Zoom-In Expanding) 트랜지션 레이어 */}
+      {/* 🚀 [대표님 지시] 클릭 시 배경색이 먼저 줌아웃(확장)되며 튀어나오고, 연속적으로 다음 화면(상세 기사)이 줌아웃/팝업되는 모션 */}
       {zoomingHero && (
         <div
           style={{
@@ -583,12 +583,10 @@ export default function MobileHomeClient(props: Props) {
             inset: 0,
             zIndex: 99999,
             pointerEvents: "none",
-            backgroundColor: zoomingHero.isExpanded ? "rgba(15, 23, 42, 0.4)" : "transparent",
-            backdropFilter: zoomingHero.isExpanded ? "blur(4px)" : "none",
-            WebkitBackdropFilter: zoomingHero.isExpanded ? "blur(4px)" : "none",
-            transition: "background-color 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
+            overflow: "hidden",
           }}
         >
+          {/* 1단계: 클릭된 위치에서 튀어나와 화면 전체를 덮는 배경색(화이트) 레이어 */}
           <div
             style={{
               position: "absolute",
@@ -596,84 +594,123 @@ export default function MobileHomeClient(props: Props) {
               left: zoomingHero.isExpanded ? 0 : zoomingHero.rect.left,
               width: zoomingHero.isExpanded ? "100vw" : zoomingHero.rect.width,
               height: zoomingHero.isExpanded ? "100dvh" : zoomingHero.rect.height,
-              transition: "all 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
-              overflow: "hidden",
+              borderRadius: zoomingHero.isExpanded ? 0 : 0,
               background: "#ffffff",
-              display: "flex",
-              flexDirection: "column",
-              boxShadow: zoomingHero.isExpanded ? "0 25px 50px -12px rgba(0, 0, 0, 0.35)" : "none",
+              boxShadow: zoomingHero.isExpanded
+                ? "0 25px 60px -10px rgba(0, 0, 0, 0.3)"
+                : "0 4px 12px rgba(0, 0, 0, 0.1)",
+              transition: "all 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
+              overflow: "hidden",
+              willChange: "top, left, width, height, border-radius",
             }}
           >
-            {/* 상단 썸네일 줌인 영역 */}
+            {/* 2단계: 배경색 확장과 동시에 연속적으로 튀어나오는 다음 화면 (실제 기사 상세 레이아웃) */}
             <div
               style={{
-                position: "relative",
-                width: "100%",
-                height: zoomingHero.isExpanded ? "38vh" : "100%",
-                flexShrink: 0,
-                transition: "height 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
-                overflow: "hidden",
-                background: "#0f172a",
+                width: "100vw",
+                height: "100dvh",
+                background: "#ffffff",
+                display: "flex",
+                flexDirection: "column",
+                opacity: zoomingHero.isExpanded ? 1 : 0,
+                transform: zoomingHero.isExpanded ? "scale(1) translateY(0)" : "scale(0.92) translateY(18px)",
+                transition: "opacity 0.20s cubic-bezier(0.16, 1, 0.3, 1) 0.03s, transform 0.20s cubic-bezier(0.16, 1, 0.3, 1) 0.03s",
+                overflowY: "hidden",
+                willChange: "opacity, transform",
               }}
             >
-              {zoomingHero.hero.thumbnail_url ? (
-                <img
-                  src={zoomingHero.hero.thumbnail_url}
-                  alt={zoomingHero.hero.title}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    transform: zoomingHero.isExpanded ? "scale(1.06)" : "scale(1)",
-                    transition: "transform 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
-                  }}
-                />
-              ) : (
-                <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />
-              )}
+              {/* 기사 상세 상단 헤더 바 */}
               <div
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  padding: "16px 20px",
-                  zIndex: 2,
+                  height: 48,
+                  borderBottom: "1px solid #f1f5f9",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "0 16px",
+                  flexShrink: 0,
+                  background: "#ffffff",
                 }}
               >
-                <span style={{ background: "#dc2626", color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8, letterSpacing: "0.5px" }}>HEADLINE</span>
-                <h2 style={{ color: "#fff", fontSize: zoomingHero.isExpanded ? 20 : 19, fontWeight: 800, lineHeight: 1.4, wordBreak: "keep-all", margin: 0, letterSpacing: "-0.5px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: "#1a4282", letterSpacing: "-0.5px" }}>공실뉴스</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, color: "#64748b" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+                  </svg>
+                </div>
+              </div>
+
+              {/* 기사 헤더: 카테고리 / 제목 / 기자 / 배포일 */}
+              <div style={{ padding: "16px 20px 12px", flexShrink: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#dc2626", marginBottom: 6 }}>
+                  [HEADLINE · 주요 기사]
+                </div>
+                <h1
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 800,
+                    color: "#0f172a",
+                    lineHeight: 1.38,
+                    margin: 0,
+                    letterSpacing: "-0.6px",
+                    wordBreak: "keep-all",
+                  }}
+                >
                   {zoomingHero.hero.title}
-                </h2>
-                <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 14, marginTop: 6, marginBottom: 0, letterSpacing: "-0.2px" }}>
-                  {zoomingHero.hero.author_name} · {formatDate(zoomingHero.hero.published_at || zoomingHero.hero.created_at)}
-                </p>
+                </h1>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginTop: 10,
+                    fontSize: 12,
+                    color: "#64748b",
+                  }}
+                >
+                  <span style={{ fontWeight: 700, color: "#1e293b" }}>
+                    {zoomingHero.hero.author_name || "공실뉴스"} 기자
+                  </span>
+                  <span>·</span>
+                  <span>
+                    배포 {zoomingHero.hero.published_at 
+                      ? zoomingHero.hero.published_at.substring(0, 10).replace(/-/g, '.')
+                      : zoomingHero.hero.created_at 
+                      ? zoomingHero.hero.created_at.substring(0, 10).replace(/-/g, '.')
+                      : ""}
+                  </span>
+                </div>
+              </div>
+
+              {/* 기사 메인 사진 */}
+              {zoomingHero.hero.thumbnail_url && (
+                <div style={{ padding: "0 20px", marginBottom: 16, flexShrink: 0 }}>
+                  <div style={{ width: "100%", borderRadius: 8, overflow: "hidden", aspectRatio: "16/9", background: "#0f172a" }}>
+                    <img
+                      src={zoomingHero.hero.thumbnail_url}
+                      alt={zoomingHero.hero.title}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 본문 스켈레톤 라인 (부드러운 시각적 연속성) */}
+              <div style={{ padding: "0 20px", flex: 1 }}>
+                <div style={{ width: "100%", height: 15, background: "#f1f5f9", borderRadius: 4, marginBottom: 10 }} />
+                <div style={{ width: "95%", height: 15, background: "#f1f5f9", borderRadius: 4, marginBottom: 10 }} />
+                <div style={{ width: "90%", height: 15, background: "#f1f5f9", borderRadius: 4, marginBottom: 10 }} />
+                <div style={{ width: "70%", height: 15, background: "#f1f5f9", borderRadius: 4 }} />
               </div>
             </div>
-
-            {/* 하단 기사 본문 전개 영역 (부드러운 페이드인) */}
-            {zoomingHero.isExpanded && (
-              <div
-                style={{
-                  flex: 1,
-                  background: "#ffffff",
-                  padding: "20px",
-                  animation: "zoomArticleBody 0.22s ease-out forwards",
-                }}
-              >
-                <div style={{ width: "40%", height: 16, background: "#f1f5f9", borderRadius: 4, marginBottom: 14 }} />
-                <div style={{ width: "100%", height: 14, background: "#f8fafc", borderRadius: 4, marginBottom: 10 }} />
-                <div style={{ width: "95%", height: 14, background: "#f8fafc", borderRadius: 4, marginBottom: 10 }} />
-                <div style={{ width: "80%", height: 14, background: "#f8fafc", borderRadius: 4 }} />
-              </div>
-            )}
           </div>
         </div>
       )}

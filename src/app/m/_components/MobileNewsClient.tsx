@@ -582,7 +582,7 @@ const RecommendedNewsCarousel = React.memo(({
         ))}
       </div>
 
-      {/* 🚀 네이버 뉴스 스타일 추천 기사 줌인 익스팬딩(Zoom-In Expanding) 트랜지션 레이어 */}
+      {/* 🚀 [대표님 지시] 클릭 시 배경색이 먼저 줌아웃(확장)되며 튀어나오고, 연속적으로 다음 화면(상세 기사)이 줌아웃/팝업되는 모션 */}
       {zoomingArticle && (
         <div
           style={{
@@ -590,12 +590,10 @@ const RecommendedNewsCarousel = React.memo(({
             inset: 0,
             zIndex: 99999,
             pointerEvents: "none",
-            backgroundColor: zoomingArticle.isExpanded ? "rgba(15, 23, 42, 0.4)" : "transparent",
-            backdropFilter: zoomingArticle.isExpanded ? "blur(4px)" : "none",
-            WebkitBackdropFilter: zoomingArticle.isExpanded ? "blur(4px)" : "none",
-            transition: "background-color 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
+            overflow: "hidden",
           }}
         >
+          {/* 1단계: 클릭된 위치에서 튀어나와 화면 전체를 덮는 배경색(화이트) 레이어 */}
           <div
             style={{
               position: "absolute",
@@ -603,86 +601,123 @@ const RecommendedNewsCarousel = React.memo(({
               left: zoomingArticle.isExpanded ? 0 : zoomingArticle.rect.left,
               width: zoomingArticle.isExpanded ? "100vw" : zoomingArticle.rect.width,
               height: zoomingArticle.isExpanded ? "100dvh" : zoomingArticle.rect.height,
-              transition: "all 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
-              overflow: "hidden",
+              borderRadius: zoomingArticle.isExpanded ? 0 : 16,
               background: "#ffffff",
-              display: "flex",
-              flexDirection: "column",
-              boxShadow: zoomingArticle.isExpanded ? "0 25px 50px -12px rgba(0, 0, 0, 0.35)" : "none",
+              boxShadow: zoomingArticle.isExpanded
+                ? "0 25px 60px -10px rgba(0, 0, 0, 0.3)"
+                : "0 4px 12px rgba(0, 0, 0, 0.1)",
+              transition: "all 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
+              overflow: "hidden",
+              willChange: "top, left, width, height, border-radius",
             }}
           >
-            {/* 상단 썸네일 줌인 영역 */}
+            {/* 2단계: 배경색 확장과 동시에 연속적으로 튀어나오는 다음 화면 (실제 기사 상세 레이아웃) */}
             <div
               style={{
-                position: "relative",
-                width: "100%",
-                height: zoomingArticle.isExpanded ? "38vh" : "100%",
-                flexShrink: 0,
-                transition: "height 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
-                overflow: "hidden",
-                background: "#0f172a",
+                width: "100vw",
+                height: "100dvh",
+                background: "#ffffff",
+                display: "flex",
+                flexDirection: "column",
+                opacity: zoomingArticle.isExpanded ? 1 : 0,
+                transform: zoomingArticle.isExpanded ? "scale(1) translateY(0)" : "scale(0.92) translateY(18px)",
+                transition: "opacity 0.20s cubic-bezier(0.16, 1, 0.3, 1) 0.03s, transform 0.20s cubic-bezier(0.16, 1, 0.3, 1) 0.03s",
+                overflowY: "hidden",
+                willChange: "opacity, transform",
               }}
             >
-              {(zoomingArticle.art.thumbnail_url || extractYoutubeId(zoomingArticle.art.youtube_url, zoomingArticle.art.content)) ? (
-                <img
-                  src={zoomingArticle.art.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(zoomingArticle.art.youtube_url, zoomingArticle.art.content)}/mqdefault.jpg`}
-                  alt={zoomingArticle.art.title}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    transform: zoomingArticle.isExpanded ? "scale(1.06)" : "scale(1)",
-                    transition: "transform 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
-                  }}
-                />
-              ) : (
-                <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />
-              )}
+              {/* 기사 상세 상단 헤더 바 */}
               <div
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%)",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  padding: "16px 20px",
-                  zIndex: 2,
+                  height: 48,
+                  borderBottom: "1px solid #f1f5f9",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "0 16px",
+                  flexShrink: 0,
+                  background: "#ffffff",
                 }}
               >
-                <span style={{ background: "#1a4282", color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8, letterSpacing: "0.5px" }}>추천 뉴스</span>
-                <h2 style={{ color: "#fff", fontSize: zoomingArticle.isExpanded ? 20 : 19, fontWeight: 800, lineHeight: 1.35, wordBreak: "keep-all", margin: 0, letterSpacing: "-0.5px" }}>
-                  {zoomingArticle.art.title}
-                </h2>
-                <div style={{ fontSize: "12px", color: "#ddd", display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
-                  <span>{zoomingArticle.art.published_at ? zoomingArticle.art.published_at.substring(0, 10).replace(/-/g, '.') : zoomingArticle.art.created_at ? zoomingArticle.art.created_at.substring(0, 10).replace(/-/g, '.') : ""}</span>
-                  <span>·</span>
-                  <span>{zoomingArticle.art.author_name || "공실뉴스"}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: "#1a4282", letterSpacing: "-0.5px" }}>공실뉴스</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, color: "#64748b" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+                  </svg>
                 </div>
               </div>
-            </div>
 
-            {/* 하단 기사 본문 전개 영역 */}
-            {zoomingArticle.isExpanded && (
-              <div
-                style={{
-                  flex: 1,
-                  background: "#ffffff",
-                  padding: "20px",
-                  animation: "zoomArticleBody 0.22s ease-out forwards",
-                }}
-              >
-                <div style={{ width: "40%", height: 16, background: "#f1f5f9", borderRadius: 4, marginBottom: 14 }} />
-                <div style={{ width: "100%", height: 14, background: "#f8fafc", borderRadius: 4, marginBottom: 10 }} />
-                <div style={{ width: "95%", height: 14, background: "#f8fafc", borderRadius: 4, marginBottom: 10 }} />
-                <div style={{ width: "80%", height: 14, background: "#f8fafc", borderRadius: 4 }} />
+              {/* 기사 헤더: 카테고리 / 제목 / 기자 / 배포일 */}
+              <div style={{ padding: "16px 20px 12px", flexShrink: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a4282", marginBottom: 6 }}>
+                  [{zoomingArticle.art.section1 ? `부동산-경제 > ${zoomingArticle.art.section2 || "전체"}` : "공실뉴스 > 추천"}]
+                </div>
+                <h1
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 800,
+                    color: "#0f172a",
+                    lineHeight: 1.38,
+                    margin: 0,
+                    letterSpacing: "-0.6px",
+                    wordBreak: "keep-all",
+                  }}
+                >
+                  {zoomingArticle.art.title}
+                </h1>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginTop: 10,
+                    fontSize: 12,
+                    color: "#64748b",
+                  }}
+                >
+                  <span style={{ fontWeight: 700, color: "#1e293b" }}>
+                    {zoomingArticle.art.author_name || "공실뉴스"} 기자
+                  </span>
+                  <span>·</span>
+                  <span>
+                    배포 {zoomingArticle.art.published_at 
+                      ? zoomingArticle.art.published_at.substring(0, 10).replace(/-/g, '.')
+                      : zoomingArticle.art.created_at 
+                      ? zoomingArticle.art.created_at.substring(0, 10).replace(/-/g, '.')
+                      : ""}
+                  </span>
+                </div>
               </div>
-            )}
+
+              {/* 기사 메인 사진 */}
+              {(zoomingArticle.art.thumbnail_url || extractYoutubeId(zoomingArticle.art.youtube_url, zoomingArticle.art.content)) && (
+                <div style={{ padding: "0 20px", marginBottom: 16, flexShrink: 0 }}>
+                  <div style={{ width: "100%", borderRadius: 8, overflow: "hidden", aspectRatio: "16/9", background: "#0f172a" }}>
+                    <img
+                      src={zoomingArticle.art.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(zoomingArticle.art.youtube_url, zoomingArticle.art.content)}/mqdefault.jpg`}
+                      alt={zoomingArticle.art.title}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 본문 스켈레톤 라인 (부드러운 시각적 연속성) */}
+              <div style={{ padding: "0 20px", flex: 1 }}>
+                <div style={{ width: "100%", height: 15, background: "#f1f5f9", borderRadius: 4, marginBottom: 10 }} />
+                <div style={{ width: "95%", height: 15, background: "#f1f5f9", borderRadius: 4, marginBottom: 10 }} />
+                <div style={{ width: "90%", height: 15, background: "#f1f5f9", borderRadius: 4, marginBottom: 10 }} />
+                <div style={{ width: "70%", height: 15, background: "#f1f5f9", borderRadius: 4 }} />
+              </div>
+            </div>
           </div>
         </div>
       )}
