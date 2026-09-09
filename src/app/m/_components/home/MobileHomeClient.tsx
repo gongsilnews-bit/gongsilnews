@@ -81,6 +81,62 @@ export default function MobileHomeClient(props: Props) {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  // 🚀 [대표님 지시] 헤드라인 클릭 시 네이버 뉴스 스타일 줌인 익스팬딩(Zoom-In Expanding) 트랜지션
+  const [zoomingHero, setZoomingHero] = useState<{
+    hero: any;
+    rect: { top: number; left: number; width: number; height: number };
+    isExpanded: boolean;
+  } | null>(null);
+
+  // 헤드라인 기사 백그라운드 프리페치 (터치 즉시 0초 전환 보장)
+  useEffect(() => {
+    if (!headlineArticles || headlineArticles.length === 0) return;
+    headlineArticles.slice(0, 5).forEach((hero) => {
+      const url = `/m/news/${hero.article_no || hero.id}`;
+      router.prefetch(url);
+    });
+  }, [headlineArticles, router]);
+
+  // 뒤로가기 시 줌인 오버레이 잔상 제거
+  useEffect(() => {
+    const handlePopState = () => setZoomingHero(null);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const handleHeadlineClick = (e: React.MouseEvent<HTMLAnchorElement>, hero: any) => {
+    if (isSwipingHero) return;
+    e.preventDefault();
+    saveHomeScroll();
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const targetUrl = `/m/news/${hero.article_no || hero.id}`;
+
+    // 1단계: 클릭된 위치에 줌인 레이어 즉시 마운트
+    setZoomingHero({
+      hero,
+      rect: {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      },
+      isExpanded: false,
+    });
+
+    // 2단계: 다음 프레임에서 전체 화면으로 슉 확장 (Zoom-In Expanding)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setZoomingHero((prev) => (prev ? { ...prev, isExpanded: true } : null));
+      });
+    });
+
+    // 3단계: 화면 가득 확장되는 순간(0.24초) 실제 기사 페이지로 매끄럽게 전환
+    setTimeout(() => {
+      router.push(targetUrl);
+    }, 240);
+  };
+
   // 공실뉴스 영상 기사와 텍스트 기사 완벽 분리
   const ytRx = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/;
   const gongsilVideoArticles = gongsilArticles.filter((a: any) => {
@@ -264,7 +320,22 @@ export default function MobileHomeClient(props: Props) {
             }}
           >
             {headlineArticles.slice(0, 5).map((hero, i) => (
-              <Link key={i} href={`/m/news/${hero.article_no || hero.id}`} onClick={saveHomeScroll} style={{ width: "100%", height: "100%", flexShrink: 0, scrollSnapAlign: "start", scrollSnapStop: "always", position: "relative", display: "block", textDecoration: "none" }}>
+              <Link
+                key={i}
+                href={`/m/news/${hero.article_no || hero.id}`}
+                onClick={(e) => handleHeadlineClick(e, hero)}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  flexShrink: 0,
+                  scrollSnapAlign: "start",
+                  scrollSnapStop: "always",
+                  position: "relative",
+                  display: "block",
+                  textDecoration: "none",
+                  touchAction: "pan-x",
+                }}
+              >
                 {hero.thumbnail_url ? (
                   <Image
                     src={hero.thumbnail_url}
@@ -502,6 +573,109 @@ export default function MobileHomeClient(props: Props) {
       {/* 로그인 모달 */}
       {isAuthModalOpen && (
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+      )}
+
+      {/* 🚀 네이버 뉴스 스타일 줌인 익스팬딩(Zoom-In Expanding) 트랜지션 레이어 */}
+      {zoomingHero && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            pointerEvents: "none",
+            backgroundColor: zoomingHero.isExpanded ? "rgba(15, 23, 42, 0.4)" : "transparent",
+            backdropFilter: zoomingHero.isExpanded ? "blur(4px)" : "none",
+            WebkitBackdropFilter: zoomingHero.isExpanded ? "blur(4px)" : "none",
+            transition: "background-color 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: zoomingHero.isExpanded ? 0 : zoomingHero.rect.top,
+              left: zoomingHero.isExpanded ? 0 : zoomingHero.rect.left,
+              width: zoomingHero.isExpanded ? "100vw" : zoomingHero.rect.width,
+              height: zoomingHero.isExpanded ? "100dvh" : zoomingHero.rect.height,
+              transition: "all 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
+              overflow: "hidden",
+              background: "#ffffff",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: zoomingHero.isExpanded ? "0 25px 50px -12px rgba(0, 0, 0, 0.35)" : "none",
+            }}
+          >
+            {/* 상단 썸네일 줌인 영역 */}
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                height: zoomingHero.isExpanded ? "38vh" : "100%",
+                flexShrink: 0,
+                transition: "height 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
+                overflow: "hidden",
+                background: "#0f172a",
+              }}
+            >
+              {zoomingHero.hero.thumbnail_url ? (
+                <img
+                  src={zoomingHero.hero.thumbnail_url}
+                  alt={zoomingHero.hero.title}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    transform: zoomingHero.isExpanded ? "scale(1.06)" : "scale(1)",
+                    transition: "transform 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
+                  }}
+                />
+              ) : (
+                <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />
+              )}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  padding: "16px 20px",
+                  zIndex: 2,
+                }}
+              >
+                <span style={{ background: "#dc2626", color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8, letterSpacing: "0.5px" }}>HEADLINE</span>
+                <h2 style={{ color: "#fff", fontSize: zoomingHero.isExpanded ? 20 : 19, fontWeight: 800, lineHeight: 1.4, wordBreak: "keep-all", margin: 0, letterSpacing: "-0.5px" }}>
+                  {zoomingHero.hero.title}
+                </h2>
+                <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 14, marginTop: 6, marginBottom: 0, letterSpacing: "-0.2px" }}>
+                  {zoomingHero.hero.author_name} · {formatDate(zoomingHero.hero.published_at || zoomingHero.hero.created_at)}
+                </p>
+              </div>
+            </div>
+
+            {/* 하단 기사 본문 전개 영역 (부드러운 페이드인) */}
+            {zoomingHero.isExpanded && (
+              <div
+                style={{
+                  flex: 1,
+                  background: "#ffffff",
+                  padding: "20px",
+                  animation: "zoomArticleBody 0.22s ease-out forwards",
+                }}
+              >
+                <div style={{ width: "40%", height: 16, background: "#f1f5f9", borderRadius: 4, marginBottom: 14 }} />
+                <div style={{ width: "100%", height: 14, background: "#f8fafc", borderRadius: 4, marginBottom: 10 }} />
+                <div style={{ width: "95%", height: 14, background: "#f8fafc", borderRadius: 4, marginBottom: 10 }} />
+                <div style={{ width: "80%", height: 14, background: "#f8fafc", borderRadius: 4 }} />
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
