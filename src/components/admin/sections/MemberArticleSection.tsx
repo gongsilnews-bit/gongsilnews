@@ -374,20 +374,20 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
             style={{
               height: 36,
               padding: "0 16px",
-              background: checkedIds.length > 0 ? "#059669" : darkMode ? "#334155" : "#e2e8f0",
-              color: checkedIds.length > 0 ? "#fff" : textSecondary,
+              background: "#059669",
+              color: "#fff",
               border: "none",
               borderRadius: 6,
               fontSize: 13,
               fontWeight: 700,
-              cursor: checkedIds.length > 0 ? "pointer" : "default",
+              cursor: "pointer",
               display: "flex",
               alignItems: "center",
               gap: 6,
               transition: "all 0.15s",
             }}
           >
-            🏷️ 배너 일괄적용 {checkedIds.length > 0 ? `(${checkedIds.length})` : ""}
+            🏷️ 배너 일괄적용
           </button>
           <span style={{ fontSize: 12, color: textSecondary, marginLeft: 4 }}>
             ※ 작성중/반려 기사만 승인신청 가능

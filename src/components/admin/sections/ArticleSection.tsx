@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import { getArticles, deleteArticle, adminUpdateArticleStatus, adminUpdateArticleFlags, adminReviseArticleWithFeedback, getArticleTabCounts } from "@/app/actions/article";
+import { getAdminArticlesAdSettingsMap, adminUpdateArticlesAdSettings, AuthorBanner } from "@/app/actions/articleAd";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -29,6 +30,14 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedArticleIdsForReject, setSelectedArticleIdsForReject] = useState<string[]>([]);
+
+  // 배너광고 상태 및 일괄적용 state
+  const [adSettingsMap, setAdSettingsMap] = useState<Record<string, { ad_type: string; custom_banner_id: string | null; banner_name: string | null }>>({});
+  const [authorBanners, setAuthorBanners] = useState<AuthorBanner[]>([]);
+  const [activeDropdownArticleId, setActiveDropdownArticleId] = useState<string | null>(null);
+  const [isBulkAdModalOpen, setIsBulkAdModalOpen] = useState(false);
+  const [bulkSelectedBannerId, setBulkSelectedBannerId] = useState<string>("DEFAULT");
+  const [isBulkApplying, setIsBulkApplying] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const action = searchParams.get("action");
@@ -96,6 +105,16 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     if (res.success) {
       setDbArticles(res.data || []);
       setTotalCount(res.count || 0);
+
+      const ids = (res.data || []).map((a: any) => a.id);
+      if (ids.length > 0) {
+        getAdminArticlesAdSettingsMap(ids).then((adRes) => {
+          if (adRes.success) {
+            setAdSettingsMap(adRes.settingsMap);
+            setAuthorBanners(adRes.banners);
+          }
+        });
+      }
     }
 
     // Fetch tab counts via dedicated ultra-fast server action (HEAD counts, no body data)
@@ -110,11 +129,89 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) setCurrentUserId(data.user.id);
     });
+
+    const handleOutside = () => setActiveDropdownArticleId(null);
+    window.addEventListener("click", handleOutside);
+    return () => window.removeEventListener("click", handleOutside);
   }, []);
 
   useEffect(() => {
     loadData();
   }, [currentPage, articleFilter, publishFilter, activeFilters, pageSize, sortBy]);
+
+  // 배너 개별 빠른 변경 핸들러
+  const handleQuickChangeBanner = async (articleId: string, bannerValue: string) => {
+    let adType: "DEFAULT" | "BANNER" | "NONE" = "DEFAULT";
+    let customBannerId: string | null = null;
+    let bannerName: string | null = null;
+
+    if (bannerValue === "NONE") {
+      adType = "NONE";
+    } else if (bannerValue !== "DEFAULT") {
+      adType = "BANNER";
+      customBannerId = bannerValue;
+      const found = authorBanners.find((b) => b.id === bannerValue);
+      bannerName = found?.name || null;
+    }
+
+    setAdSettingsMap((prev) => ({
+      ...prev,
+      [articleId]: { ad_type: adType, custom_banner_id: customBannerId, banner_name: bannerName },
+    }));
+    setActiveDropdownArticleId(null);
+
+    const res = await adminUpdateArticlesAdSettings([articleId], { ad_type: adType, custom_banner_id: customBannerId });
+    if (res.success) {
+      setToastMessage({ text: "배너광고 설정이 변경되었습니다.", type: "success" });
+    } else {
+      setToastMessage({ text: res.error || "배너 변경 실패", type: "error" });
+      loadData();
+    }
+  };
+
+  // 배너 일괄 적용 핸들러
+  const handleApplyBulkBanner = async () => {
+    if (checkedArticleIds.length === 0) {
+      alert("적용할 기사를 선택해주세요.");
+      return;
+    }
+
+    setIsBulkApplying(true);
+    let adType: "DEFAULT" | "BANNER" | "NONE" = "DEFAULT";
+    let customBannerId: string | null = null;
+    let bannerName: string | null = null;
+
+    if (bulkSelectedBannerId === "NONE") {
+      adType = "NONE";
+    } else if (bulkSelectedBannerId !== "DEFAULT") {
+      adType = "BANNER";
+      customBannerId = bulkSelectedBannerId;
+      const found = authorBanners.find((b) => b.id === bulkSelectedBannerId);
+      bannerName = found?.name || null;
+    }
+
+    const res = await adminUpdateArticlesAdSettings(checkedArticleIds, {
+      ad_type: adType,
+      custom_banner_id: customBannerId,
+    });
+
+    setIsBulkApplying(false);
+
+    if (res.success) {
+      setAdSettingsMap((prev) => {
+        const next = { ...prev };
+        checkedArticleIds.forEach((id) => {
+          next[id] = { ad_type: adType, custom_banner_id: customBannerId, banner_name: bannerName };
+        });
+        return next;
+      });
+      setIsBulkAdModalOpen(false);
+      setCheckedArticleIds([]);
+      setToastMessage({ text: `${checkedArticleIds.length}건의 기사에 배너가 성공적으로 적용되었습니다.`, type: "success" });
+    } else {
+      alert(res.error || "일괄 적용 중 오류가 발생했습니다.");
+    }
+  };
 
   // 최고관리자 기사관리: AI 에이전트 초안 포함 모든 기사 표시
   const baseArticles = dbArticles;
@@ -247,6 +344,33 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             선택삭제
           </button>
+          <button
+            onClick={() => {
+              if (checkedArticleIds.length === 0) {
+                alert("배너를 일괄 적용할 기사를 먼저 체크박스로 선택해주세요.");
+                return;
+              }
+              setBulkSelectedBannerId("DEFAULT");
+              setIsBulkAdModalOpen(true);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              height: 36,
+              padding: "0 16px",
+              background: "#059669",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              gap: 6,
+              transition: "all 0.15s",
+            }}
+          >
+            🏷️ 배너 일괄적용
+          </button>
           </div>
 
           {/* 발행됨 탭에서 노출되는 기사 유형 필터 */}
@@ -277,12 +401,13 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>작성일</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>발행일</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>수정일</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>배너광고</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 150 }}>관리</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: textSecondary }}>조회된 기사가 없습니다.</td></tr>
+                <tr><td colSpan={12} style={{ padding: 40, textAlign: "center", color: textSecondary }}>조회된 기사가 없습니다.</td></tr>
               ) : filtered.map((a) => (
                 <tr key={a.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}` }}>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
@@ -353,6 +478,157 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>{a.created_at ? (() => { const d = new Date(a.created_at); return <><div>{d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}</div><div style={{color:'#9ca3af'}}>{d.toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })}</div></>; })() : '-'}</td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>{a.published_at ? (() => { const d = new Date(a.published_at); return <><div>{d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}</div><div style={{color:'#9ca3af'}}>{d.toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })}</div></>; })() : '-'}</td>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", color: textSecondary, fontSize: 12 }}>{a.updated_at ? (() => { const d = new Date(a.updated_at); return <><div>{d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}</div><div style={{color:'#9ca3af'}}>{d.toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false })}</div></>; })() : '-'}</td>
+
+                  {/* 배너광고 상태 버튼 */}
+                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                    {(() => {
+                      const adInfo = adSettingsMap[a.id];
+                      const adType = adInfo?.ad_type || "DEFAULT";
+                      const bannerName = adInfo?.banner_name;
+                      const isOpen = activeDropdownArticleId === a.id;
+
+                      let label = "업체프로필";
+                      let btnBg = darkMode ? "#1e293b" : "#eff6ff";
+                      let btnColor = "#2563eb";
+                      let btnBorder = darkMode ? "#334155" : "#bfdbfe";
+
+                      if (adType === "NONE") {
+                        label = "배너없음";
+                        btnBg = darkMode ? "#2c2d31" : "#f3f4f6";
+                        btnColor = "#9ca3af";
+                        btnBorder = darkMode ? "#444" : "#d1d5db";
+                      } else if (adType === "BANNER" && bannerName) {
+                        label = bannerName;
+                        btnBg = darkMode ? "#064e3b" : "#ecfdf5";
+                        btnColor = "#059669";
+                        btnBorder = darkMode ? "#065f46" : "#a7f3d0";
+                      }
+
+                      return (
+                        <div style={{ position: "relative", display: "inline-block" }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDropdownArticleId(isOpen ? null : a.id);
+                            }}
+                            style={{
+                              height: 28,
+                              padding: "0 10px",
+                              background: btnBg,
+                              color: btnColor,
+                              border: `1px solid ${btnBorder}`,
+                              borderRadius: 6,
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              whiteSpace: "nowrap",
+                              maxWidth: 110,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              transition: "all 0.15s",
+                            }}
+                            title={`클릭하여 배너 변경 (현재: ${label})`}
+                          >
+                            {label}
+                            <span style={{ fontSize: 9, opacity: 0.7 }}>▼</span>
+                          </button>
+
+                          {/* 빠른 변경 드롭다운 메뉴 */}
+                          {isOpen && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                position: "absolute",
+                                top: "100%",
+                                right: 0,
+                                marginTop: 4,
+                                background: darkMode ? "#1e293b" : "#ffffff",
+                                border: `1px solid ${border}`,
+                                borderRadius: 8,
+                                boxShadow: "0 10px 25px rgba(0,0,0,0.18)",
+                                zIndex: 100,
+                                minWidth: 140,
+                                padding: "6px 0",
+                                textAlign: "left",
+                              }}
+                            >
+                              <div style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, color: textSecondary, borderBottom: `1px solid ${border}` }}>
+                                배너 변경
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleQuickChangeBanner(a.id, "DEFAULT")}
+                                style={{
+                                  width: "100%",
+                                  padding: "8px 12px",
+                                  border: "none",
+                                  background: adType === "DEFAULT" ? (darkMode ? "#334155" : "#eff6ff") : "transparent",
+                                  color: adType === "DEFAULT" ? "#2563eb" : textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: adType === "DEFAULT" ? 700 : 500,
+                                  textAlign: "left",
+                                  cursor: "pointer",
+                                  display: "block",
+                                }}
+                              >
+                                👤 업체프로필 (기본)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleQuickChangeBanner(a.id, "NONE")}
+                                style={{
+                                  width: "100%",
+                                  padding: "8px 12px",
+                                  border: "none",
+                                  background: adType === "NONE" ? (darkMode ? "#334155" : "#eff6ff") : "transparent",
+                                  color: adType === "NONE" ? "#ef4444" : textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: adType === "NONE" ? 700 : 500,
+                                  textAlign: "left",
+                                  cursor: "pointer",
+                                  display: "block",
+                                }}
+                              >
+                                🚫 배너없음
+                              </button>
+                              {authorBanners.length > 0 && (
+                                <div style={{ borderTop: `1px solid ${border}`, margin: "4px 0" }} />
+                              )}
+                              {authorBanners.map((b) => (
+                                <button
+                                  key={b.id}
+                                  type="button"
+                                  onClick={() => handleQuickChangeBanner(a.id, b.id)}
+                                  style={{
+                                    width: "100%",
+                                    padding: "8px 12px",
+                                    border: "none",
+                                    background: adType === "BANNER" && adInfo?.custom_banner_id === b.id ? (darkMode ? "#334155" : "#ecfdf5") : "transparent",
+                                    color: adType === "BANNER" && adInfo?.custom_banner_id === b.id ? "#059669" : textPrimary,
+                                    fontSize: 12,
+                                    fontWeight: adType === "BANNER" && adInfo?.custom_banner_id === b.id ? 700 : 500,
+                                    textAlign: "left",
+                                    cursor: "pointer",
+                                    display: "block",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  }}
+                                >
+                                  🏷️ {b.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </td>
+
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                       <button onClick={() => window.open(`/news/${a.article_no || a.id}`, '_blank')} style={{ width: 76, height: 32, padding: 0, justifyContent: "center", background: darkMode ? "#1e293b" : "#fff", color: darkMode ? "#93c5fd" : "#2563eb", border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, borderRadius: 4, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
@@ -456,6 +732,150 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               }} style={{ padding: "10px 18px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>반려 처리</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 배너 일괄적용 모달 */}
+      {isBulkAdModalOpen && (
+        <div
+          onClick={() => setIsBulkAdModalOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: cardBg,
+              borderRadius: 14,
+              padding: "24px 28px",
+              maxWidth: 440,
+              width: "100%",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
+              border: `1px solid ${border}`,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: 0 }}>
+                🏷️ 기사 배너 일괄적용
+              </h3>
+              <button
+                onClick={() => setIsBulkAdModalOpen(false)}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: textSecondary }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: 13, color: textSecondary, marginBottom: 18, lineHeight: 1.5 }}>
+              선택하신 <strong style={{ color: "#3b82f6" }}>{checkedArticleIds.length}개</strong>의 기사에 일괄 적용할 배너를 선택해주세요.
+            </p>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>
+                적용할 배너
+              </label>
+              <select
+                value={bulkSelectedBannerId}
+                onChange={(e) => setBulkSelectedBannerId(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  border: `1.5px solid #3b82f6`,
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: textPrimary,
+                  background: darkMode ? "#1e293b" : "#f8fafc",
+                  outline: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <optgroup label="── 등록된 배너 목록 ──">
+                  {authorBanners.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      🏷️ {b.name} {!b.is_active ? "(중지됨)" : "(진행중)"}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="── 기본 / 특수 설정 ──">
+                  <option value="DEFAULT">👤 업체프로필 (기본 광고)</option>
+                  <option value="NONE">🚫 배너없음 (숨김)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setIsBulkAdModalOpen(false)}
+                style={{
+                  padding: "9px 16px",
+                  borderRadius: 6,
+                  border: `1px solid ${border}`,
+                  background: darkMode ? "#2c2d31" : "#f3f4f6",
+                  color: textSecondary,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={handleApplyBulkBanner}
+                disabled={isBulkApplying}
+                style={{
+                  padding: "9px 20px",
+                  borderRadius: 6,
+                  border: "none",
+                  background: "#059669",
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {isBulkApplying ? "적용 중..." : "일괄 적용하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification UI */}
+      {toastMessage && (
+        <div style={{
+          position: "fixed",
+          bottom: 40,
+          right: 40,
+          zIndex: 9999,
+          padding: "16px 24px",
+          background: toastMessage.type === "success" ? "#10b981" : toastMessage.type === "error" ? "#ef4444" : "#3b82f6",
+          color: "#fff",
+          borderRadius: 8,
+          boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          fontWeight: 700,
+          fontSize: 15,
+          animation: "slideIn 0.3s ease-out forwards"
+        }}>
+          <span>{toastMessage.text}</span>
+          <button onClick={() => setToastMessage(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: 0, marginLeft: 10 }}>✕</button>
+          <style>{`
+            @keyframes slideIn {
+              from { transform: translateX(100%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+            }
+          `}</style>
         </div>
       )}
     </div>

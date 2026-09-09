@@ -470,6 +470,57 @@ export async function getAuthorArticlesAdSettingsMap(authorId: string): Promise<
   }
 }
 
+/* ── 4-2. 최고관리자용: 기사 목록 광고 설정 맵 및 전체 배너 목록 조회 ── */
+export async function getAdminArticlesAdSettingsMap(articleIds: string[]): Promise<{
+  success: boolean;
+  settingsMap: Record<string, { ad_type: string; custom_banner_id: string | null; banner_name: string | null }>;
+  banners: AuthorBanner[];
+  error?: string;
+}> {
+  const supabase = getAdminClient();
+  try {
+    const promises: Promise<any>[] = [
+      supabase
+        .from("article_author_banners")
+        .select("*")
+        .order("created_at", { ascending: false }),
+    ];
+
+    if (articleIds && articleIds.length > 0) {
+      promises.push(
+        supabase
+          .from("article_ad_settings")
+          .select("article_id, ad_type, custom_banner_id, custom_banner:article_author_banners(name)")
+          .in("article_id", articleIds)
+      );
+    }
+
+    const [banRes, adRes] = await Promise.all(promises);
+
+    const settingsMap: Record<string, { ad_type: string; custom_banner_id: string | null; banner_name: string | null }> = {};
+    if (adRes?.data) {
+      adRes.data.forEach((item: any) => {
+        const bannerName = Array.isArray(item.custom_banner)
+          ? item.custom_banner[0]?.name
+          : item.custom_banner?.name || null;
+        settingsMap[item.article_id] = {
+          ad_type: item.ad_type || "DEFAULT",
+          custom_banner_id: item.custom_banner_id || null,
+          banner_name: bannerName,
+        };
+      });
+    }
+
+    return {
+      success: true,
+      settingsMap,
+      banners: banRes?.data || [],
+    };
+  } catch (err: any) {
+    return { success: false, settingsMap: {}, banners: [], error: err.message };
+  }
+}
+
 /* ── 5. 선택된 기사들에 광고 설정 일괄/개별 저장 ── */
 export async function updateArticlesAdSettings(
   articleIds: string[],
@@ -527,6 +578,57 @@ export async function updateArticlesAdSettings(
       revalidatePath(`/news/${id}`);
       revalidatePath(`/m/news/${id}`);
     });
+
+    return { success: true, count: articleIds.length };
+  } catch (err: any) {
+    return { success: false, error: err.message || "광고 설정 저장 중 오류가 발생했습니다." };
+  }
+}
+
+/* ── 5-2. 최고관리자용: 선택된 기사들에 광고 설정 일괄/개별 저장 ── */
+export async function adminUpdateArticlesAdSettings(
+  articleIds: string[],
+  settings: {
+    ad_type: "DEFAULT" | "BANNER" | "NONE";
+    custom_banner_id?: string | null;
+  }
+): Promise<{ success: boolean; count?: number; error?: string }> {
+  if (!articleIds || articleIds.length === 0) {
+    return { success: false, error: "적용할 기사를 선택해주세요." };
+  }
+  const supabase = getAdminClient();
+
+  try {
+    // 1) 기사들의 author_id 조회
+    const { data: arts } = await supabase
+      .from("articles")
+      .select("id, author_id")
+      .in("id", articleIds);
+
+    const authorMap = new Map((arts || []).map((a: any) => [a.id, a.author_id]));
+
+    const upsertRows = articleIds.map((artId) => ({
+      article_id: artId,
+      author_id: authorMap.get(artId) || null,
+      ad_type: settings.ad_type || "DEFAULT",
+      custom_banner_id: settings.ad_type === "BANNER" ? settings.custom_banner_id || null : null,
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabase
+      .from("article_ad_settings")
+      .upsert(upsertRows, { onConflict: "article_id" });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    // 캐시 무효화
+    articleIds.forEach((id) => {
+      revalidatePath(`/news/${id}`);
+      revalidatePath(`/m/news/${id}`);
+    });
+    revalidatePath("/admin");
 
     return { success: true, count: articleIds.length };
   } catch (err: any) {
