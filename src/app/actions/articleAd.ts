@@ -47,7 +47,7 @@ export interface ArticleAdSetting {
 }
 
 /* ── 배너 데이터 정규화 헬퍼 (link_target 내 날짜 백업 인코딩 파싱) ── */
-export function normalizeAuthorBanner(b: any): AuthorBanner {
+function normalizeAuthorBanner(b: any): AuthorBanner {
   if (!b) return b;
   let startDate = b.start_date || null;
   let endDate = b.end_date || null;
