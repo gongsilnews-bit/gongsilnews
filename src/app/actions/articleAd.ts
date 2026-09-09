@@ -495,6 +495,7 @@ export async function getArticleAdInfo(articleId: string, authorId?: string): Pr
   banner: AuthorBanner | null;
   agencyInfo: any | null;
   memberInfo: any | null;
+  businessProfile: any | null;
   vacancyStats: { total: number; maemae: number; jeonse: number; rent: number; short: number };
 }> {
   const supabase = getAdminClient();
@@ -517,7 +518,7 @@ export async function getArticleAdInfo(articleId: string, authorId?: string): Pr
     }
 
     if (!targetAuthorId) {
-      return { success: true, ad_type: "NONE", banner: null, agencyInfo: null, memberInfo: null, vacancyStats: defaultStats };
+      return { success: true, ad_type: "NONE", banner: null, agencyInfo: null, memberInfo: null, businessProfile: null, vacancyStats: defaultStats };
     }
 
     // 2) 작성자의 회원 정보 및 부동산 정보 조회
@@ -532,6 +533,13 @@ export async function getArticleAdInfo(articleId: string, authorId?: string): Pr
         ? member.agencies[0]
         : member.agencies
       : null;
+
+    // 2-1) 비즈니스 프로필 조회 (비즈니스 회원 맞춤형 카드용)
+    const { data: bProfile } = await supabase
+      .from("business_profiles")
+      .select("*")
+      .eq("user_id", targetAuthorId)
+      .maybeSingle();
 
     // 작성자의 공실 통계 (전체/매매/전세/월세/단기 - 삭제 매물 제외, ACTIVE 매물만 집계)
     const { data: vacancies } = await supabase
@@ -570,13 +578,14 @@ export async function getArticleAdInfo(articleId: string, authorId?: string): Pr
           banner: b,
           agencyInfo: agency,
           memberInfo: member,
+          businessProfile: bProfile || null,
           vacancyStats: stats,
         };
       }
     }
 
     if (adSetting && adSetting.ad_type === "NONE") {
-      return { success: true, ad_type: "NONE", banner: null, agencyInfo: agency, memberInfo: member, vacancyStats: stats };
+      return { success: true, ad_type: "NONE", banner: null, agencyInfo: agency, memberInfo: member, businessProfile: bProfile || null, vacancyStats: stats };
     }
 
     // 기간 만료 또는 기본형일 때는 기본형(등록자정보)으로 리턴!
@@ -586,10 +595,11 @@ export async function getArticleAdInfo(articleId: string, authorId?: string): Pr
       banner: null,
       agencyInfo: agency,
       memberInfo: member,
+      businessProfile: bProfile || null,
       vacancyStats: stats,
     };
   } catch (err: any) {
     console.warn("getArticleAdInfo catch:", err.message);
-    return { success: true, ad_type: "NONE", banner: null, agencyInfo: null, memberInfo: null, vacancyStats: defaultStats };
+    return { success: true, ad_type: "NONE", banner: null, agencyInfo: null, memberInfo: null, businessProfile: null, vacancyStats: defaultStats };
   }
 }

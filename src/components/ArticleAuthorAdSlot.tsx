@@ -25,6 +25,7 @@ export default function ArticleAuthorAdSlot({
     banner: AuthorBanner | null;
     agencyInfo: any | null;
     memberInfo: any | null;
+    businessProfile?: any | null;
     vacancyStats: { total: number; maemae: number; jeonse: number; rent: number; short: number };
   } | null>(null);
 
@@ -86,8 +87,14 @@ export default function ArticleAuthorAdSlot({
     return null;
   }
 
-  const { banner, agencyInfo, memberInfo, vacancyStats: dbStats } = adData || {};
+  const { banner, agencyInfo, memberInfo, businessProfile, vacancyStats: dbStats } = adData || {};
   const vacancyStats = dbStats || { total: 0, maemae: 0, jeonse: 0, rent: 0, short: 0 };
+
+  // 비즈니스 회원 여부 판별
+  const isBusiness =
+    memberInfo?.role === "BIZ" ||
+    memberInfo?.plan_type === "biz_premium" ||
+    !!businessProfile;
 
   // 1. 배너형 광고 (유료회원 맞춤 이미지 배너)
   if (effectiveType === "BANNER" && banner && banner.image_url) {
@@ -166,16 +173,40 @@ export default function ArticleAuthorAdSlot({
   }
 
   // 2. 기본형 광고 (대표님 지정 등록자 정보 카드: 미니홈피 스타일)
-  const agencyName = agencyInfo?.agency_name || agencyInfo?.name || memberInfo?.name || article.author_name || "공실뉴스 공식 부동산";
-  const ceoName = agencyInfo?.ceo_name || memberInfo?.name || "-";
-  const regNum = agencyInfo?.registration_no || agencyInfo?.reg_num || "-";
-  const address = [agencyInfo?.address, agencyInfo?.address_detail].filter(Boolean).join(" ") || "주소 미등록";
-  const phone = agencyInfo?.phone || memberInfo?.phone || "02-0000-0000";
-  const cell = agencyInfo?.cell && agencyInfo.cell !== phone ? `, ${agencyInfo.cell}` : "";
-  const intro = agencyInfo?.intro || "공실 등록 및 중개 매물을 신속하고 정직하게 안내해 드립니다.";
-  const profileImg = memberInfo?.profile_image_url || agencyInfo?.profile_image_url;
-  const authorInitial = agencyName.slice(0, 1) || "공";
-  const mapSearchUrl = agencyInfo?.address ? `https://map.kakao.com/link/search/${encodeURIComponent(agencyInfo.address)}` : null;
+  const agencyName = isBusiness
+    ? businessProfile?.company_name || memberInfo?.name || article.author_name || "비즈니스 회원"
+    : agencyInfo?.agency_name || agencyInfo?.name || memberInfo?.name || article.author_name || "공실뉴스 공식 부동산";
+
+  const ceoName = isBusiness
+    ? businessProfile?.ceo_name || memberInfo?.name || "-"
+    : agencyInfo?.ceo_name || memberInfo?.name || "-";
+
+  const regNum = isBusiness
+    ? businessProfile?.biz_num || "-"
+    : agencyInfo?.registration_no || agencyInfo?.reg_num || "-";
+
+  const address = isBusiness
+    ? businessProfile?.address || [agencyInfo?.address, agencyInfo?.address_detail].filter(Boolean).join(" ") || "주소 미등록"
+    : [agencyInfo?.address, agencyInfo?.address_detail].filter(Boolean).join(" ") || "주소 미등록";
+
+  const phone = isBusiness
+    ? businessProfile?.contact_number || memberInfo?.phone || agencyInfo?.phone || "02-0000-0000"
+    : agencyInfo?.phone || memberInfo?.phone || "02-0000-0000";
+
+  const cell = (!isBusiness && agencyInfo?.cell && agencyInfo.cell !== phone) ? `, ${agencyInfo.cell}` : "";
+
+  const introTitle = isBusiness ? "업체정보" : "소개말";
+
+  const intro = isBusiness
+    ? businessProfile?.description || memberInfo?.intro || "전문적인 서비스를 신속하고 정직하게 안내해 드립니다."
+    : agencyInfo?.intro || "공실 등록 및 중개 매물을 신속하고 정직하게 안내해 드립니다.";
+
+  const profileImg = isBusiness
+    ? businessProfile?.logo_url || memberInfo?.profile_image_url || agencyInfo?.profile_image_url
+    : memberInfo?.profile_image_url || agencyInfo?.profile_image_url;
+
+  const authorInitial = agencyName.slice(0, 1) || (isBusiness ? "업" : "공");
+  const mapSearchUrl = address && address !== "주소 미등록" ? `https://map.kakao.com/link/search/${encodeURIComponent(address)}` : null;
   const targetReporterId = article.author_id || memberInfo?.id || "";
   const miniHomeUrl = targetReporterId ? `/reporter/${targetReporterId}` : "#";
 
@@ -324,7 +355,12 @@ export default function ArticleAuthorAdSlot({
                 </div>
                 <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
                   <span>
-                    대표 {ceoName} <span style={{ color: "#cbd5e1", margin: "0 6px" }}>|</span> 등록번호 {regNum}
+                    대표 {ceoName} <span style={{ color: "#cbd5e1", margin: "0 6px" }}>|</span> {isBusiness ? "사업자번호" : "등록번호"} {regNum}
+                    {isBusiness && businessProfile?.business_type && (
+                      <span style={{ marginLeft: 8, color: "#2563eb", fontWeight: 600, background: "#eff6ff", padding: "1px 6px", borderRadius: 4, fontSize: 11 }}>
+                        {businessProfile.business_type}
+                      </span>
+                    )}
                   </span>
                 </div>
               </div>
@@ -459,7 +495,7 @@ export default function ArticleAuthorAdSlot({
             </div>
           </div>
 
-          {/* 우측 소개말 박스 */}
+          {/* 우측 소개말 / 업체정보 박스 */}
           <div style={{ flex: "1 1 240px", minWidth: 200 }}>
             <div
               style={{
@@ -474,7 +510,7 @@ export default function ArticleAuthorAdSlot({
                 justifyContent: "flex-start",
               }}
             >
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 6 }}>소개말</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 6 }}>{introTitle}</div>
               <div
                 style={{
                   fontSize: 13,
@@ -490,78 +526,130 @@ export default function ArticleAuthorAdSlot({
           </div>
         </div>
 
-        {/* 하단 공실등록현황 바 (미니홈피로 이동) */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            background: "#f8fafc",
-            borderRadius: 10,
-            overflow: "hidden",
-            border: "1px solid #e2e8f0",
-            flexWrap: "wrap",
-          }}
-        >
+        {/* 하단 바: 비즈니스 회원의 경우 공실등록현황 제거 & 기사열람하기 제공 */}
+        {isBusiness ? (
           <div
             style={{
-              padding: "12px 18px",
-              fontSize: 13,
-              fontWeight: 800,
-              color: "#0f172a",
-              borderRight: "1px solid #e2e8f0",
-              background: "#f1f5f9",
               display: "flex",
               alignItems: "center",
-              gap: 6,
+              justifyContent: "space-between",
+              background: "#f8fafc",
+              borderRadius: 10,
+              overflow: "hidden",
+              border: "1px solid #e2e8f0",
+              padding: "10px 18px",
+              flexWrap: "wrap",
+              gap: 10,
             }}
           >
-            <span>공실등록현황</span>
-          </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569", fontWeight: 600 }}>
+              <span style={{ fontSize: 14 }}>💼</span>
+              <span>{businessProfile?.business_type ? `[${businessProfile.business_type}] ` : ""}{agencyName}</span>
+              <span style={{ color: "#94a3b8", fontSize: 12 }}>전문 비즈니스 파트너</span>
+            </div>
 
-          <Link
-            href={miniHomeUrl}
-            onClick={(e) => {
-              if (previewMode) {
-                e.preventDefault();
-                alert("기사 작성 중 미리보기 상태입니다. 실제 기사에서는 해당 기자의 미니홈피로 연결됩니다.");
-              }
-            }}
+            <Link
+              href={miniHomeUrl}
+              onClick={(e) => {
+                if (previewMode) {
+                  e.preventDefault();
+                  alert("기사 작성 중 미리보기 상태입니다. 실제 기사에서는 해당 작성자의 기사 모아보기 페이지로 연결됩니다.");
+                }
+              }}
+              style={{
+                marginLeft: "auto",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 13,
+                color: "#2563eb",
+                fontWeight: 700,
+                textDecoration: "none",
+                padding: "6px 14px",
+                borderRadius: 6,
+                background: "#eff6ff",
+                border: "1px solid #dbeafe",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#dbeafe"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "#eff6ff"; }}
+            >
+              <span>기사열람하기 &gt;&gt;</span>
+            </Link>
+          </div>
+        ) : (
+          <div
             style={{
               display: "flex",
               alignItems: "center",
-              flex: 1,
-              padding: "12px 18px",
-              gap: 14,
-              fontSize: 13,
-              color: "#64748b",
-              textDecoration: "none",
+              background: "#f8fafc",
+              borderRadius: 10,
+              overflow: "hidden",
+              border: "1px solid #e2e8f0",
               flexWrap: "wrap",
             }}
           >
-            <span>
-              전체 <strong style={{ color: "#2563eb", fontWeight: 800 }}>{vacancyStats.total}</strong>
-            </span>
-            <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
-            <span>
-              매매 <strong style={{ color: "#0f172a" }}>{vacancyStats.maemae}</strong>
-            </span>
-            <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
-            <span>
-              전세 <strong style={{ color: "#0f172a" }}>{vacancyStats.jeonse}</strong>
-            </span>
-            <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
-            <span>
-              월세 <strong style={{ color: "#0f172a" }}>{vacancyStats.rent}</strong>
-            </span>
-            <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
-            <span>
-              단기 <strong style={{ color: "#0f172a" }}>{vacancyStats.short}</strong>
-            </span>
-            <span style={{ marginLeft: "auto", fontSize: 12, color: "#2563eb", fontWeight: 700 }}>
-              매물 보러가기 &gt;
-            </span>
-          </Link>
-        </div>
+            <div
+              style={{
+                padding: "12px 18px",
+                fontSize: 13,
+                fontWeight: 800,
+                color: "#0f172a",
+                borderRight: "1px solid #e2e8f0",
+                background: "#f1f5f9",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <span>공실등록현황</span>
+            </div>
+
+            <Link
+              href={miniHomeUrl}
+              onClick={(e) => {
+                if (previewMode) {
+                  e.preventDefault();
+                  alert("기사 작성 중 미리보기 상태입니다. 실제 기사에서는 해당 기자의 미니홈피로 연결됩니다.");
+                }
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flex: 1,
+                padding: "12px 18px",
+                gap: 14,
+                fontSize: 13,
+                color: "#64748b",
+                textDecoration: "none",
+                flexWrap: "wrap",
+              }}
+            >
+              <span>
+                전체 <strong style={{ color: "#2563eb", fontWeight: 800 }}>{vacancyStats.total}</strong>
+              </span>
+              <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
+              <span>
+                매매 <strong style={{ color: "#0f172a" }}>{vacancyStats.maemae}</strong>
+              </span>
+              <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
+              <span>
+                전세 <strong style={{ color: "#0f172a" }}>{vacancyStats.jeonse}</strong>
+              </span>
+              <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
+              <span>
+                월세 <strong style={{ color: "#0f172a" }}>{vacancyStats.rent}</strong>
+              </span>
+              <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
+              <span>
+                단기 <strong style={{ color: "#0f172a" }}>{vacancyStats.short}</strong>
+              </span>
+              <span style={{ marginLeft: "auto", fontSize: 12, color: "#2563eb", fontWeight: 700 }}>
+                매물 보러가기 &gt;
+              </span>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
