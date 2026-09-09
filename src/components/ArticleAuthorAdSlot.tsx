@@ -363,49 +363,52 @@ export default function ArticleAuthorAdSlot({
               </div>
             </div>
 
-            {/* ═══ 미니홈피 스타일 액션 버튼들 & SNS 아이콘 바 ═══ */}
+            {/* ═══ 오직 동그란 원형 아이콘들만 깔끔하게 배치 ═══ */}
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-              {/* 1) 오시는길 버튼 (미니홈피 스타일) */}
+              {/* 1) 오시는길 지도 버튼 (동그란 원형 버튼) */}
               {mapSearchUrl && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    window.open(mapSearchUrl, "_blank");
+                <a
+                  href={mapSearchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    if (previewMode) {
+                      e.preventDefault();
+                      window.open(mapSearchUrl, "_blank");
+                    }
                   }}
-                  title="오시는길 (카카오맵)"
+                  title="오시는길 지도보기 (카카오맵)"
                   style={{
-                    padding: "7px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    background: "#ffffff",
-                    color: "#1e293b",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer",
+                    width: 36,
+                    height: 36,
+                    borderRadius: "50%",
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "5px",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                    justifyContent: "center",
+                    textDecoration: "none",
+                    boxShadow: "0 1px 3px rgba(37,99,235,0.12)",
                     transition: "all 0.15s",
+                    cursor: "pointer",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#f1f5f9";
-                    e.currentTarget.style.borderColor = "#94a3b8";
+                    e.currentTarget.style.transform = "scale(1.08)";
+                    e.currentTarget.style.background = "#dbeafe";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "#ffffff";
-                    e.currentTarget.style.borderColor = "#cbd5e1";
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.background = "#eff6ff";
                   }}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                     <circle cx="12" cy="10" r="3"></circle>
                   </svg>
-                  <span>오시는길</span>
-                </button>
+                </a>
               )}
 
-              {/* 2) 미니홈피 바로가기 버튼 */}
+              {/* 2) 미니홈피 바로가기 (동그란 원형 버튼) */}
               <Link
                 href={miniHomeUrl}
                 onClick={(e) => {
@@ -414,41 +417,104 @@ export default function ArticleAuthorAdSlot({
                     alert("기사 작성 중 미리보기 상태입니다. 실제 기사에서는 해당 기자의 미니홈피로 연결됩니다.");
                   }
                 }}
+                title="기자/부동산 미니홈피 바로가기"
                 style={{
-                  padding: "7px 12px",
-                  borderRadius: "8px",
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  background: "#f8fafc",
                   border: "1px solid #cbd5e1",
-                  background: "#ffffff",
-                  color: "#1e293b",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "5px",
+                  justifyContent: "center",
                   textDecoration: "none",
                   boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                   transition: "all 0.15s",
                 }}
                 onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.08)";
+                  e.currentTarget.style.borderColor = "#94a3b8";
                   e.currentTarget.style.background = "#eff6ff";
-                  e.currentTarget.style.borderColor = "#bfdbfe";
-                  e.currentTarget.style.color = "#2563eb";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.transform = "scale(1)";
                   e.currentTarget.style.borderColor = "#cbd5e1";
-                  e.currentTarget.style.color = "#1e293b";
+                  e.currentTarget.style.background = "#f8fafc";
                 }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                   <polyline points="9 22 9 12 15 12 15 22"></polyline>
                 </svg>
-                <span>미니홈피</span>
               </Link>
 
-              {/* 3) 공유 버튼 */}
+              {/* 3) 미니홈피 등록 SNS 아이콘들 (동그란 원형 버튼들) */}
+              {activeSnsKeys.length > 0 &&
+                activeSnsKeys.slice(0, 5).map((key) => {
+                  const link = snsLinks[key].url;
+                  const validUrl = link.startsWith("http") ? link : `https://${link}`;
+                  let iconHtml: React.ReactNode = null;
+                  let titleText = "SNS 링크";
+                  if (key === "youtube") {
+                    titleText = "유튜브 채널";
+                    iconHtml = <svg viewBox="0 0 24 24" width="16" height="16" fill="#dc2626"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.99C18.88 4 12 4 12 4s-6.88 0-8.59.43A2.78 2.78 0 0 0 1.46 6.42C1 8.16 1 12 1 12s0 3.84.46 5.58a2.78 2.78 0 0 0 1.95 1.99C5.12 20 12 20 12 20s6.88 0 8.59-.43a2.78 2.78 0 0 0 1.95-1.99C23 15.84 23 12 23 12s0-3.84-.46-5.58zM9.54 15.55V8.45L15.82 12l-6.28 3.55z"></path></svg>;
+                  } else if (key === "kakao") {
+                    titleText = "카카오톡 오픈채팅/채널";
+                    iconHtml = <svg viewBox="0 0 24 24" width="16" height="16" fill="#381e1f"><path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path></svg>;
+                  } else if (key === "instagram") {
+                    titleText = "인스타그램";
+                    iconHtml = <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#e1306c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>;
+                  } else if (key === "contact") {
+                    titleText = "문의하기";
+                    iconHtml = <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>;
+                  } else if (key === "blog") {
+                    titleText = "네이버 블로그";
+                    iconHtml = <span style={{ fontSize: 10, fontWeight: 900, color: "#03c75a" }}>BLOG</span>;
+                  } else {
+                    titleText = "공식 홈페이지";
+                    iconHtml = <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
+                  }
+                  return (
+                    <a
+                      key={key}
+                      href={validUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={titleText}
+                      onClick={(e) => {
+                        if (previewMode) {
+                          e.preventDefault();
+                          window.open(validUrl, "_blank");
+                        }
+                      }}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        background: "#f8fafc",
+                        border: "1px solid #cbd5e1",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        textDecoration: "none",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                        transition: "all 0.15s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "scale(1.08)";
+                        e.currentTarget.style.borderColor = "#94a3b8";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "scale(1)";
+                        e.currentTarget.style.borderColor = "#cbd5e1";
+                      }}
+                    >
+                      {iconHtml}
+                    </a>
+                  );
+                })}
+
+              {/* 4) 공유 버튼 (동그란 원형 버튼) */}
               <button
                 type="button"
                 onClick={(e) => {
@@ -462,89 +528,40 @@ export default function ArticleAuthorAdSlot({
                     });
                   }
                 }}
+                title="미니홈피 주소 공유하기"
                 style={{
-                  padding: "7px 12px",
-                  borderRadius: "8px",
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
                   border: "1px solid #cbd5e1",
-                  background: "#ffffff",
+                  background: "#f8fafc",
                   color: "#475569",
-                  fontSize: "12px",
-                  fontWeight: 600,
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "5px",
+                  justifyContent: "center",
                   boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                   transition: "all 0.15s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#f1f5f9";
+                  e.currentTarget.style.transform = "scale(1.08)";
                   e.currentTarget.style.borderColor = "#94a3b8";
+                  e.currentTarget.style.background = "#eff6ff";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.transform = "scale(1)";
                   e.currentTarget.style.borderColor = "#cbd5e1";
+                  e.currentTarget.style.background = "#f8fafc";
                 }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="18" cy="5" r="3"></circle>
                   <circle cx="6" cy="12" r="3"></circle>
                   <circle cx="18" cy="19" r="3"></circle>
                   <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
                   <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
                 </svg>
-                <span>공유</span>
               </button>
-
-              {/* 4) 미니홈피 등록 SNS 아이콘들 (원형) */}
-              {activeSnsKeys.length > 0 && (
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginLeft: 2 }}>
-                  {activeSnsKeys.slice(0, 5).map((key) => {
-                    const link = snsLinks[key].url;
-                    const validUrl = link.startsWith("http") ? link : `https://${link}`;
-                    let iconHtml: React.ReactNode = null;
-                    if (key === "youtube") {
-                      iconHtml = <svg viewBox="0 0 24 24" width="14" height="14" fill="#dc2626"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.99C18.88 4 12 4 12 4s-6.88 0-8.59.43A2.78 2.78 0 0 0 1.46 6.42C1 8.16 1 12 1 12s0 3.84.46 5.58a2.78 2.78 0 0 0 1.95 1.99C5.12 20 12 20 12 20s6.88 0 8.59-.43a2.78 2.78 0 0 0 1.95-1.99C23 15.84 23 12 23 12s0-3.84-.46-5.58zM9.54 15.55V8.45L15.82 12l-6.28 3.55z"></path></svg>;
-                    } else if (key === "kakao") {
-                      iconHtml = <svg viewBox="0 0 24 24" width="14" height="14" fill="#381e1f"><path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path></svg>;
-                    } else if (key === "instagram") {
-                      iconHtml = <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#e1306c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>;
-                    } else if (key === "contact") {
-                      iconHtml = <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>;
-                    } else {
-                      iconHtml = <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>;
-                    }
-                    return (
-                      <a
-                        key={key}
-                        href={validUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => {
-                          if (previewMode) {
-                            e.preventDefault();
-                            window.open(validUrl, "_blank");
-                          }
-                        }}
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: "50%",
-                          background: "#f8fafc",
-                          border: "1px solid #cbd5e1",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          textDecoration: "none",
-                          transition: "transform 0.15s",
-                        }}
-                      >
-                        {iconHtml}
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           </div>
 
@@ -647,7 +664,7 @@ export default function ArticleAuthorAdSlot({
               단기 <strong style={{ color: "#0f172a" }}>{vacancyStats.short}</strong>
             </span>
             <span style={{ marginLeft: "auto", fontSize: 12, color: "#2563eb", fontWeight: 700 }}>
-              매물 보러가기 (미니홈피) &gt;
+              매물 보러가기 &gt;
             </span>
           </Link>
         </div>
