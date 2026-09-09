@@ -3,8 +3,9 @@
 import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
-import { IconDashboard, IconBuilding, IconArticle, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage } from "@/components/admin/sections/AdminIcons";
+import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage } from "@/components/admin/sections/AdminIcons";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
+import ArticleAdUpgradeModal from "@/components/admin/ArticleAdUpgradeModal";
 import { getVacancies } from "@/app/actions/vacancy";
 import { adminApproveRealtorApplication, normalizePendingRealtorRole } from "@/app/admin/actions";
 import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
@@ -14,6 +15,7 @@ import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
 const DashboardSection = lazy(() => import("@/components/admin/sections/DashboardSection"));
 const VacancySection = lazy(() => import("@/components/admin/sections/VacancySection"));
 const MemberArticleSection = lazy(() => import("@/components/admin/sections/MemberArticleSection"));
+const MemberArticleAdSection = lazy(() => import("@/components/admin/sections/MemberArticleAdSection"));
 const MyPointSection = lazy(() => import("@/components/admin/sections/MyPointSection"));
 const HomepageSection = lazy(() => import("@/components/admin/sections/HomepageSection"));
 const CustomerSection = lazy(() => import("@/components/admin/sections/CustomerSection"));
@@ -23,6 +25,7 @@ const REALTY_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
+  { key: "article_ad", label: "광고관리", icon: <IconAd /> },
   { key: "study", label: "특강관리", icon: <IconStudy /> },
   { key: "customer", label: "고객문의", icon: <IconCustomer /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
@@ -70,6 +73,17 @@ function RealtyAdminContent() {
   const [showDocWarning, setShowDocWarning] = useState(false);
   const [planType, setPlanType] = useState<string>("free");
   const [userRole, setUserRole] = useState<string>("");
+  const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
+
+  // 공실뉴스기자(유료회원/최고관리자) 자격 판별
+  const isReporterEligible =
+    userRole === "ADMIN" ||
+    userRole === "BIZ" ||
+    planType === "news_basic" ||
+    planType === "news_premium" ||
+    planType === "vacancy_basic" ||
+    planType === "vacancy_premium" ||
+    planType === "business";
 
   /* ── 프리페치 데이터 저장소 ── */
   const [prefetchedData, setPrefetchedData] = useState<Record<string, any[]>>({});
@@ -187,7 +201,14 @@ function RealtyAdminContent() {
           {REALTY_MENU.map((item) => (
             <li key={item.key} style={{ margin: 0, position: "relative", ...(item.separated ? { marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)" } : {}) }}
               onMouseEnter={() => handleMenuHover(item.key)} onMouseLeave={() => setHoveredMenu(null)}>
-              <button onClick={() => { setActiveMenu(item.key); router.push(`?menu=${item.key}`, { scroll: false }); }}
+              <button onClick={() => {
+                  if (item.key === "article_ad" && !isReporterEligible) {
+                    setShowUpgradeModal(true);
+                    return;
+                  }
+                  setActiveMenu(item.key);
+                  router.push(`?menu=${item.key}`, { scroll: false });
+                }}
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                   padding: "18px 0", textDecoration: "none", width: "100%", border: "none", cursor: "pointer",
@@ -246,6 +267,18 @@ function RealtyAdminContent() {
           {activeMenu === "dashboard" && <DashboardSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} agencyStatus={agencyStatus} rejectionReason={rejectionReason} memberId={memberId || undefined} onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
           {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} ownerId={memberId} ownerName={userName} initialData={prefetchedData["gongsil"]} />}
           {activeMenu === "article" && memberId && <MemberArticleSection theme={theme} memberId={memberId} memberName={userName} memberEmail={userEmail || undefined} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} />}
+          {activeMenu === "article_ad" && memberId && (
+            isReporterEligible ? (
+              <MemberArticleAdSection theme={theme} memberId={memberId} memberName={userName} memberEmail={userEmail || undefined} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} />
+            ) : (
+              <div style={{ flex: 1, margin: 16, background: theme.cardBg, borderRadius: 12, padding: 40, textAlign: "center" }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>📰</div>
+                <h2 style={{ fontSize: 18, fontWeight: 800, color: theme.textPrimary, marginBottom: 8 }}>공실뉴스기자 전용 페이지입니다</h2>
+                <p style={{ fontSize: 14, color: theme.textSecondary, marginBottom: 20 }}>기사 하단에 맞춤 광고 및 홍보 배너를 등록하여 강력한 마케팅 효과를 누려보세요!</p>
+                <button onClick={() => setShowUpgradeModal(true)} style={{ padding: "10px 20px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>멤버십 안내 보기</button>
+              </div>
+            )
+          )}
           {activeMenu === "point" && memberId && <MyPointSection theme={theme} memberId={memberId} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} />}
           {activeMenu === "settings" && (
             <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: theme.cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
@@ -264,6 +297,12 @@ function RealtyAdminContent() {
             </div>
           )}
         </Suspense>
+
+        {/* 공실뉴스기자 멤버십 안내 모달 */}
+        <ArticleAdUpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+        />
       </main>
     </div>
   );

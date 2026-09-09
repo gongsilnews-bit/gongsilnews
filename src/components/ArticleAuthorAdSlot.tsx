@@ -1,0 +1,418 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { getArticleAdInfo, AuthorBanner } from "@/app/actions/articleAd";
+
+interface ArticleAuthorAdSlotProps {
+  article: any;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+export default function ArticleAuthorAdSlot({ article, className, style }: ArticleAuthorAdSlotProps) {
+  const [loading, setLoading] = useState(true);
+  const [adData, setAdData] = useState<{
+    ad_type: "DEFAULT" | "BANNER" | "NONE";
+    banner: AuthorBanner | null;
+    agencyInfo: any | null;
+    memberInfo: any | null;
+    vacancyStats: { total: number; maemae: number; jeonse: number; rent: number; short: number };
+  } | null>(null);
+
+  useEffect(() => {
+    if (!article?.id) return;
+    let isMounted = true;
+
+    getArticleAdInfo(article.id, article.author_id)
+      .then((res) => {
+        if (isMounted && res.success) {
+          setAdData(res);
+        }
+      })
+      .catch((err) => console.warn("AdSlot load error:", err))
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [article?.id, article?.author_id]);
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          margin: "28px 0",
+          height: 120,
+          borderRadius: 12,
+          background: "#f8fafc",
+          border: "1px solid #e2e8f0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#94a3b8",
+          fontSize: 12,
+          ...style,
+        }}
+      >
+        <span>광고를 불러오는 중...</span>
+      </div>
+    );
+  }
+
+  if (!adData || adData.ad_type === "NONE") {
+    return null;
+  }
+
+  const { ad_type, banner, agencyInfo, memberInfo, vacancyStats } = adData;
+
+  // 1. 배너형 광고 (유료회원 맞춤 이미지 배너)
+  if (ad_type === "BANNER" && banner && banner.image_url) {
+    const bannerContent = (
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          borderRadius: 12,
+          overflow: "hidden",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.04)",
+          background: "#ffffff",
+          transition: "transform 0.15s, box-shadow 0.15s",
+        }}
+      >
+        {/* AD 뱃지 */}
+        <span
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            background: "rgba(15, 23, 42, 0.72)",
+            color: "#ffffff",
+            fontSize: 10,
+            fontWeight: 800,
+            padding: "2px 6px",
+            borderRadius: 4,
+            letterSpacing: "0.5px",
+            zIndex: 2,
+          }}
+        >
+          AD
+        </span>
+        <img
+          src={banner.image_url}
+          alt={banner.name || "광고 배너"}
+          style={{
+            width: "100%",
+            maxHeight: 220,
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+      </div>
+    );
+
+    return (
+      <div className={`article-author-ad-slot ${className || ""}`} style={{ margin: "32px 0 28px", ...style }}>
+        {banner.link_url ? (
+          <a
+            href={banner.link_url}
+            target={banner.link_target || "_blank"}
+            rel="noopener noreferrer"
+            style={{ textDecoration: "none", display: "block" }}
+          >
+            {bannerContent}
+          </a>
+        ) : (
+          bannerContent
+        )}
+      </div>
+    );
+  }
+
+  // 2. 기본형 광고 (대표님 지정 공실열람 [등록자정보] 카드 1:1 완벽 구현)
+  const agencyName = agencyInfo?.agency_name || agencyInfo?.name || memberInfo?.name || article.author_name || "공실뉴스 부동산";
+  const ceoName = agencyInfo?.ceo_name || memberInfo?.name || "-";
+  const regNum = agencyInfo?.registration_no || agencyInfo?.reg_num || "-";
+  const address = [agencyInfo?.address, agencyInfo?.address_detail].filter(Boolean).join(" ");
+  const phone = agencyInfo?.phone || memberInfo?.phone || "02-0000-0000";
+  const cell = agencyInfo?.cell && agencyInfo.cell !== phone ? `, ${agencyInfo.cell}` : "";
+  const intro = agencyInfo?.intro || "공실 등록 및 중개 매물을 신속하고 정직하게 안내해 드립니다.";
+  const profileImg = memberInfo?.profile_image_url || agencyInfo?.profile_image_url;
+  const authorInitial = agencyName.slice(0, 1) || "강";
+  const mapSearchUrl = agencyInfo?.address ? `https://map.kakao.com/link/search/${encodeURIComponent(agencyInfo.address)}` : null;
+  const vacanciesUrl = `/gongsil?ownerId=${article.author_id || memberInfo?.id || ""}`;
+
+  return (
+    <div
+      className={`article-author-ad-slot ${className || ""}`}
+      style={{
+        margin: "32px 0 28px",
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        borderRadius: 14,
+        overflow: "hidden",
+        boxShadow: "0 4px 20px -2px rgba(0, 0, 0, 0.05)",
+        position: "relative",
+        fontFamily: "'Pretendard', -apple-system, sans-serif",
+        ...style,
+      }}
+    >
+      {/* 상단 탭 헤더 & AD 뱃지 */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "10px 18px",
+          borderBottom: "1px solid #f1f5f9",
+          background: "#fafafa",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: "#1e293b" }}>
+            🏢 공실뉴스 공식 부동산 (기사 등록자)
+          </span>
+        </div>
+        <span
+          style={{
+            background: "#f1f5f9",
+            color: "#64748b",
+            fontSize: 10,
+            fontWeight: 800,
+            padding: "2px 6px",
+            borderRadius: 4,
+            border: "1px solid #cbd5e1",
+            letterSpacing: "0.5px",
+          }}
+        >
+          AD
+        </span>
+      </div>
+
+      {/* 본문 카드 영역 (기존 GongsilDetailPanel과 100% 동일) */}
+      <div style={{ padding: "20px 20px 16px" }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 20,
+            marginBottom: 16,
+          }}
+        >
+          {/* 좌측 기본 정보 영역 */}
+          <div style={{ flex: "1 1 300px", minWidth: 260 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+              {/* 프로필 사진 또는 원형 이니셜 */}
+              {profileImg ? (
+                <img
+                  src={profileImg}
+                  alt={agencyName}
+                  style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    flexShrink: 0,
+                    border: "1.5px solid #e5e7eb",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: "50%",
+                    background: "#e8f0fe",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 19,
+                    fontWeight: 800,
+                    color: "#2563eb",
+                    flexShrink: 0,
+                    border: "1.5px solid #dbeafe",
+                  }}
+                >
+                  {authorInitial}
+                </div>
+              )}
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 17,
+                    fontWeight: 800,
+                    color: "#0f172a",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {agencyName}
+                </div>
+                <div style={{ fontSize: 13, color: "#64748b", marginTop: 3 }}>
+                  <span>
+                    대표 {ceoName} <span style={{ color: "#cbd5e1", margin: "0 6px" }}>|</span> 등록번호 {regNum}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 주소 및 연락처 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+              {address && (
+                <div style={{ fontSize: 13, color: "#334155", display: "flex", alignItems: "flex-start", gap: 6 }}>
+                  <span style={{ color: "#94a3b8", width: 44, flexShrink: 0 }}>주소</span>
+                  <span style={{ flex: 1, lineHeight: 1.4 }}>{address}</span>
+                </div>
+              )}
+              <div style={{ fontSize: 13, color: "#334155", display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ color: "#94a3b8", width: 44, flexShrink: 0 }}>연락처</span>
+                <span style={{ fontWeight: 800, color: "#1a73e8", fontSize: 14 }}>
+                  {phone}{cell}
+                </span>
+              </div>
+            </div>
+
+            {/* 지도 핀 버튼 */}
+            {mapSearchUrl && (
+              <a
+                href={mapSearchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="오시는길 (카카오맵)"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "5px 10px",
+                  borderRadius: 6,
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  color: "#475569",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#eff6ff";
+                  e.currentTarget.style.color = "#2563eb";
+                  e.currentTarget.style.borderColor = "#bfdbfe";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#f8fafc";
+                  e.currentTarget.style.color = "#475569";
+                  e.currentTarget.style.borderColor = "#e2e8f0";
+                }}
+              >
+                <span>📍 오시는길 지도보기</span>
+              </a>
+            )}
+          </div>
+
+          {/* 우측 소개말 박스 */}
+          <div style={{ flex: "1 1 240px", minWidth: 200 }}>
+            <div
+              style={{
+                height: "100%",
+                minHeight: 90,
+                padding: "14px 16px",
+                background: "#f8fafc",
+                borderRadius: 10,
+                border: "1px solid #e2e8f0",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-start",
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 6 }}>소개말</div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#334155",
+                  lineHeight: 1.55,
+                  whiteSpace: "pre-line",
+                  wordBreak: "break-word",
+                }}
+              >
+                {intro}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 하단 공실등록현황 바 */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            background: "#f8fafc",
+            borderRadius: 10,
+            overflow: "hidden",
+            border: "1px solid #e2e8f0",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              padding: "12px 18px",
+              fontSize: 13,
+              fontWeight: 800,
+              color: "#0f172a",
+              borderRight: "1px solid #e2e8f0",
+              background: "#f1f5f9",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span>공실등록현황</span>
+          </div>
+
+          <Link
+            href={vacanciesUrl}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              flex: 1,
+              padding: "12px 18px",
+              gap: 14,
+              fontSize: 13,
+              color: "#64748b",
+              textDecoration: "none",
+              flexWrap: "wrap",
+            }}
+          >
+            <span>
+              전체 <strong style={{ color: "#2563eb", fontWeight: 800 }}>{vacancyStats.total}</strong>
+            </span>
+            <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
+            <span>
+              매매 <strong style={{ color: "#0f172a" }}>{vacancyStats.maemae}</strong>
+            </span>
+            <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
+            <span>
+              전세 <strong style={{ color: "#0f172a" }}>{vacancyStats.jeonse}</strong>
+            </span>
+            <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
+            <span>
+              월세 <strong style={{ color: "#0f172a" }}>{vacancyStats.rent}</strong>
+            </span>
+            <span style={{ width: 1, height: 12, background: "#cbd5e1" }} />
+            <span>
+              단기 <strong style={{ color: "#0f172a" }}>{vacancyStats.short}</strong>
+            </span>
+            <span style={{ marginLeft: "auto", fontSize: 12, color: "#2563eb", fontWeight: 700 }}>
+              매물 보러가기 &gt;
+            </span>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

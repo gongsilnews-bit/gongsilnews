@@ -14,6 +14,7 @@ import { getVacancies } from "@/app/actions/vacancy";
 import { toggleArticleBookmark, getArticleBookmarks } from "@/app/actions/bookmark";
 import AuthModal from "./AuthModal";
 import BannerSlot from "./BannerSlot";
+import ArticleAuthorAdSlot from "./ArticleAuthorAdSlot";
 import BookmarkCategoryModal from "./BookmarkCategoryModal";
 import { formatSection1 } from "@/utils/formatCategory";
 
@@ -857,6 +858,9 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                 <div style={{ color: "#888", fontSize: 13, borderTop: "1px solid #f0f0f0", paddingTop: 12 }}>저작권자 © 공실뉴스 무단전재 및 재배포 금지</div>
               </div>
             </div>
+
+            {/* ── 기사 작성자 맞춤 광고/배너 슬롯 (등록자정보와 추천합니다 사이) ── */}
+            <ArticleAuthorAdSlot article={article} />
 
             {/* ── 추천 (리액션) 섹션 ── */}
             <div className="recommend-section" style={{ marginTop: 40, paddingBottom: 24, borderBottom: "8px solid #f3f4f6" }}>
