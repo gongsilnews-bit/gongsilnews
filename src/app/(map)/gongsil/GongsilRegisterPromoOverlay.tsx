@@ -34,15 +34,15 @@ export default function GongsilRegisterPromoOverlay({
     <div
       onClick={(e) => e.stopPropagation()}
       style={{
-        position: "absolute",
+        position: "fixed",
         top: 0,
         left: 0,
-        width: "100%",
-        height: "100%",
-        background: "rgba(255, 255, 255, 0.82)",
-        backdropFilter: "blur(6px)",
-        WebkitBackdropFilter: "blur(6px)",
-        zIndex: 1050,
+        width: "100vw",
+        height: "100dvh",
+        background: "rgba(255, 255, 255, 0.88)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        zIndex: 10050,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getVacancyDetail, getVacanciesForMap } from "@/app/actions/vacancy";
 import { toggleVacancyBookmark, getVacancyBookmarks } from "@/app/actions/bookmark";
-import { getPermissionLevel } from "@/utils/permissionCheck";
+import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import AuthModal from "@/components/AuthModal";
 import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
@@ -14,6 +14,7 @@ import MobileTopBarHeader from "../_components/MobileTopBarHeader";
 import { getJitteredCoords, getCleanAddrText, getMarkerDimensions } from "@/app/(map)/gongsil/gongsilHelpers";
 import { GongsilMobileDetailPanel } from "./GongsilMobileDetailPanel";
 import { GongsilMobileDrawerList } from "./GongsilMobileDrawerList";
+import GongsilRegisterPromoOverlay from "@/app/(map)/gongsil/GongsilRegisterPromoOverlay";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 const MAX_MOBILE_MAP_LEVEL = 6;
@@ -136,6 +137,11 @@ function MobileGongsilContent() {
   // 권한 관련 State
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userLevel, setUserLevel] = useState<number>(0);
+  const isSuperAdmin =
+    userLevel >= 5 ||
+    isAdminRole(currentUser?.role) ||
+    currentUser?.email === "gongsilmarketing@gmail.com";
+  const [showRegisterPromoOverlay, setShowRegisterPromoOverlay] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // 권한 파생 값
@@ -294,6 +300,14 @@ function MobileGongsilContent() {
 
   // 2) 실시간 공실 ↔ 법원 경공매 탭 전환 시 직전 필터 및 지도 위치를 보존하고 대상 모드 필터/위치 불러오기
   const switchMode = (newMode: "공실" | "경매") => {
+    if (newMode === "공실") {
+      if (!isSuperAdmin) {
+        setShowRegisterPromoOverlay(true);
+      }
+    } else {
+      setShowRegisterPromoOverlay(false);
+    }
+
     if (effectiveMode === newMode) return;
 
     const kakao = (window as any).kakao;
@@ -459,14 +473,30 @@ function MobileGongsilContent() {
         const { data: memberData } = await client.from('members').select('role, plan_type, agencies(status)').eq('id', data.user.id).single();
         setCurrentUser({ ...data.user, role: memberData?.role });
         if (memberData) {
-          setUserLevel(getPermissionLevel(memberData));
+          const lvl = getPermissionLevel(memberData);
+          setUserLevel(lvl);
+          if (lvl >= 5 || isAdminRole(memberData.role) || data.user.email === "gongsilmarketing@gmail.com") {
+            setShowRegisterPromoOverlay(false);
+          }
         } else {
           setUserLevel(1);
+          if (data.user.email === "gongsilmarketing@gmail.com") {
+            setShowRegisterPromoOverlay(false);
+          }
         }
       }
     }
     initUser();
   }, []);
+
+  // 공실 모드 진입 시 일반 사용자에게 등록 유도 오버레이 노출
+  useEffect(() => {
+    if (effectiveMode === "공실" && !isSuperAdmin) {
+      setShowRegisterPromoOverlay(true);
+    } else {
+      setShowRegisterPromoOverlay(false);
+    }
+  }, [effectiveMode, isSuperAdmin]);
 
   useEffect(() => {
     if (selectedVacancy && detailTab === "info") {
@@ -1745,6 +1775,17 @@ function MobileGongsilContent() {
           isOpen={isAuthModalOpen}
           onClose={() => setIsAuthModalOpen(false)}
           initialTab="login"
+        />
+      )}
+
+      {/* 모바일 실시간 공실 탭 선택 시 노출되는 '내 공동중개 물건 무료 등록' 오버레이 (최고관리자는 제외) */}
+      {showRegisterPromoOverlay && !isSuperAdmin && (
+        <GongsilRegisterPromoOverlay
+          categoryName="공실"
+          onClose={() => setShowRegisterPromoOverlay(false)}
+          onGoAuction={() => switchMode("경매")}
+          currentUser={currentUser}
+          userLevel={userLevel}
         />
       )}
 
