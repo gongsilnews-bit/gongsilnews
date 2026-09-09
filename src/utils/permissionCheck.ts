@@ -32,11 +32,15 @@ export function getPermissionLevel(member: {
 export function isAdminRole(role?: string | null): boolean {
   if (!role) return false;
   const normalizedRole = role.trim().toUpperCase();
-  // 부동산회원, 부동산관리자 등은 본사 최고관리자가 아니므로 제외
+  // 부동산회원, 비즈니스회원, 일반회원 등은 본사 최고관리자가 아니므로 절대 제외
   if (
     normalizedRole.includes("부동산") ||
     normalizedRole.includes("REALTOR") ||
-    normalizedRole.includes("AGENCY")
+    normalizedRole.includes("AGENCY") ||
+    normalizedRole.includes("BIZ") ||
+    normalizedRole.includes("비즈니스") ||
+    normalizedRole.includes("USER") ||
+    normalizedRole.includes("일반")
   ) {
     return false;
   }
