@@ -3046,7 +3046,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       onChange={() => setWriteAdType("DEFAULT")}
                       style={{ accentColor: "#2563eb", width: 16, height: 16, cursor: "pointer" }}
                     />
-                    <span>기본프로필 선택 (공실등록정보 카드)</span>
+                    <span>기본프로필 선택 (등록자 프로필 카드)</span>
                   </label>
 
                   <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14, fontWeight: 600, color: writeAdType === "BANNER" ? "#2563eb" : textPrimary }}>
