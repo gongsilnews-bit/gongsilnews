@@ -778,7 +778,7 @@ export default function SignupPage() {
               <button 
                 className="pc-pricing-card-btn free-btn"
                 onClick={() => {
-                  router.push('/newsrealty');
+                  router.push('/login?returnTo=' + encodeURIComponent('/realty_admin?menu=settings&tab=agency'));
                 }}
               >
                 공실뉴스부동산 신청하기

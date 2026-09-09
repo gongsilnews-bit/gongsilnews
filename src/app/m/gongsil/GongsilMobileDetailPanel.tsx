@@ -207,10 +207,10 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                     if (typeof window !== "undefined") {
                       localStorage.setItem("signup_member_type", "broker");
                     }
-                  window.location.href = "/m/newsrealty";
-                } else {
-                  window.location.href = "/m/admin/settings?tab=agency";
-                }
+                    window.location.href = "/m/login?returnTo=" + encodeURIComponent("/m/admin/settings?tab=agency");
+                  } else {
+                    window.location.href = "/m/admin/settings?tab=agency";
+                  }
               }}
               style={{
                 width: "100%",

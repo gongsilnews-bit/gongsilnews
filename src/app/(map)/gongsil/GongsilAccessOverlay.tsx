@@ -55,7 +55,7 @@ export default function GongsilAccessOverlay({ property, currentUser, userLevel,
               window.location.href = "/login?returnTo=" + encodeURIComponent(`/gongsil?id=${property.id}`);
             } else if (!currentUser) {
               localStorage.setItem("signup_member_type", "broker");
-              window.location.href = "/newsrealty";
+              window.location.href = "/login?returnTo=" + encodeURIComponent("/realty_admin?menu=settings&tab=agency");
             } else {
               window.location.href = "/realty_admin?menu=settings";
             }

@@ -725,7 +725,7 @@ export default function MobileSignupPage() {
               <button 
                 className="m-pricing-card-btn free-btn"
                 onClick={() => {
-                  router.push('/m/newsrealty');
+                  router.push('/m/login?returnTo=' + encodeURIComponent('/m/admin/settings?tab=agency'));
                 }}
               >
                 공실뉴스부동산 신청하기
