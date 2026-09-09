@@ -12,6 +12,7 @@ import {
   AuthorBanner,
   AuthorBannerStat,
 } from "@/app/actions/articleAd";
+import ArticleBulkAdManager from "./ArticleBulkAdManager";
 
 interface MemberArticleAdSectionProps extends AdminSectionProps {
   memberId: string;
@@ -227,6 +228,11 @@ export default function MemberArticleAdSection({
     router.push(`${pathname}?menu=article_ad&action=stats`);
   };
 
+  // 기사 일괄 배너 관리 모드로 진입 (URL 연동)
+  const handleOpenBulkArticles = () => {
+    router.push(`${pathname}?menu=article_ad&action=bulk_articles`);
+  };
+
   // 목록으로 돌아가기 (URL 연동)
   const handleBackToList = () => {
     router.push(`${pathname}?menu=article_ad`);
@@ -306,6 +312,20 @@ export default function MemberArticleAdSection({
     if (filter === "전체") return true;
     return getBannerStatusInfo(b).label === filter;
   });
+
+  /* ══════════════════════════════════════════════════════════════
+     0. 기사 일괄 배너 관리 (독립 모듈형 컴포넌트)
+     ══════════════════════════════════════════════════════════════ */
+  if (action === "bulk_articles") {
+    return (
+      <ArticleBulkAdManager
+        theme={theme}
+        memberId={memberId}
+        memberName={memberName}
+        onBack={handleBackToList}
+      />
+    );
+  }
 
   /* ══════════════════════════════════════════════════════════════
      1. 배너 등록 / 수정 폼 (최고관리자와 100% 동일한 프리미엄 UI)
@@ -1208,6 +1228,25 @@ export default function MemberArticleAdSection({
             }}
           >
             📊 성과 분석
+          </button>
+          <button
+            onClick={handleOpenBulkArticles}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              height: 36,
+              padding: "0 16px",
+              background: "#059669",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              gap: 6,
+            }}
+          >
+            📰 기사 일괄 배너교체
           </button>
           <button
             onClick={() => handleDelete(checkedIds)}
