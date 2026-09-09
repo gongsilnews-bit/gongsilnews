@@ -8,9 +8,17 @@ interface ArticleAuthorAdSlotProps {
   article: any;
   className?: string;
   style?: React.CSSProperties;
+  forceType?: "DEFAULT" | "BANNER" | "NONE";
+  previewMode?: boolean;
 }
 
-export default function ArticleAuthorAdSlot({ article, className, style }: ArticleAuthorAdSlotProps) {
+export default function ArticleAuthorAdSlot({
+  article,
+  className,
+  style,
+  forceType,
+  previewMode = false,
+}: ArticleAuthorAdSlotProps) {
   const [loading, setLoading] = useState(true);
   const [adData, setAdData] = useState<{
     ad_type: "DEFAULT" | "BANNER" | "NONE";
@@ -21,10 +29,15 @@ export default function ArticleAuthorAdSlot({ article, className, style }: Artic
   } | null>(null);
 
   useEffect(() => {
-    if (!article?.id) return;
+    const targetId = article?.id || "preview";
+    const authorId = article?.author_id;
+    if (!targetId && !authorId) {
+      setLoading(false);
+      return;
+    }
     let isMounted = true;
 
-    getArticleAdInfo(article.id, article.author_id)
+    getArticleAdInfo(targetId, authorId)
       .then((res) => {
         if (isMounted && res.success) {
           setAdData(res);
@@ -44,8 +57,8 @@ export default function ArticleAuthorAdSlot({ article, className, style }: Artic
     return (
       <div
         style={{
-          margin: "28px 0",
-          height: 120,
+          margin: previewMode ? "8px 0" : "28px 0",
+          height: 100,
           borderRadius: 12,
           background: "#f8fafc",
           border: "1px solid #e2e8f0",
@@ -53,23 +66,28 @@ export default function ArticleAuthorAdSlot({ article, className, style }: Artic
           alignItems: "center",
           justifyContent: "center",
           color: "#94a3b8",
-          fontSize: 12,
+          fontSize: 13,
           ...style,
         }}
       >
-        <span>광고를 불러오는 중...</span>
+        <span>등록자 프로필 박스를 불러오는 중...</span>
       </div>
     );
   }
 
-  if (!adData || adData.ad_type === "NONE") {
+  const effectiveType = forceType || adData?.ad_type;
+  if (!adData && !forceType) {
+    return null;
+  }
+  if (effectiveType === "NONE") {
     return null;
   }
 
-  const { ad_type, banner, agencyInfo, memberInfo, vacancyStats } = adData;
+  const { banner, agencyInfo, memberInfo, vacancyStats: dbStats } = adData || {};
+  const vacancyStats = dbStats || { total: 0, maemae: 0, jeonse: 0, rent: 0, short: 0 };
 
   // 1. 배너형 광고 (유료회원 맞춤 이미지 배너)
-  if (ad_type === "BANNER" && banner && banner.image_url) {
+  if (effectiveType === "BANNER" && banner && banner.image_url) {
     const bannerContent = (
       <div
         style={{
@@ -115,12 +133,20 @@ export default function ArticleAuthorAdSlot({ article, className, style }: Artic
     );
 
     return (
-      <div className={`article-author-ad-slot ${className || ""}`} style={{ margin: "32px 0 28px", ...style }}>
+      <div className={`article-author-ad-slot ${className || ""}`} style={{ margin: previewMode ? "10px 0" : "32px 0 28px", ...style }}>
+        {previewMode && (
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 6, fontSize: 12, fontWeight: 700, color: "#2563eb" }}>
+            <span>👀 [미리보기] 실제 기사 하단에 노출되는 배너 박스</span>
+          </div>
+        )}
         {banner.link_url ? (
           <a
             href={banner.link_url}
             target={banner.link_target || "_blank"}
             rel="noopener noreferrer"
+            onClick={(e) => {
+              if (previewMode) e.preventDefault();
+            }}
             style={{ textDecoration: "none", display: "block" }}
           >
             {bannerContent}
@@ -133,15 +159,15 @@ export default function ArticleAuthorAdSlot({ article, className, style }: Artic
   }
 
   // 2. 기본형 광고 (대표님 지정 공실열람 [등록자정보] 카드 1:1 완벽 구현)
-  const agencyName = agencyInfo?.agency_name || agencyInfo?.name || memberInfo?.name || article.author_name || "공실뉴스 부동산";
+  const agencyName = agencyInfo?.agency_name || agencyInfo?.name || memberInfo?.name || article.author_name || "공실뉴스 공식 부동산";
   const ceoName = agencyInfo?.ceo_name || memberInfo?.name || "-";
   const regNum = agencyInfo?.registration_no || agencyInfo?.reg_num || "-";
-  const address = [agencyInfo?.address, agencyInfo?.address_detail].filter(Boolean).join(" ");
+  const address = [agencyInfo?.address, agencyInfo?.address_detail].filter(Boolean).join(" ") || "주소 미등록";
   const phone = agencyInfo?.phone || memberInfo?.phone || "02-0000-0000";
   const cell = agencyInfo?.cell && agencyInfo.cell !== phone ? `, ${agencyInfo.cell}` : "";
   const intro = agencyInfo?.intro || "공실 등록 및 중개 매물을 신속하고 정직하게 안내해 드립니다.";
   const profileImg = memberInfo?.profile_image_url || agencyInfo?.profile_image_url;
-  const authorInitial = agencyName.slice(0, 1) || "강";
+  const authorInitial = agencyName.slice(0, 1) || "공";
   const mapSearchUrl = agencyInfo?.address ? `https://map.kakao.com/link/search/${encodeURIComponent(agencyInfo.address)}` : null;
   const vacanciesUrl = `/gongsil?ownerId=${article.author_id || memberInfo?.id || ""}`;
 
@@ -149,7 +175,7 @@ export default function ArticleAuthorAdSlot({ article, className, style }: Artic
     <div
       className={`article-author-ad-slot ${className || ""}`}
       style={{
-        margin: "32px 0 28px",
+        margin: previewMode ? "10px 0" : "32px 0 28px",
         background: "#ffffff",
         border: "1px solid #e2e8f0",
         borderRadius: 14,
@@ -160,6 +186,24 @@ export default function ArticleAuthorAdSlot({ article, className, style }: Artic
         ...style,
       }}
     >
+      {previewMode && (
+        <div
+          style={{
+            padding: "8px 16px",
+            background: "#eff6ff",
+            borderBottom: "1px solid #dbeafe",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#1d4ed8", display: "flex", alignItems: "center", gap: 6 }}>
+            <span>👀</span> [실시간 미리보기] 실제 기사 하단에 노출되는 등록자 프로필 박스입니다.
+          </span>
+          <span style={{ fontSize: 11, color: "#3b82f6" }}>실제 기사 독자에게 100% 동일하게 보여집니다</span>
+        </div>
+      )}
+
       {/* 상단 탭 헤더 & AD 뱃지 */}
       <div
         style={{
@@ -284,6 +328,12 @@ export default function ArticleAuthorAdSlot({ article, className, style }: Artic
                 href={mapSearchUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => {
+                  if (previewMode) {
+                    e.preventDefault();
+                    window.open(mapSearchUrl, "_blank");
+                  }
+                }}
                 title="오시는길 (카카오맵)"
                 style={{
                   display: "inline-flex",
@@ -376,6 +426,12 @@ export default function ArticleAuthorAdSlot({ article, className, style }: Artic
 
           <Link
             href={vacanciesUrl}
+            onClick={(e) => {
+              if (previewMode) {
+                e.preventDefault();
+                alert("기사 작성 중 미리보기 상태입니다. 실제 기사에서는 해당 부동산의 공실 목록 페이지로 연결됩니다.");
+              }
+            }}
             style={{
               display: "flex",
               alignItems: "center",

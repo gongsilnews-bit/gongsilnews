@@ -9,6 +9,7 @@ import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 import { generateMarketingDrafts, saveAiDraft, getAiDraftHistory } from "@/app/actions/gemini";
 import { getAuthorBanners, saveAuthorBanner, updateArticlesAdSettings, getArticleAdInfo, AuthorBanner } from "@/app/actions/articleAd";
+import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import Link from "next/link";
 
 /* ─── 타입 ─── */
@@ -2997,10 +2998,22 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   </label>
                 </div>
 
-                {/* 기본프로필 선택 시 심플 안내 */}
+                {/* 기본프로필 선택 시: 실제 기사 하단에 등록되는 등록자정보 카드 실물 미리보기 */}
                 {writeAdType === "DEFAULT" && (
-                  <div style={{ padding: "10px 14px", background: "#f8fafc", borderRadius: 8, border: `1px solid ${border}`, fontSize: 13, color: "#475569" }}>
-                    🏢 기사 하단에 내 중개업소 프로필(상호/대표자/등록번호/연락처)과 실시간 공실등록현황 카드가 자동으로 노출됩니다.
+                  <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ padding: "8px 12px", background: "#f8fafc", borderRadius: 8, border: `1px solid ${border}`, fontSize: 13, color: "#475569" }}>
+                      🏢 기사 하단에 아래와 같이 내 중개업소 프로필 및 실시간 공실등록현황 카드가 자동으로 노출됩니다.
+                    </div>
+                    <ArticleAuthorAdSlot
+                      article={{
+                        id: loadArticleId || "preview",
+                        author_id: memberAuthorId || currentUserId,
+                        author_name: reporterName,
+                      }}
+                      forceType="DEFAULT"
+                      previewMode={true}
+                      style={{ margin: "4px 0 0" }}
+                    />
                   </div>
                 )}
 
