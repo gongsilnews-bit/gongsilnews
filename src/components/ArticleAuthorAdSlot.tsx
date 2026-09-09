@@ -158,7 +158,7 @@ export default function ArticleAuthorAdSlot({
     );
   }
 
-  // 2. 기본형 광고 (대표님 지정 공실열람 [등록자정보] 카드 1:1 완벽 구현)
+  // 2. 기본형 광고 (대표님 지정 등록자 정보 카드: 미니홈피 스타일)
   const agencyName = agencyInfo?.agency_name || agencyInfo?.name || memberInfo?.name || article.author_name || "공실뉴스 공식 부동산";
   const ceoName = agencyInfo?.ceo_name || memberInfo?.name || "-";
   const regNum = agencyInfo?.registration_no || agencyInfo?.reg_num || "-";
@@ -169,7 +169,14 @@ export default function ArticleAuthorAdSlot({
   const profileImg = memberInfo?.profile_image_url || agencyInfo?.profile_image_url;
   const authorInitial = agencyName.slice(0, 1) || "공";
   const mapSearchUrl = agencyInfo?.address ? `https://map.kakao.com/link/search/${encodeURIComponent(agencyInfo.address)}` : null;
-  const vacanciesUrl = `/gongsil?ownerId=${article.author_id || memberInfo?.id || ""}`;
+  const targetReporterId = article.author_id || memberInfo?.id || "";
+  const miniHomeUrl = targetReporterId ? `/reporter/${targetReporterId}` : "#";
+
+  // SNS 링크 목록 (미니홈피 연동)
+  const snsLinks = memberInfo?.sns_links || {};
+  const activeSnsKeys = Object.keys(snsLinks).filter(
+    (k) => k !== "api_info" && k !== "api_list" && snsLinks[k]?.url
+  );
 
   return (
     <div
@@ -204,22 +211,17 @@ export default function ArticleAuthorAdSlot({
         </div>
       )}
 
-      {/* 상단 탭 헤더 & AD 뱃지 */}
+      {/* 상단: 우측에 AD만 깔끔하게 단독 표시 */}
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "flex-end",
           alignItems: "center",
-          padding: "10px 18px",
-          borderBottom: "1px solid #f1f5f9",
+          padding: "8px 16px",
+          borderBottom: "1px solid #f8fafc",
           background: "#fafafa",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: "#1e293b" }}>
-            🏢 공실뉴스 공식 부동산 (기사 등록자)
-          </span>
-        </div>
         <span
           style={{
             background: "#f1f5f9",
@@ -236,8 +238,8 @@ export default function ArticleAuthorAdSlot({
         </span>
       </div>
 
-      {/* 본문 카드 영역 (기존 GongsilDetailPanel과 100% 동일) */}
-      <div style={{ padding: "20px 20px 16px" }}>
+      {/* 본문 카드 영역 */}
+      <div style={{ padding: "18px 20px 16px" }}>
         <div
           style={{
             display: "flex",
@@ -247,58 +249,97 @@ export default function ArticleAuthorAdSlot({
           }}
         >
           {/* 좌측 기본 정보 영역 */}
-          <div style={{ flex: "1 1 300px", minWidth: 260 }}>
+          <div style={{ flex: "1 1 320px", minWidth: 260 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-              {/* 프로필 사진 또는 원형 이니셜 */}
-              {profileImg ? (
-                <img
-                  src={profileImg}
-                  alt={agencyName}
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                    flexShrink: 0,
-                    border: "1.5px solid #e5e7eb",
-                    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: "50%",
-                    background: "#e8f0fe",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 19,
-                    fontWeight: 800,
-                    color: "#2563eb",
-                    flexShrink: 0,
-                    border: "1.5px solid #dbeafe",
-                  }}
-                >
-                  {authorInitial}
-                </div>
-              )}
+              {/* 프로필 사진 또는 원형 이니셜 (미니홈피로 이동 링크) */}
+              <Link
+                href={miniHomeUrl}
+                onClick={(e) => {
+                  if (previewMode) e.preventDefault();
+                }}
+                style={{ textDecoration: "none" }}
+              >
+                {profileImg ? (
+                  <img
+                    src={profileImg}
+                    alt={agencyName}
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: "16px",
+                      objectFit: "cover",
+                      flexShrink: 0,
+                      border: "1.5px solid #e5e7eb",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: "16px",
+                      background: "#e8f0fe",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 20,
+                      fontWeight: 800,
+                      color: "#2563eb",
+                      flexShrink: 0,
+                      border: "1.5px solid #dbeafe",
+                    }}
+                  >
+                    {authorInitial}
+                  </div>
+                )}
+              </Link>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 17,
-                    fontWeight: 800,
-                    color: "#0f172a",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {agencyName}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <Link
+                    href={miniHomeUrl}
+                    onClick={(e) => {
+                      if (previewMode) e.preventDefault();
+                    }}
+                    style={{
+                      fontSize: 17,
+                      fontWeight: 800,
+                      color: "#0f172a",
+                      textDecoration: "none",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {agencyName}
+                  </Link>
+
+                  {/* 미니홈피 뱃지 (미니홈피 스타일) */}
+                  <Link
+                    href={miniHomeUrl}
+                    onClick={(e) => {
+                      if (previewMode) e.preventDefault();
+                    }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      background: "#eff6ff",
+                      padding: "2px 7px",
+                      borderRadius: 10,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "#2563eb",
+                      border: "1px solid #dbeafe",
+                      textDecoration: "none",
+                    }}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    미니홈피
+                  </Link>
                 </div>
-                <div style={{ fontSize: 13, color: "#64748b", marginTop: 3 }}>
+                <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
                   <span>
                     대표 {ceoName} <span style={{ color: "#cbd5e1", margin: "0 6px" }}>|</span> 등록번호 {regNum}
                   </span>
@@ -307,7 +348,7 @@ export default function ArticleAuthorAdSlot({
             </div>
 
             {/* 주소 및 연락처 */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
               {address && (
                 <div style={{ fontSize: 13, color: "#334155", display: "flex", alignItems: "flex-start", gap: 6 }}>
                   <span style={{ color: "#94a3b8", width: 44, flexShrink: 0 }}>주소</span>
@@ -322,47 +363,189 @@ export default function ArticleAuthorAdSlot({
               </div>
             </div>
 
-            {/* 지도 핀 버튼 */}
-            {mapSearchUrl && (
-              <a
-                href={mapSearchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+            {/* ═══ 미니홈피 스타일 액션 버튼들 & SNS 아이콘 바 ═══ */}
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+              {/* 1) 오시는길 버튼 (미니홈피 스타일) */}
+              {mapSearchUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.open(mapSearchUrl, "_blank");
+                  }}
+                  title="오시는길 (카카오맵)"
+                  style={{
+                    padding: "7px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    background: "#ffffff",
+                    color: "#1e293b",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#f1f5f9";
+                    e.currentTarget.style.borderColor = "#94a3b8";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#ffffff";
+                    e.currentTarget.style.borderColor = "#cbd5e1";
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                  <span>오시는길</span>
+                </button>
+              )}
+
+              {/* 2) 미니홈피 바로가기 버튼 */}
+              <Link
+                href={miniHomeUrl}
                 onClick={(e) => {
                   if (previewMode) {
                     e.preventDefault();
-                    window.open(mapSearchUrl, "_blank");
+                    alert("기사 작성 중 미리보기 상태입니다. 실제 기사에서는 해당 기자의 미니홈피로 연결됩니다.");
                   }
                 }}
-                title="오시는길 (카카오맵)"
                 style={{
+                  padding: "7px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#1e293b",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 4,
-                  padding: "5px 10px",
-                  borderRadius: 6,
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  color: "#475569",
-                  fontSize: 12,
-                  fontWeight: 600,
+                  gap: "5px",
                   textDecoration: "none",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                   transition: "all 0.15s",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "#eff6ff";
-                  e.currentTarget.style.color = "#2563eb";
                   e.currentTarget.style.borderColor = "#bfdbfe";
+                  e.currentTarget.style.color = "#2563eb";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#f8fafc";
-                  e.currentTarget.style.color = "#475569";
-                  e.currentTarget.style.borderColor = "#e2e8f0";
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#cbd5e1";
+                  e.currentTarget.style.color = "#1e293b";
                 }}
               >
-                <span>📍 오시는길 지도보기</span>
-              </a>
-            )}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span>미니홈피</span>
+              </Link>
+
+              {/* 3) 공유 버튼 */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (typeof window !== "undefined") {
+                    const shareUrl = `${window.location.origin}${miniHomeUrl}`;
+                    navigator.clipboard?.writeText(shareUrl).then(() => {
+                      alert("부동산 미니홈피 주소가 복사되었습니다!");
+                    }).catch(() => {
+                      alert(`미니홈피 주소: ${shareUrl}`);
+                    });
+                  }
+                }}
+                style={{
+                  padding: "7px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#475569",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f1f5f9";
+                  e.currentTarget.style.borderColor = "#94a3b8";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#cbd5e1";
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3"></circle>
+                  <circle cx="6" cy="12" r="3"></circle>
+                  <circle cx="18" cy="19" r="3"></circle>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                <span>공유</span>
+              </button>
+
+              {/* 4) 미니홈피 등록 SNS 아이콘들 (원형) */}
+              {activeSnsKeys.length > 0 && (
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginLeft: 2 }}>
+                  {activeSnsKeys.slice(0, 5).map((key) => {
+                    const link = snsLinks[key].url;
+                    const validUrl = link.startsWith("http") ? link : `https://${link}`;
+                    let iconHtml: React.ReactNode = null;
+                    if (key === "youtube") {
+                      iconHtml = <svg viewBox="0 0 24 24" width="14" height="14" fill="#dc2626"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.99C18.88 4 12 4 12 4s-6.88 0-8.59.43A2.78 2.78 0 0 0 1.46 6.42C1 8.16 1 12 1 12s0 3.84.46 5.58a2.78 2.78 0 0 0 1.95 1.99C5.12 20 12 20 12 20s6.88 0 8.59-.43a2.78 2.78 0 0 0 1.95-1.99C23 15.84 23 12 23 12s0-3.84-.46-5.58zM9.54 15.55V8.45L15.82 12l-6.28 3.55z"></path></svg>;
+                    } else if (key === "kakao") {
+                      iconHtml = <svg viewBox="0 0 24 24" width="14" height="14" fill="#381e1f"><path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path></svg>;
+                    } else if (key === "instagram") {
+                      iconHtml = <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#e1306c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>;
+                    } else if (key === "contact") {
+                      iconHtml = <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>;
+                    } else {
+                      iconHtml = <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>;
+                    }
+                    return (
+                      <a
+                        key={key}
+                        href={validUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                          if (previewMode) {
+                            e.preventDefault();
+                            window.open(validUrl, "_blank");
+                          }
+                        }}
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: "50%",
+                          background: "#f8fafc",
+                          border: "1px solid #cbd5e1",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          textDecoration: "none",
+                          transition: "transform 0.15s",
+                        }}
+                      >
+                        {iconHtml}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 우측 소개말 박스 */}
@@ -370,7 +553,7 @@ export default function ArticleAuthorAdSlot({
             <div
               style={{
                 height: "100%",
-                minHeight: 90,
+                minHeight: 100,
                 padding: "14px 16px",
                 background: "#f8fafc",
                 borderRadius: 10,
@@ -396,7 +579,7 @@ export default function ArticleAuthorAdSlot({
           </div>
         </div>
 
-        {/* 하단 공실등록현황 바 */}
+        {/* 하단 공실등록현황 바 (미니홈피로 이동) */}
         <div
           style={{
             display: "flex",
@@ -425,11 +608,11 @@ export default function ArticleAuthorAdSlot({
           </div>
 
           <Link
-            href={vacanciesUrl}
+            href={miniHomeUrl}
             onClick={(e) => {
               if (previewMode) {
                 e.preventDefault();
-                alert("기사 작성 중 미리보기 상태입니다. 실제 기사에서는 해당 부동산의 공실 목록 페이지로 연결됩니다.");
+                alert("기사 작성 중 미리보기 상태입니다. 실제 기사에서는 해당 기자의 미니홈피로 연결됩니다.");
               }
             }}
             style={{
@@ -464,7 +647,7 @@ export default function ArticleAuthorAdSlot({
               단기 <strong style={{ color: "#0f172a" }}>{vacancyStats.short}</strong>
             </span>
             <span style={{ marginLeft: "auto", fontSize: 12, color: "#2563eb", fontWeight: 700 }}>
-              매물 보러가기 &gt;
+              매물 보러가기 (미니홈피) &gt;
             </span>
           </Link>
         </div>
