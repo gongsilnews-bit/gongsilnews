@@ -624,6 +624,13 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             } else {
               setIsMemberMode(false);
             }
+
+            // 작성자의 등록된 기존 배너 보관함 목록 로드 (대표님 지시)
+            getAuthorBanners(authData.user.id).then((bRes) => {
+              if (bRes.success && bRes.data) {
+                setAuthorBanners(bRes.data);
+              }
+            });
           }
         }
       };
@@ -691,6 +698,13 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
             // 기사별 기존 광고 설정 조회 및 세팅
             const supabase = createClient();
+            if (d.author_id) {
+              getAuthorBanners(d.author_id).then((bRes) => {
+                if (bRes.success && bRes.data) {
+                  setAuthorBanners(bRes.data);
+                }
+              });
+            }
             supabase
               .from("article_ad_settings")
               .select("*, custom_banner:article_author_banners(*)")
@@ -3096,9 +3110,22 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={async () => {
                               setWriteAdMode("EXISTING");
-                              if (authorBanners.length > 0 && !writeAdBannerId) {
+                              const targetId = memberAuthorId || currentUserId;
+                              if (targetId) {
+                                const bRes = await getAuthorBanners(targetId);
+                                if (bRes.success && bRes.data) {
+                                  setAuthorBanners(bRes.data);
+                                  if (bRes.data.length > 0 && !writeAdBannerId) {
+                                    const first = bRes.data[0];
+                                    setWriteAdBannerId(first.id);
+                                    setWriteAdBannerName(first.name);
+                                    setWriteAdLinkUrl(first.link_url || "");
+                                    setWriteAdPreview(first.image_url || "");
+                                  }
+                                }
+                              } else if (authorBanners.length > 0 && !writeAdBannerId) {
                                 const first = authorBanners[0];
                                 setWriteAdBannerId(first.id);
                                 setWriteAdBannerName(first.name);
