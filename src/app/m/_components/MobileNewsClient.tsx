@@ -11,6 +11,7 @@ import HomeHeader from "../_components/HomeHeader";
 import AuthorProfileHeader from "../_components/AuthorProfileHeader";
 import AuthModal from "@/components/AuthModal";
 import BannerSlot from "@/components/BannerSlot";
+import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import { formatSection1 } from "@/utils/formatCategory";
@@ -2433,6 +2434,27 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 }
               }}
             />
+
+            {/* 키워드 태그 (있을 경우) */}
+            {articleDetail.article_keywords && articleDetail.article_keywords.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", margin: "16px 0", padding: "12px 0", borderTop: "1px solid #f0f0f0" }}>
+                {articleDetail.article_keywords.map((kw: any, i: number) => (
+                  <span key={i} style={{ padding: "4px 10px", borderRadius: "16px", background: "#fff7ed", color: "#b45309", fontSize: "12px", fontWeight: 500, border: "1px solid #fde68a" }}>
+                    #{kw.keyword}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* 저작권 및 작성자 푸터 */}
+            <div style={{ marginTop: "24px", paddingTop: "12px", borderTop: "1px solid #f0f0f0", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#888" }}>
+              <span style={{ fontWeight: 700, color: "#333" }}>{articleDetail.author_name || "공실뉴스"}</span>
+              <span>저작권자 © 공실뉴스 무단전재 및 재배포 금지</span>
+            </div>
+
+            {/* ── 기사 작성자 맞춤 광고/배너 및 프로필 박스 슬롯 (모바일) ── */}
+            <ArticleAuthorAdSlot article={articleDetail} style={{ margin: "20px 0 16px" }} />
+            <BannerSlot placement="NEWS_DETAIL" style={{ margin: "16px 0" }} />
           </div>
         ) : (
           <div style={{ padding: "40px 20px", textAlign: "center", color: "#999" }}>

@@ -7,6 +7,8 @@ import MapSearchBar from "@/components/MapSearchBar";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import { formatSection1 } from "@/utils/formatCategory";
+import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
+import BannerSlot from "@/components/BannerSlot";
 
 export default function NewsMapClient({ initialArticles, initialPopularArticles }: { initialArticles: any[], initialPopularArticles: any[] }) {
   /* ── 상태 ── */
@@ -774,6 +776,10 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
                     </div>
                     <div style={{ color: "#888", fontSize: 13 }}>저작권자 © 공실뉴스 무단전재 및 재배포 금지</div>
                   </div>
+
+                  {/* ── 기사 작성자 맞춤 광고/배너 및 프로필 박스 슬롯 ── */}
+                  <ArticleAuthorAdSlot article={articleDetail} style={{ margin: "28px 0 20px" }} />
+                  <BannerSlot placement="NEWS_DETAIL" style={{ margin: "20px 0" }} />
 
                   {/* 댓글 */}
                   <div className="comments-section">
