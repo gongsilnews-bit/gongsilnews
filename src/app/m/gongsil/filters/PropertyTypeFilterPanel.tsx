@@ -113,44 +113,43 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
     const singleGroupItems = PROPERTY_TYPES[0].items;
     const isAllSingleSelected = singleGroupItems.length > 0 && singleGroupItems.every(item => filters.propertyTypes.includes(item));
 
-    const handleToggleSingleAll = () => {
+    const selectAllSingle = () => {
+      onFilterChange({ propertyTypes: singleGroupItems });
+    };
+
+    const toggleSingleProp = (item: string) => {
       if (isAllSingleSelected) {
-        onFilterChange({ propertyTypes: [] });
-      } else {
-        onFilterChange({ propertyTypes: singleGroupItems });
+        onFilterChange({ propertyTypes: [item] });
+        return;
       }
+      const arr = filters.propertyTypes;
+      let next = arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
+      if (next.length === 0) {
+        next = singleGroupItems;
+      }
+      onFilterChange({ propertyTypes: next });
     };
 
     return (
       <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-          <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280" }}>
-            경·공매 자산유형 선택
-          </div>
-          <button
-            type="button"
-            onClick={() => onFilterChange({ propertyTypes: singleGroupItems })}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: isAllSingleSelected ? "#9ca3af" : "#2563eb",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-              padding: "2px 6px",
-            }}
-          >
-            전체선택
-          </button>
+        <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280", marginBottom: "8px" }}>
+          경·공매 자산유형 선택
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+          <button
+            type="button"
+            onClick={selectAllSingle}
+            style={subPillStyle(isAllSingleSelected)}
+          >
+            전체 {isAllSingleSelected && "✓"}
+          </button>
           {singleGroupItems.map(item => {
-            const isSel = filters.propertyTypes.includes(item);
+            const isSel = !isAllSingleSelected && filters.propertyTypes.includes(item);
             return (
               <button
                 key={item}
                 type="button"
-                onClick={() => toggleProp(item)}
+                onClick={() => toggleSingleProp(item)}
                 style={subPillStyle(isSel)}
               >
                 {item} {isSel && "✓"}
@@ -162,49 +161,96 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
     );
   }
 
+  const selectAllGlobal = () => {
+    onFilterChange({ propertyTypes: ALL_PROPERTY_TYPES });
+  };
+
+  const handleSelectGroupExclusive = (groupName: string) => {
+    setActiveGroup(groupName);
+    const targetGroup = PROPERTY_TYPES.find(g => g.group === groupName);
+    if (!targetGroup) return;
+
+    if (isAllItemsSelected) {
+      // 전체 선택 상태에서 특정 대분류를 누르면 그 대분류만 단독 선택
+      onFilterChange({ propertyTypes: targetGroup.items });
+      return;
+    }
+
+    const currentSelected = filters.propertyTypes;
+    const hasAnyInGroup = targetGroup.items.some(it => currentSelected.includes(it));
+    let next: string[];
+    if (hasAnyInGroup) {
+      next = currentSelected.filter(it => !targetGroup.items.includes(it));
+      if (next.length === 0) next = ALL_PROPERTY_TYPES;
+    } else {
+      next = [...currentSelected, ...targetGroup.items];
+    }
+    onFilterChange({ propertyTypes: next });
+  };
+
+  const selectAllGroup = () => {
+    const next = Array.from(new Set([...filters.propertyTypes, ...groupItems]));
+    onFilterChange({ propertyTypes: next });
+  };
+
+  const toggleGroupProp = (item: string) => {
+    if (isAllGroupSelected) {
+      // 세부분류 전체 상태에서 특정 소분류를 누르면 그 소분류만 단독 선택
+      const otherGroupItems = filters.propertyTypes.filter(x => !groupItems.includes(x));
+      onFilterChange({ propertyTypes: [...otherGroupItems, item] });
+      return;
+    }
+    const arr = filters.propertyTypes;
+    let next = arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
+    const remainingInGroup = groupItems.filter(x => next.includes(x));
+    if (remainingInGroup.length === 0) {
+      // 해당 그룹이 다 꺼지면 다시 그 그룹 전체 선택
+      next = Array.from(new Set([...next, ...groupItems]));
+    }
+    onFilterChange({ propertyTypes: next });
+  };
+
   // 🏢 [일반 공실 모드] 4대 대분류 + 세부분류 2단계 구조
   return (
     <div>
       {/* 1단계: 매물 대분류 선택 */}
       <div style={{ marginBottom: "16px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-          <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280" }}>
-            1. 매물 대분류 선택
-          </div>
-          <button
-            type="button"
-            onClick={() => onFilterChange({ propertyTypes: ALL_PROPERTY_TYPES })}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: isAllItemsSelected ? "#9ca3af" : "#2563eb",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-              padding: "2px 6px",
-            }}
-          >
-            전체선택
-          </button>
+        <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280", marginBottom: "8px" }}>
+          1. 매물 대분류 선택
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
+          {/* 맨 앞 1번: 전체 */}
+          <button
+            type="button"
+            onClick={selectAllGlobal}
+            style={{
+              ...mainTabStyle(isAllItemsSelected),
+              gridColumn: "1 / -1",
+              fontSize: "14px",
+              padding: "10px 8px",
+            }}
+          >
+            전체 {isAllItemsSelected && "✓"}
+          </button>
+
           {PROPERTY_TYPES.map(g => {
             const hasSelectedItems = g.items.some(item => filters.propertyTypes.includes(item));
             const isTabFocused = activeGroup === g.group;
+            const active = !isAllItemsSelected && (isTabFocused || hasSelectedItems);
 
             return (
               <button
                 key={g.group}
                 type="button"
-                onClick={() => handleSelectGroup(g.group)}
-                style={mainTabStyle(isTabFocused || hasSelectedItems)}
+                onClick={() => handleSelectGroupExclusive(g.group)}
+                style={mainTabStyle(active)}
               >
                 {g.group === "아파트·오피스텔" && "🏢 "}
                 {g.group === "빌라·주택" && "🏡 "}
                 {g.group === "원룸·투룸(풀옵션)" && "🛏️ "}
                 {g.group === "상가·사무실·공장·토지" && "🏬 "}
-                {g.group} {hasSelectedItems && "✓"}
+                {g.group} {!isAllItemsSelected && hasSelectedItems && "✓"}
               </button>
             );
           })}
@@ -213,41 +259,32 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
 
       {/* 2단계: 선택된 1차 대분류의 세부 분류(소분류) 선택 */}
       <div style={{ background: "#f9fafb", padding: "14px", borderRadius: "10px", border: "1px solid #e5e7eb" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-          <div style={{ fontSize: "13px", fontWeight: 700, color: "#102c57" }}>
-            2. 세부 분류 선택 ({activeGroup})
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              const next = Array.from(new Set([...filters.propertyTypes, ...groupItems]));
-              onFilterChange({ propertyTypes: next });
-            }}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: isAllGroupSelected ? "#9ca3af" : "#2563eb",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-              padding: "2px 6px",
-            }}
-          >
-            전체선택
-          </button>
+        <div style={{ fontSize: "13px", fontWeight: 700, color: "#102c57", marginBottom: "10px" }}>
+          2. 세부 분류 선택 ({activeGroup})
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-          {groupItems.map(item => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => toggleProp(item)}
-              style={subPillStyle(filters.propertyTypes.includes(item))}
-            >
-              {item} {filters.propertyTypes.includes(item) && "✓"}
-            </button>
-          ))}
+          {/* 맨 앞 1번: 세부분류 전체 */}
+          <button
+            type="button"
+            onClick={selectAllGroup}
+            style={subPillStyle(isAllGroupSelected)}
+          >
+            전체 {isAllGroupSelected && "✓"}
+          </button>
+          {groupItems.map(item => {
+            const isSel = !isAllGroupSelected && filters.propertyTypes.includes(item);
+            return (
+              <button
+                key={item}
+                type="button"
+                onClick={() => toggleGroupProp(item)}
+                style={subPillStyle(isSel)}
+              >
+                {item} {isSel && "✓"}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

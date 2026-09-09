@@ -10,18 +10,22 @@ interface Props {
 export default function TradeTypeFilterPanel({ filters, onFilterChange, TRADE_TYPES }: Props) {
   const isAllSelected = TRADE_TYPES.length > 0 && TRADE_TYPES.every(item => filters.tradeTypes.includes(item));
 
-  const toggleTrade = (item: string) => {
-    const arr = filters.tradeTypes;
-    const newArr = arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
-    onFilterChange({ tradeTypes: newArr });
+  const selectAll = () => {
+    onFilterChange({ tradeTypes: TRADE_TYPES });
   };
 
-  const handleToggleAll = () => {
+  const toggleTrade = (item: string) => {
     if (isAllSelected) {
-      onFilterChange({ tradeTypes: [] });
-    } else {
-      onFilterChange({ tradeTypes: TRADE_TYPES });
+      // 전체 선택 상태에서 특정 항목을 누르면 해당 항목만 단독 선택
+      onFilterChange({ tradeTypes: [item] });
+      return;
     }
+    const arr = filters.tradeTypes;
+    let newArr = arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
+    if (newArr.length === 0) {
+      newArr = TRADE_TYPES; // 모두 해제되면 자동으로 전체 선택 복원
+    }
+    onFilterChange({ tradeTypes: newArr });
   };
 
   const gridBtnStyle = (active: boolean): React.CSSProperties => ({
@@ -33,12 +37,22 @@ export default function TradeTypeFilterPanel({ filters, onFilterChange, TRADE_TY
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
-        {TRADE_TYPES.map(t => (
-          <button key={t} onClick={() => toggleTrade(t)} style={gridBtnStyle(filters.tradeTypes.includes(t))}>
-            {t} {filters.tradeTypes.includes(t) && "✓"}
-          </button>
-        ))}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+        <button 
+          type="button"
+          onClick={selectAll} 
+          style={gridBtnStyle(isAllSelected)}
+        >
+          전체 {isAllSelected && "✓"}
+        </button>
+        {TRADE_TYPES.map(t => {
+          const active = !isAllSelected && filters.tradeTypes.includes(t);
+          return (
+            <button key={t} type="button" onClick={() => toggleTrade(t)} style={gridBtnStyle(active)}>
+              {t} {active && "✓"}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
