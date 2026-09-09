@@ -79,15 +79,6 @@ export default async function MobileNewsReadPage({ params, searchParams }: { par
   // 모바일 전용 래퍼 클래스로 감싸주어 globals.css의 반응형 속성을 적용
   return (
     <div className="flex flex-col w-full bg-white min-h-screen mobile-news-detail-wrapper">
-      <style>{`
-        @keyframes newsDetailZoomSettling {
-          from { opacity: 0.92; transform: scale(0.995); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .mobile-news-detail-wrapper {
-          animation: newsDetailZoomSettling 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-      `}</style>
       {isEmbedded && (
         <style>{`
           nav { display: none !important; }
