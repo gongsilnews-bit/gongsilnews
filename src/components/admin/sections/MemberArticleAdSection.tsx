@@ -96,6 +96,7 @@ export default function MemberArticleAdSection({
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState<"PC" | "MOBILE">("PC");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = (text: string, type: "success" | "error" = "success") => {
@@ -580,53 +581,288 @@ export default function MemberArticleAdSection({
             </div>
           </div>
 
-          {/* 실시간 실물 배너 미리보기 카드 */}
-          {imagePreview && (
-            <div style={{ marginBottom: 28, paddingTop: 20, borderTop: `1px dashed ${border}` }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: "#2563eb", display: "flex", alignItems: "center", gap: 6 }}>
+          {/* 실시간 실물 배너 미리보기 카드 (PC & 모바일 듀얼 뷰) */}
+          <div style={{ marginBottom: 32, paddingTop: 24, borderTop: `1px dashed ${border}` }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 15, fontWeight: 800, color: "#2563eb", display: "flex", alignItems: "center", gap: 6 }}>
                   <span>👀</span> [실시간 미리보기] 실제 기사 하단 노출 모습
                 </span>
-                <span style={{ fontSize: 12, color: textSecondary }}>
-                  {bannerLink ? `연결 링크: ${bannerLink}` : "링크 미입력"}
+                <span style={{ fontSize: 12, color: textSecondary, background: darkMode ? "#2c2d31" : "#f1f5f9", padding: "3px 8px", borderRadius: 6 }}>
+                  독자 화면 100% 동일 렌더링
                 </span>
               </div>
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  border: "1px solid #e2e8f0",
-                  boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
-                  background: "#ffffff",
-                }}
-              >
-                <span
+
+              {/* 🖥️ PC vs 📱 모바일 디바이스 전환 토글 바 */}
+              <div style={{ display: "inline-flex", background: darkMode ? "#1f2937" : "#e2e8f0", padding: 3, borderRadius: 10, border: `1px solid ${border}` }}>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDevice("PC")}
                   style={{
-                    position: "absolute",
-                    top: 10,
-                    right: 10,
-                    background: "rgba(15, 23, 42, 0.72)",
-                    color: "#ffffff",
-                    fontSize: 10,
-                    fontWeight: 800,
-                    padding: "2px 6px",
-                    borderRadius: 4,
-                    letterSpacing: "0.5px",
-                    zIndex: 2,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 14px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    border: "none",
+                    background: previewDevice === "PC" ? (darkMode ? "#374151" : "#ffffff") : "transparent",
+                    color: previewDevice === "PC" ? (darkMode ? "#ffffff" : "#0f172a") : textSecondary,
+                    boxShadow: previewDevice === "PC" ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
+                    transition: "all 0.15s ease",
                   }}
                 >
-                  AD
-                </span>
-                <img
-                  src={imagePreview}
-                  alt="배너 실시간 미리보기"
-                  style={{ width: "100%", maxHeight: 280, objectFit: "cover", display: "block" }}
-                />
+                  <span>🖥️</span> PC 화면 (기사 본문 800px)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDevice("MOBILE")}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 14px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    border: "none",
+                    background: previewDevice === "MOBILE" ? (darkMode ? "#374151" : "#ffffff") : "transparent",
+                    color: previewDevice === "MOBILE" ? (darkMode ? "#ffffff" : "#0f172a") : textSecondary,
+                    boxShadow: previewDevice === "MOBILE" ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <span>📱</span> 모바일 화면 (스마트폰 380px)
+                </button>
               </div>
             </div>
-          )}
+
+            {/* 디바이스 뷰 컨테이너 */}
+            <div
+              style={{
+                background: darkMode ? "#111827" : "#f8fafc",
+                borderRadius: 16,
+                padding: previewDevice === "PC" ? "28px 20px" : "36px 16px",
+                border: `1px solid ${border}`,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                transition: "all 0.3s ease",
+              }}
+            >
+              {previewDevice === "PC" ? (
+                /* ─── 🖥️ PC 기사 뷰 (최대 820px 본문 박스) ─── */
+                <div
+                  style={{
+                    width: "100%",
+                    maxWidth: 820,
+                    background: darkMode ? "#1e293b" : "#ffffff",
+                    borderRadius: 14,
+                    padding: "24px 28px",
+                    boxShadow: "0 4px 20px -2px rgba(0,0,0,0.06)",
+                    border: `1px solid ${border}`,
+                  }}
+                >
+                  {/* 기사 끝자락 목업 */}
+                  <div style={{ borderBottom: `1px solid ${border}`, paddingBottom: 16, marginBottom: 20 }}>
+                    <p style={{ fontSize: 13, color: textSecondary, margin: "0 0 10px", lineHeight: 1.6, fontStyle: "italic" }}>
+                      ... 한편 공실뉴스 전략기획팀은 빅데이터 기반 상권 분석과 독자 맞춤형 부동산 정책 정보를 지속적으로 보도하여 독자들의 권익 보호에 앞장서고 있다.
+                    </p>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: textSecondary }}>
+                      <span style={{ fontWeight: 700, color: textPrimary }}>{memberName || "공실뉴스 기자"}</span>
+                      <span>저작권자 © 공실뉴스 무단전재 및 재배포 금지</span>
+                    </div>
+                  </div>
+
+                  {/* 배너 노출 영역 */}
+                  {imagePreview ? (
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        borderRadius: 12,
+                        overflow: "hidden",
+                        border: "1px solid #e2e8f0",
+                        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                        background: "#ffffff",
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 10,
+                          right: 10,
+                          background: "rgba(15, 23, 42, 0.75)",
+                          color: "#ffffff",
+                          fontSize: 10,
+                          fontWeight: 800,
+                          padding: "2px 7px",
+                          borderRadius: 4,
+                          letterSpacing: "0.5px",
+                          zIndex: 2,
+                        }}
+                      >
+                        AD
+                      </span>
+                      <img
+                        src={imagePreview}
+                        alt="배너 PC 실시간 미리보기"
+                        style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: 180,
+                        borderRadius: 12,
+                        border: "2px dashed #cbd5e1",
+                        background: darkMode ? "#0f172a" : "#f1f5f9",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        color: textSecondary,
+                      }}
+                    >
+                      <span style={{ fontSize: 28 }}>🖼️</span>
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>위에서 배너 이미지를 첨부하시면 실제 PC 기사 크기(800px)로 표시됩니다</span>
+                    </div>
+                  )}
+
+                  {/* 댓글란 목업 */}
+                  <div style={{ marginTop: 24, paddingTop: 16, borderTop: `1px solid ${border}`, opacity: 0.6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 8 }}>💬 0개의 댓글</div>
+                    <div style={{ padding: "10px 14px", background: darkMode ? "#0f172a" : "#f8fafc", borderRadius: 8, border: `1px solid ${border}`, fontSize: 12, color: textSecondary }}>
+                      로그인이 필요합니다. 댓글을 남겨보세요...
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* ─── 📱 모바일 스마트폰 뷰 (380px 목업) ─── */
+                <div
+                  style={{
+                    width: "100%",
+                    maxWidth: 380,
+                    background: "#0f172a",
+                    borderRadius: 44,
+                    padding: "12px",
+                    boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255,255,255,0.1)",
+                    border: "4px solid #334155",
+                    position: "relative",
+                  }}
+                >
+                  {/* 상단 다이내믹 아일랜드 & 노치 */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 16px 8px", color: "#94a3b8", fontSize: 11, fontWeight: 600 }}>
+                    <span>9:41</span>
+                    <div style={{ width: 80, height: 18, background: "#000", borderRadius: 20, margin: "0 auto" }} />
+                    <span>5G 􀛨</span>
+                  </div>
+
+                  {/* 스마트폰 내부 화면 */}
+                  <div
+                    style={{
+                      background: darkMode ? "#1e293b" : "#ffffff",
+                      borderRadius: 32,
+                      padding: "16px 14px 20px",
+                      minHeight: 460,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div>
+                      {/* 모바일 브라우저 주소창 미니어처 */}
+                      <div style={{ background: darkMode ? "#0f172a" : "#f1f5f9", padding: "6px 12px", borderRadius: 16, textAlign: "center", fontSize: 11, color: textSecondary, marginBottom: 14 }}>
+                        🔒 gongsilnews.com/m/news
+                      </div>
+
+                      {/* 기사 끝자락 */}
+                      <p style={{ fontSize: 11, color: textSecondary, margin: "0 0 8px", lineHeight: 1.5, fontStyle: "italic" }}>
+                        ... 공실뉴스는 빅데이터 분석을 통해 실생활에 유용한 상권 정보를 신속 보도합니다.
+                      </p>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: textSecondary, borderBottom: `1px solid ${border}`, paddingBottom: 10, marginBottom: 14 }}>
+                        <span style={{ fontWeight: 700, color: textPrimary }}>{memberName || "공실뉴스 기자"}</span>
+                        <span>저작권자 © 무단전재 금지</span>
+                      </div>
+
+                      {/* 모바일 배너 노출 */}
+                      {imagePreview ? (
+                        <div
+                          style={{
+                            position: "relative",
+                            width: "100%",
+                            borderRadius: 10,
+                            overflow: "hidden",
+                            border: "1px solid #e2e8f0",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                            background: "#ffffff",
+                          }}
+                        >
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: 6,
+                              right: 6,
+                              background: "rgba(15, 23, 42, 0.75)",
+                              color: "#ffffff",
+                              fontSize: 9,
+                              fontWeight: 800,
+                              padding: "1px 5px",
+                              borderRadius: 3,
+                              zIndex: 2,
+                            }}
+                          >
+                            AD
+                          </span>
+                          <img
+                            src={imagePreview}
+                            alt="배너 모바일 실시간 미리보기"
+                            style={{ width: "100%", aspectRatio: "1200 / 400", objectFit: "cover", display: "block" }}
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            width: "100%",
+                            height: 110,
+                            borderRadius: 10,
+                            border: "2px dashed #cbd5e1",
+                            background: darkMode ? "#0f172a" : "#f1f5f9",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 4,
+                            color: textSecondary,
+                          }}
+                        >
+                          <span style={{ fontSize: 20 }}>📱</span>
+                          <span style={{ fontSize: 11, fontWeight: 700 }}>모바일 스마트폰 배너 크기로 표시됩니다</span>
+                        </div>
+                      )}
+
+                      {/* 모바일 댓글란 목업 */}
+                      <div style={{ marginTop: 14, paddingTop: 10, borderTop: `1px solid ${border}`, opacity: 0.7 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>💬 0개의 댓글</div>
+                        <div style={{ padding: "8px 10px", background: darkMode ? "#0f172a" : "#f8fafc", borderRadius: 8, border: `1px solid ${border}`, fontSize: 10, color: textSecondary }}>
+                          댓글을 남겨보세요...
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 스마트폰 홈 바 (Home Indicator) */}
+                    <div style={{ width: 110, height: 4, background: darkMode ? "#475569" : "#cbd5e1", borderRadius: 2, margin: "14px auto 0" }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* 저장 / 취소 버튼 */}
           <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
