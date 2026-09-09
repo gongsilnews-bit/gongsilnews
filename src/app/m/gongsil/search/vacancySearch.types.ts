@@ -21,10 +21,12 @@ export interface FilterState {
   roomCount: number | null;
   bathCount: number | null;
   direction: string | null;
+  directions?: string[];
   unitsMin: number | null;
   unitsMax?: number | null;
   maintMax: number | null;
   parking: string | null;
+  parkings?: string[];
   options: string[];
   ownerRole: string | null;
   commissionType: string | null;

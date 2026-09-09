@@ -207,10 +207,12 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     filters.roomCount !== null ||
     filters.bathCount !== null ||
     filters.direction !== null ||
+    (filters.directions && filters.directions.length > 0) ||
     filters.unitsMin !== null ||
     (filters.unitsMax !== null && filters.unitsMax !== undefined) ||
     filters.maintMax !== null ||
     filters.parking !== null ||
+    (filters.parkings && filters.parkings.length > 0) ||
     filters.options.length > 0 ||
     filters.ownerRole !== null ||
     filters.commissionType !== null ||
@@ -441,8 +443,10 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                 </button>
               )}
               {showDirectionPill && (
-                <button onClick={() => setActivePanel(activePanel === "direction" ? null : "direction")} style={pillStyle(activePanel === "direction" || filters.direction !== null)}>
-                  {filters.direction ? `${filters.direction}` : "방향 ▾"}
+                <button onClick={() => setActivePanel(activePanel === "direction" ? null : "direction")} style={pillStyle(activePanel === "direction" || (filters.directions && filters.directions.length > 0) || filters.direction !== null)}>
+                  {filters.directions && filters.directions.length > 0
+                    ? (filters.directions.length === 1 ? filters.directions[0] : `${filters.directions[0]} 외 ${filters.directions.length - 1}`)
+                    : (filters.direction && filters.direction !== "전체" ? `${filters.direction}` : "방향 ▾")}
                 </button>
               )}
               {showUnitsPill && (
@@ -465,8 +469,10 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                 </button>
               )}
               {showParkingPill && (
-                <button onClick={() => setActivePanel(activePanel === "parking" ? null : "parking")} style={pillStyle(activePanel === "parking" || filters.parking !== null)}>
-                  {filters.parking ? `${filters.parking}` : "주차 ▾"}
+                <button onClick={() => setActivePanel(activePanel === "parking" ? null : "parking")} style={pillStyle(activePanel === "parking" || (filters.parkings && filters.parkings.length > 0) || filters.parking !== null)}>
+                  {filters.parkings && filters.parkings.length > 0
+                    ? (filters.parkings.length === 1 ? filters.parkings[0] : `${filters.parkings[0]} 외 ${filters.parkings.length - 1}`)
+                    : (filters.parking && filters.parking !== "전체" ? `${filters.parking}` : "주차 ▾")}
                 </button>
               )}
               {showYearPill && (
@@ -680,10 +686,12 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                   roomCount: null, 
                   bathCount: null, 
                   direction: null, 
+                  directions: [],
                   unitsMin: null, 
                   unitsMax: null, 
                   maintMax: null, 
                   parking: null, 
+                  parkings: [],
                   options: [], 
                   ownerRole: null, 
                   commissionType: null, 

@@ -375,28 +375,45 @@ export function RoomBathFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-// ── 방향 패널 ──
+// ── 방향 패널 (다중 중복 선택 가능: 남향, 남동향 등) ──
 export function DirectionFilterPanel({ filters, onFilterChange }: Props) {
   const DIRS = ["동향", "서향", "남향", "북향", "남동향", "남서향", "북동향", "북서향"];
-  const isAll = !filters.direction || filters.direction === "전체";
+  const currentDirs = (filters.directions && filters.directions.length > 0)
+    ? filters.directions
+    : (filters.direction && filters.direction !== "전체" ? [filters.direction] : []);
+  const isAll = currentDirs.length === 0;
+
+  const toggleDir = (d: string) => {
+    const nextDirs = currentDirs.includes(d)
+      ? currentDirs.filter(x => x !== d)
+      : [...currentDirs, d];
+    onFilterChange({
+      directions: nextDirs,
+      direction: nextDirs.length === 1 ? nextDirs[0] : (nextDirs.length === 0 ? null : "다중")
+    });
+  };
+
+  const selectAll = () => {
+    onFilterChange({ directions: [], direction: null });
+  };
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
         <button
           type="button"
-          onClick={() => onFilterChange({ direction: null })}
+          onClick={selectAll}
           style={gridBtnStyle(isAll)}
         >
           전체 {isAll && "✓"}
         </button>
         {DIRS.map((d) => {
-          const isSel = !isAll && filters.direction === d;
+          const isSel = !isAll && currentDirs.includes(d);
           return (
             <button
               key={d}
               type="button"
-              onClick={() => onFilterChange({ direction: filters.direction === d ? null : d })}
+              onClick={() => toggleDir(d)}
               style={gridBtnStyle(isSel)}
             >
               {d} {isSel && "✓"}
@@ -407,7 +424,7 @@ export function DirectionFilterPanel({ filters, onFilterChange }: Props) {
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button
           type="button"
-          onClick={() => onFilterChange({ direction: null })}
+          onClick={selectAll}
           style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
         >
           ↻ 조건삭제
@@ -518,28 +535,45 @@ export function MaintFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-// ── 주차 패널 ──
+// ── 주차 패널 (다중 중복 선택 가능: 자주식, 무료주차 등) ──
 export function ParkingFilterPanel({ filters, onFilterChange }: Props) {
   const PARKING = ["주차가능", "자주식", "기계식", "무료주차"];
-  const isAll = !filters.parking;
+  const currentParkings = (filters.parkings && filters.parkings.length > 0)
+    ? filters.parkings
+    : (filters.parking && filters.parking !== "전체" ? [filters.parking] : []);
+  const isAll = currentParkings.length === 0;
+
+  const toggleParking = (p: string) => {
+    const nextParkings = currentParkings.includes(p)
+      ? currentParkings.filter(x => x !== p)
+      : [...currentParkings, p];
+    onFilterChange({
+      parkings: nextParkings,
+      parking: nextParkings.length === 1 ? nextParkings[0] : (nextParkings.length === 0 ? null : "다중")
+    });
+  };
+
+  const selectAll = () => {
+    onFilterChange({ parkings: [], parking: null });
+  };
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
         <button
           type="button"
-          onClick={() => onFilterChange({ parking: null })}
+          onClick={selectAll}
           style={gridBtnStyle(isAll)}
         >
           전체 {isAll && "✓"}
         </button>
         {PARKING.map((p) => {
-          const isSel = !isAll && filters.parking === p;
+          const isSel = !isAll && currentParkings.includes(p);
           return (
             <button
               key={p}
               type="button"
-              onClick={() => onFilterChange({ parking: filters.parking === p ? null : p })}
+              onClick={() => toggleParking(p)}
               style={gridBtnStyle(isSel)}
             >
               {p} {isSel && "✓"}
@@ -550,7 +584,7 @@ export function ParkingFilterPanel({ filters, onFilterChange }: Props) {
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button
           type="button"
-          onClick={() => onFilterChange({ parking: null })}
+          onClick={selectAll}
           style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
         >
           ↻ 조건삭제

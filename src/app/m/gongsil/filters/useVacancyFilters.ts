@@ -30,10 +30,12 @@ export const initialFilterState: FilterState = {
   roomCount: null,
   bathCount: null,
   direction: null,
+  directions: [],
   unitsMin: null,
   unitsMax: null,
   maintMax: null,
   parking: null,
+  parkings: [],
   options: [],
   ownerRole: null,
   commissionType: null,
@@ -345,10 +347,14 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
         }
       }
 
-      // 6.3 방향
-      if (filters.direction && filters.direction !== "전체") {
+      // 6.3 방향 (다중 선택 지원: 남향, 남동향 등 선택된 방향 중 하나라도 포함되면 매칭)
+      const selectedDirs = (filters.directions && filters.directions.length > 0)
+        ? filters.directions
+        : (filters.direction && filters.direction !== "전체" ? [filters.direction] : []);
+      if (selectedDirs.length > 0) {
         const dir = v.direction || v.main_direction || "";
-        if (!dir.includes(filters.direction)) return false;
+        const matches = selectedDirs.some(d => dir.includes(d));
+        if (!matches) return false;
       }
 
       // 6.4 세대수 (50세대 이하, 100세대 미만, 300세대 미만, 500세대 미만, 1000세대 이상)
@@ -365,10 +371,14 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
         if (maint > filters.maintMax) return false;
       }
 
-      // 6.6 주차 (PC 동일)
-      if (filters.parking && filters.parking !== "전체") {
+      // 6.6 주차 (다중 선택 지원)
+      const selectedParkings = (filters.parkings && filters.parkings.length > 0)
+        ? filters.parkings
+        : (filters.parking && filters.parking !== "전체" ? [filters.parking] : []);
+      if (selectedParkings.length > 0) {
         const park = v.parking || "";
-        if (!park.includes(filters.parking)) return false;
+        const matches = selectedParkings.some(p => park.includes(p));
+        if (!matches) return false;
       }
 
       // 6.7 기타옵션 (PC 동일)
