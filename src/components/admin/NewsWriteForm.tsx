@@ -1999,6 +1999,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               formData.append("author_id", targetAuthorId);
               formData.append("name", writeAdBannerName.trim() || `${title.slice(0, 20)} 맞춤 배너`);
               formData.append("link_url", writeAdLinkUrl.trim());
+              if (writeAdStartDate) formData.append("start_date", writeAdStartDate);
+              if (writeAdEndDate) formData.append("end_date", writeAdEndDate);
               formData.append("image", writeAdFile);
               const bRes = await saveAuthorBanner(formData);
               if (bRes.success && bRes.data) {
@@ -3188,6 +3190,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                                       setWriteAdLinkUrl(found.link_url || "");
                                       setWriteAdPreview(found.image_url || "");
                                       setWriteAdBannerName(found.name);
+                                      setWriteAdStartDate(found.start_date || "");
+                                      setWriteAdEndDate(found.end_date || "");
                                     }
                                   }
                                 }}

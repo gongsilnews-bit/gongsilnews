@@ -20,8 +20,18 @@ export interface AuthorBanner {
   link_url: string | null;
   link_target: string;
   is_active: boolean;
+  click_count?: number;
+  view_count?: number;
+  start_date?: string | null;
+  end_date?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface AuthorBannerStat extends AuthorBanner {
+  click_count: number;
+  view_count: number;
+  ctr: string;
 }
 
 export interface ArticleAdSetting {
@@ -34,6 +44,31 @@ export interface ArticleAdSetting {
   created_at?: string;
   updated_at?: string;
   custom_banner?: AuthorBanner | null;
+}
+
+/* ── 배너 데이터 정규화 헬퍼 (link_target 내 날짜 백업 인코딩 파싱) ── */
+export function normalizeAuthorBanner(b: any): AuthorBanner {
+  if (!b) return b;
+  let startDate = b.start_date || null;
+  let endDate = b.end_date || null;
+  let linkTarget = b.link_target || "_blank";
+
+  if (linkTarget.includes("|dates:")) {
+    const parts = linkTarget.split("|dates:");
+    linkTarget = parts[0] || "_blank";
+    const dateParts = (parts[1] || "").split(",");
+    if (!startDate && dateParts[0]) startDate = dateParts[0];
+    if (!endDate && dateParts[1]) endDate = dateParts[1];
+  }
+
+  return {
+    ...b,
+    link_target: linkTarget,
+    start_date: startDate,
+    end_date: endDate,
+    click_count: Number(b.click_count) || 0,
+    view_count: Number(b.view_count) || 0,
+  };
 }
 
 /* ── 1. 작성자의 배너 목록 조회 ── */
@@ -52,7 +87,8 @@ export async function getAuthorBanners(authorId: string): Promise<{ success: boo
       console.warn("getAuthorBanners notice:", error.message);
       return { success: true, data: [] };
     }
-    return { success: true, data: data || [] };
+    const banners = (data || []).map(normalizeAuthorBanner);
+    return { success: true, data: banners };
   } catch (err: any) {
     console.warn("getAuthorBanners catch:", err.message);
     return { success: true, data: [] };
@@ -72,6 +108,8 @@ export async function saveAuthorBanner(formData: FormData): Promise<{ success: b
       linkUrl = `https://${linkUrl}`;
     }
     const linkTarget = (formData.get("link_target") as string) || "_blank";
+    const startDate = (formData.get("start_date") as string)?.trim() || null;
+    const endDate = (formData.get("end_date") as string)?.trim() || null;
 
     if (!authorId) {
       return { success: false, error: "작성자 정보가 없습니다." };
@@ -99,41 +137,80 @@ export async function saveAuthorBanner(formData: FormData): Promise<{ success: b
       return { success: false, error: "배너 이미지를 등록해주세요." };
     }
 
+    const isColError = (err: any) =>
+      Boolean(err && (err.code === "42703" || err.code === "PGRST204" || err.message?.includes("column") || err.message?.includes("schema cache")));
+
     if (id) {
       // 수정
-      const { data, error } = await supabase
+      let updatePayload: any = {
+        name,
+        image_url: imageUrl,
+        link_url: linkUrl,
+        link_target: linkTarget,
+        start_date: startDate,
+        end_date: endDate,
+        updated_at: new Date().toISOString(),
+      };
+
+      let { data, error } = await supabase
         .from("article_author_banners")
-        .update({
-          name,
-          image_url: imageUrl,
-          link_url: linkUrl,
-          link_target: linkTarget,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", id)
         .eq("author_id", authorId)
         .select()
         .single();
 
+      // 만약 start_date/end_date 컬럼 미존재(PGRST204 / 42703) 시 제외하고 안전하게 재시도
+      if (isColError(error)) {
+        delete updatePayload.start_date;
+        delete updatePayload.end_date;
+        const retry = await supabase
+          .from("article_author_banners")
+          .update(updatePayload)
+          .eq("id", id)
+          .eq("author_id", authorId)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
+
       if (error) return { success: false, error: error.message };
-      return { success: true, data };
+      return { success: true, data: normalizeAuthorBanner(data) };
     } else {
       // 신규 등록
-      const { data, error } = await supabase
+      let insertPayload: any = {
+        author_id: authorId,
+        name,
+        image_url: imageUrl,
+        link_url: linkUrl,
+        link_target: linkTarget,
+        start_date: startDate,
+        end_date: endDate,
+        is_active: true,
+      };
+
+      let { data, error } = await supabase
         .from("article_author_banners")
-        .insert({
-          author_id: authorId,
-          name,
-          image_url: imageUrl,
-          link_url: linkUrl,
-          link_target: linkTarget,
-          is_active: true,
-        })
+        .insert(insertPayload)
         .select()
         .single();
 
+      // 만약 start_date/end_date 컬럼 미존재(PGRST204 / 42703) 시 제외하고 안전하게 재시도
+      if (isColError(error)) {
+        delete insertPayload.start_date;
+        delete insertPayload.end_date;
+        const retry = await supabase
+          .from("article_author_banners")
+          .insert(insertPayload)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
+
       if (error) return { success: false, error: error.message };
-      return { success: true, data };
+      return { success: true, data: normalizeAuthorBanner(data) };
     }
   } catch (err: any) {
     return { success: false, error: err.message || "배너 저장 중 오류가 발생했습니다." };
@@ -173,6 +250,95 @@ export async function deleteAuthorBanner(bannerId: string, authorId: string): Pr
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || "삭제 중 오류가 발생했습니다." };
+  }
+}
+
+/* ── 3-1. 작성자 배너 성과 분석(통계) 조회 ── */
+export async function getAuthorBannerStats(authorId: string): Promise<{
+  success: boolean;
+  data: AuthorBannerStat[];
+  error?: string;
+}> {
+  if (!authorId) return { success: true, data: [] };
+  const supabase = getAdminClient();
+
+  try {
+    const { data: banners, error } = await supabase
+      .from("article_author_banners")
+      .select("*")
+      .eq("author_id", authorId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.warn("getAuthorBannerStats error:", error.message);
+      return { success: true, data: [] };
+    }
+
+    const stats: AuthorBannerStat[] = (banners || []).map(normalizeAuthorBanner).map((b) => {
+      const clickCount = Number(b.click_count) || 0;
+      const viewCount = Number(b.view_count) || 0;
+      const ctr = viewCount > 0 ? ((clickCount / viewCount) * 100).toFixed(2) : "0.00";
+      return {
+        ...b,
+        click_count: clickCount,
+        view_count: viewCount,
+        ctr,
+      };
+    });
+
+    // 클릭수 많은 순으로 정렬
+    stats.sort((a, b) => (b.click_count - a.click_count) || (b.view_count - a.view_count));
+
+    return { success: true, data: stats };
+  } catch (err: any) {
+    console.warn("getAuthorBannerStats catch:", err.message);
+    return { success: true, data: [] };
+  }
+}
+
+/* ── 3-2. 작성자 배너 클릭 추적 ── */
+export async function trackAuthorBannerClick(bannerId: string): Promise<{ success: boolean }> {
+  if (!bannerId) return { success: false };
+  const supabase = getAdminClient();
+  try {
+    const { data } = await supabase
+      .from("article_author_banners")
+      .select("click_count")
+      .eq("id", bannerId)
+      .single();
+
+    if (data && typeof data.click_count !== "undefined") {
+      await supabase
+        .from("article_author_banners")
+        .update({ click_count: (Number(data.click_count) || 0) + 1 })
+        .eq("id", bannerId);
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false };
+  }
+}
+
+/* ── 3-3. 작성자 배너 노출 추적 ── */
+export async function trackAuthorBannerView(bannerId: string): Promise<{ success: boolean }> {
+  if (!bannerId) return { success: false };
+  const supabase = getAdminClient();
+  try {
+    const { data } = await supabase
+      .from("article_author_banners")
+      .select("view_count")
+      .eq("id", bannerId)
+      .single();
+
+    if (data && typeof data.view_count !== "undefined") {
+      await supabase
+        .from("article_author_banners")
+        .update({ view_count: (Number(data.view_count) || 0) + 1 })
+        .eq("id", bannerId);
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false };
   }
 }
 
@@ -354,11 +520,13 @@ export async function getArticleAdInfo(articleId: string, authorId?: string): Pr
       stats.total = stats.maemae + stats.jeonse + stats.rent + stats.short;
     }
 
-    // 3) 배너형 광고 유효성 체크
+    // 3) 배너형 광고 유효성 체크 (기사 설정 또는 배너 자체의 노출 기간 모두 완벽 반영)
     if (adSetting && adSetting.ad_type === "BANNER" && adSetting.custom_banner) {
-      const b = adSetting.custom_banner;
-      const isStarted = !adSetting.start_date || adSetting.start_date <= todayStr;
-      const isNotEnded = !adSetting.end_date || adSetting.end_date >= todayStr;
+      const b = normalizeAuthorBanner(adSetting.custom_banner);
+      const effectiveStartDate = adSetting.start_date || b.start_date;
+      const effectiveEndDate = adSetting.end_date || b.end_date;
+      const isStarted = !effectiveStartDate || effectiveStartDate <= todayStr;
+      const isNotEnded = !effectiveEndDate || effectiveEndDate >= todayStr;
 
       if (b.is_active && isStarted && isNotEnded) {
         return {

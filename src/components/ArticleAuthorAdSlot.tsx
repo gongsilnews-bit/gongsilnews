@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { getArticleAdInfo, AuthorBanner } from "@/app/actions/articleAd";
+import { getArticleAdInfo, AuthorBanner, trackAuthorBannerClick, trackAuthorBannerView } from "@/app/actions/articleAd";
 
 interface ArticleAuthorAdSlotProps {
   article: any;
@@ -41,6 +41,9 @@ export default function ArticleAuthorAdSlot({
       .then((res) => {
         if (isMounted && res.success) {
           setAdData(res);
+          if (!previewMode && res.banner?.id) {
+            trackAuthorBannerView(res.banner.id).catch(() => {});
+          }
         }
       })
       .catch((err) => console.warn("AdSlot load error:", err))
@@ -145,7 +148,11 @@ export default function ArticleAuthorAdSlot({
             target={banner.link_target || "_blank"}
             rel="noopener noreferrer"
             onClick={(e) => {
-              if (previewMode) e.preventDefault();
+              if (previewMode) {
+                e.preventDefault();
+              } else if (banner.id) {
+                trackAuthorBannerClick(banner.id).catch(() => {});
+              }
             }}
             style={{ textDecoration: "none", display: "block" }}
           >

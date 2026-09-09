@@ -7,7 +7,9 @@ import {
   saveAuthorBanner,
   deleteAuthorBanner,
   toggleAuthorBannerActive,
+  getAuthorBannerStats,
   AuthorBanner,
+  AuthorBannerStat,
 } from "@/app/actions/articleAd";
 
 interface MemberArticleAdSectionProps extends AdminSectionProps {
@@ -71,14 +73,20 @@ export default function MemberArticleAdSection({
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
   const [toast, setToast] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
-  // 최고관리자 스타일의 폼 화면 전환: "list" | "new" | "edit"
-  const [viewMode, setViewMode] = useState<"list" | "new" | "edit">("list");
+  // 최고관리자 스타일의 폼 화면 전환: "list" | "new" | "edit" | "stats"
+  const [viewMode, setViewMode] = useState<"list" | "new" | "edit" | "stats">("list");
   const [editingBanner, setEditingBanner] = useState<AuthorBanner | null>(null);
+
+  // 성과 분석 통계 데이터
+  const [stats, setStats] = useState<AuthorBannerStat[]>([]);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // 배너 폼 상태
   const [bannerName, setBannerName] = useState("");
   const [bannerLink, setBannerLink] = useState("");
   const [bannerLinkTarget, setBannerLinkTarget] = useState("_blank");
+  const [bannerStartDate, setBannerStartDate] = useState("");
+  const [bannerEndDate, setBannerEndDate] = useState("");
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -104,9 +112,53 @@ export default function MemberArticleAdSection({
     }
   };
 
+  const loadStats = async () => {
+    if (!memberId) return;
+    setStatsLoading(true);
+    try {
+      const res = await getAuthorBannerStats(memberId);
+      if (res.success) {
+        setStats(res.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, [memberId]);
+
+  // 배너 상태 판별 헬퍼 함수 (최고관리자와 동일)
+  const getBannerStatusInfo = (b: AuthorBanner) => {
+    if (!b.is_active) {
+      return { label: "중지", color: "#9ca3af", bg: "#f3f4f6" };
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    if (b.start_date && b.start_date > today) {
+      return { label: "예약", color: "#f59e0b", bg: "#fffbeb" };
+    }
+    if (b.end_date && b.end_date < today) {
+      return { label: "종료", color: "#ef4444", bg: "#fef2f2" };
+    }
+    return { label: "진행중", color: "#10b981", bg: "#ecfdf5" };
+  };
+
+  // 배너 노출 기간 텍스트
+  const getBannerPeriodText = (b: AuthorBanner) => {
+    if (b.start_date && b.end_date) {
+      return `${b.start_date} ~ ${b.end_date}`;
+    }
+    if (b.start_date) {
+      return `${b.start_date} ~ 상시`;
+    }
+    if (b.end_date) {
+      return `~ ${b.end_date}`;
+    }
+    return "상시 노출 (기간 제한 없음)";
+  };
 
   // 배너 등록 모드로 진입
   const handleOpenNew = () => {
@@ -114,6 +166,8 @@ export default function MemberArticleAdSection({
     setBannerName("");
     setBannerLink("");
     setBannerLinkTarget("_blank");
+    setBannerStartDate("");
+    setBannerEndDate("");
     setBannerFile(null);
     setImagePreview(null);
     setViewMode("new");
@@ -125,6 +179,8 @@ export default function MemberArticleAdSection({
     setBannerName(b.name);
     setBannerLink(b.link_url || "");
     setBannerLinkTarget(b.link_target || "_blank");
+    setBannerStartDate(b.start_date || "");
+    setBannerEndDate(b.end_date || "");
     setBannerFile(null);
     setImagePreview(b.image_url);
     setViewMode("edit");
@@ -179,6 +235,8 @@ export default function MemberArticleAdSection({
       formData.append("name", bannerName.trim());
       formData.append("link_url", bannerLink.trim());
       formData.append("link_target", bannerLinkTarget);
+      formData.append("start_date", bannerStartDate.trim());
+      formData.append("end_date", bannerEndDate.trim());
       if (bannerFile) formData.append("image", bannerFile);
       if (editingBanner && !bannerFile) formData.append("image_url", editingBanner.image_url);
 
@@ -199,9 +257,8 @@ export default function MemberArticleAdSection({
 
   // 필터링된 배너 목록
   const filteredBanners = banners.filter((b) => {
-    if (filter === "진행중") return b.is_active;
-    if (filter === "중지") return !b.is_active;
-    return true;
+    if (filter === "전체") return true;
+    return getBannerStatusInfo(b).label === filter;
   });
 
   /* ══════════════════════════════════════════════════════════════
@@ -400,6 +457,72 @@ export default function MemberArticleAdSection({
                 <option value="_self">현재 창에서 열기 (_self)</option>
               </select>
             </div>
+
+            {/* 5) 노출 기간 설정 (시작일 ~ 종료일) */}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
+                노출 기간 설정
+              </label>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13, color: textSecondary }}>시작일:</span>
+                  <input
+                    type="date"
+                    value={bannerStartDate}
+                    onChange={(e) => setBannerStartDate(e.target.value)}
+                    style={{
+                      padding: "10px 14px",
+                      border: `1px solid ${border}`,
+                      borderRadius: 8,
+                      fontSize: 14,
+                      color: textPrimary,
+                      background: darkMode ? "#1a1b1e" : "#fff",
+                      outline: "none",
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: 14, color: textSecondary, fontWeight: 700 }}>~</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13, color: textSecondary }}>종료일:</span>
+                  <input
+                    type="date"
+                    value={bannerEndDate}
+                    onChange={(e) => setBannerEndDate(e.target.value)}
+                    style={{
+                      padding: "10px 14px",
+                      border: `1px solid ${border}`,
+                      borderRadius: 8,
+                      fontSize: 14,
+                      color: textPrimary,
+                      background: darkMode ? "#1a1b1e" : "#fff",
+                      outline: "none",
+                    }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBannerStartDate("");
+                    setBannerEndDate("");
+                  }}
+                  style={{
+                    padding: "9px 14px",
+                    border: `1px solid ${border}`,
+                    borderRadius: 8,
+                    background: darkMode ? "#2c2d31" : "#f3f4f6",
+                    color: textSecondary,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  상시 노출 (기간 초기화)
+                </button>
+              </div>
+              <p style={{ fontSize: 12, color: textSecondary, margin: "6px 0 0" }}>
+                * 기간을 설정하면 기사 하단에 해당 기간 동안만 배너가 노출되며, 기사 작성 시 이 배너를 가져오면 노출 기간 조건이 기사에 자동으로 함께 동기화됩니다. (미설정 시 상시 노출)
+              </p>
+            </div>
           </div>
 
           {/* 실시간 실물 배너 미리보기 카드 */}
@@ -491,7 +614,195 @@ export default function MemberArticleAdSection({
   }
 
   /* ══════════════════════════════════════════════════════════════
-     2. 배너 목록 카드 그리드 (최고관리자와 100% 동일한 디자인 레이아웃)
+     2. 배너 성과 분석 대시보드 (최고관리자와 100% 동일한 프리미엄 UI)
+     ══════════════════════════════════════════════════════════════ */
+  if (viewMode === "stats") {
+    const totalBanners = stats.length;
+    const activeBanners = stats.filter((s) => s.is_active).length;
+    const totalClicks = stats.reduce((acc, s) => acc + (s.click_count || 0), 0);
+    const totalViews = stats.reduce((acc, s) => acc + (s.view_count || 0), 0);
+
+    return (
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg, fontFamily: "'Pretendard', sans-serif" }}>
+        {/* 상단 헤더 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>📊 배너 성과 분석</h1>
+            <p style={{ fontSize: 13, color: textSecondary, margin: "4px 0 0" }}>
+              작성자 본인이 등록한 배너들의 실시간 노출수, 클릭수 및 클릭률(CTR) 통계입니다.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            style={{
+              padding: "8px 20px",
+              background: darkMode ? "#374151" : "#f3f4f6",
+              color: textPrimary,
+              border: `1px solid ${border}`,
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            ← 목록으로
+          </button>
+        </div>
+
+        {/* 요약 카드 4종 */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+          {[
+            { label: "전체 배너", value: totalBanners, icon: "🖼️", color: "#3b82f6" },
+            { label: "활성 배너", value: activeBanners, icon: "✅", color: "#10b981" },
+            { label: "총 클릭수", value: totalClicks.toLocaleString(), icon: "👆", color: "#f59e0b" },
+            { label: "총 노출수", value: totalViews.toLocaleString(), icon: "👁️", color: "#8b5cf6" },
+          ].map((card, i) => (
+            <div
+              key={i}
+              style={{
+                background: cardBg,
+                borderRadius: 12,
+                padding: "20px 24px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                border: `1px solid ${border}`,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                <span style={{ fontSize: 24 }}>{card.icon}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>{card.label}</span>
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: card.color }}>{card.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* 배너별 성과 테이블 */}
+        <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+          <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, fontWeight: 700, color: textPrimary, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>배너별 클릭 성과 (CTR = 클릭수 ÷ 노출수)</span>
+            <button
+              type="button"
+              onClick={loadStats}
+              disabled={statsLoading}
+              style={{
+                background: "none",
+                border: `1px solid ${border}`,
+                borderRadius: 6,
+                padding: "4px 10px",
+                fontSize: 12,
+                color: textSecondary,
+                cursor: statsLoading ? "not-allowed" : "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              🔄 {statsLoading ? "새로고침 중..." : "새로고침"}
+            </button>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
+                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${border}`, width: 100 }}>미리보기</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${border}` }}>배너명</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${border}`, width: 90 }}>상태</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${border}`, width: 150 }}>노출 기간</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${border}`, width: 100 }}>노출수</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${border}`, width: 100 }}>클릭수</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${border}`, width: 100 }}>CTR</th>
+                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${border}`, width: 220 }}>클릭률 그래프</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.map((s) => {
+                const ctrNum = parseFloat(s.ctr) || 0;
+                const statusInfo = getBannerStatusInfo(s);
+                return (
+                  <tr key={s.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}` }}>
+                    <td style={{ padding: "10px 16px", textAlign: "center" }}>
+                      <div style={{ width: 80, height: 28, borderRadius: 4, overflow: "hidden", background: "#f3f4f6", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                        <img src={s.image_url} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    </td>
+                    <td style={{ padding: "14px 16px", fontWeight: 600, color: textPrimary }}>
+                      <div>{s.name}</div>
+                      {s.link_url && (
+                        <a
+                          href={s.link_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ fontSize: 11, color: "#3b82f6", textDecoration: "none", display: "inline-block", marginTop: 2, maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        >
+                          🔗 {s.link_url}
+                        </a>
+                      )}
+                    </td>
+                    <td style={{ padding: "14px 16px", textAlign: "center" }}>
+                      <span
+                        style={{
+                          padding: "2px 8px",
+                          borderRadius: 4,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          background: statusInfo.bg,
+                          color: statusInfo.color,
+                        }}
+                      >
+                        {statusInfo.label}
+                      </span>
+                    </td>
+                    <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 12, color: textSecondary, fontWeight: 500 }}>
+                      {getBannerPeriodText(s)}
+                    </td>
+                    <td style={{ padding: "14px 16px", textAlign: "center", color: textPrimary, fontWeight: 600 }}>
+                      {(s.view_count || 0).toLocaleString()}
+                    </td>
+                    <td style={{ padding: "14px 16px", textAlign: "center", color: "#3b82f6", fontWeight: 700 }}>
+                      {(s.click_count || 0).toLocaleString()}
+                    </td>
+                    <td
+                      style={{
+                        padding: "14px 16px",
+                        textAlign: "center",
+                        fontWeight: 700,
+                        color: ctrNum > 5 ? "#10b981" : ctrNum > 1 ? "#f59e0b" : textSecondary,
+                      }}
+                    >
+                      {s.ctr}%
+                    </td>
+                    <td style={{ padding: "14px 16px" }}>
+                      <div style={{ background: darkMode ? "#1a1b1e" : "#f3f4f6", borderRadius: 4, height: 20, overflow: "hidden" }}>
+                        <div
+                          style={{
+                            width: `${Math.min(ctrNum * 5, 100)}%`,
+                            height: "100%",
+                            background: `linear-gradient(90deg, #3b82f6, ${ctrNum > 5 ? "#10b981" : "#60a5fa"})`,
+                            borderRadius: 4,
+                            transition: "width 0.5s ease",
+                          }}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {stats.length === 0 && (
+                <tr>
+                  <td colSpan={7} style={{ padding: 40, textAlign: "center", color: textSecondary }}>
+                    등록된 배너가 없습니다.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     3. 배너 목록 카드 그리드 (최고관리자와 100% 동일한 디자인 레이아웃)
      ══════════════════════════════════════════════════════════════ */
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg, fontFamily: "'Pretendard', sans-serif" }}>
@@ -506,53 +817,55 @@ export default function MemberArticleAdSection({
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>광고/배너 관리</h1>
         <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
-          ( 진행중 {banners.filter((b) => b.is_active).length}건 / 전체 {banners.length}건 )
+          ( 진행중 {banners.filter((b) => getBannerStatusInfo(b).label === "진행중").length}건 / 전체 {banners.length}건 )
         </span>
       </div>
 
       <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>
-        {/* 필터 탭 (전체 / 진행중 / 중지) */}
+        {/* 필터 탭 (전체 / 진행중 / 예약 / 종료 / 중지 - 최고관리자와 100% 동일) */}
         <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: darkMode ? "#2c2d31" : "#fafafa", padding: "0 16px" }}>
-          {[
-            { key: "전체", count: banners.length },
-            { key: "진행중", count: banners.filter((b) => b.is_active).length },
-            { key: "중지", count: banners.filter((b) => !b.is_active).length },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => {
-                setFilter(tab.key);
-                setCheckedIds([]);
-              }}
-              style={{
-                border: "none",
-                background: "none",
-                padding: "16px 20px",
-                fontSize: 14,
-                fontWeight: filter === tab.key ? 800 : 600,
-                color: filter === tab.key ? "#3b82f6" : textSecondary,
-                borderBottom: filter === tab.key ? "3px solid #3b82f6" : "3px solid transparent",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              {tab.key}
-              <span
+          {["전체", "진행중", "예약", "종료", "중지"].map((tab) => {
+            let count = 0;
+            if (tab === "전체") count = banners.length;
+            else count = banners.filter((b) => getBannerStatusInfo(b).label === tab).length;
+
+            return (
+              <button
+                key={tab}
+                onClick={() => {
+                  setFilter(tab);
+                  setCheckedIds([]);
+                }}
                 style={{
-                  background: tab.key === "전체" ? "#e5e7eb" : tab.key === "진행중" ? "#10b981" : "#9ca3af",
-                  color: tab.key === "전체" ? "#4b5563" : "#fff",
-                  padding: "2px 8px",
-                  borderRadius: 10,
-                  fontSize: 11,
-                  fontWeight: 700,
+                  border: "none",
+                  background: "none",
+                  padding: "16px 20px",
+                  fontSize: 14,
+                  fontWeight: filter === tab ? 800 : 600,
+                  color: filter === tab ? "#3b82f6" : textSecondary,
+                  borderBottom: filter === tab ? "3px solid #3b82f6" : "3px solid transparent",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
                 }}
               >
-                {tab.count}
-              </span>
-            </button>
-          ))}
+                {tab}
+                <span
+                  style={{
+                    background: tab === "전체" ? "#e5e7eb" : tab === "진행중" ? "#10b981" : tab === "예약" ? "#f59e0b" : tab === "종료" ? "#ef4444" : "#9ca3af",
+                    color: tab === "전체" ? "#4b5563" : "#fff",
+                    padding: "2px 8px",
+                    borderRadius: 10,
+                    fontSize: 11,
+                    fontWeight: 700,
+                  }}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* 액션 바 */}
@@ -575,6 +888,28 @@ export default function MemberArticleAdSection({
             }}
           >
             + 새 배너 등록
+          </button>
+          <button
+            onClick={() => {
+              loadStats();
+              setViewMode("stats");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              height: 36,
+              padding: "0 16px",
+              background: "#8b5cf6",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              gap: 6,
+            }}
+          >
+            📊 성과 분석
           </button>
           <button
             onClick={() => handleDelete(checkedIds)}
@@ -620,24 +955,31 @@ export default function MemberArticleAdSection({
                     transition: "all 0.2s",
                   }}
                 >
-                  {/* 상단 상태 바 (최고관리자와 동일) */}
-                  <div
-                    style={{
-                      padding: "8px 14px",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: "#fff",
-                      background: b.is_active ? "#10b981" : "#9ca3af",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span>{b.created_at ? new Date(b.created_at).toLocaleDateString("ko-KR") : "상시 노출"}</span>
-                    <span style={{ background: "rgba(255,255,255,0.25)", padding: "2px 8px", borderRadius: 4 }}>
-                      {b.is_active ? "진행중" : "중지"}
-                    </span>
-                  </div>
+                  {/* 상단 상태 바 (최고관리자와 동일: 노출기간 + 실시간 상태) */}
+                  {(() => {
+                    const statusInfo = getBannerStatusInfo(b);
+                    return (
+                      <div
+                        style={{
+                          padding: "8px 14px",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: "#fff",
+                          background: statusInfo.label === "진행중" ? "#10b981" : statusInfo.label === "예약" ? "#f59e0b" : statusInfo.label === "종료" ? "#ef4444" : "#9ca3af",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "68%" }}>
+                          📅 {getBannerPeriodText(b)}
+                        </span>
+                        <span style={{ background: "rgba(255,255,255,0.25)", padding: "2px 8px", borderRadius: 4 }}>
+                          {statusInfo.label}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   {/* 배너 이미지 썸네일 */}
                   <div
@@ -684,8 +1026,16 @@ export default function MemberArticleAdSection({
                       </span>
                     </div>
 
-                    <div style={{ fontSize: 12, color: textSecondary, marginBottom: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ fontSize: 12, color: textSecondary, marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {b.link_url ? `🔗 ${b.link_url}` : "링크 없음"}
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: textSecondary, marginBottom: 10 }}>
+                      <span style={{ padding: "2px 8px", background: darkMode ? "#2c2d31" : "#f3f4f6", borderRadius: 4, fontWeight: 600 }}>1200x400</span>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <span>클릭 <strong style={{ color: "#3b82f6" }}>{(b.click_count || 0).toLocaleString()}</strong></span>
+                        <span>노출 <strong style={{ color: textPrimary }}>{(b.view_count || 0).toLocaleString()}</strong></span>
+                      </div>
                     </div>
 
                     {/* 액션 버튼 그룹 (중지/활성 | 수정 | 삭제) */}
