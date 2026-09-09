@@ -83,6 +83,7 @@ export async function saveArticle(data: {
   reject_reason?: string;
   is_important?: boolean;
   is_headline?: boolean;
+  skip_edit_count?: boolean;
 }) {
   const supabase = getAdminClient();
 
@@ -186,11 +187,12 @@ export async function saveArticle(data: {
         if (authorMember?.role === 'ADMIN') isAdmin = true;
       }
       
-      if (!isAdmin && existing && existing.status === "APPROVED" && (existing.edit_count || 0) >= 3) {
-        return { success: false, error: "수정 가능 횟수(3회)를 초과했습니다. 기사를 삭제 후 새로 작성해 주세요." };
+      if (!isAdmin && !data.skip_edit_count && existing && existing.status === "APPROVED" && (existing.edit_count || 0) >= 3) {
+        return { success: false, error: "수정 가능 횟수(3회)를 초과했습니다. 배너/광고 설정만 변경 가능합니다." };
       }
       // 발행된 기사를 수정하면 edit_count 증가 (관리자도 카운트는 하되 제한만 안 걸림)
-      if (existing && existing.status === "APPROVED") {
+      // 단, 배너/광고 설정만 변경된 경우(skip_edit_count=true)에는 카운트하지 않음
+      if (existing && existing.status === "APPROVED" && !data.skip_edit_count) {
         (articleData as any).edit_count = (existing.edit_count || 0) + 1;
       }
       // 수정일(updated_at)을 현재 시간으로 동기화

@@ -78,6 +78,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [attachFiles, setAttachFiles] = useState<{ file: File; name: string }[]>([]);
   const [loadArticleId, setLoadArticleId] = useState<string | null>(null);
   const [editCount, setEditCount] = useState<number>(0);
+  /* 기사 콘텐츠 원본 스냅샷: 배너/광고만 변경 시 edit_count 증가 방지용 */
+  const originalArticleRef = React.useRef<{ title: string; subtitle: string; content: string; section1: string; section2: string; youtubeUrl: string; keywords: string[] } | null>(null);
 
   /* ═══ ✨ AI 마법사 통합 상태 ═══ */
   const [showAiWizardModal, setShowAiWizardModal] = useState(false);
@@ -695,6 +697,17 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 published_at: ra.published_at
               })));
             }
+
+            // 원본 기사 콘텐츠 스냅샷 저장 (배너만 변경 시 edit_count 증가 방지용)
+            originalArticleRef.current = {
+              title: d.title || "",
+              subtitle: d.subtitle || "",
+              content: d.content || "",
+              section1: d.section1 || "",
+              section2: d.section2 || "",
+              youtubeUrl: d.youtube_url || "",
+              keywords: d.article_keywords ? d.article_keywords.map((k: any) => k.keyword) : [],
+            };
 
             // 기사별 기존 광고 설정 조회 및 세팅
             const supabase = createClient();
@@ -1863,6 +1876,23 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
       const currentHtmlContent = editorRef.current ? editorRef.current.innerHTML : content;
 
+      // 기사 콘텐츠 변경 여부 비교 (배너/광고만 변경 시 edit_count 증가 방지)
+      let skipEditCount = false;
+      if (loadArticleId && originalArticleRef.current) {
+        const orig = originalArticleRef.current;
+        const contentUnchanged =
+          title === orig.title &&
+          subtitle === orig.subtitle &&
+          currentHtmlContent === orig.content &&
+          section1 === orig.section1 &&
+          section2 === orig.section2 &&
+          youtubeUrl === orig.youtubeUrl &&
+          JSON.stringify([...keywords].sort()) === JSON.stringify([...orig.keywords].sort());
+        if (contentUnchanged) {
+          skipEditCount = true;
+        }
+      }
+
       const result = await saveArticle({
         id: loadArticleId || undefined,
         author_id: memberAuthorId || currentUserId || undefined,
@@ -1886,6 +1916,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         thumbnail_url: thumbnailUrl || undefined,
         reject_reason: overrideRejectReason || undefined,
         relatedIds: relatedArticles.map(a => a.id),
+        skip_edit_count: skipEditCount,
       });
 
       if (result.success) {
@@ -3373,12 +3404,12 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               </div>
             ) : status === 'APPROVED' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <button type="button" disabled={saving || editCount >= 3} onClick={async () => { await handleSave('APPROVED'); }}
-                  style={{ flex: 1, padding: "16px 0", background: (saving || editCount >= 3) ? "#9ca3af" : "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: (saving || editCount >= 3) ? "not-allowed" : "pointer" }}>
-                  {saving ? "⏳ 저장 중..." : `수정저장 (수정 가능 횟수: ${3 - editCount}회 남음)`}
+                <button type="button" disabled={saving} onClick={async () => { await handleSave('APPROVED'); }}
+                  style={{ flex: 1, padding: "16px 0", background: saving ? "#9ca3af" : "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>
+                  {saving ? "⏳ 저장 중..." : editCount >= 3 ? "수정저장 (배너/광고 설정만 변경 가능)" : `수정저장 (수정 가능 횟수: ${3 - editCount}회 남음)`}
                 </button>
                 <div style={{ fontSize: 13, color: textSecondary, textAlign: 'center' }}>
-                  ※ 3회 수정 이후에는 기사를 삭제하고 새로 작성해야 합니다.
+                  {editCount >= 3 ? "※ 기사 본문 수정 횟수(3회)를 모두 사용했습니다. 배너/광고 설정은 계속 변경 가능합니다." : "※ 배너/광고 설정 변경은 수정 횟수에 포함되지 않습니다."}
                 </div>
               </div>
             ) : (
