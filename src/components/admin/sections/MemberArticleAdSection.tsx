@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { AdminSectionProps } from "./types";
 import {
   getAuthorBanners,
@@ -66,6 +67,11 @@ export default function MemberArticleAdSection({
   memberName,
 }: MemberArticleAdSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const action = searchParams.get("action");
+  const bannerId = searchParams.get("id");
 
   const [banners, setBanners] = useState<AuthorBanner[]>([]);
   const [filter, setFilter] = useState("전체");
@@ -160,20 +166,49 @@ export default function MemberArticleAdSection({
     return "상시 노출 (기간 제한 없음)";
   };
 
-  // 배너 등록 모드로 진입
+  // URL action 파라미터와 viewMode 동기화 (뒤로가기 시 대시보드 대신 목록으로 안전 복귀)
+  useEffect(() => {
+    if (!action) {
+      setViewMode("list");
+      setEditingBanner(null);
+      setImagePreview(null);
+    } else if (action === "stats") {
+      setViewMode("stats");
+      loadStats();
+    } else if (action === "new") {
+      setEditingBanner(null);
+      setBannerName("");
+      setBannerLink("");
+      setBannerLinkTarget("_blank");
+      setBannerStartDate("");
+      setBannerEndDate("");
+      setBannerFile(null);
+      setImagePreview(null);
+      setViewMode("new");
+    } else if (action === "edit") {
+      setViewMode("edit");
+      if (bannerId && banners.length > 0) {
+        const found = banners.find((b) => b.id === bannerId);
+        if (found) {
+          setEditingBanner(found);
+          setBannerName(found.name);
+          setBannerLink(found.link_url || "");
+          setBannerLinkTarget(found.link_target || "_blank");
+          setBannerStartDate(found.start_date || "");
+          setBannerEndDate(found.end_date || "");
+          setBannerFile(null);
+          setImagePreview(found.image_url);
+        }
+      }
+    }
+  }, [action, bannerId, banners]);
+
+  // 배너 등록 모드로 진입 (URL 연동)
   const handleOpenNew = () => {
-    setEditingBanner(null);
-    setBannerName("");
-    setBannerLink("");
-    setBannerLinkTarget("_blank");
-    setBannerStartDate("");
-    setBannerEndDate("");
-    setBannerFile(null);
-    setImagePreview(null);
-    setViewMode("new");
+    router.push(`${pathname}?menu=article_ad&action=new`);
   };
 
-  // 배너 수정 모드로 진입
+  // 배너 수정 모드로 진입 (URL 연동)
   const handleOpenEdit = (b: AuthorBanner) => {
     setEditingBanner(b);
     setBannerName(b.name);
@@ -183,7 +218,17 @@ export default function MemberArticleAdSection({
     setBannerEndDate(b.end_date || "");
     setBannerFile(null);
     setImagePreview(b.image_url);
-    setViewMode("edit");
+    router.push(`${pathname}?menu=article_ad&action=edit&id=${b.id}`);
+  };
+
+  // 성과 분석 모드로 진입 (URL 연동)
+  const handleOpenStats = () => {
+    router.push(`${pathname}?menu=article_ad&action=stats`);
+  };
+
+  // 목록으로 돌아가기 (URL 연동)
+  const handleBackToList = () => {
+    router.push(`${pathname}?menu=article_ad`);
   };
 
   // 배너 활성/중지 토글
@@ -243,7 +288,7 @@ export default function MemberArticleAdSection({
       const res = await saveAuthorBanner(formData);
       if (res.success) {
         showToast(editingBanner ? "배너가 성공적으로 수정되었습니다." : "새 배너가 등록되었습니다!");
-        setViewMode("list");
+        router.push(`${pathname}?menu=article_ad`);
         loadData();
       } else {
         showToast(res.error || "배너 저장 실패", "error");
@@ -274,13 +319,16 @@ export default function MemberArticleAdSection({
           </div>
         )}
 
-        {/* 상단 헤더: 목록으로 버튼이 타이틀 앞에 위치 */}
+        {/* 상단 헤더: 뒤로가기 버튼이 타이틀 앞에 위치 */}
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
           <button
             type="button"
-            onClick={() => setViewMode("list")}
+            onClick={handleBackToList}
             style={{
-              padding: "8px 16px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 18px",
               background: darkMode ? "#374151" : "#f3f4f6",
               color: textPrimary,
               border: `1px solid ${border}`,
@@ -288,9 +336,16 @@ export default function MemberArticleAdSection({
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = darkMode ? "#4b5563" : "#e5e7eb";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = darkMode ? "#374151" : "#f3f4f6";
             }}
           >
-            ← 목록으로
+            ← 뒤로가기
           </button>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>
             {viewMode === "edit" ? "배너 수정" : "새 배너 등록"}
@@ -624,16 +679,16 @@ export default function MemberArticleAdSection({
 
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg, fontFamily: "'Pretendard', sans-serif" }}>
-        {/* 상단 헤더: 목록으로 버튼이 타이틀 앞에 위치 */}
+        {/* 상단 헤더: 뒤로가기 버튼이 타이틀 앞에 위치 */}
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
           <button
             type="button"
-            onClick={() => setViewMode("list")}
+            onClick={handleBackToList}
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              padding: "8px 16px",
+              padding: "8px 18px",
               background: darkMode ? "#374151" : "#f3f4f6",
               color: textPrimary,
               border: `1px solid ${border}`,
@@ -650,7 +705,7 @@ export default function MemberArticleAdSection({
               e.currentTarget.style.background = darkMode ? "#374151" : "#f3f4f6";
             }}
           >
-            ← 목록으로
+            ← 뒤로가기
           </button>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>📊 배너 성과 분석</h1>
@@ -900,10 +955,7 @@ export default function MemberArticleAdSection({
             + 새 배너 등록
           </button>
           <button
-            onClick={() => {
-              loadStats();
-              setViewMode("stats");
-            }}
+            onClick={handleOpenStats}
             style={{
               display: "flex",
               alignItems: "center",

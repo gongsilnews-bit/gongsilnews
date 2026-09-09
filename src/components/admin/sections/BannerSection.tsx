@@ -379,7 +379,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
           <button onClick={() => router.push(`${pathname}?menu=ad`)}
-            style={{ padding: "8px 16px", background: darkMode ? "#374151" : "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>← 목록으로</button>
+            style={{ padding: "8px 18px", background: darkMode ? "#374151" : "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>← 뒤로가기</button>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>{b ? "배너 수정" : "새 배너 등록"}</h1>
         </div>
 
@@ -673,7 +673,7 @@ export default function BannerSection({ theme }: AdminSectionProps) {
               e.currentTarget.style.background = darkMode ? "#374151" : "#f3f4f6";
             }}
           >
-            ← 목록으로
+            ← 뒤로가기
           </button>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>📊 배너 성과 분석</h1>
         </div>
