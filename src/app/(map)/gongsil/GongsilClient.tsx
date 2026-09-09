@@ -64,9 +64,16 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   });
 
   const [activeCategory, setActiveCategory] = useState(() => {
-    // 공실열람 메뉴 진입 시 기본은 일반 공실('apart')
-    // 최고관리자는 바로 지도 열람 가능, 일반/부동산/비즈니스 회원은 등록 유도 오버레이 즉시 노출
-    return "apart";
+    const first = initialVacancies[0];
+    if (first) {
+      if (first.trade_type === "경매") return "auction";
+      const catEntry = Object.entries(CATEGORY_TO_PROPERTY_TYPE).find(
+        ([, pType]) => pType === first.property_type
+      );
+      if (catEntry) return catEntry[0];
+    }
+    // 공실열람 메뉴 진입 시 언제나 매물이 가장 풍부한 '경매/공매' 탭이 기본으로 열림
+    return "auction";
   });
   const [activePills, setActivePills] = useState<string[]>(() => {
     const first = initialVacancies[0];
@@ -143,9 +150,10 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   const [userLevel, setUserLevel] = useState<number>(0);
   const isSuperAdmin =
     Boolean(
-      currentUser &&
       (userLevel >= 5 || isAdminRole(currentUser?.role)) &&
-      !["REALTOR", "부동산회원", "부동산관리자", "BIZ", "비즈니스회원", "USER", "일반회원"].includes(currentUser?.role)
+      currentUser?.role !== "REALTOR" &&
+      currentUser?.role !== "부동산회원" &&
+      currentUser?.role !== "부동산관리자"
     ) || currentUser?.email === "gongsilmarketing@gmail.com";
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -289,7 +297,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
-  const [showRegisterPromoOverlay, setShowRegisterPromoOverlay] = useState(true);
+  const [showRegisterPromoOverlay, setShowRegisterPromoOverlay] = useState(false);
   const [agencyInfo, setAgencyInfo] = useState<any>(null);
   const detailHistoryInitializedRef = useRef(false);
 
@@ -820,21 +828,17 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           const isSuper =
             Boolean(
               (lvl >= 5 || isAdminRole(memberData.role)) &&
-              !["REALTOR", "부동산회원", "부동산관리자", "BIZ", "비즈니스회원", "USER", "일반회원"].includes(memberData.role)
+              memberData.role !== "REALTOR" &&
+              memberData.role !== "부동산회원" &&
+              memberData.role !== "부동산관리자"
             ) || data.user.email === "gongsilmarketing@gmail.com";
           if (isSuper) {
             setShowRegisterPromoOverlay(false);
-          } else {
-            if (activeCategory !== "auction") {
-              setShowRegisterPromoOverlay(true);
-            }
           }
         } else {
           setUserLevel(1);
           if (data.user.email === "gongsilmarketing@gmail.com") {
             setShowRegisterPromoOverlay(false);
-          } else if (activeCategory !== "auction") {
-            setShowRegisterPromoOverlay(true);
           }
         }
       }

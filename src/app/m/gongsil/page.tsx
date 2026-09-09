@@ -88,12 +88,12 @@ function MobileGongsilContent() {
   const [isFetchingVacancies, setIsFetchingVacancies] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(7);
   // Keep the first server and client render identical; URL mode is applied after mount.
-  const [activeMode, setActiveMode] = useState<"공실" | "경매">("공실");
+  const [activeMode, setActiveMode] = useState<"공실" | "경매">("경매");
   const urlMode = searchParams.get("mode");
-  const effectiveMode: "공실" | "경매" = urlMode === "auction"
-    ? "경매"
-    : urlMode === "gongsil"
-      ? "공실"
+  const effectiveMode: "공실" | "경매" = urlMode === "gongsil"
+    ? "공실"
+    : urlMode === "auction"
+      ? "경매"
       : activeMode;
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -139,17 +139,12 @@ function MobileGongsilContent() {
   const [userLevel, setUserLevel] = useState<number>(0);
   const isSuperAdmin =
     Boolean(
-      currentUser &&
       (userLevel >= 5 || isAdminRole(currentUser?.role)) &&
-      !["REALTOR", "부동산회원", "부동산관리자", "BIZ", "비즈니스회원", "USER", "일반회원"].includes(currentUser?.role)
+      currentUser?.role !== "REALTOR" &&
+      currentUser?.role !== "부동산회원" &&
+      currentUser?.role !== "부동산관리자"
     ) || currentUser?.email === "gongsilmarketing@gmail.com";
-  const [showRegisterPromoOverlay, setShowRegisterPromoOverlay] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const p = new URLSearchParams(window.location.search);
-      if (p.get("mode") === "auction") return false;
-    }
-    return true; // 공실열람 진입 시 기본으로 등록 유도 오버레이 활성화 (최고관리자는 인증 후 자동 해제)
-  });
+  const [showRegisterPromoOverlay, setShowRegisterPromoOverlay] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // 권한 파생 값
@@ -292,11 +287,11 @@ function MobileGongsilContent() {
           setLocLabel(parsed.locLabel);
         }
       } else {
-        if (modeParam === "auction") {
+        if (modeParam === "gongsil") {
+          setActiveMode("공실");
+        } else {
           setActiveMode("경매");
           setFilters({ ...initialFilterState, propertyTypes: AUCTION_PROPERTY_TYPES });
-        } else {
-          setActiveMode("공실");
         }
       }
     } catch (e) {
@@ -486,22 +481,17 @@ function MobileGongsilContent() {
           const isSuper =
             Boolean(
               (lvl >= 5 || isAdminRole(memberData.role)) &&
-              !["REALTOR", "부동산회원", "부동산관리자", "BIZ", "비즈니스회원", "USER", "일반회원"].includes(memberData.role)
+              memberData.role !== "REALTOR" &&
+              memberData.role !== "부동산회원" &&
+              memberData.role !== "부동산관리자"
             ) || data.user.email === "gongsilmarketing@gmail.com";
           if (isSuper) {
             setShowRegisterPromoOverlay(false);
-          } else {
-            // 최고관리자가 아닌 모든 회원(부동산, 일반, 비즈니스)은 공실 모드 진입 시 오버레이 노출
-            if (effectiveMode === "공실") {
-              setShowRegisterPromoOverlay(true);
-            }
           }
         } else {
           setUserLevel(1);
           if (data.user.email === "gongsilmarketing@gmail.com") {
             setShowRegisterPromoOverlay(false);
-          } else if (effectiveMode === "공실") {
-            setShowRegisterPromoOverlay(true);
           }
         }
       }
@@ -509,7 +499,7 @@ function MobileGongsilContent() {
     initUser();
   }, []);
 
-  // 공실 모드 진입 시 최고관리자를 제외한 모든 사용자(부동산회원, 일반회원, 비즈니스회원)에게 등록 유도 오버레이 노출
+  // 공실 모드 진입 시 일반 사용자에게 등록 유도 오버레이 노출
   useEffect(() => {
     if (effectiveMode === "공실" && !isSuperAdmin) {
       setShowRegisterPromoOverlay(true);
