@@ -7,6 +7,7 @@ import { getComments } from "@/app/actions/comment";
 import { getArticleReactions } from "@/app/actions/reaction";
 import { createClient } from "@/utils/supabase/client";
 import { formatSection1 } from "@/utils/formatCategory";
+import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 
 const REJECT_REASONS = [
   "사진 화질 불량 또는 이미지 누락",
@@ -340,6 +341,9 @@ export default function ArticleDetailPanel({ articleId, onBack, onEdit, role }: 
               <div style={{ color: '#888', fontSize: 13, paddingTop: 4 }}>저작권자 © 공실뉴스 무단전재 및 재배포 금지</div>
             </div>
           </div>
+
+          {/* ── 기사 작성자 맞춤 광고/배너 슬롯 (공실뉴스 기사 하단 배너/프로필 카드) ── */}
+          <ArticleAuthorAdSlot article={article} style={{ margin: "24px 0" }} />
 
           {/* Comments Section */}
           <div className="adp-comments">
