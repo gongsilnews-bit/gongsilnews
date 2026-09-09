@@ -3032,10 +3032,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             <hr style={{ border: "none", borderTop: `1px solid ${border}`, margin: "0 0 24px 0" }} />
 
             {/* ── 광고등록 (위치등록 바로 아래, 대표님 지시) ── */}
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 32 }}>
-              <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80, paddingTop: 4 }}>광고등록</label>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 32, minWidth: 0 }}>
+              <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80, paddingTop: 4, flexShrink: 0 }}>광고등록</label>
               
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
                 {/* 옵션 선택 */}
                 <div style={{ display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
                   <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14, fontWeight: 600, color: writeAdType === "DEFAULT" ? "#2563eb" : textPrimary }}>
@@ -3074,7 +3074,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
                 {/* 기본프로필 선택 시: 실제 기사 하단에 등록되는 등록자정보 카드 실물 미리보기 */}
                 {writeAdType === "DEFAULT" && (
-                  <div style={{ marginTop: 8 }}>
+                  <div style={{ marginTop: 8, minWidth: 0 }}>
                     <ArticleAuthorAdSlot
                       article={{
                         id: loadArticleId || "preview",
@@ -3090,35 +3090,35 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
                 {/* 배너등록 선택 시: 배너이름 -> 링크첨부 -> 이미지첨부(새배너/기존배너) -> 광고기간 */}
                 {writeAdType === "BANNER" && (
-                  <div style={{ padding: "16px 18px", background: "#f8fafc", borderRadius: 10, border: `1px solid ${border}`, display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div style={{ padding: "16px 18px", background: "#f8fafc", borderRadius: 10, border: `1px solid ${border}`, display: "flex", flexDirection: "column", gap: 14, minWidth: 0, boxSizing: "border-box" }}>
                     {/* 1) 배너 이름 */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85 }}>배너 이름:</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>배너 이름:</span>
                       <input
                         type="text"
                         value={writeAdBannerName}
                         onChange={(e) => setWriteAdBannerName(e.target.value)}
                         placeholder="예: 논현동 신축 상가 분양 홍보 배너"
-                        style={{ flex: 1, padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", outline: "none" }}
+                        style={{ flex: 1, minWidth: 0, padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", outline: "none", boxSizing: "border-box" }}
                       />
                     </div>
 
                     {/* 2) 링크 첨부 (배너 이름 하단) */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85 }}>링크 첨부:</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>링크 첨부:</span>
                       <input
                         type="text"
                         value={writeAdLinkUrl}
                         onChange={(e) => setWriteAdLinkUrl(e.target.value)}
                         placeholder="https://... (클릭 시 이동할 링크 URL)"
-                        style={{ flex: 1, padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", outline: "none" }}
+                        style={{ flex: 1, minWidth: 0, padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", outline: "none", boxSizing: "border-box" }}
                       />
                     </div>
 
                     {/* 3) 이미지 첨부: 새 배너 등록하기 / 기존 배너 가져오기 */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85 }}>이미지 첨부:</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>이미지 첨부:</span>
                         <div style={{ display: "inline-flex", background: "#e2e8f0", padding: "3px", borderRadius: "8px", gap: 4 }}>
                           <button
                             type="button"
@@ -3185,9 +3185,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       </div>
 
                       {/* 이미지 첨부 필드 */}
-                      <div style={{ marginLeft: 95, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ marginLeft: 95, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
                         {writeAdMode === "NEW" ? (
-                          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
                             <input
                               type="file"
                               accept="image/*"
@@ -3250,7 +3250,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                             </span>
                           </div>
                         ) : (
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                             {authorBanners.length > 0 ? (
                               <select
                                 value={writeAdBannerId}
@@ -3268,7 +3268,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                                     }
                                   }
                                 }}
-                                style={{ padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", flex: 1, maxWidth: 360 }}
+                                style={{ padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", flex: 1, maxWidth: 360, minWidth: 0 }}
                               >
                                 {authorBanners.map((b) => (
                                   <option key={b.id} value={b.id}>
@@ -3286,9 +3286,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
                         {/* 이미지 미리보기 */}
                         {writeAdPreview && (
-                          <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 10 }}>
-                            <span style={{ fontSize: 12, color: textSecondary }}>미리보기:</span>
-                            <div style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${border}`, maxHeight: 85, maxWidth: 360, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+                          <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                            <span style={{ fontSize: 12, color: textSecondary, flexShrink: 0 }}>미리보기:</span>
+                            <div style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${border}`, maxHeight: 85, maxWidth: 360, width: "100%", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
                               <img src={writeAdPreview} alt="배너 미리보기" style={{ width: "100%", height: 85, objectFit: "cover", display: "block" }} />
                             </div>
                           </div>
@@ -3297,8 +3297,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                     </div>
 
                     {/* 4) 광고기간: 시작 - 종료 */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85 }}>광고기간:</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>광고기간:</span>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <input
                           type="date"
@@ -3331,12 +3331,24 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
                     {/* 5) 실제 기사 하단 배너 실시간 미리보기 (대표님 요청) */}
                     {writeAdPreview && (
-                      <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed #cbd5e1" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#2563eb", display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed #cbd5e1", minWidth: 0, maxWidth: "100%", boxSizing: "border-box" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8, minWidth: 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#2563eb", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, whiteSpace: "nowrap" }}>
                             <span>👀</span> [실시간 미리보기] 실제 기사 하단에 노출되는 배너 모습
                           </span>
-                          <span style={{ fontSize: 11, color: textSecondary }}>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: textSecondary,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              minWidth: 0,
+                              maxWidth: "50%",
+                              textAlign: "right",
+                            }}
+                            title={writeAdLinkUrl || ""}
+                          >
                             {writeAdLinkUrl ? `클릭 시 이동: ${writeAdLinkUrl}` : "링크 미입력 (클릭 불가)"}
                           </span>
                         </div>
@@ -3344,11 +3356,13 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                           style={{
                             position: "relative",
                             width: "100%",
+                            maxWidth: 820,
                             borderRadius: 12,
                             overflow: "hidden",
                             border: "1px solid #e2e8f0",
                             boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
                             background: "#ffffff",
+                            boxSizing: "border-box",
                           }}
                         >
                           <span
