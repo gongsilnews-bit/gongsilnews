@@ -381,18 +381,21 @@ export default function MemberArticleAdSection({
               />
             </div>
 
-            {/* 2) 배너 이미지 */}
+            {/* 2) 배너 이미지 (1200X400 WebP 자동 압축) */}
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
                 배너 이미지 <span style={{ color: "#ef4444" }}>*</span>
+                <span style={{ fontSize: 12, fontWeight: 500, color: "#2563eb", marginLeft: 8 }}>
+                  (권장: 1200X400 / WebP 자동 압축 변환 적용)
+                </span>
               </label>
-              <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   style={{
                     width: 320,
-                    height: 107,
-                    border: `1px solid ${border}`,
+                    height: 120,
+                    border: `2px dashed ${border}`,
                     borderRadius: 10,
                     display: "flex",
                     alignItems: "center",
@@ -407,8 +410,8 @@ export default function MemberArticleAdSection({
                     <img src={imagePreview} alt="배너 미리보기" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     <div style={{ textAlign: "center", color: textSecondary, fontSize: 12 }}>
-                      <div style={{ fontSize: 26, marginBottom: 4 }}>📁</div>
-                      클릭하여 이미지 첨부
+                      <div style={{ fontSize: 28, marginBottom: 4 }}>📁</div>
+                      클릭하여 이미지 첨부 (1200X400)
                     </div>
                   )}
                 </div>
@@ -432,7 +435,14 @@ export default function MemberArticleAdSection({
                     }
                   }}
                 />
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 240, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: textPrimary }}>
+                    {bannerFile ? `선택된 파일: ${bannerFile.name} (${Math.round(bannerFile.size / 1024)} KB)` : "파일 선택 대기 중"}
+                  </div>
+                  <div style={{ fontSize: 12, color: textSecondary, lineHeight: 1.5 }}>
+                    • 이미지를 첨부하시면 모바일/PC에 가장 최적화된 <strong>WebP 형식</strong>으로 자동 압축됩니다.<br />
+                    • 기사 하단 프로필 카드와 정확히 일치하는 <strong>1200 × 400 px</strong> 규격을 권장합니다.
+                  </div>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
@@ -656,6 +666,17 @@ export default function MemberArticleAdSection({
                     border: `1px solid ${border}`,
                   }}
                 >
+                  {/* 기사 끝자락 목업 */}
+                  <div style={{ borderBottom: `1px solid ${border}`, paddingBottom: 16, marginBottom: 20 }}>
+                    <p style={{ fontSize: 13, color: textSecondary, margin: "0 0 10px", lineHeight: 1.6, fontStyle: "italic" }}>
+                      ... 한편 공실뉴스 전략기획팀은 빅데이터 기반 상권 분석과 독자 맞춤형 부동산 정책 정보를 지속적으로 보도하여 독자들의 권익 보호에 앞장서고 있다.
+                    </p>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: textSecondary }}>
+                      <span style={{ fontWeight: 700, color: textPrimary }}>{memberName || "공실뉴스 기자"}</span>
+                      <span>저작권자 © 공실뉴스 무단전재 및 재배포 금지</span>
+                    </div>
+                  </div>
+
                   {/* 배너 노출 영역 */}
                   {imagePreview ? (
                     <div
@@ -709,9 +730,17 @@ export default function MemberArticleAdSection({
                       }}
                     >
                       <span style={{ fontSize: 28 }}>🖼️</span>
-                      <span style={{ fontSize: 13, fontWeight: 700 }}>이미지 첨부 시 실제 PC 규격(800px)으로 표시됩니다</span>
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>위에서 배너 이미지를 첨부하시면 실제 PC 기사 크기(800px)로 표시됩니다</span>
                     </div>
                   )}
+
+                  {/* 댓글란 목업 */}
+                  <div style={{ marginTop: 24, paddingTop: 16, borderTop: `1px solid ${border}`, opacity: 0.6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 8 }}>💬 0개의 댓글</div>
+                    <div style={{ padding: "10px 14px", background: darkMode ? "#0f172a" : "#f8fafc", borderRadius: 8, border: `1px solid ${border}`, fontSize: 12, color: textSecondary }}>
+                      로그인이 필요합니다. 댓글을 남겨보세요...
+                    </div>
+                  </div>
                 </div>
               ) : (
                 /* ─── 📱 모바일 스마트폰 뷰 (380px 목업) ─── */
@@ -739,73 +768,96 @@ export default function MemberArticleAdSection({
                     style={{
                       background: darkMode ? "#1e293b" : "#ffffff",
                       borderRadius: 32,
-                      padding: "24px 16px",
-                      minHeight: 220,
+                      padding: "16px 14px 20px",
+                      minHeight: 460,
                       display: "flex",
                       flexDirection: "column",
-                      justifyContent: "center",
-                      alignItems: "center",
+                      justifyContent: "space-between",
                       overflow: "hidden",
                     }}
                   >
-                    {/* 모바일 배너 노출 */}
-                    {imagePreview ? (
-                      <div
-                        style={{
-                          position: "relative",
-                          width: "100%",
-                          borderRadius: 10,
-                          overflow: "hidden",
-                          border: "1px solid #e2e8f0",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                          background: "#ffffff",
-                        }}
-                      >
-                        <span
+                    <div>
+                      {/* 모바일 브라우저 주소창 미니어처 */}
+                      <div style={{ background: darkMode ? "#0f172a" : "#f1f5f9", padding: "6px 12px", borderRadius: 16, textAlign: "center", fontSize: 11, color: textSecondary, marginBottom: 14 }}>
+                        🔒 gongsilnews.com/m/news
+                      </div>
+
+                      {/* 기사 끝자락 */}
+                      <p style={{ fontSize: 11, color: textSecondary, margin: "0 0 8px", lineHeight: 1.5, fontStyle: "italic" }}>
+                        ... 공실뉴스는 빅데이터 분석을 통해 실생활에 유용한 상권 정보를 신속 보도합니다.
+                      </p>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: textSecondary, borderBottom: `1px solid ${border}`, paddingBottom: 10, marginBottom: 14 }}>
+                        <span style={{ fontWeight: 700, color: textPrimary }}>{memberName || "공실뉴스 기자"}</span>
+                        <span>저작권자 © 무단전재 금지</span>
+                      </div>
+
+                      {/* 모바일 배너 노출 */}
+                      {imagePreview ? (
+                        <div
                           style={{
-                            position: "absolute",
-                            top: 6,
-                            right: 6,
-                            background: "rgba(15, 23, 42, 0.75)",
-                            color: "#ffffff",
-                            fontSize: 9,
-                            fontWeight: 800,
-                            padding: "1px 5px",
-                            borderRadius: 3,
-                            zIndex: 2,
+                            position: "relative",
+                            width: "100%",
+                            borderRadius: 10,
+                            overflow: "hidden",
+                            border: "1px solid #e2e8f0",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                            background: "#ffffff",
                           }}
                         >
-                          AD
-                        </span>
-                        <img
-                          src={imagePreview}
-                          alt="배너 모바일 실시간 미리보기"
-                          style={{ width: "100%", aspectRatio: "1200 / 400", objectFit: "cover", display: "block" }}
-                        />
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: 6,
+                              right: 6,
+                              background: "rgba(15, 23, 42, 0.75)",
+                              color: "#ffffff",
+                              fontSize: 9,
+                              fontWeight: 800,
+                              padding: "1px 5px",
+                              borderRadius: 3,
+                              zIndex: 2,
+                            }}
+                          >
+                            AD
+                          </span>
+                          <img
+                            src={imagePreview}
+                            alt="배너 모바일 실시간 미리보기"
+                            style={{ width: "100%", aspectRatio: "1200 / 400", objectFit: "cover", display: "block" }}
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            width: "100%",
+                            height: 110,
+                            borderRadius: 10,
+                            border: "2px dashed #cbd5e1",
+                            background: darkMode ? "#0f172a" : "#f1f5f9",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 4,
+                            color: textSecondary,
+                          }}
+                        >
+                          <span style={{ fontSize: 20 }}>📱</span>
+                          <span style={{ fontSize: 11, fontWeight: 700 }}>모바일 스마트폰 배너 크기로 표시됩니다</span>
+                        </div>
+                      )}
+
+                      {/* 모바일 댓글란 목업 */}
+                      <div style={{ marginTop: 14, paddingTop: 10, borderTop: `1px solid ${border}`, opacity: 0.7 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>💬 0개의 댓글</div>
+                        <div style={{ padding: "8px 10px", background: darkMode ? "#0f172a" : "#f8fafc", borderRadius: 8, border: `1px solid ${border}`, fontSize: 10, color: textSecondary }}>
+                          댓글을 남겨보세요...
+                        </div>
                       </div>
-                    ) : (
-                      <div
-                        style={{
-                          width: "100%",
-                          height: 120,
-                          borderRadius: 10,
-                          border: "2px dashed #cbd5e1",
-                          background: darkMode ? "#0f172a" : "#f1f5f9",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 4,
-                          color: textSecondary,
-                        }}
-                      >
-                        <span style={{ fontSize: 20 }}>📱</span>
-                        <span style={{ fontSize: 11, fontWeight: 700 }}>스마트폰 배너 크기로 표시됩니다</span>
-                      </div>
-                    )}
+                    </div>
 
                     {/* 스마트폰 홈 바 (Home Indicator) */}
-                    <div style={{ width: 110, height: 4, background: darkMode ? "#475569" : "#cbd5e1", borderRadius: 2, marginTop: 20 }} />
+                    <div style={{ width: 110, height: 4, background: darkMode ? "#475569" : "#cbd5e1", borderRadius: 2, margin: "14px auto 0" }} />
                   </div>
                 </div>
               )}
