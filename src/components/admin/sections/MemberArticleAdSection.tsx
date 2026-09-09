@@ -274,27 +274,27 @@ export default function MemberArticleAdSection({
           </div>
         )}
 
-        {/* 상단 헤더 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>
-            {viewMode === "edit" ? "배너 수정" : "새 배너 등록"}
-          </h1>
+        {/* 상단 헤더: 목록으로 버튼이 타이틀 앞에 위치 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
           <button
             type="button"
             onClick={() => setViewMode("list")}
             style={{
-              padding: "8px 20px",
+              padding: "8px 16px",
               background: darkMode ? "#374151" : "#f3f4f6",
               color: textPrimary,
               border: `1px solid ${border}`,
-              borderRadius: 6,
+              borderRadius: 8,
               fontSize: 13,
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: "pointer",
             }}
           >
             ← 목록으로
           </button>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>
+            {viewMode === "edit" ? "배너 수정" : "새 배너 등록"}
+          </h1>
         </div>
 
         {/* 메인 폼 카드 */}
@@ -624,30 +624,40 @@ export default function MemberArticleAdSection({
 
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg, fontFamily: "'Pretendard', sans-serif" }}>
-        {/* 상단 헤더 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        {/* 상단 헤더: 목록으로 버튼이 타이틀 앞에 위치 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              background: darkMode ? "#374151" : "#f3f4f6",
+              color: textPrimary,
+              border: `1px solid ${border}`,
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = darkMode ? "#4b5563" : "#e5e7eb";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = darkMode ? "#374151" : "#f3f4f6";
+            }}
+          >
+            ← 목록으로
+          </button>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>📊 배너 성과 분석</h1>
             <p style={{ fontSize: 13, color: textSecondary, margin: "4px 0 0" }}>
               작성자 본인이 등록한 배너들의 실시간 노출수, 클릭수 및 클릭률(CTR) 통계입니다.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setViewMode("list")}
-            style={{
-              padding: "8px 20px",
-              background: darkMode ? "#374151" : "#f3f4f6",
-              color: textPrimary,
-              border: `1px solid ${border}`,
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            ← 목록으로
-          </button>
         </div>
 
         {/* 요약 카드 4종 */}

@@ -377,10 +377,10 @@ export default function BannerSection({ theme }: AdminSectionProps) {
     const b = editingBanner;
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>{b ? "배너 수정" : "새 배너 등록"}</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
           <button onClick={() => router.push(`${pathname}?menu=ad`)}
-            style={{ padding: "8px 20px", background: darkMode ? "#374151" : "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 목록으로</button>
+            style={{ padding: "8px 16px", background: darkMode ? "#374151" : "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>← 목록으로</button>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>{b ? "배너 수정" : "새 배너 등록"}</h1>
         </div>
 
         <form onSubmit={handleSubmit} style={{ background: cardBg, borderRadius: 14, padding: 28, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
@@ -649,10 +649,33 @@ export default function BannerSection({ theme }: AdminSectionProps) {
   if (showStats) {
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: bg }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+          <button
+            onClick={() => router.push(`${pathname}?menu=ad`)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              background: darkMode ? "#374151" : "#f3f4f6",
+              color: textPrimary,
+              border: `1px solid ${border}`,
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = darkMode ? "#4b5563" : "#e5e7eb";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = darkMode ? "#374151" : "#f3f4f6";
+            }}
+          >
+            ← 목록으로
+          </button>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>📊 배너 성과 분석</h1>
-          <button onClick={() => router.push(`${pathname}?menu=ad`)}
-            style={{ padding: "8px 20px", background: darkMode ? "#374151" : "#f3f4f6", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 목록으로</button>
         </div>
 
         {/* 요약 카드 */}
