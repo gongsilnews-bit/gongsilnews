@@ -562,7 +562,24 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               /* 일반 공실 모드 전용 조건 섹션 */
               <>
                 <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-                  <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>거래유형</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                    <div style={{ fontSize: "15px", fontWeight: 800, color: "#111" }}>거래유형</div>
+                    <button
+                      type="button"
+                      onClick={() => handleTempFilterChange({ tradeTypes: TRADE_TYPES })}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: TRADE_TYPES.every(t => tempFilters.tradeTypes.includes(t)) ? "#9ca3af" : "#2563eb",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        padding: "2px 6px",
+                      }}
+                    >
+                      전체선택
+                    </button>
+                  </div>
                   <TradeTypeFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} TRADE_TYPES={TRADE_TYPES} />
                 </div>
                 

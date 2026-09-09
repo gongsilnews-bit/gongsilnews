@@ -33,16 +33,10 @@ export default function TradeTypeFilterPanel({ filters, onFilterChange, TRADE_TY
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-        <button 
-          onClick={handleToggleAll} 
-          style={{ ...gridBtnStyle(isAllSelected), fontSize: "14px" }}
-        >
-          {isAllSelected ? "✓ 전체해제" : "✓ 전체선택"}
-        </button>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
         {TRADE_TYPES.map(t => (
           <button key={t} onClick={() => toggleTrade(t)} style={gridBtnStyle(filters.tradeTypes.includes(t))}>
-            {t}
+            {t} {filters.tradeTypes.includes(t) && "✓"}
           </button>
         ))}
       </div>

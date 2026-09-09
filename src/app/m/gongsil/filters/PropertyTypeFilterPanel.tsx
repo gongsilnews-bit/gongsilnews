@@ -123,18 +123,27 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
 
     return (
       <div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-          {/* 맨 앞 1번: 전체해제 / 전체선택 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+          <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280" }}>
+            경·공매 자산유형 선택
+          </div>
           <button
             type="button"
-            onClick={handleToggleSingleAll}
+            onClick={() => onFilterChange({ propertyTypes: singleGroupItems })}
             style={{
-              ...subPillStyle(isAllSingleSelected),
-              fontSize: "14px",
+              background: "transparent",
+              border: "none",
+              color: isAllSingleSelected ? "#9ca3af" : "#2563eb",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              padding: "2px 6px",
             }}
           >
-            {isAllSingleSelected ? "✓ 전체해제" : "✓ 전체선택"}
+            전체선택
           </button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
           {singleGroupItems.map(item => {
             const isSel = filters.propertyTypes.includes(item);
             return (
@@ -158,25 +167,28 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
     <div>
       {/* 1단계: 매물 대분류 선택 */}
       <div style={{ marginBottom: "16px" }}>
-        <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280", marginBottom: "8px" }}>
-          1. 매물 대분류 선택
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+          <div style={{ fontSize: "13px", fontWeight: 700, color: "#6b7280" }}>
+            1. 매물 대분류 선택
+          </div>
+          <button
+            type="button"
+            onClick={() => onFilterChange({ propertyTypes: ALL_PROPERTY_TYPES })}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: isAllItemsSelected ? "#9ca3af" : "#2563eb",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              padding: "2px 6px",
+            }}
+          >
+            전체선택
+          </button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
-          {/* 최상단 1번: 전체선택 / 전체해제 */}
-          <button
-            type="button"
-            onClick={handleToggleGlobalAll}
-            style={{
-              ...mainTabStyle(isAllItemsSelected),
-              gridColumn: "1 / -1",
-              fontSize: "14px",
-              padding: "10px 8px",
-            }}
-          >
-            {isAllItemsSelected ? "✓ 전체해제 (모든 유형 선택됨)" : "✓ 대분류 전체선택"}
-          </button>
-
           {PROPERTY_TYPES.map(g => {
             const hasSelectedItems = g.items.some(item => filters.propertyTypes.includes(item));
             const isTabFocused = activeGroup === g.group;
@@ -201,24 +213,27 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
 
       {/* 2단계: 선택된 1차 대분류의 세부 분류(소분류) 선택 */}
       <div style={{ background: "#f9fafb", padding: "14px", borderRadius: "10px", border: "1px solid #e5e7eb" }}>
-        <div style={{ fontSize: "13px", fontWeight: 700, color: "#102c57", marginBottom: "10px" }}>
-          2. 세부 분류 선택 ({activeGroup})
-        </div>
-
-        {/* 2단계 세부분류 그리드 (1번 맨 앞: 해당 1차 카테고리 전용 전체선택/전체해제) */}
-        <div style={{ marginBottom: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+          <div style={{ fontSize: "13px", fontWeight: 700, color: "#102c57" }}>
+            2. 세부 분류 선택 ({activeGroup})
+          </div>
           <button
             type="button"
-            onClick={handleToggleGroupAll}
+            onClick={() => {
+              const next = Array.from(new Set([...filters.propertyTypes, ...groupItems]));
+              onFilterChange({ propertyTypes: next });
+            }}
             style={{
-              ...subPillStyle(isAllGroupSelected),
-              width: "100%",
-              padding: "9px 8px",
-              fontWeight: 800,
-              fontSize: "13px",
+              background: "transparent",
+              border: "none",
+              color: isAllGroupSelected ? "#9ca3af" : "#2563eb",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              padding: "2px 6px",
             }}
           >
-            {isAllGroupSelected ? `✓ ${activeGroup} 세부분류 전체해제` : `✓ ${activeGroup} 세부분류 전체선택`}
+            전체선택
           </button>
         </div>
 
