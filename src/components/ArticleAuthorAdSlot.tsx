@@ -124,7 +124,7 @@ export default function ArticleAuthorAdSlot({
           alt={banner.name || "광고 배너"}
           style={{
             width: "100%",
-            maxHeight: 220,
+            maxHeight: 280,
             objectFit: "cover",
             display: "block",
           }}

@@ -3131,17 +3131,21 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={(e) => {
+                              onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  setWriteAdFile(file);
-                                  setWriteAdPreview(URL.createObjectURL(file));
+                                  // 대표님 지시: 배너 등록 시 WebP로 자동 압축 변환
+                                  const webpFile = await compressToWebP(file, 1200, 0.85);
+                                  setWriteAdFile(webpFile);
+                                  setWriteAdPreview(URL.createObjectURL(webpFile));
                                   setWriteAdBannerId("");
                                 }
                               }}
                               style={{ fontSize: 13 }}
                             />
-                            <span style={{ fontSize: 12, color: textSecondary }}>권장: 가로 1200px 이상 고화질 배너 이미지</span>
+                            <span style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>
+                              권장 사이즈: 1200X400 (WebP 자동 압축 적용)
+                            </span>
                           </div>
                         ) : (
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
