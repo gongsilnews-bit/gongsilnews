@@ -315,11 +315,12 @@ export async function getArticleAdInfo(articleId: string, authorId?: string): Pr
         : member.agencies
       : null;
 
-    // 작성자의 공실 통계 (전체/매매/전세/월세/단기)
+    // 작성자의 공실 통계 (전체/매매/전세/월세/단기 - 삭제 매물 제외, ACTIVE 매물만 집계)
     const { data: vacancies } = await supabase
       .from("vacancies")
       .select("trade_type")
       .eq("owner_id", targetAuthorId)
+      .eq("status", "ACTIVE")
       .neq("trade_type", "경매")
       .neq("trade_type", "공매");
 
