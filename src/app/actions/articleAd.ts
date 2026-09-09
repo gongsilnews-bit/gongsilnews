@@ -325,13 +325,15 @@ export async function getArticleAdInfo(articleId: string, authorId?: string): Pr
 
     const stats = { ...defaultStats };
     if (vacancies) {
-      stats.total = vacancies.length;
       vacancies.forEach((v: any) => {
-        if (v.trade_type === "매매") stats.maemae += 1;
-        else if (v.trade_type === "전세") stats.jeonse += 1;
-        else if (v.trade_type === "월세") stats.rent += 1;
-        else if (v.trade_type === "단기") stats.short += 1;
+        const t = v.trade_type || "";
+        if (t === "매매" || t.includes("매매")) stats.maemae += 1;
+        else if (t === "전세" || t.includes("전세")) stats.jeonse += 1;
+        else if (t === "월세" || t.includes("월세")) stats.rent += 1;
+        else if (t === "단기" || t === "단기임대" || t.includes("단기")) stats.short += 1;
       });
+      // 전체는 각 거래유형의 실제 합산으로 정확히 일치시킴
+      stats.total = stats.maemae + stats.jeonse + stats.rent + stats.short;
     }
 
     // 3) 배너형 광고 유효성 체크

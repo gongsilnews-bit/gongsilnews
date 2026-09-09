@@ -535,10 +535,10 @@ export default function MobileReporterClient({
                 <div className="hide-scrollbar" style={{ display: "flex", alignItems: "center", padding: "0 16px", gap: 12, fontSize: 12, color: "#666", overflowX: "auto", whiteSpace: "nowrap" }}>
                   {[
                     { label: '전체', count: visibleVacancies.length },
-                    { label: '매매', count: visibleVacancies.filter(v => v.trade_type === '매매').length },
-                    { label: '전세', count: visibleVacancies.filter(v => v.trade_type === '전세').length },
-                    { label: '월세', count: visibleVacancies.filter(v => v.trade_type === '월세').length },
-                    { label: '단기', count: visibleVacancies.filter(v => v.trade_type === '단기').length }
+                    { label: '매매', count: visibleVacancies.filter(v => v.trade_type === '매매' || v.trade_type?.includes('매매')).length },
+                    { label: '전세', count: visibleVacancies.filter(v => v.trade_type === '전세' || v.trade_type?.includes('전세')).length },
+                    { label: '월세', count: visibleVacancies.filter(v => v.trade_type === '월세' || v.trade_type?.includes('월세')).length },
+                    { label: '단기', count: visibleVacancies.filter(v => v.trade_type === '단기' || v.trade_type === '단기임대' || v.trade_type?.includes('단기')).length }
                   ].map((stat, i, arr) => (
                     <React.Fragment key={stat.label}>
                       <span 
@@ -558,7 +558,14 @@ export default function MobileReporterClient({
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {visibleVacancies.filter(v => realtorTradeType === "전체" || v.trade_type === realtorTradeType).map((prop, i) => {
+                {visibleVacancies.filter(v => {
+                  if (realtorTradeType === "전체") return true;
+                  if (realtorTradeType === "매매") return v.trade_type === "매매" || v.trade_type?.includes("매매");
+                  if (realtorTradeType === "전세") return v.trade_type === "전세" || v.trade_type?.includes("전세");
+                  if (realtorTradeType === "월세") return v.trade_type === "월세" || v.trade_type?.includes("월세");
+                  if (realtorTradeType === "단기") return v.trade_type === "단기" || v.trade_type === "단기임대" || v.trade_type?.includes("단기");
+                  return v.trade_type === realtorTradeType;
+                }).map((prop, i) => {
                   const cardMasked = prop.exposure_type === '부동산노출' && (prop.trade_type === '경매' || prop.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
                   const cardAddr = prop.building_name || [prop.dong, prop.sigungu].filter(Boolean).join(" ") || "이름없는 공실";
                   const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
