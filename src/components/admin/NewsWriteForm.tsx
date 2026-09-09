@@ -117,11 +117,14 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
   // ── 기사 하단 광고등록 상태 (대표님 지시) ──
   const [writeAdType, setWriteAdType] = useState<"DEFAULT" | "BANNER" | "NONE">("DEFAULT");
+  const [writeAdMode, setWriteAdMode] = useState<"NEW" | "EXISTING">("NEW"); // 새 배너 등록하기 vs 기존 배너 가져오기
   const [writeAdBannerId, setWriteAdBannerId] = useState<string>("");
   const [writeAdBannerName, setWriteAdBannerName] = useState<string>("");
   const [writeAdFile, setWriteAdFile] = useState<File | null>(null);
   const [writeAdLinkUrl, setWriteAdLinkUrl] = useState<string>("");
   const [writeAdPreview, setWriteAdPreview] = useState<string>("");
+  const [writeAdStartDate, setWriteAdStartDate] = useState<string>("");
+  const [writeAdEndDate, setWriteAdEndDate] = useState<string>("");
   const [authorBanners, setAuthorBanners] = useState<AuthorBanner[]>([]);
   const [aiEndingType, setAiEndingType] = useState("하십시오체");
   const [aiLayoutPattern, setAiLayoutPattern] = useState<"standard" | "summary_header" | "targeted">("summary_header");
@@ -685,6 +688,28 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 published_at: ra.published_at
               })));
             }
+
+            // 기사별 기존 광고 설정 조회 및 세팅
+            const supabase = createClient();
+            supabase
+              .from("article_ad_settings")
+              .select("*, custom_banner:article_author_banners(*)")
+              .eq("article_id", articleId)
+              .maybeSingle()
+              .then(({ data: adSetting }) => {
+                if (adSetting) {
+                  setWriteAdType(adSetting.ad_type || "DEFAULT");
+                  if (adSetting.start_date) setWriteAdStartDate(adSetting.start_date);
+                  if (adSetting.end_date) setWriteAdEndDate(adSetting.end_date);
+                  if (adSetting.custom_banner) {
+                    setWriteAdBannerId(adSetting.custom_banner.id);
+                    setWriteAdBannerName(adSetting.custom_banner.name);
+                    setWriteAdLinkUrl(adSetting.custom_banner.link_url || "");
+                    setWriteAdPreview(adSetting.custom_banner.image_url || "");
+                    setWriteAdMode("EXISTING");
+                  }
+                }
+              });
 
             // [기존 DB 파일(사진) 불러오기]
             let existingPhotos: any[] = [];
@@ -1969,6 +1994,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             await updateArticlesAdSettings([articleId], targetAuthorId, {
               ad_type: writeAdType,
               custom_banner_id: writeAdType === "BANNER" ? finalBannerId : null,
+              start_date: writeAdType === "BANNER" && writeAdStartDate ? writeAdStartDate : null,
+              end_date: writeAdType === "BANNER" && writeAdEndDate ? writeAdEndDate : null,
             });
           }
         } catch (adErr) {
@@ -3014,43 +3041,12 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   </div>
                 )}
 
-                {/* 배너등록 선택 시: 이미지 첨부 + 링크 첨부 심플 영역 */}
+                {/* 배너등록 선택 시: 배너이름 -> 링크첨부 -> 이미지첨부(새배너/기존배너) -> 광고기간 */}
                 {writeAdType === "BANNER" && (
-                  <div style={{ padding: "14px 16px", background: "#f8fafc", borderRadius: 10, border: `1px solid ${border}`, display: "flex", flexDirection: "column", gap: 12 }}>
-                    {/* 내 배너 보관함에서 불러오기 */}
-                    {authorBanners.length > 0 && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary, width: 85 }}>기존 배너:</span>
-                        <select
-                          value={writeAdBannerId}
-                          onChange={(e) => {
-                            const bId = e.target.value;
-                            setWriteAdBannerId(bId);
-                            if (bId) {
-                              const found = authorBanners.find((b) => b.id === bId);
-                              if (found) {
-                                setWriteAdLinkUrl(found.link_url || "");
-                                setWriteAdPreview(found.image_url || "");
-                                setWriteAdBannerName(found.name);
-                              }
-                            }
-                          }}
-                          style={{ padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", flex: 1, maxWidth: 280 }}
-                        >
-                          <option value="">-- 내 배너 보관함에서 선택 --</option>
-                          {authorBanners.map((b) => (
-                            <option key={b.id} value={b.id}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </select>
-                        <span style={{ fontSize: 12, color: textSecondary }}>또는 아래에서 새로 첨부</span>
-                      </div>
-                    )}
-
-                    {/* 배너 이름 */}
+                  <div style={{ padding: "16px 18px", background: "#f8fafc", borderRadius: 10, border: `1px solid ${border}`, display: "flex", flexDirection: "column", gap: 14 }}>
+                    {/* 1) 배너 이름 */}
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary, width: 85 }}>배너 이름:</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85 }}>배너 이름:</span>
                       <input
                         type="text"
                         value={writeAdBannerName}
@@ -3060,27 +3056,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       />
                     </div>
 
-                    {/* 이미지 첨부 */}
+                    {/* 2) 링크 첨부 (배너 이름 하단) */}
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary, width: 85 }}>이미지 첨부:</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setWriteAdFile(file);
-                            setWriteAdPreview(URL.createObjectURL(file));
-                            setWriteAdBannerId(""); // 직접 파일 선택 시 기존 보관함 선택 해제
-                          }
-                        }}
-                        style={{ fontSize: 13 }}
-                      />
-                    </div>
-
-                    {/* 링크 첨부 */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary, width: 85 }}>링크 첨부:</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85 }}>링크 첨부:</span>
                       <input
                         type="text"
                         value={writeAdLinkUrl}
@@ -3090,15 +3068,158 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                       />
                     </div>
 
-                    {/* 이미지 미리보기 */}
-                    {writeAdPreview && (
-                      <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 12, color: textSecondary, width: 85 }}>미리보기:</span>
-                        <div style={{ borderRadius: 6, overflow: "hidden", border: `1px solid ${border}`, maxHeight: 80, maxWidth: 320 }}>
-                          <img src={writeAdPreview} alt="배너 미리보기" style={{ width: "100%", height: 80, objectFit: "cover" }} />
+                    {/* 3) 이미지 첨부: 새 배너 등록하기 / 기존 배너 가져오기 */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85 }}>이미지 첨부:</span>
+                        <div style={{ display: "inline-flex", background: "#e2e8f0", padding: "3px", borderRadius: "8px", gap: 4 }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setWriteAdMode("NEW");
+                              setWriteAdBannerId("");
+                            }}
+                            style={{
+                              padding: "5px 12px",
+                              borderRadius: "6px",
+                              border: "none",
+                              fontSize: "12px",
+                              fontWeight: writeAdMode === "NEW" ? 700 : 500,
+                              background: writeAdMode === "NEW" ? "#ffffff" : "transparent",
+                              color: writeAdMode === "NEW" ? "#2563eb" : "#64748b",
+                              cursor: "pointer",
+                              boxShadow: writeAdMode === "NEW" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                              transition: "all 0.15s",
+                            }}
+                          >
+                            새 배너 등록하기
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setWriteAdMode("EXISTING");
+                              if (authorBanners.length > 0 && !writeAdBannerId) {
+                                const first = authorBanners[0];
+                                setWriteAdBannerId(first.id);
+                                setWriteAdBannerName(first.name);
+                                setWriteAdLinkUrl(first.link_url || "");
+                                setWriteAdPreview(first.image_url || "");
+                              }
+                            }}
+                            style={{
+                              padding: "5px 12px",
+                              borderRadius: "6px",
+                              border: "none",
+                              fontSize: "12px",
+                              fontWeight: writeAdMode === "EXISTING" ? 700 : 500,
+                              background: writeAdMode === "EXISTING" ? "#ffffff" : "transparent",
+                              color: writeAdMode === "EXISTING" ? "#2563eb" : "#64748b",
+                              cursor: "pointer",
+                              boxShadow: writeAdMode === "EXISTING" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                              transition: "all 0.15s",
+                            }}
+                          >
+                            기존 배너 가져오기 {authorBanners.length > 0 ? `(${authorBanners.length})` : ""}
+                          </button>
                         </div>
                       </div>
-                    )}
+
+                      {/* 이미지 첨부 필드 */}
+                      <div style={{ marginLeft: 95, display: "flex", flexDirection: "column", gap: 8 }}>
+                        {writeAdMode === "NEW" ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  setWriteAdFile(file);
+                                  setWriteAdPreview(URL.createObjectURL(file));
+                                  setWriteAdBannerId("");
+                                }
+                              }}
+                              style={{ fontSize: 13 }}
+                            />
+                            <span style={{ fontSize: 12, color: textSecondary }}>권장: 가로 1200px 이상 고화질 배너 이미지</span>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            {authorBanners.length > 0 ? (
+                              <select
+                                value={writeAdBannerId}
+                                onChange={(e) => {
+                                  const bId = e.target.value;
+                                  setWriteAdBannerId(bId);
+                                  if (bId) {
+                                    const found = authorBanners.find((b) => b.id === bId);
+                                    if (found) {
+                                      setWriteAdLinkUrl(found.link_url || "");
+                                      setWriteAdPreview(found.image_url || "");
+                                      setWriteAdBannerName(found.name);
+                                    }
+                                  }
+                                }}
+                                style={{ padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", flex: 1, maxWidth: 360 }}
+                              >
+                                {authorBanners.map((b) => (
+                                  <option key={b.id} value={b.id}>
+                                    {b.name}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span style={{ fontSize: 13, color: "#ef4444" }}>
+                                등록된 기존 배너가 없습니다. [새 배너 등록하기]를 선택해주세요.
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* 이미지 미리보기 */}
+                        {writeAdPreview && (
+                          <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ fontSize: 12, color: textSecondary }}>미리보기:</span>
+                            <div style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${border}`, maxHeight: 85, maxWidth: 360, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+                              <img src={writeAdPreview} alt="배너 미리보기" style={{ width: "100%", height: 85, objectFit: "cover", display: "block" }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 4) 광고기간: 시작 - 종료 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85 }}>광고기간:</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <input
+                          type="date"
+                          value={writeAdStartDate}
+                          onChange={(e) => setWriteAdStartDate(e.target.value)}
+                          style={{ padding: "7px 10px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff" }}
+                        />
+                        <span style={{ fontSize: 13, color: textSecondary }}>~</span>
+                        <input
+                          type="date"
+                          value={writeAdEndDate}
+                          onChange={(e) => setWriteAdEndDate(e.target.value)}
+                          style={{ padding: "7px 10px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff" }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWriteAdStartDate("");
+                            setWriteAdEndDate("");
+                          }}
+                          style={{ padding: "6px 10px", borderRadius: 5, border: "1px solid #cbd5e1", background: "#fff", fontSize: 12, color: "#64748b", cursor: "pointer" }}
+                        >
+                          기간 초기화 (상시)
+                        </button>
+                      </div>
+                      <span style={{ fontSize: 12, color: textSecondary, marginLeft: 95, width: "100%" }}>
+                        * 미설정 시 상시 노출되며, 설정 시 해당 기간 동안만 배너가 노출되고 이후엔 기본프로필 카드로 자동 전환됩니다.
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
