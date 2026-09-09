@@ -38,11 +38,8 @@ export default function ArticleBulkAdManager({
   // 체크박스 선택 기사 IDs
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  // 일괄 적용 설정
-  // selectedBannerId: "DEFAULT" | "NONE" | banner.id
+  // 일괄 적용 설정 (selectedBannerId: "DEFAULT" | "NONE" | banner.id)
   const [selectedBannerId, setSelectedBannerId] = useState<string>("DEFAULT");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
 
   // 필터 및 검색
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,8 +72,6 @@ export default function ArticleBulkAdManager({
         if (banRes.data.length > 0 && selectedBannerId === "DEFAULT") {
           const firstActive = banRes.data.find((b) => b.is_active) || banRes.data[0];
           setSelectedBannerId(firstActive.id);
-          setStartDate(firstActive.start_date || "");
-          setEndDate(firstActive.end_date || "");
         }
       }
     } catch (err: any) {
@@ -91,21 +86,6 @@ export default function ArticleBulkAdManager({
       loadData();
     }
   }, [memberId]);
-
-  // 배너 드롭다운 변경 시 기간 자동 연동
-  const handleBannerSelectChange = (val: string) => {
-    setSelectedBannerId(val);
-    if (val === "DEFAULT" || val === "NONE") {
-      setStartDate("");
-      setEndDate("");
-    } else {
-      const found = banners.find((b) => b.id === val);
-      if (found) {
-        setStartDate(found.start_date || "");
-        setEndDate(found.end_date || "");
-      }
-    }
-  };
 
   // 필터링된 기사 목록
   const filteredArticles = useMemo(() => {
@@ -145,11 +125,9 @@ export default function ArticleBulkAdManager({
 
   const handleToggleSelectAll = () => {
     if (isAllSelected) {
-      // 현재 필터된 기사들 해제
       const filteredIds = new Set(filteredArticles.map((a) => a.id));
       setSelectedIds((prev) => prev.filter((id) => !filteredIds.has(id)));
     } else {
-      // 현재 필터된 기사들 모두 선택에 추가
       const newIds = new Set([...selectedIds, ...filteredArticles.map((a) => a.id)]);
       setSelectedIds(Array.from(newIds));
     }
@@ -176,8 +154,7 @@ export default function ArticleBulkAdManager({
     if (selectedBannerId === "NONE") targetBannerName = "배너 노출 안 함(숨김)";
     else if (currentSelectedBannerObj) targetBannerName = `[${currentSelectedBannerObj.name}] 배너`;
 
-    const periodText = startDate || endDate ? `\n(노출 기간: ${startDate || "시작일 없음"} ~ ${endDate || "종료일 없음"})` : "";
-    const msg = `선택하신 ${selectedIds.length}개의 기사에\n'${targetBannerName}'을(를) 일괄 적용하시겠습니까?${periodText}`;
+    const msg = `선택하신 ${selectedIds.length}개의 기사에\n'${targetBannerName}'을(를) 일괄 적용하시겠습니까?`;
 
     if (!confirm(msg)) return;
 
@@ -186,8 +163,8 @@ export default function ArticleBulkAdManager({
       const res = await updateArticlesAdSettings(selectedIds, memberId, {
         ad_type: selectedBannerId === "DEFAULT" ? "DEFAULT" : selectedBannerId === "NONE" ? "NONE" : "BANNER",
         custom_banner_id: selectedBannerId !== "DEFAULT" && selectedBannerId !== "NONE" ? selectedBannerId : null,
-        start_date: startDate || null,
-        end_date: endDate || null,
+        start_date: currentSelectedBannerObj?.start_date || null,
+        end_date: currentSelectedBannerObj?.end_date || null,
       });
 
       if (res.success) {
@@ -206,9 +183,6 @@ export default function ArticleBulkAdManager({
 
   // 개별 기사 단독 빠른 변경
   const handleSingleArticleChange = async (articleId: string, bannerVal: string) => {
-    const art = articles.find((a) => a.id === articleId);
-    if (!art) return;
-
     let sDate = null;
     let eDate = null;
     let targetType: "DEFAULT" | "BANNER" | "NONE" = "DEFAULT";
@@ -353,18 +327,18 @@ export default function ArticleBulkAdManager({
           </h2>
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 16 }}>
           {/* 배너 선택 드롭다운 */}
-          <div style={{ minWidth: 260, flex: "1 1 260px" }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 5 }}>
-              적용할 배너
+          <div style={{ flex: "1 1 320px", maxWidth: 460 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>
+              적용할 배너 선택
             </label>
             <select
               value={selectedBannerId}
-              onChange={(e) => handleBannerSelectChange(e.target.value)}
+              onChange={(e) => setSelectedBannerId(e.target.value)}
               style={{
                 width: "100%",
-                padding: "10px 14px",
+                padding: "11px 14px",
                 border: `1.5px solid #3b82f6`,
                 borderRadius: 8,
                 fontSize: 14,
@@ -389,83 +363,14 @@ export default function ArticleBulkAdManager({
             </select>
           </div>
 
-          {/* 노출 기간 설정 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "2 1 320px" }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 5 }}>
-                시작일
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "9px 12px",
-                  border: `1px solid ${border}`,
-                  borderRadius: 8,
-                  fontSize: 13,
-                  color: textPrimary,
-                  background: darkMode ? "#1a1b1e" : "#fff",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-            <span style={{ marginTop: 22, color: textSecondary, fontWeight: 700 }}>~</span>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 5 }}>
-                종료일
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "9px 12px",
-                  border: `1px solid ${border}`,
-                  borderRadius: 8,
-                  fontSize: 13,
-                  color: textPrimary,
-                  background: darkMode ? "#1a1b1e" : "#fff",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-            <div style={{ marginTop: 20 }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setStartDate("");
-                  setEndDate("");
-                }}
-                style={{
-                  padding: "9px 12px",
-                  border: `1px solid ${border}`,
-                  borderRadius: 8,
-                  background: darkMode ? "#2c2d31" : "#f1f5f9",
-                  color: textSecondary,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                상시 노출
-              </button>
-            </div>
-          </div>
-
           {/* 일괄 적용 실행 버튼 */}
-          <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 12 }}>
+          <div>
             <button
               onClick={handleApplyBatch}
               disabled={selectedIds.length === 0 || isApplying}
               style={{
-                height: 42,
-                padding: "0 24px",
+                height: 44,
+                padding: "0 28px",
                 background: selectedIds.length > 0 ? "linear-gradient(135deg, #2563eb, #1d4ed8)" : darkMode ? "#334155" : "#e2e8f0",
                 color: selectedIds.length > 0 ? "#ffffff" : "#94a3b8",
                 border: "none",
@@ -501,7 +406,7 @@ export default function ArticleBulkAdManager({
             }}
           >
             <span style={{ fontSize: 12, fontWeight: 700, color: textSecondary }}>
-              선택 배너 미리보기:
+              선택 배너:
             </span>
             <div
               style={{
@@ -694,7 +599,7 @@ export default function ArticleBulkAdManager({
                 <th style={{ width: 110, padding: "12px 16px", textAlign: "center", fontWeight: 700, color: textSecondary }}>
                   발행일
                 </th>
-                <th style={{ width: 220, padding: "12px 16px", textAlign: "left", fontWeight: 700, color: textSecondary }}>
+                <th style={{ width: 200, padding: "12px 16px", textAlign: "left", fontWeight: 700, color: textSecondary }}>
                   현재 적용된 배너
                 </th>
                 <th style={{ width: 140, padding: "12px 16px", textAlign: "center", fontWeight: 700, color: textSecondary }}>
@@ -838,7 +743,7 @@ export default function ArticleBulkAdManager({
                       {/* 현재 적용된 배너 */}
                       <td style={{ padding: "14px 16px" }}>
                         {adType === "BANNER" && customBanner ? (
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <div
                               style={{
                                 width: 56,
@@ -856,27 +761,19 @@ export default function ArticleBulkAdManager({
                                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
                               />
                             </div>
-                            <div style={{ minWidth: 0 }}>
-                              <span
-                                style={{
-                                  background: "#ecfdf5",
-                                  color: "#059669",
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  padding: "2px 6px",
-                                  borderRadius: 4,
-                                  display: "inline-block",
-                                  marginBottom: 2,
-                                }}
-                              >
-                                🏷️ {customBanner.name}
-                              </span>
-                              {(setting.start_date || setting.end_date) && (
-                                <div style={{ fontSize: 11, color: textSecondary }}>
-                                  {setting.start_date || "시작"} ~ {setting.end_date || "종료"}
-                                </div>
-                              )}
-                            </div>
+                            <span
+                              style={{
+                                background: "#ecfdf5",
+                                color: "#059669",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                padding: "2px 8px",
+                                borderRadius: 4,
+                                display: "inline-block",
+                              }}
+                            >
+                              🏷️ {customBanner.name}
+                            </span>
                           </div>
                         ) : adType === "NONE" ? (
                           <span
