@@ -4,7 +4,7 @@ import React from "react";
 
 interface GongsilRegisterPromoOverlayProps {
   categoryName?: string;
-  onClose: () => void;
+  onClose?: () => void;
   onGoAuction?: () => void;
   currentUser?: any;
 }
@@ -26,6 +26,7 @@ export default function GongsilRegisterPromoOverlay({
 
   return (
     <div
+      onClick={(e) => e.stopPropagation()}
       style={{
         position: "absolute",
         top: 0,
@@ -43,6 +44,7 @@ export default function GongsilRegisterPromoOverlay({
       }}
     >
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
           width: "90%",
           maxWidth: 460,
@@ -62,34 +64,6 @@ export default function GongsilRegisterPromoOverlay({
             to { opacity: 1; transform: translateY(0) scale(1); }
           }
         `}</style>
-
-        {/* 닫기 버튼 */}
-        <button
-          onClick={onClose}
-          style={{
-            position: "absolute",
-            top: 16,
-            right: 18,
-            width: 32,
-            height: 32,
-            background: "transparent",
-            border: "none",
-            borderRadius: "50%",
-            fontSize: 22,
-            color: "#94a3b8",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            lineHeight: 1,
-            transition: "color 0.15s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#334155")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
-          title="닫기"
-        >
-          ✕
-        </button>
 
         {/* 뱃지 */}
         <div
