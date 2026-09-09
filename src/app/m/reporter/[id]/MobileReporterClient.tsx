@@ -305,11 +305,10 @@ export default function MobileReporterClient({
             )}
 
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "18px", fontWeight: 800, color: "#fff", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
-                {agencyInfo ? agencyInfo.name : profile.name}
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(255,255,255,0.15)", padding: "2px 6px", borderRadius: "8px", fontSize: "10px", fontWeight: 700, color: "#fff", border: "1px solid rgba(255,255,255,0.2)" }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                  기자홈피
+              <div style={{ fontSize: "18px", fontWeight: 800, color: "#fff", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                {agencyInfo ? (agencyInfo.name || agencyInfo.agency_name || profile.name) : (profile.company_name || profile.name)}
+                <div style={{ display: "inline-flex", alignItems: "center", background: "rgba(255,255,255,0.18)", padding: "2px 7px", borderRadius: "8px", fontSize: "10px", fontWeight: 800, color: "#fff", border: "1px solid rgba(255,255,255,0.25)", letterSpacing: "-0.2px" }}>
+                  {agencyInfo ? "부동산" : (profile.business_type || (profile.role === "BIZ" ? "세무" : profile.role === "REALTOR" ? "부동산" : "기자"))}
                 </div>
               </div>
               

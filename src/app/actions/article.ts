@@ -924,12 +924,16 @@ export async function getAuthorProfileById(id: string) {
     const { data, error } = await supabase.from('members').select('*').eq('id', id).limit(1).maybeSingle();
     if (error) return { success: false, error: error.message };
     
-    // BIZ 회원이면 business_profiles에서 업종 정보도 가져옴
-    if (data && data.role === 'BIZ') {
-      const { data: bizProfile } = await supabase.from('business_profiles').select('business_type, company_name').eq('user_id', id).maybeSingle();
+    // business_profiles에서 업종 정보 가져옴
+    if (data) {
+      const { data: bizProfile } = await supabase.from('business_profiles').select('business_type, company_name, address, contact_number, biz_num, description').eq('user_id', id).maybeSingle();
       if (bizProfile) {
-        data.business_type = bizProfile.business_type;
-        data.company_name = bizProfile.company_name;
+        data.business_type = bizProfile.business_type || data.business_type;
+        data.company_name = bizProfile.company_name || data.company_name;
+        data.business_address = bizProfile.address;
+        data.business_contact = bizProfile.contact_number;
+        data.business_biz_num = bizProfile.biz_num;
+        data.business_description = bizProfile.description;
       }
     }
     
