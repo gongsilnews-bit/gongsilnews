@@ -348,9 +348,65 @@ const RecommendedNewsCarousel = React.memo(({
   activeTab,
   extractYoutubeId 
 }: RecommendedNewsCarouselProps) => {
+  const router = useRouter();
   const [recIndex, setRecIndex] = useState(0);
   const [isSwipingRec, setIsSwipingRec] = useState(false);
   const recScrollRef = React.useRef<HTMLDivElement>(null);
+
+  // 🚀 [대표님 지시] 추천/중요 기사 클릭 시 네이버 뉴스 스타일 줌인 익스팬딩(Zoom-In Expanding) 트랜지션
+  const [zoomingArticle, setZoomingArticle] = useState<{
+    art: any;
+    rect: { top: number; left: number; width: number; height: number };
+    isExpanded: boolean;
+  } | null>(null);
+
+  // 추천 기사 백그라운드 프리페치 (즉각 전환 보장)
+  React.useEffect(() => {
+    if (!importantArticles || importantArticles.length === 0) return;
+    importantArticles.slice(0, 8).forEach((art) => {
+      router.prefetch(`/m/news/${art.article_no || art.id}`);
+    });
+  }, [importantArticles, router]);
+
+  // 뒤로가기 시 줌인 오버레이 잔상 제거
+  React.useEffect(() => {
+    const handlePopState = () => setZoomingArticle(null);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const handleImportantArticleClick = (e: React.MouseEvent<HTMLAnchorElement>, art: any) => {
+    if (isSwipingRec) return;
+    e.preventDefault();
+    sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString());
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const targetUrl = `/m/news/${art.article_no || art.id}`;
+
+    // 1단계: 클릭된 위치에 줌인 레이어 즉시 마운트
+    setZoomingArticle({
+      art,
+      rect: {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      },
+      isExpanded: false,
+    });
+
+    // 2단계: 다음 프레임에서 전체 화면으로 슉 확장 (Zoom-In Expanding)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setZoomingArticle((prev) => (prev ? { ...prev, isExpanded: true } : null));
+      });
+    });
+
+    // 3단계: 화면 가득 확장되는 순간(0.24초) 실제 기사 페이지로 매끄럽게 전환
+    setTimeout(() => {
+      router.push(targetUrl);
+    }, 240);
+  };
 
   // Reset index when articles set changes
   React.useEffect(() => {
@@ -474,7 +530,7 @@ const RecommendedNewsCarousel = React.memo(({
           <Link
             key={art.id || idx}
             href={`/m/news/${art.article_no || art.id}`}
-            onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
+            onClick={(e) => handleImportantArticleClick(e, art)}
             style={{
               textDecoration: "none",
               display: "flex",
@@ -525,6 +581,111 @@ const RecommendedNewsCarousel = React.memo(({
           </Link>
         ))}
       </div>
+
+      {/* 🚀 네이버 뉴스 스타일 추천 기사 줌인 익스팬딩(Zoom-In Expanding) 트랜지션 레이어 */}
+      {zoomingArticle && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            pointerEvents: "none",
+            backgroundColor: zoomingArticle.isExpanded ? "rgba(15, 23, 42, 0.4)" : "transparent",
+            backdropFilter: zoomingArticle.isExpanded ? "blur(4px)" : "none",
+            WebkitBackdropFilter: zoomingArticle.isExpanded ? "blur(4px)" : "none",
+            transition: "background-color 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: zoomingArticle.isExpanded ? 0 : zoomingArticle.rect.top,
+              left: zoomingArticle.isExpanded ? 0 : zoomingArticle.rect.left,
+              width: zoomingArticle.isExpanded ? "100vw" : zoomingArticle.rect.width,
+              height: zoomingArticle.isExpanded ? "100dvh" : zoomingArticle.rect.height,
+              transition: "all 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
+              overflow: "hidden",
+              background: "#ffffff",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: zoomingArticle.isExpanded ? "0 25px 50px -12px rgba(0, 0, 0, 0.35)" : "none",
+            }}
+          >
+            {/* 상단 썸네일 줌인 영역 */}
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                height: zoomingArticle.isExpanded ? "38vh" : "100%",
+                flexShrink: 0,
+                transition: "height 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
+                overflow: "hidden",
+                background: "#0f172a",
+              }}
+            >
+              {(zoomingArticle.art.thumbnail_url || extractYoutubeId(zoomingArticle.art.youtube_url, zoomingArticle.art.content)) ? (
+                <img
+                  src={zoomingArticle.art.thumbnail_url || `https://img.youtube.com/vi/${extractYoutubeId(zoomingArticle.art.youtube_url, zoomingArticle.art.content)}/mqdefault.jpg`}
+                  alt={zoomingArticle.art.title}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    transform: zoomingArticle.isExpanded ? "scale(1.06)" : "scale(1)",
+                    transition: "transform 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
+                  }}
+                />
+              ) : (
+                <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a2e50,#2d4a7a)" }} />
+              )}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  padding: "16px 20px",
+                  zIndex: 2,
+                }}
+              >
+                <span style={{ background: "#1a4282", color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 3, display: "inline-block", marginBottom: 8, letterSpacing: "0.5px" }}>추천 뉴스</span>
+                <h2 style={{ color: "#fff", fontSize: zoomingArticle.isExpanded ? 20 : 19, fontWeight: 800, lineHeight: 1.35, wordBreak: "keep-all", margin: 0, letterSpacing: "-0.5px" }}>
+                  {zoomingArticle.art.title}
+                </h2>
+                <div style={{ fontSize: "12px", color: "#ddd", display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
+                  <span>{zoomingArticle.art.published_at ? zoomingArticle.art.published_at.substring(0, 10).replace(/-/g, '.') : zoomingArticle.art.created_at ? zoomingArticle.art.created_at.substring(0, 10).replace(/-/g, '.') : ""}</span>
+                  <span>·</span>
+                  <span>{zoomingArticle.art.author_name || "공실뉴스"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 하단 기사 본문 전개 영역 */}
+            {zoomingArticle.isExpanded && (
+              <div
+                style={{
+                  flex: 1,
+                  background: "#ffffff",
+                  padding: "20px",
+                  animation: "zoomArticleBody 0.22s ease-out forwards",
+                }}
+              >
+                <div style={{ width: "40%", height: 16, background: "#f1f5f9", borderRadius: 4, marginBottom: 14 }} />
+                <div style={{ width: "100%", height: 14, background: "#f8fafc", borderRadius: 4, marginBottom: 10 }} />
+                <div style={{ width: "95%", height: 14, background: "#f8fafc", borderRadius: 4, marginBottom: 10 }} />
+                <div style={{ width: "80%", height: 14, background: "#f8fafc", borderRadius: 4 }} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 });
