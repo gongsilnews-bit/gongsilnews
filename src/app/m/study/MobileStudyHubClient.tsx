@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
 import StudySubMenuBar, { type StudyTab } from "../_components/StudySubMenuBar";
@@ -202,7 +203,7 @@ export default function MobileStudyHubClient({ lectures }: any) {
                   <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", overflow: "hidden", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
                     <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#062326" }}>
                       {lecture.thumbnail_url ? (
-                        <img src={lecture.thumbnail_url} alt={lecture.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <Image src={lecture.thumbnail_url} alt={lecture.title} fill sizes="(max-width: 448px) 100vw, 448px" style={{ objectFit: "cover" }} />
                       ) : (
                         <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#062326,#064e3b)", color: "#fff" }}>
                           <span style={{ fontSize: 28, marginBottom: 4 }}>🎓</span>

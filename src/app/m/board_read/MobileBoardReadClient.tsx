@@ -272,7 +272,7 @@ export default function MobileBoardReadClient({
         <div style={{ fontSize: '16px', lineHeight: 1.6, color: '#374151', wordBreak: 'break-word' }}>
           {post.thumbnail_url && (
             <div style={{ marginBottom: '24px', borderRadius: '12px', overflow: 'hidden' }}>
-              <img src={post.thumbnail_url} alt="thumbnail" style={{ width: '100%', height: 'auto', display: 'block' }} />
+              <Image src={post.thumbnail_url} alt="thumbnail" width={800} height={450} sizes="(max-width: 448px) 100vw, 800px" style={{ width: '100%', height: 'auto', display: 'block' }} priority />
             </div>
           )}
 

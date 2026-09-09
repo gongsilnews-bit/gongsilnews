@@ -74,7 +74,7 @@ JSON 구조:
 }`;
 
     // 4. REST API 직접 호출
-    const models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash", "gemini-1.5-flash"];
+    const models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest", "gemini-3-flash-preview"];
     const errors: string[] = [];
     let parsedData = null;
 

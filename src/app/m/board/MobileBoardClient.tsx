@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import BoardDropdownHeader from "../_components/header/BoardDropdownHeader";
 import { createClient } from "@/utils/supabase/client";
@@ -399,7 +400,7 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
               <Link key={p.id} href={getReadUrl(p.id)} style={{ textDecoration: 'none' }}>
                 <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #f3f4f6', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ width: '100%', aspectRatio: '4/3', position: 'relative', backgroundColor: '#e5e7eb' }}>
-                    <img src={getPrimaryThumbnail(p)} alt="thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <Image src={getPrimaryThumbnail(p)} alt="thumbnail" fill sizes="(max-width: 448px) 50vw, 200px" style={{ objectFit: 'cover' }} />
                     {hasVideoLink(p, board.skin_type) && (
                       <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '36px', height: '36px', backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(255,255,255,0.8)' }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>

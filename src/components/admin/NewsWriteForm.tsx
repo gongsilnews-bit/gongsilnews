@@ -131,6 +131,24 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [activeSidebarType, setActiveSidebarType] = useState<"library" | "ai_library">("library");
   const [aiActiveSidebarTab, setAiActiveSidebarTab] = useState<"article" | "blog" | "shorts" | "sns">("article");
   
+  /* ═══ ✨ 좌측 패널 모드: 기본 글쓰기도구 vs AI 코파일럿 챗 ═══ */
+  const [leftSidebarMode, setLeftSidebarMode] = useState<"tools" | "ai_chat">("tools");
+  const [aiChatInput, setAiChatInput] = useState("");
+  const [aiChatMessages, setAiChatMessages] = useState<{ id: string; role: "user" | "assistant"; text: string; data?: any }[]>([
+    {
+      id: "welcome",
+      role: "assistant",
+      text: "안녕하세요! 공실뉴스 AI 기자 어시스턴트입니다.\n어떤 기사를 작성해 드릴까요? 아래 옵션을 선택하거나 원하시는 주제를 입력해 주세요."
+    }
+  ]);
+  
+  // ── ✨ 대화형 옵션 위자드 (토큰 1회 절약형 톡톡 선택) 상태 ──
+  const [optHighlight, setOptHighlight] = useState("🚇 초역세권/사통팔달 교통망");
+  const [optTarget, setOptTarget] = useState("🧑‍💼 2030 직장인/청년");
+  const [optArticleStyle, setOptArticleStyle] = useState("📰 시장 출회 정통 보도기사");
+  const [optNewsAngle, setOptNewsAngle] = useState("📊 팩트·데이터 중심 객관적 분석");
+  const [optNewsHeadline, setOptNewsHeadline] = useState("🔥 포탈 메인 클릭률 높은 헤드라인");
+  
   const [aiHistory, setAiHistory] = useState<any[]>([]);
   const [showAiHistoryModal, setShowAiHistoryModal] = useState(false);
 
@@ -265,6 +283,132 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     } finally {
       setIsGeneratingAi(false);
     }
+  };
+
+  /* ── AI 초안 결과를 에디터에 즉시 주입하는 헬퍼 ── */
+  const applyDraftToEditor = (draftData: any) => {
+    if (!draftData) return;
+    if (draftData.title) setTitle(draftData.title);
+    if (draftData.subtitle) setSubtitle(draftData.subtitle.replaceAll('\\n', '\n'));
+    setSection1("공실뉴스");
+    if (draftData.section2) setSection2(draftData.section2);
+    if (draftData.keywords && Array.isArray(draftData.keywords)) {
+      setKeywords(draftData.keywords);
+    }
+    if (editorRef.current && draftData.content_article) {
+      editorRef.current.innerHTML = parseMarkdownToHtml(draftData.content_article);
+      setContent(editorRef.current.innerHTML);
+    }
+  };
+
+  /* ── ✨ 옵션 위자드 원클릭 기사 생성 (토큰 1회 전송) ── */
+  const executeOptionWizardGenerate = async (track: "vacancy" | "news", extraPrompt?: string) => {
+    setIsGeneratingAi(true);
+
+    let promptContent = "";
+    let userSummaryText = "";
+
+    if (track === "vacancy") {
+      const curVac = myVacancies.find(v => v.id === selectedVacancyId);
+      const vacTitle = curVac ? `[${curVac.trade_type}] ${curVac.building_name || "공실매물"} (${curVac.sido} ${curVac.dong})` : "선택된 매물";
+      userSummaryText = `🏢 [매물 시장출회 기사 요청]\n• 대상: ${vacTitle}\n• 핵심매력: ${optHighlight}\n• 타깃고객: ${optTarget}\n• 기사스타일: ${optArticleStyle}`;
+      promptContent = `[공실 매물 시장 출회 정통 보도 요청]\n- 대상 매물: ${vacTitle}\n- 핵심 강조 매력: ${optHighlight}\n- 주요 타깃 독자: ${optTarget}\n- 기사 스타일: ${optArticleStyle}\n${extraPrompt ? `- 추가 요청: ${extraPrompt}\n` : ""}- 작성 불변 원칙: 중개사 호객 광고가 아닌, 해당 지역의 시장 동향과 매물 출회(시장 진입) 현상을 객관적으로 다루는 영구 보존용 경제/부동산 저널리즘 기사로 작성할 것.`;
+    } else {
+      const srcText = (aiNewsSourceText || extraPrompt || "").trim();
+      userSummaryText = `📰 [보도자료 심층 기사화 요청]\n• 분석방향: ${optNewsAngle}\n• 헤드라인: ${optNewsHeadline}\n• 원문: ${srcText.slice(0, 50)}${srcText.length > 50 ? "..." : ""}`;
+      promptContent = `[보도자료/뉴스 원문 심층 기사화 요청]\n- 분석 방향(논조): ${optNewsAngle}\n- 헤드라인 스타일: ${optNewsHeadline}\n- 원문 자료:\n${srcText || "최근 수도권 및 주요 거점 부동산 시장의 최신 동향과 금리·대출·임대차 이슈"}\n- 작성 불변 원칙: 원문을 단순 복사하지 말고, 공실뉴스만의 독창적인 시각과 시장 분석을 담아 표절률 0%의 완전히 새로운 정통 보도기사로 재작성할 것.`;
+    }
+
+    const userMsgId = `user_${Date.now()}`;
+    setAiChatMessages(prev => [...prev, { id: userMsgId, role: "user" as const, text: userSummaryText }]);
+
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert("로그인이 필요합니다.");
+        setIsGeneratingAi(false);
+        return;
+      }
+
+      const res = await generateMarketingDrafts({
+        memberId: user.id,
+        vacancyId: track === "vacancy" ? selectedVacancyId : undefined,
+        sourceText: promptContent,
+        tone: "오피셜 칼럼",
+        audience: optTarget,
+        styleType: optArticleStyle,
+        endingType: "하십시오체",
+        layoutPattern: "targeted"
+      });
+
+      if (res.success && res.data) {
+        setAiDrafts(res.data);
+        applyDraftToEditor(res.data);
+
+        await saveAiDraft({
+          member_id: user.id,
+          vacancy_id: track === "vacancy" ? selectedVacancyId : undefined,
+          source_type: track === "vacancy" ? "VACANCY" : "NEWS",
+          original_source: promptContent,
+          title: res.data.title,
+          subtitle: res.data.subtitle,
+          content_article: res.data.content_article,
+          content_blog: res.data.content_blog,
+          content_shorts: res.data.content_shorts,
+          content_sns: res.data.content_sns,
+          image_urls: []
+        });
+
+        setAiChatMessages(prev => [
+          ...prev,
+          {
+            id: `ai_${Date.now()}`,
+            role: "assistant",
+            text: `✨ **공실뉴스 정통 보도기사 초안이 완성되었습니다!**\n\n📰 **제목**: ${res.data.title}\n📌 **부제**: ${res.data.subtitle}\n\n👉 오른쪽 에디터에 제목, 부제목, 섹션, 태그, 본문이 즉시 반영되었습니다.\n(💡 계약 완료 후에도 삭제할 필요 없는 객관적 시장 보도 기사입니다)`,
+            data: res.data
+          }
+        ]);
+        setActiveSidebarType("ai_library");
+        setAiActiveSidebarTab("article");
+      } else {
+        const rawErr = res.error || "알 수 없는 오류";
+        let userFriendlyMsg = `❌ 기사 작성 중 오류가 발생했습니다.\n\n${rawErr}`;
+        if (rawErr.includes("prepayment") || rawErr.includes("depleted") || rawErr.includes("RESOURCE_EXHAUSTED") || rawErr.includes("429")) {
+          userFriendlyMsg = `⚠️ **Google Gemini API 크레딧 안내**\n현재 등록된 구글 AI API 키의 결제 크레딧(선불 잔액)이 소진되었거나 일일 한도에 도달했습니다.\n\n👉 Google AI Studio (https://aistudio.google.com/)에서 프로젝트 결제 크레딧을 충전하시거나, 새 API 키를 관리자 설정에 등록해 주시면 정상 작성됩니다.`;
+        }
+        setAiChatMessages(prev => [
+          ...prev,
+          {
+            id: `err_${Date.now()}`,
+            role: "assistant",
+            text: userFriendlyMsg
+          }
+        ]);
+      }
+    } catch (err: any) {
+      setAiChatMessages(prev => [
+        ...prev,
+        {
+          id: `err_${Date.now()}`,
+          role: "assistant",
+          text: `❌ 서버 통신 오류: ${err.message}`
+        }
+      ]);
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
+  /* ── 좌측 Copilot 대화형 프롬프트 전송 로직 ── */
+  const handleChatSubmit = async (customPrompt?: string) => {
+    const textToSend = (customPrompt || aiChatInput).trim();
+    if (!textToSend) {
+      executeOptionWizardGenerate(aiWizardTab);
+      return;
+    }
+    executeOptionWizardGenerate(aiWizardTab, textToSend);
+    setAiChatInput("");
   };
 
   // AI 생성 히스토리 로드
@@ -1820,72 +1964,564 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   // 폼이 ArticleSection 안에서 렌더링되므로, 기존의 사이드바/상단헤더/전체화면높이 스타일은 제거하고 내부 컨텐츠 래퍼만 반환합니다.
   return (
     <div style={{ flex: 1, overflowY: "auto", height: "100%", background: pageBg }}>
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 28px", display: "flex", gap: 20, alignItems: "flex-start", width: "100%" }}>
+      <div style={{ maxWidth: leftSidebarMode === "ai_chat" ? 1760 : 1400, margin: "0 auto", padding: "10px 24px 24px 24px", display: "flex", gap: 20, alignItems: "flex-start", width: "100%", transition: "max-width 0.25s ease" }}>
 
-        {/* ═══ 좌측 사이드바: 글쓰기도구 ═══ */}
-        <aside style={{ width: 220, minWidth: 220, position: "sticky", top: 80, flexShrink: 0 }}>
-          <div style={{ background: cardBg, borderRadius: 12, border: `1px solid ${border}`, padding: "20px 16px" }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800, color: textPrimary, margin: "0 0 16px 0" }}>글쓰기도구</h3>
+        {/* ═══ 좌측 사이드바: 글쓰기도구 <-> AI 코파일럿 챗 패널 (확장 전환) ═══ */}
+        <aside style={{
+          width: leftSidebarMode === "ai_chat" ? 580 : 220,
+          minWidth: leftSidebarMode === "ai_chat" ? 580 : 220,
+          position: "sticky",
+          top: 8,
+          flexShrink: 0,
+          transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+        }}>
+          {leftSidebarMode === "tools" ? (
+            /* ── 기본 글쓰기도구 (220px) ── */
+            <div style={{ background: cardBg, borderRadius: 12, border: `1px solid ${border}`, padding: "20px 16px" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: textPrimary, margin: "0 0 16px 0" }}>글쓰기도구</h3>
 
-            {/* 3개 아이콘 그리드 */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4, marginBottom: 20 }}>
-              {/* 사진 */}
-              <button onClick={openPhotoModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-                </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#3b82f6" }}>사진</span>
-              </button>
-              {/* 영상 */}
-              <button onClick={openVideoModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 8 16 12 10 16 10 8" fill="#ef4444"/>
-                </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#ef4444" }}>영상</span>
-              </button>
-              {/* 포토DB */}
-              <button onClick={openPhotoDbModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>
-                </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, color: textSecondary }}>포토DB</span>
-              </button>
-            </div>
-
-            {/* AI 마법사 카드 */}
-            <div style={{ border: "2px solid #f59e0b", borderRadius: 12, padding: "18px 16px", background: "linear-gradient(135deg, #fffbeb, #fef3c7)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                <span style={{ fontSize: 16 }}>✨</span>
-                <span style={{ fontSize: 15, fontWeight: 800, color: "#d97706" }}>AI 마법사</span>
+              {/* 3개 아이콘 그리드 */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4, marginBottom: 20 }}>
+                {/* 사진 */}
+                <button onClick={openPhotoModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#3b82f6" }}>사진</span>
+                </button>
+                {/* 영상 */}
+                <button onClick={openVideoModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 8 16 12 10 16 10 8" fill="#ef4444"/>
+                  </svg>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#ef4444" }}>영상</span>
+                </button>
+                {/* 포토DB */}
+                <button onClick={openPhotoDbModal} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 4px", border: "none", background: "none", cursor: "pointer", borderRadius: 8 }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={textSecondary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>
+                  </svg>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: textSecondary }}>포토DB</span>
+                </button>
               </div>
-              <p style={{ fontSize: 12, color: "#92400e", lineHeight: 1.6, margin: "0 0 14px 0" }}>
-                공실광고 정보만 한 번 입력하면 기사, 블로그, 쇼츠 대본까지 5가지 콘텐츠를 AI가 한 번에 완성해 줍니다!
-              </p>
-              <button 
-                onClick={() => setShowAiWizardModal(true)}
-                style={{
-                  width: "100%", padding: "12px 0", background: "linear-gradient(135deg, #f59e0b, #f97316)",
-                  color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6
-                }}
-              >
-                <span>✨</span> 실행하기
-              </button>
-              <button 
-                onClick={() => setShowAiHistoryModal(true)}
-                style={{
-                  width: "100%", padding: "10px 0", background: "none", border: `1px solid #d97706`,
-                  color: "#d97706", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 8,
-                  transition: "background 0.15s", boxSizing: "border-box"
-                }}
-                onMouseOver={e => e.currentTarget.style.background = "#fffbeb"}
-                onMouseOut={e => e.currentTarget.style.background = "none"}
-              >
-                🕒 과거 AI 초안 불러오기
-              </button>
+
+              {/* AI 마법사 카드 */}
+              <div style={{ border: "2px solid #f59e0b", borderRadius: 12, padding: "20px 16px", background: "linear-gradient(135deg, #fffbeb, #fef3c7)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <span style={{ fontSize: 18 }}>✨</span>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: "#d97706" }}>AI 마법사</span>
+                </div>
+                <p style={{ fontSize: 13, color: "#92400e", lineHeight: 1.6, margin: "0 0 14px 0" }}>
+                  공실광고 정보만 한 번 입력하면 기사, 블로그, 쇼츠 대본까지 5가지 콘텐츠를 AI가 한 번에 완성해 줍니다!
+                </p>
+                <button 
+                  onClick={() => {
+                    setLeftSidebarMode("ai_chat");
+                    fetchMyVacancies();
+                  }}
+                  style={{
+                    width: "100%", padding: "13px 0", background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                    color: "#fff", border: "none", borderRadius: 8, fontSize: 14.5, fontWeight: 800, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    boxShadow: "0 4px 12px rgba(245, 158, 11, 0.25)", transition: "transform 0.1s"
+                  }}
+                  onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+                  onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                >
+                  <span>✨</span> AI 코파일럿 열기 ➔
+                </button>
+                <button 
+                  onClick={() => setShowAiHistoryModal(true)}
+                  style={{
+                    width: "100%", padding: "10px 0", background: "none", border: `1px solid #d97706`,
+                    color: "#d97706", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 8,
+                    transition: "background 0.15s", boxSizing: "border-box"
+                  }}
+                  onMouseOver={e => e.currentTarget.style.background = "#fffbeb"}
+                  onMouseOut={e => e.currentTarget.style.background = "none"}
+                >
+                  🕒 과거 AI 초안 불러오기
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* ── ✨ AI 코파일럿 대화형 사이드 패널 (Hedra 스타일 모던 챗 - 대화면/큰 폰트/완전한 화면 핏) ── */
+            <div style={{
+              background: "#ffffff",
+              borderRadius: 16,
+              border: `1.5px solid #cbd5e1`,
+              display: "flex",
+              flexDirection: "column",
+              height: "calc(100vh - 76px)",
+              maxHeight: "calc(100vh - 76px)",
+              boxShadow: "0 16px 44px rgba(0, 0, 0, 0.1)",
+              overflow: "hidden"
+            }}>
+              {/* 헤더 */}
+              <div style={{
+                padding: "16px 20px",
+                borderBottom: `1px solid #334155`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "linear-gradient(135deg, #0f172a, #1e293b)",
+                color: "#ffffff",
+                flexShrink: 0
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 24 }}>✨</span>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
+                      AI 뉴스 코파일럿
+                      <span style={{ fontSize: 12, background: "rgba(99, 102, 241, 0.35)", color: "#c7d2fe", padding: "2px 8px", borderRadius: 10, fontWeight: 700 }}>Gemini 3.6</span>
+                    </div>
+                    <div style={{ fontSize: 13.5, color: "#94a3b8", marginTop: 2 }}>실시간 기사 에디터 연동 대화형 비서</div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAiChatMessages([{
+                        id: "welcome",
+                        role: "assistant",
+                        text: "새로운 대화를 시작합니다. 어떤 기사나 홍보글을 작성할까요?\n원하시는 매물이나 보도자료를 선택 또는 입력해 주세요!"
+                      }]);
+                    }}
+                    title="대화 초기화"
+                    style={{ background: "rgba(255,255,255,0.12)", border: "none", borderRadius: 8, color: "#e2e8f0", width: 34, height: 34, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    ⟲
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLeftSidebarMode("tools")}
+                    title="도구함으로 닫기"
+                    style={{ background: "rgba(255,255,255,0.16)", border: "none", borderRadius: 8, color: "#ffffff", width: 34, height: 34, cursor: "pointer", fontSize: 17, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* 매물 연동 / 보도자료 빠른 선택 탭바 */}
+              <div style={{ padding: "10px 16px", background: "#f8fafc", borderBottom: `1px solid ${border}`, display: "flex", gap: 10, flexShrink: 0 }}>
+                <button
+                  type="button"
+                  onClick={() => setAiWizardTab("vacancy")}
+                  style={{
+                    flex: 1, padding: "10px 0", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 800, cursor: "pointer",
+                    background: aiWizardTab === "vacancy" ? "#4f46e5" : "#e2e8f0",
+                    color: aiWizardTab === "vacancy" ? "#fff" : "#475569",
+                    transition: "all 0.15s"
+                  }}
+                >
+                  🏢 내 매물 연동
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiWizardTab("news")}
+                  style={{
+                    flex: 1, padding: "10px 0", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 800, cursor: "pointer",
+                    background: aiWizardTab === "news" ? "#4f46e5" : "#e2e8f0",
+                    color: aiWizardTab === "news" ? "#fff" : "#475569",
+                    transition: "all 0.15s"
+                  }}
+                >
+                  📰 보도자료/주제 입력
+                </button>
+              </div>
+
+              {/* ═══ ✨ [트랙 1: 내 매물 연동] 단계별 옵션 위자드 ═══ */}
+              {aiWizardTab === "vacancy" && (
+                <div style={{ padding: "14px 18px", background: "#f8fafc", borderBottom: `1.5px solid #cbd5e1`, display: "flex", flexDirection: "column", gap: 12, flexShrink: 0 }}>
+                  {/* Step 1. 매물 선택 */}
+                  <div>
+                    <div style={{ fontSize: 13.5, fontWeight: 800, color: "#1e293b", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ background: "#4f46e5", color: "#fff", width: 20, height: 20, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900 }}>1</span>
+                      보도 대상 공실 매물 선택
+                    </div>
+                    {isLoadingVacancies ? (
+                      <div style={{ fontSize: 13.5, color: "#64748b", padding: "8px 0" }}>⏳ 매물 목록 불러오는 중...</div>
+                    ) : myVacancies.length === 0 ? (
+                      <div style={{ fontSize: 13.5, color: "#b45309", padding: "8px 0" }}>⚠️ 등록된 매물이 없습니다.</div>
+                    ) : (
+                      <select
+                        value={selectedVacancyId}
+                        onChange={e => setSelectedVacancyId(e.target.value)}
+                        style={{ width: "100%", padding: "10px 12px", fontSize: 14.5, borderRadius: 8, border: "1.5px solid #cbd5e1", outline: "none", background: "#ffffff", fontWeight: 700, color: "#0f172a" }}
+                      >
+                        {myVacancies.map(v => (
+                          <option key={v.id} value={v.id}>
+                            [{v.trade_type}] {v.building_name || "무제"} ({v.sido} {v.dong})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  {/* Step 2. 핵심 매력 강조 칩 */}
+                  <div>
+                    <div style={{ fontSize: 13.5, fontWeight: 800, color: "#1e293b", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ background: "#4f46e5", color: "#fff", width: 20, height: 20, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900 }}>2</span>
+                      핵심 부각 매력 (원클릭)
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {[
+                        "🚇 초역세권/교통망",
+                        "💰 시세 대비 착한 급매",
+                        "✨ 신축 첫입주/풀옵션",
+                        "🏢 유동인구·상권·사옥",
+                        "🌳 숲세권/채광·조망 뷰"
+                      ].map(item => {
+                        const active = optHighlight === item;
+                        return (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => setOptHighlight(item)}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: 16,
+                              fontSize: 13,
+                              fontWeight: active ? 800 : 600,
+                              background: active ? "#4f46e5" : "#ffffff",
+                              color: active ? "#ffffff" : "#334155",
+                              border: `1.5px solid ${active ? "#4f46e5" : "#cbd5e1"}`,
+                              cursor: "pointer",
+                              transition: "all 0.15s"
+                            }}
+                          >
+                            {item}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Step 3. 주요 타깃 고객층 */}
+                  <div>
+                    <div style={{ fontSize: 13.5, fontWeight: 800, color: "#1e293b", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ background: "#4f46e5", color: "#fff", width: 20, height: 20, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900 }}>3</span>
+                      타깃 독자층
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {[
+                        "🧑‍💼 2030 직장인/청년",
+                        "👫 신혼부부/가족형 주거",
+                        "💼 창업 소상공인/사옥",
+                        "📈 임대수익·투자자"
+                      ].map(item => {
+                        const active = optTarget === item;
+                        return (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => setOptTarget(item)}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: 16,
+                              fontSize: 13,
+                              fontWeight: active ? 800 : 600,
+                              background: active ? "#0284c7" : "#ffffff",
+                              color: active ? "#ffffff" : "#334155",
+                              border: `1.5px solid ${active ? "#0284c7" : "#cbd5e1"}`,
+                              cursor: "pointer",
+                              transition: "all 0.15s"
+                            }}
+                          >
+                            {item}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 🚀 원클릭 생성 버튼 */}
+                  <button
+                    type="button"
+                    disabled={isGeneratingAi}
+                    onClick={() => executeOptionWizardGenerate("vacancy")}
+                    style={{
+                      width: "100%",
+                      padding: "13px 0",
+                      background: isGeneratingAi ? "#94a3b8" : "linear-gradient(135deg, #4f46e5, #6366f1)",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: 10,
+                      fontSize: 16,
+                      fontWeight: 900,
+                      cursor: isGeneratingAi ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      boxShadow: "0 4px 14px rgba(79, 70, 229, 0.35)",
+                      marginTop: 4
+                    }}
+                  >
+                    <span>🚀</span> 1초 만에 정통 보도기사 완성하기 (토큰 1회)
+                  </button>
+                  <div style={{ fontSize: 11.5, color: "#64748b", textAlign: "center", lineHeight: 1.4 }}>
+                    🛡️ 계약 완료 후에도 지울 필요 없는 <b>객관적 시장 출회 보도기사</b>로 작성됩니다.
+                  </div>
+                </div>
+              )}
+
+              {/* ═══ 📰 [트랙 2: 보도자료/기사 복사붙여넣기] 옵션 위자드 ═══ */}
+              {aiWizardTab === "news" && (
+                <div style={{ padding: "14px 18px", background: "#f8fafc", borderBottom: `1.5px solid #cbd5e1`, display: "flex", flexDirection: "column", gap: 12, flexShrink: 0 }}>
+                  {/* 복사붙여넣기 강조 뱃지 */}
+                  <div style={{
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    background: "linear-gradient(135deg, #eff6ff, #dbeafe)",
+                    border: "1.5px solid #93c5fd",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 8
+                  }}>
+                    <span style={{ fontSize: 18 }}>📋</span>
+                    <div style={{ fontSize: 12.5, color: "#1e40af", lineHeight: 1.5 }}>
+                      <b>네이버 뉴스·보도자료를 복사(Ctrl+V)해서 붙여넣으세요!</b><br />
+                      AI가 표절 없이 공실뉴스만의 독창적인 정통 보도기사로 100% 재구성합니다.
+                    </div>
+                  </div>
+
+                  {/* 원문 텍스트박스 */}
+                  <textarea
+                    rows={3}
+                    value={aiNewsSourceText}
+                    onChange={e => setAiNewsSourceText(e.target.value)}
+                    placeholder="기사 전문 또는 보도자료를 여기에 붙여넣으세요 (또는 아래 추천 키워드 클릭)..."
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      border: "1.5px solid #cbd5e1",
+                      fontSize: 14,
+                      lineHeight: 1.5,
+                      outline: "none",
+                      resize: "none",
+                      boxSizing: "border-box",
+                      background: "#ffffff",
+                      fontFamily: "inherit"
+                    }}
+                  />
+
+                  {/* 오늘의 추천 핫이슈 빠른 채우기 칩 */}
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: "#475569", marginBottom: 4 }}>
+                      🔥 오늘의 실시간 부동산 추천 핫이슈 (클릭 시 자동 세팅):
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {[
+                        "📉 2026 주담대 연체율 급등 & 은행 건전성",
+                        "⚠️ 전세사기 여파와 빌라 역전세난 동향",
+                        "🏗️ 3기 신도시 분양가 및 청약 전망",
+                        "🏢 상가 공실률 급증과 경매 시장"
+                      ].map(topic => (
+                        <button
+                          key={topic}
+                          type="button"
+                          onClick={() => setAiNewsSourceText(topic)}
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: 14,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            background: "#ffffff",
+                            color: "#0369a1",
+                            border: "1px solid #bae6fd",
+                            cursor: "pointer"
+                          }}
+                        >
+                          {topic}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 분석 방향 및 헤드라인 선택 */}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 4 }}>분석 논조</div>
+                      <select
+                        value={optNewsAngle}
+                        onChange={e => setOptNewsAngle(e.target.value)}
+                        style={{ width: "100%", padding: "7px 8px", fontSize: 12.5, borderRadius: 6, border: "1px solid #cbd5e1", background: "#fff", fontWeight: 600 }}
+                      >
+                        <option value="📊 팩트·데이터 중심 객관적 분석">📊 데이터·팩트 객관적 분석</option>
+                        <option value="⚠️ 시장 침체 경고 및 리스크 점검">⚠️ 시장 침체 경고 및 리스크</option>
+                        <option value="💡 임대인·임차인 실전 대응 가이드">💡 실전 대응 가이드</option>
+                        <option value="🚀 위기 속 투자자 관점 전망">🚀 투자자 관점 전망</option>
+                      </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 4 }}>헤드라인 스타일</div>
+                      <select
+                        value={optNewsHeadline}
+                        onChange={e => setOptNewsHeadline(e.target.value)}
+                        style={{ width: "100%", padding: "7px 8px", fontSize: 12.5, borderRadius: 6, border: "1px solid #cbd5e1", background: "#fff", fontWeight: 600 }}
+                      >
+                        <option value="🔥 포탈 메인 클릭률 높은 헤드라인">🔥 자극적 헤드라인</option>
+                        <option value="📰 언론사 1면 정통 헤드라인">📰 언론사 1면 정통</option>
+                        <option value="📌 바쁜 현대인을 위한 3줄 브리핑">📌 3줄 요약 헤드라인</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* 🚀 원클릭 생성 버튼 */}
+                  <button
+                    type="button"
+                    disabled={isGeneratingAi}
+                    onClick={() => executeOptionWizardGenerate("news")}
+                    style={{
+                      width: "100%",
+                      padding: "13px 0",
+                      background: isGeneratingAi ? "#94a3b8" : "linear-gradient(135deg, #0284c7, #2563eb)",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: 10,
+                      fontSize: 16,
+                      fontWeight: 900,
+                      cursor: isGeneratingAi ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      boxShadow: "0 4px 14px rgba(2, 132, 199, 0.35)",
+                      marginTop: 2
+                    }}
+                  >
+                    <span>🚀</span> 공실뉴스 독창 기사로 완성하기 (토큰 1회)
+                  </button>
+                </div>
+              )}
+
+              {/* ═══ 대화 스레드 (결과물 브리핑 & 후속 칩) ═══ */}
+              <div style={{ flex: "1 1 0", minHeight: 0, overflowY: "auto", padding: "18px 18px", display: "flex", flexDirection: "column", gap: 14, background: "#f8fafc" }}>
+                {aiChatMessages.map(msg => (
+                  <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start" }}>
+                    <div style={{
+                      maxWidth: "92%",
+                      padding: "14px 18px",
+                      borderRadius: msg.role === "user" ? "16px 16px 2px 16px" : "16px 16px 16px 2px",
+                      background: msg.role === "user" ? "#4f46e5" : "#ffffff",
+                      color: msg.role === "user" ? "#ffffff" : "#1e293b",
+                      fontSize: 15.5,
+                      lineHeight: 1.7,
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                      border: msg.role === "assistant" ? "1px solid #e2e8f0" : "none",
+                      whiteSpace: "pre-wrap"
+                    }}>
+                      {msg.text}
+                    </div>
+
+                    {/* AI 초안이 포함된 메시지일 경우 에디터 재적용 및 채널 탭 칩 */}
+                    {msg.data && (
+                      <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            applyDraftToEditor(msg.data);
+                            alert("⚡ 에디터 본문에 즉시 재적용되었습니다!");
+                          }}
+                          style={{ padding: "7px 14px", background: "#e0e7ff", color: "#4338ca", border: "1px solid #c7d2fe", borderRadius: 8, fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}
+                        >
+                          ⚡ 본문 재적용
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(msg.data.content_blog || "");
+                            alert("📋 블로그 원고가 복사되었습니다!");
+                          }}
+                          style={{ padding: "7px 14px", background: "#ecfdf5", color: "#065f46", border: "1px solid #a7f3d0", borderRadius: 8, fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}
+                        >
+                          ✍️ 블로그 복사
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(msg.data.content_shorts || "");
+                            alert("🎥 쇼츠 대본이 복사되었습니다!");
+                          }}
+                          style={{ padding: "7px 14px", background: "#fff1f2", color: "#9f1239", border: "1px solid #fecdd3", borderRadius: 8, fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}
+                        >
+                          🎬 쇼츠 복사
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {isGeneratingAi && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", background: "#ffffff", borderRadius: 12, border: "1.5px solid #6366f1", alignSelf: "flex-start", boxShadow: "0 2px 10px rgba(99,102,241,0.15)" }}>
+                    <div style={{ width: 22, height: 22, border: "3px solid #6366f1", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                    <span style={{ fontSize: 15.5, color: "#4f46e5", fontWeight: 800 }}>AI 기자가 정통 보도기사를 집필하여 에디터에 밀어넣는 중...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 하단 세부 요청 인풋 (선택 사항) */}
+              <div style={{ padding: "10px 16px 12px", background: "#ffffff", borderTop: `1px solid ${border}`, flexShrink: 0 }}>
+                <div style={{
+                  position: "relative",
+                  border: "1.5px solid #cbd5e1",
+                  borderRadius: 12,
+                  background: "#ffffff",
+                  padding: "8px 12px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8
+                }}>
+                  <input
+                    type="text"
+                    value={aiChatInput}
+                    onChange={e => setAiChatInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleChatSubmit();
+                      }
+                    }}
+                    placeholder="추가 세부 지시사항이 있을 때만 입력 (Enter 전송)..."
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      outline: "none",
+                      fontSize: 14,
+                      background: "transparent",
+                      color: "#0f172a"
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={isGeneratingAi}
+                    onClick={() => handleChatSubmit()}
+                    style={{
+                      width: 32, height: 32,
+                      borderRadius: "50%",
+                      background: isGeneratingAi ? "#94a3b8" : "#4f46e5",
+                      color: "#fff",
+                      border: "none",
+                      cursor: isGeneratingAi ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 16,
+                      fontWeight: 900
+                    }}
+                  >
+                    ↑
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </aside>
 
         {/* ═══ 중앙 메인 폼: 기사쓰기 ═══ */}

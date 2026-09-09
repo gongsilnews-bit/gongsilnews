@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { getLectureDetail, createLectureReview, enrollLecture, checkEnrollment } from "@/app/actions/lecture";
 import { getPointBalance } from "@/app/actions/point";
@@ -221,7 +222,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
       {/* ── 1. 썸네일 프리뷰 ── */}
       <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#062326" }}>
         {lecture.thumbnail_url ? (
-          <img src={lecture.thumbnail_url} alt={lecture.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <Image src={lecture.thumbnail_url} alt={lecture.title} fill priority sizes="(max-width: 448px) 100vw, 448px" style={{ objectFit: "cover" }} />
         ) : (
           <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #062326 0%, #064e3b 100%)", color: "#fff" }}>
             <span style={{ fontSize: 32, marginBottom: 4 }}>🎓</span>

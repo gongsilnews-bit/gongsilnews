@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface NewsItem {
   id: string;
@@ -23,8 +24,8 @@ export default function NewsSection({ title, items }: NewsSectionProps) {
       <div className="flex flex-col gap-4">
         {items.map((item) => (
           <Link key={item.id} href={`/m/news/${item.id}`} className="flex gap-3 items-start">
-            <div className="w-[100px] h-[64px] bg-gray-200 rounded overflow-hidden flex-shrink-0">
-              <img src={item.imageUrl} className="w-full h-full object-cover" alt={item.title} />
+            <div className="w-[100px] h-[64px] bg-gray-200 rounded overflow-hidden flex-shrink-0 relative">
+              <Image src={item.imageUrl} fill sizes="100px" style={{ objectFit: "cover" }} alt={item.title} />
             </div>
             <div className="flex-1">
               <h3 className="text-[15px] font-bold text-gray-900 leading-snug line-clamp-2 mb-1">

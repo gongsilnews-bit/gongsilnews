@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 interface VideoItem {
   id: string;
@@ -33,7 +34,7 @@ export default function VideoSlider({ title, items, theme = "light", cardType = 
           cardType === "video" ? (
             <div key={item.id} className={`flex-shrink-0 cursor-pointer ${isDark ? "w-[180px]" : "w-[200px]"}`}>
               <div className={`w-full ${isDark ? "h-[100px]" : "h-[112px]"} ${isDark ? "bg-gray-800 border border-gray-700" : "bg-gray-200"} rounded-lg overflow-hidden relative mb-2`}>
-                <img src={item.imageUrl} className={`w-full h-full object-cover ${isDark ? "opacity-80" : ""}`} alt={item.title} />
+                <Image src={item.imageUrl} fill sizes="200px" style={{ objectFit: "cover" }} className={isDark ? "opacity-80" : ""} alt={item.title} />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                   <div className={`rounded-full border-2 border-white flex items-center justify-center bg-black/50 ${isDark ? "w-8 h-8" : "w-10 h-10"}`}>
                     <svg width={isDark ? "14" : "20"} height={isDark ? "14" : "20"} viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
@@ -46,7 +47,7 @@ export default function VideoSlider({ title, items, theme = "light", cardType = 
           ) : (
             <div key={item.id} className="w-[220px] flex-shrink-0 cursor-pointer border border-gray-100 rounded-xl overflow-hidden shadow-sm bg-white">
               <div className="w-full h-[120px] bg-gray-100 relative">
-                <img src={item.imageUrl} className="w-full h-full object-cover" alt={item.title} />
+                <Image src={item.imageUrl} fill sizes="220px" style={{ objectFit: "cover" }} alt={item.title} />
               </div>
               <div className="p-3">
                 <span className="text-[#3b82f6] text-[10px] font-bold">{item.category}</span>
