@@ -726,8 +726,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               .then(({ data: adSetting }) => {
                 if (adSetting) {
                   setWriteAdType(adSetting.ad_type || "DEFAULT");
-                  if (adSetting.start_date) setWriteAdStartDate(adSetting.start_date);
-                  if (adSetting.end_date) setWriteAdEndDate(adSetting.end_date);
+                  const sDate = adSetting.start_date || adSetting.custom_banner?.start_date || "";
+                  const eDate = adSetting.end_date || adSetting.custom_banner?.end_date || "";
+                  if (sDate) setWriteAdStartDate(sDate);
+                  if (eDate) setWriteAdEndDate(eDate);
                   if (adSetting.custom_banner) {
                     setWriteAdBannerId(adSetting.custom_banner.id);
                     setWriteAdBannerName(adSetting.custom_banner.name);
@@ -3088,106 +3090,321 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   </div>
                 )}
 
-                {/* 배너등록 선택 시: 배너이름 -> 링크첨부 -> 이미지첨부(새배너/기존배너) -> 광고기간 */}
+                {/* 배너등록 선택 시: 등록 방식 먼저 선택 -> 분기 렌더링 (대표님 지시) */}
                 {writeAdType === "BANNER" && (
-                  <div style={{ padding: "16px 18px", background: "#f8fafc", borderRadius: 10, border: `1px solid ${border}`, display: "flex", flexDirection: "column", gap: 14, minWidth: 0, boxSizing: "border-box" }}>
-                    {/* 1) 배너 이름 */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>배너 이름:</span>
-                      <input
-                        type="text"
-                        value={writeAdBannerName}
-                        onChange={(e) => setWriteAdBannerName(e.target.value)}
-                        placeholder="예: 논현동 신축 상가 분양 홍보 배너"
-                        style={{ flex: 1, minWidth: 0, padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", outline: "none", boxSizing: "border-box" }}
-                      />
-                    </div>
-
-                    {/* 2) 링크 첨부 (배너 이름 하단) */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>링크 첨부:</span>
-                      <input
-                        type="text"
-                        value={writeAdLinkUrl}
-                        onChange={(e) => setWriteAdLinkUrl(e.target.value)}
-                        placeholder="https://... (클릭 시 이동할 링크 URL)"
-                        style={{ flex: 1, minWidth: 0, padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", outline: "none", boxSizing: "border-box" }}
-                      />
-                    </div>
-
-                    {/* 3) 이미지 첨부: 새 배너 등록하기 / 기존 배너 가져오기 */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>이미지 첨부:</span>
-                        <div style={{ display: "inline-flex", background: "#e2e8f0", padding: "3px", borderRadius: "8px", gap: 4 }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setWriteAdMode("NEW");
-                              setWriteAdBannerId("");
-                            }}
-                            style={{
-                              padding: "5px 12px",
-                              borderRadius: "6px",
-                              border: "none",
-                              fontSize: "12px",
-                              fontWeight: writeAdMode === "NEW" ? 700 : 500,
-                              background: writeAdMode === "NEW" ? "#ffffff" : "transparent",
-                              color: writeAdMode === "NEW" ? "#2563eb" : "#64748b",
-                              cursor: "pointer",
-                              boxShadow: writeAdMode === "NEW" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                              transition: "all 0.15s",
-                            }}
-                          >
-                            새 배너 등록하기
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              setWriteAdMode("EXISTING");
-                              const targetId = memberAuthorId || currentUserId;
-                              if (targetId) {
-                                const bRes = await getAuthorBanners(targetId);
-                                if (bRes.success && bRes.data) {
-                                  setAuthorBanners(bRes.data);
-                                  if (bRes.data.length > 0 && !writeAdBannerId) {
-                                    const first = bRes.data[0];
-                                    setWriteAdBannerId(first.id);
-                                    setWriteAdBannerName(first.name);
-                                    setWriteAdLinkUrl(first.link_url || "");
-                                    setWriteAdPreview(first.image_url || "");
-                                  }
-                                }
-                              } else if (authorBanners.length > 0 && !writeAdBannerId) {
-                                const first = authorBanners[0];
-                                setWriteAdBannerId(first.id);
-                                setWriteAdBannerName(first.name);
-                                setWriteAdLinkUrl(first.link_url || "");
-                                setWriteAdPreview(first.image_url || "");
+                  <div style={{ padding: "18px 20px", background: "#f8fafc", borderRadius: 10, border: `1px solid ${border}`, display: "flex", flexDirection: "column", gap: 14, minWidth: 0, boxSizing: "border-box" }}>
+                    {/* [1순위] 등록 방식 선택 (새 배너 직접 등록 vs 기존 배너 가져오기) */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, paddingBottom: 12, borderBottom: `1px dashed ${border}` }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>등록 방식:</span>
+                      <div style={{ display: "inline-flex", background: "#e2e8f0", padding: "3px", borderRadius: "8px", gap: 4 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWriteAdMode("NEW");
+                            setWriteAdBannerId("");
+                            setWriteAdFile(null);
+                            setWriteAdBannerName("");
+                            setWriteAdLinkUrl("");
+                            setWriteAdPreview("");
+                            setWriteAdStartDate("");
+                            setWriteAdEndDate("");
+                          }}
+                          style={{
+                            padding: "6px 14px",
+                            borderRadius: "6px",
+                            border: "none",
+                            fontSize: "12.5px",
+                            fontWeight: writeAdMode === "NEW" ? 700 : 500,
+                            background: writeAdMode === "NEW" ? "#ffffff" : "transparent",
+                            color: writeAdMode === "NEW" ? "#2563eb" : "#64748b",
+                            cursor: "pointer",
+                            boxShadow: writeAdMode === "NEW" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          ➕ 새 배너 직접 등록
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setWriteAdMode("EXISTING");
+                            const targetId = memberAuthorId || currentUserId;
+                            if (targetId) {
+                              const bRes = await getAuthorBanners(targetId);
+                              if (bRes.success && bRes.data) {
+                                setAuthorBanners(bRes.data);
                               }
-                            }}
-                            style={{
-                              padding: "5px 12px",
-                              borderRadius: "6px",
-                              border: "none",
-                              fontSize: "12px",
-                              fontWeight: writeAdMode === "EXISTING" ? 700 : 500,
-                              background: writeAdMode === "EXISTING" ? "#ffffff" : "transparent",
-                              color: writeAdMode === "EXISTING" ? "#2563eb" : "#64748b",
-                              cursor: "pointer",
-                              boxShadow: writeAdMode === "EXISTING" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                              transition: "all 0.15s",
-                            }}
-                          >
-                            기존 배너 가져오기
-                          </button>
-                        </div>
+                            }
+                          }}
+                          style={{
+                            padding: "6px 14px",
+                            borderRadius: "6px",
+                            border: "none",
+                            fontSize: "12.5px",
+                            fontWeight: writeAdMode === "EXISTING" ? 700 : 500,
+                            background: writeAdMode === "EXISTING" ? "#ffffff" : "transparent",
+                            color: writeAdMode === "EXISTING" ? "#2563eb" : "#64748b",
+                            cursor: "pointer",
+                            boxShadow: writeAdMode === "EXISTING" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          📂 기존 배너 가져오기
+                        </button>
                       </div>
+                    </div>
 
-                      {/* 이미지 첨부 필드 */}
-                      <div style={{ marginLeft: 95, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-                        {writeAdMode === "NEW" ? (
+                    {/* ── [A안: 기존 배너 가져오기 선택 시] ── */}
+                    {writeAdMode === "EXISTING" ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
+                        {/* 1) 배너 선택 드롭다운 (선택하기를 맨 위에 둠) */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>배너 선택:</span>
+                          {authorBanners.length > 0 ? (
+                            <select
+                              value={writeAdBannerId}
+                              onChange={(e) => {
+                                const bId = e.target.value;
+                                setWriteAdBannerId(bId);
+                                if (bId) {
+                                  const found = authorBanners.find((b) => b.id === bId);
+                                  if (found) {
+                                    setWriteAdBannerName(found.name);
+                                    setWriteAdLinkUrl(found.link_url || "");
+                                    setWriteAdPreview(found.image_url || "");
+                                    setWriteAdStartDate(found.start_date || "");
+                                    setWriteAdEndDate(found.end_date || "");
+                                  }
+                                } else {
+                                  setWriteAdBannerName("");
+                                  setWriteAdLinkUrl("");
+                                  setWriteAdPreview("");
+                                  setWriteAdStartDate("");
+                                  setWriteAdEndDate("");
+                                }
+                              }}
+                              style={{ padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", flex: 1, maxWidth: 360, minWidth: 0 }}
+                            >
+                              <option value="">-- 사용할 배너를 선택하세요 --</option>
+                              {authorBanners.map((b) => (
+                                <option key={b.id} value={b.id}>
+                                  {b.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span style={{ fontSize: 13, color: "#ef4444" }}>
+                              등록된 기존 배너가 없습니다. [새 배너 직접 등록]을 선택해주세요.
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 배너를 아직 선택하지 않았을 때 안내 */}
+                        {!writeAdBannerId && authorBanners.length > 0 && (
+                          <div style={{ marginLeft: 95, padding: "12px 14px", background: "#f1f5f9", borderRadius: 8, fontSize: 13, color: textSecondary }}>
+                            💡 위 드롭다운에서 기사에 적용할 배너를 선택해 주세요. 배너를 선택하면 이미지, 링크, 광고기간이 자동으로 표시됩니다.
+                          </div>
+                        )}
+
+                        {/* 배너가 선택되었을 때만 아래 세부 정보 노출 (대표님 지시) */}
+                        {writeAdBannerId && (
+                          <>
+                            {/* 2) 링크 첨부 (확인 및 수정 가능) */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>링크 첨부:</span>
+                              <input
+                                type="text"
+                                value={writeAdLinkUrl}
+                                onChange={(e) => setWriteAdLinkUrl(e.target.value)}
+                                placeholder="https://... (클릭 시 이동할 링크 URL)"
+                                style={{ flex: 1, minWidth: 0, padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", outline: "none", boxSizing: "border-box" }}
+                              />
+                            </div>
+
+                            {/* 3) 배너 이미지 썸네일 (클릭 시 새 창 열기) */}
+                            {writeAdPreview && (
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>배너 이미지:</span>
+                                <a
+                                  href={writeAdLinkUrl ? (writeAdLinkUrl.startsWith("http") ? writeAdLinkUrl : `https://${writeAdLinkUrl}`) : undefined}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => {
+                                    if (!writeAdLinkUrl) e.preventDefault();
+                                  }}
+                                  style={{
+                                    display: "block",
+                                    borderRadius: 8,
+                                    overflow: "hidden",
+                                    border: `1px solid ${border}`,
+                                    maxHeight: 85,
+                                    maxWidth: 360,
+                                    width: "100%",
+                                    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                                    cursor: writeAdLinkUrl ? "pointer" : "default",
+                                    textDecoration: "none",
+                                  }}
+                                  title={writeAdLinkUrl ? `새 창에서 링크 열기: ${writeAdLinkUrl}` : ""}
+                                >
+                                  <img src={writeAdPreview} alt="배너 미리보기" style={{ width: "100%", height: 85, objectFit: "cover", display: "block" }} />
+                                </a>
+                              </div>
+                            )}
+
+                            {/* 4) 광고기간: 시작 - 종료 (기간초기화 버튼 제거 완료) */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>광고기간:</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                <input
+                                  type="date"
+                                  value={writeAdStartDate}
+                                  onChange={(e) => setWriteAdStartDate(e.target.value)}
+                                  style={{ padding: "7px 10px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff" }}
+                                />
+                                <span style={{ fontSize: 13, color: textSecondary }}>~</span>
+                                <input
+                                  type="date"
+                                  value={writeAdEndDate}
+                                  onChange={(e) => setWriteAdEndDate(e.target.value)}
+                                  style={{ padding: "7px 10px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff" }}
+                                />
+                              </div>
+                              <span style={{ fontSize: 12, color: textSecondary, marginLeft: 95, width: "100%" }}>
+                                * 미설정 시 상시 노출되며, 설정 시 해당 기간 동안만 배너가 노출되고 이후엔 기본프로필 카드로 자동 전환됩니다.
+                              </span>
+                            </div>
+
+                            {/* 5) 실제 기사 하단 배너 실시간 미리보기 (클릭 시 새 창 이동) */}
+                            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed #cbd5e1", minWidth: 0, maxWidth: "100%", boxSizing: "border-box" }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8, minWidth: 0 }}>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: "#2563eb", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, whiteSpace: "nowrap" }}>
+                                  <span>👀</span> [실시간 미리보기] 실제 기사 하단에 노출되는 배너 모습
+                                </span>
+                                <a
+                                  href={writeAdLinkUrl ? (writeAdLinkUrl.startsWith("http") ? writeAdLinkUrl : `https://${writeAdLinkUrl}`) : undefined}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => {
+                                    if (!writeAdLinkUrl) e.preventDefault();
+                                  }}
+                                  style={{
+                                    fontSize: 11,
+                                    color: writeAdLinkUrl ? "#2563eb" : textSecondary,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    minWidth: 0,
+                                    maxWidth: "50%",
+                                    textAlign: "right",
+                                    textDecoration: writeAdLinkUrl ? "underline" : "none",
+                                    cursor: writeAdLinkUrl ? "pointer" : "default",
+                                    fontWeight: 600,
+                                  }}
+                                  title={writeAdLinkUrl ? `새 창에서 링크 열기: ${writeAdLinkUrl}` : "링크 미입력"}
+                                >
+                                  {writeAdLinkUrl ? `🔗 클릭 시 이동: ${writeAdLinkUrl}` : "링크 미입력 (클릭 불가)"}
+                                </a>
+                              </div>
+                              <a
+                                href={writeAdLinkUrl ? (writeAdLinkUrl.startsWith("http") ? writeAdLinkUrl : `https://${writeAdLinkUrl}`) : undefined}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => {
+                                  if (!writeAdLinkUrl) {
+                                    e.preventDefault();
+                                    alert("연결할 링크 URL이 입력되지 않았습니다.");
+                                  }
+                                }}
+                                style={{
+                                  display: "block",
+                                  position: "relative",
+                                  width: "100%",
+                                  maxWidth: 820,
+                                  borderRadius: 12,
+                                  overflow: "hidden",
+                                  border: "1px solid #e2e8f0",
+                                  boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
+                                  background: "#ffffff",
+                                  boxSizing: "border-box",
+                                  cursor: writeAdLinkUrl ? "pointer" : "default",
+                                  textDecoration: "none",
+                                  transition: "all 0.2s ease",
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (writeAdLinkUrl) {
+                                    e.currentTarget.style.transform = "translateY(-2px)";
+                                    e.currentTarget.style.boxShadow = "0 8px 22px rgba(37, 99, 235, 0.18)";
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.transform = "none";
+                                  e.currentTarget.style.boxShadow = "0 2px 10px rgba(0, 0, 0, 0.05)";
+                                }}
+                                title={writeAdLinkUrl ? `클릭 시 새 창으로 열기: ${writeAdLinkUrl}` : "링크 미입력"}
+                              >
+                                <span
+                                  style={{
+                                    position: "absolute",
+                                    top: 10,
+                                    right: 10,
+                                    background: "rgba(15, 23, 42, 0.72)",
+                                    color: "#ffffff",
+                                    fontSize: 10,
+                                    fontWeight: 800,
+                                    padding: "2px 6px",
+                                    borderRadius: 4,
+                                    letterSpacing: "0.5px",
+                                    zIndex: 2,
+                                  }}
+                                >
+                                  AD
+                                </span>
+                                <img
+                                  src={writeAdPreview}
+                                  alt="배너 실시간 미리보기"
+                                  style={{
+                                    width: "100%",
+                                    maxHeight: 280,
+                                    objectFit: "cover",
+                                    display: "block",
+                                  }}
+                                />
+                              </a>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      /* ── [B안: 새 배너 직접 등록 선택 시] ── */
+                      <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
+                        {/* 1) 배너 이름 */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>배너 이름:</span>
+                          <input
+                            type="text"
+                            value={writeAdBannerName}
+                            onChange={(e) => setWriteAdBannerName(e.target.value)}
+                            placeholder="예: 논현동 신축 상가 분양 홍보 배너"
+                            style={{ flex: 1, minWidth: 0, padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", outline: "none", boxSizing: "border-box" }}
+                          />
+                        </div>
+
+                        {/* 2) 링크 첨부 */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>링크 첨부:</span>
+                          <input
+                            type="text"
+                            value={writeAdLinkUrl}
+                            onChange={(e) => setWriteAdLinkUrl(e.target.value)}
+                            placeholder="https://... (클릭 시 이동할 링크 URL)"
+                            style={{ flex: 1, minWidth: 0, padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", outline: "none", boxSizing: "border-box" }}
+                          />
+                        </div>
+
+                        {/* 3) 이미지 첨부 (파일 선택) */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>이미지 첨부:</span>
                             <input
                               type="file"
                               accept="image/*"
@@ -3249,150 +3466,160 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                               (사이즈: 1200X400 PX)
                             </span>
                           </div>
-                        ) : (
-                          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                            {authorBanners.length > 0 ? (
-                              <select
-                                value={writeAdBannerId}
-                                onChange={(e) => {
-                                  const bId = e.target.value;
-                                  setWriteAdBannerId(bId);
-                                  if (bId) {
-                                    const found = authorBanners.find((b) => b.id === bId);
-                                    if (found) {
-                                      setWriteAdLinkUrl(found.link_url || "");
-                                      setWriteAdPreview(found.image_url || "");
-                                      setWriteAdBannerName(found.name);
-                                      setWriteAdStartDate(found.start_date || "");
-                                      setWriteAdEndDate(found.end_date || "");
-                                    }
-                                  }
+
+                          {/* 작은 썸네일 미리보기 (클릭 시 새 창 열기) */}
+                          {writeAdPreview && (
+                            <div style={{ marginLeft: 95, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                              <span style={{ fontSize: 12, color: textSecondary, flexShrink: 0 }}>미리보기:</span>
+                              <a
+                                href={writeAdLinkUrl ? (writeAdLinkUrl.startsWith("http") ? writeAdLinkUrl : `https://${writeAdLinkUrl}`) : undefined}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => {
+                                  if (!writeAdLinkUrl) e.preventDefault();
                                 }}
-                                style={{ padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", flex: 1, maxWidth: 360, minWidth: 0 }}
+                                style={{
+                                  display: "block",
+                                  borderRadius: 8,
+                                  overflow: "hidden",
+                                  border: `1px solid ${border}`,
+                                  maxHeight: 85,
+                                  maxWidth: 360,
+                                  width: "100%",
+                                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                                  cursor: writeAdLinkUrl ? "pointer" : "default",
+                                  textDecoration: "none",
+                                }}
+                                title={writeAdLinkUrl ? `새 창에서 링크 열기: ${writeAdLinkUrl}` : ""}
                               >
-                                {authorBanners.map((b) => (
-                                  <option key={b.id} value={b.id}>
-                                    {b.name}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span style={{ fontSize: 13, color: "#ef4444" }}>
-                                등록된 기존 배너가 없습니다. [새 배너 등록하기]를 선택해주세요.
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* 이미지 미리보기 */}
-                        {writeAdPreview && (
-                          <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                            <span style={{ fontSize: 12, color: textSecondary, flexShrink: 0 }}>미리보기:</span>
-                            <div style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${border}`, maxHeight: 85, maxWidth: 360, width: "100%", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-                              <img src={writeAdPreview} alt="배너 미리보기" style={{ width: "100%", height: 85, objectFit: "cover", display: "block" }} />
+                                <img src={writeAdPreview} alt="배너 미리보기" style={{ width: "100%", height: 85, objectFit: "cover", display: "block" }} />
+                              </a>
                             </div>
+                          )}
+                        </div>
+
+                        {/* 4) 광고기간: 시작 - 종료 (기간초기화 버튼 제거 완료) */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>광고기간:</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <input
+                              type="date"
+                              value={writeAdStartDate}
+                              onChange={(e) => setWriteAdStartDate(e.target.value)}
+                              style={{ padding: "7px 10px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff" }}
+                            />
+                            <span style={{ fontSize: 13, color: textSecondary }}>~</span>
+                            <input
+                              type="date"
+                              value={writeAdEndDate}
+                              onChange={(e) => setWriteAdEndDate(e.target.value)}
+                              style={{ padding: "7px 10px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff" }}
+                            />
+                          </div>
+                          <span style={{ fontSize: 12, color: textSecondary, marginLeft: 95, width: "100%" }}>
+                            * 미설정 시 상시 노출되며, 설정 시 해당 기간 동안만 배너가 노출되고 이후엔 기본프로필 카드로 자동 전환됩니다.
+                          </span>
+                        </div>
+
+                        {/* 5) 실제 기사 하단 배너 실시간 미리보기 (클릭 시 새 창 이동) */}
+                        {writeAdPreview && (
+                          <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed #cbd5e1", minWidth: 0, maxWidth: "100%", boxSizing: "border-box" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8, minWidth: 0 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "#2563eb", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, whiteSpace: "nowrap" }}>
+                                <span>👀</span> [실시간 미리보기] 실제 기사 하단에 노출되는 배너 모습
+                              </span>
+                              <a
+                                href={writeAdLinkUrl ? (writeAdLinkUrl.startsWith("http") ? writeAdLinkUrl : `https://${writeAdLinkUrl}`) : undefined}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => {
+                                  if (!writeAdLinkUrl) e.preventDefault();
+                                }}
+                                style={{
+                                  fontSize: 11,
+                                  color: writeAdLinkUrl ? "#2563eb" : textSecondary,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                  minWidth: 0,
+                                  maxWidth: "50%",
+                                  textAlign: "right",
+                                  textDecoration: writeAdLinkUrl ? "underline" : "none",
+                                  cursor: writeAdLinkUrl ? "pointer" : "default",
+                                  fontWeight: 600,
+                                }}
+                                title={writeAdLinkUrl ? `새 창에서 링크 열기: ${writeAdLinkUrl}` : "링크 미입력"}
+                              >
+                                {writeAdLinkUrl ? `🔗 클릭 시 이동: ${writeAdLinkUrl}` : "링크 미입력 (클릭 불가)"}
+                              </a>
+                            </div>
+                            <a
+                              href={writeAdLinkUrl ? (writeAdLinkUrl.startsWith("http") ? writeAdLinkUrl : `https://${writeAdLinkUrl}`) : undefined}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => {
+                                if (!writeAdLinkUrl) {
+                                  e.preventDefault();
+                                  alert("연결할 링크 URL이 입력되지 않았습니다.");
+                                }
+                              }}
+                              style={{
+                                display: "block",
+                                position: "relative",
+                                width: "100%",
+                                maxWidth: 820,
+                                borderRadius: 12,
+                                overflow: "hidden",
+                                border: "1px solid #e2e8f0",
+                                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
+                                background: "#ffffff",
+                                boxSizing: "border-box",
+                                cursor: writeAdLinkUrl ? "pointer" : "default",
+                                textDecoration: "none",
+                                transition: "all 0.2s ease",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (writeAdLinkUrl) {
+                                  e.currentTarget.style.transform = "translateY(-2px)";
+                                  e.currentTarget.style.boxShadow = "0 8px 22px rgba(37, 99, 235, 0.18)";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = "none";
+                                e.currentTarget.style.boxShadow = "0 2px 10px rgba(0, 0, 0, 0.05)";
+                              }}
+                              title={writeAdLinkUrl ? `클릭 시 새 창으로 열기: ${writeAdLinkUrl}` : "링크 미입력"}
+                            >
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: 10,
+                                  right: 10,
+                                  background: "rgba(15, 23, 42, 0.72)",
+                                  color: "#ffffff",
+                                  fontSize: 10,
+                                  fontWeight: 800,
+                                  padding: "2px 6px",
+                                  borderRadius: 4,
+                                  letterSpacing: "0.5px",
+                                  zIndex: 2,
+                                }}
+                              >
+                                AD
+                              </span>
+                              <img
+                                src={writeAdPreview}
+                                alt="배너 실시간 미리보기"
+                                style={{
+                                  width: "100%",
+                                  maxHeight: 280,
+                                  objectFit: "cover",
+                                  display: "block",
+                                }}
+                              />
+                            </a>
                           </div>
                         )}
-                      </div>
-                    </div>
-
-                    {/* 4) 광고기간: 시작 - 종료 */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, width: 85, flexShrink: 0 }}>광고기간:</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <input
-                          type="date"
-                          value={writeAdStartDate}
-                          onChange={(e) => setWriteAdStartDate(e.target.value)}
-                          style={{ padding: "7px 10px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff" }}
-                        />
-                        <span style={{ fontSize: 13, color: textSecondary }}>~</span>
-                        <input
-                          type="date"
-                          value={writeAdEndDate}
-                          onChange={(e) => setWriteAdEndDate(e.target.value)}
-                          style={{ padding: "7px 10px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff" }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setWriteAdStartDate("");
-                            setWriteAdEndDate("");
-                          }}
-                          style={{ padding: "6px 10px", borderRadius: 5, border: "1px solid #cbd5e1", background: "#fff", fontSize: 12, color: "#64748b", cursor: "pointer" }}
-                        >
-                          기간 초기화 (상시)
-                        </button>
-                      </div>
-                      <span style={{ fontSize: 12, color: textSecondary, marginLeft: 95, width: "100%" }}>
-                        * 미설정 시 상시 노출되며, 설정 시 해당 기간 동안만 배너가 노출되고 이후엔 기본프로필 카드로 자동 전환됩니다.
-                      </span>
-                    </div>
-
-                    {/* 5) 실제 기사 하단 배너 실시간 미리보기 (대표님 요청) */}
-                    {writeAdPreview && (
-                      <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed #cbd5e1", minWidth: 0, maxWidth: "100%", boxSizing: "border-box" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8, minWidth: 0 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#2563eb", display: "flex", alignItems: "center", gap: 6, flexShrink: 0, whiteSpace: "nowrap" }}>
-                            <span>👀</span> [실시간 미리보기] 실제 기사 하단에 노출되는 배너 모습
-                          </span>
-                          <span
-                            style={{
-                              fontSize: 11,
-                              color: textSecondary,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              minWidth: 0,
-                              maxWidth: "50%",
-                              textAlign: "right",
-                            }}
-                            title={writeAdLinkUrl || ""}
-                          >
-                            {writeAdLinkUrl ? `클릭 시 이동: ${writeAdLinkUrl}` : "링크 미입력 (클릭 불가)"}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            position: "relative",
-                            width: "100%",
-                            maxWidth: 820,
-                            borderRadius: 12,
-                            overflow: "hidden",
-                            border: "1px solid #e2e8f0",
-                            boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
-                            background: "#ffffff",
-                            boxSizing: "border-box",
-                          }}
-                        >
-                          <span
-                            style={{
-                              position: "absolute",
-                              top: 10,
-                              right: 10,
-                              background: "rgba(15, 23, 42, 0.72)",
-                              color: "#ffffff",
-                              fontSize: 10,
-                              fontWeight: 800,
-                              padding: "2px 6px",
-                              borderRadius: 4,
-                              letterSpacing: "0.5px",
-                              zIndex: 2,
-                            }}
-                          >
-                            AD
-                          </span>
-                          <img
-                            src={writeAdPreview}
-                            alt="배너 실시간 미리보기"
-                            style={{
-                              width: "100%",
-                              maxHeight: 280,
-                              objectFit: "cover",
-                              display: "block",
-                            }}
-                          />
-                        </div>
                       </div>
                     )}
                   </div>

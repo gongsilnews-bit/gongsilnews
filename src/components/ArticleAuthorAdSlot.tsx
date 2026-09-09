@@ -154,10 +154,8 @@ export default function ArticleAuthorAdSlot({
             href={banner.link_url}
             target={banner.link_target || "_blank"}
             rel="noopener noreferrer"
-            onClick={(e) => {
-              if (previewMode) {
-                e.preventDefault();
-              } else if (banner.id) {
+            onClick={() => {
+              if (!previewMode && banner.id) {
                 trackAuthorBannerClick(banner.id).catch(() => {});
               }
             }}
