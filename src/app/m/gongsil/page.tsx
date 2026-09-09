@@ -87,12 +87,12 @@ function MobileGongsilContent() {
   const [isFetchingVacancies, setIsFetchingVacancies] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(7);
   // Keep the first server and client render identical; URL mode is applied after mount.
-  const [activeMode, setActiveMode] = useState<"공실" | "경매">("공실");
+  const [activeMode, setActiveMode] = useState<"공실" | "경매">("경매");
   const urlMode = searchParams.get("mode");
-  const effectiveMode: "공실" | "경매" = urlMode === "auction"
-    ? "경매"
-    : urlMode === "gongsil"
-      ? "공실"
+  const effectiveMode: "공실" | "경매" = urlMode === "gongsil"
+    ? "공실"
+    : urlMode === "auction"
+      ? "경매"
       : activeMode;
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -251,9 +251,9 @@ function MobileGongsilContent() {
         }
 
         const resolvedMode: "공실" | "경매" =
-          modeParam === "auction" ? "경매" :
           modeParam === "gongsil" ? "공실" :
-          (parsed.activeMode === "경매" ? "경매" : "공실");
+          modeParam === "auction" ? "경매" :
+          (parsed.activeMode === "공실" ? "공실" : "경매");
 
         setActiveMode(resolvedMode);
 
@@ -278,11 +278,11 @@ function MobileGongsilContent() {
           setLocLabel(parsed.locLabel);
         }
       } else {
-        if (modeParam === "auction") {
+        if (modeParam === "gongsil") {
+          setActiveMode("공실");
+        } else {
           setActiveMode("경매");
           setFilters({ ...initialFilterState, propertyTypes: AUCTION_PROPERTY_TYPES });
-        } else {
-          setActiveMode("공실");
         }
       }
     } catch (e) {

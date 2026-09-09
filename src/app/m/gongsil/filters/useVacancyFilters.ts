@@ -446,8 +446,13 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
     });
 }
 
-export function useVacancyFilters(initialVacancies: VacancyLike[], mode: "공실" | "경매" = "공실") {
-  const [filters, setFilters] = useState<FilterState>(initialFilterState);
+export function useVacancyFilters(initialVacancies: VacancyLike[], mode: "공실" | "경매" = "경매") {
+  const [filters, setFilters] = useState<FilterState>(() => {
+    if (mode === "경매") {
+      return { ...initialFilterState, propertyTypes: ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"] };
+    }
+    return initialFilterState;
+  });
 
   const filteredVacancies = useMemo(() => {
     return filterVacanciesList(initialVacancies, filters, mode);
