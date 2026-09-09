@@ -3148,7 +3148,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                               transition: "all 0.15s",
                             }}
                           >
-                            기존 배너 가져오기 {authorBanners.length > 0 ? `(${authorBanners.length})` : ""}
+                            기존 배너 가져오기
                           </button>
                         </div>
                       </div>
