@@ -7,8 +7,9 @@ import { getAdminArticlesAdSettingsMap, adminUpdateArticlesAdSettings, AuthorBan
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import NewsWriteForm from "@/components/admin/NewsWriteForm";
-import ArticleDetailPanel from "./ArticleDetailPanel";
+// ⚡ 5,566줄 대형 에디터를 지연 로딩하여 기사 목록 초기 번들 크기 대폭 축소
+const NewsWriteForm = React.lazy(() => import("@/components/admin/NewsWriteForm"));
+const ArticleDetailPanel = React.lazy(() => import("./ArticleDetailPanel"));
 
 const REJECT_REASONS = [
   "사진 화질 불량 또는 이미지 누락",
@@ -218,11 +219,19 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const filtered = dbArticles;
 
   if (action === "detail" && editId) {
-    return <ArticleDetailPanel role="admin" articleId={editId} onBack={() => router.push('?menu=article')} onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)} />;
+    return (
+      <React.Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: textSecondary }}>기사 상세 내용을 불러오는 중입니다...</div>}>
+        <ArticleDetailPanel role="admin" articleId={editId} onBack={() => router.push('?menu=article')} onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)} />
+      </React.Suspense>
+    );
   }
 
   if (showWriteForm) {
-    return <NewsWriteForm />;
+    return (
+      <React.Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: textSecondary }}>기사 에디터를 불러오는 중입니다...</div>}>
+        <NewsWriteForm />
+      </React.Suspense>
+    );
   }
 
   return (

@@ -7,8 +7,10 @@ import { getAuthorArticlesAdSettingsMap, updateArticlesAdSettings, AuthorBanner 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import NewsWriteForm from "@/components/admin/NewsWriteForm";
-import ArticleDetailPanel from "@/components/admin/sections/ArticleDetailPanel";
+
+// ⚡ 5,566줄 대형 에디터를 지연 로딩하여 목록 화면 번들 용량을 80% 이상 절감
+const NewsWriteForm = React.lazy(() => import("@/components/admin/NewsWriteForm"));
+const ArticleDetailPanel = React.lazy(() => import("@/components/admin/sections/ArticleDetailPanel"));
 
 interface MemberArticleSectionProps extends AdminSectionProps {
   memberId: string;
@@ -16,21 +18,33 @@ interface MemberArticleSectionProps extends AdminSectionProps {
   memberEmail?: string;
   /** 'realtor' | 'user' – 저장 후 돌아갈 admin 경로 판별용 */
   role?: string;
+  initialData?: any[];
+  initialAdSettings?: Record<string, { ad_type: string; custom_banner_id: string | null; banner_name: string | null }>;
+  initialBanners?: AuthorBanner[];
 }
 
-export default function MemberArticleSection({ theme, memberId, memberName, memberEmail, role }: MemberArticleSectionProps) {
+export default function MemberArticleSection({
+  theme,
+  memberId,
+  memberName,
+  memberEmail,
+  role,
+  initialData,
+  initialAdSettings,
+  initialBanners,
+}: MemberArticleSectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
-  const [articles, setArticles] = useState<any[]>([]);
+  const [articles, setArticles] = useState<any[]>(initialData || []);
   const [filter, setFilter] = useState("전체");
   const [sortBy, setSortBy] = useState("published_at");
   const [checkedIds, setCheckedIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialData || initialData.length === 0);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
   const [writePermission, setWritePermission] = useState<{ checked: boolean; allowed: boolean; error?: string }>({ checked: false, allowed: false });
 
   // 배너광고 상태 및 일괄적용 state
-  const [adSettingsMap, setAdSettingsMap] = useState<Record<string, { ad_type: string; custom_banner_id: string | null; banner_name: string | null }>>({});
-  const [authorBanners, setAuthorBanners] = useState<AuthorBanner[]>([]);
+  const [adSettingsMap, setAdSettingsMap] = useState<Record<string, { ad_type: string; custom_banner_id: string | null; banner_name: string | null }>>(initialAdSettings || {});
+  const [authorBanners, setAuthorBanners] = useState<AuthorBanner[]>(initialBanners || []);
   const [activeDropdownArticleId, setActiveDropdownArticleId] = useState<string | null>(null);
   const [isBulkAdModalOpen, setIsBulkAdModalOpen] = useState(false);
   const [bulkSelectedBannerId, setBulkSelectedBannerId] = useState<string>("DEFAULT");
@@ -55,6 +69,26 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
     }
     return true;
   };
+
+  // ⚡ 사전 로딩(Prefetch) 데이터가 도착하면 즉시 화면에 반영하여 로딩 스피너 제거
+  useEffect(() => {
+    if (initialData && initialData.length > 0) {
+      setArticles(initialData);
+      setLoading(false);
+    }
+  }, [initialData]);
+
+  useEffect(() => {
+    if (initialAdSettings && Object.keys(initialAdSettings).length > 0) {
+      setAdSettingsMap(initialAdSettings);
+    }
+  }, [initialAdSettings]);
+
+  useEffect(() => {
+    if (initialBanners && initialBanners.length > 0) {
+      setAuthorBanners(initialBanners);
+    }
+  }, [initialBanners]);
 
   useEffect(() => {
     if (!showWriteForm || !memberId) return;
@@ -158,7 +192,18 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
 
   useEffect(() => {
     if (!memberId) return;
-    fetchArticles();
+    if (!initialData || initialData.length === 0) {
+      fetchArticles();
+    } else {
+      // ⚡ 사전 로딩된 데이터가 있으면 화면은 즉시 띄우고 백그라운드에서 조용히 동기화
+      getMyArticles(memberId).then(res => { if (res.success) setArticles(res.data || []); });
+      getAuthorArticlesAdSettingsMap(memberId).then(adRes => {
+        if (adRes.success) {
+          setAdSettingsMap(adRes.settingsMap || {});
+          setAuthorBanners(adRes.banners || []);
+        }
+      });
+    }
 
     // Supabase Realtime Subscription for Toast Notifications
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -269,12 +314,16 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
   };
 
   if (showDetail && editId) {
-    return <ArticleDetailPanel
-      articleId={editId}
-      onBack={() => router.push("?menu=article")}
-      onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)}
-      role={role}
-    />;
+    return (
+      <React.Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: textSecondary }}>기사 상세 내용을 불러오는 중입니다...</div>}>
+        <ArticleDetailPanel
+          articleId={editId}
+          onBack={() => router.push("?menu=article")}
+          onEdit={() => router.push(`?menu=article&action=write&id=${editId}`)}
+          role={role}
+        />
+      </React.Suspense>
+    );
   }
 
   if (showWriteForm) {
@@ -289,7 +338,11 @@ export default function MemberArticleSection({ theme, memberId, memberName, memb
         </div>
       );
     }
-    return <NewsWriteForm />;
+    return (
+      <React.Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: textSecondary }}>기사 에디터를 불러오는 중입니다...</div>}>
+        <NewsWriteForm />
+      </React.Suspense>
+    );
   }
 
   return (

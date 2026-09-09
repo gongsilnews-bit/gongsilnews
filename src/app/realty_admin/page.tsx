@@ -7,6 +7,8 @@ import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustom
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import ArticleAdUpgradeModal from "@/components/admin/ArticleAdUpgradeModal";
 import { getVacancies } from "@/app/actions/vacancy";
+import { getMyArticles } from "@/app/actions/article";
+import { getAuthorArticlesAdSettingsMap } from "@/app/actions/articleAd";
 import { adminApproveRealtorApplication, normalizePendingRealtorRole } from "@/app/admin/actions";
 import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
 import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
@@ -96,6 +98,19 @@ function RealtyAdminContent() {
       if (key === "gongsil" && ownerId) {
         const res = await getVacancies({ ownerId });
         if (res.success) setPrefetchedData(prev => ({ ...prev, gongsil: res.data || [] }));
+      } else if (key === "article" && ownerId) {
+        const [artRes, adRes] = await Promise.all([
+          getMyArticles(ownerId),
+          getAuthorArticlesAdSettingsMap(ownerId),
+        ]);
+        if (artRes.success) {
+          setPrefetchedData(prev => ({
+            ...prev,
+            article: artRes.data || [],
+            article_ads: adRes.settingsMap || {},
+            article_banners: adRes.banners || [],
+          }));
+        }
       }
     } finally {
       fetchingRef.current.delete(key);
@@ -152,8 +167,12 @@ function RealtyAdminContent() {
         setUserRole(getEffectiveMemberRole(member.role, null));
       }
 
-      // 공실 데이터 프리페치
-      prefetchSection("gongsil", member.id);
+      // 데이터 프리페치 (현재 진입한 메뉴가 article이면 article 우선, 아니면 gongsil)
+      if (menuParam === "article") {
+        prefetchSection("article", member.id);
+      } else {
+        prefetchSection("gongsil", member.id);
+      }
       setAuthChecked(true);
     }
     fetchUser();
@@ -168,8 +187,8 @@ function RealtyAdminContent() {
   /* ── 사이드바 호버 시 프리페치 ── */
   const handleMenuHover = useCallback((key: string) => {
     setHoveredMenu(key);
-    if (key === "gongsil" && memberId) {
-      prefetchSection("gongsil", memberId);
+    if ((key === "gongsil" || key === "article") && memberId) {
+      prefetchSection(key, memberId);
     }
   }, [memberId, prefetchSection]);
 
@@ -266,7 +285,18 @@ function RealtyAdminContent() {
         <Suspense fallback={<AdminLoadingFallback />}>
           {activeMenu === "dashboard" && <DashboardSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} agencyStatus={agencyStatus} rejectionReason={rejectionReason} memberId={memberId || undefined} onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
           {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} ownerId={memberId} ownerName={userName} initialData={prefetchedData["gongsil"]} />}
-          {activeMenu === "article" && memberId && <MemberArticleSection theme={theme} memberId={memberId} memberName={userName} memberEmail={userEmail || undefined} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} />}
+          {activeMenu === "article" && memberId && (
+            <MemberArticleSection
+              theme={theme}
+              memberId={memberId}
+              memberName={userName}
+              memberEmail={userEmail || undefined}
+              role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"}
+              initialData={prefetchedData["article"]}
+              initialAdSettings={prefetchedData["article_ads"]}
+              initialBanners={prefetchedData["article_banners"]}
+            />
+          )}
           {activeMenu === "article_ad" && memberId && (
             isReporterEligible ? (
               <MemberArticleAdSection theme={theme} memberId={memberId} memberName={userName} memberEmail={userEmail || undefined} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} />
