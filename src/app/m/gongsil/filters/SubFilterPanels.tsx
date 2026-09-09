@@ -434,13 +434,13 @@ export function DirectionFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-// ── 세대수 패널 (50세대 이하, 100세대 미만, 300세대 미만, 500세대 미만, 1,000세대 이상) ──
+// ── 세대수 패널 (50세대 이하, 100세대 이하, 300세대 이하, 500세대 이하, 1,000세대 이상) ──
 export function UnitsFilterPanel({ filters, onFilterChange }: Props) {
   const UNITS = [
     { label: "50세대 이하", min: null, max: 50 },
-    { label: "100세대 미만", min: null, max: 99 },
-    { label: "300세대 미만", min: null, max: 299 },
-    { label: "500세대 미만", min: null, max: 499 },
+    { label: "100세대 이하", min: null, max: 100 },
+    { label: "300세대 이하", min: null, max: 300 },
+    { label: "500세대 이하", min: null, max: 500 },
     { label: "1,000세대 이상", min: 1000, max: null },
   ];
   const isAll = filters.unitsMin === null && (filters.unitsMax === null || filters.unitsMax === undefined);

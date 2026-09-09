@@ -452,8 +452,8 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               {showUnitsPill && (
                 <button onClick={() => setActivePanel(activePanel === "units" ? null : "units")} style={pillStyle(activePanel === "units" || filters.unitsMin !== null || (filters.unitsMax !== null && filters.unitsMax !== undefined))}>
                   {filters.unitsMin !== null || (filters.unitsMax !== null && filters.unitsMax !== undefined) ? (
-                    filters.unitsMin && !filters.unitsMax ? `${filters.unitsMin}세대+` :
-                    !filters.unitsMin && filters.unitsMax ? (filters.unitsMax === 50 ? "50세대 이하" : `${filters.unitsMax + 1}세대 미만`) :
+                    filters.unitsMin && !filters.unitsMax ? `${filters.unitsMin}세대 이상` :
+                    !filters.unitsMin && filters.unitsMax ? `${filters.unitsMax}세대 이하` :
                     `${filters.unitsMin}~${filters.unitsMax}세대`
                   ) : "세대수 ▾"}
                 </button>
