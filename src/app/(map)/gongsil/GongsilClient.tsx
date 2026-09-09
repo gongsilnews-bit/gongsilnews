@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { getVacancies, getAgencyInfo, getVacancyDetail, getVacanciesForMap, getVacancyByVacancyNo } from "@/app/actions/vacancy";
 import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyComments";
 import { getVacancyUserData, toggleWishlistToDB, addRecentViewToDB } from "@/app/actions/vacancyUserData";
-import { getPermissionLevel } from "@/utils/permissionCheck";
+import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import AuthModal from "@/components/AuthModal";
 import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
@@ -148,6 +148,10 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userLevel, setUserLevel] = useState<number>(0);
+  const isSuperAdmin =
+    userLevel >= 5 ||
+    isAdminRole(currentUser?.role) ||
+    currentUser?.email === "gongsilmarketing@gmail.com";
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSecret, setIsSecret] = useState(true);
@@ -816,9 +820,16 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           .single();
         setCurrentUser({ ...data.user, role: memberData?.role });
         if (memberData) {
-          setUserLevel(getPermissionLevel(memberData));
+          const lvl = getPermissionLevel(memberData);
+          setUserLevel(lvl);
+          if (lvl >= 5 || isAdminRole(memberData.role) || data.user.email === "gongsilmarketing@gmail.com") {
+            setShowRegisterPromoOverlay(false);
+          }
         } else {
           setUserLevel(1);
+          if (data.user.email === "gongsilmarketing@gmail.com") {
+            setShowRegisterPromoOverlay(false);
+          }
         }
       }
     }
@@ -1335,8 +1346,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
 
   const handleCategoryChange = (key: string) => {
     if (activeCategory === key) {
-      // 이미 선택된 탭을 다시 눌렀을 때도 일반 공실 탭이면 안내 오버레이 다시 노출
-      if (["apart", "villa", "one", "biz", "sale"].includes(key)) {
+      // 이미 선택된 탭을 다시 눌렀을 때도 일반 공실 탭이면 안내 오버레이 다시 노출 (최고관리자는 제외)
+      if (["apart", "villa", "one", "biz", "sale"].includes(key) && !isSuperAdmin) {
         setShowRegisterPromoOverlay(true);
       }
       return;
@@ -1349,8 +1360,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     setIsAuctionMode(newKey === "auction");
     setActiveMode(newKey === "auction" ? "경매" : "공실");
 
-    // 아파트~신축분양 탭 선택 시 공실 등록 유도 오버레이 노출
-    if (["apart", "villa", "one", "biz", "sale"].includes(newKey)) {
+    // 아파트~신축분양 탭 선택 시 공실 등록 유도 오버레이 노출 (최고관리자는 항상 열람 가능)
+    if (["apart", "villa", "one", "biz", "sale"].includes(newKey) && !isSuperAdmin) {
       setShowRegisterPromoOverlay(true);
     } else {
       setShowRegisterPromoOverlay(false);
@@ -2651,13 +2662,14 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           </div>
         )}
 
-        {/* 일반 공실 탭 선택 시 노출되는 '내 공동중개 물건 무료 등록' 흰색 오버레이 */}
-        {showRegisterPromoOverlay && (
+        {/* 일반 공실 탭 선택 시 노출되는 '내 공동중개 물건 무료 등록' 오버레이 (최고관리자는 제외) */}
+        {showRegisterPromoOverlay && !isSuperAdmin && (
           <GongsilRegisterPromoOverlay
             categoryName={CATEGORY_CONFIG[activeCategory]?.name || "공실"}
             onClose={() => setShowRegisterPromoOverlay(false)}
             onGoAuction={() => handleCategoryChange("auction")}
             currentUser={currentUser}
+            userLevel={userLevel}
           />
         )}
       </main>

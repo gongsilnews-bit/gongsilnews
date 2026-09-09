@@ -1,12 +1,12 @@
-"use client";
-
 import React from "react";
+import { isAdminRole } from "@/utils/permissionCheck";
 
 interface GongsilRegisterPromoOverlayProps {
   categoryName?: string;
   onClose?: () => void;
   onGoAuction?: () => void;
   currentUser?: any;
+  userLevel?: number;
 }
 
 export default function GongsilRegisterPromoOverlay({
@@ -14,7 +14,13 @@ export default function GongsilRegisterPromoOverlay({
   onClose,
   onGoAuction,
   currentUser,
+  userLevel = 0,
 }: GongsilRegisterPromoOverlayProps) {
+  const isSuperAdmin =
+    userLevel >= 5 ||
+    isAdminRole(currentUser?.role) ||
+    currentUser?.email === "gongsilmarketing@gmail.com";
+
   const handleRegisterClick = () => {
     const targetUrl = "/realty_admin?menu=gongsil&action=write";
     if (!currentUser) {
@@ -65,6 +71,35 @@ export default function GongsilRegisterPromoOverlay({
           }
         `}</style>
 
+        {/* 최고관리자 닫기 버튼 (우측 상단) */}
+        {isSuperAdmin && onClose && (
+          <button
+            onClick={onClose}
+            title="최고관리자 매물 열람 모드로 전환 (오버레이 닫기)"
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "6px 12px",
+              background: "#1e293b",
+              color: "#f8fafc",
+              fontSize: 12,
+              fontWeight: 700,
+              borderRadius: 8,
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              zIndex: 10,
+            }}
+          >
+            <span>👑 열람하기</span>
+            <span style={{ fontSize: 14 }}>✕</span>
+          </button>
+        )}
+
         {/* 뱃지 */}
         <div
           style={{
@@ -73,14 +108,14 @@ export default function GongsilRegisterPromoOverlay({
             gap: 6,
             padding: "5px 12px",
             borderRadius: 20,
-            background: "#eff6ff",
-            color: "#2563eb",
+            background: isSuperAdmin ? "#fef3c7" : "#eff6ff",
+            color: isSuperAdmin ? "#b45309" : "#2563eb",
             fontSize: 12,
             fontWeight: 700,
             marginBottom: 16,
           }}
         >
-          <span>🏢 부동산 회원 특별 혜택</span>
+          <span>{isSuperAdmin ? "👑 최고관리자 개발·검증 모드" : "🏢 부동산 회원 특별 혜택"}</span>
         </div>
 
         {/* 메인 타이틀 */}
@@ -188,6 +223,38 @@ export default function GongsilRegisterPromoOverlay({
             }}
           >
             ⚖️ 전국 1만건 경매·공매 매물 보러가기
+          </button>
+        )}
+
+        {/* 최고관리자 즉시 열람 버튼 */}
+        {isSuperAdmin && onClose && (
+          <button
+            onClick={onClose}
+            style={{
+              width: "100%",
+              marginTop: 10,
+              padding: "12px 18px",
+              background: "#0f172a",
+              color: "#38bdf8",
+              fontSize: 14,
+              fontWeight: 800,
+              borderRadius: 12,
+              border: "1px solid #334155",
+              cursor: "pointer",
+              transition: "all 0.15s",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#1e293b";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#0f172a";
+            }}
+          >
+            <span>👑 최고관리자: 이 화면 닫고 공실 매물 즉시 열람하기</span>
           </button>
         )}
       </div>
