@@ -493,6 +493,49 @@ export default function ArticleAuthorAdSlot({
                   );
                 })}
             </div>
+
+            {/* 비즈니스 회원의 경우: 아이콘 바로 아래에 [기사열람하기 >>] 버튼 배치 */}
+            {isBusiness && (
+              <div style={{ marginTop: 14 }}>
+                <Link
+                  href={miniHomeUrl}
+                  onClick={(e) => {
+                    if (previewMode) {
+                      e.preventDefault();
+                      alert("기사 작성 중 미리보기 상태입니다. 실제 기사에서는 해당 작성자의 기사 모아보기 페이지로 연결됩니다.");
+                    }
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "#1d4ed8",
+                    background: "#eff6ff",
+                    border: "1.5px solid #bfdbfe",
+                    padding: "7px 16px",
+                    borderRadius: 8,
+                    textDecoration: "none",
+                    boxShadow: "0 1px 3px rgba(37, 99, 235, 0.12)",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#dbeafe";
+                    e.currentTarget.style.borderColor = "#93c5fd";
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#eff6ff";
+                    e.currentTarget.style.borderColor = "#bfdbfe";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
+                  <span>기사열람하기</span>
+                  <span style={{ fontSize: 13, fontWeight: 800 }}>&gt;&gt;</span>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* 우측 소개말 / 업체정보 박스 */}
@@ -526,58 +569,8 @@ export default function ArticleAuthorAdSlot({
           </div>
         </div>
 
-        {/* 하단 바: 비즈니스 회원의 경우 공실등록현황 제거 & 기사열람하기 제공 */}
-        {isBusiness ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "#f8fafc",
-              borderRadius: 10,
-              overflow: "hidden",
-              border: "1px solid #e2e8f0",
-              padding: "10px 18px",
-              flexWrap: "wrap",
-              gap: 10,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569", fontWeight: 600 }}>
-              <span style={{ fontSize: 14 }}>💼</span>
-              <span>{businessProfile?.business_type ? `[${businessProfile.business_type}] ` : ""}{agencyName}</span>
-              <span style={{ color: "#94a3b8", fontSize: 12 }}>전문 비즈니스 파트너</span>
-            </div>
-
-            <Link
-              href={miniHomeUrl}
-              onClick={(e) => {
-                if (previewMode) {
-                  e.preventDefault();
-                  alert("기사 작성 중 미리보기 상태입니다. 실제 기사에서는 해당 작성자의 기사 모아보기 페이지로 연결됩니다.");
-                }
-              }}
-              style={{
-                marginLeft: "auto",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                fontSize: 13,
-                color: "#2563eb",
-                fontWeight: 700,
-                textDecoration: "none",
-                padding: "6px 14px",
-                borderRadius: 6,
-                background: "#eff6ff",
-                border: "1px solid #dbeafe",
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#dbeafe"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "#eff6ff"; }}
-            >
-              <span>기사열람하기 &gt;&gt;</span>
-            </Link>
-          </div>
-        ) : (
+        {/* 하단 바: 비즈니스 회원이 아닌 경우(공인중개사)에만 공실등록현황 표시 (비즈니스 회원은 완전 제거) */}
+        {!isBusiness && (
           <div
             style={{
               display: "flex",
