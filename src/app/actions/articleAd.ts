@@ -140,6 +140,23 @@ export async function saveAuthorBanner(formData: FormData): Promise<{ success: b
   }
 }
 
+/* ── 2-1. 작성자 배너 활성/비활성 토글 ── */
+export async function toggleAuthorBannerActive(bannerId: string, authorId: string, currentActive: boolean): Promise<{ success: boolean; error?: string }> {
+  if (!bannerId || !authorId) return { success: false, error: "잘못된 요청입니다." };
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("article_author_banners")
+      .update({ is_active: !currentActive, updated_at: new Date().toISOString() })
+      .eq("id", bannerId)
+      .eq("author_id", authorId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 /* ── 3. 작성자 배너 삭제 ── */
 export async function deleteAuthorBanner(bannerId: string, authorId: string): Promise<{ success: boolean; error?: string }> {
   if (!bannerId || !authorId) return { success: false, error: "잘못된 요청입니다." };
