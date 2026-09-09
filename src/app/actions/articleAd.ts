@@ -176,6 +176,24 @@ export async function saveAuthorBanner(formData: FormData): Promise<{ success: b
       }
 
       if (error) return { success: false, error: error.message };
+
+      // ── 배너 기간 변경 시, 해당 배너를 사용하는 모든 기사의 ad_settings도 동기화 ──
+      if (id && (startDate || endDate)) {
+        try {
+          await supabase
+            .from("article_ad_settings")
+            .update({
+              start_date: startDate,
+              end_date: endDate,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("custom_banner_id", id)
+            .eq("author_id", authorId);
+        } catch (syncErr) {
+          console.warn("기사 광고설정 기간 동기화 중 오류 (무시):", syncErr);
+        }
+      }
+
       return { success: true, data: normalizeAuthorBanner(data) };
     } else {
       // 신규 등록
@@ -439,6 +457,23 @@ export async function updateArticlesAdSettings(
 
     if (error) {
       return { success: false, error: error.message };
+    }
+
+    // ── 배너 자체 기간도 동기화 (단일 소스: 어디서 수정해도 동일 값) ──
+    if (settings.ad_type === "BANNER" && settings.custom_banner_id && (settings.start_date || settings.end_date)) {
+      try {
+        await supabase
+          .from("article_author_banners")
+          .update({
+            start_date: settings.start_date || null,
+            end_date: settings.end_date || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", settings.custom_banner_id)
+          .eq("author_id", authorId);
+      } catch (syncErr) {
+        console.warn("배너 기간 동기화 중 오류 (무시):", syncErr);
+      }
     }
 
     // 캐시 무효화
