@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
-import { getArticles, deleteArticle, adminUpdateArticleStatus, adminUpdateArticleFlags, adminReviseArticleWithFeedback } from "@/app/actions/article";
+import { getArticles, deleteArticle, adminUpdateArticleStatus, adminUpdateArticleFlags, adminReviseArticleWithFeedback, getArticleTabCounts } from "@/app/actions/article";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -98,29 +98,11 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       setTotalCount(res.count || 0);
     }
 
-    // Fetch tab counts via server action (admin client, bypasses RLS, real-time noCache)
-    const [allRes, pendingRes, approvedRes, scheduledRes, draftRes, rejectedRes, headlineRes, importantRes, regularRes] = await Promise.all([
-      getArticles({ limit: 1, noCache: true }),
-      getArticles({ status: "PENDING", limit: 1, noCache: true }),
-      getArticles({ status: "APPROVED", limit: 1, noCache: true }),
-      getArticles({ status: "SCHEDULED", limit: 1, noCache: true }),
-      getArticles({ status: "DRAFT", limit: 1, noCache: true }),
-      getArticles({ status: "REJECTED", limit: 1, noCache: true }),
-      getArticles({ status: "APPROVED", is_headline: true, limit: 1, noCache: true }),
-      getArticles({ status: "APPROVED", is_important: true, limit: 1, noCache: true }),
-      getArticles({ status: "APPROVED", is_headline: false, is_important: false, limit: 1, noCache: true }),
-    ]);
-    setCounts({
-      전체: allRes.count || 0,
-      승인대기: pendingRes.count || 0,
-      발행됨: approvedRes.count || 0,
-      예약됨: scheduledRes.count || 0,
-      작성중: draftRes.count || 0,
-      반려: rejectedRes.count || 0,
-      헤드라인: headlineRes.count || 0,
-      중요: importantRes.count || 0,
-      일반기사: regularRes.count || 0,
-    });
+    // Fetch tab counts via dedicated ultra-fast server action (HEAD counts, no body data)
+    const countsRes = await getArticleTabCounts();
+    if (countsRes.success && countsRes.data) {
+      setCounts(countsRes.data);
+    }
   };
 
   useEffect(() => {

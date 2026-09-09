@@ -296,7 +296,7 @@ export async function getArticles(filters?: {
     const supabase = getAdminClient();
     let query = supabase
       .from("articles")
-      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)", { count: "exact" })
+      .select("id, article_no, status, section1, section2, title, subtitle, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)", { count: "exact" })
       .eq("is_deleted", false);
 
     if (filters?.orderBy === "updated_at") {
@@ -424,13 +424,49 @@ export async function searchArticles(query: string) {
   }
 }
 
-/* ── 회원 본인 기사만 조회 (author_id 필터링) ── */
+/* ── 기사 탭별 건수 초고속 조회 (HEAD 쿼리로 본문 데이터 전송 없이 카운트만 고속 조회) ── */
+export async function getArticleTabCounts() {
+  const supabase = getAdminClient();
+  const now = new Date().toISOString();
+  try {
+    const [all, pending, approved, scheduled, draft, rejected, headline, important, regular] = await Promise.all([
+      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false),
+      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "PENDING"),
+      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "APPROVED").or(`published_at.is.null,published_at.lte.${now}`),
+      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "APPROVED").gt("published_at", now),
+      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "DRAFT"),
+      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "REJECTED"),
+      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "APPROVED").eq("is_headline", true),
+      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "APPROVED").eq("is_important", true),
+      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "APPROVED").eq("is_headline", false).eq("is_important", false),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        전체: all.count || 0,
+        승인대기: pending.count || 0,
+        발행됨: approved.count || 0,
+        예약됨: scheduled.count || 0,
+        작성중: draft.count || 0,
+        반려: rejected.count || 0,
+        헤드라인: headline.count || 0,
+        중요: important.count || 0,
+        일반기사: regular.count || 0,
+      }
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/* ── 회원 본인 기사만 조회 (author_id 필터링, 대용량 content 필드 제외로 초고속 조회) ── */
 export async function getMyArticles(authorId: string) {
   const supabase = getAdminClient();
   try {
     const { data, error } = await supabase
       .from("articles")
-      .select("id, article_no, status, section1, section2, title, subtitle, content, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)")
+      .select("id, article_no, status, section1, section2, title, subtitle, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)")
       .eq("is_deleted", false)
       .eq("author_id", authorId)
       .order("published_at", { ascending: false, nullsFirst: false })
