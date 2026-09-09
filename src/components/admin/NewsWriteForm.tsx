@@ -3160,6 +3160,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                             <input
                               type="file"
                               accept="image/*"
+                              id="writeAdFileInput"
                               onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
@@ -3170,8 +3171,49 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                                   setWriteAdBannerId("");
                                 }
                               }}
-                              style={{ fontSize: 13 }}
+                              style={{ display: "none" }}
                             />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const inp = document.getElementById("writeAdFileInput") as HTMLInputElement;
+                                if (inp) inp.click();
+                              }}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 8,
+                                padding: "9px 18px",
+                                borderRadius: 8,
+                                border: `1.5px dashed ${writeAdFile ? "#2563eb" : "#94a3b8"}`,
+                                background: writeAdFile ? "#eff6ff" : "#f8fafc",
+                                color: writeAdFile ? "#2563eb" : "#475569",
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = "#2563eb";
+                                e.currentTarget.style.background = "#eff6ff";
+                                e.currentTarget.style.color = "#2563eb";
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!writeAdFile) {
+                                  e.currentTarget.style.borderColor = "#94a3b8";
+                                  e.currentTarget.style.background = "#f8fafc";
+                                  e.currentTarget.style.color = "#475569";
+                                }
+                              }}
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <circle cx="10" cy="13" r="2" />
+                                <path d="M20 17l-1.09-1.09a2 2 0 0 0-2.82 0L10 22" />
+                              </svg>
+                              {writeAdFile ? writeAdFile.name : "파일 선택"}
+                            </button>
                             <span style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>
                               권장 사이즈: 1200X400 (WebP 자동 압축 적용)
                             </span>
