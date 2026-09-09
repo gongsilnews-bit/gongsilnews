@@ -36,6 +36,7 @@ export const initialFilterState: FilterState = {
   maintMax: null,
   parking: null,
   parkings: [],
+  moveInDate: null,
   options: [],
   ownerRole: null,
   commissionType: null,
@@ -100,6 +101,7 @@ type VacancyLike = {
   maintenance_cost?: number | null;
   maint_fee?: number | null;
   parking?: string | null;
+  move_in_date?: string | null;
   options?: string[] | string | null;
   facilities?: string[] | string | null;
   owner_role?: string | null;
@@ -371,14 +373,45 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
         if (maint > filters.maintMax) return false;
       }
 
-      // 6.6 주차 (다중 선택 지원)
+      // 6.6 주차 (다중 선택 지원: 주차가능, 1대 이상, 2대 이상, 자주식, 기계식, 무료주차)
       const selectedParkings = (filters.parkings && filters.parkings.length > 0)
         ? filters.parkings
         : (filters.parking && filters.parking !== "전체" ? [filters.parking] : []);
       if (selectedParkings.length > 0) {
-        const park = v.parking || "";
-        const matches = selectedParkings.some(p => park.includes(p));
+        const park = String(v.parking || "").trim();
+        const matches = selectedParkings.some(p => {
+          if (p === "주차가능") {
+            return (park.includes("가능") || park.includes("대") || park.includes("자주") || park.includes("기계") || park.includes("무료")) && !park.includes("없음") && !park.includes("불가");
+          }
+          if (p === "1대 이상") {
+            return (/\d+대/.test(park) || park.includes("가능") || park.includes("자주") || park.includes("기계") || park.includes("무료")) && !park.includes("없음") && !park.includes("불가");
+          }
+          if (p === "2대 이상") {
+            const m = park.match(/(\d+)대/);
+            return m ? parseInt(m[1], 10) >= 2 : (park.includes("2대") || park.includes("3대") || park.includes("4대") || park.includes("5대"));
+          }
+          return park.includes(p);
+        });
         if (!matches) return false;
+      }
+
+      // 6.7 사용가능일 (입주가능일: 즉시사용/즉시입주, 1개월 이내, 2개월 이내, 3개월 이내, 날짜 협의)
+      if (filters.moveInDate && filters.moveInDate !== "전체") {
+        const mid = String(v.move_in_date || "").trim();
+        if (filters.moveInDate.includes("즉시")) {
+          // '즉시' 필터: '즉시입주', '즉시사용', 빈값(공실 기본) 매칭
+          if (mid && !mid.includes("즉시") && !mid.includes("공실")) return false;
+        } else if (filters.moveInDate === "1개월 이내") {
+          if (mid && !mid.includes("1개월") && !mid.includes("즉시") && !mid.includes("공실")) return false;
+        } else if (filters.moveInDate === "2개월 이내") {
+          if (mid && !mid.includes("2개월") && !mid.includes("1개월") && !mid.includes("즉시") && !mid.includes("공실")) return false;
+        } else if (filters.moveInDate === "3개월 이내") {
+          if (mid && !mid.includes("3개월") && !mid.includes("2개월") && !mid.includes("1개월") && !mid.includes("즉시") && !mid.includes("공실")) return false;
+        } else if (filters.moveInDate.includes("협의")) {
+          if (!mid.includes("협의")) return false;
+        } else {
+          if (!mid.includes(filters.moveInDate)) return false;
+        }
       }
 
       // 6.7 기타옵션 (PC 동일)

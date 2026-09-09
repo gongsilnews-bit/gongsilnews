@@ -27,6 +27,7 @@ export interface FilterState {
   maintMax: number | null;
   parking: string | null;
   parkings?: string[];
+  moveInDate?: string | null;
   options: string[];
   ownerRole: string | null;
   commissionType: string | null;

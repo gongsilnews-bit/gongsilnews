@@ -18,6 +18,7 @@ import {
   UnitsFilterPanel,
   MaintFilterPanel,
   ParkingFilterPanel,
+  MoveInDateFilterPanel,
   OptionsFilterPanel,
   AuctionAppraisalFilterPanel,
   AuctionBidPriceFilterPanel,
@@ -143,7 +144,8 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const showTempDirection = isApartmentGroup || isVillaGroup || isOneRoomGroup;
   const showTempFloor = isCommercialGroup;
   const showTempMaint = isOneRoomGroup || isCommercialGroup;
-  const showTempParking = isCommercialGroup;
+  const showTempParking = true; // 🚀 [대표님 지침] 주차여부는 모든 카테고리에서 항상 노출
+  const showTempMoveInDate = true; // 🚀 [대표님 지침] 사용가능일(입주가능일) 항상 노출
   const showTempOptions = isApartmentGroup || isVillaGroup || isOneRoomGroup || isCommercialGroup;
   const showTempTheme = true;
 
@@ -162,7 +164,8 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const showDirectionPill = extIsApart || extIsVilla || extIsOne;
   const showFloorPill = extIsBiz;
   const showMaintPill = extIsOne || extIsBiz;
-  const showParkingPill = extIsBiz;
+  const showParkingPill = true; // 🚀 항상 노출
+  const showMoveInDatePill = true; // 🚀 항상 노출
   const showOptionsPill = extIsApart || extIsVilla || extIsOne || extIsBiz;
   const showThemePill = true;
 
@@ -213,6 +216,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     filters.maintMax !== null ||
     filters.parking !== null ||
     (filters.parkings && filters.parkings.length > 0) ||
+    filters.moveInDate !== null ||
     filters.options.length > 0 ||
     filters.ownerRole !== null ||
     filters.commissionType !== null ||
@@ -475,6 +479,11 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                     : (filters.parking && filters.parking !== "전체" ? `${filters.parking}` : "주차 ▾")}
                 </button>
               )}
+              {showMoveInDatePill && (
+                <button onClick={() => setActivePanel(activePanel === "move_in" ? null : "move_in")} style={pillStyle(activePanel === "move_in" || filters.moveInDate !== null)}>
+                  {filters.moveInDate ? `${filters.moveInDate}` : "입주/사용일 ▾"}
+                </button>
+              )}
               {showYearPill && (
                 <button onClick={() => setActivePanel(activePanel === "year" ? null : "year")} style={pillStyle(activePanel === "year" || filters.yearMin !== null || filters.yearMax !== null)}>
                   {yearLabel} ▾
@@ -517,7 +526,8 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
       {activePanel === "direction" && renderSheet("방향", <DirectionFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "units" && renderSheet("세대수", <UnitsFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "maint" && renderSheet("관리비", <MaintFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
-      {activePanel === "parking" && renderSheet("주차", <ParkingFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {activePanel === "parking" && renderSheet("주차여부", <ParkingFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
+      {activePanel === "move_in" && renderSheet("사용가능일 (입주가능일)", <MoveInDateFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "floor" && renderSheet("층수", <FloorFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "year" && renderSheet("사용승인일 (연식)", <YearFilterPanel filters={filters} onFilterChange={onFilterChange} />)}
       {activePanel === "options" && renderSheet("기타옵션 (특화 맞춤)", <OptionsFilterPanel filters={filters} onFilterChange={onFilterChange} optionsList={getCategoryOptions(filters.propertyTypes)} />)}
@@ -635,8 +645,15 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
 
                 {showTempParking && (
                   <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
-                    <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>주차</div>
+                    <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>주차여부</div>
                     <ParkingFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
+                  </div>
+                )}
+
+                {showTempMoveInDate && (
+                  <div style={{ padding: "20px 0", borderBottom: "1px solid #f3f4f6" }}>
+                    <div style={{ fontSize: "15px", fontWeight: 800, color: "#111", marginBottom: "12px" }}>사용가능일 (입주가능일)</div>
+                    <MoveInDateFilterPanel filters={tempFilters} onFilterChange={handleTempFilterChange} />
                   </div>
                 )}
 
@@ -692,6 +709,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                   maintMax: null, 
                   parking: null, 
                   parkings: [],
+                  moveInDate: null,
                   options: [], 
                   ownerRole: null, 
                   commissionType: null, 

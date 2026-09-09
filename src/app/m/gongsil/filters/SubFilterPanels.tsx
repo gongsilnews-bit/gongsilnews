@@ -535,9 +535,9 @@ export function MaintFilterPanel({ filters, onFilterChange }: Props) {
   );
 }
 
-// ── 주차 패널 (다중 중복 선택 가능: 자주식, 무료주차 등) ──
+// ── 주차 패널 (다중 중복 선택 가능: 주차가능, 1대 이상, 2대 이상, 자주식, 기계식, 무료주차) ──
 export function ParkingFilterPanel({ filters, onFilterChange }: Props) {
-  const PARKING = ["주차가능", "자주식", "기계식", "무료주차"];
+  const PARKING = ["주차가능", "1대 이상", "2대 이상", "자주식", "기계식", "무료주차"];
   const currentParkings = (filters.parkings && filters.parkings.length > 0)
     ? filters.parkings
     : (filters.parking && filters.parking !== "전체" ? [filters.parking] : []);
@@ -585,6 +585,54 @@ export function ParkingFilterPanel({ filters, onFilterChange }: Props) {
         <button
           type="button"
           onClick={selectAll}
+          style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+        >
+          ↻ 조건삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── 사용가능일 (입주가능일) 패널 (단일 선택) ──
+export function MoveInDateFilterPanel({ filters, onFilterChange }: Props) {
+  const PRESETS = [
+    { label: "즉시입주 / 즉시사용", val: "즉시사용" },
+    { label: "1개월 이내", val: "1개월 이내" },
+    { label: "2개월 이내", val: "2개월 이내" },
+    { label: "3개월 이내", val: "3개월 이내" },
+    { label: "날짜 협의", val: "날짜 협의" },
+  ];
+  const isAll = !filters.moveInDate || filters.moveInDate === "전체";
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "20px" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ moveInDate: null })}
+          style={gridBtnStyle(isAll)}
+        >
+          전체 {isAll && "✓"}
+        </button>
+        {PRESETS.map((p) => {
+          const active = !isAll && filters.moveInDate === p.val;
+          return (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => onFilterChange({ moveInDate: active ? null : p.val })}
+              style={gridBtnStyle(active)}
+            >
+              {p.label} {active && "✓"}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          onClick={() => onFilterChange({ moveInDate: null })}
           style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
         >
           ↻ 조건삭제
