@@ -3224,6 +3224,59 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                         * 미설정 시 상시 노출되며, 설정 시 해당 기간 동안만 배너가 노출되고 이후엔 기본프로필 카드로 자동 전환됩니다.
                       </span>
                     </div>
+
+                    {/* 5) 실제 기사 하단 배너 실시간 미리보기 (대표님 요청) */}
+                    {writeAdPreview && (
+                      <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed #cbd5e1" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#2563eb", display: "flex", alignItems: "center", gap: 6 }}>
+                            <span>👀</span> [실시간 미리보기] 실제 기사 하단에 노출되는 배너 모습
+                          </span>
+                          <span style={{ fontSize: 11, color: textSecondary }}>
+                            {writeAdLinkUrl ? `클릭 시 이동: ${writeAdLinkUrl}` : "링크 미입력 (클릭 불가)"}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            position: "relative",
+                            width: "100%",
+                            borderRadius: 12,
+                            overflow: "hidden",
+                            border: "1px solid #e2e8f0",
+                            boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
+                            background: "#ffffff",
+                          }}
+                        >
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: 10,
+                              right: 10,
+                              background: "rgba(15, 23, 42, 0.72)",
+                              color: "#ffffff",
+                              fontSize: 10,
+                              fontWeight: 800,
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                              letterSpacing: "0.5px",
+                              zIndex: 2,
+                            }}
+                          >
+                            AD
+                          </span>
+                          <img
+                            src={writeAdPreview}
+                            alt="배너 실시간 미리보기"
+                            style={{
+                              width: "100%",
+                              maxHeight: 280,
+                              objectFit: "cover",
+                              display: "block",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
