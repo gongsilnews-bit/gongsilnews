@@ -263,10 +263,14 @@ export default function HeroMapSection() {
     
     kakaoMapRef.current = map;
 
-    // Initially set bounds and update on move
+    // Initially set bounds and update on move (with debounce)
     setMapBounds(map.getBounds());
+    let debounceTimer: any = null;
     kakao.maps.event.addListener(map, 'idle', () => {
-      setMapBounds(map.getBounds());
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        setMapBounds(map.getBounds());
+      }, 250);
     });
   }, [mapLoaded]);
 

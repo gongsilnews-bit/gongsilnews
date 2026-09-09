@@ -114,6 +114,7 @@ export async function createVacancy(data: {
       .single();
 
     if (error) return { success: false, error: error.message };
+    clearServerMapCache();
     return { success: true, id: result.id, vacancy_no: result.vacancy_no };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -508,6 +509,7 @@ export async function updateVacancyStatus(vacancyId: string, newStatus: string) 
       .eq('id', vacancyId);
 
     if (error) return { success: false, error: error.message };
+    clearServerMapCache();
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -524,6 +526,7 @@ export async function updateVacancy(vacancyId: string, updates: Record<string, a
       .eq('id', vacancyId);
 
     if (error) return { success: false, error: error.message };
+    clearServerMapCache();
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -540,6 +543,7 @@ export async function deleteVacancy(vacancyId: string) {
       .eq('id', vacancyId);
 
     if (error) return { success: false, error: error.message };
+    clearServerMapCache();
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -559,10 +563,37 @@ export async function getAgencyInfo(ownerId: string) {
 }
 
 
-// --- Node.js Server-side Global Cache for Map ---
+// --- Node.js Server-side Global & Regional Cache for Map ---
 let _serverMapCache: any[] | null = null;
 let _serverMapCacheTime: number = 0;
 const SERVER_MAP_CACHE_TTL = 3 * 60 * 1000; // 3분 캐시
+
+// 영역별/조건별 캐시 (최대 200개, 60초 TTL)
+const _regionMapCache = new Map<string, { time: number; data: any[] }>();
+const REGION_CACHE_TTL = 60 * 1000; // 60초 캐시
+const MAX_REGION_CACHE_SIZE = 200;
+
+export async function clearServerMapCache() {
+  _serverMapCache = null;
+  _serverMapCacheTime = 0;
+  _regionMapCache.clear();
+}
+
+function getMapCacheKey(options?: any): string | null {
+  if (!options) return "global";
+  if (options.ownerId) return null; // 특정 중개사 전용 조회는 캐시 생략
+  if (options.bbox) {
+    const swLat = options.bbox.swLat.toFixed(2);
+    const swLng = options.bbox.swLng.toFixed(2);
+    const neLat = options.bbox.neLat.toFixed(2);
+    const neLng = options.bbox.neLng.toFixed(2);
+    return `bbox_${swLat}_${swLng}_${neLat}_${neLng}_${options.is_auction ?? ''}`;
+  }
+  if (options.sido || options.sigungu || options.dong) {
+    return `addr_${options.sido || ''}_${options.sigungu || ''}_${options.dong || ''}_${options.is_auction ?? ''}`;
+  }
+  return "global";
+}
 
 export async function getVacanciesForMap(options?: {
   bbox?: {
@@ -581,11 +612,21 @@ export async function getVacanciesForMap(options?: {
 }) {
   const supabase = getAdminClient();
   try {
-    // 1. 캐시 활용 (특정 범위/조건이 없는 메인페이지의 전체 로딩인 경우)
     const isGlobalFetch = !options?.bbox && !options?.sido && !options?.sigungu && !options?.dong && options?.is_auction === undefined && !options?.ownerId;
+    
+    // 1. 글로벌 캐시 확인
     if (isGlobalFetch) {
       if (_serverMapCache && (Date.now() - _serverMapCacheTime < SERVER_MAP_CACHE_TTL)) {
         return { success: true, data: _serverMapCache };
+      }
+    } else {
+      // 2. 지역/BBox 캐시 확인
+      const cacheKey = getMapCacheKey(options);
+      if (cacheKey) {
+        const cached = _regionMapCache.get(cacheKey);
+        if (cached && (Date.now() - cached.time < REGION_CACHE_TTL)) {
+          return { success: true, data: cached.data };
+        }
       }
     }
 
@@ -676,6 +717,15 @@ export async function getVacanciesForMap(options?: {
     if (isGlobalFetch) {
       _serverMapCache = lightData;
       _serverMapCacheTime = Date.now();
+    } else {
+      const cacheKey = getMapCacheKey(options);
+      if (cacheKey) {
+        if (_regionMapCache.size >= MAX_REGION_CACHE_SIZE) {
+          const oldestKey = _regionMapCache.keys().next().value;
+          if (oldestKey) _regionMapCache.delete(oldestKey);
+        }
+        _regionMapCache.set(cacheKey, { time: Date.now(), data: lightData });
+      }
     }
 
     return { success: true, data: lightData };

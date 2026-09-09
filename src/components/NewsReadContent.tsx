@@ -342,13 +342,21 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
 
   useEffect(() => {
     if (article && article.id) {
-      incrementArticleView(article.id).then((res) => {
-        if (res.success && res.view_count !== undefined) {
-          setViewCount(res.view_count);
+      const storageKey = `gongsil_art_viewed_${article.id}`;
+      const hasViewed = typeof window !== "undefined" && sessionStorage.getItem(storageKey);
+
+      if (!hasViewed) {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(storageKey, "1");
         }
-      });
+        incrementArticleView(article.id).then((res) => {
+          if (res.success && res.view_count !== undefined) {
+            setViewCount(res.view_count);
+          }
+        });
+      }
     }
-  }, [article.id]);
+  }, [article?.id]);
 
   // 기사 작성자의 권한 확인 및 공실 데이터 페칭은 서버에서 처리하여 props로 전달받음
 
