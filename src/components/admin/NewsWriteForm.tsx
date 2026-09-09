@@ -8,6 +8,7 @@ import { uploadArticleMediaDirect } from "@/utils/uploadDirect";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 import { generateMarketingDrafts, saveAiDraft, getAiDraftHistory } from "@/app/actions/gemini";
+import { getAuthorBanners, saveAuthorBanner, updateArticlesAdSettings, getArticleAdInfo, AuthorBanner } from "@/app/actions/articleAd";
 import Link from "next/link";
 
 /* ─── 타입 ─── */
@@ -112,6 +113,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [aiLengthType, setAiLengthType] = useState("보통");
   const [aiCustomLength, setAiCustomLength] = useState(1000);
   const [aiStyleType, setAiStyleType] = useState("기본");
+
+  // ── 기사 하단 광고등록 상태 (대표님 지시) ──
+  const [writeAdType, setWriteAdType] = useState<"DEFAULT" | "BANNER" | "NONE">("DEFAULT");
+  const [writeAdBannerId, setWriteAdBannerId] = useState<string>("");
+  const [writeAdBannerName, setWriteAdBannerName] = useState<string>("");
+  const [writeAdFile, setWriteAdFile] = useState<File | null>(null);
+  const [writeAdLinkUrl, setWriteAdLinkUrl] = useState<string>("");
+  const [writeAdPreview, setWriteAdPreview] = useState<string>("");
+  const [authorBanners, setAuthorBanners] = useState<AuthorBanner[]>([]);
   const [aiEndingType, setAiEndingType] = useState("하십시오체");
   const [aiLayoutPattern, setAiLayoutPattern] = useState<"standard" | "summary_header" | "targeted">("summary_header");
   const [aiAttachedImage, setAiAttachedImage] = useState<{ data: string; mimeType: string; name: string } | null>(null);
@@ -1938,6 +1948,32 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
            }).catch(console.error);
         }
 
+        // ── 기사 하단 맞춤 광고 설정 저장 ──
+        try {
+          const targetAuthorId = memberAuthorId || currentUserId;
+          if (articleId && targetAuthorId) {
+            let finalBannerId = writeAdBannerId || null;
+            // 배너 직접 첨부한 경우 배너 보관함에 먼저 업로드/저장
+            if (writeAdType === "BANNER" && writeAdFile) {
+              const formData = new FormData();
+              formData.append("author_id", targetAuthorId);
+              formData.append("name", writeAdBannerName.trim() || `${title.slice(0, 20)} 맞춤 배너`);
+              formData.append("link_url", writeAdLinkUrl.trim());
+              formData.append("image", writeAdFile);
+              const bRes = await saveAuthorBanner(formData);
+              if (bRes.success && bRes.data) {
+                finalBannerId = bRes.data.id;
+              }
+            }
+            await updateArticlesAdSettings([articleId], targetAuthorId, {
+              ad_type: writeAdType,
+              custom_banner_id: writeAdType === "BANNER" ? finalBannerId : null,
+            });
+          }
+        } catch (adErr) {
+          console.warn("기사 광고 설정 저장 중 오류 (기사는 정상 저장됨):", adErr);
+        }
+
         alert("✅ 기사가 저장되었습니다!");
         window.location.href = isMemberMode ? memberReturnPath : "/admin?menu=article";
       } else {
@@ -2914,6 +2950,147 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 <button type="button" onClick={() => alert("카카오맵 지도검색 버튼을 눌러 위치를 누르면 자동으로 입력됩니다!\n직접 입력 시: 위도, 경도 순으로 입력하세요.")} style={{ padding: "0 16px", height: 40, background: "#9ca3af", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }}>
                   #위도 경도 넣는법
                 </button>
+              </div>
+            </div>
+
+            {/* ── 구분선 ── */}
+            <hr style={{ border: "none", borderTop: `1px solid ${border}`, margin: "0 0 24px 0" }} />
+
+            {/* ── 광고등록 (위치등록 바로 아래, 대표님 지시) ── */}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 32 }}>
+              <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80, paddingTop: 4 }}>광고등록</label>
+              
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+                {/* 옵션 선택 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14, fontWeight: 600, color: writeAdType === "DEFAULT" ? "#2563eb" : textPrimary }}>
+                    <input
+                      type="radio"
+                      name="write_ad_type"
+                      checked={writeAdType === "DEFAULT"}
+                      onChange={() => setWriteAdType("DEFAULT")}
+                      style={{ accentColor: "#2563eb", width: 16, height: 16, cursor: "pointer" }}
+                    />
+                    <span>기본프로필 선택 (공실등록정보 카드)</span>
+                  </label>
+
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14, fontWeight: 600, color: writeAdType === "BANNER" ? "#2563eb" : textPrimary }}>
+                    <input
+                      type="radio"
+                      name="write_ad_type"
+                      checked={writeAdType === "BANNER"}
+                      onChange={() => setWriteAdType("BANNER")}
+                      style={{ accentColor: "#2563eb", width: 16, height: 16, cursor: "pointer" }}
+                    />
+                    <span>배너등록 (이미지 첨부 + 링크 첨부)</span>
+                  </label>
+
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: textSecondary }}>
+                    <input
+                      type="radio"
+                      name="write_ad_type"
+                      checked={writeAdType === "NONE"}
+                      onChange={() => setWriteAdType("NONE")}
+                      style={{ accentColor: "#64748b", width: 15, height: 15, cursor: "pointer" }}
+                    />
+                    <span>노출 안함</span>
+                  </label>
+                </div>
+
+                {/* 기본프로필 선택 시 심플 안내 */}
+                {writeAdType === "DEFAULT" && (
+                  <div style={{ padding: "10px 14px", background: "#f8fafc", borderRadius: 8, border: `1px solid ${border}`, fontSize: 13, color: "#475569" }}>
+                    🏢 기사 하단에 내 중개업소 프로필(상호/대표자/등록번호/연락처)과 실시간 공실등록현황 카드가 자동으로 노출됩니다.
+                  </div>
+                )}
+
+                {/* 배너등록 선택 시: 이미지 첨부 + 링크 첨부 심플 영역 */}
+                {writeAdType === "BANNER" && (
+                  <div style={{ padding: "14px 16px", background: "#f8fafc", borderRadius: 10, border: `1px solid ${border}`, display: "flex", flexDirection: "column", gap: 12 }}>
+                    {/* 내 배너 보관함에서 불러오기 */}
+                    {authorBanners.length > 0 && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary, width: 85 }}>기존 배너:</span>
+                        <select
+                          value={writeAdBannerId}
+                          onChange={(e) => {
+                            const bId = e.target.value;
+                            setWriteAdBannerId(bId);
+                            if (bId) {
+                              const found = authorBanners.find((b) => b.id === bId);
+                              if (found) {
+                                setWriteAdLinkUrl(found.link_url || "");
+                                setWriteAdPreview(found.image_url || "");
+                                setWriteAdBannerName(found.name);
+                              }
+                            }
+                          }}
+                          style={{ padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", flex: 1, maxWidth: 280 }}
+                        >
+                          <option value="">-- 내 배너 보관함에서 선택 --</option>
+                          {authorBanners.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.name}
+                            </option>
+                          ))}
+                        </select>
+                        <span style={{ fontSize: 12, color: textSecondary }}>또는 아래에서 새로 첨부</span>
+                      </div>
+                    )}
+
+                    {/* 배너 이름 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary, width: 85 }}>배너 이름:</span>
+                      <input
+                        type="text"
+                        value={writeAdBannerName}
+                        onChange={(e) => setWriteAdBannerName(e.target.value)}
+                        placeholder="예: 논현동 신축 상가 분양 홍보 배너"
+                        style={{ flex: 1, padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", outline: "none" }}
+                      />
+                    </div>
+
+                    {/* 이미지 첨부 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary, width: 85 }}>이미지 첨부:</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setWriteAdFile(file);
+                            setWriteAdPreview(URL.createObjectURL(file));
+                            setWriteAdBannerId(""); // 직접 파일 선택 시 기존 보관함 선택 해제
+                          }
+                        }}
+                        style={{ fontSize: 13 }}
+                      />
+                    </div>
+
+                    {/* 링크 첨부 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary, width: 85 }}>링크 첨부:</span>
+                      <input
+                        type="text"
+                        value={writeAdLinkUrl}
+                        onChange={(e) => setWriteAdLinkUrl(e.target.value)}
+                        placeholder="https://... (클릭 시 이동할 링크 URL)"
+                        style={{ flex: 1, padding: "8px 12px", borderRadius: 6, border: `1px solid ${border}`, fontSize: 13, background: "#fff", outline: "none" }}
+                      />
+                    </div>
+
+                    {/* 이미지 미리보기 */}
+                    {writeAdPreview && (
+                      <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 12, color: textSecondary, width: 85 }}>미리보기:</span>
+                        <div style={{ borderRadius: 6, overflow: "hidden", border: `1px solid ${border}`, maxHeight: 80, maxWidth: 320 }}>
+                          <img src={writeAdPreview} alt="배너 미리보기" style={{ width: "100%", height: 80, objectFit: "cover" }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
