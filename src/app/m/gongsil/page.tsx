@@ -138,9 +138,12 @@ function MobileGongsilContent() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userLevel, setUserLevel] = useState<number>(0);
   const isSuperAdmin =
-    userLevel >= 5 ||
-    isAdminRole(currentUser?.role) ||
-    currentUser?.email === "gongsilmarketing@gmail.com";
+    Boolean(
+      (userLevel >= 5 || isAdminRole(currentUser?.role)) &&
+      currentUser?.role !== "REALTOR" &&
+      currentUser?.role !== "부동산회원" &&
+      currentUser?.role !== "부동산관리자"
+    ) || currentUser?.email === "gongsilmarketing@gmail.com";
   const [showRegisterPromoOverlay, setShowRegisterPromoOverlay] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -475,7 +478,14 @@ function MobileGongsilContent() {
         if (memberData) {
           const lvl = getPermissionLevel(memberData);
           setUserLevel(lvl);
-          if (lvl >= 5 || isAdminRole(memberData.role) || data.user.email === "gongsilmarketing@gmail.com") {
+          const isSuper =
+            Boolean(
+              (lvl >= 5 || isAdminRole(memberData.role)) &&
+              memberData.role !== "REALTOR" &&
+              memberData.role !== "부동산회원" &&
+              memberData.role !== "부동산관리자"
+            ) || data.user.email === "gongsilmarketing@gmail.com";
+          if (isSuper) {
             setShowRegisterPromoOverlay(false);
           }
         } else {

@@ -17,9 +17,12 @@ export default function GongsilRegisterPromoOverlay({
   userLevel = 0,
 }: GongsilRegisterPromoOverlayProps) {
   const isSuperAdmin =
-    userLevel >= 5 ||
-    isAdminRole(currentUser?.role) ||
-    currentUser?.email === "gongsilmarketing@gmail.com";
+    Boolean(
+      (userLevel >= 5 || isAdminRole(currentUser?.role)) &&
+      currentUser?.role !== "REALTOR" &&
+      currentUser?.role !== "부동산회원" &&
+      currentUser?.role !== "부동산관리자"
+    ) || currentUser?.email === "gongsilmarketing@gmail.com";
 
   const handleRegisterClick = () => {
     const targetUrl = "/realty_admin?menu=gongsil&action=write";

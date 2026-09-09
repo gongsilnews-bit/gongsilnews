@@ -30,8 +30,24 @@ export function getPermissionLevel(member: {
   return 1; // 기본적으로 인증된 사용자는 1레벨로 취급
 }
 export function isAdminRole(role?: string | null): boolean {
-  const normalizedRole = role?.trim().toUpperCase() || "";
-  return normalizedRole === "ADMIN" || normalizedRole === "SUPER_ADMIN" || normalizedRole === "최고관리자" || normalizedRole.includes("관리자");
+  if (!role) return false;
+  const normalizedRole = role.trim().toUpperCase();
+  // 부동산회원, 부동산관리자 등은 본사 최고관리자가 아니므로 제외
+  if (
+    normalizedRole.includes("부동산") ||
+    normalizedRole.includes("REALTOR") ||
+    normalizedRole.includes("AGENCY")
+  ) {
+    return false;
+  }
+  return (
+    normalizedRole === "ADMIN" ||
+    normalizedRole === "SUPER_ADMIN" ||
+    normalizedRole === "SUPERADMIN" ||
+    normalizedRole === "최고관리자" ||
+    normalizedRole === "SUPER_ADMINISTRATOR" ||
+    normalizedRole === "MASTER"
+  );
 }
 
 export function getEffectiveMemberRole(role?: string | null, agencyStatus?: string | null): "ADMIN" | "REALTOR" | "USER" {
