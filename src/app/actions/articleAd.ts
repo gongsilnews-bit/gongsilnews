@@ -424,6 +424,52 @@ export async function getAuthorArticlesWithAdSettings(authorId: string): Promise
   }
 }
 
+/* ── 4-1. 기사관리용: 작성자의 기사별 광고 설정 맵 및 배너 목록 조회 ── */
+export async function getAuthorArticlesAdSettingsMap(authorId: string): Promise<{
+  success: boolean;
+  settingsMap: Record<string, { ad_type: string; custom_banner_id: string | null; banner_name: string | null }>;
+  banners: AuthorBanner[];
+  error?: string;
+}> {
+  if (!authorId) return { success: true, settingsMap: {}, banners: [] };
+  const supabase = getAdminClient();
+  try {
+    const [adRes, banRes] = await Promise.all([
+      supabase
+        .from("article_ad_settings")
+        .select("article_id, ad_type, custom_banner_id, custom_banner:article_author_banners(name)")
+        .eq("author_id", authorId),
+      supabase
+        .from("article_author_banners")
+        .select("*")
+        .eq("author_id", authorId)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    const settingsMap: Record<string, { ad_type: string; custom_banner_id: string | null; banner_name: string | null }> = {};
+    if (adRes.data) {
+      adRes.data.forEach((item: any) => {
+        const bannerName = Array.isArray(item.custom_banner)
+          ? item.custom_banner[0]?.name
+          : item.custom_banner?.name || null;
+        settingsMap[item.article_id] = {
+          ad_type: item.ad_type || "DEFAULT",
+          custom_banner_id: item.custom_banner_id || null,
+          banner_name: bannerName,
+        };
+      });
+    }
+
+    return {
+      success: true,
+      settingsMap,
+      banners: banRes.data || [],
+    };
+  } catch (err: any) {
+    return { success: false, settingsMap: {}, banners: [], error: err.message };
+  }
+}
+
 /* ── 5. 선택된 기사들에 광고 설정 일괄/개별 저장 ── */
 export async function updateArticlesAdSettings(
   articleIds: string[],
