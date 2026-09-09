@@ -22,6 +22,7 @@ export interface FilterState {
   bathCount: number | null;
   direction: string | null;
   unitsMin: number | null;
+  unitsMax?: number | null;
   maintMax: number | null;
   parking: string | null;
   options: string[];

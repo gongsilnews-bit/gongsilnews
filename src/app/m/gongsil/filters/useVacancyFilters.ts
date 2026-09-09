@@ -31,6 +31,7 @@ export const initialFilterState: FilterState = {
   bathCount: null,
   direction: null,
   unitsMin: null,
+  unitsMax: null,
   maintMax: null,
   parking: null,
   options: [],
@@ -324,28 +325,38 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
         if (filters.floor === '옥탑' && v.floor !== '옥탑') return false;
       }
 
-      // 6.1 방 개수 (PC 동일)
+      // 6.1 방 개수 (1개, 2개, 3개, 4개 이상 정확한 매칭)
       if (filters.roomCount !== null) {
         const rooms = v.room_count || (v.rooms ? parseInt(v.rooms, 10) : 0);
-        if (rooms < filters.roomCount) return false;
+        if (filters.roomCount >= 4) {
+          if (rooms < 4) return false;
+        } else {
+          if (rooms !== filters.roomCount) return false;
+        }
       }
 
-      // 6.2 욕실 개수 (PC 동일)
+      // 6.2 욕실 개수 (1개, 2개, 3개 이상 정확한 매칭)
       if (filters.bathCount !== null) {
         const baths = v.bath_count || (v.bathrooms ? parseInt(v.bathrooms, 10) : 0);
-        if (baths < filters.bathCount) return false;
+        if (filters.bathCount >= 3) {
+          if (baths < 3) return false;
+        } else {
+          if (baths !== filters.bathCount) return false;
+        }
       }
 
-      // 6.3 방향 (PC 동일)
+      // 6.3 방향
       if (filters.direction && filters.direction !== "전체") {
         const dir = v.direction || v.main_direction || "";
         if (!dir.includes(filters.direction)) return false;
       }
 
-      // 6.4 세대수 (PC 동일)
-      if (filters.unitsMin !== null) {
-        const units = parseInt(v.total_units, 10) || 0;
-        if (units < filters.unitsMin) return false;
+      // 6.4 세대수 (50세대 이하, 100세대 미만, 300세대 미만, 500세대 미만, 1000세대 이상)
+      if (filters.unitsMin !== null || (filters.unitsMax !== null && filters.unitsMax !== undefined)) {
+        const units = parseInt(String(v.total_units || 0), 10) || 0;
+        if (!units) return false;
+        if (filters.unitsMin !== null && units < filters.unitsMin) return false;
+        if (filters.unitsMax !== null && filters.unitsMax !== undefined && units > filters.unitsMax) return false;
       }
 
       // 6.5 관리비 (PC 동일)
