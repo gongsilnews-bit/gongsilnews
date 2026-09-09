@@ -5,9 +5,8 @@ import { AdminSectionProps } from "./types";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import VacancyDetailPanel from "./VacancyDetailPanel";
 import VacancyMarketingPanel from "./VacancyMarketingPanel";
-import { getVacancies, updateVacancyStatus, updateVacancy, deleteVacancy, getVacancyDetail } from "@/app/actions/vacancy";
+import { getVacancies, updateVacancyStatus, updateVacancy, deleteVacancy, getVacancyDetail, getVacancyTabCounts, getVacancyFlyerStates } from "@/app/actions/vacancy";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 
 interface VacancySectionProps extends AdminSectionProps {
   role: "admin" | "realtor" | "user";
@@ -31,23 +30,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
   useEffect(() => {
     async function checkFlyers() {
       if (dbVacancies.length === 0) return;
-      const supabase = createClient();
       const ids = dbVacancies.map((v: any) => v.id);
-      
-      const { data: flyers } = await supabase
-        .from("vacancy_flyers")
-        .select("vacancy_id, flyer_state")
-        .in("vacancy_id", ids);
-        
-      if (flyers) {
-        const map: Record<string, { flyer: boolean; report: boolean }> = {};
-        flyers.forEach((f: any) => {
-          const state = f.flyer_state;
-          const hasFlyer = state ? (('flyer' in state) ? !!state.flyer : true) : false;
-          const hasReport = state ? (('report' in state) ? !!state.report : false) : false;
-          map[f.vacancy_id] = { flyer: hasFlyer, report: hasReport };
-        });
-        setFlyerMap(map);
+      const res = await getVacancyFlyerStates(ids);
+      if (res.success && res.data) {
+        setFlyerMap(res.data);
       }
     }
     checkFlyers();
@@ -138,43 +124,15 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
       setTotalCount(res.count || 0);
     }
 
-    // Compute total and status counts (using high-performance aggregates to bypass 1,000 max row limit)
-    const supabase = createClient();
-    let queryAll = supabase.from("vacancies").select("*", { count: "exact", head: true }).neq("status", "DELETED");
-    let queryActive = supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("status", "ACTIVE");
-    let queryStopped = supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("status", "STOPPED");
-    let queryDraft = supabase.from("vacancies").select("*", { count: "exact", head: true }).eq("status", "DRAFT");
-
-    if (role !== "admin" && ownerId) {
-      const { data: user } = await supabase.from('members').select('role').eq('id', ownerId).single();
-      if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
-        queryAll = queryAll.eq('owner_id', ownerId);
-        queryActive = queryActive.eq('owner_id', ownerId);
-        queryStopped = queryStopped.eq('owner_id', ownerId);
-        queryDraft = queryDraft.eq('owner_id', ownerId);
-      }
-    }
-
-    if (role === "admin" && excludeOnbid) {
-      queryAll = queryAll.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
-      queryActive = queryActive.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
-      queryStopped = queryStopped.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
-      queryDraft = queryDraft.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
-    }
-
-    const [resAll, resActive, resStopped, resDraft] = await Promise.all([
-      queryAll,
-      queryActive,
-      queryStopped,
-      queryDraft
-    ]);
-
-    setCounts({
-      전체: resAll.count || 0,
-      광고중: resActive.count || 0,
-      광고종료: resStopped.count || 0,
-      임시저장: resDraft.count || 0
+    // Compute total and status counts via dedicated high-speed server action
+    const countsRes = await getVacancyTabCounts({
+      role,
+      ownerId,
+      excludeOnbid: role === "admin" && excludeOnbid
     });
+    if (countsRes.success && countsRes.data) {
+      setCounts(countsRes.data);
+    }
   };
 
   const handleRequestApproval = async () => {

@@ -186,6 +186,82 @@ export async function syncVacancyPhotos(vacancyId: string, urls: string[]) {
   }
 }
 
+/* ── 공실 탭별 건수 초고속 조회 (HEAD 카운트 쿼리) ── */
+export async function getVacancyTabCounts(options?: {
+  role?: string;
+  ownerId?: string;
+  excludeOnbid?: boolean;
+}) {
+  const supabase = getAdminClient();
+  try {
+    let queryAll = supabase.from("vacancies").select("id", { count: "exact", head: true }).neq("status", "DELETED");
+    let queryActive = supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("status", "ACTIVE");
+    let queryStopped = supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("status", "STOPPED");
+    let queryDraft = supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("status", "DRAFT");
+
+    if (options?.role !== "admin" && options?.ownerId) {
+      const { data: user } = await supabase.from('members').select('role').eq('id', options.ownerId).single();
+      if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN' && user?.role !== '최고관리자') {
+        queryAll = queryAll.eq('owner_id', options.ownerId);
+        queryActive = queryActive.eq('owner_id', options.ownerId);
+        queryStopped = queryStopped.eq('owner_id', options.ownerId);
+        queryDraft = queryDraft.eq('owner_id', options.ownerId);
+      }
+    }
+
+    if (options?.excludeOnbid) {
+      queryAll = queryAll.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+      queryActive = queryActive.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+      queryStopped = queryStopped.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+      queryDraft = queryDraft.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+    }
+
+    const [resAll, resActive, resStopped, resDraft] = await Promise.all([
+      queryAll,
+      queryActive,
+      queryStopped,
+      queryDraft
+    ]);
+
+    return {
+      success: true,
+      data: {
+        전체: resAll.count || 0,
+        광고중: resActive.count || 0,
+        광고종료: resStopped.count || 0,
+        임시저장: resDraft.count || 0
+      }
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/* ── 공실 전단지/보고서 상태 일괄 조회 ── */
+export async function getVacancyFlyerStates(vacancyIds: string[]) {
+  if (!vacancyIds || vacancyIds.length === 0) return { success: true, data: {} };
+  const supabase = getAdminClient();
+  try {
+    const { data: flyers, error } = await supabase
+      .from("vacancy_flyers")
+      .select("vacancy_id, flyer_state")
+      .in("vacancy_id", vacancyIds);
+
+    if (error) return { success: false, error: error.message };
+
+    const map: Record<string, { flyer: boolean; report: boolean }> = {};
+    (flyers || []).forEach((f: any) => {
+      const state = f.flyer_state;
+      const hasFlyer = state ? (('flyer' in state) ? !!state.flyer : true) : false;
+      const hasReport = state ? (('report' in state) ? !!state.report : false) : false;
+      map[f.vacancy_id] = { flyer: hasFlyer, report: hasReport };
+    });
+    return { success: true, data: map };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 // ── 공실 목록 조회 ──
 // --- Node.js Server-side Global Cache ---
 let _serverVacanciesCache: string | null = null;
@@ -215,9 +291,7 @@ export async function getVacancies(options?: {
 
   const supabase = getAdminClient();
   try {
-    const selectFields = options?.all
-      ? 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, building_name, lat, lng, created_at, address_exposure, exposure_type, realtor_commission, room_count, bath_count, exclusive_m2, supply_m2, parking, total_floor, current_floor, direction, move_in_date, client_name, client_phone, themes, options, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)'
-      : '*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
+    const selectFields = 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, building_name, lat, lng, created_at, address_exposure, exposure_type, realtor_commission, room_count, bath_count, exclusive_m2, supply_m2, parking, total_floor, current_floor, direction, move_in_date, client_name, client_phone, themes, options, metadata, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
 
     // 만약 페이지네이션이 명시된 경우, 단일 쿼리로 최적화해서 수행
     if (options?.page && options?.limit) {
