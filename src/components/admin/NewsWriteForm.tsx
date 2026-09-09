@@ -3246,7 +3246,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                               {writeAdFile ? writeAdFile.name : "파일 선택"}
                             </button>
                             <span style={{ fontSize: 12, color: textSecondary, fontWeight: 600 }}>
-                              권장 사이즈: 1200X400 (WebP 자동 압축 적용)
+                              (사이즈: 1200X400 PX)
                             </span>
                           </div>
                         ) : (

@@ -386,7 +386,7 @@ export default function MemberArticleAdSection({
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
                 배너 이미지 <span style={{ color: "#ef4444" }}>*</span>
                 <span style={{ fontSize: 12, fontWeight: 500, color: "#2563eb", marginLeft: 8 }}>
-                  (권장: 1200X400 / WebP 자동 압축 변환 적용)
+                  (사이즈: 1200X400 PX)
                 </span>
               </label>
               <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
