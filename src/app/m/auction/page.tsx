@@ -693,11 +693,11 @@ function MobileAuctionContent() {
         if (!showListView) {
           setTimeout(() => kakaoMapRef.current?.relayout(), 50);
         }
-      } else if (selectedCluster) {
+      } else if (selectedCluster || showListView) {
         vacancyStackRef.current = [];
         setSelectedCluster(null);
-      } else if (showListView) {
         setShowListView(false);
+        setTimeout(() => kakaoMapRef.current?.relayout(), 50);
       }
     };
     window.addEventListener("popstate", handlePopState);
@@ -1191,40 +1191,55 @@ function MobileAuctionContent() {
   };
 
   const goBack = () => {
+    // 1) 상세 내비게이션 스택이 쌓여 있는 경우
     if (vacancyStackRef.current.length > 0) {
       window.history.back();
       return;
     }
+    // 2) 임베디드 iframe 모드
     if (isEmbedded) {
       if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
       setTimeout(() => window.parent.postMessage({ type: 'CLOSE_VACANCY_OVERLAY' }, '*'), 350);
       return;
     }
-    // 히스토리 state에 detail이 쌓여 있다면 history.back()으로 popstate 트리거
-    if (window.history.state?.panel === "detail") {
-      window.history.back();
+    // 3) 상세 패널(selectedVacancy)이 열려 있는 경우
+    if (selectedVacancy) {
+      if (window.history.state?.panel === "detail") {
+        window.history.back();
+        return;
+      }
+      if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
+      setTimeout(() => {
+        if (window.opener && !window.opener.closed) {
+          window.close();
+        } else {
+          setSelectedVacancy(null);
+          setIsDirectView(false);
+          directViewLoadedRef.current = false;
+          if (typeof window !== "undefined") {
+            const cleanParams = new URLSearchParams(window.location.search);
+            cleanParams.delete("id");
+            const cleanUrl = window.location.pathname + (cleanParams.toString() ? `?${cleanParams.toString()}` : "");
+            window.history.replaceState({ panel: (selectedCluster || showListView) ? "list" : "map" }, "", cleanUrl);
+          }
+          if (!showListView && !selectedCluster) {
+            setTimeout(() => kakaoMapRef.current?.relayout(), 50);
+          }
+        }
+      }, 200);
       return;
     }
-    // 그 외 직접 URL 진입이나 외부 리다이렉트 진입 후 안전한 닫기 처리
-    if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
-    setTimeout(() => {
-      if (window.opener && !window.opener.closed) {
-        window.close();
-      } else {
-        setSelectedVacancy(null);
-        setIsDirectView(false);
-        directViewLoadedRef.current = false;
-        if (typeof window !== "undefined") {
-          const cleanParams = new URLSearchParams(window.location.search);
-          cleanParams.delete("id");
-          const cleanUrl = window.location.pathname + (cleanParams.toString() ? `?${cleanParams.toString()}` : "");
-          window.history.replaceState({ panel: "map" }, "", cleanUrl);
-        }
-        if (!showListView) {
-          setTimeout(() => kakaoMapRef.current?.relayout(), 50);
-        }
+    // 4) 리스트 패널(selectedCluster 또는 showListView)이 열려 있는 경우 -> 지도로 복귀!
+    if (selectedCluster || showListView) {
+      if (window.history.state?.panel === "list" || window.history.state?.panel === "cluster") {
+        window.history.back();
+        return;
       }
-    }, 200);
+      setSelectedCluster(null);
+      setShowListView(false);
+      setTimeout(() => kakaoMapRef.current?.relayout(), 50);
+      return;
+    }
   };
 
   return (
