@@ -201,16 +201,19 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
           <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 280 }}>
             <button
               onClick={() => {
-                  if (isAuctionProperty) {
-                    window.location.replace("/m/login?returnTo=" + encodeURIComponent(`/m/gongsil?id=${selectedVacancy.id}`));
-                  } else if (!currentUser) {
-                    if (typeof window !== "undefined") {
-                      localStorage.setItem("signup_member_type", "broker");
-                    }
-                    window.location.replace("/m/login?returnTo=" + encodeURIComponent("/m/admin/settings?tab=agency"));
-                  } else {
-                    window.location.href = "/m/admin/settings?tab=agency";
+                if (isAuctionProperty) {
+                  const locQuery = selectedVacancy?.lat && selectedVacancy?.lng
+                    ? `&lat=${selectedVacancy.lat}&lng=${selectedVacancy.lng}&level=4`
+                    : "";
+                  window.location.replace("/m/login?returnTo=" + encodeURIComponent(`/m/gongsil?mode=auction${locQuery}`));
+                } else if (!currentUser) {
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("signup_member_type", "broker");
                   }
+                  window.location.replace("/m/login?returnTo=" + encodeURIComponent("/m/admin/settings?tab=agency"));
+                } else {
+                  window.location.href = "/m/admin/settings?tab=agency";
+                }
               }}
               style={{
                 width: "100%",
@@ -225,13 +228,19 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
               }}
             >
-              {isAuctionProperty ? "무료 회원가입하기" : "✨ 중개업소 무료 가입하기 →"}
+              {isAuctionProperty ? "✨ 무료 회원가입 후 열람하기" : "✨ 중개업소 무료 가입하기 →"}
             </button>
 
-            {!currentUser && !isAuctionProperty && (
+            {!currentUser && (
               <button
                 onClick={() => {
-                  window.location.replace("/m/login?returnTo=" + encodeURIComponent(`/m/gongsil?id=${selectedVacancy.id}`));
+                  const locQuery = selectedVacancy?.lat && selectedVacancy?.lng
+                    ? `&lat=${selectedVacancy.lat}&lng=${selectedVacancy.lng}&level=4`
+                    : "";
+                  const returnPath = isAuctionProperty
+                    ? `/m/gongsil?mode=auction${locQuery}`
+                    : `/m/gongsil?mode=gongsil${locQuery}`;
+                  window.location.replace("/m/login?returnTo=" + encodeURIComponent(returnPath));
                 }}
                 style={{
                   width: "100%",
@@ -245,7 +254,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   cursor: "pointer",
                 }}
               >
-                🔑 로그인
+                🔑 기존 회원 로그인
               </button>
             )}
 
