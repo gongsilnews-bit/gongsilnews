@@ -22,7 +22,7 @@ function MobileBottomNavContent() {
 
   // 지도 페이지 또는 우리동네뉴스 탭에서는 항상 하단바가 보이도록 리셋
   useEffect(() => {
-    const isMapPage = pathname.startsWith('/m/news_map') || (pathname === '/m' && tab === 'local') || pathname.startsWith('/m/gongsil');
+    const isMapPage = pathname.startsWith('/m/news_map') || (pathname === '/m' && tab === 'local') || pathname.startsWith('/m/gongsil') || pathname.startsWith('/m/auction');
     if (isMapPage) {
       setIsVisible(true);
     }
@@ -30,7 +30,7 @@ function MobileBottomNavContent() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const isMapPage = pathname.startsWith('/m/news_map') || (pathname === '/m' && tab === 'local') || pathname.startsWith('/m/gongsil');
+      const isMapPage = pathname.startsWith('/m/news_map') || (pathname === '/m' && tab === 'local') || pathname.startsWith('/m/gongsil') || pathname.startsWith('/m/auction');
       if (isMapPage) {
         setIsVisible(true);
         return;
@@ -195,6 +195,10 @@ function MobileBottomNavContent() {
             }
             if (item.name === "우리동네") {
               if (pathname.startsWith("/m/news_map")) return true;
+              return false;
+            }
+            if (item.name === "공실") {
+              if (pathname.startsWith("/m/gongsil") || pathname.startsWith("/m/auction")) return true;
               return false;
             }
             return pathname === item.path ||

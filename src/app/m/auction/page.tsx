@@ -8,12 +8,12 @@ import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import AuthModal from "@/components/AuthModal";
 import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
-import MobileFilterBar from "./MobileFilterBar";
-import { initialFilterState, useVacancyFilters } from "./filters/useVacancyFilters";
+import MobileFilterBar from "../gongsil/MobileFilterBar";
+import { initialFilterState, useVacancyFilters } from "../gongsil/filters/useVacancyFilters";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
 import { getJitteredCoords, getCleanAddrText, getMarkerDimensions } from "@/app/(map)/gongsil/gongsilHelpers";
-import { GongsilMobileDetailPanel } from "./GongsilMobileDetailPanel";
-import { GongsilMobileDrawerList } from "./GongsilMobileDrawerList";
+import { GongsilMobileDetailPanel } from "../gongsil/GongsilMobileDetailPanel";
+import { GongsilMobileDrawerList } from "../gongsil/GongsilMobileDrawerList";
 import GongsilRegisterPromoOverlay from "@/app/(map)/gongsil/GongsilRegisterPromoOverlay";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
@@ -61,7 +61,7 @@ function formatPrice(v: any): string {
   return "-";
 }
 
-function MobileGongsilContent() {
+function MobileAuctionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [vacancies, setVacancies] = useState<any[]>([]);
@@ -87,8 +87,8 @@ function MobileGongsilContent() {
   const [isFetchingVacancies, setIsFetchingVacancies] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(7);
   // Keep the first server and client render identical; URL mode is applied after mount.
-  const [activeMode, setActiveMode] = useState<"공실" | "경매">("공실");
-  const effectiveMode: "공실" | "경매" = "공실";
+  const [activeMode, setActiveMode] = useState<"공실" | "경매">("경매");
+  const effectiveMode: "공실" | "경매" = "경매";
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -253,11 +253,11 @@ function MobileGongsilContent() {
           savedAuctionLocRef.current = parsed.auctionLocation;
         }
 
-        const resolvedMode: "공실" | "경매" = "공실";
+        const resolvedMode: "공실" | "경매" = "경매";
 
         setActiveMode(resolvedMode);
 
-        const currentFilters = parsed.gongsilFilters || (parsed.activeMode !== "경매" ? parsed.filters : null) || initialFilterState;
+        const currentFilters = parsed.auctionFilters || (parsed.activeMode === "경매" ? parsed.filters : null) || { ...initialFilterState, propertyTypes: AUCTION_PROPERTY_TYPES };
 
         let restoredPropertyTypes = currentFilters.propertyTypes;
         if (resolvedMode === "경매") {
@@ -295,8 +295,8 @@ function MobileGongsilContent() {
           setLocLabel(parsed.locLabel);
         }
       } else {
-        setActiveMode("공실");
-        setFilters(initialFilterState);
+        setActiveMode("경매");
+        setFilters({ ...initialFilterState, propertyTypes: AUCTION_PROPERTY_TYPES });
       }
     } catch (e) {
       console.error("Failed to restore mobile search state:", e);
@@ -1241,7 +1241,7 @@ function MobileGongsilContent() {
       )}
       {!isEmbedded && (
         <MobileTopBarHeader
-          activeTab="gongsil"
+          activeTab="auction"
           onLocationMove={(lat, lng, zoom) => {
             const kakao = (window as any).kakao;
             if (kakaoMapRef.current && kakao) {
@@ -1306,25 +1306,7 @@ function MobileGongsilContent() {
           <div style={{ padding: "8px 16px", backgroundColor: "#fff", display: "flex", justifyContent: "center", borderBottom: "1px solid #f3f4f6" }}>
             <div style={{ display: "flex", width: "100%", background: "#f1f5f9", borderRadius: "12px", padding: "4px" }}>
               <button
-                onClick={() => {}}
-                style={{
-                  flex: 1,
-                  padding: "10px 0",
-                  borderRadius: "8px",
-                  border: "none",
-                  fontSize: "14px",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  backgroundColor: "#1a73e8",
-                  color: "#ffffff",
-                  boxShadow: "0 4px 12px rgba(26,115,232,0.25)"
-                }}
-              >
-                ● 실시간 공실
-              </button>
-              <button
-                onClick={() => router.push("/m/auction")}
+                onClick={() => router.push("/m/gongsil")}
                 style={{
                   flex: 1,
                   padding: "10px 0",
@@ -1337,6 +1319,24 @@ function MobileGongsilContent() {
                   backgroundColor: "transparent",
                   color: "#64748b",
                   boxShadow: "none"
+                }}
+              >
+                ● 실시간 공실
+              </button>
+              <button
+                onClick={() => {}}
+                style={{
+                  flex: 1,
+                  padding: "10px 0",
+                  borderRadius: "8px",
+                  border: "none",
+                  fontSize: "14px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  backgroundColor: "#1a4282",
+                  color: "#ffffff",
+                  boxShadow: "0 4px 12px rgba(26,66,130,0.25)"
                 }}
               >
                 🔨 법원 경·공매
@@ -1685,7 +1685,7 @@ function MobileGongsilContent() {
         <GongsilRegisterPromoOverlay
           categoryName="공실"
           onClose={() => setShowRegisterPromoOverlay(false)}
-          onGoAuction={() => router.push("/m/auction")}
+          onGoAuction={() => switchMode("경매")}
           currentUser={currentUser}
           userLevel={userLevel}
           isMobile={true}
@@ -1850,10 +1850,10 @@ function MobileGongsilContent() {
   );
 }
 
-export default function MobileGongsilPage() {
+export default function MobileAuctionPage() {
   return (
     <Suspense fallback={null}>
-      <MobileGongsilContent />
+      <MobileAuctionContent />
     </Suspense>
   );
 }

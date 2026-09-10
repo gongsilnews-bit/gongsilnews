@@ -185,7 +185,10 @@ export default function MobileTopBarHeader({ activeTab, onLocationMove }: Props)
           }}
         >
           {CATEGORIES.map((cat) => {
-            const isActive = (cat.key === "news" || cat.key === "news_gongsil")
+            const isGongsilGroup = cat.key === "gongsil" && (activeTab === "gongsil" || activeTab === "auction");
+            const isActive = isGongsilGroup
+              ? true
+              : (cat.key === "news" || cat.key === "news_gongsil")
               ? (!activeTab || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc" || activeTab === "local")
               : (cat.key === "study" ? (activeTab === "study" || activeTab?.startsWith("board_")) : activeTab === cat.key);
             return (
@@ -220,7 +223,7 @@ export default function MobileTopBarHeader({ activeTab, onLocationMove }: Props)
             );
           })}
           {/* 검색 및 버튼에 가려지지 않도록 끝부분 여백 추가 */}
-          <div style={{ flexShrink: 0, width: (activeTab === "local" || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc" || activeTab === "gongsil") ? "155px" : "48px" }} />
+          <div style={{ flexShrink: 0, width: (activeTab === "local" || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc" || activeTab === "gongsil" || activeTab === "auction") ? "155px" : "48px" }} />
         </div>
         
         {/* 우측 상단 버튼 영역 — 고정 */}
@@ -297,8 +300,8 @@ export default function MobileTopBarHeader({ activeTab, onLocationMove }: Props)
             )
           )}
 
-          {/* 2. 공실열람 탭: 지도기사 스타일의 '공실관리' 버튼 */}
-          {activeTab === "gongsil" && (
+          {/* 2. 공실열람 및 경공매 탭: 지도기사 스타일의 '공실관리' 버튼 */}
+          {(activeTab === "gongsil" || activeTab === "auction") && (
             <button
               onClick={handleVacancyAdminClick}
               style={{
