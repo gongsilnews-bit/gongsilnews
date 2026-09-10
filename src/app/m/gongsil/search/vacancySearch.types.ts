@@ -41,7 +41,7 @@ export interface FilterState {
   auctionBidPriceMin: number | null;
   auctionBidPriceMax: number | null;
   auctionDiscount: number;
-  auctionBidCount: number;
+  auctionBidCount: number | string;
   auctionStartDate: string;
 }
 

@@ -10,7 +10,7 @@ export function useGongsilFilterState() {
   const [tempRentMin, setTempRentMin] = useState<number | null>(null);
   const [tempRentMax, setTempRentMax] = useState<number | null>(null);
   const [filterAuctionDiscount, setFilterAuctionDiscount] = useState(0);
-  const [filterAuctionBidCount, setFilterAuctionBidCount] = useState(0);
+  const [filterAuctionBidCount, setFilterAuctionBidCount] = useState<number | string>("all");
   const [filterAuctionStartDate, setFilterAuctionStartDate] = useState("all");
   const [filterAuctionAppraisalMin, setFilterAuctionAppraisalMin] = useState<number | null>(null);
   const [filterAuctionAppraisalMax, setFilterAuctionAppraisalMax] = useState<number | null>(null);

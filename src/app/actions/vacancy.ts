@@ -363,6 +363,10 @@ export async function getVacancies(options?: {
           lowest_bid_price: metadata.lowest_bid_price,
           pblctBgnDtm: metadata.pblctBgnDtm,
           bid_start_date: metadata.bid_start_date,
+          pbctCnt: Number(metadata.fail_count ?? metadata.usbdNft ?? metadata.pbctCnt ?? metadata.pbct_cnt ?? 0) || 0,
+          fail_count: Number(metadata.fail_count ?? metadata.usbdNft ?? metadata.pbctCnt ?? metadata.pbct_cnt ?? 0) || 0,
+          usbdNft: Number(metadata.usbdNft ?? metadata.fail_count ?? metadata.pbctCnt ?? 0) || 0,
+          discount_rate: metadata.discount_rate,
         } : {};
         return { ...rest, metadata: lightMetadata, members, vacancy_photos };
       });
@@ -450,6 +454,10 @@ export async function getVacancies(options?: {
         lowest_bid_price: metadata.lowest_bid_price,
         pblctBgnDtm: metadata.pblctBgnDtm,
         bid_start_date: metadata.bid_start_date,
+        pbctCnt: Number(metadata.fail_count ?? metadata.usbdNft ?? metadata.pbctCnt ?? metadata.pbct_cnt ?? 0) || 0,
+        fail_count: Number(metadata.fail_count ?? metadata.usbdNft ?? metadata.pbctCnt ?? metadata.pbct_cnt ?? 0) || 0,
+        usbdNft: Number(metadata.usbdNft ?? metadata.fail_count ?? metadata.pbctCnt ?? 0) || 0,
+        discount_rate: metadata.discount_rate,
       } : {};
       return { ...rest, metadata: lightMetadata, members, vacancy_photos };
     });
@@ -787,6 +795,10 @@ export async function getVacanciesForMap(options?: {
         lowest_bid_price: metadata.lowest_bid_price,
         pblctBgnDtm: metadata.pblctBgnDtm,
         bid_start_date: metadata.bid_start_date,
+        pbctCnt: Number(metadata.fail_count ?? metadata.usbdNft ?? metadata.pbctCnt ?? metadata.pbct_cnt ?? 0) || 0,
+        fail_count: Number(metadata.fail_count ?? metadata.usbdNft ?? metadata.pbctCnt ?? metadata.pbct_cnt ?? 0) || 0,
+        usbdNft: Number(metadata.usbdNft ?? metadata.fail_count ?? metadata.pbctCnt ?? 0) || 0,
+        discount_rate: metadata.discount_rate,
       } : {};
       return { ...rest, metadata: lightMetadata, vacancy_photos };
     });

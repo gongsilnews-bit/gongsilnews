@@ -1338,7 +1338,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     setRoomBathInteractions({ room: false, bath: false });
 
     setFilterAuctionDiscount(0);
-    setFilterAuctionBidCount(0);
+    setFilterAuctionBidCount("all");
     setFilterAuctionStartDate("all");
     setFilterAuctionAppraisalMin(null);
     setFilterAuctionAppraisalMax(null);

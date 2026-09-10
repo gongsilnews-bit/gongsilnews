@@ -1498,12 +1498,16 @@ export default function GongsilFilterPanel({ panel }: GongsilFilterPanelProps) {
                                   <div style={{ fontSize: "14px", color: "#374151", marginBottom: "10px", fontWeight: "bold" }}>유찰 횟수</div>
                                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                                     {[
-                                      { label: "전체", val: 0 },
-                                      { label: "1회↑", val: 1 },
-                                      { label: "2회↑", val: 2 },
-                                      { label: "3회↑", val: 3 },
+                                      { label: "전체", val: "all" },
+                                      { label: "0회 (신건)", val: "0" },
+                                      { label: "1회", val: "1" },
+                                      { label: "2회", val: "2" },
+                                      { label: "3회", val: "3" },
+                                      { label: "4회 이상", val: "4+" },
                                     ].map((item) => {
-                                      const isSelected = filterAuctionBidCount === item.val;
+                                      const isSelected = item.val === "all"
+                                        ? (filterAuctionBidCount === "all" || filterAuctionBidCount === 0 || !filterAuctionBidCount)
+                                        : (String(filterAuctionBidCount) === item.val || filterAuctionBidCount === Number(item.val));
                                       return (
                                         <button
                                           key={item.label}
@@ -1880,6 +1884,13 @@ export default function GongsilFilterPanel({ panel }: GongsilFilterPanelProps) {
                                 setAppliedDepositMax(null);
                                 setAppliedRentMin(null);
                                 setAppliedRentMax(null);
+                                setFilterAuctionDiscount(0);
+                                setFilterAuctionBidCount("all");
+                                setFilterAuctionStartDate("all");
+                                setFilterAuctionAppraisalMin(null);
+                                setFilterAuctionAppraisalMax(null);
+                                setFilterAuctionBidPriceMin(null);
+                                setFilterAuctionBidPriceMax(null);
                               }}
                               style={{
                                 flex: 1,

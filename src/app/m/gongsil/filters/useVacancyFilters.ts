@@ -51,7 +51,7 @@ export const initialFilterState: FilterState = {
   auctionBidPriceMin: null,
   auctionBidPriceMax: null,
   auctionDiscount: 0,
-  auctionBidCount: 0,
+  auctionBidCount: "all",
   auctionStartDate: "all",
 };
 
@@ -242,9 +242,16 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
         }
 
         // 4) 유찰 횟수 필터
-        if (filters.auctionBidCount > 0) {
-          const bidCount = Number(meta.bid_count ?? meta.pbctCnt ?? 0) || 0;
-          if (bidCount < filters.auctionBidCount) return false;
+        if (filters.auctionBidCount !== undefined && filters.auctionBidCount !== null && filters.auctionBidCount !== "all") {
+          const meta = (v as any).metadata || {};
+          const bidCount = Number(meta.fail_count ?? meta.usbdNft ?? meta.pbctCnt ?? meta.pbct_cnt ?? meta.bid_count ?? 0) || 0;
+          const valStr = String(filters.auctionBidCount);
+          if (valStr === "0" && bidCount !== 0) return false;
+          if (valStr === "1" && bidCount !== 1) return false;
+          if (valStr === "2" && bidCount !== 2) return false;
+          if (valStr === "3" && bidCount !== 3) return false;
+          if ((valStr === "4" || valStr === "4+" || valStr === "4회이상") && bidCount < 4) return false;
+          if (typeof filters.auctionBidCount === "number" && filters.auctionBidCount > 0 && bidCount < filters.auctionBidCount) return false;
         }
 
         // 5) 입찰 시작일 필터

@@ -831,29 +831,31 @@ export function AuctionDiscountFilterPanel({ filters, onFilterChange }: Props) {
 // 4. 유찰 횟수 패널
 export function AuctionBidCountFilterPanel({ filters, onFilterChange }: Props) {
   const COUNTS = [
-    { label: "1회↑", val: 1 },
-    { label: "2회↑", val: 2 },
-    { label: "3회↑", val: 3 },
+    { label: "0회 (신건)", val: "0" },
+    { label: "1회", val: "1" },
+    { label: "2회", val: "2" },
+    { label: "3회", val: "3" },
+    { label: "4회 이상", val: "4+" },
   ];
-  const isAll = filters.auctionBidCount === 0;
+  const isAll = filters.auctionBidCount === "all" || filters.auctionBidCount === 0 || !filters.auctionBidCount;
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px", marginBottom: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", marginBottom: "20px" }}>
         <button
           type="button"
-          onClick={() => onFilterChange({ auctionBidCount: 0 })}
+          onClick={() => onFilterChange({ auctionBidCount: "all" })}
           style={gridBtnStyle(isAll)}
         >
           전체 {isAll && "✓"}
         </button>
         {COUNTS.map((c) => {
-          const active = !isAll && filters.auctionBidCount === c.val;
+          const active = !isAll && (String(filters.auctionBidCount) === c.val || filters.auctionBidCount === Number(c.val));
           return (
             <button
               key={c.label}
               type="button"
-              onClick={() => onFilterChange({ auctionBidCount: filters.auctionBidCount === c.val ? 0 : c.val })}
+              onClick={() => onFilterChange({ auctionBidCount: active ? "all" : c.val })}
               style={gridBtnStyle(active)}
             >
               {c.label} {active && "✓"}
@@ -864,7 +866,7 @@ export function AuctionBidCountFilterPanel({ filters, onFilterChange }: Props) {
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button
           type="button"
-          onClick={() => onFilterChange({ auctionBidCount: 0 })}
+          onClick={() => onFilterChange({ auctionBidCount: "all" })}
           style={{ background: "none", border: "none", color: "#6b7280", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
         >
           ↻ 조건삭제

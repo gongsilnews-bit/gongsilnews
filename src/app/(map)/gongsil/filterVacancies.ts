@@ -40,7 +40,7 @@ type FilterVacanciesOptions = {
   filterAuctionBidPriceMin: number | null;
   filterAuctionBidPriceMax: number | null;
   filterAuctionDiscount: number;
-  filterAuctionBidCount: number;
+  filterAuctionBidCount: number | string;
   filterAuctionStartDate: string;
 };
 
@@ -143,10 +143,20 @@ export function filterVacancies({
         return ((appraisal - bidPrice) / appraisal) * 100 >= filterAuctionDiscount;
       });
     }
-    if (filterAuctionBidCount > 0) {
+    if (filterAuctionBidCount !== undefined && filterAuctionBidCount !== null && filterAuctionBidCount !== "all") {
       auctionList = auctionList.filter((v) => {
         const meta = (v as any).metadata || {};
-        return (meta.bid_count || meta.pbctCnt || 0) >= filterAuctionBidCount;
+        const count = Number(meta.fail_count ?? meta.usbdNft ?? meta.pbctCnt ?? meta.pbct_cnt ?? meta.bid_count ?? 0) || 0;
+        const valStr = String(filterAuctionBidCount);
+        if (valStr === "0") return count === 0;
+        if (valStr === "1") return count === 1;
+        if (valStr === "2") return count === 2;
+        if (valStr === "3") return count === 3;
+        if (valStr === "4" || valStr === "4+" || valStr === "4회이상") return count >= 4;
+        if (typeof filterAuctionBidCount === "number" && filterAuctionBidCount > 0) {
+          return count >= filterAuctionBidCount;
+        }
+        return true;
       });
     }
     if (filterAuctionStartDate !== "all") {
