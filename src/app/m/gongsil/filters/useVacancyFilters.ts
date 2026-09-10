@@ -134,7 +134,13 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
 
     if (v.trade_type === "경매") {
       // 🚀 [대표님 지침] 법원 경공매 모드 전용 8대 표준 자산 분류 엔진 (PC GongsilClient 100% 동일)
-      if (filters.propertyTypes.length >= AUCTION_ALL_PROPERTY_TYPES.length) {
+      // 8대 전체 선택, 레거시 6개 선택, 또는 일반공실 배열이 넘어온 경우 모두 전체 자산 100% 통과!
+      const isAllAuctionSelected =
+        filters.propertyTypes.length === 0 ||
+        filters.propertyTypes.length >= AUCTION_ALL_PROPERTY_TYPES.length ||
+        (filters.propertyTypes.length === 6 && !filters.propertyTypes.includes("오피스텔") && !filters.propertyTypes.includes("상가/근생"));
+
+      if (isAllAuctionSelected) {
         isPropMatch = true;
       } else {
         const info = getAuctionInfo(v);
@@ -257,6 +263,9 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
             default: break;
           }
         }
+
+        // 🚀 [핵심] 경매 매물은 경매 전용 필터를 통과했으면 즉시 매칭 완료! (일반 공실 필터 혼입 원천 차단)
+        return true;
       }
 
       // 2. 거래 방식 (일반 공실)

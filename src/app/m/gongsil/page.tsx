@@ -270,13 +270,27 @@ function MobileGongsilContent() {
           ? (parsed.auctionFilters || (parsed.activeMode === "경매" ? parsed.filters : null) || { ...initialFilterState, propertyTypes: AUCTION_PROPERTY_TYPES })
           : (parsed.gongsilFilters || (parsed.activeMode !== "경매" ? parsed.filters : null) || initialFilterState);
 
+        let restoredPropertyTypes = currentFilters.propertyTypes;
+        if (resolvedMode === "경매") {
+          // 경매 모드인데 과거 6개이거나, 일반공실용 15개이거나, 비어있거나, 오피스텔/상가근생이 누락된 구버전인 경우 8대 전체로 자동 마이그레이션!
+          if (
+            !restoredPropertyTypes ||
+            restoredPropertyTypes.length === 0 ||
+            restoredPropertyTypes.length >= 10 ||
+            (restoredPropertyTypes.length === 6 && !restoredPropertyTypes.includes("오피스텔"))
+          ) {
+            restoredPropertyTypes = AUCTION_PROPERTY_TYPES;
+          }
+        } else {
+          if (!restoredPropertyTypes || restoredPropertyTypes.length === 0) {
+            restoredPropertyTypes = initialFilterState.propertyTypes;
+          }
+        }
+
         setFilters({
           ...initialFilterState,
           ...currentFilters,
-          propertyTypes:
-            currentFilters.propertyTypes && currentFilters.propertyTypes.length > 0
-              ? currentFilters.propertyTypes
-              : (resolvedMode === "경매" ? AUCTION_PROPERTY_TYPES : initialFilterState.propertyTypes),
+          propertyTypes: restoredPropertyTypes,
           locationSearchType: "map",
         });
 
@@ -349,6 +363,14 @@ function MobileGongsilContent() {
         ...initialFilterState,
         propertyTypes: AUCTION_PROPERTY_TYPES
       };
+      if (
+        !targetFilters.propertyTypes ||
+        targetFilters.propertyTypes.length === 0 ||
+        targetFilters.propertyTypes.length >= 10 ||
+        (targetFilters.propertyTypes.length === 6 && !targetFilters.propertyTypes.includes("오피스텔"))
+      ) {
+        targetFilters.propertyTypes = AUCTION_PROPERTY_TYPES;
+      }
     }
 
     // 대상 모드의 이전 위치 복원

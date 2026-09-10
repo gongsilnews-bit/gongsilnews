@@ -339,8 +339,17 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const propertyTypeLabel = (() => {
     const allPropTypes = PROPERTY_TYPES.flatMap(g => g.items);
     if (filters.propertyTypes.length === 0) return activeMode === "경매" ? "자산유형 ▾" : "전체매물 ▾";
-    if (filters.propertyTypes.length >= allPropTypes.length) {
-      return activeMode === "경매" ? "전체자산 ▾" : "전체매물 ▾";
+    if (activeMode === "경매") {
+      if (
+        filters.propertyTypes.length >= allPropTypes.length ||
+        (filters.propertyTypes.length === 6 && !filters.propertyTypes.includes("오피스텔") && !filters.propertyTypes.includes("상가/근생"))
+      ) {
+        return "전체자산 ▾";
+      }
+    } else {
+      if (filters.propertyTypes.length >= allPropTypes.length) {
+        return "전체매물 ▾";
+      }
     }
 
     // 대분류 전체와 1:1 일치하는지 확인
