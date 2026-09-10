@@ -481,7 +481,9 @@ function MobileAuctionContent() {
   const directViewLoadedRef = useRef(false); // 다이렉트 뷰 중복 로드 방지
 
   // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
-  const [isDirectView, setIsDirectView] = useState(searchParams.has("id"));
+  const idFromUrl = searchParams.get("id");
+  const [isDirectView, setIsDirectView] = useState(Boolean(idFromUrl));
+  const lastLoadedDirectIdRef = useRef<string | null>(null);
   const [isEmbedded] = useState(searchParams.get("embed") === "true");
   const [isLocating, setIsLocating] = useState(false);
 
@@ -824,41 +826,49 @@ function MobileAuctionContent() {
     fetchVacanciesData();
   }, [mapBounds, effectiveMode, filters.locationSearchType, filters.sido, filters.sigungu, filters.dong]);
 
-  // 💡 최초 진입 시, 만약 URL에 id 파라미터가 있어서 다이렉트 뷰 모드인 경우 1회 강제 단일 상세 로드
+  // 💡 URL의 id 파라미터를 감지하여 다이렉트 상세 정보 실시간 로드
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const idParam = params.get("id");
-    if (!idParam) return;
-
-    // 즉시 ref를 설정하여 fetchVacanciesData의 중복 호출을 차단
-    directViewLoadedRef.current = true;
-
-    // 🌟 뒤로가기 시 로그인이나 외부 리다이렉트로 튕기지 않고 지도/목록으로 자연스럽게 돌아갈 수 있도록 베이스 히스토리 설정
-    const cleanParams = new URLSearchParams(window.location.search);
-    cleanParams.delete("id");
-    const cleanUrl = window.location.pathname + (cleanParams.toString() ? `?${cleanParams.toString()}` : "");
-    window.history.replaceState({ panel: "map" }, "", cleanUrl);
-    window.history.pushState({ panel: "detail", id: idParam }, "", window.location.href);
-
-    const loadSingleDirectVacancy = async () => {
-      setLoading(true);
-      const res = await getVacancyDetail(idParam);
-      if (res.success && res.data) {
-        setIsDirectView(true);
-        const detail = {
-          ...res.data,
-          images: res.data.vacancy_photos
-            ? [...res.data.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
-            : [],
-        };
-        setSelectedVacancy(detail);
-        setDetailTab("info");
+    if (!idFromUrl) {
+      if (isDirectView) {
+        setIsDirectView(false);
+        setSelectedVacancy(null);
       }
-      setLoading(false);
+      return;
+    }
+
+    if (lastLoadedDirectIdRef.current === idFromUrl && selectedVacancy?.id === idFromUrl) {
+      return;
+    }
+
+    lastLoadedDirectIdRef.current = idFromUrl;
+    setIsDirectView(true);
+    setDetailLoading(true);
+
+    const loadDirectVacancy = async () => {
+      try {
+        const res = await getVacancyDetail(idFromUrl);
+        if (res.success && res.data) {
+          const detail = {
+            ...res.data,
+            images: res.data.vacancy_photos
+              ? [...res.data.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+              : [],
+          };
+          setSelectedVacancy(detail);
+          setDetailTab("info");
+        } else {
+          setSelectedVacancy({ _notFound: true, id: idFromUrl });
+        }
+      } catch (err) {
+        console.error("Failed to load direct auction vacancy:", err);
+        setSelectedVacancy({ _notFound: true, id: idFromUrl });
+      } finally {
+        setDetailLoading(false);
+      }
     };
-    loadSingleDirectVacancy();
-  }, []);
+
+    loadDirectVacancy();
+  }, [idFromUrl]);
 
   // 카카오 지도 초기화
   useEffect(() => {
@@ -1202,7 +1212,16 @@ function MobileAuctionContent() {
       setTimeout(() => window.parent.postMessage({ type: 'CLOSE_VACANCY_OVERLAY' }, '*'), 350);
       return;
     }
-    // 3) 상세 패널(selectedVacancy)이 열려 있는 경우
+    // 3) 다이렉트 뷰(?id=...)인 경우 뒤로가기 처리
+    if (isDirectView) {
+      if (typeof window !== "undefined" && window.history.length > 1) {
+        window.history.back();
+      } else {
+        router.replace("/m/auction");
+      }
+      return;
+    }
+    // 4) 지도 상에서 열린 상세 패널인 경우
     if (selectedVacancy) {
       if (window.history.state?.panel === "detail") {
         window.history.back();
@@ -1712,8 +1731,44 @@ function MobileAuctionContent() {
 
       {/* 상세 패널 */}
       <div ref={detailPanelRef} className={`detail-panel ${selectedVacancy ? "open" : ""} ${isDirectView ? "direct-view" : ""}`} onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* 상단 헤더 (모든 모바일 상세 뷰 공통 뒤로가기 & 주소 & 찜/공유 헤더) */}
-        {selectedVacancy && (
+        {/* 1. 다이렉트 뷰 로딩 중 UI (흰 화면 완전 방지) */}
+        {isDirectView && (!selectedVacancy || detailLoading) && (
+          <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#fff" }}>
+            <div style={{ zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px" }}>
+              <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", flex: 1 }}>경공매 정보 로딩 중</h2>
+            </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+              <div style={{ width: 40, height: 40, border: "3px solid #f3f4f6", borderTop: "3px solid #1a73e8", borderRadius: "50%", animation: "spinCircleLocating 0.8s linear infinite" }} />
+              <p style={{ fontSize: 15, fontWeight: 700, color: "#4b5563" }}>경공매 상세 정보를 불러오고 있습니다...</p>
+            </div>
+          </div>
+        )}
+
+        {/* 2. 매물을 찾을 수 없는 경우 안내 UI */}
+        {isDirectView && selectedVacancy?._notFound && !detailLoading && (
+          <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#fff" }}>
+            <div style={{ zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px" }}>
+              <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", flex: 1 }}>안내</h2>
+            </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 24px", textAlign: "center" }}>
+              <div style={{ fontSize: 48 }}>🔨</div>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#111" }}>해당 경공매 매물을 찾을 수 없습니다</h3>
+              <p style={{ fontSize: 14, color: "#666", lineHeight: 1.5 }}>이미 낙찰되었거나 삭제된 매물입니다.</p>
+              <button onClick={goBack} style={{ marginTop: 12, padding: "12px 24px", background: "#1a73e8", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+                이전 화면으로 돌아가기
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 3. 정상 상세 헤더 */}
+        {selectedVacancy && !selectedVacancy._notFound && !detailLoading && (
           <div style={{ zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", position: "sticky", top: 0 }}>
             <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
@@ -1764,7 +1819,7 @@ function MobileAuctionContent() {
           </div>
         )}
 
-        {selectedVacancy && (
+        {selectedVacancy && !selectedVacancy._notFound && !detailLoading && (
           <GongsilMobileDetailPanel
             selectedVacancy={selectedVacancy}
             isDirectView={isDirectView}
