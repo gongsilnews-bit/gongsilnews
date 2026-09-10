@@ -40,7 +40,13 @@ export async function GET(request: Request) {
         
         // 모바일에서 PC용 관리자 주소가 넘어왔을 경우 모바일 관리자 주소로 자동 변환
         if (from === 'mobile' && redirectPath.startsWith('/realty_admin')) {
-          redirectPath = redirectPath.replace('/realty_admin?menu=settings', '/m/admin/settings');
+          if (redirectPath.includes('settings')) {
+            redirectPath = '/m/admin/settings';
+          } else if (redirectPath.includes('gongsil') || redirectPath.includes('vacancy')) {
+            redirectPath = '/m/admin/vacancy/write';
+          } else {
+            redirectPath = '/m/admin/dashboard';
+          }
         }
 
         try {

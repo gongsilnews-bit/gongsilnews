@@ -273,7 +273,7 @@ function MobileVacancyWrite() {
     (async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/m"); return; }
+      if (!user) { router.replace("/m/login?returnTo=" + encodeURIComponent("/m/admin/vacancy/write")); return; }
       const { data } = await supabase.from("members").select("id, name, phone, role").eq("id", user.id).single();
       if (data) { setMemberId(data.id); setUserName(data.name||""); setUserPhone(data.phone||""); setClientName(data.name||""); setClientPhone(data.phone||""); setUserRole((data as any).role || "USER"); }
       setAuthChecked(true);

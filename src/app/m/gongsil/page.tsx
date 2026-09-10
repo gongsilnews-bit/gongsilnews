@@ -1850,6 +1850,7 @@ function MobileGongsilContent() {
           onGoAuction={() => switchMode("경매")}
           currentUser={currentUser}
           userLevel={userLevel}
+          isMobile={true}
         />
       )}
 

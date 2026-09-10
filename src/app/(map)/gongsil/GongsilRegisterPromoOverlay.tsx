@@ -7,6 +7,7 @@ interface GongsilRegisterPromoOverlayProps {
   onGoAuction?: () => void;
   currentUser?: any;
   userLevel?: number;
+  isMobile?: boolean;
 }
 
 export default function GongsilRegisterPromoOverlay({
@@ -15,6 +16,7 @@ export default function GongsilRegisterPromoOverlay({
   onGoAuction,
   currentUser,
   userLevel = 0,
+  isMobile,
 }: GongsilRegisterPromoOverlayProps) {
   const isSuperAdmin =
     Boolean(
@@ -24,10 +26,16 @@ export default function GongsilRegisterPromoOverlay({
       currentUser?.role !== "부동산관리자"
     ) || currentUser?.email === "gongsilmarketing@gmail.com";
 
+  const isMobileView = isMobile ?? (typeof window !== "undefined" && (window.location.pathname.startsWith("/m") || window.innerWidth <= 768));
+
   const handleRegisterClick = () => {
-    const targetUrl = "/realty_admin?menu=gongsil&action=write";
+    const targetUrl = isMobileView
+      ? "/m/admin/vacancy/write"
+      : "/realty_admin?menu=gongsil&action=write";
+    const loginUrl = isMobileView ? "/m/login" : "/login";
+
     if (!currentUser) {
-      window.location.href = `/login?returnTo=${encodeURIComponent(targetUrl)}`;
+      window.location.href = `${loginUrl}?returnTo=${encodeURIComponent(targetUrl)}`;
     } else {
       window.location.href = targetUrl;
     }
