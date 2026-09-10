@@ -31,6 +31,13 @@ export function middleware(request: NextRequest) {
       ? hostname.replace(`.gongsilnews.com`, '')
       : hostname.replace(`.localhost:3000`, '');
 
+  // /m/gongsil/detail/... 접근 시 정상적인 /gongsil/detail/... 로 리다이렉트
+  if (url.pathname.startsWith('/m/gongsil/detail/')) {
+    const detailId = url.pathname.replace('/m/gongsil/detail/', '');
+    url.pathname = `/gongsil/detail/${detailId}`;
+    return NextResponse.redirect(url);
+  }
+
   // 메인 도메인 접속 (서브도메인이 없는 경우)
   if (
     hostname === 'localhost:3000' ||
@@ -44,7 +51,7 @@ export function middleware(request: NextRequest) {
     // 쿠키를 통한 PC 버전 강제 보기 옵션 확인 (옵션)
     const viewDesktop = request.cookies.get('view-desktop')?.value === 'true';
 
-    // 이미 /m 경로이거나 관리자 페이지 등은 제외하고 Rewrite
+    // 이미 /m 경로이거나 관리자 페이지, 독립 상세 페이지 등은 제외하고 Rewrite
     if (
       isMobile &&
       !viewDesktop &&
@@ -54,7 +61,8 @@ export function middleware(request: NextRequest) {
       !url.pathname.startsWith('/realty_admin') &&
       !url.pathname.startsWith('/user_admin') &&
       !url.pathname.startsWith('/com') &&
-      !url.pathname.startsWith('/flyer')
+      !url.pathname.startsWith('/flyer') &&
+      !url.pathname.startsWith('/gongsil/detail')
     ) {
       url.pathname = `/m${url.pathname === '/' ? '' : url.pathname}`;
       return NextResponse.rewrite(url);
