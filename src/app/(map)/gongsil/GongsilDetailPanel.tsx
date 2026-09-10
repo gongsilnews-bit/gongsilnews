@@ -356,7 +356,7 @@ export default function GongsilDetailPanel({
                 const ap = dm.appraisal_price || parseInt(dm.apslEvlAmt || "0", 10) || 0;
                 const lp = dm.lowest_bid_price || parseInt(dm.lowstBidPrcIndctCont || "0", 10) || 0;
                 const lpText = dm.lowstBidPrcIndctCont === "비공개" ? "비공개" : lp > 0 ? formatAmount(lp) : "-";
-                const pbct = dm.pbctCnt || dm.pbct_cnt || "0";
+                const pbct = dm.fail_count !== undefined ? dm.fail_count : (dm.usbdNft !== undefined ? dm.usbdNft : (dm.pbctCnt || dm.pbct_cnt || "0"));
                 const discountRate = ap > 0 ? Math.round(((ap - lp) / ap) * 100) : 0;
                 const fmtP = (v: number) => {
                   if (!v) return "-";
@@ -1444,7 +1444,7 @@ const filteredFields = fields.filter(field => {
             const bidStart = meta.bid_start_date || "";
             const bidEnd = meta.bid_end_date || "";
             const dpstRt = meta.dpstRt || meta.dpst_rt || "10";
-            const pbctCnt = meta.pbctCnt || meta.pbct_cnt || "0";
+            const pbctCnt = meta.fail_count !== undefined ? meta.fail_count : (meta.usbdNft !== undefined ? meta.usbdNft : (meta.pbctCnt || meta.pbct_cnt || "0"));
             const bidMtd = meta.bidMtd || meta.bid_mtd || "";
             const opbdDt = meta.opbdDt || meta.opbd_dt || "";
             const opbdPlc = meta.opbdPlc || meta.opbd_plc || "";
@@ -1456,12 +1456,20 @@ const filteredFields = fields.filter(field => {
             // D-day 계산
             let dDay = "";
             if (bidEnd) {
-              const endDate = new Date(bidEnd.replace(" ", "T") + ":00+09:00");
-              const now = new Date();
-              const diff = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-              if (diff > 0) dDay = `D-${diff}`;
-              else if (diff === 0) dDay = "오늘 마감";
-              else dDay = "마감";
+              if (bidEnd.includes("2999") || bidEnd.includes("미정") || bidEnd.includes("보류")) {
+                dDay = "일정보류";
+              } else {
+                try {
+                  const endDate = new Date(bidEnd.replace(" ", "T") + ":00+09:00");
+                  const now = new Date();
+                  const diff = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                  if (diff > 0) dDay = `D-${diff}`;
+                  else if (diff === 0) dDay = "오늘 마감";
+                  else dDay = "마감";
+                } catch {
+                  dDay = "-";
+                }
+              }
             }
             return (
               <div style={{ borderBottom: "10px solid #f5f5f5" }}>
@@ -2201,7 +2209,7 @@ const filteredFields = fields.filter(field => {
         }}
       >
         <span style={{ fontSize: 18, fontWeight: "bold", color: prop.trade_type === "경매" ? (isAuctionMode ? "#1a4282" : "#1a73e8") : "#111" }}>
-          {prop.trade_type === "경매" ? `감정가 ${formatAmount(prop.deposit * 10000)}` : getPriceText(prop)}
+          {prop.trade_type === "경매" ? `최저입찰가 ${formatAmount(prop.deposit * 10000)}` : getPriceText(prop)}
         </span>
         {prop.trade_type === "경매" ? (
           <span

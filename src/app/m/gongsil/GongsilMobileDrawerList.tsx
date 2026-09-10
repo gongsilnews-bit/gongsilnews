@@ -133,8 +133,24 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
           const lowestBidText = meta.lowstBidPrcIndctCont === "비공개" ? "비공개" : lowestBidPrice > 0 ? formatAmount(lowestBidPrice) : "";
           const cardDiscountRate = appraisalPrice > 0 ? Math.round(((appraisalPrice - lowestBidPrice) / appraisalPrice) * 100) : 0;
           const mngNo = meta.cltrMngNo || meta.cltrMngNoIndctCont || v.vacancy_no || "";
-          const bidStartDate = meta.pbctBegnDtm || meta.bid_start_date || v.created_at;
-          const bidStartText = bidStartDate ? new Date(bidStartDate).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\s/g, "").slice(0, -1) : "";
+          const bidStartDate = meta.bid_start_date || meta.pbctBegnDtm || v.created_at;
+          let bidStartText = "";
+          if (bidStartDate) {
+            if (bidStartDate.includes("2999") || bidStartDate.includes("미정") || bidStartDate.includes("보류")) {
+              bidStartText = "일정 미정";
+            } else {
+              try {
+                const parsedD = new Date(bidStartDate);
+                if (!isNaN(parsedD.getTime())) {
+                  bidStartText = parsedD.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\s/g, "").slice(0, -1);
+                } else {
+                  bidStartText = bidStartDate.slice(0, 10);
+                }
+              } catch {
+                bidStartText = "-";
+              }
+            }
+          }
           const info = getAuctionInfo(v);
 
           // 🔨 1. 법원 경공매 전용 고밀도 프리미엄 카드 레이아웃

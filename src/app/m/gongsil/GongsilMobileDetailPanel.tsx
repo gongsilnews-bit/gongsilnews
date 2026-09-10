@@ -309,10 +309,12 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 const cltrMngNo = meta.cltrMngNo || meta.cltrMngNoIndctCont || selectedVacancy.vacancy_no || "";
                 const ap = meta.appraisal_price || parseInt(meta.apslEvlAmt || "0", 10) || 0;
                 const lo = meta.lowest_bid_price || parseInt(meta.lowstBidPrcIndctCont || "0", 10) || 0;
-                const pbctCnt = meta.pbctCnt || meta.pbct_cnt || "0";
+                const pbctCnt = meta.fail_count !== undefined ? meta.fail_count : (meta.usbdNft !== undefined ? meta.usbdNft : (meta.pbctCnt || meta.pbct_cnt || "0"));
                 const discountRate = ap > 0 ? Math.round(((ap - lo) / ap) * 100) : 0;
                 const bidStartDate = meta.bid_start_date || meta.pblctBgnDtm || meta.pbctBegnDtm || "";
-                const bidStartText = bidStartDate ? bidStartDate.slice(0, 10) : "-";
+                const bidStartText = (!bidStartDate || bidStartDate.includes("2999") || bidStartDate.includes("미정") || bidStartDate.includes("보류"))
+                  ? "일정 미정"
+                  : bidStartDate.slice(0, 10);
 
                 const fmtP = (v: number) => {
                   if (!v) return "-";
@@ -762,7 +764,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
             {activeDetailTab === "auction_bid" && (
               (() => {
                 const dpstRt = meta.dpstRt || meta.dpst_rt || "10";
-                const pbctCnt = meta.pbctCnt || meta.pbct_cnt || "0";
+                const pbctCnt = meta.fail_count !== undefined ? meta.fail_count : (meta.usbdNft !== undefined ? meta.usbdNft : (meta.pbctCnt || meta.pbct_cnt || "0"));
                 const bidMtd = meta.bidMtd || meta.bid_mtd || "";
                 const opbdDt = meta.opbdDt || meta.opbd_dt || "";
                 const opbdPlc = meta.opbdPlc || meta.opbd_plc || "";
@@ -771,15 +773,19 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 // D-day 계산
                 let dDay = "";
                 if (bidEnd) {
-                  try {
-                    const endDate = new Date(bidEnd.replace(" ", "T") + ":00+09:00");
-                    const now = new Date();
-                    const diff = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                    if (diff > 0) dDay = `D-${diff}`;
-                    else if (diff === 0) dDay = "오늘 마감";
-                    else dDay = "마감";
-                  } catch (e) {
-                    dDay = "";
+                  if (bidEnd.includes("2999") || bidEnd.includes("미정") || bidEnd.includes("보류")) {
+                    dDay = "일정보류";
+                  } else {
+                    try {
+                      const endDate = new Date(bidEnd.replace(" ", "T") + ":00+09:00");
+                      const now = new Date();
+                      const diff = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                      if (diff > 0) dDay = `D-${diff}`;
+                      else if (diff === 0) dDay = "오늘 마감";
+                      else dDay = "마감";
+                    } catch (e) {
+                      dDay = "-";
+                    }
                   }
                 }
                 return (

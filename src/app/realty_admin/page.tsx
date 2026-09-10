@@ -88,7 +88,7 @@ function RealtyAdminContent() {
     planType === "business";
 
   /* ── 프리페치 데이터 저장소 ── */
-  const [prefetchedData, setPrefetchedData] = useState<Record<string, any[]>>({});
+  const [prefetchedData, setPrefetchedData] = useState<Record<string, any>>({});
   const fetchingRef = useRef<Set<string>>(new Set());
 
   const prefetchSection = useCallback(async (key: string, ownerId?: string) => {

@@ -125,9 +125,95 @@ function mapPropertyType(onbidCategory: string, propertyName?: string): string {
   return "상가·사무실·건물·공장·토지";
 }
 
+function isRealDate(dtStr: string | null | undefined): boolean {
+  if (!dtStr) return false;
+  const s = String(dtStr).trim();
+  if (s.length < 8) return false;
+  const y = parseInt(s.substring(0, 4), 10);
+  return y >= 2020 && y <= 2040;
+}
+
 function formatOnbidDate(dtStr: string): string {
-  if (!dtStr || dtStr.length < 8) return dtStr || "";
+  if (!dtStr || dtStr.length < 8) return "일정 미정";
+  if (!isRealDate(dtStr)) return "일정 보류(미정)";
   return `${dtStr.substring(0, 4)}-${dtStr.substring(4, 6)}-${dtStr.substring(6, 8)} ${dtStr.substring(8, 10) || "00"}:${dtStr.substring(10, 12) || "00"}`;
+}
+
+function getKstNowString(): string {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const kst = new Date(utc + (9 * 3600000));
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const y = kst.getFullYear();
+  const m = pad(kst.getMonth() + 1);
+  const d = pad(kst.getDate());
+  const hh = pad(kst.getHours());
+  const mm = pad(kst.getMinutes());
+  return `${y}${m}${d}${hh}${mm}`;
+}
+
+function selectBestRound(rounds: any[], nowStr: string): any {
+  if (!rounds || rounds.length === 0) return null;
+
+  const validRounds = rounds.filter(
+    (r) => isRealDate(r.cltrBidBgngDt) && isRealDate(r.cltrBidEndDt)
+  );
+
+  // 더미 일자만 있는 경우
+  if (validRounds.length === 0) {
+    return rounds[0];
+  }
+
+  // 1순위: 현재 입찰 진행 중인 회차 (시작일 <= 현재 <= 종료일)
+  const activeRounds = validRounds.filter((r) => {
+    const bg = String(r.cltrBidBgngDt);
+    const ed = String(r.cltrBidEndDt);
+    return bg <= nowStr && ed >= nowStr;
+  });
+  if (activeRounds.length > 0) {
+    activeRounds.sort((a, b) => String(a.cltrBidEndDt).localeCompare(String(b.cltrBidEndDt)));
+    return activeRounds[0];
+  }
+
+  // 2순위: 오늘 이후 가장 먼저 다가오는 직근 미래 회차 (종료일 > 현재)
+  const upcomingRounds = validRounds.filter((r) => {
+    const ed = String(r.cltrBidEndDt);
+    return ed > nowStr;
+  });
+  if (upcomingRounds.length > 0) {
+    upcomingRounds.sort((a, b) => {
+      const cmp = String(a.cltrBidBgngDt).localeCompare(String(b.cltrBidBgngDt));
+      if (cmp !== 0) return cmp;
+      return String(a.cltrBidEndDt).localeCompare(String(b.cltrBidEndDt));
+    });
+    return upcomingRounds[0];
+  }
+
+  // 3순위: 모두 종료된 경우 (가장 최근에 끝난 회차)
+  validRounds.sort((a, b) => String(b.cltrBidEndDt).localeCompare(String(a.cltrBidEndDt)));
+  return validRounds[0];
+}
+
+function calculateFailCount(item: any): number {
+  const rawUsbd = parseInt(item.usbdNft ?? "0", 10) || 0;
+  const apsl = parseInt(item.apslEvlAmt || "0", 10) || 0;
+  const lowest = parseInt(item.lowstBidPrcIndctCont || "0", 10) || 0;
+
+  // 1차: 온비드 raw usbdNft가 1 이상이면 그 값을 신뢰
+  if (rawUsbd > 0) return rawUsbd;
+
+  // 2차: 감정가 대비 할인율을 통한 유찰 횟수 역산 (공매 1회 유찰당 통상 10%씩 체감)
+  if (apsl > 0 && lowest > 0 && lowest < apsl) {
+    const discountRate = ((apsl - lowest) / apsl) * 100;
+    const est = Math.round(discountRate / 10);
+    if (est > 0) return est;
+  }
+
+  // 3차: 공고차수(pbctNsq) 기반
+  const nsq = parseInt(item.pbctNsq || "0", 10) || 0;
+  if (nsq > 1) return nsq - 1;
+
+  return 0;
 }
 
 // ─── 온비드 API 호출 ─────────────────────────────────────────
@@ -249,25 +335,26 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
     }
     console.log(`📦 API 수집: ${apiItems.length}건 (${targetSido})`);
 
-    // ═══ 2단계: API 물건을 공고번호(cltrMngNo) 기준으로 중복 제거 ═══
-    // 같은 공고번호에 여러 입찰 회차가 있으면 → 가장 최근 입찰일 것만 유지
-    const apiMap = new Map<string, any>();
+    // ═══ 2단계: API 물건을 공고번호(cltrMngNo) 기준으로 그룹핑 후 최적 회차 스마트 선정 ═══
+    // 온비드 다회차 공고 중: 1순위 현재 진행중, 2순위 직근 다가오는 회차, 2999년 등 더미일자 배제
+    const nowStr = getKstNowString();
+    const groupedByMngNo = new Map<string, any[]>();
     for (const item of apiItems) {
       const mngNo = String(item.cltrMngNo || "").trim();
       if (!mngNo) continue;
-      
-      const existing = apiMap.get(mngNo);
-      if (!existing) {
-        apiMap.set(mngNo, item);
-      } else {
-        const existEnd = existing.cltrBidEndDt || "";
-        const newEnd = item.cltrBidEndDt || "";
-        if (newEnd > existEnd) {
-          apiMap.set(mngNo, item);
-        }
+      const list = groupedByMngNo.get(mngNo) || [];
+      list.push(item);
+      groupedByMngNo.set(mngNo, list);
+    }
+
+    const apiMap = new Map<string, any>();
+    for (const [mngNo, rounds] of groupedByMngNo.entries()) {
+      const best = selectBestRound(rounds, nowStr);
+      if (best) {
+        apiMap.set(mngNo, best);
       }
     }
-    console.log(`📋 공고번호 기준 고유 물건: ${apiMap.size}건 (API ${apiItems.length}건 → 고유 필터)`);
+    console.log(`📋 공고번호 기준 고유 물건: ${apiMap.size}건 (API ${apiItems.length}건 → 직근 유효 회차 선별 완료)`);
 
     // ═══ 3단계: DB 기존 매물 조회 (페이징으로 1,000건 제한 완벽 우회) ═══
     const sidoFilters = [targetSido, normalizeSido(targetSido), targetSido.substring(0, 2)];
@@ -399,13 +486,26 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
         const appraisalPrice = Math.round(parseInt(item.apslEvlAmt || "0", 10) / 10000);
         const bidStart = formatOnbidDate(item.cltrBidBgngDt);
         const bidEnd = formatOnbidDate(item.cltrBidEndDt);
+        const failCount = calculateFailCount(item);
+
+        const isPendingSchedule = !isRealDate(item.cltrBidBgngDt);
+        const bidStatus = isPendingSchedule
+          ? "일정보류"
+          : (item.cltrBidBgngDt <= nowStr && item.cltrBidEndDt >= nowStr)
+            ? "입찰진행중"
+            : (item.cltrBidBgngDt > nowStr)
+              ? "입찰준비중"
+              : "입찰마감";
+
+        const discountRate = appraisalPrice > 0 ? Math.round(((appraisalPrice - deposit) / appraisalPrice) * 100) : 0;
 
         const description = `[📢 온비드 공매 추천 매물]
 * 공고번호: ${mngNo}
 * 물건번호 (온비드 고유 ID): ${item.onbidCltrno || ""}
 * 감정평가액: ${(appraisalPrice * 10000).toLocaleString()}원
-* 최저입찰가격: ${(deposit * 10000).toLocaleString()}원
-* 입찰 기간: ${bidStart} ~ ${bidEnd}
+* 최저입찰가격: ${(deposit * 10000).toLocaleString()}원 (할인율 ${discountRate > 0 ? `▼${discountRate}%` : "0%"})
+* 유찰 횟수: ${failCount}회
+* 입찰 진행: ${bidStatus} (${bidStart} ~ ${bidEnd})
 
 본 매물은 한국자산관리공사(KAMCO)에서 진행하는 공식 공매 물건입니다. 
 인터넷 입찰은 온비드 사이트에서 입찰 기간 내에 직접 참여하실 수 있습니다. 
@@ -416,11 +516,28 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
           cltrMngNo: mngNo,
           bid_start_date: bidStart,
           bid_end_date: bidEnd,
+          bid_status: bidStatus,
+          fail_count: failCount,
+          failCount: failCount,
+          usbdNft: failCount,
+          pbctCnt: failCount,
+          pbct_cnt: failCount,
+          round_nsq: item.pbctNsq || "",
           appraisal_price: appraisalPrice * 10000,
           lowest_bid_price: deposit * 10000,
-          discount_rate: appraisalPrice > 0 ? Math.round(((appraisalPrice - deposit) / appraisalPrice) * 100) : 0,
+          discount_rate: discountRate,
         };
         for (const [key, val] of Object.entries(item)) { metadata[key] = val; }
+        metadata.bid_start_date = bidStart;
+        metadata.bid_end_date = bidEnd;
+        metadata.bid_status = bidStatus;
+        metadata.fail_count = failCount;
+        metadata.usbdNft = failCount;
+        metadata.pbctCnt = failCount;
+        metadata.pbct_cnt = failCount;
+        metadata.appraisal_price = appraisalPrice * 10000;
+        metadata.lowest_bid_price = deposit * 10000;
+        metadata.discount_rate = discountRate;
 
         const { data: inserted, error: insertErr } = await supabase.from("vacancies").insert({
           owner_id: ownerId, owner_role: "ADMIN", property_type: propertyType, trade_type: "경매",
@@ -457,24 +574,54 @@ export async function syncOnbidProperties(targetSido: string = "서울특별시"
         const bidStart = formatOnbidDate(item.cltrBidBgngDt);
         const bidEnd = formatOnbidDate(item.cltrBidEndDt);
         const propertyType = mapPropertyType(item.cltrUsgMclsCtgrNm || item.cltrUsgLclsCtgrNm, item.onbidCltrNm);
+        const failCount = calculateFailCount(item);
+
+        const isPendingSchedule = !isRealDate(item.cltrBidBgngDt);
+        const bidStatus = isPendingSchedule
+          ? "일정보류"
+          : (item.cltrBidBgngDt <= nowStr && item.cltrBidEndDt >= nowStr)
+            ? "입찰진행중"
+            : (item.cltrBidBgngDt > nowStr)
+              ? "입찰준비중"
+              : "입찰마감";
+
+        const discountRate = appraisalPrice > 0 ? Math.round(((appraisalPrice - deposit) / appraisalPrice) * 100) : 0;
 
         const metadata: Record<string, any> = {
           source_type: "ONBID",
           cltrMngNo: mngNo,
           bid_start_date: bidStart,
           bid_end_date: bidEnd,
+          bid_status: bidStatus,
+          fail_count: failCount,
+          failCount: failCount,
+          usbdNft: failCount,
+          pbctCnt: failCount,
+          pbct_cnt: failCount,
+          round_nsq: item.pbctNsq || "",
           appraisal_price: appraisalPrice * 10000,
           lowest_bid_price: deposit * 10000,
-          discount_rate: appraisalPrice > 0 ? Math.round(((appraisalPrice - deposit) / appraisalPrice) * 100) : 0,
+          discount_rate: discountRate,
         };
         for (const [key, val] of Object.entries(item)) { metadata[key] = val; }
+        metadata.bid_start_date = bidStart;
+        metadata.bid_end_date = bidEnd;
+        metadata.bid_status = bidStatus;
+        metadata.fail_count = failCount;
+        metadata.usbdNft = failCount;
+        metadata.pbctCnt = failCount;
+        metadata.pbct_cnt = failCount;
+        metadata.appraisal_price = appraisalPrice * 10000;
+        metadata.lowest_bid_price = deposit * 10000;
+        metadata.discount_rate = discountRate;
 
         const description = `[📢 온비드 공매 추천 매물]
 * 공고번호: ${mngNo}
 * 물건번호 (온비드 고유 ID): ${item.onbidCltrno || ""}
 * 감정평가액: ${(appraisalPrice * 10000).toLocaleString()}원
-* 최저입찰가격: ${(deposit * 10000).toLocaleString()}원
-* 입찰 기간: ${bidStart} ~ ${bidEnd}
+* 최저입찰가격: ${(deposit * 10000).toLocaleString()}원 (할인율 ${discountRate > 0 ? `▼${discountRate}%` : "0%"})
+* 유찰 횟수: ${failCount}회
+* 입찰 진행: ${bidStatus} (${bidStart} ~ ${bidEnd})
 
 본 매물은 한국자산관리공사(KAMCO)에서 진행하는 공식 공매 물건입니다. 
 인터넷 입찰은 온비드 사이트에서 입찰 기간 내에 직접 참여하실 수 있습니다. 
