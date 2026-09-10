@@ -650,38 +650,23 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                         </table>
                       </div>
                     </div>
-                    {/* 공고기관 및 담당자 정보 */}
+                    {/* 공고기관 정보 */}
                     <div style={{ padding: "0 16px 24px" }}>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "#1a4282", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>✓ 공고기관 및 담당자</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#1a4282", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>✓ 공고기관</div>
                       <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", border: "1px solid #eee", borderRadius: 6, overflow: "hidden" }}>
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>공고번호</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{meta.onbidPbancNo || meta.pbctNo || "정보 없음"}</div>
+
                         <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>집행기관</div>
                         <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{meta.orgNm || "한국자산관리공사 (KAMCO)"}</div>
 
-                        {meta.rqstOrgNm && (
-                          <>
-                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>의뢰기관</div>
-                            <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{meta.rqstOrgNm}</div>
-                          </>
-                        )}
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>의뢰기관</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{meta.rqstOrgNm || "-"}</div>
 
-                        {meta.sbOfcNm && (
-                          <>
-                            <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>담당부점</div>
-                            <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{meta.sbOfcNm}</div>
-                          </>
-                        )}
-
-                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>담당자 연락처</div>
-                        <div style={{ padding: "12px", fontSize: 13, color: "#1a4282", fontWeight: 700, borderBottom: "1px solid #eee" }}>
-                          {(() => {
-                            const tel = meta.cmsCmmTelNo;
-                            if (tel) return <a href={`tel:${tel}`} style={{ color: "#1a4282", textDecoration: "none" }}>📞 {tel}</a>;
-                            return <a href="tel:1588-5321" style={{ color: "#1a4282", textDecoration: "none" }}>📞 1588-5321 (온비드 고객센터)</a>;
-                          })()}
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555" }}>정보제공업체</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#1a4282", fontWeight: 700 }}>
+                          <a href="tel:1588-5321" style={{ color: "#1a4282", textDecoration: "none" }}>📞 1588-5321 (온비드 고객센터)</a>
                         </div>
-
-                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555" }}>공고번호</div>
-                        <div style={{ padding: "12px", fontSize: 13, color: "#222" }}>{meta.onbidPbancNo || meta.pbctNo || "정보 없음"}</div>
                       </div>
                     </div>
                     {/* 위치정보 & 로드뷰 */}
@@ -711,7 +696,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   { label: "관리번호", value: cltrMngNo },
                   { label: "명도책임", value: evctRspb === "Y" ? "매수자 부담 (있음)" : evctRspb === "N" ? "없음" : evctRspb },
                   { label: "집행기관", value: orgNm + (sbOfc ? ` (${sbOfc})` : "") },
-                  { label: "담당자 연락처", value: meta.cmsCmmTelNo || meta.cms_cmm_tel_no || "1588-5321 (온비드 고객센터)" },
+                  { label: "정보제공업체", value: "1588-5321 (온비드 고객센터)" },
                 ];
                 return (
                   <div style={{ borderBottom: "10px solid #f5f5f5" }}>
