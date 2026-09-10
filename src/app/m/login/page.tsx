@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 
@@ -8,6 +8,27 @@ function MobileLoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnToParam = searchParams.get('returnTo') || '/m';
+
+  // 🔒 이미 로그인된 상태면 로그인 폼을 보여주지 않고 즉시 returnTo로 이동
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) {
+          // 이미 로그인 상태 → returnTo로 즉시 리다이렉트 (히스토리 replace)
+          router.replace(returnToParam);
+          return;
+        }
+      } catch (e) {
+        // 세션 확인 실패 시 로그인 폼 표시
+      }
+      setIsCheckingAuth(false);
+    };
+    checkExistingSession();
+  }, [router, returnToParam]);
 
   const [showFindAccount, setShowFindAccount] = useState(false);
   const [findName, setFindName] = useState('');
@@ -62,6 +83,15 @@ function MobileLoginClient() {
     if (p === 'naver') return '#03C75A';
     return '#fff';
   };
+
+  // 인증 확인 중이면 아무것도 표시하지 않음 (깜빡임 방지)
+  if (isCheckingAuth) {
+    return (
+      <div style={{ minHeight: '85vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Pretendard', -apple-system, sans-serif" }}>
+        <div style={{ color: '#94a3b8', fontSize: 14 }}>로딩 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '85vh', padding: '24px 20px', fontFamily: "'Pretendard', -apple-system, sans-serif", background: '#ffffff', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>

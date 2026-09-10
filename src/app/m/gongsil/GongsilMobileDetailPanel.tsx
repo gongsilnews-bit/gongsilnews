@@ -202,12 +202,12 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
             <button
               onClick={() => {
                   if (isAuctionProperty) {
-                    window.location.href = "/m/login?returnTo=" + encodeURIComponent(`/m/gongsil?id=${selectedVacancy.id}`);
+                    window.location.replace("/m/login?returnTo=" + encodeURIComponent(`/m/gongsil?id=${selectedVacancy.id}`));
                   } else if (!currentUser) {
                     if (typeof window !== "undefined") {
                       localStorage.setItem("signup_member_type", "broker");
                     }
-                    window.location.href = "/m/login?returnTo=" + encodeURIComponent("/m/admin/settings?tab=agency");
+                    window.location.replace("/m/login?returnTo=" + encodeURIComponent("/m/admin/settings?tab=agency"));
                   } else {
                     window.location.href = "/m/admin/settings?tab=agency";
                   }

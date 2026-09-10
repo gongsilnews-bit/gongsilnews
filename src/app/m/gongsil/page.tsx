@@ -493,6 +493,7 @@ function MobileGongsilContent() {
   const listScrollTopRef = useRef(0);
   const lastVacancySearchKeyRef = useRef<string | null>(null);
   const currentFetchIdRef = useRef<number>(0);
+  const directViewLoadedRef = useRef(false); // 다이렉트 뷰 중복 로드 방지
 
   // 다이렉트 뷰 상태 (URL에 id가 있는 경우 지도를 가리고 상세 정보를 보여줌)
   const [isDirectView, setIsDirectView] = useState(searchParams.has("id"));
@@ -689,6 +690,7 @@ function MobileGongsilContent() {
         vacancyStackRef.current = [];
         setSelectedVacancy(null);
         setIsDirectView(false);
+        directViewLoadedRef.current = false;
         requestAnimationFrame(() => {
           if (listScrollRef.current) listScrollRef.current.scrollTop = listScrollTopRef.current;
         });
@@ -833,12 +835,14 @@ function MobileGongsilContent() {
           }
 
           // URL에 id 파라미터가 있는 경우의 다이렉트 디테일 조회 지원
-          if (typeof window !== "undefined") {
+          // 💡 directViewLoadedRef가 이미 true이면 loadSingleDirectVacancy에서 이미 처리 완료됨 → 중복 호출 방지
+          if (typeof window !== "undefined" && !directViewLoadedRef.current) {
             const params = new URLSearchParams(window.location.search);
             const idParam = params.get("id");
             if (idParam) {
               const target = withImages.find((item: any) => item.id === idParam);
               if (target) {
+                directViewLoadedRef.current = true;
                 setIsDirectView(true);
                 handleVacancyClick(target, true);
               }
@@ -864,6 +868,9 @@ function MobileGongsilContent() {
     const params = new URLSearchParams(window.location.search);
     const idParam = params.get("id");
     if (!idParam) return;
+
+    // 즉시 ref를 설정하여 fetchVacanciesData의 중복 호출을 차단
+    directViewLoadedRef.current = true;
 
     const loadSingleDirectVacancy = async () => {
       setLoading(true);
