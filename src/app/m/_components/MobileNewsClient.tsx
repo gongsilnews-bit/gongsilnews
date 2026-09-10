@@ -792,6 +792,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const clusterModeRef = useRef(false);
   const suppressIdleRef = useRef(false);
   const detailPanelRef = useRef<HTMLDivElement>(null);
+  const detailScrollRef = useRef<HTMLDivElement>(null);
 
   // ── 우리동네뉴스 위치 필터 상태 ──
   const [locActivePanel, setLocActivePanel] = useState<string | null>(null);
@@ -1068,14 +1069,15 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   // 기사 상세 변경 시 스크롤 최상단 강제 초기화 (가장 확실한 방법)
   useEffect(() => {
-    if (showDetail && detailPanelRef.current) {
-      const el = detailPanelRef.current;
-      el.scrollTop = 0;
+    if (showDetail) {
+      if (detailPanelRef.current) detailPanelRef.current.scrollTop = 0;
+      if (detailScrollRef.current) detailScrollRef.current.scrollTop = 0;
 
       // 혹시 모를 렌더링 딜레이를 대비해 여러 번 강제 초기화
       let attempts = 0;
       const interval = setInterval(() => {
-        if (el) el.scrollTop = 0;
+        if (detailPanelRef.current) detailPanelRef.current.scrollTop = 0;
+        if (detailScrollRef.current) detailScrollRef.current.scrollTop = 0;
         attempts++;
         if (attempts > 5) clearInterval(interval);
       }, 50);
@@ -2414,25 +2416,79 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         }}
       >
         {/* 헤더 */}
-        <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: "1px solid #f0f0f0", flexShrink: 0 }}>
-          <button onClick={() => window.history.back()} style={{ background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px", cursor: "pointer", marginLeft: "-4px" }}>
+        <div style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
+          background: "#fff",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          padding: "14px 16px",
+          borderBottom: "1px solid #f0f0f0",
+          flexShrink: 0
+        }}>
+          <button
+            onClick={() => window.history.back()}
+            style={{
+              background: "none",
+              border: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "4px",
+              cursor: "pointer",
+              marginLeft: "-4px"
+            }}
+          >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
           </button>
+          {articleDetail && (
+            <div style={{
+              fontSize: "16px",
+              fontWeight: 800,
+              color: "#111",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap"
+            }}>
+              <span>{formatSection1(articleDetail.section1)}</span>
+              {articleDetail.section2 && (
+                <>
+                  <span style={{ color: "#9ca3af", fontSize: "14px", fontWeight: 600 }}>&gt;</span>
+                  <span style={{ color: "#ea580c" }}>{articleDetail.section2}</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* 로딩 상태 */}
-        {detailLoading ? (
-          <div style={{ padding: "20px" }}>
-            <div className="skeleton" style={{ width: "80%", height: "24px", marginBottom: "16px" }} />
-            <div className="skeleton" style={{ width: "40%", height: "16px", marginBottom: "30px" }} />
-            <div className="skeleton" style={{ width: "100%", height: "200px", marginBottom: "16px" }} />
-          </div>
-        ) : articleDetail ? (
-          <div style={{ padding: "0 20px 40px", backgroundColor: "#fff" }}>
-            {/* 섹션 */}
-            <div style={{ fontSize: "13px", color: "#666", marginBottom: "10px", marginTop: "16px" }}>
-              [{formatSection1(articleDetail.section1)} &gt; {articleDetail.section2 || "전체"}]
+        {/* 본문 스크롤 영역 */}
+        <div
+          ref={detailScrollRef}
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            background: "#fff"
+          }}
+        >
+          {/* 로딩 상태 */}
+          {detailLoading ? (
+            <div style={{ padding: "20px" }}>
+              <div className="skeleton" style={{ width: "80%", height: "24px", marginBottom: "16px" }} />
+              <div className="skeleton" style={{ width: "40%", height: "16px", marginBottom: "30px" }} />
+              <div className="skeleton" style={{ width: "100%", height: "200px", marginBottom: "16px" }} />
             </div>
+          ) : articleDetail ? (
+            <div style={{ padding: "0 20px 40px", backgroundColor: "#fff" }}>
+              {/* 섹션 */}
+              <div style={{ fontSize: "13px", color: "#666", marginBottom: "10px", marginTop: "16px" }}>
+                [{formatSection1(articleDetail.section1)} &gt; {articleDetail.section2 || "전체"}]
+              </div>
             {/* 제목 */}
             <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#111", lineHeight: 1.4, marginBottom: "16px", wordBreak: "keep-all" }}>
               {articleDetail.title}
@@ -2519,6 +2575,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             기사를 불러올 수 없습니다.
           </div>
         )}
+        </div>
       </div>
       
       {/* Vacancy Iframe Overlay */}
