@@ -322,6 +322,13 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       } else {
         setShowGalleryModal(false);
         setShowDetail(false);
+        if (typeof window !== "undefined") {
+          const currentUrl = new URL(window.location.href);
+          if (currentUrl.searchParams.has("id")) {
+            currentUrl.searchParams.delete("id");
+            window.history.replaceState({ gongsilView: "list" }, "", currentUrl.toString());
+          }
+        }
       }
     };
 
@@ -1658,6 +1665,13 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       window.history.back();
     } else {
       setShowDetail(false);
+      if (typeof window !== "undefined") {
+        const currentUrl = new URL(window.location.href);
+        if (currentUrl.searchParams.has("id")) {
+          currentUrl.searchParams.delete("id");
+          window.history.replaceState({ gongsilView: "list" }, "", currentUrl.toString());
+        }
+      }
     }
   };
 

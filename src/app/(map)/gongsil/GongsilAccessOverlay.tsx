@@ -52,10 +52,10 @@ export default function GongsilAccessOverlay({ property, currentUser, userLevel,
         <button
           onClick={() => {
             if (isAuctionProperty) {
-              window.location.href = "/login?returnTo=" + encodeURIComponent(`/gongsil?id=${property.id}`);
+              window.location.replace("/login?returnTo=" + encodeURIComponent(`/gongsil?id=${property.id}`));
             } else if (!currentUser) {
               localStorage.setItem("signup_member_type", "broker");
-              window.location.href = "/login?returnTo=" + encodeURIComponent("/realty_admin?menu=settings&tab=agency");
+              window.location.replace("/login?returnTo=" + encodeURIComponent("/realty_admin?menu=settings&tab=agency"));
             } else {
               window.location.href = "/realty_admin?menu=settings";
             }
@@ -67,7 +67,7 @@ export default function GongsilAccessOverlay({ property, currentUser, userLevel,
 
         {!currentUser && !isAuctionProperty && (
           <button
-            onClick={() => { window.location.href = "/login?returnTo=" + encodeURIComponent(`/gongsil?id=${property.id}`); }}
+            onClick={() => { window.location.replace("/login?returnTo=" + encodeURIComponent(`/gongsil?id=${property.id}`)); }}
             style={{ width: "100%", padding: "12px 0", background: "#ffffff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
           >
             🔑 로그인

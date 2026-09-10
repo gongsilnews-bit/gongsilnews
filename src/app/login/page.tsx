@@ -9,6 +9,26 @@ function LoginClient() {
   const searchParams = useSearchParams();
   const returnToParam = searchParams.get('returnTo') || '/';
 
+  // 🔒 이미 로그인된 상태면 로그인 폼을 보여주지 않고 즉시 returnTo로 이동
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) {
+          router.replace(returnToParam);
+          return;
+        }
+      } catch (e) {
+        // 세션 확인 실패 시 로그인 폼 표시
+      }
+      setIsCheckingAuth(false);
+    };
+    checkExistingSession();
+  }, [router, returnToParam]);
+
   // 🚀 모바일 기기/브라우저 접속 시 모바일 전용 로그인 페이지(/m/login)로 즉시 자동 리다이렉트
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -68,6 +88,14 @@ function LoginClient() {
     if (p === 'naver') return '#03C75A';
     return '#fff';
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Pretendard Variable', sans-serif" }}>
+        <div style={{ color: '#94a3b8', fontSize: 14 }}>로딩 중...</div>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -65,7 +65,6 @@ function MobileGongsilContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [vacancies, setVacancies] = useState<any[]>([]);
-  const [allVacancies, setAllVacancies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
   const kakaoMapRef = useRef<any>(null);
@@ -691,6 +690,16 @@ function MobileGongsilContent() {
         setSelectedVacancy(null);
         setIsDirectView(false);
         directViewLoadedRef.current = false;
+
+        // URL에서 id 파라미터가 남아있다면 깔끔하게 제거
+        if (typeof window !== "undefined") {
+          const currentUrl = new URL(window.location.href);
+          if (currentUrl.searchParams.has("id")) {
+            currentUrl.searchParams.delete("id");
+            window.history.replaceState({ panel: "map" }, "", currentUrl.toString());
+          }
+        }
+
         requestAnimationFrame(() => {
           if (listScrollRef.current) listScrollRef.current.scrollTop = listScrollTopRef.current;
         });
@@ -708,39 +717,6 @@ function MobileGongsilContent() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [selectedVacancy, selectedCluster, isEmbedded, showListView, showGalleryFullscreen]);
-
-  // 💡 [전국 매물 풀 로드] 상세검색 시 전국 매물 개수를 정확하게 계산하기 위한 전체 데이터셋 캐싱
-  useEffect(() => {
-    let isCancelled = false;
-    const fetchAllVacancies = async () => {
-      try {
-        const isAuction = effectiveMode === "경매";
-        const res = await getVacanciesForMap({
-          is_auction: isAuction,
-          limit: 10000
-        });
-        if (isCancelled) return;
-        if (res && res.success && res.data) {
-          const filteredRows = res.data.filter((v: any) =>
-            isAuction ? v.trade_type === "경매" : v.trade_type !== "경매"
-          );
-          const withImages = filteredRows.map((v: any) => ({
-            ...v,
-            images: v.vacancy_photos
-              ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
-              : [],
-          }));
-          setAllVacancies(withImages);
-        }
-      } catch (e) {
-        console.error("Failed to fetch all vacancies:", e);
-      }
-    };
-    fetchAllVacancies();
-    return () => {
-      isCancelled = true;
-    };
-  }, [effectiveMode]);
 
   // 💡 [대표님 지침] Bbox(지도의 화면 영역) 변화 또는 필터 기반(B스타일) 행정구역 검색 시 Supabase에서 실시간으로 범위 내/지역 내 매물 패치!
   useEffect(() => {
@@ -871,6 +847,13 @@ function MobileGongsilContent() {
 
     // 즉시 ref를 설정하여 fetchVacanciesData의 중복 호출을 차단
     directViewLoadedRef.current = true;
+
+    // 🌟 뒤로가기 시 로그인이나 외부 리다이렉트로 튕기지 않고 지도/목록으로 자연스럽게 돌아갈 수 있도록 베이스 히스토리 설정
+    const cleanParams = new URLSearchParams(window.location.search);
+    cleanParams.delete("id");
+    const cleanUrl = window.location.pathname + (cleanParams.toString() ? `?${cleanParams.toString()}` : "");
+    window.history.replaceState({ panel: "map" }, "", cleanUrl);
+    window.history.pushState({ panel: "detail", id: idParam }, "", window.location.href);
 
     const loadSingleDirectVacancy = async () => {
       setLoading(true);
@@ -1231,17 +1214,31 @@ function MobileGongsilContent() {
       setTimeout(() => window.parent.postMessage({ type: 'CLOSE_VACANCY_OVERLAY' }, '*'), 350);
       return;
     }
-    if (isDirectView) {
-      if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
-      setTimeout(() => {
-        if (window.opener) window.close();
-        else window.history.back();
-      }, 350);
+    // 히스토리 state에 detail이 쌓여 있다면 history.back()으로 popstate 트리거
+    if (window.history.state?.panel === "detail") {
+      window.history.back();
       return;
     }
-    if (selectedVacancy) { window.history.back(); return; }
-    if (selectedCluster) { window.history.back(); return; }
-    if (showListView) { setShowListView(false); return; }
+    // 그 외 직접 URL 진입이나 외부 리다이렉트 진입 후 안전한 닫기 처리
+    if (detailPanelRef.current) detailPanelRef.current.classList.add("slide-out");
+    setTimeout(() => {
+      if (window.opener && !window.opener.closed) {
+        window.close();
+      } else {
+        setSelectedVacancy(null);
+        setIsDirectView(false);
+        directViewLoadedRef.current = false;
+        if (typeof window !== "undefined") {
+          const cleanParams = new URLSearchParams(window.location.search);
+          cleanParams.delete("id");
+          const cleanUrl = window.location.pathname + (cleanParams.toString() ? `?${cleanParams.toString()}` : "");
+          window.history.replaceState({ panel: "map" }, "", cleanUrl);
+        }
+        if (!showListView) {
+          setTimeout(() => kakaoMapRef.current?.relayout(), 50);
+        }
+      }
+    }, 200);
   };
 
   return (
