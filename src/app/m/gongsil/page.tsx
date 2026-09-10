@@ -1398,6 +1398,19 @@ function MobileGongsilContent() {
           {/* 카카오 지도 */}
           <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
 
+          {/* 모바일 실시간 공실 탭 선택 시 노출되는 '내 공동중개 물건 무료 등록' 오버레이 (상단 메뉴는 보이고 지도 영역만 덮음) */}
+          {showRegisterPromoOverlay && !isSuperAdmin && (
+            <GongsilRegisterPromoOverlay
+              categoryName="공실"
+              onClose={() => setShowRegisterPromoOverlay(false)}
+              onGoAuction={() => switchMode("경매")}
+              currentUser={currentUser}
+              userLevel={userLevel}
+              isMobile={true}
+              inlineMap={true}
+            />
+          )}
+
           {/* [대표님 지침] 모바일 줌인(Zoom In) 안내 오버레이 (정중앙 펄스 효과) */}
           {mapLoaded && zoomLevel >= 9 && (
             <div style={{
@@ -1842,17 +1855,7 @@ function MobileGongsilContent() {
         />
       )}
 
-      {/* 모바일 실시간 공실 탭 선택 시 노출되는 '내 공동중개 물건 무료 등록' 오버레이 (최고관리자는 제외) */}
-      {showRegisterPromoOverlay && !isSuperAdmin && (
-        <GongsilRegisterPromoOverlay
-          categoryName="공실"
-          onClose={() => setShowRegisterPromoOverlay(false)}
-          onGoAuction={() => switchMode("경매")}
-          currentUser={currentUser}
-          userLevel={userLevel}
-          isMobile={true}
-        />
-      )}
+
 
     </div>
   );

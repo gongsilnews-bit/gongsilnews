@@ -8,6 +8,7 @@ interface GongsilRegisterPromoOverlayProps {
   currentUser?: any;
   userLevel?: number;
   isMobile?: boolean;
+  inlineMap?: boolean;
 }
 
 export default function GongsilRegisterPromoOverlay({
@@ -17,6 +18,7 @@ export default function GongsilRegisterPromoOverlay({
   currentUser,
   userLevel = 0,
   isMobile,
+  inlineMap = false,
 }: GongsilRegisterPromoOverlayProps) {
   const isSuperAdmin =
     Boolean(
@@ -45,34 +47,41 @@ export default function GongsilRegisterPromoOverlay({
     <div
       onClick={(e) => e.stopPropagation()}
       style={{
-        position: "fixed",
+        position: inlineMap ? "absolute" : "fixed",
         top: 0,
         left: 0,
-        width: "100vw",
-        height: "100dvh",
+        right: 0,
+        bottom: 0,
+        width: "100%",
+        height: "100%",
         background: "rgba(255, 255, 255, 0.88)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
-        zIndex: 10050,
+        zIndex: inlineMap ? 150 : 10050,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        padding: inlineMap ? "16px" : "20px",
+        boxSizing: "border-box",
         fontFamily: "'Pretendard', -apple-system, sans-serif",
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: "90%",
-          maxWidth: 460,
+          width: "100%",
+          maxWidth: inlineMap ? 420 : 460,
+          maxHeight: inlineMap ? "calc(100% - 16px)" : "90vh",
+          overflowY: "auto",
           background: "#ffffff",
           borderRadius: 20,
           boxShadow: "0 20px 40px -10px rgba(0, 0, 0, 0.14), 0 0 1px 1px rgba(0, 0, 0, 0.06)",
-          padding: "36px 30px",
+          padding: inlineMap ? "24px 18px" : "36px 30px",
           textAlign: "center",
           position: "relative",
           border: "1px solid #e2e8f0",
           animation: "gongsilFadeUp 0.25s ease-out",
+          boxSizing: "border-box",
         }}
       >
         <style>{`
