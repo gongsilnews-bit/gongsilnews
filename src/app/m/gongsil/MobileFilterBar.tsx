@@ -110,7 +110,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
 
   // 🚀 PC GongsilClient.tsx 기준 100% 동일 대분류 & 소분류(알약) 구조
   const PROPERTY_TYPES = activeMode === "경매" ? [
-    { group: "경·공매 자산유형", items: ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"] }
+    { group: "경·공매 자산유형", items: ["아파트", "오피스텔", "단독/다가구", "빌라/주택", "상가/근생", "빌딩/사무실", "공장/창고", "토지"] }
   ] : [
     { group: "아파트·오피스텔", items: ["아파트", "오피스텔", "기타"] },
     { group: "빌라·주택", items: ["빌라/연립", "단독/다가구", "전원주택"] },
@@ -231,7 +231,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     filters.auctionAppraisalMin !== null || filters.auctionAppraisalMax !== null ||
     filters.auctionBidPriceMin !== null || filters.auctionBidPriceMax !== null ||
     filters.auctionDiscount > 0 ||
-    filters.auctionBidCount > 0 ||
+    (filters.auctionBidCount !== "all" && filters.auctionBidCount !== 0 && Boolean(filters.auctionBidCount)) ||
     filters.auctionStartDate !== "all";
 
   const formatPriceVal = (val: number | null) => {
@@ -315,7 +315,15 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   })();
 
   const auctionDiscountLabel = filters.auctionDiscount > 0 ? `할인율 ▼${filters.auctionDiscount}%↑` : "할인율 ▾";
-  const auctionBidCountLabel = filters.auctionBidCount > 0 ? `유찰 ${filters.auctionBidCount}회↑` : "유찰횟수 ▾";
+  const auctionBidCountLabel = (() => {
+    if (filters.auctionBidCount === "all" || filters.auctionBidCount === 0 || !filters.auctionBidCount) return "유찰횟수 ▾";
+    if (String(filters.auctionBidCount) === "0") return "0회 (신건)";
+    if (String(filters.auctionBidCount) === "1") return "유찰 1회";
+    if (String(filters.auctionBidCount) === "2") return "유찰 2회";
+    if (String(filters.auctionBidCount) === "3") return "유찰 3회";
+    if (String(filters.auctionBidCount) === "4" || String(filters.auctionBidCount) === "4+") return "유찰 4회↑";
+    return `유찰 ${filters.auctionBidCount}회↑`;
+  })();
   const auctionStartDateLabel = (() => {
     switch (filters.auctionStartDate) {
       case "1w": return "1주 이내";
@@ -416,19 +424,19 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           {/* 🔨 경매 모드 전용 필터 버튼들 (PC 100% 동일) */}
           {activeMode === "경매" ? (
             <>
-              <button onClick={() => openFullFilter("auction-appraisal")} style={pillStyle(true)}>
+              <button onClick={() => openFullFilter("auction-appraisal")} style={pillStyle(filters.auctionAppraisalMin !== null || filters.auctionAppraisalMax !== null)}>
                 {auctionAppraisalLabel}
               </button>
-              <button onClick={() => openFullFilter("auction-bid-price")} style={pillStyle(true)}>
+              <button onClick={() => openFullFilter("auction-bid-price")} style={pillStyle(filters.auctionBidPriceMin !== null || filters.auctionBidPriceMax !== null)}>
                 {auctionBidPriceLabel}
               </button>
-              <button onClick={() => openFullFilter("auction-discount")} style={pillStyle(true)}>
+              <button onClick={() => openFullFilter("auction-discount")} style={pillStyle(filters.auctionDiscount > 0)}>
                 {auctionDiscountLabel}
               </button>
-              <button onClick={() => openFullFilter("auction-bid-count")} style={pillStyle(true)}>
+              <button onClick={() => openFullFilter("auction-bid-count")} style={pillStyle(filters.auctionBidCount !== "all" && filters.auctionBidCount !== 0 && Boolean(filters.auctionBidCount))}>
                 {auctionBidCountLabel}
               </button>
-              <button onClick={() => openFullFilter("auction-start-date")} style={pillStyle(true)}>
+              <button onClick={() => openFullFilter("auction-start-date")} style={pillStyle(filters.auctionStartDate !== "all")}>
                 {auctionStartDateLabel}
               </button>
             </>

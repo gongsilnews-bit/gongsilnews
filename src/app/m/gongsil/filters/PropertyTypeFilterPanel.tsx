@@ -108,7 +108,7 @@ export default function PropertyTypeFilterPanel({ filters, onFilterChange, PROPE
     transition: "all 0.15s",
   });
 
-  // 🔨 [법원 경·공매 모드] 단일 그룹일 때는 1단계/2단계 분기 없이 바로 6대 자산 알약을 3열 그리드로 깔끔하게 노출!
+  // 🔨 [법원 경·공매 모드] 단일 그룹일 때는 1단계/2단계 분기 없이 바로 8대 표준 자산 알약을 3열 그리드로 깔끔하게 노출!
   if (PROPERTY_TYPES.length === 1) {
     const singleGroupItems = PROPERTY_TYPES[0].items;
     const isAllSingleSelected = singleGroupItems.length > 0 && singleGroupItems.every(item => filters.propertyTypes.includes(item));

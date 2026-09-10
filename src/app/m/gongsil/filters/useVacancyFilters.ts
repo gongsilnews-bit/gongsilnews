@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { FilterState } from '../search/vacancySearch.types';
+import { getAuctionInfo } from '@/app/(map)/gongsil/gongsilHelpers';
 
 export type { FilterState } from '../search/vacancySearch.types';
 
@@ -8,6 +9,10 @@ const ALL_PROPERTY_TYPES = [
   "빌라/연립", "단독/다가구", "전원주택",
   "원룸", "1.5룸", "투룸",
   "상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지"
+];
+
+export const AUCTION_ALL_PROPERTY_TYPES = [
+  "아파트", "오피스텔", "단독/다가구", "빌라/주택", "상가/근생", "빌딩/사무실", "공장/창고", "토지"
 ];
 
 export const initialFilterState: FilterState = {
@@ -127,37 +132,18 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
     
     let isPropMatch = false;
 
-    // 🚀 [대표님 지침] '전체 매물' 선택 시 모든 매물 100% 매칭
-    if (filters.propertyTypes.length >= ALL_PROPERTY_TYPES.length) {
-      isPropMatch = true;
-    } else if (v.trade_type === "경매") {
-        // 🚀 [대표님 지침] 법원 경공매 모드 전용 6대 자산 분류 고성능 해석 엔진 (PC 동일)
-        const meta = (v.metadata ?? {}) as Record<string, unknown>;
-        const mcls = String(meta.cltrUsgMclsCtgrNm ?? "");
-        const scls = String(meta.cltrUsgSclsCtgrNm ?? "");
-        
-        isPropMatch = filters.propertyTypes.some((pill) => {
-          if (pill === "아파트") return scls.includes("아파트") || scls.includes("오피스텔") || scls.includes("공동주택");
-          if (pill === "단독/다가구") return scls.includes("단독") || scls.includes("다가구") || scls.includes("주택");
-          if (pill === "빌라/주택")
-            return (mcls.includes("주거") || scls.includes("주택") || scls.includes("빌라") || scls.includes("다세대") || scls.includes("연립")) && !scls.includes("아파트");
-          if (pill === "빌딩/사무실")
-            return (
-              mcls.includes("상업") || scls.includes("상가") || scls.includes("점포") || scls.includes("판매") ||
-              scls.includes("사무") || mcls.includes("업무") || scls.includes("오피스텔") || scls.includes("아파트형") || scls.includes("지식산업") ||
-              mcls.includes("근린생활") || scls.includes("상가주택") || scls.includes("빌딩") || mcls.includes("숙박") || mcls.includes("의료") ||
-              scls.includes("업무시설") || mcls.includes("업무시설")
-            );
-          if (pill === "공장/창고")
-            return (
-              (scls.includes("공장") || scls.includes("창고") || scls.includes("제조") || mcls.includes("산업") || mcls.includes("공장")) &&
-              !scls.includes("아파트형") &&
-              !scls.includes("지식산업")
-            );
-          if (pill === "토지")
-            return mcls.includes("토지") || scls.includes("토지") || mcls.includes("대지") || scls.includes("대지") || mcls.includes("임야") || mcls.includes("전") || mcls.includes("답") || mcls.includes("잡종지") || mcls.includes("과수원");
-          return false;
-        });
+    if (v.trade_type === "경매") {
+      // 🚀 [대표님 지침] 법원 경공매 모드 전용 8대 표준 자산 분류 엔진 (PC GongsilClient 100% 동일)
+      if (filters.propertyTypes.length >= AUCTION_ALL_PROPERTY_TYPES.length) {
+        isPropMatch = true;
+      } else {
+        const info = getAuctionInfo(v);
+        isPropMatch = filters.propertyTypes.includes(info.category);
+      }
+    } else {
+      // 🚀 [대표님 지침] '전체 매물' 선택 시 모든 일반공실 매물 100% 매칭
+      if (filters.propertyTypes.length >= ALL_PROPERTY_TYPES.length) {
+        isPropMatch = true;
       } else {
         // 🚀 일반 공실 매물 필터링 (PC GongsilClient.tsx 100% 동일 매칭 로직)
         isPropMatch = filters.propertyTypes.some((pill) => {
@@ -217,8 +203,9 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
           return v.sub_category === pill || v.property_type === pill;
         });
       }
+    }
       
-      if (!isPropMatch) return false;
+    if (!isPropMatch) return false;
       
       // 🚀 경매 전용 상세 필터 (PC GongsilClient.tsx 100% 동일)
       if (v.trade_type === "경매") {

@@ -153,7 +153,7 @@ function MobileGongsilContent() {
   // 필터 State 및 필터링 로직 (Hook으로 분리) - 현재 활성 모드(공실/경매) 연동
   const { filters, filteredVacancies, updateFilter, resetFilters, setFilters } = useVacancyFilters(vacancies, effectiveMode);
 
-  const AUCTION_PROPERTY_TYPES = ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"];
+  const AUCTION_PROPERTY_TYPES = ["아파트", "오피스텔", "단독/다가구", "빌라/주택", "상가/근생", "빌딩/사무실", "공장/창고", "토지"];
 
   const STORAGE_KEY = "m_gongsil_last_state";
 
