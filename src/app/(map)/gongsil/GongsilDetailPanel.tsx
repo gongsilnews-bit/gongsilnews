@@ -53,6 +53,7 @@ interface GongsilDetailPanelProps {
   openGalleryModal: () => void;
   isAuctionMode: boolean;
   isStandalone?: boolean;
+  isAuthChecking?: boolean;
 }
 
 export default function GongsilDetailPanel({
@@ -95,6 +96,7 @@ export default function GongsilDetailPanel({
   openGalleryModal,
   isAuctionMode,
   isStandalone = false,
+  isAuthChecking = false,
 }: GongsilDetailPanelProps) {
   if (!showDetail || !activeProperty) return null;
 
@@ -166,7 +168,14 @@ export default function GongsilDetailPanel({
         ×
       </button>
 
-      <GongsilAccessOverlay property={prop} currentUser={currentUser} userLevel={userLevel} onBack={onBack} />
+      <GongsilAccessOverlay
+        property={prop}
+        currentUser={currentUser}
+        userLevel={userLevel}
+        onBack={onBack}
+        isStandalone={isStandalone}
+        isAuthChecking={isAuthChecking}
+      />
 
       {/* 뒤로가기 버튼 탭 */}
       {prevPropertyId && (

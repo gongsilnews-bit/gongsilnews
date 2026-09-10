@@ -17,6 +17,7 @@ import BannerSlot from "./BannerSlot";
 import ArticleAuthorAdSlot from "./ArticleAuthorAdSlot";
 import BookmarkCategoryModal from "./BookmarkCategoryModal";
 import { formatSection1 } from "@/utils/formatCategory";
+import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
 
 interface NewsReadContentProps {
   article: any;
@@ -133,6 +134,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
   // 현재 열람자 권한 State
   const [viewerRole, setViewerRole] = useState<string | null>(null);
   const [viewerAgencyStatus, setViewerAgencyStatus] = useState<string | null>(null);
+  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
 
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -141,6 +143,7 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
       supabase.auth.getUser().then(({ data }) => {
         if (data?.user) {
           setCurrentUserId(data.user.id);
+          setViewerEmail(data.user.email || null);
           // 필요하면 user_metadata 에서 이름 가져오기
           setCurrentUserName(data.user.user_metadata?.name || data.user.email?.split("@")[0] || "익명");
 
@@ -1066,14 +1069,24 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
             {/* 1. 추천 공실 - 부동산회원이면 등록한 공실 전체 노출 */}
             {(() => {
               const visibleVacancies = authorVacancies.filter(prop => prop.trade_type !== '경매' && prop.trade_type !== '공매');
-              if (authorRole !== "REALTOR" || visibleVacancies.length === 0) return null;
+              const isAuthorRealtor = authorRole === "REALTOR" || authorRole === "부동산회원";
+              if (!isAuthorRealtor || visibleVacancies.length === 0) return null;
               
               return (
                 <div className="sb-widget">
                   <div className="sb-title">추천 공실</div>
                   {visibleVacancies.map((prop, i) => {
-                  const isApprovedRealtor = viewerRole === 'REALTOR' && viewerAgencyStatus === 'APPROVED';
-                  const hasFullVacancyAccess = viewerRole === 'ADMIN' || isApprovedRealtor;
+                  const viewerLevel = getPermissionLevel({
+                    role: viewerRole || undefined,
+                    agencies: { status: viewerAgencyStatus || undefined },
+                  });
+                  const isSuper = Boolean(
+                    (viewerLevel >= 5 || isAdminRole(viewerRole)) &&
+                    viewerRole !== "REALTOR" &&
+                    viewerRole !== "부동산회원" &&
+                    viewerRole !== "부동산관리자"
+                  ) || viewerEmail === "gongsilmarketing@gmail.com";
+                  const hasFullVacancyAccess = isSuper || viewerLevel >= 2;
                   const cardMasked = prop.exposure_type === '부동산노출' && !hasFullVacancyAccess;
                   const cardAddr = prop.building_name || prop.detail_addr || "이름없는 공실";
                   const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
@@ -1112,22 +1125,20 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
                       target={isMobile ? undefined : "_blank"} 
                       key={prop.id || i} 
                       onClick={(e) => {
-                        if (cardMasked) {
-                          e.preventDefault();
-                          const loginUrl = isMobile ? "/m/login" : "/login";
-                          const vacancyPath = isMobile
-                            ? `/m/gongsil?id=${encodeURIComponent(String(prop.id))}`
-                            : `/gongsil/detail/${encodeURIComponent(String(prop.id))}`;
-                          window.location.href = loginUrl + "?returnTo=" + encodeURIComponent(vacancyPath);
-                          return;
-                        }
                         if (isMobile) {
+                          if (cardMasked) {
+                            e.preventDefault();
+                            const loginUrl = "/m/login";
+                            const vacancyPath = `/m/gongsil?id=${encodeURIComponent(String(prop.id))}`;
+                            window.location.href = loginUrl + "?returnTo=" + encodeURIComponent(vacancyPath);
+                            return;
+                          }
                           e.preventDefault();
                           router.push(`/m/gongsil?id=${encodeURIComponent(String(prop.id))}`);
                           return;
                         }
 
-                        // PC 환경: 브라우저 팝업창으로 열기 (각 매물마다 고유한 창 이름으로 여러 개 동시 열람 가능)
+                        // PC 환경: 기사 페이지를 떠나지 않고 브라우저 독립 팝업창으로 열기
                         e.preventDefault();
                         const popupW = 620;
                         const popupH = 880;

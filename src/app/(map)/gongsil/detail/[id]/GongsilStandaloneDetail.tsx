@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import GongsilDetailPanel from "../../GongsilDetailPanel";
 import { getCleanAddrText, getPriceText } from "../../gongsilHelpers";
 import { createClient } from "@/utils/supabase/client";
+import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
 
 interface GongsilStandaloneDetailProps {
   initialVacancy: any;
@@ -50,7 +51,8 @@ export default function GongsilStandaloneDetail({
     return "info";
   });
 
-  const [userLevel, setUserLevel] = useState(1);
+  const [userLevel, setUserLevel] = useState(0);
+  const [authChecking, setAuthChecking] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -77,21 +79,38 @@ export default function GongsilStandaloneDetail({
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
-        setCurrentUser(data.user);
         supabase
           .from("members")
           .select("role, plan_type, agencies(status)")
           .eq("id", data.user.id)
           .maybeSingle()
           .then(({ data: member }) => {
+            setCurrentUser({ ...data.user, role: member?.role });
             if (member) {
-              let level = 1;
-              if (member.role === "admin" || member.role === "superadmin") level = 4;
-              else if (member.role === "realtor") level = 2;
-              else if (member.plan_type === "pro") level = 3;
-              setUserLevel(level);
+              const lvl = getPermissionLevel(member);
+              const isSuper =
+                Boolean(
+                  (lvl >= 5 || isAdminRole(member.role)) &&
+                  member.role !== "REALTOR" &&
+                  member.role !== "부동산회원" &&
+                  member.role !== "부동산관리자"
+                ) || data.user.email === "gongsilmarketing@gmail.com";
+              setUserLevel(isSuper ? 5 : lvl);
+            } else {
+              const isSuper = data.user.email === "gongsilmarketing@gmail.com";
+              setUserLevel(isSuper ? 5 : 1);
             }
+            setAuthChecking(false);
+          })
+          .catch(() => {
+            setCurrentUser(data.user);
+            setUserLevel(1);
+            setAuthChecking(false);
           });
+      } else {
+        setCurrentUser(null);
+        setUserLevel(0);
+        setAuthChecking(false);
       }
     });
 
@@ -229,7 +248,7 @@ export default function GongsilStandaloneDetail({
     });
   };
 
-  // Close handler: Close standalone tab, fallback to back/map if window.close is not allowed
+  // Close handler: Close standalone tab/window without redirecting to map
   const handleClose = () => {
     try {
       window.close();
@@ -238,13 +257,13 @@ export default function GongsilStandaloneDetail({
     }
     setTimeout(() => {
       if (!window.closed) {
-        if (window.history.length > 1) {
+        if (window.opener) {
+          window.close();
+        } else if (window.history.length > 1) {
           window.history.back();
-        } else {
-          window.location.href = `/gongsil?id=${vacancy.id}`;
         }
       }
-    }, 300);
+    }, 200);
   };
 
   // Print handler
@@ -432,6 +451,7 @@ export default function GongsilStandaloneDetail({
         openGalleryModal={() => setShowGalleryModal(true)}
         isAuctionMode={isAuctionMode}
         isStandalone={true}
+        isAuthChecking={authChecking}
       />
 
       {/* 갤러리 풀스크린 모달 */}
