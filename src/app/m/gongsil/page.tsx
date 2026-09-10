@@ -272,14 +272,19 @@ function MobileGongsilContent() {
 
         let restoredPropertyTypes = currentFilters.propertyTypes;
         if (resolvedMode === "경매") {
-          // 경매 모드인데 과거 6개이거나, 일반공실용 15개이거나, 비어있거나, 오피스텔/상가근생이 누락된 구버전인 경우 8대 전체로 자동 마이그레이션!
+          // 경매 모드인데 과거 6개이거나, 일반공실용 15개이거나, 비어있거나, 오피스텔/상가근생/빌라주택/빌딩사무실이 누락된 구버전인 경우 8대 전체로 자동 마이그레이션!
           if (
             !restoredPropertyTypes ||
             restoredPropertyTypes.length === 0 ||
             restoredPropertyTypes.length >= 10 ||
-            (restoredPropertyTypes.length === 6 && !restoredPropertyTypes.includes("오피스텔"))
+            !restoredPropertyTypes.includes("빌라/주택") ||
+            !restoredPropertyTypes.includes("상가/근생") ||
+            !restoredPropertyTypes.includes("빌딩/사무실")
           ) {
             restoredPropertyTypes = AUCTION_PROPERTY_TYPES;
+          }
+          if (currentFilters.auctionBidCount === 0) {
+            currentFilters.auctionBidCount = "all";
           }
         } else {
           if (!restoredPropertyTypes || restoredPropertyTypes.length === 0) {
@@ -361,15 +366,21 @@ function MobileGongsilContent() {
     } else {
       targetFilters = savedAuctionFiltersRef.current || {
         ...initialFilterState,
-        propertyTypes: AUCTION_PROPERTY_TYPES
+        propertyTypes: AUCTION_PROPERTY_TYPES,
+        auctionBidCount: "all",
       };
       if (
         !targetFilters.propertyTypes ||
         targetFilters.propertyTypes.length === 0 ||
         targetFilters.propertyTypes.length >= 10 ||
-        (targetFilters.propertyTypes.length === 6 && !targetFilters.propertyTypes.includes("오피스텔"))
+        !targetFilters.propertyTypes.includes("빌라/주택") ||
+        !targetFilters.propertyTypes.includes("상가/근생") ||
+        !targetFilters.propertyTypes.includes("빌딩/사무실")
       ) {
         targetFilters.propertyTypes = AUCTION_PROPERTY_TYPES;
+      }
+      if (targetFilters.auctionBidCount === 0) {
+        targetFilters.auctionBidCount = "all";
       }
     }
 
@@ -1475,6 +1486,23 @@ function MobileGongsilContent() {
               onClick={() => {
                 resetFilters();
                 setLocLabel("위치");
+                saveLastSearchState(
+                  effectiveMode === "경매"
+                    ? {
+                        ...initialFilterState,
+                        propertyTypes: AUCTION_PROPERTY_TYPES,
+                        auctionBidCount: "all",
+                        auctionStartDate: "all",
+                        auctionDiscount: 0,
+                        auctionAppraisalMin: null,
+                        auctionAppraisalMax: null,
+                        auctionBidPriceMin: null,
+                        auctionBidPriceMax: null,
+                      }
+                    : initialFilterState,
+                  effectiveMode,
+                  "위치"
+                );
               }}
               style={{ background: "rgba(255,255,255,0.9)", borderRadius: "20px", padding: "8px 14px", border: "1px solid #ddd", fontSize: "13px", fontWeight: 700, color: "#1a73e8", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
             >

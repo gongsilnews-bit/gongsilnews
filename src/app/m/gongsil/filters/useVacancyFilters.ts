@@ -235,7 +235,7 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
         }
 
         // 4) 유찰 횟수 필터
-        if (filters.auctionBidCount !== undefined && filters.auctionBidCount !== null && filters.auctionBidCount !== "all") {
+        if (filters.auctionBidCount !== undefined && filters.auctionBidCount !== null && filters.auctionBidCount !== "all" && filters.auctionBidCount !== "") {
           const meta = (v as any).metadata || {};
           const bidCount = Number(meta.fail_count ?? meta.usbdNft ?? meta.pbctCnt ?? meta.pbct_cnt ?? meta.bid_count ?? 0) || 0;
           const valStr = String(filters.auctionBidCount);
@@ -506,7 +506,12 @@ export function filterVacanciesList(vacancies: VacancyLike[], filters: FilterSta
 export function useVacancyFilters(initialVacancies: VacancyLike[], mode: "공실" | "경매" = "경매") {
   const [filters, setFilters] = useState<FilterState>(() => {
     if (mode === "경매") {
-      return { ...initialFilterState, propertyTypes: ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"] };
+      return {
+        ...initialFilterState,
+        propertyTypes: AUCTION_ALL_PROPERTY_TYPES,
+        auctionBidCount: "all",
+        auctionStartDate: "all",
+      };
     }
     return initialFilterState;
   });
@@ -543,7 +548,21 @@ export function useVacancyFilters(initialVacancies: VacancyLike[], mode: "공실
   };
 
   const resetFilters = () => {
-    setFilters(initialFilterState);
+    if (mode === "경매") {
+      setFilters({
+        ...initialFilterState,
+        propertyTypes: AUCTION_ALL_PROPERTY_TYPES,
+        auctionBidCount: "all",
+        auctionStartDate: "all",
+        auctionDiscount: 0,
+        auctionAppraisalMin: null,
+        auctionAppraisalMax: null,
+        auctionBidPriceMin: null,
+        auctionBidPriceMax: null,
+      });
+    } else {
+      setFilters(initialFilterState);
+    }
   };
 
   const activeFilterCount = useMemo(() => {

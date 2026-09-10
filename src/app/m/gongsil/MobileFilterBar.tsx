@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { FilterState, filterVacanciesList } from "./filters/useVacancyFilters";
+import { FilterState, filterVacanciesList, AUCTION_ALL_PROPERTY_TYPES } from "./filters/useVacancyFilters";
 import { VacancyRecord } from "./search/vacancySearch.types";
 import LocationFilterPanel from "./filters/LocationFilterPanel";
 import PropertyTypeFilterPanel from "./filters/PropertyTypeFilterPanel";
@@ -231,7 +231,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
     filters.auctionAppraisalMin !== null || filters.auctionAppraisalMax !== null ||
     filters.auctionBidPriceMin !== null || filters.auctionBidPriceMax !== null ||
     filters.auctionDiscount > 0 ||
-    (filters.auctionBidCount !== "all" && filters.auctionBidCount !== 0 && Boolean(filters.auctionBidCount)) ||
+    (filters.auctionBidCount !== undefined && filters.auctionBidCount !== null && filters.auctionBidCount !== "all" && filters.auctionBidCount !== "") ||
     filters.auctionStartDate !== "all";
 
   const formatPriceVal = (val: number | null) => {
@@ -316,7 +316,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
 
   const auctionDiscountLabel = filters.auctionDiscount > 0 ? `할인율 ▼${filters.auctionDiscount}%↑` : "할인율 ▾";
   const auctionBidCountLabel = (() => {
-    if (filters.auctionBidCount === "all" || filters.auctionBidCount === 0 || !filters.auctionBidCount) return "유찰횟수 ▾";
+    if (filters.auctionBidCount === "all" || filters.auctionBidCount === undefined || filters.auctionBidCount === null || filters.auctionBidCount === "") return "유찰횟수 ▾";
     if (String(filters.auctionBidCount) === "0") return "0회 (신건)";
     if (String(filters.auctionBidCount) === "1") return "유찰 1회";
     if (String(filters.auctionBidCount) === "2") return "유찰 2회";
@@ -442,7 +442,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
               <button onClick={() => openFullFilter("auction-discount")} style={pillStyle(filters.auctionDiscount > 0)}>
                 {auctionDiscountLabel}
               </button>
-              <button onClick={() => openFullFilter("auction-bid-count")} style={pillStyle(filters.auctionBidCount !== "all" && filters.auctionBidCount !== 0 && Boolean(filters.auctionBidCount))}>
+              <button onClick={() => openFullFilter("auction-bid-count")} style={pillStyle(Boolean(filters.auctionBidCount && filters.auctionBidCount !== "all"))}>
                 {auctionBidCountLabel}
               </button>
               <button onClick={() => openFullFilter("auction-start-date")} style={pillStyle(filters.auctionStartDate !== "all")}>
@@ -712,13 +712,19 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e5e7eb", padding: "12px 20px 24px", display: "flex", gap: "12px" }}>
             <button 
               onClick={() => {
-                const allPropTypes = PROPERTY_TYPES.flatMap(g => g.items);
+                const allPropTypes = activeMode === "경매" ? AUCTION_ALL_PROPERTY_TYPES : PROPERTY_TYPES.flatMap(g => g.items);
                 const empty = { 
                   propertyTypes: allPropTypes, 
                   tradeTypes: TRADE_TYPES, 
                   keyword: "", 
                   priceMin: null, 
                   priceMax: null, 
+                  salePriceMin: null,
+                  salePriceMax: null,
+                  depositMin: null,
+                  depositMax: null,
+                  monthlyRentMin: null,
+                  monthlyRentMax: null,
                   areaMin: null, 
                   areaMax: null, 
                   yearMin: null, 
@@ -747,7 +753,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
                   auctionBidPriceMin: null,
                   auctionBidPriceMax: null,
                   auctionDiscount: 0,
-                  auctionBidCount: 0,
+                  auctionBidCount: "all",
                   auctionStartDate: "all"
                 };
                 setTempFilters(empty);

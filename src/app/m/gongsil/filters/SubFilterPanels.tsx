@@ -837,7 +837,7 @@ export function AuctionBidCountFilterPanel({ filters, onFilterChange }: Props) {
     { label: "3회", val: "3" },
     { label: "4회 이상", val: "4+" },
   ];
-  const isAll = filters.auctionBidCount === "all" || filters.auctionBidCount === 0 || !filters.auctionBidCount;
+  const isAll = filters.auctionBidCount === undefined || filters.auctionBidCount === null || filters.auctionBidCount === "all" || filters.auctionBidCount === "";
 
   return (
     <div>
