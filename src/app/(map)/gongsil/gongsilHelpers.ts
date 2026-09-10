@@ -8,7 +8,7 @@ export const CATEGORY_CONFIG: Record<string, { name: string; pills: string[]; ba
   one: { name: "원룸·투룸(풀옵션)", pills: ["원룸", "1.5룸", "투룸", "오피스텔만 보기"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   biz: { name: "상가·사무실·공장·토지", pills: ["상가", "사무실", "지식산업센터", "건물/빌딩", "공장/창고", "토지"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   sale: { name: "신축/분양", pills: ["아파트", "오피스텔", "빌라", "도시형생활주택", "생활숙박시설", "상가/업무"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
-  auction: { name: "경매/공매", pills: ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
+  auction: { name: "경매/공매", pills: ["아파트", "오피스텔", "단독/다가구", "빌라/주택", "상가/근생", "빌딩/사무실", "공장/창고", "토지"], basicFilters: ["거래유형"], detailFilters: [], showToggle: false },
   wish: { name: "MY관심공실", pills: [], basicFilters: [], detailFilters: [], showToggle: false },
 };
 
@@ -90,9 +90,9 @@ export const getCleanAddrText = (prop: any) => {
   return [dong, subCategory].filter(Boolean).join(" ") || "공실 매물";
 };
 
-// 온비드 경공매 물건의 세부 카테고리 정보 및 면적을 안전하게 분석하는 헬퍼 함수
+// 온비드 경공매 물건의 세부 카테고리 정보 및 면적을 안전하게 분석하는 헬퍼 함수 (8대 표준 카테고리 체계)
 export const getAuctionInfo = (prop: any) => {
-  if (!prop) return { category: "공매", badge: "공매", area: "" };
+  if (!prop) return { category: "상가/근생", badge: "상가/근생 공매", area: "" };
 
   let meta = prop.metadata || {};
   if (typeof meta === 'string') {
@@ -103,50 +103,71 @@ export const getAuctionInfo = (prop: any) => {
     }
   }
 
-  let scls = meta.cltrUsgSclsCtgrNm || "";
-  let mcls = meta.cltrUsgMclsCtgrNm || "";
-  let bldName = prop.building_name || "";
-  let propType = prop.property_type || "";
+  const scls = meta.cltrUsgSclsCtgrNm || "";
+  const mcls = meta.cltrUsgMclsCtgrNm || "";
+  const bldName = prop.building_name || "";
+  const propType = prop.property_type || "";
 
   let category = "";
-  if (scls) {
-    category = scls;
-  } else if (mcls) {
-    category = mcls;
-  } else {
+
+  // 1. 오피스텔 (투자 최우선 자산)
+  if (scls.includes("오피스텔") || bldName.includes("오피스텔")) {
+    category = "오피스텔";
+  }
+  // 2. 아파트 (지식산업센터 아파트형공장 제외)
+  else if ((scls.includes("아파트") || bldName.includes("아파트")) && !scls.includes("아파트형") && !bldName.includes("아파트형")) {
+    category = "아파트";
+  }
+  // 3. 단독/다가구
+  else if (scls.includes("단독") || scls.includes("다가구") || bldName.includes("단독") || bldName.includes("다가구")) {
+    category = "단독/다가구";
+  }
+  // 4. 빌라/주택 (다세대, 연립, 도시형생활주택, 기타주거 등)
+  else if (
+    scls.includes("빌라") || scls.includes("다세대") || scls.includes("연립") || scls.includes("도시형") || scls.includes("기타주거") ||
+    bldName.includes("빌라") || bldName.includes("다세대") || bldName.includes("연립") || bldName.includes("도시형") ||
+    (mcls.includes("주거") && !scls.includes("아파트") && !scls.includes("단독") && !scls.includes("다가구"))
+  ) {
+    category = "빌라/주택";
+  }
+  // 5. 상가/근생 (근린생활시설, 판매시설, 상가, 점포, 소매점 등)
+  else if (
+    scls.includes("근린생활") || scls.includes("판매") || scls.includes("상가") || scls.includes("점포") || scls.includes("소매") || scls.includes("상가주택") ||
+    bldName.includes("근생") || bldName.includes("상가") || bldName.includes("판매시설")
+  ) {
+    category = "상가/근생";
+  }
+  // 6. 공장/창고 (공장, 창고, 제조소, 자동차관련시설 등)
+  else if (
+    (scls.includes("공장") || scls.includes("창고") || scls.includes("제조") || scls.includes("자동차") || bldName.includes("공장") || bldName.includes("창고") || mcls.includes("산업")) &&
+    !scls.includes("지식산업") && !scls.includes("아파트형")
+  ) {
+    category = "공장/창고";
+  }
+  // 7. 토지 (임야, 대지, 전, 답, 과수원, 도로, 잡종지 등)
+  else if (
+    mcls.includes("토지") || scls.includes("토지") || scls.includes("대지") || scls.includes("임야") || scls.includes("전") || scls.includes("답") ||
+    scls.includes("잡종지") || scls.includes("과수원") || scls.includes("도로") || scls.includes("목장") || scls.includes("염전") || scls.includes("구거") ||
+    scls.includes("하천") || scls.includes("부지") || scls.includes("용지") || bldName.includes("토지") || bldName.includes("임야") || bldName.includes("대지")
+  ) {
+    category = "토지";
+  }
+  // 8. 빌딩/사무실 (사무실, 업무시설, 상업용빌딩, 숙박시설, 콘도, 지식산업센터 등)
+  else if (
+    scls.includes("사무") || scls.includes("업무") || scls.includes("빌딩") || scls.includes("숙박") || scls.includes("콘도") || scls.includes("의료") ||
+    scls.includes("지식산업") || scls.includes("아파트형") || bldName.includes("빌딩") || bldName.includes("사무실") || mcls.includes("상가용및업무")
+  ) {
+    category = "빌딩/사무실";
+  }
+  // 9. 미분류 폴백
+  else {
     if (propType === "아파트·오피스텔") {
       category = bldName.includes("오피스텔") ? "오피스텔" : "아파트";
     } else if (propType === "빌라·주택") {
-      if (bldName.includes("단독") || bldName.includes("다가구")) category = "단독주택";
-      else if (bldName.includes("다세대") || bldName.includes("연립")) category = "다세대주택";
-      else category = "빌라/주택";
+      category = (bldName.includes("단독") || bldName.includes("다가구")) ? "단독/다가구" : "빌라/주택";
     } else {
-      if (bldName.includes("토지") || bldName.includes("전") || bldName.includes("답") || bldName.includes("임야") || bldName.includes("대지") || bldName.includes("잡종지")) {
-        if (bldName.includes("임야")) category = "임야";
-        else if (bldName.includes("전")) category = "전";
-        else if (bldName.includes("답")) category = "답";
-        else if (bldName.includes("대지")) category = "대지";
-        else category = "토지";
-      } else if (bldName.includes("공장") || bldName.includes("창고") || bldName.includes("제조")) {
-        category = bldName.includes("창고") ? "창고" : "공장";
-      } else if (bldName.includes("사무") || bldName.includes("사무실") || bldName.includes("지산") || bldName.includes("오피스")) {
-        category = "사무실";
-      } else if (bldName.includes("빌딩") || bldName.includes("근생") || bldName.includes("근린") || bldName.includes("숙박") || bldName.includes("의료") || bldName.includes("콘도") || bldName.includes("리조트")) {
-        if (bldName.includes("근생") || bldName.includes("근린")) category = "근린생활시설";
-        else if (bldName.includes("콘도") || bldName.includes("리조트") || bldName.includes("호텔")) category = "숙박시설";
-        else category = "빌딩";
-      } else {
-        category = "상가/점포";
-      }
+      category = "상가/근생";
     }
-  }
-
-  if (category === "상가·사무실·건물·공장·토지") {
-    category = "상업용";
-  }
-
-  if (["상가/점포", "사무실/지산", "빌딩/근생", "근린생활시설", "숙박시설", "빌딩", "사무실"].includes(category)) {
-    category = "빌딩/사무실";
   }
 
   const areaVal = meta.bldSqms || meta.cltrAr || prop.exclusive_m2;

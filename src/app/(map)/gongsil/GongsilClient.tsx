@@ -43,6 +43,7 @@ import {
   getPriceText,
   formatAmount,
   isApartmentType,
+  getAuctionInfo,
   getJitteredCoords,
 } from "./gongsilHelpers";
 
@@ -79,15 +80,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     const first = initialVacancies[0];
     if (first) {
       if (first.trade_type === "경매") {
-        const meta = first.metadata || {};
-        const scls = meta.cltrUsgSclsCtgrNm || "";
-        if (scls.includes("아파트") || scls.includes("오피스텔") || scls.includes("공동주택")) return ["아파트"];
-        if (scls.includes("단독") || scls.includes("다가구") || scls.includes("주택")) return ["단독/다가구"];
-        if (scls.includes("빌라") || scls.includes("다세대") || scls.includes("연립")) return ["빌라/주택"];
-        if (scls.includes("상가") || scls.includes("점포") || scls.includes("사무") || scls.includes("빌딩") || scls.includes("근린생활")) return ["빌딩/사무실"];
-        if (scls.includes("공장") || scls.includes("창고")) return ["공장/창고"];
-        if (scls.includes("토지") || scls.includes("대지") || scls.includes("임야")) return ["토지"];
-        return ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"];
+        const info = getAuctionInfo(first);
+        return [info.category];
       } else {
         if (first.sub_category) {
           return [first.sub_category];
@@ -98,7 +92,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     if (config && config.pills) {
       return config.pills.filter((p) => p !== "오피스텔만 보기");
     }
-    return ["아파트", "단독/다가구", "빌라/주택", "빌딩/사무실", "공장/창고", "토지"];
+    return ["아파트", "오피스텔", "단독/다가구", "빌라/주택", "상가/근생", "빌딩/사무실", "공장/창고", "토지"];
   });
   const [activeProperty, setActiveProperty] = useState<string | number | null>(() => {
     return initialVacancies[0]?.id || null;
@@ -1383,6 +1377,10 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     if (savedPills) {
       try { pills = JSON.parse(savedPills); } catch {}
     }
+    // 과거 6개 알약 저장 상태 호환성: 신규 8개 체계로 갱신
+    if (newKey === "auction" && pills.length > 0 && (!pills.includes("상가/근생") || !pills.includes("오피스텔"))) {
+      pills = [];
+    }
     if (pills.length === 0) {
       const c = CATEGORY_CONFIG[newKey];
       pills = c && c.pills ? c.pills.filter(p => p !== "오피스텔만 보기") : [];
@@ -1732,7 +1730,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
               let activeColor = "#1a73e8";
 
               if (isAuctionMode) {
-                if (["빌딩/사무실", "공장/창고", "토지"].includes(p)) {
+                if (["상가/근생", "빌딩/사무실", "공장/창고", "토지"].includes(p)) {
                   activeBg = "#f3f0ff";
                   activeBorder = "#7048e8";
                   activeColor = "#7048e8";
