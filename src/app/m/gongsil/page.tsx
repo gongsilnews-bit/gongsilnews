@@ -75,7 +75,7 @@ function MobileGongsilContent() {
   const [selectedCluster, setSelectedCluster] = useState<any[] | null>(null);
   const [selectedVacancy, setSelectedVacancy] = useState<any | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(searchParams.has("id"));
   
   // 🚀 위치 역지오코딩 & 상단 라벨 실시간 갱신용 React State
   const [locLabel, setLocLabel] = useState("위치");
@@ -681,7 +681,7 @@ function MobileGongsilContent() {
           setDetailTab("realtor");
           setTimeout(() => { if (detailScrollRef.current) detailScrollRef.current.scrollTo(0, 0); }, 50);
         }
-      } else if (selectedVacancy) {
+      } else if (selectedVacancy || isDirectView) {
         if (isEmbedded) {
           window.parent.postMessage({ type: 'CLOSE_VACANCY_OVERLAY' }, '*');
           return;
@@ -690,6 +690,7 @@ function MobileGongsilContent() {
         setSelectedVacancy(null);
         setIsDirectView(false);
         directViewLoadedRef.current = false;
+        setDetailLoading(false);
 
         // URL에서 id 파라미터가 남아있다면 깔끔하게 제거
         if (typeof window !== "undefined") {
@@ -716,7 +717,7 @@ function MobileGongsilContent() {
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [selectedVacancy, selectedCluster, isEmbedded, showListView, showGalleryFullscreen]);
+  }, [selectedVacancy, isDirectView, selectedCluster, isEmbedded, showListView, showGalleryFullscreen]);
 
   // 💡 [대표님 지침] Bbox(지도의 화면 영역) 변화 또는 필터 기반(B스타일) 행정구역 검색 시 Supabase에서 실시간으로 범위 내/지역 내 매물 패치!
   useEffect(() => {
@@ -847,29 +848,45 @@ function MobileGongsilContent() {
 
     // 즉시 ref를 설정하여 fetchVacanciesData의 중복 호출을 차단
     directViewLoadedRef.current = true;
+    setDetailLoading(true);
 
-    // 🌟 뒤로가기 시 로그인이나 외부 리다이렉트로 튕기지 않고 지도/목록으로 자연스럽게 돌아갈 수 있도록 베이스 히스토리 설정
+    // 🌟 원본 URL(id 포함)과 지도 URL(id 제외)을 명확하게 분리하여 히스토리 스택 설정
+    const originalUrlWithId = window.location.href;
     const cleanParams = new URLSearchParams(window.location.search);
     cleanParams.delete("id");
     const cleanUrl = window.location.pathname + (cleanParams.toString() ? `?${cleanParams.toString()}` : "");
+    
+    // 1단계: 지도 베이스를 이전 히스토리 자리에 replace
     window.history.replaceState({ panel: "map" }, "", cleanUrl);
-    window.history.pushState({ panel: "detail", id: idParam }, "", window.location.href);
+    // 2단계: 상세 열림 상태를 원본 id URL과 함께 push
+    window.history.pushState({ panel: "detail", id: idParam }, "", originalUrlWithId);
 
     const loadSingleDirectVacancy = async () => {
       setLoading(true);
-      const res = await getVacancyDetail(idParam);
-      if (res.success && res.data) {
-        setIsDirectView(true);
-        const detail = {
-          ...res.data,
-          images: res.data.vacancy_photos
-            ? [...res.data.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
-            : [],
-        };
-        setSelectedVacancy(detail);
-        setDetailTab("info");
+      try {
+        const res = await getVacancyDetail(idParam);
+        if (res.success && res.data) {
+          setIsDirectView(true);
+          const detail = {
+            ...res.data,
+            images: res.data.vacancy_photos
+              ? [...res.data.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+              : [],
+          };
+          setSelectedVacancy(detail);
+          setDetailTab("info");
+        } else {
+          alert("매물 정보를 불러올 수 없거나 이미 삭제된 매물입니다.");
+          goBack();
+        }
+      } catch (err) {
+        console.error("Failed to load direct vacancy:", err);
+        alert("매물 정보를 불러오는 중 오류가 발생했습니다.");
+        goBack();
+      } finally {
+        setLoading(false);
+        setDetailLoading(false);
       }
-      setLoading(false);
     };
     loadSingleDirectVacancy();
   }, []);
@@ -1228,6 +1245,7 @@ function MobileGongsilContent() {
         setSelectedVacancy(null);
         setIsDirectView(false);
         directViewLoadedRef.current = false;
+        setDetailLoading(false);
         if (typeof window !== "undefined") {
           const cleanParams = new URLSearchParams(window.location.search);
           cleanParams.delete("id");
@@ -1238,7 +1256,7 @@ function MobileGongsilContent() {
           setTimeout(() => kakaoMapRef.current?.relayout(), 50);
         }
       }
-    }, 200);
+    }, 150);
   };
 
   return (
@@ -1316,7 +1334,7 @@ function MobileGongsilContent() {
         )}
 
         {/* 🚀 [대표님 승인안] 실시간 공실 vs 법원 경공매 듀얼 알약 세그먼트 스위치 */}
-        {!isEmbedded && !isDirectView && (
+        {!isEmbedded && (
           <div style={{ padding: "8px 16px", backgroundColor: "#fff", display: "flex", justifyContent: "center", borderBottom: "1px solid #f3f4f6" }}>
             <div style={{ display: "flex", width: "100%", background: "#f1f5f9", borderRadius: "12px", padding: "4px" }}>
               <button
@@ -1360,7 +1378,7 @@ function MobileGongsilContent() {
         )}
 
         {/* 필터 바 */}
-        {!isEmbedded && !isDirectView && (
+        {!isEmbedded && (
           <MobileFilterBar
             vacancies={visibleVacancies}
             filteredCount={visibleVacancies.length}
@@ -1394,7 +1412,7 @@ function MobileGongsilContent() {
         )}
 
         {/* 지도 및 오버레이 컨테이너 */}
-        <div style={{ position: "relative", flex: 1, display: isDirectView ? "none" : "flex", flexDirection: "column", backgroundColor: "#fff" }}>
+        <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", backgroundColor: "#fff" }}>
           {/* 카카오 지도 */}
           <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
 
@@ -1694,96 +1712,126 @@ function MobileGongsilContent() {
     </div>
 
       {/* 상세 패널 */}
-      <div ref={detailPanelRef} className={`detail-panel ${selectedVacancy ? "open" : ""} ${isDirectView ? "direct-view" : ""}`} onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {/* 상단 헤더 (모든 모바일 상세 뷰 공통 뒤로가기 & 주소 & 찜/공유 헤더) */}
-        {selectedVacancy && (
-          <div style={{ zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", position: "sticky", top: 0 }}>
-            <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px" }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {(() => {
-                const isMyProperty = currentUser?.id && selectedVacancy.owner_id === currentUser.id;
-                const isAuctionProperty = selectedVacancy.trade_type === "경매" || selectedVacancy.trade_type === "공매";
-                const isDetailMasked = isAuctionProperty
-                  ? userLevel < 1
-                  : selectedVacancy.exposure_type === "부동산노출" && userLevel < 2 && !isMyProperty;
-                return isDetailMasked ? "XX" : (getCleanAddrText(selectedVacancy) || "공실광고 상세");
-              })()}
-            </h2>
-            {/* Action Buttons */}
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              {/* 찜하기 */}
-              <button onClick={toggleBookmark} style={{ background: "none", border: "none", cursor: "pointer", padding: "0", display: "flex", alignItems: "center", color: isBookmarked ? "#1a73e8" : "#6b7280" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                </svg>
+      <div
+        ref={detailPanelRef}
+        className={`detail-panel ${selectedVacancy ? "open" : ""} ${isDirectView ? "direct-view" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          display: (selectedVacancy || isDirectView) ? "flex" : "none",
+          flexDirection: "column",
+          overflow: "hidden"
+        }}
+      >
+        {selectedVacancy ? (
+          <>
+            {/* 상단 헤더 (모든 모바일 상세 뷰 공통 뒤로가기 & 주소 & 찜/공유 헤더) */}
+            <div style={{ zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", position: "sticky", top: 0 }}>
+              <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
-              {/* 공유(전달) */}
-              <div style={{ position: "relative" }} ref={shareDropdownRef}>
-                <button onClick={() => setShowShareDropdown(!showShareDropdown)} style={{ background: "none", border: "none", cursor: "pointer", padding: "0", display: "flex", alignItems: "center", color: showShareDropdown ? "#1a73e8" : "#6b7280" }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line>
+              <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#111827", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {(() => {
+                  const isMyProperty = currentUser?.id && selectedVacancy.owner_id === currentUser.id;
+                  const isAuctionProperty = selectedVacancy.trade_type === "경매" || selectedVacancy.trade_type === "공매";
+                  const isDetailMasked = isAuctionProperty
+                    ? userLevel < 1
+                    : selectedVacancy.exposure_type === "부동산노출" && userLevel < 2 && !isMyProperty;
+                  return isDetailMasked ? "XX" : (getCleanAddrText(selectedVacancy) || "공실광고 상세");
+                })()}
+              </h2>
+              {/* Action Buttons */}
+              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                {/* 찜하기 */}
+                <button onClick={toggleBookmark} style={{ background: "none", border: "none", cursor: "pointer", padding: "0", display: "flex", alignItems: "center", color: isBookmarked ? "#1a73e8" : "#6b7280" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
                   </svg>
                 </button>
-                {showShareDropdown && (
-                  <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "#fff", border: "1px solid #e0e0e0", borderRadius: "10px", boxShadow: "0 6px 24 rgba(0,0,0,0.15)", width: "200px", zIndex: 9999, overflow: "hidden" }}>
-                    <button onClick={handleKakaoShare} style={{ width: "100%", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", background: "none", border: "none", borderBottom: "1px solid #f0f0f0", cursor: "pointer", fontSize: "14px", color: "#333", fontWeight: 600 }}>
-                      <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#FEE500", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path></svg>
-                      </div>
-                      카카오톡 공유
-                    </button>
-                    <button onClick={handleCopyUrl} style={{ width: "100%", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#333", fontWeight: 600 }}>
-                      <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                      </div>
-                      URL 복사
-                    </button>
-                  </div>
-                )}
+                {/* 공유(전달) */}
+                <div style={{ position: "relative" }} ref={shareDropdownRef}>
+                  <button onClick={() => setShowShareDropdown(!showShareDropdown)} style={{ background: "none", border: "none", cursor: "pointer", padding: "0", display: "flex", alignItems: "center", color: showShareDropdown ? "#1a73e8" : "#6b7280" }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>
+                  </button>
+                  {showShareDropdown && (
+                    <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "#fff", border: "1px solid #e0e0e0", borderRadius: "10px", boxShadow: "0 6px 24px rgba(0,0,0,0.15)", width: "200px", zIndex: 9999, overflow: "hidden" }}>
+                      <button onClick={handleKakaoShare} style={{ width: "100%", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", background: "none", border: "none", borderBottom: "1px solid #f0f0f0", cursor: "pointer", fontSize: "14px", color: "#333", fontWeight: 600 }}>
+                        <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#FEE500", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3c-5.5 0-10 3.5-10 7.8 0 2.8 1.8 5.2 4.4 6.5l-1 3.7c-.1.3.3.6.5.4l4.3-2.9c.6.1 1.2.1 1.8.1 5.5 0 10-3.5 10-7.8S17.5 3 12 3z"></path></svg>
+                        </div>
+                        카카오톡 공유
+                      </button>
+                      <button onClick={handleCopyUrl} style={{ width: "100%", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontSize: "14px", color: "#333", fontWeight: 600 }}>
+                        <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                        </div>
+                        URL 복사
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {selectedVacancy && (
-          <GongsilMobileDetailPanel
-            selectedVacancy={selectedVacancy}
-            isDirectView={isDirectView}
-            goBack={goBack}
-            isBookmarked={isBookmarked}
-            toggleBookmark={toggleBookmark}
-            showShareDropdown={showShareDropdown}
-            setShowShareDropdown={setShowShareDropdown}
-            shareDropdownRef={shareDropdownRef}
-            handleKakaoShare={handleKakaoShare}
-            handleCopyUrl={handleCopyUrl}
-            detailScrollRef={detailScrollRef}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEndHandler={onTouchEndHandler}
-            galleryIndex={galleryIndex}
-            setGalleryIndex={setGalleryIndex}
-            openGalleryFullscreen={openGalleryFullscreen}
-            currentUser={currentUser}
-            userLevel={userLevel}
-            setIsAuthModalOpen={setIsAuthModalOpen}
-            activeMode={activeMode}
-            detailTab={detailTab}
-            setDetailTab={setDetailTab}
-            activeDetailTab={activeDetailTab}
-            setActiveDetailTab={setActiveDetailTab}
-            itemMapRef={itemMapRef}
-            roadviewRef={roadviewRef}
-            realtorFilter={realtorFilter}
-            setRealtorFilter={setRealtorFilter}
-            vacancies={vacancies}
-            vacancyStackRef={vacancyStackRef}
-            handleVacancyClick={handleVacancyClick}
-            formatPrice={formatPrice}
-            showCommission={showCommission}
-          />
+            <GongsilMobileDetailPanel
+              selectedVacancy={selectedVacancy}
+              isDirectView={isDirectView}
+              goBack={goBack}
+              isBookmarked={isBookmarked}
+              toggleBookmark={toggleBookmark}
+              showShareDropdown={showShareDropdown}
+              setShowShareDropdown={setShowShareDropdown}
+              shareDropdownRef={shareDropdownRef}
+              handleKakaoShare={handleKakaoShare}
+              handleCopyUrl={handleCopyUrl}
+              detailScrollRef={detailScrollRef}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEndHandler={onTouchEndHandler}
+              galleryIndex={galleryIndex}
+              setGalleryIndex={setGalleryIndex}
+              openGalleryFullscreen={openGalleryFullscreen}
+              currentUser={currentUser}
+              userLevel={userLevel}
+              setIsAuthModalOpen={setIsAuthModalOpen}
+              activeMode={activeMode}
+              detailTab={detailTab}
+              setDetailTab={setDetailTab}
+              activeDetailTab={activeDetailTab}
+              setActiveDetailTab={setActiveDetailTab}
+              itemMapRef={itemMapRef}
+              roadviewRef={roadviewRef}
+              realtorFilter={realtorFilter}
+              setRealtorFilter={setRealtorFilter}
+              vacancies={vacancies}
+              vacancyStackRef={vacancyStackRef}
+              handleVacancyClick={handleVacancyClick}
+              formatPrice={formatPrice}
+              showCommission={showCommission}
+            />
+          </>
+        ) : (
+          /* 로딩 중일 때: 상단 뒤로가기 헤더 + 로딩 표시 (절대 빈 흰 화면 방지) */
+          <>
+            <div style={{ zIndex: 10, background: "#fff", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", position: "sticky", top: 0 }}>
+              <button onClick={goBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#111827", flex: 1 }}>
+                물건 정보 불러오는 중...
+              </h2>
+            </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px" }}>
+              <div style={{ width: "36px", height: "36px", border: "3px solid #e2e8f0", borderTopColor: "#2563eb", borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: "16px" }} />
+              <p style={{ fontSize: "14px", fontWeight: 700, color: "#1e293b", margin: 0 }}>
+                매물 상세 정보를 불러오는 중입니다
+              </p>
+              <p style={{ fontSize: "12px", color: "#94a3b8", marginTop: "6px" }}>
+                잠시만 기다려 주세요
+              </p>
+            </div>
+          </>
         )}
       </div>
 

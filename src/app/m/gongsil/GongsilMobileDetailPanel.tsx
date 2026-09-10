@@ -225,10 +225,10 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
               }}
             >
-              {isAuctionProperty ? "무료 회원가입하기" : "✨ 중개업소 무료 가입하기 →"}
+              {isAuctionProperty ? "✨ 무료 회원가입 후 열람하기" : "✨ 중개업소 무료 가입하기 →"}
             </button>
 
-            {!currentUser && !isAuctionProperty && (
+            {!currentUser && (
               <button
                 onClick={() => {
                   window.location.replace("/m/login?returnTo=" + encodeURIComponent(`/m/gongsil?id=${selectedVacancy.id}`));
@@ -245,7 +245,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                   cursor: "pointer",
                 }}
               >
-                🔑 로그인
+                🔑 기존 회원 로그인
               </button>
             )}
 
