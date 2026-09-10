@@ -1359,59 +1359,48 @@ function MobileGongsilContent() {
           </div>
         )}
 
-        {/* 필터 바 */}
-        {!isEmbedded && !isDirectView && (
-          <MobileFilterBar
-            vacancies={visibleVacancies}
-            filteredCount={visibleVacancies.length}
-            filters={filters}
-            onFilterChange={updateFilter}
-            onLocationMove={(lat, lng, zoom) => {
-              const kakao = (window as any).kakao;
-              if (kakaoMapRef.current && kakao) {
-                skipGeocodingSyncRef.current = true;
-                kakaoMapRef.current.setCenter(new kakao.maps.LatLng(lat, lng));
-                kakaoMapRef.current.setLevel(Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
-                setMapBounds(kakaoMapRef.current.getBounds());
-                setZoomLevel(kakaoMapRef.current.getLevel());
-                saveLastSearchState(filters, effectiveMode, locLabel, lat, lng, Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
-                setTimeout(() => {
-                  skipGeocodingSyncRef.current = false;
-                }, 2500);
-              }
-            }}
-            onShowList={(mode) => {
-              setSelectedVacancy(null);
-              setSelectedCluster(null);
-              setListViewMode(mode || "filter");
-              window.history.pushState({ panel: "list" }, "");
-              setShowListView(true);
-            }}
-            locLabel={locLabel}
-            setLocLabel={setLocLabel}
-            activeMode={effectiveMode}
-          />
-        )}
-
-        {/* 지도 및 오버레이 컨테이너 */}
-        <div style={{ position: "relative", flex: 1, display: isDirectView ? "none" : "flex", flexDirection: "column", backgroundColor: "#fff" }}>
-          {/* 카카오 지도 */}
-          <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
-
-          {/* 모바일 실시간 공실 탭 선택 시 노출되는 '내 공동중개 물건 무료 등록' 오버레이 (상단 메뉴는 보이고 지도 영역만 덮음) */}
-          {showRegisterPromoOverlay && !isSuperAdmin && (
-            <GongsilRegisterPromoOverlay
-              categoryName="공실"
-              onClose={() => setShowRegisterPromoOverlay(false)}
-              onGoAuction={() => switchMode("경매")}
-              currentUser={currentUser}
-              userLevel={userLevel}
-              isMobile={true}
-              inlineMap={true}
+        {/* 🌟 [대표님 지침] 실시간 공실 vs 법원 경공매 탭 바로 아래 영역 (필터바 + 지도) 래퍼 */}
+        <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+          {/* 필터 바 */}
+          {!isEmbedded && !isDirectView && (
+            <MobileFilterBar
+              vacancies={visibleVacancies}
+              filteredCount={visibleVacancies.length}
+              filters={filters}
+              onFilterChange={updateFilter}
+              onLocationMove={(lat, lng, zoom) => {
+                const kakao = (window as any).kakao;
+                if (kakaoMapRef.current && kakao) {
+                  skipGeocodingSyncRef.current = true;
+                  kakaoMapRef.current.setCenter(new kakao.maps.LatLng(lat, lng));
+                  kakaoMapRef.current.setLevel(Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
+                  setMapBounds(kakaoMapRef.current.getBounds());
+                  setZoomLevel(kakaoMapRef.current.getLevel());
+                  saveLastSearchState(filters, effectiveMode, locLabel, lat, lng, Math.min(zoom, MAX_MOBILE_MAP_LEVEL));
+                  setTimeout(() => {
+                    skipGeocodingSyncRef.current = false;
+                  }, 2500);
+                }
+              }}
+              onShowList={(mode) => {
+                setSelectedVacancy(null);
+                setSelectedCluster(null);
+                setListViewMode(mode || "filter");
+                window.history.pushState({ panel: "list" }, "");
+                setShowListView(true);
+              }}
+              locLabel={locLabel}
+              setLocLabel={setLocLabel}
+              activeMode={effectiveMode}
             />
           )}
 
-          {/* [대표님 지침] 모바일 줌인(Zoom In) 안내 오버레이 (정중앙 펄스 효과) */}
+          {/* 지도 및 오버레이 컨테이너 */}
+          <div style={{ position: "relative", flex: 1, display: isDirectView ? "none" : "flex", flexDirection: "column", backgroundColor: "#fff" }}>
+            {/* 카카오 지도 */}
+            <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
+
+            {/* [대표님 지침] 모바일 줌인(Zoom In) 안내 오버레이 (정중앙 펄스 효과) */}
           {mapLoaded && zoomLevel >= 9 && (
             <div style={{
               position: "absolute",
@@ -1704,6 +1693,20 @@ function MobileGongsilContent() {
           </div>
         )}
       </div>
+
+      {/* 🌟 [대표님 지침] 실시간 공실 무료등록 오버레이: 스위치 탭 바로 아래부터 필터바 + 지도를 통째로 덮음 */}
+      {showRegisterPromoOverlay && !isSuperAdmin && (
+        <GongsilRegisterPromoOverlay
+          categoryName="공실"
+          onClose={() => setShowRegisterPromoOverlay(false)}
+          onGoAuction={() => switchMode("경매")}
+          currentUser={currentUser}
+          userLevel={userLevel}
+          isMobile={true}
+          inlineMap={true}
+        />
+      )}
+    </div>
     </div>
 
       {/* 상세 패널 */}
