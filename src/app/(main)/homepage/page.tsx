@@ -7,7 +7,7 @@ import { getMapBlocks } from "@/app/actions/map_blocks";
 import MapSearchBar from "@/components/MapSearchBar";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import AuthModal from "@/components/AuthModal";
-import { getAuctionInfo } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getAuctionInfo, formatAreaWithPy } from "@/app/(map)/gongsil/gongsilHelpers";
 
 export const HOMEPAGE_CATEGORIES = [
   {
@@ -1620,7 +1620,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
                                 {addrText}
                               </div>
                               <div style={{ fontSize: 13, color: "#475569", fontWeight: 500 }}>
-                                {getAuctionInfo(v).category || v.property_type} {v.area_m2 ? `· 면적 ${v.area_m2}m²` : ""}
+                                {getAuctionInfo(v).category || v.property_type} {getAuctionInfo(v).area ? `· 면적 ${getAuctionInfo(v).area}` : (v.area_m2 ? `· 면적 ${formatAreaWithPy(v.area_m2)}` : "")}
                               </div>
                               <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
                                 📅 입찰일: {bidDate.substring(0, 10)} {meta.bid_count > 0 && `(유찰 ${meta.bid_count}회)`}

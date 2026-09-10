@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { formatAmount } from "./page";
-import { getAuctionInfo, getCleanAddrText } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getAuctionInfo, getCleanAddrText, formatAreaWithPy } from "@/app/(map)/gongsil/gongsilHelpers";
 
 type AuctionSortKey = "latest" | "appraisal" | "bid" | "bidDate";
 
@@ -225,7 +225,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                         alt=""
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         onError={(e) => {
-                          const wrapper = (e.currentTarget as HTMLImageElement).closest('[data-thumb-wrapper="true"]');
+                          const wrapper = (e.currentTarget as HTMLImageElement).closest('[data-thumb-wrapper="true"]') as HTMLElement | null;
                           if (wrapper) wrapper.style.display = "none";
                         }}
                       />
@@ -271,7 +271,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                 
                 {/* Specs 1: Type | Direction | Area */}
                 <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {[v.property_type || "건물", v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(" | ")}
+                  {[v.property_type || "건물", v.direction, v.exclusive_m2 && formatAreaWithPy(v.exclusive_m2)].filter(Boolean).join(" | ")}
                 </p>
                 
                 {/* Specs 2: Rooms, Options */}
@@ -297,7 +297,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                     alt=""
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     onError={(e) => {
-                      const wrapper = (e.currentTarget as HTMLImageElement).closest('[data-thumb-wrapper="true"]');
+                      const wrapper = (e.currentTarget as HTMLImageElement).closest('[data-thumb-wrapper="true"]') as HTMLElement | null;
                       if (wrapper) wrapper.style.display = "none";
                     }}
                   />

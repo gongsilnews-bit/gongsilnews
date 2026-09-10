@@ -86,8 +86,19 @@ export const getCleanAddrText = (prop: any) => {
     return [dong, subCategory, bldName].filter(Boolean).join(" ");
   }
 
-  // 그 외: 동 + sub_category (예: 논현동 사무실)
+// 그 외: 동 + sub_category (예: 논현동 사무실)
   return [dong, subCategory].filter(Boolean).join(" ") || "공실 매물";
+};
+
+// ㎡ 단위 면적을 평수로 자동 환산하여 '00㎡ (00평)' 형태로 반환하는 헬퍼 함수
+export const formatAreaWithPy = (val: number | string | undefined | null): string => {
+  if (!val) return "";
+  const cleaned = typeof val === "string" ? val.replace(/,/g, "").replace(/[㎡m²m2평\s]/gi, "").trim() : val;
+  const num = typeof cleaned === "string" ? parseFloat(cleaned) : cleaned;
+  if (isNaN(num) || num <= 0) return "";
+  const formattedM2 = num.toLocaleString("ko-KR", { maximumFractionDigits: 4 });
+  const py = Math.max(1, Math.round(num * 0.3025));
+  return `${formattedM2}㎡ (${py}평)`;
 };
 
 // 온비드 경공매 물건의 세부 카테고리 정보 및 면적을 안전하게 분석하는 헬퍼 함수 (8대 표준 카테고리 체계)
@@ -170,8 +181,8 @@ export const getAuctionInfo = (prop: any) => {
     }
   }
 
-  const areaVal = meta.bldSqms || meta.cltrAr || prop.exclusive_m2;
-  const areaText = areaVal ? `${parseFloat(areaVal).toLocaleString()}㎡` : "";
+  const areaVal = meta.bldSqms || meta.landSqms || meta.ldSqms || meta.cltrAr || prop.exclusive_m2;
+  const areaText = areaVal ? formatAreaWithPy(areaVal) : "";
 
   return {
     category,

@@ -6,6 +6,7 @@ import {
   getPriceText,
   getAuctionInfo,
   formatAmount,
+  formatAreaWithPy,
   getOptionSvg,
   isApartmentType,
 } from "./gongsilHelpers";
@@ -587,7 +588,7 @@ export default function GongsilDetailPanel({
           ) : (
             <>
               <div style={{ fontSize: 13, color: "#555", marginTop: 4, marginBottom: 12 }}>
-                {prop.property_type} · {prop.direction || "방향없음"} · {prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category))) ? `연면적: ${prop.supply_m2 || 0}㎡` : `공급/전용 면적: ${prop.supply_m2 || 0}㎡ / ${prop.exclusive_m2 || 0}㎡`}
+                {prop.property_type} · {prop.direction || "방향없음"} · {prop.trade_type === "매매" && ((prop.property_type === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(prop.sub_category)) || (prop.property_type === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(prop.sub_category))) ? `연면적: ${prop.supply_m2 ? formatAreaWithPy(prop.supply_m2) : "0㎡"}` : `공급/전용 면적: ${prop.supply_m2 ? formatAreaWithPy(prop.supply_m2) : "0㎡"} / ${prop.exclusive_m2 ? formatAreaWithPy(prop.exclusive_m2) : "0㎡"}`}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 13, color: "#555" }}>
                 <span>룸 {prop.room_count || 0}개</span>
@@ -1196,7 +1197,7 @@ const filteredFields = fields.filter(field => {
         {activeDetailTab === "auction_detail" && prop.trade_type === "경매" && (
           (() => {
             const meta = (prop as any).metadata || {};
-            const ldSqms = meta.ldSqms || meta.ld_sqms || "";
+            const ldSqms = meta.landSqms || meta.ldSqms || meta.ld_sqms || "";
             const bldSqms = meta.bldSqms || meta.bld_sqms || "";
             const usageLcls = meta.cltrUsgLclsCtgrNm || "";
             const usageMcls = meta.cltrUsgMclsCtgrNm || "";
@@ -1223,14 +1224,14 @@ const filteredFields = fields.filter(field => {
                       {ldSqms && (
                         <tr>
                           <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>토지(대)</td>
-                          <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>{parseFloat(ldSqms).toLocaleString()}㎡</td>
+                          <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>{formatAreaWithPy(ldSqms)}</td>
                           <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#888" }}>지목: {ldKnd}</td>
                         </tr>
                       )}
                       {bldSqms && (
                         <tr>
                           <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>건물(건물)</td>
-                          <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>{parseFloat(bldSqms).toLocaleString()}㎡</td>
+                          <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#333" }}>{formatAreaWithPy(bldSqms)}</td>
                           <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", textAlign: "center", color: "#888" }}>-</td>
                         </tr>
                       )}
@@ -1337,38 +1338,19 @@ const filteredFields = fields.filter(field => {
                       </>
                     )}
 
-                    <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>담당부점/담당자</div>
-                    <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>
-                      {(() => {
-                        if (meta.sbOfcNm) return meta.sbOfcNm;
-                        const org = meta.orgNm || "";
-                        if (org.includes("대신자산신탁")) return "신탁사업본부 / 김대신 과장";
-                        if (org.includes("한국자산관리공사") || org.includes("캠코")) return "국유재산관리부 / 이캠코 대리";
-                        if (org.includes("KB부동산신탁") || org.includes("케이비부동산신탁")) return "신탁2부 / 홍석민 차장";
-                        if (org.includes("코리아신탁")) return "신탁사업1본부 / 박코리아 차장";
-                        if (org.includes("하나자산신탁")) return "개발신탁본부 / 최하나 팀장";
-                        if (org.includes("우리자산신탁")) return "신탁사업부 / 정우리 대리";
-                        if (org.includes("무궁화신탁")) return "신탁기획부 / 이무궁화 과장";
-                        return "공매사업본부 / 홍길동 담당자";
-                      })()}
-                    </div>
+                    {meta.sbOfcNm && (
+                      <>
+                        <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>담당부점</div>
+                        <div style={{ padding: "12px", fontSize: 13, color: "#222", borderBottom: "1px solid #eee" }}>{meta.sbOfcNm}</div>
+                      </>
+                    )}
 
                     <div style={{ background: "#f4f6fa", padding: "12px", fontSize: 13, fontWeight: 700, color: "#555", borderBottom: "1px solid #eee" }}>담당자 연락처</div>
                     <div style={{ padding: "12px", fontSize: 13, color: "#1a73e8", fontWeight: 700, borderBottom: "1px solid #eee" }}>
                       {(() => {
                         const tel = meta.cmsCmmTelNo;
                         if (tel) return <a href={`tel:${tel}`} style={{ color: "#1a73e8", textDecoration: "none" }}>📞 {tel}</a>;
-
-                        const org = meta.orgNm || "";
-                        let fallbackTel = "1588-5321";
-                        if (org.includes("대신자산신탁")) fallbackTel = "02-769-2000";
-                        else if (org.includes("KB부동산신탁") || org.includes("케이비부동산신탁")) fallbackTel = "02-2190-7696";
-                        else if (org.includes("코리아신탁")) fallbackTel = "02-6906-8100";
-                        else if (org.includes("하나자산신탁")) fallbackTel = "02-3287-4600";
-                        else if (org.includes("우리자산신탁")) fallbackTel = "02-6900-9100";
-                        else if (org.includes("무궁화신탁")) fallbackTel = "02-3456-5600";
-
-                        return <a href={`tel:${fallbackTel}`} style={{ color: "#1a73e8", textDecoration: "none" }}>📞 {fallbackTel}</a>;
+                        return <a href="tel:1588-5321" style={{ color: "#1a73e8", textDecoration: "none" }}>📞 1588-5321 (온비드 고객센터)</a>;
                       })()}
                     </div>
 
@@ -1404,7 +1386,7 @@ const filteredFields = fields.filter(field => {
               { label: "관리번호", value: cltrMngNo },
               { label: "명도책임", value: evctRspb === "Y" ? "매수자 부담 (있음)" : evctRspb === "N" ? "없음" : evctRspb },
               { label: "집행기관", value: orgNm + (sbOfc ? ` (${sbOfc})` : "") },
-              { label: "담당자 연락처", value: meta.cmsCmmTelNo || meta.cms_cmm_tel_no || "-" },
+              { label: "담당자 연락처", value: meta.cmsCmmTelNo || meta.cms_cmm_tel_no || "1588-5321 (온비드 고객센터)" },
             ];
             return (
               <div style={{ borderBottom: "10px solid #f5f5f5" }}>
@@ -2136,7 +2118,7 @@ const filteredFields = fields.filter(field => {
                         }}
                       >
                         {vp.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {vp.direction || "방향없음"}{" "}
-                        <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {vp.exclusive_m2 ? `${vp.exclusive_m2}㎡` : "면적미상"}
+                        <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {vp.exclusive_m2 ? formatAreaWithPy(vp.exclusive_m2) : "면적미상"}
                       </div>
                       <div
                         style={{

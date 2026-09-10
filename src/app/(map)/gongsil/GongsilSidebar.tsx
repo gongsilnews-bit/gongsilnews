@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { getCleanAddrText, getPriceText, getAuctionInfo, formatAmount } from "./gongsilHelpers";
+import { getCleanAddrText, getPriceText, getAuctionInfo, formatAmount, formatAreaWithPy } from "./gongsilHelpers";
 
 type AuctionSortKey = "latest" | "appraisal" | "bid" | "bidDate";
 
@@ -540,7 +540,7 @@ export default function GongsilSidebar({
                     ) : (
                       <>
                         {prop.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.direction || "방향없음"}{" "}
-                        <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? `${prop.exclusive_m2}㎡` : "면적미상"}
+                        <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {prop.exclusive_m2 ? formatAreaWithPy(prop.exclusive_m2) : "면적미상"}
                       </>
                     )}
                   </div>
@@ -558,8 +558,8 @@ export default function GongsilSidebar({
                     {prop.trade_type === "경매"
                       ? [
                           (() => {
-                            const av = meta.bldSqms || meta.cltrAr || prop.exclusive_m2;
-                            return av ? `면적 ${parseFloat(av).toLocaleString()}㎡` : null;
+                            const av = meta.bldSqms || meta.landSqms || meta.ldSqms || meta.cltrAr || prop.exclusive_m2;
+                            return av ? `면적 ${formatAreaWithPy(av)}` : null;
                           })(),
                           meta.pblctBgnDtm || meta.bid_start_date
                             ? `입찰 ${(meta.pblctBgnDtm || meta.bid_start_date || "").substring(0, 10)}`
