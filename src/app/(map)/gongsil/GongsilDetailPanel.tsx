@@ -1343,6 +1343,13 @@ const filteredFields = fields.filter(field => {
                     </div>
                   </div>
                 </div>
+                {/* 유의사항 안내 (법적 주의사항) */}
+                <div style={{ margin: "0 20px 20px", padding: "16px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#b45309", marginBottom: 6 }}>⚠️ 입찰 전 법적 주의사항 (필독)</div>
+                  <div style={{ fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+                    본 정보는 한국자산관리공사(KAMCO)를 통해 실시간으로 제공받는 참고용 데이터입니다. 시세, 매물 정보 및 관련 권리관계 데이터는 실시간 변동 또는 지연이 있을 수 있으므로, <strong>입찰 전 반드시 공식 온비드 및 해당 집행기관(법원/신탁사 등)의 공고를 최종 확인</strong>하신 후 진행하시기 바랍니다. 공실뉴스는 단순 정보 제공처로서 데이터의 정확성을 보장하지 않으며, 제공된 정보에 의존하여 행해진 결정이나 거래 결과에 대해 어떠한 법적 책임도 지지 않습니다.
+                  </div>
+                </div>
                 {/* 위치정보 & 로드뷰 */}
                 <div style={{ padding: "0 20px 20px" }}>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "#222", marginBottom: 12 }}>위치정보</div>
@@ -1371,7 +1378,6 @@ const filteredFields = fields.filter(field => {
               { label: "관리번호", value: cltrMngNo },
               { label: "명도책임", value: evctRspb === "Y" ? "매수자 부담 (있음)" : evctRspb === "N" ? "없음" : evctRspb },
               { label: "집행기관", value: orgNm + (sbOfc ? ` (${sbOfc})` : "") },
-              { label: "담당자 연락처", value: meta.cmsCmmTelNo || meta.cms_cmm_tel_no || "1588-5321 (온비드 고객센터)" },
             ];
             return (
               <div style={{ borderBottom: "10px solid #f5f5f5" }}>
@@ -1387,13 +1393,6 @@ const filteredFields = fields.filter(field => {
                         <div style={{ padding: "14px 16px", fontSize: 13, color: row.highlight ? "#dc2626" : "#222", fontWeight: row.highlight ? 700 : 500, borderBottom: i < rows.length - 1 ? "1px solid #eee" : "none" }}>{row.value}</div>
                       </React.Fragment>
                     ))}
-                  </div>
-                </div>
-                {/* 유의사항 안내 */}
-                <div style={{ margin: "0 20px 24px", padding: "16px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#b45309", marginBottom: 6 }}>⚠️ 입찰 전 법적 주의사항 (필독)</div>
-                  <div style={{ fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
-                    본 정보는 한국자산관리공사(KAMCO)를 통해 실시간으로 제공받는 참고용 데이터입니다. 시세, 매물 정보 및 관련 권리관계 데이터는 실시간 변동 또는 지연이 있을 수 있으므로, <strong>입찰 전 반드시 공식 온비드 및 해당 집행기관(법원/신탁사 등)의 공고를 최종 확인</strong>하신 후 진행하시기 바랍니다. 공실뉴스는 단순 정보 제공처로서 데이터의 정확성을 보장하지 않으며, 제공된 정보에 의존하여 행해진 결정이나 거래 결과에 대해 어떠한 법적 책임도 지지 않습니다.
                   </div>
                 </div>
               </div>
