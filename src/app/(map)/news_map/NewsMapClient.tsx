@@ -604,11 +604,11 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
             <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: "#111", display: "flex", alignItems: "center", gap: 6 }}>
               {clusterMode ? (
                 <>
-                  <span style={{ color: "#ff8e15" }}>📍 선택 지역</span> 기사 {filteredArticles.length}개
+                  <span style={{ color: "#ff8e15" }}>선택 지역</span> 기사 {filteredArticles.length}개
                 </>
               ) : (
                 <>
-                  <span style={{ color: "#ff8e15" }}>🗺️</span> 지도영역 기사 {filteredArticles.length}개
+                  지도영역 기사 <span style={{ color: "#ff8e15" }}>{filteredArticles.length}</span>개
                 </>
               )}
             </h2>

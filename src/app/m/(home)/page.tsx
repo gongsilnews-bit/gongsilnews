@@ -1,5 +1,5 @@
 import React from "react";
-import { getVacanciesForMap } from "@/app/actions/vacancy";
+import { getVacanciesForMap, getAuctionCount } from "@/app/actions/vacancy";
 import { getLectures } from "@/app/actions/lecture";
 import { getArticles } from "@/app/actions/article";
 import { getBoardPosts } from "@/app/actions/board";
@@ -17,6 +17,7 @@ export default async function MobileHomePage() {
     lifeRes,
     lecturesRes,
     droneRes,
+    auctionCount,
   ] = await Promise.all([
     getArticles({ status: "APPROVED", is_headline: true, limit: 8 }),
     getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 30 }),
@@ -25,6 +26,7 @@ export default async function MobileHomePage() {
     getArticles({ status: "APPROVED", section1: "라이프·오피니언", limit: 6 }),
     getLectures({ status: "ACTIVE" }),
     getBoardPosts("drone"),
+    getAuctionCount(),
   ]);
 
   const headlineArticles = headlineRes.success ? (headlineRes.data || []) : [];
@@ -46,6 +48,7 @@ export default async function MobileHomePage() {
         lifeArticles={lifeArticles}
         lectures={lectures.slice(0, 4)}
         dronePosts={dronePosts}
+        auctionCount={auctionCount}
       />
       <div style={{ width: '100%', maxWidth: '448px', margin: '0 auto' }}>
         <MobileFooter />

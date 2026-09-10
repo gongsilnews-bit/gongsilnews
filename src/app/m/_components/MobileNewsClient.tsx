@@ -1776,13 +1776,58 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           </div>
 
           {/* ── 리스트 패널 (우→좌 슬라이드) ── */}
-          <div className={`news-detail-panel ${showListPanel ? "open" : ""}`} style={{ zIndex: 1500 }}>
-            {/* 헤더 */}
-            <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #f0f0f0" }}>
-              <button onClick={() => window.history.back()} style={{ background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          <div
+            className={`news-detail-panel ${showListPanel ? "open" : ""}`}
+            style={{
+              position: "fixed",
+              top: "56px",
+              bottom: "60px",
+              height: "auto",
+              zIndex: 1500,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden"
+            }}
+          >
+            {/* 상단 뒤로가기 & 지도영역 기사 헤더 (PC와 동일 스타일) */}
+            <div style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 50,
+              background: "#fff",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "14px 16px",
+              borderBottom: "1px solid #f0f0f0",
+              flexShrink: 0
+            }}>
+              <button
+                onClick={() => {
+                  setShowListPanel(false);
+                  const params = new URLSearchParams(window.location.search);
+                  if (params.get('panel') === 'list-panel') {
+                    window.history.back();
+                  }
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "4px",
+                  cursor: "pointer",
+                  marginLeft: "-4px"
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
               </button>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#111" }}>해당 지역 기사 {listPanelArticles.length}개</h2>
+              <h2 style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: "#111", display: "flex", alignItems: "center", gap: "6px" }}>
+                지도영역 기사 <span style={{ color: "#ff8e15" }}>{listPanelArticles.length}</span>개
+              </h2>
             </div>
             
             <div style={{ flex: 1, overflowY: "auto", background: "#fff", paddingBottom: "40px" }}>
@@ -2354,11 +2399,24 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
         </div>
       )}
       {/* 기사 상세 뷰 (모바일 슬라이딩 패널) - 우리동네뉴스 전용 */}
-      <div ref={detailPanelRef} className={`news-detail-panel ${showDetail ? "open" : ""}`} style={{ zIndex: 2000 }}>
+      <div
+        ref={detailPanelRef}
+        className={`news-detail-panel ${showDetail ? "open" : ""}`}
+        style={{
+          position: "fixed",
+          top: "56px",
+          bottom: "60px",
+          height: "auto",
+          zIndex: 2000,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden"
+        }}
+      >
         {/* 헤더 */}
-        <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", display: "flex", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #f0f0f0" }}>
-          <button onClick={() => window.history.back()} style={{ background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        <div style={{ position: "sticky", top: 0, zIndex: 50, background: "#fff", display: "flex", alignItems: "center", padding: "14px 16px", borderBottom: "1px solid #f0f0f0", flexShrink: 0 }}>
+          <button onClick={() => window.history.back()} style={{ background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px", cursor: "pointer", marginLeft: "-4px" }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
           </button>
         </div>
 

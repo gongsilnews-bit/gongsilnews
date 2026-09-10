@@ -1034,4 +1034,24 @@ export async function getVacancyFlyers() {
   }
 }
 
+// ── 활성 경공매 매물 총 개수 조회 ──
+export async function getAuctionCount(): Promise<number> {
+  try {
+    const supabase = getAdminClient();
+    const { count, error } = await supabase
+      .from('vacancies')
+      .select('id', { count: 'exact', head: true })
+      .eq('trade_type', '경매')
+      .eq('status', 'ACTIVE');
+
+    if (error || count === null || count === undefined) {
+      return 10820; // fallback default
+    }
+    return count;
+  } catch {
+    return 10820;
+  }
+}
+
+
 

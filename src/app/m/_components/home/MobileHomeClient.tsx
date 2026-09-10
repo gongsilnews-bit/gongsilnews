@@ -56,6 +56,7 @@ interface Props {
   lifeArticles: any[];
   lectures: any[];
   dronePosts: any[];
+  auctionCount?: number;
 }
 
 const CATEGORIES = [
@@ -66,7 +67,7 @@ const CATEGORIES = [
 ];
 
 export default function MobileHomeClient(props: Props) {
-  const { headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, lectures, dronePosts } = props;
+  const { headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, lectures, dronePosts, auctionCount } = props;
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [isMapLoading, setIsMapLoading] = useState(true);
@@ -117,8 +118,8 @@ export default function MobileHomeClient(props: Props) {
       if (!mapBounds) return; // bounds가 준비될 때까지 대기
       setIsMapLoading(true);
       const { getVacanciesForMap } = await import("@/app/actions/vacancy");
-      // 🚀 뷰포트 기준 로딩: 현재 지도 bounds 영역만 데이터 조회
-      const res = await getVacanciesForMap({ bbox: mapBounds, limit: 1200 });
+      // 🚀 뷰포트 기준 로딩: 현재 지도 bounds 영역의 경공매 매물 조회
+      const res = await getVacanciesForMap({ bbox: mapBounds, limit: 1200, is_auction: true });
       if (res.success && res.data) {
         setVacancies(res.data);
       }
@@ -304,11 +305,13 @@ export default function MobileHomeClient(props: Props) {
         </div>
       )}
 
-      {/* ② 실시간 공실 공실광고 - 카카오 지도 미리보기 */}
+      {/* ② 실시간 경공매 - 카카오 지도 미리보기 */}
       <div style={{ background: "#fff", marginBottom: 12, borderBottom: "1px solid #f0f0f0", position: "relative" }}>
         <div className="sec-hd">
-          <h2>실시간 공실 공실광고</h2>
-          <Link href="/m/gongsil?mode=auction" style={{ fontSize: 15, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>더보기 ›</Link>
+          <h2>
+            실시간 경공매 <span style={{ color: "#ea580c" }}>{(auctionCount || 10820).toLocaleString()}</span>건
+          </h2>
+          <Link href="/m/auction" style={{ fontSize: 15, color: "#999999", textDecoration: "none", letterSpacing: "-0.2px" }}>더보기 ›</Link>
         </div>
         <div style={{ padding: "0 16px 16px", position: "relative" }}>
           <MiniVacancyMap vacancies={vacancies} isLoading={isMapLoading} onBoundsChange={setMapBounds} />

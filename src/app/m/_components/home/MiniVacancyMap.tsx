@@ -42,19 +42,19 @@ export default function MiniVacancyMap({ vacancies, isLoading, onBoundsChange }:
   const centerLat = 37.498095;
   const centerLng = 127.027610;
 
-  // 지도의 현재 중심 좌표와 배율을 유지한 채 전체 지도 페이지로 정밀 이동
+  // 지도의 현재 중심 좌표와 배율을 유지한 채 전체 경공매 지도 페이지로 정밀 이동
   const handleNavigate = (targetLat?: number, targetLng?: number) => {
     if (targetLat !== undefined && targetLng !== undefined) {
       const level = mapInstance ? mapInstance.getLevel() : 7;
-      router.push(`/m/gongsil?lat=${targetLat}&lng=${targetLng}&level=${level}&mode=auction`);
+      router.push(`/m/auction?lat=${targetLat}&lng=${targetLng}&level=${level}`);
     } else if (mapInstance) {
       const center = mapInstance.getCenter();
       const lat = center.getLat();
       const lng = center.getLng();
       const level = mapInstance.getLevel();
-      router.push(`/m/gongsil?lat=${lat}&lng=${lng}&level=${level}&mode=auction`);
+      router.push(`/m/auction?lat=${lat}&lng=${lng}&level=${level}`);
     } else {
-      router.push(`/m/gongsil?lat=${centerLat}&lng=${centerLng}&level=7&mode=auction`);
+      router.push(`/m/auction?lat=${centerLat}&lng=${centerLng}&level=7`);
     }
   };
 
@@ -280,7 +280,7 @@ export default function MiniVacancyMap({ vacancies, isLoading, onBoundsChange }:
           cursor: "pointer",
         }}
       >
-        🏢 공실 {visibleCount}건 지도보기
+        🔨 경공매 {visibleCount}건 지도보기
       </div>
 
       {/* 더보기 버튼 (클릭 시 현재 위치 기반으로 이동) */}
@@ -304,7 +304,7 @@ export default function MiniVacancyMap({ vacancies, isLoading, onBoundsChange }:
           cursor: "pointer",
         }}
       >
-        공실열람 바로가기
+        경공매 바로가기
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <polyline points="9 18 15 12 9 6" />
         </svg>
