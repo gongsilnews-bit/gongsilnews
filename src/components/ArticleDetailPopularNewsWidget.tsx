@@ -11,6 +11,8 @@ interface ArticleDetailPopularNewsWidgetProps {
   basePath?: string;
 }
 
+type PeriodType = "1week" | "1month" | "3months" | "6months" | "1year";
+
 function ArticleDetailPopularNewsWidgetImpl({
   currentArticleId,
   section1,
@@ -18,7 +20,26 @@ function ArticleDetailPopularNewsWidgetImpl({
   allArticles = [],
   basePath = "",
 }: ArticleDetailPopularNewsWidgetProps) {
-  // 2차 카테고리별 + 주간 클릭수(views_week) 0.001초 인메모리 필터링
+  const [period, setPeriod] = React.useState<PeriodType>("1week");
+
+  // 브라우저 로컬스토리지에 저장된 사용자 선호 기간 불러오기
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem("popular_news_period") as PeriodType;
+      if (saved && ["1week", "1month", "3months", "6months", "1year"].includes(saved)) {
+        setPeriod(saved);
+      }
+    } catch (e) {}
+  }, []);
+
+  const handlePeriodChange = (val: PeriodType) => {
+    setPeriod(val);
+    try {
+      localStorage.setItem("popular_news_period", val);
+    } catch (e) {}
+  };
+
+  // 2차 카테고리별 + 기간별(주간/월간 실제클릭수 또는 기간별 조회수) 0.001초 인메모리 필터링
   const popularArticles = useMemo(() => {
     // 현재 열람 중인 기사 제외
     const curIdStr = String(currentArticleId || "");
@@ -35,15 +56,42 @@ function ArticleDetailPopularNewsWidgetImpl({
       }
     }
 
-    // 2. 주간 클릭수(views_week) 우선 정렬 (동점 시 누적 조회수 및 최신순)
-    const sorted = [...pool].sort((a, b) => {
-      const aVal = a.views_week ?? a.view_count ?? 0;
-      const bVal = b.views_week ?? b.view_count ?? 0;
-      if (bVal !== aVal) return bVal - aVal;
-      return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
-    });
+    // 2. 기간별 정렬 및 필터링
+    if (period === "1week") {
+      // 주간 실제 클릭수(views_week) 우선 정렬
+      pool = [...pool].sort((a, b) => {
+        const aVal = a.views_week ?? a.view_count ?? 0;
+        const bVal = b.views_week ?? b.view_count ?? 0;
+        if (bVal !== aVal) return bVal - aVal;
+        return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
+      });
+    } else if (period === "1month") {
+      // 월간 실제 클릭수(views_month) 우선 정렬
+      pool = [...pool].sort((a, b) => {
+        const aVal = a.views_month ?? a.view_count ?? 0;
+        const bVal = b.views_month ?? b.view_count ?? 0;
+        if (bVal !== aVal) return bVal - aVal;
+        return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
+      });
+    } else {
+      // 지난 3개월, 6개월, 1년: 발행일 기준 필터 후 누적 조회수 정렬
+      const now = new Date();
+      const cutoff = new Date();
+      if (period === "3months") cutoff.setMonth(now.getMonth() - 3);
+      else if (period === "6months") cutoff.setMonth(now.getMonth() - 6);
+      else if (period === "1year") cutoff.setFullYear(now.getFullYear() - 1);
 
-    const top5 = sorted.slice(0, 5);
+      const filtered = pool.filter((a) => a.published_at && new Date(a.published_at) >= cutoff);
+      const targetPool = filtered.length > 0 ? filtered : pool;
+
+      pool = [...targetPool].sort((a, b) => {
+        const diff = (b.view_count || 0) - (a.view_count || 0);
+        if (diff !== 0) return diff;
+        return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
+      });
+    }
+
+    const top5 = pool.slice(0, 5);
 
     // 3. 안전망(Fallback): 5개 미만인 경우 해당 카테고리 내 다른 기사로 보충
     if (top5.length < 5) {
@@ -72,7 +120,7 @@ function ArticleDetailPopularNewsWidgetImpl({
     }
 
     return top5;
-  }, [allArticles, currentArticleId, section2]);
+  }, [allArticles, currentArticleId, section2, period]);
 
   // 동적 타이틀: 2차 카테고리 우선 표기
   const displayTitle = section2
@@ -81,14 +129,16 @@ function ArticleDetailPopularNewsWidgetImpl({
 
   return (
     <div className="sb-widget" style={{ position: "relative" }}>
-      {/* 헤더: 타이틀 (전체 1줄 깔끔한 구분선) */}
+      {/* 헤더: 타이틀 + 기간 셀렉트박스 (전체 1줄 깔끔한 구분선) */}
       <div
         style={{
           display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
           marginBottom: "15px",
           paddingBottom: "10px",
           borderBottom: "1px solid #111",
+          gap: "8px",
         }}
       >
         <div
@@ -102,11 +152,36 @@ function ArticleDetailPopularNewsWidgetImpl({
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            flex: 1,
           }}
           title={displayTitle}
         >
           {displayTitle}
         </div>
+
+        {/* 기간 선택 드롭다운 (간결한 프리셋, 상태 로컬 기억) */}
+        <select
+          value={period}
+          onChange={(e) => handlePeriodChange(e.target.value as PeriodType)}
+          style={{
+            padding: "3px 6px",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: "#374151",
+            background: "#fff",
+            border: "1px solid #d1d5db",
+            borderRadius: "4px",
+            outline: "none",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <option value="1week">지난 1주일</option>
+          <option value="1month">지난 1달</option>
+          <option value="3months">지난 3개월</option>
+          <option value="6months">지난 6개월</option>
+          <option value="1year">지난 1년</option>
+        </select>
       </div>
 
       {/* 랭킹 1~5위 리스트 */}

@@ -11,13 +11,34 @@ interface PopularNewsSidebarWidgetProps {
   initialPopular?: any[];
 }
 
+type PeriodType = "1week" | "1month" | "3months" | "6months" | "1year";
+
 function PopularNewsSidebarWidgetImpl({
   title,
   selectedSubCategory,
   allArticles = [],
   category = "gongsil",
 }: PopularNewsSidebarWidgetProps) {
-  // 1. 해당 2차 카테고리 필터링 + 주간 조회수(views_week) 기준 상위 5개 추출 (초고속 인메모리 0.001초)
+  const [period, setPeriod] = React.useState<PeriodType>("1week");
+
+  // 브라우저 로컬스토리지에 저장된 사용자 선호 기간 불러오기
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem("popular_news_period") as PeriodType;
+      if (saved && ["1week", "1month", "3months", "6months", "1year"].includes(saved)) {
+        setPeriod(saved);
+      }
+    } catch (e) {}
+  }, []);
+
+  const handlePeriodChange = (val: PeriodType) => {
+    setPeriod(val);
+    try {
+      localStorage.setItem("popular_news_period", val);
+    } catch (e) {}
+  };
+
+  // 1. 해당 2차 카테고리 필터링 + 기간별(주간/월간 실제클릭수 또는 기간별 조회수) 상위 5개 추출
   const popularArticles = useMemo(() => {
     let pool = allArticles;
 
@@ -29,15 +50,42 @@ function PopularNewsSidebarWidgetImpl({
       }
     }
 
-    // 주간 클릭수(views_week) 우선 정렬, 없을 경우 누적 조회수(view_count) 내림차순 정렬
-    const sorted = [...pool].sort((a, b) => {
-      const aVal = a.views_week ?? a.view_count ?? 0;
-      const bVal = b.views_week ?? b.view_count ?? 0;
-      if (bVal !== aVal) return bVal - aVal;
-      return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
-    });
+    // 2. 기간별 정렬 및 필터링
+    if (period === "1week") {
+      // 주간 실제 클릭수(views_week) 우선 정렬
+      pool = [...pool].sort((a, b) => {
+        const aVal = a.views_week ?? a.view_count ?? 0;
+        const bVal = b.views_week ?? b.view_count ?? 0;
+        if (bVal !== aVal) return bVal - aVal;
+        return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
+      });
+    } else if (period === "1month") {
+      // 월간 실제 클릭수(views_month) 우선 정렬
+      pool = [...pool].sort((a, b) => {
+        const aVal = a.views_month ?? a.view_count ?? 0;
+        const bVal = b.views_month ?? b.view_count ?? 0;
+        if (bVal !== aVal) return bVal - aVal;
+        return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
+      });
+    } else {
+      // 지난 3개월, 6개월, 1년: 발행일 기준 필터 후 누적 조회수 정렬
+      const now = new Date();
+      const cutoff = new Date();
+      if (period === "3months") cutoff.setMonth(now.getMonth() - 3);
+      else if (period === "6months") cutoff.setMonth(now.getMonth() - 6);
+      else if (period === "1year") cutoff.setFullYear(now.getFullYear() - 1);
 
-    const top5 = sorted.slice(0, 5);
+      const filtered = pool.filter((a) => a.published_at && new Date(a.published_at) >= cutoff);
+      const targetPool = filtered.length > 0 ? filtered : pool;
+
+      pool = [...targetPool].sort((a, b) => {
+        const diff = (b.view_count || 0) - (a.view_count || 0);
+        if (diff !== 0) return diff;
+        return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
+      });
+    }
+
+    const top5 = pool.slice(0, 5);
 
     // 5개 미만일 경우 안전망 보충
     if (top5.length < 5) {
@@ -49,7 +97,7 @@ function PopularNewsSidebarWidgetImpl({
     }
 
     return top5;
-  }, [allArticles, selectedSubCategory]);
+  }, [allArticles, selectedSubCategory, period]);
 
   // 동적 타이틀: 세부 카테고리명 1:1 반영
   const displayTitle = selectedSubCategory && selectedSubCategory !== "전체"
@@ -58,14 +106,16 @@ function PopularNewsSidebarWidgetImpl({
 
   return (
     <div className="sb-widget" style={{ position: "relative" }}>
-      {/* 헤더: 타이틀 (전체 1줄 깔끔한 구분선) */}
+      {/* 헤더: 타이틀 + 기간 셀렉트박스 (전체 1줄 깔끔한 구분선) */}
       <div 
         style={{ 
           display: "flex", 
+          justifyContent: "space-between",
           alignItems: "center", 
           marginBottom: "15px", 
           paddingBottom: "10px", 
-          borderBottom: "1px solid #111" 
+          borderBottom: "1px solid #111",
+          gap: "8px",
         }}
       >
         <div 
@@ -79,11 +129,36 @@ function PopularNewsSidebarWidgetImpl({
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            flex: 1,
           }}
           title={displayTitle}
         >
           {displayTitle}
         </div>
+
+        {/* 기간 선택 드롭다운 (간결한 프리셋, 상태 로컬 기억) */}
+        <select
+          value={period}
+          onChange={(e) => handlePeriodChange(e.target.value as PeriodType)}
+          style={{
+            padding: "3px 6px",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: "#374151",
+            backgroundColor: "#f9fafb",
+            border: "1px solid #d1d5db",
+            borderRadius: "4px",
+            cursor: "pointer",
+            outline: "none",
+            flexShrink: 0,
+          }}
+        >
+          <option value="1week">지난 1주일</option>
+          <option value="1month">지난 1달</option>
+          <option value="3months">지난 3개월</option>
+          <option value="6months">지난 6개월</option>
+          <option value="1year">지난 1년</option>
+        </select>
       </div>
 
       {/* 랭킹 1~5위 리스트 */}
