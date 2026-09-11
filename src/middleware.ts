@@ -31,12 +31,6 @@ export function middleware(request: NextRequest) {
       ? hostname.replace(`.gongsilnews.com`, '')
       : hostname.replace(`.localhost:3000`, '');
 
-  // /m/gongsil/detail/... 접근 시 정상적인 /gongsil/detail/... 로 리다이렉트
-  if (url.pathname.startsWith('/m/gongsil/detail/')) {
-    const detailId = url.pathname.replace('/m/gongsil/detail/', '');
-    url.pathname = `/gongsil/detail/${detailId}`;
-    return NextResponse.redirect(url);
-  }
 
   // 메인 도메인 접속 (서브도메인이 없는 경우)
   if (

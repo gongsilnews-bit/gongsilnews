@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { getArticleDetail, getArticles } from "@/app/actions/article";
-import { getVacancies } from "@/app/actions/vacancy";
 import { createClient } from "@supabase/supabase-js";
 import NewsReadContent from "@/components/NewsReadContent";
 import Link from "next/link";
@@ -56,7 +55,23 @@ export default async function MobileNewsReadPage({ params, searchParams }: { par
 
   let authorRole = null;
   let authorEmail = null;
-  let authorVacancies: any[] = [];
+  let attachedVacancy = null;
+
+  // ⚡ 기사에 연결된 공실 매물(스냅샷) 추출 - 추가 DB 쿼리 0건!
+  if (article?.article_media && Array.isArray(article.article_media)) {
+    const attachedMedia = article.article_media.find(
+      (m: any) =>
+        (m.media_type === "FILE" && m.filename === "ATTACHED_VACANCY") ||
+        m.media_type === "ATTACHED_VACANCY"
+    );
+    if (attachedMedia?.caption) {
+      try {
+        attachedVacancy = JSON.parse(attachedMedia.caption);
+      } catch (e) {
+        attachedVacancy = null;
+      }
+    }
+  }
 
   if (article && article.author_id) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -67,12 +82,6 @@ export default async function MobileNewsReadPage({ params, searchParams }: { par
     if (member) {
       authorRole = member.role;
       authorEmail = member.email;
-      if (member.role === "REALTOR") {
-        const res = await getVacancies({ ownerId: article.author_id });
-        if (res.success && res.data) {
-          authorVacancies = res.data;
-        }
-      }
     }
   }
 
@@ -90,7 +99,13 @@ export default async function MobileNewsReadPage({ params, searchParams }: { par
       {/* 공통 모바일 뉴스 헤더 (상단 고정) */}
       {!isEmbedded && <MobileNewsTabBar />}
 
-      <NewsReadContent article={article} popularArticles={popular} initialAuthorRole={authorRole} initialAuthorEmail={authorEmail} initialAuthorVacancies={authorVacancies} />
+      <NewsReadContent
+        article={article}
+        popularArticles={popular}
+        initialAuthorRole={authorRole}
+        initialAuthorEmail={authorEmail}
+        initialAttachedVacancy={attachedVacancy}
+      />
     </div>
   );
 }

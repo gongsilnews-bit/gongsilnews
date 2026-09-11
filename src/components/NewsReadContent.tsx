@@ -10,11 +10,11 @@ import { createClient } from "@/utils/supabase/client";
 import { incrementArticleView } from "@/app/actions/article";
 import { getComments, addComment, deleteComment, toggleCommentLike, editComment } from "@/app/actions/comment";
 import { getArticleReactions, toggleArticleReaction } from "@/app/actions/reaction";
-import { getVacancies } from "@/app/actions/vacancy";
 import { toggleArticleBookmark, getArticleBookmarks } from "@/app/actions/bookmark";
 import AuthModal from "./AuthModal";
 import BannerSlot from "./BannerSlot";
 import ArticleAuthorAdSlot from "./ArticleAuthorAdSlot";
+import ArticleAttachedVacancyCard from "./ArticleAttachedVacancyCard";
 import BookmarkCategoryModal from "./BookmarkCategoryModal";
 import { formatSection1 } from "@/utils/formatCategory";
 import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
@@ -25,6 +25,7 @@ interface NewsReadContentProps {
   initialAuthorRole?: string | null;
   initialAuthorEmail?: string | null;
   initialAuthorVacancies?: any[];
+  initialAttachedVacancy?: any;
 }
 
 const FONT_SIZES = [
@@ -35,7 +36,14 @@ const FONT_SIZES = [
   { label: "최대크게", size: 24 },
 ];
 
-export default function NewsReadContent({ article, popularArticles, initialAuthorRole = null, initialAuthorEmail = null, initialAuthorVacancies = [] }: NewsReadContentProps) {
+export default function NewsReadContent({
+  article,
+  popularArticles,
+  initialAuthorRole = null,
+  initialAuthorEmail = null,
+  initialAuthorVacancies = [],
+  initialAttachedVacancy = null,
+}: NewsReadContentProps) {
   const pathname = usePathname() || "";
   const router = useRouter();
   const isMobile = pathname.startsWith("/m");
@@ -130,6 +138,23 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
   const [authorRole, setAuthorRole] = useState<string | null>(initialAuthorRole);
   const [authorEmail, setAuthorEmail] = useState<string | null>(initialAuthorEmail);
   const [authorVacancies, setAuthorVacancies] = useState<any[]>(initialAuthorVacancies);
+  const [attachedVacancy, setAttachedVacancy] = useState<any>(initialAttachedVacancy);
+
+  // 기사 객체에서 첨부 공실 스냅샷 자동 복원
+  useEffect(() => {
+    if (!attachedVacancy && article?.article_media && Array.isArray(article.article_media)) {
+      const media = article.article_media.find(
+        (m: any) =>
+          (m.media_type === "FILE" && m.filename === "ATTACHED_VACANCY") ||
+          m.media_type === "ATTACHED_VACANCY"
+      );
+      if (media?.caption) {
+        try {
+          setAttachedVacancy(JSON.parse(media.caption));
+        } catch (e) {}
+      }
+    }
+  }, [article, attachedVacancy]);
 
   // 현재 열람자 권한 State
   const [viewerRole, setViewerRole] = useState<string | null>(null);
@@ -1066,143 +1091,10 @@ export default function NewsReadContent({ article, popularArticles, initialAutho
 
           {/* 사이드바 */}
           <div className="news-sidebar">
-            {/* 1. 추천 공실 - 부동산회원이면 등록한 공실 전체 노출 */}
-            {(() => {
-              const visibleVacancies = authorVacancies.filter(prop => prop.trade_type !== '경매' && prop.trade_type !== '공매');
-              const isAuthorRealtor = authorRole === "REALTOR" || authorRole === "부동산회원";
-              if (!isAuthorRealtor || visibleVacancies.length === 0) return null;
-              
-              return (
-                <div className="sb-widget">
-                  <div className="sb-title">추천 공실</div>
-                  {visibleVacancies.map((prop, i) => {
-                  const viewerLevel = getPermissionLevel({
-                    role: viewerRole || undefined,
-                    agencies: { status: viewerAgencyStatus || undefined },
-                  });
-                  const isSuper = Boolean(
-                    (viewerLevel >= 5 || isAdminRole(viewerRole)) &&
-                    viewerRole !== "REALTOR" &&
-                    viewerRole !== "부동산회원" &&
-                    viewerRole !== "부동산관리자"
-                  ) || viewerEmail === "gongsilmarketing@gmail.com";
-                  const hasFullVacancyAccess = isSuper || viewerLevel >= 2;
-                  const cardMasked = prop.exposure_type === '부동산노출' && !hasFullVacancyAccess;
-                  const cardAddr = prop.building_name || prop.detail_addr || "이름없는 공실";
-                  const title = cardMasked ? cardAddr.replace(/[^\s]/g, "X") : cardAddr;
-                  
-                  // 가격 포매팅 로직 개선 (원 단위 -> 억/천/백 혼합)
-                  const formatMoney = (val: number) => {
-                    if (!val) return "0";
-                    const m = Math.round(val / 10000);
-                    if (m === 0) return "0";
-                    const e = Math.floor(m / 10000);
-                    const r = m % 10000;
-                    let result = "";
-                    if (e > 0) result += `${e}억`;
-                    if (r > 0) {
-                      const c = Math.floor(r / 1000);
-                      const rem = r % 1000;
-                      let rest = "";
-                      if (c > 0) rest += `${c}천`;
-                      if (rem > 0) rest += `${rem}`;
-                      result += (result ? " " : "") + rest + "만";
-                    }
-                    return result || "0";
-                  };
-
-                  let price = prop.trade_type;
-                  if (prop.trade_type === "매매" || prop.trade_type === "전세") price += ` ${formatMoney(prop.deposit)}`;
-                  else if (prop.trade_type === "월세") price += ` ${formatMoney(prop.deposit || 0)} / ${formatMoney(prop.monthly_rent || 0)}`;
-                  
-                  const detailStr = `룸 ${prop.room_count||0}개, 욕실 ${prop.bath_count||0}개`;
-                  const thumb = prop.vacancy_photos && prop.vacancy_photos.length > 0 ? prop.vacancy_photos[0].url : "";
-                  const createdDate = prop.created_at ? new Date(prop.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "") : "";
-
-                  return (
-                    <Link 
-                      href={isMobile ? `/m/gongsil?id=${prop.id}` : `/gongsil/detail/${prop.id}`} 
-                      target={isMobile ? undefined : "_blank"} 
-                      key={prop.id || i} 
-                      onClick={(e) => {
-                        if (isMobile) {
-                          if (cardMasked) {
-                            e.preventDefault();
-                            const loginUrl = "/m/login";
-                            const vacancyPath = `/m/gongsil?id=${encodeURIComponent(String(prop.id))}`;
-                            window.location.href = loginUrl + "?returnTo=" + encodeURIComponent(vacancyPath);
-                            return;
-                          }
-                          e.preventDefault();
-                          router.push(`/m/gongsil?id=${encodeURIComponent(String(prop.id))}`);
-                          return;
-                        }
-
-                        // PC 환경: 기사 페이지를 떠나지 않고 브라우저 독립 팝업창으로 열기
-                        e.preventDefault();
-                        const popupW = 620;
-                        const popupH = 880;
-                        const left = Math.max(20, window.screen.width - popupW - 40);
-                        const top = 60;
-                        const popupFeatures = `width=${popupW},height=${popupH},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
-                        window.open(
-                          `/gongsil/detail/${prop.id}`,
-                          `gongsil_popup_${prop.id}`,
-                          popupFeatures
-                        );
-                      }}
-                      style={{ textDecoration: "none", color: "inherit", display: "block" }}
-                    >
-                      <div className="prop-item" style={{ padding: "16px 0", borderBottom: "1px solid #f0f0f0", display: "flex", gap: 12, cursor: "pointer", background: "#fff", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
-                        <div className="prop-info" style={{ minWidth: 0, overflow: "hidden", flex: 1, display: "flex", flexDirection: "column" }}>
-                          <div className="prop-title" style={{ fontSize: 16, fontWeight: 700, color: cardMasked ? "#bbb" : "#111", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: cardMasked ? 1 : 0 }}>
-                            {title}
-                            {cardMasked && (
-                              <span style={{ fontSize: "11px", color: "#3b82f6", fontWeight: 700, background: "#eef6ff", padding: "3px 8px", borderRadius: "4px", marginLeft: "8px", verticalAlign: "middle" }}>
-                                {prop.trade_type === '경매' || prop.trade_type === '공매' ? '🔒 회원가입 시 무료열람' : '🔒 중개업소 회원 전용'}
-                              </span>
-                            )}
-                          </div>
-                          <div className="prop-price" style={{ color: "#1a73e8", fontWeight: 800, fontSize: 20, marginBottom: 6 }}>{price}</div>
-                          <div className="prop-meta" style={{ fontSize: 14, color: "#666", marginBottom: 3 }}>
-                            {prop.property_type || "주택"} <span style={{color: "#ddd"}}>|</span> {prop.direction || "방향없음"} <span style={{color: "#ddd"}}>|</span> {prop.exclusive_m2 || 0}㎡
-                          </div>
-                          <div className="prop-meta" style={{ fontSize: 14, color: "#666", marginBottom: 10, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {detailStr}{prop.options && prop.options.length > 0 ? `, ${prop.options.join(", ")}` : ""}
-                          </div>
-                          {prop.themes && prop.themes.length > 0 && (
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
-                              {prop.themes.map((theme: string, idx: number) => (
-                                <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
-                                  {theme.startsWith('#') ? theme : `# ${theme}`}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            {hasFullVacancyAccess && (prop.realtor_commission || prop.commission_type) && (
-                              <span style={{ display: "inline-block", fontSize: 11, color: "#fa5252", border: "1px solid #fa5252", padding: "1px 5px", borderRadius: 4, fontWeight: "bold" }}>
-                                {prop.realtor_commission || prop.commission_type}
-                              </span>
-                            )}
-                            {prop.vacancy_no && (
-                              <span style={{ fontSize: 15, color: "#ef4444", fontWeight: 700 }}>{prop.vacancy_no}</span>
-                            )}
-                            <span style={{ fontSize: 14, color: "#999" }}>{createdDate}</span>
-                          </div>
-                        </div>
-                        {thumb && (
-                          <div className="prop-img-wrapper" style={{ flexShrink: 0 }}>
-                            <div style={{ width: 80, height: 80, backgroundColor: "#eee", backgroundImage: `url(${thumb})`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: 6, border: "1px solid #eee" }}></div>
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-              );
-            })()}
+            {/* 1. 기사 연결 추천 공실 (유료 부동산 전용 1개 실매물 카드) */}
+            {attachedVacancy && (
+              <ArticleAttachedVacancyCard vacancy={attachedVacancy} isMobile={isMobile} />
+            )}
 
             {/* 2. 많이 본 뉴스 */}
             <div className="sb-widget">

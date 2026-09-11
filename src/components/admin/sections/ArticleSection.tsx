@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import { getArticles, deleteArticle, adminUpdateArticleStatus, adminUpdateArticleFlags, adminReviseArticleWithFeedback, getArticleTabCounts } from "@/app/actions/article";
 import { getAdminArticlesAdSettingsMap, adminUpdateArticlesAdSettings, AuthorBanner } from "@/app/actions/articleAd";
+import { getAdminArticlesVacancyMap, getAuthorEligibleVacancies, updateArticleAttachedVacancy, updateMultipleArticlesAttachedVacancy } from "@/app/actions/articleVacancy";
+import ArticleVacancyDropdown from "@/components/admin/ArticleVacancyDropdown";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -39,6 +41,13 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [isBulkAdModalOpen, setIsBulkAdModalOpen] = useState(false);
   const [bulkSelectedBannerId, setBulkSelectedBannerId] = useState<string>("DEFAULT");
   const [isBulkApplying, setIsBulkApplying] = useState(false);
+
+  // 공실 연결 state
+  const [eligibleVacancies, setEligibleVacancies] = useState<any[]>([]);
+  const [vacancySettingsMap, setVacancySettingsMap] = useState<Record<string, { vacancy_id: string; title: string; snapshot: any }>>({});
+  const [isBulkVacancyModalOpen, setIsBulkVacancyModalOpen] = useState(false);
+  const [bulkSelectedVacancyId, setBulkSelectedVacancyId] = useState<string>("NONE");
+  const [isBulkVacancyApplying, setIsBulkVacancyApplying] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const action = searchParams.get("action");
@@ -115,6 +124,11 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
             setAuthorBanners(adRes.banners);
           }
         });
+        getAdminArticlesVacancyMap(ids).then((vacRes) => {
+          if (vacRes.success) {
+            setVacancySettingsMap(vacRes.vacancyMap);
+          }
+        });
       }
     }
 
@@ -122,6 +136,34 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     const countsRes = await getArticleTabCounts();
     if (countsRes.success && countsRes.data) {
       setCounts(countsRes.data);
+    }
+  };
+
+  // 최고관리자/현재 사용자의 적격 공실 로드
+  useEffect(() => {
+    if (!currentUserId) return;
+    getAuthorEligibleVacancies(currentUserId).then((res) => {
+      if (res.success) {
+        setEligibleVacancies(res.vacancies || []);
+      }
+    });
+  }, [currentUserId]);
+
+  const handleSelectVacancy = async (articleId: string, vacancyId: string | null) => {
+    const res = await updateArticleAttachedVacancy(articleId, vacancyId);
+    if (res.success) {
+      const selected = eligibleVacancies.find((v) => v.id === vacancyId);
+      const title = selected ? selected.building_name || selected.dong || "공실" : "";
+      setVacancySettingsMap((prev) => ({
+        ...prev,
+        [articleId]: { vacancy_id: vacancyId || "", title, snapshot: selected || null },
+      }));
+      setToastMessage({
+        text: vacancyId ? "기사에 공실 매물이 연결되었습니다." : "공실 연결이 해제되었습니다.",
+        type: "success",
+      });
+    } else {
+      setToastMessage({ text: res.error || "공실 설정 변경 실패", type: "error" });
     }
   };
 
@@ -211,6 +253,41 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       setToastMessage({ text: `${checkedArticleIds.length}건의 기사에 배너가 성공적으로 적용되었습니다.`, type: "success" });
     } else {
       alert(res.error || "일괄 적용 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 공실 일괄 적용 핸들러
+  const handleApplyBulkVacancy = async () => {
+    if (checkedArticleIds.length === 0) {
+      alert("공실을 적용할 기사를 선택해주세요.");
+      return;
+    }
+
+    setIsBulkVacancyApplying(true);
+    const targetVacId = bulkSelectedVacancyId === "NONE" ? null : bulkSelectedVacancyId;
+    const res = await updateMultipleArticlesAttachedVacancy(checkedArticleIds, targetVacId);
+    setIsBulkVacancyApplying(false);
+
+    if (res.success) {
+      const selected = eligibleVacancies.find((v) => v.id === targetVacId);
+      const title = selected ? selected.building_name || selected.dong || "공실" : "";
+      setVacancySettingsMap((prev) => {
+        const next = { ...prev };
+        checkedArticleIds.forEach((id) => {
+          next[id] = { vacancy_id: targetVacId || "", title, snapshot: selected || null };
+        });
+        return next;
+      });
+      setIsBulkVacancyModalOpen(false);
+      setCheckedArticleIds([]);
+      setToastMessage({
+        text: targetVacId
+          ? `${checkedArticleIds.length}건의 기사에 공실 매물이 성공적으로 연결되었습니다.`
+          : `${checkedArticleIds.length}건의 기사에서 공실 연결이 해제되었습니다.`,
+        type: "success",
+      });
+    } else {
+      alert(res.error || "공실 일괄 적용 중 오류가 발생했습니다.");
     }
   };
 
@@ -380,6 +457,33 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
           >
             🏷️ 배너 일괄적용
           </button>
+          <button
+            onClick={() => {
+              if (checkedArticleIds.length === 0) {
+                alert("공실을 일괄 적용할 기사를 먼저 체크박스로 선택해주세요.");
+                return;
+              }
+              setBulkSelectedVacancyId("NONE");
+              setIsBulkVacancyModalOpen(true);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              height: 36,
+              padding: "0 16px",
+              background: "#2563eb",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              gap: 6,
+              transition: "all 0.15s",
+            }}
+          >
+            🏢 공실 일괄적용
+          </button>
           </div>
 
           {/* 발행됨 탭에서 노출되는 기사 유형 필터 */}
@@ -410,13 +514,14 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>작성일</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>발행일</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>수정일</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>배너광고</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110 }}>배너광고</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>공실선택</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 150 }}>관리</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={12} style={{ padding: 40, textAlign: "center", color: textSecondary }}>조회된 기사가 없습니다.</td></tr>
+                <tr><td colSpan={13} style={{ padding: 40, textAlign: "center", color: textSecondary }}>조회된 기사가 없습니다.</td></tr>
               ) : filtered.map((a) => (
                 <tr key={a.id} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}` }}>
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
@@ -638,6 +743,19 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                     })()}
                   </td>
 
+                  {/* 기사 연결 공실 선택 드롭다운 */}
+                  <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                    <ArticleVacancyDropdown
+                      articleId={a.id}
+                      currentVacancyId={vacancySettingsMap[a.id]?.vacancy_id || null}
+                      currentVacancyTitle={vacancySettingsMap[a.id]?.title || null}
+                      vacanciesList={eligibleVacancies}
+                      isPaidRealtor={true}
+                      onSelect={handleSelectVacancy}
+                      darkMode={darkMode}
+                    />
+                  </td>
+
                   <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                       <button onClick={() => window.open(`/news/${a.article_no || a.id}`, '_blank')} style={{ width: 76, height: 32, padding: 0, justifyContent: "center", background: darkMode ? "#1e293b" : "#fff", color: darkMode ? "#93c5fd" : "#2563eb", border: `1px solid ${darkMode ? "#334155" : "#bfdbfe"}`, borderRadius: 4, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
@@ -852,6 +970,136 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                 }}
               >
                 {isBulkApplying ? "적용 중..." : "일괄 적용하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 공실 일괄 적용 모달 */}
+      {isBulkVacancyModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setIsBulkVacancyModalOpen(false)}
+        >
+          <div
+            style={{
+              background: cardBg,
+              border: `1px solid ${border}`,
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 480,
+              width: "100%",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <h3 style={{ fontSize: 17, fontWeight: 800, margin: 0, color: textPrimary, display: "flex", alignItems: "center", gap: 6 }}>
+                🏢 기사 노출 공실 일괄 적용
+              </h3>
+              <button
+                onClick={() => setIsBulkVacancyModalOpen(false)}
+                style={{ background: "none", border: "none", fontSize: 20, color: textSecondary, cursor: "pointer", padding: 0 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: 13, color: textSecondary, marginBottom: 18, lineHeight: 1.5 }}>
+              선택하신 <strong style={{ color: "#2563eb" }}>{checkedArticleIds.length}개</strong>의 기사에 일괄 연결할 공실 매물을 선택해주세요.<br />
+              <span style={{ fontSize: 12, color: "#6b7280" }}>※ [부동산노출 + 일반인노출]로 등록된 활성 매물만 노출됩니다.</span>
+            </p>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: textSecondary, marginBottom: 6 }}>
+                연결할 공실 매물 (최대 1개)
+              </label>
+              <select
+                value={bulkSelectedVacancyId}
+                onChange={(e) => setBulkSelectedVacancyId(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  border: `1.5px solid #2563eb`,
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: textPrimary,
+                  background: darkMode ? "#1e293b" : "#f8fafc",
+                  outline: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="NONE">🚫 공실 미노출 (연결 해제)</option>
+                {eligibleVacancies.map((v) => {
+                  const formatMoney = (tradeType: string, deposit?: number, rent?: number) => {
+                    const fmt = (val?: number) => {
+                      if (!val || val === 0) return "0";
+                      const m = Math.round(val / 10000);
+                      if (m === 0) return "0";
+                      const e = Math.floor(m / 10000);
+                      const r = m % 10000;
+                      let res = "";
+                      if (e > 0) res += `${e}억`;
+                      if (r > 0) res += `${r}만`;
+                      return res || "0";
+                    };
+                    if (tradeType === "매매" || tradeType === "전세") return `[${tradeType} ${fmt(deposit)}]`;
+                    if (tradeType === "월세" || tradeType === "단기") return `[${tradeType} ${fmt(deposit)}/${fmt(rent)}]`;
+                    return `[${tradeType}]`;
+                  };
+                  const priceTag = formatMoney(v.trade_type, v.deposit, v.monthly_rent);
+                  const addr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ") || "공실";
+                  return (
+                    <option key={v.id} value={v.id}>
+                      🏢 {priceTag} {addr} {v.exclusive_m2 ? `(${v.exclusive_m2}㎡)` : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setIsBulkVacancyModalOpen(false)}
+                style={{
+                  padding: "9px 16px",
+                  borderRadius: 6,
+                  border: `1px solid ${border}`,
+                  background: darkMode ? "#2c2d31" : "#f3f4f6",
+                  color: textSecondary,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={handleApplyBulkVacancy}
+                disabled={isBulkVacancyApplying}
+                style={{
+                  padding: "9px 20px",
+                  borderRadius: 6,
+                  border: "none",
+                  background: "#2563eb",
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {isBulkVacancyApplying ? "적용 중..." : "일괄 적용하기"}
               </button>
             </div>
           </div>

@@ -103,6 +103,14 @@ export async function saveArticle(data: {
       "갤러리": "GALLERY",
     };
 
+    let finalYoutubeUrl = data.youtube_url || null;
+    if (!finalYoutubeUrl && data.content) {
+      const ym = data.content.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+      if (ym) {
+        finalYoutubeUrl = `https://www.youtube.com/watch?v=${ym[1]}`;
+      }
+    }
+
     const articleData = {
       author_id: data.author_id || null,
       author_name: data.author_name,
@@ -115,7 +123,7 @@ export async function saveArticle(data: {
       title: data.title,
       subtitle: data.subtitle || null,
       content: data.content || null,
-      youtube_url: data.youtube_url || null,
+      youtube_url: finalYoutubeUrl,
       is_shorts: data.is_shorts,
       lat: data.lat || null,
       lng: data.lng || null,
@@ -829,6 +837,10 @@ ${article.content}
     // Supabase DB 업데이트: 수정된 기사 + 새 사진 반영 및 상태를 'APPROVED'(정식 발행)으로 즉시 재발행
     const nowIso = new Date().toISOString();
     let finalContent = newContent;
+    if (!newYoutubeUrl && newContent) {
+      const ym = newContent.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+      if (ym) newYoutubeUrl = `https://www.youtube.com/watch?v=${ym[1]}`;
+    }
     if (newThumbnailUrl && !newYoutubeUrl && !finalContent.includes(newThumbnailUrl)) {
       finalContent = `<div style="text-align: center;"><img src="${newThumbnailUrl}" style="max-width: 100%; height: auto; border-radius: 8px;" /></div><br/>${finalContent}`;
     }
