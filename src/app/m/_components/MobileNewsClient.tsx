@@ -15,6 +15,7 @@ import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
 import { formatSection1 } from "@/utils/formatCategory";
+import { MobilePopularNewsWidget } from "./MobilePopularNewsWidget";
 
 function formatPrice(v: any): string {
   const formatValue = (val: number) => {
@@ -2236,10 +2237,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               ? [...filteredBySection2].sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
               : filteredBySection2;
 
-            const popularArticles = [...filteredBySection2]
-              .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
-              .slice(0, 5);
-            
             const carouselArticles = importantArticles.length > 0
               ? importantArticles.slice(0, 8)
               : filteredBySection2.slice(0, 5);
@@ -2256,73 +2253,13 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   />
                 )}
 
-                {/* 많이 본 뉴스 순위 리스트 (2차 카테고리가 전체일 때만 노출) */}
-                {section2Tab === "" && popularArticles.length > 0 && (
-                  <div style={{ padding: "20px 16px", borderBottom: "8px solid #f4f6f8", backgroundColor: "#fff" }}>
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #f3f4f6" }}>
-                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#508bf5" }}>{currentCatLabel}</span>
-                      <span style={{ fontSize: "16px", fontWeight: 800, color: "#1f2937", marginLeft: "5px" }}>많이 본 뉴스</span>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      {popularArticles.map((a: any, idx: number) => {
-                        const rank = idx + 1;
-                        const isTop3 = rank <= 3;
-                        return (
-                          <Link
-                            href={`/m/news/${a.article_no || a.id}`}
-                            key={`popular-${a.id}`}
-                            className="article-row"
-                            onClick={() => sessionStorage.setItem(`news_scroll_${activeTab}`, window.scrollY.toString())}
-                            style={{
-                              display: "flex",
-                              alignItems: "flex-start",
-                              gap: "12px",
-                              textDecoration: "none",
-                              cursor: "pointer",
-                              padding: "8px 10px",
-                              margin: "0 -4px",
-                              borderRadius: "8px",
-                              transition: "transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.12s ease",
-                              WebkitTapHighlightColor: "transparent",
-                              willChange: "transform",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: "17px",
-                                fontWeight: 800,
-                                fontStyle: "italic",
-                                color: isTop3 ? "#508bf5" : "#71717a",
-                                width: "18px",
-                                textAlign: "center",
-                                flexShrink: 0,
-                                marginTop: "1px"
-                              }}
-                            >
-                              {rank}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: "18px",
-                                fontWeight: 600,
-                                color: "#1f2937",
-                                lineHeight: "1.4",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                display: "-webkit-box",
-                                WebkitLineClamp: 1,
-                                WebkitBoxOrient: "vertical",
-                                wordBreak: "keep-all"
-                              }}
-                            >
-                              {a.title}
-                            </span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                {/* 많이 본 뉴스 순위 리스트 (모바일 전용 독립 컴포넌트: 전체 및 서브카테고리별 + 기간 선택) */}
+                <MobilePopularNewsWidget
+                  currentCatLabel={currentCatLabel}
+                  section2Tab={section2Tab}
+                  allArticles={articles}
+                  activeTab={activeTab}
+                />
                 
                 {/* 일반 뉴스 리스트 정렬 필터 (모노크롬 미니멀 스타일) */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6" }}>

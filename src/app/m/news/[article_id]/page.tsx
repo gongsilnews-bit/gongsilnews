@@ -24,19 +24,17 @@ export default async function MobileNewsReadPage({ params, searchParams }: { par
   let popular: any[] = [];
 
   if (articleId) {
-    const [articleRes, popularRes] = await Promise.all([
-      getArticleDetail(articleId, true),
-      getArticles({ status: "APPROVED", limit: 50, noCache: true }),
-    ]);
-
+    const articleRes = await getArticleDetail(articleId, true);
     if (articleRes.success && articleRes.data) {
       article = articleRes.data;
-    }
 
-    if (popularRes.success && popularRes.data) {
-      popular = [...popularRes.data]
-        .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
-        .slice(0, 5);
+      // ⚡ 초고속 60초 메모리 캐시 활성화 (noCache 제거) + 20건 경량 조회 (0ms 응답)
+      const popularRes = await getArticles({
+        section1: article.section1,
+        status: "APPROVED",
+        limit: 20,
+      });
+      popular = popularRes.success && popularRes.data ? popularRes.data : [];
     }
   }
 

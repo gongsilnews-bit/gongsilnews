@@ -10,8 +10,9 @@ import { getArticleBookmarks, getBookmarkCategories } from "@/app/actions/bookma
 import AuthModal from "./AuthModal";
 import BookmarkCategoryModal from "./BookmarkCategoryModal";
 import { formatSection1 } from "@/utils/formatCategory";
+import { PopularNewsSidebarWidget } from "./PopularNewsSidebarWidget";
 
-interface Article {
+export interface Article {
   id: string;
   article_no?: number;
   title: string;
@@ -60,14 +61,14 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null | 'ALL'>('ALL');
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(searchParams.get("section2") || null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(searchParams.get("section2") || searchParams.get("section") || null);
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>(() => {
     const sortVal = searchParams.get("sort");
     return (sortVal === 'popular' || sortVal === 'newest') ? sortVal : 'newest';
   });
 
   useEffect(() => {
-    setSelectedSubCategory(searchParams.get("section2") || null);
+    setSelectedSubCategory(searchParams.get("section2") || searchParams.get("section") || null);
   }, [searchParams]);
 
   // Sync currentPage with URL searchParams and handle initial restoration
@@ -679,29 +680,13 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
 
             {/* 많이 본 뉴스 5개 (검색/북마크 모드일 때는 숨김) */}
             {!hidePopularNews && (
-              <div className="sb-widget">
-                <div className="sb-title">{title} 많이 본 뉴스</div>
-                <ul className="pop-list">
-                  {initialPopular.length > 0 ? initialPopular.map((item, i) => (
-                    <li key={item.id} className="pop-item">
-                      <Link 
-                        href={`/news/${item.article_no || item.id}`} 
-                        style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "flex-start", gap: 8, width: "100%" }}
-                        onClick={() => {
-                          if (typeof window !== "undefined") {
-                            sessionStorage.setItem(`pc_news_scroll_${category}`, window.scrollY.toString());
-                          }
-                        }}
-                      >
-                        <span className="pop-ranking">{i + 1}</span>
-                        <span className="pop-title">{item.title}</span>
-                      </Link>
-                    </li>
-                  )) : (
-                    <li className="pop-item" style={{ color: "#999", fontSize: 13 }}>기사가 없습니다.</li>
-                  )}
-                </ul>
-              </div>
+              <PopularNewsSidebarWidget
+                category={category}
+                title={title}
+                selectedSubCategory={selectedSubCategory}
+                allArticles={initialArticles}
+                initialPopular={initialPopular}
+              />
             )}
           </div>
         </div>

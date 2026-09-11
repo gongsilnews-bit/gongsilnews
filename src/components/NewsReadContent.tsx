@@ -15,6 +15,8 @@ import AuthModal from "./AuthModal";
 import BannerSlot from "./BannerSlot";
 import ArticleAuthorAdSlot from "./ArticleAuthorAdSlot";
 import ArticleAttachedVacancyCard from "./ArticleAttachedVacancyCard";
+import { ArticleDetailPopularNewsWidget } from "./ArticleDetailPopularNewsWidget";
+import { MobileArticleDetailPopularNewsWidget } from "@/app/m/_components/MobileArticleDetailPopularNewsWidget";
 import BookmarkCategoryModal from "./BookmarkCategoryModal";
 import { formatSection1 } from "@/utils/formatCategory";
 import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
@@ -1096,22 +1098,24 @@ export default function NewsReadContent({
               <ArticleAttachedVacancyCard vacancy={attachedVacancy} isMobile={isMobile} />
             )}
 
-            {/* 2. 많이 본 뉴스 */}
-            <div className="sb-widget">
-              <div className="sb-title">많이 본 뉴스</div>
-              <ul className="pop-list">
-                {popularArticles.length > 0 ? popularArticles.map((item, i) => (
-                  <li key={item.id} className="pop-item">
-                    <Link href={`${basePath}/news/${item.article_no || item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "flex-start", gap: 8, width: "100%" }}>
-                      <span className="pop-ranking">{i + 1}</span>
-                      <span className="pop-title">{item.title}</span>
-                    </Link>
-                  </li>
-                )) : (
-                  <li className="pop-item" style={{ color: "#999", fontSize: 15 }}>기사가 없습니다.</li>
-                )}
-              </ul>
-            </div>
+            {/* 2. 많이 본 뉴스 (해당 기사 2차 카테고리 연동 + 기간 선택 독립 컴포넌트) */}
+            {isMobile ? (
+              <MobileArticleDetailPopularNewsWidget
+                currentArticleId={article.id}
+                section1={article.section1}
+                section2={article.section2}
+                allArticles={popularArticles}
+                basePath={basePath}
+              />
+            ) : (
+              <ArticleDetailPopularNewsWidget
+                currentArticleId={article.id}
+                section1={article.section1}
+                section2={article.section2}
+                allArticles={popularArticles}
+                basePath={basePath}
+              />
+            )}
 
             {/* 3. 광고 배너 */}
             <div style={{ marginBottom: 20 }}>
