@@ -1349,29 +1349,6 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
               </div>
             )}
 
-            {/* ──── 댓글상담 ──── */}
-            <div style={{ padding: "20px 16px", background: "#fff" }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 16 }}>0개의 댓글상담</div>
-              <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 12, background: "#fff", marginBottom: 12 }}>
-                <textarea 
-                  placeholder="로그인 후 이용하실 수 있습니다." 
-                  disabled 
-                  style={{ width: "100%", height: 70, border: "none", resize: "none", outline: "none", fontSize: 13, color: "#9ca3af", background: "#fff", padding: 0 }}
-                />
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f3f4f6", paddingTop: 8, marginTop: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <input type="checkbox" id="secret-mock" disabled style={{ width: 14, height: 14 }} />
-                    <label htmlFor="secret-mock" style={{ fontSize: 12, color: "#9ca3af", cursor: "default" }}>비밀댓글</label>
-                  </div>
-                  <button disabled style={{ background: "#e5e7eb", color: "#9ca3af", border: "none", borderRadius: 4, padding: "5px 12px", fontSize: 12, fontWeight: 700 }}>
-                    등록
-                  </button>
-                </div>
-              </div>
-              <div style={{ textAlign: "center", padding: "30px 0", color: "#9ca3af", fontSize: 13 }}>
-                아직 등록된 댓글이 없습니다.
-              </div>
-            </div>
           </div>
         ) : (
           /* 탭 2: 등록자 정보 (공실) */

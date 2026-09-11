@@ -47,10 +47,6 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
     return { id: null, hasVideo: false };
   };
 
-  // JS에서 새 카테고리별 분류 및 더보기 상태 관리
-  const [row1Limit, setRow1Limit] = useState(3); // 공실뉴스 + 부동산·경제
-  const [row3Limit, setRow3Limit] = useState(3); // AI마케팅 + 라이프·오피니언
-
   const videoScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollVideoLeft, setCanScrollVideoLeft] = useState(false);
   const [canScrollVideoRight, setCanScrollVideoRight] = useState(true);
@@ -80,13 +76,13 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
   const allLife = allNewsArticles.filter(a => a.section1 === "기타" || a.section1 === "라이프·오피니언");
   const allGongsilList = allNewsArticles.filter(a => (a.section1 === "공실현장" || a.section1 === "공실뉴스") && !extractYoutubeIdInfo(a).hasVideo);
 
-  const marketingArts = allMarketing.slice(0, row3Limit);
-  const economyArts = allEconomy.slice(0, row1Limit);
-  const lifeArts = allLife.slice(0, row3Limit);
+  const marketingArts = allMarketing.slice(0, 3);
+  const economyArts = allEconomy.slice(0, 3);
+  const lifeArts = allLife.slice(0, 3);
   
   // 영상 목록은 최신 일반 기사 제한과 독립적으로 유지한다.
   const gongsilArts = gongsilVideoArticles.filter(a => extractYoutubeIdInfo(a).hasVideo).slice(0, 6);
-  const gongsilListArts = allGongsilList.slice(0, row1Limit);
+  const gongsilListArts = allGongsilList.slice(0, 3);
 
   useEffect(() => {
     checkVideoScroll();
@@ -172,81 +168,6 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
     });
   };
 
-  const renderRowMoreButton = (hasMore: boolean, currentLimit: number, setLimit: (val: number) => void, sectionId: string) => {
-    if (currentLimit === 3) {
-      if (!hasMore) return null;
-      return (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: "16px", marginBottom: "8px" }}>
-          <button
-            onClick={() => setLimit(8)}
-            style={{
-              padding: "8px 24px",
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "#6b7280",
-              backgroundColor: "#fff",
-              border: "1px solid #e5e7eb",
-              borderRadius: "20px",
-              cursor: "pointer",
-              transition: "all 0.2s",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px"
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#fff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
-          >
-            기사 5건 더보기
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-        </div>
-      );
-    } else {
-      return (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: "16px", marginBottom: "8px" }}>
-          <button
-            onClick={() => {
-              setLimit(3);
-              setTimeout(() => {
-                const element = document.getElementById(sectionId);
-                if (element) {
-                  const yOffset = -100;
-                  const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                  window.scrollTo({ top: y, behavior: "smooth" });
-                }
-              }, 50);
-            }}
-            style={{
-              padding: "8px 24px",
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "#6b7280",
-              backgroundColor: "#fff",
-              border: "1px solid #e5e7eb",
-              borderRadius: "20px",
-              cursor: "pointer",
-              transition: "all 0.2s",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px"
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#fff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
-          >
-            닫기
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-          </button>
-        </div>
-      );
-    }
-  };
-
   return (
     <>
       <style>{`
@@ -280,7 +201,6 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
             </div>
           </div>
         </div>
-        {renderRowMoreButton(allGongsilList.length > 3 || allEconomy.length > 3, row1Limit, setRow1Limit, "row-gongsil-economy")}
       </div>
 
       {/* 6. Video News: 공실뉴스 — 블랙 배경 */}
@@ -387,7 +307,6 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
             </div>
           </div>
         </div>
-        {renderRowMoreButton(allMarketing.length > 3 || allLife.length > 3, row3Limit, setRow3Limit, "row-marketing-life")}
       </div>
     </>
   );

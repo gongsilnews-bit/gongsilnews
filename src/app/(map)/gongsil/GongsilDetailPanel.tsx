@@ -11,7 +11,6 @@ import {
   isApartmentType,
 } from "./gongsilHelpers";
 import GongsilAccessOverlay from "./GongsilAccessOverlay";
-import GongsilComments from "./GongsilComments";
 
 interface GongsilDetailPanelProps {
   showDetail: boolean;
@@ -1182,19 +1181,6 @@ const filteredFields = fields.filter(field => {
               </div>
             )}
 
-            {/* ──── 댓글상담 ──── */}
-            <GongsilComments
-              targetProp={prop}
-              comments={comments}
-              currentUser={currentUser}
-              newComment={newComment}
-              setNewComment={setNewComment}
-              isSecret={isSecret}
-              setIsSecret={setIsSecret}
-              replyTarget={replyTarget}
-              setReplyTarget={setReplyTarget}
-              handleCommentSubmit={handleCommentSubmit}
-            />
           </>
         )}
 
@@ -1978,190 +1964,7 @@ const filteredFields = fields.filter(field => {
                   </div>
                 )}
               </div>
-
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    background: "#f9f9f9",
-                    borderRadius: 8,
-                    overflow: "hidden",
-                    border: "1px solid #eee",
-                  }}
-                >
-                  <div
-                    style={{
-                      flex: 1,
-                      padding: "16px 20px",
-                      fontSize: 14,
-                      fontWeight: "bold",
-                      color: "#111",
-                      borderRight: "1px solid #eee",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    공실등록현황
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0 20px", gap: 16, fontSize: 13, color: "#666" }}>
-                    {[
-                      { label: "전체", count: dbVacancies.filter((v) => v.owner_id === prop.owner_id && v.trade_type !== "경매" && v.trade_type !== "공매").length },
-                      {
-                        label: "매매",
-                        count: dbVacancies.filter((v) => v.owner_id === prop.owner_id && v.trade_type === "매매").length,
-                      },
-                      {
-                        label: "전세",
-                        count: dbVacancies.filter((v) => v.owner_id === prop.owner_id && v.trade_type === "전세").length,
-                      },
-                      {
-                        label: "월세",
-                        count: dbVacancies.filter((v) => v.owner_id === prop.owner_id && v.trade_type === "월세").length,
-                      },
-                      {
-                        label: "단기",
-                        count: dbVacancies.filter((v) => v.owner_id === prop.owner_id && v.trade_type === "단기").length,
-                      },
-                    ].map((stat, i, arr) => (
-                      <React.Fragment key={stat.label}>
-                        <span
-                          onClick={() => setRealtorTradeType(stat.label)}
-                          style={{
-                            cursor: "pointer",
-                            color: realtorTradeType === stat.label ? "#1a73e8" : "#666",
-                            fontWeight: realtorTradeType === stat.label ? "bold" : "normal",
-                          }}
-                        >
-                          {stat.label}{" "}
-                          <strong style={{ color: realtorTradeType === stat.label ? "#1a73e8" : "#111" }}>{stat.count}</strong>
-                        </span>
-                        {i < arr.length - 1 && <span style={{ width: 1, height: 12, background: "#ddd" }}></span>}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </div>
-
-            {/* ──── 등록 물건 리스트 ──── */}
-            <div style={{ borderTop: "10px solid #f5f5f5" }}>
-              {dbVacancies
-                .filter(
-                  (v) =>
-                    v.owner_id === prop.owner_id && v.trade_type !== "경매" && v.trade_type !== "공매" &&
-                    (realtorTradeType === "전체" || v.trade_type === realtorTradeType)
-                )
-                .map((vp) => (
-                  <div
-                    key={vp.id}
-                    onClick={() => {
-                      setPrevPropertyId(activeProperty);
-                      setActiveProperty(vp.id);
-                      setActiveDetailTab("info");
-                      setGalleryIndex(0);
-                    }}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      padding: "16px 20px",
-                      cursor: "pointer",
-                      transition: "background 0.15s",
-                      borderBottom: "1px solid #f0f0f0",
-                      background: "#fff",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "#f9fbff";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "#fff";
-                    }}
-                  >
-                    {(() => {
-                      const isMasked = vp.exposure_type === "부동산노출" && userLevel < 2 && vp.owner_id !== currentUser?.id;
-                      const propertyName = vp.building_name || vp.dong || "주소 정보 없음";
-
-                      return (
-                        <div style={{ flex: 1, paddingRight: vp.images?.[0] ? 12 : 0, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: 15,
-                          fontWeight: "bold",
-                          color: "#111",
-                          marginBottom: 4,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {isMasked ? propertyName.replace(/[^\s]/g, "X") : propertyName}
-                        {isMasked && <span style={{ marginLeft: 8, fontSize: 11, color: "#2563eb", background: "#eef6ff", padding: "3px 8px", borderRadius: 4 }}>🔒 부동산회원 전용</span>}
-                      </div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: "#1a73e8", marginBottom: 4 }}>
-                        {getPriceText(vp)}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 13,
-                          color: "#555",
-                          marginBottom: 2,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {vp.property_type} <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {vp.direction || "방향없음"}{" "}
-                        <span style={{ color: "#ddd", margin: "0 4px" }}>|</span> {vp.exclusive_m2 ? formatAreaWithPy(vp.exclusive_m2) : "면적미상"}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "#666",
-                          marginBottom: 8,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 1,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                        }}
-                      >
-                        {[`룸 ${vp.room_count || 0}개`, `욕실 ${vp.bathroom_count || 0}개`, ...(vp.options || [])]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </div>
-                        </div>
-                      );
-                    })()}
-                    {vp.images?.[0] && (
-                      <div
-                        style={{
-                          width: 80,
-                          height: 80,
-                          borderRadius: 6,
-                          overflow: "hidden",
-                          background: "#f0f0f0",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <img src={vp.images[0]} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-
-            {/* ──── 댓글상담 (등록자정보 탭 하단) ──── */}
-            <GongsilComments
-              targetProp={prop}
-              comments={comments}
-              currentUser={currentUser}
-              newComment={newComment}
-              setNewComment={setNewComment}
-              isSecret={isSecret}
-              setIsSecret={setIsSecret}
-              replyTarget={replyTarget}
-              setReplyTarget={setReplyTarget}
-              handleCommentSubmit={handleCommentSubmit}
-            />
           </>
         )}
       </div>
