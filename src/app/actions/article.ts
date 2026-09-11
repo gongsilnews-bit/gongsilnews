@@ -927,31 +927,55 @@ export async function adminUpdateArticleFlags(articleId: string, isImportant: bo
   }
 }
 
-/* ── 기사 조회수 1 증가 ── */
+/* ── 기사 조회수 1 증가 (누적 + 주간 views_week + 월간 views_month 동시 반영) ── */
 export async function incrementArticleView(articleId: string) {
   const supabase = getAdminClient();
   try {
-    const { data: article, error: fetchError } = await supabase
+    let fetchRes = await supabase
       .from("articles")
-      .select("view_count")
+      .select("view_count, views_week, views_month")
       .eq("id", articleId)
       .single();
 
-    if (fetchError || !article) return { success: false, error: fetchError?.message };
+    if (fetchRes.error) {
+      // 컬럼이 아직 없을 때를 위한 안전망
+      fetchRes = await supabase
+        .from("articles")
+        .select("view_count")
+        .eq("id", articleId)
+        .single();
+    }
+
+    const article = fetchRes.data;
+    if (!article) return { success: false, error: fetchRes.error?.message };
 
     const newViewCount = (article.view_count || 0) + 1;
+    const newViewsWeek = ((article as any).views_week || 0) + 1;
+    const newViewsMonth = ((article as any).views_month || 0) + 1;
 
-    const { error: updateError } = await supabase
+    const updateRes = await supabase
       .from("articles")
-      .update({ view_count: newViewCount })
+      .update({
+        view_count: newViewCount,
+        views_week: newViewsWeek,
+        views_month: newViewsMonth,
+      })
       .eq("id", articleId);
 
-    if (updateError) return { success: false, error: updateError.message };
+    if (updateRes.error) {
+      // 컬럼 추가 전 호환성을 위해 기존 view_count 단독 업데이트
+      await supabase
+        .from("articles")
+        .update({ view_count: newViewCount })
+        .eq("id", articleId);
+    }
 
-    // 캐시 무효화 삭제: 조회수+1 할 때마다 전체 기사 목록 캐시가 초기화되는 레이턴시 문제 방지
-    // revalidateTag("articles");
-    
-    return { success: true, view_count: newViewCount };
+    return { 
+      success: true, 
+      view_count: newViewCount, 
+      views_week: newViewsWeek, 
+      views_month: newViewsMonth 
+    };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
