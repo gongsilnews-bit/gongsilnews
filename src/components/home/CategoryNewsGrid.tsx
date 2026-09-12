@@ -44,6 +44,8 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
       const match = article.content.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
       if (match) return { id: match[1], hasVideo: true };
     }
+    const thumbnailMatch = article.thumbnail_url?.match(/(?:img\.youtube\.com|i\.ytimg\.com)\/vi(?:_webp)?\/([\w-]{11})\//);
+    if (thumbnailMatch) return { id: thumbnailMatch[1], hasVideo: true };
     return { id: null, hasVideo: false };
   };
 
@@ -151,8 +153,8 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
               <div className="hi-img" style={{ position: "relative", width: "160px", height: "100px", flexShrink: 0 }}>
                 <img src={thumbSrc} alt={item.title} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 4 }} />
                 {ytInfo.hasVideo && (
-                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 32, height: 32, background: "rgba(0,0,0,0.5)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="white" style={{ marginLeft: 2 }}><path d="M8 5v14l11-7z"/></svg>
+                  <div role="img" aria-label="유튜브 영상 기사" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 30, background: "#ff0033", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", boxShadow: "0 2px 8px #0002" }}>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="white" style={{ marginLeft: 2 }}><path d="M8 5v14l11-7z"/></svg>
                   </div>
                 )}
               </div>

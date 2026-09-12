@@ -1,4 +1,3 @@
-import { getVacanciesForMap } from "@/app/actions/vacancy";
 import { getBannersByPlacement } from "@/app/actions/banner";
 import { getLectures } from "@/app/actions/lecture";
 import { getArticles } from "@/app/actions/article";
@@ -6,8 +5,7 @@ import { getArticles } from "@/app/actions/article";
 export const revalidate = 300; // 5분 캐시 (60s → 300s 확장)
 
 import QuickFloatingMenu from "@/components/common/QuickFloatingMenu";
-import HeroMapSection from "@/components/home/HeroMapSection";
-import HeroSideContent from "@/components/home/HeroSideContent";
+import HomeNewsHero from "@/components/home/HomeNewsHero";
 import CategoryNewsGrid from "@/components/home/CategoryNewsGrid";
 import PremiumDroneSection from "@/components/home/PremiumDroneSection";
 import SpecialLectureBanner from "@/components/home/SpecialLectureBanner";
@@ -26,6 +24,7 @@ export default async function Home() {
     gongsilRes,
     gongsilVideoRes,
     mapNewsRes,
+    headlineRes,
   ] = await Promise.all([
     getBannersByPlacement("MAIN_TOP"),
     getBannersByPlacement("MAIN_BOTTOM_FULL"),
@@ -37,6 +36,7 @@ export default async function Home() {
     getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 6 }),
     getArticles({ status: "APPROVED", section1: "공실뉴스" }),
     getArticles({ status: "APPROVED", limit: 10 }),
+    getArticles({ status: "APPROVED", is_headline: true }),
   ]);
 
   const allNewsArticles = [
@@ -59,11 +59,7 @@ export default async function Home() {
           <BannerSlot placement="MAIN_TOP" style={{ borderRadius: 0 }} initialBanners={mainTopBanners} />
         </div>
 
-        {/* ========== 3. Hero Section (Map & HOT News) ========== */}
-        <div className="hero-section" style={{ padding: "0 25px 0 0", border: "0.5px solid #dcdcdc", borderTop: "none", marginBottom: 0, background: "#fff" }}>
-          <HeroMapSection />
-          <HeroSideContent />
-        </div>
+        <HomeNewsHero headlines={headlineRes.data || []} latest={mapArticles} />
 
         {/* ========== 5. Category News Grid (pre-fetched data) ========== */}
         <CategoryNewsGrid
