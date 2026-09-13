@@ -23,6 +23,8 @@ interface BookmarkCategoryModalProps {
 export default function BookmarkCategoryModal({ 
   isOpen, onClose, userId, itemId, type, onSuccess 
 }: BookmarkCategoryModalProps) {
+  const isManagementMode = itemId == null;
+  const modalTitle = isManagementMode ? '폴더 관리' : '이동할 폴더를 선택하세요';
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -155,7 +157,7 @@ export default function BookmarkCategoryModal({
         className="bookmark-category-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="폴더 관리 및 이동"
+        aria-label={modalTitle}
         style={{ 
           position: 'relative', background: '#fff', width: '100%',
           display: 'flex', flexDirection: 'column',
@@ -184,7 +186,7 @@ export default function BookmarkCategoryModal({
         `}</style>
         
         <div className="bookmark-category-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6' }}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#111' }}>어느 폴더에 저장할까요?</h3>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#111' }}>{modalTitle}</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 24, color: '#aaa', cursor: 'pointer', padding: 0, lineHeight: 1 }}>✕</button>
         </div>
 
@@ -201,7 +203,7 @@ export default function BookmarkCategoryModal({
                   disabled={saving || itemId == null}
                   style={{
                     width: '100%', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: '#f8f9fa', border: '1px solid #e5e7eb', borderRadius: 12, cursor: 'pointer',
+                    background: '#f8f9fa', border: '1px solid #e5e7eb', borderRadius: 12, cursor: isManagementMode ? 'default' : 'pointer',
                     fontSize: 15, fontWeight: 600, color: '#111', fontFamily: 'inherit', textAlign: 'left'
                   }}
                 >
@@ -209,7 +211,7 @@ export default function BookmarkCategoryModal({
                     <span style={{ fontSize: 20 }}>📁</span>
                     기본 폴더
                   </div>
-                  <span style={{ color: '#aaa', fontSize: 13, fontWeight: 400 }}>선택</span>
+                  {!isManagementMode && <span style={{ color: '#aaa', fontSize: 13, fontWeight: 400 }}>선택</span>}
                 </button>
               </li>
 
@@ -236,7 +238,7 @@ export default function BookmarkCategoryModal({
                         disabled={saving || itemId == null}
                         style={{
                           flex: 1, padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, cursor: 'pointer',
+                          background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, cursor: isManagementMode ? 'default' : 'pointer',
                           fontSize: 15, fontWeight: 600, color: '#111', fontFamily: 'inherit', textAlign: 'left'
                         }}
                       >
@@ -244,7 +246,7 @@ export default function BookmarkCategoryModal({
                           <span style={{ fontSize: 20 }}>📂</span>
                           {cat.name}
                         </div>
-                        <span style={{ color: '#aaa', fontSize: 13, fontWeight: 400 }}>선택</span>
+                        {!isManagementMode && <span style={{ color: '#aaa', fontSize: 13, fontWeight: 400 }}>선택</span>}
                       </button>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         <button 
@@ -266,7 +268,7 @@ export default function BookmarkCategoryModal({
           </div>
           {/* 새 폴더 추가 */}
           <div className="bookmark-category-create">
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#666', marginBottom: 8 }}>+ 새 폴더 추가</label>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#666', marginBottom: 8 }}>+ 폴더 만들기</label>
             <div style={{ display: 'flex', gap: 8 }}>
               <input 
                 type="text" 
@@ -286,7 +288,7 @@ export default function BookmarkCategoryModal({
                   border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: newCategoryName.trim() ? 'pointer' : 'default', fontFamily: 'inherit'
                 }}
               >
-                추가
+                만들기
               </button>
             </div>
           </div>
