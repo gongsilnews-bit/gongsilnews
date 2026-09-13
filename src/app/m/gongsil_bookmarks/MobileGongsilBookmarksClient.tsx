@@ -179,6 +179,14 @@ export default function MobileGongsilBookmarksClient() {
             {cat.name}
           </button>
         ))}
+                <button
+                  onClick={() => {
+                    if (!user) { setIsAuthModalOpen(true); return; }
+                    setSelectedVacancyId(null);
+                    setShowCategoryModal(true);
+                  }}
+                  style={{ marginLeft: 'auto', position: 'sticky', right: 0, flexShrink: 0, padding: '6px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', color: '#4b5563', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer' }}
+                >폴더관리</button>
       </div>
 
       {/* List */}
@@ -249,7 +257,7 @@ export default function MobileGongsilBookmarksClient() {
         )}
       </div>
 
-      {user && showCategoryModal && selectedVacancyId && (
+      {user && showCategoryModal && (
         <BookmarkCategoryModal
           isOpen={showCategoryModal}
           onClose={() => {

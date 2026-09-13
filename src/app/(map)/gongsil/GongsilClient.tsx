@@ -2858,7 +2858,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="signup" />
 
-      {currentUser && showCategoryModal && selectedVacancyId && (
+      {currentUser && showCategoryModal && (
         <BookmarkCategoryModal
           isOpen={showCategoryModal}
           onClose={() => {

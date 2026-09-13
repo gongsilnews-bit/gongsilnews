@@ -477,6 +477,14 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                     {cat.name}
                   </button>
                 ))}
+                <button
+                  onClick={() => {
+                    if (!user) { setIsAuthModalOpen(true); return; }
+                    setSelectedArticleId(null);
+                    setShowCategoryModal(true);
+                  }}
+                  style={{ marginLeft: 'auto', position: 'sticky', right: 0, flexShrink: 0, padding: '6px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', color: '#4b5563', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer' }}
+                >폴더관리</button>
               </div>
             )}
 
@@ -563,7 +571,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                     <BannerSlot placement="LIST_INLINE" category={category} />
                   </div>
                 )}
-                <div style={{ position: "relative" }}>
+                <div style={{ position: "relative", display: "flex", flexDirection: "column" }}>
                   <Link 
                     href={`/news/${article.article_no || article.id}`} 
                     style={{ textDecoration: "none", color: "inherit" }}
@@ -603,7 +611,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                     </div>
                   </Link>
                   {isBookmarkMode && (
-                    <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
+                    <div style={{ order: -1, display: "flex", justifyContent: "flex-end", flexWrap: "wrap", gap: 6, padding: "12px 12px 0" }}>
                       <button
                         onClick={(e) => { e.preventDefault(); setSelectedArticleId(article.id); setShowCategoryModal(true); }}
                         title="폴더 이동"
@@ -696,7 +704,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialTab="login" />
       )}
 
-      {user && showCategoryModal && selectedArticleId && (
+      {user && showCategoryModal && (
         <BookmarkCategoryModal
           isOpen={showCategoryModal}
           onClose={() => {

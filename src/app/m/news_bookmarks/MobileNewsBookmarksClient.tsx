@@ -144,6 +144,14 @@ export default function MobileNewsBookmarksClient() {
             {cat.name}
           </button>
         ))}
+                <button
+                  onClick={() => {
+                    if (!currentUser) { setIsAuthModalOpen(true); return; }
+                    setSelectedArticleId(null);
+                    setShowCategoryModal(true);
+                  }}
+                  style={{ marginLeft: 'auto', position: 'sticky', right: 0, flexShrink: 0, padding: '6px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', color: '#4b5563', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer' }}
+                >폴더관리</button>
       </div>
 
       {/* List */}
@@ -200,7 +208,7 @@ export default function MobileNewsBookmarksClient() {
         )}
       </div>
 
-      {currentUser && showCategoryModal && selectedArticleId && (
+      {currentUser && showCategoryModal && (
         <BookmarkCategoryModal
           isOpen={showCategoryModal}
           onClose={() => {

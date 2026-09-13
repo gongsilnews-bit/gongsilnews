@@ -156,12 +156,23 @@ export default function GongsilSidebar({
           </div>
 
           {wishTab === "wish" && (
+            <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "10px 16px 0" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#333" }}>관심 폴더</span>
+                <button
+                  onClick={() => {
+                    if (!currentUser) { setIsAuthModalOpen(true); return; }
+                    setSelectedVacancyId(null);
+                    setShowCategoryModal(true);
+                  }}
+                  style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', color: '#4b5563', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer' }}
+                >폴더관리</button>
+              </div>
             <div
               style={{
                 display: "flex",
                 overflowX: "auto",
                 background: "#fff",
-                borderBottom: "1px solid #e5e7eb",
                 padding: "10px 16px",
                 gap: "8px",
                 WebkitOverflowScrolling: "touch",
@@ -180,6 +191,7 @@ export default function GongsilSidebar({
                   border: "none",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
+                  flexShrink: 0,
                 }}
               >
                 전체
@@ -196,6 +208,7 @@ export default function GongsilSidebar({
                   border: "none",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
+                  flexShrink: 0,
                 }}
               >
                 기본 폴더
@@ -214,11 +227,14 @@ export default function GongsilSidebar({
                     border: "none",
                     cursor: "pointer",
                     whiteSpace: "nowrap",
+                  flexShrink: 0,
                   }}
                 >
                   {cat.name}
                 </button>
               ))}
+
+            </div>
             </div>
           )}
 
@@ -358,6 +374,7 @@ export default function GongsilSidebar({
                 }}
                 style={{
                   display: "flex",
+                  flexWrap: "wrap",
                   justifyContent: "space-between",
                   alignItems: "flex-start",
                   padding: "16px 20px 16px 16px",
@@ -438,27 +455,7 @@ export default function GongsilSidebar({
                         </>
                       )}
                     </div>
-                    {activeCategory === "wish" && wishTab === "wish" && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedVacancyId(prop.id);
-                          setShowCategoryModal(true);
-                        }}
-                        style={{
-                          background: "#f3f4f6",
-                          border: "none",
-                          padding: "4px 10px",
-                          borderRadius: "4px",
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          color: "#4b5563",
-                          cursor: "pointer",
-                        }}
-                      >
-                        폴더 이동
-                      </button>
-                    )}
+
                   </div>
 
                   {/* 주소 영역: 마스킹 시 글자수에 맞춰 X로 대체 */}
@@ -613,6 +610,29 @@ export default function GongsilSidebar({
                     )}
                   </div>
                 )}
+                    {activeCategory === "wish" && wishTab === "wish" && (
+                      <div style={{ flexBasis: "100%", display: "flex", justifyContent: "flex-end", paddingTop: 12 }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedVacancyId(prop.id);
+                          setShowCategoryModal(true);
+                        }}
+                        style={{
+                          background: "#f3f4f6",
+                          border: "none",
+                          padding: "4px 10px",
+                          borderRadius: "4px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#4b5563",
+                          cursor: "pointer",
+                        }}
+                      >
+                        폴더 이동
+                      </button>
+                      </div>
+                    )}
               </div>
             );
           })

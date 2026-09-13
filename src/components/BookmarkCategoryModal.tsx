@@ -15,7 +15,7 @@ interface BookmarkCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   userId: string;
-  itemId: string | number;
+  itemId: string | number | null;
   type: 'ARTICLE' | 'VACANCY';
   onSuccess?: () => void;
 }
@@ -88,7 +88,7 @@ export default function BookmarkCategoryModal({
   };
 
   const handleSelectCategory = async (categoryId: string | null) => {
-    if (saving) return;
+    if (saving || itemId == null) return;
     setSaving(true);
     let res;
     if (type === 'ARTICLE') {
@@ -110,11 +110,12 @@ export default function BookmarkCategoryModal({
 
   const modalContent = (
     <div
+      className="bookmark-category-overlay"
       style={{
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
         width: '100vw', height: '100vh', zIndex: 99999999,
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        padding: 0, boxSizing: 'border-box',
+        display: 'flex', justifyContent: 'center',
+        boxSizing: 'border-box',
       }}
     >
       {/* 딤 배경 */}
@@ -125,14 +126,23 @@ export default function BookmarkCategoryModal({
 
       {/* 바텀시트 / 모달 컨테이너 */}
       <div 
+        className="bookmark-category-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="폴더 관리 및 이동"
         style={{ 
           position: 'relative', background: '#fff', width: '100%', maxWidth: '440px', 
-          borderTopLeftRadius: 20, borderTopRightRadius: 20,
-          display: 'flex', flexDirection: 'column', maxHeight: '85vh',
-          animation: 'slideUp 0.3s ease-out'
+          display: 'flex', flexDirection: 'column',
         }}
       >
         <style>{`
+          .bookmark-category-overlay { align-items: flex-end; padding: 0; }
+          .bookmark-category-dialog { border-radius: 20px 20px 0 0; max-height: 85dvh; animation: slideUp 0.3s ease-out; }
+          @media (min-width: 768px) {
+            .bookmark-category-overlay { align-items: center; padding: 24px; }
+            .bookmark-category-dialog { border-radius: 20px; max-height: calc(100dvh - 48px); box-shadow: 0 24px 80px rgba(0,0,0,.24); animation: bookmarkFadeIn .2s ease-out; }
+          }
+          @keyframes bookmarkFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
           @keyframes slideUp {
             from { transform: translateY(100%); }
             to { transform: translateY(0); }
@@ -158,7 +168,7 @@ export default function BookmarkCategoryModal({
               <li>
                 <button 
                   onClick={() => handleSelectCategory(null)}
-                  disabled={saving}
+                  disabled={saving || itemId == null}
                   style={{
                     width: '100%', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     background: '#f8f9fa', border: '1px solid #e5e7eb', borderRadius: 12, cursor: 'pointer',
@@ -193,7 +203,7 @@ export default function BookmarkCategoryModal({
                     <>
                       <button 
                         onClick={() => handleSelectCategory(cat.id)}
-                        disabled={saving}
+                        disabled={saving || itemId == null}
                         style={{
                           flex: 1, padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, cursor: 'pointer',
