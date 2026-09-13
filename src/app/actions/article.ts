@@ -406,6 +406,22 @@ export async function getArticles(filters?: {
   return await fetcher();
 }
 
+// Fetch every explicitly important article, independently of regular-list pagination.
+export async function getImportantArticles(filters: { section1?: string; section2?: string; author_name?: string; keyword?: string } = {}) {
+  const fetcher = unstable_cache(async () => {
+    const articles: any[] = [];
+    const pageSize = 500;
+    for (let page = 1; ; page++) {
+      const result = await getArticles({ ...filters, status: "APPROVED", is_important: true, page, limit: pageSize, noCache: true });
+      if (!result.success) return result;
+      articles.push(...(result.data || []));
+      if (!result.data?.length || articles.length >= (result.count || 0)) break;
+    }
+    return { success: true, data: articles, count: articles.length };
+  }, ["important-articles", JSON.stringify(filters)], { tags: ["articles"], revalidate: 60 });
+  return fetcher();
+}
+
 /* ── 제목/본문 텍스트 검색 ── */
 export async function searchArticles(query: string) {
   const supabase = getAdminClient();

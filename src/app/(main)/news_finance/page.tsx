@@ -1,5 +1,5 @@
 import NewsListLayout from "@/components/NewsListLayout";
-import { getArticles } from "@/app/actions/article";
+import { getImportantArticles, getArticles } from "@/app/actions/article";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +7,7 @@ export default async function NewsFinancePage() {
   const [articlesRes, popularRes, importantRes] = await Promise.all([
     getArticles({ status: "APPROVED", section2: "부동산·주식·재테크" }),
     getArticles({ status: "APPROVED", section2: "부동산·주식·재테크", limit: 50 }),
-    getArticles({ status: "APPROVED", is_important: true, section2: "부동산·주식·재테크", limit: 15 })
+    getImportantArticles({ section2: "부동산·주식·재테크" })
   ]);
 
   const articles = articlesRes.success ? (articlesRes.data || []) : [];

@@ -236,14 +236,7 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
   let displayImportantArticles = importantArticles;
   if (selectedSubCategory && !isBookmarkMode) {
     // 1. 해당 서브카테고리에 명시적으로 중요 표시된 기사 필터링
-    const subImportant = importantArticles.filter(a => a.section2 === selectedSubCategory);
-    if (subImportant.length > 0) {
-      displayImportantArticles = subImportant;
-    } else {
-      // 2. 중요 표시된 기사가 없다면, 해당 서브카테고리에 속한 전체 기사 중 최신 기사순으로 상위 5개를 추천 기사로 채워줌
-      const subAll = initialArticles.filter(a => a.section2 === selectedSubCategory);
-      displayImportantArticles = subAll.slice(0, 5);
-    }
+    displayImportantArticles = importantArticles.filter(a => a.section2 === selectedSubCategory);
   }
 
   const displayTitle = isBookmarkMode ? "📌 관심기사" : title;

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
+import { getImportantArticles, getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
 import { getVacancyCountByKeyword, getVacancyListByKeyword } from "@/app/actions/vacancy";
 import HomeHeader from "../_components/HomeHeader";
 import AuthorProfileHeader from "../_components/AuthorProfileHeader";
@@ -664,9 +664,25 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       : articles;
   }, [articles, section2Tab]);
 
-  const importantArticles = useMemo(() => {
-    return filteredBySection2.filter(a => a.is_important);
-  }, [filteredBySection2]);
+  const [importantSource, setImportantSource] = useState<any[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    setImportantSource([]);
+    if (activeTab === "local") return;
+    const isAll = searchParams.get("sec") === "all" || pathname === "/m/news";
+    void getImportantArticles({
+      section1: isAll ? undefined : KEY_TO_SECTION1[activeTab],
+      author_name: searchParams.get("author_name") || undefined,
+      keyword: searchParams.get("keyword") || undefined,
+    }).then(result => {
+      if (!cancelled && result.success) setImportantSource(result.data || []);
+    });
+    return () => { cancelled = true; };
+  }, [activeTab, pathname, searchParams]);
+  const importantArticles = useMemo(() => section2Tab
+    ? importantSource.filter(a => a.section2 === section2Tab)
+    : importantSource, [importantSource, section2Tab]);
+
 
   // URL 파라미터가 변경되면 상태 동기화 (뒤로가기 시 복구용)
   useEffect(() => {
@@ -2237,9 +2253,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               ? [...filteredBySection2].sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
               : filteredBySection2;
 
-            const carouselArticles = importantArticles.length > 0
-              ? importantArticles.slice(0, 8)
-              : filteredBySection2.slice(0, 5);
+            const carouselArticles = importantArticles;
             
             return (
               <div>

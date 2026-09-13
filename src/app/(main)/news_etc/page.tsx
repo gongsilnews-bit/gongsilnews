@@ -1,5 +1,5 @@
 import NewsListLayout from "@/components/NewsListLayout";
-import { getArticles } from "@/app/actions/article";
+import { getImportantArticles, getArticles } from "@/app/actions/article";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +7,7 @@ export default async function NewsEtcPage() {
   const [articlesRes, popularRes, importantRes] = await Promise.all([
     getArticles({ status: "APPROVED", section1: "라이프·오피니언" }),
     getArticles({ status: "APPROVED", section1: "라이프·오피니언", limit: 50 }),
-    getArticles({ status: "APPROVED", is_important: true, section1: "라이프·오피니언", limit: 15 })
+    getImportantArticles({ section1: "라이프·오피니언" })
   ]);
 
   const articles = articlesRes.success ? (articlesRes.data || []) : [];

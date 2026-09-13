@@ -1,5 +1,5 @@
 import NewsListLayout from "@/components/NewsListLayout";
-import { getArticles, searchArticles } from "@/app/actions/article";
+import { getImportantArticles, getArticles, searchArticles } from "@/app/actions/article";
 
 interface PageProps {
   searchParams?: any;
@@ -27,7 +27,7 @@ export default async function NewsAllPage({ searchParams }: PageProps) {
   const [popularRes, importantRes] = await Promise.all([
     getArticles({ status: "APPROVED", limit: 50 }),
     // 검색 중이거나 기자별 리스트일 때는 중요 기사를 불러올 필요 없음
-    isSearching ? Promise.resolve({ success: true, data: [] }) : getArticles({ status: "APPROVED", is_important: true, limit: 15 }),
+    isSearching ? Promise.resolve({ success: true, data: [] }) : getImportantArticles({  }),
   ]);
 
   const articles = articlesRes.success ? (articlesRes.data || []) : [];
