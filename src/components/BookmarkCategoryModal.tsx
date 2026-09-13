@@ -34,6 +34,38 @@ export default function BookmarkCategoryModal({
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
   const overlayRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const closingRef = useRef(false);
+  const ownsHistoryRef = useRef(false);
+
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen || !mounted) return;
+    closingRef.current = false;
+    // Add one same-page entry so Back dismisses the modal before leaving the list.
+    // Reuse it during Strict Mode effect replay and after forward navigation.
+    if (!window.history.state?.bookmarkCategoryModal) {
+      window.history.pushState({ ...window.history.state, bookmarkCategoryModal: true }, '', window.location.href);
+    }
+    ownsHistoryRef.current = true;
+    const handleBack = () => {
+      ownsHistoryRef.current = false;
+      onCloseRef.current();
+    };
+    window.addEventListener('popstate', handleBack);
+    return () => window.removeEventListener('popstate', handleBack);
+  }, [isOpen, mounted]);
+
+  const closeModal = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    if (ownsHistoryRef.current && window.history.state?.bookmarkCategoryModal) {
+      window.history.back();
+    } else {
+      onCloseRef.current();
+    }
+  };
 
   useEffect(() => {
     if (!isOpen || !mounted) return;
@@ -126,7 +158,7 @@ export default function BookmarkCategoryModal({
 
     if (res.success) {
       if (onSuccess) onSuccess();
-      onClose();
+      closeModal();
     } else {
       alert('저장에 실패했습니다: ' + res.error);
     }
@@ -148,7 +180,7 @@ export default function BookmarkCategoryModal({
     >
       {/* 딤 배경 */}
       <div 
-        onClick={onClose} 
+        onClick={closeModal}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', transition: 'opacity 0.3s' }} 
       />
 
@@ -187,7 +219,7 @@ export default function BookmarkCategoryModal({
         
         <div className="bookmark-category-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6' }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#111' }}>{modalTitle}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 24, color: '#aaa', cursor: 'pointer', padding: 0, lineHeight: 1 }}>✕</button>
+          <button onClick={closeModal} aria-label="닫기" style={{ background: 'none', border: 'none', fontSize: 24, color: '#aaa', cursor: 'pointer', padding: 0, lineHeight: 1 }}>✕</button>
         </div>
 
         <div className="bookmark-category-content" style={{ overflowY: 'auto', padding: '12px 20px 24px' }}>
