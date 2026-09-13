@@ -92,7 +92,7 @@ export default function QuickFloatingMenu() {
       }}>
         {/* 관심공실광고 */}
         <div
-          onClick={() => handleAuthClick("/gongsil")}
+          onClick={() => handleAuthClick("/gongsil?tab=wish")}
           style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "12px 14px", cursor: "pointer",

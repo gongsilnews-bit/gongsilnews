@@ -50,6 +50,7 @@ import {
 export default function GongsilClient({ initialVacancies, ownerId }: { initialVacancies: any[]; ownerId?: string }) {
   /* ── State & Refs ── */
   const searchParams = useSearchParams();
+  const openWishlist = searchParams.get("tab") === "wish";
   const [dbVacancies, setDbVacancies] = useState<any[]>(() => {
     if (initialVacancies && initialVacancies.length > 0) {
       return initialVacancies.map((v: any) => ({
@@ -65,6 +66,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   });
 
   const [activeCategory, setActiveCategory] = useState(() => {
+    if (openWishlist) return "wish";
     const first = initialVacancies[0];
     if (first) {
       if (first.trade_type === "경매") return "auction";
@@ -77,6 +79,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     return "auction";
   });
   const [activePills, setActivePills] = useState<string[]>(() => {
+    if (openWishlist) return [];
     const first = initialVacancies[0];
     if (first) {
       if (first.trade_type === "경매") {
@@ -98,7 +101,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     return initialVacancies[0]?.id || null;
   });
   const [prevPropertyId, setPrevPropertyId] = useState<string | number | null>(null);
-  const [showDetail, setShowDetail] = useState(true);
+  const [showDetail, setShowDetail] = useState(!openWishlist);
   const [activeDetailTab, setActiveDetailTab] = useState<
     "info" | "realtor" | "auction_detail" | "auction_property" | "auction_bid" | "auction_market"
   >(() => {
@@ -114,6 +117,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isAuctionMode, setIsAuctionMode] = useState(() => {
+    if (openWishlist) return false;
     const first = initialVacancies[0];
     if (first) {
       return first.trade_type === "경매";
@@ -121,6 +125,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     return true;
   });
   const [activeMode, setActiveMode] = useState<"공실" | "분양" | "경매">(() => {
+    if (openWishlist) return "공실";
     const first = initialVacancies[0];
     if (first) {
       return first.trade_type === "경매" ? "경매" : "공실";
