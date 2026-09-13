@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   getBookmarkCategories, 
@@ -31,6 +31,31 @@ export default function BookmarkCategoryModal({
   const [mounted, setMounted] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen || !mounted) return;
+    const viewport = window.visualViewport;
+    const updateViewport = () => {
+      const overlay = overlayRef.current;
+      if (!overlay) return;
+      overlay.style.setProperty('--bookmark-height', `${viewport?.height ?? window.innerHeight}px`);
+      overlay.style.setProperty('--bookmark-top', `${viewport?.offsetTop ?? 0}px`);
+      const input = document.activeElement;
+      if (input instanceof HTMLInputElement && overlay.contains(input)) {
+        input.scrollIntoView({ block: 'nearest' });
+      }
+    };
+    updateViewport();
+    viewport?.addEventListener('resize', updateViewport);
+    viewport?.addEventListener('scroll', updateViewport);
+    window.addEventListener('resize', updateViewport);
+    return () => {
+      viewport?.removeEventListener('resize', updateViewport);
+      viewport?.removeEventListener('scroll', updateViewport);
+      window.removeEventListener('resize', updateViewport);
+    };
+  }, [isOpen, mounted]);
 
   useEffect(() => {
     setMounted(true);
@@ -110,10 +135,11 @@ export default function BookmarkCategoryModal({
 
   const modalContent = (
     <div
+      ref={overlayRef}
       className="bookmark-category-overlay"
       style={{
-        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-        width: '100vw', height: '100vh', zIndex: 99999999,
+        position: 'fixed', left: 0, right: 0,
+        width: '100%', zIndex: 99999999,
         display: 'flex', justifyContent: 'center',
         boxSizing: 'border-box',
       }}
@@ -131,16 +157,24 @@ export default function BookmarkCategoryModal({
         aria-modal="true"
         aria-label="폴더 관리 및 이동"
         style={{ 
-          position: 'relative', background: '#fff', width: '100%', maxWidth: '440px', 
+          position: 'relative', background: '#fff', width: '100%',
           display: 'flex', flexDirection: 'column',
         }}
       >
         <style>{`
-          .bookmark-category-overlay { align-items: flex-end; padding: 0; }
-          .bookmark-category-dialog { border-radius: 20px 20px 0 0; max-height: 85dvh; animation: slideUp 0.3s ease-out; }
+          .bookmark-category-overlay { top: var(--bookmark-top, 0px); height: var(--bookmark-height, 100dvh); align-items: stretch; padding: 0; }
+          .bookmark-category-dialog { height: 100%; min-height: 0; overflow: hidden; }
+          .bookmark-category-header { padding: max(20px, env(safe-area-inset-top)) 20px 16px; flex-shrink: 0; }
+          .bookmark-category-content { display: flex; flex-direction: column; gap: 24px; min-height: 0; overscroll-behavior: contain; padding-bottom: max(24px, env(safe-area-inset-bottom)) !important; }
+          .bookmark-category-list { order: 2; }
+          .bookmark-category-create { order: 1; padding-bottom: 16px; border-bottom: 1px dashed #e5e7eb; }
+          .bookmark-category-dialog input { min-width: 0; font-size: 16px !important; scroll-margin-block: 16px; }
+          .bookmark-category-dialog li button { min-width: 0; overflow-wrap: anywhere; }
           @media (min-width: 768px) {
-            .bookmark-category-overlay { align-items: center; padding: 24px; }
-            .bookmark-category-dialog { border-radius: 20px; max-height: calc(100dvh - 48px); box-shadow: 0 24px 80px rgba(0,0,0,.24); animation: bookmarkFadeIn .2s ease-out; }
+            .bookmark-category-overlay { top: 0; height: 100dvh; align-items: center; padding: 24px; }
+            .bookmark-category-dialog { height: auto; max-width: 440px; border-radius: 20px; max-height: calc(100dvh - 48px); box-shadow: 0 24px 80px rgba(0,0,0,.24); animation: bookmarkFadeIn .2s ease-out; }
+            .bookmark-category-list { order: 1; }
+            .bookmark-category-create { order: 2; padding-top: 16px; padding-bottom: 0; border-top: 1px dashed #e5e7eb; border-bottom: 0; }
           }
           @keyframes bookmarkFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
           @keyframes slideUp {
@@ -149,17 +183,13 @@ export default function BookmarkCategoryModal({
           }
         `}</style>
         
-        {/* 핸들바 (모바일용) */}
-        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
-          <div style={{ width: 40, height: 4, background: '#e5e7eb', borderRadius: 2 }} />
-        </div>
-
-        <div style={{ padding: '0 20px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6' }}>
+        <div className="bookmark-category-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6' }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#111' }}>어느 폴더에 저장할까요?</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 24, color: '#aaa', cursor: 'pointer', padding: 0, lineHeight: 1 }}>✕</button>
         </div>
 
-        <div style={{ overflowY: 'auto', flex: 1, padding: '12px 20px 24px' }}>
+        <div className="bookmark-category-content" style={{ overflowY: 'auto', padding: '12px 20px 24px' }}>
+          <div className="bookmark-category-list">
           {loading ? (
             <div style={{ padding: '40px 0', textAlign: 'center', color: '#888', fontSize: 14 }}>불러오는 중...</div>
           ) : (
@@ -233,8 +263,9 @@ export default function BookmarkCategoryModal({
             </ul>
           )}
 
+          </div>
           {/* 새 폴더 추가 */}
-          <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px dashed #e5e7eb' }}>
+          <div className="bookmark-category-create">
             <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#666', marginBottom: 8 }}>+ 새 폴더 추가</label>
             <div style={{ display: 'flex', gap: 8 }}>
               <input 
