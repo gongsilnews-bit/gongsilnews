@@ -299,12 +299,13 @@ export async function getArticles(filters?: {
   searchKeyword?: string;
   orderBy?: "published_at" | "updated_at" | "created_at";
   noCache?: boolean;
+  countOnly?: boolean;
 }) {
   const executeQuery = async () => {
     const supabase = getAdminClient();
     let query = supabase
       .from("articles")
-      .select("id, article_no, status, section1, section2, title, subtitle, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)", { count: "exact" })
+      .select(filters?.countOnly ? "id" : "id, article_no, status, section1, section2, title, subtitle, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)", { count: "exact", head: filters?.countOnly ?? false })
       .eq("is_deleted", false);
 
     if (filters?.orderBy === "updated_at") {
@@ -346,8 +347,8 @@ export async function getArticles(filters?: {
         query = query.eq("section2", filters.section2);
       }
     }
-    if (filters?.is_important !== undefined) query = query.eq("is_important", filters.is_important);
-    if (filters?.is_headline !== undefined) query = query.eq("is_headline", filters.is_headline);
+    if (filters?.is_important !== undefined) query = filters.is_important ? query.eq("is_important", true) : query.or("is_important.is.null,is_important.eq.false");
+    if (filters?.is_headline !== undefined) query = filters.is_headline ? query.eq("is_headline", true) : query.or("is_headline.is.null,is_headline.eq.false");
     if (filters?.author_name) query = query.eq("author_name", filters.author_name);
     if (filters?.author_id) query = query.eq("author_id", filters.author_id);
     
@@ -433,25 +434,31 @@ export async function searchArticles(query: string) {
 }
 
 /* ── 기사 탭별 건수 초고속 조회 (HEAD 쿼리로 본문 데이터 전송 없이 카운트만 고속 조회) ── */
-export async function getArticleTabCounts() {
-  const supabase = getAdminClient();
-  const now = new Date().toISOString();
+export async function getArticleTabCounts(filters: { status?: string; section1?: string; section2?: string; articleNo?: string; searchKeyword?: string } = {}) {
   try {
-    const [all, pending, approved, scheduled, draft, rejected, headline, important, regular] = await Promise.all([
-      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false),
-      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "PENDING"),
-      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "APPROVED").or(`published_at.is.null,published_at.lte.${now}`),
-      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "APPROVED").gt("published_at", now),
-      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "DRAFT"),
-      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "REJECTED"),
-      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "APPROVED").eq("is_headline", true),
-      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "APPROVED").eq("is_important", true),
-      supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false).eq("status", "APPROVED").eq("is_headline", false).eq("is_important", false),
+    const pendingCounts = new Map<string, ReturnType<typeof getArticles>>();
+    const count = (extra: Record<string, unknown> = {}) => {
+      const params = { ...filters, status: undefined, ...extra, countOnly: true, noCache: true };
+      const key = JSON.stringify(params);
+      if (!pendingCounts.has(key)) pendingCounts.set(key, getArticles(params));
+      return pendingCounts.get(key)!;
+    };
+    const [all, pending, approved, scheduled, draft, rejected, headline, important, regular, typeAll] = await Promise.all([
+      count(), count({ status: "PENDING" }), count({ status: "APPROVED" }),
+      count({ status: "SCHEDULED" }), count({ status: "DRAFT" }), count({ status: "REJECTED" }),
+      count({ status: filters.status, is_headline: true }),
+      count({ status: filters.status, is_important: true }),
+      count({ status: filters.status, is_headline: false, is_important: false }),
+      count({ status: filters.status }),
     ]);
+    const failed = [all, pending, approved, scheduled, draft, rejected, headline, important, regular, typeAll].find(result => !result.success);
+    if (failed) return { success: false, error: failed.error };
+
 
     return {
       success: true,
       data: {
+        typeAll: typeAll.count || 0,
         전체: all.count || 0,
         승인대기: pending.count || 0,
         발행됨: approved.count || 0,

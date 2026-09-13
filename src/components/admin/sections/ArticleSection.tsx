@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AdminSectionProps } from "./types";
 import { getArticles, deleteArticle, adminUpdateArticleStatus, adminUpdateArticleFlags, adminReviseArticleWithFeedback, getArticleTabCounts } from "@/app/actions/article";
 import { getAdminArticlesAdSettingsMap, adminUpdateArticlesAdSettings, AuthorBanner } from "@/app/actions/articleAd";
@@ -68,9 +68,6 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       keyword: updates?.keyword !== undefined ? updates.keyword : searchKeyword,
     };
     setActiveFilters(newFilters);
-    if (newFilters.articleNo || newFilters.keyword || newFilters.section !== "전체" || newFilters.section2 !== "전체") {
-      setArticleFilter("전체");
-    }
     setCurrentPage(1);
   };
 
@@ -78,9 +75,12 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [pageSize, setPageSize] = useState(30);
   const [sortBy, setSortBy] = useState("published_at");
   const [totalCount, setTotalCount] = useState(0);
-  const [counts, setCounts] = useState({ 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, 작성중: 0, 반려: 0, 헤드라인: 0, 중요: 0, 일반기사: 0 });
+  const [counts, setCounts] = useState({ typeAll: 0, 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, 작성중: 0, 반려: 0, 헤드라인: 0, 중요: 0, 일반기사: 0 });
 
-  const loadData = async () => {
+  const countsKeyRef = useRef<string | null>(null);
+  const requestRef = useRef(0);
+  const loadData = async (refreshCounts = true) => {
+    const request = ++requestRef.current;
     const params: any = {
       page: currentPage,
       limit: pageSize,
@@ -98,7 +98,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     if (activeFilters.section2 !== "전체") params.section2 = activeFilters.section2;
     if (activeFilters.keyword) params.searchKeyword = activeFilters.keyword;
 
-    if (articleFilter === "발행됨") {
+    {
       if (publishFilter === "헤드라인") {
         params.is_headline = true;
       } else if (publishFilter === "중요") {
@@ -111,7 +111,19 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
 
     params.noCache = true;
 
-    const res = await getArticles(params);
+    const listRequest = getArticles(params);
+    const countFilters = { status: params.status, section1: params.section1, section2: params.section2, articleNo: params.articleNo, searchKeyword: params.searchKeyword };
+    const countsKey = JSON.stringify(countFilters);
+    if (refreshCounts || countsKeyRef.current !== countsKey) {
+      countsKeyRef.current = countsKey;
+      void getArticleTabCounts(countFilters).then(result => {
+        if (countsKeyRef.current !== countsKey) return;
+        if (result.success && result.data) setCounts(result.data);
+        else countsKeyRef.current = null;
+      });
+    }
+    const res = await listRequest;
+    if (request !== requestRef.current) return;
     if (res.success) {
       setDbArticles(res.data || []);
       setTotalCount(res.count || 0);
@@ -132,11 +144,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       }
     }
 
-    // Fetch tab counts via dedicated ultra-fast server action (HEAD counts, no body data)
-    const countsRes = await getArticleTabCounts();
-    if (countsRes.success && countsRes.data) {
-      setCounts(countsRes.data);
-    }
+
   };
 
   // 최고관리자/현재 사용자의 적격 공실 로드
@@ -179,7 +187,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   }, []);
 
   useEffect(() => {
-    loadData();
+    loadData(false);
   }, [currentPage, articleFilter, publishFilter, activeFilters, pageSize, sortBy]);
 
   // 배너 개별 빠른 변경 핸들러
@@ -379,7 +387,6 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
               return (
                 <button key={tab} onClick={() => {
                   setArticleFilter(tab);
-                  setPublishFilter("전체");
                   setCheckedArticleIds([]);
                   setActiveFilters({ articleNo: "", section: "전체", section2: "전체", keyword: "" });
                   setSearchArticleNo(""); setSearchSection("전체"); setSearchSection2("전체"); setSearchKeyword("");
@@ -486,13 +493,15 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
           </button>
           </div>
 
-          {/* 발행됨 탭에서 노출되는 기사 유형 필터 */}
-          {articleFilter === "발행됨" && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <button onClick={() => { setPublishFilter("전체"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "전체" ? "none" : `1px solid ${border}`, background: publishFilter === "전체" ? (darkMode ? "#4b5563" : "#374151") : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "전체" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>전체 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.발행됨}</span></button>
+          {/* Article type filters apply across all statuses. */}
+          {(
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", width: "100%", paddingTop: 12 }}>
+              <span style={{ fontSize: 13, color: textSecondary }}>기사 구분</span>
+              <button onClick={() => { setPublishFilter("전체"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "전체" ? "none" : `1px solid ${border}`, background: publishFilter === "전체" ? (darkMode ? "#4b5563" : "#374151") : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "전체" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>전체 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.typeAll}</span></button>
               <button onClick={() => { setPublishFilter("헤드라인"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "헤드라인" ? "none" : `1px solid ${border}`, background: publishFilter === "헤드라인" ? "#ef4444" : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "헤드라인" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>📌 헤드라인 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.헤드라인}</span></button>
               <button onClick={() => { setPublishFilter("중요"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "중요" ? "none" : `1px solid ${border}`, background: publishFilter === "중요" ? "#f59e0b" : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "중요" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>⭐ 중요기사 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.중요}</span></button>
               <button onClick={() => { setPublishFilter("일반기사"); setCurrentPage(1); }} style={{ height: 34, padding: "0 16px", borderRadius: 17, fontSize: 13, fontWeight: 700, border: publishFilter === "일반기사" ? "none" : `1px solid ${border}`, background: publishFilter === "일반기사" ? "#3b82f6" : (darkMode ? "#2c2d31" : "#fff"), color: publishFilter === "일반기사" ? "#fff" : textSecondary, cursor: "pointer", transition: "all 0.2s" }}>일반기사 <span style={{opacity:0.7, marginLeft:4, fontWeight:500}}>{counts.일반기사}</span></button>
+              <span style={{ fontSize: 12, color: textSecondary }}>중요·헤드라인 중복 지정 포함</span>
             </div>
           )}
         </div>
@@ -507,7 +516,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                 </th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 60 }}>번호</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>상태</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>광고</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>기사 구분</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>섹션</th>
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>기사 제목</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>기자명</th>
