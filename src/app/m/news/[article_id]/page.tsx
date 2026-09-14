@@ -9,11 +9,19 @@ export const revalidate = 0;
 
 import MobileNewsTabBar from "@/app/m/_components/header/MobileNewsTabBar";
 
-export default async function MobileNewsReadPage({ params, searchParams }: { params: Promise<{ article_id: string }>, searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const resolvedParams = await params;
+export default async function MobileNewsReadPage({
+  params,
+  searchParams,
+}: {
+  params?: Promise<{ article_id: string }> | { article_id: string };
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }> | { [key: string]: string | string[] | undefined };
+}) {
+  const resolvedParams = params ? await params : null;
   const resolvedSearchParams = searchParams ? await searchParams : {};
-  const isEmbedded = resolvedSearchParams.embed === 'true';
-  const articleId = typeof resolvedParams.article_id === "string" ? resolvedParams.article_id : null;
+  const isEmbedded = resolvedSearchParams?.embed === 'true';
+  const articleId = typeof resolvedParams?.article_id === "string" && resolvedParams.article_id.trim()
+    ? resolvedParams.article_id.trim()
+    : null;
 
   if (!articleId) {
     notFound();

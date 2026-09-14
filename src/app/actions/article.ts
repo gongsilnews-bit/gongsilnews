@@ -634,7 +634,8 @@ export async function deleteArticle(articleId: string) {
     
     // @ts-ignore
     revalidateTag("articles");
-    revalidatePath("/", "layout");
+    revalidatePath("/");
+    revalidatePath("/m");
     
     return { success: true };
   } catch (err: any) {
@@ -743,14 +744,16 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
         
         // @ts-ignore
         revalidateTag("articles");
-    revalidatePath("/", "layout");
+        revalidatePath("/");
+        revalidatePath("/m");
         return { success: true };
       }
       return { success: false, error: error.message };
     }
     // @ts-ignore
     revalidateTag("articles");
-    revalidatePath("/", "layout");
+    revalidatePath("/");
+    revalidatePath("/m");
 
     // 반려(REJECTED)와 동시에 반려 사유가 있으면 기사작성 + 사진 에이전트가 즉시 재작성하여 [승인대기]로 자동 이동
     if (status === 'REJECTED' && reject_reason && reject_reason.trim()) {
@@ -912,7 +915,8 @@ ${article.content}
 
     // @ts-ignore
     revalidateTag("articles");
-    revalidatePath("/", "layout");
+    revalidatePath("/");
+    revalidatePath("/m");
 
     return {
       success: true,
@@ -943,7 +947,8 @@ export async function adminUpdateArticleFlags(articleId: string, isImportant: bo
     
     // @ts-ignore
     revalidateTag("articles");
-    revalidatePath("/", "layout");
+    revalidatePath("/");
+    revalidatePath("/m");
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };

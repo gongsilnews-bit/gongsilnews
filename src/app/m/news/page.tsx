@@ -6,6 +6,11 @@ interface SearchParams {
 	sec?: string;
 }
 
-export default async function MobileAllNewsPage({ searchParams }: { searchParams: SearchParams }) {
-	return MobileNewsPage({ searchParams: { ...searchParams, sec: "all" } });
+export default async function MobileAllNewsPage({
+	searchParams,
+}: {
+	searchParams?: Promise<SearchParams> | SearchParams;
+}) {
+	const resolved = searchParams ? await searchParams : {};
+	return MobileNewsPage({ searchParams: { ...(resolved || {}), sec: "all" } });
 }

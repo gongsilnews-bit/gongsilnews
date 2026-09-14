@@ -84,7 +84,8 @@ export async function POST(req: Request) {
     // Next.js 캐시 무효화
     const { revalidateTag, revalidatePath } = require('next/cache');
     revalidateTag('articles');
-    revalidatePath('/', 'layout');
+    revalidatePath("/");
+    revalidatePath("/m");
 
     return NextResponse.json({
       success: true,

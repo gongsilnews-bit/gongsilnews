@@ -327,7 +327,8 @@ export async function deleteLecture(lectureId: string) {
     try {
       const { revalidateTag, revalidatePath } = require("next/cache");
       revalidateTag("lectures");
-      revalidatePath("/", "layout");
+      revalidatePath("/");
+    revalidatePath("/m");
     } catch (cacheErr) {
       console.error("Cache revalidate error:", cacheErr);
     }
