@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import Link from "next/link";
+import LectureLearningMaterials from "@/components/LectureLearningMaterials";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLectureDetail, checkEnrollment } from "@/app/actions/lecture";
 import { createClient } from "@/utils/supabase/client";
@@ -337,20 +338,7 @@ function StudyWatchContent() {
 
               {activeTab === "files" && (
                 <div>
-                  {lecture.materials && lecture.materials.length > 0 ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      {lecture.materials.map((mat: any, idx: number) => (
-                        <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8 }}>
-                          <span style={{ fontWeight: 600, color: "#062828" }}>📎 {mat.label || "실습 자료 및 계약서 양식"}</span>
-                          <a href={mat.url} target="_blank" rel="noreferrer" style={{ padding: "6px 14px", background: "#059669", color: "#fff", textDecoration: "none", borderRadius: 6, fontSize: 12.5, fontWeight: 700 }}>
-                            다운로드
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p style={{ color: "#94a3b8", margin: 0 }}>본 강의에 등록된 별도 첨부파일이 없습니다.</p>
-                  )}
+                  <LectureLearningMaterials lecture={lecture} lessonId={activeLesson?.id} />
                 </div>
               )}
 

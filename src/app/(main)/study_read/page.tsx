@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import LectureLearningMaterials from "@/components/LectureLearningMaterials";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLectureDetail, getLectures, createLectureReview, enrollLecture, checkEnrollment } from "@/app/actions/lecture";
 import { getPointBalance } from "@/app/actions/point";
@@ -442,6 +443,7 @@ function StudyReadContent() {
               <h3 style={{ fontSize: 19, fontWeight: 800, color: "#062828", margin: "0 0 16px 0" }}>
                 스터디 소개
               </h3>
+              <LectureLearningMaterials lecture={lecture} previewOnly />
               {lecture.description ? (
                 <div dangerouslySetInnerHTML={{ __html: lecture.description }} />
               ) : (
@@ -628,29 +630,20 @@ function StudyReadContent() {
                 </span>
               </div>
               <div style={{ fontSize: 12.5, color: "#059669", fontWeight: 700, marginTop: 4 }}>
-                1년(365일) 이용 · 결제일로부터
+                {lecture.duration_months || 5}개월 이용 · 수강 시작일로부터
               </div>
             </div>
 
-            {/* 포함 혜택 리스트 */}
-            <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginBottom: 20, fontSize: 13, color: "#475569", lineHeight: 1.8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#059669", fontWeight: 800 }}>✓</span>
-                <span>실습 템플릿·예제 파일 포함</span>
+            {lecture.sidebar_copy?.benefits?.trim() && (
+              <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginBottom: 20, fontSize: 13, color: "#475569", lineHeight: 1.8 }}>
+                {lecture.sidebar_copy.benefits.split(/\r?\n/).map((line: string) => line.trim()).filter(Boolean).map((line: string, index: number) => (
+                  <div key={index} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                    <span style={{ color: "#059669", fontWeight: 800 }}>✓</span>
+                    <span style={{ overflowWrap: "anywhere" }}>{line}</span>
+                  </div>
+                ))}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#059669", fontWeight: 800 }}>✓</span>
-                <span>모바일·PC 365일 무제한 수강</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#059669", fontWeight: 800 }}>✓</span>
-                <span>강의 자료 & 계약서 양식 다운로드 제공</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#059669", fontWeight: 800 }}>✓</span>
-                <span>전국 11만 부동산 스터디 크루 연계</span>
-              </div>
-            </div>
+            )}
 
             {/* CTA 버튼 */}
             <button
@@ -692,29 +685,12 @@ function StudyReadContent() {
 
           </div>
 
-          {/* 2. 공실뉴스가 보장하는 것 (신뢰 박스) */}
-          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "20px" }}>
-            <h4 style={{ fontSize: 13.5, fontWeight: 800, color: "#062828", margin: "0 0 12px 0" }}>
-              공실뉴스가 보장하는 것
-            </h4>
-            <div style={{ fontSize: 12.5, color: "#475569", lineHeight: 1.6 }}>
-              <p style={{ margin: "0 0 8px 0" }}>
-                <strong>365일 무제한 복습</strong><br />
-                스마트폰과 PC 어디서나 1년 내내 언제든 복습 가능합니다.
-              </p>
-              <p style={{ margin: "0 0 8px 0" }}>
-                <strong>실무 서식 원본 제공</strong><br />
-                계약서 특약, AI 프롬프트 원본 파일을 자유롭게 다운로드합니다.
-              </p>
-              <p style={{ margin: 0 }}>
-                <strong>매월 신규 업데이트</strong><br />
-                변화하는 최신 AI 기술과 정책을 매달 새로 반영합니다.
-              </p>
+          {(lecture.sidebar_copy?.assurance_title?.trim() || lecture.sidebar_copy?.assurance_body?.trim()) && (
+            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, overflowWrap: "anywhere" }}>
+              {lecture.sidebar_copy.assurance_title && <h4 style={{ fontSize: 13.5, fontWeight: 800, color: "#062828", margin: "0 0 12px" }}>{lecture.sidebar_copy.assurance_title}</h4>}
+              <div style={{ fontSize: 12.5, color: "#475569", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{lecture.sidebar_copy.assurance_body}</div>
             </div>
-            <div style={{ borderTop: "1px solid #e2e8f0", marginTop: 14, paddingTop: 10, fontSize: 12, color: "#64748b", textAlign: "center" }}>
-              궁금한 점이 있으신가요? <span onClick={() => alert("고객센터 010-7337-1122 또는 1:1 문의를 이용해 주세요.")} style={{ color: "#059669", fontWeight: 700, cursor: "pointer" }}>문의하기</span>
-            </div>
-          </div>
+          )}
 
         </aside>
 

@@ -6,8 +6,12 @@ import { saveLecture, getLectureDetail, uploadLectureImage } from "@/app/actions
 import { createClient } from "@/utils/supabase/client";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
+import LectureMaterialsEditor from "./LectureMaterialsEditor";
+import type { LectureMaterial } from "@/types/lectureMaterial";
+
 /* ── 타입 ── */
 type Chapter = {
+  materials?: LectureMaterial[];
   id?: string;
   chapter_no: number;
   title: string;
@@ -15,6 +19,7 @@ type Chapter = {
   lessons: Lesson[];
 };
 type Lesson = {
+  materials?: LectureMaterial[];
   id?: string;
   lesson_no: number;
   title: string;
@@ -23,11 +28,7 @@ type Lesson = {
   is_preview: boolean;
   sort_order: number;
 };
-type Material = {
-  type: string;
-  label: string;
-  url: string;
-};
+type Material = LectureMaterial;
 
 const CATEGORIES = ["중개실무", "법률", "세무", "분양", "마케팅", "기타"];
 
@@ -56,6 +57,8 @@ const compressToWebP = (file: File, maxWidth = 1920, quality = 0.82): Promise<Fi
 export default function StudyWriteForm() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [materialUploads, setMaterialUploads] = useState(0);
+  const trackUpload = (busy: boolean) => setMaterialUploads(n => n + (busy ? 1 : -1));
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loadId, setLoadId] = useState<string | null>(null);
 
@@ -64,6 +67,7 @@ export default function StudyWriteForm() {
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [description, setDescription] = useState("");
+  const [sidebarCopy, setSidebarCopy] = useState({ benefits: "", assurance_title: "", assurance_body: "" });
   const [images, setImages] = useState<string[]>([]);
   const [coverIndex, setCoverIndex] = useState(0);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -116,6 +120,7 @@ export default function StudyWriteForm() {
             setTitle(d.title || "");
             setSubtitle(d.subtitle || "");
             setDescription(d.description || "");
+            setSidebarCopy({ benefits: d.sidebar_copy?.benefits || "", assurance_title: d.sidebar_copy?.assurance_title || "", assurance_body: d.sidebar_copy?.assurance_body || "" });
             // 이미지 배열 복원
             const loadedImages: string[] = d.images || [];
             if (d.thumbnail_url && !loadedImages.includes(d.thumbnail_url)) {
@@ -134,7 +139,7 @@ export default function StudyWriteForm() {
             setDiscountLabel(d.discount_label || "");
             setDurationMonths(d.duration_months || 5);
             setTotalDuration(d.total_duration || "");
-            setMaterials(d.materials || []);
+            setMaterials((d.materials || []).filter((m: LectureMaterial) => !m.scope || m.scope === "common"));
 
             // 에디터에 기존 HTML 로드
             if (d.description && editorRef.current) {
@@ -145,11 +150,13 @@ export default function StudyWriteForm() {
               setChapters(
                 d.chapters.map((ch: any, ci: number) => ({
                   id: ch.id,
+                  materials: (d.materials || []).filter((m: LectureMaterial) => m.scope === "chapter" && m.chapter_no === ch.chapter_no),
                   chapter_no: ch.chapter_no,
                   title: ch.title,
                   sort_order: ch.sort_order || ci,
                   lessons: (ch.lessons || []).map((ls: any, li: number) => ({
                     id: ls.id,
+                    materials: (d.materials || []).filter((m: LectureMaterial) => m.scope === "lesson" && m.chapter_no === ch.chapter_no && m.lesson_no === ls.lesson_no),
                     lesson_no: ls.lesson_no,
                     title: ls.title,
                     video_url: ls.video_url || "",
@@ -344,10 +351,11 @@ export default function StudyWriteForm() {
     });
   };
   const removeChapter = (idx: number) => {
+    if (materialUploads > 0) return;
     if (chapters.length <= 1) return;
     setChapters((prev) => prev.filter((_, i) => i !== idx).map((ch, i) => ({ ...ch, chapter_no: i + 1, sort_order: i })));
   };
-  const updateChapter = (idx: number, field: string, value: string) => {
+  const updateChapter = (idx: number, field: string, value: string | LectureMaterial[]) => {
     setChapters((prev) => prev.map((ch, i) => (i === idx ? { ...ch, [field]: value } : ch)));
   };
   const addLesson = (chapterIdx: number) => {
@@ -360,6 +368,7 @@ export default function StudyWriteForm() {
     );
   };
   const removeLesson = (chapterIdx: number, lessonIdx: number) => {
+    if (materialUploads > 0) return;
     setChapters((prev) =>
       prev.map((ch, i) =>
         i === chapterIdx
@@ -376,6 +385,7 @@ export default function StudyWriteForm() {
     );
   };
   const toggleChapter = (idx: number) => {
+    if (materialUploads > 0) return;
     setExpandedChapters((prev) => {
       const next = new Set(prev);
       next.has(idx) ? next.delete(idx) : next.add(idx);
@@ -386,6 +396,10 @@ export default function StudyWriteForm() {
   /* ── 저장 ── */
   const handleSave = async (status: string) => {
     if (!title.trim()) { alert("강의 제목을 입력해주세요."); return; }
+    if (chapters.some(ch => (!ch.title.trim() && ((ch.materials || []).length > 0 || ch.lessons.some(ls => (ls.materials || []).length > 0))) || ch.lessons.some(ls => !ls.title.trim() && (ls.materials || []).length > 0))) {
+      alert('자료를 첨부한 챕터와 강의의 제목을 입력해 주세요.'); return;
+    }
+    if (materialUploads > 0) { alert("자료 업로드가 끝난 후 저장해 주세요."); return; }
     setSaving(true);
     try {
       const res = await saveLecture({
@@ -396,6 +410,7 @@ export default function StudyWriteForm() {
         title,
         subtitle,
         description,
+        sidebar_copy: sidebarCopy,
         thumbnail_url: images.length > 0 ? images[coverIndex] || images[0] : "",
         images,
         instructor_name: instructorName,
@@ -406,7 +421,13 @@ export default function StudyWriteForm() {
         discount_label: discountLabel,
         duration_months: durationMonths,
         total_duration: totalDuration,
-        materials,
+        materials: [
+          ...materials.map(m => ({ ...m, scope: 'common' as const, chapter_no: undefined, lesson_no: undefined })),
+          ...chapters.flatMap(ch => [
+            ...(ch.materials || []).map(m => ({ ...m, scope: 'chapter' as const, chapter_no: ch.chapter_no, lesson_no: undefined })),
+            ...ch.lessons.flatMap(ls => (ls.materials || []).map(m => ({ ...m, scope: 'lesson' as const, chapter_no: ch.chapter_no, lesson_no: ls.lesson_no }))),
+          ]),
+        ],
         chapters: chapters.map((ch) => ({ ...ch, lessons: ch.lessons.filter((ls) => ls.title.trim()) })).filter((ch) => ch.title.trim()),
       });
       if (res.success) {
@@ -458,8 +479,8 @@ export default function StudyWriteForm() {
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => router.push("?menu=study")} style={{ height: 40, padding: "0 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>취소</button>
-            <button onClick={() => handleSave("DRAFT")} disabled={saving} style={{ height: 40, padding: "0 20px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
-            <button onClick={() => handleSave("ACTIVE")} disabled={saving} style={{ height: 40, padding: "0 24px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>🚀 공개 등록</button>
+            <button onClick={() => handleSave("DRAFT")} disabled={saving || materialUploads > 0} style={{ height: 40, padding: "0 20px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
+            <button onClick={() => handleSave("ACTIVE")} disabled={saving || materialUploads > 0} style={{ height: 40, padding: "0 24px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>🚀 공개 등록</button>
           </div>
         </div>
 
@@ -737,6 +758,17 @@ export default function StudyWriteForm() {
               </div>
             </div>
 
+            <div style={sectionStyle}>
+              <div style={sectionTitleStyle}>강의 우측 안내 문구</div>
+              <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>수강 신청 영역에 표시됩니다. 비워 둔 항목은 표시하지 않습니다. 수강료와 이용 기간은 위의 가격·수강 기간 설정을 따릅니다.</p>
+              <label style={labelStyle} htmlFor="lecture-benefits">수강 혜택 — 한 줄에 하나씩 입력</label>
+              <textarea id="lecture-benefits" rows={4} value={sidebarCopy.benefits} onChange={e => setSidebarCopy(prev => ({ ...prev, benefits: e.target.value }))} style={{ ...inputStyle, height: 'auto', resize: 'vertical', marginBottom: 16 }} placeholder="예: 실습 예제 파일 제공" />
+              <label style={labelStyle} htmlFor="lecture-assurance-title">하단 안내 제목</label>
+              <input id="lecture-assurance-title" value={sidebarCopy.assurance_title} onChange={e => setSidebarCopy(prev => ({ ...prev, assurance_title: e.target.value }))} style={{ ...inputStyle, marginBottom: 16 }} placeholder="예: 수강 전 확인해 주세요" />
+              <label style={labelStyle} htmlFor="lecture-assurance-body">하단 안내 내용</label>
+              <textarea id="lecture-assurance-body" rows={6} value={sidebarCopy.assurance_body} onChange={e => setSidebarCopy(prev => ({ ...prev, assurance_body: e.target.value }))} style={{ ...inputStyle, height: 'auto', resize: 'vertical' }} placeholder="강의별 안내 내용을 입력하세요. 줄바꿈이 그대로 표시됩니다." />
+            </div>
+
             {/* ========== 5. 커리큘럼 빌더 ========== */}
             <div style={sectionStyle}>
               <div style={{ ...sectionTitleStyle, justifyContent: "space-between" }}>
@@ -767,6 +799,7 @@ export default function StudyWriteForm() {
 
                     {expandedChapters.has(ci) && (
                       <div style={{ padding: "16px 20px" }}>
+                        <LectureMaterialsEditor title="챕터 자료" value={chapter.materials} onChange={items => updateChapter(ci, "materials", items)} onUploading={trackUpload} />
                         {chapter.lessons.map((lesson, li) => (
                           <div key={li} style={{ display: "grid", gridTemplateColumns: "32px 1fr 200px 80px 60px 32px", gap: 8, alignItems: "center", marginBottom: 10, padding: "8px 12px", background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb" }}>
                             <span style={{ fontSize: 13, fontWeight: 700, color: "#8a3ffc", textAlign: "center" }}>{ci + 1}-{li + 1}</span>
@@ -777,6 +810,7 @@ export default function StudyWriteForm() {
                               <input type="checkbox" checked={lesson.is_preview} onChange={(e) => updateLesson(ci, li, "is_preview", e.target.checked)} style={{ accentColor: "#3b82f6" }} />미리보기
                             </label>
                             <button onClick={() => removeLesson(ci, li)} style={{ width: 28, height: 28, border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", color: "#ef4444", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="강의 삭제">×</button>
+                            <LectureMaterialsEditor title="개별 강의 자료" value={lesson.materials} onChange={items => updateLesson(ci, li, "materials", items)} onUploading={trackUpload} />
                           </div>
                         ))}
                         <button onClick={() => addLesson(ci)} style={{ width: "100%", height: 36, border: "2px dashed #d1d5db", borderRadius: 8, background: "none", color: "#6b7280", fontSize: 13, fontWeight: 600, cursor: "pointer", marginTop: 4, transition: "all 0.2s" }}
@@ -793,67 +827,14 @@ export default function StudyWriteForm() {
 
             {/* ========== 6. 특강 자료 (첨부 파일 및 외부 링크) ========== */}
             <div style={sectionStyle}>
-              <div style={sectionTitleStyle}><span style={{ fontSize: 20 }}>🔗</span> 자료 첨부</div>
-              <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>영상 스킨(video_album) 및 자료실 스킨(file_album) 전용 간편 등록. 외부 링크 또는 직접 파일 첨부가 가능합니다.</p>
-              
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {materials.map((mat, mi) => (
-                  <div key={mi} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <select value={mat.type} onChange={(e) => { const newArr=[...materials]; newArr[mi].type=e.target.value; if (e.target.value !== "FILE") newArr[mi].url=""; setMaterials(newArr); }} style={{ height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 6, width: 180 }}>
-                      <option value="YOUTUBE">🎬 YouTube 영상</option>
-                      <option value="DRIVE">📁 구글 드라이브 다운로드</option>
-                      <option value="LINK">🔗 일반 외부링크</option>
-                      <option value="FILE">📎 파일 직접 첨부</option>
-                    </select>
-                    <input type="text" value={mat.label} onChange={(e) => { const newArr=[...materials]; newArr[mi].label=e.target.value; setMaterials(newArr); }} placeholder="라벨 (예: 수업자료)" style={{ height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 6, width: 200 }} />
-                    
-                    {mat.type === "FILE" ? (
-                      mat.url ? (
-                        <div style={{ flex: 1, height: 40, display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 13, color: "#2563eb", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{mat.url.split("/").pop()}</span>
-                          <button onClick={() => { const newArr=[...materials]; newArr[mi].url=""; setMaterials(newArr); }} style={{ fontSize: 12, color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>파일 변경</button>
-                        </div>
-                      ) : (
-                        <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
-                          <label style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px", background: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#374151" }}>
-                            파일 선택
-                            <input type="file" style={{ display: "none" }} onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              const formData = new FormData();
-                              formData.append("file", file);
-                              formData.append("lecture_id", loadId || "temp");
-                              formData.append("type", "material");
-                              const res = await uploadLectureImage(formData); // Using same general media upload approach
-                              if (res.success && res.url) {
-                                const newArr=[...materials]; 
-                                newArr[mi].url = res.url; 
-                                setMaterials(newArr);
-                              } else {
-                                alert("업로드 실패: " + (res.error || ""));
-                              }
-                              e.target.value = "";
-                            }} />
-                          </label>
-                        </div>
-                      )
-                    ) : (
-                      <input type="text" value={mat.url} onChange={(e) => { const newArr=[...materials]; newArr[mi].url=e.target.value; setMaterials(newArr); }} placeholder="https://..." style={{ height: 40, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 6, flex: 1 }} />
-                    )}
-                    
-                    <button onClick={() => setMaterials(materials.filter((_, i) => i !== mi))} style={{ width: 40, height: 40, border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", color: "#ef4444", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="삭제">×</button>
-                  </div>
-                ))}
-                
-                <button onClick={() => setMaterials([...materials, { type: "LINK", label: "", url: "" }])} style={{ height: 40, background: "#1f2937", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", width: 120 }}>+ 추가</button>
-              </div>
+              <LectureMaterialsEditor title="특강 공통 자료" value={materials} onChange={setMaterials} onUploading={trackUpload} />
             </div>
 
             {/* ========== 하단 버튼 ========== */}
             <div style={{ display: "flex", justifyContent: "center", gap: 16, padding: "20px 0 60px" }}>
               <button onClick={() => router.push("/admin?menu=study")} style={{ height: 48, padding: "0 32px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>취소</button>
-              <button onClick={() => handleSave("DRAFT")} disabled={saving} style={{ height: 48, padding: "0 32px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
-              <button onClick={() => handleSave("ACTIVE")} disabled={saving} style={{ height: 48, padding: "0 40px", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, boxShadow: "0 4px 14px rgba(245,158,11,0.3)" }}>🚀 공개 등록</button>
+              <button onClick={() => handleSave("DRAFT")} disabled={saving || materialUploads > 0} style={{ height: 48, padding: "0 32px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
+              <button onClick={() => handleSave("ACTIVE")} disabled={saving || materialUploads > 0} style={{ height: 48, padding: "0 40px", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, boxShadow: "0 4px 14px rgba(245,158,11,0.3)" }}>🚀 공개 등록</button>
             </div>
       </div>
     </div>

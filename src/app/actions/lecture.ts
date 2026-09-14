@@ -2,6 +2,18 @@
 
 import { createClient } from "@supabase/supabase-js"
 import { revalidateTag } from "next/cache"
+import type { LectureMaterial } from '@/types/lectureMaterial';
+import { createClient as createSessionClient } from '@/utils/supabase/server';
+import { isAdminRole } from '@/utils/permissionCheck';
+import { sealMaterialUrl, openMaterialUrl } from '@/utils/lectureMaterialSecrets';
+
+async function lectureEditor(lectureAuthor?: string | null) {
+  const session = await createSessionClient();
+  const { data: { user } } = await session.auth.getUser();
+  if (!user) return null;
+  const { data: member } = await getAdminClient().from('members').select('role').eq('id', user.id).single();
+  return isAdminRole(member?.role) || lectureAuthor === user.id ? user : null;
+}
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -21,6 +33,7 @@ export async function saveLecture(data: {
   title: string;
   subtitle?: string;
   description?: string;
+  sidebar_copy?: { benefits: string; assurance_title: string; assurance_body: string };
   thumbnail_url?: string;
   images?: string[];
   instructor_name?: string;
@@ -31,7 +44,7 @@ export async function saveLecture(data: {
   discount_label?: string;
   duration_months?: number;
   total_duration?: string;
-  materials?: { type: string; label?: string; url: string; }[];
+  materials?: LectureMaterial[];
   chapters?: {
     id?: string;
     chapter_no: number;
@@ -51,6 +64,22 @@ export async function saveLecture(data: {
   const supabase = getAdminClient();
 
   try {
+    const { data: existingLecture } = data.id
+      ? await supabase.from('lectures').select('author_id,materials').eq('id', data.id).single()
+      : { data: null };
+    const editor = await lectureEditor(data.id ? existingLecture?.author_id : data.author_id);
+    if (!editor) return { success: false, error: '강의를 편집할 권한이 없습니다.' };
+    const existingMaterialUrls = new Set((existingLecture?.materials || []).map((m: LectureMaterial) => openMaterialUrl(m.url)));
+    const storedMaterials = (data.materials || []).map(material => {
+      if (!material.url.trim()) throw new Error('자료 주소 또는 파일을 입력해 주세요.');
+      if (material.scope === 'chapter' || material.scope === 'lesson') {
+        const chapter = data.chapters?.find(ch => ch.chapter_no === material.chapter_no);
+        if (!chapter || (material.scope === 'lesson' && !chapter.lessons.some(ls => ls.lesson_no === material.lesson_no))) throw new Error('자료를 연결할 챕터 또는 강의를 확인해 주세요.');
+      }
+      if (material.url.startsWith('sealed:')) throw new Error('자료를 다시 불러온 후 저장해 주세요.');
+      if (material.url.startsWith('private:') && !material.url.startsWith(`private:${editor.id}/`) && !existingMaterialUrls.has(material.url)) throw new Error('사용할 수 없는 자료 파일입니다.');
+      return { ...material, url: sealMaterialUrl(material.url.trim()), is_preview: !!material.is_preview };
+    });
     const statusMap: Record<string, string> = {
       "임시저장": "DRAFT",
       "등록신청": "PENDING",
@@ -60,12 +89,13 @@ export async function saveLecture(data: {
     };
 
     const lectureData = {
-      author_id: data.author_id || null,
+      author_id: existingLecture?.author_id || editor.id,
       status: statusMap[data.status || ""] || data.status || "DRAFT",
       category: data.category,
       title: data.title,
       subtitle: data.subtitle || null,
       description: data.description || null,
+      ...(data.sidebar_copy !== undefined ? { sidebar_copy: data.sidebar_copy } : {}),
       thumbnail_url: data.thumbnail_url || null,
       images: data.images || [],
       instructor_name: data.instructor_name || null,
@@ -76,7 +106,7 @@ export async function saveLecture(data: {
       discount_label: data.discount_label || null,
       duration_months: data.duration_months || 5,
       total_duration: data.total_duration || null,
-      materials: data.materials || [],
+      materials: storedMaterials,
       updated_at: new Date().toISOString(),
     };
 
@@ -201,6 +231,10 @@ export async function getLectureDetail(lectureId: string) {
     if (error) return { success: false, error: error.message };
 
     // 챕터 조회
+    const editor = await lectureEditor(lecture.author_id);
+    lecture.materials = (lecture.materials || []).map((material: LectureMaterial) => ({
+      ...material, url: editor ? openMaterialUrl(material.url || '') : '',
+    }));
     const { data: chapters } = await supabase
       .from("lecture_chapters")
       .select("*")

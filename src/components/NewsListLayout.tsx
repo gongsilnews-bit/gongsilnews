@@ -11,6 +11,7 @@ import AuthModal from "./AuthModal";
 import BookmarkCategoryModal from "./BookmarkCategoryModal";
 import { formatSection1 } from "@/utils/formatCategory";
 import { PopularNewsSidebarWidget } from "./PopularNewsSidebarWidget";
+import CategoryImportantHero from "./CategoryImportantHero";
 
 export interface Article {
   id: string;
@@ -52,6 +53,14 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const [isDesktopHero, setIsDesktopHero] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 769px)');
+    const sync = () => setIsDesktopHero(media.matches);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
 
   const [currentPage, setCurrentPage] = useState(() => {
     const pageVal = searchParams.get("page");
@@ -415,6 +424,9 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
                 {/* 스플릿 매거진 레이아웃 및 헤더 통합 */}
                 {(() => {
                   const isKeywordSearch = !!searchQuery;
+                  if (isDesktopHero && !selectedSubCategory && !isKeywordSearch && ['/news_gongsil', '/news_politics', '/news_marketing', '/news_etc'].includes(pathname)) {
+                    return <CategoryImportantHero articles={displayImportantArticles} memberName={memberName || "부동산"} mentalText={PERSONALIZED_MENTAL_MAP[category]?.["전체"] || "추천 뉴스"} />;
+                  }
                   if (isKeywordSearch) {
                     return <PremiumSplitRecommend articles={displayImportantArticles} />;
                   }

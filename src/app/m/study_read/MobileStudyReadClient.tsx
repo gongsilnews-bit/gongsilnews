@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import LectureLearningMaterials from "@/components/LectureLearningMaterials";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { getLectureDetail, createLectureReview, enrollLecture, checkEnrollment } from "@/app/actions/lecture";
@@ -325,7 +326,8 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
             <h3 style={{ fontSize: 16, fontWeight: 800, color: "#062828", margin: "0 0 12px 0" }}>
               스터디 안내
             </h3>
-            {lecture.description ? (
+            <LectureLearningMaterials lecture={lecture} previewOnly />
+              {lecture.description ? (
               <div dangerouslySetInnerHTML={{ __html: lecture.description }} />
             ) : (
               <p>본 과정은 내일 당장 현장에서 계약을 쓰고 매물을 홍보할 수 있는 실전 노하우를 중심으로 구성되어 있습니다.</p>

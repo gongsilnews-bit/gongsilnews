@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
+import LectureLearningMaterials from "@/components/LectureLearningMaterials";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLectureDetail, checkEnrollment } from "@/app/actions/lecture";
 import { createClient } from "@/utils/supabase/client";
@@ -306,20 +307,7 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
 
         {activeTab === "files" && (
           <div>
-            {lecture.materials && lecture.materials.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {lecture.materials.map((mat: any, idx: number) => (
-                  <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#062828" }}>📎 {mat.label || "실습 자료 및 계약서 양식"}</span>
-                    <a href={mat.url} target="_blank" rel="noreferrer" style={{ padding: "5px 10px", background: "#059669", color: "#fff", textDecoration: "none", borderRadius: 4, fontSize: 11.5, fontWeight: 700 }}>
-                      다운로드
-                    </a>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>등록된 첨부 파일이 없습니다.</p>
-            )}
+            <LectureLearningMaterials lecture={lecture} lessonId={activeLesson?.id} />
           </div>
         )}
       </div>
