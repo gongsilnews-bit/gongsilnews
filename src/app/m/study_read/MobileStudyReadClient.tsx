@@ -333,8 +333,8 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
         {[
           { id: "introduce", label: "소개" },
           { id: "curriculum", label: `커리큘럼 (${totalLessons})` },
-          { id: "review", label: `후기 (${reviews.length})` },
           { id: "creator", label: "강사" },
+          { id: "review", label: `후기 (${reviews.length})` },
         ].map((tab) => {
           const isSel = activeTab === tab.id;
           return (
