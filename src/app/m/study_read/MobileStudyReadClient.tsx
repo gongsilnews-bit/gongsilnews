@@ -20,7 +20,13 @@ const toEmbedUrl = (url: string): string => {
   return url;
 };
 
-export default function MobileStudyReadClient({ initialLecture }: { initialLecture: any }) {
+export default function MobileStudyReadClient({
+  initialLecture,
+  onClose,
+}: {
+  initialLecture: any;
+  onClose?: () => void;
+}) {
   const router = useRouter();
   const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -31,6 +37,12 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
 
   const [activeTab, setActiveTab] = useState<"introduce" | "curriculum" | "review" | "creator">("introduce");
   const [lecture, setLecture] = useState<any>(initialLecture);
+
+  useEffect(() => {
+    if (initialLecture) {
+      setLecture(initialLecture);
+    }
+  }, [initialLecture]);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [newRating, setNewRating] = useState(5);
@@ -180,7 +192,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
     return (
       <div style={{ backgroundColor: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         <div style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: "#fff", height: "50px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", padding: "0 16px" }}>
-          <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
+          <button onClick={() => onClose ? onClose() : router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
           </button>
           <div style={{ flex: 1, textAlign: "center", fontSize: "16px", fontWeight: 700, color: "#111827" }}>공실스터디</div>
@@ -204,7 +216,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
   const displayPrice = lecture.discount_price !== null && lecture.discount_price !== undefined ? lecture.discount_price : lecture.price;
 
   return (
-    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", paddingBottom: "90px", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#1e293b" }}>
+    <div className="study-read-entry" style={{ backgroundColor: "#ffffff", minHeight: "100vh", paddingBottom: "90px", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#1e293b" }}>
       
       {/* ── 미리보기 모달 ── */}
       {previewUrl && (
@@ -239,7 +251,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
 
       {/* ── 상단 고정 헤더 바 (뒤로가기 & 타이틀) ── */}
       <div style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: "#ffffff", height: "50px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", padding: "0 16px", justifyContent: "space-between" }}>
-        <button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px" }}>
+        <button onClick={() => onClose ? onClose() : router.back()} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", marginLeft: "-4px" }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#062828" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
         </button>
         <div style={{ flex: 1, textAlign: "center", fontSize: "16px", fontWeight: 800, color: "#062828" }}>

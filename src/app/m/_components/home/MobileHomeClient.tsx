@@ -9,6 +9,8 @@ const MiniVacancyMap = dynamic(() => import("./MiniVacancyMap"), { ssr: false })
 import { useRouter } from "next/navigation";
 import AuthModal from "@/components/AuthModal";
 import { createClient } from "@/utils/supabase/client";
+import MobileStudyReadClient from "@/app/m/study_read/MobileStudyReadClient";
+import { getLectureDetail } from "@/app/actions/lecture";
 
 function formatDate(d: string) {
   if (!d) return "";
@@ -81,6 +83,88 @@ export default function MobileHomeClient(props: Props) {
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // ── 공실스터디 카드 줌인(Zoom-in) / 줌아웃(Zoom-out) 인라인 패널 상태 (3안) ──
+  const [panelState, setPanelState] = useState<'closed' | 'zooming-in' | 'open' | 'zooming-out'>('closed');
+  const [selectedLecture, setSelectedLecture] = useState<any | null>(null);
+  const [cardOriginRect, setCardOriginRect] = useState<{ top: number; left: number; width: number; height: number }>({
+    top: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+  });
+
+  const handleStudyCardClick = (e: React.MouseEvent<HTMLAnchorElement>, lec: any) => {
+    e.preventDefault();
+    if (panelState !== 'closed') return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCardOriginRect({
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    });
+    setSelectedLecture(lec);
+    setPanelState('zooming-in');
+
+    // 브라우저 뒤로가기 지원을 위한 history pushState
+    window.history.pushState({ panel: 'study-read', id: lec.id }, '', window.location.pathname + '?study_id=' + lec.id);
+
+    // 상세 정보(챕터, 강의자료, 후기 등) 비동기 로드
+    getLectureDetail(lec.id).then((res) => {
+      if (res.success && res.data) {
+        setSelectedLecture(res.data);
+      }
+    });
+
+    // 다음 프레임에서 전체화면(open)으로 부드럽게 줌인 확장
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setPanelState('open');
+      });
+    });
+  };
+
+  const triggerZoomOut = () => {
+    setPanelState('zooming-out');
+    setTimeout(() => {
+      setPanelState('closed');
+      setSelectedLecture(null);
+    }, 280);
+  };
+
+  const handleCloseStudyPanel = () => {
+    if (panelState === 'zooming-out' || panelState === 'closed') return;
+    if (window.history.state?.panel === 'study-read') {
+      window.history.back();
+    } else {
+      triggerZoomOut();
+    }
+  };
+
+  // 브라우저/안드로이드 하드웨어 뒤로가기 버튼(popstate) 감지 시 부드러운 줌아웃 닫기
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (panelState === 'open' || panelState === 'zooming-in') {
+        triggerZoomOut();
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [panelState]);
+
+  // 패널이 열려있을 때 배경 페이지 스크롤 방지
+  useEffect(() => {
+    if (panelState === 'open' || panelState === 'zooming-in') {
+      document.body.style.overflow = 'hidden';
+    } else if (panelState === 'closed') {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [panelState]);
 
   // 공실뉴스 영상 기사와 텍스트 기사 완벽 분리
   const ytRx = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/;
@@ -390,7 +474,9 @@ export default function MobileHomeClient(props: Props) {
           <div className="no-scrollbar" style={{ display: "flex", gap: 12, padding: "0 16px 16px", overflowX: "auto" }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
             {lectures.map((lec: any) => (
               <Link key={lec.id} href={`/m/study_read?id=${lec.id}`}
-                style={{ flexShrink: 0, width: 180, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", border: "1px solid #f3f4f6", background: "#fff", textDecoration: "none", display: "block" }}>
+                onClick={(e) => handleStudyCardClick(e, lec)}
+                className="study-card-tap"
+                style={{ flexShrink: 0, width: 180, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", border: "1px solid #f3f4f6", background: "#fff", textDecoration: "none", display: "block", transition: "transform 0.15s ease", cursor: "pointer" }}>
                 <div style={{ width: "100%", height: 112, overflow: "hidden", background: "#e5e7eb", position: "relative" }}>
                   {lec.thumbnail_url
                     ? <Image src={lec.thumbnail_url} alt={lec.title} fill style={{ objectFit: "cover" }} sizes="50vw" />
@@ -502,10 +588,63 @@ export default function MobileHomeClient(props: Props) {
         <span style={{ fontSize: "14px", fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>공실등록</span>
       </button>
 
-      {/* 로그인 모달 */}
-      {isAuthModalOpen && (
-        <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+      {/* ── 공실스터디 카드 풀스크린 줌인(Zoom-in) / 줌아웃(Zoom-out) 인라인 패널 (3안) ── */}
+      {panelState !== 'closed' && selectedLecture && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            pointerEvents: panelState === 'zooming-out' ? 'none' : 'auto',
+          }}
+        >
+          {/* 어두운 배경 오버레이 (페이드인 / 페이드아웃) */}
+          <div
+            onClick={handleCloseStudyPanel}
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.45)",
+              opacity: panelState === 'open' ? 1 : 0,
+              transition: "opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+          />
+
+          {/* 줌인/줌아웃 카드 패널 */}
+          <div
+            style={{
+              position: "absolute",
+              top: panelState === 'open' ? 0 : cardOriginRect.top,
+              left: panelState === 'open' ? 0 : cardOriginRect.left,
+              width: panelState === 'open' ? "100vw" : cardOriginRect.width,
+              height: panelState === 'open' ? "100vh" : cardOriginRect.height,
+              borderRadius: panelState === 'open' ? 0 : 12,
+              backgroundColor: "#ffffff",
+              overflowX: "hidden",
+              overflowY: panelState === 'open' ? "auto" : "hidden",
+              WebkitOverflowScrolling: "touch",
+              boxShadow: panelState === 'open'
+                ? "0 25px 50px -12px rgba(0, 0, 0, 0.35)"
+                : "0 4px 14px rgba(0, 0, 0, 0.12)",
+              transition: "top 0.28s cubic-bezier(0.16, 1, 0.3, 1), left 0.28s cubic-bezier(0.16, 1, 0.3, 1), width 0.28s cubic-bezier(0.16, 1, 0.3, 1), height 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+          >
+            <MobileStudyReadClient
+              initialLecture={selectedLecture}
+              onClose={handleCloseStudyPanel}
+            />
+          </div>
+        </div>
       )}
+
+      <style>{`
+        .study-card-tap {
+          -webkit-tap-highlight-color: transparent;
+        }
+        .study-card-tap:active {
+          transform: scale(0.96) !important;
+        }
+      `}</style>
     </div>
   );
 }
