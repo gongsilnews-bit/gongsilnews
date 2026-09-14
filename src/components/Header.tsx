@@ -453,9 +453,34 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
           {/* 닫기 버튼 */}
           <button 
             onClick={() => setIsSearchActive(false)}
-            style={{ position: "absolute", top: "40px", right: "60px", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            aria-label="검색 닫기"
+            style={{ 
+              position: "absolute", 
+              top: "85px", 
+              right: "60px", 
+              background: "none", 
+              border: "none", 
+              cursor: "pointer", 
+              padding: "6px",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "transform 0.15s, background-color 0.15s"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.06)";
+              e.currentTarget.style.transform = "scale(1.08)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
           >
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#1f2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
 
           <div style={{ width: "100%", maxWidth: "800px", display: "flex", flexDirection: "column", marginTop: "40px" }}>
