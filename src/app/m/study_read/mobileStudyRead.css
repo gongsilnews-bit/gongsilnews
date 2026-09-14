@@ -1,0 +1,4 @@
+/* Keep sticky navigation attached to the viewport on this page only. */
+body.mobile-study-detail-sticky {
+  overflow-x: clip;
+}

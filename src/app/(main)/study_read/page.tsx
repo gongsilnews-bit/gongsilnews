@@ -8,6 +8,7 @@ import { getLectureDetail, getLectures, createLectureReview, enrollLecture, chec
 import { getPointBalance } from "@/app/actions/point";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
+import styles from "./studyRead.module.css";
 
 /* ── YouTube URL → embed URL ── */
 const toEmbedUrl = (url: string): string => {
@@ -35,6 +36,23 @@ function StudyReadContent() {
   const [activeTab, setActiveTab] = useState<"introduce" | "curriculum" | "review" | "creator">("introduce");
   const [lecture, setLecture] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [headerHeight, setHeaderHeight] = useState(96);
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    document.body.classList.add("study-detail-sticky");
+    const header = document.querySelector<HTMLElement>("header.header");
+    const updateHeight = () => {
+      if (header) setHeaderHeight(Math.ceil(header.getBoundingClientRect().height));
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    if (header) observer.observe(header);
+    return () => {
+      observer.disconnect();
+      document.body.classList.remove("study-detail-sticky");
+    };
+  }, []);
 
   /* ── 캐러셀 ── */
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -222,7 +240,7 @@ function StudyReadContent() {
       lecture_id: lecture.id,
       user_id: user.id,
       rating: newRating,
-      comment: newReview,
+      content: newReview.trim(),
     });
     if (res.success) {
       alert("리뷰가 등록되었습니다.");
@@ -407,18 +425,22 @@ function StudyReadContent() {
           </div>
 
           {/* 3. 윤자동 스타일 탭 바 */}
-          <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", marginBottom: 36, gap: 28 }}>
+          <div ref={tabsRef} className={styles.tabs} style={{ top: headerHeight, scrollMarginTop: headerHeight, display: "flex", borderBottom: "1px solid #e2e8f0", marginBottom: 36, gap: 28 }}>
             {[
               { id: "introduce", label: "소개" },
               { id: "curriculum", label: `커리큘럼 (${totalLessons}강)` },
-              { id: "review", label: `수강 후기 (${reviews.length})` },
               { id: "creator", label: "강사진 소개" },
+              { id: "review", label: `수강 후기 (${reviews.length})` },
             ].map((tab) => {
               const isSel = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => {
+                    const wasSticky = tabsRef.current && tabsRef.current.getBoundingClientRect().top <= headerHeight + 1;
+                    setActiveTab(tab.id as typeof activeTab);
+                    if (wasSticky) requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ block: "start" }));
+                  }}
                   style={{
                     padding: "12px 0",
                     background: "none",
@@ -572,7 +594,7 @@ function StudyReadContent() {
                         <span style={{ color: "#d97706", fontWeight: 800 }}>{"★".repeat(rev.rating || 5)}</span>
                         <span style={{ fontSize: 12, color: "#94a3b8" }}>{rev.created_at?.substring(0, 10)}</span>
                       </div>
-                      <p style={{ fontSize: 14, color: "#334155", margin: 0, lineHeight: 1.6 }}>{rev.comment}</p>
+                      <p style={{ fontSize: 14, color: "#334155", margin: 0, lineHeight: 1.6, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{rev.content}</p>
                     </div>
                   ))}
                 </div>
@@ -604,7 +626,7 @@ function StudyReadContent() {
         </div>
 
         {/* ━━━ 우측: 윤자동 스타일 Sticky 구매/수강 위젯 ━━━ */}
-        <aside style={{ position: "sticky", top: 80, display: "flex", flexDirection: "column", gap: 16 }}>
+        <aside className={styles.sidebar} style={{ top: headerHeight + 16, maxHeight: `calc(100dvh - ${headerHeight + 32}px)`, display: "flex", flexDirection: "column", gap: 16 }}>
           
           {/* 1. 메인 결제/수강 카드 */}
           <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "26px 22px", boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { getLectureDetail, createLectureReview, enrollLecture, checkEnrollment } from "@/app/actions/lecture";
 import { getPointBalance } from "@/app/actions/point";
 import { createClient } from "@/utils/supabase/client";
+import "./mobileStudyRead.css";
 
 /* ── YouTube URL → embed URL ── */
 const toEmbedUrl = (url: string): string => {
@@ -21,6 +22,12 @@ const toEmbedUrl = (url: string): string => {
 
 export default function MobileStudyReadClient({ initialLecture }: { initialLecture: any }) {
   const router = useRouter();
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    document.body.classList.add("mobile-study-detail-sticky");
+    return () => document.body.classList.remove("mobile-study-detail-sticky");
+  }, []);
 
   const [activeTab, setActiveTab] = useState<"introduce" | "curriculum" | "review" | "creator">("introduce");
   const [lecture, setLecture] = useState<any>(initialLecture);
@@ -150,7 +157,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
       lecture_id: lecture.id,
       user_id: user.id,
       rating: newRating,
-      comment: newReview,
+      content: newReview.trim(),
     });
     if (res.success) {
       alert("후기가 등록되었습니다.");
@@ -289,7 +296,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
       </div>
 
       {/* ── 3. 윤자동 스타일 탭 바 ── */}
-      <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", padding: "0 16px", background: "#ffffff", position: "sticky", top: 50, zIndex: 40 }}>
+      <div ref={tabsRef} style={{ display: "flex", borderBottom: "1px solid #e2e8f0", padding: "0 16px", background: "#ffffff", position: "sticky", top: 50, scrollMarginTop: 50, zIndex: 40 }}>
         {[
           { id: "introduce", label: "소개" },
           { id: "curriculum", label: `커리큘럼 (${totalLessons})` },
@@ -300,7 +307,11 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => {
+                const wasSticky = tabsRef.current && tabsRef.current.getBoundingClientRect().top <= 51;
+                setActiveTab(tab.id as typeof activeTab);
+                if (wasSticky) requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ block: "start" }));
+              }}
               style={{
                 flex: 1,
                 padding: "12px 0",
@@ -406,7 +417,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
                     <span>{"★".repeat(rev.rating || 5)}</span>
                     <span style={{ color: "#94a3b8" }}>{rev.created_at?.substring(0, 10)}</span>
                   </div>
-                  <p style={{ fontSize: 13, color: "#334155", margin: 0 }}>{rev.comment}</p>
+                  <p style={{ fontSize: 13, color: "#334155", margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{rev.content}</p>
                 </div>
               ))}
             </div>

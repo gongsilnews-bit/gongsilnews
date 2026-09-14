@@ -1,0 +1,17 @@
+/* Avoid a body scroll container intercepting viewport sticky positioning. */
+:global(body.study-detail-sticky) {
+  overflow-x: clip;
+}
+
+.tabs {
+  position: sticky;
+  z-index: 20;
+  background: #fff;
+}
+
+.sidebar {
+  position: sticky;
+  align-self: start;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}

@@ -402,6 +402,11 @@ export async function createLectureReview(data: {
   rating: number;
   content: string;
 }) {
+  const content = typeof data.content === "string" ? data.content.trim() : "";
+  if (!content) return { success: false, error: "후기 내용을 입력해주세요." };
+  if (!Number.isInteger(data.rating) || data.rating < 1 || data.rating > 5) {
+    return { success: false, error: "별점은 1점부터 5점까지 선택해주세요." };
+  }
   const supabase = getAdminClient();
   try {
     const { error } = await supabase
@@ -411,7 +416,7 @@ export async function createLectureReview(data: {
         user_id: data.user_id || null,
         user_name: data.user_name || "익명",
         rating: data.rating,
-        content: data.content,
+        content,
       });
 
     if (error) return { success: false, error: error.message };
