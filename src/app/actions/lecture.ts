@@ -32,8 +32,9 @@ export async function saveLecture(data: {
   category: string;
   title: string;
   subtitle?: string;
+  keywords?: string[];
   description?: string;
-  sidebar_copy?: { benefits: string; assurance_title: string; assurance_body: string };
+  sidebar_copy?: { benefits?: string; assurance_title?: string; assurance_body?: string; keywords?: string[] };
   thumbnail_url?: string;
   images?: string[];
   instructor_name?: string;
@@ -65,7 +66,7 @@ export async function saveLecture(data: {
 
   try {
     const { data: existingLecture } = data.id
-      ? await supabase.from('lectures').select('author_id,materials').eq('id', data.id).single()
+      ? await supabase.from('lectures').select('author_id,materials,sidebar_copy').eq('id', data.id).single()
       : { data: null };
     const editor = await lectureEditor(data.id ? existingLecture?.author_id : data.author_id);
     if (!editor) return { success: false, error: '강의를 편집할 권한이 없습니다.' };
@@ -88,6 +89,12 @@ export async function saveLecture(data: {
       "삭제": "DELETED",
     };
 
+    const mergedSidebarCopy = {
+      ...(existingLecture?.sidebar_copy || {}),
+      ...(data.sidebar_copy || {}),
+      ...(data.keywords !== undefined ? { keywords: data.keywords } : {}),
+    };
+
     const lectureData = {
       author_id: existingLecture?.author_id || editor.id,
       status: statusMap[data.status || ""] || data.status || "DRAFT",
@@ -95,7 +102,7 @@ export async function saveLecture(data: {
       title: data.title,
       subtitle: data.subtitle || null,
       description: data.description || null,
-      ...(data.sidebar_copy !== undefined ? { sidebar_copy: data.sidebar_copy } : {}),
+      sidebar_copy: mergedSidebarCopy,
       thumbnail_url: data.thumbnail_url || null,
       images: data.images || [],
       instructor_name: data.instructor_name || null,
@@ -211,7 +218,11 @@ export async function getLectures(filters?: {
 
     const { data, error } = await query;
     if (error) return { success: false, error: error.message };
-    return { success: true, data: data || [] };
+    const mapped = (data || []).map((lec: any) => ({
+      ...lec,
+      keywords: lec.keywords || lec.sidebar_copy?.keywords || [],
+    }));
+    return { success: true, data: mapped };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -229,6 +240,8 @@ export async function getLectureDetail(lectureId: string) {
       .single();
 
     if (error) return { success: false, error: error.message };
+
+    const keywords = lecture.keywords || lecture.sidebar_copy?.keywords || [];
 
     // 챕터 조회
     const editor = await lectureEditor(lecture.author_id);
@@ -258,9 +271,16 @@ export async function getLectureDetail(lectureId: string) {
       }, {});
 
       for (const chapter of chapters) {
+        const lessons = (lessonsByChapter[chapter.id] || []).map((les: any) => ({
+          ...les,
+          chapter_no: chapter.chapter_no,
+          materials: (lecture.materials || []).filter(
+            (m: any) => m.scope === "lesson" && m.chapter_no === chapter.chapter_no && m.lesson_no === les.lesson_no
+          ),
+        }));
         chaptersWithLessons.push({
           ...chapter,
-          lessons: lessonsByChapter[chapter.id] || [],
+          lessons,
         });
       }
     }
@@ -301,6 +321,7 @@ export async function getLectureDetail(lectureId: string) {
       success: true,
       data: {
         ...lecture,
+        keywords,
         chapters: chaptersWithLessons,
         reviews: enrichedReviews,
       },

@@ -329,7 +329,7 @@ function StudyWatchContent() {
               {activeTab === "desc" && (
                 <div>
                   {activeLesson?.description ? (
-                    <p style={{ margin: 0 }}>{activeLesson.description}</p>
+                    <p style={{ margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{activeLesson.description}</p>
                   ) : (
                     <p style={{ color: "#94a3b8", margin: 0 }}>본 강의에 대한 설명이 등록되어 있습니다. 영상을 시청하며 실습을 진행해 보세요.</p>
                   )}
@@ -382,7 +382,7 @@ function StudyWatchContent() {
                   boxShadow: "0 2px 8px rgba(5,150,105,0.25)",
                 }}
               >
-                {nextLesson ? `${nextLesson.lesson_no || activeLessonIndex + 2}강. ${nextLesson.title} →` : "✓ 수강 완료"}
+                {nextLesson ? `${activeLessonIndex + 2}강. ${nextLesson.title} →` : "✓ 수강 완료"}
               </button>
             </div>
 

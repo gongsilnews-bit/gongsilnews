@@ -18,7 +18,7 @@ function load(file, mocks = {}) {
     { label: 'lesson', scope: 'lesson', chapter_no: 2, lesson_no: 3 },
     { label: 'other lesson', scope: 'lesson', chapter_no: 2, lesson_no: 4 },
   ];
-  assert.deepEqual(Array.from(materialGroups(materials, 2, 3), group => Array.from(group.items, item => item.label)), [['lesson'], ['chapter'], ['legacy common']]);
+  assert.deepEqual(Array.from(materialGroups(materials, 2, 3), group => Array.from(group.items, item => item.label)), [['lesson'], ['legacy common']]);
   assert.equal(materialGroups(materials, 1, 1)[0].items.length, 0);
 
   const previousKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

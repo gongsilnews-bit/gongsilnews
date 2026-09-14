@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import LectureLearningMaterials from "@/components/LectureLearningMaterials";
+import LecturePublicMaterialsModal from "@/components/LecturePublicMaterialsModal";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { getLectureDetail, createLectureReview, enrollLecture, checkEnrollment } from "@/app/actions/lecture";
@@ -38,6 +38,12 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState("");
+
+  /* ── 공개 자료 모달 ── */
+  const [selectedMaterialLesson, setSelectedMaterialLesson] = useState<{
+    title: string;
+    materials: { material: any; globalIndex: number }[];
+  } | null>(null);
 
   /* ── 수강 등록 상태 ── */
   const [isEnrolled, setIsEnrolled] = useState(false);
@@ -184,7 +190,15 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
     );
   }
 
-  const chapters = lecture.chapters || [];
+  const rawChapters = lecture.chapters || [];
+  const allLessons = rawChapters.flatMap((chapter: any, cIdx: number) =>
+    (chapter.lessons || []).map((les: any, lIdx: number) => ({
+      ...les,
+      chapter_no: les.chapter_no ?? chapter.chapter_no ?? (cIdx + 1),
+      lesson_no: les.lesson_no ?? (lIdx + 1),
+    }))
+  );
+  const chapters = [{ lessons: allLessons }];
   const reviews = lecture.reviews || [];
   const totalLessons = chapters.reduce((sum: number, ch: any) => sum + (ch.lessons?.length || 0), 0);
   const displayPrice = lecture.discount_price !== null && lecture.discount_price !== undefined ? lecture.discount_price : lecture.price;
@@ -213,6 +227,15 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
           </div>
         </div>
       )}
+
+      {/* ── 공개 자료 모달 ── */}
+      <LecturePublicMaterialsModal
+        isOpen={!!selectedMaterialLesson}
+        onClose={() => setSelectedMaterialLesson(null)}
+        lessonTitle={selectedMaterialLesson?.title || ""}
+        materials={selectedMaterialLesson?.materials || []}
+        lectureId={lecture.id}
+      />
 
       {/* ── 상단 고정 헤더 바 (뒤로가기 & 타이틀) ── */}
       <div style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: "#ffffff", height: "50px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", padding: "0 16px", justifyContent: "space-between" }}>
@@ -286,9 +309,19 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
           <span style={{ background: "#f0fdf4", color: "#065f46", border: "1px solid #d1fae5", padding: "3px 8px", borderRadius: 4 }}>
             총 {totalLessons}강
           </span>
-          <span style={{ background: "#f0fdf4", color: "#065f46", border: "1px solid #d1fae5", padding: "3px 8px", borderRadius: 4 }}>
-            1년(365일) 무제한 수강
-          </span>
+          {(Array.isArray(lecture.keywords)
+            ? lecture.keywords
+            : (Array.isArray(lecture.sidebar_copy?.keywords)
+              ? lecture.sidebar_copy.keywords
+              : ["1년(365일) 무제한 수강", "실무 서식 100% 제공"])
+          ).map((kw: string, idx: number) => (
+            <span
+              key={idx}
+              style={{ background: "#f0fdf4", color: "#065f46", border: "1px solid #d1fae5", padding: "3px 8px", borderRadius: 4 }}
+            >
+              {kw}
+            </span>
+          ))}
           <span style={{ display: "flex", alignItems: "center", gap: 3, color: "#d97706", marginLeft: "auto" }}>
             ★ {(lecture.rating || 4.9).toFixed(1)} ({lecture.review_count || reviews.length})
           </span>
@@ -337,8 +370,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
             <h3 style={{ fontSize: 16, fontWeight: 800, color: "#062828", margin: "0 0 12px 0" }}>
               스터디 안내
             </h3>
-            <LectureLearningMaterials lecture={lecture} previewOnly />
-              {lecture.description ? (
+            {lecture.description ? (
               <div dangerouslySetInnerHTML={{ __html: lecture.description }} />
             ) : (
               <p>본 과정은 내일 당장 현장에서 계약을 쓰고 매물을 홍보할 수 있는 실전 노하우를 중심으로 구성되어 있습니다.</p>
@@ -356,17 +388,66 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
           </div>
         )}
 
-        {activeTab === "curriculum" && (
-          <div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {chapters.map((ch: any, chIdx: number) => (
+        {activeTab === "curriculum" && (() => {
+          const allMaterials = lecture.materials || [];
+          const commonPublicMaterials = allMaterials
+            .map((m: any, idx: number) => ({ material: m, globalIndex: idx }))
+            .filter(({ material }) => material.is_preview && (!material.scope || material.scope === "common"));
+
+          return (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#062828" }}>
+                  커리큘럼 <span style={{ fontSize: 12, color: "#64748b" }}>전체 {totalLessons}강</span>
+                </div>
+
+                {commonPublicMaterials.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMaterialLesson({ title: `${lecture.title} · 공통 공개 자료`, materials: commonPublicMaterials })}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "3px 8px",
+                      borderRadius: 5,
+                      background: "#eff6ff",
+                      color: "#1d4ed8",
+                      border: "1px solid #bfdbfe",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    공통 자료{commonPublicMaterials.length > 1 ? ` (${commonPublicMaterials.length})` : ""}
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {chapters.map((ch: any, chIdx: number) => (
                 <div key={chIdx} style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", background: "#fff" }}>
-                  <div style={{ padding: "10px 14px", background: "#f8fafc", fontWeight: 700, fontSize: 13, color: "#062828", borderBottom: "1px solid #e2e8f0" }}>
-                    {ch.title || `Chapter ${chIdx + 1}`}
-                  </div>
+
                   <div>
                     {(ch.lessons || []).map((les: any, lesIdx: number) => {
                       const isPreview = les.is_preview || lesIdx === 0;
+                      const allMaterials = lecture.materials || [];
+                      const lessonPublicMaterials = allMaterials
+                        .map((m: any, idx: number) => ({ material: m, globalIndex: idx }))
+                        .filter(({ material }) => {
+                          if (!material.is_preview) return false;
+                          if (material.scope === "lesson") {
+                            const matchChapter = material.chapter_no === undefined || material.chapter_no === les.chapter_no;
+                            const matchLesson = material.lesson_no === les.lesson_no;
+                            return matchChapter && matchLesson;
+                          }
+                          return false;
+                        });
+
                       return (
                         <div key={les.id || lesIdx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 14px", borderBottom: "1px solid #f8fafc", fontSize: 13 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
@@ -374,14 +455,44 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
                             <span style={{ fontWeight: 600, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{les.title}</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                            {lessonPublicMaterials.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedMaterialLesson({ title: les.title, materials: lessonPublicMaterials })}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 3,
+                                  padding: "2px 6px",
+                                  borderRadius: 4,
+                                  background: "#eff6ff",
+                                  color: "#1d4ed8",
+                                  border: "1px solid #bfdbfe",
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                  <polyline points="14 2 14 8 20 8" />
+                                </svg>
+                                공개 자료{lessonPublicMaterials.length > 1 ? ` (${lessonPublicMaterials.length})` : ""}
+                              </button>
+                            )}
+
                             {isPreview ? (
-                              <button onClick={() => { setPreviewUrl(les.video_url); setPreviewTitle(les.title); }} style={{ padding: "2px 6px", borderRadius: 4, background: "#ecfdf5", color: "#047857", border: "1px solid #d1fae5", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                              <button
+                                type="button"
+                                onClick={() => { setPreviewUrl(les.video_url); setPreviewTitle(les.title); }}
+                                style={{ padding: "2px 6px", borderRadius: 4, background: "#ecfdf5", color: "#047857", border: "1px solid #d1fae5", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                              >
                                 미리보기
                               </button>
                             ) : (
                               <span style={{ fontSize: 11, color: "#94a3b8" }}>🔒</span>
                             )}
-                            <span style={{ fontSize: 11, color: "#94a3b8" }}>{les.duration_minutes ? `${les.duration_minutes}분` : "8:04"}</span>
+                            <span style={{ fontSize: 11, color: "#94a3b8" }}>{les.duration_minutes ? `${les.duration_minutes}분` : (les.duration || "8:04")}</span>
                           </div>
                         </div>
                       );
@@ -391,7 +502,7 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
               ))}
             </div>
           </div>
-        )}
+        ); })()}
 
         {activeTab === "review" && (
           <div>
@@ -426,9 +537,29 @@ export default function MobileStudyReadClient({ initialLecture }: { initialLectu
 
         {activeTab === "creator" && (
           <div style={{ background: "#f8fafc", padding: "18px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#062828", marginBottom: 4 }}>{lecture.instructor_name || "공실뉴스 강사진"}</div>
-            <div style={{ fontSize: 12, color: "#059669", fontWeight: 700, marginBottom: 10 }}>공실뉴스 공식 파트너 강사</div>
-            <p style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, margin: 0 }}>{lecture.instructor_bio || "현직 1등 공인중개사, 프롬프트 엔지니어, 경공매 권리분석 전문가로 구성된 수석 강사진입니다."}</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 50, height: 50, borderRadius: "50%", background: "#062326", color: "#6ee7b7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, overflow: "hidden", flexShrink: 0 }}>
+                {lecture.instructor_photo ? (
+                  <img src={lecture.instructor_photo} alt={lecture.instructor_name || "강사"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  "🎓"
+                )}
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#062828", marginBottom: 2 }}>{lecture.instructor_name || "공실뉴스 강사진"}</div>
+                <div style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>공실뉴스 공식 파트너 강사</div>
+              </div>
+            </div>
+            {lecture.instructor_bio ? (
+              <div
+                style={{ fontSize: 13, color: "#475569", lineHeight: 1.65, margin: 0 }}
+                dangerouslySetInnerHTML={{ __html: lecture.instructor_bio }}
+              />
+            ) : (
+              <p style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, margin: 0 }}>
+                현직 1등 공인중개사, 프롬프트 엔지니어, 경공매 권리분석 전문가로 구성된 수석 강사진입니다.
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -66,6 +66,8 @@ export default function StudyWriteForm() {
   const [category, setCategory] = useState("중개실무");
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
+  const [keywords, setKeywords] = useState<string[]>(["1년(365일) 무제한 수강", "실무 서식 100% 제공"]);
+  const [newKeyword, setNewKeyword] = useState("");
   const [description, setDescription] = useState("");
   const [sidebarCopy, setSidebarCopy] = useState({ benefits: "", assurance_title: "", assurance_body: "" });
   const [images, setImages] = useState<string[]>([]);
@@ -82,6 +84,10 @@ export default function StudyWriteForm() {
   const [instructorName, setInstructorName] = useState("");
   const [instructorBio, setInstructorBio] = useState("");
   const [instructorPhoto, setInstructorPhoto] = useState("");
+  const instructorBioEditorRef = useRef<HTMLDivElement>(null);
+  const savedBioRangeRef = useRef<Range | null>(null);
+  const instructorBioFileRef = useRef<HTMLInputElement>(null);
+  const [bioUploading, setBioUploading] = useState(false);
 
   /* ── 가격 ── */
   const [price, setPrice] = useState(0);
@@ -119,6 +125,13 @@ export default function StudyWriteForm() {
             setCategory(d.category || "중개실무");
             setTitle(d.title || "");
             setSubtitle(d.subtitle || "");
+            if (d.keywords !== undefined && Array.isArray(d.keywords)) {
+              setKeywords(d.keywords);
+            } else if (d.sidebar_copy?.keywords !== undefined && Array.isArray(d.sidebar_copy.keywords)) {
+              setKeywords(d.sidebar_copy.keywords);
+            } else {
+              setKeywords(["1년(365일) 무제한 수강", "실무 서식 100% 제공"]);
+            }
             setDescription(d.description || "");
             setSidebarCopy({ benefits: d.sidebar_copy?.benefits || "", assurance_title: d.sidebar_copy?.assurance_title || "", assurance_body: d.sidebar_copy?.assurance_body || "" });
             // 이미지 배열 복원
@@ -144,6 +157,9 @@ export default function StudyWriteForm() {
             // 에디터에 기존 HTML 로드
             if (d.description && editorRef.current) {
               editorRef.current.innerHTML = d.description;
+            }
+            if (d.instructor_bio && instructorBioEditorRef.current) {
+              instructorBioEditorRef.current.innerHTML = d.instructor_bio;
             }
 
             if (d.chapters && d.chapters.length > 0) {
@@ -180,6 +196,113 @@ export default function StudyWriteForm() {
       editorRef.current.innerHTML = description;
     }
   }, [description]);
+
+  useEffect(() => {
+    if (instructorBio && instructorBioEditorRef.current && !instructorBioEditorRef.current.innerHTML) {
+      instructorBioEditorRef.current.innerHTML = instructorBio;
+    }
+  }, [instructorBio]);
+
+  /* ── 강사 소개 에디터 함수 ── */
+  const saveBioSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (instructorBioEditorRef.current && instructorBioEditorRef.current.contains(range.commonAncestorContainer)) {
+        savedBioRangeRef.current = range.cloneRange();
+      }
+    }
+  };
+
+  const execBioCmd = (command: string, value?: string) => {
+    instructorBioEditorRef.current?.focus();
+    document.execCommand(command, false, value);
+    syncBioContent();
+  };
+
+  const syncBioContent = () => {
+    if (instructorBioEditorRef.current) {
+      setInstructorBio(instructorBioEditorRef.current.innerHTML);
+    }
+  };
+
+  const handleBioClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const wrapper = target.closest('.inserted-photo') as HTMLElement | null;
+    if (wrapper) {
+      const rect = wrapper.getBoundingClientRect();
+      const clickXFromRight = rect.right - e.clientX;
+      const clickYFromTop = e.clientY - rect.top;
+
+      if (clickXFromRight >= 0 && clickXFromRight <= 40 && clickYFromTop >= 0 && clickYFromTop <= 40) {
+        e.preventDefault();
+        e.stopPropagation();
+        const nextSib = wrapper.nextSibling;
+        if (nextSib && nextSib.nodeName === 'BR') {
+          nextSib.remove();
+        }
+        wrapper.remove();
+        syncBioContent();
+      }
+    }
+  };
+
+  const handleBioImageInsert = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setBioUploading(true);
+
+    for (const rawFile of Array.from(files)) {
+      if (!rawFile.type.startsWith('image/')) continue;
+
+      const compressed = await compressToWebP(rawFile);
+      const formData = new FormData();
+      formData.append("file", compressed);
+      formData.append("lecture_id", loadId || "temp");
+      formData.append("type", "content");
+
+      const res = await uploadLectureImage(formData);
+      if (res.success && res.url) {
+        if (instructorBioEditorRef.current) {
+          instructorBioEditorRef.current.focus();
+
+          const wrapper = document.createElement('div');
+          wrapper.style.cssText = 'margin: 14px 0; text-align: center;';
+          wrapper.setAttribute('contenteditable', 'false');
+          wrapper.className = 'inserted-photo';
+
+          const img = document.createElement('img');
+          img.src = res.url;
+          img.style.cssText = 'max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto;';
+          img.alt = '강사 소개 이미지';
+          wrapper.appendChild(img);
+
+          const br = document.createElement('br');
+
+          if (savedBioRangeRef.current && instructorBioEditorRef.current.contains(savedBioRangeRef.current.commonAncestorContainer)) {
+            const range = savedBioRangeRef.current;
+            range.deleteContents();
+            range.insertNode(br);
+            range.insertNode(wrapper);
+            range.setStartAfter(br);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          } else {
+            instructorBioEditorRef.current.appendChild(wrapper);
+            instructorBioEditorRef.current.appendChild(br);
+          }
+
+          syncBioContent();
+        }
+      } else {
+        alert("이미지 업로드 실패: " + (res.error || ""));
+      }
+    }
+
+    setBioUploading(false);
+    if (instructorBioFileRef.current) instructorBioFileRef.current.value = "";
+  };
 
   /* ── 에디터 커서 저장 ── */
   const saveSelection = () => {
@@ -393,6 +516,32 @@ export default function StudyWriteForm() {
     });
   };
 
+  /* ── 키워드 뱃지 관리 ── */
+  const handleAddKeyword = () => {
+    const trimmed = newKeyword.trim();
+    if (!trimmed) return;
+    const parts = trimmed.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+    const next = [...keywords];
+    for (const part of parts) {
+      if (!next.includes(part)) {
+        next.push(part);
+      }
+    }
+    setKeywords(next);
+    setNewKeyword("");
+  };
+
+  const handleRemoveKeyword = (indexToRemove: number) => {
+    setKeywords(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddKeyword();
+    }
+  };
+
   /* ── 저장 ── */
   const handleSave = async (status: string) => {
     if (!title.trim()) { alert("강의 제목을 입력해주세요."); return; }
@@ -409,8 +558,9 @@ export default function StudyWriteForm() {
         category,
         title,
         subtitle,
+        keywords,
         description,
-        sidebar_copy: sidebarCopy,
+        sidebar_copy: { ...sidebarCopy, keywords },
         thumbnail_url: images.length > 0 ? images[coverIndex] || images[0] : "",
         images,
         instructor_name: instructorName,
@@ -509,6 +659,112 @@ export default function StudyWriteForm() {
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle}>부제목</label>
                 <input type="text" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="예: 공실광고 접수부터 계약까지 완벽 가이드" style={inputStyle} />
+              </div>
+
+              {/* ── 키워드 / 혜택 뱃지 등록 ── */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>
+                    키워드 뱃지 (강의 상세 상단 초록색 박스)
+                  </label>
+                  <span style={{ fontSize: 12, color: "#6b7280" }}>
+                    강의 상세 페이지 제목 하단에 초록색 뱃지로 표시됩니다
+                  </span>
+                </div>
+
+                {/* 입력창 + 추가 버튼 */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  <input
+                    type="text"
+                    value={newKeyword}
+                    onChange={(e) => setNewKeyword(e.target.value)}
+                    onKeyDown={handleKeywordKeyDown}
+                    placeholder="예: 1년(365일) 무제한 수강, 실무 서식 100% 제공 (Enter 또는 추가)"
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddKeyword}
+                    style={{
+                      height: 42,
+                      padding: "0 18px",
+                      background: "#059669",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                    }}
+                  >
+                    + 추가
+                  </button>
+                </div>
+
+                {/* 등록된 키워드 뱃지 목록 */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, minHeight: 32, alignItems: "center" }}>
+                  {keywords.length === 0 ? (
+                    <span style={{ fontSize: 13, color: "#9ca3af" }}>등록된 키워드가 없습니다. 상단에서 키워드를 입력해 등록해주세요.</span>
+                  ) : (
+                    keywords.map((kw, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          background: "#f0fdf4",
+                          color: "#065f46",
+                          border: "1px solid #a7f3d0",
+                          padding: "6px 12px",
+                          borderRadius: 6,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                        }}
+                      >
+                        <span>{kw}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveKeyword(idx)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 18,
+                            height: 18,
+                            borderRadius: "50%",
+                            background: "#d1fae5",
+                            color: "#065f46",
+                            border: "none",
+                            cursor: "pointer",
+                            fontSize: 11,
+                            fontWeight: 800,
+                            lineHeight: 1,
+                            padding: 0,
+                            transition: "all 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "#ef4444";
+                            e.currentTarget.style.color = "#ffffff";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "#d1fae5";
+                            e.currentTarget.style.color = "#065f46";
+                          }}
+                          title="삭제"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
               </div>
 
               {/* ── 리치 에디터 (상세 설명) ── */}
@@ -731,7 +987,87 @@ export default function StudyWriteForm() {
               </div>
               <div>
                 <label style={labelStyle}>강사 소개</label>
-                <textarea value={instructorBio} onChange={(e) => setInstructorBio(e.target.value)} placeholder={"- (현) 공실뉴스 부동산 아카데미 대표강사\n- (현) 강남역 1번출구 부동산중개법인 대표"} style={textareaStyle} />
+
+                {/* 강사 소개 툴바 */}
+                <div style={{
+                  display: "flex", flexWrap: "wrap", gap: 4, padding: "8px 12px",
+                  border: "1px solid #d1d5db", borderBottom: "none", borderRadius: "8px 8px 0 0",
+                  background: "#f9fafb",
+                }}>
+                  <ToolBtn onClick={() => execBioCmd("bold")} title="굵게 (Ctrl+B)"><b>B</b></ToolBtn>
+                  <ToolBtn onClick={() => execBioCmd("italic")} title="기울임 (Ctrl+I)"><i>I</i></ToolBtn>
+                  <ToolBtn onClick={() => execBioCmd("underline")} title="밑줄 (Ctrl+U)"><u>U</u></ToolBtn>
+                  <ToolBtn onClick={() => execBioCmd("strikeThrough")} title="취소선"><s>S</s></ToolBtn>
+                  <div style={{ width: 1, background: "#d1d5db", margin: "0 4px" }} />
+                  <ToolBtn onClick={() => execBioCmd("formatBlock", "h2")} title="제목 (H2)"><span style={{ fontWeight: 800, fontSize: 14 }}>H2</span></ToolBtn>
+                  <ToolBtn onClick={() => execBioCmd("formatBlock", "h3")} title="소제목 (H3)"><span style={{ fontWeight: 800, fontSize: 12 }}>H3</span></ToolBtn>
+                  <ToolBtn onClick={() => execBioCmd("formatBlock", "p")} title="본문 (P)"><span style={{ fontSize: 12 }}>P</span></ToolBtn>
+                  <div style={{ width: 1, background: "#d1d5db", margin: "0 4px" }} />
+                  <ToolBtn onClick={() => execBioCmd("insertUnorderedList")} title="목록">•</ToolBtn>
+                  <ToolBtn onClick={() => execBioCmd("insertOrderedList")} title="번호 목록">1.</ToolBtn>
+                  <div style={{ width: 1, background: "#d1d5db", margin: "0 4px" }} />
+                  <ToolBtn onClick={() => execBioCmd("justifyLeft")} title="왼쪽 정렬">⫷</ToolBtn>
+                  <ToolBtn onClick={() => execBioCmd("justifyCenter")} title="가운데 정렬">☰</ToolBtn>
+                  <div style={{ width: 1, background: "#d1d5db", margin: "0 4px" }} />
+                  <ToolBtn onClick={() => { saveBioSelection(); instructorBioFileRef.current?.click(); }} title="사진 삽입 (WebP 자동 압축)">
+                    📷
+                  </ToolBtn>
+                  {bioUploading && (
+                    <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, marginLeft: 8 }}>
+                      ⏳ 업로드 중...
+                    </span>
+                  )}
+                  <input
+                    ref={instructorBioFileRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => handleBioImageInsert(e.target.files)}
+                    style={{ display: "none" }}
+                  />
+                </div>
+
+                {/* 강사 소개 본문 에디터 */}
+                <div
+                  ref={instructorBioEditorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={syncBioContent}
+                  onMouseUp={saveBioSelection}
+                  onKeyUp={saveBioSelection}
+                  onClick={handleBioClick}
+                  onPaste={async (e) => {
+                    const items = e.clipboardData?.items;
+                    if (items) {
+                      for (const item of Array.from(items)) {
+                        if (item.type.startsWith("image/")) {
+                          e.preventDefault();
+                          const file = item.getAsFile();
+                          if (file) {
+                            const dt = new DataTransfer();
+                            dt.items.add(file);
+                            await handleBioImageInsert(dt.files);
+                          }
+                          return;
+                        }
+                      }
+                    }
+                  }}
+                  style={{
+                    minHeight: 180,
+                    maxHeight: 500,
+                    overflowY: "auto",
+                    padding: "16px 18px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "0 0 8px 8px",
+                    fontSize: 14.5,
+                    lineHeight: "1.75",
+                    color: "#111",
+                    outline: "none",
+                    background: "#fff",
+                  }}
+                  data-placeholder="강사 약력 및 소개를 입력하세요. 사진을 삽입할 수 있습니다."
+                />
               </div>
             </div>
 
