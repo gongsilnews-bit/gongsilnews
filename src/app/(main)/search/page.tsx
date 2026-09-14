@@ -10,32 +10,23 @@ export default async function SearchPage({ searchParams }: PageProps) {
   const resolvedParams = searchParams ? await Promise.resolve(searchParams) : {};
   const query = resolvedParams.q as string || "";
 
-  // 1. 기사 검색
-  let articlesRes;
-  if (query) {
-    articlesRes = await searchArticles(query);
-  } else {
-    articlesRes = { success: true, data: [] };
-  }
-  const articles = articlesRes.success ? (articlesRes.data || []) : [];
-
-  // 2. 공실 검색
-  let vacancies = [];
+  // 1. 기사 검색 및 공실 개수 병렬 초고속 조회 (초기 800KB 공실 리스트 다운로드 제거)
+  let articles: any[] = [];
   let vacancyCount = 0;
+
   if (query) {
-    const [vRes, listRes] = await Promise.all([
+    const [articlesRes, vRes] = await Promise.all([
+      searchArticles(query),
       getVacancyCountByKeyword(query),
-      getVacancyListByKeyword(query)
     ]);
+    if (articlesRes.success) articles = articlesRes.data || [];
     if (vRes.success) vacancyCount = vRes.count || 0;
-    if (listRes.success) vacancies = listRes.data || [];
   }
 
   return (
     <SearchClient 
       query={query} 
       articles={articles} 
-      vacancies={vacancies} 
       vacancyCount={vacancyCount} 
     />
   );

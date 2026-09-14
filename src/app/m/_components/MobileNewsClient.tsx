@@ -5,8 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { getImportantArticles, getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
+import { getImportantArticles, getArticles, searchArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
 import { getVacancyCountByKeyword, getVacancyListByKeyword } from "@/app/actions/vacancy";
+import LoadingDots from "@/components/common/LoadingDots";
 import HomeHeader from "../_components/HomeHeader";
 import AuthorProfileHeader from "../_components/AuthorProfileHeader";
 import AuthModal from "@/components/AuthModal";
@@ -669,6 +670,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     let cancelled = false;
     setImportantSource([]);
     if (activeTab === "local") return;
+    const currentKeyword = searchParams.get("keyword") || initialKeyword || "";
+    if (currentKeyword.trim()) return; // 검색 모드에서는 중요 기사 캐러셀 쿼리 차단
     const isAll = searchParams.get("sec") === "all" || pathname === "/m/news";
     void getImportantArticles({
       section1: isAll ? undefined : KEY_TO_SECTION1[activeTab],
@@ -678,7 +681,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       if (!cancelled && result.success) setImportantSource(result.data || []);
     });
     return () => { cancelled = true; };
-  }, [activeTab, pathname, searchParams]);
+  }, [activeTab, pathname, searchParams, initialKeyword]);
   const importantArticles = useMemo(() => section2Tab
     ? importantSource.filter(a => a.section2 === section2Tab)
     : importantSource, [importantSource, section2Tab]);
@@ -766,7 +769,27 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [visibleArticles, setVisibleArticles] = useState<any[]>(initialArticles || []);
   const [vacancyCount, setVacancyCount] = useState<number>(0);
   const [vacancyList, setVacancyList] = useState<any[]>([]);
+  const [loadingVacancies, setLoadingVacancies] = useState(false);
   const [searchTab, setSearchTab] = useState<'article' | 'vacancy'>('article');
+  const isSearchMode = !!(initialKeyword || searchParams.get("keyword"));
+
+  const handleSearchTabChange = async (tab: 'article' | 'vacancy') => {
+    setSearchTab(tab);
+    const kw = searchParams.get("keyword") || initialKeyword || "";
+    if (tab === 'vacancy' && vacancyList.length === 0 && kw) {
+      setLoadingVacancies(true);
+      try {
+        const listRes = await getVacancyListByKeyword(kw);
+        if (listRes.success && listRes.data) {
+          setVacancyList(listRes.data);
+        }
+      } catch (e) {
+        console.error("공실 목록 조회 오류:", e);
+      } finally {
+        setLoadingVacancies(false);
+      }
+    }
+  };
   const [mapLoaded, setMapLoaded] = useState(false);
   const [clusterMode, setClusterMode] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -968,24 +991,21 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
     const loadSearchData = async () => {
       setLoading(true);
-      const filters: any = { status: "APPROVED", limit: ARTICLE_PAGE_SIZE, page: 1 };
-      if (authorMatch) filters.author_name = authorMatch;
-      if (keywordMatch) filters.keyword = keywordMatch;
-
       if (keywordMatch) {
-        const [vRes, listRes, res] = await Promise.all([
+        // 검색 모드: searchArticles로 제목/본문 검색 & 공실 개수 병렬 조회 (초기 공실 목록 800KB 다운로드 제거)
+        const [vRes, res] = await Promise.all([
           getVacancyCountByKeyword(keywordMatch),
-          getVacancyListByKeyword(keywordMatch),
-          getArticles(filters)
+          searchArticles(keywordMatch),
         ]);
         if (vRes.success) setVacancyCount(vRes.count || 0);
         else setVacancyCount(0);
-        if (listRes.success) setVacancyList(listRes.data || []);
-        else setVacancyList([]);
+        setVacancyList([]); // 공실 목록은 탭 클릭 시 지연 로드
         if (res.success && res.data) replaceArticles(res.data);
       } else {
         setVacancyCount(0);
         setVacancyList([]);
+        const filters: any = { status: "APPROVED", limit: ARTICLE_PAGE_SIZE, page: 1 };
+        if (authorMatch) filters.author_name = authorMatch;
         const res = await getArticles(filters);
         if (res.success && res.data) replaceArticles(res.data);
       }
@@ -997,17 +1017,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     } else {
       replaceArticles(initialArticles);
       if (keywordMatch) {
-        const loadVacanciesOnly = async () => {
-          const [vRes, listRes] = await Promise.all([
-            getVacancyCountByKeyword(keywordMatch),
-            getVacancyListByKeyword(keywordMatch)
-          ]);
+        const loadVacancyCountOnly = async () => {
+          const vRes = await getVacancyCountByKeyword(keywordMatch);
           if (vRes.success) setVacancyCount(vRes.count || 0);
           else setVacancyCount(0);
-          if (listRes.success) setVacancyList(listRes.data || []);
-          else setVacancyList([]);
         };
-        loadVacanciesOnly();
+        loadVacancyCountOnly();
       }
     }
   }, [searchParams, initialArticles, initialKeyword, initialAuthorName]);
@@ -1015,6 +1030,9 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   // 탭 전환 시 해당 카테고리 기사를 클라이언트에서 직접 fetch (SPA 전환으로 서버 컴포넌트가 안 돌 때 대비)
   useEffect(() => {
     if (activeTab === "local") return;
+    const currentKeyword = searchParams.get("keyword") || initialKeyword || "";
+    if (currentKeyword.trim()) return; // 검색 모드에서는 카테고리 기사 덮어쓰기 완전 차단!
+
     const isAll = searchParams.get("sec") === "all" || pathname === "/m/news";
     const targetSection1 = isAll ? undefined : (KEY_TO_SECTION1[activeTab] || undefined);
 
@@ -1030,12 +1048,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     if (isAll || activeTab !== initialTab) {
       fetchCategoryArticles();
     }
-  }, [activeTab, initialTab, searchParams]);
+  }, [activeTab, initialTab, searchParams, initialKeyword]);
 
   // 기사 목록 하단에 도달하면 다음 12건을 이어서 불러온다.
   useEffect(() => {
     const sentinel = loadMoreRef.current;
-    if (!sentinel || activeTab === "local") return;
+    if (!sentinel || activeTab === "local" || initialKeyword || searchParams.get("keyword")) return;
 
     const loadMoreArticles = async () => {
       if (loadingMoreArticles || !hasMoreArticles) return;
@@ -2129,12 +2147,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               
               <div style={{ display: "flex" }}>
                 <div 
-                  onClick={() => setSearchTab('article')}
+                  onClick={() => handleSearchTabChange('article')}
                   style={{ flex: 1, textAlign: "center", padding: "12px 0", fontSize: "15px", fontWeight: searchTab === 'article' ? 800 : 600, color: searchTab === 'article' ? "#111" : "#888", borderBottom: searchTab === 'article' ? "3px solid #111" : "3px solid transparent", cursor: "pointer" }}>
                   관련기사 <span style={{ color: searchTab === 'article' ? "#508bf5" : "#888" }}>{articles.length}</span>
                 </div>
                 <div 
-                  onClick={() => setSearchTab('vacancy')}
+                  onClick={() => handleSearchTabChange('vacancy')}
                   style={{ flex: 1, textAlign: "center", padding: "12px 0", fontSize: "15px", fontWeight: searchTab === 'vacancy' ? 800 : 600, color: searchTab === 'vacancy' ? "#111" : "#888", borderBottom: searchTab === 'vacancy' ? "3px solid #111" : "3px solid transparent", cursor: "pointer" }}>
                   관련공실 <span style={{ color: searchTab === 'vacancy' ? "#508bf5" : "#888" }}>{vacancyCount}</span>
                 </div>
@@ -2142,26 +2160,23 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             </div>
           )}
 
-          {/* 스켈레톤 로딩 */}
-          {loading && articles.length === 0 && (
-            <div style={{ padding: "16px" }}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} style={{ display: "flex", gap: "12px", padding: "16px 0", borderBottom: "1px solid #f3f4f6" }}>
-                  <div style={{ flex: 1 }}>
-                    <div className="skeleton" style={{ height: "16px", width: "90%", marginBottom: "8px" }} />
-                    <div className="skeleton" style={{ height: "16px", width: "70%", marginBottom: "8px" }} />
-                    <div className="skeleton" style={{ height: "12px", width: "40%" }} />
-                  </div>
-                  <div className="skeleton" style={{ width: "84px", height: "64px", borderRadius: "8px", flexShrink: 0 }} />
-                </div>
-              ))}
+          {/* 검색 모드 로딩 중 인디케이터 (점점점 불러오고 있습니다) */}
+          {loading && (
+            <div style={{ padding: "48px 16px", display: "flex", justifyContent: "center" }}>
+              <LoadingDots label="검색결과를 불러오고 있습니다" size="md" />
             </div>
           )}
 
           {/* 공실 리스트 (관련공실 탭일 경우) */}
           {searchTab === 'vacancy' && (
             <div style={{ background: "#f9fafb", padding: "8px 16px 20px" }}>
-              {vacancyList.map((v: any) => {
+              {loadingVacancies ? (
+                <div style={{ padding: "48px 16px", display: "flex", justifyContent: "center" }}>
+                  <LoadingDots label="공실 매물을 불러오고 있습니다" size="md" />
+                </div>
+              ) : (
+                <>
+                  {vacancyList.map((v: any) => {
                 const cardMasked = v.exposure_type === '부동산노출' && (v.trade_type === '경매' || v.trade_type === '공매' ? userLevel < 1 : userLevel < 2);
                 const showCommission = userLevel >= 2;
                 const baseAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
@@ -2234,17 +2249,19 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   </div>
                 );
               })}
-              {vacancyList.length === 0 && (
-                <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
-                  <div style={{ fontSize: "40px", marginBottom: "12px" }}>🏢</div>
-                  <p style={{ fontSize: "15px", fontWeight: 600 }}>해당 키워드의 공실이 없습니다.</p>
-                </div>
+                  {vacancyList.length === 0 && (
+                    <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
+                      <div style={{ fontSize: "40px", marginBottom: "12px" }}>🏢</div>
+                      <p style={{ fontSize: "15px", fontWeight: 600 }}>해당 키워드의 공실이 없습니다.</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
 
           {/* 실 기사 리스트 */}
-          {searchTab === 'article' && (() => {
+          {searchTab === 'article' && !loading && (() => {
             const isAll = searchParams.get("sec") === "all" || pathname === "/m/news";
             const currentCatLabel = isAll ? "공실뉴스" : (section2Tab || (NEWS_PILL_TABS.find(p => p.key === activeTab)?.label || "공실뉴스"));
             
@@ -2257,8 +2274,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             
             return (
               <div>
-                {/* 중요 뉴스 슬라이딩 캐러셀 (추천 - 상위 최대 8개) */}
-                {carouselArticles.length > 0 && (
+                {/* 중요 뉴스 슬라이딩 캐러셀 (검색 모드에서는 숨김) */}
+                {!isSearchMode && carouselArticles.length > 0 && (
                   <RecommendedNewsCarousel 
                     importantArticles={carouselArticles}
                     currentCatLabel={currentCatLabel}
@@ -2267,18 +2284,24 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                   />
                 )}
 
-                {/* 많이 본 뉴스 순위 리스트 (모바일 전용 독립 컴포넌트: 전체 및 서브카테고리별 + 기간 선택) */}
-                <MobilePopularNewsWidget
-                  currentCatLabel={currentCatLabel}
-                  section2Tab={section2Tab}
-                  allArticles={articles}
-                  activeTab={activeTab}
-                />
+                {/* 많이 본 뉴스 순위 리스트 (검색 모드에서는 숨김) */}
+                {!isSearchMode && (
+                  <MobilePopularNewsWidget
+                    currentCatLabel={currentCatLabel}
+                    section2Tab={section2Tab}
+                    allArticles={articles}
+                    activeTab={activeTab}
+                  />
+                )}
                 
-                {/* 일반 뉴스 리스트 정렬 필터 (모노크롬 미니멀 스타일) */}
+                {/* 일반 뉴스 리스트 정렬 필터 */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px", backgroundColor: "#fff", borderBottom: "1px solid #f3f4f6" }}>
                   <span style={{ fontSize: "13px", fontWeight: 700, color: "#18181b", letterSpacing: "-0.3px" }}>
-                    {isAll ? "공실뉴스" : (KEY_TO_SECTION1[activeTab] || "공실뉴스")} <span style={{ color: "#a1a1aa", fontWeight: 400, margin: "0 2px" }}>&gt;</span> {section2Tab || "전체"}
+                    {isSearchMode ? (
+                      <>검색결과 <span style={{ color: "#3b82f6" }}>{sortedRegularArticles.length}</span>건</>
+                    ) : (
+                      <>{isAll ? "공실뉴스" : (KEY_TO_SECTION1[activeTab] || "공실뉴스")} <span style={{ color: "#a1a1aa", fontWeight: 400, margin: "0 2px" }}>&gt;</span> {section2Tab || "전체"}</>
+                    )}
                   </span>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <button 
@@ -2328,7 +2351,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                     extractYoutubeId={extractYoutubeId}
                   />
                 ))}
-                {hasMoreArticles && (
+                {!isSearchMode && hasMoreArticles && (
                   <div ref={loadMoreRef} style={{ minHeight: 48, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {loadingMoreArticles && (
                       <div aria-label="다음 기사 불러오는 중" style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -2344,11 +2367,11 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
           })()}
 
           {!loading && searchTab === 'article' && articles.length === 0 && (
-                <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
-                  <div style={{ fontSize: "40px", marginBottom: "12px" }}>📰</div>
-                  <p style={{ fontSize: "15px", fontWeight: 600 }}>아직 기사가 없습니다.</p>
-                </div>
-              )}
+            <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>
+              <div style={{ fontSize: "40px", marginBottom: "12px" }}>{isSearchMode ? "🔍" : "📰"}</div>
+              <p style={{ fontSize: "15px", fontWeight: 600 }}>{isSearchMode ? "검색 결과가 없습니다." : "아직 기사가 없습니다."}</p>
+            </div>
+          )}
         </div>
       )}
       {/* 기사 상세 뷰 (모바일 슬라이딩 패널) - 우리동네뉴스 전용 */}

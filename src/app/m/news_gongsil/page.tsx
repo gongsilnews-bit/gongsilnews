@@ -1,6 +1,6 @@
 import React from "react";
 import MobileNewsClientWrapper from "../_components/MobileNewsClient";
-import { getArticles, getAuthorProfileByName } from "@/app/actions/article";
+import { getArticles, searchArticles, getAuthorProfileByName } from "@/app/actions/article";
 
 export const revalidate = 60;
 
@@ -14,12 +14,16 @@ export default async function MobileNewsPage({
   const keywordMatch = resolvedParams.keyword;
   const isAll = resolvedParams.sec === "all";
   
-  const filters: any = { status: "APPROVED", limit: 12 };
-  if (authorMatch) filters.author_name = authorMatch;
-  if (keywordMatch) filters.keyword = keywordMatch;
-
-  const res = await getArticles(filters);
-  const initialArticles = res.success ? res.data || [] : [];
+  let initialArticles: any[] = [];
+  if (keywordMatch) {
+    const res = await searchArticles(keywordMatch);
+    initialArticles = res.success ? res.data || [] : [];
+  } else {
+    const filters: any = { status: "APPROVED", limit: 12 };
+    if (authorMatch) filters.author_name = authorMatch;
+    const res = await getArticles(filters);
+    initialArticles = res.success ? res.data || [] : [];
+  }
   
   let authorProfile = null;
   if (authorMatch) {

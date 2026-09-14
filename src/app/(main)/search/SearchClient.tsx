@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { formatSection1 } from "@/utils/formatCategory";
+import LoadingDots from "@/components/common/LoadingDots";
+import { getVacancyListByKeyword } from "@/app/actions/vacancy";
 
 const formatPrice = (val: any) => {
   const deposit = val.deposit || 0;
@@ -41,12 +43,33 @@ const formatPrice = (val: any) => {
 interface SearchClientProps {
   query: string;
   articles: any[];
-  vacancies: any[];
+  vacancies?: any[];
   vacancyCount: number;
 }
 
-export default function SearchClient({ query, articles, vacancies, vacancyCount }: SearchClientProps) {
+export default function SearchClient({ query, articles, vacancies: initialVacancies, vacancyCount }: SearchClientProps) {
   const [searchTab, setSearchTab] = useState<'article' | 'vacancy'>('article');
+  const [vacancies, setVacancies] = useState<any[]>(initialVacancies || []);
+  const [loadingVacancies, setLoadingVacancies] = useState(false);
+  const [vacanciesLoaded, setVacanciesLoaded] = useState(Boolean(initialVacancies && initialVacancies.length > 0));
+
+  const handleTabChange = async (tab: 'article' | 'vacancy') => {
+    setSearchTab(tab);
+    if (tab === 'vacancy' && !vacanciesLoaded && query) {
+      setLoadingVacancies(true);
+      try {
+        const res = await getVacancyListByKeyword(query);
+        if (res.success && res.data) {
+          setVacancies(res.data);
+        }
+      } catch (err) {
+        console.error("공실 목록 로드 실패:", err);
+      } finally {
+        setVacanciesLoaded(true);
+        setLoadingVacancies(false);
+      }
+    }
+  };
 
   // 날짜 포맷
   const formatDate = (dateStr: string) => {
@@ -97,12 +120,12 @@ export default function SearchClient({ query, articles, vacancies, vacancyCount 
       {/* Tabs */}
       <div style={{ display: "flex", borderBottom: "2px solid #e5e7eb", marginBottom: "30px" }}>
         <div 
-          onClick={() => setSearchTab('article')}
+          onClick={() => handleTabChange('article')}
           style={{ flex: 1, textAlign: "center", padding: "16px 0", fontSize: "18px", fontWeight: searchTab === 'article' ? 800 : 600, color: searchTab === 'article' ? "#111" : "#888", borderBottom: searchTab === 'article' ? "4px solid #111" : "4px solid transparent", cursor: "pointer", transition: "all 0.2s" }}>
           관련기사 <span style={{ color: searchTab === 'article' ? "#508bf5" : "#888" }}>{articles.length}</span>
         </div>
         <div 
-          onClick={() => setSearchTab('vacancy')}
+          onClick={() => handleTabChange('vacancy')}
           style={{ flex: 1, textAlign: "center", padding: "16px 0", fontSize: "18px", fontWeight: searchTab === 'vacancy' ? 800 : 600, color: searchTab === 'vacancy' ? "#111" : "#888", borderBottom: searchTab === 'vacancy' ? "4px solid #111" : "4px solid transparent", cursor: "pointer", transition: "all 0.2s" }}>
           관련공실 <span style={{ color: searchTab === 'vacancy' ? "#f97316" : "#888" }}>{vacancyCount}</span>
         </div>
@@ -163,75 +186,81 @@ export default function SearchClient({ query, articles, vacancies, vacancyCount 
           {/* Vacancy List */}
           {searchTab === 'vacancy' && (
             <div>
-              {vacancies.length > 0 ? vacancies.map((v) => {
-                const baseAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
-                const price = formatPrice ? formatPrice(v) : (v.deposit + " / " + (v.monthly_rent || 0));
+              {loadingVacancies ? (
+                <div style={{ padding: "80px 0", display: "flex", justifyContent: "center" }}>
+                  <LoadingDots label="공실 매물을 불러오고 있습니다" size="lg" />
+                </div>
+              ) : vacancies.length > 0 ? (
+                vacancies.map((v) => {
+                  const baseAddr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ");
+                  const price = formatPrice ? formatPrice(v) : (v.deposit + " / " + (v.monthly_rent || 0));
 
-                return (
-                  <div
-                    key={v.id}
-                    style={{ display: "flex", gap: "16px", padding: "20px", border: "1px solid #e5e7eb", borderRadius: "12px", marginBottom: "16px", background: "#fff", transition: "box-shadow 0.2s", cursor: "pointer" }}
-                    onMouseEnter={(e) => e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)"}
-                    onMouseLeave={(e) => e.currentTarget.style.boxShadow = "none"}
-                    onClick={() => {
-                        window.location.href = `/gongsil?id=${v.id}`;
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
-                        {(v.realtor_commission || v.commission_type) && (
-                          <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "4px" }}>
-                            {v.realtor_commission || v.commission_type}
-                          </span>
+                  return (
+                    <div
+                      key={v.id}
+                      style={{ display: "flex", gap: "16px", padding: "20px", border: "1px solid #e5e7eb", borderRadius: "12px", marginBottom: "16px", background: "#fff", transition: "box-shadow 0.2s", cursor: "pointer" }}
+                      onMouseEnter={(e) => e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)"}
+                      onMouseLeave={(e) => e.currentTarget.style.boxShadow = "none"}
+                      onClick={() => {
+                          window.location.href = `/gongsil?id=${v.id}`;
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
+                          {(v.realtor_commission || v.commission_type) && (
+                            <span style={{ fontSize: "13px", fontWeight: 700, color: "#ef4444", border: "1px solid #ef4444", padding: "2px 8px", borderRadius: "4px" }}>
+                              {v.realtor_commission || v.commission_type}
+                            </span>
+                          )}
+                          <span style={{ fontSize: "14px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
+                          <span style={{ fontSize: "13px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
+                        </div>
+
+                        <p style={{ fontSize: "20px", fontWeight: 800, color: "#111827", marginBottom: "8px" }}>
+                          {baseAddr}
+                        </p>
+                        
+                        <p style={{ fontSize: "22px", fontWeight: 800, color: "#1a73e8", marginBottom: "8px" }}>
+                          {v.trade_type} {price}
+                        </p>
+                        
+                        <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "4px" }}>
+                          {[v.property_type || "건물", v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(" | ")}
+                        </p>
+                        
+                        <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "12px" }}>
+                          {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
+                        </p>
+
+                        {v.themes && v.themes.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                            {v.themes.map((theme: string, idx: number) => (
+                              <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "13px", padding: "4px 10px", borderRadius: "14px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                                #{theme}
+                              </span>
+                            ))}
+                          </div>
                         )}
-                        <span style={{ fontSize: "14px", fontWeight: 700, color: "#ef4444" }}>{v.vacancy_no || '-'}</span>
-                        <span style={{ fontSize: "13px", color: "#9ca3af" }}>{v.created_at ? new Date(v.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}</span>
                       </div>
 
-                      <p style={{ fontSize: "20px", fontWeight: 800, color: "#111827", marginBottom: "8px" }}>
-                        {baseAddr}
-                      </p>
-                      
-                      <p style={{ fontSize: "22px", fontWeight: 800, color: "#1a73e8", marginBottom: "8px" }}>
-                        {v.trade_type} {price}
-                      </p>
-                      
-                      <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "4px" }}>
-                        {[v.property_type || "건물", v.direction, v.exclusive_m2 && `${v.exclusive_m2}㎡`].filter(Boolean).join(" | ")}
-                      </p>
-                      
-                      <p style={{ fontSize: "15px", color: "#6b7280", marginBottom: "12px" }}>
-                        {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
-                      </p>
-
-                      {v.themes && v.themes.length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                          {v.themes.map((theme: string, idx: number) => (
-                            <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "13px", padding: "4px 10px", borderRadius: "14px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
-                              #{theme}
-                            </span>
-                          ))}
-                        </div>
+                      {/* Vacancy Image (if available) */}
+                      {v.vacancy_photos && v.vacancy_photos.length > 0 && (
+                          <div data-thumb-wrapper="true" style={{ width: "160px", height: "160px", flexShrink: 0, borderRadius: "12px", overflow: "hidden" }}>
+                              <img
+                                src={v.vacancy_photos[0].url}
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                alt="공실"
+                                onError={(e) => {
+                                  const wrapper = (e.currentTarget as HTMLImageElement).closest('[data-thumb-wrapper="true"]');
+                                  if (wrapper) wrapper.style.display = 'none';
+                                }}
+                              />
+                          </div>
                       )}
                     </div>
-
-                    {/* Vacancy Image (if available) */}
-                    {v.vacancy_photos && v.vacancy_photos.length > 0 && (
-                        <div data-thumb-wrapper="true" style={{ width: "160px", height: "160px", flexShrink: 0, borderRadius: "12px", overflow: "hidden" }}>
-                            <img
-                              src={v.vacancy_photos[0].url}
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                              alt="공실"
-                              onError={(e) => {
-                                const wrapper = (e.currentTarget as HTMLImageElement).closest('[data-thumb-wrapper="true"]');
-                                if (wrapper) wrapper.style.display = 'none';
-                              }}
-                            />
-                        </div>
-                    )}
-                  </div>
-                );
-              }) : (
+                  );
+                })
+              ) : (
                 <div style={{ padding: "80px 0", textAlign: "center", color: "#888", fontSize: "16px" }}>
                   관련 공실이 없습니다.
                 </div>
