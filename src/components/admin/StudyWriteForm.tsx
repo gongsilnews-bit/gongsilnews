@@ -19,6 +19,7 @@ type Chapter = {
   lessons: Lesson[];
 };
 type Lesson = {
+  description?: string;
   materials?: LectureMaterial[];
   id?: string;
   lesson_no: number;
@@ -101,9 +102,8 @@ export default function StudyWriteForm() {
 
   /* ── 커리큘럼 ── */
   const [chapters, setChapters] = useState<Chapter[]>([
-    { chapter_no: 1, title: "", sort_order: 0, lessons: [{ lesson_no: 1, title: "", video_url: "", duration: "", is_preview: false, sort_order: 0 }] },
+    { chapter_no: 1, title: "강의 목록", sort_order: 0, lessons: [{ lesson_no: 1, title: "", video_url: "", duration: "", is_preview: false, sort_order: 0 }] },
   ]);
-  const [expandedChapters, setExpandedChapters] = useState<Set<number>>(new Set([0]));
 
   /* ── 초기 로드 ── */
   useEffect(() => {
@@ -163,26 +163,14 @@ export default function StudyWriteForm() {
             }
 
             if (d.chapters && d.chapters.length > 0) {
-              setChapters(
-                d.chapters.map((ch: any, ci: number) => ({
-                  id: ch.id,
-                  materials: (d.materials || []).filter((m: LectureMaterial) => m.scope === "chapter" && m.chapter_no === ch.chapter_no),
-                  chapter_no: ch.chapter_no,
-                  title: ch.title,
-                  sort_order: ch.sort_order || ci,
-                  lessons: (ch.lessons || []).map((ls: any, li: number) => ({
-                    id: ls.id,
-                    materials: (d.materials || []).filter((m: LectureMaterial) => m.scope === "lesson" && m.chapter_no === ch.chapter_no && m.lesson_no === ls.lesson_no),
-                    lesson_no: ls.lesson_no,
-                    title: ls.title,
-                    video_url: ls.video_url || "",
-                    duration: ls.duration || "",
-                    is_preview: ls.is_preview || false,
-                    sort_order: ls.sort_order || li,
-                  })),
-                }))
-              );
-              setExpandedChapters(new Set(d.chapters.map((_: any, i: number) => i)));
+              const lessons = d.chapters.flatMap((ch: any) => (ch.lessons || []).map((ls: any) => ({
+                ...ls,
+                description: ls.description || "",
+                video_url: ls.video_url || "",
+                duration: ls.duration || "",
+                materials: (d.materials || []).filter((m: LectureMaterial) => m.scope === "lesson" && m.chapter_no === ch.chapter_no && m.lesson_no === ls.lesson_no),
+              }))).map((ls: Lesson, i: number) => ({ ...ls, lesson_no: i + 1, sort_order: i }));
+              setChapters([{ chapter_no: 1, title: "강의 목록", sort_order: 0, lessons }]);
             }
           }
         });
@@ -463,24 +451,6 @@ export default function StudyWriteForm() {
   const setCover = (idx: number) => setCoverIndex(idx);
 
   /* ── 챕터/레슨 핸들러 ── */
-  const addChapter = () => {
-    setChapters((prev) => {
-      const newIdx = prev.length;
-      setExpandedChapters((s) => new Set([...s, newIdx]));
-      return [
-        ...prev,
-        { chapter_no: prev.length + 1, title: "", sort_order: prev.length, lessons: [{ lesson_no: 1, title: "", video_url: "", duration: "", is_preview: false, sort_order: 0 }] },
-      ];
-    });
-  };
-  const removeChapter = (idx: number) => {
-    if (materialUploads > 0) return;
-    if (chapters.length <= 1) return;
-    setChapters((prev) => prev.filter((_, i) => i !== idx).map((ch, i) => ({ ...ch, chapter_no: i + 1, sort_order: i })));
-  };
-  const updateChapter = (idx: number, field: string, value: string | LectureMaterial[]) => {
-    setChapters((prev) => prev.map((ch, i) => (i === idx ? { ...ch, [field]: value } : ch)));
-  };
   const addLesson = (chapterIdx: number) => {
     setChapters((prev) =>
       prev.map((ch, i) =>
@@ -507,15 +477,6 @@ export default function StudyWriteForm() {
       )
     );
   };
-  const toggleChapter = (idx: number) => {
-    if (materialUploads > 0) return;
-    setExpandedChapters((prev) => {
-      const next = new Set(prev);
-      next.has(idx) ? next.delete(idx) : next.add(idx);
-      return next;
-    });
-  };
-
   /* ── 키워드 뱃지 관리 ── */
   const handleAddKeyword = () => {
     const trimmed = newKeyword.trim();
@@ -545,9 +506,10 @@ export default function StudyWriteForm() {
   /* ── 저장 ── */
   const handleSave = async (status: string) => {
     if (!title.trim()) { alert("강의 제목을 입력해주세요."); return; }
-    if (chapters.some(ch => (!ch.title.trim() && ((ch.materials || []).length > 0 || ch.lessons.some(ls => (ls.materials || []).length > 0))) || ch.lessons.some(ls => !ls.title.trim() && (ls.materials || []).length > 0))) {
-      alert('자료를 첨부한 챕터와 강의의 제목을 입력해 주세요.'); return;
+    if (chapters.some(ch => ch.lessons.some(ls => !ls.title.trim() && (ls.video_url.trim() || ls.description?.trim() || (ls.materials || []).length > 0)))) {
+      alert('설명, 영상 또는 자료를 입력한 강의의 제목을 입력해 주세요.'); return;
     }
+    const savedChapters = chapters.map(ch => ({ ...ch, lessons: ch.lessons.filter(ls => ls.title.trim()).map((ls, i) => ({ ...ls, lesson_no: i + 1, sort_order: i })) }));
     if (materialUploads > 0) { alert("자료 업로드가 끝난 후 저장해 주세요."); return; }
     setSaving(true);
     try {
@@ -573,12 +535,11 @@ export default function StudyWriteForm() {
         total_duration: totalDuration,
         materials: [
           ...materials.map(m => ({ ...m, scope: 'common' as const, chapter_no: undefined, lesson_no: undefined })),
-          ...chapters.flatMap(ch => [
-            ...(ch.materials || []).map(m => ({ ...m, scope: 'chapter' as const, chapter_no: ch.chapter_no, lesson_no: undefined })),
+          ...savedChapters.flatMap(ch => [
             ...ch.lessons.flatMap(ls => (ls.materials || []).map(m => ({ ...m, scope: 'lesson' as const, chapter_no: ch.chapter_no, lesson_no: ls.lesson_no }))),
           ]),
         ],
-        chapters: chapters.map((ch) => ({ ...ch, lessons: ch.lessons.filter((ls) => ls.title.trim()) })).filter((ch) => ch.title.trim()),
+        chapters: savedChapters,
       });
       if (res.success) {
         alert(status === "DRAFT" ? "임시저장 완료!" : "등록 완료!");
@@ -1111,34 +1072,19 @@ export default function StudyWriteForm() {
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontSize: 20 }}>📚</span> 커리큘럼
                   <span style={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}>
-                    ({chapters.length}개 챕터, {chapters.reduce((sum, ch) => sum + ch.lessons.length, 0)}개 강의)
+                    ({chapters.reduce((sum, ch) => sum + ch.lessons.length, 0)}개 강의)
                   </span>
                 </div>
-                <button onClick={addChapter} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>+ 챕터 추가</button>
+                <button onClick={() => addLesson(0)} style={{ height: 36, padding: "0 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>+ 강의 추가</button>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {chapters.map((chapter, ci) => (
                   <div key={ci} style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden", background: "#fafbfc" }}>
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", background: "#f1f5f9", cursor: "pointer", borderBottom: expandedChapters.has(ci) ? "1px solid #e5e7eb" : "none" }}
-                      onClick={() => toggleChapter(ci)}
-                    >
-                      <span style={{ fontSize: 12, fontWeight: 800, color: "#8a3ffc", background: "#ede9fe", padding: "2px 10px", borderRadius: 4 }}>Ch.{chapter.chapter_no}</span>
-                      <input type="text" value={chapter.title} onChange={(e) => { e.stopPropagation(); updateChapter(ci, "title", e.target.value); }} onClick={(e) => e.stopPropagation()} placeholder="챕터 제목을 입력하세요" style={{ flex: 1, height: 34, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, fontWeight: 700, color: "#111", outline: "none", background: "#fff" }} />
-                      <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 600, whiteSpace: "nowrap" }}>{chapter.lessons.length}개 강의</span>
-                      <span style={{ color: "#9ca3af", fontSize: 16, transition: "transform 0.2s", transform: expandedChapters.has(ci) ? "rotate(180deg)" : "none" }}>▼</span>
-                      {chapters.length > 1 && (
-                        <button onClick={(e) => { e.stopPropagation(); removeChapter(ci); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fca5a5", background: "#fff", color: "#ef4444", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }} title="챕터 삭제">×</button>
-                      )}
-                    </div>
-
-                    {expandedChapters.has(ci) && (
-                      <div style={{ padding: "16px 20px" }}>
-                        <LectureMaterialsEditor title="챕터 자료" value={chapter.materials} onChange={items => updateChapter(ci, "materials", items)} onUploading={trackUpload} />
+                    <div style={{ padding: "16px 20px" }}>
                         {chapter.lessons.map((lesson, li) => (
                           <div key={li} style={{ display: "grid", gridTemplateColumns: "32px 1fr 200px 80px 60px 32px", gap: 8, alignItems: "center", marginBottom: 10, padding: "8px 12px", background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb" }}>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: "#8a3ffc", textAlign: "center" }}>{ci + 1}-{li + 1}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#8a3ffc", textAlign: "center" }}>{li + 1}강</span>
                             <input type="text" value={lesson.title} onChange={(e) => updateLesson(ci, li, "title", e.target.value)} placeholder="강의 제목" style={{ height: 34, padding: "0 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, color: "#111", outline: "none" }} />
                             <input type="text" value={lesson.video_url} onChange={(e) => updateLesson(ci, li, "video_url", e.target.value)} placeholder="YouTube URL" style={{ height: 34, padding: "0 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, color: "#555", outline: "none" }} />
                             <input type="text" value={lesson.duration} onChange={(e) => updateLesson(ci, li, "duration", e.target.value)} placeholder="12:40" style={{ height: 34, padding: "0 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, color: "#555", textAlign: "center", outline: "none" }} />
@@ -1146,16 +1092,17 @@ export default function StudyWriteForm() {
                               <input type="checkbox" checked={lesson.is_preview} onChange={(e) => updateLesson(ci, li, "is_preview", e.target.checked)} style={{ accentColor: "#3b82f6" }} />미리보기
                             </label>
                             <button onClick={() => removeLesson(ci, li)} style={{ width: 28, height: 28, border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", color: "#ef4444", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="강의 삭제">×</button>
-                            <LectureMaterialsEditor title="개별 강의 자료" value={lesson.materials} onChange={items => updateLesson(ci, li, "materials", items)} onUploading={trackUpload} />
+                            <label style={{ gridColumn: "1 / -1", display: "grid", gap: 8, marginTop: 8, fontSize: 13, fontWeight: 600 }}>
+                              강의 설명
+                              <textarea value={lesson.description || ""} onChange={e => updateLesson(ci, li, "description", e.target.value)} rows={4} placeholder="이 강의의 설명을 입력해 주세요. 줄바꿈이 그대로 표시됩니다." style={{ width: "100%", boxSizing: "border-box", padding: 12, border: "1px solid #d1d5db", borderRadius: 8, resize: "vertical", font: "inherit", fontWeight: 400 }} />
+                            </label>
+                            <details style={{ gridColumn: "1 / -1", marginTop: 8 }}>
+                              <summary style={{ cursor: "pointer", color: "#047857", fontSize: 13 }}>자료 첨부{lesson.materials?.length ? ` (${lesson.materials.length})` : ""}</summary>
+                              <LectureMaterialsEditor title="이 강의 자료" value={lesson.materials} onChange={items => updateLesson(ci, li, "materials", items)} onUploading={trackUpload} />
+                            </details>
                           </div>
                         ))}
-                        <button onClick={() => addLesson(ci)} style={{ width: "100%", height: 36, border: "2px dashed #d1d5db", borderRadius: 8, background: "none", color: "#6b7280", fontSize: 13, fontWeight: 600, cursor: "pointer", marginTop: 4, transition: "all 0.2s" }}
-                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.color = "#3b82f6"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b7280"; }}>
-                          + 강의 추가
-                        </button>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 ))}
               </div>

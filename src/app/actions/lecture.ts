@@ -55,6 +55,7 @@ export async function saveLecture(data: {
       id?: string;
       lesson_no: number;
       title: string;
+      description?: string;
       video_url?: string;
       duration?: string;
       is_preview?: boolean;
@@ -70,6 +71,10 @@ export async function saveLecture(data: {
       : { data: null };
     const editor = await lectureEditor(data.id ? existingLecture?.author_id : data.author_id);
     if (!editor) return { success: false, error: '강의를 편집할 권한이 없습니다.' };
+    if (data.chapters?.some(ch => ch.lessons.length > 0)) {
+      const { error } = await supabase.from('lecture_lessons').select('description').limit(0);
+      if (error) return { success: false, error: '강의 설명 저장 준비가 필요합니다: ' + error.message };
+    }
     const existingMaterialUrls = new Set((existingLecture?.materials || []).map((m: LectureMaterial) => openMaterialUrl(m.url)));
     const storedMaterials = (data.materials || []).map(material => {
       if (!material.url.trim()) throw new Error('자료 주소 또는 파일을 입력해 주세요.');
@@ -140,10 +145,11 @@ export async function saveLecture(data: {
     // 챕터 + 레슨 저장
     if (lectureId && data.chapters && data.chapters.length > 0) {
       // 기존 챕터 삭제 (CASCADE로 lessons도 삭제됨)
-      await supabase
+      const { error: deleteError } = await supabase
         .from("lecture_chapters")
         .delete()
         .eq("lecture_id", lectureId);
+      if (deleteError) throw new Error(deleteError.message);
 
       await Promise.all(
         data.chapters.map(async (chapter) => {
@@ -159,8 +165,7 @@ export async function saveLecture(data: {
             .single();
 
           if (chapterError) {
-            console.error("챕터 저장 실패:", chapterError.message);
-            return;
+            throw new Error(chapterError.message);
           }
 
           if (chapter.lessons && chapter.lessons.length > 0) {
@@ -168,6 +173,7 @@ export async function saveLecture(data: {
               chapter_id: insertedChapter.id,
               lesson_no: lesson.lesson_no,
               title: lesson.title,
+              description: lesson.description?.trim() || null,
               video_url: lesson.video_url || null,
               duration: lesson.duration || null,
               is_preview: lesson.is_preview || false,
@@ -179,7 +185,7 @@ export async function saveLecture(data: {
               .insert(lessonRows);
 
             if (lessonError) {
-              console.error("레슨 저장 실패:", lessonError.message);
+              throw new Error(lessonError.message);
             }
           }
         })
