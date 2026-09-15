@@ -306,7 +306,7 @@ export async function getArticles(filters?: {
     const supabase = getAdminClient();
     let query = supabase
       .from("articles")
-      .select(filters?.countOnly ? "id" : "id, article_no, status, section1, section2, title, subtitle, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)", { count: "exact", head: filters?.countOnly ?? false })
+      .select(filters?.countOnly ? "id" : "id, article_no, status, section1, section2, title, subtitle, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, views_week, views_month, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)", { count: "exact", head: filters?.countOnly ?? false })
       .eq("is_deleted", false);
 
     if (filters?.orderBy === "updated_at") {

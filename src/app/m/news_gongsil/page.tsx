@@ -33,5 +33,5 @@ export default async function MobileNewsPage({
     }
   }
 
-  return <MobileNewsClientWrapper initialTab="news_gongsil" initialArticles={initialArticles} initialAuthorName={authorMatch} initialKeyword={keywordMatch} authorProfile={authorProfile} />;
+  return <MobileNewsClientWrapper initialTab={isAll ? "all" : "news_gongsil"} initialArticles={initialArticles} initialAuthorName={authorMatch} initialKeyword={keywordMatch} authorProfile={authorProfile} />;
 }

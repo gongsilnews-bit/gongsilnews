@@ -1044,14 +1044,20 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
     const fetchCategoryArticles = async () => {
       setLoading(true);
-      const params: any = { status: "APPROVED", limit: ARTICLE_PAGE_SIZE, page: 1 };
-      if (targetSection1) params.section1 = targetSection1;
-      const res = await getArticles(params);
-      if (res.success && res.data) replaceArticles(res.data);
-      setLoading(false);
+      try {
+        const params: any = { status: "APPROVED", limit: ARTICLE_PAGE_SIZE, page: 1 };
+        if (targetSection1) params.section1 = targetSection1;
+        const res = await getArticles(params);
+        if (res.success && res.data) replaceArticles(res.data);
+      } catch (err) {
+        console.error("기사 카테고리 로드 실패:", err);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    if (isAll || activeTab !== initialTab) {
+    // initialTab과 activeTab이 일치하면 서버에서 이미 올바른 initialArticles를 가져온 상태이므로 재fetch 불필요
+    if (activeTab !== initialTab) {
       fetchCategoryArticles();
     }
   }, [activeTab, initialTab, searchParams, initialKeyword]);
