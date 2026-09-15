@@ -386,6 +386,154 @@ export async function updateLectureStatus(lectureId: string, newStatus: string) 
   }
 }
 
+// ── 리뷰 수정 ──
+export async function updateLectureReview(data: {
+  review_id: string;
+  user_id: string;
+  rating: number;
+  content: string;
+}) {
+  const content = typeof data.content === 'string' ? data.content.trim() : '';
+  if (!content) return { success: false, error: '후기 내용을 입력해주세요.' };
+  if (!Number.isInteger(data.rating) || data.rating < 1 || data.rating > 5) {
+    return { success: false, error: '별점은 1점부터 5점까지 선택해주세요.' };
+  }
+  if (!data.user_id) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
+  const supabase = getAdminClient();
+  try {
+    const { data: existing, error: findError } = await supabase
+      .from('lecture_reviews')
+      .select('id, user_id, lecture_id')
+      .eq('id', data.review_id)
+      .single();
+
+    if (findError || !existing) {
+      return { success: false, error: '수정할 후기를 찾을 수 없습니다.' };
+    }
+
+    let hasPermission = existing.user_id === data.user_id;
+    if (!hasPermission) {
+      const { data: member } = await supabase
+        .from('members')
+        .select('role')
+        .eq('id', data.user_id)
+        .single();
+      if (member && (member.role === 'ADMIN' || member.role === 'admin')) {
+        hasPermission = true;
+      }
+    }
+
+    if (!hasPermission) {
+      return { success: false, error: '본인이 작성한 후기만 수정할 수 있습니다.' };
+    }
+
+    const { error: updateError } = await supabase
+      .from('lecture_reviews')
+      .update({
+        rating: data.rating,
+        content,
+      })
+      .eq('id', data.review_id);
+
+    if (updateError) return { success: false, error: updateError.message };
+
+    // 평점 재계산
+    const { data: reviews } = await supabase
+      .from('lecture_reviews')
+      .select('rating')
+      .eq('lecture_id', existing.lecture_id);
+
+    if (reviews && reviews.length > 0) {
+      const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+      await supabase
+        .from('lectures')
+        .update({
+          rating: Math.round(avg * 10) / 10,
+          review_count: reviews.length,
+        })
+        .eq('id', existing.lecture_id);
+    }
+
+    // @ts-ignore
+    revalidateTag('lectures');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ── 리뷰 삭제 ──
+export async function deleteLectureReview(data: {
+  review_id: string;
+  user_id: string;
+}) {
+  if (!data.review_id || !data.user_id) {
+    return { success: false, error: '권한이 없습니다.' };
+  }
+
+  const supabase = getAdminClient();
+  try {
+    const { data: existing, error: findError } = await supabase
+      .from('lecture_reviews')
+      .select('id, user_id, lecture_id')
+      .eq('id', data.review_id)
+      .single();
+
+    if (findError || !existing) {
+      return { success: false, error: '삭제할 후기를 찾을 수 없습니다.' };
+    }
+
+    let hasPermission = existing.user_id === data.user_id;
+    if (!hasPermission) {
+      const { data: member } = await supabase
+        .from('members')
+        .select('role')
+        .eq('id', data.user_id)
+        .single();
+      if (member && (member.role === 'ADMIN' || member.role === 'admin')) {
+        hasPermission = true;
+      }
+    }
+
+    if (!hasPermission) {
+      return { success: false, error: '본인이 작성한 후기만 삭제할 수 있습니다.' };
+    }
+
+    const { error: deleteError } = await supabase
+      .from('lecture_reviews')
+      .delete()
+      .eq('id', data.review_id);
+
+    if (deleteError) return { success: false, error: deleteError.message };
+
+    // 평점 재계산
+    const { data: reviews } = await supabase
+      .from('lecture_reviews')
+      .select('rating')
+      .eq('lecture_id', existing.lecture_id);
+
+    const count = reviews ? reviews.length : 0;
+    const avg = count > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / count : 0;
+
+    await supabase
+      .from('lectures')
+      .update({
+        rating: Math.round(avg * 10) / 10,
+        review_count: count,
+      })
+      .eq('id', existing.lecture_id);
+
+    // @ts-ignore
+    revalidateTag('lectures');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 // ── 강의 이미지 업로드 (썸네일 + 에디터 인라인) ──
 // 버킷: "lecture-media" (Supabase Storage에서 미리 생성 필요)
 export async function uploadLectureImage(formData: FormData) {

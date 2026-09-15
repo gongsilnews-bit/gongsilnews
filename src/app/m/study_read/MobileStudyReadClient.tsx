@@ -5,7 +5,7 @@ import Link from "next/link";
 import LecturePublicMaterialsModal from "@/components/LecturePublicMaterialsModal";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { getLectureDetail, createLectureReview, enrollLecture, checkEnrollment } from "@/app/actions/lecture";
+import { getLectureDetail, createLectureReview, updateLectureReview, deleteLectureReview, enrollLecture, checkEnrollment } from "@/app/actions/lecture";
 import { getPointBalance } from "@/app/actions/point";
 import { createClient } from "@/utils/supabase/client";
 import "./mobileStudyRead.css";
@@ -48,6 +48,12 @@ export default function MobileStudyReadClient({
   const [newRating, setNewRating] = useState(5);
   const [newReview, setNewReview] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userName, setUserName] = useState("익명");
+  const [userRole, setUserRole] = useState<string>("");
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editContent, setEditContent] = useState("");
+  const [isReviewActionLoading, setIsReviewActionLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState("");
 
@@ -68,6 +74,15 @@ export default function MobileStudyReadClient({
     supabase.auth.getUser().then(async ({ data }) => {
       if (data?.user) {
         setUser(data.user);
+        const { data: member } = await supabase.from("members").select("name, role").eq("id", data.user.id).single();
+        if (member?.name) {
+          setUserName(member.name);
+        } else {
+          setUserName(data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "익명");
+        }
+        if (member?.role) {
+          setUserRole(member.role);
+        }
         const balRes = await getPointBalance(data.user.id);
         if (balRes.success) setPointBalance(balRes.balance);
       }
@@ -174,6 +189,7 @@ export default function MobileStudyReadClient({
     const res = await createLectureReview({
       lecture_id: lecture.id,
       user_id: user.id,
+      user_name: userName,
       rating: newRating,
       content: newReview.trim(),
     });
@@ -186,6 +202,65 @@ export default function MobileStudyReadClient({
       alert(res.error || "등록 실패");
     }
     setIsSubmitting(false);
+  };
+
+  /* ── 모바일 리뷰 수정 시작 ── */
+  const handleReviewEditStart = (rev: any) => {
+    setEditingReviewId(rev.id);
+    setEditRating(rev.rating || 5);
+    setEditContent(rev.content || "");
+  };
+
+  /* ── 모바일 리뷰 수정 취소 ── */
+  const handleReviewEditCancel = () => {
+    setEditingReviewId(null);
+    setEditRating(5);
+    setEditContent("");
+  };
+
+  /* ── 모바일 리뷰 수정 제출 ── */
+  const handleReviewUpdate = async (reviewId: string) => {
+    if (!user) return;
+    if (!editContent.trim()) {
+      alert("후기 내용을 입력해주세요.");
+      return;
+    }
+    setIsReviewActionLoading(true);
+    const res = await updateLectureReview({
+      review_id: reviewId,
+      user_id: user.id,
+      rating: editRating,
+      content: editContent.trim(),
+    });
+    if (res.success) {
+      alert("후기가 수정되었습니다.");
+      setEditingReviewId(null);
+      const detail = await getLectureDetail(lecture.id);
+      if (detail.success && detail.data) setLecture(detail.data);
+    } else {
+      alert(res.error || "후기 수정에 실패했습니다.");
+    }
+    setIsReviewActionLoading(false);
+  };
+
+  /* ── 모바일 리뷰 삭제 ── */
+  const handleReviewDelete = async (reviewId: string) => {
+    if (!user) return;
+    if (!confirm("작성하신 수강 후기를 삭제하시겠습니까?")) return;
+    setIsReviewActionLoading(true);
+    const res = await deleteLectureReview({
+      review_id: reviewId,
+      user_id: user.id,
+    });
+    if (res.success) {
+      alert("후기가 삭제되었습니다.");
+      if (editingReviewId === reviewId) setEditingReviewId(null);
+      const detail = await getLectureDetail(lecture.id);
+      if (detail.success && detail.data) setLecture(detail.data);
+    } else {
+      alert(res.error || "후기 삭제에 실패했습니다.");
+    }
+    setIsReviewActionLoading(false);
   };
 
   if (!lecture) {
@@ -404,7 +479,7 @@ export default function MobileStudyReadClient({
           const allMaterials = lecture.materials || [];
           const commonPublicMaterials = allMaterials
             .map((m: any, idx: number) => ({ material: m, globalIndex: idx }))
-            .filter(({ material }) => material.is_preview && (!material.scope || material.scope === "common"));
+            .filter(({ material }: any) => material.is_preview && (!material.scope || material.scope === "common"));
 
           return (
             <div>
@@ -450,7 +525,7 @@ export default function MobileStudyReadClient({
                       const allMaterials = lecture.materials || [];
                       const lessonPublicMaterials = allMaterials
                         .map((m: any, idx: number) => ({ material: m, globalIndex: idx }))
-                        .filter(({ material }) => {
+                        .filter(({ material }: any) => {
                           if (!material.is_preview) return false;
                           if (material.scope === "lesson") {
                             const matchChapter = material.chapter_no === undefined || material.chapter_no === les.chapter_no;
@@ -534,15 +609,86 @@ export default function MobileStudyReadClient({
             </form>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {reviews.map((rev: any, i: number) => (
-                <div key={i} style={{ padding: "12px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#d97706", marginBottom: 4 }}>
-                    <span>{"★".repeat(rev.rating || 5)}</span>
-                    <span style={{ color: "#94a3b8" }}>{rev.created_at?.substring(0, 10)}</span>
+              {reviews.map((rev: any, i: number) => {
+                const isOwner = user && (rev.user_id === user.id || userRole === "ADMIN" || userRole === "admin");
+                const isEditing = editingReviewId === rev.id;
+
+                if (isEditing) {
+                  return (
+                    <div key={rev.id || i} style={{ padding: "12px", background: "#f8fafc", border: "1.5px solid #059669", borderRadius: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>별점 수정:</span>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            type="button"
+                            key={star}
+                            onClick={() => setEditRating(star)}
+                            style={{ background: "none", border: "none", fontSize: 16, cursor: "pointer", color: star <= editRating ? "#d97706" : "#cbd5e1", padding: 0 }}
+                          >
+                            ★
+                          </button>
+                        ))}
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        style={{ width: "100%", padding: "8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 13, boxSizing: "border-box", background: "#fff" }}
+                      />
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginTop: 8 }}>
+                        <button
+                          type="button"
+                          onClick={handleReviewEditCancel}
+                          disabled={isReviewActionLoading}
+                          style={{ padding: "5px 12px", background: "#e2e8f0", color: "#475569", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600 }}
+                        >
+                          취소
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleReviewUpdate(rev.id)}
+                          disabled={isReviewActionLoading}
+                          style={{ padding: "5px 14px", background: "#059669", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 700 }}
+                        >
+                          {isReviewActionLoading ? "저장 중..." : "수정 완료"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={rev.id || i} style={{ padding: "12px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontSize: 11, color: "#d97706", fontWeight: 700 }}>{"★".repeat(rev.rating || 5)}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+                        <span style={{ color: "#94a3b8" }}>{rev.created_at?.substring(0, 10)}</span>
+                        {isOwner && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <button
+                              type="button"
+                              onClick={() => handleReviewEditStart(rev)}
+                              style={{ background: "none", border: "none", color: "#64748b", fontSize: 11, cursor: "pointer", textDecoration: "underline", padding: "0 2px" }}
+                            >
+                              수정
+                            </button>
+                            <span style={{ color: "#e2e8f0" }}>|</span>
+                            <button
+                              type="button"
+                              onClick={() => handleReviewDelete(rev.id)}
+                              disabled={isReviewActionLoading}
+                              style={{ background: "none", border: "none", color: "#ef4444", fontSize: 11, cursor: "pointer", textDecoration: "underline", padding: "0 2px" }}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 13, color: "#334155", margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{rev.content}</p>
                   </div>
-                  <p style={{ fontSize: 13, color: "#334155", margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{rev.content}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
