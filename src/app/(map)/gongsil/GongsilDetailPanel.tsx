@@ -9,6 +9,7 @@ import {
   formatAreaWithPy,
   getOptionSvg,
   isApartmentType,
+  getJitteredCoords,
 } from "./gongsilHelpers";
 import GongsilAccessOverlay from "./GongsilAccessOverlay";
 
@@ -36,7 +37,8 @@ interface GongsilDetailPanelProps {
   handleKakaoShare: (prop: any) => void;
   handleCopyUrl: (id: any) => void;
   itemMapRef: React.RefObject<HTMLDivElement | null>;
-  roadviewRef: React.RefObject<HTMLDivElement | null>;
+  roadviewRef?: React.RefObject<HTMLDivElement | null>;
+  onPanToMap?: (lat: number, lng: number) => void;
   comments: any[];
   currentUser: any;
   newComment: string;
@@ -96,6 +98,7 @@ export default function GongsilDetailPanel({
   isAuctionMode,
   isStandalone = false,
   isAuthChecking = false,
+  onPanToMap,
 }: GongsilDetailPanelProps) {
   if (!showDetail || !activeProperty) return null;
 
@@ -1088,47 +1091,162 @@ const filteredFields = fields.filter(field => {
             )}
 
             {/* ──── 위치정보 ──── */}
-            <div style={{ padding: "30px 20px 0" }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 12 }}>위치정보</div>
+            <div style={{ padding: "30px 20px 20px" }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 6 }}>위치정보</div>
+              <div style={{ fontSize: 14, color: "#4b5563", marginBottom: 12, fontWeight: 500 }}>
+                {getCleanAddrText(prop)}
+              </div>
               <div
-                ref={itemMapRef}
                 style={{
+                  position: "relative",
                   width: "100%",
-                  height: 300,
+                  height: 280,
                   borderRadius: 8,
-                  marginBottom: 20,
-                  background: "#e8eaed",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#999",
-                  fontSize: 14,
-                  border: "1px solid #eee",
                   overflow: "hidden",
+                  border: "1px solid #e5e7eb",
+                  background: "#e8eaed",
                 }}
-              ></div>
+              >
+                <div ref={itemMapRef} style={{ width: "100%", height: "100%" }} />
+
+                {/* 지도 하단: 지도에서 보기 플로팅 버튼 */}
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 12,
+                    bottom: 12,
+                    zIndex: 10,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const coords = getJitteredCoords(prop, true);
+                      if (coords.lat && coords.lng) {
+                        if (onPanToMap) {
+                          onPanToMap(coords.lat, coords.lng);
+                        } else {
+                          window.open(`https://map.kakao.com/link/map/${encodeURIComponent(prop.title || '매물위치')},${coords.lat},${coords.lng}`, "_blank");
+                        }
+                      }
+                    }}
+                    title="우측 대형 지도에서 위치 보기"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "7px 12px",
+                      background: "#ffffff",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 4,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "#374151",
+                      boxShadow: "0 2px 5px rgba(0,0,0,0.12)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#f9fafb";
+                      e.currentTarget.style.borderColor = "#9ca3af";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#ffffff";
+                      e.currentTarget.style.borderColor = "#d1d5db";
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span>지도에서 보기</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* ──── 로드뷰 ──── */}
             <div style={{ padding: "0 20px" }}>
               <div style={{ fontSize: 16, fontWeight: 800, color: "#222", marginBottom: 12 }}>로드뷰</div>
               <div
-                ref={roadviewRef}
                 style={{
+                  position: "relative",
                   width: "100%",
                   height: 300,
                   borderRadius: 8,
-                  marginBottom: 20,
-                  background: "#e8eaed",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#999",
-                  fontSize: 14,
-                  border: "1px solid #eee",
                   overflow: "hidden",
+                  border: "1px solid #eee",
+                  background: "#e8eaed",
+                  marginBottom: 20,
                 }}
-              ></div>
+              >
+                <div
+                  ref={roadviewRef}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#999",
+                    fontSize: 14,
+                  }}
+                />
+
+                {/* 로드뷰 하단: 로드뷰 보기 플로팅 버튼 */}
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 12,
+                    bottom: 12,
+                    zIndex: 10,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const coords = getJitteredCoords(prop, true);
+                      if (coords.lat && coords.lng) {
+                        window.open(`https://map.kakao.com/link/roadview/${coords.lat},${coords.lng}`, "_blank");
+                      }
+                    }}
+                    title="새 창으로 카카오 로드뷰 크게 보기"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "7px 12px",
+                      background: "#ffffff",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 4,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "#374151",
+                      boxShadow: "0 2px 5px rgba(0,0,0,0.12)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#f9fafb";
+                      e.currentTarget.style.borderColor = "#9ca3af";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#ffffff";
+                      e.currentTarget.style.borderColor = "#d1d5db";
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="22" y1="12" x2="18" y2="12"></line>
+                      <line x1="6" y1="12" x2="2" y2="12"></line>
+                      <line x1="12" y1="6" x2="12" y2="2"></line>
+                      <line x1="12" y1="22" x2="12" y2="18"></line>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <span>로드뷰 보기</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* ──── 옵션 ──── */}
@@ -1345,12 +1463,148 @@ const filteredFields = fields.filter(field => {
                     본 정보는 한국자산관리공사(KAMCO)를 통해 실시간으로 제공받는 참고용 데이터입니다. 시세, 매물 정보 및 관련 권리관계 데이터는 실시간 변동 또는 지연이 있을 수 있으므로, <strong>입찰 전 반드시 공식 온비드 및 해당 집행기관(법원/신탁사 등)의 공고를 최종 확인</strong>하신 후 진행하시기 바랍니다. 공실뉴스는 단순 정보 제공처로서 데이터의 정확성을 보장하지 않으며, 제공된 정보에 의존하여 행해진 결정이나 거래 결과에 대해 어떠한 법적 책임도 지지 않습니다.
                   </div>
                 </div>
-                {/* 위치정보 & 로드뷰 */}
+                {/* 위치정보 */}
                 <div style={{ padding: "0 20px 20px" }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#222", marginBottom: 12 }}>위치정보</div>
-                  <div ref={itemMapRef} style={{ width: "100%", height: 250, borderRadius: 8, marginBottom: 20, background: "#e8eaed", border: "1px solid #eee", overflow: "hidden" }}></div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#222", marginBottom: 12 }}>로드뷰</div>
-                  <div ref={roadviewRef} style={{ width: "100%", height: 250, borderRadius: 8, background: "#e8eaed", border: "1px solid #eee", overflow: "hidden" }}></div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#222", marginBottom: 6 }}>위치정보</div>
+                  <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 12, fontWeight: 500 }}>
+                    {prop.title || prop.address || "-"}
+                  </div>
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: 260,
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      border: "1px solid #e5e7eb",
+                      background: "#e8eaed",
+                    }}
+                  >
+                    <div ref={itemMapRef} style={{ width: "100%", height: "100%" }} />
+
+                    {/* 지도 하단: 지도에서 보기 플로팅 버튼 */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        right: 12,
+                        bottom: 12,
+                        zIndex: 10,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const coords = getJitteredCoords(prop, true);
+                          if (coords.lat && coords.lng) {
+                            if (onPanToMap) {
+                              onPanToMap(coords.lat, coords.lng);
+                            } else {
+                              window.open(`https://map.kakao.com/link/map/${encodeURIComponent(prop.title || '매물위치')},${coords.lat},${coords.lng}`, "_blank");
+                            }
+                          }
+                        }}
+                        title="우측 대형 지도에서 위치 보기"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                          padding: "7px 12px",
+                          background: "#ffffff",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 4,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#374151",
+                          boxShadow: "0 2px 5px rgba(0,0,0,0.12)",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#f9fafb";
+                          e.currentTarget.style.borderColor = "#9ca3af";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "#ffffff";
+                          e.currentTarget.style.borderColor = "#d1d5db";
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                          <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        <span>지도에서 보기</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#222", marginBottom: 12, marginTop: 20 }}>로드뷰</div>
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: 250,
+                      borderRadius: 8,
+                      background: "#e8eaed",
+                      border: "1px solid #eee",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div ref={roadviewRef} style={{ width: "100%", height: "100%" }} />
+
+                    {/* 로드뷰 하단: 로드뷰 보기 플로팅 버튼 */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        right: 12,
+                        bottom: 12,
+                        zIndex: 10,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const coords = getJitteredCoords(prop, true);
+                          if (coords.lat && coords.lng) {
+                            window.open(`https://map.kakao.com/link/roadview/${coords.lat},${coords.lng}`, "_blank");
+                          }
+                        }}
+                        title="새 창으로 카카오 로드뷰 크게 보기"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                          padding: "7px 12px",
+                          background: "#ffffff",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 4,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#374151",
+                          boxShadow: "0 2px 5px rgba(0,0,0,0.12)",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#f9fafb";
+                          e.currentTarget.style.borderColor = "#9ca3af";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "#ffffff";
+                          e.currentTarget.style.borderColor = "#d1d5db";
+                        }}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="22" y1="12" x2="18" y2="12"></line>
+                          <line x1="6" y1="12" x2="2" y2="12"></line>
+                          <line x1="12" y1="6" x2="12" y2="2"></line>
+                          <line x1="12" y1="22" x2="12" y2="18"></line>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <span>로드뷰 보기</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             );

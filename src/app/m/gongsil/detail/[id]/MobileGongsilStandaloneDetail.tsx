@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCleanAddrText, formatAreaWithPy, getMaskedAddress } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getCleanAddrText, formatAreaWithPy, getMaskedAddress, getJitteredCoords } from "@/app/(map)/gongsil/gongsilHelpers";
 
 interface MobileGongsilStandaloneDetailProps {
   vacancy: any;
@@ -137,6 +137,31 @@ export default function MobileGongsilStandaloneDetail({
   const itemMapRef = useRef<HTMLDivElement | null>(null);
   const roadviewRef = useRef<HTMLDivElement | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mobileRoadviewOpen, setMobileRoadviewOpen] = useState(false);
+  const mobileRoadviewCanvasRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!mobileRoadviewOpen || !selectedVacancy) return;
+    const kakao = (window as any).kakao;
+    if (!kakao || !kakao.maps || !mobileRoadviewCanvasRef.current) return;
+
+    const coords = getJitteredCoords(selectedVacancy, true);
+    if (!coords.lat || !coords.lng) return;
+
+    const pos = new kakao.maps.LatLng(coords.lat, coords.lng);
+    mobileRoadviewCanvasRef.current.innerHTML = "";
+    const rv = new kakao.maps.Roadview(mobileRoadviewCanvasRef.current);
+    const rvClient = new kakao.maps.RoadviewClient();
+
+    rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
+      if (panoId) {
+        rv.setPanoId(panoId, pos);
+      } else if (mobileRoadviewCanvasRef.current) {
+        mobileRoadviewCanvasRef.current.innerHTML =
+          '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:14px; background:#111;">해당 위치 근처의 로드뷰가 제공되지 않습니다.</div>';
+      }
+    });
+  }, [mobileRoadviewOpen, selectedVacancy]);
 
   // 1. Load Kakao Maps SDK
   useEffect(() => {
@@ -616,14 +641,78 @@ export default function MobileGongsilStandaloneDetail({
 
             {/* ──── 위치정보 ──── */}
             <div style={{ padding: "20px 16px 0", background: "#fff" }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 12 }}>위치정보</div>
-              <div ref={itemMapRef} style={{ width: "100%", height: 200, borderRadius: 8, marginBottom: 20, background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, border: "1px solid #eee", overflow: "hidden" }}></div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 6 }}>위치정보</div>
+              <div style={{ fontSize: 13, color: "#4b5563", marginBottom: 10, fontWeight: 500 }}>
+                {getCleanAddrText(selectedVacancy)}
+              </div>
+              <div
+                style={{
+                  width: "100%",
+                  height: 200,
+                  borderRadius: 8,
+                  overflow: "hidden",
+                  border: "1px solid #eee",
+                  background: "#e8eaed",
+                  marginBottom: 16,
+                }}
+              >
+                <div ref={itemMapRef} style={{ width: "100%", height: "100%" }} />
+              </div>
             </div>
 
             {/* ──── 로드뷰 ──── */}
             <div style={{ padding: "0 16px 20px", background: "#fff", borderBottom: "8px solid #f3f4f6" }}>
               <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 12 }}>로드뷰</div>
-              <div ref={roadviewRef} style={{ width: "100%", height: 200, borderRadius: 8, background: "#e8eaed", display: "flex", alignItems: "center", justifyContent: "center", color: "#999", fontSize: 14, border: "1px solid #eee", overflow: "hidden" }}></div>
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  height: 200,
+                  borderRadius: 8,
+                  overflow: "hidden",
+                  border: "1px solid #eee",
+                  background: "#e8eaed",
+                }}
+              >
+                <div ref={roadviewRef} style={{ width: "100%", height: "100%" }} />
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 10,
+                    bottom: 10,
+                    zIndex: 10,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setMobileRoadviewOpen(true)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "6px 12px",
+                      background: "#ffffff",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 4,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "#374151",
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.12)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="22" y1="12" x2="18" y2="12"></line>
+                      <line x1="6" y1="12" x2="2" y2="12"></line>
+                      <line x1="12" y1="6" x2="12" y2="2"></line>
+                      <line x1="12" y1="22" x2="12" y2="18"></line>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <span>로드뷰 보기</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* ──── 주변환경 (인프라) ──── */}
@@ -742,6 +831,125 @@ export default function MobileGongsilStandaloneDetail({
           연락하기
         </button>
       </div>
+      {/* ──── 모바일 전체화면 로드뷰 모달 (하단 슬라이드업) ──── */}
+      {mobileRoadviewOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999999,
+            background: "#fff",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* 상단 헤더 */}
+          <div
+            style={{
+              height: 52,
+              background: "#fff",
+              borderBottom: "1px solid #eee",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+              flexShrink: 0,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setMobileRoadviewOpen(false)}
+              aria-label="닫기"
+              style={{
+                position: "absolute",
+                left: 12,
+                background: "none",
+                border: "none",
+                padding: "8px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#111",
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#111" }}>위치보기</span>
+          </div>
+
+          {/* 중앙 로드뷰 캔버스 */}
+          <div
+            ref={mobileRoadviewCanvasRef}
+            style={{
+              flex: 1,
+              width: "100%",
+              background: "#1e293b",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          />
+
+          {/* 하단 카카오맵 바로가기 바 */}
+          {(() => {
+            const coords = getJitteredCoords(selectedVacancy, true);
+            return (
+              <div
+                style={{
+                  height: 56,
+                  background: "#fff",
+                  borderTop: "1px solid #eee",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 16px",
+                  flexShrink: 0,
+                }}
+              >
+                <a
+                  href={`https://map.kakao.com/link/roadview/${coords.lat},${coords.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    textDecoration: "none",
+                    width: "100%",
+                    color: "#333",
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 22,
+                      height: 22,
+                      borderRadius: 4,
+                      background: "#fae100",
+                      color: "#371d1e",
+                      fontSize: 11,
+                      fontWeight: 900,
+                    }}
+                  >
+                    k
+                  </span>
+                  <span style={{ flex: 1, color: "#222" }}>카카오맵에서 자세히 보기</span>
+                  <span style={{ color: "#999", fontSize: 18, lineHeight: 1 }}>›</span>
+                </a>
+              </div>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 }

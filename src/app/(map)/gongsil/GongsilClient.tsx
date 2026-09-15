@@ -963,6 +963,19 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     }
   }, [showDetail, activeProperty, activeDetailTab, dbVacancies, agencyInfo, mapLoaded]);
 
+  const handlePanToProperty = (lat: number, lng: number) => {
+    if (kakaoMapRef.current) {
+      const kakao = (window as any).kakao;
+      if (kakao && kakao.maps) {
+        const pos = new kakao.maps.LatLng(lat, lng);
+        kakaoMapRef.current.panTo(pos);
+        if (kakaoMapRef.current.getLevel() > 4) {
+          kakaoMapRef.current.setLevel(3);
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     if (
       (window as any).kakao &&
@@ -2578,6 +2591,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           setRealtorTradeType={setRealtorTradeType}
           openGalleryModal={openGalleryModal}
           isAuctionMode={isAuctionMode}
+          onPanToMap={handlePanToProperty}
         />
 
         <KakaoMapView
