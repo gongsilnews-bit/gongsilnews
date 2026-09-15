@@ -579,3 +579,25 @@ export async function getAiDraftHistory(memberId: string) {
   }
 }
 
+// ── AI 초안 마법사: Supabase DB 히스토리 단건 삭제 서버 액션 ──
+export async function deleteAiDraft(draftId: string, memberId: string) {
+  try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { error } = await supabaseAdmin
+      .from('ai_drafts')
+      .delete()
+      .eq('id', draftId)
+      .eq('member_id', memberId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (err: any) {
+    console.error('deleteAiDraft 오류:', err);
+    return { success: false, error: err.message };
+  }
+}
+
