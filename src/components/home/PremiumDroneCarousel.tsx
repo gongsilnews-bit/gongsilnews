@@ -78,9 +78,7 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
       {canScrollLeft && (
         <button 
           onClick={() => scroll("left")}
-          style={{ position: "absolute", left: "-24px", top: "90px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
-          onMouseOver={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1.05)"; e.currentTarget.style.color = "#1e56a0"; }}
-          onMouseOut={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1)"; e.currentTarget.style.color = "#333"; }}
+          style={{ position: "absolute", left: "-24px", top: "90px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", }}
           title="이전"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -89,9 +87,7 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
       {canScrollRight && (
         <button 
           onClick={() => scroll("right")}
-          style={{ position: "absolute", right: "-24px", top: "90px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
-          onMouseOver={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1.05)"; e.currentTarget.style.color = "#1e56a0"; }}
-          onMouseOut={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1)"; e.currentTarget.style.color = "#333"; }}
+          style={{ position: "absolute", right: "-24px", top: "90px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", }}
           title="다음"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -141,7 +137,6 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
                 scrollSnapAlign: "start",
                 textDecoration: "none",
                 display: "block",
-                transition: "all 0.25s cubic-bezier(0.2, 0, 0.2, 1)",
                 borderRadius: "10px",
                 overflow: "hidden"
               }}
@@ -165,7 +160,6 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
                     backgroundImage: `url(${thumb})`, 
                     backgroundSize: "cover", 
                     backgroundPosition: "center",
-                    transition: "transform 0.4s cubic-bezier(0.2, 0, 0.2, 1), filter 0.3s ease"
                   }}
                 />
                 {/* 비디오 아이콘 */}
@@ -177,7 +171,6 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
                       top: "50%", 
                       left: "50%", 
                       transform: "translate(-50%, -50%)",
-                      transition: "all 0.25s cubic-bezier(0.2, 0, 0.2, 1)",
                       zIndex: 2
                     }}
                   >
@@ -190,7 +183,7 @@ export default function PremiumDroneCarousel({ posts }: { posts: any[] }) {
                 {/* 하단 그라디언트 */}
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)", pointerEvents: "none" }} />
               </div>
-              <div className="prem-title drone-title" style={{ color: "#fff", transition: "color 0.2s ease" }}>{item.title}</div>
+              <div className="prem-title drone-title" style={{ color: "#fff" }}>{item.title}</div>
               <div className="prem-desc" style={{ 
                 display: "-webkit-box", 
                 WebkitLineClamp: 2, 

@@ -16,7 +16,7 @@
 .leadLabel { display: inline-block; position: relative; margin-top: -1px; padding: 5px 13px; background: #1a4282; color: #fff; font-size: 12px; font-weight: 700; }
 .lead h1 { font-size: 30px; font-weight: 800; line-height: 1.4; letter-spacing: -1.3px; margin: 16px 0 11px; word-break: keep-all; overflow-wrap: anywhere; }
 .hero a { text-decoration: none; }
-.supportArticle a:hover h3, .lead a:hover h1 { color: #1a4282; }
+.supportArticle a:hover h3, .lead a:hover h1 { color: #2563eb; text-decoration: underline; text-underline-offset: 4px; }
 .hero a:focus-visible, .hero button:focus-visible { outline: 2px solid #1a4282; outline-offset: 3px; }
 .vacancies { height: 342px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ccd3dd transparent; }
 .vacancy { display: flex; align-items: center; gap: 12px; padding: 15px 0; min-height: 114px; border-bottom: 1px solid #ededed; }

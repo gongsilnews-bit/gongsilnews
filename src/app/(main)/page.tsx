@@ -22,7 +22,7 @@ export default async function Home() {
     economyRes,
     lifeRes,
     gongsilRes,
-    gongsilVideoRes,
+    videoNewsRes,
     mapNewsRes,
     headlineRes,
   ] = await Promise.all([
@@ -34,7 +34,7 @@ export default async function Home() {
     getArticles({ status: "APPROVED", section1: "부동산·경제", limit: 4 }),
     getArticles({ status: "APPROVED", section1: "라이프·오피니언", limit: 4 }),
     getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 6 }),
-    getArticles({ status: "APPROVED", section1: "공실뉴스" }),
+    getArticles({ status: "APPROVED", hasVideo: true, limit: 12 }),
     getArticles({ status: "APPROVED", limit: 10 }),
     getArticles({ status: "APPROVED", is_headline: true }),
   ]);
@@ -46,7 +46,7 @@ export default async function Home() {
     ...(gongsilRes.success ? gongsilRes.data || [] : []),
   ];
   const mapArticles = mapNewsRes.success ? mapNewsRes.data || [] : [];
-  const gongsilVideoArticles = gongsilVideoRes.success ? gongsilVideoRes.data || [] : [];
+  const videoArticles = videoNewsRes.success ? videoNewsRes.data || [] : [];
 
   return (
     <>
@@ -64,7 +64,8 @@ export default async function Home() {
         {/* ========== 5. Category News Grid (pre-fetched data) ========== */}
         <CategoryNewsGrid
           allNewsArticles={allNewsArticles}
-          gongsilVideoArticles={gongsilVideoArticles}
+          videoArticles={videoArticles}
+          gongsilVideoArticles={videoArticles}
           mapArticles={mapArticles}
           issueRightBanners={[]}
           middleIssueBanners={[]}

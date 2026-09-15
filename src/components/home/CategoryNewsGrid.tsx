@@ -7,12 +7,13 @@ import BannerSlot from "@/components/BannerSlot";
 interface CategoryNewsGridProps {
   allNewsArticles?: any[];
   gongsilVideoArticles?: any[];
+  videoArticles?: any[];
   mapArticles?: any[];
   issueRightBanners?: any[];
   middleIssueBanners?: any[];
 }
 
-export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArticles = [], mapArticles = [], issueRightBanners, middleIssueBanners }: CategoryNewsGridProps) {
+export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArticles = [], videoArticles, mapArticles = [], issueRightBanners, middleIssueBanners }: CategoryNewsGridProps) {
   // PC 홈 스크롤 복원: 기사 클릭 후 뒤로가기 시 보던 위치로 즉시 복원 (깜빡임 제거)
   useLayoutEffect(() => {
     const savedScroll = sessionStorage.getItem('pc_home_scroll');
@@ -82,24 +83,25 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
   const economyArts = allEconomy.slice(0, 3);
   const lifeArts = allLife.slice(0, 3);
   
-  // 영상 목록은 최신 일반 기사 제한과 독립적으로 유지한다.
-  const gongsilArts = gongsilVideoArticles.filter(a => extractYoutubeIdInfo(a).hasVideo).slice(0, 6);
+  // 동영상뉴스 목록은 전체 기사 중 유튜브 영상이 있는 기사를 최신순으로 표시
+  const rawVideoArts = videoArticles && videoArticles.length > 0 ? videoArticles : gongsilVideoArticles;
+  const videoArts = rawVideoArts.filter(a => extractYoutubeIdInfo(a).hasVideo).slice(0, 12);
   const gongsilListArts = allGongsilList.slice(0, 3);
 
   useEffect(() => {
     checkVideoScroll();
     window.addEventListener("resize", checkVideoScroll);
     return () => window.removeEventListener("resize", checkVideoScroll);
-  }, [gongsilArts]);
+  }, [videoArts]);
 
-  // 공실뉴스 영상 캐러셀 3.8초 간격 자동 롤링 (마우스 오버 시 일시정지)
+  // 동영상뉴스 영상 캐러셀 4초 간격 자동 롤링 (마우스 오버 시 일시정지)
   useEffect(() => {
-    if (gongsilArts.length <= 3 || isVideoHovered) return;
+    if (videoArts.length <= 4 || isVideoHovered) return;
 
     const interval = setInterval(() => {
       if (!videoScrollRef.current) return;
       const { scrollLeft, scrollWidth, clientWidth } = videoScrollRef.current;
-      const scrollStep = clientWidth / 3 + 20;
+      const scrollStep = clientWidth / 2;
 
       if (scrollLeft + clientWidth >= scrollWidth - 15) {
         videoScrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
@@ -107,10 +109,10 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
         videoScrollRef.current.scrollBy({ left: scrollStep, behavior: "smooth" });
       }
       setTimeout(checkVideoScroll, 400);
-    }, 3800);
+    }, 4000);
 
     return () => clearInterval(interval);
-  }, [gongsilArts.length, isVideoHovered]);
+  }, [videoArts.length, isVideoHovered]);
 
   // 날짜 포맷팅
   const formatDate = (dateStr: string) => {
@@ -174,12 +176,15 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
     <>
       <style>{`
         .video-grid { display: flex; gap: 20px; }
-        .vid-item { display: flex; flex-direction: column; cursor: pointer; transition: transform 0.2s; text-decoration: none; color: inherit; }
-        .vid-item:hover { transform: translateY(-3px); }
+        .vid-item { display: flex; flex-direction: column; cursor: pointer; text-decoration: none; color: inherit; }
+        .vid-item:hover { transform: none !important; }
+        .vid-item:hover .vid-title { color: #60a5fa !important; text-decoration: underline !important; text-underline-offset: 3px; }
         .vid-thumb { position: relative; width: 100%; padding-bottom: 56.25%; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
-        .vid-thumb img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: opacity 0.2s; }
-        .vid-item:hover .vid-thumb img { opacity: 1; }
+        .vid-thumb img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         .vid-title { font-size: 16px; font-weight: 700; line-height: 1.4; color: #111; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .hi-item { transition: none !important; }
+        .hi-item:hover { transform: none !important; }
+        .hi-item:hover .hi-txt h3 { color: #2563eb !important; text-decoration: underline !important; text-underline-offset: 3px; }
         .hide-scroll::-webkit-scrollbar { display: none; }
       `}</style>
       
@@ -205,11 +210,14 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
         </div>
       </div>
 
-      {/* 6. Video News: 공실뉴스 — 블랙 배경 */}
+      {/* 6. Video News: 동영상뉴스 — 블랙 배경 */}
       <div className="video-dark-bg" style={{ background: "#111", margin: "0 -9999px", padding: "40px 9999px 48px", position: "relative" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div className="sec-title-wrap">
-            <Link href="/news_gongsil" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}><svg width="28" height="20" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg><h2 className="sec-title" style={{ color: "#fff", margin: 0 }}>공실뉴스 &gt;</h2></Link>
+            <Link href="/news_all" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
+              <svg width="28" height="20" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg>
+              <h2 className="sec-title" style={{ color: "#fff", margin: 0 }}>동영상뉴스 &gt;</h2>
+            </Link>
           </div>
 
           <div 
@@ -221,20 +229,16 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
             {canScrollVideoLeft && (
               <button 
                 onClick={() => scrollVideo("left")}
-                style={{ position: "absolute", left: "-24px", top: "105px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
-                onMouseOver={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1.05)"; e.currentTarget.style.color = "#1e56a0"; }}
-                onMouseOut={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1)"; e.currentTarget.style.color = "#333"; }}
+                style={{ position: "absolute", left: "-24px", top: "85px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                 title="이전"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
               </button>
             )}
-            {canScrollVideoRight && gongsilArts.length > 3 && (
+            {canScrollVideoRight && videoArts.length > 4 && (
               <button 
                 onClick={() => scrollVideo("right")}
-                style={{ position: "absolute", right: "-24px", top: "105px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
-                onMouseOver={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1.05)"; e.currentTarget.style.color = "#1e56a0"; }}
-                onMouseOut={e => { e.currentTarget.style.transform = "translateY(-50%) scale(1)"; e.currentTarget.style.color = "#333"; }}
+                style={{ position: "absolute", right: "-24px", top: "85px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                 title="다음"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -255,19 +259,19 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
                 paddingBottom: "10px"
               }}
             >
-              {gongsilArts.length > 0 ? (
-                gongsilArts.map((item, i) => {
+              {videoArts.length > 0 ? (
+                videoArts.map((item, i) => {
                   const ytInfo = extractYoutubeIdInfo(item);
                   const thumbSrc = getThumbnailSrc(item, ytInfo);
                   return (
                     <Link 
-                      key={i} 
+                      key={item.id || i} 
                       href={`/news/${item.article_no || item.id}`} 
                       className="vid-item" 
                       onClick={saveScroll}
                       style={{
-                        flex: "0 0 calc(33.333% - 13.33px)",
-                        minWidth: "280px",
+                        flex: "0 0 calc(25% - 15px)",
+                        minWidth: "220px",
                         scrollSnapAlign: "start",
                         textDecoration: "none",
                         display: "block"
@@ -282,7 +286,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
                   );
                 })
               ) : (
-                <div style={{ color: "#666", padding: "40px 0", width: "100%", textAlign: "center" }}>등록된 공실뉴스 기사가 없습니다.</div>
+                <div style={{ color: "#666", padding: "40px 0", width: "100%", textAlign: "center" }}>등록된 동영상뉴스 기사가 없습니다.</div>
               )}
             </div>
           </div>

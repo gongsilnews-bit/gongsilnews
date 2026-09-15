@@ -33,10 +33,15 @@
   line-height: 1.4;
   -webkit-line-clamp: 2;
 }
-.hero .lead h1,
+.hero .lead h1 {
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+}
 .hero .lead a:hover h1 {
   color: #fff;
   text-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .greeting {
   position: absolute;
@@ -123,4 +128,4 @@
   letter-spacing: -.4px;
   display: block;
 }
-.hero .supportArticle a:hover h3 { color: #fff; }
+.hero .supportArticle a:hover h3 { color: #fff; text-decoration: underline; text-underline-offset: 3px; }

@@ -18,6 +18,7 @@ export default async function MobileHomePage() {
     lecturesRes,
     droneRes,
     auctionCount,
+    videoRes,
   ] = await Promise.all([
     getArticles({ status: "APPROVED", is_headline: true, limit: 8 }),
     getArticles({ status: "APPROVED", section1: "공실뉴스", limit: 30 }),
@@ -27,6 +28,7 @@ export default async function MobileHomePage() {
     getLectures({ status: "ACTIVE" }),
     getBoardPosts("drone"),
     getAuctionCount(),
+    getArticles({ status: "APPROVED", hasVideo: true, limit: 12 }),
   ]);
 
   const headlineArticles = headlineRes.success ? (headlineRes.data || []) : [];
@@ -36,6 +38,7 @@ export default async function MobileHomePage() {
   const lifeArticles = lifeRes.success ? (lifeRes.data || []) : [];
   const lectures = lecturesRes.success ? (lecturesRes.data || []) : [];
   const dronePosts = droneRes.data?.slice(0, 8) || [];
+  const videoArticles = videoRes.success ? (videoRes.data || []) : [];
 
   return (
     <>
@@ -49,6 +52,7 @@ export default async function MobileHomePage() {
         lectures={lectures.slice(0, 4)}
         dronePosts={dronePosts}
         auctionCount={auctionCount}
+        videoArticles={videoArticles}
       />
       <div style={{ width: '100%', maxWidth: '448px', margin: '0 auto' }}>
         <MobileFooter />

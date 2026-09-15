@@ -57,6 +57,7 @@ interface Props {
   lectures: any[];
   dronePosts: any[];
   auctionCount?: number;
+  videoArticles?: any[];
 }
 
 const CATEGORIES = [
@@ -67,7 +68,7 @@ const CATEGORIES = [
 ];
 
 export default function MobileHomeClient(props: Props) {
-  const { headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, lectures, dronePosts, auctionCount } = props;
+  const { headlineArticles, gongsilArticles, realestateArticles, marketingArticles, lifeArticles, lectures, dronePosts, auctionCount, videoArticles } = props;
   const router = useRouter();
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [isMapLoading, setIsMapLoading] = useState(true);
@@ -108,22 +109,24 @@ export default function MobileHomeClient(props: Props) {
     return () => window.removeEventListener("pageshow", handlePageShow);
   }, []);
 
-  // 공실뉴스 영상 기사와 텍스트 기사 완벽 분리
+  // 동영상뉴스 영상 기사와 텍스트 기사 완벽 분리
   const ytRx = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/;
   const gongsilVideoArticles = gongsilArticles.filter((a: any) => {
     if (a.youtube_url && ytRx.test(a.youtube_url)) return true;
     if (a.content && ytRx.test(a.content)) return true;
     return false;
   });
+  const videoArts = videoArticles && videoArticles.length > 0 ? videoArticles : gongsilVideoArticles;
+
   const gongsilTextArticles = gongsilArticles.filter((a: any) => {
     if (a.youtube_url && ytRx.test(a.youtube_url)) return false;
     if (a.content && ytRx.test(a.content)) return false;
     return true;
   }).slice(0, 5);
 
-  // 모바일 공실뉴스 영상 캐러셀 3.8초 간격 자동 롤링
+  // 모바일 동영상뉴스 영상 캐러셀 3.8초 간격 자동 롤링
   useEffect(() => {
-    if (gongsilVideoArticles.length <= 1 || isVideoHovered) return;
+    if (videoArts.length <= 1 || isVideoHovered) return;
     const interval = setInterval(() => {
       if (!mobileVideoScrollRef.current) return;
       const { scrollLeft, scrollWidth, clientWidth } = mobileVideoScrollRef.current;
@@ -135,7 +138,7 @@ export default function MobileHomeClient(props: Props) {
       }
     }, 3800);
     return () => clearInterval(interval);
-  }, [gongsilVideoArticles.length, isVideoHovered]);
+  }, [videoArts.length, isVideoHovered]);
 
   const [mapBounds, setMapBounds] = useState<any>(null);
 
@@ -350,19 +353,19 @@ export default function MobileHomeClient(props: Props) {
       {/* ③ 부동산·경제 */}
       <NewsSection title="부동산·경제" href="/m/news_politics" articles={realestateArticles} onArticleClick={saveHomeScroll} />
 
-      {/* ④ 공실뉴스 영상 (PC 검은배경 VideoGrid 모바일 버전 - 3.8초 자동 슬라이드) */}
-      {gongsilVideoArticles.length > 0 && (
+      {/* ④ 동영상뉴스 영상 (PC 검은배경 VideoGrid 모바일 버전 - 3.8초 자동 슬라이드) */}
+      {videoArts.length > 0 && (
         <div 
           style={{ background: "#111", marginBottom: 12 }}
           onMouseEnter={() => setIsVideoHovered(true)}
           onMouseLeave={() => setIsVideoHovered(false)}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 16px 14px" }}>
-            <Link href="/m/news_gongsil" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+            <Link href="/m/news" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
               <svg width="24" height="17" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg>
-              <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>공실뉴스 &gt;</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>동영상뉴스 &gt;</span>
             </Link>
-            <Link href="/m/news_gongsil" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>더보기 ›</Link>
+            <Link href="/m/news" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>더보기 ›</Link>
           </div>
           <div 
             ref={mobileVideoScrollRef}
@@ -377,7 +380,7 @@ export default function MobileHomeClient(props: Props) {
             onTouchStart={() => setIsVideoHovered(true)} 
             onTouchEnd={() => setTimeout(() => setIsVideoHovered(false), 3000)}
           >
-            {gongsilVideoArticles.slice(0, 10).map((a: any) => {
+            {videoArts.slice(0, 10).map((a: any) => {
               const ytMatch = (a.youtube_url || a.content || "").match(ytRx);
               const ytId = ytMatch ? ytMatch[1] : null;
               const thumbSrc = a.thumbnail_url || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null);

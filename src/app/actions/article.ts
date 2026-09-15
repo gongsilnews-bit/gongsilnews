@@ -290,6 +290,7 @@ export async function getArticles(filters?: {
   section2?: string | string[];
   is_important?: boolean;
   is_headline?: boolean;
+  hasVideo?: boolean;
   limit?: number;
   page?: number;
   keyword?: string;
@@ -349,6 +350,7 @@ export async function getArticles(filters?: {
     }
     if (filters?.is_important !== undefined) query = filters.is_important ? query.eq("is_important", true) : query.or("is_important.is.null,is_important.eq.false");
     if (filters?.is_headline !== undefined) query = filters.is_headline ? query.eq("is_headline", true) : query.or("is_headline.is.null,is_headline.eq.false");
+    if (filters?.hasVideo) query = query.not("youtube_url", "is", null).neq("youtube_url", "");
     if (filters?.author_name) query = query.eq("author_name", filters.author_name);
     if (filters?.author_id) query = query.eq("author_id", filters.author_id);
     
