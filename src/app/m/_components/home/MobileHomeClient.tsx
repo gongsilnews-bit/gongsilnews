@@ -363,7 +363,7 @@ export default function MobileHomeClient(props: Props) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 16px 14px" }}>
             <Link href="/m/news" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
               <svg width="24" height="17" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg>
-              <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>동영상뉴스 &gt;</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>동영상뉴스</span>
             </Link>
             <Link href="/m/news" style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>더보기 ›</Link>
           </div>
@@ -428,8 +428,8 @@ export default function MobileHomeClient(props: Props) {
                     width: 180,
                     borderRadius: 12,
                     overflow: "hidden",
-                    boxShadow: isSelected ? "0 12px 28px rgba(0,0,0,0.25)" : "0 2px 8px rgba(0,0,0,0.08)",
-                    border: isSelected ? "1.5px solid #3b82f6" : "1px solid #f3f4f6",
+                    boxShadow: isSelected ? "0 12px 28px rgba(5, 150, 105, 0.25)" : "0 2px 8px rgba(0,0,0,0.08)",
+                    border: isSelected ? "2px solid #059669" : "1px solid #f3f4f6",
                     background: "#fff",
                     textDecoration: "none",
                     display: "block",
@@ -577,10 +577,11 @@ export default function MobileHomeClient(props: Props) {
         }
         .study-card-tap {
           -webkit-tap-highlight-color: transparent;
-          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
         }
         .study-card-tap:active {
           transform: scale(0.98) !important;
+          border-color: #059669 !important;
         }
       `}</style>
     </div>

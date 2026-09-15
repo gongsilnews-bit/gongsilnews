@@ -42,11 +42,59 @@ export default function SpecialLectureBanner({ initialLectures }: { initialLectu
   return (
     <div className="container px-20 mt-50 mb-50">
       <div className="sec-title-wrap">
-        <h2 className="sec-title" id="special-lecture" style={{ scrollMarginTop: 150 }}>공실스터디</h2>
+        <Link href="/study" style={{ textDecoration: "none" }}>
+          <h2 className="sec-title" id="special-lecture" style={{ scrollMarginTop: 150 }}>공실스터디</h2>
+        </Link>
+        <Link href="/study" className="sec-more-btn">more</Link>
       </div>
+      <style>{`
+        .lecture-card {
+          border: 2px solid #e2e8f0 !important;
+          border-radius: 12px !important;
+          background: #fff !important;
+          transition: all 0.2s ease !important;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
+        }
+        .lecture-card:hover {
+          border-color: #059669 !important;
+          box-shadow: 0 12px 24px rgba(5, 150, 105, 0.22) !important;
+          transform: translateY(-5px) !important;
+        }
+        .lecture-card:hover .lecture-title {
+          text-decoration: underline !important;
+          text-underline-offset: 3px;
+        }
+      `}</style>
       <div className="lecture-grid mb-50">
         {lectures.map((item, i) => (
-          <Link href={item.id ? `/study_read?id=${item.id}` : "/study_read"} key={item.id || i} className="lecture-card" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <Link 
+            href={item.id ? `/study_read?id=${item.id}` : "/study_read"} 
+            key={item.id || i} 
+            className="lecture-card" 
+            style={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              height: "100%",
+              backgroundColor: "#ffffff",
+              borderRadius: 12,
+              overflow: "hidden",
+              border: "2px solid #e2e8f0",
+              transition: "all 0.2s ease",
+              cursor: "pointer",
+              textDecoration: "none",
+              boxShadow: "0 4px 15px rgba(0,0,0,0.05)"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 12px 24px rgba(5, 150, 105, 0.22)";
+              e.currentTarget.style.borderColor = "#059669";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.05)";
+              e.currentTarget.style.borderColor = "#e2e8f0";
+            }}
+          >
             <div className="lecture-thumb">
               {item.thumbnail_url ? (
                 <img

@@ -290,7 +290,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
       )}      {/* 2. Main Header Placeholder & Header */}
       <div ref={placeholderRef} style={{ width: "100%", height: 0 }} />
       <header className="header" ref={headerRef}>
-        <div className="container">
+        <div className="container px-20">
           {/* Scroll state (1-line sticky) vs Top state (1-line large) */}
           <div className="header-main" style={{ 
             display: "flex", 
@@ -305,7 +305,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
             <div style={{ display: "flex", alignItems: isSmallHeader ? "center" : "flex-end", gap: isSmallHeader ? "16px" : "20px", flex: 1, minWidth: 0 }}>
               {/* 1. 로고 (isSmallHeader에 따라 크기만 변경) */}
               <div style={{ display: "flex", alignItems: "flex-end", cursor: "pointer", flexShrink: 0 }} onClick={() => window.location.href = "/"}>
-                <img src="/logo.png" style={{ height: isSmallHeader ? "40px" : "70px", transition: "height 0.3s ease" }} alt="부동산 정보채널 공실뉴스" />
+                <img src="/logo.png" style={{ height: isSmallHeader ? "38px" : "56px", transition: "height 0.3s ease" }} alt="부동산 정보채널 공실뉴스" />
               </div>
 
               {/* 2. 메인 메뉴 또는 기사 제목 (Indication Bar) */}

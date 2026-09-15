@@ -317,7 +317,7 @@ export default function MapSearchBar({ onSearchCoord, onRegionSelect, mapCenterR
           style={{
             border: "none",
             borderRadius: 6,
-            background: "#1a4282",
+            background: "#ff8e15",
             color: "#fff",
             cursor: "pointer",
             padding: "7px 10px",

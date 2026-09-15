@@ -149,8 +149,17 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
       const ytInfo = extractYoutubeIdInfo(item);
       const thumbSrc = getThumbnailSrc(item, ytInfo);
       return (
-        <Link key={i} href={`/news/${item.article_no || item.id}`} onClick={saveScroll} style={{ textDecoration: "none", color: "inherit", display: "block", marginBottom: 24 }}>
-          <div className="hi-item" style={{ alignItems: "flex-start", display: "flex", gap: "20px" }}>
+        <Link key={i} href={`/news/${item.article_no || item.id}`} onClick={saveScroll} style={{ textDecoration: "none", color: "inherit", display: "block", marginBottom: 8 }}>
+          <div 
+            className="hi-item" 
+            style={{ alignItems: "flex-start", display: "flex", gap: "20px", padding: "12px", borderRadius: "8px", transition: "background-color 0.2s ease" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#f9f9f9";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }}
+          >
             {thumbSrc && (
               <div className="hi-img" style={{ position: "relative", width: "160px", height: "100px", flexShrink: 0 }}>
                 <img src={thumbSrc} alt={item.title} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 4 }} />
@@ -182,8 +191,8 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
         .vid-thumb { position: relative; width: 100%; padding-bottom: 56.25%; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
         .vid-thumb img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         .vid-title { font-size: 16px; font-weight: 700; line-height: 1.4; color: #111; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .hi-item { transition: none !important; }
-        .hi-item:hover { transform: none !important; }
+        .hi-item { transition: background-color 0.2s ease !important; border-radius: 8px; border-bottom: 1px solid #eee; }
+        .hi-item:hover { transform: none !important; background-color: #f9f9f9 !important; }
         .hi-item:hover .hi-txt h3 { color: #2563eb !important; text-decoration: underline !important; text-underline-offset: 3px; }
         .hide-scroll::-webkit-scrollbar { display: none; }
       `}</style>
@@ -193,7 +202,8 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
         <div className="hot-issue-wrap" style={{ gap: 40, marginBottom: "8px" }}>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
-              <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title">공실뉴스 &gt;</h2></Link>
+              <Link href="/news_gongsil" style={{ textDecoration: "none" }}><h2 className="sec-title">공실뉴스</h2></Link>
+              <Link href="/news_gongsil" className="sec-more-btn">more</Link>
             </div>
             <div className="hi-list">
               {renderArticleList(gongsilListArts)}
@@ -201,7 +211,8 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
           </div>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
-              <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산·경제 &gt;</h2></Link>
+              <Link href="/news_politics" style={{ textDecoration: "none" }}><h2 className="sec-title">부동산·경제</h2></Link>
+              <Link href="/news_politics" className="sec-more-btn">more</Link>
             </div>
             <div className="hi-list">
               {renderArticleList(economyArts)}
@@ -216,7 +227,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
           <div className="sec-title-wrap">
             <Link href="/news_all" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
               <svg width="28" height="20" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><path d="M11 5.5L19.5 10L11 14.5V5.5Z" fill="white"/></svg>
-              <h2 className="sec-title" style={{ color: "#fff", margin: 0 }}>동영상뉴스 &gt;</h2>
+              <h2 className="sec-title" style={{ color: "#fff", margin: 0 }}>동영상뉴스</h2>
             </Link>
           </div>
 
@@ -229,7 +240,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
             {canScrollVideoLeft && (
               <button 
                 onClick={() => scrollVideo("left")}
-                style={{ position: "absolute", left: "-24px", top: "85px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ position: "absolute", left: "-24px", top: "110px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                 title="이전"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -238,7 +249,7 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
             {canScrollVideoRight && videoArts.length > 4 && (
               <button 
                 onClick={() => scrollVideo("right")}
-                style={{ position: "absolute", right: "-24px", top: "85px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ position: "absolute", right: "-24px", top: "110px", transform: "translateY(-50%)", zIndex: 20, width: "48px", height: "48px", background: "#fff", borderRadius: "50%", padding: "0", border: "1px solid #e5e7eb", boxShadow: "0 4px 16px rgba(0,0,0,0.15)", color: "#333", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                 title="다음"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -298,7 +309,8 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
         <div className="hot-issue-wrap" style={{ gap: 40, marginBottom: "8px" }}>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
-              <Link href="/news_marketing" style={{ textDecoration: "none" }}><h2 className="sec-title">AI마케팅 &gt;</h2></Link>
+              <Link href="/news_marketing" style={{ textDecoration: "none" }}><h2 className="sec-title">AI마케팅</h2></Link>
+              <Link href="/news_marketing" className="sec-more-btn">more</Link>
             </div>
             <div className="hi-list">
               {renderArticleList(marketingArts)}
@@ -306,7 +318,8 @@ export default function CategoryNewsGrid({ allNewsArticles = [], gongsilVideoArt
           </div>
           <div className="hi-left" style={{ flex: 1, minWidth: 0, width: "calc(50% - 20px)" }}>
             <div className="sec-title-wrap">
-              <Link href="/news_etc" style={{ textDecoration: "none" }}><h2 className="sec-title">라이프·오피니언 &gt;</h2></Link>
+              <Link href="/news_etc" style={{ textDecoration: "none" }}><h2 className="sec-title">라이프·오피니언</h2></Link>
+              <Link href="/news_etc" className="sec-more-btn">more</Link>
             </div>
             <div className="hi-list">
               {renderArticleList(lifeArts)}

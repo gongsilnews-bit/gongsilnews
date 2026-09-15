@@ -835,34 +835,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
           </div>
 
           {/* 🔍 지도 통합 플로팅 바: 위치검색 + 내 위치 검색 (나란히 배열) */}
-          <MapSearchBar onSearchCoord={panMapTo} mapCenterRegion={mapCenterRegion}>
-            {/* 내 위치에서 검색 (별도 버튼) */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setClusterMode(false);
-                setActiveArticleId(null);
-                setShowDetail(false);
-                if (typeof closeInfoWindow === 'function') closeInfoWindow();
-                if (navigator.geolocation) {
-                  navigator.geolocation.getCurrentPosition((pos) => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    if (kakaoMapRef.current) {
-                      const kakao = (window as any).kakao;
-                      kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
-                    }
-                  }, (err) => {
-                    console.error("Geolocation error:", err);
-                    handleLocationPermissionDenied();
-                  }, { enableHighAccuracy: true });
-                } else {
-                  handleLocationUnavailable();
-                }
-              }}
-              style={{ padding: "8px 18px", background: "#ff8e15", color: "#fff", border: "none", borderRadius: 30, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 4px 10px rgba(0,0,0,0.1)" }}
-            >내 위치에서 검색</button>
-          </MapSearchBar>
+          <MapSearchBar onSearchCoord={panMapTo} mapCenterRegion={mapCenterRegion} />
 
         </div>
       </main>
