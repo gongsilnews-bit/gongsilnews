@@ -103,9 +103,10 @@ export default function KakaoMapView({
     }
 
     const restored = mapStart("pc-gongsil-position", { lat: initialLat, lng: initialLng, level: 6 });
+    const initialLevel = Math.min(restored.level || 6, 10);
     kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
       center: new kakao.maps.LatLng(restored.lat, restored.lng),
-      level: restored.level,
+      level: initialLevel,
       draggable: true,
     });
 
@@ -113,9 +114,9 @@ export default function KakaoMapView({
     setZoomLevel(map.getLevel());
     setMapBounds(map.getBounds()); // 🚀 최초 맵 로드 시 Bounds를 즉각 주입하여 첫 화면 freeze 해결!
 
-    // 제한된 범위 지정 (3: 가장 확대된 상태, 14: 전국 범위)
+    // 제한된 범위 지정 (3: 가장 확대된 상태, 10: 최대 줌아웃 - 광역 10km 축척 수준)
     map.setMinLevel(3);
-    map.setMaxLevel(14);
+    map.setMaxLevel(10);
 
     // 🚀 PC 페이지를 태블릿/모바일에서 열 때 터치 드래그 및 핀치 줌 강제 활성화 (자식 target에 이벤트 위임 및 휠/클릭 시뮬레이션)
     if (mapRef.current && ('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
@@ -852,7 +853,10 @@ export default function KakaoMapView({
           </button>
           <button
             onClick={() => {
-              if (kakaoMapRef.current) kakaoMapRef.current.setLevel(kakaoMapRef.current.getLevel() + 1);
+              if (kakaoMapRef.current) {
+                const cur = kakaoMapRef.current.getLevel();
+                if (cur < 10) kakaoMapRef.current.setLevel(cur + 1);
+              }
             }}
             style={{
               width: 36,
