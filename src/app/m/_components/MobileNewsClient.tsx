@@ -1,5 +1,7 @@
 "use client";
 
+import { mapStart, rememberMap } from "@/utils/mapMemory";
+import { useMapFields } from "@/utils/useMapFields";
 import React, { useState, useEffect, useLayoutEffect, useRef, Suspense, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -856,8 +858,10 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   // 우리동네(local) 탭에서는 1차 카테고리를 항상 전체(빈 값)로 유지
   useEffect(() => {
     if (activeTab === "local") {
-      setSection1Filter("");
-      setSection2Filter("");
+      if (searchParams.has("section1") || searchParams.has("section2")) {
+        setSection1Filter(searchParams.get("section1") || "");
+        setSection2Filter(searchParams.get("section2") || "");
+      }
     } else {
       setSection1Filter(searchParams.get("section1") || "");
       setSection2Filter(searchParams.get("section2") || "");
@@ -865,6 +869,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   }, [searchParams, activeTab]);
 
 
+
+  useMapFields("mobile-news-filters", { section1Filter, section2Filter, sortBy }, { section1Filter: setSection1Filter, section2Filter: setSection2Filter, sortBy: setSortBy }, activeTab === "local");
 
   const loadSidoData = async () => {
     try {
@@ -1170,10 +1176,12 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
       const kakao = (window as any).kakao;
       if (!kakao?.maps) return;
 
+      const restored = mapStart("mobile-news-position", { lat: 37.5665, lng: 126.978, level: 6 });
       const map = new kakao.maps.Map(mapRef.current, {
-        center: new kakao.maps.LatLng(37.5665, 126.978),
-        level: 6,
+        center: new kakao.maps.LatLng(restored.lat, restored.lng),
+        level: restored.level,
       });
+      kakao.maps.event.addListener(map, "idle", () => rememberMap("mobile-news-position", map));
       kakaoMapRef.current = map;
       setMapLoaded(true);
     };

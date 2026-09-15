@@ -1,3 +1,4 @@
+import { mapStart, rememberMap } from "@/utils/mapMemory";
 import React, { useEffect, useRef } from "react";
 import MapSearchBar from "@/components/MapSearchBar";
 import { getJitteredCoords } from "./gongsilHelpers";
@@ -101,9 +102,10 @@ export default function KakaoMapView({
       }
     }
 
+    const restored = mapStart("pc-gongsil-position", { lat: initialLat, lng: initialLng, level: 6 });
     kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
-      center: new kakao.maps.LatLng(initialLat, initialLng),
-      level: 6,
+      center: new kakao.maps.LatLng(restored.lat, restored.lng),
+      level: restored.level,
       draggable: true,
     });
 
@@ -215,6 +217,7 @@ export default function KakaoMapView({
     }
 
     kakao.maps.event.addListener(map, "idle", () => {
+      rememberMap("pc-gongsil-position", map);
       setMapBounds(map.getBounds());
       // Reverse Geocoder for the center
       const center = map.getCenter();

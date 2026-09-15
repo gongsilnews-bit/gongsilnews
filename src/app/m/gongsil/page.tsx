@@ -149,7 +149,7 @@ function MobileGongsilContent() {
 
   const AUCTION_PROPERTY_TYPES = ["아파트", "오피스텔", "단독/다가구", "빌라/주택", "상가/근생", "빌딩/사무실", "공장/창고", "토지"];
 
-  const STORAGE_KEY = "m_gongsil_last_state";
+  const STORAGE_KEY = "m_gongsil_map_state_v1";
 
   // 실시간 공실 및 법원 경공매의 필터와 지도 위치를 각각 독립적으로 기억
   const savedGongsilFiltersRef = useRef<any>(null);
@@ -217,9 +217,7 @@ function MobileGongsilContent() {
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-      if (currentUser && currentUser.id) {
-        localStorage.setItem(`last_gongsil_filters_${currentUser.id}`, JSON.stringify(stateToSave));
-      }
+
     } catch (e) {
       console.error("Failed to save mobile search state:", e);
     }
@@ -235,8 +233,7 @@ function MobileGongsilContent() {
 
     try {
       const savedStr =
-        localStorage.getItem(STORAGE_KEY) ||
-        (currentUser && currentUser.id ? localStorage.getItem(`last_gongsil_filters_${currentUser.id}`) : null);
+        ['id', 'mng', 'lat', 'lng'].some(key => searchParams.has(key)) ? null : localStorage.getItem(STORAGE_KEY);
 
       if (savedStr) {
         const parsed = JSON.parse(savedStr);
@@ -895,8 +892,7 @@ function MobileGongsilContent() {
       } else {
         try {
           const savedStr =
-            localStorage.getItem(STORAGE_KEY) ||
-            (currentUser && currentUser.id ? localStorage.getItem(`last_gongsil_filters_${currentUser.id}`) : null);
+            localStorage.getItem(STORAGE_KEY);
           if (savedStr) {
             const parsed = JSON.parse(savedStr);
             const modeParam = searchParams.get("mode");

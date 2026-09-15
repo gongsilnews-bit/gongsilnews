@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useMapFields } from "@/utils/useMapFields";
 import { getCleanAddrText, getPriceText, getAuctionInfo, formatAmount, formatAreaWithPy } from "./gongsilHelpers";
 
 type AuctionSortKey = "latest" | "appraisal" | "bid" | "bidDate";
@@ -59,6 +60,7 @@ export default function GongsilSidebar({
   setShowCategoryModal,
 }: GongsilSidebarProps) {
   const [auctionSort, setAuctionSort] = useState<AuctionSortKey>("latest");
+  useMapFields("pc-gongsil-sort", { auctionSort }, { auctionSort: setAuctionSort });
 
   const sortedVacancies = useMemo(() => {
     if (!isAuctionMode) return displayVacancies;

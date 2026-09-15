@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useMapFields } from "@/utils/useMapFields";
 import { useSearchParams } from "next/navigation";
 import { getVacancies, getAgencyInfo, getVacancyDetail, getVacanciesForMap, getVacancyByVacancyNo } from "@/app/actions/vacancy";
 import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyComments";
@@ -133,6 +134,7 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     return "경매";
   });
   const shareDropdownRef = useRef<HTMLDivElement>(null);
+  useMapFields("pc-gongsil-category", { activeCategory, activePills, activeMode, isAuctionMode }, { activeCategory: setActiveCategory, activePills: setActivePills, activeMode: setActiveMode, isAuctionMode: setIsAuctionMode });
 
   const [wishTab, setWishTab] = useState<"wish" | "recent">("wish");
   const [recentViews, setRecentViews] = useState<any[]>([]);

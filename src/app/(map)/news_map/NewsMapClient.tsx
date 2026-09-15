@@ -1,5 +1,7 @@
 "use client";
 
+import { useMapFields } from "@/utils/useMapFields";
+import { mapStart, rememberMap } from "@/utils/mapMemory";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
@@ -24,6 +26,14 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
   const [viewedArticles, setViewedArticles] = useState<Set<string>>(new Set());
   const [section1, setSection1] = useState("");
   const [section2, setSection2] = useState("");
+  useMapFields("pc-news-filters", { section1, section2 }, { section1: setSection1, section2: setSection2 });
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("section1") || params.has("section2")) {
+      setSection1(params.get("section1") || "");
+      setSection2(params.get("section2") || "");
+    }
+  }, []);
   const [mapError, setMapError] = useState<string | null>(null);
   const [clusterMode, setClusterMode] = useState(false);  // 클러스터 클릭으로 필터 중인지 여부
   const [activeInfoWindow, setActiveInfoWindow] = useState<any>(null); // 현재 열린 InfoWindow ref
@@ -273,9 +283,10 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
     const kakao = (window as any).kakao;
     if (!mapRef.current || kakaoMapRef.current) return;
 
+    const restored = mapStart("pc-news-position", { lat: 37.498095, lng: 127.027610, level: 8 });
     kakaoMapRef.current = new kakao.maps.Map(mapRef.current, {
-      center: new kakao.maps.LatLng(37.498095, 127.027610),
-      level: 8,
+      center: new kakao.maps.LatLng(restored.lat, restored.lng),
+      level: restored.level,
       draggable: true,
     });
 
@@ -386,6 +397,7 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
 
     // 지도 이동/줌 완료 시 → 현재 뷰포트에 보이는 기사만 사이드바에 표시 + 주소 파악
     kakao.maps.event.addListener(map, 'idle', () => {
+      rememberMap('pc-news-position', map);
       if (!clusterModeRef.current) {
         updateVisibleArticlesRef.current();
       }
