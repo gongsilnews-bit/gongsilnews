@@ -281,6 +281,10 @@ export async function getVacancies(options?: {
   searchKeyword?: string;
   excludeOnbid?: boolean;
   stringify?: boolean;
+  /** 관리자 목록 화면 전용. 표에 실제로 그려지는 컬럼만 조회한다.
+   *  metadata(JSONB 통째), agencies(*), vacancy_photos 조인을 제외해 전송량과 조인 비용을 줄인다.
+   *  기존 호출처의 응답 형태를 바꾸지 않기 위해 명시적으로 켠 경우에만 적용된다. */
+  slim?: boolean;
 }) {
   // 1. 서버 캐시 확인 (전체 조회 & stringify 옵션 시에만 적용)
   if (options?.all && options?.stringify) {
@@ -293,14 +297,22 @@ export async function getVacancies(options?: {
   try {
     const selectFields = 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, building_name, lat, lng, created_at, address_exposure, exposure_type, realtor_commission, room_count, bath_count, exclusive_m2, supply_m2, parking, total_floor, current_floor, direction, move_in_date, client_name, client_phone, themes, options, metadata, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
 
+    // 관리자 공실목록 표가 실제로 읽는 컬럼만 담은 축소 select (VacancySection 기준)
+    const slimSelectFields = 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, sido, sigungu, dong, building_name, created_at, room_count, exclusive_m2, supply_m2, current_floor, client_name, client_phone, members!vacancies_owner_id_fkey(name, phone, role, agencies(name))';
+
     // 만약 페이지네이션이 명시된 경우, 단일 쿼리로 최적화해서 수행
     if (options?.page && options?.limit) {
       const from = (options.page - 1) * options.limit;
       const to = from + options.limit - 1;
 
+      // select 문자열은 변수로 받아 string 으로 넓힌다.
+      // .select() 인자에 삼항연산자를 인라인으로 두면 PostgREST 가 두 select 리터럴의
+      // 결과 타입 union 을 전개하려다 TS2590(union type too complex) 을 낸다.
+      const pageSelectFields: string = options?.slim ? slimSelectFields : selectFields;
+
       let pageQuery = supabase
         .from('vacancies')
-        .select(selectFields, { count: 'exact' })
+        .select(pageSelectFields, { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -346,7 +358,8 @@ export async function getVacancies(options?: {
         return { success: false, error: error.message };
       }
 
-      const lightData = (data || []).map(v => {
+      // slim 여부에 따라 select 컬럼이 달라져 행 타입이 정적으로 결정되지 않으므로 명시적으로 받는다
+      const lightData = ((data || []) as any[]).map((v: any) => {
         const { infrastructure, description, metadata, members, vacancy_photos, ...rest } = v;
         const lightMetadata = metadata ? {
           cltrUsgLclsCtgrNm: metadata.cltrUsgLclsCtgrNm,

@@ -301,12 +301,21 @@ export async function getArticles(filters?: {
   orderBy?: "published_at" | "updated_at" | "created_at";
   noCache?: boolean;
   countOnly?: boolean;
+  /** 관리자 기사목록 화면 전용. 표에 실제로 그려지는 컬럼만 조회한다.
+   *  article_keywords 조인과 본문 부가 필드를 제외한다.
+   *  기존 호출처의 응답 형태를 바꾸지 않기 위해 명시적으로 켠 경우에만 적용된다. */
+  slim?: boolean;
 }) {
+  const LIST_FIELDS = "id, article_no, status, section1, section2, title, subtitle, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, views_week, views_month, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)";
+  // 관리자 기사목록 표가 실제로 읽는 컬럼만 담은 축소 select (ArticleSection 기준)
+  const SLIM_LIST_FIELDS = "id, article_no, status, section1, section2, title, author_name, author_id, published_at, created_at, updated_at, is_important, is_headline, reject_reason";
+
   const executeQuery = async () => {
     const supabase = getAdminClient();
+    const selectFields = filters?.countOnly ? "id" : filters?.slim ? SLIM_LIST_FIELDS : LIST_FIELDS;
     let query = supabase
       .from("articles")
-      .select(filters?.countOnly ? "id" : "id, article_no, status, section1, section2, title, subtitle, author_name, author_id, published_at, created_at, updated_at, is_deleted, thumbnail_url, view_count, views_week, views_month, lat, lng, location_name, youtube_url, is_important, is_headline, reject_reason, edit_count, article_keywords(keyword)", { count: "exact", head: filters?.countOnly ?? false })
+      .select(selectFields, { count: "exact", head: filters?.countOnly ?? false })
       .eq("is_deleted", false);
 
     if (filters?.orderBy === "updated_at") {

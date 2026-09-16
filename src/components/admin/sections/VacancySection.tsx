@@ -95,7 +95,8 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     const params: any = {
       page: currentPage,
       limit: pageSize,
-      all: role === "admin"
+      all: role === "admin",
+      slim: true, // 목록 표가 쓰지 않는 metadata/사진/agencies 조인 제외
     };
 
     if (role !== "admin" && ownerId) {
@@ -118,18 +119,21 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
     if (activeFilters.propertyType !== "전체") params.propertyType = activeFilters.propertyType;
     if (activeFilters.subCategory !== "전체") params.subCategory = activeFilters.subCategory;
 
-    const res = await getVacancies(params);
+    // 목록과 탭 카운트는 서로 의존하지 않으므로 병렬로 조회한다 (직렬 실행 시 두 대기시간이 그대로 합산됨)
+    const [res, countsRes] = await Promise.all([
+      getVacancies(params),
+      // Compute total and status counts via dedicated high-speed server action
+      getVacancyTabCounts({
+        role,
+        ownerId,
+        excludeOnbid: role === "admin" && excludeOnbid
+      }),
+    ]);
+
     if (res.success) {
       setDbVacancies(res.data || []);
       setTotalCount(res.count || 0);
     }
-
-    // Compute total and status counts via dedicated high-speed server action
-    const countsRes = await getVacancyTabCounts({
-      role,
-      ownerId,
-      excludeOnbid: role === "admin" && excludeOnbid
-    });
     if (countsRes.success && countsRes.data) {
       setCounts(countsRes.data);
     }
