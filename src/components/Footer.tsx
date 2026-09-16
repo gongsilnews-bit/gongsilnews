@@ -2,8 +2,15 @@
 
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  if (pathname === '/newsrealty/apply') {
+    return null;
+  }
+
   const scrollToTop = () => {
     if (typeof window !== "undefined") {
       window.scrollTo(0, 0);

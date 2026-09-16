@@ -6,38 +6,34 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { submitNewsrealtyApplication } from "@/app/actions/newsrealtyApply";
 
-const SERVICE_OPTIONS = [
-  { id: "기사작성", label: "AI 공실뉴스 기사 발행 및 포털 송출", icon: "📰", desc: "지역 공실·상권 소식을 포털 기사형태로 독점 배포" },
-  { id: "유튜브쇼츠", label: "유튜브 쇼츠 & 릴스 영상 콘텐츠", icon: "🎬", desc: "매물 및 상권 분석 60초 숏폼 영상 및 대본 제작" },
-  { id: "블로그", label: "네이버 블로그 전문 마케팅 원고", icon: "✍️", desc: "검색 상위 노출에 최적화된 지역 전문 부동산 블로그" },
-  { id: "인스타그램", label: "인스타그램 카드뉴스 & 비주얼 브랜딩", icon: "📸", desc: "감각적인 디자인의 공실 소개 및 중개업소 브랜딩" },
-  { id: "쓰레드", label: "쓰레드(Threads) 실시간 부동산 인사이트", icon: "💬", desc: "텍스트 기반 바이럴 및 건물주·투자자 네트워크 형성" },
+const AD_PRODUCTS = [
+  { id: "아파트", label: "아파트 광고 상품을 이용하고 싶어요." },
+  { id: "원룸/빌라/오피스텔", label: "원룸/빌라/오피스텔 광고 상품을 이용하고 싶어요." },
+  { id: "전체", label: "아파트 및 원룸/빌라/오피스텔 광고 상품을 모두 이용하고 싶어요." },
 ];
 
 export default function NewsRealtyApplyPage() {
   const router = useRouter();
-  const [loadingUser, setLoadingUser] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [member, setMember] = useState<any>(null);
-  const [agency, setAgency] = useState<any>(null);
 
-  // 폼 상태
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    agencyName: "",
-    agencyAddress: "",
-    regionCity: "서울특별시",
-    regionDistrict: "",
-    regionDong: "",
-    interests: ["기사작성", "유튜브쇼츠", "블로그"],
-    memo: "",
-  });
+  // 이메일 분리
+  const [emailLocal, setEmailLocal] = useState("");
+  const [emailDomain, setEmailDomain] = useState("");
+  const [customDomain, setCustomDomain] = useState("");
 
+  // 폼 상태 (직방 1:1)
+  const [agencyName, setAgencyName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState("전체");
+  const [referralCode, setReferralCode] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(true);
+  const [termsAccordionOpen, setTermsAccordionOpen] = useState(false);
+
+  // 모달 및 서브밋 상태
+  const [showGuideModal, setShowGuideModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submittedInfo, setSubmittedInfo] = useState<any>(null);
+  const [submittedData, setSubmittedData] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
@@ -49,96 +45,85 @@ export default function NewsRealtyApplyPage() {
         if (authUser) {
           setUser(authUser);
 
-          // member 조회
           const { data: memberData } = await supabase
             .from("members")
             .select("*")
             .eq("id", authUser.id)
             .maybeSingle();
 
-          setMember(memberData);
-
-          // agency 조회
           const { data: agencyData } = await supabase
             .from("agencies")
             .select("*")
             .eq("owner_id", authUser.id)
             .maybeSingle();
 
-          setAgency(agencyData);
+          if (agencyData?.name || memberData?.company_name) {
+            setAgencyName(agencyData?.name || memberData?.company_name || "");
+          }
+          if (memberData?.phone || authUser.user_metadata?.phone) {
+            setPhone(memberData?.phone || authUser.user_metadata?.phone || "");
+          }
 
-          // 폼 초기값 자동 입력
-          setFormData((prev) => ({
-            ...prev,
-            name: memberData?.name || authUser.user_metadata?.name || "",
-            phone: memberData?.phone || authUser.user_metadata?.phone || "",
-            email: authUser.email || "",
-            agencyName: agencyData?.name || memberData?.company_name || "",
-            agencyAddress: agencyData?.address || "",
-            regionCity: agencyData?.region_city || "서울특별시",
-            regionDistrict: agencyData?.region_district || "",
-            regionDong: agencyData?.region_dong || "",
-          }));
+          const userEmail = authUser.email || "";
+          if (userEmail.includes("@")) {
+            const [local, dom] = userEmail.split("@");
+            setEmailLocal(local);
+            if (["naver.com", "gmail.com", "daum.net", "kakao.com", "nate.com"].includes(dom)) {
+              setEmailDomain(dom);
+            } else {
+              setEmailDomain("direct");
+              setCustomDomain(dom);
+            }
+          }
         }
       } catch (err) {
         console.error("Error loading user info:", err);
-      } finally {
-        setLoadingUser(false);
       }
     }
     loadUserData();
   }, []);
 
-  const handleInterestToggle = (id: string) => {
-    setFormData((prev) => {
-      const exists = prev.interests.includes(id);
-      return {
-        ...prev,
-        interests: exists
-          ? prev.interests.filter((item) => item !== id)
-          : [...prev.interests, id],
-      };
-    });
+  const getFullEmail = () => {
+    if (!emailLocal) return "";
+    const dom = emailDomain === "direct" ? customDomain : emailDomain;
+    return dom ? `${emailLocal}@${dom}` : emailLocal;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!formData.name.trim()) {
-      setErrorMsg("대표자 성함을 입력해 주세요.");
+    if (!agencyName.trim()) {
+      setErrorMsg("중개사무소 정보를 입력해 주세요.");
       return;
     }
-    if (!formData.phone.trim()) {
-      setErrorMsg("연락처를 입력해 주세요.");
+    if (!phone.trim()) {
+      setErrorMsg("대표 공인중개사 휴대폰 번호를 입력해 주세요.");
       return;
     }
-    if (!formData.agencyName.trim()) {
-      setErrorMsg("중개사무소 명칭을 입력해 주세요.");
+    if (!agreeTerms) {
+      setErrorMsg("회원가입 약관에 동의해 주세요.");
       return;
     }
+
+    const finalEmail = getFullEmail();
 
     setSubmitting(true);
     try {
       const res = await submitNewsrealtyApplication({
         memberId: user?.id,
-        name: formData.name,
-        phone: formData.phone,
-        email: formData.email,
-        agencyName: formData.agencyName,
-        agencyAddress: formData.agencyAddress,
-        regionCity: formData.regionCity,
-        regionDistrict: formData.regionDistrict,
-        regionDong: formData.regionDong,
-        interests: formData.interests,
-        memo: formData.memo,
+        name: agencyName.trim(),
+        phone: phone.trim(),
+        email: finalEmail,
+        agencyName: agencyName.trim(),
+        interests: [selectedProduct, referralCode ? `추천인:${referralCode}` : ""].filter(Boolean),
+        memo: `[직방형 접수] 상품: ${selectedProduct}${referralCode ? ` / 추천인: ${referralCode}` : ""}`,
       });
 
       if (res.success) {
-        setSubmittedInfo({
-          name: formData.name,
-          agencyName: formData.agencyName,
-          phone: formData.phone,
+        setSubmittedData({
+          agencyName,
+          phone,
           smsSent: res.smsSent,
         });
         setIsSubmitted(true);
@@ -153,58 +138,53 @@ export default function NewsRealtyApplyPage() {
     }
   };
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 1. 접수 완료 화면
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 py-16">
-        <div className="max-w-xl w-full bg-slate-900 border border-emerald-500/30 rounded-3xl p-8 sm:p-10 shadow-2xl relative overflow-hidden text-center">
-          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600" />
-          
-          <div className="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner border border-emerald-500/40">
+      <div className="min-h-screen bg-[#f5f6f8] text-[#222] font-sans flex items-center justify-center p-4">
+        <div className="max-w-[480px] w-full bg-white rounded-xl p-8 sm:p-10 shadow-sm border border-[#e5e8ec] text-center">
+          <div className="w-14 h-14 bg-[#fa7743]/10 text-[#fa7743] rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-5">
             ✓
           </div>
-
-          <span className="inline-block text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full mb-3">
-            신청 접수 완료
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-3">
-            공실뉴스부동산 파트너 신청이<br />성공적으로 접수되었습니다!
+          <h1 className="text-2xl font-bold text-[#222] mb-2 tracking-tight">
+            회원가입 신청이 완료되었습니다
           </h1>
-          <p className="text-slate-400 text-sm sm:text-base leading-relaxed mb-8">
-            <strong className="text-emerald-300 font-semibold">{submittedInfo?.name} 대표님</strong> ({submittedInfo?.agencyName}),<br />
-            보내주신 소중한 정보를 바탕으로 전담 매니저가 검토 후<br />
-            <strong>1영업일 이내</strong>에 등록해주신 연락처로 유선 안내드리겠습니다.
+          <p className="text-[#666] text-[13.5px] leading-relaxed mb-6">
+            <strong className="text-[#222] font-semibold">{submittedData?.agencyName}</strong> 대표님,<br />
+            가입 신청서를 확인 후 <strong>1~2일 이내</strong> 전화드리겠습니다.
           </p>
 
-          <div className="bg-slate-950/70 rounded-2xl p-5 border border-slate-800 text-left mb-8 space-y-2 text-sm">
+          <div className="bg-[#f8f9fa] rounded-lg p-4 text-left text-xs space-y-2 mb-6 border border-[#edf0f2]">
             <div className="flex justify-between">
-              <span className="text-slate-400">신청 사무소</span>
-              <span className="text-slate-200 font-medium">{submittedInfo?.agencyName}</span>
+              <span className="text-[#888]">중개사무소</span>
+              <span className="font-semibold text-[#222]">{submittedData?.agencyName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">담당 연락처</span>
-              <span className="text-slate-200 font-medium">{submittedInfo?.phone}</span>
+              <span className="text-[#888]">휴대폰 번호</span>
+              <span className="font-semibold text-[#222]">{submittedData?.phone}</span>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-slate-800/80">
-              <span className="text-slate-400">안내 문자(SMS)</span>
-              <span className="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
-                {submittedInfo?.smsSent ? "발송 완료" : "순차 발송중"}
+            <div className="flex justify-between items-center pt-2 border-t border-[#e5e8ec]">
+              <span className="text-[#888]">접수 확인 문자</span>
+              <span className="text-[11px] px-2 py-0.5 rounded font-bold bg-[#e6fcf5] text-[#0ca678]">
+                {submittedData?.smsSent ? "발송 완료" : "순차 발송중"}
               </span>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex gap-2.5">
             <Link
               href="/newsrealty"
-              className="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold transition border border-slate-700"
+              className="flex-1 py-3 rounded-lg bg-white border border-[#dfe2e6] text-[#444] text-xs font-semibold hover:bg-[#f8f9fa] transition text-center"
             >
-              소개 페이지로 돌아가기
+              소개 홈으로
             </Link>
             <Link
               href="/"
-              className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-900/40 transition"
+              className="flex-1 py-3 rounded-lg bg-[#fa8258] hover:bg-[#f36b36] text-white text-xs font-bold transition text-center shadow-2xs"
             >
-              공실뉴스 메인으로
+              메인으로 이동
             </Link>
           </div>
         </div>
@@ -212,284 +192,480 @@ export default function NewsRealtyApplyPage() {
     );
   }
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 2. 직방 CEO 신청폼 1:1 완벽 구현 화면 (첨부 이미지 100% 동일)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-12 px-4 sm:px-6">
-      <div className="max-w-3xl mx-auto">
-        {/* 상단 네비게이션 & 헤더 */}
-        <div className="mb-8 text-center">
-          <Link
-            href="/newsrealty"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-400 hover:text-emerald-300 mb-4 transition"
-          >
-            ← 공실뉴스부동산 소개 페이지로
-          </Link>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold mb-3">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            공인중개사 전용 제휴 파트너십
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            공실뉴스부동산 입점 신청서
-          </h1>
-          <p className="mt-3 text-slate-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
-            지역 1등 미디어 공인중개사로의 도약, 지금 신청하시면 전담 매니저가 기사 작성부터 5대 채널 콘텐츠 제작까지 1:1 맞춤 세팅을 지원합니다.
-          </p>
-        </div>
-
-        {/* 비로그인 / 일반회원 가입 안내 카드 */}
-        {!loadingUser && !user && (
-          <div className="mb-8 bg-gradient-to-br from-slate-900 to-emerald-950/40 border-2 border-emerald-500/40 rounded-3xl p-6 sm:p-8 text-center shadow-xl">
-            <div className="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 border border-emerald-500/30">
-              🏢
-            </div>
-            <h2 className="text-xl font-bold text-white mb-2">
-              부동산회원 전용 서비스입니다
-            </h2>
-            <p className="text-slate-300 text-sm leading-relaxed mb-6 max-w-md mx-auto">
-              공실뉴스부동산은 공인중개사 자격을 보유한 중개사무소 전용 파트너십입니다.<br />
-              <strong>부동산회원으로 가입</strong>하시거나 기존 계정으로 <strong>로그인</strong> 후 신청서를 작성해 주세요.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                href="/signup?type=realtor&returnTo=/newsrealty/apply"
-                className="px-6 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-extrabold shadow-lg shadow-emerald-900/50 transition transform hover:-translate-y-0.5"
-              >
-                ✨ 부동산회원 무료 가입하기
-              </Link>
-              <Link
-                href="/login?returnTo=/newsrealty/apply"
-                className="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold border border-slate-700 transition"
-              >
-                기존 계정으로 로그인
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* 로그인되어 있으나 부동산회원이 아닌 경우 안내 */}
-        {!loadingUser && user && member && member.role !== "REALTOR" && member.role !== "ADMIN" && (
-          <div className="mb-8 bg-amber-950/40 border border-amber-500/40 rounded-2xl p-5 text-sm text-amber-200 flex items-center justify-between gap-4">
-            <div>
-              <p className="font-semibold mb-1">💡 현재 일반회원 계정으로 로그인되어 있습니다.</p>
-              <p className="text-xs text-amber-300/80">부동산회원 권한 등록 시 더 많은 혜택과 전문 콘텐츠 툴이 제공됩니다. 바로 신청하셔도 담당자가 중개사무소 확인을 함께 도와드립니다.</p>
-            </div>
-            <Link
-              href="/realty_admin?menu=settings&tab=agency"
-              className="shrink-0 px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition"
-            >
-              중개사 등록
+    <div style={{ backgroundColor: "#f7f8f9", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif" }}>
+      
+      {/* ── 직방 CEO 스타일 단독 상단 헤더 ── */}
+      <header style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #eaedf0", height: "60px", position: "sticky", top: 0, zIndex: 40 }}>
+        <div style={{ maxWidth: "1060px", margin: "0 auto", height: "100%", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Link href="/" style={{ display: "flex", alignItems: "center", gap: "6px", textDecoration: "none" }}>
+              <span style={{ fontSize: "18px", fontWeight: 700, color: "#111" }}>공실뉴스</span>
+              <span style={{ fontSize: "16px", color: "#ccc", fontWeight: 300 }}>|</span>
+              <span style={{ fontSize: "18px", fontWeight: 700, color: "#111" }}>부동산 CEO</span>
             </Link>
           </div>
-        )}
 
-        {/* 접수 폼 */}
-        <form onSubmit={handleSubmit} className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl backdrop-blur-sm space-y-8">
-          {/* STEP 1: 대표자 정보 */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center border border-emerald-500/30">1</span>
-              <h3 className="text-lg font-bold text-white">대표자 기본 정보</h3>
+          <nav style={{ display: "flex", alignItems: "center", gap: "24px", fontSize: "13px", fontWeight: 500, color: "#444" }}>
+            <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>홈</Link>
+            <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>채용</Link>
+            <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>상품소개</Link>
+            <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>허위광고OUT</Link>
+            <Link href="tel:15555343" style={{ color: "#444", textDecoration: "none" }}>이용안내</Link>
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", color: "#444", cursor: "pointer", border: "none", background: "none" }}
+            >
+              <span>☰</span> 전체 메뉴
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      {/* ── 메인 화이트 카드 컨테이너 (정중앙 배치) ── */}
+      <main style={{ padding: "48px 20px 80px 20px", display: "flex", justifyContent: "center" }}>
+        <div style={{
+          width: "100%",
+          maxWidth: "1060px",
+          backgroundColor: "#ffffff",
+          borderRadius: "16px",
+          border: "1px solid #eaedf0",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.03)",
+          padding: "56px 64px 60px 64px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: "72px"
+        }}>
+
+          {/* ━━━ 좌측 안내 영역 (Width: 380px) ━━━ */}
+          <div style={{ width: "380px", flexShrink: 0 }}>
+            <h1 style={{ fontSize: "32px", fontWeight: 700, color: "#1a1a1a", lineHeight: 1.32, letterSpacing: "-0.5px", marginBottom: "36px" }}>
+              쉽고 빠른 회원가입을<br />
+              도와드려요
+            </h1>
+
+            {/* 직방 연회색 안내 카드 */}
+            <div style={{ backgroundColor: "#f8f9fa", borderRadius: "10px", padding: "24px 20px", border: "1px solid #f0f2f5" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px", fontSize: "13px", color: "#555", lineHeight: 1.6 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                  <span style={{ color: "#aaa", marginTop: "-1px" }}>•</span>
+                  <span>국가 공간 정보 포털의 부동산중개업 정보에 등록된 대표 공인중개사만 회원가입이 가능해요.</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                  <span style={{ color: "#aaa", marginTop: "-1px" }}>•</span>
+                  <span>회원가입신청 시 1~2일 이내 전화드려요.</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                  <span style={{ color: "#aaa", marginTop: "-1px" }}>•</span>
+                  <span>문의는 1555-5343 (평일 오전 10시 ~ 오후 6시)로 연락해 주세요.</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowGuideModal(true)}
+                style={{
+                  marginTop: "20px",
+                  width: "100%",
+                  height: "40px",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #d5d9de",
+                  borderRadius: "6px",
+                  fontSize: "12.5px",
+                  fontWeight: 600,
+                  color: "#333",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "background-color 0.15s"
+                }}
+              >
+                회원가입 절차와 필요한 서류가 궁금해요
+              </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  대표자 성함 <span className="text-emerald-400">*</span>
+          </div>
+
+          {/* ━━━ 우측 입력 폼 (Width: 460px) ━━━ */}
+          <div style={{ width: "100%", maxWidth: "460px", flexShrink: 0 }}>
+            <form onSubmit={handleSubmit}>
+
+              {/* 1. 중개사무소 정보 */}
+              <div style={{ marginBottom: "24px" }}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#222", marginBottom: "8px" }}>
+                  중개사무소 정보
                 </label>
                 <input
                   type="text"
                   required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="홍길동"
-                  className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition"
+                  value={agencyName}
+                  onChange={(e) => setAgencyName(e.target.value)}
+                  placeholder="중개사무소 이름, 대표자명, 주소를 조합 검색"
+                  style={{
+                    width: "100%",
+                    height: "48px",
+                    padding: "0 16px",
+                    border: "1px solid #dfe2e6",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    color: "#222",
+                    backgroundColor: "#fff",
+                    outline: "none",
+                    boxSizing: "border-box"
+                  }}
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  휴대폰 번호 <span className="text-emerald-400">*</span> (안내 문자 수신)
+              {/* 2. 대표 공인중개사 휴대폰 번호 */}
+              <div style={{ marginBottom: "24px" }}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#222", marginBottom: "8px" }}>
+                  대표 공인중개사 휴대폰 번호
                 </label>
                 <input
                   type="tel"
                   required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="010-0000-0000"
-                  className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="예) 01098765432"
+                  style={{
+                    width: "100%",
+                    height: "48px",
+                    padding: "0 16px",
+                    border: "1px solid #dfe2e6",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    color: "#222",
+                    backgroundColor: "#fff",
+                    outline: "none",
+                    boxSizing: "border-box"
+                  }}
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  이메일 주소
+              {/* 3. 대표 공인중개사 이메일 */}
+              <div style={{ marginBottom: "24px" }}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#222", marginBottom: "8px" }}>
+                  대표 공인중개사 이메일 <span style={{ fontWeight: 400, fontSize: "12px", color: "#888" }}>(가입 후 아이디로 이용돼요.)</span>
                 </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="example@email.com"
-                  className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* STEP 2: 중개사무소 정보 */}
-          <div className="pt-6 border-t border-slate-800">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center border border-emerald-500/30">2</span>
-              <h3 className="text-lg font-bold text-white">중개사무소 정보</h3>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  중개사무소 명칭 <span className="text-emerald-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.agencyName}
-                  onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
-                  placeholder="공실뉴스 공인중개사사무소"
-                  className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">시/도</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <input
                     type="text"
-                    value={formData.regionCity}
-                    onChange={(e) => setFormData({ ...formData, regionCity: e.target.value })}
-                    placeholder="서울특별시"
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+                    value={emailLocal}
+                    onChange={(e) => setEmailLocal(e.target.value)}
+                    placeholder="이메일"
+                    style={{
+                      flex: 1,
+                      height: "48px",
+                      padding: "0 16px",
+                      border: "1px solid #dfe2e6",
+                      borderRadius: "6px",
+                      fontSize: "14px",
+                      color: "#222",
+                      backgroundColor: "#fff",
+                      outline: "none",
+                      boxSizing: "border-box"
+                    }}
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">구/군</label>
-                  <input
-                    type="text"
-                    value={formData.regionDistrict}
-                    onChange={(e) => setFormData({ ...formData, regionDistrict: e.target.value })}
-                    placeholder="강남구"
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">동/읍/면</label>
-                  <input
-                    type="text"
-                    value={formData.regionDong}
-                    onChange={(e) => setFormData({ ...formData, regionDong: e.target.value })}
-                    placeholder="역삼동"
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">사무소 상세 주소</label>
-                <input
-                  type="text"
-                  value={formData.agencyAddress}
-                  onChange={(e) => setFormData({ ...formData, agencyAddress: e.target.value })}
-                  placeholder="서울특별시 강남구 테헤란로 123 2층"
-                  className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* STEP 3: 관심 서비스 선택 */}
-          <div className="pt-6 border-t border-slate-800">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center justify-center border border-emerald-500/30">3</span>
-              <h3 className="text-lg font-bold text-white">관심 서비스 선택 (복수 선택 가능)</h3>
-            </div>
-            <p className="text-xs text-slate-400 mb-4">희망하시는 미디어 마케팅 채널을 선택해주시면 맞춤 전략을 제안해 드립니다.</p>
-            
-            <div className="space-y-3">
-              {SERVICE_OPTIONS.map((item) => {
-                const checked = formData.interests.includes(item.id);
-                return (
-                  <label
-                    key={item.id}
-                    onClick={() => handleInterestToggle(item.id)}
-                    className={`flex items-start gap-3.5 p-4 rounded-2xl border cursor-pointer transition select-none ${
-                      checked
-                        ? "bg-emerald-950/30 border-emerald-500/60 shadow-lg shadow-emerald-950/20"
-                        : "bg-slate-950/50 border-slate-800 hover:border-slate-700"
-                    }`}
-                  >
+                  <span style={{ color: "#888", fontSize: "14px" }}>@</span>
+                  {emailDomain === "direct" ? (
                     <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => {}}
-                      className="mt-1 w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 border-slate-700 bg-slate-900"
+                      type="text"
+                      value={customDomain}
+                      onChange={(e) => setCustomDomain(e.target.value)}
+                      placeholder="직접 입력"
+                      style={{
+                        flex: 1,
+                        height: "48px",
+                        padding: "0 16px",
+                        border: "1px solid #dfe2e6",
+                        borderRadius: "6px",
+                        fontSize: "14px",
+                        color: "#222",
+                        backgroundColor: "#fff",
+                        outline: "none",
+                        boxSizing: "border-box"
+                      }}
                     />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{item.icon}</span>
-                        <span className="text-sm font-bold text-white">{item.label}</span>
-                      </div>
-                      <p className="text-xs text-slate-400 mt-1">{item.desc}</p>
+                  ) : null}
+                  <select
+                    value={emailDomain}
+                    onChange={(e) => setEmailDomain(e.target.value)}
+                    style={{
+                      width: "140px",
+                      height: "48px",
+                      padding: "0 12px",
+                      border: "1px solid #dfe2e6",
+                      borderRadius: "6px",
+                      fontSize: "13.5px",
+                      color: "#444",
+                      backgroundColor: "#fff",
+                      outline: "none",
+                      cursor: "pointer",
+                      boxSizing: "border-box"
+                    }}
+                  >
+                    <option value="">선택</option>
+                    <option value="naver.com">naver.com</option>
+                    <option value="gmail.com">gmail.com</option>
+                    <option value="daum.net">daum.net</option>
+                    <option value="kakao.com">kakao.com</option>
+                    <option value="nate.com">nate.com</option>
+                    <option value="direct">직접 입력</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 4. 상담할 광고 상품 선택 */}
+              <div style={{ marginBottom: "24px" }}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#222", marginBottom: "12px" }}>
+                  상담할 광고 상품 선택
+                </label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {AD_PRODUCTS.map((prod) => {
+                    const isChecked = selectedProduct === prod.id;
+                    return (
+                      <label
+                        key={prod.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          color: "#333",
+                          userSelect: "none"
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="adProduct"
+                          value={prod.id}
+                          checked={isChecked}
+                          onChange={() => setSelectedProduct(prod.id)}
+                          style={{
+                            width: "16px",
+                            height: "16px",
+                            accentColor: "#fa8258",
+                            cursor: "pointer"
+                          }}
+                        />
+                        <span style={{ fontWeight: isChecked ? 600 : 400, color: isChecked ? "#111" : "#444" }}>
+                          {prod.label}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 5. 회원가입 약관 전체 동의 하기 (아코디언 박스) */}
+              <div style={{ marginBottom: "24px" }}>
+                <div style={{
+                  border: "1px solid #dfe2e6",
+                  borderRadius: "6px",
+                  padding: "14px 16px",
+                  backgroundColor: "#ffffff"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13.5px", fontWeight: 600, color: "#222", userSelect: "none" }}>
+                      <input
+                        type="checkbox"
+                        checked={agreeTerms}
+                        onChange={(e) => setAgreeTerms(e.target.checked)}
+                        style={{
+                          width: "18px",
+                          height: "18px",
+                          accentColor: "#fa8258",
+                          cursor: "pointer"
+                        }}
+                      />
+                      회원가입 약관 전체 동의 하기
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setTermsAccordionOpen(!termsAccordionOpen)}
+                      style={{ color: "#888", fontSize: "14px", cursor: "pointer", border: "none", background: "none", padding: "4px" }}
+                    >
+                      {termsAccordionOpen ? "▲" : "▼"}
+                    </button>
+                  </div>
+
+                  {termsAccordionOpen && (
+                    <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f0f2f5", fontSize: "11.5px", color: "#666", lineHeight: 1.6, paddingLeft: "28px" }}>
+                      <p>• 개인정보 수집 및 이용 목적: 공실뉴스 공인중개사 회원가입 심사 및 안내</p>
+                      <p>• 수집 항목: 중개사무소 정보, 대표자 성명, 휴대폰 번호, 이메일</p>
+                      <p>• 보유 및 이용 기간: 회원 탈퇴 또는 법정 의무 보유 기간까지</p>
                     </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
+                  )}
+                </div>
 
-          {/* 추가 문의 및 요청사항 */}
-          <div className="pt-6 border-t border-slate-800">
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              기타 요청사항이나 문의사항 (선택)
-            </label>
-            <textarea
-              rows={3}
-              value={formData.memo}
-              onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
-              placeholder="예: 강남권 빌딩 공실 위주로 취재 기사를 발행하고 싶습니다. 유튜브 쇼츠 제작 가이드도 함께 받고 싶습니다."
-              className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl p-3 text-sm text-white placeholder-slate-500 outline-none transition"
-            />
-          </div>
+                <p style={{ fontSize: "11.5px", color: "#888", marginTop: "6px", paddingLeft: "4px" }}>
+                  약관의 효력은 회원가입 절차가 완료된 후 적용됩니다.
+                </p>
+              </div>
 
-          {/* 에러 메시지 */}
-          {errorMsg && (
-            <div className="p-4 rounded-xl bg-red-950/60 border border-red-500/50 text-red-200 text-xs font-medium">
-              ⚠️ {errorMsg}
-            </div>
-          )}
+              {/* 6. 추천인 코드 6자리 (선택) */}
+              <div style={{ marginBottom: "28px" }}>
+                <input
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value)}
+                  placeholder="추천인 코드 6자리 (선택)"
+                  style={{
+                    width: "100%",
+                    height: "48px",
+                    padding: "0 16px",
+                    border: "1px solid #dfe2e6",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    color: "#222",
+                    backgroundColor: "#fff",
+                    outline: "none",
+                    boxSizing: "border-box"
+                  }}
+                />
+              </div>
 
-          {/* 신청하기 제출 버튼 */}
-          <div className="pt-4">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-extrabold text-base sm:text-lg shadow-xl shadow-emerald-950/50 transition transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {submitting ? (
-                <>
-                  <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                  접수 처리 중...
-                </>
-              ) : (
-                <>
-                  공실뉴스부동산 파트너 신청 완료하기 →
-                </>
+              {/* 에러 메시지 */}
+              {errorMsg && (
+                <div style={{ marginBottom: "16px", padding: "12px", borderRadius: "6px", backgroundColor: "#fff5f5", border: "1px solid #ffc9c9", fontSize: "12px", fontWeight: 700, color: "#e03131" }}>
+                  ⚠️ {errorMsg}
+                </div>
               )}
-            </button>
-            <p className="text-center text-xs text-slate-500 mt-3">
-              신청 접수 즉시 등록해주신 휴대폰 번호로 접수 확인 문자(SMS)가 발송됩니다.
-            </p>
-          </div>
-        </form>
 
-        {/* 고객센터 안내 */}
-        <div className="mt-8 text-center text-xs text-slate-500">
-          신청 관련 유선 문의: <strong className="text-slate-400">1555-5343</strong> (평일 09:00 ~ 18:00) | gongsilnews@naver.com
+              {/* 7. 직방 시그니처 코랄 오렌지 메인 신청 버튼 */}
+              <div>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  style={{
+                    width: "100%",
+                    height: "56px",
+                    borderRadius: "8px",
+                    backgroundColor: "#fa8258",
+                    color: "#ffffff",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    border: "none",
+                    cursor: submitting ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    letterSpacing: "-0.3px",
+                    boxShadow: "0 2px 6px rgba(250, 130, 88, 0.25)",
+                    transition: "background-color 0.15s, transform 0.1s"
+                  }}
+                >
+                  {submitting ? "신청 처리 중..." : "중개사무소 회원가입 신청하기"}
+                </button>
+              </div>
+            </form>
+          </div>
+
         </div>
-      </div>
+      </main>
+
+      {/* ── 직방 CEO 스타일 푸터 ── */}
+      <footer style={{ maxWidth: "1060px", margin: "0 auto", padding: "20px 24px 40px 24px", textAlign: "center", fontSize: "11.5px", color: "#888", lineHeight: 1.6 }}>
+        <p style={{ fontWeight: 600, color: "#666", marginBottom: "4px" }}>공실뉴스 | 부동산 CEO</p>
+        <p>고객센터: 1555-5343 (평일 10:00 ~ 18:00) | 이메일: gongsilnews@naver.com</p>
+        <p style={{ marginTop: "4px" }}>© GONGSILLNEWS Corp. All rights reserved.</p>
+      </footer>
+
+      {/* ━━━ 직방 스타일: 회원가입 절차 가이드 모달 ━━━ */}
+      {showGuideModal && (
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-[440px] w-full p-5 sm:p-6 shadow-2xl border border-[#dee2e6] relative">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#f1f3f5]">
+              <h3 className="font-extrabold text-[16px] text-[#1f2328] tracking-tight">
+                회원가입 절차 가이드
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowGuideModal(false)}
+                className="text-[#868e96] hover:text-[#1f2328] text-base font-bold p-1 leading-none cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs text-[#495057]">
+              {/* 1단계 */}
+              <div className="p-2.5 rounded-xl border border-[#ffa94d] bg-[#fff9db]/30">
+                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[12px] mb-0.5">
+                  <span>📝</span>
+                  <span>1단계 필수 정보 입력</span>
+                </div>
+                <p className="text-[#495057] text-[11px] leading-tight mb-1">
+                  원활한 상담을 위해 중개사무소 정보를 정확히 입력해 주세요.
+                </p>
+                <ul className="space-y-0.5 text-[#868e96] pl-1.5 text-[10.5px]">
+                  <li>• 중개사무소명</li>
+                  <li>• 대표 공인중개사 휴대폰 번호와 이메일</li>
+                  <li>• 주거래 매물 선택</li>
+                </ul>
+              </div>
+
+              {/* 2단계 */}
+              <div className="p-2.5 rounded-xl border border-[#edf0f2] bg-[#f8f9fa]">
+                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[12px] mb-0.5">
+                  <span>📞</span>
+                  <span>2단계 가입신청 상담</span>
+                </div>
+                <p className="text-[#495057] text-[11px] leading-tight mb-0.5">
+                  담당 매니저가 가입 신청서를 확인하고 연락드려요.
+                </p>
+                <p className="text-[#868e96] pl-1.5 text-[10.5px]">
+                  • 최대 1~2 영업일 소요
+                </p>
+              </div>
+
+              {/* 3단계 */}
+              <div className="p-2.5 rounded-xl border border-[#edf0f2] bg-[#f8f9fa]">
+                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[12px] mb-0.5">
+                  <span>📄</span>
+                  <span>3단계 승인 심사 및 완료</span>
+                </div>
+                <p className="text-[#495057] text-[11px] leading-tight mb-1">
+                  상담 후, 가입에 필요한 서류를 보내주시면 담당 매니저가 승인해드려요.<br />
+                  결과는 카카오톡으로 보내드립니다.
+                </p>
+                <div className="space-y-0.5 text-[10.5px] text-[#495057] pl-1 font-medium">
+                  <div className="flex items-center gap-1.5">
+                    <span>📄</span>
+                    <span>사업자 등록증</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span>🏢</span>
+                    <span>중개사무소 등록증</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span>🖼️</span>
+                    <span>프로필 사진</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 하단 우측 직방 스타일 주황색 확인 버튼 */}
+            <div className="mt-3.5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowGuideModal(false)}
+                className="px-6 py-2 bg-[#fa7743] hover:bg-[#f36b36] text-white font-extrabold text-xs rounded-lg shadow-sm transition cursor-pointer"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

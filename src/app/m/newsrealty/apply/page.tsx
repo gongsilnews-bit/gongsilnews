@@ -6,37 +6,34 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { submitNewsrealtyApplication } from "@/app/actions/newsrealtyApply";
 
-const SERVICE_OPTIONS = [
-  { id: "기사작성", label: "AI 공실뉴스 기사 발행 & 포털 송출", icon: "📰", desc: "지역 공실·상권 소식을 기사화하여 포털 독점 배포" },
-  { id: "유튜브쇼츠", label: "유튜브 쇼츠 & 릴스 숏폼 제작", icon: "🎬", desc: "매물과 상권 분석 60초 영상 및 자동 대본 생성" },
-  { id: "블로그", label: "네이버 블로그 상위노출 마케팅 원고", icon: "✍️", desc: "검색 유입에 최적화된 지역 전문 부동산 블로그" },
-  { id: "인스타그램", label: "인스타그램 카드뉴스 & 브랜딩", icon: "📸", desc: "비주얼 중심 공실 홍보 및 인스타 계정 브랜딩" },
-  { id: "쓰레드", label: "쓰레드(Threads) 실시간 인사이트", icon: "💬", desc: "텍스트 기반 바이럴 및 건물주·투자자 인맥 형성" },
+const AD_PRODUCTS = [
+  { id: "아파트", label: "아파트 광고 상품을 이용하고 싶어요." },
+  { id: "원룸/빌라/오피스텔", label: "원룸/빌라/오피스텔 광고 상품을 이용하고 싶어요." },
+  { id: "전체", label: "아파트 및 원룸/빌라/오피스텔 광고 상품을 모두 이용하고 싶어요." },
 ];
 
 export default function MobileNewsRealtyApplyPage() {
   const router = useRouter();
-  const [loadingUser, setLoadingUser] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [member, setMember] = useState<any>(null);
-  const [agency, setAgency] = useState<any>(null);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    agencyName: "",
-    agencyAddress: "",
-    regionCity: "서울특별시",
-    regionDistrict: "",
-    regionDong: "",
-    interests: ["기사작성", "유튜브쇼츠", "블로그"],
-    memo: "",
-  });
+  // 이메일 분리
+  const [emailLocal, setEmailLocal] = useState("");
+  const [emailDomain, setEmailDomain] = useState("");
+  const [customDomain, setCustomDomain] = useState("");
 
+  // 폼 상태
+  const [agencyName, setAgencyName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState("전체");
+  const [referralCode, setReferralCode] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(true);
+  const [termsAccordionOpen, setTermsAccordionOpen] = useState(false);
+
+  // 모달 및 서브밋 상태
+  const [showGuideModal, setShowGuideModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submittedInfo, setSubmittedInfo] = useState<any>(null);
+  const [submittedData, setSubmittedData] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
@@ -54,87 +51,79 @@ export default function MobileNewsRealtyApplyPage() {
             .eq("id", authUser.id)
             .maybeSingle();
 
-          setMember(memberData);
-
           const { data: agencyData } = await supabase
             .from("agencies")
             .select("*")
             .eq("owner_id", authUser.id)
             .maybeSingle();
 
-          setAgency(agencyData);
+          if (agencyData?.name || memberData?.company_name) {
+            setAgencyName(agencyData?.name || memberData?.company_name || "");
+          }
+          if (memberData?.phone || authUser.user_metadata?.phone) {
+            setPhone(memberData?.phone || authUser.user_metadata?.phone || "");
+          }
 
-          setFormData((prev) => ({
-            ...prev,
-            name: memberData?.name || authUser.user_metadata?.name || "",
-            phone: memberData?.phone || authUser.user_metadata?.phone || "",
-            email: authUser.email || "",
-            agencyName: agencyData?.name || memberData?.company_name || "",
-            agencyAddress: agencyData?.address || "",
-            regionCity: agencyData?.region_city || "서울특별시",
-            regionDistrict: agencyData?.region_district || "",
-            regionDong: agencyData?.region_dong || "",
-          }));
+          const userEmail = authUser.email || "";
+          if (userEmail.includes("@")) {
+            const [local, dom] = userEmail.split("@");
+            setEmailLocal(local);
+            if (["naver.com", "gmail.com", "daum.net", "kakao.com", "nate.com"].includes(dom)) {
+              setEmailDomain(dom);
+            } else {
+              setEmailDomain("direct");
+              setCustomDomain(dom);
+            }
+          }
         }
       } catch (err) {
         console.error("Error loading user info:", err);
-      } finally {
-        setLoadingUser(false);
       }
     }
     loadUserData();
   }, []);
 
-  const handleInterestToggle = (id: string) => {
-    setFormData((prev) => {
-      const exists = prev.interests.includes(id);
-      return {
-        ...prev,
-        interests: exists
-          ? prev.interests.filter((item) => item !== id)
-          : [...prev.interests, id],
-      };
-    });
+  const getFullEmail = () => {
+    if (!emailLocal) return "";
+    const dom = emailDomain === "direct" ? customDomain : emailDomain;
+    return dom ? `${emailLocal}@${dom}` : emailLocal;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!formData.name.trim()) {
-      setErrorMsg("대표자 성함을 입력해 주세요.");
+    if (!agencyName.trim()) {
+      setErrorMsg("중개사무소 정보를 입력해 주세요.");
       return;
     }
-    if (!formData.phone.trim()) {
-      setErrorMsg("연락처 번호를 입력해 주세요.");
+    if (!phone.trim()) {
+      setErrorMsg("대표 공인중개사 휴대폰 번호를 입력해 주세요.");
       return;
     }
-    if (!formData.agencyName.trim()) {
-      setErrorMsg("중개사무소 명칭을 입력해 주세요.");
+    if (!agreeTerms) {
+      setErrorMsg("약관에 동의해 주세요.");
       return;
     }
+
+    const finalEmail = getFullEmail();
 
     setSubmitting(true);
     try {
       const res = await submitNewsrealtyApplication({
         memberId: user?.id,
-        name: formData.name,
-        phone: formData.phone,
-        email: formData.email,
-        agencyName: formData.agencyName,
-        agencyAddress: formData.agencyAddress,
-        regionCity: formData.regionCity,
-        regionDistrict: formData.regionDistrict,
-        regionDong: formData.regionDong,
-        interests: formData.interests,
-        memo: formData.memo,
+        name: agencyName.trim(),
+        phone: phone.trim(),
+        email: finalEmail,
+        agencyName: agencyName.trim(),
+        interests: [selectedProduct, referralCode ? `추천인:${referralCode}` : ""].filter(Boolean),
+        memo: `[모바일 직방형 접수] 상품: ${selectedProduct}${referralCode ? ` / 추천인: ${referralCode}` : ""}`,
       });
 
       if (res.success) {
-        setSubmittedInfo({
-          name: formData.name,
-          agencyName: formData.agencyName,
-          phone: formData.phone,
+        setSubmittedData({
+          agencyName,
+          phone,
           smsSent: res.smsSent,
         });
         setIsSubmitted(true);
@@ -152,52 +141,42 @@ export default function MobileNewsRealtyApplyPage() {
   // 접수 완료 화면
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center px-4 py-12">
-        <div className="bg-slate-900 border border-emerald-500/40 rounded-3xl p-6 text-center shadow-2xl relative overflow-hidden">
-          <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 border border-emerald-500/30">
+      <div className="min-h-screen bg-[#f5f6f8] text-[#222] font-sans flex items-center justify-center p-4">
+        <div className="max-w-[400px] w-full bg-white rounded-xl p-6 text-center shadow-xs border border-[#e5e8ec]">
+          <div className="w-12 h-12 bg-[#fa7743]/10 text-[#fa7743] rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
             ✓
           </div>
-          <span className="inline-block text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full mb-2">
-            접수 완료
-          </span>
-          <h1 className="text-xl font-extrabold text-white mb-2">
-            파트너 신청이 접수되었습니다!
+          <h1 className="text-xl font-bold text-[#222] mb-1.5">
+            회원가입 신청 완료
           </h1>
-          <p className="text-xs text-slate-400 leading-relaxed mb-6">
-            <strong className="text-emerald-300 font-semibold">{submittedInfo?.name} 대표님</strong> ({submittedInfo?.agencyName}),<br />
-            담당 매니저가 기재해주신 내용을 검토 후<br />
-            <strong>1영업일 이내</strong> 등록해주신 연락처로 유선 안내드리겠습니다.
+          <p className="text-xs text-[#666] leading-relaxed mb-5">
+            <strong className="text-[#222]">{submittedData?.agencyName}</strong> 대표님,<br />
+            확인 후 <strong>1~2일 이내</strong> 전화드리겠습니다.
           </p>
 
-          <div className="bg-slate-950 rounded-2xl p-4 text-xs text-left mb-6 space-y-2 border border-slate-800">
+          <div className="bg-[#f8f9fa] rounded-lg p-3.5 text-xs text-left mb-5 space-y-1.5 border border-[#edf0f2]">
             <div className="flex justify-between">
-              <span className="text-slate-400">사무소명</span>
-              <span className="text-slate-200 font-medium">{submittedInfo?.agencyName}</span>
+              <span className="text-[#888]">중개사무소</span>
+              <span className="font-semibold text-[#222]">{submittedData?.agencyName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">연락처</span>
-              <span className="text-slate-200 font-medium">{submittedInfo?.phone}</span>
-            </div>
-            <div className="flex justify-between items-center pt-2 border-t border-slate-800">
-              <span className="text-slate-400">확인 문자(SMS)</span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">
-                {submittedInfo?.smsSent ? "발송 완료" : "발송 중"}
-              </span>
+              <span className="text-[#888]">연락처</span>
+              <span className="font-semibold text-[#222]">{submittedData?.phone}</span>
             </div>
           </div>
 
           <div className="space-y-2">
             <Link
               href="/m/newsrealty"
-              className="block w-full py-3 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700"
+              className="block w-full py-2.5 rounded-lg bg-white border border-[#dfe2e6] text-[#444] text-xs font-semibold text-center"
             >
-              소개 페이지로 돌아가기
+              소개 홈으로
             </Link>
             <Link
               href="/m"
-              className="block w-full py-3 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-lg shadow-emerald-950/40"
+              className="block w-full py-2.5 rounded-lg bg-[#fa7743] text-white text-xs font-bold text-center shadow-2xs"
             >
-              공실뉴스 메인 홈으로
+              공실뉴스 메인으로
             </Link>
           </div>
         </div>
@@ -206,263 +185,295 @@ export default function MobileNewsRealtyApplyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-28">
-      {/* 모바일 상단 바 */}
-      <header className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
-        <Link href="/m/newsrealty" className="text-slate-400 text-sm font-semibold flex items-center gap-1">
+    <div className="min-h-screen bg-white text-[#222] pb-24 font-sans">
+      {/* ── 직방 CEO 스타일 상단 헤더 ── */}
+      <header className="sticky top-0 z-30 bg-white border-b border-[#eef0f2] px-4 py-3.5 flex items-center justify-between">
+        <Link href="/m/newsrealty" className="text-[#444] text-sm font-semibold flex items-center gap-1">
           ‹ 뒤로
         </Link>
-        <span className="text-sm font-bold text-white">공실뉴스부동산 신청</span>
+        <span className="font-bold text-[16px] text-[#222] tracking-tight">공실뉴스 | 부동산 CEO</span>
         <div className="w-8" />
       </header>
 
-      <main className="px-4 py-6">
-        {/* 인트로 안내 */}
-        <div className="mb-6 text-center">
-          <span className="inline-block text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full mb-2">
-            공인중개사 전용 파트너십
-          </span>
-          <h1 className="text-2xl font-extrabold text-white">
-            파트너 입점 신청서
+      <main className="px-5 py-6">
+        {/* 헤드라인 */}
+        <div className="mb-6">
+          <h1 className="text-[26px] font-extrabold text-[#1f2328] leading-tight">
+            쉽고 빠른 회원가입을<br />
+            도와드려요
           </h1>
-          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-            지역 대표 미디어 공인중개사로 선정되면<br />
-            AI 기사 발행 및 5대 채널 콘텐츠를 독점 지원합니다.
-          </p>
         </div>
 
-        {/* 비로그인 회원 가입 안내 카드 */}
-        {!loadingUser && !user && (
-          <div className="mb-6 bg-gradient-to-b from-slate-900 to-emerald-950/30 border border-emerald-500/40 rounded-2xl p-5 text-center shadow-lg">
-            <div className="text-3xl mb-2">🏢</div>
-            <h2 className="text-base font-bold text-white mb-1">
-              부동산회원 가입 후 신청해주세요
-            </h2>
-            <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              공실뉴스부동산은 공인중개사 회원 전용 서비스입니다. 먼저 부동산회원으로 가입하거나 로그인해주세요.
-            </p>
-            <div className="flex flex-col gap-2">
-              <Link
-                href="/m/signup?type=realtor&returnTo=/m/newsrealty/apply"
-                className="py-3 rounded-xl bg-emerald-500 text-slate-950 text-xs font-black shadow-md shadow-emerald-950/50"
-              >
-                ✨ 부동산회원 가입하기
-              </Link>
-              <Link
-                href="/m/login?returnTo=/m/newsrealty/apply"
-                className="py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700"
-              >
-                기존 계정으로 로그인
-              </Link>
-            </div>
-          </div>
-        )}
+        {/* 안내 카드 */}
+        <div className="bg-[#f8f9fa] border border-[#f1f3f5] rounded-xl p-4 mb-6">
+          <ul className="space-y-2.5 text-xs text-[#495057] leading-relaxed">
+            <li className="flex items-start gap-1.5">
+              <span className="text-[#adb5bd] mt-0.5">•</span>
+              <span>국가 공간 정보 포털의 부동산중개업 정보에 등록된 <strong>대표 공인중개사</strong>만 회원가입이 가능해요.</span>
+            </li>
+            <li className="flex items-start gap-1.5">
+              <span className="text-[#adb5bd] mt-0.5">•</span>
+              <span>회원가입신청 시 <strong>1~2일 이내</strong> 전화드려요.</span>
+            </li>
+            <li className="flex items-start gap-1.5">
+              <span className="text-[#adb5bd] mt-0.5">•</span>
+              <span>문의는 <strong>1555-5343</strong> (평일 오전 10시 ~ 오후 6시)로 연락해 주세요.</span>
+            </li>
+          </ul>
 
-        {/* 폼 본문 */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 섹션 1: 대표자 정보 */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3.5">
-            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-bold flex items-center justify-center">1</span>
-              대표자 기본 정보
-            </h3>
+          <button
+            type="button"
+            onClick={() => setShowGuideModal(true)}
+            className="mt-4 w-full py-2.5 px-3 bg-white border border-[#dfe2e6] rounded-md text-xs font-semibold text-[#495057] shadow-2xs text-center cursor-pointer"
+          >
+            회원가입 절차와 필요한 서류가 궁금해요
+          </button>
+        </div>
 
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                대표자 성함 <span className="text-emerald-400">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="홍길동"
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                연락처 <span className="text-emerald-400">*</span> (안내 문자 수신)
-              </label>
-              <input
-                type="tel"
-                required
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="010-0000-0000"
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                이메일 (선택)
-              </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="example@email.com"
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-500"
-              />
-            </div>
-          </div>
-
-          {/* 섹션 2: 중개사무소 정보 */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3.5">
-            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-bold flex items-center justify-center">2</span>
+        {/* 폼 */}
+        <form onSubmit={handleSubmit} className="space-y-4.5">
+          {/* 1. 중개사무소 정보 */}
+          <div>
+            <label className="block text-xs font-semibold text-[#222] mb-1.5">
               중개사무소 정보
-            </h3>
+            </label>
+            <input
+              type="text"
+              required
+              value={agencyName}
+              onChange={(e) => setAgencyName(e.target.value)}
+              placeholder="중개사무소 이름, 대표자명, 주소를 조합 검색"
+              className="w-full h-11 px-3.5 rounded-md border border-[#dfe2e6] text-xs text-[#222] placeholder-[#aaa] outline-none focus:border-[#fa8258] transition"
+            />
+          </div>
 
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                중개사무소 명칭 <span className="text-emerald-400">*</span>
-              </label>
+          {/* 2. 대표 공인중개사 휴대폰 번호 */}
+          <div>
+            <label className="block text-xs font-semibold text-[#222] mb-1.5">
+              대표 공인중개사 휴대폰 번호
+            </label>
+            <input
+              type="tel"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="예) 01098765432"
+              className="w-full h-11 px-3.5 rounded-md border border-[#dfe2e6] text-xs text-[#222] placeholder-[#aaa] outline-none focus:border-[#fa8258] transition"
+            />
+          </div>
+
+          {/* 3. 대표 공인중개사 이메일 */}
+          <div>
+            <label className="block text-xs font-semibold text-[#222] mb-1.5">
+              대표 공인중개사 이메일 <span className="text-[#888] font-normal text-[11px]">(가입 후 아이디로 이용돼요.)</span>
+            </label>
+            <div className="flex items-center gap-1.5">
               <input
                 type="text"
-                required
-                value={formData.agencyName}
-                onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
-                placeholder="공실뉴스 공인중개사사무소"
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-500"
+                value={emailLocal}
+                onChange={(e) => setEmailLocal(e.target.value)}
+                placeholder="이메일"
+                className="flex-1 h-11 px-3 rounded-md border border-[#dfe2e6] text-xs text-[#222] outline-none focus:border-[#fa8258]"
               />
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-1">시/도</label>
+              <span className="text-[#888] text-xs">@</span>
+              {emailDomain === "direct" ? (
                 <input
                   type="text"
-                  value={formData.regionCity}
-                  onChange={(e) => setFormData({ ...formData, regionCity: e.target.value })}
-                  placeholder="서울시"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white outline-none"
+                  value={customDomain}
+                  onChange={(e) => setCustomDomain(e.target.value)}
+                  placeholder="도메인"
+                  className="w-24 h-11 px-2 rounded-md border border-[#dfe2e6] text-xs outline-none focus:border-[#fa8258]"
                 />
-              </div>
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-1">구/군</label>
-                <input
-                  type="text"
-                  value={formData.regionDistrict}
-                  onChange={(e) => setFormData({ ...formData, regionDistrict: e.target.value })}
-                  placeholder="강남구"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-1">동/읍/면</label>
-                <input
-                  type="text"
-                  value={formData.regionDong}
-                  onChange={(e) => setFormData({ ...formData, regionDong: e.target.value })}
-                  placeholder="역삼동"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                사무소 주소
-              </label>
-              <input
-                type="text"
-                value={formData.agencyAddress}
-                onChange={(e) => setFormData({ ...formData, agencyAddress: e.target.value })}
-                placeholder="서울특별시 강남구 테헤란로 123"
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-500"
-              />
+              ) : null}
+              <select
+                value={emailDomain}
+                onChange={(e) => setEmailDomain(e.target.value)}
+                className="w-24 h-11 px-1.5 rounded-md border border-[#dfe2e6] text-xs text-[#555] bg-white outline-none focus:border-[#fa8258]"
+              >
+                <option value="">선택</option>
+                <option value="naver.com">naver.com</option>
+                <option value="gmail.com">gmail.com</option>
+                <option value="daum.net">daum.net</option>
+                <option value="kakao.com">kakao.com</option>
+                <option value="direct">직접입력</option>
+              </select>
             </div>
           </div>
 
-          {/* 섹션 3: 관심 서비스 선택 */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-bold flex items-center justify-center">3</span>
-              관심 서비스 선택 (다중 선택)
-            </h3>
-            <p className="text-[11px] text-slate-400">희망하시는 미디어 채널을 체크해주세요.</p>
-
+          {/* 4. 상담할 광고 상품 선택 */}
+          <div className="pt-1">
+            <label className="block text-xs font-semibold text-[#222] mb-2">
+              상담할 광고 상품 선택
+            </label>
             <div className="space-y-2">
-              {SERVICE_OPTIONS.map((item) => {
-                const checked = formData.interests.includes(item.id);
+              {AD_PRODUCTS.map((prod) => {
+                const isChecked = selectedProduct === prod.id;
                 return (
-                  <div
-                    key={item.id}
-                    onClick={() => handleInterestToggle(item.id)}
-                    className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition select-none ${
-                      checked
-                        ? "bg-emerald-950/40 border-emerald-500/60"
-                        : "bg-slate-950 border-slate-800"
-                    }`}
+                  <label
+                    key={prod.id}
+                    className="flex items-center gap-2 p-2.5 rounded-md border border-[#eef0f2] bg-[#f8f9fa] text-xs cursor-pointer select-none"
                   >
                     <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => {}}
-                      className="mt-0.5 w-4 h-4 rounded text-emerald-500 border-slate-700 bg-slate-900"
+                      type="radio"
+                      name="adProductMobile"
+                      value={prod.id}
+                      checked={isChecked}
+                      onChange={() => setSelectedProduct(prod.id)}
+                      style={{ accentColor: "#fa8258" }}
+                      className="w-4 h-4 text-[#fa8258] border-[#ccc]"
                     />
-                    <div className="flex-1">
-                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <span>{item.icon}</span>
-                        <span>{item.label}</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{item.desc}</p>
-                    </div>
-                  </div>
+                    <span className={`text-[12px] ${isChecked ? "font-semibold text-[#111]" : "text-[#444]"}`}>
+                      {prod.label}
+                    </span>
+                  </label>
                 );
               })}
             </div>
           </div>
 
-          {/* 추가 메모 */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
-            <label className="block text-xs font-bold text-white">
-              기타 문의 및 요청사항 (선택)
-            </label>
-            <textarea
-              rows={2}
-              value={formData.memo}
-              onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
-              placeholder="추가로 궁금하신 사항을 적어주세요."
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-500"
+          {/* 5. 회원가입 약관 전체 동의 하기 */}
+          <div className="pt-2">
+            <div className="border border-[#dfe2e6] rounded-lg p-3.5 bg-white">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs font-semibold text-[#222] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={agreeTerms}
+                    onChange={(e) => setAgreeTerms(e.target.checked)}
+                    style={{ accentColor: "#fa8258" }}
+                    className="w-4 h-4 rounded border-[#ccc]"
+                  />
+                  회원가입 약관 전체 동의 하기
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setTermsAccordionOpen(!termsAccordionOpen)}
+                  className="text-[#888] text-xs p-1"
+                >
+                  {termsAccordionOpen ? "▲" : "▼"}
+                </button>
+              </div>
+              <p className="text-[11px] text-[#888] pl-6 mt-1">
+                약관의 효력은 회원가입 절차가 완료된 후 적용됩니다.
+              </p>
+              {termsAccordionOpen && (
+                <div className="mt-2.5 pt-2.5 border-t border-[#f1f3f5] text-[11px] text-[#666] pl-6 space-y-1">
+                  <p>• 수집 목적: 공실뉴스 공인중개사 회원가입 심사</p>
+                  <p>• 항목: 중개사무소명, 대표자명, 휴대폰 번호, 이메일</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 6. 추천인 코드 */}
+          <div>
+            <input
+              type="text"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value)}
+              placeholder="추천인 코드 6자리 (선택)"
+              className="w-full h-11 px-3.5 rounded-md border border-[#dfe2e6] text-xs text-[#222] placeholder-[#aaa] outline-none focus:border-[#fa8258]"
             />
           </div>
 
           {/* 에러 메시지 */}
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-red-950/70 border border-red-500/50 text-red-200 text-xs">
+            <div className="p-2.5 rounded-md bg-[#fff5f5] border border-[#ffc9c9] text-xs font-bold text-[#e03131]">
               ⚠️ {errorMsg}
             </div>
           )}
 
-          {/* 하단 고정 액션 바 */}
-          <div className="fixed bottom-0 left-0 right-0 p-3 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 z-40">
+          {/* 7. 하단 고정 직방 시그니처 코랄 오렌지 버튼 */}
+          <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-xs border-t border-[#eef0f2] z-40">
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 text-slate-950 font-black text-sm shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
+              style={{ backgroundColor: "#fa8258" }}
+              className="w-full h-[52px] rounded-lg text-white font-bold text-[15px] shadow-sm flex items-center justify-center disabled:opacity-50 tracking-tight cursor-pointer"
             >
-              {submitting ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                  접수 처리 중...
-                </>
-              ) : (
-                "공실뉴스부동산 파트너 신청하기 ➔"
-              )}
+              {submitting ? "처리 중..." : "중개사무소 회원가입 신청하기"}
             </button>
           </div>
         </form>
-
-        {/* 하단 안내 */}
-        <div className="mt-8 text-center text-[11px] text-slate-500 leading-relaxed">
-          고객센터: 1555-5343 | gongsilnews@naver.com<br />
-          신청 완료 즉시 확인 문자가 발송됩니다.
-        </div>
       </main>
+
+      {/* ━━━ 직방 스타일: 회원가입 절차 가이드 모달 ━━━ */}
+      {showGuideModal && (
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-[#dee2e6] relative">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#f1f3f5]">
+              <h3 className="font-extrabold text-[15px] text-[#1f2328] tracking-tight">
+                회원가입 절차 가이드
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowGuideModal(false)}
+                className="text-[#868e96] hover:text-[#1f2328] text-base font-bold p-1 leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs text-[#495057]">
+              {/* 1단계 */}
+              <div className="p-2.5 rounded-xl border border-[#ffa94d] bg-[#fff9db]/30">
+                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[11.5px] mb-0.5">
+                  <span>📝</span>
+                  <span>1단계 필수 정보 입력</span>
+                </div>
+                <p className="text-[#495057] text-[10.5px] leading-tight mb-1">
+                  원활한 상담을 위해 중개사무소 정보를 정확히 입력해 주세요.
+                </p>
+                <ul className="space-y-0.5 text-[#868e96] pl-1 text-[10px]">
+                  <li>• 중개사무소명</li>
+                  <li>• 대표 공인중개사 휴대폰 번호와 이메일</li>
+                  <li>• 주거래 매물 선택</li>
+                </ul>
+              </div>
+
+              {/* 2단계 */}
+              <div className="p-2.5 rounded-xl border border-[#edf0f2] bg-[#f8f9fa]">
+                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[11.5px] mb-0.5">
+                  <span>📞</span>
+                  <span>2단계 가입신청 상담</span>
+                </div>
+                <p className="text-[#495057] text-[10.5px] leading-tight mb-0.5">
+                  담당 매니저가 가입 신청서를 확인하고 연락드려요.
+                </p>
+                <p className="text-[#868e96] pl-1 text-[10px]">
+                  • 최대 1~2 영업일 소요
+                </p>
+              </div>
+
+              {/* 3단계 */}
+              <div className="p-2.5 rounded-xl border border-[#edf0f2] bg-[#f8f9fa]">
+                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[11.5px] mb-0.5">
+                  <span>📄</span>
+                  <span>3단계 승인 심사 및 완료</span>
+                </div>
+                <p className="text-[#495057] text-[10.5px] leading-tight mb-1">
+                  상담 후, 가입에 필요한 서류를 보내주시면 승인해드려요.
+                </p>
+                <div className="space-y-0.5 text-[10px] text-[#495057] pl-1 font-medium">
+                  <div>📄 사업자 등록증</div>
+                  <div>🏢 중개사무소 등록증</div>
+                  <div>🖼️ 프로필 사진</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowGuideModal(false)}
+                className="px-5 py-2 bg-[#fa7743] text-white font-bold text-xs rounded-lg shadow-sm"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

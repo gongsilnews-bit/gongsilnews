@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
 
 /* ── 14대 공식 브랜드 및 공공기관 실물 배너 데이터 (7x2 14개) ── */
 const BANNERS = [
@@ -199,6 +200,12 @@ const BANNERS = [
 ];
 
 export default function RealEstateInfoBanner() {
+  const pathname = usePathname();
+
+  if (pathname === '/newsrealty/apply') {
+    return null;
+  }
+
   return (
     <section
       style={{

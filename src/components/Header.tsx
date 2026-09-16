@@ -182,6 +182,10 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
   const isHomePage = pathname === '/';
   const isSmallHeader = !isHomePage || isScrolled;
 
+  if (pathname === '/newsrealty/apply') {
+    return null;
+  }
+
   return (
     <>
       <AuthModal
