@@ -355,7 +355,7 @@ export default function NewsRealtyPage() {
             margin: "0 0 16px 0",
             wordBreak: "keep-all"
           }}>
-            공실이 콘텐츠가 됩니다
+            내가 기사를 쓸 수 있을까??
           </h2>
 
           <p style={{
@@ -366,7 +366,7 @@ export default function NewsRealtyPage() {
             maxWidth: 640,
             wordBreak: "keep-all"
           }}>
-            지역의 새로운 공실과 매물은 그 자체로 좋은 부동산 콘텐츠입니다.
+            공실뉴스에 공실을 등록하고, AI가 알아서 기사 초안을 작성합니다.
           </p>
 
           {/* 파이프라인 흐름도: 공실 → 뉴스 → 블로그 → 유튜브 → 고객 */}

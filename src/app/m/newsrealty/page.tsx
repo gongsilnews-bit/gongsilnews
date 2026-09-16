@@ -334,10 +334,10 @@ export default function MobileNewsRealtyPage() {
             CONTENT PIPELINE
           </div>
           <h2 style={{ fontSize: 25, fontWeight: 900, color: "#1c1917", margin: "0 0 10px 0", letterSpacing: "-0.5px" }}>
-            공실이 콘텐츠가 됩니다
+            내가 기사를 쓸 수 있을까??
           </h2>
           <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0, wordBreak: "keep-all" }}>
-            지역의 새로운 공실과 매물은 그 자체로 좋은 부동산 콘텐츠입니다.
+            공실뉴스에 공실을 등록하고, AI가 알아서 기사 초안을 작성합니다.
           </p>
         </div>
 
