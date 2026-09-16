@@ -341,7 +341,7 @@ export default function NewsRealtyPage() {
         backgroundColor: "#fffbf7",
         borderBottom: "1px solid #fed7aa"
       }}>
-        <div style={{ maxWidth: 960, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto", textAlign: "center" }}>
           
           <div style={{ display: "inline-block", padding: "6px 16px", borderRadius: 20, background: "#fff2e8", color: "#ea580c", fontWeight: 800, fontSize: 13, marginBottom: 16 }}>
             CONTENT PIPELINE
@@ -369,36 +369,104 @@ export default function NewsRealtyPage() {
             공실뉴스에 공실을 등록하고, AI가 알아서 기사 초안을 작성합니다.
           </p>
 
-          {/* 파이프라인 흐름도: 공실 → 뉴스 → 블로그 → 유튜브 → 고객 */}
+          {/* 파이프라인 흐름도: 5단계 스마트 AI 자동화 */}
           <div style={{
             display: "flex",
-            alignItems: "center",
+            alignItems: "stretch",
             justifyContent: "center",
-            gap: 12,
+            gap: 10,
             marginBottom: 44,
           }}>
             {[
-              { step: "01", title: "공실", sub: "지역 매물", icon: "🏢" },
-              { step: "02", title: "뉴스", sub: "공실뉴스 보도", icon: "📰" },
-              { step: "03", title: "블로그", sub: "포털 검색장악", icon: "✍️" },
-              { step: "04", title: "유튜브", sub: "영상 브리핑", icon: "🎥" },
-              { step: "05", title: "고객", sub: "문의 및 계약", icon: "🤝" },
+              {
+                step: "01",
+                icon: "🏢",
+                title: "공동중개 등록",
+                badge: "#11만 무료열람",
+                sub: "전국 중개망 실시간 노출",
+                badgeBg: "#fff2e8",
+                badgeColor: "#ea580c",
+              },
+              {
+                step: "02",
+                icon: "📊",
+                title: "AI 매물보고서",
+                badge: "#10초 완성",
+                sub: "임대인·고객 브리핑 리포트",
+                badgeBg: "#eff6ff",
+                badgeColor: "#2563eb",
+              },
+              {
+                step: "03",
+                icon: "📰",
+                title: "AI 기사초안",
+                badge: "#10초 완성",
+                sub: "언론 포털 송출용 기사",
+                badgeBg: "#fef3c7",
+                badgeColor: "#b45309",
+              },
+              {
+                step: "04",
+                icon: "🎬",
+                title: "기사·유튜브·블로그",
+                badge: "#AI 초안작성",
+                sub: "SNS 멀티채널 원클릭 확산",
+                badgeBg: "#f5f3ff",
+                badgeColor: "#7c3aed",
+              },
+              {
+                step: "05",
+                icon: "💼",
+                title: "뉴스 광고영업",
+                badge: "#신축·분양·로컬",
+                sub: "지역 언론 미디어 광고수익",
+                badgeBg: "#ecfdf5",
+                badgeColor: "#059669",
+              },
             ].map((node, idx, arr) => (
               <React.Fragment key={node.title}>
-                <div className="flow-node-box">
-                  <div style={{ fontSize: "28px", marginBottom: 8 }}>
+                <div className="flow-node-box" style={{ padding: "26px 14px" }}>
+                  <span style={{
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    color: "#94a3b8",
+                    letterSpacing: "0.5px",
+                    marginBottom: 8
+                  }}>
+                    STEP {node.step}
+                  </span>
+                  <div style={{ fontSize: "30px", marginBottom: 10 }}>
                     {node.icon}
                   </div>
-                  <div style={{ fontSize: "20px", fontWeight: 900, color: "#1c1917", marginBottom: 4 }}>
+                  <div style={{
+                    fontSize: "17px",
+                    fontWeight: 900,
+                    color: "#1c1917",
+                    marginBottom: 10,
+                    letterSpacing: "-0.5px",
+                    lineHeight: 1.3
+                  }}>
                     {node.title}
                   </div>
-                  <div style={{ fontSize: "13px", color: "#ea580c", fontWeight: 700 }}>
+                  <div style={{
+                    display: "inline-block",
+                    padding: "4px 10px",
+                    borderRadius: 14,
+                    background: node.badgeBg,
+                    color: node.badgeColor,
+                    fontSize: "12px",
+                    fontWeight: 800,
+                    marginBottom: 8
+                  }}>
+                    {node.badge}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, lineHeight: 1.45, wordBreak: "keep-all" }}>
                     {node.sub}
                   </div>
                 </div>
 
                 {idx < arr.length - 1 && (
-                  <div style={{ fontSize: "24px", color: "#fa8258", fontWeight: 900, padding: "0 2px" }}>
+                  <div style={{ display: "flex", alignItems: "center", fontSize: "20px", color: "#fa8258", fontWeight: 900, padding: "0 1px" }}>
                     →
                   </div>
                 )}
@@ -412,16 +480,15 @@ export default function NewsRealtyPage() {
             border: "1px solid #fed7aa",
             borderRadius: 18,
             padding: "32px 40px",
-            maxWidth: 720,
+            maxWidth: 780,
             margin: "0 auto",
             boxShadow: "0 8px 24px rgba(250, 130, 88, 0.08)"
           }}>
-            <div style={{ fontSize: "21px", fontWeight: 900, color: "#1c1917", marginBottom: 10 }}>
-              "오늘 무엇을 올릴지 고민하지 않아도 됩니다."
+            <div style={{ fontSize: "20px", fontWeight: 900, color: "#1c1917", marginBottom: 10 }}>
+              "공실 하나만 등록하면, 보고서부터 기사·영상·광고까지 AI가 한 번에 완성합니다."
             </div>
-            <div style={{ fontSize: "16.5px", color: "#475569", lineHeight: 1.75, wordBreak: "keep-all" }}>
-              지역의 부동산 이야기를 꾸준히 전달하면서<br />
-              유튜브와 블로그를 함께 키울 수 있습니다.
+            <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.75, wordBreak: "keep-all" }}>
+              매일 무엇을 올릴지 고민할 필요 없이, 지역 공실 정보가 곧 고품질 콘텐츠와 새로운 수익이 됩니다.
             </div>
           </div>
 

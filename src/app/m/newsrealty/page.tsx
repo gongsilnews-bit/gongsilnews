@@ -344,26 +344,78 @@ export default function MobileNewsRealtyPage() {
         {/* 파이프라인 단계 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
           {[
-            { step: "01", title: "공실", sub: "지역 매물 발굴", icon: "🏢" },
-            { step: "02", title: "뉴스", sub: "공실뉴스 보도", icon: "📰" },
-            { step: "03", title: "블로그", sub: "검색 노출 장악", icon: "✍️" },
-            { step: "04", title: "유튜브", sub: "영상 브리핑 쇼츠", icon: "🎥" },
-            { step: "05", title: "고객", sub: "직접 문의 및 계약", icon: "🤝" },
+            {
+              step: "01",
+              icon: "🏢",
+              title: "공동중개 등록",
+              badge: "#11만 무료열람",
+              sub: "전국 중개망 실시간 무료 노출",
+              badgeBg: "#fff2e8",
+              badgeColor: "#ea580c",
+            },
+            {
+              step: "02",
+              icon: "📊",
+              title: "AI 매물보고서",
+              badge: "#10초 완성",
+              sub: "임대인·고객 맞춤 브리핑 리포트",
+              badgeBg: "#eff6ff",
+              badgeColor: "#2563eb",
+            },
+            {
+              step: "03",
+              icon: "📰",
+              title: "AI 기사초안 작성",
+              badge: "#10초 완성",
+              sub: "포털 송출용 정식 뉴스 기사 생성",
+              badgeBg: "#fef3c7",
+              badgeColor: "#b45309",
+            },
+            {
+              step: "04",
+              icon: "🎬",
+              title: "기사·유튜브·블로그",
+              badge: "#AI 초안작성",
+              sub: "SNS 멀티채널 원클릭 동시 확산",
+              badgeBg: "#f5f3ff",
+              badgeColor: "#7c3aed",
+            },
+            {
+              step: "05",
+              icon: "💼",
+              title: "뉴스 광고영업",
+              badge: "#신축·분양·로컬",
+              sub: "지역 언론 미디어 추가 광고수익",
+              badgeBg: "#ecfdf5",
+              badgeColor: "#059669",
+            },
           ].map((item) => (
             <div key={item.step} className="m-flow-item">
-              <div style={{ fontSize: 24, flexShrink: 0 }}>
+              <div style={{ fontSize: 26, flexShrink: 0 }}>
                 {item.icon}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#ea580c", background: "#fff2e8", padding: "2px 6px", borderRadius: 4 }}>
-                    STEP {item.step}
-                  </span>
-                  <span style={{ fontSize: 15.5, fontWeight: 900, color: "#1c1917" }}>
-                    {item.title}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 10.5, fontWeight: 800, color: "#94a3b8" }}>
+                      STEP {item.step}
+                    </span>
+                    <span style={{ fontSize: 15.5, fontWeight: 900, color: "#1c1917" }}>
+                      {item.title}
+                    </span>
+                  </div>
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: item.badgeColor,
+                    background: item.badgeBg,
+                    padding: "2px 7px",
+                    borderRadius: 10
+                  }}>
+                    {item.badge}
                   </span>
                 </div>
-                <div style={{ fontSize: 13, color: "#ea580c", fontWeight: 600 }}>
+                <div style={{ fontSize: 12.5, color: "#64748b", fontWeight: 500 }}>
                   {item.sub}
                 </div>
               </div>
@@ -379,11 +431,11 @@ export default function MobileNewsRealtyPage() {
           textAlign: "center",
           boxShadow: "0 4px 12px rgba(250, 130, 88, 0.06)"
         }}>
-          <div style={{ fontSize: 16.5, fontWeight: 900, color: "#1c1917", marginBottom: 6 }}>
-            "오늘 무엇을 올릴지 고민하지 않아도 됩니다."
+          <div style={{ fontSize: 15.5, fontWeight: 900, color: "#1c1917", marginBottom: 6 }}>
+            "공실 하나만 등록하면, 보고서부터 기사·영상·광고까지 AI가 한 번에 완성합니다."
           </div>
-          <div style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65, wordBreak: "keep-all" }}>
-            지역의 부동산 이야기를 꾸준히 전달하면서 유튜브와 블로그를 함께 키울 수 있습니다.
+          <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, wordBreak: "keep-all" }}>
+            매일 무엇을 올릴지 고민할 필요 없이, 지역 공실 정보가 곧 고품질 콘텐츠와 새로운 수익이 됩니다.
           </div>
         </div>
       </section>
