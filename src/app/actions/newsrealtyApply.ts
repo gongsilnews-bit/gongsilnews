@@ -27,6 +27,93 @@ export interface NewsrealtyApplicationInput {
 }
 
 /**
+ * 회원의 기존 신청 내역 확인 (중복 신청 방지)
+ */
+export async function checkExistingNewsrealtyApplication(memberId?: string, phone?: string) {
+  try {
+    const supabase = getAdminClient();
+    const cleanPhone = phone ? phone.replace(/[^0-9]/g, "") : null;
+
+    if (!memberId && (!cleanPhone || cleanPhone.length < 9)) {
+      return { exists: false, application: null };
+    }
+
+    // 1. newsrealty_applications 테이블 조회 시도
+    let query = supabase.from("newsrealty_applications").select("*");
+
+    if (memberId && cleanPhone && cleanPhone.length >= 9) {
+      query = query.or(`member_id.eq.${memberId},phone.eq.${cleanPhone}`);
+    } else if (memberId) {
+      query = query.eq("member_id", memberId);
+    } else if (cleanPhone && cleanPhone.length >= 9) {
+      query = query.eq("phone", cleanPhone);
+    } else {
+      return { exists: false, application: null };
+    }
+
+    const { data, error } = await query
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (!error && data && data.length > 0) {
+      const app = data[0];
+      return {
+        exists: true,
+        application: {
+          id: app.id,
+          status: app.status || "신규",
+          created_at: app.created_at,
+          applicant_name: app.applicant_name,
+          agency_name: app.agency_name,
+          phone: app.phone,
+          email: app.email,
+        },
+      };
+    }
+
+    // 2. board_posts 폴백 테이블 조회
+    if (memberId) {
+      const { data: posts, error: postErr } = await supabase
+        .from("board_posts")
+        .select("*")
+        .eq("board_id", "newsrealty")
+        .eq("author_id", memberId)
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (!postErr && posts && posts.length > 0) {
+        const post = posts[0];
+        let meta: any = {};
+        try {
+          meta = JSON.parse(post.external_url || "{}");
+        } catch (e) {
+          meta = {};
+        }
+
+        return {
+          exists: true,
+          application: {
+            id: post.id,
+            status: meta.status || "신규",
+            created_at: post.created_at,
+            applicant_name: meta.name || post.author_name,
+            agency_name: meta.agencyName || "중개사무소",
+            phone: meta.phone || "",
+            email: meta.email || "",
+          },
+        };
+      }
+    }
+
+    return { exists: false, application: null };
+  } catch (err: any) {
+    console.error("checkExistingNewsrealtyApplication error:", err);
+    return { exists: false, application: null };
+  }
+}
+
+/**
  * 공실뉴스부동산 파트너 신청 접수
  */
 export async function submitNewsrealtyApplication(data: NewsrealtyApplicationInput) {
@@ -47,6 +134,27 @@ export async function submitNewsrealtyApplication(data: NewsrealtyApplicationInp
     const cleanPhone = data.phone.replace(/[^0-9]/g, "");
     if (cleanPhone.length < 9) {
       return { success: false, message: "올바른 연락처 번호를 입력해주세요." };
+    }
+
+    // 1-1. 중복 신청 여부 체크 (이미 신청한 회원은 중복 접수 방지)
+    const existingCheck = await checkExistingNewsrealtyApplication(data.memberId, cleanPhone);
+    if (existingCheck.exists && existingCheck.application) {
+      const status = existingCheck.application.status || "신규";
+      if (status === "승인완료") {
+        return {
+          success: false,
+          alreadyApplied: true,
+          status,
+          message: "이미 공실뉴스부동산 파트너로 승인 완료된 회원입니다.",
+        };
+      } else if (status !== "반려") {
+        return {
+          success: false,
+          alreadyApplied: true,
+          status,
+          message: "이미 파트너 입점 신청서가 접수되어 심사 진행 중입니다. (1영업일 이내 유선 안내)",
+        };
+      }
     }
 
     let insertedId: string | null = null;

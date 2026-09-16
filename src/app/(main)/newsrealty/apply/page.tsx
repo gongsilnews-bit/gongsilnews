@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { submitNewsrealtyApplication } from "@/app/actions/newsrealtyApply";
+import { submitNewsrealtyApplication, checkExistingNewsrealtyApplication } from "@/app/actions/newsrealtyApply";
 
 export default function NewsRealtyApplyPage() {
   const router = useRouter();
@@ -24,6 +24,9 @@ export default function NewsRealtyApplyPage() {
   const [agencyName, setAgencyName] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [termsAccordionOpen, setTermsAccordionOpen] = useState(false);
+
+  // 기존 신청 내역 상태
+  const [existingApplication, setExistingApplication] = useState<any>(null);
 
   // 모달 및 서브밋 상태
   const [showGuideModal, setShowGuideModal] = useState(false);
@@ -54,14 +57,16 @@ export default function NewsRealtyApplyPage() {
             .eq("owner_id", authUser.id)
             .maybeSingle();
 
+          const currentPhone = memberData?.phone || authUser.user_metadata?.phone || "";
+
           if (memberData?.name || authUser.user_metadata?.name) {
             setApplicantName(memberData?.name || authUser.user_metadata?.name || "");
           }
           if (agencyData?.name || memberData?.company_name) {
             setAgencyName(agencyData?.name || memberData?.company_name || "");
           }
-          if (memberData?.phone || authUser.user_metadata?.phone) {
-            setPhone(memberData?.phone || authUser.user_metadata?.phone || "");
+          if (currentPhone) {
+            setPhone(currentPhone);
           }
 
           const userEmail = authUser.email || "";
@@ -75,8 +80,16 @@ export default function NewsRealtyApplyPage() {
               setCustomDomain(dom);
             }
           }
-        } else {
-          // 비로그인 상태 (authLoading은 이미 위에서 false로 설정됨)
+
+          // 기존 신청 내역 확인
+          try {
+            const checkRes = await checkExistingNewsrealtyApplication(authUser.id, currentPhone);
+            if (checkRes.exists && checkRes.application && checkRes.application.status !== "반려") {
+              setExistingApplication(checkRes.application);
+            }
+          } catch (e) {
+            console.error("Error checking existing application:", e);
+          }
         }
       } catch (err) {
         console.error("Error loading user info:", err);
@@ -493,6 +506,188 @@ export default function NewsRealtyApplyPage() {
     );
   }
 
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 0-2. 기존 신청 내역이 이미 존재하는 경우 (중복 신청 방지 및 상태 안내)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if (existingApplication && !isSubmitted) {
+    const isApproved = existingApplication.status === "승인완료";
+    const dateStr = existingApplication.created_at
+      ? new Date(existingApplication.created_at).toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "";
+
+    return (
+      <div style={{ backgroundColor: "#f7f8f9", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif", display: "flex", flexDirection: "column" }}>
+        {/* 헤더 */}
+        <header style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #eaedf0", height: "60px", position: "sticky", top: 0, zIndex: 40 }}>
+          <div style={{ maxWidth: "1060px", margin: "0 auto", height: "100%", padding: "0 24px", display: "flex", alignItems: "center" }}>
+            <Link href="/" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }}>공실뉴스</Link>
+            <span style={{ fontSize: "16px", color: "#ccc", fontWeight: 300, margin: "0 8px" }}>|</span>
+            <Link href="/newsrealty" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }}>공실뉴스부동산</Link>
+          </div>
+        </header>
+
+        {/* 상태 안내 카드 */}
+        <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 20px" }}>
+          <div style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "20px",
+            border: "1px solid #eaedf0",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+            padding: "52px 48px 44px 48px",
+            maxWidth: "540px",
+            width: "100%",
+            textAlign: "center"
+          }}>
+            {/* 상태 뱃지 & 아이콘 */}
+            <div style={{
+              width: "72px",
+              height: "72px",
+              backgroundColor: isApproved ? "#ecfdf5" : "#fff2e8",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "30px",
+              color: isApproved ? "#059669" : "#fa8258",
+              margin: "0 auto 20px auto"
+            }}>
+              {isApproved ? "🏢" : "📋"}
+            </div>
+
+            <div style={{
+              display: "inline-block",
+              backgroundColor: isApproved ? "#ecfdf5" : "#fff2e8",
+              color: isApproved ? "#059669" : "#ea580c",
+              fontSize: "12.5px",
+              fontWeight: 800,
+              padding: "4px 14px",
+              borderRadius: "20px",
+              marginBottom: "12px"
+            }}>
+              {isApproved ? "🎉 정식 승인 파트너" : `신청 접수 완료 · ${existingApplication.status || "심사 진행 중"}`}
+            </div>
+
+            <h1 style={{ fontSize: "24px", fontWeight: 900, color: "#1a1a1a", marginBottom: "12px", letterSpacing: "-0.5px", wordBreak: "keep-all" }}>
+              {isApproved
+                ? "이미 공실뉴스부동산 정식 파트너로 승인되었습니다"
+                : "이미 파트너 입점 신청서가 접수되었습니다"}
+            </h1>
+
+            <p style={{ fontSize: "14.5px", color: "#64748b", lineHeight: 1.65, marginBottom: "28px", wordBreak: "keep-all" }}>
+              {isApproved ? (
+                <>
+                  <strong style={{ color: "#222" }}>{existingApplication.applicant_name || existingApplication.agency_name}</strong> 대표님은 이미 정식 파트너 권한을 보유하고 계십니다.<br />
+                  공실 등록, 기사 송고, AI 물건보고서 등 모든 혜택을 이용하실 수 있습니다.
+                </>
+              ) : (
+                <>
+                  <strong style={{ color: "#222" }}>{existingApplication.applicant_name || existingApplication.agency_name}</strong> 대표님의 입점 신청서가 정상 접수되어<br />
+                  현재 담당 매니저가 심사 및 상담을 준비 중입니다. <strong style={{ color: "#222" }}>(중복 신청 불가)</strong>
+                </>
+              )}
+            </p>
+
+            {/* 접수 정보 요약 박스 */}
+            <div style={{
+              backgroundColor: "#f8f9fa",
+              borderRadius: "14px",
+              border: "1px solid #edf0f2",
+              padding: "20px 22px",
+              textAlign: "left",
+              marginBottom: "24px"
+            }}>
+              {[
+                { label: "신청자명", value: existingApplication.applicant_name },
+                { label: "중개사무소", value: existingApplication.agency_name },
+                { label: "연락처", value: existingApplication.phone },
+                { label: "신청일시", value: dateStr || "최근 접수" },
+                { label: "진행상태", value: isApproved ? "정식 파트너 활성" : `${existingApplication.status || "신규"} (1영업일 이내 유선 안내)` },
+              ].map((item, idx) => (
+                <div key={idx} style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "8px 0",
+                  borderBottom: idx < 4 ? "1px solid #f0f2f5" : "none",
+                  fontSize: "13.5px"
+                }}>
+                  <span style={{ color: "#888", fontWeight: 500 }}>{item.label}</span>
+                  <span style={{ color: item.label === "진행상태" ? (isApproved ? "#059669" : "#ea580c") : "#333", fontWeight: item.label === "진행상태" ? 800 : 700 }}>
+                    {item.value || "-"}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* 고객센터 안내 */}
+            <div style={{
+              backgroundColor: "#fffbf7",
+              border: "1px solid #fed7aa",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              fontSize: "12.5px",
+              color: "#9a3412",
+              lineHeight: 1.55,
+              marginBottom: "24px",
+              textAlign: "left"
+            }}>
+              💡 신청 내용 변경이나 빠른 상담이 필요하신 경우 고객센터 <strong>1555-5343</strong> (평일 10:00~18:00)로 문의해 주시기 바랍니다.
+            </div>
+
+            {/* 버튼 그룹 */}
+            <div style={{ display: "flex", gap: "10px" }}>
+              <Link
+                href="/"
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "48px",
+                  backgroundColor: "#ffffff",
+                  color: "#555555",
+                  border: "1px solid #dfe2e6",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  textDecoration: "none"
+                }}
+              >
+                메인 홈으로
+              </Link>
+              <Link
+                href={isApproved ? "/admin" : "/newsrealty"}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "48px",
+                  backgroundColor: "#fa8258",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: 800,
+                  textDecoration: "none",
+                  boxShadow: "0 2px 8px rgba(250, 130, 88, 0.3)"
+                }}
+              >
+                {isApproved ? "관리자/공실 등록 ➔" : "공실뉴스부동산 소개 ➔"}
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 1. 접수 완료 화면
