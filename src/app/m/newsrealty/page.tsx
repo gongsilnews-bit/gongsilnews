@@ -476,40 +476,80 @@ export default function MobileNewsRealtyPage() {
         </h2>
 
         {/* 2단 비교 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 28, textAlign: "left" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 28, textAlign: "left" }}>
           
           <div style={{
             background: "#ffffff",
             border: "1px solid #e2e8f0",
-            borderRadius: 14,
+            borderRadius: 16,
             padding: "20px 18px"
           }}>
-            <div style={{ display: "inline-block", background: "#fee2e2", color: "#dc2626", padding: "3px 8px", borderRadius: 4, fontSize: 11.5, fontWeight: 700, marginBottom: 8 }}>
-              ❌ 기존 방식
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ display: "inline-block", background: "#fee2e2", color: "#dc2626", padding: "4px 10px", borderRadius: 4, fontSize: 11.5, fontWeight: 700 }}>
+                ❌ 기존 방식
+              </div>
+              <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 600 }}>단순 중개 영업</span>
             </div>
-            <div style={{ fontSize: 16, color: "#334155", fontWeight: 700, lineHeight: 1.5, marginBottom: 6 }}>
-              “대표님, 매물 있으세요?”
+
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
+              <img
+                src="/images/realty/sales_old_way.png"
+                alt="기존 영업 방식"
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  border: "2px solid #fee2e2",
+                  flexShrink: 0
+                }}
+              />
+              <div style={{ fontSize: 16, color: "#334155", fontWeight: 800, lineHeight: 1.4, wordBreak: "keep-all" }}>
+                “대표님, 매물 있으세요?”
+              </div>
             </div>
-            <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.5 }}>
-              수많은 부동산 중 하나로 인식되어 피로도를 유발하는 전형적인 '을'의 영업
+
+            <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.55, wordBreak: "keep-all" }}>
+              수많은 부동산 중 하나로 인식되어 건물주의 경계심과 피로도를 유발하는 전형적인 '을'의 영업
             </div>
           </div>
 
           <div style={{
             background: "#ffffff",
             border: "2px solid #fa8258",
-            borderRadius: 14,
+            borderRadius: 16,
             padding: "20px 18px",
-            boxShadow: "0 6px 18px rgba(250, 130, 88, 0.15)"
+            boxShadow: "0 6px 20px rgba(250, 130, 88, 0.15)"
           }}>
-            <div style={{ display: "inline-block", background: "#fff2e8", color: "#ea580c", padding: "3px 8px", borderRadius: 4, fontSize: 11.5, fontWeight: 800, marginBottom: 8 }}>
-              ✅ 공실뉴스부동산
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ display: "inline-block", background: "#fff2e8", color: "#ea580c", padding: "4px 10px", borderRadius: 4, fontSize: 11.5, fontWeight: 800 }}>
+                ✅ 공실뉴스부동산
+              </div>
+              <span style={{ fontSize: "11px", color: "#fa8258", fontWeight: 800 }}>언론 취재형 2단계 영업</span>
             </div>
-            <div style={{ fontSize: 17, color: "#1c1917", fontWeight: 900, lineHeight: 1.45, marginBottom: 6 }}>
-              “대표님 건물의 공실을<br />공실뉴스에서 소개해드리겠습니다.”
+
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 12 }}>
+              <img
+                src="/images/realty/sales_news_way.png"
+                alt="공실뉴스부동산 영업 방식"
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  border: "2px solid #fed7aa",
+                  flexShrink: 0,
+                  marginTop: 2
+                }}
+              />
+              <div style={{ fontSize: 16, color: "#1c1917", fontWeight: 900, lineHeight: 1.45, wordBreak: "keep-all" }}>
+                “사장님, 공실 등록 무료로 해드릴게요.<br />
+                <span style={{ color: "#fa8258" }}>그런데… 뉴스 기사 광고도 한번 내보시는 건 어떠세요?”</span>
+              </div>
             </div>
-            <div style={{ fontSize: 13, color: "#9a3412", lineHeight: 1.5, fontWeight: 600 }}>
-              건물주의 자존감을 높이고 언론 홍보 기회를 제공하는 당당한 '취재형' 영업
+
+            <div style={{ fontSize: 12.5, color: "#9a3412", lineHeight: 1.55, fontWeight: 600, wordBreak: "keep-all" }}>
+              거절 없는 무료 공실 등록으로 문을 열고, 지역 언론 기사 광고로 고수익까지 창출하는 당당한 취재형 영업
             </div>
           </div>
 
