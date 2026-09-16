@@ -151,7 +151,6 @@ export default function NewsRealtyPage() {
           
           {/* 상단 태그 */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(16, 185, 129, 0.14)", border: "1px solid rgba(16, 185, 129, 0.35)", padding: "8px 20px", borderRadius: 30, fontSize: 14, fontWeight: 700, color: "#6ee7b7", marginBottom: 28 }}>
-            <span>🏢</span>
             <span>공실뉴스부동산</span>
           </div>
 
@@ -174,7 +173,7 @@ export default function NewsRealtyPage() {
             fontSize: "22px",
             color: "#e2e8f0",
             lineHeight: 1.65,
-            margin: "0 auto 18px",
+            margin: "0 auto 40px",
             maxWidth: 720,
             wordBreak: "keep-all"
           }}>
@@ -184,26 +183,13 @@ export default function NewsRealtyPage() {
             </strong>
           </div>
 
-          <p style={{
-            fontSize: "18.5px",
-            color: "#d1fae5",
-            fontWeight: 600,
-            lineHeight: 1.75,
-            maxWidth: 680,
-            margin: "0 auto 44px",
-            wordBreak: "keep-all"
-          }}>
-            우리 지역의 공실 매물 상권 소식을 뉴스 콘텐츠로 전달하고<br />
-            내 지역 대표 부동산이 되세요!
-          </p>
-
           {/* CTA 버튼 */}
           <div>
             <button
               onClick={handleApplyClick}
               className="cta-action-btn"
             >
-              <span>[ 공실뉴스부동산 신청하기 ]</span>
+              <span>공실뉴스부동산 신청하기</span>
               <span style={{ fontSize: "22px" }}>➔</span>
             </button>
           </div>
@@ -532,7 +518,7 @@ export default function NewsRealtyPage() {
               className="cta-action-btn"
               style={{ fontSize: "21px", padding: "22px 56px" }}
             >
-              <span>[ 공실뉴스부동산 신청하기 ]</span>
+              <span>공실뉴스부동산 신청하기</span>
               <span style={{ fontSize: "24px" }}>➔</span>
             </button>
           </div>

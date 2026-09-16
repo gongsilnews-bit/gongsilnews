@@ -161,7 +161,6 @@ export default function MobileNewsRealtyPage() {
           color: "#6ee7b7",
           marginBottom: 20
         }}>
-          <span>🏢</span>
           <span>공실뉴스부동산</span>
         </div>
 
@@ -182,7 +181,7 @@ export default function MobileNewsRealtyPage() {
           fontSize: 16,
           color: "#e2e8f0",
           lineHeight: 1.65,
-          margin: "0 0 14px 0",
+          margin: "0 0 26px 0",
           wordBreak: "keep-all",
           fontWeight: 500
         }}>
@@ -192,23 +191,12 @@ export default function MobileNewsRealtyPage() {
           </strong>
         </div>
 
-        <p style={{
-          fontSize: 14,
-          color: "#a7f3d0",
-          opacity: 0.95,
-          lineHeight: 1.7,
-          margin: "0 auto 30px auto",
-          wordBreak: "keep-all"
-        }}>
-          우리 지역의 공실·매물·상권 소식을 뉴스와 콘텐츠로 전달하고 지역을 대표하는 부동산으로 성장하세요.
-        </p>
-
         <div>
           <button
             onClick={handleApplyClick}
             className="m-cta-btn"
           >
-            <span>[ 공실뉴스부동산 신청하기 ]</span>
+            <span>공실뉴스부동산 신청하기</span>
             <span>➔</span>
           </button>
         </div>
@@ -460,7 +448,7 @@ export default function MobileNewsRealtyPage() {
             onClick={handleApplyClick}
             className="m-cta-btn"
           >
-            <span>[ 공실뉴스부동산 신청하기 ]</span>
+            <span>공실뉴스부동산 신청하기</span>
             <span>➔</span>
           </button>
         </div>
