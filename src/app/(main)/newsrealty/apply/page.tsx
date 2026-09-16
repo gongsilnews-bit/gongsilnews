@@ -308,21 +308,22 @@ export default function NewsRealtyApplyPage() {
                 style={{
                   marginTop: "20px",
                   width: "100%",
-                  height: "40px",
+                  height: "44px",
                   backgroundColor: "#ffffff",
-                  border: "1px solid #d5d9de",
-                  borderRadius: "6px",
-                  fontSize: "12.5px",
-                  fontWeight: 600,
-                  color: "#333",
+                  border: "1px solid #fa8258",
+                  borderRadius: "8px",
+                  fontSize: "13.5px",
+                  fontWeight: 700,
+                  color: "#ea580c",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  transition: "background-color 0.15s"
+                  transition: "all 0.15s ease",
+                  boxShadow: "0 2px 6px rgba(250, 130, 88, 0.1)"
                 }}
               >
-                회원가입 절차와 필요한 서류가 궁금해요
+                📋 회원가입 및 이용 절차가 궁금해요
               </button>
             </div>
           </div>
@@ -576,18 +577,19 @@ export default function NewsRealtyApplyPage() {
         <p style={{ marginTop: "4px" }}>© GONGSILLNEWS Corp. All rights reserved.</p>
       </footer>
 
-      {/* ━━━ 직방 스타일: 회원가입 절차 가이드 모달 (1:1 동일) ━━━ */}
+      {/* ━━━ 공실뉴스부동산: 회원가입 및 이용 절차 가이드 모달 ━━━ */}
       {showGuideModal && (
         <div
           onClick={() => setShowGuideModal(false)}
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backdropFilter: "blur(2px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "16px",
+            padding: "20px",
             zIndex: 9999
           }}
         >
@@ -595,114 +597,238 @@ export default function NewsRealtyApplyPage() {
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#ffffff",
-              borderRadius: "12px",
+              borderRadius: "20px",
               width: "100%",
-              maxWidth: "420px",
-              padding: "26px 22px 20px 22px",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-              position: "relative"
+              maxWidth: "680px",
+              padding: "36px 36px 30px 36px",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.22)",
+              position: "relative",
+              maxHeight: "92vh",
+              overflowY: "auto"
             }}
           >
-            {/* 모달 타이틀 */}
-            <h3 style={{ fontSize: "17px", fontWeight: 700, color: "#1a1a1a", marginBottom: "18px", letterSpacing: "-0.3px" }}>
-              회원가입 절차 가이드
-            </h3>
+            {/* 닫기 버튼 */}
+            <button
+              type="button"
+              onClick={() => setShowGuideModal(false)}
+              style={{
+                position: "absolute",
+                top: "24px",
+                right: "24px",
+                background: "none",
+                border: "none",
+                fontSize: "24px",
+                color: "#94a3b8",
+                cursor: "pointer",
+                padding: "4px",
+                lineHeight: 1
+              }}
+            >
+              ✕
+            </button>
 
-            <div>
+            {/* 모달 헤더 */}
+            <div style={{ marginBottom: "26px" }}>
+              <div style={{
+                display: "inline-block",
+                background: "#fff2e8",
+                color: "#ea580c",
+                fontSize: "12.5px",
+                fontWeight: 800,
+                padding: "4px 12px",
+                borderRadius: "14px",
+                marginBottom: "10px"
+              }}>
+                공실뉴스부동산 입점 안내
+              </div>
+              <h3 style={{ fontSize: "24px", fontWeight: 900, color: "#1e293b", margin: "0 0 8px 0", letterSpacing: "-0.5px" }}>
+                회원가입 및 이용 절차 안내
+              </h3>
+              <p style={{ fontSize: "15px", color: "#64748b", margin: 0, lineHeight: 1.5 }}>
+                공실뉴스부동산 파트너 입점은 아래 4단계를 거쳐 신속하게 진행됩니다.
+              </p>
+            </div>
+
+            {/* 4단계 스텝 리스트 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
               {/* 1단계 */}
-              <div style={{ marginBottom: "18px" }}>
-                <div style={{
-                  backgroundColor: "#f4f6f8",
-                  borderRadius: "8px",
-                  padding: "10px 14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px"
-                }}>
-                  <span style={{ fontSize: "14px" }}>📝</span>
-                  <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#fa8258" }}>1단계 필수 정보 입력</span>
+              <div style={{
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "14px",
+                padding: "20px 22px"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                  <span style={{
+                    backgroundColor: "#fa8258",
+                    color: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: 800,
+                    padding: "3px 10px",
+                    borderRadius: "6px"
+                  }}>
+                    1단계
+                  </span>
+                  <span style={{ fontSize: "17.5px", fontWeight: 800, color: "#1e293b" }}>
+                    회원가입 및 중개업소 등록
+                  </span>
                 </div>
-                <div style={{ padding: "10px 4px 0 6px", fontSize: "12px", color: "#666", lineHeight: 1.55 }}>
-                  <p style={{ marginBottom: "6px" }}>원활한 상담을 위해 중개사무소 정보를 정확히 입력해 주세요.</p>
-                  <ul style={{ color: "#777", fontSize: "11.5px", display: "flex", flexDirection: "column", gap: "2px", paddingLeft: "2px" }}>
-                    <li>· 중개사무소명</li>
-                    <li>· 대표 공인 중개사 휴대폰 번호와 이메일</li>
-                    <li>· 주거래 매물 선택</li>
-                  </ul>
+                <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
+                  <p style={{ margin: "0 0 4px 0" }}>• 공실뉴스 포털에서 기본 <strong>부동산 회원가입</strong>을 진행합니다.</p>
+                  <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>• 대표 공인중개사 정보 및 소속 중개업소 기본 정보를 등록합니다.</p>
                 </div>
               </div>
 
               {/* 2단계 */}
-              <div style={{ marginBottom: "18px" }}>
-                <div style={{
-                  backgroundColor: "#f4f6f8",
-                  borderRadius: "8px",
-                  padding: "10px 14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px"
-                }}>
-                  <span style={{ fontSize: "14px" }}>👤</span>
-                  <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#fa8258" }}>2단계 가입신청 상담</span>
+              <div style={{
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "14px",
+                padding: "20px 22px"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                  <span style={{
+                    backgroundColor: "#fa8258",
+                    color: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: 800,
+                    padding: "3px 10px",
+                    borderRadius: "6px"
+                  }}>
+                    2단계
+                  </span>
+                  <span style={{ fontSize: "17.5px", fontWeight: 800, color: "#1e293b" }}>
+                    신청하기
+                  </span>
                 </div>
-                <div style={{ padding: "10px 4px 0 6px", fontSize: "12px", color: "#666", lineHeight: 1.55 }}>
-                  <p style={{ marginBottom: "4px" }}>담당 매니저가 가입 신청서를 확인하고 연락드려요.</p>
-                  <p style={{ color: "#777", fontSize: "11.5px" }}>· 최대 1~2 영업일 소요</p>
+                <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
+                  <p style={{ margin: "0 0 4px 0" }}>• <strong>로그인 상태</strong>에서 공실뉴스부동산 Pro 파트너 입점 신청서를 제출합니다.</p>
+                  <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>• 신청자 성함, 연락처, 사무소 명칭을 확인하고 약관 동의 후 원클릭 접수</p>
                 </div>
               </div>
 
               {/* 3단계 */}
-              <div style={{ marginBottom: "18px" }}>
-                <div style={{
-                  backgroundColor: "#f4f6f8",
-                  borderRadius: "8px",
-                  padding: "10px 14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px"
-                }}>
-                  <span style={{ fontSize: "14px" }}>📋</span>
-                  <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#fa8258" }}>3단계 승인 심사 및 완료</span>
+              <div style={{
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "14px",
+                padding: "20px 22px"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                  <span style={{
+                    backgroundColor: "#fa8258",
+                    color: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: 800,
+                    padding: "3px 10px",
+                    borderRadius: "6px"
+                  }}>
+                    3단계
+                  </span>
+                  <span style={{ fontSize: "17.5px", fontWeight: 800, color: "#1e293b" }}>
+                    승인심사 및 결과 안내
+                  </span>
                 </div>
-                <div style={{ padding: "10px 4px 0 6px", fontSize: "12px", color: "#666", lineHeight: 1.55 }}>
-                  <p>상담 후, 가입에 필요한 서류를 보내주시면 담당 매니저가 승인해드려요.</p>
-                  <p style={{ marginBottom: "8px" }}>결과는 카카오톡으로 보내드립니다.</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11.5px", color: "#444", fontWeight: 500 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span>📄</span>
-                      <span>사업자 등록증</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span>🏢</span>
-                      <span>중개사무소 등록증</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span>🖼️</span>
-                      <span>프로필 사진</span>
-                    </div>
-                  </div>
+                <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
+                  <p style={{ margin: "0 0 4px 0" }}>• 담당 매니저가 중개업소 정보 확인 후 <strong>신속히 승인 심사</strong>를 진행합니다.</p>
+                  <p style={{ margin: "0 0 4px 0", color: "#64748b", fontSize: "14px" }}>• 이미 부동산 회원으로 등록되어 있어 <strong>별도 복잡한 서류 제출 없이</strong> 빠르게 처리됩니다.</p>
+                  <p style={{ margin: 0, color: "#059669", fontSize: "14px", fontWeight: 700 }}>• 심사 결과는 카카오톡 알림톡 및 유선 전화로 정중히 안내드립니다.</p>
                 </div>
               </div>
+
+              {/* 4단계 */}
+              <div style={{
+                backgroundColor: "#fffbf7",
+                border: "1.5px solid #fed7aa",
+                borderRadius: "14px",
+                padding: "20px 22px"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                  <span style={{
+                    backgroundColor: "#ea580c",
+                    color: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: 800,
+                    padding: "3px 10px",
+                    borderRadius: "6px"
+                  }}>
+                    4단계
+                  </span>
+                  <span style={{ fontSize: "17.5px", fontWeight: 900, color: "#1e293b" }}>
+                    이용료 납부 (기간별 할인 혜택)
+                  </span>
+                </div>
+                <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
+                  <p style={{ margin: "0 0 10px 0" }}>• 승인 완료 후 원하시는 이용 기간을 선택하여 이용료를 납부합니다.</p>
+                  
+                  {/* 할인 칩 박스 */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginTop: "12px" }}>
+                    <div style={{
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "10px",
+                      padding: "14px 10px",
+                      textAlign: "center"
+                    }}>
+                      <div style={{ fontSize: "15px", fontWeight: 800, color: "#334155" }}>3개월</div>
+                      <div style={{ fontSize: "13px", color: "#64748b", marginTop: "3px" }}>월 30,000원</div>
+                      <div style={{ fontSize: "11.5px", color: "#94a3b8", marginTop: "3px" }}>기본 플랜</div>
+                    </div>
+                    <div style={{
+                      backgroundColor: "#ffffff",
+                      border: "1.5px solid #fdba74",
+                      borderRadius: "10px",
+                      padding: "14px 10px",
+                      textAlign: "center",
+                      boxShadow: "0 2px 8px rgba(251, 146, 60, 0.12)"
+                    }}>
+                      <div style={{ fontSize: "15px", fontWeight: 800, color: "#ea580c" }}>6개월</div>
+                      <div style={{ fontSize: "13px", color: "#ea580c", fontWeight: 700, marginTop: "3px" }}>5% 추가할인</div>
+                      <div style={{ fontSize: "11.5px", color: "#ea580c", marginTop: "3px" }}>인기 플랜 👍</div>
+                    </div>
+                    <div style={{
+                      backgroundColor: "#fff7ed",
+                      border: "2px solid #fa8258",
+                      borderRadius: "10px",
+                      padding: "14px 10px",
+                      textAlign: "center",
+                      boxShadow: "0 4px 12px rgba(250, 130, 88, 0.2)"
+                    }}>
+                      <div style={{ fontSize: "15px", fontWeight: 900, color: "#c2410c" }}>12개월</div>
+                      <div style={{ fontSize: "13px", color: "#c2410c", fontWeight: 800, marginTop: "3px" }}>15% 특별할인</div>
+                      <div style={{ fontSize: "11.5px", color: "#c2410c", fontWeight: 700, marginTop: "3px" }}>최대 혜택 🔥</div>
+                    </div>
+                  </div>
+
+                  <p style={{ margin: "12px 0 0 0", color: "#ea580c", fontSize: "13px", fontWeight: 700 }}>
+                    ※ 납부 완료 즉시 월 20건 공실 등록 및 월 4건 뉴스 포털 정식 송고 권한이 부여됩니다.
+                  </p>
+                </div>
+              </div>
+
             </div>
 
-            {/* 하단 우측 직방 스타일 주황색 확인 버튼 */}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+            {/* 하단 닫기/확인 버튼 */}
+            <div style={{ marginTop: "26px" }}>
               <button
                 type="button"
                 onClick={() => setShowGuideModal(false)}
                 style={{
-                  padding: "7px 18px",
+                  width: "100%",
+                  height: "52px",
                   backgroundColor: "#fa8258",
                   color: "#ffffff",
-                  fontSize: "12.5px",
-                  fontWeight: 700,
-                  borderRadius: "6px",
+                  fontSize: "16px",
+                  fontWeight: 800,
+                  borderRadius: "12px",
                   border: "none",
                   cursor: "pointer",
-                  boxShadow: "0 1px 3px rgba(250, 130, 88, 0.3)"
+                  boxShadow: "0 4px 14px rgba(250, 130, 88, 0.35)",
+                  transition: "all 0.15s ease"
                 }}
               >
-                확인
+                확인 및 닫기
               </button>
             </div>
           </div>
