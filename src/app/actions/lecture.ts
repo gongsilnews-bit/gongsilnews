@@ -75,14 +75,26 @@ export async function saveLecture(data: {
       const { error } = await supabase.from('lecture_lessons').select('description').limit(0);
       if (error) return { success: false, error: '강의 설명 저장 준비가 필요합니다: ' + error.message };
     }
-    const existingMaterialUrls = new Set((existingLecture?.materials || []).map((m: LectureMaterial) => openMaterialUrl(m.url)));
+    const existingMaterialUrls = new Set(
+      (existingLecture?.materials || [])
+        .map((m: LectureMaterial) => {
+          try {
+            return openMaterialUrl(m.url);
+          } catch {
+            return m.url;
+          }
+        })
+        .filter(Boolean)
+    );
     const storedMaterials = (data.materials || []).map(material => {
       if (!material.url.trim()) throw new Error('자료 주소 또는 파일을 입력해 주세요.');
       if (material.scope === 'chapter' || material.scope === 'lesson') {
         const chapter = data.chapters?.find(ch => ch.chapter_no === material.chapter_no);
         if (!chapter || (material.scope === 'lesson' && !chapter.lessons.some(ls => ls.lesson_no === material.lesson_no))) throw new Error('자료를 연결할 챕터 또는 강의를 확인해 주세요.');
       }
-      if (material.url.startsWith('sealed:')) throw new Error('자료를 다시 불러온 후 저장해 주세요.');
+      if (material.url.startsWith('sealed:')) {
+        return { ...material, is_preview: !!material.is_preview };
+      }
       if (material.url.startsWith('private:') && !material.url.startsWith(`private:${editor.id}/`) && !existingMaterialUrls.has(material.url)) throw new Error('사용할 수 없는 자료 파일입니다.');
       return { ...material, url: sealMaterialUrl(material.url.trim()), is_preview: !!material.is_preview };
     });
@@ -251,9 +263,17 @@ export async function getLectureDetail(lectureId: string) {
 
     // 챕터 조회
     const editor = await lectureEditor(lecture.author_id);
-    lecture.materials = (lecture.materials || []).map((material: LectureMaterial) => ({
-      ...material, url: editor ? openMaterialUrl(material.url || '') : '',
-    }));
+    lecture.materials = (lecture.materials || []).map((material: LectureMaterial) => {
+      let resolvedUrl = "";
+      if (editor) {
+        try {
+          resolvedUrl = openMaterialUrl(material.url || "");
+        } catch {
+          resolvedUrl = material.url || "";
+        }
+      }
+      return { ...material, url: resolvedUrl };
+    });
     const { data: chapters } = await supabase
       .from("lecture_chapters")
       .select("*")

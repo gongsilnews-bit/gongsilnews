@@ -180,6 +180,8 @@ export default function StudyWriteForm() {
               }))).map((ls: Lesson, i: number) => ({ ...ls, lesson_no: i + 1, sort_order: i }));
               setChapters([{ chapter_no: 1, title: "강의 목록", sort_order: 0, lessons }]);
             }
+          } else if (!res.success) {
+            alert("강의 정보를 불러오지 못했습니다: " + (res.error || ""));
           }
         });
       }
