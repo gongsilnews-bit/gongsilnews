@@ -210,10 +210,13 @@ export async function getVacancyTabCounts(options?: {
     }
 
     if (options?.excludeOnbid) {
-      queryAll = queryAll.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
-      queryActive = queryActive.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
-      queryStopped = queryStopped.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
-      queryDraft = queryDraft.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+      // is_onbid 는 metadata->>'source_type' = 'ONBID' 를 stored 로 물린 생성 컬럼이다.
+      // 이전의 .or("...is.null,...neq.ONBID") 는 JSONB 추출 + 부정 비교라 인덱스를 타지 못해
+      // 11,477행을 전수 스캔했다. 등치 조건으로 바꿔 idx_vacancies_admin_list 를 태운다.
+      queryAll = queryAll.eq('is_onbid', false);
+      queryActive = queryActive.eq('is_onbid', false);
+      queryStopped = queryStopped.eq('is_onbid', false);
+      queryDraft = queryDraft.eq('is_onbid', false);
     }
 
     const [resAll, resActive, resStopped, resDraft] = await Promise.all([
@@ -298,7 +301,9 @@ export async function getVacancies(options?: {
     const selectFields = 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, building_name, lat, lng, created_at, address_exposure, exposure_type, realtor_commission, room_count, bath_count, exclusive_m2, supply_m2, parking, total_floor, current_floor, direction, move_in_date, client_name, client_phone, themes, options, metadata, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
 
     // 관리자 공실목록 표가 실제로 읽는 컬럼만 담은 축소 select (VacancySection 기준)
-    const slimSelectFields = 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, sido, sigungu, dong, building_name, created_at, room_count, exclusive_m2, supply_m2, current_floor, client_name, client_phone, members!vacancies_owner_id_fkey(name, phone, role, agencies(name))';
+    // detail_addr / apt_dong / hosu 는 VacancySection 이 주소 칸에 그리는데 기존 selectFields 에
+    // 빠져 있어 상세주소·동·호수가 표시되지 않았다. 축소 select 에서는 포함시켜 정상 표시한다.
+    const slimSelectFields = 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, sido, sigungu, dong, detail_addr, building_name, apt_dong, hosu, created_at, room_count, exclusive_m2, supply_m2, current_floor, client_name, client_phone, members!vacancies_owner_id_fkey(name, phone, role, agencies(name))';
 
     // 만약 페이지네이션이 명시된 경우, 단일 쿼리로 최적화해서 수행
     if (options?.page && options?.limit) {
@@ -343,7 +348,7 @@ export async function getVacancies(options?: {
         pageQuery = pageQuery.or(`sido.ilike.${p},sigungu.ilike.${p},dong.ilike.${p},building_name.ilike.${p},client_name.ilike.${p},client_phone.ilike.${p}`);
       }
       if (options?.excludeOnbid) {
-        pageQuery = pageQuery.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+        pageQuery = pageQuery.eq('is_onbid', false);
       }
       if (options?.propertyType && options.propertyType !== "전체") {
         pageQuery = pageQuery.eq('property_type', options.propertyType);
@@ -424,7 +429,7 @@ export async function getVacancies(options?: {
       }
 
       if (options?.excludeOnbid) {
-        pageQuery = pageQuery.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+        pageQuery = pageQuery.eq('is_onbid', false);
       }
 
       promises.push(pageQuery);
