@@ -202,11 +202,15 @@ export default function NewsRealtyApplyPage() {
       <header style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #eaedf0", height: "60px", position: "sticky", top: 0, zIndex: 40 }}>
         <div style={{ maxWidth: "1060px", margin: "0 auto", height: "100%", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Link href="/" style={{ display: "flex", alignItems: "center", gap: "6px", textDecoration: "none" }}>
-              <span style={{ fontSize: "18px", fontWeight: 700, color: "#111" }}>공실뉴스</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <Link href="/" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }} title="공실뉴스 홈으로">
+                공실뉴스
+              </Link>
               <span style={{ fontSize: "16px", color: "#ccc", fontWeight: 300 }}>|</span>
-              <span style={{ fontSize: "18px", fontWeight: 700, color: "#111" }}>공실뉴스부동산</span>
-            </Link>
+              <Link href="/newsrealty" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }} title="공실뉴스부동산 소개로">
+                공실뉴스부동산
+              </Link>
+            </div>
           </div>
 
           <nav style={{ display: "flex", alignItems: "center", gap: "24px", fontSize: "13px", fontWeight: 500, color: "#444" }}>

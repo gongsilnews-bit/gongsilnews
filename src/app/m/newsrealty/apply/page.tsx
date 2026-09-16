@@ -191,7 +191,9 @@ export default function MobileNewsRealtyApplyPage() {
         <Link href="/m/newsrealty" className="text-[#444] text-sm font-semibold flex items-center gap-1">
           ‹ 뒤로
         </Link>
-        <span className="font-bold text-[16px] text-[#222] tracking-tight">공실뉴스 | 공실뉴스부동산</span>
+        <Link href="/m/newsrealty" className="font-bold text-[16px] text-[#222] tracking-tight no-underline">
+          공실뉴스 | 공실뉴스부동산
+        </Link>
         <div className="w-8" />
       </header>
 
