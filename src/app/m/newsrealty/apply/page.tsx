@@ -191,7 +191,7 @@ export default function MobileNewsRealtyApplyPage() {
         <Link href="/m/newsrealty" className="text-[#444] text-sm font-semibold flex items-center gap-1">
           ‹ 뒤로
         </Link>
-        <span className="font-bold text-[16px] text-[#222] tracking-tight">공실뉴스 | 부동산 CEO</span>
+        <span className="font-bold text-[16px] text-[#222] tracking-tight">공실뉴스 | 공실뉴스부동산</span>
         <div className="w-8" />
       </header>
 
@@ -199,8 +199,8 @@ export default function MobileNewsRealtyApplyPage() {
         {/* 헤드라인 */}
         <div className="mb-6">
           <h1 className="text-[26px] font-extrabold text-[#1f2328] leading-tight">
-            쉽고 빠른 회원가입을<br />
-            도와드려요
+            내 지역 공실을<br />
+            뉴스로 전달하세요!
           </h1>
         </div>
 
@@ -391,7 +391,7 @@ export default function MobileNewsRealtyApplyPage() {
               style={{ backgroundColor: "#fa8258" }}
               className="w-full h-[52px] rounded-lg text-white font-bold text-[15px] shadow-sm flex items-center justify-center disabled:opacity-50 tracking-tight cursor-pointer"
             >
-              {submitting ? "처리 중..." : "중개사무소 회원가입 신청하기"}
+              {submitting ? "처리 중..." : "공실뉴스부동산 신청하기"}
             </button>
           </div>
         </form>

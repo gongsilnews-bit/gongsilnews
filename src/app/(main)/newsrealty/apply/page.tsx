@@ -205,7 +205,7 @@ export default function NewsRealtyApplyPage() {
             <Link href="/" style={{ display: "flex", alignItems: "center", gap: "6px", textDecoration: "none" }}>
               <span style={{ fontSize: "18px", fontWeight: 700, color: "#111" }}>공실뉴스</span>
               <span style={{ fontSize: "16px", color: "#ccc", fontWeight: 300 }}>|</span>
-              <span style={{ fontSize: "18px", fontWeight: 700, color: "#111" }}>부동산 CEO</span>
+              <span style={{ fontSize: "18px", fontWeight: 700, color: "#111" }}>공실뉴스부동산</span>
             </Link>
           </div>
 
@@ -245,8 +245,8 @@ export default function NewsRealtyApplyPage() {
           {/* ━━━ 좌측 안내 영역 (Width: 380px) ━━━ */}
           <div style={{ width: "380px", flexShrink: 0 }}>
             <h1 style={{ fontSize: "32px", fontWeight: 700, color: "#1a1a1a", lineHeight: 1.32, letterSpacing: "-0.5px", marginBottom: "36px" }}>
-              쉽고 빠른 회원가입을<br />
-              도와드려요
+              내 지역 공실을<br />
+              뉴스로 전달하세요!
             </h1>
 
             {/* 직방 연회색 안내 카드 */}
@@ -561,7 +561,7 @@ export default function NewsRealtyApplyPage() {
                     transition: "background-color 0.15s, transform 0.1s"
                   }}
                 >
-                  {submitting ? "신청 처리 중..." : "중개사무소 회원가입 신청하기"}
+                  {submitting ? "신청 처리 중..." : "공실뉴스부동산 신청하기"}
                 </button>
               </div>
             </form>
@@ -572,7 +572,7 @@ export default function NewsRealtyApplyPage() {
 
       {/* ── 직방 CEO 스타일 푸터 ── */}
       <footer style={{ maxWidth: "1060px", margin: "0 auto", padding: "20px 24px 40px 24px", textAlign: "center", fontSize: "11.5px", color: "#888", lineHeight: 1.6 }}>
-        <p style={{ fontWeight: 600, color: "#666", marginBottom: "4px" }}>공실뉴스 | 부동산 CEO</p>
+        <p style={{ fontWeight: 600, color: "#666", marginBottom: "4px" }}>공실뉴스 | 공실뉴스부동산</p>
         <p>고객센터: 1555-5343 (평일 10:00 ~ 18:00) | 이메일: gongsilnews@naver.com</p>
         <p style={{ marginTop: "4px" }}>© GONGSILLNEWS Corp. All rights reserved.</p>
       </footer>
