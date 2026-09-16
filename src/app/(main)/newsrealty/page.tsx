@@ -9,7 +9,10 @@ const benefits: {
   num: string;
   tag: string;
   title: React.ReactNode;
+  modalTitle: string;
   desc: string;
+  videoUrl: string;
+  videoBullets: string[];
   badgeBg: string;
   badgeColor: string;
   numColor: string;
@@ -23,6 +26,13 @@ const benefits: {
         매월 언론 기사 4건 등록
       </>
     ),
+    modalTitle: "공실 20건 & 매월 언론 기사 4건 등록",
+    videoUrl: "https://www.youtube.com/embed/4a3_M6-Crew?autoplay=1&rel=0",
+    videoBullets: [
+      "전국 11만 공인중개사가 실시간 무료 열람하는 공실뉴스에 매월 20건 공실 매물 등록",
+      "네이버 등 주요 포털 검색 및 언론 매체에 정식 송출되는 공식 뉴스기사 매월 4건 발행 권한",
+      "단순 매물 광고를 넘어 언론 보도로 신뢰도와 전속 계약 확률을 대폭 극대화"
+    ],
     desc: "전국 11만 부동산이 무료 열람할 수 있는 공실뉴스에 공실 매물 20건과 매월 기사 4건을 등록·홍보할 수 있습니다.",
     badgeBg: "#fff2e8",
     badgeColor: "#ea580c",
@@ -37,6 +47,13 @@ const benefits: {
         블로그 포스팅까지 AI 원클릭 생성
       </>
     ),
+    modalTitle: "유튜브 대본부터 블로그 포스팅까지 AI 원클릭 생성",
+    videoUrl: "https://www.youtube.com/embed/4a3_M6-Crew?autoplay=1&rel=0",
+    videoBullets: [
+      "공실 매물 정보 입력 즉시 AI가 자동으로 정밀 분석 및 보도기사 초안 완성",
+      "네이버 블로그 검색 상위 노출에 최적화된 포스팅 글 원클릭 자동 생성",
+      "1분 쇼츠 및 릴스 제작용 유튜브 영상 대본까지 한 번에 자동 추출하여 제작 부담 0%"
+    ],
     desc: "등록한 공실 매물 데이터를 기반으로, AI가 뉴스 기사 초안부터 네이버 블로그 글, 유튜브 쇼츠 대본까지 단 한 번의 클릭으로 자동 완성합니다.",
     badgeBg: "#eff6ff",
     badgeColor: "#1d4ed8",
@@ -51,6 +68,13 @@ const benefits: {
         새로운 언론 광고수익 창출
       </>
     ),
+    modalTitle: "지역 독점 로컬기자로 새로운 언론 광고수익 창출",
+    videoUrl: "https://www.youtube.com/embed/4a3_M6-Crew?autoplay=1&rel=0",
+    videoBullets: [
+      "내 관할 지역의 공실뉴스 공식 '로컬기자부동산' 단독 취재 및 영업 권한 부여",
+      "지역 건물주, 상가 점주, 기업을 대상으로 배너 광고 및 기사형 홍보 영업 진행",
+      "단순 중개보수 수입에 그치지 않고, 매월 안정적인 언론 미디어 광고 수익을 추가 창출"
+    ],
     desc: "단순 중개보수에 머물지 않고, 지역 건물주 및 상가 사업자를 대상으로 배너 광고, 기사형 홍보 등 언론사 광고 영업을 통해 추가 수익을 만듭니다.",
     badgeBg: "#fef3c7",
     badgeColor: "#b45309",
@@ -77,6 +101,7 @@ export default function NewsRealtyPage() {
   const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [selectedVideoBenefit, setSelectedVideoBenefit] = useState<any>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -156,6 +181,24 @@ export default function NewsRealtyPage() {
           transform: translateY(-5px);
           border-color: #fdba74;
           box-shadow: 0 14px 30px rgba(250, 130, 88, 0.12);
+        }
+
+        .video-action-btn {
+          margin-top: 24px;
+          padding-top: 18px;
+          border-top: 1px solid #f1f5f9;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          color: #fa8258;
+          font-size: 14px;
+          font-weight: 800;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .video-action-btn:hover {
+          color: #ea580c;
+          transform: translateX(3px);
         }
       `}</style>
 
@@ -273,8 +316,14 @@ export default function NewsRealtyPage() {
                   </p>
                 </div>
 
-                <div style={{ marginTop: 26, paddingTop: 18, borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 6, color: "#fa8258", fontSize: "13px", fontWeight: 800 }}>
-                  <span>핵심 혜택 확인</span>
+                <div 
+                  onClick={() => setSelectedVideoBenefit(b)}
+                  className="video-action-btn"
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: "14px" }}>▶</span>
+                    <span>영상으로 상세보기</span>
+                  </span>
                   <span>➔</span>
                 </div>
               </div>
@@ -619,6 +668,170 @@ export default function NewsRealtyPage() {
 
         </div>
       </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          혜택 영상 팝업 모달
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {selectedVideoBenefit && (
+        <div 
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.72)",
+            backdropFilter: "blur(6px)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px"
+          }}
+          onClick={() => setSelectedVideoBenefit(null)}
+        >
+          <div 
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: 20,
+              maxWidth: 680,
+              width: "100%",
+              boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.45)",
+              overflow: "hidden",
+              position: "relative",
+              border: "1px solid rgba(250, 130, 88, 0.2)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 팝업 헤더 */}
+            <div style={{
+              padding: "20px 26px",
+              borderBottom: "1px solid #f1f5f9",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              backgroundColor: "#ffffff"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{
+                  padding: "4px 10px",
+                  borderRadius: 12,
+                  background: selectedVideoBenefit.badgeBg,
+                  color: selectedVideoBenefit.badgeColor,
+                  fontSize: "12.5px",
+                  fontWeight: 800
+                }}>
+                  {selectedVideoBenefit.num} {selectedVideoBenefit.tag}
+                </span>
+                <h3 style={{
+                  fontSize: "18px",
+                  fontWeight: 900,
+                  color: "#1e293b",
+                  margin: 0,
+                  letterSpacing: "-0.5px"
+                }}>
+                  {selectedVideoBenefit.modalTitle || selectedVideoBenefit.tag}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedVideoBenefit(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "22px",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                  lineHeight: 1,
+                  borderRadius: 6
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 영상 플레이어 (16:9 반응형 유튜브) */}
+            <div style={{
+              position: "relative",
+              paddingBottom: "56.25%",
+              height: 0,
+              backgroundColor: "#000000"
+            }}>
+              <iframe
+                src={selectedVideoBenefit.videoUrl}
+                title="공실뉴스부동산 영상 가이드"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  border: "none"
+                }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+
+            {/* 하단 상세 텍스트 영역 */}
+            <div style={{ padding: "24px 26px", backgroundColor: "#fffbf7", borderTop: "1px solid #fed7aa" }}>
+              <div style={{
+                fontSize: "15px",
+                fontWeight: 800,
+                color: "#ea580c",
+                marginBottom: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 6
+              }}>
+                <span>💡</span>
+                <span>상세 혜택 및 활용 안내</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {selectedVideoBenefit.videoBullets?.map((bullet: string, idx: number) => (
+                  <div key={idx} style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 8,
+                    fontSize: "14.5px",
+                    color: "#334155",
+                    lineHeight: 1.65,
+                    wordBreak: "keep-all"
+                  }}>
+                    <span style={{ color: "#fa8258", fontWeight: 900, marginTop: "1px" }}>✓</span>
+                    <span>{bullet}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 팝업 푸터 버튼 */}
+            <div style={{
+              padding: "16px 26px",
+              backgroundColor: "#ffffff",
+              borderTop: "1px solid #f1f5f9",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end"
+            }}>
+              <button
+                onClick={() => setSelectedVideoBenefit(null)}
+                style={{
+                  backgroundColor: "#fa8258",
+                  color: "#ffffff",
+                  fontSize: "15px",
+                  fontWeight: 800,
+                  padding: "10px 24px",
+                  borderRadius: 8,
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 14px rgba(250, 130, 88, 0.28)",
+                  transition: "background 0.2s"
+                }}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
