@@ -198,7 +198,71 @@ export default function NewsRealtyPage() {
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          2. 공실이 콘텐츠가 됩니다 (Story & Pipeline Section)
+          2. 무엇이 좋아질까요? (3 Core Benefits)
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section style={{ padding: "96px 24px", backgroundColor: "#ffffff" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+          
+          <div style={{ textAlign: "center", marginBottom: 54 }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: "#ea580c", letterSpacing: "1px", textTransform: "uppercase" }}>
+              ADVANTAGES
+            </span>
+            <h2 style={{ fontSize: "36px", fontWeight: 900, color: "#1c1917", margin: "10px 0 14px 0", letterSpacing: "-1px" }}>
+              무엇이 좋아질까요?
+            </h2>
+            <p style={{ fontSize: "16.5px", color: "#64748b", margin: 0 }}>
+              공실뉴스부동산으로 전환하는 순간, 3가지 핵심 성장 엔진이 작동합니다.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 26 }}>
+            {benefits.map((b) => (
+              <div key={b.num} className="clean-card">
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
+                    <span style={{
+                      fontSize: "36px",
+                      fontWeight: 900,
+                      color: b.numColor,
+                      letterSpacing: "-1px",
+                      lineHeight: 1
+                    }}>
+                      {b.num}
+                    </span>
+                    <span style={{
+                      padding: "5px 14px",
+                      borderRadius: 20,
+                      background: b.badgeBg,
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      color: b.badgeColor
+                    }}>
+                      {b.tag}
+                    </span>
+                  </div>
+
+                  <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#0f172a", lineHeight: 1.5, margin: "0 0 14px 0", wordBreak: "keep-all" }}>
+                    {b.title}
+                  </h3>
+
+                  <p style={{ fontSize: "15px", color: "#475569", lineHeight: 1.75, margin: 0, wordBreak: "keep-all" }}>
+                    {b.desc}
+                  </p>
+                </div>
+
+                <div style={{ marginTop: 26, paddingTop: 18, borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 6, color: "#fa8258", fontSize: "13px", fontWeight: 800 }}>
+                  <span>핵심 혜택 확인</span>
+                  <span>➔</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          3. 공실이 콘텐츠가 됩니다 (Story & Pipeline Section)
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{
         padding: "85px 24px 80px",
@@ -287,70 +351,6 @@ export default function NewsRealtyPage() {
               지역의 부동산 이야기를 꾸준히 전달하면서<br />
               유튜브와 블로그를 함께 키울 수 있습니다.
             </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          3. 무엇이 좋아질까요? (3 Core Benefits)
-      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ padding: "96px 24px", backgroundColor: "#ffffff" }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-          
-          <div style={{ textAlign: "center", marginBottom: 54 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: "#ea580c", letterSpacing: "1px", textTransform: "uppercase" }}>
-              ADVANTAGES
-            </span>
-            <h2 style={{ fontSize: "36px", fontWeight: 900, color: "#1c1917", margin: "10px 0 14px 0", letterSpacing: "-1px" }}>
-              무엇이 좋아질까요?
-            </h2>
-            <p style={{ fontSize: "16.5px", color: "#64748b", margin: 0 }}>
-              공실뉴스부동산으로 전환하는 순간, 3가지 핵심 성장 엔진이 작동합니다.
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 26 }}>
-            {benefits.map((b) => (
-              <div key={b.num} className="clean-card">
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
-                    <span style={{
-                      fontSize: "36px",
-                      fontWeight: 900,
-                      color: b.numColor,
-                      letterSpacing: "-1px",
-                      lineHeight: 1
-                    }}>
-                      {b.num}
-                    </span>
-                    <span style={{
-                      padding: "5px 14px",
-                      borderRadius: 20,
-                      background: b.badgeBg,
-                      fontSize: "13px",
-                      fontWeight: 800,
-                      color: b.badgeColor
-                    }}>
-                      {b.tag}
-                    </span>
-                  </div>
-
-                  <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#0f172a", lineHeight: 1.5, margin: "0 0 14px 0", wordBreak: "keep-all" }}>
-                    {b.title}
-                  </h3>
-
-                  <p style={{ fontSize: "15px", color: "#475569", lineHeight: 1.75, margin: 0, wordBreak: "keep-all" }}>
-                    {b.desc}
-                  </p>
-                </div>
-
-                <div style={{ marginTop: 26, paddingTop: 18, borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 6, color: "#fa8258", fontSize: "13px", fontWeight: 800 }}>
-                  <span>핵심 혜택 확인</span>
-                  <span>➔</span>
-                </div>
-              </div>
-            ))}
           </div>
 
         </div>

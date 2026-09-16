@@ -203,7 +203,60 @@ export default function MobileNewsRealtyPage() {
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          2. 공실이 콘텐츠가 됩니다 (모바일 파이프라인)
+          2. 무엇이 좋아질까요? (모바일 3 Core Benefits)
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section style={{ padding: "50px 20px", backgroundColor: "#ffffff" }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#ea580c", letterSpacing: "1px" }}>
+            ADVANTAGES
+          </span>
+          <h2 style={{ fontSize: 26, fontWeight: 900, color: "#1c1917", margin: "6px 0 8px 0", letterSpacing: "-0.5px" }}>
+            무엇이 좋아질까요?
+          </h2>
+          <p style={{ fontSize: 14, color: "#64748b", margin: 0, wordBreak: "keep-all" }}>
+            공실뉴스부동산이 되는 순간 3가지 강력한 무기를 얻게 됩니다.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {benefits.map((b) => (
+            <div key={b.num} style={{
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
+              borderRadius: 16,
+              padding: "22px 18px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.03)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 28, fontWeight: 900, color: b.numColor, lineHeight: 1 }}>
+                  {b.num}
+                </span>
+                <span style={{
+                  padding: "4px 10px",
+                  borderRadius: 16,
+                  background: b.badgeBg,
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: b.badgeColor
+                }}>
+                  {b.tag}
+                </span>
+              </div>
+
+              <h3 style={{ fontSize: 17, fontWeight: 800, color: "#0f172a", lineHeight: 1.45, margin: "0 0 8px 0", wordBreak: "keep-all" }}>
+                {b.title}
+              </h3>
+
+              <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65, margin: 0, wordBreak: "keep-all" }}>
+                {b.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          3. 공실이 콘텐츠가 됩니다 (모바일 파이프라인)
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{ padding: "48px 20px", backgroundColor: "#fffbf7", borderBottom: "1px solid #fed7aa" }}>
         <div style={{ textAlign: "center", marginBottom: 26 }}>
@@ -262,59 +315,6 @@ export default function MobileNewsRealtyPage() {
           <div style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65, wordBreak: "keep-all" }}>
             지역의 부동산 이야기를 꾸준히 전달하면서 유튜브와 블로그를 함께 키울 수 있습니다.
           </div>
-        </div>
-      </section>
-
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          3. 무엇이 좋아질까요? (모바일 3 Core Benefits)
-      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ padding: "50px 20px", backgroundColor: "#ffffff" }}>
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: "#ea580c", letterSpacing: "1px" }}>
-            ADVANTAGES
-          </span>
-          <h2 style={{ fontSize: 26, fontWeight: 900, color: "#1c1917", margin: "6px 0 8px 0", letterSpacing: "-0.5px" }}>
-            무엇이 좋아질까요?
-          </h2>
-          <p style={{ fontSize: 14, color: "#64748b", margin: 0, wordBreak: "keep-all" }}>
-            공실뉴스부동산이 되는 순간 3가지 강력한 무기를 얻게 됩니다.
-          </p>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {benefits.map((b) => (
-            <div key={b.num} style={{
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              borderRadius: 16,
-              padding: "22px 18px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.03)"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <span style={{ fontSize: 28, fontWeight: 900, color: b.numColor, lineHeight: 1 }}>
-                  {b.num}
-                </span>
-                <span style={{
-                  padding: "4px 10px",
-                  borderRadius: 16,
-                  background: b.badgeBg,
-                  fontSize: 12,
-                  fontWeight: 800,
-                  color: b.badgeColor
-                }}>
-                  {b.tag}
-                </span>
-              </div>
-
-              <h3 style={{ fontSize: 17, fontWeight: 800, color: "#0f172a", lineHeight: 1.45, margin: "0 0 8px 0", wordBreak: "keep-all" }}>
-                {b.title}
-              </h3>
-
-              <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65, margin: 0, wordBreak: "keep-all" }}>
-                {b.desc}
-              </p>
-            </div>
-          ))}
         </div>
       </section>
 
