@@ -201,8 +201,8 @@ export default function MobileNewsRealtyApplyPage() {
         {/* 헤드라인 */}
         <div className="mb-6">
           <h1 className="text-[26px] font-extrabold text-[#1f2328] leading-tight">
-            내 지역 공실을<br />
-            뉴스로 전달하세요!
+            지역/단지 대표부동산을<br />
+            모십니다.
           </h1>
         </div>
 
