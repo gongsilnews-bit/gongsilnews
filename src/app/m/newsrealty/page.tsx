@@ -11,9 +11,9 @@ const benefits = [
     tag: "콘텐츠",
     title: "유튜브·블로그를 꾸준히 운영할 수 있습니다.",
     desc: "내 지역의 공실과 부동산 소식이 계속해서 새로운 콘텐츠가 됩니다. 무엇을 올릴지 더 이상 고민하지 마세요.",
-    badgeBg: "#ecfdf5",
-    badgeColor: "#047857",
-    numColor: "#10b981",
+    badgeBg: "#fff2e8",
+    badgeColor: "#ea580c",
+    numColor: "#fa8258",
   },
   {
     num: "02",
@@ -81,7 +81,7 @@ export default function MobileNewsRealtyPage() {
         left: 0,
         width: "100%",
         height: 50,
-        background: "#062326",
+        background: "#181411",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -90,13 +90,13 @@ export default function MobileNewsRealtyPage() {
         borderBottom: "1px solid rgba(255,255,255,0.1)",
         boxSizing: "border-box"
       }}>
-        <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "#6ee7b7", padding: "4px", cursor: "pointer", display: "flex", alignItems: "center" }}>
+        <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "#ffaa88", padding: "4px", cursor: "pointer", display: "flex", alignItems: "center" }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
         </button>
         <div style={{ fontSize: 16, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.5px" }}>
           공실뉴스부동산
         </div>
-        <Link href="/" style={{ color: "#a7f3d0", fontSize: 13, textDecoration: "none", fontWeight: 700 }}>
+        <Link href="/" style={{ color: "#ffaa88", fontSize: 13, textDecoration: "none", fontWeight: 700 }}>
           홈으로
         </Link>
       </div>
@@ -110,7 +110,7 @@ export default function MobileNewsRealtyPage() {
           gap: 8px;
           width: 100%;
           padding: 16px 20px;
-          background: #059669;
+          background: #fa8258;
           color: #ffffff;
           font-size: 17px;
           font-weight: 900;
@@ -118,12 +118,12 @@ export default function MobileNewsRealtyPage() {
           border: none;
           border-radius: 12px;
           cursor: pointer;
-          box-shadow: 0 6px 20px rgba(5, 150, 105, 0.35);
+          box-shadow: 0 6px 20px rgba(250, 130, 88, 0.35);
           box-sizing: border-box;
           transition: all 0.2s ease;
         }
         .m-cta-btn:active {
-          background: #047857;
+          background: #f37243;
           transform: scale(0.98);
         }
 
@@ -132,18 +132,18 @@ export default function MobileNewsRealtyPage() {
           align-items: center;
           gap: 14px;
           background: #ffffff;
-          border: 1px solid #d1fae5;
+          border: 1px solid #fed7aa;
           border-radius: 14px;
           padding: 14px 18px;
-          box-shadow: 0 2px 8px rgba(5, 150, 105, 0.04);
+          box-shadow: 0 2px 8px rgba(250, 130, 88, 0.04);
         }
       `}</style>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          1. HERO SECTION (모바일: 유튜브 제외, 깔끔한 텍스트 중심)
+          1. HERO SECTION (모바일: 웜 다크 & 코랄 오렌지)
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{
-        backgroundColor: "#062326",
+        backgroundColor: "#181411",
         color: "#ffffff",
         padding: "50px 20px 54px",
         textAlign: "center"
@@ -152,13 +152,13 @@ export default function MobileNewsRealtyPage() {
           display: "inline-flex",
           alignItems: "center",
           gap: 6,
-          background: "rgba(16, 185, 129, 0.14)",
-          border: "1px solid rgba(16, 185, 129, 0.35)",
+          background: "rgba(250, 130, 88, 0.14)",
+          border: "1px solid rgba(250, 130, 88, 0.38)",
           padding: "6px 16px",
           borderRadius: 24,
           fontSize: 12.5,
           fontWeight: 800,
-          color: "#6ee7b7",
+          color: "#ffaa88",
           marginBottom: 20
         }}>
           <span>공실뉴스부동산</span>
@@ -174,7 +174,7 @@ export default function MobileNewsRealtyPage() {
           wordBreak: "keep-all"
         }}>
           내 지역의 공실을<br />
-          <span style={{ color: "#34d399" }}>뉴스로 전달하다</span>
+          <span style={{ color: "#fa8258" }}>뉴스로 전달하다</span>
         </h1>
 
         <div style={{
@@ -186,7 +186,7 @@ export default function MobileNewsRealtyPage() {
           fontWeight: 500
         }}>
           매물만 광고하는 부동산에서<br />
-          <strong style={{ color: "#ffffff", fontSize: 17.5, fontWeight: 900, borderBottom: "2px solid #34d399", paddingBottom: "1px" }}>
+          <strong style={{ color: "#ffffff", fontSize: 17.5, fontWeight: 900, borderBottom: "2px solid #fa8258", paddingBottom: "1px" }}>
             지역의 부동산 정보를 전달하는 부동산으로.
           </strong>
         </div>
@@ -205,15 +205,15 @@ export default function MobileNewsRealtyPage() {
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           2. 공실이 콘텐츠가 됩니다 (모바일 파이프라인)
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ padding: "48px 20px", backgroundColor: "#f2f9f6", borderBottom: "1px solid #d1fae5" }}>
+      <section style={{ padding: "48px 20px", backgroundColor: "#fffbf7", borderBottom: "1px solid #fed7aa" }}>
         <div style={{ textAlign: "center", marginBottom: 26 }}>
-          <div style={{ display: "inline-block", padding: "5px 14px", borderRadius: 16, background: "#ecfdf5", color: "#047857", fontWeight: 800, fontSize: 12, marginBottom: 10 }}>
+          <div style={{ display: "inline-block", padding: "5px 14px", borderRadius: 16, background: "#fff2e8", color: "#ea580c", fontWeight: 800, fontSize: 12, marginBottom: 10 }}>
             CONTENT PIPELINE
           </div>
-          <h2 style={{ fontSize: 25, fontWeight: 900, color: "#062828", margin: "0 0 10px 0", letterSpacing: "-0.5px" }}>
+          <h2 style={{ fontSize: 25, fontWeight: 900, color: "#1c1917", margin: "0 0 10px 0", letterSpacing: "-0.5px" }}>
             공실이 콘텐츠가 됩니다
           </h2>
-          <p style={{ fontSize: 14, color: "#334155", lineHeight: 1.6, margin: 0, wordBreak: "keep-all" }}>
+          <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0, wordBreak: "keep-all" }}>
             지역의 새로운 공실과 매물은 그 자체로 좋은 부동산 콘텐츠입니다.
           </p>
         </div>
@@ -233,14 +233,14 @@ export default function MobileNewsRealtyPage() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#047857", background: "#ecfdf5", padding: "2px 6px", borderRadius: 4 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#ea580c", background: "#fff2e8", padding: "2px 6px", borderRadius: 4 }}>
                     STEP {item.step}
                   </span>
-                  <span style={{ fontSize: 15.5, fontWeight: 900, color: "#062828" }}>
+                  <span style={{ fontSize: 15.5, fontWeight: 900, color: "#1c1917" }}>
                     {item.title}
                   </span>
                 </div>
-                <div style={{ fontSize: 13, color: "#059669", fontWeight: 600 }}>
+                <div style={{ fontSize: 13, color: "#ea580c", fontWeight: 600 }}>
                   {item.sub}
                 </div>
               </div>
@@ -250,13 +250,13 @@ export default function MobileNewsRealtyPage() {
 
         <div style={{
           background: "#ffffff",
-          border: "1px solid #d1fae5",
+          border: "1px solid #fed7aa",
           borderRadius: 14,
           padding: "20px 18px",
           textAlign: "center",
-          boxShadow: "0 4px 12px rgba(5, 150, 105, 0.05)"
+          boxShadow: "0 4px 12px rgba(250, 130, 88, 0.06)"
         }}>
-          <div style={{ fontSize: 16.5, fontWeight: 900, color: "#062828", marginBottom: 6 }}>
+          <div style={{ fontSize: 16.5, fontWeight: 900, color: "#1c1917", marginBottom: 6 }}>
             "오늘 무엇을 올릴지 고민하지 않아도 됩니다."
           </div>
           <div style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65, wordBreak: "keep-all" }}>
@@ -270,10 +270,10 @@ export default function MobileNewsRealtyPage() {
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{ padding: "50px 20px", backgroundColor: "#ffffff" }}>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: "#059669", letterSpacing: "1px" }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#ea580c", letterSpacing: "1px" }}>
             ADVANTAGES
           </span>
-          <h2 style={{ fontSize: 26, fontWeight: 900, color: "#062828", margin: "6px 0 8px 0", letterSpacing: "-0.5px" }}>
+          <h2 style={{ fontSize: 26, fontWeight: 900, color: "#1c1917", margin: "6px 0 8px 0", letterSpacing: "-0.5px" }}>
             무엇이 좋아질까요?
           </h2>
           <p style={{ fontSize: 14, color: "#64748b", margin: 0, wordBreak: "keep-all" }}>
@@ -322,16 +322,16 @@ export default function MobileNewsRealtyPage() {
           4. 매물을 받으러 가지 말고 뉴스를 취재하러 가세요 (모바일)
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{
-        backgroundColor: "#062326",
+        backgroundColor: "#181411",
         color: "#ffffff",
         padding: "54px 20px",
         textAlign: "center"
       }}>
         <div style={{
           display: "inline-block",
-          background: "rgba(16, 185, 129, 0.14)",
-          border: "1px solid rgba(16, 185, 129, 0.35)",
-          color: "#6ee7b7",
+          background: "rgba(250, 130, 88, 0.14)",
+          border: "1px solid rgba(250, 130, 88, 0.38)",
+          color: "#ffaa88",
           padding: "5px 14px",
           borderRadius: 20,
           fontSize: 12,
@@ -350,7 +350,7 @@ export default function MobileNewsRealtyPage() {
           wordBreak: "keep-all"
         }}>
           매물을 받으러 가지 말고,<br />
-          <span style={{ color: "#34d399" }}>뉴스를 취재하러 가세요.</span>
+          <span style={{ color: "#fa8258" }}>뉴스를 취재하러 가세요.</span>
         </h2>
 
         {/* 2단 비교 */}
@@ -375,18 +375,18 @@ export default function MobileNewsRealtyPage() {
 
           <div style={{
             background: "#ffffff",
-            border: "2px solid #059669",
+            border: "2px solid #fa8258",
             borderRadius: 14,
             padding: "20px 18px",
-            boxShadow: "0 6px 18px rgba(5, 150, 105, 0.15)"
+            boxShadow: "0 6px 18px rgba(250, 130, 88, 0.15)"
           }}>
-            <div style={{ display: "inline-block", background: "#ecfdf5", color: "#047857", padding: "3px 8px", borderRadius: 4, fontSize: 11.5, fontWeight: 800, marginBottom: 8 }}>
+            <div style={{ display: "inline-block", background: "#fff2e8", color: "#ea580c", padding: "3px 8px", borderRadius: 4, fontSize: 11.5, fontWeight: 800, marginBottom: 8 }}>
               ✅ 공실뉴스부동산
             </div>
-            <div style={{ fontSize: 17, color: "#062828", fontWeight: 900, lineHeight: 1.45, marginBottom: 6 }}>
+            <div style={{ fontSize: 17, color: "#1c1917", fontWeight: 900, lineHeight: 1.45, marginBottom: 6 }}>
               “대표님 건물의 공실을<br />공실뉴스에서 소개해드리겠습니다.”
             </div>
-            <div style={{ fontSize: 13, color: "#064e3b", lineHeight: 1.5, fontWeight: 600 }}>
+            <div style={{ fontSize: 13, color: "#9a3412", lineHeight: 1.5, fontWeight: 600 }}>
               건물주의 자존감을 높이고 언론 홍보 기회를 제공하는 당당한 '취재형' 영업
             </div>
           </div>
@@ -405,7 +405,7 @@ export default function MobileNewsRealtyPage() {
         <h2 style={{
           fontSize: 26,
           fontWeight: 900,
-          color: "#062828",
+          color: "#1c1917",
           letterSpacing: "-1px",
           margin: "0 0 16px 0",
           wordBreak: "keep-all"
@@ -417,28 +417,28 @@ export default function MobileNewsRealtyPage() {
           display: "inline-flex",
           alignItems: "center",
           gap: 6,
-          background: "#f2f9f6",
-          border: "1px solid #d1fae5",
+          background: "#fffbf7",
+          border: "1px solid #fed7aa",
           padding: "8px 16px",
           borderRadius: 20,
           fontSize: 13,
           fontWeight: 800,
-          color: "#062828",
+          color: "#1c1917",
           marginBottom: 22
         }}>
           <span>부동산</span>
-          <span style={{ color: "#059669" }}>×</span>
+          <span style={{ color: "#fa8258" }}>×</span>
           <span>뉴스</span>
-          <span style={{ color: "#059669" }}>×</span>
+          <span style={{ color: "#fa8258" }}>×</span>
           <span>유튜브</span>
-          <span style={{ color: "#059669" }}>×</span>
+          <span style={{ color: "#fa8258" }}>×</span>
           <span>블로그</span>
         </div>
 
         <div style={{ fontSize: 15, color: "#334155", lineHeight: 1.7, marginBottom: 28, wordBreak: "keep-all" }}>
           내 지역의 공실을 가장 잘 아는 사람.<br />
           내 지역의 부동산 소식을 가장 먼저 전달하는 사람.
-          <div style={{ fontSize: 24, fontWeight: 900, color: "#062828", marginTop: 10 }}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: "#1c1917", marginTop: 10 }}>
             공실뉴스부동산
           </div>
         </div>
