@@ -161,7 +161,7 @@ export default function MobileNewsRealtyPage() {
           color: "#ffaa88",
           marginBottom: 20
         }}>
-          <span>공실뉴스부동산</span>
+          <span>공실뉴스부동산이란?</span>
         </div>
 
         <h1 style={{
@@ -187,7 +187,7 @@ export default function MobileNewsRealtyPage() {
         }}>
           매물만 광고하는 부동산에서<br />
           <strong style={{ color: "#ffffff", fontSize: 17.5, fontWeight: 900, borderBottom: "2px solid #fa8258", paddingBottom: "1px" }}>
-            지역의 부동산 정보를 전달하는 부동산으로.
+            지역 부동산 정보를 전달하는 "로컬기자부동산"으로
           </strong>
         </div>
 

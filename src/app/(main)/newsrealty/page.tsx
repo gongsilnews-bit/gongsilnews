@@ -151,7 +151,7 @@ export default function NewsRealtyPage() {
           
           {/* 상단 태그 */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(250, 130, 88, 0.14)", border: "1px solid rgba(250, 130, 88, 0.38)", padding: "8px 20px", borderRadius: 30, fontSize: 14, fontWeight: 700, color: "#ffaa88", marginBottom: 28 }}>
-            <span>공실뉴스부동산</span>
+            <span>공실뉴스부동산이란?</span>
           </div>
 
           {/* 메인 타이틀 */}
@@ -179,7 +179,7 @@ export default function NewsRealtyPage() {
           }}>
             매물만 광고하는 부동산에서<br />
             <strong style={{ color: "#ffffff", fontSize: "24px", fontWeight: 900, borderBottom: "3px solid #fa8258", paddingBottom: "2px" }}>
-              지역의 부동산 정보를 전달하는 부동산으로.
+              지역 부동산 정보를 전달하는 "로컬기자부동산"으로
             </strong>
           </div>
 
