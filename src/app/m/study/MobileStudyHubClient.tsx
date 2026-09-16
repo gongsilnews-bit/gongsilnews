@@ -51,15 +51,34 @@ const FAQS = [
   },
 ];
 
-export default function MobileStudyHubClient({ lectures }: any) {
+const CATEGORIES = [
+  "전체",
+  "중개실무",
+  "법률",
+  "세무",
+  "분양",
+  "마케팅",
+  "기타",
+];
+
+export default function MobileStudyHubClient({
+  lectures,
+  categories = CATEGORIES,
+}: any) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : tabParam === "community" ? "community" : "lecture";
   const [activeTab, setActiveTab] = useState<StudyTab>(initialTab);
+  const [activeCategory, setActiveCategory] = useState<string>("전체");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const router = useRouter();
+
+  const filteredLectures = (lectures || []).filter((lecture: any) => {
+    if (activeCategory === "전체") return true;
+    return lecture.category === activeCategory || lecture.category?.includes(activeCategory);
+  });
 
   React.useEffect(() => {
     const currentTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : tabParam === "community" ? "community" : "lecture";
@@ -186,19 +205,46 @@ export default function MobileStudyHubClient({ lectures }: any) {
 
           {/* 2. 특강 목록 */}
           <div style={{ padding: "0 16px 24px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <span style={{ fontSize: 16, fontWeight: 800, color: "#062828" }}>전체 스터디 특강</span>
-              <span style={{ fontSize: 12.5, color: "#64748b", fontWeight: 600 }}>총 {lectures.length}개</span>
+              <span style={{ fontSize: 12.5, color: "#64748b", fontWeight: 600 }}>총 {filteredLectures.length}개</span>
+            </div>
+
+            {/* 카테고리 필터 버튼 바 */}
+            <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "10px", marginBottom: "14px", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
+              {categories.map((cat: string) => {
+                const isSel = activeCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "20px",
+                      fontSize: "13px",
+                      fontWeight: isSel ? 700 : 500,
+                      whiteSpace: "nowrap",
+                      color: isSel ? "#ffffff" : "#065f46",
+                      backgroundColor: isSel ? "#062f32" : "#ffffff",
+                      border: isSel ? "1px solid #062f32" : "1px solid #d1fae5",
+                      cursor: "pointer",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {lectures.length === 0 && (
+              {filteredLectures.length === 0 && (
                 <div style={{ padding: "50px 20px", textAlign: "center", color: "#9ca3af", backgroundColor: "#fff", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-                  등록된 특강이 없습니다.
+                  해당 카테고리의 특강이 없습니다.
                 </div>
               )}
 
-              {lectures.map((lecture: any) => (
+              {filteredLectures.map((lecture: any) => (
                 <Link key={lecture.id} href={`/m/study_read?id=${lecture.id}`} style={{ textDecoration: "none" }}>
                   <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", overflow: "hidden", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
                     <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", backgroundColor: "#062326" }}>

@@ -17,9 +17,9 @@ export default function SpecialLectureBanner({ initialLectures }: { initialLectu
       } else {
         // DB에 데이터 없으면 기본 하드코딩 데이터 사용
         setLectures([
-          { id: null, category: "실무/마케팅", title: "[2026] 부동산이 쉽게 활용하는 유튜브 쇼츠 운영법", instructor_name: "공실마스터 특강", rating: 4.9, review_count: 137, price: 2000, thumbnail_url: null, _isNew: true },
-          { id: null, category: "경매/특수물건", title: "[2026] 부동산이 알아야 하는 민법 활용법", instructor_name: "공실마스터 특강", rating: 4.8, review_count: 198, price: 3000, thumbnail_url: null, _isNew: true },
-          { id: null, category: "재개발/투자", title: "[2026] 부동산 중개에 필요한 재개발 활용법", instructor_name: "공실마스터 특강", rating: 4.9, review_count: 154, price: 5000, thumbnail_url: null, _isNew: false },
+          { id: null, category: "마케팅", title: "[2026] 부동산이 쉽게 활용하는 유튜브 쇼츠 운영법", instructor_name: "공실마스터 특강", rating: 4.9, review_count: 137, price: 2000, thumbnail_url: null, _isNew: true },
+          { id: null, category: "법률", title: "[2026] 부동산이 알아야 하는 민법 활용법", instructor_name: "공실마스터 특강", rating: 4.8, review_count: 198, price: 3000, thumbnail_url: null, _isNew: true },
+          { id: null, category: "중개실무", title: "[2026] 부동산 중개에 필요한 재개발 활용법", instructor_name: "공실마스터 특강", rating: 4.9, review_count: 154, price: 5000, thumbnail_url: null, _isNew: false },
         ]);
       }
       setLoading(false);

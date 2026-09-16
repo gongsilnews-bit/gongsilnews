@@ -11,15 +11,17 @@ interface Props {
   initialLectures: any[];
   initialTab?: string;
   initialCategory?: string;
+  initialCategories?: string[];
 }
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   "전체",
-  "실무/마케팅",
-  "경매/특수물건",
-  "재개발/투자",
-  "세무/법률",
-  "AI마케팅/쇼츠",
+  "중개실무",
+  "법률",
+  "세무",
+  "분양",
+  "마케팅",
+  "기타",
 ];
 
 const FAQS = [
@@ -49,8 +51,10 @@ export default function StudyHubClient({
   initialLectures,
   initialTab = "lecture",
   initialCategory = "전체",
+  initialCategories = DEFAULT_CATEGORIES,
 }: Props) {
   const router = useRouter();
+  const [categories] = useState<string[]>(initialCategories);
   const [activeTab, setActiveTab] = useState<"lecture" | "applications" | "classroom">(
     (initialTab as any) || "lecture"
   );
@@ -104,11 +108,8 @@ export default function StudyHubClient({
   const filteredLectures = lectures.filter((item) => {
     const matchCategory =
       activeCategory === "전체" ||
-      item.category?.includes(activeCategory) ||
-      (activeCategory === "AI마케팅/쇼츠" &&
-        (item.category?.includes("마케팅") ||
-          item.title?.includes("쇼츠") ||
-          item.title?.includes("AI")));
+      item.category === activeCategory ||
+      item.category?.includes(activeCategory);
     const matchSearch =
       !searchQuery.trim() ||
       item.title?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
@@ -331,7 +332,7 @@ export default function StudyHubClient({
 
               {/* 카테고리 필터 버튼 바 */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 32 }}>
-                {CATEGORIES.map((cat) => {
+                {categories.map((cat) => {
                   const isSel = activeCategory === cat;
                   return (
                     <button

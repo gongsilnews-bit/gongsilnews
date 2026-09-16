@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { saveLecture, getLectureDetail, uploadLectureImage } from "@/app/actions/lecture";
+import { getStudySettings } from "@/app/actions/studySettings";
 import { createClient } from "@/utils/supabase/client";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
@@ -64,6 +65,7 @@ export default function StudyWriteForm() {
   const [loadId, setLoadId] = useState<string | null>(null);
 
   /* ── 기본 정보 ── */
+  const [categoryList, setCategoryList] = useState<string[]>(CATEGORIES);
   const [category, setCategory] = useState("중개실무");
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
@@ -113,6 +115,12 @@ export default function StudyWriteForm() {
       if (user) setCurrentUserId(user.id);
     };
     fetchUser();
+
+    getStudySettings().then((res) => {
+      if (res.success && res.categories && res.categories.length > 0) {
+        setCategoryList(res.categories);
+      }
+    });
 
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -603,7 +611,10 @@ export default function StudyWriteForm() {
                 <div>
                   <label style={labelStyle}>카테고리 *</label>
                   <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    {category && !categoryList.includes(category) && (
+                      <option value={category}>{category}</option>
+                    )}
+                    {categoryList.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>

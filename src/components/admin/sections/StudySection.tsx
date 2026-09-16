@@ -2,9 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { AdminSectionProps } from "./types";
 import { getLectures, deleteLecture, updateLectureStatus } from "@/app/actions/lecture";
 import StudyWriteForm from "@/components/admin/StudyWriteForm";
+
+const StudySettingsModal = dynamic(() => import("@/components/admin/study/StudySettingsModal"), {
+  ssr: false,
+});
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
   DRAFT: { label: "임시저장", color: "#6b7280", bg: "#f3f4f6", border: "#d1d5db" },
@@ -22,6 +27,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
   const [filterStatus, setFilterStatus] = useState("전체");
   const [searchKw, setSearchKw] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   
   const searchParams = useSearchParams();
   const action = searchParams.get("action");
@@ -150,6 +156,28 @@ export default function StudySection({ theme }: AdminSectionProps) {
             + 새 강의 등록
           </button>
           <button
+            type="button"
+            onClick={() => setShowSettingsModal(true)}
+            style={{
+              height: 36,
+              padding: "0 16px",
+              background: darkMode ? "#374151" : "#4b5563",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "background 0.15s",
+            }}
+          >
+            <span>⚙️</span>
+            <span>강의 설정</span>
+          </button>
+          <button
             onClick={handleBulkDelete}
             disabled={selectedIds.size === 0}
             style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: selectedIds.size > 0 ? "#ef4444" : textSecondary, border: `1px solid ${selectedIds.size > 0 ? "#fca5a5" : border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: selectedIds.size > 0 ? "pointer" : "not-allowed", opacity: selectedIds.size === 0 ? 0.5 : 1 }}
@@ -237,6 +265,14 @@ export default function StudySection({ theme }: AdminSectionProps) {
           </div>
         )}
       </div>
+
+      {showSettingsModal && (
+        <StudySettingsModal
+          darkMode={darkMode}
+          onClose={() => setShowSettingsModal(false)}
+          onCategoriesUpdated={() => fetchData()}
+        />
+      )}
     </div>
   );
 }

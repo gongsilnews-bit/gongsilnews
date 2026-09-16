@@ -5,70 +5,54 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
-const brokerStats = [
-  { label: "전국 가입 부동산", value: "11만+", sub: "대규모 네트워크 인프라" },
-  { label: "공동중개 실매물 열람", value: "100% 무료", sub: "빠른 계약을 위한 무료 개방" },
-  { label: "가입비 · 월이용료", value: "평생 0원", sub: "부동산 누구나 무료 열람" },
-];
-
-const RECOMMENDED_TARGETS = [
+const benefits = [
   {
-    role: "개업공인중개사 대표님",
-    title: "빠른 전월세·매매 공동중개 매칭이 필요하신 대표님",
-    desc: "전국 11만 부동산 실매물망을 100% 무료로 열람하여 내 고객에게 딱 맞는 물건을 빠르게 찾아 공동중개를 성사시킬 수 있습니다.",
-    tag: "추천 대상: 매물망을 넓히고 빠른 계약 성사를 원하는 개업공인중개사",
-    image: "/images/realty/avatar_broker_success.jpg",
+    num: "01",
+    tag: "콘텐츠",
+    title: "유튜브·블로그를 꾸준히 운영할 수 있습니다.",
+    desc: "내 지역의 공실과 부동산 소식이 계속해서 새로운 콘텐츠가 됩니다. 무엇을 올릴지 더 이상 고민하지 마세요.",
+    badgeBg: "#ecfdf5",
+    badgeColor: "#047857",
+    numColor: "#10b981",
   },
   {
-    role: "현장 실무 & 임장 중개사",
-    title: "현장에서 즉시 브리핑 제안서와 주변 공실을 확인하고 싶을 때",
-    desc: "야외에서도 스마트폰 지도로 주변 공실을 실시간 확인하고, 지번만 넣으면 1초 만에 깔끔한 고객 브리핑용 AI 제안서를 바로 출력할 수 있습니다.",
-    tag: "추천 대상: 고객 브리핑 퀄리티를 높이고 현장 미팅이 잦은 소속·개업 중개사",
-    image: "/images/realty/avatar_realtor_mobile.jpg",
+    num: "02",
+    tag: "수익",
+    title: "새로운 광고수익을 만들 수 있습니다.",
+    desc: "건물주와 임대인의 공실·매물 홍보를 통해 지역 광고와 중개의 새로운 기회를 만들 수 있습니다.",
+    badgeBg: "#eff6ff",
+    badgeColor: "#1d4ed8",
+    numColor: "#3b82f6",
   },
   {
-    role: "신규 개업 공인중개사",
-    title: "초기 고정비 부담 없이 전국 매물 네트워크가 필요한 신규 대표님",
-    desc: "가입비나 월정액 비용 없이 전국 11만 부동산 매물망을 즉시 확보하여 개업 초기부터 경쟁력 있는 공동중개를 시작할 수 있습니다.",
-    tag: "추천 대상: 텃세 없는 오픈 네트워크에서 빠르게 자리를 잡고 싶은 신규 개업 중개사",
-    image: "/images/realty/avatar_young_broker.jpg",
-  },
-  {
-    role: "상가·오피스·토지 전문 중개법인",
-    title: "법원 경·공매 및 권리분석 데이터까지 원스톱으로 필요한 전문가",
-    desc: "실시간 법원 경매·공매 물건 정보와 기본 권리분석 데이터까지 무료로 열람하여 고난도 특수물건 중개와 고객 컨설팅에 즉시 활용할 수 있습니다.",
-    tag: "추천 대상: 경공매 및 수익형 부동산 전문 컨설팅 역량을 강화하려는 중개법인",
-    image: "/images/realty/avatar_corporate_broker.jpg",
+    num: "03",
+    tag: "네트워크",
+    title: "강력한 지역 네트워크를 만들 수 있습니다.",
+    desc: "취재와 콘텐츠를 통해 건물주·임대인·사업자·투자자와 자연스럽게 연결됩니다.",
+    badgeBg: "#fef3c7",
+    badgeColor: "#b45309",
+    numColor: "#f59e0b",
   },
 ];
 
-const brokerFaqs = [
+const faqs = [
   {
-    q: "공동중개 열람과 물건 등록은 어떻게 무료인가요?",
-    a: "대한민국 부동산 대표님이라면 전국 11만 공동중개 실매물 열람은 100% 평생 무료(무제한)이며, 내 매물을 올려 다른 부동산에 알리는 공동중개 물건 등록도 3건까지 무료로 제공됩니다.",
+    q: "공실뉴스부동산은 어떤 서비스인가요?",
+    a: "매물만 광고하는 중개사무소에서 벗어나, 우리 지역의 공실·매물·상권 소식을 뉴스와 미디어 콘텐츠로 전달하며 지역을 대표하는 1위 부동산으로 성장하도록 돕는 파트너십입니다.",
   },
   {
-    q: "공실뉴스는 정말 평생 무료인가요?",
-    a: "네, 그렇습니다. 공실뉴스부동산은 가입비나 월정액 이용료가 전혀 없는 100% 무료 서비스입니다. 빠른 계약을 위해 대한민국 공인중개사 대표님 누구라도 100% 무료로 실매물을 열람하고 공동중개에 참여하실 수 있습니다.",
+    q: "초보 공인중개사도 콘텐츠를 만들 수 있나요?",
+    a: "네, 공실뉴스의 원클릭 AI 초안 작성기를 통해 1분 만에 기사, 블로그, 쇼츠 대본까지 완벽히 생성되므로 누구나 쉽게 운영할 수 있습니다.",
   },
   {
-    q: "어떤 매물과 정보를 무료로 열람할 수 있나요?",
-    a: "전국 11만 부동산의 실시간 공동중개 실매물망부터 실시간 법원 경·공매 정보 및 기본 권리분석 데이터까지, 빠른 계약에 필요한 모든 정보를 부동산 누구라도 제한 없이 무료로 열람하실 수 있습니다.",
-  },
-  {
-    q: "스마트폰 모바일에서도 지도 열람이 가능한가요?",
-    a: "네, 스마트폰 모바일 화면에 완벽히 최적화되어 있어, 야외 현장이나 임장 중에도 실시간 지도 기반으로 주변 공실 및 공동중개 물건을 누구나 무료로 열람하고 담당 중개사와 바로 연결됩니다.",
-  },
-  {
-    q: "AI 물건보고서(제안서)는 어떻게 활용하나요?",
-    a: "지번이나 주소만 입력하면 1초 만에 깔끔한 고객 브리핑용 맞춤 제안서가 완성됩니다. 빠른 계약 성사를 위해 고객 방문 상담, 현장 브리핑, 모바일 카카오톡 전송 등에 즉시 활용하실 수 있습니다.",
+    q: "신청 절차는 어떻게 되나요?",
+    a: "신청서 제출 후 담당 매니저가 중개사무소 확인을 거쳐 전용 파트너 권한 및 콘텐츠 제작 가이드를 제공해 드립니다.",
   },
 ];
 
 export default function MobileNewsRealtyPage() {
   const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -92,349 +76,486 @@ export default function MobileNewsRealtyPage() {
   };
 
   return (
-    <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", paddingBottom: 80, paddingTop: 50 }}>
-        
-        {/* ── 고정 상단 헤더 ── */}
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: 50, background: "#091e3a", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", zIndex: 50, borderBottom: "1px solid #1e3a8a", boxSizing: "border-box" }}>
-          <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "#bae6fd", padding: "4px", cursor: "pointer", display: "flex", alignItems: "center" }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
-          </button>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>무료 중개업소 등록</div>
-          <div style={{ width: 24 }} />
+    <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", paddingBottom: 90, paddingTop: 50, overflowX: "hidden" }}>
+      
+      {/* ── 고정 상단 헤더 ── */}
+      <div style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: 50,
+        background: "#062326",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 16px",
+        zIndex: 50,
+        borderBottom: "1px solid rgba(255,255,255,0.1)",
+        boxSizing: "border-box"
+      }}>
+        <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "#6ee7b7", padding: "4px", cursor: "pointer", display: "flex", alignItems: "center" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+        </button>
+        <div style={{ fontSize: 16, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.5px" }}>
+          공실뉴스부동산
+        </div>
+        <Link href="/" style={{ color: "#a7f3d0", fontSize: 13, textDecoration: "none", fontWeight: 700 }}>
+          홈으로
+        </Link>
+      </div>
+
+      {/* ── 스타일 ── */}
+      <style>{`
+        .m-cta-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          padding: 16px 20px;
+          background: #059669;
+          color: #ffffff;
+          font-size: 17px;
+          font-weight: 900;
+          letter-spacing: -0.3px;
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          box-shadow: 0 6px 20px rgba(5, 150, 105, 0.35);
+          box-sizing: border-box;
+          transition: all 0.2s ease;
+        }
+        .m-cta-btn:active {
+          background: #047857;
+          transform: scale(0.98);
+        }
+
+        .m-flow-item {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          background: #ffffff;
+          border: 1px solid #d1fae5;
+          border-radius: 14px;
+          padding: 14px 18px;
+          box-shadow: 0 2px 8px rgba(5, 150, 105, 0.04);
+        }
+      `}</style>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          1. HERO SECTION (모바일: 유튜브 제외, 깔끔한 텍스트 중심)
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section style={{
+        backgroundColor: "#062326",
+        color: "#ffffff",
+        padding: "50px 20px 54px",
+        textAlign: "center"
+      }}>
+        <div style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          background: "rgba(16, 185, 129, 0.14)",
+          border: "1px solid rgba(16, 185, 129, 0.35)",
+          padding: "6px 16px",
+          borderRadius: 24,
+          fontSize: 12.5,
+          fontWeight: 800,
+          color: "#6ee7b7",
+          marginBottom: 20
+        }}>
+          <span>🏢</span>
+          <span>공실뉴스부동산</span>
         </div>
 
-        {/* ━━━ 1. 모바일 히어로 배너 (무료 강조) ━━━ */}
-        <section style={{ backgroundColor: "#091e3a", color: "#ffffff", padding: "28px 16px 36px", textAlign: "center" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.35)", padding: "4px 12px", borderRadius: 20, fontSize: 11.5, fontWeight: 800, color: "#fbbf24", marginBottom: 14 }}>
-            <span>✨</span>
-            <span>공실뉴스에 무료 등록하세요!</span>
-          </div>
+        <h1 style={{
+          fontSize: 32,
+          fontWeight: 900,
+          lineHeight: 1.35,
+          letterSpacing: "-1px",
+          margin: "0 0 18px 0",
+          color: "#ffffff",
+          wordBreak: "keep-all"
+        }}>
+          내 지역의 공실을<br />
+          <span style={{ color: "#34d399" }}>뉴스로 전달하다</span>
+        </h1>
 
-          <h1 style={{ fontSize: 21, fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>
-            빠른 계약을 원할땐,<br />
-            <span style={{ color: "#fbbf24" }}>무료 공실등록하세요!</span>
-          </h1>
+        <div style={{
+          fontSize: 16,
+          color: "#e2e8f0",
+          lineHeight: 1.65,
+          margin: "0 0 14px 0",
+          wordBreak: "keep-all",
+          fontWeight: 500
+        }}>
+          매물만 광고하는 부동산에서<br />
+          <strong style={{ color: "#ffffff", fontSize: 17.5, fontWeight: 900, borderBottom: "2px solid #34d399", paddingBottom: "1px" }}>
+            지역의 부동산 정보를 전달하는 부동산으로.
+          </strong>
+        </div>
 
-          <p style={{ fontSize: 13, color: "#bae6fd", lineHeight: 1.55, margin: "0 0 20px 0", wordBreak: "keep-all" }}>
-            지금 가입하시면, 공동중개 3건 등록/열람, AI물건보고서, 그리고 전국 법원 경공매 정보를 무료로 열람하실 수 있습니다.
-          </p>
+        <p style={{
+          fontSize: 14,
+          color: "#a7f3d0",
+          opacity: 0.95,
+          lineHeight: 1.7,
+          margin: "0 auto 30px auto",
+          wordBreak: "keep-all"
+        }}>
+          우리 지역의 공실·매물·상권 소식을 뉴스와 콘텐츠로 전달하고 지역을 대표하는 부동산으로 성장하세요.
+        </p>
 
-          <div style={{ width: "100%", aspectRatio: "16/9", borderRadius: 12, overflow: "hidden", border: "1px solid #1e3a8a", marginBottom: 16, boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
-            <iframe
-              width="100%"
-              height="100%"
-              src="https://www.youtube.com/embed/4a3_M6-Crew?rel=0"
-              title="소개 영상"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
-
+        <div>
           <button
             onClick={handleApplyClick}
-            className="m-realty-cta-btn"
+            className="m-cta-btn"
           >
-            ✨ 무료 중개업소 등록하기
+            <span>[ 공실뉴스부동산 신청하기 ]</span>
+            <span>➔</span>
           </button>
-        </section>
+        </div>
+      </section>
 
-        {/* 모바일 인터랙티브 애니메이션 스타일 */}
-        <style>{`
-          .m-realty-cta-btn {
-            width: 100%;
-            padding: 14px 0;
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: #ffffff;
-            border: none;
-            border-radius: 10px;
-            font-size: 15.5px;
-            font-weight: 800;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(37,99,235,0.4);
-            transition: all 0.25s ease;
-            animation: mCtaFloat 3.2s ease-in-out infinite;
-          }
-          .m-realty-cta-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(37,99,235,0.5);
-            filter: brightness(1.06);
-          }
-          .m-realty-cta-btn:active {
-            transform: scale(0.98);
-          }
-          @keyframes mCtaFloat {
-            0%, 100% { transform: translateY(0); box-shadow: 0 4px 14px rgba(37,99,235,0.4); }
-            50% { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(37,99,235,0.5); }
-          }
-
-          .m-benefit-card {
-            background: #f8fafc;
-            padding: 16px 14px;
-            border-radius: 14px;
-            border: 1px solid #e2e8f0;
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-            cursor: pointer;
-          }
-          .m-benefit-card:hover {
-            transform: translateY(-4px);
-            border-color: #3b82f6;
-            box-shadow: 0 10px 22px rgba(37,99,235,0.1);
-            background: #ffffff;
-          }
-          .m-benefit-card .m-benefit-icon {
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-          }
-          .m-benefit-card:hover .m-benefit-icon {
-            transform: scale(1.1) rotate(3deg);
-          }
-
-          .m-benefit-card .m-benefit-title {
-            font-size: 15px;
-            font-weight: 900;
-            color: #0f172a;
-            margin-bottom: 3px;
-          }
-
-          .m-target-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 14px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-            transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-            cursor: pointer;
-          }
-          .m-target-card:hover {
-            transform: translateY(-4px);
-            border-color: #3b82f6;
-            box-shadow: 0 12px 24px rgba(37,99,235,0.1);
-          }
-          .m-target-card .m-avatar-img {
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-          }
-          .m-target-card:hover .m-avatar-img {
-            transform: scale(1.1) rotate(2deg);
-          }
-          .m-target-card .m-target-title {
-            font-size: 13.5px;
-            font-weight: 800;
-            color: #0f172a;
-            line-height: 1.4;
-            margin-bottom: 4px;
-          }
-          .m-target-card .m-role-badge {
-            display: inline-block;
-            background: #eff6ff;
-            color: #1d4ed8;
-            font-size: 10.5px;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-bottom: 4px;
-            transition: all 0.25s ease;
-          }
-          .m-target-card:hover .m-role-badge {
-            background: #dbeafe;
-            color: #1e40af;
-          }
-        `}</style>
-
-        {/* ━━━ 2. 3대 핵심 무료 혜택 ━━━ */}
-        <section style={{ padding: "32px 16px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
-          <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 800, color: "#2563eb", letterSpacing: "0.5px" }}>100% FREE BENEFITS</span>
-            <h2 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", margin: "4px 0 6px 0", letterSpacing: "-0.3px" }}>
-              대한민국 11만 부동산을 위한 무료 공실 채널
-            </h2>
-            <p style={{ fontSize: 12.5, color: "#64748b", margin: 0 }}>
-              가입비 0원, 월정액 0원! 100% 무료 개방
-            </p>
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          2. 공실이 콘텐츠가 됩니다 (모바일 파이프라인)
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section style={{ padding: "48px 20px", backgroundColor: "#f2f9f6", borderBottom: "1px solid #d1fae5" }}>
+        <div style={{ textAlign: "center", marginBottom: 26 }}>
+          <div style={{ display: "inline-block", padding: "5px 14px", borderRadius: 16, background: "#ecfdf5", color: "#047857", fontWeight: 800, fontSize: 12, marginBottom: 10 }}>
+            CONTENT PIPELINE
           </div>
+          <h2 style={{ fontSize: 25, fontWeight: 900, color: "#062828", margin: "0 0 10px 0", letterSpacing: "-0.5px" }}>
+            공실이 콘텐츠가 됩니다
+          </h2>
+          <p style={{ fontSize: 14, color: "#334155", lineHeight: 1.6, margin: 0, wordBreak: "keep-all" }}>
+            지역의 새로운 공실과 매물은 그 자체로 좋은 부동산 콘텐츠입니다.
+          </p>
+        </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
-            {/* 1. 100% 무료 공동중개망 */}
-            <div className="m-benefit-card">
-              <div style={{ width: 48, height: 48, borderRadius: 10, overflow: "hidden", flexShrink: 0, border: "1px solid #e2e8f0", background: "#fff" }}>
-                <img src="/images/realty/icons/icon_key_unlock.jpg" alt="100% 무료 공동중개망" className="m-benefit-icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        {/* 파이프라인 단계 */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
+          {[
+            { step: "01", title: "공실", sub: "지역 매물 발굴", icon: "🏢" },
+            { step: "02", title: "뉴스", sub: "공실뉴스 보도", icon: "📰" },
+            { step: "03", title: "블로그", sub: "검색 노출 장악", icon: "✍️" },
+            { step: "04", title: "유튜브", sub: "영상 브리핑 쇼츠", icon: "🎥" },
+            { step: "05", title: "고객", sub: "직접 문의 및 계약", icon: "🤝" },
+          ].map((item) => (
+            <div key={item.step} className="m-flow-item">
+              <div style={{ fontSize: 24, flexShrink: 0 }}>
+                {item.icon}
               </div>
-              <div>
-                <div style={{ display: "inline-block", background: "#eff6ff", color: "#2563eb", padding: "2px 7px", borderRadius: 4, fontSize: 10.5, fontWeight: 800, marginBottom: 4 }}>
-                  전국 부동산 누구나
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#047857", background: "#ecfdf5", padding: "2px 6px", borderRadius: 4 }}>
+                    STEP {item.step}
+                  </span>
+                  <span style={{ fontSize: 15.5, fontWeight: 900, color: "#062828" }}>
+                    {item.title}
+                  </span>
                 </div>
-                <div className="m-benefit-title">
-                  100% 무료 공동중개망
-                </div>
-                <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.45 }}>
-                  빠른 공실 계약을 위해 11만 부동산 실매물 열람은 100% 무료! 물건 등록도 3건까지 무료로 제공됩니다.
+                <div style={{ fontSize: 13, color: "#059669", fontWeight: 600 }}>
+                  {item.sub}
                 </div>
               </div>
             </div>
+          ))}
+        </div>
 
-            {/* 2. 1초 완성 AI 물건보고서 3건 무료 */}
-            <div className="m-benefit-card">
-              <div style={{ width: 48, height: 48, borderRadius: 10, overflow: "hidden", flexShrink: 0, border: "1px solid #e2e8f0", background: "#fff" }}>
-                <img src="/images/realty/icons/icon_doc_chart.jpg" alt="1초 완성 AI 물건보고서 3건 무료" className="m-benefit-icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <div style={{
+          background: "#ffffff",
+          border: "1px solid #d1fae5",
+          borderRadius: 14,
+          padding: "20px 18px",
+          textAlign: "center",
+          boxShadow: "0 4px 12px rgba(5, 150, 105, 0.05)"
+        }}>
+          <div style={{ fontSize: 16.5, fontWeight: 900, color: "#062828", marginBottom: 6 }}>
+            "오늘 무엇을 올릴지 고민하지 않아도 됩니다."
+          </div>
+          <div style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65, wordBreak: "keep-all" }}>
+            지역의 부동산 이야기를 꾸준히 전달하면서 유튜브와 블로그를 함께 키울 수 있습니다.
+          </div>
+        </div>
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          3. 무엇이 좋아질까요? (모바일 3 Core Benefits)
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section style={{ padding: "50px 20px", backgroundColor: "#ffffff" }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#059669", letterSpacing: "1px" }}>
+            ADVANTAGES
+          </span>
+          <h2 style={{ fontSize: 26, fontWeight: 900, color: "#062828", margin: "6px 0 8px 0", letterSpacing: "-0.5px" }}>
+            무엇이 좋아질까요?
+          </h2>
+          <p style={{ fontSize: 14, color: "#64748b", margin: 0, wordBreak: "keep-all" }}>
+            공실뉴스부동산이 되는 순간 3가지 강력한 무기를 얻게 됩니다.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {benefits.map((b) => (
+            <div key={b.num} style={{
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
+              borderRadius: 16,
+              padding: "22px 18px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.03)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 28, fontWeight: 900, color: b.numColor, lineHeight: 1 }}>
+                  {b.num}
+                </span>
+                <span style={{
+                  padding: "4px 10px",
+                  borderRadius: 16,
+                  background: b.badgeBg,
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: b.badgeColor
+                }}>
+                  {b.tag}
+                </span>
               </div>
-              <div>
-                <div style={{ display: "inline-block", background: "#fef3c7", color: "#d97706", padding: "2px 7px", borderRadius: 4, fontSize: 10.5, fontWeight: 800, marginBottom: 4 }}>
-                  중개사 필수 AI 도구
-                </div>
-                <div className="m-benefit-title">
-                  1초 완성 AI 물건보고서 3건 무료
-                </div>
-                <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.45 }}>
-                  지번만 입력하면 고객 브리핑용 매매·임대 제안서를 1초 만에 깔끔하게 만들어 드립니다.
-                </div>
-              </div>
+
+              <h3 style={{ fontSize: 17, fontWeight: 800, color: "#0f172a", lineHeight: 1.45, margin: "0 0 8px 0", wordBreak: "keep-all" }}>
+                {b.title}
+              </h3>
+
+              <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65, margin: 0, wordBreak: "keep-all" }}>
+                {b.desc}
+              </p>
             </div>
+          ))}
+        </div>
+      </section>
 
-            {/* 3. 전국 법원 경공매 물건 무료 열람 */}
-            <div className="m-benefit-card">
-              <div style={{ width: 48, height: 48, borderRadius: 10, overflow: "hidden", flexShrink: 0, border: "1px solid #e2e8f0", background: "#fff" }}>
-                <img src="/images/realty/icons/icon_auction_gavel.jpg" alt="전국 법원 경공매 물건 무료 열람" className="m-benefit-icon" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              </div>
-              <div>
-                <div style={{ display: "inline-block", background: "#ecfdf5", color: "#059669", padding: "2px 7px", borderRadius: 4, fontSize: 10.5, fontWeight: 800, marginBottom: 4 }}>
-                  실시간 법원 연동
-                </div>
-                <div className="m-benefit-title">
-                  전국 법원 경공매 물건 무료 열람
-                </div>
-                <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.45 }}>
-                  법원 실시간 경매·공매 물건 정보 및 기본권리분석 정보를 무료로 열람할 수 있습니다.
-                </div>
-              </div>
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          4. 매물을 받으러 가지 말고 뉴스를 취재하러 가세요 (모바일)
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section style={{
+        backgroundColor: "#062326",
+        color: "#ffffff",
+        padding: "54px 20px",
+        textAlign: "center"
+      }}>
+        <div style={{
+          display: "inline-block",
+          background: "rgba(16, 185, 129, 0.14)",
+          border: "1px solid rgba(16, 185, 129, 0.35)",
+          color: "#6ee7b7",
+          padding: "5px 14px",
+          borderRadius: 20,
+          fontSize: 12,
+          fontWeight: 800,
+          marginBottom: 16
+        }}>
+          영업의 패러다임 전환
+        </div>
+
+        <h2 style={{
+          fontSize: 26,
+          fontWeight: 900,
+          lineHeight: 1.35,
+          letterSpacing: "-1px",
+          margin: "0 0 28px 0",
+          wordBreak: "keep-all"
+        }}>
+          매물을 받으러 가지 말고,<br />
+          <span style={{ color: "#34d399" }}>뉴스를 취재하러 가세요.</span>
+        </h2>
+
+        {/* 2단 비교 */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 28, textAlign: "left" }}>
+          
+          <div style={{
+            background: "#ffffff",
+            border: "1px solid #e2e8f0",
+            borderRadius: 14,
+            padding: "20px 18px"
+          }}>
+            <div style={{ display: "inline-block", background: "#fee2e2", color: "#dc2626", padding: "3px 8px", borderRadius: 4, fontSize: 11.5, fontWeight: 700, marginBottom: 8 }}>
+              ❌ 기존 방식
+            </div>
+            <div style={{ fontSize: 16, color: "#334155", fontWeight: 700, lineHeight: 1.5, marginBottom: 6 }}>
+              “대표님, 매물 있으세요?”
+            </div>
+            <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.5 }}>
+              수많은 부동산 중 하나로 인식되어 피로도를 유발하는 전형적인 '을'의 영업
             </div>
           </div>
 
-          {/* 회원 유형 안내 */}
-          <div style={{ background: "#f1f5f9", borderRadius: 10, padding: "12px 14px", fontSize: 11.5, color: "#475569", lineHeight: 1.6, textAlign: "left" }}>
-            <div>· <strong>일반회원</strong> : 공실 3건 무료, 경공매 열람 가능, 공동중개 열람 불가</div>
-            <div>· <strong>부동산회원</strong> : <strong style={{ color: "#2563eb" }}>공동중개 열람 100% 무료</strong>, <strong>공동중개 물건등록 3건 무료</strong>, 경공매 열람 가능</div>
-          </div>
-        </section>
-
-        {/* ━━━ 3. 3D 파스텔 아바타 후기 섹션 (11만 부동산 & 임대인 실제 증명) ━━━ */}
-        <section style={{ padding: "36px 16px", backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-          <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <h2 style={{ fontSize: 17.5, fontWeight: 900, color: "#0f172a", margin: "0 0 6px 0", lineHeight: 1.35 }}>
-              빠른 계약을 원할땐, 공실뉴스에 무료 등록하세요!<br />
-              <span style={{ color: "#2563eb" }}>부동산은 누구나 무료!!</span>
-            </h2>
-            <p style={{ fontSize: 13, color: "#1e293b", margin: "0 0 2px 0", fontWeight: 800 }}>
-              💡 이런 부동산 대표님께 적극 추천합니다
-            </p>
-            <p style={{ fontSize: 12, color: "#64748b", margin: 0, lineHeight: 1.5 }}>
-              가입비 0원, 월정액 0원! 100% 무료 공동중개망
-            </p>
+          <div style={{
+            background: "#ffffff",
+            border: "2px solid #059669",
+            borderRadius: 14,
+            padding: "20px 18px",
+            boxShadow: "0 6px 18px rgba(5, 150, 105, 0.15)"
+          }}>
+            <div style={{ display: "inline-block", background: "#ecfdf5", color: "#047857", padding: "3px 8px", borderRadius: 4, fontSize: 11.5, fontWeight: 800, marginBottom: 8 }}>
+              ✅ 공실뉴스부동산
+            </div>
+            <div style={{ fontSize: 17, color: "#062828", fontWeight: 900, lineHeight: 1.45, marginBottom: 6 }}>
+              “대표님 건물의 공실을<br />공실뉴스에서 소개해드리겠습니다.”
+            </div>
+            <div style={{ fontSize: 13, color: "#064e3b", lineHeight: 1.5, fontWeight: 600 }}>
+              건물주의 자존감을 높이고 언론 홍보 기회를 제공하는 당당한 '취재형' 영업
+            </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {RECOMMENDED_TARGETS.map((item, idx) => (
+        </div>
+
+        <div style={{ fontSize: 18, fontWeight: 900, color: "#ffffff" }}>
+          뉴스가 새로운 영업의 시작이 됩니다.
+        </div>
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          5. 우리 지역을 대표하는 부동산이 되어보세요 (모바일 Closing)
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section style={{ padding: "50px 20px", textAlign: "center", backgroundColor: "#ffffff" }}>
+        <h2 style={{
+          fontSize: 26,
+          fontWeight: 900,
+          color: "#062828",
+          letterSpacing: "-1px",
+          margin: "0 0 16px 0",
+          wordBreak: "keep-all"
+        }}>
+          우리 지역을 대표하는<br />부동산이 되어보세요
+        </h2>
+
+        <div style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          background: "#f2f9f6",
+          border: "1px solid #d1fae5",
+          padding: "8px 16px",
+          borderRadius: 20,
+          fontSize: 13,
+          fontWeight: 800,
+          color: "#062828",
+          marginBottom: 22
+        }}>
+          <span>부동산</span>
+          <span style={{ color: "#059669" }}>×</span>
+          <span>뉴스</span>
+          <span style={{ color: "#059669" }}>×</span>
+          <span>유튜브</span>
+          <span style={{ color: "#059669" }}>×</span>
+          <span>블로그</span>
+        </div>
+
+        <div style={{ fontSize: 15, color: "#334155", lineHeight: 1.7, marginBottom: 28, wordBreak: "keep-all" }}>
+          내 지역의 공실을 가장 잘 아는 사람.<br />
+          내 지역의 부동산 소식을 가장 먼저 전달하는 사람.
+          <div style={{ fontSize: 24, fontWeight: 900, color: "#062828", marginTop: 10 }}>
+            공실뉴스부동산
+          </div>
+        </div>
+
+        <div>
+          <button
+            onClick={handleApplyClick}
+            className="m-cta-btn"
+          >
+            <span>[ 공실뉴스부동산 신청하기 ]</span>
+            <span>➔</span>
+          </button>
+        </div>
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          6. 자주 묻는 질문 (FAQ)
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section style={{ padding: "40px 20px 60px", backgroundColor: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+        <h3 style={{ fontSize: 20, fontWeight: 900, color: "#0f172a", margin: "0 0 20px 0", textAlign: "center" }}>
+          자주 묻는 질문 (FAQ)
+        </h3>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {faqs.map((faq, idx) => {
+            const isOpen = openFaq === idx;
+            return (
               <div
                 key={idx}
-                className="m-target-card"
+                style={{
+                  backgroundColor: "#ffffff",
+                  border: isOpen ? "1px solid #059669" : "1px solid #e2e8f0",
+                  borderRadius: 12,
+                  overflow: "hidden"
+                }}
               >
-                <div style={{ width: 68, height: 68, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 4 }}>
-                  <img src={item.image} alt={item.role} className="m-avatar-img" style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 8 }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span className="m-role-badge">
-                    {item.role}
-                  </span>
-                  <div className="m-target-title">
-                    {item.title}
-                  </div>
-                  <p style={{ fontSize: 12, color: "#475569", lineHeight: 1.45, margin: "0 0 4px 0" }}>
-                    {item.desc}
-                  </p>
-                  <span style={{ fontSize: 11, color: "#2563eb", fontWeight: 700 }}>
-                    {item.tag}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ━━━ 5. 자주 묻는 질문 FAQ ━━━ */}
-        <section style={{ padding: "36px 16px", backgroundColor: "#f8fafc" }}>
-          <div style={{ fontSize: 16, fontWeight: 900, color: "#0f172a", marginBottom: 14 }}>
-            자주 묻는 질문 FAQ
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {brokerFaqs.map((faq, i) => {
-              const isOpen = openFaq === i;
-              return (
                 <div
-                  key={i}
+                  onClick={() => setOpenFaq(isOpen ? null : idx)}
                   style={{
-                    backgroundColor: "#ffffff",
-                    border: isOpen ? "1.5px solid #2563eb" : "1px solid #e2e8f0",
-                    borderRadius: 10,
-                    overflow: "hidden",
-                    transition: "all 0.2s ease",
-                    boxShadow: isOpen ? "0 2px 8px rgba(37, 99, 235, 0.08)" : "none",
+                    padding: "16px 18px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    cursor: "pointer"
                   }}
                 >
-                  <button
-                    onClick={() => setOpenFaq(isOpen ? null : i)}
-                    style={{
-                      width: "100%",
-                      padding: "14px 16px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      backgroundColor: "#ffffff",
-                      border: "none",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      gap: 10,
-                    }}
-                  >
-                    <span style={{ fontSize: 13.5, fontWeight: 700, color: isOpen ? "#1e40af" : "#0f172a", lineHeight: 1.4 }}>
-                      Q. {faq.q}
-                    </span>
-                    <span style={{ color: isOpen ? "#2563eb" : "#94a3b8", fontSize: 12, flexShrink: 0 }}>
-                      {isOpen ? "▲" : "▼"}
-                    </span>
-                  </button>
-                  {isOpen && (
-                    <div style={{ padding: "0 16px 14px", fontSize: 12.5, color: "#334155", lineHeight: 1.6, borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
-                      {faq.a}
-                    </div>
-                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
+                    <span style={{ color: "#059669", fontWeight: 900, fontSize: 15 }}>Q.</span>
+                    <span style={{ fontSize: 14.5, fontWeight: 700, color: "#1e293b" }}>{faq.q}</span>
+                  </div>
+                  <span style={{
+                    fontSize: 14,
+                    color: "#94a3b8",
+                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.2s"
+                  }}>
+                    ▼
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        </section>
 
-        {/* ━━━ 6. 모바일 하단 CTA 배너 (PC와 동일한 딥 네이비 스타일) ━━━ */}
-        <section style={{ padding: "40px 16px 45px", backgroundColor: "#091e3a", color: "#ffffff", textAlign: "center" }}>
-          <div style={{ maxWidth: 500, margin: "0 auto" }}>
-            <h2 style={{ fontSize: 20, fontWeight: 900, margin: "0 0 10px 0", letterSpacing: "-0.5px", wordBreak: "keep-all" }}>
-              내 지역 공실등록, 지금 바로 무료로 시작하세요
-            </h2>
-            <p style={{ fontSize: 13, color: "#bae6fd", lineHeight: 1.55, margin: "0 0 22px 0", wordBreak: "keep-all" }}>
-              가입비 0원, 월정액 0원으로 전국 11만 부동산 네트워크와 100% 무료 공동중개를 누려보세요.
-            </p>
-            <button
-              onClick={handleApplyClick}
-              className="m-realty-cta-btn"
-            >
-              ✨ 무료 중개업소 등록하기 →
-            </button>
-          </div>
-        </section>
+                {isOpen && (
+                  <div style={{
+                    padding: "0 18px 16px 18px",
+                    fontSize: 13.5,
+                    color: "#475569",
+                    lineHeight: 1.65,
+                    borderTop: "1px solid #f1f5f9",
+                    textAlign: "left"
+                  }}>
+                    <p style={{ margin: "12px 0 0 0" }}>{faq.a}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
+      {/* ── 하단 고정 플로팅 바 ── */}
+      <div style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        width: "100%",
+        padding: "12px 16px",
+        background: "rgba(255, 255, 255, 0.96)",
+        backdropFilter: "blur(8px)",
+        borderTop: "1px solid #e2e8f0",
+        boxSizing: "border-box",
+        zIndex: 40
+      }}>
+        <button
+          onClick={handleApplyClick}
+          className="m-cta-btn"
+          style={{ padding: "14px 20px", fontSize: 16 }}
+        >
+          <span>공실뉴스부동산 신청하기</span>
+          <span>➔</span>
+        </button>
       </div>
+
+    </div>
   );
 }
