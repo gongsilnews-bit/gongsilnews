@@ -9,6 +9,7 @@ import { adminGetMembers } from "@/app/admin/actions";
 import { getArticles } from "@/app/actions/article";
 import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
+import { isAdminRole } from "@/utils/permissionCheck";
 
 /* ── Lazy-loaded 섹션 ── */
 const DashboardSection = lazy(() => import("@/components/admin/sections/DashboardSection"));
@@ -130,7 +131,7 @@ function AdminContent() {
         .eq("id", user.id)
         .single();
 
-      if (!member || member.role !== "ADMIN") {
+      if (!member || !isAdminRole(member.role)) {
         alert("⚠️ 접근 권한이 없습니다.");
         window.location.href = "/";
         return;

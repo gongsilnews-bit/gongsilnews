@@ -143,6 +143,12 @@ function RealtyAdminContent() {
         return;
       }
 
+      // 🔐 최고관리자는 /admin으로 리다이렉트
+      if (isAdminRole(member.role)) {
+        window.location.href = "/admin";
+        return;
+      }
+
       setUserEmail(user.email || null);
       setMemberId(member.id);
       setUserName(member.name || "이름없음");
