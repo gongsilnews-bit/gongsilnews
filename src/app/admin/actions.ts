@@ -308,17 +308,33 @@ export async function adminGetMembers() {
     const { data: members, error } = await supabaseAdmin.from('members').select('*, agencies(*)').order('created_at', { ascending: false });
     if (error) return { success: false, error: error.message };
 
-    // 비즈니스 프로필은 별도 쿼리 (FK 관계가 members가 아닌 auth.users를 참조하므로)
-    const { data: bizProfiles } = await supabaseAdmin.from('business_profiles').select('*');
-
-    const { data: vacancies } = await supabaseAdmin.from('vacancies').select('id, owner_id');
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const { data: articles } = await supabaseAdmin.from('articles').select('id, author_id').gte('created_at', firstDayOfMonth).eq('is_deleted', false);
+
+    // 회원별 공실/기사 건수는 DB 에서 센다.
+    // 이전에는 vacancies 전체를 받아와 JS 에서 filter 로 셌는데, PostgREST 기본 행 상한(1,000)에
+    // 걸려 11,477건 중 1,000건만 집계되어 공실 건수가 실제보다 적게 표시됐다.
+    // (덤으로 회원수 x 공실수 만큼의 JS 반복과 전체 행 전송도 사라진다)
+    // 회원 수만큼 카운트 쿼리가 나가므로 회원이 수백 명 규모가 되면 GROUP BY RPC 로 옮길 것.
+    const [bizProfilesRes, memberCounts] = await Promise.all([
+      // 비즈니스 프로필은 별도 쿼리 (FK 관계가 members가 아닌 auth.users를 참조하므로)
+      supabaseAdmin.from('business_profiles').select('*'),
+      Promise.all((members as any[]).map(async (m: any) => {
+        const [vRes, aRes] = await Promise.all([
+          // 기존 동작과 동일하게 status 필터 없이 전체를 센다
+          supabaseAdmin.from('vacancies').select('id', { count: 'exact', head: true }).eq('owner_id', m.id),
+          supabaseAdmin.from('articles').select('id', { count: 'exact', head: true }).eq('author_id', m.id).eq('is_deleted', false).gte('created_at', firstDayOfMonth),
+        ]);
+        return { id: m.id, vCount: vRes.count || 0, aCount: aRes.count || 0 };
+      })),
+    ]);
+    const bizProfiles = bizProfilesRes.data;
+    const countsById = new Map(memberCounts.map(c => [c.id, c]));
 
     const data = members.map((m: any) => {
-      const vCount = vacancies?.filter((v: any) => v.owner_id === m.id).length || 0;
-      const aCount = articles?.filter((a: any) => a.author_id === m.id).length || 0;
+      const counts = countsById.get(m.id);
+      const vCount = counts?.vCount || 0;
+      const aCount = counts?.aCount || 0;
       
       let homepage_id = '';
       if (m.agencies) {

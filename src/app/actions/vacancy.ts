@@ -210,10 +210,13 @@ export async function getVacancyTabCounts(options?: {
     }
 
     if (options?.excludeOnbid) {
-      queryAll = queryAll.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
-      queryActive = queryActive.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
-      queryStopped = queryStopped.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
-      queryDraft = queryDraft.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+      // is_onbid 는 metadata->>'source_type' = 'ONBID' 를 stored 로 물린 생성 컬럼이다.
+      // 이전의 .or("...is.null,...neq.ONBID") 는 JSONB 추출 + 부정 비교라 인덱스를 타지 못해
+      // 11,477행을 전수 스캔했다. 등치 조건으로 바꿔 idx_vacancies_admin_list 를 태운다.
+      queryAll = queryAll.eq('is_onbid', false);
+      queryActive = queryActive.eq('is_onbid', false);
+      queryStopped = queryStopped.eq('is_onbid', false);
+      queryDraft = queryDraft.eq('is_onbid', false);
     }
 
     const [resAll, resActive, resStopped, resDraft] = await Promise.all([
@@ -281,6 +284,10 @@ export async function getVacancies(options?: {
   searchKeyword?: string;
   excludeOnbid?: boolean;
   stringify?: boolean;
+  /** 관리자 목록 화면 전용. 표에 실제로 그려지는 컬럼만 조회한다.
+   *  metadata(JSONB 통째), agencies(*), vacancy_photos 조인을 제외해 전송량과 조인 비용을 줄인다.
+   *  기존 호출처의 응답 형태를 바꾸지 않기 위해 명시적으로 켠 경우에만 적용된다. */
+  slim?: boolean;
 }) {
   // 1. 서버 캐시 확인 (전체 조회 & stringify 옵션 시에만 적용)
   if (options?.all && options?.stringify) {
@@ -293,14 +300,24 @@ export async function getVacancies(options?: {
   try {
     const selectFields = 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, maintenance_fee, sido, sigungu, dong, building_name, lat, lng, created_at, address_exposure, exposure_type, realtor_commission, room_count, bath_count, exclusive_m2, supply_m2, parking, total_floor, current_floor, direction, move_in_date, client_name, client_phone, themes, options, metadata, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)';
 
+    // 관리자 공실목록 표가 실제로 읽는 컬럼만 담은 축소 select (VacancySection 기준)
+    // detail_addr / apt_dong / hosu 는 VacancySection 이 주소 칸에 그리는데 기존 selectFields 에
+    // 빠져 있어 상세주소·동·호수가 표시되지 않았다. 축소 select 에서는 포함시켜 정상 표시한다.
+    const slimSelectFields = 'id, vacancy_no, owner_id, status, trade_type, property_type, sub_category, deposit, monthly_rent, sido, sigungu, dong, detail_addr, building_name, apt_dong, hosu, created_at, room_count, exclusive_m2, supply_m2, current_floor, client_name, client_phone, members!vacancies_owner_id_fkey(name, phone, role, agencies(name))';
+
     // 만약 페이지네이션이 명시된 경우, 단일 쿼리로 최적화해서 수행
     if (options?.page && options?.limit) {
       const from = (options.page - 1) * options.limit;
       const to = from + options.limit - 1;
 
+      // select 문자열은 변수로 받아 string 으로 넓힌다.
+      // .select() 인자에 삼항연산자를 인라인으로 두면 PostgREST 가 두 select 리터럴의
+      // 결과 타입 union 을 전개하려다 TS2590(union type too complex) 을 낸다.
+      const pageSelectFields: string = options?.slim ? slimSelectFields : selectFields;
+
       let pageQuery = supabase
         .from('vacancies')
-        .select(selectFields, { count: 'exact' })
+        .select(pageSelectFields, { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -331,7 +348,7 @@ export async function getVacancies(options?: {
         pageQuery = pageQuery.or(`sido.ilike.${p},sigungu.ilike.${p},dong.ilike.${p},building_name.ilike.${p},client_name.ilike.${p},client_phone.ilike.${p}`);
       }
       if (options?.excludeOnbid) {
-        pageQuery = pageQuery.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+        pageQuery = pageQuery.eq('is_onbid', false);
       }
       if (options?.propertyType && options.propertyType !== "전체") {
         pageQuery = pageQuery.eq('property_type', options.propertyType);
@@ -346,7 +363,8 @@ export async function getVacancies(options?: {
         return { success: false, error: error.message };
       }
 
-      const lightData = (data || []).map(v => {
+      // slim 여부에 따라 select 컬럼이 달라져 행 타입이 정적으로 결정되지 않으므로 명시적으로 받는다
+      const lightData = ((data || []) as any[]).map((v: any) => {
         const { infrastructure, description, metadata, members, vacancy_photos, ...rest } = v;
         const lightMetadata = metadata ? {
           cltrUsgLclsCtgrNm: metadata.cltrUsgLclsCtgrNm,
@@ -411,7 +429,7 @@ export async function getVacancies(options?: {
       }
 
       if (options?.excludeOnbid) {
-        pageQuery = pageQuery.or("metadata->>source_type.is.null,metadata->>source_type.neq.ONBID");
+        pageQuery = pageQuery.eq('is_onbid', false);
       }
 
       promises.push(pageQuery);

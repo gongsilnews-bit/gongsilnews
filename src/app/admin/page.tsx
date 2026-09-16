@@ -4,8 +4,6 @@ import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from 
 import { createClient } from "@/utils/supabase/client";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconMembers, IconBuilding, IconArticle, IconStudy, IconEdit, IconBoard, IconAd, IconPlugin, IconStats, IconSettings, IconManual, IconPoint, IconComment, IconRobot } from "@/components/admin/sections/AdminIcons";
-import { getVacancies } from "@/app/actions/vacancy";
-import { adminGetMembers } from "@/app/admin/actions";
 import { getArticles } from "@/app/actions/article";
 import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
@@ -46,8 +44,12 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
 ];
 
-/* ── 데이터 프리페치 매핑 ── */
-const DATA_KEYS = ["gongsil", "members", "article"] as const;
+/* ── 데이터 프리페치 매핑 ──
+   기사관리만 프리페치한다.
+   - 공실관리: sessionStorage 에 저장된 검색조건을 복원한 뒤 조회하므로 무필터 프리페치 결과와
+     어긋나 잘못된 목록이 잠깐 보인다.
+   - 회원관리: MemberSection 이 마운트 시 adminGetMembers() 를 무조건 재호출하므로 순수 중복이다. */
+const DATA_KEYS = ["article"] as const;
 type DataKey = typeof DATA_KEYS[number];
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -96,14 +98,10 @@ function AdminContent() {
     fetchingRef.current.add(key);
     try {
       let data: any[] = [];
-      if (key === "gongsil") {
-        const res = await getVacancies({ all: true, page: 1, limit: 30, excludeOnbid: true });
-        if (res.success) data = res.data || [];
-      } else if (key === "members") {
-        const res = await adminGetMembers();
-        if (res?.success) data = res.data || [];
-      } else if (key === "article") {
-        const res = await getArticles();
+      if (key === "article") {
+        // ArticleSection 이 마운트 직후 실행하는 첫 쿼리와 동일한 조건으로 맞춘다.
+        // (무필터 호출은 limit 이 없어 기사 테이블을 통째로 받아오고, 그 결과는 재조회에 덮여 버려진다)
+        const res = await getArticles({ page: 1, limit: 30, orderBy: "published_at", noCache: true, slim: true });
         if (res.success) data = res.data || [];
       }
       setPrefetchedData(prev => ({ ...prev, [key]: data }));
@@ -248,8 +246,8 @@ function AdminContent() {
         {/* 콘텐츠 영역 */}
         <Suspense fallback={<AdminLoadingFallback />}>
           {activeMenu === "dashboard" && <DashboardSection theme={theme} role="admin" onMenuChange={(menu) => { setActiveMenu(menu); router.push(`?menu=${menu}`, { scroll: false }); }} />}
-          {activeMenu === "members" && <MemberSection theme={theme} activeSubmenu={activeSubmenu} onSubmenuChange={setActiveSubmenu} initialData={prefetchedData["members"]} />}
-          {activeMenu === "gongsil" && <VacancySection theme={theme} role="admin" ownerId={adminUserId} initialData={prefetchedData["gongsil"]} />}
+          {activeMenu === "members" && <MemberSection theme={theme} activeSubmenu={activeSubmenu} onSubmenuChange={setActiveSubmenu} />}
+          {activeMenu === "gongsil" && <VacancySection theme={theme} role="admin" ownerId={adminUserId} />}
           {activeMenu === "article" && <ArticleSection theme={theme} initialData={prefetchedData["article"]} />}
           {activeMenu === "study" && <StudySection theme={theme} />}
           {activeMenu === "board" && <BoardSection theme={theme} />}

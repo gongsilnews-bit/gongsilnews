@@ -85,6 +85,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
       page: currentPage,
       limit: pageSize,
       orderBy: sortBy,
+      slim: true, // 목록 표가 쓰지 않는 컬럼/키워드 조인 제외
     };
 
     if (articleFilter === "승인대기") params.status = "PENDING";
