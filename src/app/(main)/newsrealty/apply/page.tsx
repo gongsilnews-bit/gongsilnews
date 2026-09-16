@@ -688,7 +688,7 @@ export default function NewsRealtyApplyPage() {
 
                 <div>
                   <a
-                    href="/signup"
+                    href="/login?returnTo=%2Fsignup"
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -698,7 +698,7 @@ export default function NewsRealtyApplyPage() {
                       color: "#ffffff",
                       fontSize: "14.5px",
                       fontWeight: 800,
-                      padding: "11px 20px",
+                      padding: "11px 22px",
                       borderRadius: "10px",
                       textDecoration: "none",
                       boxShadow: "0 3px 10px rgba(250, 130, 88, 0.3)",
@@ -706,7 +706,7 @@ export default function NewsRealtyApplyPage() {
                       whiteSpace: "nowrap"
                     }}
                   >
-                    회원가입 바로가기 ➔
+                    회원가입 / 로그인 바로가기 ➔
                   </a>
                 </div>
               </div>

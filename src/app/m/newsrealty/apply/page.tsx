@@ -455,10 +455,10 @@ export default function MobileNewsRealtyApplyPage() {
                   • 대표 공인중개사 및 소속 중개사무소 정보 등록
                 </p>
                 <a
-                  href="/m/signup"
-                  className="inline-flex items-center justify-center w-full py-2 px-3 bg-[#fa8258] text-white text-xs font-bold rounded-lg shadow-xs no-underline"
+                  href="/login?returnTo=%2Fsignup"
+                  className="inline-flex items-center justify-center w-full py-2.5 px-3 bg-[#fa8258] text-white text-[13px] font-bold rounded-lg shadow-xs no-underline"
                 >
-                  회원가입 바로가기 ➔
+                  회원가입 / 로그인 바로가기 ➔
                 </a>
               </div>
 
