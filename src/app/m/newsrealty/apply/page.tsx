@@ -200,9 +200,12 @@ export default function MobileNewsRealtyApplyPage() {
       <main className="px-5 py-6">
         {/* 헤드라인 */}
         <div className="mb-6">
-          <h1 className="text-[26px] font-extrabold text-[#1f2328] leading-tight">
-            지역/단지 대표부동산을<br />
-            모십니다.
+          <h1 className="text-[24px] font-extrabold text-[#1f2328] leading-tight" style={{ wordBreak: "keep-all" }}>
+            내 지역/단지<br />
+            로컬 부동산 기자가 되세요!
+            <div className="text-[16px] font-bold text-[#fa8258] mt-2">
+              부동산중개 + 지역부동산기자
+            </div>
           </h1>
         </div>
 

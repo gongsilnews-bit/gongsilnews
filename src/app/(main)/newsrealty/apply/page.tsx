@@ -248,9 +248,12 @@ export default function NewsRealtyApplyPage() {
 
           {/* ━━━ 좌측 안내 영역 (Width: 380px) ━━━ */}
           <div style={{ width: "380px", flexShrink: 0 }}>
-            <h1 style={{ fontSize: "32px", fontWeight: 700, color: "#1a1a1a", lineHeight: 1.35, letterSpacing: "-0.5px", marginBottom: "36px" }}>
-              지역/단지 대표부동산을<br />
-              모십니다.
+            <h1 style={{ fontSize: "29px", fontWeight: 800, color: "#1a1a1a", lineHeight: 1.32, letterSpacing: "-0.5px", marginBottom: "32px", wordBreak: "keep-all" }}>
+              내 지역/단지<br />
+              로컬 부동산 기자가 되세요!
+              <div style={{ fontSize: "19px", fontWeight: 700, color: "#fa8258", marginTop: "12px", letterSpacing: "-0.3px" }}>
+                부동산중개 + 지역부동산기자
+              </div>
             </h1>
 
             {/* 직방 연회색 안내 카드 */}
