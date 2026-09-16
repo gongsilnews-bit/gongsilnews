@@ -577,87 +577,131 @@ export default function NewsRealtyApplyPage() {
         <p style={{ marginTop: "4px" }}>© GONGSILLNEWS Corp. All rights reserved.</p>
       </footer>
 
-      {/* ━━━ 직방 스타일: 회원가입 절차 가이드 모달 ━━━ */}
+      {/* ━━━ 직방 스타일: 회원가입 절차 가이드 모달 (1:1 동일) ━━━ */}
       {showGuideModal && (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-[440px] w-full p-5 sm:p-6 shadow-2xl border border-[#dee2e6] relative">
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#f1f3f5]">
-              <h3 className="font-extrabold text-[16px] text-[#1f2328] tracking-tight">
-                회원가입 절차 가이드
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowGuideModal(false)}
-                className="text-[#868e96] hover:text-[#1f2328] text-base font-bold p-1 leading-none cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
+        <div
+          onClick={() => setShowGuideModal(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+            zIndex: 9999
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              width: "100%",
+              maxWidth: "420px",
+              padding: "26px 22px 20px 22px",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+              position: "relative"
+            }}
+          >
+            {/* 모달 타이틀 */}
+            <h3 style={{ fontSize: "17px", fontWeight: 700, color: "#1a1a1a", marginBottom: "18px", letterSpacing: "-0.3px" }}>
+              회원가입 절차 가이드
+            </h3>
 
-            <div className="space-y-2 text-xs text-[#495057]">
+            <div>
               {/* 1단계 */}
-              <div className="p-2.5 rounded-xl border border-[#ffa94d] bg-[#fff9db]/30">
-                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[12px] mb-0.5">
-                  <span>📝</span>
-                  <span>1단계 필수 정보 입력</span>
+              <div style={{ marginBottom: "18px" }}>
+                <div style={{
+                  backgroundColor: "#f4f6f8",
+                  borderRadius: "8px",
+                  padding: "10px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <span style={{ fontSize: "14px" }}>📝</span>
+                  <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#fa8258" }}>1단계 필수 정보 입력</span>
                 </div>
-                <p className="text-[#495057] text-[11px] leading-tight mb-1">
-                  원활한 상담을 위해 중개사무소 정보를 정확히 입력해 주세요.
-                </p>
-                <ul className="space-y-0.5 text-[#868e96] pl-1.5 text-[10.5px]">
-                  <li>• 중개사무소명</li>
-                  <li>• 대표 공인중개사 휴대폰 번호와 이메일</li>
-                  <li>• 주거래 매물 선택</li>
-                </ul>
+                <div style={{ padding: "10px 4px 0 6px", fontSize: "12px", color: "#666", lineHeight: 1.55 }}>
+                  <p style={{ marginBottom: "6px" }}>원활한 상담을 위해 중개사무소 정보를 정확히 입력해 주세요.</p>
+                  <ul style={{ color: "#777", fontSize: "11.5px", display: "flex", flexDirection: "column", gap: "2px", paddingLeft: "2px" }}>
+                    <li>· 중개사무소명</li>
+                    <li>· 대표 공인 중개사 휴대폰 번호와 이메일</li>
+                    <li>· 주거래 매물 선택</li>
+                  </ul>
+                </div>
               </div>
 
               {/* 2단계 */}
-              <div className="p-2.5 rounded-xl border border-[#edf0f2] bg-[#f8f9fa]">
-                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[12px] mb-0.5">
-                  <span>📞</span>
-                  <span>2단계 가입신청 상담</span>
+              <div style={{ marginBottom: "18px" }}>
+                <div style={{
+                  backgroundColor: "#f4f6f8",
+                  borderRadius: "8px",
+                  padding: "10px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <span style={{ fontSize: "14px" }}>👤</span>
+                  <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#fa8258" }}>2단계 가입신청 상담</span>
                 </div>
-                <p className="text-[#495057] text-[11px] leading-tight mb-0.5">
-                  담당 매니저가 가입 신청서를 확인하고 연락드려요.
-                </p>
-                <p className="text-[#868e96] pl-1.5 text-[10.5px]">
-                  • 최대 1~2 영업일 소요
-                </p>
+                <div style={{ padding: "10px 4px 0 6px", fontSize: "12px", color: "#666", lineHeight: 1.55 }}>
+                  <p style={{ marginBottom: "4px" }}>담당 매니저가 가입 신청서를 확인하고 연락드려요.</p>
+                  <p style={{ color: "#777", fontSize: "11.5px" }}>· 최대 1~2 영업일 소요</p>
+                </div>
               </div>
 
               {/* 3단계 */}
-              <div className="p-2.5 rounded-xl border border-[#edf0f2] bg-[#f8f9fa]">
-                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[12px] mb-0.5">
-                  <span>📄</span>
-                  <span>3단계 승인 심사 및 완료</span>
+              <div style={{ marginBottom: "18px" }}>
+                <div style={{
+                  backgroundColor: "#f4f6f8",
+                  borderRadius: "8px",
+                  padding: "10px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <span style={{ fontSize: "14px" }}>📋</span>
+                  <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#fa8258" }}>3단계 승인 심사 및 완료</span>
                 </div>
-                <p className="text-[#495057] text-[11px] leading-tight mb-1">
-                  상담 후, 가입에 필요한 서류를 보내주시면 담당 매니저가 승인해드려요.<br />
-                  결과는 카카오톡으로 보내드립니다.
-                </p>
-                <div className="space-y-0.5 text-[10.5px] text-[#495057] pl-1 font-medium">
-                  <div className="flex items-center gap-1.5">
-                    <span>📄</span>
-                    <span>사업자 등록증</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span>🏢</span>
-                    <span>중개사무소 등록증</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span>🖼️</span>
-                    <span>프로필 사진</span>
+                <div style={{ padding: "10px 4px 0 6px", fontSize: "12px", color: "#666", lineHeight: 1.55 }}>
+                  <p>상담 후, 가입에 필요한 서류를 보내주시면 담당 매니저가 승인해드려요.</p>
+                  <p style={{ marginBottom: "8px" }}>결과는 카카오톡으로 보내드립니다.</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11.5px", color: "#444", fontWeight: 500 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>📄</span>
+                      <span>사업자 등록증</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>🏢</span>
+                      <span>중개사무소 등록증</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>🖼️</span>
+                      <span>프로필 사진</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* 하단 우측 직방 스타일 주황색 확인 버튼 */}
-            <div className="mt-3.5 flex justify-end">
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
               <button
                 type="button"
                 onClick={() => setShowGuideModal(false)}
-                className="px-6 py-2 bg-[#fa7743] hover:bg-[#f36b36] text-white font-extrabold text-xs rounded-lg shadow-sm transition cursor-pointer"
+                style={{
+                  padding: "7px 18px",
+                  backgroundColor: "#fa8258",
+                  color: "#ffffff",
+                  fontSize: "12.5px",
+                  fontWeight: 700,
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 1px 3px rgba(250, 130, 88, 0.3)"
+                }}
               >
                 확인
               </button>

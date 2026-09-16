@@ -399,65 +399,61 @@ export default function MobileNewsRealtyApplyPage() {
 
       {/* ━━━ 직방 스타일: 회원가입 절차 가이드 모달 ━━━ */}
       {showGuideModal && (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-[#dee2e6] relative">
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#f1f3f5]">
-              <h3 className="font-extrabold text-[15px] text-[#1f2328] tracking-tight">
-                회원가입 절차 가이드
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowGuideModal(false)}
-                className="text-[#868e96] hover:text-[#1f2328] text-base font-bold p-1 leading-none"
-              >
-                ✕
-              </button>
-            </div>
+        <div
+          onClick={() => setShowGuideModal(false)}
+          className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-xl max-w-sm w-full p-5 shadow-2xl relative"
+          >
+            <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-4 tracking-tight">
+              회원가입 절차 가이드
+            </h3>
 
-            <div className="space-y-2 text-xs text-[#495057]">
+            <div>
               {/* 1단계 */}
-              <div className="p-2.5 rounded-xl border border-[#ffa94d] bg-[#fff9db]/30">
-                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[11.5px] mb-0.5">
-                  <span>📝</span>
-                  <span>1단계 필수 정보 입력</span>
+              <div className="mb-4">
+                <div className="bg-[#f4f6f8] rounded-lg py-2 px-3 flex items-center gap-2">
+                  <span className="text-xs">📝</span>
+                  <span className="text-xs font-bold text-[#fa8258]">1단계 필수 정보 입력</span>
                 </div>
-                <p className="text-[#495057] text-[10.5px] leading-tight mb-1">
-                  원활한 상담을 위해 중개사무소 정보를 정확히 입력해 주세요.
-                </p>
-                <ul className="space-y-0.5 text-[#868e96] pl-1 text-[10px]">
-                  <li>• 중개사무소명</li>
-                  <li>• 대표 공인중개사 휴대폰 번호와 이메일</li>
-                  <li>• 주거래 매물 선택</li>
-                </ul>
+                <div className="pt-2 px-1 text-[11px] text-[#666] leading-relaxed">
+                  <p className="mb-1">원활한 상담을 위해 중개사무소 정보를 정확히 입력해 주세요.</p>
+                  <ul className="text-[#777] text-[10.5px] space-y-0.5 pl-1">
+                    <li>· 중개사무소명</li>
+                    <li>· 대표 공인 중개사 휴대폰 번호와 이메일</li>
+                    <li>· 주거래 매물 선택</li>
+                  </ul>
+                </div>
               </div>
 
               {/* 2단계 */}
-              <div className="p-2.5 rounded-xl border border-[#edf0f2] bg-[#f8f9fa]">
-                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[11.5px] mb-0.5">
-                  <span>📞</span>
-                  <span>2단계 가입신청 상담</span>
+              <div className="mb-4">
+                <div className="bg-[#f4f6f8] rounded-lg py-2 px-3 flex items-center gap-2">
+                  <span className="text-xs">👤</span>
+                  <span className="text-xs font-bold text-[#fa8258]">2단계 가입신청 상담</span>
                 </div>
-                <p className="text-[#495057] text-[10.5px] leading-tight mb-0.5">
-                  담당 매니저가 가입 신청서를 확인하고 연락드려요.
-                </p>
-                <p className="text-[#868e96] pl-1 text-[10px]">
-                  • 최대 1~2 영업일 소요
-                </p>
+                <div className="pt-2 px-1 text-[11px] text-[#666] leading-relaxed">
+                  <p className="mb-0.5">담당 매니저가 가입 신청서를 확인하고 연락드려요.</p>
+                  <p className="text-[#777] text-[10.5px]">· 최대 1~2 영업일 소요</p>
+                </div>
               </div>
 
               {/* 3단계 */}
-              <div className="p-2.5 rounded-xl border border-[#edf0f2] bg-[#f8f9fa]">
-                <div className="flex items-center gap-1.5 font-bold text-[#f76707] text-[11.5px] mb-0.5">
-                  <span>📄</span>
-                  <span>3단계 승인 심사 및 완료</span>
+              <div className="mb-4">
+                <div className="bg-[#f4f6f8] rounded-lg py-2 px-3 flex items-center gap-2">
+                  <span className="text-xs">📋</span>
+                  <span className="text-xs font-bold text-[#fa8258]">3단계 승인 심사 및 완료</span>
                 </div>
-                <p className="text-[#495057] text-[10.5px] leading-tight mb-1">
-                  상담 후, 가입에 필요한 서류를 보내주시면 승인해드려요.
-                </p>
-                <div className="space-y-0.5 text-[10px] text-[#495057] pl-1 font-medium">
-                  <div>📄 사업자 등록증</div>
-                  <div>🏢 중개사무소 등록증</div>
-                  <div>🖼️ 프로필 사진</div>
+                <div className="pt-2 px-1 text-[11px] text-[#666] leading-relaxed">
+                  <p>상담 후, 가입에 필요한 서류를 보내주시면 승인해드려요.</p>
+                  <p className="mb-1.5">결과는 카카오톡으로 보내드립니다.</p>
+                  <div className="space-y-1 text-[10.5px] text-[#444] font-medium">
+                    <div>📄 사업자 등록증</div>
+                    <div>🏢 중개사무소 등록증</div>
+                    <div>🖼️ 프로필 사진</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -466,7 +462,8 @@ export default function MobileNewsRealtyApplyPage() {
               <button
                 type="button"
                 onClick={() => setShowGuideModal(false)}
-                className="px-5 py-2 bg-[#fa7743] text-white font-bold text-xs rounded-lg shadow-sm"
+                style={{ backgroundColor: "#fa8258" }}
+                className="px-5 py-1.5 text-white font-bold text-xs rounded-md shadow-xs cursor-pointer"
               >
                 확인
               </button>
