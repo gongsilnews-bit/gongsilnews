@@ -5,30 +5,53 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
-const benefits = [
+const benefits: {
+  num: string;
+  tag: string;
+  title: React.ReactNode;
+  desc: string;
+  badgeBg: string;
+  badgeColor: string;
+  numColor: string;
+}[] = [
   {
     num: "01",
-    tag: "콘텐츠",
-    title: "유튜브·블로그를 꾸준히 운영할 수 있습니다.",
-    desc: "내 지역의 공실과 부동산 소식이 계속해서 새로운 콘텐츠가 됩니다. 무엇을 올릴지 더 이상 고민하지 마세요.",
+    tag: "기본 혜택",
+    title: (
+      <>
+        11만 중개망 공실 20건 &<br />
+        매월 언론 기사 4건 등록
+      </>
+    ),
+    desc: "전국 11만 부동산이 실시간 무료 열람하는 공실뉴스에 매월 공실 매물 20건과 공식 보도기사 4건을 자유롭게 등록·홍보할 수 있습니다.",
     badgeBg: "#fff2e8",
     badgeColor: "#ea580c",
     numColor: "#fa8258",
   },
   {
     num: "02",
-    tag: "수익",
-    title: "새로운 광고수익을 만들 수 있습니다.",
-    desc: "건물주와 임대인의 공실·매물 홍보를 통해 지역 광고와 중개의 새로운 기회를 만들 수 있습니다.",
+    tag: "AI 원클릭",
+    title: (
+      <>
+        AI로 유튜브 대본부터<br />
+        블로그 포스팅까지 원클릭
+      </>
+    ),
+    desc: "등록한 공실 매물 데이터를 기반으로, AI가 뉴스 기사 초안부터 네이버 블로그 글, 유튜브 쇼츠 대본까지 단 한 번의 클릭으로 자동 완성합니다.",
     badgeBg: "#eff6ff",
     badgeColor: "#1d4ed8",
     numColor: "#3b82f6",
   },
   {
     num: "03",
-    tag: "네트워크",
-    title: "강력한 지역 네트워크를 만들 수 있습니다.",
-    desc: "취재와 콘텐츠를 통해 건물주·임대인·사업자·투자자와 자연스럽게 연결됩니다.",
+    tag: "수익 다각화",
+    title: (
+      <>
+        지역 독점 로컬기자로<br />
+        새로운 언론 광고수익 창출
+      </>
+    ),
+    desc: "단순 중개보수에 머물지 않고, 지역 건물주 및 상가 사업자를 대상으로 배너 광고, 기사형 홍보 등 언론사 광고 영업을 통해 추가 수익을 만듭니다.",
     badgeBg: "#fef3c7",
     badgeColor: "#b45309",
     numColor: "#f59e0b",
