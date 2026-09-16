@@ -561,7 +561,330 @@ export default function MobileNewsRealtyPage() {
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          5. 내 지역/단지 로컬 부동산 기자가 되세요! (모바일 Closing)
+          5. 플랜 비교 (모바일 요금 안내 & 플랜 비교)
+      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section style={{ padding: "54px 18px", backgroundColor: "#f8fafc", borderTop: "1px solid #eaedf0", borderBottom: "1px solid #eaedf0", textAlign: "center" }}>
+        
+        {/* 상단 뱃지 */}
+        <div style={{
+          display: "inline-block",
+          background: "rgba(250, 130, 88, 0.12)",
+          border: "1px solid rgba(250, 130, 88, 0.3)",
+          color: "#ea580c",
+          padding: "5px 14px",
+          borderRadius: 20,
+          fontSize: "12px",
+          fontWeight: 800,
+          marginBottom: 14
+        }}>
+          가입비 0원 · 연회비 0원
+        </div>
+
+        <h2 style={{
+          fontSize: 25,
+          fontWeight: 900,
+          color: "#1c1917",
+          letterSpacing: "-1px",
+          margin: "0 0 10px 0",
+          wordBreak: "keep-all",
+          lineHeight: 1.35
+        }}>
+          부담 없는 <span style={{ color: "#fa8258" }}>월 3만 원</span>으로<br />
+          지역 1등 로컬기자가 되세요
+        </h2>
+
+        <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 28px 0", lineHeight: 1.55, wordBreak: "keep-all" }}>
+          일반 부동산 무료 회원과 공실뉴스부동산 Pro 파트너의 혜택 차이를 확인해 보세요.
+        </p>
+
+        {/* 2개 플랜 카드 스택 */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, textAlign: "left" }}>
+          
+          {/* 1. 공실뉴스부동산 (Pro) - 모바일 상단 우선 노출 및 하이라이트 */}
+          <div style={{
+            background: "#ffffff",
+            border: "2px solid #fa8258",
+            borderRadius: 18,
+            padding: "26px 20px",
+            boxShadow: "0 10px 30px rgba(250, 130, 88, 0.16)",
+            position: "relative"
+          }}>
+            <div style={{
+              position: "absolute",
+              top: -12,
+              left: 20,
+              background: "linear-gradient(135deg, #fa8258 0%, #f37243 100%)",
+              color: "#ffffff",
+              padding: "3px 12px",
+              borderRadius: 14,
+              fontSize: "11px",
+              fontWeight: 900,
+              boxShadow: "0 2px 8px rgba(250, 130, 88, 0.35)"
+            }}>
+              🔥 강력 추천 플랜
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, marginTop: 4 }}>
+              <h3 style={{ fontSize: 20, fontWeight: 900, color: "#1c1917", margin: 0 }}>
+                공실뉴스부동산 <span style={{ color: "#fa8258" }}>(Pro)</span>
+              </h3>
+              <span style={{ fontSize: 11, fontWeight: 800, background: "#fff2e8", color: "#ea580c", padding: "3px 8px", borderRadius: 12 }}>
+                로컬기자 전용
+              </span>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 30, fontWeight: 900, color: "#1c1917", letterSpacing: "-0.5px" }}>
+                ₩30,000
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#64748b", marginLeft: 4 }}>
+                  / 월 (VAT 포함)
+                </span>
+              </div>
+              <p style={{ fontSize: 11.5, color: "#fa8258", fontWeight: 700, margin: "4px 0 0" }}>
+                가입비 0원 · 연회비 0원 · 언제든 해지 가능
+              </p>
+            </div>
+
+            <button
+              onClick={handleApplyClick}
+              style={{
+                width: "100%",
+                height: 46,
+                backgroundColor: "#fa8258",
+                border: "none",
+                borderRadius: 10,
+                fontSize: 14.5,
+                fontWeight: 800,
+                color: "#ffffff",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(250, 130, 88, 0.28)",
+                marginBottom: 20
+              }}
+            >
+              공실뉴스부동산 Pro 신청하기 ➔
+            </button>
+
+            <div style={{ borderTop: "1px solid #fed7aa", paddingTop: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#1c1917", marginBottom: 12 }}>
+                포함된 모든 Pro 전용 혜택
+              </div>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10, fontSize: 12.5 }}>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
+                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span>공실 등록 : <strong>월 20건</strong> (11만 중개망 실시간 노출)</span>
+                </li>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
+                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span>기사 등록 : <strong>월 4건 정식 송고</strong> (뉴스 포털)</span>
+                </li>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
+                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span>물건 보고서 : <strong style={{ color: "#fa8258" }}>AI 물건보고서 전체 무제한 생성</strong></span>
+                </li>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
+                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span>광고 등록 : <strong>포털 내 매물 광고 등록 가능</strong></span>
+                </li>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
+                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span>광고 영업 : <strong style={{ color: "#ea580c" }}>뉴스 광고영업 가능 (영업비 20~50% 지급)</strong></span>
+                </li>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
+                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span>커뮤니티 : <strong>공실뉴스 정회원 커뮤니티 가입</strong></span>
+                </li>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
+                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span>자료실 : <strong>실무 서식·특약·계약서 무료 다운</strong></span>
+                </li>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
+                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span>드론 영상 : <strong>고화질 드론 영상 저작권 무료 상업 이용</strong></span>
+                </li>
+                <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
+                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span>공실 스터디 : <strong>실무 마케팅 강좌 일부 무료 수강</strong></span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* 2. 일반부동산 (무료) */}
+          <div style={{
+            background: "#ffffff",
+            border: "1px solid #e2e8f0",
+            borderRadius: 18,
+            padding: "24px 20px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#475569", margin: 0 }}>
+                일반부동산
+              </h3>
+              <span style={{ fontSize: 11, fontWeight: 700, background: "#f1f5f9", color: "#64748b", padding: "3px 8px", borderRadius: 12 }}>
+                기본 플랜
+              </span>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 26, fontWeight: 900, color: "#334155" }}>
+                ₩0
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8", marginLeft: 4 }}>
+                  / 평생 무료
+                </span>
+              </div>
+            </div>
+
+            <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14 }}>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8, fontSize: 12 }}>
+                <li style={{ display: "flex", alignItems: "center", gap: 8, color: "#475569" }}>
+                  <span style={{ color: "#059669", fontWeight: 900 }}>✓</span>
+                  <span>공실 등록 : <strong>최초 3건</strong></span>
+                </li>
+                <li style={{ display: "flex", alignItems: "center", gap: 8, color: "#475569" }}>
+                  <span style={{ color: "#059669", fontWeight: 900 }}>✓</span>
+                  <span>기사 등록 : <strong>최초 3건</strong></span>
+                </li>
+                <li style={{ display: "flex", alignItems: "center", gap: 8, color: "#475569" }}>
+                  <span style={{ color: "#059669", fontWeight: 900 }}>✓</span>
+                  <span>물건 보고서 : <strong>일부 기본 열람</strong></span>
+                </li>
+                <li style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8" }}>
+                  <span style={{ color: "#cbd5e1" }}>✕</span>
+                  <span style={{ textDecoration: "line-through" }}>광고 등록 : 불가</span>
+                </li>
+                <li style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8" }}>
+                  <span style={{ color: "#cbd5e1" }}>✕</span>
+                  <span style={{ textDecoration: "line-through" }}>뉴스 광고영업 : 불가</span>
+                </li>
+                <li style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8" }}>
+                  <span style={{ color: "#cbd5e1" }}>✕</span>
+                  <span style={{ textDecoration: "line-through" }}>정회원 커뮤니티 : 이용 불가</span>
+                </li>
+                <li style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8" }}>
+                  <span style={{ color: "#cbd5e1" }}>✕</span>
+                  <span style={{ textDecoration: "line-through" }}>실무 자료실 다운 : 불가</span>
+                </li>
+                <li style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8" }}>
+                  <span style={{ color: "#cbd5e1" }}>✕</span>
+                  <span style={{ textDecoration: "line-through" }}>드론 영상 무료 : 불가</span>
+                </li>
+                <li style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8" }}>
+                  <span style={{ color: "#cbd5e1" }}>✕</span>
+                  <span style={{ textDecoration: "line-through" }}>공실스터디 강좌 : 이용 불가</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            모바일 상세 혜택 비교표
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <div style={{ marginTop: 36 }}>
+          <div style={{ textAlign: "center", marginBottom: 16 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 900, color: "#1c1917", margin: "0 0 4px 0" }}>
+              일반부동산 vs Pro 혜택 비교표
+            </h3>
+            <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>
+              가입비 0원 · 월 3만 원으로 압도적인 혜택을 누리세요
+            </p>
+          </div>
+
+          <div style={{
+            background: "#ffffff",
+            borderRadius: 14,
+            border: "1px solid #e2e8f0",
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.04)"
+          }}>
+            <table style={{ width: "100%", minWidth: 420, borderCollapse: "collapse", textAlign: "left", fontSize: "12.5px" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#334155", background: "#f8fafc", width: "28%" }}>
+                    비교 항목
+                  </th>
+                  <th style={{ padding: "12px 10px", fontWeight: 700, color: "#64748b", textAlign: "center", background: "#f8fafc", width: "32%" }}>
+                    일반 (무료)
+                  </th>
+                  <th style={{ padding: "12px 12px", fontWeight: 900, color: "#ea580c", textAlign: "center", background: "#fff7ed", borderLeft: "1.5px solid #fed7aa", width: "40%" }}>
+                    공실뉴스 (Pro)
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { name: "공실 등록", free: "최초 3건", pro: "월 20건 (11만 망)", hl: false },
+                  { name: "기사 등록", free: "최초 3건", pro: "월 4건 (포털 송고)", hl: false },
+                  { name: "물건 보고서", free: "일부 열람", pro: "AI 보고서 전체 무제한", hl: true },
+                  { name: "광고 등록", free: "불가", pro: "등록 가능 (포털 매물)", hl: false },
+                  { name: "광고 영업", free: "불가", pro: "가능 (20~50% 수익)", hl: true },
+                  { name: "커뮤니티", free: "불가", pro: "정회원 가입", hl: false },
+                  { name: "실무 자료실", free: "불가", pro: "서식 무료 다운", hl: false },
+                  { name: "드론 영상", free: "불가", pro: "저작권 무료 이용", hl: true },
+                  { name: "공실 스터디", free: "불가", pro: "일부 무료 수강", hl: false }
+                ].map((row, idx) => {
+                  const isFreeDisabled = row.free === "불가";
+                  return (
+                    <tr
+                      key={idx}
+                      style={{
+                        borderBottom: idx === 8 ? "none" : "1px solid #f1f5f9",
+                        backgroundColor: row.hl ? "#fffcf9" : idx % 2 === 0 ? "#ffffff" : "#fafbfc"
+                      }}
+                    >
+                      <td style={{ padding: "11px 14px", fontWeight: 700, color: "#1e293b", whiteSpace: "nowrap" }}>
+                        {row.hl && <span style={{ color: "#fa8258", marginRight: 4 }}>•</span>}
+                        {row.name}
+                      </td>
+                      <td style={{ padding: "11px 8px", textAlign: "center", color: isFreeDisabled ? "#94a3b8" : "#475569", fontWeight: isFreeDisabled ? 500 : 700 }}>
+                        {isFreeDisabled ? "✕ 불가" : row.free}
+                      </td>
+                      <td style={{
+                        padding: "11px 12px",
+                        textAlign: "center",
+                        fontWeight: 800,
+                        color: "#1c1917",
+                        background: row.hl ? "#fff8f1" : "#fffcf9",
+                        borderLeft: "1.5px solid #fed7aa",
+                        whiteSpace: "nowrap"
+                      }}>
+                        <span style={{ color: "#fa8258", marginRight: 4 }}>✓</span>
+                        {row.pro}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <button
+              onClick={handleApplyClick}
+              style={{
+                width: "100%",
+                height: 46,
+                backgroundColor: "#fa8258",
+                border: "none",
+                borderRadius: 10,
+                fontSize: 14.5,
+                fontWeight: 800,
+                color: "#ffffff",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(250, 130, 88, 0.28)"
+              }}
+            >
+              월 3만 원 Pro 파트너 신청하기 ➔
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          6. 내 지역/단지 로컬 부동산 기자가 되세요! (모바일 Closing)
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{ padding: "50px 20px", textAlign: "center", backgroundColor: "#ffffff" }}>
         <h2 style={{
