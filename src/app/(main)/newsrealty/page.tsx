@@ -211,7 +211,7 @@ export default function NewsRealtyPage() {
               무엇이 좋아질까요?
             </h2>
             <p style={{ fontSize: "16.5px", color: "#64748b", margin: 0 }}>
-              공실뉴스부동산으로 전환하는 순간, 3가지 핵심 성장 엔진이 작동합니다.
+              공실뉴스부동산이 되시면, 부동산마케팅이 쉬워집니다.
             </p>
           </div>
 

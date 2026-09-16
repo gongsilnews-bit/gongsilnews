@@ -214,7 +214,7 @@ export default function MobileNewsRealtyPage() {
             무엇이 좋아질까요?
           </h2>
           <p style={{ fontSize: 14, color: "#64748b", margin: 0, wordBreak: "keep-all" }}>
-            공실뉴스부동산이 되는 순간 3가지 강력한 무기를 얻게 됩니다.
+            공실뉴스부동산이 되시면, 부동산마케팅이 쉬워집니다.
           </p>
         </div>
 
