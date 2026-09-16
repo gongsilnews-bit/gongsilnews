@@ -9,6 +9,7 @@ import { submitNewsrealtyApplication } from "@/app/actions/newsrealtyApply";
 export default function MobileNewsRealtyApplyPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // 이메일 분리
   const [emailLocal, setEmailLocal] = useState("");
@@ -34,6 +35,7 @@ export default function MobileNewsRealtyApplyPage() {
       try {
         const supabase = createClient();
         const { data: { user: authUser } } = await supabase.auth.getUser();
+        setAuthLoading(false);
 
         if (authUser) {
           setUser(authUser);
@@ -71,9 +73,12 @@ export default function MobileNewsRealtyApplyPage() {
               setCustomDomain(dom);
             }
           }
+        } else {
+          // 비로그인 상태 (authLoading은 이미 위에서 false로 설정됨)
         }
       } catch (err) {
         console.error("Error loading user info:", err);
+        setAuthLoading(false);
       }
     }
     loadUserData();
@@ -143,65 +148,245 @@ export default function MobileNewsRealtyApplyPage() {
     }
   };
 
-  // 접수 완료 화면
-  if (isSubmitted) {
+  // ━━━ 0. 로딩 중 ━━━
+  if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#f5f6f8] text-[#222] font-sans flex items-center justify-center p-4">
-        <div className="max-w-[400px] w-full bg-white rounded-xl p-6 text-center shadow-xs border border-[#e5e8ec]">
-          <div className="w-12 h-12 bg-[#fa7743]/10 text-[#fa7743] rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
-            ✓
-          </div>
-          <h1 className="text-xl font-bold text-[#222] mb-1.5">
-            회원가입 신청 완료
-          </h1>
-          <p className="text-xs text-[#666] leading-relaxed mb-5">
-            <strong className="text-[#222]">{submittedData?.applicantName || submittedData?.agencyName}</strong> 님,<br />
-            확인 후 <strong>1~2일 이내</strong> 전화드리겠습니다.
-          </p>
-
-          <div className="bg-[#f8f9fa] rounded-lg p-3.5 text-xs text-left mb-5 space-y-1.5 border border-[#edf0f2]">
-            <div className="flex justify-between">
-              <span className="text-[#888]">신청자</span>
-              <span className="font-semibold text-[#222]">{submittedData?.applicantName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#888]">연락처</span>
-              <span className="font-semibold text-[#222]">{submittedData?.phone}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#888]">E-mail</span>
-              <span className="font-semibold text-[#222]">{submittedData?.email}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#888]">중개사무소</span>
-              <span className="font-semibold text-[#222]">{submittedData?.agencyName}</span>
-            </div>
-            <div className="flex justify-between items-center pt-1.5 border-t border-[#e5e8ec]">
-              <span className="text-[#888]">접수 문자</span>
-              <span className="text-[10.5px] px-1.5 py-0.5 rounded font-bold bg-[#e6fcf5] text-[#0ca678]">
-                {submittedData?.smsSent ? "발송 완료" : "순차 발송중"}
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Link
-              href="/m/newsrealty"
-              className="block w-full py-2.5 rounded-lg bg-white border border-[#dfe2e6] text-[#444] text-xs font-semibold text-center"
-            >
-              소개 홈으로
-            </Link>
-            <Link
-              href="/m"
-              className="block w-full py-2.5 rounded-lg bg-[#fa7743] text-white text-xs font-bold text-center shadow-2xs"
-            >
-              공실뉴스 메인으로
-            </Link>
-          </div>
-        </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-sm text-[#999]">로딩 중...</div>
       </div>
     );
   }
+
+  // ━━━ 0-1. 비로그인 안내 화면 ━━━
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#f7f8f9] font-sans">
+        {/* 헤더 */}
+        <header className="sticky top-0 z-30 bg-white border-b border-[#eef0f2] px-4 py-3.5 flex items-center justify-between">
+          <Link href="/m/newsrealty" className="text-[#444] text-sm font-semibold flex items-center gap-1">‹ 뒤로</Link>
+          <Link href="/m/newsrealty" className="font-bold text-[16px] text-[#222] tracking-tight no-underline">공실뉴스부동산</Link>
+          <div className="w-8" />
+        </header>
+
+        <main className="px-5 py-10 flex flex-col items-center">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-[#eaedf0] p-8 text-center">
+            {/* 아이콘 */}
+            <div className="w-16 h-16 bg-[#fff2e8] rounded-full flex items-center justify-center text-3xl mx-auto mb-5">🏠</div>
+
+            <span className="inline-block bg-[#fff2e8] text-[#ea580c] text-[11px] font-bold px-3 py-1 rounded-full mb-3">
+              공실뉴스부동산 Pro 입점 신청
+            </span>
+
+            <h1 className="text-[22px] font-black text-[#1a1a1a] mb-3 leading-snug" style={{ wordBreak: "keep-all" }}>
+              로그인 후<br />신청하실 수 있어요
+            </h1>
+            <p className="text-[13.5px] text-[#64748b] leading-relaxed mb-7" style={{ wordBreak: "keep-all" }}>
+              공실뉴스부동산 Pro 파트너 입점 신청은<br />
+              <strong className="text-[#333]">공실뉴스 회원</strong>만 가능합니다.<br />
+              아직 회원이 아니시면 지금 가입해 보세요!
+            </p>
+
+            {/* 버튼 그룹 */}
+            <div className="space-y-3">
+              <a
+                href="/signup"
+                className="block w-full h-12 leading-[48px] rounded-xl text-white text-[15px] font-black text-center no-underline shadow-md"
+                style={{ backgroundColor: "#fa8258", boxShadow: "0 4px 14px rgba(250,130,88,0.35)" }}
+              >
+                회원가입 하러 가기
+              </a>
+              <a
+                href={`/login?returnTo=${encodeURIComponent("/m/newsrealty/apply")}`}
+                className="block w-full h-12 leading-[48px] rounded-xl text-[#444] text-[14px] font-bold text-center no-underline border border-[#dfe2e6] bg-white"
+              >
+                이미 회원이신가요? 로그인
+              </a>
+            </div>
+
+            {/* 절차 안내 링크 */}
+            <div className="mt-6 pt-5 border-t border-[#f0f2f5]">
+              <button
+                type="button"
+                onClick={() => setShowGuideModal(true)}
+                className="text-[#fa8258] text-[13px] font-bold underline cursor-pointer bg-transparent border-none"
+              >
+                📋 회원가입 및 이용 절차 보기
+              </button>
+            </div>
+          </div>
+        </main>
+
+        {/* 가이드 모달 (비로그인 상태에서도 볼 수 있게) */}
+        {showGuideModal && (
+          <div
+            onClick={() => setShowGuideModal(false)}
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl relative max-h-[88vh] overflow-y-auto"
+            >
+              <button type="button" onClick={() => setShowGuideModal(false)} className="absolute top-4 right-4 text-[#94a3b8] text-xl p-1 leading-none">✕</button>
+              <div className="mb-4">
+                <span className="inline-block bg-[#fff2e8] text-[#ea580c] text-[11px] font-bold px-2 py-0.5 rounded-full mb-1">안내 가이드</span>
+                <h3 className="text-[18px] font-black text-[#1e293b] tracking-tight m-0">회원가입 및 이용 절차 안내</h3>
+                <p className="text-[12.5px] text-[#64748b] mt-1 mb-0">공실뉴스부동산 4단계 간편 가입 절차</p>
+              </div>
+              <div className="space-y-3">
+                <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="bg-[#fa8258] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">1단계</span>
+                    <span className="text-[14px] font-bold text-[#1e293b]">회원가입 및 중개업소 등록</span>
+                  </div>
+                  <p className="text-[12.5px] text-[#475569] leading-relaxed mb-2.5">
+                    • 공실뉴스 포털에서 기본 부동산 회원가입 진행<br />
+                    • 대표 공인중개사 및 소속 중개사무소 정보 등록
+                  </p>
+                  <a href="/login?returnTo=%2Fsignup" className="inline-flex items-center justify-center w-full py-2.5 px-3 bg-[#fa8258] text-white text-[13px] font-bold rounded-lg shadow-xs no-underline">
+                    회원가입 / 로그인 바로가기 ➔
+                  </a>
+                </div>
+                <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="bg-[#fa8258] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">2단계</span>
+                    <span className="text-[14px] font-bold text-[#1e293b]">신청하기</span>
+                  </div>
+                  <p className="text-[12.5px] text-[#475569] leading-relaxed m-0">
+                    • <strong>로그인 상태</strong>에서 입점 신청서 제출<br />
+                    • 성함, 연락처, 사무소 확인 후 원클릭 신청 완료
+                  </p>
+                </div>
+                <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="bg-[#fa8258] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">3단계</span>
+                    <span className="text-[14px] font-bold text-[#1e293b]">승인심사 및 결과 안내</span>
+                  </div>
+                  <p className="text-[12.5px] text-[#475569] leading-relaxed m-0">
+                    • 담당 매니저가 중개업소 정보 확인 후 <strong>신속 승인</strong><br />
+                    • 별도 복잡한 서류 제출 없이 빠른 검토<br />
+                    • <span className="text-[#059669] font-semibold">카카오톡 알림톡 및 유선으로 결과 안내</span>
+                  </p>
+                </div>
+                <div className="bg-[#fffbf7] border border-[#fed7aa] rounded-xl p-3.5">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="bg-[#ea580c] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">4단계</span>
+                    <span className="text-[14px] font-black text-[#1e293b]">이용료 납부 (기간별 할인)</span>
+                  </div>
+                  <p className="text-[12.5px] text-[#475569] leading-relaxed mb-2">
+                    • 승인 완료 후 희망 기간 선택 납부 (즉시 정식 혜택 개시)
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5 text-center">
+                    <div className="bg-white border border-[#e2e8f0] rounded-lg py-2 px-1">
+                      <div className="text-[12px] font-bold text-[#334155]">3개월</div>
+                      <div className="text-[11px] text-[#64748b]">월 30,000원</div>
+                    </div>
+                    <div className="bg-white border border-[#fdba74] rounded-lg py-2 px-1 shadow-2xs">
+                      <div className="text-[12px] font-bold text-[#ea580c]">6개월</div>
+                      <div className="text-[11px] font-bold text-[#ea580c]">5% 할인</div>
+                    </div>
+                    <div className="bg-[#fff7ed] border border-[#fa8258] rounded-lg py-2 px-1 shadow-2xs">
+                      <div className="text-[12px] font-black text-[#c2410c]">12개월</div>
+                      <div className="text-[11px] font-black text-[#c2410c]">15% 할인 🔥</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <button type="button" onClick={() => setShowGuideModal(false)} style={{ backgroundColor: "#fa8258" }} className="w-full h-11 text-white font-bold text-[14.5px] rounded-xl shadow-md cursor-pointer flex items-center justify-center">
+                  확인 및 닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (isSubmitted) {
+    return (
+      <div style={{ backgroundColor: "#f7f8f9", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif", display: "flex", flexDirection: "column" }}>
+        {/* 헤더 */}
+        <header style={{ backgroundColor: "#fff", borderBottom: "1px solid #eef0f2", height: "52px", position: "sticky", top: 0, zIndex: 30, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px" }}>
+          <Link href="/m/newsrealty" style={{ fontSize: "14px", fontWeight: 600, color: "#444", textDecoration: "none" }}>‹ 뒤로</Link>
+          <Link href="/m/newsrealty" style={{ fontSize: "16px", fontWeight: 700, color: "#222", textDecoration: "none" }}>공실뉴스부동산</Link>
+          <div style={{ width: "32px" }} />
+        </header>
+
+        <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 16px" }}>
+          <div style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "20px",
+            border: "1px solid #eaedf0",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+            padding: "40px 28px 32px 28px",
+            width: "100%",
+            maxWidth: "400px",
+            textAlign: "center"
+          }}>
+            {/* 체크 아이콘 */}
+            <div style={{
+              width: "60px", height: "60px",
+              backgroundColor: "#fff2e8", borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "24px", fontWeight: 900, color: "#fa8258",
+              margin: "0 auto 20px auto"
+            }}>✓</div>
+
+            <h1 style={{ fontSize: "22px", fontWeight: 900, color: "#1a1a1a", marginBottom: "8px", letterSpacing: "-0.4px" }}>
+              회원가입 신청 완료
+            </h1>
+            <p style={{ fontSize: "14px", color: "#64748b", lineHeight: 1.65, marginBottom: "24px" }}>
+              <strong style={{ color: "#222", fontWeight: 700 }}>{submittedData?.applicantName || submittedData?.agencyName}</strong> 님,<br />
+              확인 후 <strong style={{ color: "#222" }}>1~2일 이내</strong> 전화드리겠습니다.
+            </p>
+
+            {/* 접수 정보 */}
+            <div style={{
+              backgroundColor: "#f8f9fa", borderRadius: "12px",
+              border: "1px solid #edf0f2", padding: "16px 18px",
+              textAlign: "left", marginBottom: "24px"
+            }}>
+              {[
+                { label: "신청자", value: submittedData?.applicantName },
+                { label: "연락처", value: submittedData?.phone },
+                { label: "E-mail", value: submittedData?.email },
+                { label: "중개사무소", value: submittedData?.agencyName },
+              ].map((row, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f0f2f5" }}>
+                  <span style={{ fontSize: "12px", color: "#888" }}>{row.label}</span>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#222" }}>{row.value}</span>
+                </div>
+              ))}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px" }}>
+                <span style={{ fontSize: "12px", color: "#888" }}>접수 문자</span>
+                <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "5px", fontWeight: 800, backgroundColor: "#e6fcf5", color: "#0ca678" }}>
+                  {submittedData?.smsSent ? "발송 완료" : "순차 발송중"}
+                </span>
+              </div>
+            </div>
+
+            {/* 버튼 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <Link
+                href="/m/newsrealty"
+                style={{ display: "block", height: "46px", lineHeight: "46px", borderRadius: "10px", backgroundColor: "#fff", border: "1.5px solid #dfe2e6", color: "#444", fontSize: "13px", fontWeight: 700, textDecoration: "none", textAlign: "center" }}
+              >
+                소개 홈으로
+              </Link>
+              <Link
+                href="/m"
+                style={{ display: "block", height: "46px", lineHeight: "46px", borderRadius: "10px", backgroundColor: "#fa8258", color: "#fff", fontSize: "13px", fontWeight: 800, textDecoration: "none", textAlign: "center", boxShadow: "0 4px 12px rgba(250,130,88,0.3)" }}
+              >
+                공실뉴스 메인으로
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-white text-[#222] pb-24 font-sans">
