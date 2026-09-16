@@ -58,6 +58,23 @@ CREATE INDEX IF NOT EXISTS idx_vacancies_admin_list
 -- 4) 새 컬럼/인덱스 통계 갱신
 ANALYZE public.vacancies;
 
+-- 5) PostgREST 스키마 캐시 새로고침
+--    이걸 빠뜨리면 컬럼을 만들어도 API 가 "column vacancies.is_onbid does not exist" 를 낸다.
+NOTIFY pgrst, 'reload schema';
+
+-- 6) 검증 (이 결과가 화면에 표시된다)
+--    is_onbid 컬럼 정의 + 값 분포가 함께 나와야 정상이다.
+SELECT
+  (SELECT count(*) FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='vacancies' AND column_name='is_onbid')
+                                                    AS "컬럼생성됨(1이어야함)",
+  (SELECT count(*) FROM public.vacancies)           AS "전체",
+  (SELECT count(*) FROM public.vacancies WHERE is_onbid)     AS "경공매",
+  (SELECT count(*) FROM public.vacancies WHERE NOT is_onbid) AS "일반",
+  (SELECT count(*) FROM pg_indexes
+    WHERE schemaname='public' AND indexname='idx_vacancies_admin_list')
+                                                    AS "인덱스생성됨(1이어야함)";
+
 -- ──────────────────────────────────────────────────────────────
 -- 되돌리려면:
 --   DROP INDEX IF EXISTS public.idx_vacancies_admin_list;
