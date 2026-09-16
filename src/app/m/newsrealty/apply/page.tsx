@@ -450,10 +450,16 @@ export default function MobileNewsRealtyApplyPage() {
                     회원가입 및 중개업소 등록
                   </span>
                 </div>
-                <p className="text-[12.5px] text-[#475569] leading-relaxed m-0">
+                <p className="text-[12.5px] text-[#475569] leading-relaxed mb-2.5">
                   • 공실뉴스 포털에서 기본 부동산 회원가입 진행<br />
                   • 대표 공인중개사 및 소속 중개사무소 정보 등록
                 </p>
+                <a
+                  href="/m/signup"
+                  className="inline-flex items-center justify-center w-full py-2 px-3 bg-[#fa8258] text-white text-xs font-bold rounded-lg shadow-xs no-underline"
+                >
+                  회원가입 바로가기 ➔
+                </a>
               </div>
 
               {/* 2단계 */}

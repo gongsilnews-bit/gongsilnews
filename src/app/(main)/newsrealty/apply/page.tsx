@@ -657,26 +657,57 @@ export default function NewsRealtyApplyPage() {
                 backgroundColor: "#f8fafc",
                 border: "1px solid #e2e8f0",
                 borderRadius: "14px",
-                padding: "20px 22px"
+                padding: "20px 22px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "14px"
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <span style={{
-                    backgroundColor: "#fa8258",
-                    color: "#ffffff",
-                    fontSize: "13px",
-                    fontWeight: 800,
-                    padding: "3px 10px",
-                    borderRadius: "6px"
-                  }}>
-                    1단계
-                  </span>
-                  <span style={{ fontSize: "17.5px", fontWeight: 800, color: "#1e293b" }}>
-                    회원가입 및 중개업소 등록
-                  </span>
+                <div style={{ flex: "1 1 340px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                    <span style={{
+                      backgroundColor: "#fa8258",
+                      color: "#ffffff",
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      padding: "3px 10px",
+                      borderRadius: "6px"
+                    }}>
+                      1단계
+                    </span>
+                    <span style={{ fontSize: "17.5px", fontWeight: 800, color: "#1e293b" }}>
+                      회원가입 및 중개업소 등록
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
+                    <p style={{ margin: "0 0 4px 0" }}>• 공실뉴스 포털에서 기본 <strong>부동산 회원가입</strong>을 진행합니다.</p>
+                    <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>• 대표 공인중개사 정보 및 소속 중개업소 기본 정보를 등록합니다.</p>
+                  </div>
                 </div>
-                <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
-                  <p style={{ margin: "0 0 4px 0" }}>• 공실뉴스 포털에서 기본 <strong>부동산 회원가입</strong>을 진행합니다.</p>
-                  <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>• 대표 공인중개사 정보 및 소속 중개업소 기본 정보를 등록합니다.</p>
+
+                <div>
+                  <a
+                    href="/signup"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px",
+                      backgroundColor: "#fa8258",
+                      color: "#ffffff",
+                      fontSize: "14.5px",
+                      fontWeight: 800,
+                      padding: "11px 20px",
+                      borderRadius: "10px",
+                      textDecoration: "none",
+                      boxShadow: "0 3px 10px rgba(250, 130, 88, 0.3)",
+                      transition: "all 0.15s ease",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    회원가입 바로가기 ➔
+                  </a>
                 </div>
               </div>
 
