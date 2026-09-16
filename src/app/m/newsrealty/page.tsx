@@ -432,7 +432,7 @@ export default function MobileNewsRealtyPage() {
           boxShadow: "0 4px 12px rgba(250, 130, 88, 0.06)"
         }}>
           <div style={{ fontSize: 15.5, fontWeight: 900, color: "#1c1917", marginBottom: 8, wordBreak: "keep-all", lineHeight: 1.45 }}>
-            "공실뉴스기자가 되시면, AI 물건보고서부터 기사 / 유튜브 대본 / 블로그 글까지 쉽게 완성하실 수 있습니다."
+            "공실뉴스기자가 되시면, AI 물건보고서부터 기사 / 유튜브 대본 / 블로그 글까지<br />쉽게 완성하실 수 있습니다."
           </div>
           <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, wordBreak: "keep-all" }}>
             부동산 중개와 뉴스 광고영업까지, 공실뉴스부동산이 되시면 AI로 콘텐츠 제작이 쉬워집니다.
