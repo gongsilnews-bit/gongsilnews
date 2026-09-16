@@ -79,39 +79,56 @@ export async function submitNewsrealtyApplication(data: NewsrealtyApplicationInp
       .maybeSingle();
 
     if (insertError) {
-      console.warn("newsrealty_applications 테이블 저장 실패, site_inquiries 보조 저장 시도:", insertError.message);
-      
-      // 만약 newsrealty_applications 테이블이 아직 생성되지 않은 상태라면
-      // 기존 site_inquiries 테이블에 '공실뉴스부동산' 카테고리로 안전하게 폴백 저장
-      const interestsStr = (data.interests && data.interests.length > 0) ? `\n- 관심 서비스: ${data.interests.join(", ")}` : "";
-      const regionStr = [data.regionCity, data.regionDistrict, data.regionDong].filter(Boolean).join(" ");
-      const fullContent = `[공실뉴스부동산 파트너 신청]\n- 사무소: ${data.agencyName}\n- 지역: ${regionStr || "미입력"}\n- 주소: ${data.agencyAddress || "미입력"}${interestsStr}\n- 추가요청: ${data.memo || "없음"}`;
+      console.warn("newsrealty_applications 테이블 저장 실패, board_posts(newsrealty) 보조 저장 시도:", insertError.message);
 
-      const { data: fallbackInquiry, error: fallbackError } = await supabase
-        .from("site_inquiries")
+      // 만약 newsrealty_applications 테이블이 아직 생성되지 않은 상태라면
+      // 실제 존재하는 board_posts 테이블의 'newsrealty' 게시판에 안전하게 저장
+      const structuredMeta = {
+        name: data.name.trim(),
+        phone: cleanPhone,
+        email: data.email?.trim() || null,
+        agencyName: data.agencyName.trim(),
+        agencyAddress: data.agencyAddress?.trim() || "",
+        regionCity: data.regionCity?.trim() || "",
+        regionDistrict: data.regionDistrict?.trim() || "",
+        regionDong: data.regionDong?.trim() || "",
+        interests: data.interests || [],
+        memo: data.memo?.trim() || "",
+        status: "신규",
+        admin_notes: "",
+        sms_sent: false,
+        ip_address: data.ipAddress || null,
+        source: "newsrealty_apply",
+      };
+
+      const regionStr = [data.regionCity, data.regionDistrict, data.regionDong].filter(Boolean).join(" ");
+      const interestsStr = (data.interests && data.interests.length > 0) ? `\n- 관심 서비스: ${data.interests.join(", ")}` : "";
+      const fullContent = `[공실뉴스부동산 파트너 신청]\n- 신청자: ${data.name}\n- 연락처: ${cleanPhone}\n- 이메일: ${data.email || "미입력"}\n- 사무소: ${data.agencyName}\n- 지역: ${regionStr || "미입력"}\n- 주소: ${data.agencyAddress || "미입력"}${interestsStr}\n- 추가요청: ${data.memo || "없음"}`;
+
+      const { data: fallbackPost, error: fallbackError } = await supabase
+        .from("board_posts")
         .insert([
           {
-            name: data.name.trim(),
-            phone: cleanPhone,
-            email: data.email?.trim() || null,
-            category: "공실뉴스부동산",
+            board_id: "newsrealty",
             title: `[공실뉴스부동산 신청] ${data.agencyName} (${data.name})`,
             content: fullContent,
-            user_id: data.memberId || null,
-            ip_address: data.ipAddress || null,
-            status: "신규",
+            author_name: data.name.trim(),
+            author_id: data.memberId || null,
+            external_url: JSON.stringify(structuredMeta),
+            is_notice: false,
+            is_deleted: false,
           },
         ])
         .select()
         .single();
 
       if (fallbackError) {
-        console.error("Fallback site_inquiries insertion failed:", fallbackError);
-        return { success: false, message: "접수 처리 중 데이터베이스 오류가 발생했습니다: " + insertError.message };
+        console.error("Fallback board_posts insertion failed:", fallbackError);
+        return { success: false, message: "접수 처리 중 데이터베이스 오류가 발생했습니다: " + fallbackError.message };
       }
 
-      insertedId = fallbackInquiry.id;
-      usedTable = "site_inquiries";
+      insertedId = fallbackPost.id;
+      usedTable = "board_posts";
     } else {
       insertedId = inserted?.id || null;
     }
@@ -158,12 +175,32 @@ export async function submitNewsrealtyApplication(data: NewsrealtyApplicationInp
         }).catch((err) => console.error("Admin SMS notification failed:", err));
       }
 
-      // SMS 발송 상태 업데이트 (newsrealty_applications 테이블인 경우)
-      if (insertedId && usedTable === "newsrealty_applications" && smsSuccess) {
-        await supabase
-          .from("newsrealty_applications")
-          .update({ sms_sent: true })
-          .eq("id", insertedId);
+      // SMS 발송 상태 업데이트
+      if (insertedId && smsSuccess) {
+        if (usedTable === "newsrealty_applications") {
+          await supabase
+            .from("newsrealty_applications")
+            .update({ sms_sent: true })
+            .eq("id", insertedId);
+        } else if (usedTable === "board_posts") {
+          const { data: p } = await supabase
+            .from("board_posts")
+            .select("external_url")
+            .eq("id", insertedId)
+            .single();
+          if (p?.external_url) {
+            try {
+              const meta = JSON.parse(p.external_url);
+              meta.sms_sent = true;
+              await supabase
+                .from("board_posts")
+                .update({ external_url: JSON.stringify(meta) })
+                .eq("id", insertedId);
+            } catch (e) {
+              console.error("Failed to update sms_sent in board_posts:", e);
+            }
+          }
+        }
       }
     } catch (smsErr) {
       console.error("SMS notification exception:", smsErr);
@@ -201,45 +238,54 @@ export async function getNewsrealtyApplications(filterStatus?: string) {
     const { data, error } = await query;
 
     if (error) {
-      // 테이블이 없을 경우 site_inquiries에서 '공실뉴스부동산' 카테고리 폴백 조회
-      console.warn("newsrealty_applications 조회 실패, site_inquiries에서 폴백 조회:", error.message);
-      let fallbackQuery = supabase
-        .from("site_inquiries")
+      // 2. 테이블이 없을 경우 board_posts('newsrealty')에서 폴백 조회
+      let postQuery = supabase
+        .from("board_posts")
         .select("*")
-        .eq("category", "공실뉴스부동산")
+        .eq("board_id", "newsrealty")
+        .eq("is_deleted", false)
         .order("created_at", { ascending: false });
 
-      if (filterStatus && filterStatus !== "ALL") {
-        fallbackQuery = fallbackQuery.eq("status", filterStatus);
+      const { data: postData, error: postErr } = await postQuery;
+      if (postErr) {
+        return { success: false, message: postErr.message, data: [] };
       }
 
-      const { data: fallbackData, error: fbErr } = await fallbackQuery;
-      if (fbErr) {
-        return { success: false, message: fbErr.message, data: [] };
-      }
+      // board_posts JSON 데이터를 표준 application 포맷으로 매핑
+      const mapped = (postData || []).map((row: any) => {
+        let meta: any = {};
+        try {
+          meta = JSON.parse(row.external_url || "{}");
+        } catch (e) {
+          meta = {};
+        }
 
-      // site_inquiries 형식 데이터를 표준 application 포맷으로 매핑
-      const mapped = (fallbackData || []).map((row: any) => ({
-        id: row.id,
-        created_at: row.created_at,
-        applicant_name: row.name,
-        phone: row.phone,
-        email: row.email,
-        agency_name: row.title?.replace("[공실뉴스부동산 신청] ", "") || "중개사무소",
-        agency_address: "",
-        region_city: "",
-        region_district: "",
-        region_dong: "",
-        interests: [],
-        memo: row.content,
-        status: row.status || "신규",
-        admin_notes: row.admin_notes,
-        sms_sent: true,
-        email_sent: false,
-        kakao_sent: false,
-      }));
+        return {
+          id: row.id,
+          created_at: row.created_at,
+          applicant_name: meta.name || row.author_name,
+          phone: meta.phone || "",
+          email: meta.email || "",
+          agency_name: meta.agencyName || row.title?.replace("[공실뉴스부동산 신청] ", "") || "중개사무소",
+          agency_address: meta.agencyAddress || "",
+          region_city: meta.regionCity || "",
+          region_district: meta.regionDistrict || "",
+          region_dong: meta.regionDong || "",
+          interests: meta.interests || [],
+          memo: meta.memo || row.content,
+          status: meta.status || "신규",
+          admin_notes: meta.admin_notes || "",
+          sms_sent: meta.sms_sent !== false,
+          email_sent: false,
+          kakao_sent: false,
+        };
+      });
 
-      return { success: true, data: mapped, isFallback: true };
+      const filtered = (filterStatus && filterStatus !== "ALL")
+        ? mapped.filter((item: any) => item.status === filterStatus)
+        : mapped;
+
+      return { success: true, data: filtered, isFallback: true };
     }
 
     return { success: true, data: data || [], isFallback: false };
@@ -255,8 +301,8 @@ export async function getNewsrealtyApplications(filterStatus?: string) {
 export async function updateNewsrealtyStatus(id: string, status: string, isFallback: boolean = false) {
   try {
     const supabase = getAdminClient();
-    const table = isFallback ? "site_inquiries" : "newsrealty_applications";
 
+    // 1. newsrealty_applications 시도
     const updatePayload: any = {
       status,
       updated_at: new Date().toISOString(),
@@ -265,18 +311,37 @@ export async function updateNewsrealtyStatus(id: string, status: string, isFallb
       updatePayload.contacted_at = new Date().toISOString();
     }
 
-    const { data, error } = await supabase
-      .from(table)
+    const { error: appErr } = await supabase
+      .from("newsrealty_applications")
       .update(updatePayload)
-      .eq("id", id)
-      .select()
-      .single();
+      .eq("id", id);
 
-    if (error) {
-      return { success: false, message: error.message };
+    if (appErr) {
+      // 2. board_posts 폴백 업데이트
+      const { data: post } = await supabase
+        .from("board_posts")
+        .select("external_url")
+        .eq("id", id)
+        .single();
+
+      if (post?.external_url) {
+        try {
+          const meta = JSON.parse(post.external_url);
+          meta.status = status;
+          await supabase
+            .from("board_posts")
+            .update({
+              external_url: JSON.stringify(meta),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", id);
+        } catch (e) {
+          console.error("Failed to parse external_url in updateNewsrealtyStatus:", e);
+        }
+      }
     }
 
-    return { success: true, data };
+    return { success: true };
   } catch (err: any) {
     return { success: false, message: err.message };
   }
@@ -288,23 +353,42 @@ export async function updateNewsrealtyStatus(id: string, status: string, isFallb
 export async function updateNewsrealtyAdminNotes(id: string, notes: string, isFallback: boolean = false) {
   try {
     const supabase = getAdminClient();
-    const table = isFallback ? "site_inquiries" : "newsrealty_applications";
 
-    const { data, error } = await supabase
-      .from(table)
+    // 1. newsrealty_applications 시도
+    const { error: appErr } = await supabase
+      .from("newsrealty_applications")
       .update({
         admin_notes: notes,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", id)
-      .select()
-      .single();
+      .eq("id", id);
 
-    if (error) {
-      return { success: false, message: error.message };
+    if (appErr) {
+      // 2. board_posts 폴백 업데이트
+      const { data: post } = await supabase
+        .from("board_posts")
+        .select("external_url")
+        .eq("id", id)
+        .single();
+
+      if (post?.external_url) {
+        try {
+          const meta = JSON.parse(post.external_url);
+          meta.admin_notes = notes;
+          await supabase
+            .from("board_posts")
+            .update({
+              external_url: JSON.stringify(meta),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", id);
+        } catch (e) {
+          console.error("Failed to parse external_url in updateNewsrealtyAdminNotes:", e);
+        }
+      }
     }
 
-    return { success: true, data };
+    return { success: true };
   } catch (err: any) {
     return { success: false, message: err.message };
   }
