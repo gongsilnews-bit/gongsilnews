@@ -589,18 +589,18 @@ export default function MobileNewsRealtyPage() {
           wordBreak: "keep-all",
           lineHeight: 1.35
         }}>
-          부담 없는 <span style={{ color: "#fa8258" }}>월 3만 원</span>으로<br />
+          <span style={{ color: "#fa8258" }}>월 3만 원</span>으로<br />
           지역 1등 로컬기자가 되세요
         </h2>
 
         <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 28px 0", lineHeight: 1.55, wordBreak: "keep-all" }}>
-          일반 부동산 무료 회원과 공실뉴스부동산 Pro 파트너의 혜택 차이를 확인해 보세요.
+          일반 부동산 무료 회원과 공실뉴스부동산 파트너의 혜택 차이를 확인해 보세요.
         </p>
 
         {/* 2개 플랜 카드 스택 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20, textAlign: "left" }}>
           
-          {/* 1. 공실뉴스부동산 (Pro) - 모바일 상단 우선 노출 및 하이라이트 */}
+          {/* 1. 공실뉴스부동산 - 모바일 상단 우선 노출 및 하이라이트 */}
           <div style={{
             background: "#ffffff",
             border: "2px solid #fa8258",
@@ -626,7 +626,7 @@ export default function MobileNewsRealtyPage() {
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, marginTop: 4 }}>
               <h3 style={{ fontSize: 20, fontWeight: 900, color: "#1c1917", margin: 0 }}>
-                공실뉴스부동산 <span style={{ color: "#fa8258" }}>(Pro)</span>
+                공실뉴스부동산
               </h3>
               <span style={{ fontSize: 11, fontWeight: 800, background: "#fff2e8", color: "#ea580c", padding: "3px 8px", borderRadius: 12 }}>
                 로컬기자 전용
@@ -661,12 +661,12 @@ export default function MobileNewsRealtyPage() {
                 marginBottom: 20
               }}
             >
-              공실뉴스부동산 Pro 신청하기 ➔
+              공실뉴스부동산 신청하기 ➔
             </button>
 
             <div style={{ borderTop: "1px solid #fed7aa", paddingTop: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 800, color: "#1c1917", marginBottom: 12 }}>
-                포함된 모든 Pro 전용 혜택
+                포함된 모든 전용 혜택
               </div>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10, fontSize: 12.5 }}>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
@@ -784,7 +784,7 @@ export default function MobileNewsRealtyPage() {
         <div style={{ marginTop: 36 }}>
           <div style={{ textAlign: "center", marginBottom: 16 }}>
             <h3 style={{ fontSize: 18, fontWeight: 900, color: "#1c1917", margin: "0 0 4px 0" }}>
-              일반부동산 vs Pro 혜택 비교표
+              일반부동산 vs 공실뉴스부동산 혜택 비교표
             </h3>
             <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>
               가입비 0원 · 월 3만 원으로 압도적인 혜택을 누리세요
@@ -809,7 +809,7 @@ export default function MobileNewsRealtyPage() {
                     일반 (무료)
                   </th>
                   <th style={{ padding: "12px 12px", fontWeight: 900, color: "#ea580c", textAlign: "center", background: "#fff7ed", borderLeft: "1.5px solid #fed7aa", width: "40%" }}>
-                    공실뉴스 (Pro)
+                    공실뉴스부동산
                   </th>
                 </tr>
               </thead>
@@ -876,7 +876,7 @@ export default function MobileNewsRealtyPage() {
                 boxShadow: "0 4px 12px rgba(250, 130, 88, 0.28)"
               }}
             >
-              월 3만 원 Pro 파트너 신청하기 ➔
+              월 3만 원 파트너 신청하기 ➔
             </button>
           </div>
         </div>

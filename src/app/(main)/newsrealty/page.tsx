@@ -673,7 +673,7 @@ export default function NewsRealtyPage() {
             wordBreak: "keep-all",
             lineHeight: 1.3
           }}>
-            부담 없는 <span style={{ color: "#fa8258" }}>월 3만 원</span>으로<br />
+            <span style={{ color: "#fa8258" }}>월 3만 원</span>으로<br />
             지역 1등 로컬기자 파트너가 되세요
           </h2>
 
@@ -685,7 +685,7 @@ export default function NewsRealtyPage() {
             lineHeight: 1.6,
             wordBreak: "keep-all"
           }}>
-            일반 부동산 무료 회원과 공실뉴스부동산 Pro 파트너의 압도적인 혜택 차이를 확인해 보세요.
+            일반 부동산 무료 회원과 공실뉴스부동산 파트너의 압도적인 혜택 차이를 확인해 보세요.
           </p>
 
           {/* 2열 SaaS 플랜 비교 카드 */}
@@ -795,7 +795,7 @@ export default function NewsRealtyPage() {
               </div>
             </div>
 
-            {/* 2. 공실뉴스부동산 (Pro) - 하이라이트 */}
+            {/* 2. 공실뉴스부동산 - 하이라이트 */}
             <div style={{
               background: "#ffffff",
               border: "2.5px solid #fa8258",
@@ -828,7 +828,7 @@ export default function NewsRealtyPage() {
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <h3 style={{ fontSize: "24px", fontWeight: 900, color: "#1c1917", margin: 0 }}>
-                    공실뉴스부동산 <span style={{ color: "#fa8258" }}>(Pro)</span>
+                    공실뉴스부동산
                   </h3>
                   <span style={{ fontSize: "12px", fontWeight: 800, background: "#fff2e8", color: "#ea580c", padding: "4px 12px", borderRadius: 20 }}>
                     로컬기자 전용 플랜
@@ -864,13 +864,13 @@ export default function NewsRealtyPage() {
                       transition: "all 0.2s ease"
                     }}
                   >
-                    공실뉴스부동산 Pro 신청하기 ➔
+                    공실뉴스부동산 신청하기 ➔
                   </button>
                 </div>
 
                 <div style={{ borderTop: "1px solid #fed7aa", paddingTop: 24 }}>
                   <div style={{ fontSize: "12.5px", fontWeight: 800, color: "#1c1917", marginBottom: 16 }}>
-                    포함된 모든 Pro 전용 혜택
+                    포함된 모든 전용 혜택
                   </div>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 13, fontSize: "13.5px" }}>
                     <li style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
@@ -934,7 +934,7 @@ export default function NewsRealtyPage() {
                 DETAILED COMPARISON
               </div>
               <h3 style={{ fontSize: "26px", fontWeight: 900, color: "#1c1917", margin: "0 0 8px 0", letterSpacing: "-0.5px" }}>
-                일반부동산 vs 공실뉴스부동산 Pro 혜택 비교표
+                일반부동산 vs 공실뉴스부동산 혜택 비교표
               </h3>
               <p style={{ fontSize: "15px", color: "#64748b", margin: 0 }}>
                 한눈에 확인하는 멤버십별 서비스 및 혜택 차이
@@ -982,7 +982,7 @@ export default function NewsRealtyPage() {
                       background: "#fff7ed",
                       borderLeft: "2px solid #fed7aa"
                     }}>
-                      공실뉴스부동산 <span style={{ fontSize: "13.5px", fontWeight: 800, color: "#fa8258" }}>(Pro)</span>
+                      공실뉴스부동산
                     </th>
                   </tr>
                 </thead>
@@ -1126,7 +1126,7 @@ export default function NewsRealtyPage() {
               }}>
                 <div style={{ textAlign: "left" }}>
                   <div style={{ fontSize: "16px", fontWeight: 800, color: "#1c1917" }}>
-                    가입비 0원, 월 3만 원으로 Pro의 모든 권한을 시작하세요
+                    가입비 0원, 월 3만 원으로 모든 권한을 시작하세요
                   </div>
                   <div style={{ fontSize: "13px", color: "#64748b", marginTop: 2 }}>
                     위약금이나 의무 약정 없이 언제든지 자유롭게 해지하실 수 있습니다.
@@ -1147,7 +1147,7 @@ export default function NewsRealtyPage() {
                     transition: "all 0.2s ease"
                   }}
                 >
-                  공실뉴스부동산 Pro 가입하기 ➔
+                  공실뉴스부동산 가입하기 ➔
                 </button>
               </div>
             </div>

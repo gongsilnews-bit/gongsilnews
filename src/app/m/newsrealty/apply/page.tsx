@@ -212,14 +212,14 @@ export default function MobileNewsRealtyApplyPage() {
             <div className="w-16 h-16 bg-[#fff2e8] rounded-full flex items-center justify-center text-3xl mx-auto mb-5">🏠</div>
 
             <span className="inline-block bg-[#fff2e8] text-[#ea580c] text-[11px] font-bold px-3 py-1 rounded-full mb-3">
-              공실뉴스부동산 Pro 입점 신청
+              공실뉴스부동산 입점 신청
             </span>
 
             <h1 className="text-[22px] font-black text-[#1a1a1a] mb-3 leading-snug" style={{ wordBreak: "keep-all" }}>
               로그인 후<br />신청하실 수 있어요
             </h1>
             <p className="text-[13.5px] text-[#64748b] leading-relaxed mb-7" style={{ wordBreak: "keep-all" }}>
-              공실뉴스부동산 Pro 파트너 입점 신청은<br />
+              공실뉴스부동산 파트너 입점 신청은<br />
               <strong className="text-[#333]">공실뉴스 부동산회원</strong>만 가능합니다.<br />
               아직 회원이 아니시면 지금 가입해 보세요!
             </p>
@@ -320,13 +320,10 @@ export default function MobileNewsRealtyApplyPage() {
                     <span className="bg-[#fa8258] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">1단계</span>
                     <span className="text-[14px] font-bold text-[#1e293b]">회원가입 및 중개업소 등록</span>
                   </div>
-                  <p className="text-[12.5px] text-[#475569] leading-relaxed mb-2.5">
+                  <p className="text-[12.5px] text-[#475569] leading-relaxed m-0">
                     • 공실뉴스 포털에서 기본 부동산 회원가입 진행<br />
                     • 대표 공인중개사 및 소속 중개사무소 정보 등록
                   </p>
-                  <a href="/login?returnTo=%2Fsignup" className="inline-flex items-center justify-center w-full py-2.5 px-3 bg-[#fa8258] text-white text-[13px] font-bold rounded-lg shadow-xs no-underline">
-                    회원가입 / 로그인 바로가기 ➔
-                  </a>
                 </div>
                 <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -717,16 +714,10 @@ export default function MobileNewsRealtyApplyPage() {
                     회원가입 및 중개업소 등록
                   </span>
                 </div>
-                <p className="text-[12.5px] text-[#475569] leading-relaxed mb-2.5">
+                <p className="text-[12.5px] text-[#475569] leading-relaxed m-0">
                   • 공실뉴스 포털에서 기본 부동산 회원가입 진행<br />
                   • 대표 공인중개사 및 소속 중개사무소 정보 등록
                 </p>
-                <a
-                  href="/login?returnTo=%2Fsignup"
-                  className="inline-flex items-center justify-center w-full py-2.5 px-3 bg-[#fa8258] text-white text-[13px] font-bold rounded-lg shadow-xs no-underline"
-                >
-                  회원가입 / 로그인 바로가기 ➔
-                </a>
               </div>
 
               {/* 2단계 */}

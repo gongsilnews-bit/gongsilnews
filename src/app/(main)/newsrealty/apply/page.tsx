@@ -293,13 +293,13 @@ export default function NewsRealtyApplyPage() {
               {/* 안내 타이틀 */}
               <div style={{ marginBottom: "28px" }}>
                 <div style={{ display: "inline-block", backgroundColor: "#fff2e8", color: "#ea580c", fontSize: "12px", fontWeight: 800, padding: "4px 12px", borderRadius: "14px", marginBottom: "12px" }}>
-                  공실뉴스부동산 Pro 입점 신청
+                  공실뉴스부동산 입점 신청
                 </div>
                 <h2 style={{ fontSize: "22px", fontWeight: 900, color: "#1a1a1a", marginBottom: "8px", letterSpacing: "-0.4px" }}>
                   로그인 후 신청할 수 있어요
                 </h2>
                 <p style={{ fontSize: "14px", color: "#64748b", lineHeight: 1.65, wordBreak: "keep-all" }}>
-                  공실뉴스부동산 Pro 파트너 입점 신청은<br />
+                  공실뉴스부동산 파트너 입점 신청은<br />
                   <strong style={{ color: "#333" }}>공실뉴스 부동산회원</strong>만 가능합니다.
                 </p>
               </div>
@@ -389,7 +389,7 @@ export default function NewsRealtyApplyPage() {
               {/* 구분선 + 혜택 안내 */}
               <div style={{ borderTop: "1px solid #f0f2f5", paddingTop: "24px" }}>
                 <p style={{ fontSize: "12.5px", color: "#888", marginBottom: "16px", fontWeight: 500 }}>
-                  공실뉴스부동산 Pro 회원 혜택
+                  공실뉴스부동산 회원 혜택
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {[
@@ -428,8 +428,8 @@ export default function NewsRealtyApplyPage() {
                 <p style={{ fontSize: "15px", color: "#64748b", margin: 0 }}>공실뉴스부동산 파트너 입점은 아래 4단계를 거쳐 신속하게 진행됩니다.</p>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px 22px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
-                  <div style={{ flex: "1 1 340px" }}>
+                <div style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px 22px" }}>
+                  <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
                       <span style={{ backgroundColor: "#fa8258", color: "#fff", fontSize: "13px", fontWeight: 800, padding: "3px 10px", borderRadius: "6px" }}>1단계</span>
                       <span style={{ fontSize: "17.5px", fontWeight: 800, color: "#1e293b" }}>회원가입 및 중개업소 등록</span>
@@ -439,9 +439,6 @@ export default function NewsRealtyApplyPage() {
                       <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>• 대표 공인중개사 정보 및 소속 중개업소 기본 정보를 등록합니다.</p>
                     </div>
                   </div>
-                  <div>
-                    <a href="/login?returnTo=%2Fsignup" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", backgroundColor: "#fa8258", color: "#fff", fontSize: "14.5px", fontWeight: 800, padding: "11px 22px", borderRadius: "10px", textDecoration: "none", boxShadow: "0 3px 10px rgba(250,130,88,0.3)", whiteSpace: "nowrap" }}>회원가입 / 로그인 바로가기 ➔</a>
-                  </div>
                 </div>
                 <div style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px 22px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
@@ -449,7 +446,7 @@ export default function NewsRealtyApplyPage() {
                     <span style={{ fontSize: "17.5px", fontWeight: 800, color: "#1e293b" }}>신청하기</span>
                   </div>
                   <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
-                    <p style={{ margin: "0 0 4px 0" }}>• <strong>로그인 상태</strong>에서 공실뉴스부동산 Pro 파트너 입점 신청서를 제출합니다.</p>
+                    <p style={{ margin: "0 0 4px 0" }}>• <strong>로그인 상태</strong>에서 공실뉴스부동산 파트너 입점 신청서를 제출합니다.</p>
                     <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>• 신청자 성함, 연락처, 사무소 명칭을 확인하고 약관 동의 후 원클릭 접수</p>
                   </div>
                 </div>
@@ -1082,14 +1079,9 @@ export default function NewsRealtyApplyPage() {
                 backgroundColor: "#f8fafc",
                 border: "1px solid #e2e8f0",
                 borderRadius: "14px",
-                padding: "20px 22px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "14px"
+                padding: "20px 22px"
               }}>
-                <div style={{ flex: "1 1 340px" }}>
+                <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
                     <span style={{
                       backgroundColor: "#fa8258",
@@ -1109,30 +1101,6 @@ export default function NewsRealtyApplyPage() {
                     <p style={{ margin: "0 0 4px 0" }}>• 공실뉴스 포털에서 기본 <strong>부동산 회원가입</strong>을 진행합니다.</p>
                     <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>• 대표 공인중개사 정보 및 소속 중개업소 기본 정보를 등록합니다.</p>
                   </div>
-                </div>
-
-                <div>
-                  <a
-                    href="/login?returnTo=%2Fsignup"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px",
-                      backgroundColor: "#fa8258",
-                      color: "#ffffff",
-                      fontSize: "14.5px",
-                      fontWeight: 800,
-                      padding: "11px 22px",
-                      borderRadius: "10px",
-                      textDecoration: "none",
-                      boxShadow: "0 3px 10px rgba(250, 130, 88, 0.3)",
-                      transition: "all 0.15s ease",
-                      whiteSpace: "nowrap"
-                    }}
-                  >
-                    회원가입 / 로그인 바로가기 ➔
-                  </a>
                 </div>
               </div>
 
@@ -1159,7 +1127,7 @@ export default function NewsRealtyApplyPage() {
                   </span>
                 </div>
                 <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
-                  <p style={{ margin: "0 0 4px 0" }}>• <strong>로그인 상태</strong>에서 공실뉴스부동산 Pro 파트너 입점 신청서를 제출합니다.</p>
+                  <p style={{ margin: "0 0 4px 0" }}>• <strong>로그인 상태</strong>에서 공실뉴스부동산 파트너 입점 신청서를 제출합니다.</p>
                   <p style={{ margin: 0, color: "#64748b", fontSize: "14px" }}>• 신청자 성함, 연락처, 사무소 명칭을 확인하고 약관 동의 후 원클릭 접수</p>
                 </div>
               </div>
