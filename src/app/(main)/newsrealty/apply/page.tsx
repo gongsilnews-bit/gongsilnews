@@ -11,6 +11,7 @@ export default function NewsRealtyApplyPage() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [kakaoLoading, setKakaoLoading] = useState(false);
 
   // 이메일 분리
   const [emailLocal, setEmailLocal] = useState("");
@@ -106,6 +107,24 @@ export default function NewsRealtyApplyPage() {
       console.error(err);
       alert("Google 로그인 오류: " + (err?.message || String(err)));
       setGoogleLoading(false);
+    }
+  };
+
+  const handleKakaoSignup = async () => {
+    try {
+      setKakaoLoading(true);
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "kakao",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent("/newsrealty/apply")}`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      console.error(err);
+      alert("카카오 로그인 오류: " + (err?.message || String(err)));
+      setKakaoLoading(false);
     }
   };
 
@@ -286,17 +305,17 @@ export default function NewsRealtyApplyPage() {
               </div>
 
               {/* 구글 회원가입 버튼 */}
-              <div style={{ marginBottom: "12px" }}>
+              <div style={{ marginBottom: "10px" }}>
                 <button
                   type="button"
                   onClick={handleGoogleSignup}
-                  disabled={googleLoading}
+                  disabled={googleLoading || kakaoLoading}
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
-                    width: "100%", height: "56px",
+                    width: "100%", height: "54px",
                     backgroundColor: "#fa8258", color: "#ffffff",
                     borderRadius: "8px", fontSize: "15px", fontWeight: 800,
-                    border: "none", cursor: googleLoading ? "not-allowed" : "pointer",
+                    border: "none", cursor: (googleLoading || kakaoLoading) ? "not-allowed" : "pointer",
                     boxShadow: "0 2px 6px rgba(250, 130, 88, 0.25)",
                     letterSpacing: "-0.3px", opacity: googleLoading ? 0.7 : 1
                   }}
@@ -309,6 +328,42 @@ export default function NewsRealtyApplyPage() {
                         <path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/>
                       </svg>
                       <span>Google 계정으로 회원가입</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* OR 구분선 */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "12px 0" }}>
+                <div style={{ flex: 1, height: "1px", backgroundColor: "#e5e8ec" }} />
+                <span style={{ fontSize: "12px", color: "#aaa", fontWeight: 600, letterSpacing: "0.5px" }}>OR</span>
+                <div style={{ flex: 1, height: "1px", backgroundColor: "#e5e8ec" }} />
+              </div>
+
+              {/* 카카오 회원가입 버튼 */}
+              <div style={{ marginBottom: "12px" }}>
+                <button
+                  type="button"
+                  onClick={handleKakaoSignup}
+                  disabled={googleLoading || kakaoLoading}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
+                    width: "100%", height: "54px",
+                    backgroundColor: "#FEE500", color: "#191919",
+                    borderRadius: "8px", fontSize: "15px", fontWeight: 800,
+                    border: "none", cursor: (googleLoading || kakaoLoading) ? "not-allowed" : "pointer",
+                    boxShadow: "0 2px 6px rgba(254, 229, 0, 0.4)",
+                    letterSpacing: "-0.3px", opacity: kakaoLoading ? 0.7 : 1
+                  }}
+                >
+                  {kakaoLoading ? (
+                    <span>카카오 연결 중...</span>
+                  ) : (
+                    <>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="#191919">
+                        <path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.717 1.633 5.1 4.1 6.533l-1.05 3.85c-.083.3.25.55.517.383L9.75 19.2c.733.117 1.483.183 2.25.183 5.523 0 10-3.477 10-7.767C22 6.477 17.523 3 12 3z"/>
+                      </svg>
+                      <span>카카오 계정으로 회원가입</span>
                     </>
                   )}
                 </button>

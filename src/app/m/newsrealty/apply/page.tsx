@@ -11,6 +11,7 @@ export default function MobileNewsRealtyApplyPage() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [kakaoLoading, setKakaoLoading] = useState(false);
 
   // 이메일 분리
   const [emailLocal, setEmailLocal] = useState("");
@@ -106,6 +107,24 @@ export default function MobileNewsRealtyApplyPage() {
       console.error(err);
       alert("Google 로그인 오류: " + (err?.message || String(err)));
       setGoogleLoading(false);
+    }
+  };
+
+  const handleKakaoSignup = async () => {
+    try {
+      setKakaoLoading(true);
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "kakao",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent("/m/newsrealty/apply")}`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      console.error(err);
+      alert("카카오 로그인 오류: " + (err?.message || String(err)));
+      setKakaoLoading(false);
     }
   };
 
@@ -206,13 +225,14 @@ export default function MobileNewsRealtyApplyPage() {
             </p>
 
             {/* 버튼 그룹 */}
-            <div className="space-y-3">
+            <div className="space-y-0">
+              {/* 구글 */}
               <button
                 type="button"
                 onClick={handleGoogleSignup}
-                disabled={googleLoading}
-                className="flex items-center justify-center gap-2.5 w-full h-12 rounded-xl text-white text-[15px] font-black text-center border-none"
-                style={{ backgroundColor: "#fa8258", boxShadow: "0 4px 14px rgba(250,130,88,0.35)", opacity: googleLoading ? 0.7 : 1, cursor: googleLoading ? "not-allowed" : "pointer" }}
+                disabled={googleLoading || kakaoLoading}
+                className="flex items-center justify-center gap-2.5 w-full h-12 rounded-xl text-white text-[15px] font-black text-center border-none mb-2.5"
+                style={{ backgroundColor: "#fa8258", boxShadow: "0 4px 14px rgba(250,130,88,0.35)", opacity: googleLoading ? 0.7 : 1, cursor: (googleLoading || kakaoLoading) ? "not-allowed" : "pointer" }}
               >
                 {googleLoading ? (
                   <span>Google 연결 중...</span>
@@ -225,6 +245,37 @@ export default function MobileNewsRealtyApplyPage() {
                   </>
                 )}
               </button>
+
+              {/* OR 구분선 */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "10px 0" }}>
+                <div style={{ flex: 1, height: "1px", backgroundColor: "#e5e8ec" }} />
+                <span style={{ fontSize: "11px", color: "#aaa", fontWeight: 600, letterSpacing: "0.5px" }}>OR</span>
+                <div style={{ flex: 1, height: "1px", backgroundColor: "#e5e8ec" }} />
+              </div>
+
+              {/* 카카오 */}
+              <button
+                type="button"
+                onClick={handleKakaoSignup}
+                disabled={googleLoading || kakaoLoading}
+                className="flex items-center justify-center gap-2.5 w-full h-12 rounded-xl text-[15px] font-black text-center border-none"
+                style={{ backgroundColor: "#FEE500", color: "#191919", boxShadow: "0 4px 14px rgba(254,229,0,0.4)", opacity: kakaoLoading ? 0.7 : 1, cursor: (googleLoading || kakaoLoading) ? "not-allowed" : "pointer" }}
+              >
+                {kakaoLoading ? (
+                  <span>카카오 연결 중...</span>
+                ) : (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#191919">
+                      <path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.717 1.633 5.1 4.1 6.533l-1.05 3.85c-.083.3.25.55.517.383L9.75 19.2c.733.117 1.483.183 2.25.183 5.523 0 10-3.477 10-7.767C22 6.477 17.523 3 12 3z"/>
+                    </svg>
+                    <span>카카오 계정으로 회원가입</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* 로그인 링크 */}
+            <div className="mt-3">
               <a
                 href={`/login?returnTo=${encodeURIComponent("/m/newsrealty/apply")}`}
                 className="block w-full h-12 leading-[48px] rounded-xl text-[#444] text-[14px] font-bold text-center no-underline border border-[#dfe2e6] bg-white"
@@ -232,6 +283,7 @@ export default function MobileNewsRealtyApplyPage() {
                 이미 회원이신가요? 로그인
               </a>
             </div>
+
 
             {/* 절차 안내 링크 */}
             <div className="mt-6 pt-5 border-t border-[#f0f2f5]">
