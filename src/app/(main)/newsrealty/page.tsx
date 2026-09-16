@@ -587,7 +587,7 @@ export default function NewsRealtyPage() {
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          5. 우리 지역을 대표하는 부동산이 되어보세요 (Closing & Final CTA)
+          5. 내 지역/단지 로컬 부동산 기자가 되세요! (Closing & Final CTA)
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{
         padding: "100px 24px",
@@ -601,10 +601,15 @@ export default function NewsRealtyPage() {
             fontWeight: 900,
             color: "#1c1917",
             letterSpacing: "-1.5px",
-            margin: "0 0 22px 0",
-            wordBreak: "keep-all"
+            margin: "0 0 18px 0",
+            wordBreak: "keep-all",
+            lineHeight: 1.32
           }}>
-            우리 지역을 대표하는<br />부동산이 되어보세요
+            내 지역/단지<br />
+            <span style={{ color: "#fa8258" }}>로컬 부동산 기자가 되세요!</span>
+            <div style={{ fontSize: "22px", fontWeight: 800, color: "#fa8258", marginTop: "14px", letterSpacing: "-0.5px" }}>
+              부동산중개 + 지역부동산기자
+            </div>
           </h2>
 
           {/* 매트릭스 뱃지: 부동산 × 뉴스 × 유튜브 × 블로그 */}

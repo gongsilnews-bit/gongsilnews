@@ -521,7 +521,7 @@ export default function MobileNewsRealtyPage() {
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          5. 우리 지역을 대표하는 부동산이 되어보세요 (모바일 Closing)
+          5. 내 지역/단지 로컬 부동산 기자가 되세요! (모바일 Closing)
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{ padding: "50px 20px", textAlign: "center", backgroundColor: "#ffffff" }}>
         <h2 style={{
@@ -529,10 +529,15 @@ export default function MobileNewsRealtyPage() {
           fontWeight: 900,
           color: "#1c1917",
           letterSpacing: "-1px",
-          margin: "0 0 16px 0",
-          wordBreak: "keep-all"
+          margin: "0 0 14px 0",
+          wordBreak: "keep-all",
+          lineHeight: 1.35
         }}>
-          우리 지역을 대표하는<br />부동산이 되어보세요
+          내 지역/단지<br />
+          <span style={{ color: "#fa8258" }}>로컬 부동산 기자가 되세요!</span>
+          <div style={{ fontSize: 17, fontWeight: 800, color: "#fa8258", marginTop: 8, letterSpacing: "-0.3px" }}>
+            부동산중개 + 지역부동산기자
+          </div>
         </h2>
 
         <div style={{
