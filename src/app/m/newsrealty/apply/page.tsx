@@ -6,12 +6,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { submitNewsrealtyApplication } from "@/app/actions/newsrealtyApply";
 
-const AD_PRODUCTS = [
-  { id: "아파트", label: "아파트 광고 상품을 이용하고 싶어요." },
-  { id: "원룸/빌라/오피스텔", label: "원룸/빌라/오피스텔 광고 상품을 이용하고 싶어요." },
-  { id: "전체", label: "아파트 및 원룸/빌라/오피스텔 광고 상품을 모두 이용하고 싶어요." },
-];
-
 export default function MobileNewsRealtyApplyPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -21,11 +15,10 @@ export default function MobileNewsRealtyApplyPage() {
   const [emailDomain, setEmailDomain] = useState("");
   const [customDomain, setCustomDomain] = useState("");
 
-  // 폼 상태
-  const [agencyName, setAgencyName] = useState("");
+  // 폼 상태: 신청자 정보 위주
+  const [applicantName, setApplicantName] = useState("");
   const [phone, setPhone] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState("전체");
-  const [referralCode, setReferralCode] = useState("");
+  const [agencyName, setAgencyName] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [termsAccordionOpen, setTermsAccordionOpen] = useState(false);
 
@@ -57,6 +50,9 @@ export default function MobileNewsRealtyApplyPage() {
             .eq("owner_id", authUser.id)
             .maybeSingle();
 
+          if (memberData?.name || authUser.user_metadata?.name) {
+            setApplicantName(memberData?.name || authUser.user_metadata?.name || "");
+          }
           if (agencyData?.name || memberData?.company_name) {
             setAgencyName(agencyData?.name || memberData?.company_name || "");
           }
@@ -93,12 +89,21 @@ export default function MobileNewsRealtyApplyPage() {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!agencyName.trim()) {
-      setErrorMsg("중개사무소 정보를 입력해 주세요.");
+    if (!applicantName.trim()) {
+      setErrorMsg("신청자 성함을 입력해 주세요.");
       return;
     }
     if (!phone.trim()) {
-      setErrorMsg("대표 공인중개사 휴대폰 번호를 입력해 주세요.");
+      setErrorMsg("연락처를 입력해 주세요.");
+      return;
+    }
+    const finalEmail = getFullEmail();
+    if (!finalEmail.trim()) {
+      setErrorMsg("E-mail을 입력해 주세요.");
+      return;
+    }
+    if (!agencyName.trim()) {
+      setErrorMsg("중개사무소 정보를 입력해 주세요.");
       return;
     }
     if (!agreeTerms) {
@@ -106,24 +111,24 @@ export default function MobileNewsRealtyApplyPage() {
       return;
     }
 
-    const finalEmail = getFullEmail();
-
     setSubmitting(true);
     try {
       const res = await submitNewsrealtyApplication({
         memberId: user?.id,
-        name: agencyName.trim(),
+        name: applicantName.trim(),
         phone: phone.trim(),
         email: finalEmail,
         agencyName: agencyName.trim(),
-        interests: [selectedProduct, referralCode ? `추천인:${referralCode}` : ""].filter(Boolean),
-        memo: `[모바일 직방형 접수] 상품: ${selectedProduct}${referralCode ? ` / 추천인: ${referralCode}` : ""}`,
+        interests: ["로컬기자", "부동산중개"],
+        memo: `[모바일 공실뉴스부동산 신청] 신청자: ${applicantName.trim()} / 연락처: ${phone.trim()} / 이메일: ${finalEmail} / 중개사무소: ${agencyName.trim()}`,
       });
 
       if (res.success) {
         setSubmittedData({
-          agencyName,
-          phone,
+          applicantName: applicantName.trim(),
+          agencyName: agencyName.trim(),
+          phone: phone.trim(),
+          email: finalEmail,
           smsSent: res.smsSent,
         });
         setIsSubmitted(true);
@@ -150,18 +155,32 @@ export default function MobileNewsRealtyApplyPage() {
             회원가입 신청 완료
           </h1>
           <p className="text-xs text-[#666] leading-relaxed mb-5">
-            <strong className="text-[#222]">{submittedData?.agencyName}</strong> 대표님,<br />
+            <strong className="text-[#222]">{submittedData?.applicantName || submittedData?.agencyName}</strong> 님,<br />
             확인 후 <strong>1~2일 이내</strong> 전화드리겠습니다.
           </p>
 
           <div className="bg-[#f8f9fa] rounded-lg p-3.5 text-xs text-left mb-5 space-y-1.5 border border-[#edf0f2]">
             <div className="flex justify-between">
-              <span className="text-[#888]">중개사무소</span>
-              <span className="font-semibold text-[#222]">{submittedData?.agencyName}</span>
+              <span className="text-[#888]">신청자</span>
+              <span className="font-semibold text-[#222]">{submittedData?.applicantName}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#888]">연락처</span>
               <span className="font-semibold text-[#222]">{submittedData?.phone}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#888]">E-mail</span>
+              <span className="font-semibold text-[#222]">{submittedData?.email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#888]">중개사무소</span>
+              <span className="font-semibold text-[#222]">{submittedData?.agencyName}</span>
+            </div>
+            <div className="flex justify-between items-center pt-1.5 border-t border-[#e5e8ec]">
+              <span className="text-[#888]">접수 문자</span>
+              <span className="text-[10.5px] px-1.5 py-0.5 rounded font-bold bg-[#e6fcf5] text-[#0ca678]">
+                {submittedData?.smsSent ? "발송 완료" : "순차 발송중"}
+              </span>
             </div>
           </div>
 
@@ -199,7 +218,7 @@ export default function MobileNewsRealtyApplyPage() {
 
       <main className="px-5 py-6">
         {/* 헤드라인 */}
-        <div className="mb-6">
+        <div className="mb-4">
           <h1 className="text-[24px] font-extrabold text-[#1f2328] leading-tight" style={{ wordBreak: "keep-all" }}>
             내 지역/단지<br />
             로컬 부동산 기자가 되세요!
@@ -207,6 +226,15 @@ export default function MobileNewsRealtyApplyPage() {
               부동산중개 + 지역부동산기자
             </div>
           </h1>
+        </div>
+
+        {/* 좌측/상단 앱 목업 이미지 */}
+        <div className="mb-5 text-center">
+          <img
+            src="/newsrealty_mockup@2x.png"
+            alt="공실뉴스부동산 모바일 앱 화면"
+            className="max-w-[240px] w-full h-auto inline-block drop-shadow-md rounded-xl"
+          />
         </div>
 
         {/* 안내 카드 */}
@@ -236,26 +264,26 @@ export default function MobileNewsRealtyApplyPage() {
         </div>
 
         {/* 폼 */}
-        <form onSubmit={handleSubmit} className="space-y-4.5">
-          {/* 1. 중개사무소 정보 */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 1. 신청자 */}
           <div>
             <label className="block text-xs font-semibold text-[#222] mb-1.5">
-              중개사무소 정보
+              신청자 <span className="text-[#fa8258]">*</span>
             </label>
             <input
               type="text"
               required
-              value={agencyName}
-              onChange={(e) => setAgencyName(e.target.value)}
-              placeholder="중개사무소 이름, 대표자명, 주소를 조합 검색"
+              value={applicantName}
+              onChange={(e) => setApplicantName(e.target.value)}
+              placeholder="신청자 성함을 입력해 주세요"
               className="w-full h-11 px-3.5 rounded-md border border-[#dfe2e6] text-xs text-[#222] placeholder-[#aaa] outline-none focus:border-[#fa8258] transition"
             />
           </div>
 
-          {/* 2. 대표 공인중개사 휴대폰 번호 */}
+          {/* 2. 연락처 */}
           <div>
             <label className="block text-xs font-semibold text-[#222] mb-1.5">
-              대표 공인중개사 휴대폰 번호
+              연락처 <span className="text-[#fa8258]">*</span>
             </label>
             <input
               type="tel"
@@ -267,14 +295,15 @@ export default function MobileNewsRealtyApplyPage() {
             />
           </div>
 
-          {/* 3. 대표 공인중개사 이메일 */}
+          {/* 3. E-mail */}
           <div>
             <label className="block text-xs font-semibold text-[#222] mb-1.5">
-              대표 공인중개사 이메일 <span className="text-[#888] font-normal text-[11px]">(가입 후 아이디로 이용돼요.)</span>
+              E-mail <span className="text-[#fa8258]">*</span> <span className="text-[#888] font-normal text-[11px]">(가입 후 아이디로 이용돼요)</span>
             </label>
             <div className="flex items-center gap-1.5">
               <input
                 type="text"
+                required
                 value={emailLocal}
                 onChange={(e) => setEmailLocal(e.target.value)}
                 placeholder="이메일"
@@ -284,6 +313,7 @@ export default function MobileNewsRealtyApplyPage() {
               {emailDomain === "direct" ? (
                 <input
                   type="text"
+                  required
                   value={customDomain}
                   onChange={(e) => setCustomDomain(e.target.value)}
                   placeholder="도메인"
@@ -300,40 +330,25 @@ export default function MobileNewsRealtyApplyPage() {
                 <option value="gmail.com">gmail.com</option>
                 <option value="daum.net">daum.net</option>
                 <option value="kakao.com">kakao.com</option>
+                <option value="nate.com">nate.com</option>
                 <option value="direct">직접입력</option>
               </select>
             </div>
           </div>
 
-          {/* 4. 상담할 광고 상품 선택 */}
-          <div className="pt-1">
-            <label className="block text-xs font-semibold text-[#222] mb-2">
-              상담할 광고 상품 선택
+          {/* 4. 중개사무소 */}
+          <div>
+            <label className="block text-xs font-semibold text-[#222] mb-1.5">
+              중개사무소 <span className="text-[#fa8258]">*</span>
             </label>
-            <div className="space-y-2">
-              {AD_PRODUCTS.map((prod) => {
-                const isChecked = selectedProduct === prod.id;
-                return (
-                  <label
-                    key={prod.id}
-                    className="flex items-center gap-2 p-2.5 rounded-md border border-[#eef0f2] bg-[#f8f9fa] text-xs cursor-pointer select-none"
-                  >
-                    <input
-                      type="radio"
-                      name="adProductMobile"
-                      value={prod.id}
-                      checked={isChecked}
-                      onChange={() => setSelectedProduct(prod.id)}
-                      style={{ accentColor: "#fa8258" }}
-                      className="w-4 h-4 text-[#fa8258] border-[#ccc]"
-                    />
-                    <span className={`text-[12px] ${isChecked ? "font-semibold text-[#111]" : "text-[#444]"}`}>
-                      {prod.label}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
+            <input
+              type="text"
+              required
+              value={agencyName}
+              onChange={(e) => setAgencyName(e.target.value)}
+              placeholder="중개사무소 명칭을 입력해 주세요"
+              className="w-full h-11 px-3.5 rounded-md border border-[#dfe2e6] text-xs text-[#222] placeholder-[#aaa] outline-none focus:border-[#fa8258] transition"
+            />
           </div>
 
           {/* 5. 회원가입 약관 전체 동의 하기 */}
@@ -364,21 +379,10 @@ export default function MobileNewsRealtyApplyPage() {
               {termsAccordionOpen && (
                 <div className="mt-2.5 pt-2.5 border-t border-[#f1f3f5] text-[11px] text-[#666] pl-6 space-y-1">
                   <p>• 수집 목적: 공실뉴스 공인중개사 회원가입 심사</p>
-                  <p>• 항목: 중개사무소명, 대표자명, 휴대폰 번호, 이메일</p>
+                  <p>• 항목: 신청자 성명, 연락처, E-mail, 중개사무소 정보</p>
                 </div>
               )}
             </div>
-          </div>
-
-          {/* 6. 추천인 코드 */}
-          <div>
-            <input
-              type="text"
-              value={referralCode}
-              onChange={(e) => setReferralCode(e.target.value)}
-              placeholder="추천인 코드 6자리 (선택)"
-              className="w-full h-11 px-3.5 rounded-md border border-[#dfe2e6] text-xs text-[#222] placeholder-[#aaa] outline-none focus:border-[#fa8258]"
-            />
           </div>
 
           {/* 에러 메시지 */}
@@ -388,7 +392,7 @@ export default function MobileNewsRealtyApplyPage() {
             </div>
           )}
 
-          {/* 7. 하단 고정 직방 시그니처 코랄 오렌지 버튼 */}
+          {/* 하단 고정 직방 시그니처 코랄 오렌지 버튼 */}
           <div className="fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-xs border-t border-[#eef0f2] z-40">
             <button
               type="submit"

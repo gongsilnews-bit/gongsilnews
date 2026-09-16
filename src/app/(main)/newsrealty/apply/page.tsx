@@ -6,12 +6,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { submitNewsrealtyApplication } from "@/app/actions/newsrealtyApply";
 
-const AD_PRODUCTS = [
-  { id: "아파트", label: "아파트 광고 상품을 이용하고 싶어요." },
-  { id: "원룸/빌라/오피스텔", label: "원룸/빌라/오피스텔 광고 상품을 이용하고 싶어요." },
-  { id: "전체", label: "아파트 및 원룸/빌라/오피스텔 광고 상품을 모두 이용하고 싶어요." },
-];
-
 export default function NewsRealtyApplyPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -21,11 +15,10 @@ export default function NewsRealtyApplyPage() {
   const [emailDomain, setEmailDomain] = useState("");
   const [customDomain, setCustomDomain] = useState("");
 
-  // 폼 상태 (직방 1:1)
-  const [agencyName, setAgencyName] = useState("");
+  // 폼 상태: 신청자 정보 위주
+  const [applicantName, setApplicantName] = useState("");
   const [phone, setPhone] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState("전체");
-  const [referralCode, setReferralCode] = useState("");
+  const [agencyName, setAgencyName] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [termsAccordionOpen, setTermsAccordionOpen] = useState(false);
 
@@ -57,6 +50,9 @@ export default function NewsRealtyApplyPage() {
             .eq("owner_id", authUser.id)
             .maybeSingle();
 
+          if (memberData?.name || authUser.user_metadata?.name) {
+            setApplicantName(memberData?.name || authUser.user_metadata?.name || "");
+          }
           if (agencyData?.name || memberData?.company_name) {
             setAgencyName(agencyData?.name || memberData?.company_name || "");
           }
@@ -93,12 +89,21 @@ export default function NewsRealtyApplyPage() {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!agencyName.trim()) {
-      setErrorMsg("중개사무소 정보를 입력해 주세요.");
+    if (!applicantName.trim()) {
+      setErrorMsg("신청자 성함을 입력해 주세요.");
       return;
     }
     if (!phone.trim()) {
-      setErrorMsg("대표 공인중개사 휴대폰 번호를 입력해 주세요.");
+      setErrorMsg("연락처를 입력해 주세요.");
+      return;
+    }
+    const finalEmail = getFullEmail();
+    if (!finalEmail.trim()) {
+      setErrorMsg("E-mail을 입력해 주세요.");
+      return;
+    }
+    if (!agencyName.trim()) {
+      setErrorMsg("중개사무소 정보를 입력해 주세요.");
       return;
     }
     if (!agreeTerms) {
@@ -106,24 +111,24 @@ export default function NewsRealtyApplyPage() {
       return;
     }
 
-    const finalEmail = getFullEmail();
-
     setSubmitting(true);
     try {
       const res = await submitNewsrealtyApplication({
         memberId: user?.id,
-        name: agencyName.trim(),
+        name: applicantName.trim(),
         phone: phone.trim(),
         email: finalEmail,
         agencyName: agencyName.trim(),
-        interests: [selectedProduct, referralCode ? `추천인:${referralCode}` : ""].filter(Boolean),
-        memo: `[직방형 접수] 상품: ${selectedProduct}${referralCode ? ` / 추천인: ${referralCode}` : ""}`,
+        interests: ["로컬기자", "부동산중개"],
+        memo: `[공실뉴스부동산 신청] 신청자: ${applicantName.trim()} / 연락처: ${phone.trim()} / 이메일: ${finalEmail} / 중개사무소: ${agencyName.trim()}`,
       });
 
       if (res.success) {
         setSubmittedData({
-          agencyName,
-          phone,
+          applicantName: applicantName.trim(),
+          agencyName: agencyName.trim(),
+          phone: phone.trim(),
+          email: finalEmail,
           smsSent: res.smsSent,
         });
         setIsSubmitted(true);
@@ -152,18 +157,26 @@ export default function NewsRealtyApplyPage() {
             회원가입 신청이 완료되었습니다
           </h1>
           <p className="text-[#666] text-[13.5px] leading-relaxed mb-6">
-            <strong className="text-[#222] font-semibold">{submittedData?.agencyName}</strong> 대표님,<br />
+            <strong className="text-[#222] font-semibold">{submittedData?.applicantName || submittedData?.agencyName}</strong> 님,<br />
             가입 신청서를 확인 후 <strong>1~2일 이내</strong> 전화드리겠습니다.
           </p>
 
           <div className="bg-[#f8f9fa] rounded-lg p-4 text-left text-xs space-y-2 mb-6 border border-[#edf0f2]">
             <div className="flex justify-between">
-              <span className="text-[#888]">중개사무소</span>
-              <span className="font-semibold text-[#222]">{submittedData?.agencyName}</span>
+              <span className="text-[#888]">신청자</span>
+              <span className="font-semibold text-[#222]">{submittedData?.applicantName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#888]">휴대폰 번호</span>
+              <span className="text-[#888]">연락처</span>
               <span className="font-semibold text-[#222]">{submittedData?.phone}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#888]">E-mail</span>
+              <span className="font-semibold text-[#222]">{submittedData?.email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#888]">중개사무소</span>
+              <span className="font-semibold text-[#222]">{submittedData?.agencyName}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-[#e5e8ec]">
               <span className="text-[#888]">접수 확인 문자</span>
@@ -248,13 +261,29 @@ export default function NewsRealtyApplyPage() {
 
           {/* ━━━ 좌측 안내 영역 (Width: 380px) ━━━ */}
           <div style={{ width: "380px", flexShrink: 0 }}>
-            <h1 style={{ fontSize: "29px", fontWeight: 800, color: "#1a1a1a", lineHeight: 1.32, letterSpacing: "-0.5px", marginBottom: "32px", wordBreak: "keep-all" }}>
+            <h1 style={{ fontSize: "29px", fontWeight: 800, color: "#1a1a1a", lineHeight: 1.32, letterSpacing: "-0.5px", marginBottom: "20px", wordBreak: "keep-all" }}>
               내 지역/단지<br />
               로컬 부동산 기자가 되세요!
               <div style={{ fontSize: "19px", fontWeight: 700, color: "#fa8258", marginTop: "12px", letterSpacing: "-0.3px" }}>
                 부동산중개 + 지역부동산기자
               </div>
             </h1>
+
+            {/* 좌측 서비스 앱 목업 이미지 */}
+            <div style={{ marginBottom: "24px", textAlign: "center" }}>
+              <img
+                src="/newsrealty_mockup@2x.png"
+                alt="공실뉴스부동산 모바일 앱 화면"
+                style={{
+                  width: "100%",
+                  maxWidth: "280px",
+                  height: "auto",
+                  display: "inline-block",
+                  filter: "drop-shadow(0 10px 22px rgba(0,0,0,0.06))",
+                  borderRadius: "12px"
+                }}
+              />
+            </div>
 
             {/* 직방 연회색 안내 카드 */}
             <div style={{ backgroundColor: "#f8f9fa", borderRadius: "10px", padding: "24px 20px", border: "1px solid #f0f2f5" }}>
@@ -302,17 +331,17 @@ export default function NewsRealtyApplyPage() {
           <div style={{ width: "100%", maxWidth: "460px", flexShrink: 0 }}>
             <form onSubmit={handleSubmit}>
 
-              {/* 1. 중개사무소 정보 */}
-              <div style={{ marginBottom: "24px" }}>
+              {/* 1. 신청자 */}
+              <div style={{ marginBottom: "20px" }}>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#222", marginBottom: "8px" }}>
-                  중개사무소 정보
+                  신청자 <span style={{ color: "#fa8258" }}>*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  value={agencyName}
-                  onChange={(e) => setAgencyName(e.target.value)}
-                  placeholder="중개사무소 이름, 대표자명, 주소를 조합 검색"
+                  value={applicantName}
+                  onChange={(e) => setApplicantName(e.target.value)}
+                  placeholder="신청자 성함을 입력해 주세요"
                   style={{
                     width: "100%",
                     height: "48px",
@@ -328,10 +357,10 @@ export default function NewsRealtyApplyPage() {
                 />
               </div>
 
-              {/* 2. 대표 공인중개사 휴대폰 번호 */}
-              <div style={{ marginBottom: "24px" }}>
+              {/* 2. 연락처 */}
+              <div style={{ marginBottom: "20px" }}>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#222", marginBottom: "8px" }}>
-                  대표 공인중개사 휴대폰 번호
+                  연락처 <span style={{ color: "#fa8258" }}>*</span>
                 </label>
                 <input
                   type="tel"
@@ -354,14 +383,15 @@ export default function NewsRealtyApplyPage() {
                 />
               </div>
 
-              {/* 3. 대표 공인중개사 이메일 */}
-              <div style={{ marginBottom: "24px" }}>
+              {/* 3. E-mail */}
+              <div style={{ marginBottom: "20px" }}>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#222", marginBottom: "8px" }}>
-                  대표 공인중개사 이메일 <span style={{ fontWeight: 400, fontSize: "12px", color: "#888" }}>(가입 후 아이디로 이용돼요.)</span>
+                  E-mail <span style={{ color: "#fa8258" }}>*</span> <span style={{ fontWeight: 400, fontSize: "12px", color: "#888" }}>(가입 후 아이디로 이용돼요)</span>
                 </label>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <input
                     type="text"
+                    required
                     value={emailLocal}
                     onChange={(e) => setEmailLocal(e.target.value)}
                     placeholder="이메일"
@@ -382,6 +412,7 @@ export default function NewsRealtyApplyPage() {
                   {emailDomain === "direct" ? (
                     <input
                       type="text"
+                      required
                       value={customDomain}
                       onChange={(e) => setCustomDomain(e.target.value)}
                       placeholder="직접 입력"
@@ -427,51 +458,34 @@ export default function NewsRealtyApplyPage() {
                 </div>
               </div>
 
-              {/* 4. 상담할 광고 상품 선택 */}
+              {/* 4. 중개사무소 */}
               <div style={{ marginBottom: "24px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#222", marginBottom: "12px" }}>
-                  상담할 광고 상품 선택
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#222", marginBottom: "8px" }}>
+                  중개사무소 <span style={{ color: "#fa8258" }}>*</span>
                 </label>
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {AD_PRODUCTS.map((prod) => {
-                    const isChecked = selectedProduct === prod.id;
-                    return (
-                      <label
-                        key={prod.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                          color: "#333",
-                          userSelect: "none"
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="adProduct"
-                          value={prod.id}
-                          checked={isChecked}
-                          onChange={() => setSelectedProduct(prod.id)}
-                          style={{
-                            width: "16px",
-                            height: "16px",
-                            accentColor: "#fa8258",
-                            cursor: "pointer"
-                          }}
-                        />
-                        <span style={{ fontWeight: isChecked ? 600 : 400, color: isChecked ? "#111" : "#444" }}>
-                          {prod.label}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
+                <input
+                  type="text"
+                  required
+                  value={agencyName}
+                  onChange={(e) => setAgencyName(e.target.value)}
+                  placeholder="중개사무소 명칭을 입력해 주세요"
+                  style={{
+                    width: "100%",
+                    height: "48px",
+                    padding: "0 16px",
+                    border: "1px solid #dfe2e6",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    color: "#222",
+                    backgroundColor: "#fff",
+                    outline: "none",
+                    boxSizing: "border-box"
+                  }}
+                />
               </div>
 
               {/* 5. 회원가입 약관 전체 동의 하기 (아코디언 박스) */}
-              <div style={{ marginBottom: "24px" }}>
+              <div style={{ marginBottom: "28px" }}>
                 <div style={{
                   border: "1px solid #dfe2e6",
                   borderRadius: "6px",
@@ -505,7 +519,7 @@ export default function NewsRealtyApplyPage() {
                   {termsAccordionOpen && (
                     <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f0f2f5", fontSize: "11.5px", color: "#666", lineHeight: 1.6, paddingLeft: "28px" }}>
                       <p>• 개인정보 수집 및 이용 목적: 공실뉴스 공인중개사 회원가입 심사 및 안내</p>
-                      <p>• 수집 항목: 중개사무소 정보, 대표자 성명, 휴대폰 번호, 이메일</p>
+                      <p>• 수집 항목: 신청자 성명, 연락처, E-mail, 중개사무소 정보</p>
                       <p>• 보유 및 이용 기간: 회원 탈퇴 또는 법정 의무 보유 기간까지</p>
                     </div>
                   )}
@@ -514,28 +528,6 @@ export default function NewsRealtyApplyPage() {
                 <p style={{ fontSize: "11.5px", color: "#888", marginTop: "6px", paddingLeft: "4px" }}>
                   약관의 효력은 회원가입 절차가 완료된 후 적용됩니다.
                 </p>
-              </div>
-
-              {/* 6. 추천인 코드 6자리 (선택) */}
-              <div style={{ marginBottom: "28px" }}>
-                <input
-                  type="text"
-                  value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value)}
-                  placeholder="추천인 코드 6자리 (선택)"
-                  style={{
-                    width: "100%",
-                    height: "48px",
-                    padding: "0 16px",
-                    border: "1px solid #dfe2e6",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    color: "#222",
-                    backgroundColor: "#fff",
-                    outline: "none",
-                    boxSizing: "border-box"
-                  }}
-                />
               </div>
 
               {/* 에러 메시지 */}
