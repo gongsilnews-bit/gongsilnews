@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getMyArticles, getArticles, getArticleTabCounts, adminUpdateArticleStatus, deleteArticle, adminReviseArticleWithFeedback } from "@/app/actions/article";
+import { getAdminArticlesAdSettingsMap, getAuthorArticlesAdSettingsMap, adminUpdateArticlesAdSettings, updateArticlesAdSettings, AuthorBanner } from "@/app/actions/articleAd";
+import { getAdminArticlesVacancyMap, getAuthorArticlesVacancyMap, getAuthorEligibleVacancies, updateArticleAttachedVacancy } from "@/app/actions/articleVacancy";
 import MobileAdminLoading from "@/components/mobile/MobileAdminLoading";
 
 const REJECT_REASONS = [
@@ -27,6 +29,47 @@ const EMPTY_COUNTS = { 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, �
 
 const PAGE_SIZE = 30;
 
+type ListParams = {
+  page: number;
+  limit: number;
+  orderBy: "published_at" | "updated_at" | "created_at";
+  slim: boolean;
+  noCache: boolean;
+  status?: string;
+  searchKeyword?: string;
+};
+
+type EligibleVacancy = {
+  id: string;
+  building_name?: string | null;
+  dong?: string | null;
+  trade_type: string;
+  deposit?: number;
+  monthly_rent?: number;
+};
+
+// 공실 금액 축약 표기 (ArticleVacancyDropdown과 동일 규칙)
+function formatShortMoney(tradeType: string, deposit?: number, rent?: number) {
+  const format = (val?: number) => {
+    if (!val || val === 0) return "0";
+    const m = Math.round(val / 10000);
+    if (m === 0) return "0";
+    const e = Math.floor(m / 10000);
+    const r = m % 10000;
+    let res = "";
+    if (e > 0) res += `${e}억`;
+    if (r > 0) res += `${r}만`;
+    return res || "0";
+  };
+  if (tradeType === "매매" || tradeType === "전세") return `[${tradeType} ${format(deposit)}]`;
+  if (tradeType === "월세" || tradeType === "단기") return `[${tradeType} ${format(deposit)}/${format(rent)}]`;
+  return `[${tradeType}]`;
+}
+
+const BANNER_NONE = { bg: "#f3f4f6", color: "#9ca3af", border: "#d1d5db" };
+const BANNER_SET = { bg: "#ecfdf5", color: "#059669", border: "#a7f3d0" };
+const BANNER_DEFAULT = { bg: "#eff6ff", color: "#2563eb", border: "#bfdbfe" };
+
 function MobileArticleAdmin() {
   const router = useRouter();
   const [articles, setArticles] = useState<any[]>([]);
@@ -47,6 +90,16 @@ function MobileArticleAdmin() {
   const [counts, setCounts] = useState(EMPTY_COUNTS);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE); // 일반 회원(내 기사) 화면 표시 개수
   const requestRef = useRef(0);
+
+  // 배너광고 / 공실선택
+  const [adSettingsMap, setAdSettingsMap] = useState<Record<string, { ad_type: string; custom_banner_id: string | null; banner_name: string | null }>>({});
+  const [authorBanners, setAuthorBanners] = useState<AuthorBanner[]>([]);
+  const [vacancyMap, setVacancyMap] = useState<Record<string, { vacancy_id: string; title: string; snapshot: unknown }>>({});
+  // 공실 목록은 "기사 작성자" 기준이다. 관리자는 남의 기사도 다루므로 작성자별로 캐싱한다.
+  const [vacancyOptions, setVacancyOptions] = useState<Record<string, { isPaid: boolean; vacancies: EligibleVacancy[] }>>({});
+  const [loadingVacancyAuthor, setLoadingVacancyAuthor] = useState<string | null>(null);
+  const [isPaidRealtor, setIsPaidRealtor] = useState(false);
+  const [sheet, setSheet] = useState<{ type: "banner" | "vacancy"; articleId: string; authorId: string } | null>(null);
 
   // 반려 모달
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -110,9 +163,71 @@ function MobileArticleAdmin() {
     return () => window.removeEventListener('message', handleMessage);
   }, [previewId]);
 
+  const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
+    setToastMessage({ text, type });
+    setTimeout(() => setToastMessage(null), 2500);
+  };
+
+  // 배너/공실 설정은 목록과 별개로 조회한다 (목록 렌더링을 막지 않는다)
+  const loadAdminMeta = (ids: string[], append = false) => {
+    if (ids.length === 0) return;
+    void getAdminArticlesAdSettingsMap(ids).then(res => {
+      if (!res.success) return;
+      setAdSettingsMap(prev => (append ? { ...prev, ...res.settingsMap } : res.settingsMap));
+      setAuthorBanners(res.banners || []);
+    });
+    void getAdminArticlesVacancyMap(ids).then(res => {
+      if (!res.success) return;
+      setVacancyMap(prev => (append ? { ...prev, ...res.vacancyMap } : res.vacancyMap));
+    });
+  };
+
+  const loadMemberMeta = (id: string) => {
+    void getAuthorArticlesAdSettingsMap(id).then(res => {
+      if (!res.success) return;
+      setAdSettingsMap(res.settingsMap || {});
+      setAuthorBanners(res.banners || []);
+    });
+    void getAuthorArticlesVacancyMap(id).then(res => {
+      if (res.success) setVacancyMap(res.vacancyMap || {});
+    });
+  };
+
+  // 작성자의 연결 가능 공실을 1회만 조회해 캐싱한다 (비즈니스회원은 서버 규칙상 isPaid=false)
+  const ensureVacancyOptions = (authorId: string) => {
+    if (!authorId || vacancyOptions[authorId]) return;
+    setLoadingVacancyAuthor(authorId);
+    void getAuthorEligibleVacancies(authorId).then(res => {
+      setVacancyOptions(prev => ({
+        ...prev,
+        [authorId]: { isPaid: !!res.isPaid, vacancies: (res.vacancies || []) as EligibleVacancy[] },
+      }));
+      setLoadingVacancyAuthor(prev => (prev === authorId ? null : prev));
+    });
+  };
+
+  // 로그인한 본인 기준 판정 (일반 회원의 공실선택 노출 여부)
+  useEffect(() => {
+    if (!memberId) return;
+    void getAuthorEligibleVacancies(memberId).then(res => {
+      if (!res.success) return;
+      setIsPaidRealtor(res.isPaid);
+      setVacancyOptions(prev => ({
+        ...prev,
+        [memberId]: { isPaid: res.isPaid, vacancies: (res.vacancies || []) as EligibleVacancy[] },
+      }));
+    });
+  }, [memberId]);
+
   // 목록 조회 파라미터: 탭/검색어/정렬을 서버로 넘겨 DB 전체를 대상으로 조회한다.
   const buildListParams = (page: number) => {
-    const params: any = { page, limit: PAGE_SIZE, orderBy: sortBy, slim: true, noCache: true };
+    const params: ListParams = {
+      page,
+      limit: PAGE_SIZE,
+      orderBy: sortBy as ListParams["orderBy"],
+      slim: true,
+      noCache: true,
+    };
     const status = STATUS_PARAM[filter];
     if (status) params.status = status;
     const kw = activeKeyword.trim();
@@ -132,7 +247,12 @@ function MobileArticleAdmin() {
     });
     const res = await listRequest;
     if (request !== requestRef.current) return;
-    if (res.success) { setArticles(res.data || []); setArticleTotal(res.count || 0); setArticlePage(1); }
+    if (res.success) {
+      setArticles(res.data || []);
+      setArticleTotal(res.count || 0);
+      setArticlePage(1);
+      loadAdminMeta((res.data || []).map((a: { id: string }) => a.id));
+    }
     setLoading(false);
   };
 
@@ -142,14 +262,20 @@ function MobileArticleAdmin() {
     if (showLoading) setLoading(true);
     const res = await getMyArticles(memberId!);
     if (request !== requestRef.current) return;
-    if (res.success) { setArticles(res.data || []); setVisibleCount(PAGE_SIZE); }
+    if (res.success) {
+      setArticles(res.data || []);
+      setVisibleCount(PAGE_SIZE);
+      loadMemberMeta(memberId!);
+    }
     setLoading(false);
   };
 
   useEffect(() => {
     if (!memberId || !authChecked) return;
-    if (isAdmin) void loadAdminArticles();
-    else void loadMyOwnArticles();
+    void (async () => {
+      if (isAdmin) await loadAdminArticles();
+      else await loadMyOwnArticles();
+    })();
   }, [memberId, authChecked, isAdmin, filter, activeKeyword, sortBy]);
 
   const refreshCounts = () => {
@@ -176,6 +302,7 @@ function MobileArticleAdmin() {
     if (res.success) {
       setArticles(prev => [...prev, ...(res.data || [])]);
       setArticlePage(nextPage);
+      loadAdminMeta((res.data || []).map((a: { id: string }) => a.id), true);
     }
     setIsLoadingMore(false);
   };
@@ -278,6 +405,67 @@ function MobileArticleAdmin() {
     setShowRejectModal(false);
     setArticles(prev => prev.map(a => a.id === rejectTargetId ? { ...a, status: 'REJECTED', reject_reason: finalReason } : a));
     adminUpdateArticleStatus([rejectTargetId], "REJECTED", finalReason).then(() => refreshCounts());
+  };
+
+  // 배너광고 변경 (관리자는 전체 배너, 회원은 본인 배너)
+  const handleChangeBanner = async (articleId: string, value: string) => {
+    let adType: "DEFAULT" | "BANNER" | "NONE" = "DEFAULT";
+    let customBannerId: string | null = null;
+    let bannerName: string | null = null;
+    if (value === "NONE") {
+      adType = "NONE";
+    } else if (value !== "DEFAULT") {
+      adType = "BANNER";
+      customBannerId = value;
+      bannerName = authorBanners.find(b => b.id === value)?.name || null;
+    }
+
+    const prevInfo = adSettingsMap[articleId];
+    setAdSettingsMap(prev => ({ ...prev, [articleId]: { ad_type: adType, custom_banner_id: customBannerId, banner_name: bannerName } }));
+    setSheet(null);
+
+    const res = isAdmin
+      ? await adminUpdateArticlesAdSettings([articleId], { ad_type: adType, custom_banner_id: customBannerId })
+      : await updateArticlesAdSettings([articleId], memberId!, { ad_type: adType, custom_banner_id: customBannerId });
+
+    if (res.success) {
+      showToast("배너광고 설정이 변경되었습니다.");
+    } else {
+      setAdSettingsMap(prev => {
+        const next = { ...prev };
+        if (prevInfo) next[articleId] = prevInfo; else delete next[articleId];
+        return next;
+      });
+      showToast(res.error || "배너 변경 실패", "error");
+    }
+  };
+
+  // 기사 노출 공실 연결/해제 (유료 부동산 전용)
+  const handleSelectVacancy = async (articleId: string, authorId: string, vacancyId: string | null) => {
+    const list = vacancyOptions[authorId]?.vacancies || [];
+    const selected = vacancyId ? list.find(v => v.id === vacancyId) : null;
+    const title = selected ? (selected.building_name || selected.dong || "공실") : "";
+    const prevVac = vacancyMap[articleId];
+
+    setVacancyMap(prev => {
+      const next = { ...prev };
+      if (vacancyId) next[articleId] = { vacancy_id: vacancyId, title, snapshot: null };
+      else delete next[articleId];
+      return next;
+    });
+    setSheet(null);
+
+    const res = await updateArticleAttachedVacancy(articleId, vacancyId);
+    if (res.success) {
+      showToast(vacancyId ? "기사에 공실 매물이 연결되었습니다." : "공실 연결이 해제되었습니다.");
+    } else {
+      setVacancyMap(prev => {
+        const next = { ...prev };
+        if (prevVac) next[articleId] = prevVac; else delete next[articleId];
+        return next;
+      });
+      showToast(res.error || "공실 설정 변경 실패", "error");
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -469,6 +657,58 @@ function MobileArticleAdmin() {
                 <span>수정 {updatedStr}</span>
               </div>
 
+              {/* 배너광고 · 공실선택 */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                {(() => {
+                  const info = adSettingsMap[a.id];
+                  const t = info?.ad_type || "DEFAULT";
+                  const c = t === "NONE" ? BANNER_NONE : t === "BANNER" && info?.banner_name ? BANNER_SET : BANNER_DEFAULT;
+                  const label = t === "NONE" ? "배너없음" : t === "BANNER" && info?.banner_name ? info.banner_name : "업체프로필";
+                  return (
+                    <button
+                      onClick={() => setSheet({ type: "banner", articleId: a.id, authorId: a.author_id || memberId || "" })}
+                      style={{
+                        flex: 1, minWidth: 0, height: 34, padding: "0 8px", background: c.bg, color: c.color,
+                        border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 12, fontWeight: 700,
+                        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 3,
+                      }}
+                    >
+                      <span style={{ flexShrink: 0 }}>📢</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+                      <span style={{ fontSize: 9, opacity: 0.7, flexShrink: 0 }}>▼</span>
+                    </button>
+                  );
+                })()}
+                {(() => {
+                  const v = vacancyMap[a.id];
+                  const c = v?.vacancy_id ? BANNER_DEFAULT : BANNER_NONE;
+                  const label = v?.vacancy_id ? (v.title || "공실 연결됨") : "공실 없음";
+                  return (
+                    <button
+                      onClick={() => {
+                        if (!isAdmin && !isPaidRealtor) {
+                          showToast("공실뉴스부동산 / 공실등록부동산 유료 회원 전용 기능입니다.", "info");
+                          return;
+                        }
+                        const authorId = a.author_id || memberId || "";
+                        ensureVacancyOptions(authorId);
+                        setSheet({ type: "vacancy", articleId: a.id, authorId });
+                      }}
+                      style={{
+                        flex: 1, minWidth: 0, height: 34, padding: "0 8px", background: c.bg, color: c.color,
+                        border: `1px solid ${c.border}`, borderRadius: 8, fontSize: 12, fontWeight: 700,
+                        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 3,
+                        opacity: isAdmin || isPaidRealtor ? 1 : 0.55,
+                      }}
+                    >
+                      <span style={{ flexShrink: 0 }}>🏢</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+                      <span style={{ fontSize: 9, opacity: 0.7, flexShrink: 0 }}>▼</span>
+                    </button>
+                  );
+                })()}
+              </div>
+
               {/* 액션 버튼 */}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {/* 관리자: 승인대기 기사에 승인/반려 버튼 표시 */}
@@ -624,6 +864,87 @@ function MobileArticleAdmin() {
               style={{ width: "100%", flex: 1, border: "none", background: "#f4f6f8" }}
             />
           </div>
+        </div>
+      )}
+
+      {/* 배너광고 / 공실선택 바텀시트 */}
+      {sheet && (() => {
+        const target = articles.find(a => a.id === sheet.articleId);
+        const info = adSettingsMap[sheet.articleId];
+        const adType = info?.ad_type || "DEFAULT";
+        const attachedId = vacancyMap[sheet.articleId]?.vacancy_id || null;
+        const authorOption = vacancyOptions[sheet.authorId];
+        const vacancyList = authorOption?.vacancies || [];
+        const authorIsPaid = authorOption?.isPaid;
+        const optionStyle = (active: boolean): React.CSSProperties => ({
+          width: "100%", padding: "14px 20px", border: "none", borderBottom: "1px solid #f6f7f9",
+          background: active ? "#eff6ff" : "transparent", color: active ? "#2563eb" : "#374151",
+          fontSize: 14, fontWeight: active ? 800 : 500, textAlign: "left", cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 6,
+        });
+        return (
+          <div onClick={() => setSheet(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 10000, display: "flex", alignItems: "flex-end" }}>
+            <div onClick={e => e.stopPropagation()} style={{ width: "100%", background: "#fff", borderRadius: "18px 18px 0 0", maxHeight: "72vh", display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "12px 20px 14px", borderBottom: "1px solid #eef0f3" }}>
+                <div style={{ width: 38, height: 4, background: "#e5e7eb", borderRadius: 2, margin: "0 auto 12px" }} />
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#111" }}>
+                  {sheet.type === "banner" ? "📢 배너광고 선택" : "🏢 기사 노출 공실 선택 (최대 1개)"}
+                </div>
+                <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  #{target?.article_no || "-"} {target?.title || ""}
+                  {isAdmin && target?.author_name ? ` · ${target.author_name}` : ""}
+                </div>
+              </div>
+              <div style={{ overflowY: "auto", paddingBottom: 24 }}>
+                {sheet.type === "banner" ? (
+                  <>
+                    <button onClick={() => handleChangeBanner(sheet.articleId, "DEFAULT")} style={optionStyle(adType === "DEFAULT")}>👤 업체프로필 (기본)</button>
+                    <button onClick={() => handleChangeBanner(sheet.articleId, "NONE")} style={optionStyle(adType === "NONE")}>🚫 배너없음</button>
+                    {authorBanners.length === 0 ? (
+                      <div style={{ padding: "18px 20px", fontSize: 12.5, color: "#9ca3af", lineHeight: 1.6 }}>
+                        등록된 배너가 없습니다.<br />PC 관리자 화면에서 배너를 먼저 만들어 주세요.
+                      </div>
+                    ) : authorBanners.map(b => (
+                      <button key={b.id} onClick={() => handleChangeBanner(sheet.articleId, b.id)} style={optionStyle(adType === "BANNER" && info?.custom_banner_id === b.id)}>
+                        <span style={{ flexShrink: 0 }}>🏷️</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.name}</span>
+                      </button>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => handleSelectVacancy(sheet.articleId, sheet.authorId, null)} style={optionStyle(!attachedId)}>🚫 공실 미노출 (연결 해제)</button>
+                    {loadingVacancyAuthor === sheet.authorId ? (
+                      <div style={{ padding: "18px 20px", fontSize: 12.5, color: "#9ca3af" }}>공실 목록을 불러오는 중...</div>
+                    ) : vacancyList.length === 0 ? (
+                      <div style={{ padding: "18px 20px", fontSize: 12.5, color: "#9ca3af", lineHeight: 1.6 }}>
+                        {authorIsPaid === false
+                          ? <>작성자가 공실뉴스부동산 / 공실등록부동산 유료 회원이 아니어서<br />연결할 수 있는 공실이 없습니다.</>
+                          : <>연결할 수 있는 공실이 없습니다.<br />&apos;부동산노출 + 일반인노출&apos;로 설정된 진행중 매물만 선택할 수 있습니다.</>}
+                      </div>
+                    ) : vacancyList.map(v => (
+                      <button key={v.id} onClick={() => handleSelectVacancy(sheet.articleId, sheet.authorId, v.id)} style={optionStyle(attachedId === v.id)}>
+                        <span style={{ color: "#2563eb", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>{formatShortMoney(v.trade_type, v.deposit, v.monthly_rent)}</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.building_name || v.dong || "공실"}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 토스트 */}
+      {toastMessage && (
+        <div style={{
+          position: "fixed", bottom: 96, left: "50%", transform: "translateX(-50%)", zIndex: 10001,
+          background: toastMessage.type === "error" ? "#dc2626" : toastMessage.type === "info" ? "#374151" : "#059669",
+          color: "#fff", padding: "12px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.2)", maxWidth: "88%", textAlign: "center", lineHeight: 1.4,
+        }}>
+          {toastMessage.text}
         </div>
       )}
 
