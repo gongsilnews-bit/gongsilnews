@@ -524,3 +524,31 @@ export async function resendNewsrealtySms(phone: string, applicantName: string, 
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * 관리자용: 신청 내역 삭제 (단일/일괄)
+ */
+export async function deleteNewsrealtyApplications(ids: string[]) {
+  try {
+    if (!ids || ids.length === 0) return { success: false, message: "삭제할 항목이 없습니다." };
+    const supabase = getAdminClient();
+
+    // 1. newsrealty_applications 테이블에서 삭제
+    await supabase
+      .from("newsrealty_applications")
+      .delete()
+      .in("id", ids);
+
+    // 2. board_posts 폴백 테이블에서도 삭제
+    await supabase
+      .from("board_posts")
+      .delete()
+      .in("id", ids);
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("deleteNewsrealtyApplications error:", err);
+    return { success: false, message: err.message };
+  }
+}
+
