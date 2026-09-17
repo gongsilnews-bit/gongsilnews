@@ -275,7 +275,7 @@ export default function BoardReadClient({
             {/* 제목 영역 */}
             <div style={{ padding: "28px 32px 24px", borderBottom: "1px solid #f0f0f0" }}>
               {catBadge && (
-                <div style={{ display: "inline-block", fontSize: 13, fontWeight: 700, color: "#508bf5", background: "rgba(80,139,245,0.1)", borderRadius: 4, padding: "4px 10px", marginBottom: 12 }}>
+                <div style={{ display: "inline-block", fontSize: 14, fontWeight: 800, color: "#ff8e15", marginBottom: 10 }}>
                   {catBadge}
                 </div>
               )}
