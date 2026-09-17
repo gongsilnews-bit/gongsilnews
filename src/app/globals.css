@@ -184,7 +184,8 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 }
 .gnb-new a { transition: all 0.2s; }
 .gnb-new > a,
-.gnb-dropdown-parent > a {
+.gnb-dropdown-parent > a,
+.gnb-bubble-parent > a {
     display: inline-block;
     padding: 10px 0;
 }

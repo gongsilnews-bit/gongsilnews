@@ -10,13 +10,16 @@ import { openChannelTalk } from "@/utils/channelTalk";
 import HeaderTextBanner from "./HeaderTextBanner";
 import { createClient } from "@/utils/supabase/client";
 import NotificationBell from "@/components/common/NotificationBell";
+import NavHighlightBubble, { useNavHighlightBubbles, type NavCounts } from "@/components/common/NavHighlightBubble";
 import { createPortal } from "react-dom";
 import { adminApproveRealtorApplication } from "@/app/admin/actions";
 import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
 
 
-export default function Header({ topFullBanners, headerTextBanners }: { topFullBanners?: any[], headerTextBanners?: any[] }) {
+export default function Header({ topFullBanners, headerTextBanners, navCounts }: { topFullBanners?: any[], headerTextBanners?: any[], navCounts?: NavCounts }) {
   const pathname = usePathname();
+  // 핵심 메뉴(공실열람·공실스터디) 위에 가끔 떠오르는 말풍선
+  const navBubble = useNavHighlightBubbles(navCounts);
   const router = useRouter();
   const headerRef = useRef<HTMLElement>(null);
   const txtDropdownRef = useRef<HTMLDivElement>(null);
@@ -330,7 +333,10 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   flex: 1,
                   fontSize: isSmallHeader ? "15.5px" : "17px"
                 }}>
-                  <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""}>우리동네뉴스</Link>
+                  <div className="gnb-bubble-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <Link href="/news_map" className={pathname === "/news_map" ? "active" : ""}>우리동네뉴스</Link>
+                    <NavHighlightBubble show={navBubble.key === "map"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="map" />
+                  </div>
                   <Link href="/news_gongsil" className={pathname === "/news_gongsil" ? "active" : ""}>공실뉴스</Link>
                   <Link href="/news_politics" className={pathname === "/news_politics" ? "active" : ""}>부동산·경제</Link>
                   <Link href="/news_marketing" className={pathname === "/news_marketing" ? "active" : ""}>AI마케팅</Link>
@@ -338,10 +344,14 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
 
                   {isSmallHeader && <span className="divider" style={{ width: 1, height: 16, backgroundColor: "#ddd", margin: "0 4px" }}></span>}
                   
-                  <div style={{ position: "relative", marginLeft: !isSmallHeader ? "auto" : "0", display: "flex", alignItems: "center" }}>
+                  <div className="gnb-bubble-parent" style={{ position: "relative", marginLeft: !isSmallHeader ? "auto" : "0", display: "flex", alignItems: "center" }}>
                     <Link href="/gongsil" style={{ color: "#102c57", fontWeight: 800, display: "block" }}>공실열람</Link>
+                    <NavHighlightBubble show={navBubble.key === "gongsil"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="gongsil" />
                   </div>
-                  <Link href="/study" className={pathname === "/study" || pathname?.startsWith("/study_read") ? "active" : ""}>공실스터디</Link>
+                  <div className="gnb-bubble-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <Link href="/study" className={pathname === "/study" || pathname?.startsWith("/study_read") ? "active" : ""}>공실스터디</Link>
+                    <NavHighlightBubble show={navBubble.key === "study"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="study" />
+                  </div>
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
                     <Link href="/board">자료실</Link>
                     <div className="gnb-dropdown">

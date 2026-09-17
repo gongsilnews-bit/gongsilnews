@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RealEstateInfoBanner from "@/components/RealEstateInfoBanner";
 import { getBannersByPlacement } from "@/app/actions/banner";
+import { getNavHighlightCounts } from "@/app/actions/navHighlight";
 import ComingSoon from "@/components/common/ComingSoon";
 
 export default async function MainLayout({
@@ -9,9 +10,10 @@ export default async function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [{ data: topFullBanners }, { data: headerTextBanners }] = await Promise.all([
+  const [{ data: topFullBanners }, { data: headerTextBanners }, { data: navCounts }] = await Promise.all([
     getBannersByPlacement("TOP_FULL"),
-    getBannersByPlacement("HEADER_TEXT")
+    getBannersByPlacement("HEADER_TEXT"),
+    getNavHighlightCounts(),
   ]);
 
   // const isMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
@@ -22,7 +24,7 @@ export default async function MainLayout({
 
   return (
     <div style={{ minWidth: "1200px" }}>
-      <Header topFullBanners={topFullBanners} headerTextBanners={headerTextBanners} />
+      <Header topFullBanners={topFullBanners} headerTextBanners={headerTextBanners} navCounts={navCounts} />
       {/* 하위의 모든 page.tsx 파일 내용물이 이 자리에 렌더링 됩니다 */}
       {children}
       <RealEstateInfoBanner />
