@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import NewsrealtyHeader from "@/components/newsrealty/NewsrealtyHeader";
 
 const benefits: {
   num: string;
@@ -132,6 +133,7 @@ export default function NewsRealtyPage() {
 
   return (
     <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", minHeight: "100vh" }}>
+      <NewsrealtyHeader />
       
       {/* ━━━ 스타일 정의 ━━━ */}
       <style>{`

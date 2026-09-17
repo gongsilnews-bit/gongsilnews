@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { submitNewsrealtyApplication, checkExistingNewsrealtyApplication } from "@/app/actions/newsrealtyApply";
+import NewsrealtyHeader from "@/components/newsrealty/NewsrealtyHeader";
 
 export default function NewsRealtyApplyPage() {
   const router = useRouter();
@@ -220,25 +221,7 @@ export default function NewsRealtyApplyPage() {
     return (
       <div style={{ backgroundColor: "#f7f8f9", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif" }}>
 
-        {/* ── 헤더 (기존 폼 페이지와 동일) ── */}
-        <header style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #eaedf0", height: "60px", position: "sticky", top: 0, zIndex: 40 }}>
-          <div style={{ maxWidth: "1060px", margin: "0 auto", height: "100%", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <Link href="/" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }}>공실뉴스</Link>
-                <span style={{ fontSize: "16px", color: "#ccc", fontWeight: 300 }}>|</span>
-                <Link href="/newsrealty" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }}>공실뉴스부동산</Link>
-              </div>
-            </div>
-            <nav style={{ display: "flex", alignItems: "center", gap: "24px", fontSize: "13px", fontWeight: 500, color: "#444" }}>
-              <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>홈</Link>
-              <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>채용</Link>
-              <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>상품소개</Link>
-              <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>허위광고OUT</Link>
-              <Link href="tel:15555343" style={{ color: "#444", textDecoration: "none" }}>이용안내</Link>
-            </nav>
-          </div>
-        </header>
+        <NewsrealtyHeader onOpenGuide={() => setShowGuideModal(true)} />
 
         {/* ── 메인 2컬럼 레이아웃 (기존 폼 페이지와 동일) ── */}
         <main style={{ padding: "80px 20px 100px 20px", display: "flex", justifyContent: "center" }}>
@@ -523,14 +506,7 @@ export default function NewsRealtyApplyPage() {
 
     return (
       <div style={{ backgroundColor: "#f7f8f9", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif", display: "flex", flexDirection: "column" }}>
-        {/* 헤더 */}
-        <header style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #eaedf0", height: "60px", position: "sticky", top: 0, zIndex: 40 }}>
-          <div style={{ maxWidth: "1060px", margin: "0 auto", height: "100%", padding: "0 24px", display: "flex", alignItems: "center" }}>
-            <Link href="/" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }}>공실뉴스</Link>
-            <span style={{ fontSize: "16px", color: "#ccc", fontWeight: 300, margin: "0 8px" }}>|</span>
-            <Link href="/newsrealty" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }}>공실뉴스부동산</Link>
-          </div>
-        </header>
+        <NewsrealtyHeader onOpenGuide={() => setShowGuideModal(true)} />
 
         {/* 상태 안내 카드 */}
         <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 20px" }}>
@@ -694,14 +670,7 @@ export default function NewsRealtyApplyPage() {
   if (isSubmitted) {
     return (
       <div style={{ backgroundColor: "#f7f8f9", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif", display: "flex", flexDirection: "column" }}>
-        {/* 헤더 */}
-        <header style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #eaedf0", height: "60px", position: "sticky", top: 0, zIndex: 40 }}>
-          <div style={{ maxWidth: "1060px", margin: "0 auto", height: "100%", padding: "0 24px", display: "flex", alignItems: "center" }}>
-            <Link href="/" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }}>공실뉴스</Link>
-            <span style={{ fontSize: "16px", color: "#ccc", fontWeight: 300, margin: "0 8px" }}>|</span>
-            <Link href="/newsrealty" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }}>공실뉴스부동산</Link>
-          </div>
-        </header>
+        <NewsrealtyHeader onOpenGuide={() => setShowGuideModal(true)} />
 
         {/* 완료 카드 */}
         <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 20px" }}>
@@ -827,37 +796,7 @@ export default function NewsRealtyApplyPage() {
   return (
     <div style={{ backgroundColor: "#f7f8f9", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif" }}>
       
-      {/* ── 직방 CEO 스타일 단독 상단 헤더 ── */}
-      <header style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #eaedf0", height: "60px", position: "sticky", top: 0, zIndex: 40 }}>
-        <div style={{ maxWidth: "1060px", margin: "0 auto", height: "100%", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Link href="/" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }} title="공실뉴스 홈으로">
-                공실뉴스
-              </Link>
-              <span style={{ fontSize: "16px", color: "#ccc", fontWeight: 300 }}>|</span>
-              <Link href="/newsrealty" style={{ fontSize: "18px", fontWeight: 700, color: "#111", textDecoration: "none" }} title="공실뉴스부동산 소개로">
-                공실뉴스부동산
-              </Link>
-            </div>
-          </div>
-
-          <nav style={{ display: "flex", alignItems: "center", gap: "24px", fontSize: "13px", fontWeight: 500, color: "#444" }}>
-            <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>홈</Link>
-            <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>채용</Link>
-            <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>상품소개</Link>
-            <Link href="/newsrealty" style={{ color: "#444", textDecoration: "none" }}>허위광고OUT</Link>
-            <Link href="tel:15555343" style={{ color: "#444", textDecoration: "none" }}>이용안내</Link>
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", color: "#444", cursor: "pointer", border: "none", background: "none" }}
-            >
-              <span>☰</span> 전체 메뉴
-            </button>
-          </nav>
-        </div>
-      </header>
+      <NewsrealtyHeader onOpenGuide={() => setShowGuideModal(true)} />
 
       {/* ── 메인 화이트 카드 컨테이너 (정중앙 배치) ── */}
       <main style={{ padding: "48px 20px 80px 20px", display: "flex", justifyContent: "center" }}>
