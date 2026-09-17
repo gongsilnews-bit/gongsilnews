@@ -16,6 +16,8 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
   const [internalContactOpen, setInternalContactOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [guideDropdownOpen, setGuideDropdownOpen] = useState(false);
+  const guideDropdownTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const [user, setUser] = useState<any>(null);
 
   const handleMouseEnterDropdown = () => {
@@ -29,6 +31,20 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
   const handleMouseLeaveDropdown = () => {
     dropdownTimeoutRef.current = setTimeout(() => {
       setDropdownOpen(false);
+    }, 150);
+  };
+
+  const handleMouseEnterGuideDropdown = () => {
+    if (guideDropdownTimeoutRef.current) {
+      clearTimeout(guideDropdownTimeoutRef.current);
+      guideDropdownTimeoutRef.current = null;
+    }
+    setGuideDropdownOpen(true);
+  };
+
+  const handleMouseLeaveGuideDropdown = () => {
+    guideDropdownTimeoutRef.current = setTimeout(() => {
+      setGuideDropdownOpen(false);
     }, 150);
   };
 
@@ -91,6 +107,7 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
   const isApplyActive = pathname === "/newsrealty/apply";
   const isBenefitsActive = pathname.startsWith("/newsrealty/benefits");
   const isPricingActive = pathname === "/newsrealty/pricing";
+  const isGuideActive = pathname.startsWith("/newsrealty/guide");
 
   return (
     <>
@@ -434,27 +451,197 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
               )}
             </Link>
 
-            {/* 5. 1:1 문의 */}
-            <button
-              type="button"
-              onClick={() => setInternalContactOpen(true)}
-              style={{
-                fontSize: "14px",
-                fontWeight: 600,
-                color: "#475569",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "6px 0",
-                fontFamily: "inherit",
-                transition: "color 0.15s ease",
-                whiteSpace: "nowrap",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#ff8e15")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
+            {/* 5. 이용안내 (직방 스타일 다크 차콜 드롭다운) */}
+            <div
+              style={{ position: "relative" }}
+              onMouseEnter={handleMouseEnterGuideDropdown}
+              onMouseLeave={handleMouseLeaveGuideDropdown}
             >
-              1:1 문의
-            </button>
+              <Link
+                href="/newsrealty/guide/notice"
+                style={{
+                  fontSize: "14px",
+                  fontWeight: isGuideActive ? 800 : 600,
+                  color: isGuideActive ? "#ff8e15" : guideDropdownOpen ? "#ff8e15" : "#475569",
+                  textDecoration: "none",
+                  transition: "color 0.15s ease",
+                  padding: "6px 0",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "3px",
+                  position: "relative",
+                }}
+              >
+                <span>이용안내</span>
+                <span
+                  style={{
+                    fontSize: "10px",
+                    display: "inline-block",
+                    transition: "transform 0.2s ease",
+                    transform: guideDropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    opacity: 0.7,
+                  }}
+                >
+                  ▾
+                </span>
+                {isGuideActive && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: "2px",
+                      backgroundColor: "#ff8e15",
+                      borderRadius: "2px",
+                    }}
+                  />
+                )}
+              </Link>
+
+              {/* 직방 호갱노노 CEO 1:1 동일: 다크 차콜/블랙 드롭다운 메뉴 + 상단 꼬리표 */}
+              {guideDropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 4px)",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    zIndex: 100,
+                    paddingTop: "6px",
+                  }}
+                >
+                  {/* 상단 삼각형 꼬리표 (Arrow) */}
+                  <div
+                    style={{
+                      width: 0,
+                      height: 0,
+                      borderLeft: "6px solid transparent",
+                      borderRight: "6px solid transparent",
+                      borderBottom: "6px solid #22242a",
+                      margin: "0 auto",
+                    }}
+                  />
+
+                  {/* 차콜 다크 박스 */}
+                  <div
+                    style={{
+                      backgroundColor: "#22242a",
+                      borderRadius: "4px",
+                      boxShadow: "0 10px 25px rgba(0, 0, 0, 0.35)",
+                      padding: "8px 0",
+                      minWidth: "150px",
+                    }}
+                  >
+                    <Link
+                      href="/newsrealty/guide/notice"
+                      onClick={() => setGuideDropdownOpen(false)}
+                      style={{
+                        display: "block",
+                        padding: "9px 20px",
+                        color: pathname === "/newsrealty/guide/notice" ? "#ff8e15" : "#ffffff",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        letterSpacing: "-0.2px",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#2e323b";
+                        e.currentTarget.style.color = "#ff8e15";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = pathname === "/newsrealty/guide/notice" ? "#ff8e15" : "#ffffff";
+                      }}
+                    >
+                      공지사항
+                    </Link>
+
+                    <Link
+                      href="/newsrealty/guide/manual"
+                      onClick={() => setGuideDropdownOpen(false)}
+                      style={{
+                        display: "block",
+                        padding: "9px 20px",
+                        color: pathname === "/newsrealty/guide/manual" ? "#ff8e15" : "#ffffff",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        letterSpacing: "-0.2px",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#2e323b";
+                        e.currentTarget.style.color = "#ff8e15";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = pathname === "/newsrealty/guide/manual" ? "#ff8e15" : "#ffffff";
+                      }}
+                    >
+                      이용가이드
+                    </Link>
+
+                    <Link
+                      href="/newsrealty/guide/inquiry"
+                      onClick={() => setGuideDropdownOpen(false)}
+                      style={{
+                        display: "block",
+                        padding: "9px 20px",
+                        color: pathname === "/newsrealty/guide/inquiry" ? "#ff8e15" : "#ffffff",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        letterSpacing: "-0.2px",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#2e323b";
+                        e.currentTarget.style.color = "#ff8e15";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = pathname === "/newsrealty/guide/inquiry" ? "#ff8e15" : "#ffffff";
+                      }}
+                    >
+                      1:1문의
+                    </Link>
+
+                    <Link
+                      href="/newsrealty/guide/chat"
+                      onClick={() => setGuideDropdownOpen(false)}
+                      style={{
+                        display: "block",
+                        padding: "9px 20px",
+                        color: pathname === "/newsrealty/guide/chat" ? "#ff8e15" : "#ffffff",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        letterSpacing: "-0.2px",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#2e323b";
+                        e.currentTarget.style.color = "#ff8e15";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = pathname === "/newsrealty/guide/chat" ? "#ff8e15" : "#ffffff";
+                      }}
+                    >
+                      실시간상담
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* 6. 로그인/회원가입 박스 버튼 (직방 CEO 스타일) */}
             <div style={{ marginLeft: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
