@@ -187,18 +187,6 @@ export async function submitNewsrealtyApplication(data: NewsrealtyApplicationInp
       .select()
       .maybeSingle();
 
-    if (!insertError) {
-      await createNotification({
-        recipientRole: "ADMIN",
-        type: "newsrealty_apply",
-        title: "공실뉴스부동산 신청이 접수되었습니다",
-        body: `${data.name.trim()} · ${data.agencyName.trim()}`,
-        link: "/admin?menu=newsrealty",
-        mobileLink: "/m/admin/customer",
-        sourceId: inserted?.id ? String(inserted.id) : undefined,
-      });
-    }
-
     if (insertError) {
       console.warn("newsrealty_applications 테이블 저장 실패, board_posts(newsrealty) 보조 저장 시도:", insertError.message);
 
@@ -253,6 +241,18 @@ export async function submitNewsrealtyApplication(data: NewsrealtyApplicationInp
     } else {
       insertedId = inserted?.id || null;
     }
+
+    // 신청은 본 테이블(newsrealty_applications)과 보조 테이블(board_posts) 중
+    // 어디에 저장되든 접수된 것이므로, 두 경로가 합쳐진 이 지점에서 알림을 남긴다
+    await createNotification({
+      recipientRole: "ADMIN",
+      type: "newsrealty_apply",
+      title: "공실뉴스부동산 신청이 접수되었습니다",
+      body: `${data.name.trim()} · ${data.agencyName.trim()}`,
+      link: "/admin?menu=newsrealty",
+      mobileLink: "/m/admin/customer",
+      sourceId: insertedId ? String(insertedId) : undefined,
+    });
 
     // 3. 자동 문자(SMS) 알림 발송
     let smsSuccess = false;
