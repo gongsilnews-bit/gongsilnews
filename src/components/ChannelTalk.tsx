@@ -8,12 +8,6 @@ const PLUGIN_KEY =
   process.env.NEXT_PUBLIC_CHANNEL_TALK_PLUGIN_KEY ||
   "11833cf9-5aa3-4d72-bea4-425445a85a90";
 
-/** 채널톡 미확인 답변 수가 바뀔 때 ChannelTalkLauncher 가 받는 이벤트 */
-export const CHANNEL_TALK_BADGE_EVENT = "gongsil:channeltalk-badge";
-
-/** 메신저 열림/닫힘이 바뀔 때 ChannelTalkLauncher 가 받는 이벤트 */
-export const CHANNEL_TALK_VISIBILITY_EVENT = "gongsil:channeltalk-visibility";
-
 /**
  * 부팅은 페이지 로드당 한 번만. StrictMode 는 개발 모드에서 effect 를
  * mount -> cleanup -> mount 로 두 번 실행하는데, bootChannelTalk() 이 async 라
@@ -71,8 +65,8 @@ export default function ChannelTalk() {
 
     /**
      * 채널톡 기본 런처 버튼은 항상 숨긴다(hideChannelButtonOnBoot).
-     * 우하단 플로팅 버튼은 ChannelTalkLauncher 가 직접 그리고,
-     * 빠른메뉴 / 푸터 / 모바일 메뉴의 "실시간 상담"에서도 openChannelTalk() 으로 연다.
+     * 상담창은 상시 노출되는 플로팅 버튼 없이, 헤더 커뮤니티 / 푸터 고객센터 /
+     * 빠른메뉴 / 모바일 메뉴의 "실시간 상담"에서 openChannelTalk() 으로만 연다.
      */
     function boot(extra: Record<string, unknown> = {}) {
       if (!window.ChannelIO) return;
@@ -82,24 +76,6 @@ export default function ChannelTalk() {
         { pluginKey: PLUGIN_KEY, hideChannelButtonOnBoot: true, ...extra },
         (error: unknown) => {
           markChannelTalkBooted(!error);
-          if (error) return;
-
-          // 기본 런처를 숨겼으므로 미확인 답변 배지도 직접 중계한다.
-          window.ChannelIO?.("onBadgeChanged", (count: number) => {
-            window.dispatchEvent(
-              new CustomEvent(CHANNEL_TALK_BADGE_EVENT, { detail: count })
-            );
-          });
-
-          // 상담 버튼(z-index 20000000)이 열린 메신저 위에 겹치지 않도록
-          // 열림/닫힘을 중계해 버튼을 숨겼다 다시 띄운다.
-          const emitVisibility = (visible: boolean) => {
-            window.dispatchEvent(
-              new CustomEvent(CHANNEL_TALK_VISIBILITY_EVENT, { detail: visible })
-            );
-          };
-          window.ChannelIO?.("onShowMessenger", () => emitVisibility(true));
-          window.ChannelIO?.("onHideMessenger", () => emitVisibility(false));
         }
       );
     }
