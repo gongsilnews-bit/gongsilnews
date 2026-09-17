@@ -770,6 +770,35 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     }
   }, [initialTab]);
   const [visibleArticles, setVisibleArticles] = useState<any[]>(initialArticles || []);
+
+  // 상세 패널에서 '원본보기'로 기사 페이지에 갔다가 뒤로가기로 돌아오면 이 컴포넌트가
+  // 새로 마운트된다. popstate 리스너는 그때 이미 사라진 뒤라 패널 상태가 복원되지 않아
+  // 지도만 뜬다. 마운트 시 URL 의 panel 값을 직접 읽어 리스트 패널을 되살린다.
+  // (어느 기사를 보고 있었는지는 URL 에 없으므로 상세가 아니라 리스트로 되돌린다)
+  const restoreListPanelRef = useRef(false);
+  useEffect(() => {
+    if (!window.location.pathname.startsWith('/m/news_map')) return;
+    const params = new URLSearchParams(window.location.search);
+    const panel = params.get('panel');
+    if (panel !== 'list-panel' && panel !== 'article-detail') return;
+
+    setShowListPanel(true);
+    restoreListPanelRef.current = true;
+
+    // URL 도 실제 화면과 맞춘다. 그래야 패널의 닫기 버튼이 뒤로가기를 정상 수행한다.
+    if (panel === 'article-detail') {
+      params.set('panel', 'list-panel');
+      window.history.replaceState({ panel: 'list-panel' }, '', '?' + params.toString());
+    }
+  }, []);
+
+  // 복원한 리스트는 지도가 자리를 잡아 visibleArticles 가 채워진 뒤에야 내용을 넣을 수 있다
+  useEffect(() => {
+    if (!restoreListPanelRef.current) return;
+    if (visibleArticles.length === 0) return;
+    setListPanelArticles(visibleArticles);
+    restoreListPanelRef.current = false;
+  }, [visibleArticles]);
   const [vacancyCount, setVacancyCount] = useState<number>(0);
   const [vacancyList, setVacancyList] = useState<any[]>([]);
   const [loadingVacancies, setLoadingVacancies] = useState(false);
