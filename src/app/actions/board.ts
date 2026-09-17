@@ -320,6 +320,60 @@ export async function getBoardComments(postId: string) {
 }
 
 /* ── 댓글 작성 ── */
+/**
+ * 1:1 문의는 댓글이 곧 답변이다.
+ *
+ * 상태(answered_at)와 알림을 여기 한 곳에서 처리한다. 예전에는 관리자
+ * 문의관리에만 이 로직이 있어서, 게시판 상세(PC/모바일)에서 답글을 달면
+ * 댓글만 쌓이고 계속 "신규"로 남았다.
+ *
+ *   관리자·제3자가 달면 → 답변완료 + 문의한 회원에게 알림
+ *   작성자 본인이 다시 달면 → 신규로 되돌리고 관리자에게 알림
+ */
+async function syncInquiryAfterComment(postId: string, commenterId?: string, commenterName?: string) {
+  // 글과 게시판 종류를 한 번에 가져온다 (문의 게시판이 아니면 바로 빠진다)
+  const { data: post } = await supabase
+    .from("board_posts")
+    .select("author_id, title, boards(board_type)")
+    .eq("id", postId)
+    .single();
+
+  const boards = post?.boards as { board_type?: string } | { board_type?: string }[] | null;
+  const boardType = Array.isArray(boards) ? boards[0]?.board_type : boards?.board_type;
+  if (boardType !== "inquiry") return;
+
+  const isAuthorReply = !!commenterId && commenterId === post?.author_id;
+
+  await supabase
+    .from("board_posts")
+    .update({ answered_at: isAuthorReply ? null : new Date().toISOString() })
+    .eq("id", postId);
+
+  if (isAuthorReply) {
+    // 회원이 추가 질문 → 관리자에게
+    await createNotification({
+      recipientRole: "ADMIN",
+      type: "inquiry_reply",
+      title: "1:1 문의에 추가 질문이 달렸습니다",
+      body: `${commenterName || "회원"} · ${post?.title || ""}`,
+      link: "/admin?menu=inquiry_board",
+      mobileLink: "/m/board?id=inquiry",
+      sourceId: `${postId}-${Date.now()}`,
+    });
+  } else if (post?.author_id) {
+    // 관리자 답변 → 문의한 회원에게
+    await createNotification({
+      recipientId: post.author_id,
+      type: "inquiry_answered",
+      title: "1:1 문의에 답변이 등록되었습니다",
+      body: post.title || "",
+      link: "/user_admin?menu=inquiry_board",
+      mobileLink: "/m/board?id=inquiry",
+      sourceId: `${postId}-${Date.now()}`,
+    });
+  }
+}
+
 export async function saveBoardComment(payload: {
   post_id: string;
   author_id?: string;
@@ -336,6 +390,9 @@ export async function saveBoardComment(payload: {
   } catch (err) {
     // rpc가 없으면 무시 (수동 카운트)
   }
+
+  // 1:1 문의면 답변 상태와 알림을 맞춘다 (일반 게시판이면 조회 한 번에 끝)
+  await syncInquiryAfterComment(payload.post_id, payload.author_id, payload.author_name);
 
   return { success: true };
 }
