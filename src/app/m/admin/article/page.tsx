@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { getMyArticles, getArticles, getArticleTabCounts, adminUpdateArticleStatus, deleteArticle, adminReviseArticleWithFeedback } from "@/app/actions/article";
+import { getMyArticles, getArticles, getArticleTabCounts, adminUpdateArticleStatus, adminUpdateArticleFlags, deleteArticle, adminReviseArticleWithFeedback } from "@/app/actions/article";
 import { getAdminArticlesAdSettingsMap, getAuthorArticlesAdSettingsMap, adminUpdateArticlesAdSettings, updateArticlesAdSettings, AuthorBanner } from "@/app/actions/articleAd";
 import { getAdminArticlesVacancyMap, getAuthorArticlesVacancyMap, getAuthorEligibleVacancies, updateArticleAttachedVacancy } from "@/app/actions/articleVacancy";
 import MobileAdminLoading from "@/components/mobile/MobileAdminLoading";
@@ -25,7 +25,23 @@ const STATUS_PARAM: Record<string, string | undefined> = {
   "반려": "REJECTED",
 };
 
-const EMPTY_COUNTS = { 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, 작성중: 0, 반려: 0 };
+const EMPTY_COUNTS = { 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, 작성중: 0, 반려: 0, typeAll: 0, 헤드라인: 0, 중요: 0, 일반기사: 0 };
+
+// 기사 구분 필터 (헤드라인·중요는 중복 지정이 가능하다)
+type PublishFilter = "전체" | "헤드라인" | "중요" | "일반기사";
+const TYPE_TABS: { key: PublishFilter; label: string; color: string }[] = [
+  { key: "전체", label: "전체", color: "#374151" },
+  { key: "헤드라인", label: "📌 헤드라인", color: "#ef4444" },
+  { key: "중요", label: "⭐ 중요기사", color: "#f59e0b" },
+  { key: "일반기사", label: "일반기사", color: "#3b82f6" },
+];
+
+const flagStyle = (active: boolean, color: string): React.CSSProperties => ({
+  width: 30, height: 30, padding: 0, borderRadius: 6, fontSize: 12, fontWeight: 800, cursor: "pointer",
+  border: `1px solid ${active ? color : "#e5e7eb"}`,
+  background: active ? color : "#fff",
+  color: active ? "#fff" : "#9ca3af",
+});
 
 const PAGE_SIZE = 30;
 
@@ -37,6 +53,8 @@ type ListParams = {
   noCache: boolean;
   status?: string;
   searchKeyword?: string;
+  is_headline?: boolean;
+  is_important?: boolean;
 };
 
 type EligibleVacancy = {
@@ -74,6 +92,7 @@ function MobileArticleAdmin() {
   const router = useRouter();
   const [articles, setArticles] = useState<any[]>([]);
   const [filter, setFilter] = useState("전체");
+  const [publishFilter, setPublishFilter] = useState<PublishFilter>("전체");
   const [loading, setLoading] = useState(true);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
@@ -232,6 +251,9 @@ function MobileArticleAdmin() {
     if (status) params.status = status;
     const kw = activeKeyword.trim();
     if (kw) params.searchKeyword = kw;
+    if (publishFilter === "헤드라인") params.is_headline = true;
+    else if (publishFilter === "중요") params.is_important = true;
+    else if (publishFilter === "일반기사") { params.is_headline = false; params.is_important = false; }
     return params;
   };
 
@@ -276,7 +298,7 @@ function MobileArticleAdmin() {
       if (isAdmin) await loadAdminArticles();
       else await loadMyOwnArticles();
     })();
-  }, [memberId, authChecked, isAdmin, filter, activeKeyword, sortBy]);
+  }, [memberId, authChecked, isAdmin, filter, publishFilter, activeKeyword, sortBy]);
 
   const refreshCounts = () => {
     if (!isAdmin) return;
@@ -468,6 +490,33 @@ function MobileArticleAdmin() {
     }
   };
 
+  // 기사 구분 변경 (일반/중요/헤드라인). 중요·헤드라인은 중복 지정할 수 있다.
+  const handleUpdateFlags = async (articleId: string, isImportant: boolean, isHeadline: boolean) => {
+    const before = articles.find(a => a.id === articleId);
+    setArticles(list => list.map(a => (a.id === articleId ? { ...a, is_important: isImportant, is_headline: isHeadline } : a)));
+
+    const res = await adminUpdateArticleFlags(articleId, isImportant, isHeadline);
+    if (!res.success) {
+      setArticles(list => list.map(a => (a.id === articleId ? { ...a, is_important: before?.is_important, is_headline: before?.is_headline } : a)));
+      showToast(res.error || "기사 구분 변경 실패", "error");
+      return;
+    }
+
+    // 지금 보고 있는 구분과 맞지 않게 되면 목록에서 내린다
+    const stillMatches =
+      publishFilter === "전체" ||
+      (publishFilter === "헤드라인" && isHeadline) ||
+      (publishFilter === "중요" && isImportant) ||
+      (publishFilter === "일반기사" && !isImportant && !isHeadline);
+    if (!stillMatches) {
+      setArticles(list => list.filter(a => a.id !== articleId));
+      setArticleTotal(t => Math.max(0, t - 1));
+    }
+
+    refreshCounts();
+    showToast(isHeadline ? "헤드라인 기사로 지정했습니다." : isImportant ? "중요 기사로 지정했습니다." : "일반 기사로 지정했습니다.");
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("이 기사를 삭제하시겠습니까?")) return;
     const res = await deleteArticle(id);
@@ -490,6 +539,10 @@ function MobileArticleAdmin() {
     예약됨: articles.filter(a => a.status === "APPROVED" && !!(a.published_at && new Date(a.published_at).getTime() > new Date().getTime())).length,
     작성중: articles.filter(a => a.status === "DRAFT").length,
     반려: articles.filter(a => a.status === "REJECTED").length,
+    typeAll: articles.length,
+    헤드라인: articles.filter(a => a.is_headline).length,
+    중요: articles.filter(a => a.is_important).length,
+    일반기사: articles.filter(a => !a.is_important && !a.is_headline).length,
   };
 
   const tabs = [
@@ -589,6 +642,32 @@ function MobileArticleAdmin() {
         ))}
       </div>
 
+      {/* 기사 구분 필터 (관리자 전용) */}
+      {isAdmin && (
+        <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "10px 12px", display: "flex", alignItems: "center", gap: 6, overflowX: "auto", WebkitOverflowScrolling: "touch" }} className="hide-scrollbar">
+          {TYPE_TABS.map(t => {
+            const active = publishFilter === t.key;
+            const count = t.key === "전체" ? displayCounts.typeAll : displayCounts[t.key];
+            return (
+              <button
+                key={t.key}
+                onClick={() => setPublishFilter(t.key)}
+                style={{
+                  flexShrink: 0, height: 32, padding: "0 14px", borderRadius: 16, fontSize: 12.5, fontWeight: 700,
+                  border: active ? "none" : "1px solid #e5e7eb",
+                  background: active ? t.color : "#fff",
+                  color: active ? "#fff" : "#6b7280",
+                  cursor: "pointer",
+                }}
+              >
+                {t.label} <span style={{ opacity: 0.75, marginLeft: 3, fontWeight: 600 }}>{count}</span>
+              </button>
+            );
+          })}
+          <span style={{ flexShrink: 0, fontSize: 11, color: "#9ca3af", marginLeft: 2 }}>중요·헤드라인 중복 지정 포함</span>
+        </div>
+      )}
+
       {/* 안내 배너 */}
       <div style={{ margin: "12px 16px 0", padding: "10px 14px", background: isAdmin ? "#fef3c7" : "#eff6ff", borderRadius: 10, border: `1px solid ${isAdmin ? "#fde68a" : "#bfdbfe"}`, display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 16 }}>{isAdmin ? "👑" : "💡"}</span>
@@ -656,6 +735,16 @@ function MobileArticleAdmin() {
                 <span>작성 {dateStr}</span>
                 <span>수정 {updatedStr}</span>
               </div>
+
+              {/* 기사 구분 (관리자 전용) */}
+              {isAdmin && (
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, marginRight: 2 }}>기사구분</span>
+                  <button onClick={() => handleUpdateFlags(a.id, false, false)} title="일반 기사" style={flagStyle(!a.is_important && !a.is_headline, "#3b82f6")}>일</button>
+                  <button onClick={() => handleUpdateFlags(a.id, !a.is_important, !!a.is_headline)} title="중요 기사 (카테고리 상단 노출)" style={flagStyle(!!a.is_important, "#f59e0b")}>중</button>
+                  <button onClick={() => handleUpdateFlags(a.id, !!a.is_important, !a.is_headline)} title="헤드라인 기사 (메인 영역 노출)" style={flagStyle(!!a.is_headline, "#ef4444")}>해</button>
+                </div>
+              )}
 
               {/* 배너광고 · 공실선택 */}
               <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
