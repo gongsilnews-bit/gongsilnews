@@ -36,11 +36,7 @@ function MobileBoardAdmin() {
   const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState({
     id: "", board_id: "", name: "", subtitle: "", board_type: "standard", skin_type: "LIST",
-    columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5, categories: "",
-    perm_reply: 1, perm_download: 1, use_print: false, use_editor: true,
-    auto_spam_post: false, auto_spam_comment: false, require_approval: false,
-    allow_html: true, allow_upload: true, upload_limit_count: 1,
-    top_html: "", bottom_html: "", forbidden_words: ""
+    columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5, categories: "", max_photos: 5,
   });
 
   useEffect(() => {
@@ -86,11 +82,7 @@ function MobileBoardAdmin() {
   const resetForm = () => {
     setFormData({
       id: "", board_id: "", name: "", subtitle: "", board_type: "standard", skin_type: "LIST",
-      columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5, categories: "",
-      perm_reply: 1, perm_download: 1, use_print: false, use_editor: true,
-      auto_spam_post: false, auto_spam_comment: false, require_approval: false,
-      allow_html: true, allow_upload: true, upload_limit_count: 1,
-      top_html: "", bottom_html: "", forbidden_words: ""
+      columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5, categories: "", max_photos: 5,
     });
   };
 
@@ -104,13 +96,7 @@ function MobileBoardAdmin() {
         subtitle: d.subtitle || d.description || "", board_type: d.board_type || "standard", skin_type: d.skin_type || "LIST",
         columns_count: d.columns_count || 3, perm_list: d.perm_list ?? 0,
         perm_read: d.perm_read ?? 0, perm_write: d.perm_write ?? 5,
-        categories: d.categories || "", perm_reply: d.perm_reply ?? 1,
-        perm_download: d.perm_download ?? 1, use_print: d.use_print ?? false,
-        use_editor: d.use_editor ?? true, auto_spam_post: d.auto_spam_post ?? false,
-        auto_spam_comment: d.auto_spam_comment ?? false, require_approval: d.require_approval ?? false,
-        allow_html: d.allow_html ?? true, allow_upload: d.allow_upload ?? true,
-        upload_limit_count: d.upload_limit_count ?? 1, top_html: d.top_html || "",
-        bottom_html: d.bottom_html || "", forbidden_words: d.forbidden_words || ""
+        categories: d.categories || "", max_photos: d.max_photos ?? 5,
       }));
     }
     setFormLoading(false);
@@ -125,14 +111,10 @@ function MobileBoardAdmin() {
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     let val: any = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
-    if (e.target.type === 'number' || ['perm_list', 'perm_read', 'perm_write', 'perm_reply', 'perm_download', 'upload_limit_count', 'columns_count'].includes(e.target.name)) {
+    if (e.target.type === 'number' || ['perm_list', 'perm_read', 'perm_write', 'columns_count', 'max_photos'].includes(e.target.name)) {
       val = Number(val);
     }
     setFormData({ ...formData, [e.target.name]: val });
-  };
-
-  const handleRadioChange = (name: string, value: boolean) => {
-    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,7 +129,8 @@ function MobileBoardAdmin() {
         id: formData.id || undefined, board_id: formData.board_id, name: formData.name,
         subtitle: formData.subtitle, board_type: formData.board_type, skin_type: formData.skin_type,
         columns_count: formData.columns_count, perm_list: formData.perm_list,
-        perm_read: formData.perm_read, perm_write: formData.perm_write, categories: formData.categories
+        perm_read: formData.perm_read, perm_write: formData.perm_write, categories: formData.categories,
+        max_photos: formData.max_photos
       };
       const res = await saveBoard(payload);
       if (res.success) {
@@ -258,35 +241,16 @@ function MobileBoardAdmin() {
                 </div>
               </div>
 
-              {/* 기타 설정 */}
-              <h3 style={{ margin: "24px 0 16px 0", fontSize: 16, fontWeight: 800, color: "#111", borderBottom: "2px solid #111", paddingBottom: 8 }}>기타 설정</h3>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#4b5563" }}>에디터 사용</span>
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="radio" checked={formData.use_editor} onChange={() => handleRadioChange('use_editor', true)} /> 사용</label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="radio" checked={!formData.use_editor} onChange={() => handleRadioChange('use_editor', false)} /> 미사용</label>
-                  </div>
+              {formData.board_type === "inquiry" && (
+                <div style={{ marginTop: 20 }}>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#4b5563", marginBottom: 4 }}>사진 첨부 개수</label>
+                  <select name="max_photos" value={formData.max_photos} onChange={handleFormChange} style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, background: "#fff" }}>
+                    <option value={0}>사용 안 함</option>
+                    {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}장까지</option>)}
+                  </select>
+                  <div style={{ marginTop: 6, fontSize: 12, color: "#9ca3af" }}>최대 5장 · 등록된 사진은 webp로 변환됩니다</div>
                 </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#4b5563" }}>게시물 승인기능</span>
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="radio" checked={formData.require_approval} onChange={() => handleRadioChange('require_approval', true)} /> 사용</label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="radio" checked={!formData.require_approval} onChange={() => handleRadioChange('require_approval', false)} /> 미사용</label>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#4b5563" }}>파일 업로드</span>
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="radio" checked={formData.allow_upload} onChange={() => handleRadioChange('allow_upload', true)} /> 허용</label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 4 }}><input type="radio" checked={!formData.allow_upload} onChange={() => handleRadioChange('allow_upload', false)} /> 불가</label>
-                  </div>
-                </div>
-              </div>
-
+              )}
             </div>
 
             {/* 고정 바텀 버튼 */}

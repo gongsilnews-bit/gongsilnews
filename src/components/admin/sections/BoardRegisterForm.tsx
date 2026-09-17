@@ -23,20 +23,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
     perm_read: 0,
     perm_write: 5,
     categories: "",
-    // -- Mock properties -- //
-    perm_reply: 1,
-    perm_download: 1,
-    use_print: false,
-    use_editor: true,
-    auto_spam_post: false,
-    auto_spam_comment: false,
-    require_approval: false,
-    allow_html: true,
-    allow_upload: true,
-    upload_limit_count: 1,
-    top_html: "",
-    bottom_html: "",
-    forbidden_words: ""
+    max_photos: 5,
   });
 
   useEffect(() => {
@@ -57,19 +44,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
             perm_read: res.data.perm_read ?? 0,
             perm_write: res.data.perm_write ?? 5,
             categories: res.data.categories || "",
-            perm_reply: res.data.perm_reply ?? 1,
-            perm_download: res.data.perm_download ?? 1,
-            use_print: res.data.use_print ?? false,
-            use_editor: res.data.use_editor ?? true,
-            auto_spam_post: res.data.auto_spam_post ?? false,
-            auto_spam_comment: res.data.auto_spam_comment ?? false,
-            require_approval: res.data.require_approval ?? false,
-            allow_html: res.data.allow_html ?? true,
-            allow_upload: res.data.allow_upload ?? true,
-            upload_limit_count: res.data.upload_limit_count ?? 1,
-            top_html: res.data.top_html || "",
-            bottom_html: res.data.bottom_html || "",
-            forbidden_words: res.data.forbidden_words || "",
+            max_photos: res.data.max_photos ?? 5,
           }));
         }
         setLoading(false);
@@ -79,14 +54,10 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     let val: any = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
-    if (e.target.type === 'number' || ['perm_list', 'perm_read', 'perm_write', 'perm_reply', 'perm_download', 'upload_limit_count', 'columns_count'].includes(e.target.name)) {
+    if (e.target.type === 'number' || ['perm_list', 'perm_read', 'perm_write', 'columns_count', 'max_photos'].includes(e.target.name)) {
       val = Number(val);
     }
     setFormData({ ...formData, [e.target.name]: val });
-  };
-
-  const handleRadioChange = (name: string, value: boolean) => {
-    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async () => {
@@ -107,7 +78,8 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
         perm_list: formData.perm_list,
         perm_read: formData.perm_read,
         perm_write: formData.perm_write,
-        categories: formData.categories
+        categories: formData.categories,
+        max_photos: formData.max_photos
       };
 
       const res = await saveBoard(payload);
@@ -147,19 +119,6 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
     { label: "4레벨 (공실등록부동산 이상)", value: 4 },
     { label: "5레벨 (최고관리자 이상)", value: 5 },
   ];
-
-  const renderRadio = (label1: string, label2: string, name: string, value: boolean) => (
-    <div style={{ display: "flex", gap: 16 }}>
-      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", cursor: "pointer" }}>
-        <input type="radio" checked={value === true} onChange={() => handleRadioChange(name, true)} style={{ accentColor: "#3b82f6" }} /> 
-        {label1}
-      </label>
-      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", cursor: "pointer" }}>
-        <input type="radio" checked={value === false} onChange={() => handleRadioChange(name, false)} style={{ accentColor: "#3b82f6" }} /> 
-        {label2}
-      </label>
-    </div>
-  );
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", background: darkMode ? "#1a1b1e" : "#f4f5f7" }}>
@@ -249,84 +208,20 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
           </div>
         </div>
 
-        <div style={rowStyle}>
-          <div style={labelStyle}>인쇄설정</div>
-          <div style={contentStyle}>
-            {renderRadio("사용", "미사용", "use_print", formData.use_print)}
+        {formData.board_type === "inquiry" && (
+          <div style={rowStyle}>
+            <div style={labelStyle}>사진 첨부 개수 ⓘ</div>
+            <div style={{ ...contentStyle, gap: 10 }}>
+              <select name="max_photos" value={formData.max_photos} onChange={handleChange} style={{ ...inputStyle, maxWidth: 200 }}>
+                <option value={0}>사용 안 함</option>
+                {[1, 2, 3, 4, 5].map(n => (
+                  <option key={n} value={n}>{n}장까지</option>
+                ))}
+              </select>
+              <span style={{ fontSize: 12, color: "#9ca3af" }}>최대 5장 · 등록된 사진은 webp로 변환됩니다</span>
+            </div>
           </div>
-        </div>
-
-        <div style={rowStyle}>
-          <div style={labelStyle}>본문 에디터</div>
-          <div style={contentStyle}>
-            {renderRadio("사용", "미사용", "use_editor", formData.use_editor)}
-          </div>
-        </div>
-
-        <div style={rowStyle}>
-          <div style={labelStyle}>게시물 자동등록방지</div>
-          <div style={contentStyle}>
-            {renderRadio("사용", "미사용", "auto_spam_post", formData.auto_spam_post)}
-          </div>
-        </div>
-
-        <div style={rowStyle}>
-          <div style={labelStyle}>댓글 자동등록방지</div>
-          <div style={contentStyle}>
-            {renderRadio("사용", "미사용", "auto_spam_comment", formData.auto_spam_comment)}
-          </div>
-        </div>
-        
-        <div style={rowStyle}>
-          <div style={labelStyle}>게시물 승인기능 ⓘ</div>
-          <div style={contentStyle}>
-            {renderRadio("사용", "미사용", "require_approval", formData.require_approval)}
-          </div>
-        </div>
-
-        <div style={rowStyle}>
-          <div style={labelStyle}>HTML 허용</div>
-          <div style={contentStyle}>
-            {renderRadio("허용", "비허용", "allow_html", formData.allow_html)}
-          </div>
-        </div>
-
-        <div style={rowStyle}>
-          <div style={labelStyle}>업로드허용</div>
-          <div style={contentStyle}>
-            {renderRadio("허용", "비허용", "allow_upload", formData.allow_upload)}
-          </div>
-        </div>
-
-        <div style={rowStyle}>
-          <div style={labelStyle}>파일 업로드 개수</div>
-          <div style={contentStyle}>
-            <select name="upload_limit_count" value={formData.upload_limit_count} onChange={handleChange} style={{ ...inputStyle, maxWidth: 120 }}>
-              {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}개</option>)}
-            </select>
-          </div>
-        </div>
-
-        <div style={rowStyle}>
-          <div style={labelStyle}>게시판상단 ⓘ</div>
-          <div style={{...contentStyle, flexDirection: "column", alignItems: "stretch"}}>
-            <textarea name="top_html" value={formData.top_html} onChange={handleChange} style={{ ...inputStyle, height: 100, padding: "10px 14px", resize: "vertical" }} placeholder="" />
-          </div>
-        </div>
-
-        <div style={rowStyle}>
-          <div style={labelStyle}>게시판하단 ⓘ</div>
-          <div style={{...contentStyle, flexDirection: "column", alignItems: "stretch"}}>
-            <textarea name="bottom_html" value={formData.bottom_html} onChange={handleChange} style={{ ...inputStyle, height: 100, padding: "10px 14px", resize: "vertical" }} placeholder="" />
-          </div>
-        </div>
-
-        <div style={rowStyle}>
-          <div style={labelStyle}>금지단어 ⓘ</div>
-          <div style={{...contentStyle, flexDirection: "column", alignItems: "stretch"}}>
-            <textarea name="forbidden_words" value={formData.forbidden_words} onChange={handleChange} style={{ ...inputStyle, height: 80, padding: "10px 14px", resize: "vertical" }} placeholder="금지단어는 쉼표로 구분합니다." />
-          </div>
-        </div>
+        )}
 
         <div style={rowStyle}>
           <div style={labelStyle}>카테고리 ⓘ</div>
