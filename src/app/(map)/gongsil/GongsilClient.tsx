@@ -1296,13 +1296,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
     }
     if (activeCategory === "villa") {
-      const hasVillaOrCommercialHouse = activePills.includes("빌라/연립") || activePills.includes("상가주택");
-      const hasDetachedOrRural = activePills.includes("단독/다가구") || activePills.includes("전원주택");
-      
-      if (hasDetachedOrRural && !hasVillaOrCommercialHouse) {
-        return ["거래유형", "면적", "사용승인일", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
-      }
-      return ["거래유형", "면적", "사용승인일", "세대수", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
+      // 빌라·주택은 세대수로 찾지 않는다
+      return ["거래유형", "면적", "사용승인일", "방/욕실수", "방향", "기타옵션", "등록자", "중개보수", "테마"];
     }
     if (activeCategory === "one") {
       return ["거래유형", "면적", "방/욕실수", "방향", "관리비", "기타옵션", "등록자", "중개보수", "테마"];

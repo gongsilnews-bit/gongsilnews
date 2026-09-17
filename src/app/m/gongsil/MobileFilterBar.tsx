@@ -145,7 +145,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const showTempPrice = true;
   const showTempArea = true;
   const showTempYear = isApartmentGroup || isVillaGroup;
-  const showTempUnits = isApartmentGroup || (isVillaGroup && tempFilters.propertyTypes.includes("빌라/연립"));
+  const showTempUnits = isApartmentGroup; // 빌라·주택은 세대수로 찾지 않는다
   const showTempRoomBath = isApartmentGroup || isVillaGroup || isOneRoomGroup;
   const showTempDirection = isApartmentGroup || isVillaGroup || isOneRoomGroup;
   const showTempFloor = isCommercialGroup;
@@ -166,7 +166,7 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const showPricePill = true;
   const showAreaPill = true;
   const showYearPill = extIsApart || extIsVilla;
-  const showUnitsPill = extIsApart || (extIsVilla && filters.propertyTypes.includes("빌라/연립"));
+  const showUnitsPill = extIsApart; // 빌라·주택은 세대수로 찾지 않는다
   const showRoomBathPill = extIsApart || extIsVilla || extIsOne;
   const showDirectionPill = extIsApart || extIsVilla || extIsOne;
   const showFloorPill = extIsBiz;
@@ -175,6 +175,14 @@ export default function MobileFilterBar({ vacancies, filteredCount, filters, onF
   const showMoveInDatePill = true; // 🚀 항상 노출
   const showOptionsPill = extIsApart || extIsVilla || extIsOne || extIsBiz;
   const showThemePill = true;
+
+  // 세대수가 더 이상 보이지 않는 조건이면 값이 숨은 채 적용되지 않도록 비운다
+  useEffect(() => {
+    if (showUnitsPill) return;
+    if (filters.unitsMin !== null || (filters.unitsMax !== null && filters.unitsMax !== undefined)) {
+      onFilterChange({ unitsMin: null, unitsMax: null });
+    }
+  }, [showUnitsPill, filters.unitsMin, filters.unitsMax, onFilterChange]);
 
   useEffect(() => { setTempFilters(filters); }, [filters]);
   useEffect(() => { if (searchOpen && searchInputRef.current) searchInputRef.current.focus(); }, [searchOpen]);
