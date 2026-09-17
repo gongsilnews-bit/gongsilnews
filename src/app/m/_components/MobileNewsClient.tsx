@@ -6,6 +6,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef, Suspense, useMemo 
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import NotificationBell from "@/components/common/NotificationBell";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { getImportantArticles, getArticles, searchArticles, getArticleDetail, incrementArticleView } from "@/app/actions/article";
 import { getVacancyCountByKeyword, getVacancyListByKeyword } from "@/app/actions/vacancy";
@@ -1514,6 +1515,8 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 paddingLeft: "6px",
               }}
             >
+              <NotificationBell mobile />
+
               <button
                 onClick={() => setIsSearchOpen(true)}
                 style={{

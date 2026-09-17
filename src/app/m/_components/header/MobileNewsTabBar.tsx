@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import NotificationBell from "@/components/common/NotificationBell";
 
 const SearchOverlay = dynamic(() => import("@/app/m/_components/header/SearchOverlay"), { ssr: false });
 
@@ -133,6 +134,8 @@ export default function MobileNewsTabBar({ activeTab }: MobileNewsTabBarProps) {
             paddingLeft: "6px",
           }}
         >
+          <NotificationBell mobile />
+
           <button
             onClick={() => setIsSearchOpen(true)}
             style={{

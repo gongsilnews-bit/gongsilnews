@@ -7,6 +7,7 @@ import { createClient as createServerClient } from "@/utils/supabase/server";
 import { unstable_cache, revalidateTag } from "next/cache";
 import { getEffectivePlan } from "@/utils/planCheck";
 import { formatSection1 } from "@/utils/formatCategory";
+import { createNotification } from "./notification";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -729,7 +730,37 @@ export async function updateArticleMediaCaption(mediaId: string, caption: string
 }
 
 /* ── 관리자 기사 일괄 상태 수정 ── */
+/** 승인신청된 기사를 최고관리자 알림으로 남긴다 (본래 작업을 막지 않도록 조용히 처리) */
+async function notifyArticlesPending(articleIds: string[]) {
+  try {
+    if (!articleIds?.length) return;
+    const supabase = getAdminClient();
+    const { data } = await supabase
+      .from("articles")
+      .select("id, title, author_name")
+      .in("id", articleIds);
+
+    for (const a of data || []) {
+      await createNotification({
+        recipientRole: "ADMIN",
+        type: "article_pending",
+        title: "새 기사가 승인 대기 중입니다",
+        body: `${a.author_name || "작성자"} · ${a.title || "(제목 없음)"}`,
+        link: "/admin?menu=article",
+        mobileLink: "/m/admin/article",
+        sourceId: String(a.id),
+      });
+    }
+  } catch (err) {
+    console.warn("[notifyArticlesPending]", err instanceof Error ? err.message : err);
+  }
+}
+
 export async function adminUpdateArticleStatus(articleIds: string[], status: 'APPROVED' | 'REJECTED' | 'DRAFT' | 'PENDING', reject_reason?: string) {
+  // 승인신청(PENDING)은 최고관리자가 처리해야 하는 일이라 알림을 남긴다
+  if (status === 'PENDING') {
+    void notifyArticlesPending(articleIds);
+  }
   const supabase = getAdminClient();
 
   try {

@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js"
 import { getEffectivePlan } from "@/utils/planCheck"
+import { createNotification } from "./notification"
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -115,6 +116,20 @@ export async function createVacancy(data: {
 
     if (error) return { success: false, error: error.message };
     clearServerMapCache();
+
+    // 회원이 올린 공실은 최고관리자가 확인해야 하므로 알림을 남긴다
+    if ((data.owner_role || "").toUpperCase() !== "ADMIN") {
+      await createNotification({
+        recipientRole: "ADMIN",
+        type: "vacancy_new",
+        title: "새 공실이 등록되었습니다",
+        body: `${data.trade_type || ""} · ${data.property_type || ""}`.trim(),
+        link: "/admin?menu=gongsil",
+        mobileLink: "/m/admin/vacancy",
+        sourceId: String(result.id),
+      });
+    }
+
     return { success: true, id: result.id, vacancy_no: result.vacancy_no };
   } catch (error: any) {
     return { success: false, error: error.message };

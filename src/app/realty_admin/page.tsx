@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
+import NotificationBell from "@/components/common/NotificationBell";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage } from "@/components/admin/sections/AdminIcons";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
@@ -284,6 +285,7 @@ function RealtyAdminContent() {
             {agencyStatus !== "APPROVED" && showDocWarning && <span onClick={() => { setActiveMenu("settings"); router.push('?menu=settings&tab=agency'); }} style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, padding: "4px 12px", borderRadius: 20, marginLeft: 8, color: "#c53030", background: "#fff5f5", border: "1px solid #fed7d7" }}>⚠️ 소장님! 아직 필수 서류(사업자등록증)를 내시지 않았어요! 👉 (여기를 클릭해서 서류를 제출해주세요)</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <NotificationBell color={darkMode ? "#e1e4e8" : "#333"} />
             <button onClick={() => setDarkMode(!darkMode)} style={{ background: darkMode ? "#2c2d31" : "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">{darkMode ? "☀️" : "🌙"}</button>
             <button onClick={async () => { const supabase = createClient(); await supabase.auth.signOut(); window.location.href = "/"; }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#fff", border: "none", borderRadius: 6, background: darkMode ? "#374151" : "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>로그아웃</button>
             <a href="/" style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: darkMode ? "#e1e4e8" : "#4b5563", textDecoration: "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}>🏠 공실페이지 가기</a>

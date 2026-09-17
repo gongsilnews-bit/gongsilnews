@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { INQUIRY_PAGE_SIZE } from "@/constants/inquiry";
+import { createNotification } from "./notification";
 
 /**
  * 1:1 문의 전용 조회/답변 액션
@@ -188,7 +189,7 @@ export async function replyToInquiry(payload: {
 
     const { data: post } = await supabase
       .from("board_posts")
-      .select("author_id")
+      .select("author_id, title")
       .eq("id", payload.postId)
       .single();
 
@@ -205,6 +206,30 @@ export async function replyToInquiry(payload: {
       .from("board_posts")
       .update({ answered_at: isAuthorReply ? null : new Date().toISOString() })
       .eq("id", payload.postId);
+
+    if (isAuthorReply) {
+      // 회원이 추가 질문 → 관리자에게
+      await createNotification({
+        recipientRole: "ADMIN",
+        type: "inquiry_reply",
+        title: "1:1 문의에 추가 질문이 달렸습니다",
+        body: `${payload.authorName} · ${post?.title || ""}`,
+        link: "/admin?menu=inquiry_board",
+        mobileLink: "/m/board?id=inquiry",
+        sourceId: `${payload.postId}-${Date.now()}`,
+      });
+    } else if (post?.author_id) {
+      // 관리자 답변 → 문의한 회원에게
+      await createNotification({
+        recipientId: post.author_id,
+        type: "inquiry_answered",
+        title: "1:1 문의에 답변이 등록되었습니다",
+        body: post.title || "",
+        link: "/user_admin?menu=inquiry_board",
+        mobileLink: "/m/board?id=inquiry",
+        sourceId: `${payload.postId}-${Date.now()}`,
+      });
+    }
 
     // comment_count 동기화 (rpc 가 없으면 무시)
     try {

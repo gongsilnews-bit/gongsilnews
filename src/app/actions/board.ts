@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { createNotification } from "./notification";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -171,6 +172,20 @@ export async function saveBoardPost(payload: {
       ({ data, error } = await insert(withoutContact()));
     }
     if (error) return { success: false, error: error.message };
+
+    // 1:1 문의는 최고관리자가 답해야 하는 일이라 알림을 남긴다
+    if (payload.board_id === "inquiry" && data?.id) {
+      await createNotification({
+        recipientRole: "ADMIN",
+        type: "inquiry_new",
+        title: "1:1 문의가 접수되었습니다",
+        body: `${payload.author_name || "회원"} · ${payload.title}`,
+        link: "/admin?menu=inquiry_board",
+        mobileLink: "/m/board?id=inquiry",
+        sourceId: String(data.id),
+      });
+    }
+
     return { success: true, postId: data?.id };
   }
 }

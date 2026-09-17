@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
+import NotificationBell from "@/components/common/NotificationBell";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconBuilding, IconArticle, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint } from "@/components/admin/sections/AdminIcons";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
@@ -188,6 +189,7 @@ function UserAdminContent() {
             {agencyStatus === "APPROVED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#166534", background: "#dcfce7", border: "1px solid #bbf7d0" }}>✅ 정상승인</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <NotificationBell color={darkMode ? "#e1e4e8" : "#333"} />
             <button onClick={() => setDarkMode(!darkMode)} style={{ background: darkMode ? "#2c2d31" : "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">{darkMode ? "☀️" : "🌙"}</button>
             <button onClick={async () => { const supabase = createClient(); await supabase.auth.signOut(); window.location.href = "/"; }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#fff", border: "none", borderRadius: 6, background: darkMode ? "#374151" : "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>로그아웃</button>
             <a href="/" style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: darkMode ? "#e1e4e8" : "#4b5563", textDecoration: "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}>🏠 공실페이지 가기</a>

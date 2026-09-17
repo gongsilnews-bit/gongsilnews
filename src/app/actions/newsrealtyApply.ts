@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { sendPpurioSms } from "@/utils/ppurio";
+import { createNotification } from "./notification";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -185,6 +186,18 @@ export async function submitNewsrealtyApplication(data: NewsrealtyApplicationInp
       ])
       .select()
       .maybeSingle();
+
+    if (!insertError) {
+      await createNotification({
+        recipientRole: "ADMIN",
+        type: "newsrealty_apply",
+        title: "공실뉴스부동산 신청이 접수되었습니다",
+        body: `${data.name.trim()} · ${data.agencyName.trim()}`,
+        link: "/admin?menu=newsrealty",
+        mobileLink: "/m/admin/customer",
+        sourceId: inserted?.id ? String(inserted.id) : undefined,
+      });
+    }
 
     if (insertError) {
       console.warn("newsrealty_applications 테이블 저장 실패, board_posts(newsrealty) 보조 저장 시도:", insertError.message);

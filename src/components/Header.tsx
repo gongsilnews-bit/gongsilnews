@@ -9,6 +9,7 @@ import BannerSlot from "./BannerSlot";
 import { openChannelTalk } from "@/utils/channelTalk";
 import HeaderTextBanner from "./HeaderTextBanner";
 import { createClient } from "@/utils/supabase/client";
+import NotificationBell from "@/components/common/NotificationBell";
 import { createPortal } from "react-dom";
 import { adminApproveRealtorApplication } from "@/app/admin/actions";
 import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
@@ -242,6 +243,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 공실뉴스부동산
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
+              <NotificationBell color="#ffffff" />
               <div style={{
                 background: userRole === 'ADMIN' ? '#111827' : '#ef4444',
                 color: '#fff',
@@ -402,6 +404,8 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                     </div>
                   </>
                 )}
+
+                <NotificationBell />
 
                 <button onClick={() => setIsSearchActive(true)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: 0 }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 24, height: 24 }}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>

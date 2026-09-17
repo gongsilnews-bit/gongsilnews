@@ -10,6 +10,8 @@ function getAdminClient() {
   });
 }
 
+import { createNotification } from "./notification";
+
 export async function completeMemberSignup(params: {
   userId: string;
   name: string;
@@ -65,6 +67,16 @@ export async function completeMemberSignup(params: {
 
       if (insertError) throw insertError;
     }
+
+    await createNotification({
+      recipientRole: "ADMIN",
+      type: "member_signup",
+      title: "새 회원이 가입했습니다",
+      body: `${name.trim()} (${email || "이메일 없음"})`,
+      link: "/admin?menu=members",
+      mobileLink: "/m/admin/member",
+      sourceId: userId,
+    });
 
     return { success: true };
   } catch (err: any) {

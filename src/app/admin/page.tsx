@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
+import NotificationBell from "@/components/common/NotificationBell";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconMembers, IconBuilding, IconArticle, IconStudy, IconEdit, IconBoard, IconAd, IconPlugin, IconStats, IconSettings, IconManual, IconPoint, IconComment, IconRobot } from "@/components/admin/sections/AdminIcons";
 import { getArticles } from "@/app/actions/article";
@@ -22,6 +23,7 @@ const AdminManual = lazy(() => import("./AdminManual"));
 const AIWorkspaceSection = lazy(() => import("@/components/admin/agents/AIWorkspaceSection"));
 const InquirySection = lazy(() => import("@/components/admin/sections/InquirySection"));
 const InquiryBoardSection = lazy(() => import("@/components/admin/sections/InquiryBoardSection"));
+import { getUnreadCountsByType, markAllNotificationsRead } from "@/app/actions/notification";
 const NewsrealtySection = lazy(() => import("@/components/admin/sections/NewsrealtySection"));
 const MarketingSection = lazy(() => import("@/components/admin/sections/MarketingSection"));
 
@@ -56,6 +58,15 @@ type DataKey = typeof DATA_KEYS[number];
 
 import { useRouter, useSearchParams } from "next/navigation";
 
+/** 사이드바 메뉴에 붙일 알림 종류 (안 읽은 건수를 뱃지로 보여준다) */
+const MENU_NOTIFICATION_TYPES: Record<string, string[]> = {
+  members: ["member_signup"],
+  newsrealty: ["newsrealty_apply"],
+  gongsil: ["vacancy_new"],
+  article: ["article_pending"],
+  inquiry_board: ["inquiry_new", "inquiry_reply"],
+};
+
 export default function AdminPage() {
   return (
     <Suspense fallback={<AdminLoadingFallback />}>
@@ -75,6 +86,41 @@ function AdminContent() {
   }
   
   const [activeMenu, setActiveMenu] = useState(initialMenu);
+  const [menuBadges, setMenuBadges] = useState<Record<string, number>>({});
+
+  // 메뉴별 안 읽은 알림 건수 (네이버 메일 알림처럼 숫자로 보여준다)
+  const loadMenuBadges = useCallback(async () => {
+    const res = await getUnreadCountsByType({ isAdmin: true });
+    if (!res.success) return;
+    const byMenu: Record<string, number> = {};
+    Object.entries(MENU_NOTIFICATION_TYPES).forEach(([menuKey, types]) => {
+      byMenu[menuKey] = types.reduce((sum, t) => sum + (res.data[t] || 0), 0);
+    });
+    setMenuBadges(byMenu);
+  }, []);
+
+  const markMenuNotificationsRead = useCallback(async (menuKey: string) => {
+    const types = MENU_NOTIFICATION_TYPES[menuKey];
+    if (!types) return;
+    await markAllNotificationsRead({ isAdmin: true, types });
+    void loadMenuBadges();
+  }, [loadMenuBadges]);
+
+  useEffect(() => {
+    void (async () => { await loadMenuBadges(); })();
+  }, [loadMenuBadges]);
+
+  // 새 알림이 들어오면 뱃지가 즉시 올라간다
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin-menu-badges")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
+        void loadMenuBadges();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [loadMenuBadges]);
 
   useEffect(() => {
     if (menuParam && ADMIN_MENU.some(m => m.key === menuParam)) {
@@ -189,6 +235,11 @@ function AdminContent() {
                   setActiveMenu(item.key);
                   if (item.submenus) setActiveSubmenu(item.submenus[0].key);
                   router.push(`?menu=${item.key}`, { scroll: false });
+                  // 해당 화면을 열었으면 그 종류의 알림은 확인한 것으로 본다
+                  if (MENU_NOTIFICATION_TYPES[item.key]) {
+                    setMenuBadges(prev => ({ ...prev, [item.key]: 0 }));
+                    void markMenuNotificationsRead(item.key);
+                  }
                 }}
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
@@ -205,6 +256,15 @@ function AdminContent() {
                   </span>
                 </span>
                 {item.label}
+                {(menuBadges[item.key] || 0) > 0 && (
+                  <span style={{
+                    position: "absolute", top: 10, right: 14, minWidth: 18, height: 18, padding: "0 5px",
+                    borderRadius: 9, background: "#ef4444", color: "#fff", fontSize: 10.5, fontWeight: 800,
+                    display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+                  }}>
+                    {menuBadges[item.key] > 99 ? "99+" : menuBadges[item.key]}
+                  </span>
+                )}
               </button>
               {/* 서브메뉴 (플라이아웃) */}
               {item.submenus && hoveredMenu === item.key && (
@@ -237,6 +297,7 @@ function AdminContent() {
             <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: darkMode ? "#1e3a5f" : "#dbeafe", color: "#3b82f6" }}>최고관리자</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <NotificationBell color={darkMode ? "#e1e4e8" : "#333"} />
             <button onClick={() => setDarkMode(!darkMode)} style={{ background: darkMode ? "#2c2d31" : "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">
               {darkMode ? "☀️" : "🌙"}
             </button>
