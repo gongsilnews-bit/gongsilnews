@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from "next/link";
 import dynamic from 'next/dynamic';
 import { useRouter, usePathname } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 const SearchOverlay = dynamic(() => import('./header/SearchOverlay'), { ssr: false });
 
@@ -25,6 +26,36 @@ export default function HomeHeader({
   homeUrl = '/m'
 }: HomeHeaderProps = {}) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [unreadNoti, setUnreadNoti] = useState(0);
+
+  // 안 읽은 알림 수 (헤더에는 숫자만 보여주고, 목록은 /m/notifications 에서 본다)
+  useEffect(() => {
+    const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const load = async (uid: string, isAdmin: boolean) => {
+      const { getNotifications } = await import("@/app/actions/notification");
+      const res = await getNotifications({ userId: uid, isAdmin, limit: 1 });
+      if (res.success) setUnreadNoti(res.unread);
+    };
+
+    void supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase.from("members").select("role").eq("id", user.id).single();
+      const role = (data?.role || "").toUpperCase();
+      const isAdmin = role === "ADMIN" || (data?.role || "").includes("관리자");
+
+      await load(user.id, isAdmin);
+      channel = supabase
+        .channel(`home-noti-${user.id}`)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
+          void load(user.id, isAdmin);
+        })
+        .subscribe();
+    });
+
+    return () => { if (channel) void supabase.removeChannel(channel); };
+  }, []);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -81,6 +112,27 @@ export default function HomeHeader({
 
         {/* 우측 아이콘 2개 (검색, 햄버거) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          {/* 알림 종 (목록은 전용 페이지에서 — 헤더가 좁아 팝업 대신 이동) */}
+          {unreadNoti > 0 && (
+            <button
+              onClick={() => router.push('/m/notifications')}
+              aria-label={`알림 ${unreadNoti}건`}
+              style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', position: 'relative' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <span style={{
+                position: 'absolute', top: -5, right: -6, minWidth: 16, height: 16, padding: '0 4px',
+                borderRadius: 8, background: '#ef4444', color: '#fff', fontSize: 10, fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+              }}>
+                {unreadNoti > 99 ? '99+' : unreadNoti}
+              </span>
+            </button>
+          )}
+
           {/* 검색 아이콘 */}
           <button style={{ padding: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }} onClick={() => setIsSearchOpen(true)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

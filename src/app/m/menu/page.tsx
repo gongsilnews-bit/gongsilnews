@@ -13,6 +13,7 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(true);
   const [pendingCounts, setPendingCounts] = useState({ vacancies: 0, articles: 0, members: 0 });
   const [oauthLoading, setOauthLoading] = useState<'google' | 'kakao' | null>(null);
+  const [unreadNoti, setUnreadNoti] = useState(0);
   const [userActivityCounts, setUserActivityCounts] = useState({
     myArticles: 0, myVacancies: 0, bookmarkedArticles: 0,
     bookmarkedVacancies: 0, subscribedReporters: 0, myLectures: 0
@@ -54,6 +55,15 @@ export default function MenuPage() {
             ] : []),
           ]);
           if (activityRes.success) setUserActivityCounts(activityRes.counts);
+
+          // 안 읽은 알림 수 (목록은 /m/notifications 에서 본다)
+          try {
+            const { getNotifications } = await import('@/app/actions/notification');
+            const noti = await getNotifications({ userId: user.id, isAdmin, limit: 1 });
+            if (noti.success) setUnreadNoti(noti.unread);
+          } catch (e) {
+            console.error('Failed to fetch notifications', e);
+          }
           if (isAdmin && adminResults.length === 3) {
             setPendingCounts({ vacancies: adminResults[0].count || 0, articles: adminResults[1].count || 0, members: adminResults[2].count || 0 });
           }
@@ -135,6 +145,7 @@ export default function MenuPage() {
   const menus = getAdminMenus(memberData?.role, memberData?.agencyStatus);
 
   const activityItems = [
+    { icon: '🔔', label: '알림', href: '/m/notifications', count: unreadNoti },
     { icon: '📄', label: '내가 등록한 기사', href: '/m/admin/article', count: userActivityCounts.myArticles },
     { icon: '🏢', label: '내가 등록한 공실', href: '/m/admin/vacancy', count: userActivityCounts.myVacancies },
     { icon: '🔖', label: '내가 찜한 기사', href: '/m/news_bookmarks', count: userActivityCounts.bookmarkedArticles },

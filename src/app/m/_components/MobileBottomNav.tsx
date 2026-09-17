@@ -83,16 +83,29 @@ function MobileBottomNavContent() {
         }
       }
 
-      // Get unread messages
+      // Get unread messages + notifications
+      // 하단 탭은 아이콘이 작아 숫자를 둘로 나누면 오히려 알아보기 어렵다.
+      // "확인할 게 몇 개"를 한 숫자로 합쳐 보여주고, 구분은 들어간 화면에서 한다.
       try {
-        const { getMyRooms } = await import('@/app/actions/talkActions');
-        const res = await getMyRooms(userId);
-        if (res.success && res.data) {
-          const count = res.data.reduce((sum: number, r: any) => sum + (r.unread_count || 0), 0);
-          setUnreadCount(count);
-        }
+        const [{ getMyRooms }, { getNotifications }] = await Promise.all([
+          import('@/app/actions/talkActions'),
+          import('@/app/actions/notification'),
+        ]);
+
+        const role = (data?.role || '').trim().toUpperCase();
+        const isAdmin = role === 'ADMIN' || role.includes('관리자');
+
+        const [rooms, noti] = await Promise.all([
+          getMyRooms(userId),
+          getNotifications({ userId, isAdmin, limit: 1 }),
+        ]);
+
+        const msgCount = rooms.success && rooms.data
+          ? rooms.data.reduce((sum: number, r: any) => sum + (r.unread_count || 0), 0)
+          : 0;
+        setUnreadCount(msgCount + (noti.success ? noti.unread : 0));
       } catch (e) {
-        console.error("Failed to fetch unread messages", e);
+        console.error("Failed to fetch unread counts", e);
       }
     };
 
