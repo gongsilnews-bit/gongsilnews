@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import Link from "next/link";
-import { getBoardPost, getBoard, getBoardComments, getAdjacentPosts } from "@/app/actions/board";
+import { getBoardPost, getBoard, getBoardComments, getAdjacentPosts, getPopularBoardPosts } from "@/app/actions/board";
 import BoardReadClient from "./BoardReadClient";
 
 export default async function BoardReadPage({
@@ -83,6 +83,10 @@ export default async function BoardReadPage({
     );
   }
 
+  // 사이드바 인기 게시물 (조회수 상위 5건만)
+  const popularRes = resolvedBoardId ? await getPopularBoardPosts(resolvedBoardId, 5) : null;
+  const popularPosts = popularRes?.success ? popularRes.data : [];
+
   return (
     <Suspense fallback={<div style={{ padding: 40, textAlign: "center" }}>불러오는 중...</div>}>
       <BoardReadClient
@@ -93,6 +97,7 @@ export default async function BoardReadPage({
         nextPost={nextPost}
         serverUser={serverUser}
         serverUserLevel={serverUserLevel}
+        popularPosts={popularPosts}
       />
     </Suspense>
   );

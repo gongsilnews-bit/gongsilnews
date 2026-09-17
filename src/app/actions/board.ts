@@ -376,3 +376,17 @@ export async function getAdjacentPosts(boardId: string, currentCreatedAt: string
 
   return { success: true, prev: prevData || null, next: nextData || null };
 }
+
+/** 사이드바 인기 게시물 (조회수 상위 N건만 - 목록 전체를 끌어오지 않는다) */
+export async function getPopularBoardPosts(boardId: string, limit = 5) {
+  const { data, error } = await supabase
+    .from("board_posts")
+    .select("id, title, view_count")
+    .eq("board_id", boardId)
+    .eq("is_deleted", false)
+    .order("view_count", { ascending: false })
+    .limit(limit);
+
+  if (error) return { success: false, error: error.message, data: [] };
+  return { success: true, data: data || [] };
+}

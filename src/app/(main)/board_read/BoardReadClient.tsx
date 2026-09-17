@@ -25,6 +25,7 @@ export default function BoardReadClient({
   nextPost,
   serverUser,
   serverUserLevel,
+  popularPosts = [],
 }: {
   post: any;
   board: any;
@@ -33,6 +34,7 @@ export default function BoardReadClient({
   nextPost: any;
   serverUser?: any;
   serverUserLevel?: number;
+  popularPosts?: { id: string; title: string; view_count: number | null }[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -256,7 +258,7 @@ export default function BoardReadClient({
       )}
 
       {/* 본문 영역 */}
-      <div style={{ display: "flex", gap: 40, marginTop: 20, marginBottom: 60 }}>
+      <div style={{ display: "flex", gap: 32, marginTop: 20, marginBottom: 60 }}>
         {/* 좌측 */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* 브레드크럼 */}
@@ -575,15 +577,26 @@ export default function BoardReadClient({
           </div>
         </div>
 
-        {/* 우측 사이드바 */}
-        <div style={{ width: 300, flexShrink: 0 }}>
-          <div style={{ width: "100%", height: 200, background: "#e2e2e2", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: "bold", color: "#888", marginBottom: 24 }}>배너 1</div>
-          <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, padding: 20, marginBottom: 16 }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#111", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid #111", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        {/* 우측 사이드바 — 목록 페이지와 같은 클래스라 크기가 항상 같이 간다 */}
+        <div className="b-sidebar">
+          <div className="sb-banner">배너 1</div>
+
+          <div className="sb-widget">
+            <div className="sb-title">
               인기 게시물
-              <span style={{ fontSize: 12, color: "#888", fontWeight: "normal", cursor: "pointer" }}>더보기</span>
+              <Link href={listUrl} className="sb-title-more" style={{ color: "inherit", textDecoration: "none" }}>더보기</Link>
             </div>
-            <div style={{ fontSize: 13, color: "#ccc", textAlign: "center" }}>불러오는 중...</div>
+            <ul className="pop-list">
+              {popularPosts.map((pp, i) => (
+                <li className="pop-item" key={pp.id}>
+                  <span className="pop-ranking">{i + 1}</span>
+                  <Link href={getReadUrl(pp.id)} className="pop-title" style={{ color: "inherit", textDecoration: "none" }}>
+                    {pp.title.replace(/^\[([^\]]+)\]\s*/, "")}
+                  </Link>
+                </li>
+              ))}
+              {popularPosts.length === 0 && <li style={{ fontSize: 14, color: "#94a3b8" }}>게시물이 없습니다.</li>}
+            </ul>
           </div>
         </div>
       </div>
