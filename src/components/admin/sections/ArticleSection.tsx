@@ -4,9 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { AdminSectionProps } from "./types";
 import { getArticles, deleteArticle, adminUpdateArticleStatus, adminUpdateArticleFlags, adminReviseArticleWithFeedback, getArticleTabCounts } from "@/app/actions/article";
 import { getAdminArticlesAdSettingsMap, adminUpdateArticlesAdSettings, AuthorBanner } from "@/app/actions/articleAd";
-import { getAdminArticlesVacancyMap, getAuthorEligibleVacancies, updateArticleAttachedVacancy, updateMultipleArticlesAttachedVacancy } from "@/app/actions/articleVacancy";
+import { getAdminArticlesVacancyMap, getEligibleVacanciesByAuthors, updateArticleAttachedVacancy, updateMultipleArticlesAttachedVacancy } from "@/app/actions/articleVacancy";
+import type { EligibleVacancy, AuthorVacancyOptions } from "@/types/vacancy";
 import ArticleVacancyDropdown from "@/components/admin/ArticleVacancyDropdown";
-import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 // ⚡ 5,566줄 대형 에디터를 지연 로딩하여 기사 목록 초기 번들 크기 대폭 축소
@@ -23,7 +23,6 @@ const REJECT_REASONS = [
 export default function ArticleSection({ theme, initialData }: AdminSectionProps & { initialData?: any[] }) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const [dbArticles, setDbArticles] = useState<any[]>(initialData || []);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
   const [articleFilter, setArticleFilter] = useState("전체");
   const [publishFilter, setPublishFilter] = useState<"전체" | "헤드라인" | "중요" | "일반기사">("전체");
@@ -43,7 +42,8 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   const [isBulkApplying, setIsBulkApplying] = useState(false);
 
   // 공실 연결 state
-  const [eligibleVacancies, setEligibleVacancies] = useState<any[]>([]);
+  // 기사에 붙일 수 있는 공실은 "그 기사 작성자"의 매물이다. 작성자별로 캐싱한다.
+  const [vacancyOptionsByAuthor, setVacancyOptionsByAuthor] = useState<AuthorVacancyOptions>({});
   const [vacancySettingsMap, setVacancySettingsMap] = useState<Record<string, { vacancy_id: string; title: string; snapshot: any }>>({});
   const [isBulkVacancyModalOpen, setIsBulkVacancyModalOpen] = useState(false);
   const [bulkSelectedVacancyId, setBulkSelectedVacancyId] = useState<string>("NONE");
@@ -142,26 +142,25 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
             setVacancySettingsMap(vacRes.vacancyMap);
           }
         });
+
+        const authorIds = Array.from(new Set((res.data || []).map((a: { author_id?: string }) => a.author_id).filter(Boolean))) as string[];
+        getEligibleVacanciesByAuthors(authorIds).then((optRes) => {
+          if (optRes.success) {
+            setVacancyOptionsByAuthor((prev) => ({ ...prev, ...optRes.optionsByAuthor }));
+          }
+        });
       }
     }
 
 
   };
 
-  // 최고관리자/현재 사용자의 적격 공실 로드
-  useEffect(() => {
-    if (!currentUserId) return;
-    getAuthorEligibleVacancies(currentUserId).then((res) => {
-      if (res.success) {
-        setEligibleVacancies(res.vacancies || []);
-      }
-    });
-  }, [currentUserId]);
-
   const handleSelectVacancy = async (articleId: string, vacancyId: string | null) => {
     const res = await updateArticleAttachedVacancy(articleId, vacancyId);
     if (res.success) {
-      const selected = eligibleVacancies.find((v) => v.id === vacancyId);
+      const authorId = dbArticles.find((a) => a.id === articleId)?.author_id;
+      const authorList = (authorId ? vacancyOptionsByAuthor[authorId]?.vacancies : undefined) ?? [];
+      const selected = authorList.find((v) => v.id === vacancyId);
       const title = selected ? selected.building_name || selected.dong || "공실" : "";
       setVacancySettingsMap((prev) => ({
         ...prev,
@@ -177,11 +176,6 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
   };
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) setCurrentUserId(data.user.id);
-    });
-
     const handleOutside = () => setActiveDropdownArticleId(null);
     window.addEventListener("click", handleOutside);
     return () => window.removeEventListener("click", handleOutside);
@@ -265,6 +259,23 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     }
   };
 
+  // 체크된 기사들의 작성자가 보유한 공실 합집합 (작성자가 섞여 있을 수 있다)
+  const bulkVacancyOptions = (() => {
+    const authorIds = Array.from(
+      new Set(
+        checkedArticleIds
+          .map((id) => dbArticles.find((a) => a.id === id)?.author_id)
+          .filter(Boolean) as string[]
+      )
+    );
+    const rows: { vacancy: EligibleVacancy; authorName: string }[] = [];
+    authorIds.forEach((authorId) => {
+      const authorName = dbArticles.find((a) => a.author_id === authorId)?.author_name || "";
+      (vacancyOptionsByAuthor[authorId]?.vacancies || []).forEach((v) => rows.push({ vacancy: v, authorName }));
+    });
+    return { rows, authorCount: authorIds.length };
+  })();
+
   // 공실 일괄 적용 핸들러
   const handleApplyBulkVacancy = async () => {
     if (checkedArticleIds.length === 0) {
@@ -278,7 +289,7 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
     setIsBulkVacancyApplying(false);
 
     if (res.success) {
-      const selected = eligibleVacancies.find((v) => v.id === targetVacId);
+      const selected = bulkVacancyOptions.rows.find((r) => r.vacancy.id === targetVacId)?.vacancy;
       const title = selected ? selected.building_name || selected.dong || "공실" : "";
       setVacancySettingsMap((prev) => {
         const next = { ...prev };
@@ -759,8 +770,8 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                       articleId={a.id}
                       currentVacancyId={vacancySettingsMap[a.id]?.vacancy_id || null}
                       currentVacancyTitle={vacancySettingsMap[a.id]?.title || null}
-                      vacanciesList={eligibleVacancies}
-                      isPaidRealtor={true}
+                      vacanciesList={vacancyOptionsByAuthor[a.author_id]?.vacancies || []}
+                      isPaidRealtor={vacancyOptionsByAuthor[a.author_id]?.isPaid ?? false}
                       onSelect={handleSelectVacancy}
                       darkMode={darkMode}
                     />
@@ -1051,9 +1062,9 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                 }}
               >
                 <option value="NONE">🚫 공실 미노출 (연결 해제)</option>
-                {eligibleVacancies.map((v) => {
-                  const formatMoney = (tradeType: string, deposit?: number, rent?: number) => {
-                    const fmt = (val?: number) => {
+                {bulkVacancyOptions.rows.map(({ vacancy: v, authorName }) => {
+                  const formatMoney = (tradeType: string, deposit?: number | null, rent?: number | null) => {
+                    const fmt = (val?: number | null) => {
                       if (!val || val === 0) return "0";
                       const m = Math.round(val / 10000);
                       if (m === 0) return "0";
@@ -1072,11 +1083,21 @@ export default function ArticleSection({ theme, initialData }: AdminSectionProps
                   const addr = v.building_name || [v.dong, v.sigungu].filter(Boolean).join(" ") || "공실";
                   return (
                     <option key={v.id} value={v.id}>
-                      🏢 {priceTag} {addr} {v.exclusive_m2 ? `(${v.exclusive_m2}㎡)` : ""}
+                      🏢 {bulkVacancyOptions.authorCount > 1 && authorName ? `[${authorName}] ` : ""}{priceTag} {addr} {v.exclusive_m2 ? `(${v.exclusive_m2}㎡)` : ""}
                     </option>
                   );
                 })}
               </select>
+              {bulkVacancyOptions.authorCount > 1 && (
+                <div style={{ marginTop: 8, fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>
+                  ⚠️ 작성자가 서로 다른 기사가 함께 선택되었습니다. 공실은 작성자 본인 매물을 연결하는 것이 정상입니다.
+                </div>
+              )}
+              {bulkVacancyOptions.rows.length === 0 && (
+                <div style={{ marginTop: 8, fontSize: 12, color: "#9ca3af" }}>
+                  선택한 기사 작성자에게 연결 가능한 공실이 없습니다. (&apos;부동산노출 + 일반인노출&apos;로 설정된 진행중 매물만 연결됩니다)
+                </div>
+              )}
             </div>
 
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>

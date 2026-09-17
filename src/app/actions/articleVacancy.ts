@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { getEffectivePlan } from "@/utils/planCheck";
+import type { EligibleVacancy, AuthorVacancyOptions } from "@/types/vacancy";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -90,6 +91,77 @@ export async function getAuthorEligibleVacancies(authorId: string): Promise<{
   } catch (err: any) {
     console.error("[getAuthorEligibleVacancies] unexpected error:", err);
     return { success: false, isPaid: false, vacancies: [], error: err.message };
+  }
+}
+
+/**
+ * 여러 작성자의 연결 가능 공실을 한 번에 조회 (관리자 기사목록 전용)
+ *
+ * 관리자 목록에는 작성자가 서로 다른 기사가 섞여 있다. 기사에 붙일 수 있는 공실은
+ * "그 기사 작성자"의 매물이므로 작성자별로 조회해야 한다. 작성자마다 개별 호출하면
+ * 한 페이지에 최대 30회 요청이 되므로 회원 조회 1회 + 매물 조회 1회로 묶는다.
+ */
+export async function getEligibleVacanciesByAuthors(authorIds: string[]): Promise<{
+  success: boolean;
+  optionsByAuthor: AuthorVacancyOptions;
+  error?: string;
+}> {
+  try {
+    const ids = Array.from(new Set((authorIds || []).filter(Boolean)));
+    if (ids.length === 0) return { success: true, optionsByAuthor: {} };
+
+    const supabase = getAdminClient();
+    const optionsByAuthor: AuthorVacancyOptions = {};
+    ids.forEach((id) => {
+      optionsByAuthor[id] = { isPaid: false, vacancies: [] };
+    });
+
+    const { data: members, error: mErr } = await supabase
+      .from("members")
+      .select("id, role, plan_type, plan_end_date")
+      .in("id", ids);
+
+    if (mErr) return { success: false, optionsByAuthor, error: mErr.message };
+
+    const paidIds: string[] = [];
+    (members || []).forEach((m: { id: string; role?: string; plan_type?: string; plan_end_date?: string | null }) => {
+      const plan = getEffectivePlan(m);
+      const isSuper = m.role === "SUPER_ADMIN" || m.role === "ADMIN" || m.role === "최고관리자";
+      const isPaid = isSuper || plan === "news_premium" || plan === "vacancy_premium";
+      optionsByAuthor[m.id] = { isPaid, vacancies: [] };
+      if (isPaid) paidIds.push(m.id);
+    });
+
+    if (paidIds.length === 0) return { success: true, optionsByAuthor };
+
+    const { data, error } = await supabase
+      .from("vacancies")
+      .select(
+        "id, vacancy_no, building_name, sido, sigungu, dong, detail_addr, trade_type, property_type, deposit, monthly_rent, maintenance_fee, exclusive_m2, supply_m2, room_count, bath_count, themes, exposure_type, owner_id, vacancy_photos(url, sort_order)"
+      )
+      .in("owner_id", paidIds)
+      .eq("status", "ACTIVE")
+      .neq("trade_type", "경매")
+      .neq("trade_type", "공매")
+      .ilike("exposure_type", "%일반인%")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("[getEligibleVacanciesByAuthors] error:", error);
+      return { success: false, optionsByAuthor, error: error.message };
+    }
+
+    // '부동산노출 + 일반인노출' 매물만 엄격 필터링 (공백 차이 허용)
+    (data || []).forEach((v: EligibleVacancy) => {
+      const exp = (v.exposure_type || "").replace(/\s/g, "");
+      if (exp !== "부동산노출+일반인노출") return;
+      if (v.owner_id) optionsByAuthor[v.owner_id]?.vacancies.push(v);
+    });
+
+    return { success: true, optionsByAuthor };
+  } catch (err: any) {
+    console.error("[getEligibleVacanciesByAuthors] unexpected error:", err);
+    return { success: false, optionsByAuthor: {}, error: err.message };
   }
 }
 
