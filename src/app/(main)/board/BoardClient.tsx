@@ -336,11 +336,11 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
               <table className="b-list-table">
                 <thead>
                   <tr>
-                    <th style={{ width: 60 }}>번호</th>
+                    <th style={{ width: 72 }}>번호</th>
                     <th style={{ textAlign: "left" }}>제목</th>
-                    <th style={{ width: 100 }}>작성자</th>
-                    <th style={{ width: 100 }}>작성일</th>
-                    {!is1to1 && <th style={{ width: 60 }}>조회</th>}
+                    <th style={{ width: 120 }}>작성자</th>
+                    <th style={{ width: 118 }}>작성일</th>
+                    {!is1to1 && <th style={{ width: 80 }}>조회</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -364,16 +364,16 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
                           )}
                           {is1to1 && (
                             <span style={{ 
-                              display: "inline-block", marginRight: 8, fontSize: 11, fontWeight: "bold", padding: "2px 6px", borderRadius: 4,
-                              background: (p.board_comments && p.board_comments.length > 0) ? "#10b981" : "#f3f4f6", 
-                              color: (p.board_comments && p.board_comments.length > 0) ? "#fff" : "#6b7280"
+                              display: "inline-block", marginRight: 10, fontSize: 12.5, fontWeight: 800, padding: "3px 9px", borderRadius: 5,
+                              background: (p.board_comments && p.board_comments.length > 0) ? "#10b981" : "#f1f5f9", 
+                              color: (p.board_comments && p.board_comments.length > 0) ? "#fff" : "#64748b"
                             }}>
                               {(p.board_comments && p.board_comments.length > 0) ? "답변완료" : "답변대기"}
                             </span>
                           )}
                           {p.title.replace(/^\[([^\]]+)\]\s*/, "")}
                           {p.board_comments && p.board_comments.length > 0 && (
-                            <span style={{ color: "#ef4444", fontWeight: "bold", fontSize: 13, marginLeft: 6 }}>
+                            <span style={{ color: "#ef4444", fontWeight: 800, fontSize: 13.5, marginLeft: 7 }}>
                               [{p.board_comments.length}]
                             </span>
                           )}
@@ -385,7 +385,7 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={5} style={{ padding: 40, borderBottom: "1px solid #eee", color: "#999" }}>등록된 게시글이 없습니다.</td>
+                      <td colSpan={5} style={{ padding: 70, borderBottom: "1px solid #e5e7eb", color: "#94a3b8", fontSize: 14.5 }}>등록된 게시글이 없습니다.</td>
                     </tr>
                   )}
                 </tbody>
@@ -403,9 +403,9 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
                         router.push(getReadUrl(p.id));
                       }
                     }}
-                    style={{ display: "block", textDecoration: "none", color: "inherit", border: "1px solid #eee", borderRadius: 8, overflow: "hidden", cursor: "pointer" }}
+                    style={{ display: "block", textDecoration: "none", color: "inherit", border: "1px solid #e3e9f2", borderRadius: 10, overflow: "hidden", cursor: "pointer" }}
                   >
-                    <div style={{ height: 140, background: "#222", position: "relative", overflow: "hidden" }}>
+                    <div style={{ height: 160, background: "#222", position: "relative", overflow: "hidden" }}>
                       <img src={getPrimaryThumbnail(p)} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.8 }} alt="thumb" />
                       {hasVideoLink(p, board.skin_type) && (
                         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, background: "rgba(0,0,0,0.6)", borderRadius: "50%", border: "2px solid #fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -413,28 +413,28 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
                         </div>
                       )}
                     </div>
-                    <div style={{ padding: 15 }}>
+                    <div style={{ padding: "17px 18px 19px" }}>
                       {p.title.match(/^\[([^\]]+)\]/) && (
-                        <div style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: "#508bf5", background: "rgba(80,139,245,0.1)", borderRadius: 4, padding: "2px 7px", marginBottom: 7, marginRight: 4 }}>{p.title.match(/^\[([^\]]+)\]/)?.[0]}</div>
+                        <div style={{ display: "inline-block", fontSize: 13, fontWeight: 800, color: "#ff8e15", marginBottom: 7, marginRight: 6 }}>{p.title.match(/^\[([^\]]+)\]/)?.[0]}</div>
                       )}
                       {is1to1 && (
                         <div style={{ 
-                          display: "inline-block", fontSize: 11, fontWeight: "bold", padding: "2px 6px", borderRadius: 4, marginBottom: 7, marginRight: 4,
-                          background: (p.board_comments && p.board_comments.length > 0) ? "#10b981" : "#f3f4f6", 
-                          color: (p.board_comments && p.board_comments.length > 0) ? "#fff" : "#6b7280"
+                          display: "inline-block", fontSize: 12.5, fontWeight: 800, padding: "3px 9px", borderRadius: 5, marginBottom: 7, marginRight: 6,
+                          background: (p.board_comments && p.board_comments.length > 0) ? "#10b981" : "#f1f5f9", 
+                          color: (p.board_comments && p.board_comments.length > 0) ? "#fff" : "#64748b"
                         }}>
                           {(p.board_comments && p.board_comments.length > 0) ? "답변완료" : "답변대기"}
                         </div>
                       )}
-                      <div style={{ fontSize: 15, fontWeight: 700, color: "#111", marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.title.replace(/^\[([^\]]+)\]\s*/, "")}</div>
-                      <div style={{ fontSize: 13, color: "#777", display: "flex", justifyContent: "space-between" }}>
+                      <div style={{ fontSize: 15.5, fontWeight: 600, color: "#111827", lineHeight: 1.5, marginBottom: 9, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.title.replace(/^\[([^\]]+)\]\s*/, "")}</div>
+                      <div style={{ fontSize: 13, color: "#94a3b8", display: "flex", justifyContent: "space-between" }}>
                         <span>{p.author_name || "익명"}</span>
                         <span>{!is1to1 && `조회 ${p.view_count || 0} · `}{new Date(p.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
                 )) : (
-                  <div style={{ gridColumn: "1 / -1", padding: 40, textAlign: "center", color: "#999", border: "1px solid #eee", borderRadius: 8 }}>등록된 게시물이 없습니다.</div>
+                  <div style={{ gridColumn: "1 / -1", padding: 70, textAlign: "center", color: "#94a3b8", fontSize: 14.5, border: "1px solid #e5e7eb", borderRadius: 10 }}>등록된 게시물이 없습니다.</div>
                 )}
               </div>
             )}
@@ -442,12 +442,12 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
 
           <div style={{ display: "flex", alignItems: "center", marginTop: 40, marginBottom: 20, position: "relative" }}>
             <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <div className="pagination" style={{ display: "flex", gap: "4px" }}>
+              <div className="pagination" style={{ display: "flex", gap: "6px" }}>
                 <button 
                   className="page-btn" 
                   onClick={() => handlePageChange(1)} 
                   disabled={currentPage === 1}
-                  style={{ padding: "6px 10px", border: "1px solid #ddd", background: currentPage === 1 ? "#f9f9f9" : "#fff", color: currentPage === 1 ? "#aaa" : "#555", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                  style={{ padding: "9px 14px", fontSize: 15, borderRadius: 6, border: "1px solid #d7e0ee", background: currentPage === 1 ? "#f6f8fc" : "#fff", color: currentPage === 1 ? "#b3bdcd" : "#55617a", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
                 >
                   &lt;&lt;
                 </button>
@@ -455,7 +455,7 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
                   className="page-btn" 
                   onClick={() => handlePageChange(p => Math.max(1, p - 1))} 
                   disabled={currentPage === 1}
-                  style={{ padding: "6px 10px", border: "1px solid #ddd", background: currentPage === 1 ? "#f9f9f9" : "#fff", color: currentPage === 1 ? "#aaa" : "#555", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                  style={{ padding: "9px 14px", fontSize: 15, borderRadius: 6, border: "1px solid #d7e0ee", background: currentPage === 1 ? "#f6f8fc" : "#fff", color: currentPage === 1 ? "#b3bdcd" : "#55617a", cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
                 >
                   &lt;
                 </button>
@@ -473,11 +473,11 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
                       key={p} 
                       onClick={() => handlePageChange(p)} 
                       style={{ 
-                        padding: "6px 12px", minWidth: 32,
-                        border: "1px solid #ddd", 
-                        background: currentPage === p ? "#111" : "#fff", 
-                        color: currentPage === p ? "#fff" : "#555",
-                        fontWeight: currentPage === p ? "bold" : "normal",
+                        padding: "9px 14px", minWidth: 40, fontSize: 15, borderRadius: 6,
+                        border: currentPage === p ? "1px solid #102c57" : "1px solid #d7e0ee", 
+                        background: currentPage === p ? "#102c57" : "#fff", 
+                        color: currentPage === p ? "#fff" : "#55617a",
+                        fontWeight: currentPage === p ? 800 : 600,
                         cursor: "pointer"
                       }}
                     >
@@ -490,7 +490,7 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
                   className="page-btn" 
                   onClick={() => handlePageChange(p => Math.min(totalPages, p + 1))} 
                   disabled={currentPage === totalPages}
-                  style={{ padding: "6px 10px", border: "1px solid #ddd", background: currentPage === totalPages ? "#f9f9f9" : "#fff", color: currentPage === totalPages ? "aaa" : "#555", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                  style={{ padding: "9px 14px", fontSize: 15, borderRadius: 6, border: "1px solid #d7e0ee", background: currentPage === totalPages ? "#f6f8fc" : "#fff", color: currentPage === totalPages ? "#b3bdcd" : "#55617a", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
                 >
                   &gt;
                 </button>
@@ -498,7 +498,7 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
                   className="page-btn" 
                   onClick={() => handlePageChange(totalPages)} 
                   disabled={currentPage === totalPages}
-                  style={{ padding: "6px 10px", border: "1px solid #ddd", background: currentPage === totalPages ? "#f9f9f9" : "#fff", color: currentPage === totalPages ? "aaa" : "#555", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                  style={{ padding: "9px 14px", fontSize: 15, borderRadius: 6, border: "1px solid #d7e0ee", background: currentPage === totalPages ? "#f6f8fc" : "#fff", color: currentPage === totalPages ? "#b3bdcd" : "#55617a", cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
                 >
                   &gt;&gt;
                 </button>
@@ -506,14 +506,14 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
             </div>
 
             {/* 하단 버튼 (내가 등록한 글 보기 & 글등록하기) */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginTop: 4 }}>
+            <div style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", display: "flex", gap: 8 }}>
               {currentUser && (
                 <button 
                   onClick={toggleMyPosts}
                   style={{ 
-                    background: myPostsOnly ? "#475569" : "#fff", 
-                    color: myPostsOnly ? "#fff" : "#555", 
-                    padding: "9px 17px", borderRadius: 3, fontWeight: 600, fontSize: 13, border: "1px solid #d1d5db", cursor: "pointer", lineHeight: 1.4
+                    background: myPostsOnly ? "#102c57" : "#fff", 
+                    color: myPostsOnly ? "#fff" : "#55617a", 
+                    padding: "11px 20px", borderRadius: 6, fontWeight: 700, fontSize: 15, border: myPostsOnly ? "1px solid #102c57" : "1px solid #d7e0ee", cursor: "pointer", lineHeight: 1.4
                   }}
                 >
                   {myPostsOnly ? "전체글 보기" : "내가등록한글 보기"}
@@ -523,7 +523,7 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
                 <a 
                   className="b-write-btn" 
                   href={`/board_write?board_id=${board.board_id}`}
-                  style={{ background: "#102c57", color: "#fff", padding: "9px 17px", borderRadius: 3, fontWeight: 600, fontSize: 13, textDecoration: "none", display: "inline-block", lineHeight: 1.4 }}
+                  style={{ background: "#102c57", color: "#fff", padding: "11px 22px", borderRadius: 6, fontWeight: 700, fontSize: 15, textDecoration: "none", display: "inline-block", lineHeight: 1.4 }}
                 >
                   글등록하기
                 </a>
@@ -532,23 +532,23 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
           </div>
 
         </div>
-        
+
         {/* 사이드바는 스킨 타입 상관없이 공통 노출 */}
         <div className="b-sidebar">
-          <div className="sb-banner" style={{ background: "#e2e2e2" }}>
-            배너 1
-          </div>
-          
+          <div className="sb-banner">배너 1</div>
+
           <div className="sb-widget">
             <div className="sb-title">인기 게시물</div>
             <ul className="pop-list">
-              {[...posts].sort((a,b) => (b.view_count||0) - (a.view_count||0)).slice(0, 5).map((p, i) => (
+              {[...posts].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 5).map((p, i) => (
                 <li className="pop-item" key={p.id || i}>
                   <span className="pop-ranking">{i + 1}</span>
-                  <Link href={getReadUrl(p.id)} className="pop-title" style={{ color: "inherit", textDecoration: "none" }}>{p.title.replace(/^\[([^\]]+)\]\s*/, "")}</Link>
+                  <Link href={getReadUrl(p.id)} className="pop-title" style={{ color: "inherit", textDecoration: "none" }}>
+                    {p.title.replace(/^\[([^\]]+)\]\s*/, "")}
+                  </Link>
                 </li>
               ))}
-              {posts.length === 0 && <li style={{ fontSize: 13, color: "#999" }}>게시물이 없습니다.</li>}
+              {posts.length === 0 && <li style={{ fontSize: 14, color: "#94a3b8" }}>게시물이 없습니다.</li>}
             </ul>
           </div>
         </div>
