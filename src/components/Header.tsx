@@ -238,7 +238,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
 
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
-              <Link href="/newsrealty" style={{ color: "#fbbf24", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
+              <Link href="/newsrealty" style={{ color: "#ff8e15", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
                 공실뉴스부동산
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
@@ -278,7 +278,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                 공실등록 &gt;&gt;
               </div>
 
-               <Link href="/newsrealty" style={{ color: "#fbbf24", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
+               <Link href="/newsrealty" style={{ color: "#ff8e15", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
                 공실뉴스부동산
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
@@ -384,17 +384,13 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
               <div style={{ display: "flex", alignItems: "center", gap: isSmallHeader ? "8px" : "12px", flexShrink: 0 }}>
                 {currentUser ? (
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Link href="/newsrealty" style={{ color: "#d97706", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
+                    <Link href="/newsrealty" style={{ color: "#ff8e15", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
                       공실뉴스부동산
                     </Link>
-                    <span style={{ color: "#ddd", fontSize: "13px" }}>|</span>
-                    <div style={{ color: "#333", cursor: "pointer", fontSize: "13px", fontWeight: "700" }} onClick={() => router.push(userRole === 'ADMIN' ? '/admin' : userRole === 'REALTOR' ? '/realty_admin' : '/user_admin')}>
-                      내정보
-                    </div>
                   </div>
                 ) : (
                   <>
-                    <Link href="/newsrealty" style={{ color: "#d97706", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
+                    <Link href="/newsrealty" style={{ color: "#ff8e15", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
                       공실뉴스부동산
                     </Link>
                     <span style={{ color: "#ddd", fontSize: "13px" }}>|</span>
@@ -415,25 +411,38 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 28, height: 28 }}><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
 
-                <button onClick={() => {
-                  if (!currentUser) {
-                    router.push('/login?returnTo=' + encodeURIComponent('/realty_admin?menu=gongsil&action=write'));
-                  } else {
-                    if (userRole === 'ADMIN') router.push('/admin?menu=gongsil&action=write');
-                    else if (userRole === 'REALTOR') router.push('/realty_admin?menu=gongsil&action=write');
-                    else router.push('/user_admin?menu=gongsil&action=write');
-                  }
-                }}
-                  style={{
-                    background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px",
-                    padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer",
-                    boxShadow: "0 2px 4px rgba(239, 68, 68, 0.2)", transition: "background 0.2s",
-                    whiteSpace: "nowrap", flexShrink: 0
+                {/* 스크롤해도 상단 바와 같은 등급 버튼을 유지한다.
+                    (비로그인 상태에서만 공실등록 버튼을 노출) */}
+                {currentUser ? (
+                  <button onClick={() => {
+                    if (userRole === 'REALTOR' && agencyStatus === 'REJECTED') window.open('/realty_admin?menu=settings&tab=agency', '_blank');
+                    else if (userRole === 'ADMIN') router.push('/admin');
+                    else if (userRole === 'REALTOR') router.push('/realty_admin');
+                    else router.push('/user_admin');
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "#dc2626"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "#ef4444"}>
-                  공실등록 &gt;&gt;
-                </button>
+                    style={{
+                      background: userRole === 'ADMIN' ? "#111827" : "#ef4444", color: "#fff", border: "none", borderRadius: "4px",
+                      padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer",
+                      boxShadow: userRole === 'ADMIN' ? "0 2px 4px rgba(17, 24, 39, 0.2)" : "0 2px 4px rgba(239, 68, 68, 0.2)",
+                      transition: "background 0.2s", whiteSpace: "nowrap", flexShrink: 0
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#1f2937" : "#dc2626"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#111827" : "#ef4444"}>
+                    {userRole === 'ADMIN' ? '최고관리자 >>' : (userRole === 'REALTOR' && agencyStatus === 'REJECTED') ? '서류보완 >>' : userRole === 'REALTOR' ? '부동산회원 >>' : '일반회원 >>'}
+                  </button>
+                ) : (
+                  <button onClick={() => router.push('/login?returnTo=' + encodeURIComponent('/realty_admin?menu=gongsil&action=write'))}
+                    style={{
+                      background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px",
+                      padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer",
+                      boxShadow: "0 2px 4px rgba(239, 68, 68, 0.2)", transition: "background 0.2s",
+                      whiteSpace: "nowrap", flexShrink: 0
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#dc2626"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "#ef4444"}>
+                    공실등록 &gt;&gt;
+                  </button>
+                )}
               </div>
             )}
             

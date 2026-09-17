@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { getEffectiveMemberRole } from "@/utils/permissionCheck";
 
 interface NewsrealtyHeaderProps {
   onOpenGuide?: () => void;
@@ -19,6 +20,8 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
   const [guideDropdownOpen, setGuideDropdownOpen] = useState(false);
   const guideDropdownTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>("");
+  const [agencyStatus, setAgencyStatus] = useState<string>("");
 
   const handleMouseEnterDropdown = () => {
     if (dropdownTimeoutRef.current) {
@@ -50,12 +53,28 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
 
   useEffect(() => {
     const supabase = createClient();
+
+    // 메인 헤더와 같은 규칙으로 등급을 판정한다 (members.role + agencies.status)
+    const loadRole = async (u: { id: string } | null) => {
+      if (!u) {
+        setUserRole("");
+        setAgencyStatus("");
+        return;
+      }
+      const { data: member } = await supabase.from("members").select("role").eq("id", u.id).single();
+      const { data: agency } = await supabase.from("agencies").select("status").eq("owner_id", u.id).single();
+      setAgencyStatus(agency?.status || "");
+      setUserRole(getEffectiveMemberRole(member?.role, agency?.status));
+    };
+
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
+      void loadRole(user);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
+      void loadRole(session?.user || null);
     });
 
     return () => {
@@ -647,34 +666,35 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
             <div style={{ marginLeft: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
               {user ? (
                 <>
-                  <Link
-                    href="/realty_admin"
+                  {/* 메인 헤더와 동일한 등급 버튼 (관리자 검정, 그 외 빨강) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (userRole === "REALTOR" && agencyStatus === "REJECTED") window.open("/realty_admin?menu=settings&tab=agency", "_blank");
+                      else if (userRole === "ADMIN") router.push("/admin");
+                      else if (userRole === "REALTOR") router.push("/realty_admin");
+                      else router.push("/user_admin");
+                    }}
                     style={{
                       fontSize: "13px",
                       fontWeight: 700,
-                      color: "#ff8e15",
-                      border: "1px solid #ff8e15",
+                      color: "#ffffff",
+                      background: userRole === "ADMIN" ? "#111827" : "#ef4444",
+                      border: "none",
                       borderRadius: "4px",
-                      padding: "5px 12px",
-                      textDecoration: "none",
+                      padding: "6px 12px",
                       whiteSpace: "nowrap",
-                      transition: "all 0.15s ease",
+                      cursor: "pointer",
+                      transition: "background 0.15s ease",
                       display: "inline-flex",
                       alignItems: "center",
-                      backgroundColor: "transparent",
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "#ff8e15";
-                      e.currentTarget.style.color = "#ffffff";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.color = "#ff8e15";
-                    }}
-                    title="중개사 관리자 페이지로 이동"
+                    onMouseEnter={(e) => (e.currentTarget.style.background = userRole === "ADMIN" ? "#1f2937" : "#dc2626")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = userRole === "ADMIN" ? "#111827" : "#ef4444")}
+                    title="내 관리자 페이지로 이동"
                   >
-                    중개사 관리자
-                  </Link>
+                    {userRole === "ADMIN" ? "최고관리자 >>" : (userRole === "REALTOR" && agencyStatus === "REJECTED") ? "서류보완 >>" : userRole === "REALTOR" ? "부동산회원 >>" : "일반회원 >>"}
+                  </button>
                   <button
                     type="button"
                     onClick={handleLogout}
