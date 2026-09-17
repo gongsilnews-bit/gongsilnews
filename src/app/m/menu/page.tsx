@@ -365,7 +365,7 @@ export default function MenuPage() {
               인터넷신문 등록번호 : 서울 아55037<br/>
               주소 : 서울특별시 강남구 논현로115길 31, 105호<br/>
               이메일 : master@gongsilnews.com<br/>
-              고객센터 : 1555-5343 (평일 10:00~18:00)
+              고객센터 : 1555-5343 (평일 10:00~17:00)
             </div>
             <div style={{ fontSize: '11px', color: '#d1d5db', marginTop: '16px' }}>
               © GONGSIL NEWS Co., Ltd. All Rights Reserved.

@@ -165,8 +165,8 @@ export default function Footer() {
         .details-row {
           margin-bottom: 4px;
         }
-        .details-row span {
-          color: rgba(255, 255, 255, 0.15);
+        .details-row span.divider {
+          color: rgba(255, 255, 255, 0.2);
           margin: 0 8px;
         }
         .footer-copyrights {
@@ -257,27 +257,27 @@ export default function Footer() {
           <div className="footer-details">
             <div className="details-row">
               주소 : 서울특별시 강남구 논현로115길 31, 105호 (논현동)
-              <span>|</span>
+              <span className="divider">|</span>
               인터넷신문 등록번호 : 서울 아55037
-              <span>|</span>
+              <span className="divider">|</span>
               등록일자 : 2023.09.05
             </div>
             <div className="details-row">
               제호 : 공실뉴스
-              <span>|</span>
+              <span className="divider">|</span>
               법인명 : (주)공실마케팅
-              <span>|</span>
+              <span className="divider">|</span>
               사업자등록번호 : 337-81-03010
             </div>
             <div className="details-row">
               대표자·발행인 : 김윤경
-              <span>|</span>
+              <span className="divider">|</span>
               편집인 : 김동현
-              <span>|</span>
+              <span className="divider">|</span>
               이메일 : master@gongsilnews.com
             </div>
-            <div className="details-row" style={{ fontWeight: 600, color: "#f1f5f9", marginTop: "8px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <span>고객센터 : 1555-5343 (평일 10:00~18:00)</span>
+            <div className="details-row" style={{ color: "#94a3b8", marginTop: "8px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <span>고객센터 : <strong style={{ color: "#ffffff", fontWeight: 700 }}>1555-5343</strong> (평일 10:00~17:00)</span>
               <button
                 type="button"
                 onClick={() => openChannelTalk()}

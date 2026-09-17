@@ -637,7 +637,7 @@ export default function NewsRealtyApplyPage() {
               marginBottom: "24px",
               textAlign: "left"
             }}>
-              💡 신청 내용 변경이나 빠른 상담이 필요하신 경우 고객센터 <strong>1555-5343</strong> (평일 10:00~18:00)로 문의해 주시기 바랍니다.
+              💡 신청 내용 변경이나 빠른 상담이 필요하신 경우 고객센터 <strong>1555-5343</strong> (평일 10:00~17:00)로 문의해 주시기 바랍니다.
             </div>
 
             {/* 버튼 그룹 */}

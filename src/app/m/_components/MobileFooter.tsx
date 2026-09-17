@@ -129,7 +129,7 @@ export default function MobileFooter() {
             편집인 : 김동현
           </div>
           <div>이메일 : master@gongsilnews.com</div>
-          <div>고객센터 : 1555-5343 (평일 10:00~18:00)</div>
+          <div>고객센터 : <strong style={{ color: "#444", fontWeight: 700 }}>1555-5343</strong> (평일 10:00~17:00)</div>
         </div>
 
         <div style={{ marginTop: 12, fontSize: 10, color: "#bbb", lineHeight: 1.5 }}>
