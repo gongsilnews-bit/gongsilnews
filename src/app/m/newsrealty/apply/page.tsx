@@ -282,7 +282,7 @@ export default function MobileNewsRealtyApplyPage() {
               }}>
                 내 지역/단지<br />
                 로컬 부동산 기자가 되세요!
-                <div style={{ fontSize: "15px", fontWeight: 800, color: "#fa8258", marginTop: "6px" }}>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#ff8e15", marginTop: "6px" }}>
                   부동산중개 + 지역부동산기자
                 </div>
               </h1>
@@ -317,15 +317,15 @@ export default function MobileNewsRealtyApplyPage() {
             }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#475569", lineHeight: 1.55 }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900, fontSize: "15px", lineHeight: 1 }}>•</span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900, fontSize: "15px", lineHeight: 1 }}>•</span>
                   <span>공실뉴스부동산회원만 신청하실 수 있습니다. <strong style={{ color: "#ea580c" }}>(무료)</strong></span>
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900, fontSize: "15px", lineHeight: 1 }}>•</span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900, fontSize: "15px", lineHeight: 1 }}>•</span>
                   <span>가입신청 후, 1~2일 이내 담당자가 연락드립니다. (문자, 카톡)</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900, fontSize: "15px", lineHeight: 1 }}>•</span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900, fontSize: "15px", lineHeight: 1 }}>•</span>
                   <span>문의는 1:1 게시판을 이용해주세요.</span>
                 </div>
               </div>
@@ -338,7 +338,7 @@ export default function MobileNewsRealtyApplyPage() {
                   width: "100%",
                   height: "40px",
                   backgroundColor: "#ffffff",
-                  border: "1px solid #fa8258",
+                  border: "1px solid #ff8e15",
                   borderRadius: "8px",
                   fontSize: "12.5px",
                   fontWeight: 700,
@@ -347,7 +347,7 @@ export default function MobileNewsRealtyApplyPage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 1px 4px rgba(250,130,88,0.1)"
+                  boxShadow: "0 1px 4px rgba(255, 142, 21,0.1)"
                 }}
               >
                 📋 회원가입 및 이용 절차가 궁금해요
@@ -525,7 +525,7 @@ export default function MobileNewsRealtyApplyPage() {
               <div className="space-y-3">
                 <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="bg-[#fa8258] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">1단계</span>
+                    <span className="bg-[#ff8e15] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">1단계</span>
                     <span className="text-[14px] font-bold text-[#1e293b]">회원가입 및 중개업소 등록</span>
                   </div>
                   <p className="text-[12.5px] text-[#475569] leading-relaxed m-0">
@@ -535,7 +535,7 @@ export default function MobileNewsRealtyApplyPage() {
                 </div>
                 <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="bg-[#fa8258] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">2단계</span>
+                    <span className="bg-[#ff8e15] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">2단계</span>
                     <span className="text-[14px] font-bold text-[#1e293b]">신청하기</span>
                   </div>
                   <p className="text-[12.5px] text-[#475569] leading-relaxed m-0">
@@ -545,7 +545,7 @@ export default function MobileNewsRealtyApplyPage() {
                 </div>
                 <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="bg-[#fa8258] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">3단계</span>
+                    <span className="bg-[#ff8e15] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">3단계</span>
                     <span className="text-[14px] font-bold text-[#1e293b]">승인심사 및 결과 안내</span>
                   </div>
                   <p className="text-[12.5px] text-[#475569] leading-relaxed m-0">
@@ -571,7 +571,7 @@ export default function MobileNewsRealtyApplyPage() {
                       <div className="text-[12px] font-bold text-[#ea580c]">6개월</div>
                       <div className="text-[11px] font-bold text-[#ea580c]">5% 할인</div>
                     </div>
-                    <div className="bg-[#fff7ed] border border-[#fa8258] rounded-lg py-2 px-1 shadow-2xs">
+                    <div className="bg-[#fff7ed] border border-[#ff8e15] rounded-lg py-2 px-1 shadow-2xs">
                       <div className="text-[12px] font-black text-[#c2410c]">12개월</div>
                       <div className="text-[11px] font-black text-[#c2410c]">15% 할인 🔥</div>
                     </div>
@@ -579,7 +579,7 @@ export default function MobileNewsRealtyApplyPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <button type="button" onClick={() => setShowGuideModal(false)} style={{ backgroundColor: "#fa8258" }} className="w-full h-11 text-white font-bold text-[14.5px] rounded-xl shadow-md cursor-pointer flex items-center justify-center">
+                <button type="button" onClick={() => setShowGuideModal(false)} style={{ backgroundColor: "#ff8e15" }} className="w-full h-11 text-white font-bold text-[14.5px] rounded-xl shadow-md cursor-pointer flex items-center justify-center">
                   확인 및 닫기
                 </button>
               </div>
@@ -633,7 +633,7 @@ export default function MobileNewsRealtyApplyPage() {
               alignItems: "center",
               justifyContent: "center",
               fontSize: "26px",
-              color: isApproved ? "#059669" : "#fa8258",
+              color: isApproved ? "#059669" : "#ff8e15",
               margin: "0 auto 16px auto"
             }}>
               {isApproved ? "🏢" : "📋"}
@@ -744,13 +744,13 @@ export default function MobileNewsRealtyApplyPage() {
                   height: "44px",
                   lineHeight: "44px",
                   borderRadius: "10px",
-                  backgroundColor: "#fa8258",
+                  backgroundColor: "#ff8e15",
                   color: "#fff",
                   fontSize: "13px",
                   fontWeight: 800,
                   textDecoration: "none",
                   textAlign: "center",
-                  boxShadow: "0 4px 12px rgba(250,130,88,0.3)"
+                  boxShadow: "0 4px 12px rgba(255, 142, 21,0.3)"
                 }}
               >
                 {isApproved ? "관리자/공실 관리로 이동 ➔" : "공실뉴스 메인으로 ➔"}
@@ -788,7 +788,7 @@ export default function MobileNewsRealtyApplyPage() {
               width: "60px", height: "60px",
               backgroundColor: "#fff2e8", borderRadius: "50%",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "24px", fontWeight: 900, color: "#fa8258",
+              fontSize: "24px", fontWeight: 900, color: "#ff8e15",
               margin: "0 auto 20px auto"
             }}>✓</div>
 
@@ -835,7 +835,7 @@ export default function MobileNewsRealtyApplyPage() {
               </Link>
               <Link
                 href="/m"
-                style={{ display: "block", height: "46px", lineHeight: "46px", borderRadius: "10px", backgroundColor: "#fa8258", color: "#fff", fontSize: "13px", fontWeight: 800, textDecoration: "none", textAlign: "center", boxShadow: "0 4px 12px rgba(250,130,88,0.3)" }}
+                style={{ display: "block", height: "46px", lineHeight: "46px", borderRadius: "10px", backgroundColor: "#ff8e15", color: "#fff", fontSize: "13px", fontWeight: 800, textDecoration: "none", textAlign: "center", boxShadow: "0 4px 12px rgba(255, 142, 21,0.3)" }}
               >
                 공실뉴스 메인으로
               </Link>
@@ -890,7 +890,7 @@ export default function MobileNewsRealtyApplyPage() {
             <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#1f2328", lineHeight: 1.35, letterSpacing: "-0.5px", margin: 0, wordBreak: "keep-all" }}>
               내 지역/단지<br />
               로컬 부동산 기자가 되세요!
-              <div style={{ fontSize: "16px", fontWeight: 700, color: "#fa8258", marginTop: "8px", letterSpacing: "-0.3px" }}>
+              <div style={{ fontSize: "16px", fontWeight: 700, color: "#ff8e15", marginTop: "8px", letterSpacing: "-0.3px" }}>
                 부동산중개 + 지역부동산기자
               </div>
             </h1>
@@ -928,7 +928,7 @@ export default function MobileNewsRealtyApplyPage() {
           }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "12.5px", color: "#475569", lineHeight: 1.55 }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: "7px" }}>
-                <span style={{ color: "#fa8258", fontWeight: 800, fontSize: "13px" }}>1.</span>
+                <span style={{ color: "#ff8e15", fontWeight: 800, fontSize: "13px" }}>1.</span>
                 <span>
                   <strong>공실뉴스부동산회원</strong>만 신청하실 수 있습니다.{" "}
                   <span style={{ display: "inline-block", backgroundColor: "#fff2e8", color: "#ea580c", fontSize: "11px", fontWeight: 800, padding: "1px 6px", borderRadius: "4px", marginLeft: "2px" }}>
@@ -937,11 +937,11 @@ export default function MobileNewsRealtyApplyPage() {
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "flex-start", gap: "7px" }}>
-                <span style={{ color: "#fa8258", fontWeight: 800, fontSize: "13px" }}>2.</span>
+                <span style={{ color: "#ff8e15", fontWeight: 800, fontSize: "13px" }}>2.</span>
                 <span>가입신청 후, <strong>1~2일 이내</strong> 담당자가 연락드립니다. <span style={{ color: "#888", fontSize: "11.5px" }}>(문자, 카톡)</span></span>
               </div>
               <div style={{ display: "flex", alignItems: "flex-start", gap: "7px" }}>
-                <span style={{ color: "#fa8258", fontWeight: 800, fontSize: "13px" }}>3.</span>
+                <span style={{ color: "#ff8e15", fontWeight: 800, fontSize: "13px" }}>3.</span>
                 <span>문의는 <strong>1:1 게시판</strong>을 이용해주세요.</span>
               </div>
             </div>
@@ -954,7 +954,7 @@ export default function MobileNewsRealtyApplyPage() {
                 width: "100%",
                 height: "42px",
                 backgroundColor: "#ffffff",
-                border: "1px solid #fa8258",
+                border: "1px solid #ff8e15",
                 borderRadius: "10px",
                 fontSize: "12.5px",
                 fontWeight: 700,
@@ -964,7 +964,7 @@ export default function MobileNewsRealtyApplyPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "6px",
-                boxShadow: "0 2px 6px rgba(250, 130, 88, 0.08)"
+                boxShadow: "0 2px 6px rgba(255, 142, 21, 0.08)"
               }}
             >
               📋 회원가입 및 이용 절차가 궁금해요
@@ -976,7 +976,7 @@ export default function MobileNewsRealtyApplyPage() {
             {/* 1. 신청자 */}
             <div>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#222", marginBottom: "6px" }}>
-                신청자 <span style={{ color: "#fa8258" }}>*</span>
+                신청자 <span style={{ color: "#ff8e15" }}>*</span>
               </label>
               <input
                 type="text"
@@ -1002,7 +1002,7 @@ export default function MobileNewsRealtyApplyPage() {
             {/* 2. 연락처 */}
             <div>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#222", marginBottom: "6px" }}>
-                연락처 <span style={{ color: "#fa8258" }}>*</span>
+                연락처 <span style={{ color: "#ff8e15" }}>*</span>
               </label>
               <input
                 type="tel"
@@ -1028,7 +1028,7 @@ export default function MobileNewsRealtyApplyPage() {
             {/* 3. E-mail */}
             <div>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#222", marginBottom: "6px" }}>
-                E-mail <span style={{ color: "#fa8258" }}>*</span> <span style={{ color: "#888", fontWeight: 400, fontSize: "11px" }}>(가입 후 아이디로 이용돼요)</span>
+                E-mail <span style={{ color: "#ff8e15" }}>*</span> <span style={{ color: "#888", fontWeight: 400, fontSize: "11px" }}>(가입 후 아이디로 이용돼요)</span>
               </label>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <input
@@ -1100,7 +1100,7 @@ export default function MobileNewsRealtyApplyPage() {
             {/* 4. 중개사무소 */}
             <div>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#222", marginBottom: "6px" }}>
-                중개사무소 <span style={{ color: "#fa8258" }}>*</span>
+                중개사무소 <span style={{ color: "#ff8e15" }}>*</span>
               </label>
               <input
                 type="text"
@@ -1132,7 +1132,7 @@ export default function MobileNewsRealtyApplyPage() {
                       type="checkbox"
                       checked={agreeTerms}
                       onChange={(e) => setAgreeTerms(e.target.checked)}
-                      style={{ accentColor: "#fa8258", width: "16px", height: "16px" }}
+                      style={{ accentColor: "#ff8e15", width: "16px", height: "16px" }}
                     />
                     회원가입 약관 전체 동의 하기
                   </label>
@@ -1183,13 +1183,13 @@ export default function MobileNewsRealtyApplyPage() {
                     width: "100%",
                     height: "50px",
                     borderRadius: "10px",
-                    backgroundColor: "#fa8258",
+                    backgroundColor: "#ff8e15",
                     color: "#ffffff",
                     fontWeight: 800,
                     fontSize: "15px",
                     border: "none",
                     cursor: submitting ? "not-allowed" : "pointer",
-                    boxShadow: "0 4px 14px rgba(250, 130, 88, 0.35)",
+                    boxShadow: "0 4px 14px rgba(255, 142, 21, 0.35)",
                     letterSpacing: "-0.3px",
                     opacity: submitting ? 0.6 : 1
                   }}
@@ -1239,7 +1239,7 @@ export default function MobileNewsRealtyApplyPage() {
               {/* 1단계 */}
               <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="bg-[#fa8258] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
+                  <span className="bg-[#ff8e15] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
                     1단계
                   </span>
                   <span className="text-[14px] font-bold text-[#1e293b]">
@@ -1255,7 +1255,7 @@ export default function MobileNewsRealtyApplyPage() {
               {/* 2단계 */}
               <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="bg-[#fa8258] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
+                  <span className="bg-[#ff8e15] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
                     2단계
                   </span>
                   <span className="text-[14px] font-bold text-[#1e293b]">
@@ -1271,7 +1271,7 @@ export default function MobileNewsRealtyApplyPage() {
               {/* 3단계 */}
               <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="bg-[#fa8258] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
+                  <span className="bg-[#ff8e15] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
                     3단계
                   </span>
                   <span className="text-[14px] font-bold text-[#1e293b]">
@@ -1309,7 +1309,7 @@ export default function MobileNewsRealtyApplyPage() {
                     <div className="text-[12px] font-bold text-[#ea580c]">6개월</div>
                     <div className="text-[11px] font-bold text-[#ea580c]">5% 할인</div>
                   </div>
-                  <div className="bg-[#fff7ed] border border-[#fa8258] rounded-lg py-2 px-1 shadow-2xs">
+                  <div className="bg-[#fff7ed] border border-[#ff8e15] rounded-lg py-2 px-1 shadow-2xs">
                     <div className="text-[12px] font-black text-[#c2410c]">12개월</div>
                     <div className="text-[11px] font-black text-[#c2410c]">15% 할인 🔥</div>
                   </div>
@@ -1322,7 +1322,7 @@ export default function MobileNewsRealtyApplyPage() {
               <button
                 type="button"
                 onClick={() => setShowGuideModal(false)}
-                style={{ backgroundColor: "#fa8258" }}
+                style={{ backgroundColor: "#ff8e15" }}
                 className="w-full h-11 text-white font-bold text-[14.5px] rounded-xl shadow-md cursor-pointer flex items-center justify-center"
               >
                 확인 및 닫기

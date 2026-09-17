@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 interface NewsrealtyHeaderProps {
   onOpenGuide?: () => void;
@@ -10,7 +11,41 @@ interface NewsrealtyHeaderProps {
 
 export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [internalGuideOpen, setInternalGuideOpen] = useState(false);
+  const [internalContactOpen, setInternalContactOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [user, setUser] = useState<any>(null);
+
+  const handleMouseEnterDropdown = () => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+      dropdownTimeoutRef.current = null;
+    }
+    setDropdownOpen(true);
+  };
+
+  const handleMouseLeaveDropdown = () => {
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setDropdownOpen(false);
+    }, 150);
+  };
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleGuideClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -21,8 +56,41 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
     }
   };
 
+  const handleProductsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (pathname === "/newsrealty") {
+      const el = document.getElementById("products");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+    }
+    router.push("/newsrealty#products");
+  };
+
+  const handlePricingClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (pathname === "/newsrealty") {
+      const el = document.getElementById("pricing");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+    }
+    router.push("/newsrealty#pricing");
+  };
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUser(null);
+    router.refresh();
+  };
+
   const isHomeActive = pathname === "/newsrealty";
   const isApplyActive = pathname === "/newsrealty/apply";
+  const isBenefitsActive = pathname.startsWith("/newsrealty/benefits");
+  const isPricingActive = pathname === "/newsrealty/pricing";
 
   return (
     <>
@@ -39,17 +107,18 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
       >
         <div
           style={{
-            maxWidth: "1060px",
+            maxWidth: "1080px",
             margin: "0 auto",
             height: "100%",
-            padding: "0 24px",
+            padding: "0 20px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            gap: "16px",
           }}
         >
           {/* ━━━ 좌측 로고 영역 ━━━ */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
             <Link
               href="/"
               style={{
@@ -81,7 +150,7 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
               style={{
                 fontSize: "18px",
                 fontWeight: 800,
-                color: "#fa8258",
+                color: "#ff8e15",
                 textDecoration: "none",
                 letterSpacing: "-0.5px",
                 display: "inline-flex",
@@ -93,18 +162,27 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
             </Link>
           </div>
 
-          {/* ━━━ 우측 내비게이션 메뉴 (홈 / 신청 / 이용안내) ━━━ */}
-          <nav style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+          {/* ━━━ 우측 내비게이션 메뉴 (홈 / 무엇이 좋을까? / 금액안내 / 신청하기 / 1:1 문의 / 로그인·회원가입) ━━━ */}
+          <nav
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "20px",
+              flexWrap: "nowrap",
+            }}
+          >
+            {/* 1. 홈 */}
             <Link
               href="/newsrealty"
               style={{
                 fontSize: "14px",
                 fontWeight: isHomeActive ? 800 : 600,
-                color: isHomeActive ? "#fa8258" : "#475569",
+                color: isHomeActive ? "#ff8e15" : "#475569",
                 textDecoration: "none",
                 transition: "color 0.15s ease",
                 position: "relative",
                 padding: "6px 0",
+                whiteSpace: "nowrap",
               }}
             >
               홈
@@ -116,26 +194,231 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                     left: 0,
                     right: 0,
                     height: "2px",
-                    backgroundColor: "#fa8258",
+                    backgroundColor: "#ff8e15",
                     borderRadius: "2px",
                   }}
                 />
               )}
             </Link>
 
+            {/* 2. 무엇이 좋을까? (드롭다운 메뉴) */}
+            <div
+              style={{ position: "relative" }}
+              onMouseEnter={handleMouseEnterDropdown}
+              onMouseLeave={handleMouseLeaveDropdown}
+            >
+              <Link
+                href="/newsrealty/benefits/brokerage-article"
+                style={{
+                  fontSize: "14px",
+                  fontWeight: isBenefitsActive ? 800 : 600,
+                  color: isBenefitsActive ? "#ff8e15" : dropdownOpen ? "#ff8e15" : "#475569",
+                  textDecoration: "none",
+                  transition: "color 0.15s ease",
+                  padding: "6px 0",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "3px",
+                  position: "relative",
+                }}
+              >
+                <span>무엇이 좋을까?</span>
+                <span
+                  style={{
+                    fontSize: "10px",
+                    display: "inline-block",
+                    transition: "transform 0.2s ease",
+                    transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    opacity: 0.7,
+                  }}
+                >
+                  ▾
+                </span>
+                {isBenefitsActive && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: "2px",
+                      backgroundColor: "#ff8e15",
+                      borderRadius: "2px",
+                    }}
+                  />
+                )}
+              </Link>
+
+              {/* 직방 동일 스타일: 다크 차콜/블랙 드롭다운 메뉴 + 상단 꼬리표 */}
+              {dropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 4px)",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    zIndex: 100,
+                    paddingTop: "6px",
+                  }}
+                >
+                  {/* 상단 삼각형 꼬리표 (Arrow) */}
+                  <div
+                    style={{
+                      width: 0,
+                      height: 0,
+                      borderLeft: "6px solid transparent",
+                      borderRight: "6px solid transparent",
+                      borderBottom: "6px solid #22242a",
+                      margin: "0 auto",
+                    }}
+                  />
+
+                  {/* 차콜 다크 박스 */}
+                  <div
+                    style={{
+                      backgroundColor: "#22242a",
+                      borderRadius: "4px",
+                      boxShadow: "0 10px 25px rgba(0, 0, 0, 0.35)",
+                      padding: "8px 0",
+                      minWidth: "220px",
+                    }}
+                  >
+                    <Link
+                      href="/newsrealty/benefits/brokerage-article"
+                      onClick={() => setDropdownOpen(false)}
+                      style={{
+                        display: "block",
+                        padding: "10px 20px",
+                        color: "#ffffff",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        letterSpacing: "-0.2px",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#2e323b";
+                        e.currentTarget.style.color = "#ff8e15";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = "#ffffff";
+                      }}
+                    >
+                      공동중개 20건 & 언론기사 4건
+                    </Link>
+
+                    <Link
+                      href="/newsrealty/benefits/youtube-lecture"
+                      onClick={() => setDropdownOpen(false)}
+                      style={{
+                        display: "block",
+                        padding: "10px 20px",
+                        color: "#ffffff",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        letterSpacing: "-0.2px",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#2e323b";
+                        e.currentTarget.style.color = "#ff8e15";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = "#ffffff";
+                      }}
+                    >
+                      부동산유튜브 무료 강의
+                    </Link>
+
+                    <Link
+                      href="/newsrealty/benefits/ad-revenue"
+                      onClick={() => setDropdownOpen(false)}
+                      style={{
+                        display: "block",
+                        padding: "10px 20px",
+                        color: "#ffffff",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        letterSpacing: "-0.2px",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#2e323b";
+                        e.currentTarget.style.color = "#ff8e15";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = "#ffffff";
+                      }}
+                    >
+                      뉴스 광고 영업 수익
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3. 금액안내 (독립 페이지) */}
+            <Link
+              href="/newsrealty/pricing"
+              style={{
+                fontSize: "14px",
+                fontWeight: isPricingActive ? 800 : 600,
+                color: isPricingActive ? "#ff8e15" : "#475569",
+                textDecoration: "none",
+                transition: "color 0.15s ease",
+                padding: "6px 0",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                position: "relative",
+              }}
+              onMouseEnter={(e) => {
+                if (!isPricingActive) e.currentTarget.style.color = "#ff8e15";
+              }}
+              onMouseLeave={(e) => {
+                if (!isPricingActive) e.currentTarget.style.color = "#475569";
+              }}
+            >
+              금액안내
+              {isPricingActive && (
+                <span
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: "2px",
+                    backgroundColor: "#ff8e15",
+                    borderRadius: "2px",
+                  }}
+                />
+              )}
+            </Link>
+
+            {/* 4. 신청하기 */}
             <Link
               href="/newsrealty/apply"
               style={{
                 fontSize: "14px",
                 fontWeight: isApplyActive ? 800 : 600,
-                color: isApplyActive ? "#fa8258" : "#475569",
+                color: isApplyActive ? "#ff8e15" : "#475569",
                 textDecoration: "none",
                 transition: "color 0.15s ease",
                 position: "relative",
                 padding: "6px 0",
+                whiteSpace: "nowrap",
               }}
             >
-              신청
+              신청하기
               {isApplyActive && (
                 <span
                   style={{
@@ -144,16 +427,17 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                     left: 0,
                     right: 0,
                     height: "2px",
-                    backgroundColor: "#fa8258",
+                    backgroundColor: "#ff8e15",
                     borderRadius: "2px",
                   }}
                 />
               )}
             </Link>
 
+            {/* 5. 1:1 문의 */}
             <button
               type="button"
-              onClick={handleGuideClick}
+              onClick={() => setInternalContactOpen(true)}
               style={{
                 fontSize: "14px",
                 fontWeight: 600,
@@ -164,15 +448,250 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                 padding: "6px 0",
                 fontFamily: "inherit",
                 transition: "color 0.15s ease",
+                whiteSpace: "nowrap",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#fa8258")}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#ff8e15")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
             >
-              이용안내
+              1:1 문의
             </button>
+
+            {/* 6. 로그인/회원가입 박스 버튼 (직방 CEO 스타일) */}
+            <div style={{ marginLeft: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+              {user ? (
+                <>
+                  <Link
+                    href="/realty_admin"
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#ff8e15",
+                      border: "1px solid #ff8e15",
+                      borderRadius: "4px",
+                      padding: "5px 12px",
+                      textDecoration: "none",
+                      whiteSpace: "nowrap",
+                      transition: "all 0.15s ease",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      backgroundColor: "transparent",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#ff8e15";
+                      e.currentTarget.style.color = "#ffffff";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.color = "#ff8e15";
+                    }}
+                    title="중개사 관리자 페이지로 이동"
+                  >
+                    중개사 관리자
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#64748b",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "4px 6px",
+                      whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
+                  >
+                    로그아웃
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href={`/login?returnTo=${encodeURIComponent(pathname || "/newsrealty")}`}
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "#111827",
+                    border: "1px solid #111827",
+                    borderRadius: "4px",
+                    padding: "5px 12px",
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                    transition: "all 0.15s ease",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "transparent",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#ff8e15";
+                    e.currentTarget.style.borderColor = "#ff8e15";
+                    e.currentTarget.style.color = "#ffffff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.borderColor = "#111827";
+                    e.currentTarget.style.color = "#111827";
+                  }}
+                >
+                  로그인/회원가입
+                </Link>
+              )}
+            </div>
           </nav>
         </div>
       </header>
+
+      {/* ━━━ 1:1 문의 안내 모달 ━━━ */}
+      {internalContactOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            backdropFilter: "blur(4px)",
+          }}
+          onClick={() => setInternalContactOpen(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "20px",
+              width: "100%",
+              maxWidth: "500px",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+              padding: "36px 32px 32px 32px",
+              position: "relative",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 닫기 버튼 */}
+            <button
+              type="button"
+              onClick={() => setInternalContactOpen(false)}
+              style={{
+                position: "absolute",
+                top: "22px",
+                right: "22px",
+                background: "none",
+                border: "none",
+                fontSize: "24px",
+                color: "#94a3b8",
+                cursor: "pointer",
+                padding: "4px",
+                lineHeight: 1,
+              }}
+            >
+              ✕
+            </button>
+
+            {/* 타이틀 */}
+            <div style={{ marginBottom: "22px" }}>
+              <div
+                style={{
+                  display: "inline-block",
+                  background: "#fff5eb",
+                  color: "#ff8e15",
+                  fontSize: "12px",
+                  fontWeight: 800,
+                  padding: "4px 12px",
+                  borderRadius: "14px",
+                  marginBottom: "10px",
+                }}
+              >
+                고객지원 & 입점상담
+              </div>
+              <h3 style={{ fontSize: "22px", fontWeight: 900, color: "#1e293b", margin: "0 0 8px 0", letterSpacing: "-0.5px" }}>
+                1:1 맞춤 상담 및 문의
+              </h3>
+              <p style={{ fontSize: "14px", color: "#64748b", margin: 0, lineHeight: 1.5 }}>
+                공실뉴스부동산 입점, 로컬기자 활동 및 시스템 이용에 관해 친절히 안내해 드립니다.
+              </p>
+            </div>
+
+            {/* 안내 카드 리스트 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "24px" }}>
+              {/* 전화 문의 */}
+              <div style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "18px 20px" }}>
+                <div style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px", fontWeight: 600 }}>대표 유선 상담 전화</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <a href="tel:1555-5343" style={{ fontSize: "20px", fontWeight: 900, color: "#ff8e15", textDecoration: "none" }}>
+                    1555-5343
+                  </a>
+                  <span style={{ fontSize: "12px", color: "#94a3b8" }}>평일 10:00 ~ 18:00</span>
+                </div>
+              </div>
+
+              {/* 1:1 온라인 게시판 */}
+              <div style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "18px 20px" }}>
+                <div style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px", fontWeight: 600 }}>1:1 온라인 문의 게시판</div>
+                <p style={{ fontSize: "13.5px", color: "#334155", margin: "0 0 12px 0", lineHeight: 1.5 }}>
+                  24시간 접수 가능하며, 전담 매니저가 영업시간 내에 신속하게 답변을 드립니다.
+                </p>
+                <Link
+                  href="/board"
+                  onClick={() => setInternalContactOpen(false)}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
+                    height: "44px",
+                    backgroundColor: "#ff8e15",
+                    color: "#ffffff",
+                    fontSize: "14px",
+                    fontWeight: 800,
+                    borderRadius: "8px",
+                    textDecoration: "none",
+                    boxShadow: "0 2px 8px rgba(255, 142, 21, 0.25)",
+                  }}
+                >
+                  1:1 문의 게시판 바로가기 ➔
+                </Link>
+              </div>
+
+              {/* 이메일 문의 */}
+              <div style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "14px 20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 600 }}>공식 제휴 및 이메일</span>
+                  <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#1e293b" }}>gongsilnews@naver.com</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 닫기 버튼 */}
+            <button
+              type="button"
+              onClick={() => setInternalContactOpen(false)}
+              style={{
+                width: "100%",
+                height: "48px",
+                backgroundColor: "#f1f5f9",
+                color: "#475569",
+                fontSize: "14.5px",
+                fontWeight: 700,
+                border: "none",
+                borderRadius: "10px",
+                cursor: "pointer",
+              }}
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ━━━ 기본 이용안내 가이드 모달 (onOpenGuide 없을 때 자체 팝업) ━━━ */}
       {internalGuideOpen && (
@@ -256,7 +775,7 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
               {/* 1단계 */}
               <div style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px 22px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <span style={{ backgroundColor: "#fa8258", color: "#ffffff", fontSize: "13px", fontWeight: 800, padding: "3px 10px", borderRadius: "6px" }}>1단계</span>
+                  <span style={{ backgroundColor: "#ff8e15", color: "#ffffff", fontSize: "13px", fontWeight: 800, padding: "3px 10px", borderRadius: "6px" }}>1단계</span>
                   <span style={{ fontSize: "17.5px", fontWeight: 800, color: "#1e293b" }}>회원가입 및 중개업소 등록</span>
                 </div>
                 <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
@@ -268,7 +787,7 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
               {/* 2단계 */}
               <div style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px 22px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <span style={{ backgroundColor: "#fa8258", color: "#ffffff", fontSize: "13px", fontWeight: 800, padding: "3px 10px", borderRadius: "6px" }}>2단계</span>
+                  <span style={{ backgroundColor: "#ff8e15", color: "#ffffff", fontSize: "13px", fontWeight: 800, padding: "3px 10px", borderRadius: "6px" }}>2단계</span>
                   <span style={{ fontSize: "17.5px", fontWeight: 800, color: "#1e293b" }}>신청하기</span>
                 </div>
                 <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
@@ -280,7 +799,7 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
               {/* 3단계 */}
               <div style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px 22px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <span style={{ backgroundColor: "#fa8258", color: "#ffffff", fontSize: "13px", fontWeight: 800, padding: "3px 10px", borderRadius: "6px" }}>3단계</span>
+                  <span style={{ backgroundColor: "#ff8e15", color: "#ffffff", fontSize: "13px", fontWeight: 800, padding: "3px 10px", borderRadius: "6px" }}>3단계</span>
                   <span style={{ fontSize: "17.5px", fontWeight: 800, color: "#1e293b" }}>1~2일 내 담당자 확인 및 승인</span>
                 </div>
                 <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
@@ -292,7 +811,7 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
               {/* 4단계 */}
               <div style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px 22px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <span style={{ backgroundColor: "#fa8258", color: "#ffffff", fontSize: "13px", fontWeight: 800, padding: "3px 10px", borderRadius: "6px" }}>4단계</span>
+                  <span style={{ backgroundColor: "#ff8e15", color: "#ffffff", fontSize: "13px", fontWeight: 800, padding: "3px 10px", borderRadius: "6px" }}>4단계</span>
                   <span style={{ fontSize: "17.5px", fontWeight: 800, color: "#1e293b" }}>로컬기자 활동 및 마케팅 시작</span>
                 </div>
                 <div style={{ fontSize: "15px", color: "#475569", lineHeight: 1.65, paddingLeft: "4px" }}>
@@ -310,14 +829,14 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                 style={{
                   width: "100%",
                   padding: "14px 0",
-                  backgroundColor: "#fa8258",
+                  backgroundColor: "#ff8e15",
                   color: "#ffffff",
                   fontSize: "16px",
                   fontWeight: 800,
                   border: "none",
                   borderRadius: "12px",
                   cursor: "pointer",
-                  boxShadow: "0 4px 12px rgba(250, 130, 88, 0.25)",
+                  boxShadow: "0 4px 12px rgba(255, 142, 21, 0.25)",
                 }}
               >
                 확인했습니다

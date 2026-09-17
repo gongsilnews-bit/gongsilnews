@@ -37,7 +37,7 @@ const benefits: {
     desc: "전국 11만 부동산이 무료 열람할 수 있는 공실뉴스에 공실 매물 20건과 매월 기사 4건을 등록·홍보할 수 있습니다.",
     badgeBg: "#fff2e8",
     badgeColor: "#ea580c",
-    numColor: "#fa8258",
+    numColor: "#ff8e15",
   },
   {
     num: "02",
@@ -143,7 +143,7 @@ export default function NewsRealtyPage() {
           justify-content: center;
           gap: 10px;
           padding: 20px 52px;
-          background: #fa8258;
+          background: #ff8e15;
           color: #ffffff;
           font-size: 20px;
           font-weight: 800;
@@ -151,13 +151,13 @@ export default function NewsRealtyPage() {
           border: none;
           border-radius: 12px;
           cursor: pointer;
-          box-shadow: 0 8px 26px rgba(250, 130, 88, 0.35);
+          box-shadow: 0 8px 26px rgba(255, 142, 21, 0.35);
           transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .cta-action-btn:hover {
-          background: #f37243;
+          background: #e67e10;
           transform: translateY(-3px) scale(1.02);
-          box-shadow: 0 14px 34px rgba(250, 130, 88, 0.45);
+          box-shadow: 0 14px 34px rgba(255, 142, 21, 0.45);
         }
         .cta-action-btn:active {
           transform: translateY(0) scale(0.99);
@@ -170,13 +170,13 @@ export default function NewsRealtyPage() {
           padding: 28px 18px;
           flex: 1;
           text-align: center;
-          box-shadow: 0 4px 16px rgba(250, 130, 88, 0.05);
+          box-shadow: 0 4px 16px rgba(255, 142, 21, 0.05);
           transition: all 0.25s ease;
         }
         .flow-node-box:hover {
-          border-color: #fa8258;
+          border-color: #ff8e15;
           transform: translateY(-4px);
-          box-shadow: 0 10px 24px rgba(250, 130, 88, 0.15);
+          box-shadow: 0 10px 24px rgba(255, 142, 21, 0.15);
         }
 
         .clean-card {
@@ -193,7 +193,7 @@ export default function NewsRealtyPage() {
         .clean-card:hover {
           transform: translateY(-5px);
           border-color: #fdba74;
-          box-shadow: 0 14px 30px rgba(250, 130, 88, 0.12);
+          box-shadow: 0 14px 30px rgba(255, 142, 21, 0.12);
         }
 
         .video-action-btn {
@@ -203,7 +203,7 @@ export default function NewsRealtyPage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          color: #fa8258;
+          color: #ff8e15;
           font-size: 14px;
           font-weight: 800;
           cursor: pointer;
@@ -229,7 +229,7 @@ export default function NewsRealtyPage() {
         <div style={{ maxWidth: 880, margin: "0 auto" }}>
           
           {/* 상단 태그 */}
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(250, 130, 88, 0.14)", border: "1px solid rgba(250, 130, 88, 0.38)", padding: "8px 20px", borderRadius: 30, fontSize: 14, fontWeight: 700, color: "#ffaa88", marginBottom: 28 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255, 142, 21, 0.14)", border: "1px solid rgba(255, 142, 21, 0.38)", padding: "8px 20px", borderRadius: 30, fontSize: 14, fontWeight: 700, color: "#ffb347", marginBottom: 28 }}>
             <span>공실뉴스부동산이란?</span>
           </div>
 
@@ -244,7 +244,7 @@ export default function NewsRealtyPage() {
             wordBreak: "keep-all"
           }}>
             내 지역의 공실을<br />
-            <span style={{ color: "#fa8258" }}>뉴스로 전달하다</span>
+            <span style={{ color: "#ff8e15" }}>뉴스로 전달하다</span>
           </h1>
 
           {/* 서브 카피 */}
@@ -257,7 +257,7 @@ export default function NewsRealtyPage() {
             wordBreak: "keep-all"
           }}>
             매물만 광고하는 부동산에서<br />
-            <strong style={{ color: "#ffffff", fontSize: "24px", fontWeight: 900, borderBottom: "3px solid #fa8258", paddingBottom: "2px" }}>
+            <strong style={{ color: "#ffffff", fontSize: "24px", fontWeight: 900, borderBottom: "3px solid #ff8e15", paddingBottom: "2px" }}>
               지역 부동산 정보를 전달하는 "로컬기자부동산"으로
             </strong>
           </div>
@@ -279,7 +279,7 @@ export default function NewsRealtyPage() {
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           2. 무엇이 좋아질까요? (3 Core Benefits)
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ padding: "96px 24px", backgroundColor: "#ffffff" }}>
+      <section id="products" style={{ padding: "96px 24px", backgroundColor: "#ffffff", scrollMarginTop: "70px" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
           
           <div style={{ textAlign: "center", marginBottom: 54 }}>
@@ -479,7 +479,7 @@ export default function NewsRealtyPage() {
                 </div>
 
                 {idx < arr.length - 1 && (
-                  <div style={{ display: "flex", alignItems: "center", fontSize: "20px", color: "#fa8258", fontWeight: 900, padding: "0 1px" }}>
+                  <div style={{ display: "flex", alignItems: "center", fontSize: "20px", color: "#ff8e15", fontWeight: 900, padding: "0 1px" }}>
                     →
                   </div>
                 )}
@@ -495,7 +495,7 @@ export default function NewsRealtyPage() {
             padding: "32px 40px",
             maxWidth: 780,
             margin: "0 auto",
-            boxShadow: "0 8px 24px rgba(250, 130, 88, 0.08)"
+            boxShadow: "0 8px 24px rgba(255, 142, 21, 0.08)"
           }}>
             <div style={{ fontSize: "20px", fontWeight: 900, color: "#1c1917", marginBottom: 10, wordBreak: "keep-all", lineHeight: 1.45 }}>
               "공실뉴스기자가 되시면, AI 물건보고서부터 기사 / 유튜브 대본 / 블로그 글까지<br />쉽게 완성하실 수 있습니다."
@@ -521,9 +521,9 @@ export default function NewsRealtyPage() {
           
           <div style={{
             display: "inline-block",
-            background: "rgba(250, 130, 88, 0.14)",
-            border: "1px solid rgba(250, 130, 88, 0.38)",
-            color: "#ffaa88",
+            background: "rgba(255, 142, 21, 0.14)",
+            border: "1px solid rgba(255, 142, 21, 0.38)",
+            color: "#ffb347",
             padding: "6px 18px",
             borderRadius: 30,
             fontSize: "13.5px",
@@ -542,7 +542,7 @@ export default function NewsRealtyPage() {
             wordBreak: "keep-all"
           }}>
             매물을 받으러 가지 말고,<br />
-            <span style={{ color: "#fa8258" }}>뉴스를 취재하러 가세요.</span>
+            <span style={{ color: "#ff8e15" }}>뉴스를 취재하러 가세요.</span>
           </h2>
 
           {/* 2열 비교 카드 */}
@@ -594,10 +594,10 @@ export default function NewsRealtyPage() {
             {/* 공실뉴스부동산 방식 */}
             <div style={{
               background: "#ffffff",
-              border: "2px solid #fa8258",
+              border: "2px solid #ff8e15",
               borderRadius: 18,
               padding: "36px 32px",
-              boxShadow: "0 12px 36px rgba(250, 130, 88, 0.16)",
+              boxShadow: "0 12px 36px rgba(255, 142, 21, 0.16)",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between"
@@ -607,7 +607,7 @@ export default function NewsRealtyPage() {
                   <div style={{ display: "inline-block", background: "#fff2e8", color: "#ea580c", fontSize: "13px", fontWeight: 800, padding: "5px 14px", borderRadius: 6 }}>
                     ✅ 공실뉴스부동산
                   </div>
-                  <span style={{ fontSize: "12px", color: "#fa8258", fontWeight: 800 }}>언론 취재형 2단계 영업</span>
+                  <span style={{ fontSize: "12px", color: "#ff8e15", fontWeight: 800 }}>언론 취재형 2단계 영업</span>
                 </div>
 
                 <div style={{ textAlign: "center", margin: "16px 0 24px" }}>
@@ -620,7 +620,7 @@ export default function NewsRealtyPage() {
                       borderRadius: "50%",
                       objectFit: "cover",
                       border: "3px solid #fed7aa",
-                      boxShadow: "0 10px 24px rgba(250, 130, 88, 0.22)",
+                      boxShadow: "0 10px 24px rgba(255, 142, 21, 0.22)",
                       display: "inline-block"
                     }}
                   />
@@ -628,7 +628,7 @@ export default function NewsRealtyPage() {
 
                 <h3 style={{ fontSize: "20px", fontWeight: 900, color: "#1c1917", margin: "0 0 14px 0", lineHeight: 1.45, wordBreak: "keep-all" }}>
                   “사장님, 공실 등록 무료로 해드릴게요.<br />
-                  <span style={{ color: "#fa8258" }}>그런데… 뉴스 기사 광고도 한번 내보시는 건 어떠세요?”</span>
+                  <span style={{ color: "#ff8e15" }}>그런데… 뉴스 기사 광고도 한번 내보시는 건 어떠세요?”</span>
                 </h3>
                 <p style={{ fontSize: "14.5px", color: "#9a3412", fontWeight: 600, lineHeight: 1.7, margin: 0, wordBreak: "keep-all" }}>
                   거절 없는 무료 공실 등록으로 먼저 문을 열고, 지역 언론 기사 광고로 고수익까지 창출하는 당당한 취재형 영업
@@ -653,20 +653,21 @@ export default function NewsRealtyPage() {
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           5. 플랜 비교 (Pricing & Plan Comparison)
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{
+      <section id="pricing" style={{
         padding: "100px 24px",
         backgroundColor: "#f8fafc",
         borderTop: "1px solid #eaedf0",
         borderBottom: "1px solid #eaedf0",
-        textAlign: "center"
+        textAlign: "center",
+        scrollMarginTop: "70px"
       }}>
         <div style={{ maxWidth: 940, margin: "0 auto" }}>
           
           {/* 상단 뱃지 */}
           <div style={{
             display: "inline-block",
-            background: "rgba(250, 130, 88, 0.12)",
-            border: "1px solid rgba(250, 130, 88, 0.3)",
+            background: "rgba(255, 142, 21, 0.12)",
+            border: "1px solid rgba(255, 142, 21, 0.3)",
             color: "#ea580c",
             padding: "6px 18px",
             borderRadius: 30,
@@ -686,7 +687,7 @@ export default function NewsRealtyPage() {
             wordBreak: "keep-all",
             lineHeight: 1.3
           }}>
-            <span style={{ color: "#fa8258" }}>월 3만 원</span>으로<br />
+            <span style={{ color: "#ff8e15" }}>월 3만 원</span>으로<br />
             지역 1등 로컬기자 파트너가 되세요
           </h2>
 
@@ -821,13 +822,13 @@ export default function NewsRealtyPage() {
             {/* 2. 공실뉴스부동산 - 하이라이트 */}
             <div style={{
               background: "#ffffff",
-              border: "2.5px solid #fa8258",
+              border: "2.5px solid #ff8e15",
               borderRadius: 20,
               padding: "38px 32px",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              boxShadow: "0 16px 44px rgba(250, 130, 88, 0.18)",
+              boxShadow: "0 16px 44px rgba(255, 142, 21, 0.18)",
               position: "relative"
             }}>
               {/* 상단 뱃지 */}
@@ -836,13 +837,13 @@ export default function NewsRealtyPage() {
                 top: -14,
                 left: "50%",
                 transform: "translateX(-50%)",
-                background: "linear-gradient(135deg, #fa8258 0%, #f37243 100%)",
+                background: "linear-gradient(135deg, #ff8e15 0%, #e67e10 100%)",
                 color: "#ffffff",
                 padding: "4px 18px",
                 borderRadius: 20,
                 fontSize: "12px",
                 fontWeight: 900,
-                boxShadow: "0 4px 12px rgba(250, 130, 88, 0.35)",
+                boxShadow: "0 4px 12px rgba(255, 142, 21, 0.35)",
                 letterSpacing: "-0.3px"
               }}>
                 🔥 강력 추천 · 대표 파트너십
@@ -865,7 +866,7 @@ export default function NewsRealtyPage() {
                       / 월 (VAT 포함)
                     </span>
                   </div>
-                  <p style={{ fontSize: "13px", color: "#fa8258", fontWeight: 700, margin: "6px 0 0" }}>
+                  <p style={{ fontSize: "13px", color: "#ff8e15", fontWeight: 700, margin: "6px 0 0" }}>
                     가입비 0원 · 연회비 0원 · 위약금 없이 언제든 해지 가능
                   </p>
                 </div>
@@ -876,14 +877,14 @@ export default function NewsRealtyPage() {
                     style={{
                       width: "100%",
                       height: "48px",
-                      backgroundColor: "#fa8258",
+                      backgroundColor: "#ff8e15",
                       border: "none",
                       borderRadius: "10px",
                       fontSize: "15px",
                       fontWeight: 800,
                       color: "#ffffff",
                       cursor: "pointer",
-                      boxShadow: "0 4px 14px rgba(250, 130, 88, 0.3)",
+                      boxShadow: "0 4px 14px rgba(255, 142, 21, 0.3)",
                       transition: "all 0.2s ease"
                     }}
                   >
@@ -897,39 +898,39 @@ export default function NewsRealtyPage() {
                   </div>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 13, fontSize: "13.5px" }}>
                     <li style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
-                      <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                      <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                       <span>공실 등록 : <strong style={{ color: "#1c1917" }}>월 20건</strong> (11만 중개망 실시간 노출)</span>
                     </li>
                     <li style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
-                      <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                      <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                       <span>기사 등록 : <strong style={{ color: "#1c1917" }}>월 4건 정식 송고</strong> (뉴스 포털 노출)</span>
                     </li>
                     <li style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
-                      <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
-                      <span>물건 보고서 : <strong style={{ color: "#fa8258" }}>AI 물건보고서 전체 무제한 생성</strong></span>
+                      <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
+                      <span>물건 보고서 : <strong style={{ color: "#ff8e15" }}>AI 물건보고서 전체 무제한 생성</strong></span>
                     </li>
                     <li style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
-                      <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                      <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                       <span>광고 등록 : <strong>포털 내 매물 광고 등록 가능</strong></span>
                     </li>
                     <li style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
-                      <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                      <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                       <span>광고 영업 : <strong style={{ color: "#ea580c" }}>뉴스 광고영업 가능 (영업비 20~50% 지급)</strong></span>
                     </li>
                     <li style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
-                      <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                      <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                       <span>커뮤니티 : <strong>공실뉴스 정회원 전용 커뮤니티 가입</strong></span>
                     </li>
                     <li style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
-                      <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                      <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                       <span>자료실 : <strong>실무 서식·특약·계약서 무료 다운로드</strong></span>
                     </li>
                     <li style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
-                      <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                      <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                       <span>드론 영상 : <strong>고화질 드론 영상 저작권 무료 상업 이용</strong></span>
                     </li>
                     <li style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
-                      <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                      <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                       <span>공실 스터디 : <strong>실무 마케팅 강좌 일부 무료 수강</strong></span>
                     </li>
                   </ul>
@@ -962,8 +963,8 @@ export default function NewsRealtyPage() {
             lineHeight: 1.32
           }}>
             내 지역/단지<br />
-            <span style={{ color: "#fa8258" }}>로컬 부동산 기자가 되세요!</span>
-            <div style={{ fontSize: "22px", fontWeight: 800, color: "#fa8258", marginTop: "14px", letterSpacing: "-0.5px" }}>
+            <span style={{ color: "#ff8e15" }}>로컬 부동산 기자가 되세요!</span>
+            <div style={{ fontSize: "22px", fontWeight: 800, color: "#ff8e15", marginTop: "14px", letterSpacing: "-0.5px" }}>
               부동산중개 + 지역부동산기자
             </div>
           </h2>
@@ -983,11 +984,11 @@ export default function NewsRealtyPage() {
             margin: "0 0 36px 0"
           }}>
             <span>부동산</span>
-            <span style={{ color: "#fa8258" }}>×</span>
+            <span style={{ color: "#ff8e15" }}>×</span>
             <span>뉴스</span>
-            <span style={{ color: "#fa8258" }}>×</span>
+            <span style={{ color: "#ff8e15" }}>×</span>
             <span>유튜브</span>
-            <span style={{ color: "#fa8258" }}>×</span>
+            <span style={{ color: "#ff8e15" }}>×</span>
             <span>블로그</span>
           </div>
 
@@ -1046,11 +1047,11 @@ export default function NewsRealtyPage() {
                   key={idx}
                   style={{
                     backgroundColor: "#ffffff",
-                    border: isOpen ? "1px solid #fa8258" : "1px solid #e2e8f0",
+                    border: isOpen ? "1px solid #ff8e15" : "1px solid #e2e8f0",
                     borderRadius: 14,
                     overflow: "hidden",
                     transition: "all 0.2s ease",
-                    boxShadow: isOpen ? "0 4px 16px rgba(250, 130, 88, 0.12)" : "none"
+                    boxShadow: isOpen ? "0 4px 16px rgba(255, 142, 21, 0.12)" : "none"
                   }}
                 >
                   <div
@@ -1065,12 +1066,12 @@ export default function NewsRealtyPage() {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ color: "#fa8258", fontWeight: 900, fontSize: 17 }}>Q.</span>
+                      <span style={{ color: "#ff8e15", fontWeight: 900, fontSize: 17 }}>Q.</span>
                       <span style={{ fontSize: 16, fontWeight: 700, color: "#1e293b" }}>{faq.q}</span>
                     </div>
                     <span style={{
                       fontSize: 18,
-                      color: isOpen ? "#fa8258" : "#94a3b8",
+                      color: isOpen ? "#ff8e15" : "#94a3b8",
                       transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
                       transition: "transform 0.2s"
                     }}>
@@ -1124,7 +1125,7 @@ export default function NewsRealtyPage() {
               boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.45)",
               overflow: "hidden",
               position: "relative",
-              border: "1px solid rgba(250, 130, 88, 0.2)"
+              border: "1px solid rgba(255, 142, 21, 0.2)"
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1223,7 +1224,7 @@ export default function NewsRealtyPage() {
                     lineHeight: 1.65,
                     wordBreak: "keep-all"
                   }}>
-                    <span style={{ color: "#fa8258", fontWeight: 900, marginTop: "1px" }}>✓</span>
+                    <span style={{ color: "#ff8e15", fontWeight: 900, marginTop: "1px" }}>✓</span>
                     <span>{bullet}</span>
                   </div>
                 ))}
@@ -1242,7 +1243,7 @@ export default function NewsRealtyPage() {
               <button
                 onClick={() => setSelectedVideoBenefit(null)}
                 style={{
-                  backgroundColor: "#fa8258",
+                  backgroundColor: "#ff8e15",
                   color: "#ffffff",
                   fontSize: "15px",
                   fontWeight: 800,
@@ -1250,7 +1251,7 @@ export default function NewsRealtyPage() {
                   borderRadius: 8,
                   border: "none",
                   cursor: "pointer",
-                  boxShadow: "0 4px 14px rgba(250, 130, 88, 0.28)",
+                  boxShadow: "0 4px 14px rgba(255, 142, 21, 0.28)",
                   transition: "background 0.2s"
                 }}
               >

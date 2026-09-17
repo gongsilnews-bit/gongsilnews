@@ -36,7 +36,7 @@ const benefits: {
     desc: "전국 11만 부동산이 무료 열람할 수 있는 공실뉴스에 공실 매물 20건과 매월 기사 4건을 등록·홍보할 수 있습니다.",
     badgeBg: "#fff2e8",
     badgeColor: "#ea580c",
-    numColor: "#fa8258",
+    numColor: "#ff8e15",
   },
   {
     num: "02",
@@ -149,13 +149,13 @@ export default function MobileNewsRealtyPage() {
         borderBottom: "1px solid rgba(255,255,255,0.1)",
         boxSizing: "border-box"
       }}>
-        <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "#ffaa88", padding: "4px", cursor: "pointer", display: "flex", alignItems: "center" }}>
+        <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "#ffb347", padding: "4px", cursor: "pointer", display: "flex", alignItems: "center" }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
         </button>
         <div style={{ fontSize: 16, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.5px" }}>
           공실뉴스부동산
         </div>
-        <Link href="/" style={{ color: "#ffaa88", fontSize: 13, textDecoration: "none", fontWeight: 700 }}>
+        <Link href="/" style={{ color: "#ffb347", fontSize: 13, textDecoration: "none", fontWeight: 700 }}>
           홈으로
         </Link>
       </div>
@@ -169,7 +169,7 @@ export default function MobileNewsRealtyPage() {
           gap: 8px;
           width: 100%;
           padding: 16px 20px;
-          background: #fa8258;
+          background: #ff8e15;
           color: #ffffff;
           font-size: 17px;
           font-weight: 900;
@@ -177,12 +177,12 @@ export default function MobileNewsRealtyPage() {
           border: none;
           border-radius: 12px;
           cursor: pointer;
-          box-shadow: 0 6px 20px rgba(250, 130, 88, 0.35);
+          box-shadow: 0 6px 20px rgba(255, 142, 21, 0.35);
           box-sizing: border-box;
           transition: all 0.2s ease;
         }
         .m-cta-btn:active {
-          background: #f37243;
+          background: #e67e10;
           transform: scale(0.98);
         }
 
@@ -194,7 +194,7 @@ export default function MobileNewsRealtyPage() {
           border: 1px solid #fed7aa;
           border-radius: 14px;
           padding: 14px 18px;
-          box-shadow: 0 2px 8px rgba(250, 130, 88, 0.04);
+          box-shadow: 0 2px 8px rgba(255, 142, 21, 0.04);
         }
       `}</style>
 
@@ -211,13 +211,13 @@ export default function MobileNewsRealtyPage() {
           display: "inline-flex",
           alignItems: "center",
           gap: 6,
-          background: "rgba(250, 130, 88, 0.14)",
-          border: "1px solid rgba(250, 130, 88, 0.38)",
+          background: "rgba(255, 142, 21, 0.14)",
+          border: "1px solid rgba(255, 142, 21, 0.38)",
           padding: "6px 16px",
           borderRadius: 24,
           fontSize: 12.5,
           fontWeight: 800,
-          color: "#ffaa88",
+          color: "#ffb347",
           marginBottom: 20
         }}>
           <span>공실뉴스부동산이란?</span>
@@ -233,7 +233,7 @@ export default function MobileNewsRealtyPage() {
           wordBreak: "keep-all"
         }}>
           내 지역의 공실을<br />
-          <span style={{ color: "#fa8258" }}>뉴스로 전달하다</span>
+          <span style={{ color: "#ff8e15" }}>뉴스로 전달하다</span>
         </h1>
 
         <div style={{
@@ -245,7 +245,7 @@ export default function MobileNewsRealtyPage() {
           fontWeight: 500
         }}>
           매물만 광고하는 부동산에서<br />
-          <strong style={{ color: "#ffffff", fontSize: 17.5, fontWeight: 900, borderBottom: "2px solid #fa8258", paddingBottom: "1px" }}>
+          <strong style={{ color: "#ffffff", fontSize: 17.5, fontWeight: 900, borderBottom: "2px solid #ff8e15", paddingBottom: "1px" }}>
             지역 부동산 정보를 전달하는 "로컬기자부동산"으로
           </strong>
         </div>
@@ -319,7 +319,7 @@ export default function MobileNewsRealtyPage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  color: "#fa8258",
+                  color: "#ff8e15",
                   fontSize: 13,
                   fontWeight: 800,
                   cursor: "pointer"
@@ -440,7 +440,7 @@ export default function MobileNewsRealtyPage() {
           borderRadius: 14,
           padding: "20px 18px",
           textAlign: "center",
-          boxShadow: "0 4px 12px rgba(250, 130, 88, 0.06)"
+          boxShadow: "0 4px 12px rgba(255, 142, 21, 0.06)"
         }}>
           <div style={{ fontSize: 15.5, fontWeight: 900, color: "#1c1917", marginBottom: 8, wordBreak: "keep-all", lineHeight: 1.45 }}>
             "공실뉴스기자가 되시면, AI 물건보고서부터 기사 / 유튜브 대본 / 블로그 글까지<br />쉽게 완성하실 수 있습니다."
@@ -462,9 +462,9 @@ export default function MobileNewsRealtyPage() {
       }}>
         <div style={{
           display: "inline-block",
-          background: "rgba(250, 130, 88, 0.14)",
-          border: "1px solid rgba(250, 130, 88, 0.38)",
-          color: "#ffaa88",
+          background: "rgba(255, 142, 21, 0.14)",
+          border: "1px solid rgba(255, 142, 21, 0.38)",
+          color: "#ffb347",
           padding: "5px 14px",
           borderRadius: 20,
           fontSize: 12,
@@ -483,7 +483,7 @@ export default function MobileNewsRealtyPage() {
           wordBreak: "keep-all"
         }}>
           매물을 받으러 가지 말고,<br />
-          <span style={{ color: "#fa8258" }}>뉴스를 취재하러 가세요.</span>
+          <span style={{ color: "#ff8e15" }}>뉴스를 취재하러 가세요.</span>
         </h2>
 
         {/* 2단 비교 */}
@@ -527,16 +527,16 @@ export default function MobileNewsRealtyPage() {
 
           <div style={{
             background: "#ffffff",
-            border: "2px solid #fa8258",
+            border: "2px solid #ff8e15",
             borderRadius: 16,
             padding: "20px 18px",
-            boxShadow: "0 6px 20px rgba(250, 130, 88, 0.15)"
+            boxShadow: "0 6px 20px rgba(255, 142, 21, 0.15)"
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <div style={{ display: "inline-block", background: "#fff2e8", color: "#ea580c", padding: "4px 10px", borderRadius: 4, fontSize: 11.5, fontWeight: 800 }}>
                 ✅ 공실뉴스부동산
               </div>
-              <span style={{ fontSize: "11px", color: "#fa8258", fontWeight: 800 }}>언론 취재형 2단계 영업</span>
+              <span style={{ fontSize: "11px", color: "#ff8e15", fontWeight: 800 }}>언론 취재형 2단계 영업</span>
             </div>
 
             <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 12 }}>
@@ -555,7 +555,7 @@ export default function MobileNewsRealtyPage() {
               />
               <div style={{ fontSize: 16, color: "#1c1917", fontWeight: 900, lineHeight: 1.45, wordBreak: "keep-all" }}>
                 “사장님, 공실 등록 무료로 해드릴게요.<br />
-                <span style={{ color: "#fa8258" }}>그런데… 뉴스 기사 광고도 한번 내보시는 건 어떠세요?”</span>
+                <span style={{ color: "#ff8e15" }}>그런데… 뉴스 기사 광고도 한번 내보시는 건 어떠세요?”</span>
               </div>
             </div>
 
@@ -579,8 +579,8 @@ export default function MobileNewsRealtyPage() {
         {/* 상단 뱃지 */}
         <div style={{
           display: "inline-block",
-          background: "rgba(250, 130, 88, 0.12)",
-          border: "1px solid rgba(250, 130, 88, 0.3)",
+          background: "rgba(255, 142, 21, 0.12)",
+          border: "1px solid rgba(255, 142, 21, 0.3)",
           color: "#ea580c",
           padding: "5px 14px",
           borderRadius: 20,
@@ -600,7 +600,7 @@ export default function MobileNewsRealtyPage() {
           wordBreak: "keep-all",
           lineHeight: 1.35
         }}>
-          <span style={{ color: "#fa8258" }}>월 3만 원</span>으로<br />
+          <span style={{ color: "#ff8e15" }}>월 3만 원</span>으로<br />
           지역 1등 로컬기자가 되세요
         </h2>
 
@@ -614,23 +614,23 @@ export default function MobileNewsRealtyPage() {
           {/* 1. 공실뉴스부동산 - 모바일 상단 우선 노출 및 하이라이트 */}
           <div style={{
             background: "#ffffff",
-            border: "2px solid #fa8258",
+            border: "2px solid #ff8e15",
             borderRadius: 18,
             padding: "26px 20px",
-            boxShadow: "0 10px 30px rgba(250, 130, 88, 0.16)",
+            boxShadow: "0 10px 30px rgba(255, 142, 21, 0.16)",
             position: "relative"
           }}>
             <div style={{
               position: "absolute",
               top: -12,
               left: 20,
-              background: "linear-gradient(135deg, #fa8258 0%, #f37243 100%)",
+              background: "linear-gradient(135deg, #ff8e15 0%, #e67e10 100%)",
               color: "#ffffff",
               padding: "3px 12px",
               borderRadius: 14,
               fontSize: "11px",
               fontWeight: 900,
-              boxShadow: "0 2px 8px rgba(250, 130, 88, 0.35)"
+              boxShadow: "0 2px 8px rgba(255, 142, 21, 0.35)"
             }}>
               🔥 강력 추천 플랜
             </div>
@@ -651,7 +651,7 @@ export default function MobileNewsRealtyPage() {
                   / 월 (VAT 포함)
                 </span>
               </div>
-              <p style={{ fontSize: 11.5, color: "#fa8258", fontWeight: 700, margin: "4px 0 0" }}>
+              <p style={{ fontSize: 11.5, color: "#ff8e15", fontWeight: 700, margin: "4px 0 0" }}>
                 가입비 0원 · 연회비 0원 · 언제든 해지 가능
               </p>
             </div>
@@ -661,14 +661,14 @@ export default function MobileNewsRealtyPage() {
               style={{
                 width: "100%",
                 height: 46,
-                backgroundColor: "#fa8258",
+                backgroundColor: "#ff8e15",
                 border: "none",
                 borderRadius: 10,
                 fontSize: 14.5,
                 fontWeight: 800,
                 color: "#ffffff",
                 cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(250, 130, 88, 0.28)",
+                boxShadow: "0 4px 12px rgba(255, 142, 21, 0.28)",
                 marginBottom: 20
               }}
             >
@@ -681,39 +681,39 @@ export default function MobileNewsRealtyPage() {
               </div>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10, fontSize: 12.5 }}>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                   <span>공실 등록 : <strong>월 20건</strong> (11만 중개망 실시간 노출)</span>
                 </li>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                   <span>기사 등록 : <strong>월 4건 정식 송고</strong> (뉴스 포털)</span>
                 </li>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
-                  <span>물건 보고서 : <strong style={{ color: "#fa8258" }}>AI 물건보고서 전체 무제한 생성</strong></span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
+                  <span>물건 보고서 : <strong style={{ color: "#ff8e15" }}>AI 물건보고서 전체 무제한 생성</strong></span>
                 </li>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                   <span>광고 등록 : <strong>포털 내 매물 광고 등록 가능</strong></span>
                 </li>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                   <span>광고 영업 : <strong style={{ color: "#ea580c" }}>뉴스 광고영업 가능 (영업비 20~50% 지급)</strong></span>
                 </li>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                   <span>커뮤니티 : <strong>공실뉴스 정회원 커뮤니티 가입</strong></span>
                 </li>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                   <span>자료실 : <strong>실무 서식·특약·계약서 무료 다운</strong></span>
                 </li>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                   <span>드론 영상 : <strong>고화질 드론 영상 저작권 무료 상업 이용</strong></span>
                 </li>
                 <li style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "#1c1917" }}>
-                  <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                  <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                   <span>공실 스터디 : <strong>실무 마케팅 강좌 일부 무료 수강</strong></span>
                 </li>
               </ul>
@@ -824,8 +824,8 @@ export default function MobileNewsRealtyPage() {
           lineHeight: 1.35
         }}>
           내 지역/단지<br />
-          <span style={{ color: "#fa8258" }}>로컬 부동산 기자가 되세요!</span>
-          <div style={{ fontSize: 17, fontWeight: 800, color: "#fa8258", marginTop: 8, letterSpacing: "-0.3px" }}>
+          <span style={{ color: "#ff8e15" }}>로컬 부동산 기자가 되세요!</span>
+          <div style={{ fontSize: 17, fontWeight: 800, color: "#ff8e15", marginTop: 8, letterSpacing: "-0.3px" }}>
             부동산중개 + 지역부동산기자
           </div>
         </h2>
@@ -844,11 +844,11 @@ export default function MobileNewsRealtyPage() {
           marginBottom: 22
         }}>
           <span>부동산</span>
-          <span style={{ color: "#fa8258" }}>×</span>
+          <span style={{ color: "#ff8e15" }}>×</span>
           <span>뉴스</span>
-          <span style={{ color: "#fa8258" }}>×</span>
+          <span style={{ color: "#ff8e15" }}>×</span>
           <span>유튜브</span>
-          <span style={{ color: "#fa8258" }}>×</span>
+          <span style={{ color: "#ff8e15" }}>×</span>
           <span>블로그</span>
         </div>
 
@@ -982,7 +982,7 @@ export default function MobileNewsRealtyPage() {
               boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
               overflow: "hidden",
               position: "relative",
-              border: "1px solid rgba(250, 130, 88, 0.2)"
+              border: "1px solid rgba(255, 142, 21, 0.2)"
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1073,7 +1073,7 @@ export default function MobileNewsRealtyPage() {
                     lineHeight: 1.55,
                     wordBreak: "keep-all"
                   }}>
-                    <span style={{ color: "#fa8258", fontWeight: 900 }}>✓</span>
+                    <span style={{ color: "#ff8e15", fontWeight: 900 }}>✓</span>
                     <span>{bullet}</span>
                   </div>
                 ))}
@@ -1091,7 +1091,7 @@ export default function MobileNewsRealtyPage() {
               <button
                 onClick={() => setSelectedVideoBenefit(null)}
                 style={{
-                  backgroundColor: "#fa8258",
+                  backgroundColor: "#ff8e15",
                   color: "#ffffff",
                   fontSize: "14px",
                   fontWeight: 800,
