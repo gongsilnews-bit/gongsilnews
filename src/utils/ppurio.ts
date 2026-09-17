@@ -22,7 +22,7 @@ function getEucKrByteLength(str: string): number {
  * Ppurio SMS/LMS/MMS Send Utility
  */
 export async function sendPpurioSms({ to, content, subject }: SendSmsOptions) {
-  const ppurioId = process.env.PPURIO_ID || "gongsilmarketing";
+  const ppurioId = process.env.PPURIO_ID || "mygongsil";
   const ppurioKey = process.env.PPURIO_KEY || "e9ad769b8e119d712791ce6a0a6fa2236b851674dc560f68fba444d890fc0da1";
   const ppurioFrom = process.env.PPURIO_FROM || "15555343";
 
