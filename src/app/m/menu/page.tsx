@@ -250,6 +250,27 @@ export default function MenuPage() {
                     </div>
                     <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>{memberData?.email || currentUser?.email}</p>
                   </div>
+
+                  {/* 알림 종 (목록은 /m/notifications 에서 본다) */}
+                  <button
+                    onClick={() => router.push('/m/notifications')}
+                    aria-label={unreadNoti > 0 ? `알림 ${unreadNoti}건` : '알림'}
+                    style={{ position: 'relative', flexShrink: 0, width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', padding: 0, cursor: 'pointer' }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                    {unreadNoti > 0 && (
+                      <span style={{
+                        position: 'absolute', top: 0, right: 0, minWidth: '18px', height: '18px', padding: '0 5px',
+                        borderRadius: '9px', background: '#ef4444', color: '#fff', fontSize: '10px', fontWeight: 800,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                      }}>
+                        {unreadNoti > 99 ? '99+' : unreadNoti}
+                      </span>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
