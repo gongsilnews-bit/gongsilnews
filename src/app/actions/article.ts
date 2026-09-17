@@ -367,8 +367,12 @@ export async function getArticles(filters?: {
       query = query.eq("article_no", parseInt(filters.articleNo, 10));
     }
     if (filters?.searchKeyword) {
-      const p = `%${filters.searchKeyword}%`;
-      query = query.or(`title.ilike.${p},author_name.ilike.${p}`);
+      const raw = filters.searchKeyword.trim();
+      const p = `%${raw}%`;
+      const conds = [`title.ilike.${p}`, `author_name.ilike.${p}`];
+      // 숫자만 입력한 경우 기사번호도 함께 매칭한다 (int 범위를 넘는 값은 제외)
+      if (/^\d{1,9}$/.test(raw)) conds.push(`article_no.eq.${raw}`);
+      query = query.or(conds.join(","));
     }
 
     if (filters?.keyword) {

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { getMyArticles, getArticles, adminUpdateArticleStatus, deleteArticle, adminReviseArticleWithFeedback } from "@/app/actions/article";
+import { getMyArticles, getArticles, getArticleTabCounts, adminUpdateArticleStatus, deleteArticle, adminReviseArticleWithFeedback } from "@/app/actions/article";
 import MobileAdminLoading from "@/components/mobile/MobileAdminLoading";
 
 const REJECT_REASONS = [
@@ -12,6 +12,20 @@ const REJECT_REASONS = [
   "사실 확인 필요 (내용 불충분)",
   "기타 사유 (직접 입력)"
 ];
+
+// 탭 이름 → 서버 status 파라미터 ("전체"는 status 필터 없음)
+const STATUS_PARAM: Record<string, string | undefined> = {
+  "전체": undefined,
+  "승인대기": "PENDING",
+  "발행됨": "APPROVED",
+  "예약됨": "SCHEDULED",
+  "작성중": "DRAFT",
+  "반려": "REJECTED",
+};
+
+const EMPTY_COUNTS = { 전체: 0, 승인대기: 0, 발행됨: 0, 예약됨: 0, 작성중: 0, 반려: 0 };
+
+const PAGE_SIZE = 30;
 
 function MobileArticleAdmin() {
   const router = useRouter();
@@ -30,6 +44,9 @@ function MobileArticleAdmin() {
   const [articlePage, setArticlePage] = useState(1);
   const [articleTotal, setArticleTotal] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [counts, setCounts] = useState(EMPTY_COUNTS);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE); // 일반 회원(내 기사) 화면 표시 개수
+  const requestRef = useRef(0);
 
   // 반려 모달
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -93,37 +110,69 @@ function MobileArticleAdmin() {
     return () => window.removeEventListener('message', handleMessage);
   }, [previewId]);
 
-  // 기사 목록 로딩: 관리자면 전체, 일반이면 내 기사만
+  // 목록 조회 파라미터: 탭/검색어/정렬을 서버로 넘겨 DB 전체를 대상으로 조회한다.
+  const buildListParams = (page: number) => {
+    const params: any = { page, limit: PAGE_SIZE, orderBy: sortBy, slim: true, noCache: true };
+    const status = STATUS_PARAM[filter];
+    if (status) params.status = status;
+    const kw = activeKeyword.trim();
+    if (kw) params.searchKeyword = kw;
+    return params;
+  };
+
+  // 관리자: 목록은 30건씩 서버 페이징, 건수는 HEAD 카운트로 DB 전체 기준
+  const loadAdminArticles = async (showLoading = true) => {
+    const request = ++requestRef.current;
+    if (showLoading) setLoading(true);
+    const params = buildListParams(1);
+    const listRequest = getArticles(params);
+    void getArticleTabCounts({ status: params.status, searchKeyword: params.searchKeyword }).then(res => {
+      if (request !== requestRef.current) return;
+      if (res.success && res.data) setCounts(res.data);
+    });
+    const res = await listRequest;
+    if (request !== requestRef.current) return;
+    if (res.success) { setArticles(res.data || []); setArticleTotal(res.count || 0); setArticlePage(1); }
+    setLoading(false);
+  };
+
+  // 일반 회원: 본인 기사만 받아 화면에서 30건씩 늘려 표시
+  const loadMyOwnArticles = async (showLoading = true) => {
+    const request = ++requestRef.current;
+    if (showLoading) setLoading(true);
+    const res = await getMyArticles(memberId!);
+    if (request !== requestRef.current) return;
+    if (res.success) { setArticles(res.data || []); setVisibleCount(PAGE_SIZE); }
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (!memberId || !authChecked) return;
-    (async () => {
-      setLoading(true);
-      if (isAdmin) {
-        const res = await getArticles({ page: 1, limit: 30 });
-        if (res.success) { setArticles(res.data || []); setArticleTotal(res.count || 0); setArticlePage(1); }
-      } else {
-        const res = await getMyArticles(memberId);
-        if (res.success) { setArticles((res.data || []).slice(0, 30)); setArticleTotal(res.data?.length || 0); setArticlePage(1); }
-      }
-      setLoading(false);
-    })();
-  }, [memberId, authChecked, isAdmin]);
+    if (isAdmin) void loadAdminArticles();
+    else void loadMyOwnArticles();
+  }, [memberId, authChecked, isAdmin, filter, activeKeyword, sortBy]);
+
+  const refreshCounts = () => {
+    if (!isAdmin) return;
+    const request = requestRef.current;
+    const params = buildListParams(1);
+    void getArticleTabCounts({ status: params.status, searchKeyword: params.searchKeyword }).then(res => {
+      if (request !== requestRef.current) return;
+      if (res.success && res.data) setCounts(res.data);
+    });
+  };
 
   const refreshArticles = async () => {
-    if (isAdmin) {
-      const res = await getArticles({ page: 1, limit: 30 });
-      if (res.success) { setArticles(res.data || []); setArticleTotal(res.count || 0); setArticlePage(1); }
-    } else {
-      const res = await getMyArticles(memberId!);
-      if (res.success) setArticles(res.data || []);
-    }
+    if (isAdmin) await loadAdminArticles(false);
+    else await loadMyOwnArticles(false);
   };
 
   const loadMoreArticles = async () => {
-    if (isLoadingMore || articles.length >= articleTotal || !isAdmin) return;
+    if (!isAdmin) { setVisibleCount(v => v + PAGE_SIZE); return; }
+    if (isLoadingMore || articles.length >= articleTotal) return;
     setIsLoadingMore(true);
     const nextPage = articlePage + 1;
-    const res = await getArticles({ page: nextPage, limit: 30 });
+    const res = await getArticles(buildListParams(nextPage));
     if (res.success) {
       setArticles(prev => [...prev, ...(res.data || [])]);
       setArticlePage(nextPage);
@@ -131,7 +180,8 @@ function MobileArticleAdmin() {
     setIsLoadingMore(false);
   };
 
-  const filtered = articles.filter(a => {
+  // 관리자는 서버에서 탭/검색/정렬이 적용된 결과를 그대로 쓰고, 일반 회원만 화면에서 거른다.
+  const clientFiltered = articles.filter(a => {
     const isFuture = a.published_at && new Date(a.published_at).getTime() > new Date().getTime();
     if (filter === "승인대기" && a.status !== "PENDING") return false;
     if (filter === "발행됨" && (a.status !== "APPROVED" || isFuture)) return false;
@@ -148,11 +198,16 @@ function MobileArticleAdmin() {
     return true;
   });
 
-  const sortedArticles = [...filtered].sort((a, b) => {
+  const clientSorted = [...clientFiltered].sort((a, b) => {
     if (sortBy === "updated_at") return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
     if (sortBy === "created_at") return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
     return new Date(b.published_at || b.created_at || 0).getTime() - new Date(a.published_at || a.created_at || 0).getTime();
   });
+
+  const sortedArticles = isAdmin ? articles : clientSorted;
+  const displayArticles = isAdmin ? sortedArticles : sortedArticles.slice(0, visibleCount);
+  const totalForDisplay = isAdmin ? articleTotal : sortedArticles.length;
+  const hasMore = displayArticles.length < totalForDisplay;
 
   // 승인신청 (일반 회원용)
   const handleRequestApproval = async (id: string) => {
@@ -179,6 +234,8 @@ function MobileArticleAdmin() {
     if (!res.success) {
       alert("오류: " + res.error);
       await refreshArticles();
+    } else {
+      refreshCounts();
     }
   };
 
@@ -205,6 +262,8 @@ function MobileArticleAdmin() {
     if (!res.success) {
       alert("오류: " + res.error);
       await refreshArticles();
+    } else {
+      refreshCounts();
     }
   };
 
@@ -218,7 +277,7 @@ function MobileArticleAdmin() {
     }
     setShowRejectModal(false);
     setArticles(prev => prev.map(a => a.id === rejectTargetId ? { ...a, status: 'REJECTED', reject_reason: finalReason } : a));
-    adminUpdateArticleStatus([rejectTargetId], "REJECTED", finalReason);
+    adminUpdateArticleStatus([rejectTargetId], "REJECTED", finalReason).then(() => refreshCounts());
   };
 
   const handleDelete = async (id: string) => {
@@ -235,13 +294,23 @@ function MobileArticleAdmin() {
     DRAFT: { bg: "#9ca3af", label: "작성중" },
   };
 
+  // 배지 건수: 관리자는 DB 전체 기준(HEAD 카운트), 일반 회원은 본인 기사 기준
+  const displayCounts = isAdmin ? counts : {
+    전체: articles.length,
+    승인대기: articles.filter(a => a.status === "PENDING").length,
+    발행됨: articles.filter(a => a.status === "APPROVED" && !(a.published_at && new Date(a.published_at).getTime() > new Date().getTime())).length,
+    예약됨: articles.filter(a => a.status === "APPROVED" && !!(a.published_at && new Date(a.published_at).getTime() > new Date().getTime())).length,
+    작성중: articles.filter(a => a.status === "DRAFT").length,
+    반려: articles.filter(a => a.status === "REJECTED").length,
+  };
+
   const tabs = [
-    { key: "전체", count: articles.length },
-    { key: "승인대기", count: articles.filter(a => a.status === "PENDING").length },
-    { key: "발행됨", count: articles.filter(a => a.status === "APPROVED" && !(a.published_at && new Date(a.published_at).getTime() > new Date().getTime())).length },
-    { key: "예약됨", count: articles.filter(a => a.status === "APPROVED" && (a.published_at && new Date(a.published_at).getTime() > new Date().getTime())).length },
-    { key: "작성중", count: articles.filter(a => a.status === "DRAFT").length },
-    { key: "반려", count: articles.filter(a => a.status === "REJECTED").length },
+    { key: "전체", count: displayCounts.전체 },
+    { key: "승인대기", count: displayCounts.승인대기 },
+    { key: "발행됨", count: displayCounts.발행됨 },
+    { key: "예약됨", count: displayCounts.예약됨 },
+    { key: "작성중", count: displayCounts.작성중 },
+    { key: "반려", count: displayCounts.반려 },
   ];
 
   if (!authChecked) {
@@ -268,7 +337,7 @@ function MobileArticleAdmin() {
             <span style={{ fontSize: 10, padding: "2px 8px", background: "#111827", color: "#fff", borderRadius: 10, fontWeight: 700 }}>관리자</span>
           )}
           <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
-            {articles.filter(a => a.status === "PENDING").length}건 대기 / 전체 {articles.length}건
+            {displayCounts.승인대기}건 대기 / 전체 {displayCounts.전체}건
           </span>
         </div>
         <button onClick={() => setSearchOpen(!searchOpen)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
@@ -311,7 +380,7 @@ function MobileArticleAdmin() {
         {tabs.map(tab => (
           <button
             key={tab.key}
-            onClick={() => { setFilter(tab.key); setActiveKeyword(""); setSearchKeyword(""); }}
+            onClick={() => setFilter(tab.key)}
             style={{
               flexShrink: 0, border: "none", background: "none", padding: "14px 16px", fontSize: 14,
               fontWeight: filter === tab.key ? 800 : 500,
@@ -346,14 +415,14 @@ function MobileArticleAdmin() {
       <div style={{ padding: "12px 16px 100px" }}>
         {loading ? (
           <MobileAdminLoading label="기사를 불러오는 중" />
-        ) : sortedArticles.length === 0 ? (
+        ) : displayArticles.length === 0 ? (
           <div style={{ padding: "60px 0", textAlign: "center", color: "#9ca3af" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
             <div style={{ fontSize: 15, fontWeight: 600 }}>
-              {filter === "전체" ? "작성한 기사가 없습니다." : "조회된 기사가 없습니다."}
+              {activeKeyword ? "검색 결과가 없습니다." : filter === "전체" ? "작성한 기사가 없습니다." : "조회된 기사가 없습니다."}
             </div>
           </div>
-        ) : sortedArticles.map(a => {
+        ) : displayArticles.map(a => {
           const st = statusInfo[a.status] || { bg: "#9ca3af", label: a.status };
           const dateStr = a.created_at ? new Date(a.created_at).toISOString().split("T")[0] : "-";
           const updatedStr = a.updated_at ? new Date(a.updated_at).toISOString().split("T")[0] : "-";
@@ -455,9 +524,9 @@ function MobileArticleAdmin() {
         })}
       </div>
 
-      {isAdmin && articles.length < articleTotal && (
+      {hasMore && (
         <button onClick={loadMoreArticles} disabled={isLoadingMore} style={{ display: "block", width: "calc(100% - 32px)", height: 44, margin: "0 16px 24px", border: "1px solid #dbeafe", borderRadius: 8, background: "#eff6ff", color: "#2563eb", fontSize: 13, fontWeight: 700, cursor: isLoadingMore ? "wait" : "pointer" }}>
-          {isLoadingMore ? "불러오는 중..." : `기사 더 불러오기 (${articles.length}/${articleTotal})`}
+          {isLoadingMore ? "불러오는 중..." : `기사 더 불러오기 (${displayArticles.length}/${totalForDisplay})`}
         </button>
       )}
 
