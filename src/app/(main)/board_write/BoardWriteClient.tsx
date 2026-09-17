@@ -69,6 +69,9 @@ const parseCSV = (text: string): string[][] => {
   return result.filter(r => r.length > 0 && r.some(cell => cell.trim() !== ""));
 };
 
+/** 1:1 문의 사진 첨부 장수의 상한 (게시판 설정에서 이 범위 안에서 조절한다) */
+const INQUIRY_PHOTO_LIMIT = 5;
+
 export interface LinkItem {
   id: string;
   type: "YOUTUBE" | "DRIVE" | "LINK";
@@ -95,6 +98,10 @@ export default function BoardWriteClient({
   const skinType = board?.skin_type || "FILE_THUMB";
   const isVideoOrThumb = skinType === "VIDEO_ALBUM" || skinType === "FILE_THUMB";
   const isEditMode = !!editPostId && !!editPost;
+  // 1:1 문의는 회신이 목적이라 연락처를 함께 받는다 (다른 게시판에는 노출하지 않는다)
+  const isInquiry = board?.board_type === "inquiry";
+  // 게시판 설정(boards.max_photos)에서 장수를 정한다. 값이 없으면 상한을 쓴다.
+  const maxPhotos = Math.max(0, Math.min(INQUIRY_PHOTO_LIMIT, board?.max_photos ?? INQUIRY_PHOTO_LIMIT));
 
   const categories = board?.categories
     ? board.categories.split(",").map((c: string) => c.trim()).filter(Boolean)
@@ -131,6 +138,18 @@ export default function BoardWriteClient({
   const [newLinkType, setNewLinkType] = useState<"YOUTUBE"|"DRIVE"|"LINK">("YOUTUBE");
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
+
+  // 1:1 문의 등록자 정보 — 로그인 회원 정보로 자동 채우되 수정할 수 있게 둔다
+  const [inquiryName, setInquiryName] = useState<string>(
+    editPost?.author_name || serverUser?.name || serverUser?.email?.split("@")[0] || ""
+  );
+  const [inquiryPhone, setInquiryPhone] = useState<string>(editPost?.author_phone || serverUser?.phone || "");
+  const [inquiryEmail, setInquiryEmail] = useState<string>(editPost?.author_email || serverUser?.email || "");
+
+  // 1:1 문의 사진 (최대 5장, 업로드 전 webp 변환)
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(editPost?.thumbnail_url || null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -300,6 +319,35 @@ export default function BoardWriteClient({
     }
   };
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files || []).filter(f => f.type.startsWith("image/"));
+    if (picked.length === 0) return;
+
+    const room = maxPhotos - photoFiles.length;
+    if (room <= 0) {
+      alert(`사진은 최대 ${maxPhotos}장까지 첨부할 수 있습니다.`);
+      e.target.value = "";
+      return;
+    }
+    if (picked.length > room) {
+      alert(`사진은 최대 ${maxPhotos}장까지 첨부할 수 있어 ${room}장만 추가합니다.`);
+    }
+
+    const accepted = picked.slice(0, room);
+    setPhotoFiles(prev => [...prev, ...accepted]);
+    setPhotoPreviews(prev => [...prev, ...accepted.map(f => URL.createObjectURL(f))]);
+    e.target.value = "";
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setPhotoFiles(prev => prev.filter((_, i) => i !== index));
+    setPhotoPreviews(prev => {
+      const target = prev[index];
+      if (target) URL.revokeObjectURL(target);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
   const handleSubmit = async () => {
     if (!title.trim()) {
       alert("게시글 제목을 입력해주세요.");
@@ -328,11 +376,14 @@ export default function BoardWriteClient({
       drive_url: firstDrive || undefined,
       external_url: currentLinks.length > 0 ? JSON.stringify(currentLinks) : undefined,
       author_id: serverUser?.id || undefined,
-      author_name: isEditMode ? editPost?.author_name : (
-        (serverUser?.role?.toUpperCase() === "ADMIN" || serverUser?.role?.toUpperCase() === "최고관리자" || serverUser?.role?.includes("관리자"))
-          ? "최고관리자"
-          : (serverUser?.name || serverUser?.email?.split('@')[0] || "익명")
-      ),
+      author_name: isInquiry
+        ? (inquiryName.trim() || serverUser?.name || serverUser?.email?.split('@')[0] || "익명")
+        : (isEditMode ? editPost?.author_name : (
+          (serverUser?.role?.toUpperCase() === "ADMIN" || serverUser?.role?.toUpperCase() === "최고관리자" || serverUser?.role?.includes("관리자"))
+            ? "최고관리자"
+            : (serverUser?.name || serverUser?.email?.split('@')[0] || "익명")
+        )),
+      ...(isInquiry ? { author_phone: inquiryPhone.trim(), author_email: inquiryEmail.trim() } : {}),
     });
 
     if (res.success && res.postId) {
@@ -343,6 +394,16 @@ export default function BoardWriteClient({
         fd.append("file", webpFile);
         fd.append("post_id", res.postId);
         await uploadBoardThumbnail(fd);
+      }
+
+      // 1:1 문의 사진 — 반드시 webp 로 변환해서 올린다
+      for (let i = 0; i < photoFiles.length; i++) {
+        const webpPhoto = await convertToWebp(photoFiles[i]);
+        const fd = new FormData();
+        fd.append("file", webpPhoto);
+        fd.append("post_id", res.postId);
+        fd.append("sort_order", String(i));
+        await uploadBoardAttachment(fd);
       }
 
       // 첨부파일 업로드
@@ -390,6 +451,48 @@ export default function BoardWriteClient({
 
 
 
+      {/* 1:1 문의 등록자 정보 (회신용) */}
+      {isInquiry && (
+        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "18px 20px", marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>등록자 정보</div>
+          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14 }}>
+            답변을 받으실 연락처입니다. 회원정보에서 자동으로 채워지며, 다른 곳으로 회신받으시려면 수정하세요.
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 180px", minWidth: 0 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 6 }}>이름</label>
+              <input
+                type="text"
+                value={inquiryName}
+                onChange={e => setInquiryName(e.target.value)}
+                placeholder="이름"
+                style={{ width: "100%", height: 42, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            <div style={{ flex: "1 1 180px", minWidth: 0 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 6 }}>연락처</label>
+              <input
+                type="tel"
+                value={inquiryPhone}
+                onChange={e => setInquiryPhone(e.target.value)}
+                placeholder="010-0000-0000"
+                style={{ width: "100%", height: 42, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 6 }}>이메일</label>
+              <input
+                type="email"
+                value={inquiryEmail}
+                onChange={e => setInquiryEmail(e.target.value)}
+                placeholder="example@gongsilnews.com"
+                style={{ width: "100%", height: 42, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 카테고리 + 제목 */}
       <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
         {categories.length > 0 && (
@@ -428,6 +531,52 @@ export default function BoardWriteClient({
           />
         </div>
       </div>
+
+      {/* 1:1 문의 사진 첨부 (최대 5장, webp 변환 후 저장) */}
+      {isInquiry && maxPhotos > 0 && (
+        <div>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 8 }}>
+            사진 첨부 (선택) <span style={{ fontWeight: 500, color: "#888" }}>· 최대 {maxPhotos}장</span>
+          </label>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {photoPreviews.map((src, i) => (
+              <div key={src} style={{ position: "relative", width: 110, height: 110, borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+                <img src={src} alt={`첨부 사진 ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <button
+                  type="button"
+                  onClick={() => handleRemovePhoto(i)}
+                  aria-label={`${i + 1}번째 사진 삭제`}
+                  style={{
+                    position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: "50%",
+                    background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer",
+                    fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {photoFiles.length < maxPhotos && (
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                style={{
+                  width: 110, height: 110, border: "2px dashed #d1d5db", borderRadius: 8, background: "#fff",
+                  cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span style={{ fontSize: 12, color: "#aaa" }}>{photoFiles.length}/{maxPhotos}</span>
+              </button>
+            )}
+          </div>
+          <input ref={photoInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handlePhotoChange} />
+        </div>
+      )}
 
       {/* 영상/자료실 전용 간편 필드 */}
       {isVideoOrThumb && (
@@ -522,6 +671,7 @@ export default function BoardWriteClient({
           </div>
 
           {/* 썸네일 */}
+          {!isInquiry && (
           <div>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 8 }}>목록 노출용 대표 썸네일 (선택)</label>
             <div
@@ -548,8 +698,10 @@ export default function BoardWriteClient({
             </div>
             <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleThumbnailChange} />
           </div>
+          )}
 
           {/* 첨부파일 */}
+          {!isInquiry && (
           <div style={{ marginTop: 16 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 8 }}>첨부파일 (선택)</label>
             <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -592,6 +744,7 @@ export default function BoardWriteClient({
               ))}
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -599,21 +752,6 @@ export default function BoardWriteClient({
       <div style={{ marginBottom: 30 }}>
         <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 8 }}>상세 본문 (선택)</label>
         <div style={{ border: "1px solid #d1d5db", borderRadius: 6, overflow: "hidden" }}>
-          {/* 간단한 툴바 흉내 */}
-          <div style={{ display: "flex", gap: 4, padding: "8px 10px", borderBottom: "1px solid #e5e7eb", background: "#fafafa" }}>
-            {["✨", "B", "I", "A", "■", "≡", "≣", "🔗", "🖼"].map((tool, i) => (
-              <button key={i} style={{
-                width: 30, height: 28, border: "1px solid #e5e7eb", background: "#fff",
-                borderRadius: 4, fontSize: tool === "B" || tool === "I" ? 14 : 13,
-                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                fontWeight: tool === "B" ? 900 : tool === "I" ? 700 : 400,
-                fontStyle: tool === "I" ? "italic" : "normal",
-                color: "#333",
-              }}>
-                {tool}
-              </button>
-            ))}
-          </div>
           <textarea
             placeholder="게시물 본문을 자유롭게 작성하세요."
             value={content}

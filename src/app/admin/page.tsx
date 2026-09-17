@@ -21,6 +21,7 @@ const PointSection = lazy(() => import("@/components/admin/sections/PointSection
 const AdminManual = lazy(() => import("./AdminManual"));
 const AIWorkspaceSection = lazy(() => import("@/components/admin/agents/AIWorkspaceSection"));
 const InquirySection = lazy(() => import("@/components/admin/sections/InquirySection"));
+const InquiryBoardSection = lazy(() => import("@/components/admin/sections/InquiryBoardSection"));
 const NewsrealtySection = lazy(() => import("@/components/admin/sections/NewsrealtySection"));
 const MarketingSection = lazy(() => import("@/components/admin/sections/MarketingSection"));
 
@@ -34,6 +35,7 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "inquiry", label: "문의관리", icon: <IconEdit /> },
+  { key: "inquiry_board", label: "1:1문의", icon: <IconComment /> },
   { key: "study", label: "특강관리", icon: <IconStudy /> },
   { key: "board", label: "게시판", icon: <IconBoard /> },
   { key: "ad", label: "광고", icon: <IconAd /> },
@@ -254,6 +256,7 @@ function AdminContent() {
           {activeMenu === "ad" && <BannerSection theme={theme} />}
           {activeMenu === "point" && <PointSection theme={theme} activeSubmenu={activeSubmenu} onSubmenuChange={setActiveSubmenu} />}
           {activeMenu === "inquiry" && <InquirySection theme={theme} />}
+          {activeMenu === "inquiry_board" && <InquiryBoardSection theme={theme} replyAuthorName="최고관리자" />}
           {activeMenu === "newsrealty" && <NewsrealtySection theme={theme} />}
           {activeMenu === "agent" && <AIWorkspaceSection theme={theme} />}
           {activeMenu === "marketing" && <MarketingSection theme={theme} />}

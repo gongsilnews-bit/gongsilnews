@@ -13,6 +13,7 @@ const DashboardSection = lazy(() => import("@/components/admin/sections/Dashboar
 const VacancySection = lazy(() => import("@/components/admin/sections/VacancySection"));
 const MemberArticleSection = lazy(() => import("@/components/admin/sections/MemberArticleSection"));
 const MyPointSection = lazy(() => import("@/components/admin/sections/MyPointSection"));
+const InquiryBoardSection = lazy(() => import("@/components/admin/sections/InquiryBoardSection"));
 
 /* ── 일반회원 관리자 메뉴 ── */
 const USER_MENU: MenuItem[] = [
@@ -21,6 +22,7 @@ const USER_MENU: MenuItem[] = [
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "study", label: "특강관리", icon: <IconStudy /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
+  { key: "inquiry_board", label: "1:1문의", icon: <IconCustomer /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
@@ -197,6 +199,7 @@ function UserAdminContent() {
           {activeMenu === "gongsil" && memberId && <VacancySection theme={theme} role="user" ownerId={memberId} ownerName={userName !== "로딩중..." ? userName : ""} ownerPhone={userPhone} initialData={prefetchedData["gongsil"]} />}
           {activeMenu === "article" && memberId && <MemberArticleSection theme={theme} memberId={memberId} memberName={userName} memberEmail={userEmail || undefined} role="user" />}
           {activeMenu === "point" && memberId && <MyPointSection theme={theme} memberId={memberId} role="user" />}
+          {activeMenu === "inquiry_board" && memberId && <InquiryBoardSection theme={theme} memberId={memberId} replyAuthorId={memberId} replyAuthorName={userName} />}
           {activeMenu === "settings" && (
             <div style={{ flex: 1, padding: "20px 28px", overflowY: "auto", background: theme.cardBg, margin: 16, marginBottom: 0, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}

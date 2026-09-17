@@ -30,9 +30,16 @@ export default async function BoardWritePage({
 
   if (user) {
     const { getPermissionLevel } = await import("@/utils/permissionCheck");
-    const { data: memberData } = await supabase.from("members").select("role, plan_type, agencies(status)").eq("id", user.id).single();
+    const { data: memberData } = await supabase.from("members").select("role, plan_type, name, phone, email, agencies(status)").eq("id", user.id).single();
     if (memberData) {
-      serverUser = { id: user.id, role: memberData.role, email: user.email };
+      // 1:1 문의 폼 자동 채움용으로 이름/연락처/이메일까지 넘긴다
+      serverUser = {
+        id: user.id,
+        role: memberData.role,
+        name: memberData.name || "",
+        phone: memberData.phone || "",
+        email: memberData.email || user.email,
+      };
       serverUserLevel = getPermissionLevel(memberData);
     }
   }

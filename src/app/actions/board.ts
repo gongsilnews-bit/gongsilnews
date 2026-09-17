@@ -44,6 +44,8 @@ export async function saveBoard(payload: {
   perm_list?: number;
   perm_read?: number;
   perm_write?: number;
+  /** 1:1 문의 사진 첨부 허용 장수 (0~5) */
+  max_photos?: number;
   sort_order?: number;
   is_active?: boolean;
 }) {
@@ -122,6 +124,10 @@ export async function saveBoardPost(payload: {
   board_id: string;
   author_id?: string;
   author_name?: string;
+  /** 1:1 문의 전용: 작성 시점의 회신용 연락처 */
+  author_phone?: string;
+  /** 1:1 문의 전용: 작성 시점의 회신용 이메일 */
+  author_email?: string;
   title: string;
   content?: string;
   thumbnail_url?: string;
@@ -131,19 +137,39 @@ export async function saveBoardPost(payload: {
   external_url?: string;
   is_notice?: boolean;
 }) {
+  // author_phone/author_email 은 마이그레이션(20260917) 이후에 생기는 컬럼이다.
+  // 아직 적용되지 않은 환경에서 문의 작성이 통째로 실패하지 않도록, 컬럼이 없다는
+  // 오류일 때만 연락처를 빼고 한 번 더 시도한다.
+  const isMissingContactColumn = (message?: string) =>
+    !!message && /author_(phone|email)/.test(message) && /column|does not exist/i.test(message);
+
+  const withoutContact = () => {
+    const rest: Record<string, unknown> = { ...payload };
+    delete rest.author_phone;
+    delete rest.author_email;
+    return rest;
+  };
+
   if (payload.id) {
-    const { error } = await supabase
-      .from("board_posts")
-      .update({ ...payload, updated_at: new Date().toISOString() })
-      .eq("id", payload.id);
+    const update = async (body: Record<string, unknown>) =>
+      supabase.from("board_posts").update({ ...body, updated_at: new Date().toISOString() }).eq("id", payload.id!);
+
+    let { error } = await update(payload);
+    if (error && isMissingContactColumn(error.message)) {
+      console.warn("[saveBoardPost] 연락처 컬럼 없음 — 마이그레이션 20260917 적용 필요");
+      ({ error } = await update(withoutContact()));
+    }
     if (error) return { success: false, error: error.message };
     return { success: true, postId: payload.id };
   } else {
-    const { data, error } = await supabase
-      .from("board_posts")
-      .insert(payload)
-      .select("id")
-      .single();
+    const insert = async (body: Record<string, unknown>) =>
+      supabase.from("board_posts").insert(body).select("id").single();
+
+    let { data, error } = await insert(payload);
+    if (error && isMissingContactColumn(error.message)) {
+      console.warn("[saveBoardPost] 연락처 컬럼 없음 — 마이그레이션 20260917 적용 필요");
+      ({ data, error } = await insert(withoutContact()));
+    }
     if (error) return { success: false, error: error.message };
     return { success: true, postId: data?.id };
   }

@@ -15,6 +15,8 @@ function getYoutubeEmbedUrl(url: string): string | null {
   return match ? `https://www.youtube.com/embed/${match[1]}?vq=hd1080&rel=0` : null;
 }
 
+type BoardAttachment = { id: string; file_url: string; file_name: string; file_type?: string | null };
+
 export default function BoardReadClient({
   post,
   board,
@@ -287,6 +289,23 @@ export default function BoardReadClient({
               </div>
             </div>
 
+            {/* 1:1 문의 등록자 연락처 (문의 게시판은 본인/관리자만 열람 가능하다) */}
+            {board?.board_type === "inquiry" && (post.author_phone || post.author_email) && (
+              <div style={{ margin: "0 32px", padding: "14px 18px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13 }}>
+                <span style={{ fontWeight: 700, color: "#1e293b" }}>회신 연락처</span>
+                {post.author_phone && (
+                  <span style={{ color: "#475569" }}>
+                    연락처 <a href={`tel:${post.author_phone}`} style={{ color: "#2563eb", fontWeight: 700, textDecoration: "none" }}>{post.author_phone}</a>
+                  </span>
+                )}
+                {post.author_email && (
+                  <span style={{ color: "#475569" }}>
+                    이메일 <a href={`mailto:${post.author_email}`} style={{ color: "#2563eb", fontWeight: 700, textDecoration: "none" }}>{post.author_email}</a>
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* 본문 */}
             <div style={{ padding: "32px" }}>
               {/* 썸네일 노출 (최상단) */}
@@ -417,6 +436,18 @@ export default function BoardReadClient({
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
                     첨부파일 ({post.board_attachments.length}개)
                   </div>
+                  {/* 이미지 첨부는 바로 보이도록 미리보기 */}
+                  {post.board_attachments.some((att: BoardAttachment) => (att.file_type || "").startsWith("image/")) && (
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", paddingTop: 8, paddingBottom: 4 }}>
+                      {post.board_attachments
+                        .filter((att: BoardAttachment) => (att.file_type || "").startsWith("image/"))
+                        .map((att: BoardAttachment) => (
+                          <a key={`img-${att.id}`} href={att.file_url} target="_blank" rel="noopener noreferrer" style={{ display: "block", width: 120, height: 120, borderRadius: 8, overflow: "hidden", border: "1px solid #e2e8f0" }}>
+                            <img src={att.file_url} alt={att.file_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          </a>
+                        ))}
+                    </div>
+                  )}
                   {post.board_attachments.map((att: any) => (
                     <a
                       key={att.id}
