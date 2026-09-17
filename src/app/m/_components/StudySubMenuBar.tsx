@@ -1,8 +1,12 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 
-export type StudyTab = "lecture" | "applications" | "board" | "community";
+export type StudyTab = "lecture" | "applications" | "board";
+
+// '내 강의실'은 탭이 아니라 별도 페이지(/m/my_lectures)로 이동하는 항목이다.
+type MenuKey = StudyTab | "my_lectures";
 
 interface Props {
   activeTab: StudyTab;
@@ -11,11 +15,12 @@ interface Props {
 }
 
 export default function StudySubMenuBar({ activeTab, onTabChange }: Props) {
-  const tabs: { key: StudyTab; label: string }[] = [
+  const router = useRouter();
+  const tabs: { key: MenuKey; label: string }[] = [
     { key: "lecture", label: "특강 목록" },
+    { key: "my_lectures", label: "내 강의실" },
     { key: "applications", label: "내 수강신청" },
     { key: "board", label: "자료실" },
-    { key: "community", label: "커뮤니티" },
   ];
 
   return (
@@ -46,7 +51,13 @@ export default function StudySubMenuBar({ activeTab, onTabChange }: Props) {
         return (
           <button
             key={tab.key}
-            onClick={() => onTabChange(tab.key)}
+            onClick={() => {
+              if (tab.key === "my_lectures") {
+                router.push("/m/my_lectures");
+                return;
+              }
+              onTabChange(tab.key);
+            }}
             style={{
               flexShrink: 0,
               padding: "6px 14px",

@@ -24,17 +24,7 @@ const BOARD_ITEMS = [
   { id: "doc", name: "계약서/양식", desc: "부동산 계약서 및 실무 양식", icon: <IconDoc /> },
 ];
 
-const IconCommunityChat = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.4 8.4 0 0 1-3.3-.7L4 20l1.4-3.8A7.4 7.4 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg>;
-const IconCommunityQuestion = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.7 1.8c-.9.7-1.5 1-1.5 2.2"/><path d="M12 16.5h.01"/></svg>;
-const IconCommunityNotice = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10v4"/><path d="M7 9.5 17 6v12L7 14.5v-5Z"/><path d="M17 10h2.5a1.5 1.5 0 0 1 0 3H17"/><path d="m9 15 1.2 4H8.5L7 14.5"/></svg>;
-const IconCommunityMail = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>;
 
-const COMMUNITY_ITEMS = [
-  { id: "free", name: "자유게시판", desc: "공실뉴스 회원들의 자유로운 이야기", icon: <IconCommunityChat /> },
-  { id: "qna", name: "Q&A게시판", desc: "부동산 실무 궁금증을 함께 해결", icon: <IconCommunityQuestion /> },
-  { id: "notice", name: "공지사항", desc: "공실뉴스의 새로운 소식과 안내", icon: <IconCommunityNotice /> },
-  { id: "inquiry", name: "1:1 문의", desc: "공실뉴스에 궁금한 점을 문의", icon: <IconCommunityMail /> },
-];
 
 const FAQS = [
   {
@@ -67,7 +57,7 @@ export default function MobileStudyHubClient({
 }: any) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const initialTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : tabParam === "community" ? "community" : "lecture";
+  const initialTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : "lecture";
   const [activeTab, setActiveTab] = useState<StudyTab>(initialTab);
   const [activeCategory, setActiveCategory] = useState<string>("전체");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -81,7 +71,7 @@ export default function MobileStudyHubClient({
   });
 
   React.useEffect(() => {
-    const currentTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : tabParam === "community" ? "community" : "lecture";
+    const currentTab: StudyTab = tabParam === "board" ? "board" : tabParam === "applications" ? "applications" : "lecture";
     setActiveTab(currentTab);
   }, [tabParam]);
 
@@ -388,34 +378,6 @@ export default function MobileStudyHubClient({
         </div>
       )}
 
-      {activeTab === "community" && (
-        <div style={{ padding: "16px", paddingTop: "10px" }}>
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ color: "#062828", fontSize: 16, fontWeight: 800 }}>💬 커뮤니티</div>
-            <div style={{ marginTop: 4, color: "#64748b", fontSize: 12 }}>공실뉴스 회원들과 소식을 나눠보세요.</div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {COMMUNITY_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => router.push(`/m/board?id=${item.id}`)}
-                style={{ display: "flex", alignItems: "center", gap: "14px", width: "100%", padding: "16px", textAlign: "left", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 1px 2px rgba(0,0,0,0.03)", cursor: "pointer" }}
-              >
-                <div style={{ width: "44px", height: "44px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, borderRadius: "10px", background: "#ecfdf5" }}>
-                  {item.icon}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ marginBottom: "2px", color: "#062828", fontSize: "15px", fontWeight: 700 }}>{item.name}</div>
-                  <div style={{ overflow: "hidden", color: "#64748b", fontSize: "12.5px", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{item.desc}</div>
-                </div>
-                <span style={{ flexShrink: 0, color: "#9ca3af", fontSize: "20px", lineHeight: 1 }}>›</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {activeTab === "applications" && (
         <div style={{ padding: "16px", paddingTop: "10px" }}>
           <div style={{ marginBottom: 12, color: "#062828", fontSize: 16, fontWeight: 800 }}>📋 내 수강신청 내역</div>
@@ -444,6 +406,30 @@ export default function MobileStudyHubClient({
           )}
         </div>
       )}
+
+      {/* FAB: 내 강의실 (공실등록 버튼과 동일한 형식) */}
+      <button
+        type="button"
+        onClick={() => router.push("/m/my_lectures")}
+        style={{
+          position: "fixed", bottom: "80px", right: "16px", height: "48px",
+          borderRadius: "24px", background: "linear-gradient(135deg, #059669, #047857)",
+          color: "#fff", border: "none", boxShadow: "0 6px 20px rgba(5, 150, 105, 0.4)",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "0 18px", gap: "6px", zIndex: 100000,
+          transition: "transform 0.15s ease",
+        }}
+        onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
+        onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+        onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.92)"; }}
+        onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ pointerEvents: "none" }}>
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+        <span style={{ fontSize: "14px", fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>내 강의실</span>
+      </button>
     </div>
   );
 }

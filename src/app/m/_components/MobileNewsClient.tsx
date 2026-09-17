@@ -59,6 +59,7 @@ const CATEGORIES = [
   { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
   { key: "study", label: "스터디", path: "/m/study" },
+  { key: "community", label: "커뮤니티", path: "/m/board?id=free" },
 ];
 
 const NEWS_PILL_TABS = [
@@ -1470,7 +1471,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
               <div style={{ flexShrink: 0, width: "155px" }} />
             </div>
 
-            {/* 우측 지도에서 기사보기/목록보기 토글 & 검색 버튼 — 고정 */}
+            {/* 우측 검색 버튼 — 고정 */}
             <div
               style={{
                 position: "absolute",
@@ -1484,63 +1485,6 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
                 paddingLeft: "6px",
               }}
             >
-              {activeTab === "local" ? (
-                <button
-                  onClick={() => router.push("/m/news")}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "5px 9px",
-                    borderRadius: "16px",
-                    background: "#F0F4FF",
-                    border: "1px solid #D0E0FF",
-                    color: "#1a4282",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    letterSpacing: "-0.3px",
-                  }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a4282" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="8" y1="6" x2="21" y2="6"></line>
-                    <line x1="8" y1="12" x2="21" y2="12"></line>
-                    <line x1="8" y1="18" x2="21" y2="18"></line>
-                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                  </svg>
-                  <span>목록보기</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => router.push("/m/news_map")}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "5px 9px",
-                    borderRadius: "16px",
-                    background: "#F0F4FF",
-                    border: "1px solid #D0E0FF",
-                    color: "#1a4282",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    letterSpacing: "-0.3px",
-                  }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a4282" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
-                    <line x1="8" y1="2" x2="8" y2="18"></line>
-                    <line x1="16" y1="6" x2="16" y2="22"></line>
-                  </svg>
-                  <span>지도기사</span>
-                </button>
-              )}
-
               <button
                 onClick={() => setIsSearchOpen(true)}
                 style={{

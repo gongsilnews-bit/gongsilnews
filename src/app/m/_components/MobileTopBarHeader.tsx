@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { createClient } from "@/utils/supabase/client";
 
 const SearchOverlay = dynamic(() => import("./header/SearchOverlay"), { ssr: false });
 
@@ -11,6 +10,7 @@ const CATEGORIES = [
   { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
   { key: "study", label: "스터디", path: "/m/study" },
+  { key: "community", label: "커뮤니티", path: "/m/board?id=free" },
 ];
 
 interface Props {
@@ -98,34 +98,6 @@ export default function MobileTopBarHeader({ activeTab, onLocationMove }: Props)
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const handleVacancyAdminClick = async () => {
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.replace("/m/login?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
-      } else {
-        router.push("/m/admin/vacancy");
-      }
-    } catch {
-      router.replace("/m/login?returnTo=" + encodeURIComponent("/m/admin/vacancy"));
-    }
-  };
-
-  const handleMyLecturesClick = async () => {
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.replace("/m/login?returnTo=" + encodeURIComponent("/m/my_lectures"));
-      } else {
-        router.push("/m/my_lectures");
-      }
-    } catch {
-      router.replace("/m/login?returnTo=" + encodeURIComponent("/m/my_lectures"));
-    }
-  };
 
   useEffect(() => {
     if (scrollContainerRef.current && activeTab) {
@@ -240,125 +212,6 @@ export default function MobileTopBarHeader({ activeTab, onLocationMove }: Props)
             paddingLeft: "6px",
           }}
         >
-          {/* 1. 뉴스 탭 및 우리동네 지도 뷰: 지도기사/목록보기 토글 */}
-          {(activeTab === "local" || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc") && (
-            activeTab === "local" ? (
-              <button
-                onClick={() => router.push("/m/news")}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  padding: "5px 9px",
-                  borderRadius: "16px",
-                  background: "#F0F4FF",
-                  border: "1px solid #D0E0FF",
-                  color: "#1a4282",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  letterSpacing: "-0.3px",
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a4282" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="8" y1="6" x2="21" y2="6"></line>
-                  <line x1="8" y1="12" x2="21" y2="12"></line>
-                  <line x1="8" y1="18" x2="21" y2="18"></line>
-                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                </svg>
-                <span>목록보기</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => router.push("/m/news_map")}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  padding: "5px 9px",
-                  borderRadius: "16px",
-                  background: "#F0F4FF",
-                  border: "1px solid #D0E0FF",
-                  color: "#1a4282",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  letterSpacing: "-0.3px",
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a4282" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
-                  <line x1="8" y1="2" x2="8" y2="18"></line>
-                  <line x1="16" y1="6" x2="16" y2="22"></line>
-                </svg>
-                <span>지도기사</span>
-              </button>
-            )
-          )}
-
-          {/* 2. 공실열람 및 경공매 탭: 지도기사 스타일의 '공실관리' 버튼 */}
-          {(activeTab === "gongsil" || activeTab === "auction") && (
-            <button
-              onClick={handleVacancyAdminClick}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                padding: "5px 9px",
-                borderRadius: "16px",
-                background: "#F0F4FF",
-                border: "1px solid #D0E0FF",
-                color: "#1a4282",
-                fontSize: "12px",
-                fontWeight: 700,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                letterSpacing: "-0.3px",
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a4282" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
-                <line x1="9" y1="22" x2="9" y2="16" />
-                <line x1="15" y1="22" x2="15" y2="16" />
-                <line x1="9" y1="16" x2="15" y2="16" />
-                <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
-              </svg>
-              <span>공실관리</span>
-            </button>
-          )}
-
-          {/* 3. 스터디 탭: 지도기사/공실관리 스타일의 '내 강의실' 버튼 */}
-          {activeTab === "study" && (
-            <button
-              onClick={handleMyLecturesClick}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                padding: "5px 9px",
-                borderRadius: "16px",
-                background: "#F0F4FF",
-                border: "1px solid #D0E0FF",
-                color: "#1a4282",
-                fontSize: "12px",
-                fontWeight: 700,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                letterSpacing: "-0.3px",
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a4282" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-              </svg>
-              <span>내 강의실</span>
-            </button>
-          )}
-
           <button
             onClick={() => setIsSearchOpen(true)}
             style={{
