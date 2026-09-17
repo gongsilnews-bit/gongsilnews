@@ -119,6 +119,17 @@ export default function MobileNewsRealtyPage() {
     router.push("/m/newsrealty/apply");
   };
 
+  const handleGeneralLoginClick = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("signup_member_type", "broker");
+    }
+    if (user) {
+      router.push("/m/admin/dashboard");
+    } else {
+      router.push("/m/login?returnTo=" + encodeURIComponent("/m/admin/dashboard"));
+    }
+  };
+
   return (
     <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", paddingBottom: 90, paddingTop: 50, overflowX: "hidden" }}>
       
@@ -733,6 +744,25 @@ export default function MobileNewsRealtyPage() {
                 </span>
               </div>
             </div>
+
+            <button
+              onClick={handleGeneralLoginClick}
+              style={{
+                width: "100%",
+                height: 46,
+                backgroundColor: "#1e293b",
+                border: "none",
+                borderRadius: 10,
+                fontSize: 14.5,
+                fontWeight: 800,
+                color: "#ffffff",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(30, 41, 59, 0.15)",
+                marginBottom: 20
+              }}
+            >
+              {user ? "일반부동산 바로가기 ➔" : "로그인 ➔"}
+            </button>
 
             <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14 }}>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8, fontSize: 12 }}>

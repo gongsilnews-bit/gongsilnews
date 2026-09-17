@@ -107,6 +107,9 @@ export default function NewsRealtyApplyPage() {
 
   const handleGoogleSignup = async () => {
     try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("signup_member_type", "broker");
+      }
       setGoogleLoading(true);
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
@@ -125,6 +128,9 @@ export default function NewsRealtyApplyPage() {
 
   const handleKakaoSignup = async () => {
     try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("signup_member_type", "broker");
+      }
       setKakaoLoading(true);
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
@@ -235,7 +241,7 @@ export default function NewsRealtyApplyPage() {
         </header>
 
         {/* ── 메인 2컬럼 레이아웃 (기존 폼 페이지와 동일) ── */}
-        <main style={{ padding: "48px 20px 80px 20px", display: "flex", justifyContent: "center" }}>
+        <main style={{ padding: "80px 20px 100px 20px", display: "flex", justifyContent: "center" }}>
           <div style={{
             width: "100%",
             maxWidth: "1060px",
@@ -262,25 +268,25 @@ export default function NewsRealtyApplyPage() {
 
               <div style={{ marginBottom: "24px", textAlign: "center" }}>
                 <img
-                  src="/newsrealty_mockup@2x.png"
-                  alt="공실뉴스부동산 모바일 앱 화면"
-                  style={{ width: "100%", maxWidth: "280px", height: "auto", display: "inline-block", filter: "drop-shadow(0 10px 22px rgba(0,0,0,0.06))", borderRadius: "12px" }}
+                  src="/images/realty/newsrealty_local_reporter.jpg"
+                  alt="내 지역/단지 로컬 부동산 기자"
+                  style={{ width: "100%", maxWidth: "340px", height: "auto", display: "inline-block", filter: "drop-shadow(0 10px 22px rgba(0,0,0,0.08))", borderRadius: "12px", objectFit: "cover" }}
                 />
               </div>
 
               <div style={{ backgroundColor: "#f8f9fa", borderRadius: "10px", padding: "24px 20px", border: "1px solid #f0f2f5" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "14px", fontSize: "13px", color: "#555", lineHeight: 1.6 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px", fontSize: "13.5px", color: "#475569", lineHeight: 1.6 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                    <span style={{ color: "#aaa", marginTop: "-1px" }}>•</span>
-                    <span>국가 공간 정보 포털의 부동산중개업 정보에 등록된 대표 공인중개사만 회원가입이 가능해요.</span>
+                    <span style={{ color: "#fa8258", fontWeight: "700" }}>•</span>
+                    <span>공실뉴스부동산회원만 신청하실 수 있습니다. <strong style={{ color: "#ea580c" }}>(무료)</strong></span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                    <span style={{ color: "#aaa", marginTop: "-1px" }}>•</span>
-                    <span>회원가입신청 시 1~2일 이내 전화드려요.</span>
+                    <span style={{ color: "#fa8258", fontWeight: "700" }}>•</span>
+                    <span>가입신청 후, 1~2일 이내 담당자가 연락드립니다. (문자, 카톡)</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                    <span style={{ color: "#aaa", marginTop: "-1px" }}>•</span>
-                    <span>문의는 1555-5343 (평일 오전 10시 ~ 오후 6시)로 연락해 주세요.</span>
+                    <span style={{ color: "#fa8258", fontWeight: "700" }}>•</span>
+                    <span>문의는 1:1 게시판을 이용해주세요.</span>
                   </div>
                 </div>
 
@@ -300,123 +306,116 @@ export default function NewsRealtyApplyPage() {
               </div>
             </div>
 
-            {/* ━━━ 우측: 로그인/회원가입 안내 패널 ━━━ */}
-            <div style={{ width: "100%", maxWidth: "460px", flexShrink: 0 }}>
+            {/* ━━━ 우측: 공실뉴스 공식 로그인 디자인 패널 ━━━ */}
+            <div style={{ width: "100%", maxWidth: "420px", flexShrink: 0, display: "flex", flexDirection: "column", justifyContent: "center", paddingTop: "52px" }}>
 
-              {/* 안내 타이틀 */}
-              <div style={{ marginBottom: "28px" }}>
-                <div style={{ display: "inline-block", backgroundColor: "#fff2e8", color: "#ea580c", fontSize: "12px", fontWeight: 800, padding: "4px 12px", borderRadius: "14px", marginBottom: "12px" }}>
-                  공실뉴스부동산 입점 신청
-                </div>
-                <h2 style={{ fontSize: "22px", fontWeight: 900, color: "#1a1a1a", marginBottom: "8px", letterSpacing: "-0.4px" }}>
-                  로그인 후 신청할 수 있어요
+              <div style={{ textAlign: "center", marginBottom: "36px" }}>
+                <h2 style={{ fontSize: "24px", fontWeight: 900, color: "#0f172a", margin: "0 0 10px", letterSpacing: "-0.5px" }}>
+                  공실뉴스 로그인
                 </h2>
-                <p style={{ fontSize: "14px", color: "#64748b", lineHeight: 1.65, wordBreak: "keep-all" }}>
-                  공실뉴스부동산 파트너 입점 신청은<br />
-                  <strong style={{ color: "#333" }}>공실뉴스 부동산회원</strong>만 가능합니다.
+                <p style={{ fontSize: "14px", color: "#64748b", margin: 0, lineHeight: 1.5 }}>
+                  3초 만에 소셜 연동으로 간편하게 시작하세요.<br />
+                  첫 로그인 시 자동으로 가입이 완료됩니다.
                 </p>
               </div>
 
-              {/* 구글 회원가입 버튼 */}
-              <div style={{ marginBottom: "10px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {/* 구글 */}
                 <button
                   type="button"
                   onClick={handleGoogleSignup}
                   disabled={googleLoading || kakaoLoading}
                   style={{
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
-                    width: "100%", height: "54px",
-                    backgroundColor: "#fa8258", color: "#ffffff",
-                    borderRadius: "8px", fontSize: "15px", fontWeight: 800,
-                    border: "none", cursor: (googleLoading || kakaoLoading) ? "not-allowed" : "pointer",
-                    boxShadow: "0 2px 6px rgba(250, 130, 88, 0.25)",
-                    letterSpacing: "-0.3px", opacity: googleLoading ? 0.7 : 1
+                    width: "100%",
+                    background: "#ffffff",
+                    border: "2px solid #e2e8f0",
+                    borderRadius: "8px",
+                    padding: "14px 0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "12px",
+                    fontWeight: 800,
+                    fontSize: "15px",
+                    color: "#0f172a",
+                    cursor: (googleLoading || kakaoLoading) ? "not-allowed" : "pointer",
+                    fontFamily: "inherit",
+                    transition: "all 0.15s",
+                    position: "relative"
                   }}
+                  onMouseOver={e => { e.currentTarget.style.borderColor = "#94a3b8"; e.currentTarget.style.background = "#f8fafc"; }}
+                  onMouseOut={e => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.background = "#ffffff"; }}
                 >
-                  {googleLoading ? (
-                    <span>Google 연결 중...</span>
-                  ) : (
-                    <>
-                      <svg width="20" height="20" viewBox="0 0 48 48">
-                        <path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/>
-                      </svg>
-                      <span>Google 계정으로 회원가입</span>
-                    </>
-                  )}
+                  <span style={{ position: "absolute", top: -9, right: 14, background: "#2563eb", color: "#fff", fontSize: "10px", fontWeight: 900, padding: "2px 8px", borderRadius: "10px", letterSpacing: "0.5px" }}>
+                    추천
+                  </span>
+                  <svg width="20" height="20" viewBox="0 0 48 48">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                  </svg>
+                  {googleLoading ? "Google 연결 중..." : "Google 계정으로 시작하기"}
                 </button>
-              </div>
 
-              {/* OR 구분선 */}
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "12px 0" }}>
-                <div style={{ flex: 1, height: "1px", backgroundColor: "#e5e8ec" }} />
-                <span style={{ fontSize: "12px", color: "#aaa", fontWeight: 600, letterSpacing: "0.5px" }}>OR</span>
-                <div style={{ flex: 1, height: "1px", backgroundColor: "#e5e8ec" }} />
-              </div>
-
-              {/* 카카오 회원가입 버튼 */}
-              <div style={{ marginBottom: "12px" }}>
+                {/* 카카오 */}
                 <button
                   type="button"
                   onClick={handleKakaoSignup}
                   disabled={googleLoading || kakaoLoading}
                   style={{
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
-                    width: "100%", height: "54px",
-                    backgroundColor: "#FEE500", color: "#191919",
-                    borderRadius: "8px", fontSize: "15px", fontWeight: 800,
-                    border: "none", cursor: (googleLoading || kakaoLoading) ? "not-allowed" : "pointer",
-                    boxShadow: "0 2px 6px rgba(254, 229, 0, 0.4)",
-                    letterSpacing: "-0.3px", opacity: kakaoLoading ? 0.7 : 1
+                    width: "100%",
+                    background: "#FEE500",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "15px 0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "12px",
+                    fontWeight: 800,
+                    fontSize: "15px",
+                    color: "#1e1e1e",
+                    cursor: (googleLoading || kakaoLoading) ? "not-allowed" : "pointer",
+                    fontFamily: "inherit",
+                    transition: "all 0.15s"
                   }}
+                  onMouseOver={e => (e.currentTarget.style.background = "#f5dc00")}
+                  onMouseOut={e => (e.currentTarget.style.background = "#FEE500")}
                 >
-                  {kakaoLoading ? (
-                    <span>카카오 연결 중...</span>
-                  ) : (
-                    <>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="#191919">
-                        <path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.717 1.633 5.1 4.1 6.533l-1.05 3.85c-.083.3.25.55.517.383L9.75 19.2c.733.117 1.483.183 2.25.183 5.523 0 10-3.477 10-7.767C22 6.477 17.523 3 12 3z"/>
-                      </svg>
-                      <span>카카오 계정으로 회원가입</span>
-                    </>
-                  )}
+                  <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#3C1E1E" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24l-1.12 4.16c-.1.36.3.65.6.44l4.94-3.26c.39.04.79.06 1.2.06 5.52 0 10-3.36 10-7.64C22 6.36 17.52 3 12 3z"/></svg>
+                  {kakaoLoading ? "카카오 연결 중..." : "카카오 계정으로 시작하기"}
                 </button>
               </div>
 
-              {/* 로그인 버튼 */}
-              <div style={{ marginBottom: "28px" }}>
+              {/* 어떤 계정으로 가입했는지 모르시나요? */}
+              <div style={{ textAlign: "center", marginTop: "28px" }}>
                 <a
                   href={`/login?returnTo=${encodeURIComponent("/newsrealty/apply")}`}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    width: "100%", height: "48px",
-                    backgroundColor: "#ffffff", color: "#555",
-                    border: "1px solid #dfe2e6",
-                    borderRadius: "8px", fontSize: "14px", fontWeight: 600,
-                    textDecoration: "none"
-                  }}
+                  style={{ fontSize: "13px", color: "#94a3b8", textDecoration: "none", cursor: "pointer" }}
+                  onMouseOver={e => (e.currentTarget.style.color = "#2563eb")}
+                  onMouseOut={e => (e.currentTarget.style.color = "#94a3b8")}
                 >
-                  이미 회원이신가요? &nbsp;<strong style={{ color: "#fa8258" }}>로그인</strong>
+                  어떤 계정으로 가입했는지 모르시나요?
                 </a>
               </div>
 
-              {/* 구분선 + 혜택 안내 */}
-              <div style={{ borderTop: "1px solid #f0f2f5", paddingTop: "24px" }}>
-                <p style={{ fontSize: "12.5px", color: "#888", marginBottom: "16px", fontWeight: 500 }}>
-                  공실뉴스부동산 회원 혜택
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {[
-                    { icon: "🏢", text: "공실 등록 20건 (일반 3건)" },
-                    { icon: "📰", text: "기사 등록 월 4건" },
-                    { icon: "🤖", text: "AI 물건보고서 전체 열람" },
-                    { icon: "📣", text: "광고 등록 및 영업 가능 (영업비 20~50%)" },
-                    { icon: "🎥", text: "드론영상 저작권 무료" },
-                  ].map((item, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13.5px", color: "#444" }}>
-                      <span style={{ fontSize: "16px" }}>{item.icon}</span>
-                      <span>{item.text}</span>
-                    </div>
-                  ))}
+              {/* 공실뉴스 고객센터 & 회원가입 절차 */}
+              <div style={{ borderTop: "1px solid #f1f5f9", marginTop: "36px", paddingTop: "16px", textAlign: "center" }}>
+                <div style={{ fontSize: "13px", color: "#94a3b8", marginBottom: "12px" }}>공실뉴스 고객센터</div>
+                <div style={{ fontSize: "11px", color: "#64748b", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "10px 12px", width: "100%", boxSizing: "border-box" }}>
+                  <div style={{ fontWeight: 800, color: "#475569", marginBottom: "6px", fontSize: "11.5px", textAlign: "left" }}>부동산 회원가입 절차</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "2px", color: "#64748b" }}>
+                    <span>회원가입</span>
+                    <span style={{ color: "#cbd5e1" }}>➔</span>
+                    <span>관리자페이지</span>
+                    <span style={{ color: "#cbd5e1" }}>➔</span>
+                    <span>정보설정</span>
+                    <span style={{ color: "#cbd5e1" }}>➔</span>
+                    <span style={{ fontWeight: 600 }}>중개소 가입/서류제출</span>
+                    <span style={{ color: "#cbd5e1" }}>➔</span>
+                    <span style={{ fontWeight: 800, color: "#2563eb" }}>승인완료</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -886,36 +885,48 @@ export default function NewsRealtyApplyPage() {
               </div>
             </h1>
 
-            {/* 좌측 서비스 앱 목업 이미지 */}
+            {/* 좌측 서비스 로컬 부동산 기자 실사 이미지 */}
             <div style={{ marginBottom: "24px", textAlign: "center" }}>
-              <img
-                src="/newsrealty_mockup@2x.png"
-                alt="공실뉴스부동산 모바일 앱 화면"
-                style={{
-                  width: "100%",
-                  maxWidth: "280px",
-                  height: "auto",
-                  display: "inline-block",
-                  filter: "drop-shadow(0 10px 22px rgba(0,0,0,0.06))",
-                  borderRadius: "12px"
-                }}
-              />
+              <div style={{
+                borderRadius: "16px",
+                overflow: "hidden",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.08)",
+                border: "1px solid #eaedf0",
+                backgroundColor: "#fff"
+              }}>
+                <img
+                  src="/images/realty/newsrealty_local_reporter.jpg"
+                  alt="공실뉴스부동산 로컬 부동산 기자"
+                  style={{
+                    width: "100%",
+                    maxWidth: "380px",
+                    height: "auto",
+                    display: "block",
+                    objectFit: "cover"
+                  }}
+                />
+              </div>
             </div>
 
             {/* 직방 연회색 안내 카드 */}
-            <div style={{ backgroundColor: "#f8f9fa", borderRadius: "10px", padding: "24px 20px", border: "1px solid #f0f2f5" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "14px", fontSize: "13px", color: "#555", lineHeight: 1.6 }}>
+            <div style={{ backgroundColor: "#f8f9fa", borderRadius: "12px", padding: "22px 20px", border: "1px solid #edf0f2" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "13px", color: "#475569", lineHeight: 1.6 }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <span style={{ color: "#aaa", marginTop: "-1px" }}>•</span>
-                  <span>국가 공간 정보 포털의 부동산중개업 정보에 등록된 대표 공인중개사만 회원가입이 가능해요.</span>
+                  <span style={{ color: "#fa8258", fontWeight: 800 }}>1.</span>
+                  <span>
+                    <strong>공실뉴스부동산회원</strong>만 신청하실 수 있습니다.{" "}
+                    <span style={{ display: "inline-block", backgroundColor: "#fff2e8", color: "#ea580c", fontSize: "11px", fontWeight: 800, padding: "1px 6px", borderRadius: "4px", marginLeft: "2px" }}>
+                      무료
+                    </span>
+                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <span style={{ color: "#aaa", marginTop: "-1px" }}>•</span>
-                  <span>회원가입신청 시 1~2일 이내 전화드려요.</span>
+                  <span style={{ color: "#fa8258", fontWeight: 800 }}>2.</span>
+                  <span>가입신청 후, <strong>1~2일 이내</strong> 담당자가 연락드립니다. <span style={{ color: "#888", fontSize: "12px" }}>(문자, 카톡)</span></span>
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <span style={{ color: "#aaa", marginTop: "-1px" }}>•</span>
-                  <span>문의는 1555-5343 (평일 오전 10시 ~ 오후 6시)로 연락해 주세요.</span>
+                  <span style={{ color: "#fa8258", fontWeight: 800 }}>3.</span>
+                  <span>문의는 <strong>1:1 게시판</strong>을 이용해주세요.</span>
                 </div>
               </div>
 

@@ -119,6 +119,17 @@ export default function NewsRealtyPage() {
     router.push("/newsrealty/apply");
   };
 
+  const handleGeneralLoginClick = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("signup_member_type", "broker");
+    }
+    if (user) {
+      router.push("/realty_admin");
+    } else {
+      router.push("/login?returnTo=" + encodeURIComponent("/realty_admin"));
+    }
+  };
+
   return (
     <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", backgroundColor: "#ffffff", color: "#1e293b", minHeight: "100vh" }}>
       
@@ -732,20 +743,30 @@ export default function NewsRealtyPage() {
 
                 <div style={{ marginBottom: 28 }}>
                   <button
-                    disabled
+                    onClick={handleGeneralLoginClick}
                     style={{
                       width: "100%",
                       height: "48px",
-                      backgroundColor: "#f8fafc",
-                      border: "1px solid #e2e8f0",
+                      backgroundColor: "#1e293b",
+                      border: "none",
                       borderRadius: "10px",
-                      fontSize: "14px",
-                      fontWeight: 700,
-                      color: "#94a3b8",
-                      cursor: "default"
+                      fontSize: "15px",
+                      fontWeight: 800,
+                      color: "#ffffff",
+                      cursor: "pointer",
+                      boxShadow: "0 4px 14px rgba(30, 41, 59, 0.15)",
+                      transition: "all 0.2s ease"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#0f172a";
+                      e.currentTarget.style.boxShadow = "0 6px 18px rgba(15, 23, 42, 0.25)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#1e293b";
+                      e.currentTarget.style.boxShadow = "0 4px 14px rgba(30, 41, 59, 0.15)";
                     }}
                   >
-                    기본 가입 제공
+                    {user ? "일반부동산 바로가기 ➔" : "로그인 ➔"}
                   </button>
                 </div>
 
