@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { getMySubscriptions } from "@/app/actions/subscription";
 import { getMyEnrollments } from "@/app/actions/lecture";
+import { openChannelTalk } from "@/utils/channelTalk";
 
 export default function QuickFloatingMenu() {
   const [isOpen, setIsOpen] = useState(true);
@@ -149,9 +150,9 @@ export default function QuickFloatingMenu() {
           내 수강특강
         </div>
 
-        {/* 카카오톡 실시간상담 */}
+        {/* 실시간상담 (채널톡 · 미로드 시 카카오톡 채널로 대체) */}
         <div
-          onClick={() => window.open("https://pf.kakao.com/_ckHkG/chat", "_blank")}
+          onClick={() => openChannelTalk()}
           style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "12px 14px", cursor: "pointer",
@@ -163,8 +164,10 @@ export default function QuickFloatingMenu() {
           onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a6fad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <path d="M12 4.5C6.48 4.5 2 7.86 2 11.94c0 2.62 1.75 4.93 4.38 6.24l-1.12 4.16c-.1.36.3.65.6.44l4.94-3.26c.39.04.79.06 1.2.06 5.52 0 10-3.36 10-7.64C22 7.86 17.52 4.5 12 4.5z"/>
-            <text x="12" y="14.3" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="6.5" fill="#4a6fad" stroke="none" textAnchor="middle">TALK</text>
+            <path d="M4 14v-2a8 8 0 0 1 16 0v2"/>
+            <path d="M4 14h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>
+            <path d="M20 14h-2a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1z"/>
+            <path d="M19 19v1a2 2 0 0 1-2 2h-3"/>
           </svg>
           실시간상담
         </div>

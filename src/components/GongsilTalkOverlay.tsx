@@ -384,6 +384,9 @@ export default function GongsilTalkOverlay() {
   return (
     <>
       {/* ──── 플로팅 버튼 (임시 숨김 처리) ──── */}
+      {/* 다시 켤 때 주의: 우하단은 이미 채널톡 상담 버튼(ChannelTalkLauncher)과
+          모바일 홈의 공실등록 FAB 가 쓰고 있다. 아래 bottom: 84 를
+          PC 는 136 이상, 모바일은 200 이상으로 올려야 겹치지 않는다. */}
       {/* 
       {!isOpen && (
         <button

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { getUserActivityCounts } from '@/app/actions/userActivity';
+import { openChannelTalk } from '@/utils/channelTalk';
 
 export default function MenuPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -160,11 +161,12 @@ export default function MenuPage() {
     { name: "계약서/양식", path: "/m/board?id=doc" }
   ];
 
-  const communityMenus = [
+  const communityMenus: { name: string; path?: string; action?: () => void }[] = [
     { name: "자유게시판", path: "/m/board?id=free" },
     { name: "Q&A게시판", path: "/m/board?id=qna" },
     { name: "공지사항", path: "/m/board?id=notice" },
-    { name: "1:1 문의", path: "/m/board?id=inquiry" }
+    { name: "1:1 문의", path: "/m/board?id=inquiry" },
+    { name: "실시간 상담", action: () => openChannelTalk() }
   ];
 
   const chevron = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
@@ -328,7 +330,13 @@ export default function MenuPage() {
             <h3 style={{ padding: '16px 20px 8px', fontSize: '14px', fontWeight: 700, color: '#6b7280', margin: 0 }}>커뮤니티</h3>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {communityMenus.map(menu => (
-                <li key={menu.name}><Link href={menu.path} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}><span style={{ fontSize: '15px', fontWeight: 500 }}>{menu.name}</span>{chevron}</Link></li>
+                <li key={menu.name}>
+                  {menu.path ? (
+                    <Link href={menu.path} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', textDecoration: 'none' }}><span style={{ fontSize: '15px', fontWeight: 500 }}>{menu.name}</span>{chevron}</Link>
+                  ) : (
+                    <button type="button" onClick={menu.action} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #f9fafb', color: '#1f2937', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}><span style={{ fontSize: '15px', fontWeight: 500 }}>{menu.name}</span>{chevron}</button>
+                  )}
+                </li>
               ))}
             </ul>
           </div>

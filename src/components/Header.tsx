@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import AuthModal from "./AuthModal";
 import SignupCompleteModal from "./SignupCompleteModal";
 import BannerSlot from "./BannerSlot";
+import { openChannelTalk } from "@/utils/channelTalk";
 import HeaderTextBanner from "./HeaderTextBanner";
 import { createClient } from "@/utils/supabase/client";
 import { createPortal } from "react-dom";
@@ -359,6 +360,7 @@ export default function Header({ topFullBanners, headerTextBanners }: { topFullB
                         <li><a href="/board?id=qna">Q&A게시판</a></li>
                         <li><a href="/board?id=notice">공지사항</a></li>
                         <li><a href="/board?id=inquiry">1:1 문의</a></li>
+                        <li><a role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={() => openChannelTalk()}>실시간 상담</a></li>
                       </ul>
                     </div>
                   </div>

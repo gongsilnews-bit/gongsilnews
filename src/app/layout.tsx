@@ -6,6 +6,7 @@ import PopupBanner from "@/components/PopupBanner";
 import ScrollToTop from "@/components/common/ScrollToTop";
 
 import ChannelTalk from "@/components/ChannelTalk";
+import ChannelTalkLauncher from "@/components/ChannelTalkLauncher";
 
 export const metadata: Metadata = {
   title: "공실뉴스 - 부동산 중개망의 스마트한 변화",
@@ -51,6 +52,7 @@ export default function RootLayout({
         <PopupBanner />
         <GongsilTalkOverlay />
         <ChannelTalk />
+        <ChannelTalkLauncher />
       </body>
     </html>
   );

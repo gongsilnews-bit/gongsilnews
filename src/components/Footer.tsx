@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { openChannelTalk } from "@/utils/channelTalk";
 
 export default function Footer() {
   const pathname = usePathname();
@@ -275,8 +276,27 @@ export default function Footer() {
               <span>|</span>
               이메일 : master@gongsilnews.com
             </div>
-            <div className="details-row" style={{ fontWeight: 600, color: "#f1f5f9", marginTop: "8px" }}>
-              고객센터 : 1555-5343 (평일 10:00~18:00)
+            <div className="details-row" style={{ fontWeight: 600, color: "#f1f5f9", marginTop: "8px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <span>고객센터 : 1555-5343 (평일 10:00~18:00)</span>
+              <button
+                type="button"
+                onClick={() => openChannelTalk()}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: "5px",
+                  padding: "5px 12px", borderRadius: "999px",
+                  background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.35)",
+                  color: "#f1f5f9", fontSize: "12px", fontWeight: 700,
+                  cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 14v-2a8 8 0 0 1 16 0v2"/>
+                  <path d="M4 14h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>
+                  <path d="M20 14h-2a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1z"/>
+                  <path d="M19 19v1a2 2 0 0 1-2 2h-3"/>
+                </svg>
+                실시간 상담
+              </button>
             </div>
             
             <div className="footer-copyrights">
