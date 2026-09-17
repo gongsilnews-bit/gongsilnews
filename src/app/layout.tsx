@@ -5,6 +5,8 @@ import GongsilTalkOverlay from "@/components/GongsilTalkOverlay";
 import PopupBanner from "@/components/PopupBanner";
 import ScrollToTop from "@/components/common/ScrollToTop";
 
+import ChannelTalk from "@/components/ChannelTalk";
+
 export const metadata: Metadata = {
   title: "공실뉴스 - 부동산 중개망의 스마트한 변화",
   description: "11만 부동산을 위한 무료 정보 채널. 실시간 공실 정보, 부동산 뉴스, 시세 분석을 제공합니다.",
@@ -48,7 +50,9 @@ export default function RootLayout({
         {children}
         <PopupBanner />
         <GongsilTalkOverlay />
+        <ChannelTalk />
       </body>
     </html>
   );
 }
+
