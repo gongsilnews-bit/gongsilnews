@@ -243,6 +243,22 @@ export async function saveArticle(data: {
       }
     }
 
+    // 승인신청 상태로 저장되면 최고관리자가 처리해야 하므로 알림을 남긴다.
+    // 상태 변경(adminUpdateArticleStatus)뿐 아니라 작성 화면에서 바로 승인신청으로
+    // 저장하는 경로도 있어, 두 경로가 합쳐지는 이 지점에서 처리한다.
+    if (articleId && articleData.status === "PENDING") {
+      await createNotification({
+        recipientRole: "ADMIN",
+        type: "article_pending",
+        title: "새 기사가 승인 대기 중입니다",
+        body: `${data.author_name || "작성자"} · ${data.title || "(제목 없음)"}`,
+        link: "/admin?menu=article",
+        mobileLink: "/m/admin/article",
+        sourceId: String(articleId),
+        revive: true,
+      });
+    }
+
     // 키워드 처리: 기존 삭제 후 새로 INSERT
     if (articleId && data.keywords.length > 0) {
       await supabase
@@ -749,6 +765,7 @@ async function notifyArticlesPending(articleIds: string[]) {
         link: "/admin?menu=article",
         mobileLink: "/m/admin/article",
         sourceId: String(a.id),
+        revive: true,
       });
     }
   } catch (err) {

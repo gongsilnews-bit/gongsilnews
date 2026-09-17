@@ -49,6 +49,9 @@ export async function createNotification(payload: {
   link?: string;
   mobileLink?: string;
   sourceId?: string;
+  /** 같은 사건이 다시 발생한 경우(예: 반려된 기사의 재승인신청) 기존 알림을
+   *  안 읽음으로 되살린다. 중복 방지는 유지하면서 재발생은 놓치지 않는다. */
+  revive?: boolean;
 }) {
   try {
     if (!payload.recipientId && !payload.recipientRole) return { success: false };
@@ -66,7 +69,17 @@ export async function createNotification(payload: {
     });
 
     // 같은 사건에 대한 중복 알림(23505)은 정상 흐름이라 조용히 넘긴다
-    if (error && error.code !== "23505") {
+    if (error?.code === "23505") {
+      if (payload.revive && payload.sourceId) {
+        await supabase
+          .from("notifications")
+          .update({ read_at: null, created_at: new Date().toISOString(), title: payload.title, body: payload.body || null })
+          .eq("type", payload.type)
+          .eq("source_id", payload.sourceId);
+      }
+      return { success: true };
+    }
+    if (error) {
       console.warn("[createNotification]", payload.type, error.message);
       return { success: false };
     }
