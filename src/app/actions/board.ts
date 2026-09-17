@@ -50,17 +50,39 @@ export async function saveBoard(payload: {
   sort_order?: number;
   is_active?: boolean;
 }) {
+  // max_photos 는 마이그레이션(20260917) 이후에 생기는 컬럼이다. 아직 적용되지
+  // 않은 환경에서 게시판 저장이 통째로 막히지 않도록, 그 컬럼이 없다는 오류일
+  // 때만 빼고 한 번 더 시도한다.
+  const isMissingMaxPhotos = (message?: string) =>
+    !!message && /max_photos/.test(message);
+
+  const withoutMaxPhotos = () => {
+    const rest: Record<string, unknown> = { ...payload };
+    delete rest.max_photos;
+    return rest;
+  };
+
   if (payload.id) {
     // 수정
-    const { error } = await supabase
-      .from("boards")
-      .update(payload)
-      .eq("id", payload.id);
+    const update = (body: Record<string, unknown>) =>
+      supabase.from("boards").update(body).eq("id", payload.id!);
+
+    let { error } = await update(payload);
+    if (error && isMissingMaxPhotos(error.message)) {
+      console.warn("[saveBoard] max_photos 컬럼 없음 — 마이그레이션 20260917 적용 필요");
+      ({ error } = await update(withoutMaxPhotos()));
+    }
     if (error) return { success: false, error: error.message };
     return { success: true };
   } else {
     // 생성
-    const { error } = await supabase.from("boards").insert(payload);
+    const insert = (body: Record<string, unknown>) => supabase.from("boards").insert(body);
+
+    let { error } = await insert(payload);
+    if (error && isMissingMaxPhotos(error.message)) {
+      console.warn("[saveBoard] max_photos 컬럼 없음 — 마이그레이션 20260917 적용 필요");
+      ({ error } = await insert(withoutMaxPhotos()));
+    }
     if (error) return { success: false, error: error.message };
     return { success: true };
   }

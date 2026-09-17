@@ -1,11 +1,31 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import NewsrealtyHeader from "@/components/newsrealty/NewsrealtyHeader";
 import GuideTabs from "@/components/newsrealty/GuideTabs";
+import { createClient } from "@/utils/supabase/client";
+import { saveBoardPost } from "@/app/actions/board";
+
+/** 폼의 문의 유형 → 1:1문의 게시판 카테고리
+ *  게시판 카테고리로 맞춰야 관리 화면의 카테고리 필터가 동작한다.
+ *  구체적인 유형은 본문 첫 줄에 남겨 정보를 잃지 않는다. */
+const CATEGORY_MAP: Record<string, string> = {
+  "입점 및 가입 문의": "공실뉴스부동산",
+  "매물 기사 송출 문의": "공실뉴스부동산",
+  "공동중개망 이용 문의": "공실뉴스부동산",
+  "뉴스 광고 영업 수익 문의": "광고/협업제안",
+  "결제 및 세금계산서 문의": "기타",
+  "기타 일반 문의": "기타",
+};
 
 export default function GuideInquiryPage() {
+  const pathname = usePathname();
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState<{ id: string; name: string; phone: string; email: string } | null>(null);
   const [formData, setFormData] = useState({
     category: "입점 및 가입 문의",
     brokerName: "",
@@ -15,8 +35,51 @@ export default function GuideInquiryPage() {
     content: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 문의는 회원 전용이다. 답변을 회신하고 본인이 확인할 수 있어야 하기 때문.
+  useEffect(() => {
+    const supabase = createClient();
+    void supabase.auth.getUser().then(async ({ data: { user: authUser } }) => {
+      if (authUser) {
+        const { data: member } = await supabase
+          .from("members")
+          .select("name, phone, email")
+          .eq("id", authUser.id)
+          .single();
+        const info = {
+          id: authUser.id,
+          name: member?.name || "",
+          phone: member?.phone || "",
+          email: member?.email || authUser.email || "",
+        };
+        setUser(info);
+        // 회원정보로 자동 채우되 수정할 수 있게 둔다
+        setFormData(prev => ({ ...prev, brokerName: info.name, phone: info.phone, email: info.email }));
+      }
+      setAuthChecked(true);
+    });
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user || saving) return;
+
+    setSaving(true);
+    const boardCategory = CATEGORY_MAP[formData.category] || "기타";
+    const res = await saveBoardPost({
+      board_id: "inquiry",
+      title: `[${boardCategory}] ${formData.title.trim()}`,
+      content: `문의 유형: ${formData.category}\n\n${formData.content.trim()}`,
+      author_id: user.id,
+      author_name: formData.brokerName.trim() || user.name || "회원",
+      author_phone: formData.phone.trim(),
+      author_email: formData.email.trim(),
+    });
+    setSaving(false);
+
+    if (!res.success) {
+      alert("문의 접수에 실패했습니다: " + res.error);
+      return;
+    }
     setSubmitted(true);
   };
 
@@ -42,7 +105,32 @@ export default function GuideInquiryPage() {
 
         {/* 문의 폼 (직방 스타일 상단 굵은 실선) */}
         <div style={{ borderTop: "2px solid #111827", paddingTop: "32px" }}>
-          {submitted ? (
+          {!authChecked ? (
+            <div style={{ padding: "60px 24px", textAlign: "center", color: "#94a3b8", fontSize: "14.5px" }}>
+              확인하는 중입니다...
+            </div>
+          ) : !user ? (
+            /* 문의는 회원 전용 — 답변을 회신하고 본인이 확인할 수 있어야 한다 */
+            <div style={{ backgroundColor: "#f8fafc", borderRadius: "16px", padding: "48px 24px", textAlign: "center", border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: "40px", marginBottom: "16px" }}>🔒</div>
+              <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#0f172a", margin: "0 0 8px 0" }}>
+                로그인 후 이용하실 수 있습니다
+              </h3>
+              <p style={{ fontSize: "14.5px", color: "#64748b", margin: "0 0 24px 0", lineHeight: 1.6 }}>
+                문의하신 내용과 담당자의 답변을 내 관리자페이지에서 확인하실 수 있도록<br />
+                회원 로그인 후 작성해 주세요.
+              </p>
+              <Link
+                href={`/login?returnTo=${encodeURIComponent(pathname || "/newsrealty/guide/inquiry")}`}
+                style={{
+                  display: "inline-block", padding: "12px 28px", backgroundColor: "#ff8e15", color: "#ffffff",
+                  fontSize: "15px", fontWeight: 700, border: "none", borderRadius: "8px", textDecoration: "none",
+                }}
+              >
+                로그인하고 문의하기
+              </Link>
+            </div>
+          ) : submitted ? (
             <div
               style={{
                 backgroundColor: "#f8fafc",
@@ -206,19 +294,20 @@ export default function GuideInquiryPage() {
               <div style={{ textAlign: "center", marginTop: "12px" }}>
                 <button
                   type="submit"
+                  disabled={saving}
                   style={{
                     padding: "14px 44px",
-                    backgroundColor: "#ff8e15",
+                    backgroundColor: saving ? "#cbd5e1" : "#ff8e15",
                     color: "#ffffff",
                     fontSize: "16px",
                     fontWeight: 800,
                     border: "none",
                     borderRadius: "8px",
-                    cursor: "pointer",
-                    boxShadow: "0 4px 14px rgba(255, 142, 21, 0.3)",
+                    cursor: saving ? "not-allowed" : "pointer",
+                    boxShadow: saving ? "none" : "0 4px 14px rgba(255, 142, 21, 0.3)",
                   }}
                 >
-                  1:1 문의 접수하기
+                  {saving ? "접수 중..." : "1:1 문의 접수하기"}
                 </button>
               </div>
             </form>
