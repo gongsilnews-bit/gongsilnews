@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from "next/link";
 import dynamic from 'next/dynamic';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { useNotificationsRealtime } from '@/hooks/useNotificationsRealtime';
 
 const SearchOverlay = dynamic(() => import('./header/SearchOverlay'), { ssr: false });
 
@@ -27,35 +28,29 @@ export default function HomeHeader({
 }: HomeHeaderProps = {}) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [unreadNoti, setUnreadNoti] = useState(0);
+  const [notiUser, setNotiUser] = useState<{ id: string; isAdmin: boolean } | null>(null);
 
   // 안 읽은 알림 수 (헤더에는 숫자만 보여주고, 목록은 /m/notifications 에서 본다)
   useEffect(() => {
     const supabase = createClient();
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-
-    const load = async (uid: string, isAdmin: boolean) => {
-      const { getNotifications } = await import("@/app/actions/notification");
-      const res = await getNotifications({ userId: uid, isAdmin, limit: 1 });
-      if (res.success) setUnreadNoti(res.unread);
-    };
-
     void supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       const { data } = await supabase.from("members").select("role").eq("id", user.id).single();
       const role = (data?.role || "").toUpperCase();
-      const isAdmin = role === "ADMIN" || (data?.role || "").includes("관리자");
-
-      await load(user.id, isAdmin);
-      channel = supabase
-        .channel(`home-noti-${user.id}`)
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
-          void load(user.id, isAdmin);
-        })
-        .subscribe();
+      setNotiUser({ id: user.id, isAdmin: role === "ADMIN" || (data?.role || "").includes("관리자") });
     });
-
-    return () => { if (channel) void supabase.removeChannel(channel); };
   }, []);
+
+  const loadUnread = useCallback(async () => {
+    if (!notiUser) return;
+    const { getNotifications } = await import("@/app/actions/notification");
+    const res = await getNotifications({ userId: notiUser.id, isAdmin: notiUser.isAdmin, limit: 1 });
+    if (res.success) setUnreadNoti(res.unread);
+  }, [notiUser]);
+
+  useEffect(() => { void loadUnread(); }, [loadUnread]);
+
+  useNotificationsRealtime(notiUser?.id ?? null, loadUnread);
   const router = useRouter();
   const pathname = usePathname();
 

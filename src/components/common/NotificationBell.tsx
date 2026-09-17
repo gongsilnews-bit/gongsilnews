@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { useNotificationsRealtime } from "@/hooks/useNotificationsRealtime";
 import {
   getNotifications,
   markNotificationRead,
@@ -71,19 +72,7 @@ export default function NotificationBell({ mobile = false, color = "#333" }: Pro
   }, [load]);
 
   // 새 알림이 들어오면 즉시 숫자가 올라간다
-  useEffect(() => {
-    if (!userId) return;
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`notifications-${userId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
-        void load();
-      })
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [userId, load]);
+  useNotificationsRealtime(userId, load);
 
   // 바깥 클릭 시 닫기
   useEffect(() => {

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { useNotificationsRealtime } from "@/hooks/useNotificationsRealtime";
 import {
   getNotifications,
   markNotificationRead,
@@ -71,17 +72,7 @@ export default function MobileNotificationsPage() {
   }, [authChecked, load]);
 
   // 새 알림이 오면 목록이 즉시 갱신된다
-  useEffect(() => {
-    if (!userId) return;
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`m-notifications-${userId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
-        void load();
-      })
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [userId, load]);
+  useNotificationsRealtime(userId, load);
 
   const openItem = async (n: NotificationRow) => {
     if (!n.read_at) {
