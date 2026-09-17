@@ -555,7 +555,7 @@ export async function memberGetDashboardData(memberId: string) {
 
     // 최근 본인 공실 5개
     const { data: recentVacancies } = await supabaseAdmin.from('vacancies')
-      .select('id, trade_type, address, price, contact, created_at')
+      .select('id, trade_type, sido, sigungu, dong, detail_addr, building_name, deposit, monthly_rent, created_at')
       .eq('owner_id', memberId)
       .neq('status', 'DELETED')
       .order('created_at', { ascending: false })
@@ -591,7 +591,10 @@ export async function memberGetDashboardData(memberId: string) {
     return {
       success: true,
       stats: { vacanciesCount, membersCount: null, articlesCount, commentsCount },
-      recentVacancies: recentVacancies || [],
+      recentVacancies: (recentVacancies || []).map((v: { sido?: string; sigungu?: string; dong?: string; detail_addr?: string }) => ({
+        ...v,
+        address: [v.sido, v.sigungu, v.dong, v.detail_addr].filter(Boolean).join(' '),
+      })),
       recentArticles: recentArticles || [],
       recentComments
     };

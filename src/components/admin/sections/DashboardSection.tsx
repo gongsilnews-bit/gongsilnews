@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { AdminSectionProps } from "./types";
 import { SvgIcon, IconBuilding, IconArticle, IconMembers, IconComment } from "./AdminIcons";
 import { adminGetDashboardData, memberGetDashboardData } from "@/app/admin/actions";
+import { formatAmount, getPriceText } from "@/app/(map)/gongsil/gongsilHelpers";
 
 /* ── 유틸리티 함수 ── */
 const formatTimeAgo = (dateStr: string) => {
@@ -16,8 +17,10 @@ const formatTimeAgo = (dateStr: string) => {
   return `${Math.floor(hours / 24)}일 전`;
 };
 
-const formatPrice = (type: string, price: string) => {
-  return price ? `${type} ${price}` : type;
+// 온비드 경공매의 deposit 은 만원 단위로 저장된다 (686 → 686만)
+const formatOnbidPrice = (deposit?: number) => {
+  const text = formatAmount((deposit || 0) * 10000);
+  return text ? `최저 ${text}` : "최저 -";
 };
 
 const formatRole = (role: string) => {
@@ -241,7 +244,7 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
                     <tr key={v.id} onClick={() => navigate("gongsil")} style={{ borderBottom: `1px solid ${darkMode ? "#333" : "#f3f4f6"}`, cursor: "pointer", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f8fafc"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <td style={{ padding: "10px", fontWeight: 600, color: textPrimary }}>{v.trade_type}</td>
                       <td style={{ padding: "10px", color: textSecondary }}>{v.address ? v.address.split(' ').slice(0, 2).join(' ') : '-'}</td>
-                      <td style={{ padding: "10px", color: "#3b82f6", fontWeight: 700 }}>{formatPrice(v.trade_type, v.price)}</td>
+                      <td style={{ padding: "10px", color: "#3b82f6", fontWeight: 700 }}>{getPriceText(v)}</td>
                       <td style={{ padding: "10px", color: "#9ca3af", fontSize: 12 }}>{formatTimeAgo(v.created_at)}</td>
                     </tr>
                   ))
@@ -272,7 +275,7 @@ export default function DashboardSection({ theme, role, agencyStatus, rejectionR
                         <span style={{ fontWeight: 600, color: textPrimary, display: "block" }}>{v.building_name || "공매 물건"}</span>
                         <span style={{ fontSize: 11, color: "#9ca3af" }}>{v.address ? v.address.split(' ').slice(0, 3).join(' ') : '-'}</span>
                       </td>
-                      <td style={{ padding: "10px", color: "#e11d48", fontWeight: 700 }}>{formatPrice("최저", v.price)}</td>
+                      <td style={{ padding: "10px", color: "#e11d48", fontWeight: 700 }}>{formatOnbidPrice(v.deposit)}</td>
                       <td style={{ padding: "10px", color: "#9ca3af", fontSize: 12 }}>{formatTimeAgo(v.created_at)}</td>
                     </tr>
                   ))
