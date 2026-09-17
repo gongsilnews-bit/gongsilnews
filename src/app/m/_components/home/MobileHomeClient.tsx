@@ -516,7 +516,7 @@ export default function MobileHomeClient(props: Props) {
       <button
         onClick={() => {
           if (!currentUser) {
-            alert("공실을 등록하려면 로그인이 필요합니다.");
+            alert("공실을 등록하려면 로그인이 필요합니다.\n로그인 페이지로 이동합니다.");
             setIsAuthModalOpen(true);
           } else {
             router.push("/m/admin/vacancy/write");
@@ -549,6 +549,15 @@ export default function MobileHomeClient(props: Props) {
         </svg>
         <span style={{ fontSize: "14px", fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>공실등록</span>
       </button>
+
+      {/* 로그인 모달 (공실등록 등 로그인이 필요한 동작에서 연다) */}
+      {isAuthModalOpen && (
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          initialTab="login"
+        />
+      )}
 
       {/* ── 공실스터디 카드 클릭 전환: 클릭 카드는 유지된 채 배경이 줌아웃/어두워지며 현재 창에서 상세 페이지로 즉시 이동 ── */}
       {transitioningLecId && (

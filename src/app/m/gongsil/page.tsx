@@ -1586,7 +1586,7 @@ function MobileGongsilContent() {
               <button
                 onClick={() => {
                   if (!currentUser) {
-                    alert("공실을 등록하려면 로그인이 필요합니다.");
+                    alert("공실을 등록하려면 로그인이 필요합니다.\n로그인 페이지로 이동합니다.");
                     setIsAuthModalOpen(true);
                   } else {
                     router.push("/m/admin/vacancy/write");
