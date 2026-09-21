@@ -275,7 +275,7 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
       </section>
 
       {/* ── 2. 접수 폼 ── */}
-      <section ref={formRef} style={{ padding: "64px 20px", background: "#f6f8fa", scrollMarginTop: 60 }}>
+      <section id="intake" ref={formRef} style={{ padding: "64px 20px", background: "#f6f8fa", scrollMarginTop: 60 }}>
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           {done ? (
             <div style={{ background: "#fff", borderRadius: 16, padding: "48px 32px", textAlign: "center", border: "1px solid #e2e8f0" }}>
@@ -454,8 +454,10 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
 
       {/* ── 3. 발행한 기사 ──
           "이 사람 믿어도 되나"에 답하는 재료다. 기사가 없으면 빈 선반을 보이느니
-          섹션째로 감춘다. 링크는 반드시 절대주소여야 한다 — 서브도메인에서 /news/1
-          로 걸면 미들웨어가 /sites/<이름>/news/1 로 밀어넣어 404 가 난다. */}
+          섹션째로 감춘다.
+          링크는 포털이 아니라 이 서브도메인 안의 /news/[id] 로 보낸다. 포털 기사
+          화면에는 다른 중개사의 기사와 광고가 붙어 있어서, 어렵게 데려온 방문자를
+          경쟁자에게 넘겨주는 꼴이 된다. */}
       {articles.length > 0 && (
         <section style={{ padding: "64px 20px" }}>
           <div style={{ maxWidth: 1000, margin: "0 auto" }}>
@@ -470,9 +472,7 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
               {articles.map((a) => (
                 <a
                   key={a.id}
-                  href={`https://www.gongsilnews.com/news/${a.article_no || a.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={`/news/${a.article_no || a.id}`}
                   style={{ display: "block", textDecoration: "none", color: "inherit", border: "1px solid #e8edf1", borderRadius: 14, overflow: "hidden", background: "#fff" }}
                 >
                   <div style={{ width: "100%", aspectRatio: "16/10", background: "#f1f5f9", overflow: "hidden" }}>
