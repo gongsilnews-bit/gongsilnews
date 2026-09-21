@@ -27,6 +27,21 @@ const THEMES: Record<string, { primary: string; secondary: string; dark: string 
 const MAX_PHOTOS = 5;
 const MAX_EDGE = 1280;
 
+/** 숫자만 받아 하이픈을 끼워 넣는다. 접수자가 직접 "-" 를 치게 만들 이유가 없다. */
+function formatPhone(v: string): string {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.startsWith("02")) {
+    if (d.length <= 2) return d;
+    if (d.length <= 5) return `${d.slice(0, 2)}-${d.slice(2)}`;
+    if (d.length <= 9) return `${d.slice(0, 2)}-${d.slice(2, 5)}-${d.slice(5)}`;
+    return `${d.slice(0, 2)}-${d.slice(2, 6)}-${d.slice(6, 10)}`;
+  }
+  if (d.length <= 3) return d;
+  if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`;
+  if (d.length <= 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7, 11)}`;
+}
+
 /** 업로드 전에 긴 변 1280px 로 줄이고 WebP 로 바꾼다. 폰 사진이 장당 0.1~0.2MB 로 떨어진다. */
 function shrinkToWebp(file: File): Promise<File> {
   return new Promise((resolve) => {
@@ -330,7 +345,7 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
 
                 <div>
                   <label style={labelStyle}>연락처 <span style={{ color: "#ef4444" }}>*</span></label>
-                  <input style={inputStyle} value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} placeholder="010-0000-0000" inputMode="tel" />
+                  <input style={inputStyle} value={phoneInput} onChange={(e) => setPhoneInput(formatPhone(e.target.value))} placeholder="010-0000-0000" inputMode="numeric" maxLength={13} />
                 </div>
 
                 <div>
