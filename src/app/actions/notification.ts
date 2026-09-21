@@ -26,7 +26,8 @@ export type NotificationType =
   | "vacancy_new"        // 공실 등록
   | "inquiry_new"        // 1:1문의 접수
   | "inquiry_reply"      // 1:1문의에 회원이 단 추가 질문
-  | "inquiry_answered";  // 내 문의에 답변이 달림 (회원용)
+  | "inquiry_answered"  // 내 문의에 답변이 달림 (회원용)
+  | "intake_new";       // 물건접수장 접수
 
 export type NotificationRow = {
   id: string;

@@ -198,6 +198,8 @@ export async function registerIncomingInquiry(ownerId: string, data: {
   is_registered_member?: boolean;
   target_vacancy_id?: string;
   source_flyer_id?: string;
+  photo_urls?: string[];
+  move_in_date?: string;
 }) {
   const supabase = getAdminClient();
   
@@ -224,7 +226,9 @@ export async function registerIncomingInquiry(ownerId: string, data: {
         is_registered_member: data.is_registered_member ?? customer.is_registered_member,
         target_vacancy_id: data.target_vacancy_id ?? customer.target_vacancy_id,
         source_flyer_id: data.source_flyer_id ?? customer.source_flyer_id,
-        source: data.source
+        source: data.source,
+        photo_urls: data.photo_urls?.length ? data.photo_urls : customer.photo_urls,
+        move_in_date: data.move_in_date ?? customer.move_in_date
       })
       .eq("id", customer.id)
       .select()
@@ -241,6 +245,8 @@ export async function registerIncomingInquiry(ownerId: string, data: {
     let logContent = `[🖥️ 추가 문의 자동 연동]\n• 유입 경로: ${data.source}\n`;
     if (data.area) logContent += `• 희망 조건: ${data.area}\n`;
     if (data.budget) logContent += `• 희망 예산: ${data.budget}\n`;
+    if (data.move_in_date) logContent += `• 입주 희망일: ${data.move_in_date}\n`;
+    if (data.photo_urls?.length) logContent += `• 첨부 사진: ${data.photo_urls.length}장\n`;
     if (data.notes) logContent += `• 접수 메시지:\n${data.notes}`;
 
     await supabase.from("crm_logs").insert([{
@@ -263,7 +269,9 @@ export async function registerIncomingInquiry(ownerId: string, data: {
         status: "신규",
         is_registered_member: data.is_registered_member || false,
         target_vacancy_id: data.target_vacancy_id || null,
-        source_flyer_id: data.source_flyer_id || null
+        source_flyer_id: data.source_flyer_id || null,
+        photo_urls: data.photo_urls?.length ? data.photo_urls : null,
+        move_in_date: data.move_in_date || null
       }])
       .select()
       .single();
@@ -277,6 +285,8 @@ export async function registerIncomingInquiry(ownerId: string, data: {
 
     // 최초 의뢰 로그 등록
     let logContent = `[🖥️ 첫 문의 자동 연동]\n• 유입 경로: ${data.source}\n`;
+    if (data.move_in_date) logContent += `• 입주 희망일: ${data.move_in_date}\n`;
+    if (data.photo_urls?.length) logContent += `• 첨부 사진: ${data.photo_urls.length}장\n`;
     if (data.notes) logContent += `• 접수 메시지:\n${data.notes}`;
 
     await supabase.from("crm_logs").insert([{
