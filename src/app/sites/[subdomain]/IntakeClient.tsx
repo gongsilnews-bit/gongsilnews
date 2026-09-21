@@ -61,6 +61,13 @@ function withComma(v: string): string {
   return v ? Number(v).toLocaleString("ko-KR") : "";
 }
 
+/** 제곱미터를 평으로. 부동산에서는 평으로 말하는 사람이 여전히 많다. */
+function toPyeong(m2: string): string {
+  const n = Number(m2 || 0);
+  if (!n) return "";
+  return `${(n / 3.3058).toFixed(1)}평`;
+}
+
 /** 만원 단위를 사람이 읽는 말로. 5000 -> "5,000만원", 15000 -> "1억 5,000만원" */
 function readMoney(v: string): string {
   const n = Number(v || 0);
@@ -156,6 +163,12 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
   const [tradeType, setTradeType] = useState("");
   const [deposit, setDeposit] = useState("");   // 만원 단위
   const [monthly, setMonthly] = useState("");   // 만원 단위
+  const [rooms, setRooms] = useState("");
+  const [baths, setBaths] = useState("");
+  const [exclusiveM2, setExclusiveM2] = useState("");
+  const [supplyM2, setSupplyM2] = useState("");
+  const [floor, setFloor] = useState("");
+  const [totalFloor, setTotalFloor] = useState("");
   const [detailAddr, setDetailAddr] = useState("");
   const [moveInDate, setMoveInDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -226,8 +239,9 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
       //   area   = "매물종류 / 지역 / 입주조건"
       //   budget = "[거래구분] 금액"
       const fullAddr = [area, detailAddr].filter(Boolean).join(" ").trim();
+      const moveInLabel = moveInDate ? `${isSeeking ? "입주희망" : "입주가능"} ${moveInDate}` : "";
       const composedArea = propertyType
-        ? [propertyType, fullAddr || "지역 미정", isSeeking && moveInDate ? moveInDate : ""].filter(Boolean).join(" / ")
+        ? [propertyType, fullAddr || "지역 미정", moveInLabel].filter(Boolean).join(" / ")
         : fullAddr;
 
       let priceText = "";
@@ -238,6 +252,15 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
       }
       const composedBudget = tradeType ? `[${tradeType}] ${priceText}`.trim() : priceText;
 
+      // 방·욕실·면적은 담을 컬럼이 없어 메모(crm_logs)에 붙여 보낸다.
+      // 중개사는 고객문의 상세의 이력에서 그대로 읽는다.
+      const specLines: string[] = [];
+      if (rooms || baths) specLines.push(`방/욕실: ${rooms || 0} / ${baths || 0}`);
+      if (exclusiveM2) specLines.push(`전용면적: ${exclusiveM2}㎡ (${toPyeong(exclusiveM2)})`);
+      if (supplyM2) specLines.push(`공급면적: ${supplyM2}㎡ (${toPyeong(supplyM2)})`);
+      if (floor || totalFloor) specLines.push(`층수: ${floor || "-"}층 / 총 ${totalFloor || "-"}층`);
+      const composedNotes = [specLines.join("\n"), notes.trim()].filter(Boolean).join("\n\n");
+
       const res = await submitPropertyIntake(subdomain, {
         type,
         name,
@@ -245,7 +268,7 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
         area: composedArea,
         budget: composedBudget,
         moveInDate,
-        notes,
+        notes: composedNotes,
         photoUrls,
       });
 
@@ -496,9 +519,9 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                 </div>
 
                 {/* 금액 — 만원 단위. 은행 앱처럼 쉼표와 읽는 말을 같이 보여준다 */}
-                {showBudget && tradeType && (
+                {showBudget && (
                   <div>
-                    <label style={labelStyle}>{tradeType === "매매" ? "매매가" : "보증금"}</label>
+                    <label style={labelStyle}>{tradeType === "매매" ? "매매가" : tradeType ? "보증금" : "금액"}</label>
                     <div style={{ position: "relative" }}>
                       <input
                         style={{ ...inputStyle, paddingRight: 54, textAlign: "right", fontSize: 18, fontWeight: 800 }}
@@ -577,12 +600,105 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                   </div>
                 )}
 
-                {isSeeking && (
-                  <div>
-                    <label style={labelStyle}>입주 희망일</label>
-                    <input type="date" style={inputStyle} value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)} />
+                {/* 방 · 욕실 — 직접 치지 않고 눌러서 세게 한다 */}
+                <div>
+                  <label style={labelStyle}>방 / 욕실</label>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    {([
+                      { key: "rooms", label: "방", value: rooms, set: setRooms },
+                      { key: "baths", label: "욕실", value: baths, set: setBaths },
+                    ] as const).map((f) => (
+                      <div key={f.key} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #d7dde3", borderRadius: 10, padding: "8px 10px" }}>
+                        <span style={{ fontSize: 14.5, fontWeight: 700, color: "#64748b" }}>{f.label}</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <button
+                            type="button"
+                            aria-label={`${f.label} 줄이기`}
+                            onClick={() => f.set(String(Math.max(0, Number(f.value || 0) - 1)))}
+                            style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#475569", fontSize: 17, fontWeight: 800, cursor: "pointer", lineHeight: 1 }}
+                          >
+                            −
+                          </button>
+                          <span style={{ minWidth: 22, textAlign: "center", fontSize: 16, fontWeight: 800, color: f.value ? "#1e293b" : "#cbd5e1" }}>
+                            {f.value || 0}
+                          </span>
+                          <button
+                            type="button"
+                            aria-label={`${f.label} 늘리기`}
+                            onClick={() => f.set(String(Math.min(20, Number(f.value || 0) + 1)))}
+                            style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#475569", fontSize: 17, fontWeight: 800, cursor: "pointer", lineHeight: 1 }}
+                          >
+                            +
+                          </button>
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+
+                {/* 면적 — 제곱미터로 받고 평을 같이 보여준다 */}
+                <div>
+                  <label style={labelStyle}>면적</label>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    {([
+                      { key: "ex", label: "전용", value: exclusiveM2, set: setExclusiveM2 },
+                      { key: "sp", label: "공급", value: supplyM2, set: setSupplyM2 },
+                    ] as const).map((f) => (
+                      <div key={f.key} style={{ flex: 1 }}>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            style={{ ...inputStyle, paddingLeft: 48, paddingRight: 34, textAlign: "right", fontWeight: 700 }}
+                            value={f.value}
+                            onChange={(e) => f.set(e.target.value.replace(/[^0-9.]/g, "").slice(0, 7))}
+                            placeholder="0"
+                            inputMode="decimal"
+                          />
+                          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13.5, fontWeight: 700, color: "#94a3b8" }}>{f.label}</span>
+                          <span style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>㎡</span>
+                        </div>
+                        {toPyeong(f.value) && (
+                          <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 700, color: "#94a3b8", textAlign: "right" }}>{toPyeong(f.value)}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 층수 — 해당층과 총층을 같이 받는다 */}
+                <div>
+                  <label style={labelStyle}>층수</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ flex: 1, position: "relative" }}>
+                      <input
+                        style={{ ...inputStyle, paddingLeft: 48, paddingRight: 30, textAlign: "right", fontWeight: 700 }}
+                        value={floor}
+                        onChange={(e) => setFloor(e.target.value.replace(/[^0-9-]/g, "").slice(0, 4))}
+                        placeholder="0"
+                        inputMode="numeric"
+                      />
+                      <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13.5, fontWeight: 700, color: "#94a3b8" }}>해당</span>
+                      <span style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>층</span>
+                    </div>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: "#cbd5e1" }}>/</span>
+                    <div style={{ flex: 1, position: "relative" }}>
+                      <input
+                        style={{ ...inputStyle, paddingLeft: 48, paddingRight: 30, textAlign: "right", fontWeight: 700 }}
+                        value={totalFloor}
+                        onChange={(e) => setTotalFloor(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))}
+                        placeholder="0"
+                        inputMode="numeric"
+                      />
+                      <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13.5, fontWeight: 700, color: "#94a3b8" }}>총</span>
+                      <span style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>층</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 입주일 — 내놓는 쪽은 '가능일', 구하는 쪽은 '희망일' */}
+                <div>
+                  <label style={labelStyle}>{isSeeking ? "입주 희망일" : "입주 가능일"}</label>
+                  <input type="date" style={inputStyle} value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)} />
+                </div>
 
                 {!isSeeking && showPhotos && (
                   <div>
