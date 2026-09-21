@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import StudyHeader from "@/components/study/StudyHeader";
 
 const FAQS = [
   {
@@ -33,6 +34,7 @@ export default function StudyAboutClient() {
 
   return (
     <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#132e27", minHeight: "100vh" }}>
+      <StudyHeader />
       
       {/* ━━━ 1. HERO SECTION (Clean & Centered YunJaDong style) ━━━ */}
       <section style={{ backgroundColor: "#062326", color: "#ffffff", padding: "80px 0 70px", borderBottom: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}>
@@ -41,7 +43,7 @@ export default function StudyAboutClient() {
           {/* Breadcrumb / Top Tag */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
             <Link
-              href="/study"
+              href="/study/lectures"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -79,7 +81,7 @@ export default function StudyAboutClient() {
 
           <div>
             <Link
-              href="/study"
+              href="/study/lectures"
               style={{
                 display: "inline-block",
                 padding: "16px 36px",
@@ -486,7 +488,7 @@ export default function StudyAboutClient() {
             원하는 과목을 선택하고, 현장에서 바로 적용할 수 있는 실전 노하우를 만나보세요.
           </p>
           <Link
-            href="/study"
+            href="/study/lectures"
             style={{
               display: "inline-flex",
               alignItems: "center",

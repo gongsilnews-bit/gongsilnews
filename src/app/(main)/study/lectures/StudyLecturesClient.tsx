@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getMyEnrollments } from "@/app/actions/lecture";
 import AuthModal from "@/components/AuthModal";
+import StudyHeader from "@/components/study/StudyHeader";
 
 interface Props {
   initialLectures: any[];
@@ -47,7 +48,7 @@ const FAQS = [
   },
 ];
 
-export default function StudyHubClient({
+export default function StudyLecturesClient({
   initialLectures,
   initialTab = "lecture",
   initialCategory = "전체",
@@ -55,7 +56,7 @@ export default function StudyHubClient({
 }: Props) {
   const router = useRouter();
   const [categories] = useState<string[]>(initialCategories);
-  const [activeTab, setActiveTab] = useState<"lecture" | "applications" | "classroom">(
+  const [activeTab, setActiveTab] = useState<"lecture" | "applications">(
     (initialTab as any) || "lecture"
   );
   const [activeCategory, setActiveCategory] = useState<string>(initialCategory);
@@ -81,7 +82,7 @@ export default function StudyHubClient({
 
   // 내 수강신청 / 나의 강의실 로드
   useEffect(() => {
-    if (activeTab === "applications" || activeTab === "classroom") {
+    if (activeTab === "applications") {
       if (!currentUser) {
         setEnrollments([]);
         return;
@@ -96,13 +97,13 @@ export default function StudyHubClient({
     }
   }, [activeTab, currentUser]);
 
-  const handleTabChange = (tab: "lecture" | "applications" | "classroom") => {
-    if ((tab === "applications" || tab === "classroom") && !currentUser) {
+  const handleTabChange = (tab: "lecture" | "applications") => {
+    if (tab === "applications" && !currentUser) {
       setIsAuthModalOpen(true);
       return;
     }
     setActiveTab(tab);
-    router.replace(`/study?tab=${tab}`, { scroll: false });
+    router.replace(`/study/lectures?tab=${tab}`, { scroll: false });
   };
 
   const filteredLectures = lectures.filter((item) => {
@@ -133,6 +134,7 @@ export default function StudyHubClient({
 
   return (
     <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#132e27", minHeight: "100vh" }}>
+      <StudyHeader />
       
       {/* ━━━ 1. HERO SECTION (윤자동 스타일: 딥 포레스트 에메랄드 다크 & 민트 포인트) ━━━ */}
       <section style={{ backgroundColor: "#062326", color: "#ffffff", padding: "72px 0 56px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
@@ -264,22 +266,6 @@ export default function StudyHubClient({
               }}
             >
               📋 내 수강신청 내역
-            </button>
-            <button
-              onClick={() => handleTabChange("classroom")}
-              style={{
-                padding: "9px 20px",
-                borderRadius: 20,
-                fontSize: 14,
-                fontWeight: activeTab === "classroom" ? 800 : 600,
-                color: activeTab === "classroom" ? "#062828" : "#d1fae5",
-                background: activeTab === "classroom" ? "#ffffff" : "rgba(255,255,255,0.08)",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              🎬 나의 강의실
             </button>
           </div>
 
@@ -621,52 +607,13 @@ export default function StudyHubClient({
                 {enrollments.map((en: any) => (
                   <div key={en.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 16, border: "1px solid #d1fae5", borderRadius: 8, background: "#f4fbf7" }}>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: "#062828", marginBottom: 4 }}>{en.lectures?.title || "특강"}</div>
-                      <div style={{ fontSize: 13, color: "#64748b" }}>신청일: {en.created_at?.substring(0, 10)} | 결제: {en.paid_points?.toLocaleString() || 0} P</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#062828", marginBottom: 4 }}>{en.lecture?.title || "특강"}</div>
+                      <div style={{ fontSize: 13, color: "#64748b" }}>신청일: {en.created_at?.substring(0, 10)} | 결제: {en.points_paid?.toLocaleString() || 0} P</div>
                     </div>
                     <Link href={`/study_read?id=${en.lecture_id}`} style={{ padding: "8px 18px", background: "#059669", color: "#fff", borderRadius: 6, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
                       강의실 입장
                     </Link>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </main>
-      )}
-
-      {/* ━━━ TAB 3: CLASSROOM (나의 강의실) ━━━ */}
-      {activeTab === "classroom" && (
-        <main style={{ maxWidth: 1160, margin: "0 auto", padding: "40px 24px 80px" }}>
-          <div style={{ background: "#ffffff", borderRadius: 14, padding: "32px 28px", border: "1px solid #d1fae5" }}>
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#062828", margin: "0 0 20px 0" }}>🎬 나의 강의실</h2>
-            {loadingEnrollments ? (
-              <div style={{ textAlign: "center", padding: "60px 0", color: "#64748b" }}>강의 목록을 불러오는 중...</div>
-            ) : enrollments.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 20px", color: "#94a3b8" }}>
-                <div style={{ fontSize: 44, marginBottom: 14 }}>🎓</div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: "#062828", marginBottom: 8 }}>수강 중인 강의가 없습니다</div>
-                <button
-                  onClick={() => handleTabChange("lecture")}
-                  style={{ marginTop: 12, padding: "8px 20px", background: "#062326", color: "#fff", border: "none", borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
-                >
-                  지금 특강 신청하기
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
-                {enrollments.map((en: any) => (
-                  <Link key={en.id} href={`/study_read?id=${en.lecture_id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                    <div style={{ border: "1px solid #d1fae5", borderRadius: 10, overflow: "hidden", background: "#fff" }}>
-                      <div style={{ width: "100%", aspectRatio: "16/9", background: "#062326", display: "flex", alignItems: "center", justifyContent: "center", color: "#34d399", fontSize: 28 }}>
-                        ▶
-                      </div>
-                      <div style={{ padding: 14 }}>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "#062828", marginBottom: 4 }}>{en.lectures?.title}</div>
-                        <div style={{ fontSize: 12.5, color: "#64748b" }}>강사: {en.lectures?.instructor_name || "강사진"}</div>
-                      </div>
-                    </div>
-                  </Link>
                 ))}
               </div>
             )}
