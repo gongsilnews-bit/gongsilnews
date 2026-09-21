@@ -165,6 +165,8 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
 
   const address = [companyProfile?.address, companyProfile?.address_detail].filter(Boolean).join(" ");
   const phone = settings?.contact_phone || companyProfile?.phone || member?.phone || "";
+  const agentMobile = companyProfile?.cell || member?.phone || "";
+  const agentRepresentative = companyProfile?.ceo_name ? `대표 공인중개사 ${companyProfile.ceo_name}` : "";
   const intro = settings?.company_intro || "";
 
   const formRef = useRef<HTMLDivElement>(null);
@@ -901,6 +903,75 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
       </section>
 
       {/* ── 푸터 ── */}
+      {/* ── 4. 연락처 — 온라인 전단지의 CONTACT AGENT 와 같은 블록 ── */}
+      <section style={{ background: "#1c1c1c", padding: "64px 20px" }}>
+        <div style={{ maxWidth: 620, margin: "0 auto", background: "#ffffff", borderRadius: 4, padding: "48px 32px", textAlign: "center" }}>
+          <span style={{ display: "block", fontSize: 13, fontWeight: 800, letterSpacing: "3px", color: theme.primary, marginBottom: 22 }}>
+            CONTACT AGENT
+          </span>
+
+          <p style={{ margin: "0 0 8px 0", fontSize: 27, fontWeight: 900, color: "#111827", letterSpacing: "-0.5px" }}>
+            {officeName}
+          </p>
+
+          {agentRepresentative && (
+            <p style={{ margin: "0 0 22px 0", fontSize: 15, fontWeight: 600, color: "#6b7280" }}>{agentRepresentative}</p>
+          )}
+
+          <div style={{ width: 40, height: 2, background: "#d1d5db", margin: "0 auto 24px" }} />
+
+          {(phone || agentMobile) && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, flexWrap: "wrap", marginBottom: 24 }}>
+              <span
+                aria-hidden
+                style={{ width: 44, height: 44, borderRadius: "50%", background: theme.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+                {phone && (
+                  <a href={`tel:${phone}`} style={{ fontSize: 26, fontWeight: 900, color: "#111827", textDecoration: "none", letterSpacing: "-0.5px" }}>
+                    {phone}
+                  </a>
+                )}
+                {phone && agentMobile && <span style={{ color: "#d1d5db", fontSize: 24, fontWeight: 300 }}>|</span>}
+                {agentMobile && (
+                  <a href={`tel:${agentMobile}`} style={{ fontSize: 26, fontWeight: 900, color: "#111827", textDecoration: "none", letterSpacing: "-0.5px" }}>
+                    {agentMobile}
+                  </a>
+                )}
+              </span>
+            </div>
+          )}
+
+          {companyProfile?.reg_num && (
+            <p style={{ margin: "0 0 4px 0", fontSize: 14, color: "#6b7280" }}>등록번호: {companyProfile.reg_num}</p>
+          )}
+          {address && (
+            <p style={{ margin: "0 0 28px 0", fontSize: 14, color: "#6b7280", wordBreak: "keep-all" }}>소재지: {address}</p>
+          )}
+
+          {(agentMobile || phone) && (
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+              <a
+                href={`tel:${agentMobile || phone}`}
+                style={{ flex: "1 1 160px", maxWidth: 220, padding: "16px 10px", background: theme.primary, color: "#fff", borderRadius: 10, fontSize: 16, fontWeight: 800, textDecoration: "none", letterSpacing: "1px" }}
+              >
+                전화하기
+              </a>
+              <a
+                href={`sms:${agentMobile || phone}`}
+                style={{ flex: "1 1 160px", maxWidth: 220, padding: "16px 10px", background: theme.secondary, color: "#fff", borderRadius: 10, fontSize: 16, fontWeight: 800, textDecoration: "none", letterSpacing: "1px" }}
+              >
+                문자보내기
+              </a>
+            </div>
+          )}
+        </div>
+      </section>
+
       <footer style={{ background: theme.dark, color: "rgba(255,255,255,0.55)", padding: "30px 20px", textAlign: "center", fontSize: 13, lineHeight: 1.8 }}>
         <div>{officeName}</div>
         <div>
