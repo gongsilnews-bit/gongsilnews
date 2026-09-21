@@ -351,6 +351,15 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                       <span style={{ fontWeight: 800, color: textPrimary, fontSize: 14 }}>
                         {row.source || "오프라인"}
                       </span>
+                      {/* 사진이 붙어 온 접수는 목록에서 바로 알아볼 수 있게 표시한다 */}
+                      {Array.isArray(row.photo_urls) && row.photo_urls.length > 0 && (
+                        <span
+                          title={`접수 사진 ${row.photo_urls.length}장`}
+                          style={{ display: "inline-block", marginLeft: 6, fontSize: 12, fontWeight: 800, color: "#059669", background: darkMode ? "rgba(5,150,105,0.15)" : "#ecfdf5", border: "1px solid rgba(5,150,105,0.25)", borderRadius: 20, padding: "2px 8px", verticalAlign: "middle" }}
+                        >
+                          📷 {row.photo_urls.length}
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: textSecondary }}>
                       {dateStr}

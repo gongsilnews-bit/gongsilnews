@@ -343,6 +343,30 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
             <div style={{ color: textSecondary, fontWeight: 700 }}>접수일시</div>
             <div style={{ color: textPrimary, fontWeight: 800 }}>{dateStr}</div>
           </div>
+
+          {/* 물건접수장에서 첨부한 사진. 클릭하면 원본이 새 탭에서 열린다. */}
+          {Array.isArray(localCustomer.photo_urls) && localCustomer.photo_urls.length > 0 && (
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${border}` }}>
+              <div style={{ fontSize: 15, color: textSecondary, fontWeight: 700, marginBottom: 12 }}>
+                접수 사진 <span style={{ color: textPrimary, fontWeight: 800 }}>{localCustomer.photo_urls.length}장</span>
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {localCustomer.photo_urls.map((url: string, i: number) => (
+                  <a
+                    key={url + i}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="원본 보기"
+                    style={{ display: "block", width: 116, height: 116, borderRadius: 10, overflow: "hidden", border: `1px solid ${border}`, background: darkMode ? "#1f2023" : "#f8fafc" }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={`접수 사진 ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
