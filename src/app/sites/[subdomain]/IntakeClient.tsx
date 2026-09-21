@@ -28,7 +28,20 @@ const MAX_PHOTOS = 5;
 const MAX_EDGE = 1280;
 
 const PROPERTY_TYPES = ["아파트", "빌라·주택", "상가", "사무실", "토지", "기타"];
-const TRADE_TYPES = ["매매", "전세", "월세"];
+const TRADE_TYPES = ["매매", "전세", "월세", "단기"];
+
+/** 공실등록과 같은 금액 빠른입력 단위 (만원) */
+const AMOUNT_STEPS = [
+  { label: "+50억", val: 500000 },
+  { label: "+5억", val: 50000 },
+  { label: "+1억", val: 10000 },
+  { label: "+5000만", val: 5000 },
+  { label: "+1000만", val: 1000 },
+  { label: "+500만", val: 500 },
+  { label: "+100만", val: 100 },
+  { label: "+50만", val: 50 },
+  { label: "+10만", val: 10 },
+];
 /** 입주 시점. 달력에서 날짜를 고르게 하면 대부분 대충 찍거나 그냥 건너뛴다. */
 const MOVE_IN_LISTING = ["공실", "1주 이내", "1달 이내", "협의"];
 const MOVE_IN_SEEKING = ["즉시", "1주 이내", "1달 이내", "협의"];
@@ -170,6 +183,9 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
   const [baths, setBaths] = useState("");
   const [exclusiveM2, setExclusiveM2] = useState("");
   const [supplyM2, setSupplyM2] = useState("");
+  const [maintenance, setMaintenance] = useState("");
+  const [exclusivePy, setExclusivePy] = useState("");
+  const [supplyPy, setSupplyPy] = useState("");
   const [floor, setFloor] = useState("");
   const [totalFloor, setTotalFloor] = useState("");
   const [detailAddr, setDetailAddr] = useState("");
@@ -250,19 +266,20 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
         : fullAddr;
 
       let priceText = "";
-      if (tradeType === "월세") {
+      if (tradeType === "월세" || tradeType === "단기") {
         priceText = [deposit && `보증금 ${withComma(deposit)}만원`, monthly && `월 ${withComma(monthly)}만원`].filter(Boolean).join(" / ");
       } else if (deposit) {
         priceText = `${readMoney(deposit)}`;
       }
+      if (maintenance) priceText = `${priceText} (관리비 ${withComma(maintenance)}만원)`.trim();
       const composedBudget = tradeType ? `[${tradeType}] ${priceText}`.trim() : priceText;
 
       // 방·욕실·면적은 담을 컬럼이 없어 메모(crm_logs)에 붙여 보낸다.
       // 중개사는 고객문의 상세의 이력에서 그대로 읽는다.
       const specLines: string[] = [];
       if (rooms || baths) specLines.push(`방/욕실: ${rooms || 0} / ${baths || 0}`);
-      if (exclusiveM2) specLines.push(`전용면적: ${exclusiveM2}㎡ (${toPyeong(exclusiveM2)})`);
-      if (supplyM2) specLines.push(`공급면적: ${supplyM2}㎡ (${toPyeong(supplyM2)})`);
+      if (supplyM2) specLines.push(`공급면적: ${supplyM2}㎡ (${supplyPy || toPyeong(supplyM2).replace("평", "")}평)`);
+      if (exclusiveM2) specLines.push(`전용면적: ${exclusiveM2}㎡ (${exclusivePy || toPyeong(exclusiveM2).replace("평", "")}평)`);
       if (floor || totalFloor) specLines.push(`층수: ${floor || "-"}층 / 총 ${totalFloor || "-"}층`);
       const composedNotes = [specLines.join("\n"), notes.trim()].filter(Boolean).join("\n\n");
 
@@ -307,6 +324,29 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
     color: "#334155",
     marginBottom: 8,
   };
+
+  /** 공실등록의 금액 빠른입력과 같은 버튼 묶음 */
+  const AmountKeypad = ({ value, setter }: { value: string; setter: (v: string) => void }) => (
+    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 8 }}>
+      {AMOUNT_STEPS.map((b) => (
+        <button
+          key={b.label}
+          type="button"
+          onClick={() => setter(String(Number(value || 0) + b.val))}
+          style={{ padding: "5px 9px", fontSize: 12, background: "#f1f3f5", border: "1px solid #e5e7eb", borderRadius: 6, cursor: "pointer", color: "#64748b", fontWeight: 700 }}
+        >
+          {b.label}
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={() => setter("")}
+        style={{ padding: "5px 9px", fontSize: 12, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 6, cursor: "pointer", color: "#ef4444", fontWeight: 700 }}
+      >
+        초기화
+      </button>
+    </div>
+  );
 
   const ctaButton = (label: string) => (
     <button
@@ -522,89 +562,76 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                   </div>
                 </div>
 
-                {/* 금액 — 만원 단위. 은행 앱처럼 쉼표와 읽는 말을 같이 보여준다 */}
+                {/* 금액 — 공실등록과 같은 방식. 거래유형에 따라 칸이 바뀐다 */}
                 {showBudget && (
                   <div>
-                    <label style={labelStyle}>{tradeType === "매매" ? "매매가" : tradeType ? "보증금" : "금액"}</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        style={{ ...inputStyle, paddingRight: 54, textAlign: "right", fontSize: 18, fontWeight: 800 }}
-                        value={withComma(deposit)}
-                        onChange={(e) => setDeposit(onlyDigits(e.target.value))}
-                        placeholder="0"
-                        inputMode="numeric"
-                      />
-                      <span style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 700, color: "#94a3b8" }}>만원</span>
-                    </div>
-                    {readMoney(deposit) && (
-                      <p style={{ margin: "7px 0 0", fontSize: 14, fontWeight: 800, color: theme.primary }}>{readMoney(deposit)}</p>
-                    )}
-                    <div style={{ display: "flex", gap: 7, marginTop: 9, flexWrap: "wrap" }}>
-                      {[
-                        { label: "+1억", v: 10000 },
-                        { label: "+1,000만", v: 1000 },
-                        { label: "+100만", v: 100 },
-                      ].map((q) => (
-                        <button
-                          key={q.label}
-                          type="button"
-                          onClick={() => setDeposit(String(Number(deposit || 0) + q.v))}
-                          style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#475569", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
-                        >
-                          {q.label}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setDeposit("")}
-                        style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#94a3b8", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
-                      >
-                        지우기
-                      </button>
-                    </div>
-
-                    {tradeType === "월세" && (
-                      <div style={{ marginTop: 18 }}>
-                        <label style={labelStyle}>월세</label>
+                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                      <div style={{ flex: "1 1 200px", minWidth: 180 }}>
+                        <label style={labelStyle}>
+                          {tradeType === "매매" ? "매매가" : tradeType ? "보증금" : "금액"}
+                          {readMoney(deposit) && (
+                            <span style={{ marginLeft: 8, color: theme.primary, fontSize: 13, fontWeight: 800 }}>{readMoney(deposit)}</span>
+                          )}
+                        </label>
                         <div style={{ position: "relative" }}>
                           <input
-                            style={{ ...inputStyle, paddingRight: 54, textAlign: "right", fontSize: 18, fontWeight: 800 }}
-                            value={withComma(monthly)}
-                            onChange={(e) => setMonthly(onlyDigits(e.target.value))}
-                            placeholder="0"
+                            style={{ ...inputStyle, paddingRight: 54, textAlign: "right", fontWeight: 700 }}
+                            value={withComma(deposit)}
+                            onChange={(e) => setDeposit(onlyDigits(e.target.value))}
+                            placeholder={tradeType === "매매" ? "예: 30000" : "예: 20000"}
                             inputMode="numeric"
                           />
-                          <span style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 700, color: "#94a3b8" }}>만원</span>
+                          <span style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>만원</span>
                         </div>
-                        <div style={{ display: "flex", gap: 7, marginTop: 9, flexWrap: "wrap" }}>
-                          {[
-                            { label: "+100만", v: 100 },
-                            { label: "+50만", v: 50 },
-                            { label: "+10만", v: 10 },
-                          ].map((q) => (
-                            <button
-                              key={q.label}
-                              type="button"
-                              onClick={() => setMonthly(String(Number(monthly || 0) + q.v))}
-                              style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#475569", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
-                            >
-                              {q.label}
-                            </button>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() => setMonthly("")}
-                            style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#94a3b8", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
-                          >
-                            지우기
-                          </button>
-                        </div>
+                        <AmountKeypad value={deposit} setter={setDeposit} />
                       </div>
-                    )}
+
+                      {(tradeType === "월세" || tradeType === "단기") && (
+                        <div style={{ flex: "1 1 200px", minWidth: 180 }}>
+                          <label style={labelStyle}>
+                            월세
+                            {readMoney(monthly) && (
+                              <span style={{ marginLeft: 8, color: theme.primary, fontSize: 13, fontWeight: 800 }}>{readMoney(monthly)}</span>
+                            )}
+                          </label>
+                          <div style={{ position: "relative" }}>
+                            <input
+                              style={{ ...inputStyle, paddingRight: 54, textAlign: "right", fontWeight: 700 }}
+                              value={withComma(monthly)}
+                              onChange={(e) => setMonthly(onlyDigits(e.target.value))}
+                              placeholder="예: 50"
+                              inputMode="numeric"
+                            />
+                            <span style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>만원</span>
+                          </div>
+                          <AmountKeypad value={monthly} setter={setMonthly} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 관리비 */}
+                    <div style={{ marginTop: 18 }}>
+                      <label style={labelStyle}>
+                        관리비
+                        {readMoney(maintenance) && (
+                          <span style={{ marginLeft: 8, color: theme.primary, fontSize: 13, fontWeight: 800 }}>{readMoney(maintenance)}</span>
+                        )}
+                      </label>
+                      <div style={{ position: "relative", maxWidth: 260 }}>
+                        <input
+                          style={{ ...inputStyle, paddingRight: 54, textAlign: "right", fontWeight: 700 }}
+                          value={withComma(maintenance)}
+                          onChange={(e) => setMaintenance(onlyDigits(e.target.value))}
+                          placeholder="예: 10"
+                          inputMode="numeric"
+                        />
+                        <span style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>만원</span>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                {/* 방 · 욕실 — 직접 치지 않고 눌러서 세게 한다 */}
+                {/* 방 · 욕실 */}
                 <div>
                   <label style={labelStyle}>방 / 욕실</label>
                   <div style={{ display: "flex", gap: 12 }}>
@@ -617,7 +644,7 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                         <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <button
                             type="button"
-                            aria-label={`${f.label} 줄이기`}
+                            aria-label={f.label + " 줄이기"}
                             onClick={() => f.set(String(Math.max(0, Number(f.value || 0) - 1)))}
                             style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#475569", fontSize: 17, fontWeight: 800, cursor: "pointer", lineHeight: 1 }}
                           >
@@ -628,7 +655,7 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                           </span>
                           <button
                             type="button"
-                            aria-label={`${f.label} 늘리기`}
+                            aria-label={f.label + " 늘리기"}
                             onClick={() => f.set(String(Math.min(20, Number(f.value || 0) + 1)))}
                             style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#475569", fontSize: 17, fontWeight: 800, cursor: "pointer", lineHeight: 1 }}
                           >
@@ -640,60 +667,74 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                   </div>
                 </div>
 
-                {/* 면적 — 제곱미터로 받고 평을 같이 보여준다 */}
+                {/* 면적 — 평과 ㎡ 중 아무 쪽이나 치면 반대쪽이 따라온다 */}
                 <div>
-                  <label style={labelStyle}>면적</label>
-                  <div style={{ display: "flex", gap: 12 }}>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                     {([
-                      { key: "ex", label: "전용", value: exclusiveM2, set: setExclusiveM2 },
-                      { key: "sp", label: "공급", value: supplyM2, set: setSupplyM2 },
+                      { key: "sp", label: "공급면적", py: supplyPy, setPy: setSupplyPy, m2: supplyM2, setM2: setSupplyM2, phPy: "예: 25.4", phM2: "예: 84" },
+                      { key: "ex", label: "전용면적", py: exclusivePy, setPy: setExclusivePy, m2: exclusiveM2, setM2: setExclusiveM2, phPy: "예: 18.8", phM2: "예: 59" },
                     ] as const).map((f) => (
-                      <div key={f.key} style={{ flex: 1 }}>
-                        <div style={{ position: "relative" }}>
+                      <div key={f.key} style={{ flex: "1 1 220px", minWidth: 200 }}>
+                        <label style={labelStyle}>{f.label}</label>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <input
-                            style={{ ...inputStyle, paddingLeft: 48, paddingRight: 34, textAlign: "right", fontWeight: 700 }}
-                            value={f.value}
-                            onChange={(e) => f.set(e.target.value.replace(/[^0-9.]/g, "").slice(0, 7))}
-                            placeholder="0"
+                            style={{ ...inputStyle, flex: 1, textAlign: "right", fontWeight: 700 }}
+                            value={f.py}
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/[^0-9.]/g, "").slice(0, 7);
+                              f.setPy(v);
+                              f.setM2(v ? (Number(v) * 3.3058).toFixed(1) : "");
+                            }}
+                            placeholder={f.phPy}
                             inputMode="decimal"
                           />
-                          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13.5, fontWeight: 700, color: "#94a3b8" }}>{f.label}</span>
-                          <span style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>㎡</span>
+                          <span style={{ color: "#94a3b8", fontSize: 13.5, fontWeight: 700, flexShrink: 0 }}>평</span>
+                          <span style={{ color: "#cbd5e1", fontSize: 13.5, flexShrink: 0 }}>=</span>
+                          <input
+                            style={{ ...inputStyle, flex: 1, textAlign: "right", fontWeight: 700 }}
+                            value={f.m2}
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/[^0-9.]/g, "").slice(0, 7);
+                              f.setM2(v);
+                              f.setPy(v ? (Number(v) / 3.3058).toFixed(1) : "");
+                            }}
+                            placeholder={f.phM2}
+                            inputMode="decimal"
+                          />
+                          <span style={{ color: "#94a3b8", fontSize: 13.5, fontWeight: 700, flexShrink: 0 }}>m²</span>
                         </div>
-                        {toPyeong(f.value) && (
-                          <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 700, color: "#94a3b8", textAlign: "right" }}>{toPyeong(f.value)}</p>
-                        )}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* 층수 — 해당층과 총층을 같이 받는다 */}
+                {/* 층수 */}
                 <div>
-                  <label style={labelStyle}>층수</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ flex: 1, position: "relative" }}>
-                      <input
-                        style={{ ...inputStyle, paddingLeft: 48, paddingRight: 30, textAlign: "right", fontWeight: 700 }}
-                        value={floor}
-                        onChange={(e) => setFloor(e.target.value.replace(/[^0-9-]/g, "").slice(0, 4))}
-                        placeholder="0"
-                        inputMode="numeric"
-                      />
-                      <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13.5, fontWeight: 700, color: "#94a3b8" }}>해당</span>
-                      <span style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>층</span>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    <div style={{ flex: "1 1 160px", minWidth: 140 }}>
+                      <label style={labelStyle}>해당층</label>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input
+                          style={{ ...inputStyle, flex: 1, fontWeight: 700 }}
+                          value={floor}
+                          onChange={(e) => setFloor(e.target.value.slice(0, 10))}
+                          placeholder="예: 3, 저층, 고층"
+                        />
+                        <span style={{ color: "#94a3b8", fontSize: 13.5, fontWeight: 700, flexShrink: 0 }}>층</span>
+                      </div>
                     </div>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: "#cbd5e1" }}>/</span>
-                    <div style={{ flex: 1, position: "relative" }}>
-                      <input
-                        style={{ ...inputStyle, paddingLeft: 48, paddingRight: 30, textAlign: "right", fontWeight: 700 }}
-                        value={totalFloor}
-                        onChange={(e) => setTotalFloor(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))}
-                        placeholder="0"
-                        inputMode="numeric"
-                      />
-                      <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13.5, fontWeight: 700, color: "#94a3b8" }}>총</span>
-                      <span style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>층</span>
+                    <div style={{ flex: "1 1 160px", minWidth: 140 }}>
+                      <label style={labelStyle}>전체층</label>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input
+                          style={{ ...inputStyle, flex: 1, textAlign: "right", fontWeight: 700 }}
+                          value={totalFloor}
+                          onChange={(e) => setTotalFloor(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))}
+                          placeholder="예: 5"
+                          inputMode="numeric"
+                        />
+                        <span style={{ color: "#94a3b8", fontSize: 13.5, fontWeight: 700, flexShrink: 0 }}>층</span>
+                      </div>
                     </div>
                   </div>
                 </div>
