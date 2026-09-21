@@ -32,8 +32,31 @@ const GAP_MS = 900;     // 다음 말풍선까지 쉬는 시간
 const REST_MS = 20000;  // 한 바퀴 다 돌고 쉬는 시간
 const FIRST_MS = 2500;  // 페이지가 자리잡은 뒤 첫 등장
 
-/** 말풍선 색 (그림자·그라데이션 없이 단색으로 선명하게) */
-const BUBBLE_BG = "#ff8e15";
+/** 말풍선 및 카테고리 형광 헤드라인 테마 */
+export const BUBBLE_THEMES: Record<BubbleKey, {
+  bg: string;
+  text: string;
+  softBg: string; // 단색 옅은 뒷 컬러
+}> = {
+  // 1. 공실스터디: 초록 말풍선 + 옅은 단색 초록
+  study: {
+    bg: "#059669",
+    text: "#ffffff",
+    softBg: "rgba(16, 185, 129, 0.24)",
+  },
+  // 2. 공실열람: 파랑 말풍선 + 옅은 단색 파랑
+  gongsil: {
+    bg: "#1d68ed",
+    text: "#ffffff",
+    softBg: "rgba(37, 99, 235, 0.20)",
+  },
+  // 3. 우리동네: 기존과 동일 오렌지 + 옅은 단색 오렌지
+  map: {
+    bg: "#ff8e15",
+    text: "#ffffff",
+    softBg: "rgba(255, 142, 21, 0.24)",
+  },
+};
 
 /**
  * 메뉴별 흰색 픽토그램
@@ -115,7 +138,7 @@ export function useNavHighlightBubbles(counts?: NavCounts): BubbleState {
   return state;
 }
 
-/** 메뉴 항목 아래에 붙는 말풍선 (부모에 position: relative 필요) */
+/** 메뉴 항목 위에 붙는 말풍선 (부모에 position: relative 필요) */
 export default function NavHighlightBubble({
   show,
   text,
@@ -133,6 +156,8 @@ export default function NavHighlightBubble({
 }) {
   if (disabled || !show || !text) return null;
 
+  const theme = BUBBLE_THEMES[icon || "map"] || BUBBLE_THEMES.map;
+
   return (
     <>
       <div
@@ -148,8 +173,8 @@ export default function NavHighlightBubble({
           gap: 6,
           padding: "7px 14px 7px 12px",
           borderRadius: 999,
-          background: BUBBLE_BG,
-          color: "#fff",
+          background: theme.bg,
+          color: theme.text,
           fontSize: 13,
           fontWeight: 800,
           letterSpacing: "-0.3px",
@@ -167,7 +192,7 @@ export default function NavHighlightBubble({
             marginLeft: -4,
             width: 8,
             height: 8,
-            background: BUBBLE_BG,
+            background: theme.bg,
             transform: "rotate(45deg)",
             borderRadius: 1.5,
           }}
@@ -203,5 +228,39 @@ export default function NavHighlightBubble({
         }
       `}</style>
     </>
+  );
+}
+
+/**
+ * 카테고리 텍스트 뒤에 옅은 단색으로 은은하게 나타나는 하이라이트 배경 (형광펜 효과)
+ */
+export function NavCategoryHighlightMarker({
+  categoryKey,
+  active,
+}: {
+  categoryKey: BubbleKey;
+  active: boolean;
+}) {
+  const theme = BUBBLE_THEMES[categoryKey] || BUBBLE_THEMES.map;
+
+  return (
+    <span
+      aria-hidden
+      style={{
+        position: "absolute",
+        left: -4,
+        right: -4,
+        bottom: 7,
+        height: 12,
+        borderRadius: 4,
+        background: theme.softBg,
+        opacity: active ? 1 : 0,
+        transform: active ? "scaleX(1)" : "scaleX(0.2)",
+        transformOrigin: "center",
+        transition: "opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        pointerEvents: "none",
+        zIndex: 0,
+      }}
+    />
   );
 }
