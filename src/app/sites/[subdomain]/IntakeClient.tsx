@@ -29,6 +29,9 @@ const MAX_EDGE = 1280;
 
 const PROPERTY_TYPES = ["아파트", "빌라·주택", "상가", "사무실", "토지", "기타"];
 const TRADE_TYPES = ["매매", "전세", "월세"];
+/** 입주 시점. 달력에서 날짜를 고르게 하면 대부분 대충 찍거나 그냥 건너뛴다. */
+const MOVE_IN_LISTING = ["공실", "1주 이내", "1달 이내", "협의"];
+const MOVE_IN_SEEKING = ["즉시", "1주 이내", "1달 이내", "협의"];
 
 /** 다음 우편번호 위젯. 공실등록과 같은 것을 쓰되 접수장에는 주소만 있으면 된다. */
 function openPostcode(onPick: (addr: string) => void) {
@@ -240,6 +243,8 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
       //   budget = "[거래구분] 금액"
       const fullAddr = [area, detailAddr].filter(Boolean).join(" ").trim();
       const moveInLabel = moveInDate ? `${isSeeking ? "입주희망" : "입주가능"} ${moveInDate}` : "";
+      // moveInDate 는 이제 날짜가 아니라 "1주 이내" 같은 문구라 date 컬럼으로 보내지 않는다.
+      // 고객문의 목록의 [입주일] 칸은 area 의 세 번째 조각을 읽으므로 그대로 보인다.
       const composedArea = propertyType
         ? [propertyType, fullAddr || "지역 미정", moveInLabel].filter(Boolean).join(" / ")
         : fullAddr;
@@ -267,7 +272,6 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
         phone: phoneInput,
         area: composedArea,
         budget: composedBudget,
-        moveInDate,
         notes: composedNotes,
         photoUrls,
       });
@@ -694,10 +698,33 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                   </div>
                 </div>
 
-                {/* 입주일 — 내놓는 쪽은 '가능일', 구하는 쪽은 '희망일' */}
+                {/* 입주 시점 — 내놓는 쪽은 '가능일', 구하는 쪽은 '희망일' */}
                 <div>
                   <label style={labelStyle}>{isSeeking ? "입주 희망일" : "입주 가능일"}</label>
-                  <input type="date" style={inputStyle} value={moveInDate} onChange={(e) => setMoveInDate(e.target.value)} />
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {(isSeeking ? MOVE_IN_SEEKING : MOVE_IN_LISTING).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setMoveInDate(moveInDate === t ? "" : t)}
+                        style={{
+                          flex: 1,
+                          minWidth: 78,
+                          padding: "12px 10px",
+                          borderRadius: 10,
+                          border: moveInDate === t ? `2px solid ${theme.primary}` : "1px solid #d7dde3",
+                          background: moveInDate === t ? `${theme.primary}12` : "#fff",
+                          color: moveInDate === t ? theme.primary : "#64748b",
+                          fontSize: 14.5,
+                          fontWeight: moveInDate === t ? 800 : 600,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {!isSeeking && showPhotos && (
