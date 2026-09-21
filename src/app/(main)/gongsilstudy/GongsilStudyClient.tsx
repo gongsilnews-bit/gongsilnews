@@ -187,31 +187,12 @@ export default function GongsilStudyClient() {
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 48, flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 460px", minWidth: 300 }}>
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: "rgba(16, 185, 129, 0.14)",
-                  border: "1px solid rgba(16, 185, 129, 0.35)",
-                  padding: "7px 16px",
-                  borderRadius: 24,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: "#6ee7b7",
-                  marginBottom: 24,
-                }}
-              >
-                <span>🏆</span>
-                <span>공실뉴스 마케팅 이사 직접 강의</span>
-              </div>
-
               <h1 style={{ margin: "0 0 18px 0", letterSpacing: "-1px", lineHeight: 1.3 }}>
                 <span style={{ display: "block", fontSize: 26, fontWeight: 800, color: "#d1fae5", marginBottom: 10 }}>
-                  1~2인 부동산을 위한 온라인 마케팅 강의!
+                  유튜브로 고객을 만나는 시대!
                 </span>
-                <span style={{ display: "block", fontSize: 52, fontWeight: 900, color: "#34d399" }}>
-                  월 3만원이면 끝!
+                <span style={{ display: "block", fontSize: 38, fontWeight: 900, color: "#34d399", wordBreak: "keep-all" }}>
+                  대표님은 어떤 공부를 하고 계시나요?
                 </span>
               </h1>
 
