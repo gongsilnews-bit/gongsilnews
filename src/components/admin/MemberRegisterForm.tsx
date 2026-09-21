@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember, adminUpdateBusinessProfile, adminGetLimitPolicies } from "@/app/admin/actions";
 import { geocodeAddress } from "@/app/actions/geocode";
+import { getHomepageSettings } from "@/app/actions/homepage";
 
 interface MemberRegisterFormProps {
   onBack: () => void;
@@ -158,6 +159,18 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           if (res.member.profile_image_url) {
             setProfilePhotoPreview(res.member.profile_image_url);
           }
+          // [문의하기] 는 비어 있으면 본인 물건접수장 주소를 기본값으로 넣어준다.
+          // 중개사가 링크를 따로 만들 필요 없이 바로 쓰게 하려는 것이고,
+          // 직접 입력한 값이 있으면 건드리지 않는다.
+          getHomepageSettings(editMemberId).then(hs => {
+            const sd = hs.success && hs.data ? (hs.data as any).subdomain : null;
+            if (!sd) return;
+            setSnsLinks(prev => {
+              if (prev.contact?.url) return prev;
+              return { ...prev, contact: { ...prev.contact, url: `https://${sd}.gongsilnews.com` } };
+            });
+          });
+
           if (res.member.sns_links) {
             setSnsLinks(prev => {
               const merged = { ...prev };
