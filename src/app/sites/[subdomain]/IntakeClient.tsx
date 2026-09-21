@@ -480,32 +480,6 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                   <input style={inputStyle} value={phoneInput} onChange={(e) => setPhoneInput(formatPhone(e.target.value))} placeholder="010-0000-0000" inputMode="numeric" maxLength={13} />
                 </div>
 
-                {/* 매물 종류 — 타이핑보다 탭 한 번이 빠르다 */}
-                <div>
-                  <label style={labelStyle}>매물 종류</label>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {PROPERTY_TYPES.map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => setPropertyType(propertyType === t ? "" : t)}
-                        style={{
-                          padding: "10px 16px",
-                          borderRadius: 999,
-                          border: propertyType === t ? `2px solid ${theme.primary}` : "1px solid #d7dde3",
-                          background: propertyType === t ? `${theme.primary}12` : "#fff",
-                          color: propertyType === t ? theme.primary : "#64748b",
-                          fontSize: 14.5,
-                          fontWeight: propertyType === t ? 800 : 600,
-                          cursor: "pointer",
-                        }}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* 주소 — 직접 치는 것보다 검색해서 고르는 편이 빠르고 정확하다 */}
                 <div>
                   <label style={labelStyle}>{isSeeking ? "희망 지역" : "물건 소재지"}</label>
@@ -533,6 +507,32 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                       placeholder="상세주소 (동·호수 등)"
                     />
                   )}
+                </div>
+
+                {/* 매물 종류 — 타이핑보다 탭 한 번이 빠르다 */}
+                <div>
+                  <label style={labelStyle}>매물 종류</label>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {PROPERTY_TYPES.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setPropertyType(propertyType === t ? "" : t)}
+                        style={{
+                          padding: "10px 16px",
+                          borderRadius: 999,
+                          border: propertyType === t ? `2px solid ${theme.primary}` : "1px solid #d7dde3",
+                          background: propertyType === t ? `${theme.primary}12` : "#fff",
+                          color: propertyType === t ? theme.primary : "#64748b",
+                          fontSize: 14.5,
+                          fontWeight: propertyType === t ? 800 : 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* 거래 구분 — 고르면 아래 금액 칸이 그에 맞게 바뀐다 */}
