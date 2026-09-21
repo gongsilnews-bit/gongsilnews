@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { getVacancyDetail, getAgencyInfo, getVacancies, updateVacancyStatus, deleteVacancy } from "@/app/actions/vacancy";
+import { getVacancyDetail, getAgencyInfo, getOwnerVacancySummary, updateVacancyStatus, deleteVacancy } from "@/app/actions/vacancy";
 import { createClient } from "@/utils/supabase/client";
 import "./vacancy-detail.css";
 
@@ -34,8 +34,9 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit, onMarket
   const [inquiryInput, setInquiryInput] = useState("");
   const [inquiries, setInquiries] = useState<any[]>([]);
 
-  // Owner's other vacancies for registrant tab
+  // Owner's other vacancies for registrant tab ('등록자' 탭 진입 시에만 조회한다)
   const [ownerVacancies, setOwnerVacancies] = useState<any[]>([]);
+  const [ownerCounts, setOwnerCounts] = useState<{ 전체: number; 매매: number; 전세: number; 월세: number } | null>(null);
   const [realtorTradeType, setRealtorTradeType] = useState("전체");
 
   const mapRef = useRef<HTMLDivElement>(null);
@@ -88,14 +89,25 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit, onMarket
     if (commentsData) setComments(commentsData);
     if (inquiryData) setInquiries(inquiryData);
 
-    // Fetch owner's other vacancies for registrant tab
-    if (res.success && res.data?.owner_id) {
-      const vacRes = await getVacancies({ ownerId: res.data.owner_id, all: false });
-      if (vacRes.success) setOwnerVacancies(vacRes.data || []);
-    }
-
+    // 등록자의 다른 매물은 '등록자' 탭에서만 쓰이므로 여기서 기다리지 않는다.
+    // (아래 useEffect 에서 탭을 열 때 조회한다)
     setLoading(false);
   };
+
+  // '등록자' 탭 진입 시에만 등록자의 다른 매물 + 거래유형 카운트를 조회한다.
+  // 거래유형 필터는 서버에서 걸어 limit 안에서 잘리지 않게 한다.
+  const ownerId = vacancy?.owner_id;
+  useEffect(() => {
+    if (activeTab !== 'realtor' || !ownerId) return;
+    let cancelled = false;
+    (async () => {
+      const res = await getOwnerVacancySummary(ownerId, { tradeType: realtorTradeType, limit: 10 });
+      if (cancelled || !res.success) return;
+      setOwnerVacancies(res.data || []);
+      if (res.counts) setOwnerCounts(res.counts);
+    })();
+    return () => { cancelled = true; };
+  }, [activeTab, ownerId, realtorTradeType]);
 
   // Load Kakao Map
   const loadKakaoMap = useCallback((p: any) => {
@@ -814,16 +826,16 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit, onMarket
                 )}
 
                 {/* Vacancy Stats */}
-                {ownerVacancies.length > 0 && (
+                {ownerCounts && ownerCounts.전체 > 0 && (
                   <div style={{ marginTop: 20 }}>
                     <div style={{ display: 'flex', background: '#f9f9f9', borderRadius: 8, overflow: 'hidden', border: '1px solid #eee' }}>
                       <div style={{ flex: 'none', padding: '12px 16px', fontSize: 13, fontWeight: 'bold', color: '#111', borderRight: '1px solid #eee', display: 'flex', alignItems: 'center' }}>공실등록현황</div>
                       <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12, fontSize: 12, color: '#666', flexWrap: 'wrap' }}>
                         {[
-                          { label: '전체', count: ownerVacancies.length },
-                          { label: '매매', count: ownerVacancies.filter(v => v.trade_type === '매매').length },
-                          { label: '전세', count: ownerVacancies.filter(v => v.trade_type === '전세').length },
-                          { label: '월세', count: ownerVacancies.filter(v => v.trade_type === '월세').length },
+                          { label: '전체', count: ownerCounts.전체 },
+                          { label: '매매', count: ownerCounts.매매 },
+                          { label: '전세', count: ownerCounts.전세 },
+                          { label: '월세', count: ownerCounts.월세 },
                         ].map((stat, i, arr) => (
                           <React.Fragment key={stat.label}>
                             <span onClick={() => setRealtorTradeType(stat.label)}
@@ -841,10 +853,7 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit, onMarket
                 {/* Owner's Property List */}
                 {ownerVacancies.length > 0 && (
                   <div style={{ marginTop: 16, border: '1px solid #eee', borderRadius: 8, overflow: 'hidden' }}>
-                    {ownerVacancies
-                      .filter(v => realtorTradeType === '전체' || v.trade_type === realtorTradeType)
-                      .slice(0, 10)
-                      .map((vp: any) => (
+                    {ownerVacancies.map((vp: any) => (
                       <div key={vp.id}
                         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '14px 16px', borderBottom: '1px solid #f0f0f0', background: vp.id === vacancyId ? '#eaf4ff' : '#fff' }}>
                         <div style={{ flex: 1, minWidth: 0 }}>

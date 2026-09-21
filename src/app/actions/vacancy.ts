@@ -540,35 +540,40 @@ export async function getVacancyCountByKeyword(keyword: string) {
 export async function getVacancyDetail(vacancyId: string) {
   const supabase = getAdminClient();
   try {
-    const { data, error } = await supabase
-      .from('vacancies')
-      .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
-      .eq('id', vacancyId)
-      .single();
-
-    if (error) return { success: false, error: error.message };
-
-    // 사진 조회
-    const { data: photos } = await supabase
-      .from('vacancy_photos')
+    // 세 조회는 서로 의존하지 않는다. 직렬로 두면 왕복 3회가 그대로 합산되므로 병렬로 묶는다.
+    // Flyer 는 테이블이 없을 수도 있어 reject 되더라도 전체가 깨지지 않도록 개별적으로 삼킨다.
+    const flyerPromise = supabase
+      .from('vacancy_flyers')
       .select('*')
       .eq('vacancy_id', vacancyId)
-      .order('sort_order', { ascending: true });
+      .maybeSingle()
+      .then((res: any) => res, (e: any) => {
+        console.warn("vacancy_flyers table load skipped or failed:", e);
+        return { data: null, error: e };
+      });
 
-    // Flyer 조회 (오류 시에도 에러 없이 null 처리되도록 안전하게 조회)
-    let flyer = null;
-    try {
-      const { data: flyerData } = await supabase
-        .from('vacancy_flyers')
+    const [detailRes, photoRes, flyerRes] = await Promise.all([
+      supabase
+        .from('vacancies')
+        .select('*, members!vacancies_owner_id_fkey(name, email, role, phone, sns_links, profile_image_url, agencies(*)), vacancy_photos(url, sort_order)')
+        .eq('id', vacancyId)
+        .single(),
+      supabase
+        .from('vacancy_photos')
         .select('*')
         .eq('vacancy_id', vacancyId)
-        .maybeSingle();
-      flyer = flyerData;
-    } catch (e) {
-      console.warn("vacancy_flyers table load skipped or failed:", e);
-    }
+        .order('sort_order', { ascending: true }),
+      flyerPromise,
+    ]);
 
-    return { success: true, data, photos: photos || [], flyer };
+    if (detailRes.error) return { success: false, error: detailRes.error.message };
+
+    return {
+      success: true,
+      data: detailRes.data,
+      photos: photoRes.data || [],
+      flyer: flyerRes.error ? null : (flyerRes.data ?? null)
+    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -904,6 +909,69 @@ export async function getVacanciesByOwnerId(ownerId: string) {
     })) || [];
 
     return { success: true, data: withImages };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ── 상세화면 '등록자' 탭 전용: 해당 등록자의 다른 공실 요약 ──
+// getVacancies({ ownerId }) 는 owner 의 role 이 관리자면 owner_id 필터를 걸지 않고
+// 1,000건 range 쿼리 10개를 한꺼번에 날린다(= 온비드 매물 포함 테이블 전량).
+// 등록자 탭은 카드 10장과 거래유형 카운트만 쓰므로 owner_id 를 무조건 고정하고
+// 카운트는 head 조회로, 목록은 화면에 그리는 컬럼만 limit 만큼 읽는다.
+export async function getOwnerVacancySummary(ownerId: string, options?: {
+  tradeType?: string;
+  limit?: number;
+}) {
+  if (!ownerId) return { success: false, error: "ownerId is required" };
+  const supabase = getAdminClient();
+  try {
+    const limit = options?.limit ?? 10;
+
+    // 카드가 실제로 읽는 컬럼만. metadata/조인은 일절 붙이지 않는다.
+    let listQuery = supabase
+      .from('vacancies')
+      .select('id, trade_type, property_type, building_name, dong, deposit, monthly_rent, direction, exclusive_m2')
+      .eq('owner_id', ownerId)
+      .neq('status', 'DELETED')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (options?.tradeType && options.tradeType !== '전체') {
+      listQuery = listQuery.eq('trade_type', options.tradeType);
+    }
+
+    // head: true 라 행은 내려오지 않고 count 만 온다 (getVacancyTabCounts 와 같은 방식)
+    const countQuery = (tradeType?: string) => {
+      let q = supabase
+        .from('vacancies')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', ownerId)
+        .neq('status', 'DELETED');
+      if (tradeType) q = q.eq('trade_type', tradeType);
+      return q;
+    };
+
+    const [listRes, resAll, resSale, resJeonse, resMonthly] = await Promise.all([
+      listQuery,
+      countQuery(),
+      countQuery('매매'),
+      countQuery('전세'),
+      countQuery('월세'),
+    ]);
+
+    if (listRes.error) return { success: false, error: listRes.error.message };
+
+    return {
+      success: true,
+      data: listRes.data || [],
+      counts: {
+        전체: resAll.count || 0,
+        매매: resSale.count || 0,
+        전세: resJeonse.count || 0,
+        월세: resMonthly.count || 0,
+      }
+    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
