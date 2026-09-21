@@ -140,7 +140,7 @@ function MobileDashboard() {
     { icon: "🖼️", label: "배너관리", href: "/m/admin/banner", roles: ["admin"] },
     { icon: "📋", label: "게시판관리", href: "/m/admin/board", roles: ["admin"] },
     { icon: "✉️", label: "문의관리", href: "/m/admin/inquiry", roles: ["admin"] },
-    { icon: "🌐", label: "홈페이지", href: "/realty_admin?menu=homepage", roles: ["realtor"] },
+    { icon: "📥", label: "물건접수장", href: "/realty_admin?menu=homepage", roles: ["realtor"] },
     { icon: "⚙️", label: "설정", href: "/m/admin/settings", roles: ["admin", "realtor", "user"] },
   ].filter(link => link.roles.includes(role));
 

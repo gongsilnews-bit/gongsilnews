@@ -63,7 +63,15 @@ interface Props {
 }
 
 export default function IntakeClient({ subdomain, settings, member, companyProfile }: Props) {
-  const theme = THEMES[settings?.theme_color as string] || THEMES.teal;
+  // 편집기가 저장하는 값은 settings.intake 에 모여 있다
+  const cfg = settings?.intake || {};
+  const theme = THEMES[cfg.theme_color as string] || THEMES.teal;
+
+  // 받을 항목 on/off. 저장된 적 없으면 전부 켠 상태가 기본이다.
+  const showSeeking = cfg.show_seeking !== false;
+  const showPhotos = cfg.show_photos !== false;
+  const showBudget = cfg.show_budget !== false;
+  const showNotes = cfg.show_notes !== false;
 
   const officeName =
     settings?.site_title ||
@@ -254,13 +262,13 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
           <p style={{ fontSize: 16, color: theme.secondary, fontWeight: 700, margin: "0 0 14px 0" }}>{officeName}</p>
           <h1 style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.4, letterSpacing: "-0.8px", margin: "0 0 18px 0", wordBreak: "keep-all" }}>
-            내놓을 물건이 있으신가요?<br />
-            <span style={{ color: theme.secondary }}>여기에 접수해 주세요</span>
+            {cfg.hero_title || "내놓을 물건이 있으신가요?"}<br />
+            <span style={{ color: theme.secondary }}>{cfg.hero_highlight || "여기에 접수해 주세요"}</span>
           </h1>
           <p style={{ fontSize: 16.5, lineHeight: 1.8, color: "rgba(255,255,255,0.8)", margin: "0 0 34px 0", wordBreak: "keep-all" }}>
-            {intro || "연락처만 남겨 주시면 확인 후 바로 연락드립니다. 사진이 없어도 접수됩니다."}
+            {cfg.hero_desc || intro || "연락처만 남겨 주시면 확인 후 바로 연락드립니다. 사진이 없어도 접수됩니다."}
           </p>
-          {ctaButton("1분이면 접수 끝")}
+          {ctaButton(cfg.cta_label || "1분이면 접수 끝")}
         </div>
       </section>
 
@@ -288,7 +296,7 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
               </h2>
 
               {/* 무엇 때문에 오셨는지 — 기본은 내놓기 */}
-              <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+              <div style={{ display: showSeeking ? "flex" : "none", gap: 10, marginBottom: 24 }}>
                 {(["매물내놔요", "매물구해요"] as IntakeType[]).map((t) => {
                   const on = type === t;
                   return (
@@ -330,7 +338,7 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                   <input style={inputStyle} value={area} onChange={(e) => setArea(e.target.value)} placeholder={isSeeking ? "예) 강남구 역삼동" : "예) 강남구 역삼동 OO빌딩"} />
                 </div>
 
-                <div>
+                <div style={{ display: showBudget ? "block" : "none" }}>
                   <label style={labelStyle}>{isSeeking ? "예산" : "희망 금액"}</label>
                   <input style={inputStyle} value={budget} onChange={(e) => setBudget(e.target.value)} placeholder={isSeeking ? "예) 보증금 3000 / 월 150" : "예) 보증금 5000 / 월 200"} />
                 </div>
@@ -342,7 +350,7 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                   </div>
                 )}
 
-                {!isSeeking && (
+                {!isSeeking && showPhotos && (
                   <div>
                     <label style={labelStyle}>
                       사진 <span style={{ color: "#94a3b8", fontWeight: 600 }}>(선택 · 최대 {MAX_PHOTOS}장)</span>
@@ -391,7 +399,7 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                   </div>
                 )}
 
-                <div>
+                <div style={{ display: showNotes ? "block" : "none" }}>
                   <label style={labelStyle}>남기실 말씀</label>
                   <textarea
                     style={{ ...inputStyle, minHeight: 92, resize: "vertical", fontFamily: "inherit" }}

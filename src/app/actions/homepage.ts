@@ -64,6 +64,18 @@ export async function saveHomepageSettings(ownerId: string, inputData: {
   contact_phone?: string;
   company_intro?: string;
   is_active?: boolean;
+  /** 물건접수장 전용 설정 (색상·문구·받을 항목) */
+  intake?: {
+    theme_color?: string;
+    hero_title?: string;
+    hero_highlight?: string;
+    hero_desc?: string;
+    cta_label?: string;
+    show_seeking?: boolean;
+    show_photos?: boolean;
+    show_budget?: boolean;
+    show_notes?: boolean;
+  };
 }) {
   const supabase = getAdminClient();
   try {
@@ -104,6 +116,11 @@ export async function saveHomepageSettings(ownerId: string, inputData: {
       company_info_page: {
         ...(cs.company_info_page || {}),
         greeting_text: inputData.company_intro !== undefined ? inputData.company_intro : cs.company_info_page?.greeting_text,
+      },
+      // 넘어온 키만 덮어쓴다. 편집기가 일부만 저장해도 나머지가 날아가지 않는다.
+      intake: {
+        ...(cs.intake || {}),
+        ...(inputData.intake || {}),
       }
     };
 

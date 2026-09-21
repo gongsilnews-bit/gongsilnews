@@ -20,7 +20,7 @@ const VacancySection = lazy(() => import("@/components/admin/sections/VacancySec
 const MemberArticleSection = lazy(() => import("@/components/admin/sections/MemberArticleSection"));
 const MemberArticleAdSection = lazy(() => import("@/components/admin/sections/MemberArticleAdSection"));
 const MyPointSection = lazy(() => import("@/components/admin/sections/MyPointSection"));
-const HomepageSection = lazy(() => import("@/components/admin/sections/HomepageSection"));
+const IntakeStudio = lazy(() => import("@/components/admin/sections/IntakeStudio"));
 const CustomerSection = lazy(() => import("@/components/admin/sections/CustomerSection"));
 const InquiryBoardSection = lazy(() => import("@/components/admin/sections/InquiryBoardSection"));
 
@@ -34,7 +34,7 @@ const REALTY_MENU: MenuItem[] = [
   { key: "customer", label: "고객문의", icon: <IconCustomer /> },
   { key: "inquiry_board", label: "1:1문의", icon: <IconCustomer /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
-  { key: "homepage", label: "홈페이지", icon: <IconHomepage /> },
+  { key: "homepage", label: "물건접수장", icon: <IconHomepage /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
 ];
@@ -325,10 +325,10 @@ function RealtyAdminContent() {
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} initialTab={searchParams.get("tab") === "agency" ? 1 : 0} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
-          {/* {activeMenu === "homepage" && memberId && <HomepageSection theme={theme} memberId={memberId} planType={planType} />} - 임시 숨김 */}
+          {activeMenu === "homepage" && memberId && <IntakeStudio theme={theme} memberId={memberId} planType={planType} />}
           {activeMenu === "inquiry_board" && memberId && <InquiryBoardSection theme={theme} memberId={memberId} replyAuthorId={memberId} replyAuthorName={userName} />}
           {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
-          {["homepage", "study", "manual"].includes(activeMenu) && (
+          {["study", "manual"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
