@@ -823,7 +823,7 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                     style={{ ...inputStyle, minHeight: 92, resize: "vertical", fontFamily: "inherit" }}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="편하게 적어 주세요"
+                    placeholder="세부정보를 적어주세요"
                   />
                 </div>
 
