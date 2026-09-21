@@ -250,31 +250,58 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
   // Preload Kakao Map script immediately on mount
   const [mapLoaded, setMapLoaded] = useState(false);
   useEffect(() => {
-    if ((window as any).kakao && (window as any).kakao.maps && typeof (window as any).kakao.maps.LatLng === "function") {
+    const w = window as any;
+
+    // LatLng(코어)만 보고 준비됐다고 판단하면, 아래에서 쓰는 MarkerClusterer(clusterer 서브
+    // 라이브러리)가 아직 안 붙은 상태로 통과해 "MarkerClusterer is not a constructor"가 난다.
+    // 실제로 쓰는 생성자까지 확인한다.
+    const isReady = () =>
+      !!w.kakao?.maps &&
+      typeof w.kakao.maps.LatLng === "function" &&
+      typeof w.kakao.maps.MarkerClusterer === "function";
+
+    if (isReady()) {
       setMapLoaded(true);
       return;
     }
-    const scriptId = "kakao-map-script";
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement("script");
-      const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
-      script.id = scriptId;
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
-      script.onerror = () => setMapError("카카오맵 JS 키가 유효하지 않거나 등록되지 않았습니다.");
-      document.head.appendChild(script);
-      script.onload = () => {
-        (window as any).kakao.maps.load(() => {
-          setMapLoaded(true);
-        });
-      };
-    } else {
-      const check = setInterval(() => {
-        if ((window as any).kakao && (window as any).kakao.maps && typeof (window as any).kakao.maps.LatLng === "function") {
-          clearInterval(check);
-          setMapLoaded(true);
-        }
+
+    let cancelled = false;
+    let check: ReturnType<typeof setInterval> | null = null;
+    const stopPolling = () => { if (check) { clearInterval(check); check = null; } };
+    const poll = () => {
+      stopPolling();
+      check = setInterval(() => {
+        if (cancelled) { stopPolling(); return; }
+        if (isReady()) { stopPolling(); setMapLoaded(true); }
       }, 100);
+    };
+
+    // autoload=false 로 심은 SDK 는 load() 를 호출해야 코어와 서브 라이브러리가 붙는다
+    const runLoad = () => {
+      if (typeof w.kakao?.maps?.load !== "function") return false;
+      w.kakao.maps.load(() => { if (!cancelled && isReady()) setMapLoaded(true); });
+      return true;
+    };
+
+    // 다른 화면이 이미 심어둔 SDK 가 있으면 그걸 쓴다. id 로만 찾으면 (다른 컴포넌트들은 id 를
+    // 달지 않는다) 같은 SDK 를 한 번 더 주입하게 되고, 두 번째 로드가 window.kakao 를 다시
+    // 깔면서 먼저 붙어 있던 clusterer 가 날아간다.
+    const existing = document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk.js"]') as HTMLScriptElement | null;
+    if (existing) {
+      if (!runLoad()) existing.addEventListener("load", runLoad);
+      poll();
+      return () => { cancelled = true; stopPolling(); existing.removeEventListener("load", runLoad); };
     }
+
+    const script = document.createElement("script");
+    const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
+    script.id = "kakao-map-script";
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer&autoload=false`;
+    script.onerror = () => setMapError("카카오맵 JS 키가 유효하지 않거나 등록되지 않았습니다.");
+    script.onload = () => { runLoad(); poll(); };
+    document.head.appendChild(script);
+
+    return () => { cancelled = true; stopPolling(); };
   }, []);
 
   /* ── 1. 빈 지도 즉시 렌더링 ── */
