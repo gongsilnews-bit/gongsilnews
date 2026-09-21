@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { saveBoardPost, uploadBoardAttachment, uploadBoardThumbnail, saveBoardPostsBatch } from "@/app/actions/board";
 import { createClient } from "@/utils/supabase/client";
 import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permissionCheck";
+import { getBoardListUrl } from "@/utils/boardListUrl";
 
 const convertToWebp = (file: File): Promise<File> => {
   return new Promise((resolve) => {
@@ -313,7 +314,7 @@ export default function BoardWriteClient({
 
     if (res.success) {
       alert(`성공적으로 ${res.count}개의 게시글이 일괄 등록되었습니다.`);
-      router.push(`/board?id=${boardId}`);
+      router.push(getBoardListUrl(boardId));
     } else {
       alert("일괄 등록에 실패했습니다: " + res.error);
     }
@@ -431,7 +432,7 @@ export default function BoardWriteClient({
       <div style={{ padding: 100, textAlign: "center" }}>
         <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>{getLevelName(board.perm_write ?? 5)}부터 작성하실 수 있습니다.</h2>
         <p style={{ color: "#666" }}>쓰기 레벨: <strong>{board.perm_write ?? 5}레벨 이상</strong> (현재 내 레벨: {userLevel}레벨)</p>
-        <button onClick={() => router.push(`/board?id=${boardId}`)} style={{ marginTop: 24, padding: "10px 24px", background: "#333", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>목록으로 돌아가기</button>
+        <button onClick={() => router.push(getBoardListUrl(boardId))} style={{ marginTop: 24, padding: "10px 24px", background: "#333", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>목록으로 돌아가기</button>
       </div>
     );
   }
@@ -769,7 +770,7 @@ export default function BoardWriteClient({
       {/* 제출 버튼 */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, paddingTop: 20, borderTop: "1px solid #e5e7eb" }}>
         <Link
-          href={`/board?id=${boardId}`}
+          href={getBoardListUrl(boardId)}
           style={{
             padding: "12px 24px", border: "1px solid #d1d5db", background: "#fff",
             color: "#555", borderRadius: 6, fontSize: 15, fontWeight: 600,

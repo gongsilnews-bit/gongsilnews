@@ -6,6 +6,7 @@ import { saveBoardComment, deleteBoardComment, deleteBoardPost } from "@/app/act
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getPermissionLevel, canAccessBoard } from "@/utils/permissionCheck";
+import { getBoardListUrl } from "@/utils/boardListUrl";
 
 // YouTube URL에서 embed URL 생성 (공유버튼 ?si= 등 모든 형식)
 function getYoutubeEmbedUrl(url: string): string | null {
@@ -44,7 +45,7 @@ export default function BoardReadClient({
 
   const pageParam = searchParams.get('page') || '1';
   const tabParam = searchParams.get('tab') || '전체';
-  const listUrl = `/board?id=${boardId}&page=${pageParam}&tab=${encodeURIComponent(tabParam)}`;
+  const listUrl = getBoardListUrl(boardId, { page: pageParam, tab: tabParam });
 
   const getReadUrl = (targetPostId: string) => {
     return `/board_read?id=${targetPostId}&board_id=${boardId}&page=${pageParam}&tab=${encodeURIComponent(tabParam)}`;
@@ -58,11 +59,7 @@ export default function BoardReadClient({
 
   const handleSearch = (keyword: string) => {
     const trimmed = keyword.trim();
-    if (trimmed) {
-      router.push(`/board?id=${boardId}&search=${encodeURIComponent(trimmed)}`);
-    } else {
-      router.push(`/board?id=${boardId}`);
-    }
+    router.push(getBoardListUrl(boardId, trimmed ? { search: trimmed } : undefined));
   };
 
   // 이전글/다음글 이동 등으로 initialComments가 변경되면 상태를 동기화
@@ -183,7 +180,7 @@ export default function BoardReadClient({
     const res = await deleteBoardPost(post.id);
     if (res.success) {
       alert("삭제되었습니다.");
-      router.push(`/board?id=${boardId}`);
+      router.push(getBoardListUrl(boardId));
     } else {
       alert("삭제 실패: " + res.error);
     }
@@ -246,7 +243,7 @@ export default function BoardReadClient({
           {tabs.map((tab, i) => (
             <Link
               key={tab}
-              href={`/board?id=${boardId}`}
+              href={getBoardListUrl(boardId)}
               style={{
                 border: "1px solid #ddd", background: "#fff", padding: "8px 16px",
                 borderRadius: 20, fontSize: 14, color: "#666", fontWeight: 600,
