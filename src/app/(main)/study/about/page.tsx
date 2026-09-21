@@ -1,11 +1,6 @@
-import React from "react";
-import StudyAboutClient from "./StudyAboutClient";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "공실스터디 안내 | 공실뉴스",
-  description: "1년 365일 실전 동행! AI 부동산 실무부터 공실 해결까지 공실뉴스 스터디 상세 안내",
-};
-
+// 공실스터디란? 내용은 /study 로 합쳐졌다. 예전 링크가 죽지 않도록 넘겨준다.
 export default function StudyAboutPage() {
-  return <StudyAboutClient />;
+  redirect("/study");
 }

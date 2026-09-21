@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getMyEnrollments } from "@/app/actions/lecture";
@@ -136,139 +137,79 @@ export default function StudyLecturesClient({
     <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#132e27", minHeight: "100vh" }}>
       <StudyHeader />
       
-      {/* ━━━ 1. HERO SECTION (윤자동 스타일: 딥 포레스트 에메랄드 다크 & 민트 포인트) ━━━ */}
-      <section style={{ backgroundColor: "#062326", color: "#ffffff", padding: "72px 0 56px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      {/* ━━━ 1. HERO (윤자동 스타일: 배경을 화면 끝까지 깔지 않고 본문 폭에 맞춘 둥근 카드) ━━━ */}
+      <section style={{ backgroundColor: "#ffffff", padding: "28px 0 4px" }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
-          
-          {/* Top Tag */}
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(16, 185, 129, 0.14)", border: "1px solid rgba(16, 185, 129, 0.35)", padding: "6px 14px", borderRadius: 24, fontSize: 13, fontWeight: 700, color: "#6ee7b7", marginBottom: 20 }}>
-            <span>🌿</span>
-            <span>1년(12개월) 부동산 실무 & AI 마스터마인드</span>
-          </div>
+          <div
+            style={{
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              // 사진 좌측 여백과 같은 색이라 커버 크롭으로 남는 자리가 생겨도 티가 안 난다
+              backgroundColor: "#112127",
+              color: "#ffffff",
+              borderRadius: 16,
+              overflow: "hidden",
+              minHeight: 400,
+            }}
+          >
+            {/* 사진을 카드 전면에 깐다. 좌측 어두운 여백은 사진에 이미 들어가 있다 */}
+            <Image
+              src="/study_lectures_hero.png"
+              alt="공실 앞에서 막막해하는 부동산 대표"
+              fill
+              priority
+              sizes="(max-width: 1160px) 100vw, 1112px"
+              style={{ objectFit: "cover", objectPosition: "center" }}
+            />
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 36 }}>
-            <div style={{ flex: 1, minWidth: 320, maxWidth: 520 }}>
-              <h1 style={{ fontSize: "32px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.8px", margin: "0 0 14px 0" }}>
-                AI 유튜브 시대! 부동산 중개에<br />
-                <span style={{ color: "#34d399" }}>꼭! 필요한 실전 마케팅 스터디</span>
+            {/* 카피 가독성 확보용. 사진 좌측과 같은 색이라 색이 뜨지 않는다 */}
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                pointerEvents: "none",
+                background: "linear-gradient(to right, rgba(17,33,39,0.88) 0%, rgba(17,33,39,0.5) 34%, rgba(17,33,39,0) 62%)",
+              }}
+            />
+
+            {/* 좌측 카피 */}
+            <div style={{ position: "relative", zIndex: 2, flex: "1 1 400px", maxWidth: 620, minWidth: 300, padding: "56px 48px" }}>
+              <h1 style={{ fontSize: "32px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.8px", margin: "0 0 28px 0" }}>
+                다들 AI 유튜브로 중개한다던데<br />
+                <span style={{ color: "#34d399" }}>나만 못 쓰고 있는 것 같으신가요?</span>
               </h1>
-              <p style={{ fontSize: "15px", color: "#a7f3d0", opacity: 0.9, lineHeight: 1.6, margin: "0 0 20px 0", wordBreak: "keep-all" }}>
-                매월 업데이트되는 최신 AI 마케팅 기술과 공실 해결 실무 노하우로 지역 1등 부동산을 완성하세요.
-              </p>
 
-              {/* 4대 안심 포인트 */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 18px", fontSize: "13px", color: "#d1fae5", fontWeight: 600, marginBottom: 22 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  365일 무제한 수강 & 복습
-                </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  매월 신규 실무 VOD 업데이트
-                </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  계약서·특약 원본 100% 제공
-                </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  전국 11만 중개사 스터디 크루
-                </span>
-              </div>
-
-              {/* 자세히 보기 버튼 */}
-              <div>
+              {/* 멤버십 신청 + 가격 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 13, flexWrap: "wrap" }}>
                 <Link
-                  href="/study/about"
+                  href="/study/pricing"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: 8,
-                    padding: "12px 24px",
+                    gap: 6,
+                    padding: "9px 18px",
                     background: "#059669",
                     color: "#ffffff",
-                    borderRadius: 10,
-                    fontSize: 15,
+                    borderRadius: 8,
+                    fontSize: 13.5,
                     fontWeight: 800,
                     textDecoration: "none",
-                    boxShadow: "0 4px 14px rgba(5, 150, 105, 0.35)",
+                    boxShadow: "0 3px 10px rgba(5, 150, 105, 0.3)",
                     transition: "all 0.2s",
                   }}
                 >
-                  <span>공실스터디 자세히 보기</span>
+                  <span>멤버십 신청하기</span>
                   <span>→</span>
                 </Link>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(167,243,208,0.85)" }}>
+                  12개월 <strong style={{ color: "#ffffff", fontSize: 14.5, fontWeight: 800, marginLeft: 1 }}>36만원</strong>
+                </span>
               </div>
             </div>
 
-            {/* 우측 16:9 유튜브 대형 영상 플레이어 */}
-            <div style={{ width: 540, maxWidth: "100%", flexShrink: 0 }}>
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  aspectRatio: "16/9",
-                  borderRadius: 16,
-                  overflow: "hidden",
-                  boxShadow: "0 16px 36px rgba(0, 0, 0, 0.5)",
-                  border: "1px solid rgba(255, 255, 255, 0.15)",
-                  background: "#000000",
-                }}
-              >
-                <iframe
-                  src="https://www.youtube-nocookie.com/embed/QyClYIjPzao?rel=0"
-                  title="공실스터디 안내 영상"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    border: "none",
-                  }}
-                />
-              </div>
-            </div>
           </div>
-
-          {/* 3대 모드 탭 (전체 특강 / 내 수강신청 / 나의 강의실) */}
-          <div style={{ display: "flex", gap: 10, marginTop: 42, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 20 }}>
-            <button
-              onClick={() => handleTabChange("lecture")}
-              style={{
-                padding: "9px 20px",
-                borderRadius: 20,
-                fontSize: 14,
-                fontWeight: activeTab === "lecture" ? 800 : 600,
-                color: activeTab === "lecture" ? "#062828" : "#d1fae5",
-                background: activeTab === "lecture" ? "#ffffff" : "rgba(255,255,255,0.08)",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              🎓 전체 스터디 특강
-            </button>
-            <button
-              onClick={() => handleTabChange("applications")}
-              style={{
-                padding: "9px 20px",
-                borderRadius: 20,
-                fontSize: 14,
-                fontWeight: activeTab === "applications" ? 800 : 600,
-                color: activeTab === "applications" ? "#062828" : "#d1fae5",
-                background: activeTab === "applications" ? "#ffffff" : "rgba(255,255,255,0.08)",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              📋 내 수강신청 내역
-            </button>
-          </div>
-
         </div>
       </section>
 

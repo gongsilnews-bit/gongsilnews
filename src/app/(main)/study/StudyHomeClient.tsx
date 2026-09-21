@@ -4,33 +4,29 @@ import React, { useState } from "react";
 import Link from "next/link";
 import StudyHeader from "@/components/study/StudyHeader";
 
-interface Props {
-  lectures: any[];
-  totalCount: number;
-}
-
-const BENEFITS = [
+const PRACTICE_LOOP = [
   {
-    icon: "🎬",
-    title: "365일 무제한 다시보기",
-    desc: "가입일로부터 1년 동안 모든 VOD 특강을 횟수 제한 없이 반복 시청하고 복습할 수 있습니다.",
+    step: "STEP 1",
+    title: "배운다",
+    desc: "AI·유튜브·블로그 실무 강의를 봅니다. 이론이 아니라 오늘 바로 쓰는 방법만 다룹니다",
   },
   {
-    icon: "🔄",
-    title: "매월 신규 특강 자동 추가",
-    desc: "빠르게 바뀌는 AI 툴과 부동산 정책에 맞춰 매달 새로운 실무 특강이 업데이트됩니다.",
+    step: "STEP 2",
+    title: "해본다",
+    desc: "그날 배운 걸로 내 공실을 등록하고, 기사도 직접 써봅니다. 남의 사례가 아닌 내 매물로 합니다",
   },
   {
-    icon: "📁",
-    title: "실무 서식·프롬프트 원본",
-    desc: "계약서 특약, 체크리스트, AI 프롬프트, 영상 템플릿 원본 파일을 그대로 내려받아 씁니다.",
+    step: "STEP 3",
+    title: "남는다",
+    desc: "등록한 공실은 11만 중개망에, 쓴 기사는 뉴스 포털에 노출됩니다. 연습이 곧 실전이 됩니다",
   },
   {
-    icon: "🤝",
-    title: "11만 중개사 스터디 크루",
-    desc: "전국 공인중개사 크루와 공동중개·정보 교류를 이어가며 혼자가 아닌 1년을 만듭니다.",
+    step: "STEP 4",
+    title: "또 돈다",
+    desc: "매달 새 강의가 올라오고, 또 내 매물로 연습합니다. 1년이면 몸에 붙습니다",
   },
 ];
+
 
 const FAQS = [
   {
@@ -55,14 +51,8 @@ const FAQS = [
   },
 ];
 
-export default function StudyHomeClient({ lectures, totalCount }: Props) {
+export default function StudyHomeClient() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
-
-  const formatLecturePrice = (item: any) => {
-    const value = Number(item?.price ?? 0);
-    if (!value) return "무료 수강";
-    return `${value.toLocaleString()} P`;
-  };
 
   return (
     <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#132e27", minHeight: "100vh" }}>
@@ -78,13 +68,41 @@ export default function StudyHomeClient({ lectures, totalCount }: Props) {
           </div>
 
           <h1 style={{ fontSize: "44px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-1px", margin: "0 auto 20px", color: "#ffffff" }}>
-            매주 보고 따라 하다 보면,<br />
-            AI와 유튜브가 <span style={{ color: "#34d399" }}>익숙해집니다.</span>
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 12,
+                flexWrap: "wrap",
+                fontSize: "44px",
+                fontWeight: 900,
+                color: "#6ee7b7",
+                letterSpacing: "-1px",
+                marginBottom: 10,
+              }}
+            >
+              {/* AI 아이콘 (반짝임) */}
+              <svg width="38" height="38" viewBox="0 0 24 24" fill="#6ee7b7" aria-hidden style={{ flexShrink: 0 }}>
+                <path d="M11 2.5l1.75 5.15 5.15 1.75-5.15 1.75L11 16.3l-1.75-5.15L4.1 9.4l5.15-1.75L11 2.5z" />
+                <path d="M18.5 14l.85 2.4 2.4.85-2.4.85-.85 2.4-.85-2.4-2.4-.85 2.4-.85.85-2.4z" opacity="0.75" />
+              </svg>
+              <span>AI</span>
+
+              {/* 유튜브 아이콘 */}
+              <svg width="46" height="33" viewBox="0 0 28 20" aria-hidden style={{ flexShrink: 0 }}>
+                <rect width="28" height="20" rx="5.5" fill="#FF0000" />
+                <path d="M11.2 5.8l6.6 4.2-6.6 4.2V5.8z" fill="#ffffff" />
+              </svg>
+              <span>유튜브 시대</span>
+            </span>
+            대표님 부동산 실무에는<br />
+            <span style={{ color: "#34d399" }}>어떻게 활용하고 계신가요?</span>
           </h1>
 
           <p style={{ fontSize: "17.5px", color: "#a7f3d0", opacity: 0.9, lineHeight: 1.7, maxWidth: 660, margin: "0 auto 32px", wordBreak: "keep-all" }}>
-            공실뉴스는 매주 부동산 실무와 마케팅에 꼭 필요한 실전 특강을 제공합니다.<br />
-            놓친 강의는 언제든 무제한 다시보기로 복습할 수 있어요.
+            정보를 주고 받는 부동산에게<br />
+            유튜브 콘텐츠 제작은 선택이 아니라 필수입니다.
           </p>
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
@@ -102,10 +120,10 @@ export default function StudyHomeClient({ lectures, totalCount }: Props) {
                 boxShadow: "0 8px 24px rgba(5, 150, 105, 0.35)",
               }}
             >
-              특강 둘러보기 →
+              강의 바로가기 →
             </Link>
             <Link
-              href="/study/about"
+              href="/study/pricing"
               style={{
                 display: "inline-block",
                 padding: "16px 30px",
@@ -118,7 +136,7 @@ export default function StudyHomeClient({ lectures, totalCount }: Props) {
                 textDecoration: "none",
               }}
             >
-              공실스터디란? ›
+              금액안내 ›
             </Link>
           </div>
 
@@ -158,46 +176,46 @@ export default function StudyHomeClient({ lectures, totalCount }: Props) {
               WHY 1-YEAR STUDY
             </span>
             <h2 style={{ fontSize: "32px", fontWeight: 800, color: "#062828", margin: "8px 0 12px 0", letterSpacing: "-0.5px" }}>
-              혼자 보다가 작심삼일로 끝나는 온라인 강의는 이제 그만.
+              들을 때만 알겠고, 실무활용 못하는 강의는 이제 그만!!
             </h2>
             <p style={{ fontSize: "16px", color: "#475569", margin: 0 }}>
-              AI 기술과 부동산 정책은 매달 빠르게 변합니다. 1년 동안 곁에서 함께 뛰는 든든한 파트너가 필요합니다.
+              공실등록을 통해 내 실무에 바로 활용할 수 있습니다.
             </p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
-            {/* 기존 단발성 강의 */}
+            {/* 수백만 원짜리 오프라인 강의 */}
             <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "32px 28px" }}>
               <div style={{ display: "inline-block", background: "#fee2e2", color: "#dc2626", fontSize: 13, fontWeight: 800, padding: "4px 12px", borderRadius: 6, marginBottom: 18 }}>
-                ❌ 기존 단발성 강의
+                ❌ 수백만 원짜리 오프라인 강의
               </div>
-              <h3 style={{ fontSize: 19, fontWeight: 700, color: "#334155", margin: "0 0 16px 0" }}>혼자 듣다가 흐지부지 포기</h3>
+              <h3 style={{ fontSize: 19, fontWeight: 700, color: "#334155", margin: "0 0 16px 0" }}>들을 때만 알겠고, 실무는 그대로</h3>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: 15, color: "#64748b", lineHeight: 2.0 }}>
-                <li>· 1회성 결제 후 방치되어 수강 기한 만료</li>
-                <li>· 6개월만 지나도 쓸 수 없는 옛날 AI/정책 정보</li>
-                <li>· 막히는 부분이 생겨도 질문할 곳이 없음</li>
-                <li>· 강의는 들었지만 내 실무에 적용하지 못함</li>
+                <li>· 수백만 원을 일시불로 먼저 결제</li>
+                <li>· 들을 때만 고개 끄덕, 덮으면 백지</li>
+                <li>· 이론과 교재뿐, 내 매물에는 못 씀</li>
+                <li>· 강의는 끝났는데 달라진 건 없음</li>
               </ul>
             </div>
 
             {/* 공실뉴스 1년 스터디 */}
             <div style={{ background: "#ffffff", border: "2px solid #059669", borderRadius: 16, padding: "32px 28px", boxShadow: "0 10px 30px rgba(5, 150, 105, 0.1)" }}>
               <div style={{ display: "inline-block", background: "#ecfdf5", color: "#047857", fontSize: 13, fontWeight: 800, padding: "4px 12px", borderRadius: 6, marginBottom: 18 }}>
-                ✅ 공실뉴스 1년 스터디
+                ✅ 월 3만 원 공실스터디
               </div>
-              <h3 style={{ fontSize: 19, fontWeight: 800, color: "#062828", margin: "0 0 16px 0" }}>365일 실전 동행 마스터마인드</h3>
+              <h3 style={{ fontSize: 19, fontWeight: 800, color: "#062828", margin: "0 0 16px 0" }}>듣고 끝이 아니라, 바로 써먹습니다</h3>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: 15, color: "#064e3b", fontWeight: 600, lineHeight: 2.0 }}>
-                <li>· 1년(365일) 내내 무제한 반복 시청 및 복습</li>
-                <li>· 매달 변화하는 최신 AI 툴과 정책 특강 자동 추가</li>
-                <li>· 계약서 특약, AI 프롬프트, 영상 템플릿 원본 제공</li>
-                <li>· 전국 11만 부동산 스터디 크루와 공동중개 네트워킹</li>
+                <li>· 1년 내내 무제한 반복 수강</li>
+                <li>· 매주 새로운 실전 특강 추가</li>
+                <li>· 공실등록 한 번으로 전국 공동중개까지</li>
+                <li>· 매물보고서·유튜브·블로그 글까지 손쉽게 작성</li>
               </ul>
             </div>
           </div>
 
           <div style={{ textAlign: "center", marginTop: 36 }}>
             <Link
-              href="/study/about"
+              href="/study/benefits/ai-youtube"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -212,7 +230,7 @@ export default function StudyHomeClient({ lectures, totalCount }: Props) {
                 textDecoration: "none",
               }}
             >
-              <span>공실스터디 자세히 보기</span>
+              <span>멤버십혜택 자세히 보기</span>
               <span>→</span>
             </Link>
           </div>
@@ -220,126 +238,114 @@ export default function StudyHomeClient({ lectures, totalCount }: Props) {
         </div>
       </section>
 
-      {/* ━━━ 3. 인기 특강 미리보기 ━━━ */}
-      <section style={{ padding: "70px 0 75px", backgroundColor: "#ffffff" }}>
-        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
-            <div>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
-                CURRICULUM &amp; LECTURES
-              </span>
-              <h2 style={{ fontSize: "28px", fontWeight: 800, color: "#062828", margin: "6px 0 0 0", letterSpacing: "-0.5px" }}>
-                지금 바로 들을 수 있는 실전 특강
-              </h2>
-            </div>
-            <Link
-              href="/study/lectures"
-              style={{
-                fontSize: 14.5,
-                fontWeight: 800,
-                color: "#047857",
-                textDecoration: "none",
-                whiteSpace: "nowrap",
-              }}
-            >
-              전체 강의목록 보기{totalCount > 0 ? ` (${totalCount})` : ""} ›
-            </Link>
+      {/* ━━━ 3. 3D PASTEL AVATARS: 나이가 많아서요? 코딩/컴퓨터를 못해서요? (증명 섹션) ━━━ */}
+      <section style={{ padding: "85px 0 80px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
+        <div style={{ maxWidth: 920, margin: "0 auto", padding: "0 24px" }}>
+          
+          {/* 섹션 헤딩 */}
+          <div style={{ textAlign: "center", marginBottom: 50 }}>
+            <h2 style={{ fontSize: "32px", fontWeight: 900, color: "#062828", margin: "0 0 12px 0", letterSpacing: "-0.5px", lineHeight: 1.35 }}>
+              나이가 많아서요? 컴퓨터를 잘 못 다뤄서요?<br />
+              <span style={{ color: "#059669" }}>AI 시대 컴맹도 유튜브를 만들 수 있습니다</span>
+            </h2>
+            <p style={{ fontSize: "16px", color: "#475569", lineHeight: 1.6, margin: "0 0 4px 0" }}>
+              그 걱정, 이제 내려놓으셔도 됩니다.
+            </p>
+            <p style={{ fontSize: "14.5px", color: "#64748b", margin: 0 }}>
+              나이도, IT 지식도 상관없이 전부 하실 수 있어요. 공실스터디와 함께 하시면,<br />
+              대표님도 분명 아래와 같이 하실 수 있습니다.
+            </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 24 }}>
-            {lectures.map((item, i) => {
-              const href = item.id && !String(item.id).startsWith("sample-") ? `/study_read?id=${item.id}` : "/study/lectures";
+          {/* 5대 3D 아바타 교차 카드 리스트 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 1000, margin: "0 auto" }}>
+            {[
+              {
+                role: "소속공인중개사 1년차",
+                quote: "“블로그 글 1개 쓰는데 반나절 걸리던 제가, 공실뉴스 AI 프롬프트 쓰고 5분 만에 상위노출 글 3개를 뚝딱 완성했어요.”",
+                author: "마포구 소속공인중개사 이OO 실장",
+                image: "/images/study/avatar_realtor_female.jpg",
+                imagePosition: "left",
+              },
+              {
+                role: "50대 개업공인중개사",
+                quote: "“컴맹이라 AI는 남 이야기인 줄 알았는데, 클릭 몇 번으로 매물 쇼츠 만들었더니 유튜브 보고 젊은 임차인 문의가 3배 폭증했네요.”",
+                author: "강남구 개업공인중개사 박OO 대표",
+                image: "/images/study/avatar_realtor_male.jpg",
+                imagePosition: "right",
+              },
+              {
+                role: "상가 건물주 / 임대인",
+                quote: "“1년 넘게 공실이던 3층 통상가, 공실스터디에서 배운 타깃 마케팅과 AI 제안서로 2주 만에 우량 프랜차이즈 임대 맞췄습니다.”",
+                author: "판교 상가 건물주 정OO 대표",
+                image: "/images/study/avatar_landlord_male.jpg",
+                imagePosition: "left",
+              },
+              {
+                role: "부동산 유튜버 크리에이터",
+                quote: "“고가 카메라 장비 없이 스마트폰과 AI 음성으로 부동산 브리핑 채널 시작해 구독자 1만 명 돌파하고 전속 매물 쏟아집니다.”",
+                author: "유튜브 부동산 채널 운영자 김OO 대표",
+                image: "/images/study/avatar_creator_male.jpg",
+                imagePosition: "right",
+              },
+              {
+                role: "경매 & 특수물건 실무자",
+                quote: "“어려운 유찰 물건 권리분석부터 특약 작성까지, 1년 스터디 실무 서식 원본 덕분에 실수 없이 안전하게 계약 체결했어요.”",
+                author: "경기 분당구 공인중개사 최OO 대표",
+                image: "/images/study/avatar_senior_female.jpg",
+                imagePosition: "left",
+              },
+            ].map((item, idx) => {
+              const isLeftImage = item.imagePosition === "left";
               return (
-                <Link key={item.id || i} href={href} style={{ textDecoration: "none", color: "inherit" }}>
-                  <div
-                    style={{
-                      backgroundColor: "#ffffff",
-                      borderRadius: 14,
-                      overflow: "hidden",
-                      border: "1px solid #e2e8f0",
-                      transition: "all 0.2s ease",
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      cursor: "pointer",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow = "0 12px 24px rgba(5, 150, 105, 0.1)";
-                      e.currentTarget.style.borderColor = "#059669";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.02)";
-                      e.currentTarget.style.borderColor = "#e2e8f0";
-                    }}
-                  >
-                    <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", overflow: "hidden", backgroundColor: "#062326" }}>
-                      {item.thumbnail_url ? (
-                        <img src={item.thumbnail_url} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <div
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            background: "linear-gradient(135deg, #062326 0%, #064e3b 100%)",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "#ffffff",
-                            padding: 16,
-                            textAlign: "center",
-                          }}
-                        >
-                          <span style={{ fontSize: 24, marginBottom: 4 }}>🎓</span>
-                          <span style={{ fontSize: 13.5, fontWeight: 700, color: "#6ee7b7" }}>{item.category || "공실스터디"}</span>
-                        </div>
-                      )}
+                <div
+                  key={idx}
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 20,
+                    padding: "44px 52px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 48,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                  }}
+                >
+                  {/* 이미지 좌측 배치 */}
+                  {isLeftImage && (
+                    <div style={{ width: 230, height: 230, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <img
+                        src={item.image}
+                        alt={item.role}
+                        style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 12 }}
+                      />
                     </div>
+                  )}
 
-                    <div style={{ padding: "18px 18px 16px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                      <div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "#047857", background: "#ecfdf5", padding: "3px 8px", borderRadius: 4, display: "inline-block", marginBottom: 10 }}>
-                          {item.category || "중개실무"}
-                        </span>
-                        <h3
-                          style={{
-                            fontSize: 16,
-                            fontWeight: 800,
-                            color: "#062828",
-                            lineHeight: 1.45,
-                            margin: "0 0 10px 0",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                            wordBreak: "keep-all",
-                          }}
-                        >
-                          {item.title}
-                        </h3>
-                      </div>
-
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13, color: "#64748b", marginBottom: 12 }}>
-                          <span>{item.instructor_name || "공실뉴스 강사진"}</span>
-                          <span style={{ display: "flex", alignItems: "center", gap: 3, color: "#d97706", fontWeight: 700 }}>
-                            ★ {(item.rating || 4.9).toFixed(1)}
-                          </span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
-                          <span style={{ fontSize: 15.5, fontWeight: 800, color: item.price ? "#062828" : "#059669" }}>
-                            {formatLecturePrice(item)}
-                          </span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>수강신청 ›</span>
-                        </div>
-                      </div>
+                  {/* 본문 텍스트 */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "inline-block", background: "#ecfdf5", color: "#047857", fontSize: 14, fontWeight: 800, padding: "7px 16px", borderRadius: 20, marginBottom: 18 }}>
+                      {item.role}
                     </div>
+                    <p style={{ fontSize: 23, fontWeight: 800, color: "#062828", lineHeight: 1.6, margin: "0 0 18px 0", letterSpacing: "-0.4px", wordBreak: "keep-all" }}>
+                      {item.quote}
+                    </p>
+                    <span style={{ fontSize: 14.5, color: "#64748b", fontWeight: 600 }}>
+                      {item.author}
+                    </span>
                   </div>
-                </Link>
+
+                  {/* 이미지 우측 배치 */}
+                  {!isLeftImage && (
+                    <div style={{ width: 230, height: 230, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <img
+                        src={item.image}
+                        alt={item.role}
+                        style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 12 }}
+                      />
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -347,24 +353,30 @@ export default function StudyHomeClient({ lectures, totalCount }: Props) {
         </div>
       </section>
 
-      {/* ━━━ 4. 4대 연간 멤버십 혜택 ━━━ */}
-      <section style={{ padding: "70px 0", backgroundColor: "#f2f9f6", borderTop: "1px solid #d1fae5", borderBottom: "1px solid #d1fae5" }}>
+      {/* ━━━ 4. 실습 순환 (강의 → 내 매물로 실습 → 노출로 남음 → 반복) ━━━ */}
+      <section style={{ padding: "75px 0 70px", backgroundColor: "#f2f9f6", borderTop: "1px solid #d1fae5", borderBottom: "1px solid #d1fae5" }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
 
-          <div style={{ textAlign: "center", marginBottom: 44 }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
             <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
-              MEMBERSHIP BENEFITS
+              PRACTICE, NOT JUST LECTURES
             </span>
-            <h2 style={{ fontSize: "32px", fontWeight: 800, color: "#062828", margin: "8px 0 0 0", letterSpacing: "-0.5px" }}>
-              1년 스터디 크루가 되면 받는 4가지
+            <h2 style={{ fontSize: "32px", fontWeight: 800, color: "#062828", margin: "8px 0 12px 0", letterSpacing: "-0.5px", lineHeight: 1.4 }}>
+              강의만 듣고 끝나지 않습니다.<br />
+              <span style={{ color: "#059669" }}>공실뉴스에 공실을 등록하세요!</span>
             </h2>
+            <p style={{ fontSize: "15.5px", color: "#64748b", margin: 0, lineHeight: 1.7, wordBreak: "keep-all" }}>
+              공실뉴스가 곧 연습장입니다. 배운 그날 공실을 등록하고 기사를 써보면,<br />
+              그게 연습으로 끝나지 않고 실제 노출로 남습니다.
+            </p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 22 }}>
-            {BENEFITS.map((b) => (
+            {PRACTICE_LOOP.map((step, i) => (
               <div
-                key={b.title}
+                key={step.title}
                 style={{
+                  position: "relative",
                   background: "#ffffff",
                   border: "1px solid #d1fae5",
                   borderRadius: 16,
@@ -374,12 +386,35 @@ export default function StudyHomeClient({ lectures, totalCount }: Props) {
                   gap: 10,
                 }}
               >
-                <span style={{ fontSize: 30 }}>{b.icon}</span>
-                <h3 style={{ fontSize: 17, fontWeight: 800, color: "#062828", margin: 0, letterSpacing: "-0.3px" }}>{b.title}</h3>
-                <p style={{ fontSize: 14.5, color: "#475569", lineHeight: 1.7, margin: 0, wordBreak: "keep-all" }}>{b.desc}</p>
+                {/* 다음 단계로 이어지는 화살표 (마지막 칸 제외) */}
+                {i < PRACTICE_LOOP.length - 1 && (
+                  <span
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      right: -16,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      fontSize: 18,
+                      fontWeight: 900,
+                      color: "#6ee7b7",
+                      lineHeight: 1,
+                    }}
+                  >
+                    →
+                  </span>
+                )}
+
+                <span style={{ fontSize: 13, fontWeight: 900, color: "#059669", letterSpacing: "0.5px" }}>{step.step}</span>
+                <h3 style={{ fontSize: 19, fontWeight: 800, color: "#062828", margin: 0, letterSpacing: "-0.3px" }}>{step.title}</h3>
+                <p style={{ fontSize: 14.5, color: "#475569", lineHeight: 1.7, margin: 0, wordBreak: "keep-all" }}>{step.desc}</p>
               </div>
             ))}
           </div>
+
+          <p style={{ textAlign: "center", marginTop: 40, marginBottom: 0, fontSize: "19px", fontWeight: 800, color: "#062828", letterSpacing: "-0.3px", wordBreak: "keep-all" }}>
+            연습장이 따로 없습니다. <span style={{ color: "#059669" }}>내 실제 매물이 교재입니다.</span>
+          </p>
 
         </div>
       </section>

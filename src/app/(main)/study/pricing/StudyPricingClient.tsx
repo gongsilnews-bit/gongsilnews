@@ -33,16 +33,12 @@ export default function StudyPricingClient() {
     else router.push("/login?returnTo=" + encodeURIComponent("/study/pricing"));
   };
 
-  const handleFreeClick = () => {
-    if (user) router.push("/study/lectures");
-    else router.push("/login?returnTo=" + encodeURIComponent("/study/lectures"));
-  };
-
+  // 바로 위 서브카피가 말하는 4가지와 순서까지 1:1로 맞춘다
   const valueStats = [
-    { title: "부동산 실무 VOD 특강", original: "정가 1,200,000원 상당", highlight: "무료 포함" },
-    { title: "AI·유튜브 마스터클래스", original: "정가 1,200,000원 상당", highlight: "무료 포함" },
-    { title: "실무 서식·계약 특약 자료", original: "정가 600,000원 상당", highlight: "무제한 제공" },
-    { title: "매달 신규 특강 업데이트", original: "월 100,000원 상당", highlight: "추가비용 0원" },
+    { title: "공실 등록 월 20건", highlight: "무료 포함" },
+    { title: "AI 매물보고서", highlight: "무제한 생성" },
+    { title: "기사 등록 월 4건 포털 송고", highlight: "무료 포함" },
+    { title: "뉴스 광고영업권 (최대 50%)", highlight: "권한 부여" },
   ];
 
   const faqs = [
@@ -68,28 +64,29 @@ export default function StudyPricingClient() {
     },
   ];
 
-  const freeFeatures = [
-    { on: true, text: <>기초 실무 특강 : <strong>맛보기 과정 수강</strong></> },
-    { on: true, text: <>AI 입문 강의 : <strong>일부 무료 공개</strong></> },
-    { on: true, text: <>Q&A게시판 : <strong>열람 가능</strong></> },
-    { on: false, text: "전체 VOD 특강 : 수강 불가" },
-    { on: false, text: "1년 무제한 다시보기 : 불가" },
-    { on: false, text: "강의자료·계약 특약 다운로드 : 불가" },
-    { on: false, text: "AI 프롬프트 원본 제공 : 불가" },
-    { on: false, text: "매달 신규 특강 업데이트 : 불가" },
-    { on: false, text: "스터디 전용 Q&A 답변 : 불가" },
+  // 시중 부동산 실무교육과의 대비. on:true 는 타 강의도 주는 것, on:false 는 못 받는 것.
+  const rivalFeatures = [
+    { on: true, text: <>이론 강의 + <strong>종이 교재 수십 권</strong></> },
+    { on: true, text: <>수료증 · <strong>자격증 응시자격</strong></> },
+    { on: false, text: "결국 \"유튜브·블로그 하세요\"로 끝" },
+    { on: false, text: "콘텐츠 제작은 오롯이 내 몫" },
+    { on: false, text: "AI 실전 활용 과정 없음" },
+    { on: false, text: "내 매물에 바로 적용 불가" },
+    { on: false, text: "매달 신규 특강 업데이트 없음" },
+    { on: false, text: "일시불 결제 · 중도 해지 어려움" },
+    { on: false, text: "공실 등록 · 경공매 열람 혜택 없음" },
   ];
 
   const paidFeatures = [
-    <>전체 VOD 특강 : <strong style={{ color: "#0f172a" }}>전 과목 무제한 수강</strong></>,
+    <>전 과목 VOD + <strong>HWP·엑셀·PDF 자료 원본</strong></>,
     <>수강 기간 : <strong style={{ color: POINT }}>1년(365일) 무제한 다시보기</strong></>,
+    <><strong style={{ color: POINT_DARK }}>유튜브·블로그 콘텐츠를 강의 안에서 제작</strong></>,
+    <>AI가 <strong>대본·썸네일·본문 초안</strong>까지 생성</>,
+    <>실무 AI 프롬프트 <strong>원본 전체 공개</strong></>,
+    <><strong>내 공실·매물</strong>로 바로 실습</>,
     <>신규 특강 : <strong>매달 업데이트 전편 무료</strong></>,
-    <>강의 자료 : <strong>HWP·엑셀·PDF 원본 무제한 다운로드</strong></>,
-    <>실무 서식 : <strong>계약서·특약 서식 전체 제공</strong></>,
-    <>AI 프롬프트 : <strong style={{ color: POINT_DARK }}>실무 프롬프트 원본 전체 공개</strong></>,
-    <>Q&A게시판 : <strong>강사 직접 답변 우선 제공</strong></>,
-    <>수강 기기 : <strong>PC·스마트폰 어디서나 이어보기</strong></>,
-    <>공실뉴스 : <strong>공실 등록 및 경공매 정보 열람 혜택</strong></>,
+    <><strong>월 결제</strong> · 위약금 없이 언제든 해지</>,
+    <>공실 등록 · <strong>경공매 정보 열람 혜택</strong></>,
   ];
 
   return (
@@ -118,7 +115,7 @@ export default function StudyPricingClient() {
               border: `1px solid ${POINT_BORDER}`,
             }}
           >
-            가입비 0원 · 교재비 0원
+            수백만 원짜리 교육비, 이제 그만
           </div>
 
           <h1
@@ -131,8 +128,8 @@ export default function StudyPricingClient() {
               lineHeight: 1.3,
             }}
           >
-            <span style={{ color: POINT }}>월 3만 원</span>으로<br />
-            1년 365일 실무가 손에 붙습니다
+            AI 유튜브 + 부동산 실무<br />
+            월 <span style={{ color: POINT }}>3만 원</span>이면 OK
           </h1>
 
           <p
@@ -144,7 +141,7 @@ export default function StudyPricingClient() {
               lineHeight: 1.6,
             }}
           >
-            무료 맛보기 회원과 공실스터디 멤버십의 수강 범위 차이를 확인해 보세요.
+            수백만 원짜리 시중 실무교육과 공실스터디의 차이를 확인해 보세요.
           </p>
 
           <div
@@ -158,7 +155,7 @@ export default function StudyPricingClient() {
               margin: "0 auto",
             }}
           >
-            {/* 1. 무료 회원 */}
+            {/* 1. 시중 실무교육 (비교 대상) */}
             <div
               style={{
                 background: "#ffffff",
@@ -173,52 +170,49 @@ export default function StudyPricingClient() {
             >
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                  <h3 style={{ fontSize: "24px", fontWeight: 900, color: "#334155", margin: 0 }}>무료회원</h3>
+                  <h3 style={{ fontSize: "24px", fontWeight: 900, color: "#334155", margin: 0 }}>시중 실무교육</h3>
                   <span style={{ fontSize: "12px", fontWeight: 700, background: "#f1f5f9", color: "#64748b", padding: "4px 10px", borderRadius: 20 }}>
-                    기본 플랜
+                    오프라인 아카데미
                   </span>
                 </div>
 
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ fontSize: "38px", fontWeight: 900, color: "#1e293b", letterSpacing: "-1px" }}>
-                    ₩0
-                    <span style={{ fontSize: "14px", fontWeight: 600, color: "#94a3b8", marginLeft: 6 }}>/ 평생 무료</span>
+                    수백만 원
+                    <span style={{ fontSize: "14px", fontWeight: 600, color: "#94a3b8", marginLeft: 6 }}>/ 12개월 일시불</span>
                   </div>
                   <p style={{ fontSize: "13px", color: "#94a3b8", margin: "6px 0 0" }}>
-                    기초 특강과 AI 맛보기로 분위기를 살펴보는 입문용 플랜
+                    수백만 원을 먼저 결제하고 이론과 교재부터 시작하는 과정
                   </p>
                 </div>
 
+                {/* 비교용 카드라 버튼 대신 안내 스트립으로 오른쪽 카드와 높이를 맞춘다 */}
                 <div style={{ marginBottom: 28 }}>
-                  <button
-                    type="button"
-                    onClick={handleFreeClick}
+                  <div
                     style={{
                       width: "100%",
                       height: "50px",
-                      backgroundColor: "#1e293b",
-                      border: "none",
+                      background: "#f8fafc",
+                      border: "1px dashed #cbd5e1",
                       borderRadius: "10px",
-                      fontSize: "15px",
-                      fontWeight: 800,
-                      color: "#ffffff",
-                      cursor: "pointer",
-                      boxShadow: "0 4px 14px rgba(30, 41, 59, 0.15)",
-                      transition: "all 0.2s ease",
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#0f172a")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1e293b")}
                   >
-                    무료 특강 둘러보기 ➔
-                  </button>
+                    한 번에 결제 · 환불 규정 확인 필요
+                  </div>
                 </div>
 
                 <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 24 }}>
                   <div style={{ fontSize: "12.5px", fontWeight: 800, color: "#64748b", marginBottom: 16 }}>
-                    제공되는 기본 기능
+                    수백만 원을 내고 얻는 것
                   </div>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14, fontSize: "13.5px" }}>
-                    {freeFeatures.map((f, i) => (
+                    {rivalFeatures.map((f, i) => (
                       <li key={i} style={{ display: "flex", alignItems: "center", gap: 10, color: f.on ? "#475569" : "#94a3b8" }}>
                         <span style={{ color: f.on ? POINT : "#cbd5e1", fontWeight: f.on ? 900 : 400 }}>{f.on ? "✓" : "✕"}</span>
                         <span style={f.on ? undefined : { textDecoration: "line-through" }}>{f.text}</span>
@@ -329,13 +323,15 @@ export default function StudyPricingClient() {
         <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "40px" }}>
             <div style={{ color: POINT, fontSize: "13px", fontWeight: 800, textTransform: "uppercase", marginBottom: "8px" }}>
-              ROI &amp; VALUE GUARANTEE
+              LEARN &amp; USE
             </div>
             <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#0f172a", margin: "0 0 10px 0" }}>
-              월 30,000원으로 누리는 <span style={{ color: POINT }}>300만 원 상당의 강의</span>
+              배우고 끝이 아닙니다<br />
+              <span style={{ color: POINT }}>내 실무에 바로 활용</span>할 수 있습니다.
             </h2>
-            <p style={{ fontSize: "15px", color: "#64748b", margin: 0 }}>
-              오프라인 실무 특강 1회 수강료가 보통 20만 원 이상입니다. 공실스터디는 1년 내내 무제한입니다.
+            <p style={{ fontSize: "15px", color: "#64748b", margin: 0, lineHeight: 1.6 }}>
+              공실스터디에 가입하시면, 실무에 바로 활용하실 수 있습니다.<br />
+              공실등록 20건 + 매물보고서 + 기사작성 + 광고영업까지
             </p>
           </div>
 
@@ -352,8 +348,7 @@ export default function StudyPricingClient() {
                   boxShadow: "0 2px 10px rgba(0,0,0,0.02)",
                 }}
               >
-                <div style={{ fontSize: "15px", fontWeight: 800, color: "#1e293b", marginBottom: "8px" }}>{item.title}</div>
-                <div style={{ fontSize: "13px", color: "#94a3b8", textDecoration: "line-through", marginBottom: "6px" }}>{item.original}</div>
+                <div style={{ fontSize: "15px", fontWeight: 800, color: "#1e293b", marginBottom: "10px" }}>{item.title}</div>
                 <div style={{ fontSize: "15px", fontWeight: 900, color: POINT }}>{item.highlight}</div>
               </div>
             ))}

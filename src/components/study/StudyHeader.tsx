@@ -5,17 +5,21 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getEffectiveMemberRole } from "@/utils/permissionCheck";
+import { STUDY_BENEFITS } from "@/components/study/StudyBenefitsSubNav";
 
 /**
  * 공실스터디 전용 상단 헤더 (공실뉴스부동산 헤더와 동일 포맷 / 포인트 컬러만 에메랄드)
- * 2차 카테고리 5종: 공실스터디란? · 강의목록 · 금액안내 · 나의 강의실 · Q&A게시판
+ * 2차 카테고리: 홈 · 강의목록 · 멤버십혜택(드롭다운) · 금액안내 · 나의 강의실 · Q&A게시판
+ * 홈은 따로 두지 않고 /study 가 곧 '공실스터디란?' 이다.
  */
 const POINT = "#059669";
 
-const NAV = [
-  { label: "홈", href: "/study", match: (p: string) => p === "/study" },
-  { label: "공실스터디란?", href: "/study/about", match: (p: string) => p.startsWith("/study/about") },
+const NAV_BEFORE = [
+  { label: "홈", href: "/study", match: (p: string) => p === "/study" || p.startsWith("/study/about") },
   { label: "강의목록", href: "/study/lectures", match: (p: string) => p.startsWith("/study/lectures") || p.startsWith("/study_read") },
+];
+
+const NAV_AFTER = [
   { label: "금액안내", href: "/study/pricing", match: (p: string) => p.startsWith("/study/pricing") },
   { label: "나의 강의실", href: "/study/classroom", match: (p: string) => p.startsWith("/study/classroom") },
   { label: "Q&A게시판", href: "/study/qna", match: (p: string) => p.startsWith("/study/qna") },
@@ -27,6 +31,17 @@ export default function StudyHeader() {
   const [user, setUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>("");
   const [agencyStatus, setAgencyStatus] = useState<string>("");
+  const [benefitsOpen, setBenefitsOpen] = useState(false);
+  const benefitsTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isBenefitsActive = pathname.startsWith("/study/benefits");
+
+  const openBenefits = () => {
+    if (benefitsTimer.current) { clearTimeout(benefitsTimer.current); benefitsTimer.current = null; }
+    setBenefitsOpen(true);
+  };
+  const closeBenefits = () => {
+    benefitsTimer.current = setTimeout(() => setBenefitsOpen(false), 150);
+  };
 
   useEffect(() => {
     const supabase = createClient();
@@ -127,9 +142,9 @@ export default function StudyHeader() {
           </Link>
         </div>
 
-        {/* ━━━ 우측 내비게이션 (홈 / 공실스터디란? / 강의목록 / 금액안내 / 나의 강의실 / Q&A게시판) ━━━ */}
+        {/* ━━━ 우측 내비게이션 (홈 / 강의목록 / 멤버십혜택 / 금액안내 / 나의 강의실 / Q&A게시판) ━━━ */}
         <nav style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "nowrap" }}>
-          {NAV.map((item) => {
+          {NAV_BEFORE.map((item) => {
             const isActive = item.match(pathname);
             return (
               <Link
@@ -165,6 +180,91 @@ export default function StudyHeader() {
                       borderRadius: "2px",
                     }}
                   />
+                )}
+              </Link>
+            );
+          })}
+
+          {/* 멤버십혜택 (드롭다운) */}
+          <div style={{ position: "relative" }} onMouseEnter={openBenefits} onMouseLeave={closeBenefits}>
+            <Link
+              href={STUDY_BENEFITS[0].href}
+              style={{
+                fontSize: "14px",
+                fontWeight: isBenefitsActive ? 800 : 600,
+                color: isBenefitsActive || benefitsOpen ? POINT : "#475569",
+                textDecoration: "none",
+                transition: "color 0.15s ease",
+                padding: "6px 0",
+                whiteSpace: "nowrap",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "3px",
+                position: "relative",
+              }}
+            >
+              <span>멤버십혜택</span>
+              <span style={{ fontSize: "10px", display: "inline-block", opacity: 0.7, transition: "transform 0.2s ease", transform: benefitsOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                ▾
+              </span>
+              {isBenefitsActive && (
+                <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "2px", backgroundColor: POINT, borderRadius: "2px" }} />
+              )}
+            </Link>
+
+            {benefitsOpen && (
+              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", zIndex: 100, paddingTop: "6px" }}>
+                <div style={{ width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderBottom: "6px solid #22242a", margin: "0 auto" }} />
+                <div style={{ backgroundColor: "#22242a", borderRadius: "4px", boxShadow: "0 10px 25px rgba(0,0,0,0.35)", padding: "8px 0", minWidth: "200px" }}>
+                  {STUDY_BENEFITS.map((b) => (
+                    <Link
+                      key={b.slug}
+                      href={b.href}
+                      onClick={() => setBenefitsOpen(false)}
+                      style={{
+                        display: "block",
+                        padding: "10px 20px",
+                        color: "#ffffff",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        letterSpacing: "-0.2px",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#2e323b"; e.currentTarget.style.color = POINT; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#ffffff"; }}
+                    >
+                      {b.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {NAV_AFTER.map((item) => {
+            const isActive = item.match(pathname);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{
+                  fontSize: "14px",
+                  fontWeight: isActive ? 800 : 600,
+                  color: isActive ? POINT : "#475569",
+                  textDecoration: "none",
+                  transition: "color 0.15s ease",
+                  position: "relative",
+                  padding: "6px 0",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.color = POINT; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.color = "#475569"; }}
+              >
+                {item.label}
+                {isActive && (
+                  <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "2px", backgroundColor: POINT, borderRadius: "2px" }} />
                 )}
               </Link>
             );
