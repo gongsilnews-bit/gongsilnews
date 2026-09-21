@@ -106,8 +106,8 @@ export default function NewsrealtyPricingPage() {
               lineHeight: 1.3,
             }}
           >
-            <span style={{ color: "#ff8e15" }}>월 3만 원</span>으로<br />
-            지역 1등 로컬기자 파트너가 되세요
+            가입비 <span style={{ color: "#ff8e15" }}>무료</span> 연회비 <span style={{ color: "#ff8e15" }}>무료</span><br />
+            공실스터디 회원은 <span style={{ color: "#ff8e15" }}>무료!</span>
           </h1>
 
           <p
@@ -284,15 +284,30 @@ export default function NewsrealtyPricingPage() {
                   </span>
                 </div>
 
+                {/* 정가 3만 원을 앵커로 남겨두고, 공실스터디 수강 중에는 무료임을 강조한다 */}
                 <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: "40px", fontWeight: 900, color: "#1c1917", letterSpacing: "-1px" }}>
-                    ₩30,000
-                    <span style={{ fontSize: "14.5px", fontWeight: 700, color: "#64748b", marginLeft: 6 }}>
-                      / 월 (VAT 포함)
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+                    <span
+                      style={{
+                        fontSize: "27px",
+                        fontWeight: 800,
+                        color: "#a8a29e",
+                        letterSpacing: "-0.5px",
+                        textDecoration: "line-through",
+                        textDecorationThickness: "2.5px",
+                      }}
+                    >
+                      ₩30,000
+                    </span>
+                    <span style={{ fontSize: "40px", fontWeight: 900, color: "#ff8e15", letterSpacing: "-1px" }}>
+                      무료
+                      <span style={{ fontSize: "14.5px", fontWeight: 700, color: "#64748b", marginLeft: 6 }}>
+                        / 공실스터디 수강생
+                      </span>
                     </span>
                   </div>
-                  <p style={{ fontSize: "13px", color: "#ff8e15", fontWeight: 700, margin: "6px 0 0" }}>
-                    가입비 0원 · 연회비 0원 · 위약금 없이 언제든 해지 가능
+                  <p style={{ fontSize: "13px", color: "#ff8e15", fontWeight: 700, margin: "8px 0 0" }}>
+                    가입비 0원 · 연회비 0원
                   </p>
                 </div>
 
