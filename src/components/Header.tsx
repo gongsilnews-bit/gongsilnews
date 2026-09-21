@@ -189,7 +189,12 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
 
   // 공실뉴스부동산·공실스터디는 각자 전용 헤더를 쓰므로 메인 헤더를 숨긴다
   // (/study_read, /study_watch 등 상세 페이지는 기존대로 메인 헤더 유지)
-  if (pathname?.startsWith('/newsrealty') || pathname === '/study' || pathname?.startsWith('/study/')) {
+  if (
+    pathname?.startsWith('/newsrealty') ||
+    pathname === '/study' ||
+    pathname?.startsWith('/study/') ||
+    pathname?.startsWith('/gongsilstudy')
+  ) {
     return null;
   }
 
@@ -244,8 +249,8 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
 
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
-              <Link href="/newsrealty" style={{ color: "#ff8e15", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
-                공실뉴스부동산
+              <Link href="/study" style={{ color: "#34d399", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
+                공실스터디
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
               <NotificationBell color="#ffffff" />
@@ -285,8 +290,8 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                 공실등록 &gt;&gt;
               </div>
 
-               <Link href="/newsrealty" style={{ color: "#ff8e15", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
-                공실뉴스부동산
+               <Link href="/study" style={{ color: "#34d399", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
+                공실스터디
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
               <div 
@@ -407,14 +412,14 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
               <div style={{ display: "flex", alignItems: "center", gap: isSmallHeader ? "8px" : "12px", flexShrink: 0 }}>
                 {currentUser ? (
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Link href="/newsrealty" style={{ color: "#ff8e15", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
-                      공실뉴스부동산
+                    <Link href="/study" style={{ color: "#059669", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
+                      공실스터디
                     </Link>
                   </div>
                 ) : (
                   <>
-                    <Link href="/newsrealty" style={{ color: "#ff8e15", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
-                      공실뉴스부동산
+                    <Link href="/study" style={{ color: "#059669", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
+                      공실스터디
                     </Link>
                     <span style={{ color: "#ddd", fontSize: "13px" }}>|</span>
                     <div 
