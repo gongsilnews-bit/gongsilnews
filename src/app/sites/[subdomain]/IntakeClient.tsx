@@ -27,6 +27,51 @@ const THEMES: Record<string, { primary: string; secondary: string; dark: string 
 const MAX_PHOTOS = 5;
 const MAX_EDGE = 1280;
 
+const PROPERTY_TYPES = ["아파트", "빌라·주택", "상가", "사무실", "토지", "기타"];
+const TRADE_TYPES = ["매매", "전세", "월세"];
+
+/** 다음 우편번호 위젯. 공실등록과 같은 것을 쓰되 접수장에는 주소만 있으면 된다. */
+function openPostcode(onPick: (addr: string) => void) {
+  if (typeof window === "undefined") return;
+  const run = () => {
+    const daum = (window as any).daum;
+    if (!daum?.Postcode) return;
+    new daum.Postcode({
+      oncomplete: (data: any) => onPick(data.roadAddress || data.jibunAddress || data.address || ""),
+    }).open();
+  };
+  if ((window as any).daum?.Postcode) return run();
+  const id = "daum-postcode-script";
+  const existing = document.getElementById(id) as HTMLScriptElement | null;
+  if (existing) return existing.addEventListener("load", run);
+  const sc = document.createElement("script");
+  sc.id = id;
+  sc.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+  sc.onload = run;
+  document.head.appendChild(sc);
+}
+
+/** 만원 단위 숫자만 남긴다 */
+function onlyDigits(v: string): string {
+  return v.replace(/[^0-9]/g, "").slice(0, 9);
+}
+
+/** 천 단위 쉼표 */
+function withComma(v: string): string {
+  return v ? Number(v).toLocaleString("ko-KR") : "";
+}
+
+/** 만원 단위를 사람이 읽는 말로. 5000 -> "5,000만원", 15000 -> "1억 5,000만원" */
+function readMoney(v: string): string {
+  const n = Number(v || 0);
+  if (!n) return "";
+  const eok = Math.floor(n / 10000);
+  const man = n % 10000;
+  if (eok && man) return `${eok}억 ${man.toLocaleString("ko-KR")}만원`;
+  if (eok) return `${eok}억원`;
+  return `${man.toLocaleString("ko-KR")}만원`;
+}
+
 /** 숫자만 받아 하이픈을 끼워 넣는다. 접수자가 직접 "-" 를 치게 만들 이유가 없다. */
 function formatPhone(v: string): string {
   const d = v.replace(/\D/g, "").slice(0, 11);
@@ -107,7 +152,11 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
   const [name, setName] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
   const [area, setArea] = useState("");
-  const [budget, setBudget] = useState("");
+  const [propertyType, setPropertyType] = useState("");
+  const [tradeType, setTradeType] = useState("");
+  const [deposit, setDeposit] = useState("");   // 만원 단위
+  const [monthly, setMonthly] = useState("");   // 만원 단위
+  const [detailAddr, setDetailAddr] = useState("");
   const [moveInDate, setMoveInDate] = useState("");
   const [notes, setNotes] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -173,12 +222,28 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
         photoUrls = uploaded.filter(Boolean) as string[];
       }
 
+      // 고객문의 상세 화면이 읽는 형식에 맞춰 조립한다.
+      //   area   = "매물종류 / 지역 / 입주조건"
+      //   budget = "[거래구분] 금액"
+      const fullAddr = [area, detailAddr].filter(Boolean).join(" ").trim();
+      const composedArea = propertyType
+        ? [propertyType, fullAddr || "지역 미정", isSeeking && moveInDate ? moveInDate : ""].filter(Boolean).join(" / ")
+        : fullAddr;
+
+      let priceText = "";
+      if (tradeType === "월세") {
+        priceText = [deposit && `보증금 ${withComma(deposit)}만원`, monthly && `월 ${withComma(monthly)}만원`].filter(Boolean).join(" / ");
+      } else if (deposit) {
+        priceText = `${readMoney(deposit)}`;
+      }
+      const composedBudget = tradeType ? `[${tradeType}] ${priceText}`.trim() : priceText;
+
       const res = await submitPropertyIntake(subdomain, {
         type,
         name,
         phone: phoneInput,
-        area,
-        budget,
+        area: composedArea,
+        budget: composedBudget,
         moveInDate,
         notes,
         photoUrls,
@@ -348,15 +413,169 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
                   <input style={inputStyle} value={phoneInput} onChange={(e) => setPhoneInput(formatPhone(e.target.value))} placeholder="010-0000-0000" inputMode="numeric" maxLength={13} />
                 </div>
 
+                {/* 매물 종류 — 타이핑보다 탭 한 번이 빠르다 */}
                 <div>
-                  <label style={labelStyle}>{isSeeking ? "희망 지역" : "물건 소재지"}</label>
-                  <input style={inputStyle} value={area} onChange={(e) => setArea(e.target.value)} placeholder={isSeeking ? "예) 강남구 역삼동" : "예) 강남구 역삼동 OO빌딩"} />
+                  <label style={labelStyle}>매물 종류</label>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {PROPERTY_TYPES.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setPropertyType(propertyType === t ? "" : t)}
+                        style={{
+                          padding: "10px 16px",
+                          borderRadius: 999,
+                          border: propertyType === t ? `2px solid ${theme.primary}` : "1px solid #d7dde3",
+                          background: propertyType === t ? `${theme.primary}12` : "#fff",
+                          color: propertyType === t ? theme.primary : "#64748b",
+                          fontSize: 14.5,
+                          fontWeight: propertyType === t ? 800 : 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div style={{ display: showBudget ? "block" : "none" }}>
-                  <label style={labelStyle}>{isSeeking ? "예산" : "희망 금액"}</label>
-                  <input style={inputStyle} value={budget} onChange={(e) => setBudget(e.target.value)} placeholder={isSeeking ? "예) 보증금 3000 / 월 150" : "예) 보증금 5000 / 월 200"} />
+                {/* 주소 — 직접 치는 것보다 검색해서 고르는 편이 빠르고 정확하다 */}
+                <div>
+                  <label style={labelStyle}>{isSeeking ? "희망 지역" : "물건 소재지"}</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      style={{ ...inputStyle, flex: 1, background: "#f8fafc", cursor: "pointer" }}
+                      value={area}
+                      readOnly
+                      onClick={() => openPostcode(setArea)}
+                      placeholder="주소를 검색해 주세요"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => openPostcode(setArea)}
+                      style={{ flexShrink: 0, padding: "0 18px", borderRadius: 10, border: "none", background: "#1e293b", color: "#fff", fontSize: 14.5, fontWeight: 800, cursor: "pointer" }}
+                    >
+                      주소 검색
+                    </button>
+                  </div>
+                  {area && (
+                    <input
+                      style={{ ...inputStyle, marginTop: 8 }}
+                      value={detailAddr}
+                      onChange={(e) => setDetailAddr(e.target.value)}
+                      placeholder="상세주소 (동·호수 등)"
+                    />
+                  )}
                 </div>
+
+                {/* 거래 구분 — 고르면 아래 금액 칸이 그에 맞게 바뀐다 */}
+                <div style={{ display: showBudget ? "block" : "none" }}>
+                  <label style={labelStyle}>거래 구분</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {TRADE_TYPES.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => { setTradeType(tradeType === t ? "" : t); setMonthly(""); }}
+                        style={{
+                          flex: 1,
+                          padding: "12px 10px",
+                          borderRadius: 10,
+                          border: tradeType === t ? `2px solid ${theme.primary}` : "1px solid #d7dde3",
+                          background: tradeType === t ? `${theme.primary}12` : "#fff",
+                          color: tradeType === t ? theme.primary : "#64748b",
+                          fontSize: 15,
+                          fontWeight: tradeType === t ? 800 : 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 금액 — 만원 단위. 은행 앱처럼 쉼표와 읽는 말을 같이 보여준다 */}
+                {showBudget && tradeType && (
+                  <div>
+                    <label style={labelStyle}>{tradeType === "매매" ? "매매가" : "보증금"}</label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        style={{ ...inputStyle, paddingRight: 54, textAlign: "right", fontSize: 18, fontWeight: 800 }}
+                        value={withComma(deposit)}
+                        onChange={(e) => setDeposit(onlyDigits(e.target.value))}
+                        placeholder="0"
+                        inputMode="numeric"
+                      />
+                      <span style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 700, color: "#94a3b8" }}>만원</span>
+                    </div>
+                    {readMoney(deposit) && (
+                      <p style={{ margin: "7px 0 0", fontSize: 14, fontWeight: 800, color: theme.primary }}>{readMoney(deposit)}</p>
+                    )}
+                    <div style={{ display: "flex", gap: 7, marginTop: 9, flexWrap: "wrap" }}>
+                      {[
+                        { label: "+1억", v: 10000 },
+                        { label: "+1,000만", v: 1000 },
+                        { label: "+100만", v: 100 },
+                      ].map((q) => (
+                        <button
+                          key={q.label}
+                          type="button"
+                          onClick={() => setDeposit(String(Number(deposit || 0) + q.v))}
+                          style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#475569", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
+                        >
+                          {q.label}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setDeposit("")}
+                        style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#94a3b8", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
+                      >
+                        지우기
+                      </button>
+                    </div>
+
+                    {tradeType === "월세" && (
+                      <div style={{ marginTop: 18 }}>
+                        <label style={labelStyle}>월세</label>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            style={{ ...inputStyle, paddingRight: 54, textAlign: "right", fontSize: 18, fontWeight: 800 }}
+                            value={withComma(monthly)}
+                            onChange={(e) => setMonthly(onlyDigits(e.target.value))}
+                            placeholder="0"
+                            inputMode="numeric"
+                          />
+                          <span style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 700, color: "#94a3b8" }}>만원</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 7, marginTop: 9, flexWrap: "wrap" }}>
+                          {[
+                            { label: "+100만", v: 100 },
+                            { label: "+50만", v: 50 },
+                            { label: "+10만", v: 10 },
+                          ].map((q) => (
+                            <button
+                              key={q.label}
+                              type="button"
+                              onClick={() => setMonthly(String(Number(monthly || 0) + q.v))}
+                              style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#475569", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
+                            >
+                              {q.label}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setMonthly("")}
+                            style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #d7dde3", background: "#fff", color: "#94a3b8", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
+                          >
+                            지우기
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {isSeeking && (
                   <div>
