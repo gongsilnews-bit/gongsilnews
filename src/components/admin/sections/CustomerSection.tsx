@@ -93,22 +93,31 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
     return true;
   });
 
+  // 칩을 누르면 그 자리에서 걸린다. 예전에는 선택 표시만 바뀌고 [검색] 을 눌러야
+  // 실제로 걸려서, 눌러도 아무 일이 없는 것처럼 보였다.
+  const applyTypes = (newTypes: string[]) => {
+    setSearchTypes(newTypes);
+    setActiveFilters(prev => ({ ...prev, types: newTypes }));
+    // 상태 탭이 걸려 있으면 결과가 비어 보일 수 있어 전체로 돌린다
+    if (!newTypes.includes("전체")) setActiveTab("전체");
+  };
+
   const toggleSearchType = (type: string) => {
     if (type === "전체") {
-      setSearchTypes(["전체"]);
+      applyTypes(["전체"]);
       return;
     }
-    
+
     let newTypes = searchTypes.filter(t => t !== "전체");
-    
+
     if (newTypes.includes(type)) {
       newTypes = newTypes.filter(t => t !== type);
       if (newTypes.length === 0) newTypes = ["전체"];
     } else {
       newTypes.push(type);
     }
-    
-    setSearchTypes(newTypes);
+
+    applyTypes(newTypes);
   };
 
   return (
