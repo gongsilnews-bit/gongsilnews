@@ -60,9 +60,11 @@ interface Props {
   settings: any;
   member: any;
   companyProfile: any;
+  /** 발행한 기사 (승인된 것만, 최신 3건) */
+  articles?: any[];
 }
 
-export default function IntakeClient({ subdomain, settings, member, companyProfile }: Props) {
+export default function IntakeClient({ subdomain, settings, member, companyProfile, articles = [] }: Props) {
   // 편집기가 저장하는 값은 settings.intake 에 모여 있다
   const cfg = settings?.intake || {};
   const theme = THEMES[cfg.theme_color as string] || THEMES.teal;
@@ -450,12 +452,53 @@ export default function IntakeClient({ subdomain, settings, member, companyProfi
         </div>
       </section>
 
-      {/* ── 3. 물건 현황 · 금주의 뉴스 자리 ── */}
-      <section style={{ padding: "64px 20px", maxWidth: 1000, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", padding: "48px 20px", border: "1px dashed #cbd5e1", borderRadius: 16, color: "#94a3b8", fontSize: 14.5, fontWeight: 700 }}>
-          물건 현황 · 금주의 뉴스 섹션 자리
-        </div>
-      </section>
+      {/* ── 3. 발행한 기사 ──
+          "이 사람 믿어도 되나"에 답하는 재료다. 기사가 없으면 빈 선반을 보이느니
+          섹션째로 감춘다. 링크는 반드시 절대주소여야 한다 — 서브도메인에서 /news/1
+          로 걸면 미들웨어가 /sites/<이름>/news/1 로 밀어넣어 404 가 난다. */}
+      {articles.length > 0 && (
+        <section style={{ padding: "64px 20px" }}>
+          <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+            <h2 style={{ textAlign: "center", fontSize: 26, fontWeight: 900, color: theme.dark, margin: "0 0 8px 0" }}>
+              발행한 기사
+            </h2>
+            <p style={{ textAlign: "center", fontSize: 15, color: "#64748b", margin: "0 0 34px 0" }}>
+              {officeName}가 직접 쓴 기사입니다
+            </p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}>
+              {articles.map((a) => (
+                <a
+                  key={a.id}
+                  href={`https://www.gongsilnews.com/news/${a.article_no || a.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: "block", textDecoration: "none", color: "inherit", border: "1px solid #e8edf1", borderRadius: 14, overflow: "hidden", background: "#fff" }}
+                >
+                  <div style={{ width: "100%", aspectRatio: "16/10", background: "#f1f5f9", overflow: "hidden" }}>
+                    {a.thumbnail_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={a.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#cbd5e1", fontSize: 13, fontWeight: 700 }}>
+                        공실뉴스
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ padding: "16px 18px 18px" }}>
+                    <p style={{ margin: "0 0 10px 0", fontSize: 15.5, fontWeight: 800, color: "#1e293b", lineHeight: 1.5, wordBreak: "keep-all", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {a.title}
+                    </p>
+                    <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>
+                      {(a.published_at || a.created_at || "").slice(0, 10).replace(/-/g, ".")}
+                    </span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── 4. 오시는길 ── */}
       <section style={{ background: "#f6f8fa", borderTop: "1px solid #e8edf1", padding: "64px 20px" }}>

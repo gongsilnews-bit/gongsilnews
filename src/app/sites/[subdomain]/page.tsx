@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { getHomepageSettingsBySubdomain } from "@/app/actions/homepage";
+import { getMyArticles } from "@/app/actions/article";
 import IntakeClient from "./IntakeClient";
 
 interface PageProps {
@@ -44,12 +45,20 @@ export default async function SubdomainPage({ params }: PageProps) {
     );
   }
 
+  // 발행한 기사 (신뢰 재료). getMyArticles 는 임시저장·반려까지 주므로 승인된 것만 거른다.
+  let articles: any[] = [];
+  const artRes = await getMyArticles(res.data.member.id);
+  if (artRes.success && artRes.data) {
+    articles = (artRes.data as any[]).filter((a) => a.status === "APPROVED").slice(0, 3);
+  }
+
   return (
     <IntakeClient
       subdomain={subdomain}
       settings={res.data.settings}
       member={res.data.member}
       companyProfile={res.data.companyProfile}
+      articles={articles}
     />
   );
 }

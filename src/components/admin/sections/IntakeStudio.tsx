@@ -8,6 +8,7 @@ import {
   uploadHomepageFile,
 } from "@/app/actions/homepage";
 import IntakeClient from "@/app/sites/[subdomain]/IntakeClient";
+import { getMyArticles } from "@/app/actions/article";
 
 /**
  * 물건접수장 편집기
@@ -57,6 +58,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
   const [error, setError] = useState("");
   const [open, setOpen] = useState<PanelKey>("basic");
   const [device, setDevice] = useState<"pc" | "mobile">("pc");
+  const [articles, setArticles] = useState<any[]>([]);
 
   const [subdomain, setSubdomain] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -93,6 +95,11 @@ export default function IntakeStudio({ theme, memberId }: Props) {
         setContactPhone(d.contact_phone || "");
         setCompanyIntro(d.company_intro || "");
         if (d.intake) setIntake((prev) => ({ ...prev, ...d.intake }));
+      }
+      // 미리보기에도 실제 기사를 보여준다. 공개 페이지와 같은 기준(승인 3건)으로 거른다.
+      const art = await getMyArticles(memberId);
+      if (art.success && art.data) {
+        setArticles((art.data as any[]).filter((a) => a.status === "APPROVED").slice(0, 3));
       }
       setLoading(false);
     })();
@@ -429,6 +436,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
               settings={previewSettings}
               member={null}
               companyProfile={null}
+              articles={articles}
             />
           </div>
         </div>
