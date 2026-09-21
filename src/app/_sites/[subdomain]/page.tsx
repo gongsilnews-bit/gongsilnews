@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { getHomepageSettingsBySubdomain } from "@/app/actions/homepage";
-import SubdomainClient from "./SubdomainClient";
+import IntakeClient from "./IntakeClient";
 
 interface PageProps {
   params: Promise<{ subdomain: string }>;
@@ -44,5 +44,12 @@ export default async function SubdomainPage({ params }: PageProps) {
     );
   }
 
-  return <SubdomainClient initialData={res.data} />;
+  return (
+    <IntakeClient
+      subdomain={subdomain}
+      settings={res.data.settings}
+      member={res.data.member}
+      companyProfile={res.data.companyProfile}
+    />
+  );
 }
