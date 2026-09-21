@@ -2,14 +2,6 @@
   "installCommand": "npm install && node scripts/build-marketing.js",
   "crons": [
     {
-      "path": "/api/cron/press-release",
-      "schedule": "0 23 * * *"
-    },
-    {
-      "path": "/api/cron/news-article",
-      "schedule": "0 * * * *"
-    },
-    {
       "path": "/api/cron/onbid?region=0",
       "schedule": "0 16 * * *"
     },

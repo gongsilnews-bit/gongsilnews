@@ -62,12 +62,12 @@ export async function GET(req: Request) {
   // DB에서 스케줄러 설정값 가져오기
   const { data: configData } = await supabase.from('agent_settings').select('settings').eq('id', 'article_cron').single();
   
-  // 설정값이 없으면 기본값 적용
+  // 설정값이 없으면 기본값 적용 (기본 비활성화)
   const config = configData?.settings || {
-    isActive: true,
-    autoPublish: true, // 자동 즉시 승인/발행 기본 활성화
-    hours: [8, 14, 23],
-    categories: FULL_CATEGORY_MAP.map(c => c.section2)
+    isActive: false,
+    autoPublish: false,
+    hours: [],
+    categories: []
   };
 
   // 수동 실행이 아닌 경우(Cron 자동 실행인 경우) 시간과 활성화 여부 체크
