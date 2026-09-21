@@ -8,6 +8,7 @@ import {
   uploadHomepageFile,
 } from "@/app/actions/homepage";
 import IntakeClient from "@/app/sites/[subdomain]/IntakeClient";
+import { adminGetMemberDetail } from "@/app/admin/actions";
 
 /**
  * 물건접수장 편집기
@@ -57,6 +58,8 @@ export default function IntakeStudio({ theme, memberId }: Props) {
   const [error, setError] = useState("");
   const [open, setOpen] = useState<PanelKey>("basic");
   const [device, setDevice] = useState<"pc" | "mobile">("pc");
+  const [member, setMember] = useState<any>(null);
+  const [agency, setAgency] = useState<any>(null);
 
   const [subdomain, setSubdomain] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -94,6 +97,18 @@ export default function IntakeStudio({ theme, memberId }: Props) {
         setCompanyIntro(d.company_intro || "");
         if (d.intake) setIntake((prev) => ({ ...prev, ...d.intake }));
       }
+      // 회사 정보는 [정보설정]의 부동산 등록 내용을 그대로 쓴다. 여기서 따로 입력받지 않는다.
+      const md = await adminGetMemberDetail(memberId);
+      if (md.success) {
+        setMember((md as any).member || null);
+        setAgency((md as any).agency || null);
+        // 대표 전화를 아직 안 정했으면 부동산 정보의 번호를 기본값으로 쓴다
+        const ag: any = (md as any).agency;
+        if (ag) {
+          setContactPhone((prev) => prev || ag.phone || ag.cell || "");
+        }
+      }
+
       setLoading(false);
     })();
   }, [memberId]);
@@ -346,17 +361,40 @@ export default function IntakeStudio({ theme, memberId }: Props) {
 
                     {p.key === "company" && (
                       <>
+                        {/* 상호·대표·등록번호·주소는 [정보설정]에서 한 번 넣은 것을 그대로 가져온다 */}
+                        <div style={{ ...group, background: dark ? "#111827" : "#f8fafc", border: `1px solid ${border}`, borderRadius: 10, padding: "14px 16px" }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 800, color: sub, marginBottom: 10 }}>정보설정에서 자동으로 가져옵니다</div>
+                          {agency ? (
+                            <dl style={{ margin: 0, display: "grid", gridTemplateColumns: "72px 1fr", gap: "8px 10px", fontSize: 13.5 }}>
+                              {([
+                                ["상호", agency.name],
+                                ["대표", agency.ceo_name],
+                                ["대표전화", agency.phone],
+                                ["휴대폰", agency.cell],
+                                ["등록번호", agency.reg_num],
+                                ["소재지", [agency.address, agency.address_detail].filter(Boolean).join(" ")],
+                              ] as const).map(([k, v]) => (
+                                <React.Fragment key={k}>
+                                  <dt style={{ color: sub, fontWeight: 700 }}>{k}</dt>
+                                  <dd style={{ margin: 0, color: v ? text : "#cbd5e1", fontWeight: 700, wordBreak: "keep-all" }}>{v || "미입력"}</dd>
+                                </React.Fragment>
+                              ))}
+                            </dl>
+                          ) : (
+                            <p style={{ margin: 0, fontSize: 13, color: sub, lineHeight: 1.6 }}>
+                              등록된 부동산 정보가 없습니다. <strong style={{ color: text }}>정보설정 → 부동산정보</strong>에서 먼저 입력해 주세요.
+                            </p>
+                          )}
+                        </div>
+
                         <div style={group}>
-                          <label style={label}>대표 전화</label>
-                          <input style={field} value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="02-000-0000" />
+                          <label style={label}>대표 전화 <span style={{ fontWeight: 600 }}>(비워두면 위 번호를 씁니다)</span></label>
+                          <input style={field} value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder={agency?.phone || "02-000-0000"} />
                         </div>
                         <div style={group}>
                           <label style={label}>사무소 소개</label>
                           <textarea style={{ ...field, minHeight: 88, resize: "vertical", fontFamily: "inherit" }} value={companyIntro} onChange={(e) => setCompanyIntro(e.target.value)} placeholder="어떤 물건을 주로 다루는지 짧게 적어주세요" />
                         </div>
-                        <p style={{ margin: 0, fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
-                          주소·영업시간은 <strong style={{ color: text }}>정보설정</strong>의 부동산 정보를 그대로 씁니다.
-                        </p>
                       </>
                     )}
                   </div>
@@ -427,8 +465,8 @@ export default function IntakeStudio({ theme, memberId }: Props) {
             <IntakeClient
               subdomain={subdomain || "preview"}
               settings={previewSettings}
-              member={null}
-              companyProfile={null}
+              member={member}
+              companyProfile={agency}
             />
           </div>
         </div>
