@@ -8,7 +8,7 @@ import { getEffectiveMemberRole } from "@/utils/permissionCheck";
 
 /**
  * 공실스터디 전용 상단 헤더 (공실뉴스부동산 헤더와 동일 포맷 / 포인트 컬러만 에메랄드)
- * 2차 카테고리 4종: 공실스터디란? · 강의목록 · 나의 강의실 · Q&A게시판
+ * 2차 카테고리 5종: 공실스터디란? · 강의목록 · 금액안내 · 나의 강의실 · Q&A게시판
  */
 const POINT = "#059669";
 
@@ -16,6 +16,7 @@ const NAV = [
   { label: "홈", href: "/study", match: (p: string) => p === "/study" },
   { label: "공실스터디란?", href: "/study/about", match: (p: string) => p.startsWith("/study/about") },
   { label: "강의목록", href: "/study/lectures", match: (p: string) => p.startsWith("/study/lectures") || p.startsWith("/study_read") },
+  { label: "금액안내", href: "/study/pricing", match: (p: string) => p.startsWith("/study/pricing") },
   { label: "나의 강의실", href: "/study/classroom", match: (p: string) => p.startsWith("/study/classroom") },
   { label: "Q&A게시판", href: "/study/qna", match: (p: string) => p.startsWith("/study/qna") },
 ];
@@ -126,7 +127,7 @@ export default function StudyHeader() {
           </Link>
         </div>
 
-        {/* ━━━ 우측 내비게이션 (홈 / 공실스터디란? / 강의목록 / 나의 강의실 / Q&A게시판) ━━━ */}
+        {/* ━━━ 우측 내비게이션 (홈 / 공실스터디란? / 강의목록 / 금액안내 / 나의 강의실 / Q&A게시판) ━━━ */}
         <nav style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "nowrap" }}>
           {NAV.map((item) => {
             const isActive = item.match(pathname);
