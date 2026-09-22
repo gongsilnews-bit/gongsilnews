@@ -168,7 +168,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
     }, 450);
   };
 
-  const handleAddressChangeRequest = async () => {
+  const handleAddressChange = async () => {
     setError("");
     setRequestingAddress(true);
     const res = await changeHomepageSubdomain(memberId, requestedSubdomain);
@@ -397,7 +397,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                               </div>
                               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
                                 <button type="button" onClick={() => setChangeAddressOpen(false)} style={{ padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 7, background: "transparent", color: sub, cursor: "pointer" }}>취소</button>
-                                <button type="button" disabled={requestingAddress || !requestedSubdomain} onClick={handleAddressChangeRequest} style={{ padding: "8px 12px", border: "none", borderRadius: 7, background: "#059669", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: requestingAddress || !requestedSubdomain ? 0.55 : 1 }}>
+                                <button type="button" disabled={requestingAddress || !requestedSubdomain} onClick={handleAddressChange} style={{ padding: "8px 12px", border: "none", borderRadius: 7, background: "#059669", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: requestingAddress || !requestedSubdomain ? 0.55 : 1 }}>
                                   {requestingAddress ? "변경 중..." : "바로 변경"}
                                 </button>
                               </div>
