@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { Theme } from "../theme";
 
 interface Props {
@@ -18,9 +18,70 @@ interface Props {
  * 두면 대부분 거기서 끝난다. 급한 사람은 전화, 아닌 사람은 접수로 갈라진다.
  */
 export default function MobileBottomBar({ theme, phone, onIntake, preview }: Props) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const lastScrollTopRef = useRef(0);
+  const [scrollingUp, setScrollingUp] = useState(true);
+  const [intakeVisible, setIntakeVisible] = useState(false);
+
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+
+    let scrollTarget: Window | HTMLElement = window;
+    if (preview) {
+      let parent = bar.parentElement;
+      while (parent && parent !== document.body) {
+        const { overflowY } = window.getComputedStyle(parent);
+        if (/auto|scroll|overlay/.test(overflowY)) {
+          scrollTarget = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    }
+
+    const readTop = () =>
+      scrollTarget === window ? window.scrollY : (scrollTarget as HTMLElement).scrollTop;
+    lastScrollTopRef.current = readTop();
+
+    const handleScroll = () => {
+      const top = readTop();
+      const delta = top - lastScrollTopRef.current;
+
+      if (top <= 20) setScrollingUp(true);
+      else if (delta > 6) setScrollingUp(false);
+      else if (delta < -6) setScrollingUp(true);
+
+      lastScrollTopRef.current = top;
+    };
+
+    scrollTarget.addEventListener("scroll", handleScroll, { passive: true });
+
+    const intake = document.getElementById("intake");
+    const observer = intake
+      ? new IntersectionObserver(
+          ([entry]) => setIntakeVisible(entry.isIntersecting),
+          {
+            root: scrollTarget === window ? null : (scrollTarget as HTMLElement),
+            threshold: 0.08,
+          }
+        )
+      : null;
+    if (intake && observer) observer.observe(intake);
+
+    return () => {
+      scrollTarget.removeEventListener("scroll", handleScroll);
+      observer?.disconnect();
+    };
+  }, [preview]);
+
+  const hidden = !scrollingUp || intakeVisible;
+
   return (
     <div
+      ref={barRef}
       className={preview ? undefined : "gs-bottombar"}
+      aria-hidden={hidden}
       style={{
         position: preview ? "sticky" : "fixed",
         left: 0,
@@ -34,6 +95,11 @@ export default function MobileBottomBar({ theme, phone, onIntake, preview }: Pro
         backdropFilter: "saturate(180%) blur(8px)",
         WebkitBackdropFilter: "saturate(180%) blur(8px)",
         borderTop: "1px solid #e8ecf0",
+        transform: hidden ? "translateY(calc(100% + 8px))" : "translateY(0)",
+        opacity: hidden ? 0 : 1,
+        pointerEvents: hidden ? "none" : "auto",
+        transition: "transform 220ms ease, opacity 160ms ease",
+        willChange: "transform",
       }}
     >
       {phone && (
