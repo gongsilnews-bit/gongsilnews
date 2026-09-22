@@ -28,6 +28,13 @@ export interface IntakeInput {
   notes?: string;
   /** 선택 항목. 없어도 접수된다 */
   photoUrls?: string[];
+  /**
+   * 접수 폼은 두 걸음이다.
+   *   lead   — 이름·연락처만 받고 곧바로 저장한다. 중개사에게 알림이 간다.
+   *   detail — 저장된 뒤 이어서 받는 물건 내용. 같은 번호라 같은 고객에 붙는다.
+   * detail 에서 알림을 또 보내면 한 사람 때문에 폰이 두 번 울린다. 그래서 보내지 않는다.
+   */
+  phase?: "lead" | "detail";
 }
 
 /**
@@ -75,6 +82,9 @@ export async function submitPropertyIntake(subdomain: string, input: IntakeInput
     if (!res.success) return res;
 
     // 매물은 먼저 잡는 사람이 가져간다. 중개사가 관리자에 없더라도 바로 알 수 있게 알림을 띄운다.
+    // 뒤이어 들어오는 물건 내용(detail)은 같은 고객 기록에 붙으므로 다시 알리지 않는다.
+    if (input.phase === "detail") return { success: true };
+
     await createNotification({
       recipientId: hs.owner_id,
       type: "intake_new",

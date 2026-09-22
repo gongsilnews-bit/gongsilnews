@@ -1,10 +1,16 @@
 import { Metadata } from "next";
 import { getHomepageSettingsBySubdomain } from "@/app/actions/homepage";
-import IntakeClient from "./IntakeClient";
+import { getVacanciesByOwnerId } from "@/app/actions/vacancy";
+import { getMyArticles } from "@/app/actions/article";
+import SiteClient from "./SiteClient";
 
 interface PageProps {
   params: Promise<{ subdomain: string }>;
 }
+
+/** 홈페이지에 싣는 매물·기사 수. 더 걸면 폰에서 옆으로 미는 손만 아프다 */
+const MAX_VACANCIES = 12;
+const MAX_ARTICLES = 4;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { subdomain } = await params;
@@ -30,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function SubdomainPage({ params }: PageProps) {
   const { subdomain } = await params;
   const res = await getHomepageSettingsBySubdomain(subdomain);
-  
+
   if (!res.success || !res.data) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#f8fafc", fontFamily: "sans-serif", padding: 24, textAlign: "center" }}>
@@ -44,12 +50,30 @@ export default async function SubdomainPage({ params }: PageProps) {
     );
   }
 
+  const ownerId = res.data.member.id;
+
+  // 매물과 기사는 이미 공실등록·기사작성에 들어있는 것을 그대로 쓴다.
+  // 홈페이지 때문에 같은 내용을 두 번 입력하게 만들면 두 곳 다 관리가 안 된다.
+  // 한쪽이 실패해도 페이지는 떠야 하므로 각각 받아서 비워 둔다.
+  const [vacRes, artRes] = await Promise.all([
+    getVacanciesByOwnerId(ownerId),
+    getMyArticles(ownerId),
+  ]);
+
+  const vacancies = vacRes.success && vacRes.data ? (vacRes.data as any[]).slice(0, MAX_VACANCIES) : [];
+  // getMyArticles 는 임시저장·반려까지 주므로 승인된 것만 거른다.
+  const articles = artRes.success && artRes.data
+    ? (artRes.data as any[]).filter((a) => a.status === "APPROVED").slice(0, MAX_ARTICLES)
+    : [];
+
   return (
-    <IntakeClient
+    <SiteClient
       subdomain={subdomain}
       settings={res.data.settings}
       member={res.data.member}
       companyProfile={res.data.companyProfile}
+      vacancies={vacancies}
+      articles={articles}
     />
   );
 }

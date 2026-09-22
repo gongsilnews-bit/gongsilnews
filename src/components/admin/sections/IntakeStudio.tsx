@@ -7,8 +7,11 @@ import {
   checkSubdomainAvailable,
   uploadHomepageFile,
 } from "@/app/actions/homepage";
-import IntakeClient from "@/app/sites/[subdomain]/IntakeClient";
+import SiteClient from "@/app/sites/[subdomain]/SiteClient";
+import { heroSlides, youtubeId, safeExt, shrinkToWebp, HERO_DEFAULTS, MAX_HERO_SLIDES, type HeroSlide } from "@/app/sites/[subdomain]/theme";
 import { adminGetMemberDetail } from "@/app/admin/actions";
+import { getVacanciesByOwnerId } from "@/app/actions/vacancy";
+import { getMyArticles } from "@/app/actions/article";
 
 /**
  * 물건접수장 편집기
@@ -36,11 +39,12 @@ interface Props {
   planType?: string;
 }
 
-type PanelKey = "basic" | "design" | "fields" | "company";
+type PanelKey = "basic" | "design" | "sections" | "fields" | "company";
 
 const PANELS: { key: PanelKey; label: string; icon: string }[] = [
   { key: "basic", label: "기본설정", icon: "🔗" },
   { key: "design", label: "디자인", icon: "🎨" },
+  { key: "sections", label: "섹션", icon: "🧱" },
   { key: "fields", label: "접수항목", icon: "📝" },
   { key: "company", label: "회사정보", icon: "🏢" },
 ];
@@ -60,6 +64,9 @@ export default function IntakeStudio({ theme, memberId }: Props) {
   const [device, setDevice] = useState<"pc" | "mobile">("pc");
   const [member, setMember] = useState<any>(null);
   const [agency, setAgency] = useState<any>(null);
+  // 미리보기에도 실제 매물·기사를 넣는다. 빈 화면을 보고 "안 나온다"는 문의가 온다.
+  const [vacancies, setVacancies] = useState<any[]>([]);
+  const [articles, setArticles] = useState<any[]>([]);
 
   const [subdomain, setSubdomain] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -73,9 +80,14 @@ export default function IntakeStudio({ theme, memberId }: Props) {
 
   const [intake, setIntake] = useState<Record<string, any>>({
     theme_color: "teal",
-    hero_title: "",
-    hero_highlight: "",
-    hero_desc: "",
+    // 첫 화면 슬라이드. 칸 세 개를 미리 깔아두고 중개사가 채우는 만큼만 화면에 나간다.
+    // 첫 장에는 기본 문구를 미리 적어 둔다 — 화면에서 되살리지 않으므로, 여기서
+    // 지우면 그대로 사라진다.
+    hero_slides: [
+      { title: HERO_DEFAULTS.title, highlight: HERO_DEFAULTS.highlight, desc: HERO_DEFAULTS.desc },
+      {},
+      {},
+    ],
     cta_label: "",
     show_seeking: true,
     show_photos: true,
@@ -95,7 +107,13 @@ export default function IntakeStudio({ theme, memberId }: Props) {
         setSiteTitle(d.site_title || "");
         setContactPhone(d.contact_phone || "");
         setCompanyIntro(d.company_intro || "");
-        if (d.intake) setIntake((prev) => ({ ...prev, ...d.intake }));
+        if (d.intake) {
+          // 슬라이드가 생기기 전에 저장한 중개사는 hero_image·hero_title 만 가지고 있다.
+          // 그 값을 1번 칸으로 옮겨줘야 편집기에서 지금 쓰는 화면이 그대로 보인다.
+          const filled = heroSlides(d.intake);
+          const padded: HeroSlide[] = [0, 1, 2].map((i) => filled[i] || {});
+          setIntake((prev) => ({ ...prev, ...d.intake, hero_slides: padded }));
+        }
       }
       // 회사 정보는 [정보설정]의 부동산 등록 내용을 그대로 쓴다. 여기서 따로 입력받지 않는다.
       const md = await adminGetMemberDetail(memberId);
@@ -107,6 +125,15 @@ export default function IntakeStudio({ theme, memberId }: Props) {
         if (ag) {
           setContactPhone((prev) => prev || ag.phone || ag.cell || "");
         }
+      }
+
+      const [vacRes, artRes] = await Promise.all([
+        getVacanciesByOwnerId(memberId),
+        getMyArticles(memberId),
+      ]);
+      if (vacRes.success && vacRes.data) setVacancies((vacRes.data as any[]).slice(0, 12));
+      if (artRes.success && artRes.data) {
+        setArticles((artRes.data as any[]).filter((a: any) => a.status === "APPROVED").slice(0, 4));
       }
 
       setLoading(false);
@@ -133,12 +160,44 @@ export default function IntakeStudio({ theme, memberId }: Props) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    setError("");
+    // 로고는 작게 쓰이므로 512px 로 줄이되 화질은 높게 잡는다. SVG 는 원본 그대로 올린다.
+    const shrunk = await shrinkToWebp(file, 512, 0.92);
+    const ext = shrunk.type === "image/webp" ? "webp" : safeExt(file);
     const fd = new FormData();
-    fd.append("file", file);
-    fd.append("path", `logo/${memberId}_${Date.now()}_${file.name}`);
+    fd.append("file", shrunk);
+    fd.append("path", `logo/${memberId}_${Date.now()}.${ext}`);
     const up = await uploadHomepageFile(fd);
     if (up.success) setLogoUrl((up as any).url);
     else setError((up as any).error || "로고 업로드에 실패했습니다.");
+  };
+
+  const slides: HeroSlide[] = Array.isArray(intake.hero_slides) && intake.hero_slides.length
+    ? intake.hero_slides.slice(0, MAX_HERO_SLIDES)
+    : [{}, {}, {}];
+
+  const setSlide = (i: number, patch: Partial<HeroSlide>) => {
+    setIntake((prev) => {
+      const list: HeroSlide[] = [0, 1, 2].map((n) => (prev.hero_slides?.[n] as HeroSlide) || {});
+      list[i] = { ...list[i], ...patch };
+      return { ...prev, hero_slides: list };
+    });
+  };
+
+  const onSlidePhoto = async (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError("");
+    // 첫 화면은 화면을 가득 채우는 자리다. 폰으로 찍은 4~8MB 사진을 그대로 올리면
+    // 방문자가 그걸 다 받고 나서야 문구가 보인다. 긴 변 1280px WebP 로 줄여 보낸다.
+    const shrunk = await shrinkToWebp(file);
+    const fd = new FormData();
+    fd.append("file", shrunk);
+    fd.append("path", `hero/${memberId}_${i}_${Date.now()}.webp`);
+    const up = await uploadHomepageFile(fd);
+    if (up.success) setSlide(i, { image: (up as any).url });
+    else setError((up as any).error || "사진 업로드에 실패했습니다.");
   };
 
   const handleSave = async () => {
@@ -329,21 +388,121 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                         </div>
 
                         <div style={group}>
-                          <label style={label}>첫 줄</label>
-                          <input style={field} value={intake.hero_title || ""} onChange={(e) => setIntake({ ...intake, hero_title: e.target.value })} placeholder="내놓을 물건이 있으신가요?" />
+                          <label style={label}>첫 화면 (최대 3장)</label>
+                          <p style={{ margin: "0 0 12px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
+                            사진이나 유튜브 주소를 넣으면 6초(영상은 14초)마다 넘어갑니다.
+                            한 장만 채우면 넘어가지 않고 그 장만 뜹니다. 아무것도 안 넣으면 고른 색으로 채워집니다.
+                            <br />
+                            <strong>문구 칸을 비우면 그 줄은 화면에 나오지 않습니다.</strong> 사진만 크게 보이게 하려면 세 칸을 모두 비우세요.
+                          </p>
+
+                          {slides.map((sl, i) => {
+                            const vid = youtubeId(sl.youtube);
+                            return (
+                              <div
+                                key={i}
+                                style={{ border: `1px solid ${border}`, borderRadius: 10, padding: "14px 14px 4px", marginBottom: 12, background: dark ? "#111827" : "#fcfdfe" }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 800, color: text }}>
+                                    <span style={{ width: 20, height: 20, borderRadius: "50%", background: "#059669", color: "#fff", fontSize: 11.5, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                      {i + 1}
+                                    </span>
+                                    {i === 0 ? "첫 장" : `${i + 1}번째 장`}
+                                  </span>
+                                  {(sl.image || sl.youtube || sl.title || sl.highlight || sl.desc) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSlide(i, { image: "", youtube: "", title: "", highlight: "", desc: "" })}
+                                      style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${border}`, background: "transparent", color: sub, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                                    >
+                                      비우기
+                                    </button>
+                                  )}
+                                </div>
+
+                                {sl.image && !vid ? (
+                                  <div style={{ position: "relative", borderRadius: 8, overflow: "hidden", border: `1px solid ${border}`, marginBottom: 12 }}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={sl.image} alt="" style={{ width: "100%", height: 104, objectFit: "cover", display: "block" }} />
+                                    <button
+                                      type="button"
+                                      onClick={() => setSlide(i, { image: "" })}
+                                      style={{ position: "absolute", top: 8, right: 8, padding: "5px 10px", borderRadius: 6, border: "none", background: "rgba(0,0,0,.66)", color: "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer" }}
+                                    >
+                                      사진 빼기
+                                    </button>
+                                  </div>
+                                ) : vid ? (
+                                  <div style={{ position: "relative", borderRadius: 8, overflow: "hidden", border: `1px solid ${border}`, marginBottom: 12 }}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`} alt="" style={{ width: "100%", height: 104, objectFit: "cover", display: "block" }} />
+                                    <span style={{ position: "absolute", left: 8, top: 8, padding: "4px 9px", borderRadius: 5, background: "#ef4444", color: "#fff", fontSize: 11.5, fontWeight: 800 }}>
+                                      유튜브
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <label
+                                    style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 64, border: `1px dashed ${border}`, borderRadius: 8, fontSize: 13, fontWeight: 700, color: sub, cursor: "pointer", marginBottom: 12 }}
+                                  >
+                                    + 사진 올리기
+                                    <input type="file" accept="image/*" hidden onChange={(e) => onSlidePhoto(i, e)} />
+                                  </label>
+                                )}
+
+                                <div style={{ marginBottom: 12 }}>
+                                  <label style={{ ...label, marginBottom: 5 }}>유튜브 주소 (넣으면 영상이 먼저입니다)</label>
+                                  <input
+                                    style={field}
+                                    value={sl.youtube || ""}
+                                    onChange={(e) => setSlide(i, { youtube: e.target.value })}
+                                    placeholder="https://youtu.be/..."
+                                  />
+                                  {sl.youtube && !vid && (
+                                    <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444", fontWeight: 700 }}>
+                                      유튜브 주소가 아닌 것 같습니다. 주소창에 있는 것을 그대로 붙여넣어 주세요.
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div style={{ marginBottom: 12 }}>
+                                  <label style={{ ...label, marginBottom: 5 }}>첫 줄</label>
+                                  <input style={field} value={sl.title || ""} onChange={(e) => setSlide(i, { title: e.target.value })} placeholder="내놓을 물건이 있으신가요?" />
+                                </div>
+                                <div style={{ marginBottom: 12 }}>
+                                  <label style={{ ...label, marginBottom: 5 }}>둘째 줄 (강조)</label>
+                                  <input style={field} value={sl.highlight || ""} onChange={(e) => setSlide(i, { highlight: e.target.value })} placeholder="여기에 접수해 주세요" />
+                                </div>
+                                <div style={{ marginBottom: 14 }}>
+                                  <label style={{ ...label, marginBottom: 5 }}>설명</label>
+                                  <textarea
+                                    style={{ ...field, minHeight: 60, resize: "vertical", fontFamily: "inherit" }}
+                                    value={sl.desc || ""}
+                                    onChange={(e) => setSlide(i, { desc: e.target.value })}
+                                    placeholder="연락처만 남겨 주시면 확인 후 바로 연락드립니다."
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                        <div style={group}>
-                          <label style={label}>둘째 줄 (강조)</label>
-                          <input style={field} value={intake.hero_highlight || ""} onChange={(e) => setIntake({ ...intake, hero_highlight: e.target.value })} placeholder="여기에 접수해 주세요" />
-                        </div>
-                        <div style={group}>
-                          <label style={label}>설명</label>
-                          <textarea style={{ ...field, minHeight: 72, resize: "vertical", fontFamily: "inherit" }} value={intake.hero_desc || ""} onChange={(e) => setIntake({ ...intake, hero_desc: e.target.value })} placeholder="연락처만 남겨 주시면 확인 후 바로 연락드립니다." />
-                        </div>
+
                         <div style={group}>
                           <label style={label}>버튼 문구</label>
                           <input style={field} value={intake.cta_label || ""} onChange={(e) => setIntake({ ...intake, cta_label: e.target.value })} placeholder="1분이면 접수 끝" />
                         </div>
+                      </>
+                    )}
+
+                    {p.key === "sections" && (
+                      <>
+                        <p style={{ margin: "0 0 6px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
+                          순서는 고정입니다 — 첫 화면 → 매물 → 기사 → 오시는 길 → 접수 → 연락처.
+                          내용이 없는 섹션은 켜 두어도 자동으로 숨습니다.
+                        </p>
+                        {toggle("show_vacancy", "우리 매물", "공실등록에 올린 매물을 그대로 보여줍니다")}
+                        {toggle("show_article", "기사 · 칼럼", "승인된 기사 최신 4건을 보여줍니다")}
+                        {toggle("show_location", "오시는 길", "주소 · 전화 · 영업시간과 길찾기 버튼")}
                       </>
                     )}
 
@@ -462,11 +621,14 @@ export default function IntakeStudio({ theme, memberId }: Props) {
             }}
           >
             {/* 실제 공개 페이지를 그대로 그린다 — 편집 화면과 실물이 어긋나지 않는다 */}
-            <IntakeClient
+            <SiteClient
               subdomain={subdomain || "preview"}
               settings={previewSettings}
               member={member}
               companyProfile={agency}
+              vacancies={vacancies}
+              articles={articles}
+              preview={device}
             />
           </div>
         </div>

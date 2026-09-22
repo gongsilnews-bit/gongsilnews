@@ -28,6 +28,20 @@ interface NewsReadContentProps {
   initialAuthorEmail?: string | null;
   initialAuthorVacancies?: any[];
   initialAttachedVacancy?: any;
+  /**
+   * 사이드바의 [많이 본 뉴스].
+   * 포털에서는 켜 두고, 중개사 자기 도메인에서 읽는 기사에서는 끈다 —
+   * 그 자리에 다른 기사를 늘어놓으면 읽던 사람이 그리로 샌다.
+   */
+  showPopularNews?: boolean;
+  /**
+   * 공유(카카오톡·URL 복사)로 내보낼 주소.
+   * 비워두면 공실뉴스 포털 주소로 나간다. 중개사 도메인에서 읽을 때는 그 중개사의
+   * 주소를 넘긴다 — 방문자가 퍼 나른 링크가 포털이 아니라 중개사에게 사람을 보낸다.
+   */
+  shareUrl?: string;
+  /** 공유 카드에 붙는 매체 이름. 비우면 "공실뉴스" */
+  shareSiteName?: string;
 }
 
 const FONT_SIZES = [
@@ -45,6 +59,9 @@ export default function NewsReadContent({
   initialAuthorEmail = null,
   initialAuthorVacancies = [],
   initialAttachedVacancy = null,
+  showPopularNews = true,
+  shareUrl,
+  shareSiteName,
 }: NewsReadContentProps) {
   const pathname = usePathname() || "";
   const router = useRouter();
@@ -469,6 +486,10 @@ export default function NewsReadContent({
     }
   };
 
+  // 내보낼 주소. 중개사 도메인에서 읽고 있으면 그 주소로 나간다.
+  const outboundUrl = shareUrl || `https://gongsilnews.com/news/${article.article_no || article.id}`;
+  const outboundSite = shareSiteName || "공실뉴스";
+
   // 카카오톡 공유
   const handleKakaoShare = () => {
     const Kakao = (window as any).Kakao;
@@ -476,18 +497,16 @@ export default function NewsReadContent({
       setToastMessage("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
       return;
     }
-    // 무조건 운영 서버 도메인으로 하드코딩
-    const shareUrl = `https://gongsilnews.com/news/${article.article_no || article.id}`;
     Kakao.Share.sendDefault({
       objectType: "feed",
       content: {
         title: article.title,
-        description: article.subtitle || `${formatSection1(article.section1)} | 공실뉴스`,
+        description: article.subtitle || `${formatSection1(article.section1)} | ${outboundSite}`,
         imageUrl: article.thumbnail_url || "",
-        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+        link: { mobileWebUrl: outboundUrl, webUrl: outboundUrl },
       },
       buttons: [
-        { title: "기사 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
+        { title: "기사 보기", link: { mobileWebUrl: outboundUrl, webUrl: outboundUrl } },
       ],
     });
     setShowShareDropdown(false);
@@ -495,8 +514,7 @@ export default function NewsReadContent({
 
   // URL 복사
   const handleCopyUrl = () => {
-    // 무조건 운영 서버 도메인으로 하드코딩
-    const url = `https://gongsilnews.com/news/${article.article_no || article.id}`;
+    const url = outboundUrl;
     navigator.clipboard.writeText(url).then(() => {
       setToastMessage("URL이 복사되었습니다.");
     }).catch(() => {
@@ -1099,7 +1117,7 @@ export default function NewsReadContent({
             )}
 
             {/* 2. 많이 본 뉴스 (해당 기사 2차 카테고리 연동 + 기간 선택 독립 컴포넌트) */}
-            {isMobile ? (
+            {showPopularNews && (isMobile ? (
               <MobileArticleDetailPopularNewsWidget
                 currentArticleId={article.id}
                 section1={article.section1}
@@ -1115,7 +1133,7 @@ export default function NewsReadContent({
                 allArticles={popularArticles}
                 basePath={basePath}
               />
-            )}
+            ))}
 
             {/* 3. 광고 배너 */}
             <div style={{ marginBottom: 20 }}>

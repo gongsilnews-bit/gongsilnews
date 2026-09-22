@@ -10,6 +10,35 @@ function getAdminClient() {
   });
 }
 
+/**
+ * DB 한 줄을 화면이 쓰는 모양으로 편다.
+ *
+ * 이 테이블은 상호·로고·전화처럼 오래된 값은 각자 컬럼에 그대로 두고,
+ * 첫 화면 슬라이드·섹션 on/off 처럼 자주 늘어나는 설정만 design_settings(JSONB)
+ * 안의 intake 에 모아 둔다. 설정이 하나 늘 때마다 컬럼을 만들지 않아도 된다.
+ *
+ * 한때 settings 라는 JSONB 한 칸에 전부 몰아넣는 안이 있었으나(sql/migrate_homepage_settings.sql)
+ * 롤백 스크립트로 되돌려져 그 컬럼은 DB에 없다. 코드만 남아 있어서 저장이 통째로
+ * 실패하고 있었다 — 여기 있는 컬럼에 맞춘다.
+ */
+function flattenRow(row: any) {
+  const ds = row?.design_settings || {};
+  return {
+    id: row.id,
+    owner_id: row.owner_id,
+    subdomain: row.subdomain,
+    is_active: row.is_active,
+    created_at: row.created_at,
+    theme_name: row.theme_name || null,
+    logo_url: row.logo_url || null,
+    favicon_url: row.favicon_url || null,
+    site_title: row.site_title || null,
+    contact_phone: row.contact_phone || null,
+    company_intro: row.company_intro || null,
+    intake: ds.intake || {},
+  };
+}
+
 // ── 홈페이지 설정 조회 ──
 export async function getHomepageSettings(ownerId: string) {
   const supabase = getAdminClient();
@@ -25,30 +54,7 @@ export async function getHomepageSettings(ownerId: string) {
     }
     if (error) return { success: false, error: error.message };
 
-    // JSONB(settings)에 들어있는 값들을 예전 화면(프론트엔드)이 인식할 수 있게 평탄화(Flatten)해서 내려줌
-    // 이렇게 하면 프론트엔드 코드를 당장 전부 뜯어고칠 필요가 없음
-    const flatData = {
-      id: data.id,
-      owner_id: data.owner_id,
-      subdomain: data.subdomain,
-      is_active: data.is_active,
-      created_at: data.created_at,
-      ...data.settings // 하위 호환성을 위해 최상위로 속성 전개 (theme_name 등은 이미 직단에 있음)
-    };
-    
-    // 만약 settings 내부에 카테고리별로 깊게 숨은 속성이 있다면 여기서 추출
-    const header = data.settings?.header || {};
-    const loc = data.settings?.location_map || {};
-    const info = data.settings?.company_info_page || {};
-
-    flatData.logo_url = header.logo_url || null;
-    flatData.favicon_url = header.favicon_url || null;
-    flatData.site_title = header.site_title || null;
-    flatData.contact_phone = loc.contact_number || null;
-    flatData.company_intro = info.greeting_text || null;
-    flatData.theme_name = data.settings?.theme_name || null;
-
-    return { success: true, data: flatData };
+    return { success: true, data: flattenRow(data) };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -64,13 +70,27 @@ export async function saveHomepageSettings(ownerId: string, inputData: {
   contact_phone?: string;
   company_intro?: string;
   is_active?: boolean;
-  /** 물건접수장 전용 설정 (색상·문구·받을 항목) */
+  /** 중개사 홈페이지 설정 (색상·사진·문구·섹션·받을 항목) */
   intake?: {
     theme_color?: string;
+    /** 첫 화면 슬라이드 (최대 3장). 사진이나 유튜브를 깔고 문구를 따로 얹는다 */
+    hero_slides?: {
+      image?: string;
+      youtube?: string;
+      title?: string;
+      highlight?: string;
+      desc?: string;
+    }[];
+    /** 슬라이드가 생기기 전에 쓰던 낱개 값. 읽을 때 1번 슬라이드로 옮긴다 */
+    hero_image?: string | null;
     hero_title?: string;
     hero_highlight?: string;
     hero_desc?: string;
     cta_label?: string;
+    /** 섹션 노출. 내용이 없으면 켜 두어도 화면에서 자동으로 빠진다 */
+    show_vacancy?: boolean;
+    show_article?: boolean;
+    show_location?: boolean;
     show_seeking?: boolean;
     show_photos?: boolean;
     show_budget?: boolean;
@@ -90,52 +110,36 @@ export async function saveHomepageSettings(ownerId: string, inputData: {
       }
     }
 
-    // 2. 기존 DB에 저장되어 있던 JSONB(settings) 전체를 먼저 가져옴
+    // 2. design_settings 안에 이미 들어있던 설정을 먼저 가져온다
     const { data: existingData } = await supabase
       .from('homepage_settings')
-      .select('settings')
+      .select('design_settings')
       .eq('owner_id', ownerId)
-      .single();
-    
-    const cs = existingData?.settings || {}; // 현재 세팅값 (Current Settings)
+      .maybeSingle();
 
-    // 3. 기존 JSON 구조를 해치지 않으면서(Deep Merge), 이번에 입력된 데이터만 안전하게 덮어쓰기
-    const newSettings = {
-      ...cs,
-      theme_name: inputData.theme_name !== undefined ? inputData.theme_name : cs.theme_name,
-      header: {
-        ...(cs.header || {}),
-        logo_url: inputData.logo_url !== undefined ? inputData.logo_url : cs.header?.logo_url,
-        favicon_url: inputData.favicon_url !== undefined ? inputData.favicon_url : cs.header?.favicon_url,
-        site_title: inputData.site_title !== undefined ? inputData.site_title : cs.header?.site_title,
+    const ds = existingData?.design_settings || {};
+
+    // 3. 넘어온 키만 덮어쓴다. 편집기가 일부만 저장해도 나머지가 날아가지 않는다.
+    const payload: Record<string, any> = {
+      owner_id: ownerId,
+      subdomain: inputData.subdomain,
+      design_settings: {
+        ...ds,
+        intake: { ...(ds.intake || {}), ...(inputData.intake || {}) },
       },
-      location_map: {
-        ...(cs.location_map || {}),
-        contact_number: inputData.contact_phone !== undefined ? inputData.contact_phone : cs.location_map?.contact_number,
-      },
-      company_info_page: {
-        ...(cs.company_info_page || {}),
-        greeting_text: inputData.company_intro !== undefined ? inputData.company_intro : cs.company_info_page?.greeting_text,
-      },
-      // 넘어온 키만 덮어쓴다. 편집기가 일부만 저장해도 나머지가 날아가지 않는다.
-      intake: {
-        ...(cs.intake || {}),
-        ...(inputData.intake || {}),
-      }
     };
+    if (inputData.is_active !== undefined) payload.is_active = inputData.is_active;
+    if (inputData.theme_name !== undefined) payload.theme_name = inputData.theme_name;
+    if (inputData.logo_url !== undefined) payload.logo_url = inputData.logo_url;
+    if (inputData.favicon_url !== undefined) payload.favicon_url = inputData.favicon_url;
+    if (inputData.site_title !== undefined) payload.site_title = inputData.site_title;
+    if (inputData.contact_phone !== undefined) payload.contact_phone = inputData.contact_phone;
+    if (inputData.company_intro !== undefined) payload.company_intro = inputData.company_intro;
 
-    // 4. DB에는 딱 4개의 핵심 컬럼과 1개의 JSON 컬럼만 넘겨서 저장
+    // 4. 회원당 한 줄이므로 owner_id 로 겹치면 갱신한다
     const { error } = await supabase
       .from('homepage_settings')
-      .upsert(
-        { 
-          owner_id: ownerId, 
-          subdomain: inputData.subdomain, 
-          is_active: inputData.is_active,
-          settings: newSettings 
-        },
-        { onConflict: 'owner_id' }
-      );
+      .upsert(payload, { onConflict: 'owner_id' });
 
     if (error) return { success: false, error: error.message };
     return { success: true };
@@ -199,25 +203,14 @@ export async function getHomepageSettingsBySubdomain(subdomain: string) {
     }
 
     const flatSettings = {
-      ...hs.settings,
-      theme_name: hs.settings?.theme_name || "template01",
-      logo_url: hs.settings?.header?.logo_url || null,
-      favicon_url: hs.settings?.header?.favicon_url || null,
-      site_title: hs.settings?.header?.site_title || null,
-      contact_phone: hs.settings?.location_map?.contact_number || null,
-      company_intro: hs.settings?.company_info_page?.greeting_text || null,
+      ...flattenRow(hs),
+      theme_name: hs.theme_name || "template01",
     };
 
     return {
       success: true,
       data: {
-        settings: {
-          id: hs.id,
-          subdomain: hs.subdomain,
-          is_active: hs.is_active,
-          created_at: hs.created_at,
-          ...flatSettings
-        },
+        settings: flatSettings,
         member,
         companyProfile
       }
@@ -260,13 +253,32 @@ async function ensureBucket(supabase: ReturnType<typeof getAdminClient>, bucketN
 }
 
 // ── 홈페이지 파일 업로드 (로고/파비콘 — WebP 압축 후 전송) ──
+/**
+ * 스토리지 키로 쓸 수 있는 글자만 남긴다.
+ *
+ * 사람들이 올리는 파일은 "ChatGPT Image 2026년 9월 20일 오후 06_10_48.png" 처럼
+ * 한글과 공백이 섞여 있고, 그대로 키로 쓰면 스토리지가 Invalid key 로 거절한다.
+ * 부르는 쪽에서 이미 안전한 이름을 만들지만, 한 곳이라도 빠뜨리면 같은 사고가 나므로
+ * 여기서 한 번 더 거른다.
+ */
+function safeStoragePath(path: string): string {
+  return path
+    .split('/')
+    .map((seg) => seg.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_{2,}/g, '_'))
+    .filter(Boolean)
+    .join('/');
+}
+
 export async function uploadHomepageFile(formData: FormData) {
   const file = formData.get('file') as File;
-  const path = formData.get('path') as string;
+  const rawPath = formData.get('path') as string;
 
-  if (!file || !path) {
+  if (!file || !rawPath) {
     return { success: false, error: "파일 또는 경로가 누락되었습니다." };
   }
+
+  const path = safeStoragePath(rawPath);
+  if (!path) return { success: false, error: "저장 경로를 만들 수 없습니다." };
 
   const supabase = getAdminClient();
   try {

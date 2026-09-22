@@ -1,0 +1,76 @@
+import NewsReadContent from "@/components/NewsReadContent";
+import { loadSubdomainArticle } from "../../../news/loadArticle";
+import SubdomainArticleBar from "../../../news/[article_id]/SubdomainArticleBar";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+interface PageProps {
+  params: Promise<{ subdomain: string; article_id: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps) {
+  const { subdomain, article_id } = await params;
+  const { article } = await loadSubdomainArticle(subdomain, article_id);
+  if (article) return { title: article.title, description: article.subtitle || undefined };
+  return { title: "기사" };
+}
+
+/**
+ * 폰에서 읽는 기사.
+ *
+ * NewsReadContent 는 주소가 /m 으로 시작하면 스스로 모바일 서식으로 그린다.
+ * 그래서 PC 쪽과 같은 것을 주소만 달리해 올린다.
+ */
+export default async function SubdomainMobileArticlePage({ params }: PageProps) {
+  const { subdomain, article_id } = await params;
+  const { site, article, authorRole, authorEmail, attachedVacancy } =
+    await loadSubdomainArticle(subdomain, article_id);
+
+  if (!site) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", fontFamily: "sans-serif" }}>
+        페이지를 찾을 수 없습니다.
+      </div>
+    );
+  }
+
+  if (!article) {
+    return (
+      <div style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
+        <SubdomainArticleBar subdomain={subdomain} settings={site.settings} member={site.member} companyProfile={site.companyProfile} />
+        <div style={{ padding: "80px 20px", textAlign: "center", color: "#94a3b8" }}>
+          <div style={{ fontSize: 40, marginBottom: 14 }}>📄</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#475569", marginBottom: 8 }}>기사를 찾을 수 없습니다.</div>
+          <div style={{ fontSize: 13.5 }}>삭제되었거나 존재하지 않는 기사입니다.</div>
+        </div>
+      </div>
+    );
+  }
+
+  // 퍼 나른 링크가 포털이 아니라 이 중개사에게 사람을 보내도록, 공유 주소를 중개사 것으로 준다.
+  // 로컬에서 보든 어디서 보든 공유는 실제 서비스 주소여야 하므로 여기서 직접 만든다.
+  const officeName =
+    site.settings?.site_title ||
+    site.companyProfile?.name ||
+    site.companyProfile?.company_name ||
+    site.member?.name ||
+    "부동산";
+  const shareUrl = `https://${subdomain}.gongsilnews.com/news/${article.article_no || article.id}`;
+
+  return (
+    <>
+      <SubdomainArticleBar subdomain={subdomain} settings={site.settings} member={site.member} companyProfile={site.companyProfile} />
+      <NewsReadContent
+        article={article}
+        popularArticles={[]}
+        showPopularNews={false}
+        shareUrl={shareUrl}
+        shareSiteName={officeName}
+        initialAuthorRole={authorRole}
+        initialAuthorEmail={authorEmail}
+        initialAttachedVacancy={attachedVacancy}
+      />
+    </>
+  );
+}
