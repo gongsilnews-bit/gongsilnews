@@ -127,9 +127,11 @@ function RealtyAdminContent() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
-      // 🔐 비로그인 → 메인으로 리다이렉트
+      // 🔐 비로그인 → 로그인 화면으로 보내고, 끝나면 보던 화면으로 되돌린다.
+      //    메인으로 떨구면 물건접수장을 고치러 온 사람이 다시 메뉴를 찾아 들어와야 한다.
       if (!user) {
-        window.location.href = "/";
+        const returnTo = window.location.pathname + window.location.search;
+        window.location.href = `/login?returnTo=${encodeURIComponent(returnTo)}`;
         return;
       }
 

@@ -94,6 +94,26 @@ export default function SiteClient({
     [subdomain, preview]
   );
 
+  /**
+   * 관리자 화면으로.
+   *
+   * 폰이면 모바일 관리자, PC면 PC 관리자로 간다. 둘은 화면이 아예 달라서 섞이면
+   * 폰에서 1,000px 짜리 표를 보게 된다.
+   *
+   * 로그인 여부는 여기서 알 수 없다 — 서브도메인에는 포털 로그인 쿠키가 없다.
+   * 그래서 판단은 도착한 관리자 화면에 맡긴다. 안 돼 있으면 로그인으로 보냈다가
+   * 로그인 후 이 화면으로 되돌린다.
+   */
+  const goAdmin = useCallback((ev: React.MouseEvent) => {
+    ev.preventDefault();
+    const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
+    const isPhone = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) || window.innerWidth <= 768;
+    const path = isPhone ? "/m/admin/homepage" : "/realty_admin?menu=homepage";
+    // 로컬에서 볼 때는 같은 서버의 관리자를 연다. 운영 주소로 튀면 확인이 안 된다.
+    const origin = window.location.hostname === "localhost" ? window.location.origin : "https://gongsilnews.com";
+    window.open(`${origin}${path}`, "_blank", "noopener,noreferrer");
+  }, []);
+
   const jump = useCallback((id: string) => {
     if (id === "top") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -181,13 +201,13 @@ export default function SiteClient({
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
           <span>{officeName}</span>
           {/*
-            관리자로 가는 문. 서브도메인에는 관리자 화면이 없으므로 포털 주소로 바로 보낸다.
-            중개사가 홈페이지를 보다가 고칠 곳을 발견했을 때 주소를 다시 칠 필요가 없다.
+            관리자로 가는 문. 서브도메인에는 관리자 화면이 없으므로 포털 주소로 보낸다.
+            폰에서 PC 관리자를 열면 표가 화면 밖으로 나가므로 기기에 맞는 쪽으로 보낸다.
+            로그인이 안 돼 있으면 각 관리자 화면이 로그인으로 보냈다가 여기로 되돌린다.
           */}
           <a
-            href="https://gongsilnews.com/realty_admin?menu=homepage"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#"
+            onClick={goAdmin}
             style={{
               padding: "2px 9px",
               borderRadius: 999,

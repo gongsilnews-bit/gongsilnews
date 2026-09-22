@@ -59,7 +59,9 @@ export default function MobileHomepageAdminPage() {
       const supabase = createClient();
       const { data } = await supabase.auth.getUser();
       if (!data?.user) {
-        router.push("/m");
+        // 로그인 후 이 화면으로 되돌아온다. 홈페이지 푸터의 admin 을 누르고 온 사람은
+        // 고칠 데가 정해져 있어서, 로그인하고 메인에 떨어지면 다시 찾아 들어와야 한다.
+        router.push(`/m/login?returnTo=${encodeURIComponent("/m/admin/homepage")}`);
         return;
       }
       setMemberId(data.user.id);
