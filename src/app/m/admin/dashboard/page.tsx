@@ -141,7 +141,8 @@ function MobileDashboard() {
     { icon: "🖼️", label: "배너관리", href: "/m/admin/banner", roles: ["admin"] },
     { icon: "📋", label: "게시판관리", href: "/m/admin/board", roles: ["admin"] },
     { icon: "✉️", label: "문의관리", href: "/m/admin/inquiry", roles: ["admin"] },
-    { icon: "📥", label: "물건접수장", href: "/realty_admin?menu=homepage", roles: ["realtor"] },
+    // 폰에서 PC 편집기를 열면 표가 화면 밖으로 나간다. 폰은 폰 편집기로 보낸다.
+    { icon: "📥", label: "물건접수장", href: "/m/admin/homepage", roles: ["realtor"] },
     { icon: "⚙️", label: "설정", href: "/m/admin/settings", roles: ["admin", "realtor", "user"] },
   ].filter(link => link.roles.includes(role));
 

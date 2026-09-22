@@ -17,13 +17,14 @@ const THEME_COLORS = [
   { id: "orange", name: "오렌지", primary: "#f27405" },
 ];
 
-type PanelKey = "basic" | "design" | "sections" | "fields";
+type PanelKey = "basic" | "design" | "sections" | "fields" | "company";
 
 const PANELS: { key: PanelKey; label: string; icon: string }[] = [
   { key: "basic", label: "기본설정", icon: "🔗" },
   { key: "design", label: "디자인", icon: "🎨" },
   { key: "sections", label: "섹션", icon: "🧱" },
   { key: "fields", label: "접수항목", icon: "📝" },
+  { key: "company", label: "회사정보", icon: "🏢" },
 ];
 
 const border = "#e5e7eb";
@@ -118,20 +119,31 @@ function Editor({ memberId }: { memberId: string }) {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <h1 style={{ fontSize: 17, fontWeight: 800, color: text, margin: 0, whiteSpace: "nowrap" }}>홈페이지 관리</h1>
-          <span
+          {/* PC 와 같은 자리, 같은 역할. 딱지가 아니라 눌러서 여닫는 스위치다 */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={e.isActive}
+            onClick={() => e.setIsActive(!e.isActive)}
             style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
               flexShrink: 0,
               marginLeft: 4,
-              padding: "3px 8px",
+              padding: "6px 11px",
+              border: `1px solid ${e.isActive ? "#86efac" : border}`,
               borderRadius: 999,
+              background: e.isActive ? "#f0fdf4" : "#f8fafc",
+              color: e.isActive ? "#047857" : "#6b7280",
               fontSize: 11.5,
               fontWeight: 800,
-              background: e.isActive ? "#ecfdf5" : "#f3f4f6",
-              color: e.isActive ? "#047857" : "#6b7280",
+              cursor: "pointer",
             }}
           >
+            <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: e.isActive ? "#10b981" : "#9ca3af" }} />
             {e.isActive ? "사용 중" : "사용 안 함"}
-          </span>
+          </button>
         </div>
 
         <button
@@ -200,6 +212,32 @@ function Editor({ memberId }: { memberId: string }) {
                         </div>
 
                         <div>
+                          <label style={label}>헤더 표시 방식</label>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                            {([
+                              ["text", "텍스트만"],
+                              ["logo", "로고만"],
+                              ["both", "로고 + 텍스트"],
+                            ] as const).map(([value, title]) => {
+                              const on = (e.intake.brand_mode || "both") === value;
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => e.setIntake({ ...e.intake, brand_mode: value })}
+                                  style={{ padding: "11px 4px", border: on ? "2px solid #059669" : `1px solid ${border}`, borderRadius: 9, background: on ? "#ecfdf5" : "#fff", color: on ? "#059669" : sub, fontSize: 12, fontWeight: 800, cursor: "pointer" }}
+                                >
+                                  {title}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {!e.logoUrl && e.intake.brand_mode === "logo" && (
+                            <p style={{ margin: "7px 0 0", fontSize: 12, color: "#d97706", fontWeight: 700 }}>로고를 올리기 전까지 상호가 대신 표시됩니다.</p>
+                          )}
+                        </div>
+
+                        <div>
                           <label style={label}>로고</label>
                           {e.logoUrl ? (
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -218,104 +256,32 @@ function Editor({ memberId }: { memberId: string }) {
                               <input type="file" accept="image/*" hidden onChange={e.onLogoPick} />
                             </label>
                           )}
-                        </div>
-
-                        {/*
-                          상호·대표·등록번호는 여기서 못 고친다. 폰에는 요약 상자를 놓을
-                          자리가 없으니 가는 길만 둔다. 새 창이라 편집하던 내용을 잃지 않는다.
-                        */}
-                        <a
-                          href="/m/admin/settings"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 8,
-                            padding: "12px 14px",
-                            borderRadius: 12,
-                            background: "#f8fafc",
-                            border: "1px solid #e5e7eb",
-                            textDecoration: "none",
-                          }}
-                        >
-                          <span style={{ fontSize: 12.5, fontWeight: 800, color: sub }}>
-                            상호·대표·등록번호·소재지는 정보설정에서
-                          </span>
-                          <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 800, color: "#111827" }}>정보설정 ↗</span>
-                        </a>
-
-                        <div>
-                          <label style={label}>전화번호</label>
-                          <p style={{ margin: "0 0 10px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
-                            <strong>사무실</strong>은 표시·광고법상 밝혀야 하는 중개사무소 연락처라 반드시 나옵니다
-                            — 비우면 [정보설정]의 번호가 대신 나옵니다.
-                            <br />
-                            <strong>휴대폰</strong>은 선택입니다. 비우면 안 나옵니다.
-                          </p>
-                          {([
-                            { key: "office" as const, label: "사무실", value: e.contactPhone, set: (v: string) => e.setContactPhone(v), ph: e.agency?.phone || "02-000-0000" },
-                            { key: "mobile" as const, label: "휴대폰", value: e.intake.contact_mobile || "", set: (v: string) => e.setIntake({ ...e.intake, contact_mobile: v }), ph: e.agency?.cell || "010-0000-0000" },
-                          ]).map((row) => {
-                            const picked = (e.intake.call_target || "mobile") === row.key;
-                            return (
-                              <div key={row.key} style={{ marginBottom: 12 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                  <span style={{ flexShrink: 0, width: 46, fontSize: 13, fontWeight: 700, color: sub }}>{row.label}</span>
-                                  <input
-                                    style={{ ...field, flex: 1 }}
-                                    value={row.value}
-                                    onChange={(ev) => row.set(ev.target.value)}
-                                    placeholder={row.ph}
-                                    inputMode="tel"
-                                  />
-                                </div>
-                                <label style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 7, marginLeft: 54, fontSize: 13, color: picked ? text : sub, fontWeight: picked ? 700 : 600 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={picked}
-                                    onChange={() => e.setIntake({ ...e.intake, call_target: row.key })}
-                                    style={{ width: 16, height: 16, accentColor: "#059669" }}
-                                  />
-                                  하단 [전화] 버튼을 이 번호로
-                                </label>
-                              </div>
-                            );
-                          })}
+                          <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>PNG · WebP · SVG 권장 · 최대 2MB · 표시 최대 너비 160px</p>
                         </div>
 
                         <div>
-                          <label style={label}>사무소 소개</label>
-                          <textarea
-                            style={{ ...field, minHeight: 84, resize: "vertical", fontFamily: "inherit" }}
-                            value={e.companyIntro}
-                            onChange={(ev) => e.setCompanyIntro(ev.target.value.slice(0, INTRO_MAX))}
-                            maxLength={INTRO_MAX}
-                            placeholder="어떤 물건을 주로 다루는지 100자 이내로 짧게 적어주세요"
-                          />
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: "7px 0 0" }}>
-                            <p style={{ margin: 0, flex: 1, fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
-                              맨 아래 연락처에 상호·대표 이름 밑으로 나옵니다. 비우면 [정보설정]의 부동산 소개가 쓰입니다.
-                            </p>
-                            <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: e.companyIntro.length >= INTRO_MAX ? "#dc2626" : sub }}>
-                              {e.companyIntro.length}/{INTRO_MAX}
-                            </span>
+                          <label style={label}>로고 크기</label>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            {([
+                              ["small", "작게", "30px"],
+                              ["medium", "보통", "40px"],
+                              ["large", "크게", "50px"],
+                            ] as const).map(([value, title, size]) => {
+                              const on = (e.intake.logo_size || "medium") === value;
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => e.setIntake({ ...e.intake, logo_size: value })}
+                                  style={{ flex: 1, padding: "10px 4px", border: on ? "2px solid #059669" : `1px solid ${border}`, borderRadius: 9, background: on ? "#ecfdf5" : "#fff", color: on ? "#059669" : sub, fontSize: 12, fontWeight: 800, cursor: "pointer" }}
+                                >
+                                  {title}<span style={{ display: "block", marginTop: 2, fontSize: 10.5, fontWeight: 600 }}>{size}</span>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
 
-                        <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
-                          <input
-                            type="checkbox"
-                            checked={e.isActive}
-                            onChange={(ev) => e.setIsActive(ev.target.checked)}
-                            style={{ width: 18, height: 18, marginTop: 2, accentColor: "#059669", flexShrink: 0 }}
-                          />
-                          <span>
-                            <span style={{ display: "block", fontSize: 14.5, fontWeight: 700, color: text }}>접수 받는 중</span>
-                            <span style={{ display: "block", fontSize: 12.5, color: sub, marginTop: 2 }}>끄면 주소로 들어와도 접수가 되지 않습니다</span>
-                          </span>
-                        </label>
                       </div>
                     )}
 
@@ -387,6 +353,104 @@ function Editor({ memberId }: { memberId: string }) {
                         {toggle("show_photos", "사진 첨부", "선택 항목입니다. 없어도 접수됩니다")}
                         {toggle("show_budget", "희망 금액", "보증금·월세 등")}
                         {toggle("show_notes", "남기실 말씀", "자유 입력란")}
+                      </div>
+                    )}
+
+                    {p.key === "company" && (
+                      <div style={{ paddingTop: 16, display: "flex", flexDirection: "column", gap: 18 }}>
+                        {/* 상호·대표·등록번호는 [정보설정]에서 온다. 여기서는 확인만 하고, 고치러는 새 창으로 간다 */}
+                        <div style={{ background: "#f8fafc", border: `1px solid ${border}`, borderRadius: 12, padding: "14px 16px" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+                            <span style={{ fontSize: 12.5, fontWeight: 800, color: sub }}>정보설정에서 자동으로 가져옵니다</span>
+                            <a
+                              href="/m/admin/settings"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ flexShrink: 0, padding: "6px 11px", borderRadius: 999, border: `1px solid ${border}`, background: "#fff", color: text, fontSize: 11.5, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap" }}
+                            >
+                              정보설정 ↗
+                            </a>
+                          </div>
+                          {e.agency ? (
+                            <dl style={{ margin: 0, display: "grid", gridTemplateColumns: "62px 1fr", gap: "8px 10px", fontSize: 13 }}>
+                              {([
+                                ["상호", e.agency.name],
+                                ["대표", e.agency.ceo_name],
+                                ["대표전화", e.agency.phone],
+                                ["휴대폰", e.agency.cell],
+                                ["등록번호", e.agency.reg_num],
+                                ["소재지", [e.agency.address, e.agency.address_detail].filter(Boolean).join(" ")],
+                              ] as const).map(([k, v]) => (
+                                <React.Fragment key={k}>
+                                  <dt style={{ color: sub, fontWeight: 700 }}>{k}</dt>
+                                  <dd style={{ margin: 0, color: v ? text : "#cbd5e1", fontWeight: 700, wordBreak: "keep-all" }}>{v || "미입력"}</dd>
+                                </React.Fragment>
+                              ))}
+                            </dl>
+                          ) : (
+                            <p style={{ margin: 0, fontSize: 13, color: sub, lineHeight: 1.6 }}>
+                              등록된 부동산 정보가 없습니다. <strong style={{ color: text }}>정보설정 → 부동산정보</strong>에서 먼저 넣어 주세요.
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label style={label}>전화번호</label>
+                          <p style={{ margin: "0 0 10px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
+                            <strong>사무실</strong>은 표시·광고법상 밝혀야 하는 중개사무소 연락처라 반드시 나옵니다
+                            — 비우면 [정보설정]의 번호가 대신 나옵니다.
+                            <br />
+                            <strong>휴대폰</strong>은 선택입니다. 비우면 안 나옵니다.
+                          </p>
+                          {([
+                            { key: "office" as const, label: "사무실", value: e.contactPhone, set: (v: string) => e.setContactPhone(v), ph: e.agency?.phone || "02-000-0000" },
+                            { key: "mobile" as const, label: "휴대폰", value: e.intake.contact_mobile || "", set: (v: string) => e.setIntake({ ...e.intake, contact_mobile: v }), ph: e.agency?.cell || "010-0000-0000" },
+                          ]).map((row) => {
+                            const picked = (e.intake.call_target || "mobile") === row.key;
+                            return (
+                              <div key={row.key} style={{ marginBottom: 12 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span style={{ flexShrink: 0, width: 46, fontSize: 13, fontWeight: 700, color: sub }}>{row.label}</span>
+                                  <input
+                                    style={{ ...field, flex: 1 }}
+                                    value={row.value}
+                                    onChange={(ev) => row.set(ev.target.value)}
+                                    placeholder={row.ph}
+                                    inputMode="tel"
+                                  />
+                                </div>
+                                <label style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 7, marginLeft: 54, fontSize: 13, color: picked ? text : sub, fontWeight: picked ? 700 : 600 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={picked}
+                                    onChange={() => e.setIntake({ ...e.intake, call_target: row.key })}
+                                    style={{ width: 16, height: 16, accentColor: "#059669" }}
+                                  />
+                                  하단 [전화] 버튼을 이 번호로
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div>
+                          <label style={label}>사무소 소개</label>
+                          <textarea
+                            style={{ ...field, minHeight: 84, resize: "vertical", fontFamily: "inherit" }}
+                            value={e.companyIntro}
+                            onChange={(ev) => e.setCompanyIntro(ev.target.value.slice(0, INTRO_MAX))}
+                            maxLength={INTRO_MAX}
+                            placeholder="어떤 물건을 주로 다루는지 100자 이내로 짧게 적어주세요"
+                          />
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: "7px 0 0" }}>
+                            <p style={{ margin: 0, flex: 1, fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
+                              맨 아래 연락처에 상호·대표 이름 밑으로 나옵니다. 비우면 [정보설정]의 부동산 소개가 쓰입니다.
+                            </p>
+                            <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: e.companyIntro.length >= INTRO_MAX ? "#dc2626" : sub }}>
+                              {e.companyIntro.length}/{INTRO_MAX}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
