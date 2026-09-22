@@ -61,6 +61,12 @@ interface GongsilDetailPanelProps {
   hidePrint?: boolean;
   /** 찜(관심공실광고) 버튼 숨김. 공실뉴스 로그인이 있어야 동작한다 */
   hideWishlist?: boolean;
+  /**
+   * 공유를 [URL 복사] 하나로만 둔다.
+   * 중개사 홈페이지에서는 고를 것 없이 주소만 복사되면 된다 — 카카오톡 공유는
+   * 카카오 SDK가 준비돼야 하고, 고를 게 두 개면 한 번 더 눌러야 한다.
+   */
+  copyOnlyShare?: boolean;
 }
 
 export default function GongsilDetailPanel({
@@ -107,6 +113,7 @@ export default function GongsilDetailPanel({
   hideFalseListingReport = false,
   hidePrint = false,
   hideWishlist = false,
+  copyOnlyShare = false,
   onPanToMap,
 }: GongsilDetailPanelProps) {
   if (!showDetail || !activeProperty) return null;
@@ -469,7 +476,7 @@ export default function GongsilDetailPanel({
               </button>
               )}
               <button
-                onClick={() => setShowShareDropdown(!showShareDropdown)}
+                onClick={() => (copyOnlyShare ? handleCopyUrl(prop.id) : setShowShareDropdown(!showShareDropdown))}
                 style={{
                   background: "none",
                   border: "1px solid #ddd",
@@ -482,27 +489,43 @@ export default function GongsilDetailPanel({
                   cursor: "pointer",
                   color: showShareDropdown ? "#1a73e8" : "#666",
                 }}
-                title="공유하기"
+                title={copyOnlyShare ? "URL 복사" : "공유하기"}
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="18" cy="5" r="3"></circle>
-                  <circle cx="6" cy="12" r="3"></circle>
-                  <circle cx="18" cy="19" r="3"></circle>
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                </svg>
+                {copyOnlyShare ? (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
+                ) : (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                  </svg>
+                )}
               </button>
               {/* 공유 드롭다운 */}
-              {showShareDropdown && (
+              {!copyOnlyShare && showShareDropdown && (
                 <div
                   ref={shareDropdownRef}
                   style={{

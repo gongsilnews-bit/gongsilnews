@@ -15,6 +15,8 @@ interface MobileGongsilStandaloneDetailProps {
   shareUrl?: string;
   /** 공유 카드에 붙는 이름. 비우면 "공실뉴스" */
   shareSiteName?: string;
+  /** 공유를 [URL 복사] 하나로만 둔다 (중개사 홈페이지) */
+  copyOnlyShare?: boolean;
 }
 
 // 🌟 글로벌 금액 포맷터 (기존 소스 100% 동일)
@@ -78,6 +80,7 @@ export default function MobileGongsilStandaloneDetail({
   hideFalseListingReport = false,
   shareUrl,
   shareSiteName,
+  copyOnlyShare = false,
 }: MobileGongsilStandaloneDetailProps) {
   const router = useRouter();
   const [detailTab, setDetailTab] = useState<"info" | "realtor">("info");
@@ -291,12 +294,22 @@ export default function MobileGongsilStandaloneDetail({
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           {/* 공유(전달) */}
           <div style={{ position: "relative" }} ref={shareDropdownRef}>
-            <button onClick={() => setShowShareDropdown(!showShareDropdown)} style={{ background: "none", border: "none", cursor: "pointer", padding: "0", display: "flex", alignItems: "center", color: showShareDropdown ? "#1a73e8" : "#6b7280" }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line>
-              </svg>
+            <button
+              onClick={() => (copyOnlyShare ? handleCopyUrl() : setShowShareDropdown(!showShareDropdown))}
+              title={copyOnlyShare ? "URL 복사" : "공유하기"}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: "0", display: "flex", alignItems: "center", color: showShareDropdown ? "#1a73e8" : "#6b7280" }}
+            >
+              {copyOnlyShare ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line>
+                </svg>
+              )}
             </button>
-            {showShareDropdown && (
+            {!copyOnlyShare && showShareDropdown && (
               <div style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "#fff", border: "1px solid #e0e0e0", borderRadius: "10px", boxShadow: "0 6px 24px rgba(0,0,0,0.15)", width: "200px", zIndex: 9999, overflow: "hidden" }}>
                 <button onClick={handleKakaoShare} style={{ width: "100%", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", background: "none", border: "none", borderBottom: "1px solid #f0f0f0", cursor: "pointer", fontSize: "14px", color: "#333", fontWeight: 600 }}>
                   <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#FEE500", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

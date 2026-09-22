@@ -82,6 +82,7 @@ export default async function SubdomainGongsilDetailPage({ params }: PageProps) 
         flyer={(res as any)?.flyer || null}
         agencyInfo={agencyInfo}
         hideFalseListingReport
+        copyOnlyShare
         hidePrint
         hideWishlist
         shareUrl={shareUrl}

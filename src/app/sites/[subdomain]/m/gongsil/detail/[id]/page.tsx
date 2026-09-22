@@ -75,6 +75,7 @@ export default async function SubdomainMobileGongsilDetailPage({ params }: PageP
         photos={(res as any)?.photos || []}
         agencyInfo={agencyInfo}
         hideFalseListingReport
+        copyOnlyShare
         shareUrl={shareUrl}
         shareSiteName={officeName}
       />

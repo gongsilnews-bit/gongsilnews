@@ -16,6 +16,8 @@ interface GongsilStandaloneDetailProps {
   hidePrint?: boolean;
   /** 찜(관심공실광고) 버튼 숨김 */
   hideWishlist?: boolean;
+  /** 공유를 [URL 복사] 하나로만 둔다 */
+  copyOnlyShare?: boolean;
   /**
    * 공유(카카오톡·URL 복사)로 내보낼 주소.
    * 비워두면 공실뉴스 포털 주소로 나간다. 중개사 도메인에서 열렸을 때는 그 중개사
@@ -34,6 +36,7 @@ export default function GongsilStandaloneDetail({
   hideFalseListingReport = false,
   hidePrint = false,
   hideWishlist = false,
+  copyOnlyShare = false,
   shareUrl,
   shareSiteName,
 }: GongsilStandaloneDetailProps) {
@@ -474,6 +477,7 @@ export default function GongsilStandaloneDetail({
         hideFalseListingReport={hideFalseListingReport}
         hidePrint={hidePrint}
         hideWishlist={hideWishlist}
+        copyOnlyShare={copyOnlyShare}
       />
 
       {/* 갤러리 풀스크린 모달 */}
