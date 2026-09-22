@@ -225,10 +225,10 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
                         fontWeight: 800,
                       }}
                     >
-                      <span style={{ padding: "3px 7px", borderRadius: 3, background: "#fff7ed", border: "1px solid #fed7aa", color: "#ea580c" }}>
+                      <span style={{ padding: "3px 8px", borderRadius: 3, background: theme.primary, color: "#fff" }}>
                         공동중개
                       </span>
-                      <span style={{ color: theme.primary, fontWeight: 900 }}>{v.vacancy_no}</span>
+                      <span style={{ color: "#ea580c", fontWeight: 900 }}>{v.vacancy_no}</span>
                     </span>
                     <span
                       style={{
@@ -252,7 +252,7 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
                     </span>
                   </>
                 )}
-                {v.trade_type && (
+                {(v.trade_type || kindLabel) && (
                   <span
                     style={{
                       position: "absolute",
@@ -267,7 +267,7 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
                       borderRadius: "0 3px 3px 0",
                     }}
                   >
-                    {v.trade_type}
+                    {[kindLabel, v.trade_type].filter(Boolean).join(" ")}
                   </span>
                 )}
               </div>
@@ -325,10 +325,11 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
                     style={{
                       flex: 1,
                       minWidth: 0,
-                      padding: "9px 12px",
-                      background: theme.secondary,
-                      color: theme.dark,
-                      fontSize: 15,
+                      padding: "11px 12px",
+                      textAlign: "center",
+                      background: theme.primary,
+                      color: "#fff",
+                      fontSize: 17,
                       fontWeight: 900,
                       borderRadius: 3,
                       letterSpacing: "-0.4px",
@@ -337,7 +338,7 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {[kindLabel, v.trade_type, vacancyPrice(v)].filter(Boolean).join(" ")}
+                    {[v.trade_type, vacancyPrice(v)].filter(Boolean).join(" ")}
                   </span>
                   <span
                     style={{
@@ -377,8 +378,9 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
             onClick={(ev) => ev.stopPropagation()}
             style={{ width: "100%", maxWidth: 380, background: "#fff", borderRadius: 10, padding: "30px 24px 22px", textAlign: "center", boxShadow: "0 12px 40px rgba(0,0,0,.25)" }}
           >
-            <span style={{ display: "inline-block", padding: "4px 10px", borderRadius: 3, background: "#fff7ed", border: "1px solid #fed7aa", color: "#ea580c", fontSize: 11.5, fontWeight: 800, marginBottom: 14 }}>
-              공동중개 {locked.vacancy_no}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 800, marginBottom: 14 }}>
+              <span style={{ padding: "4px 9px", borderRadius: 3, background: theme.primary, color: "#fff" }}>공동중개</span>
+              <span style={{ color: "#ea580c", fontWeight: 900 }}>{locked.vacancy_no}</span>
             </span>
             <h3 style={{ margin: "0 0 10px 0", fontSize: 19, fontWeight: 900, color: "#16202b", letterSpacing: "-0.5px" }}>
               일반인 비공개 물건입니다
