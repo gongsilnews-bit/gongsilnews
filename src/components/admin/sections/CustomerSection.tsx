@@ -41,6 +41,41 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
     setLoading(false);
   };
 
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
+
+  /**
+   * 선택 삭제.
+   *
+   * 지금 보고 있는 탭을 따른다 — 휴지통에서 고르면 영구 삭제, 그 밖에서는
+   * 휴지통으로 옮긴다. 줄마다 붙은 [삭제]·[영구삭제]와 같은 동작이라,
+   * 한 건씩 누르던 것을 여러 건 한 번에 하는 것뿐이다.
+   */
+  const handleBulkDelete = async () => {
+    if (!checkedIds.length) {
+      alert("삭제할 문의를 선택해 주세요.");
+      return;
+    }
+    const permanent = activeTab === "휴지통";
+    const ask = permanent
+      ? `선택한 ${checkedIds.length}건을 영구적으로 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`
+      : `선택한 ${checkedIds.length}건을 휴지통으로 옮기시겠습니까?`;
+    if (!confirm(ask)) return;
+
+    try {
+      const { deleteCustomer, updateCustomerStatus } = await import("@/app/actions/customer");
+      const results = await Promise.all(
+        checkedIds.map((id) => (permanent ? deleteCustomer(id) : updateCustomerStatus(id, "휴지통")))
+      );
+      const failed = results.filter((r: any) => !r?.success).length;
+      setCheckedIds([]);
+      await fetchAllCustomers();
+      if (failed) alert(`${results.length - failed}건 처리, ${failed}건 실패했습니다.`);
+      else alert(permanent ? "🗑️ 영구 삭제가 완료되었습니다." : "📥 휴지통으로 옮겼습니다.");
+    } catch (err: any) {
+      alert("⚠️ 오류 발생: " + err.message);
+    }
+  };
+
   const handleDeleteCustomer = async (customerId: string) => {
     if (!confirm("⚠️ 이 문의 정보를 휴지통으로 이동하시겠습니까?")) return;
     try {
@@ -231,6 +266,15 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
           <button style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
              엑셀 다운로드
           </button>
+
+          <button
+            onClick={handleBulkDelete}
+            style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: checkedIds.length ? "#ef4444" : textPrimary, border: `1px solid ${checkedIds.length ? "#fca5a5" : border}`, borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            {activeTab === "휴지통" ? "선택 영구삭제" : "선택삭제"}
+            {checkedIds.length > 0 && ` (${checkedIds.length})`}
+          </button>
         </div>
 
         {/* 데이터 테이블 */}
@@ -238,6 +282,15 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 1000 }}>
             <thead>
               <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
+                <th style={{ padding: "12px 4px", textAlign: "center", borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 40 }}>
+                  <input
+                    type="checkbox"
+                    aria-label="전체 선택"
+                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#3b82f6" }}
+                    checked={filteredCustomers.length > 0 && checkedIds.length === filteredCustomers.length}
+                    onChange={(ev) => setCheckedIds(ev.target.checked ? filteredCustomers.map((c) => c.id) : [])}
+                  />
+                </th>
                 <th style={{ padding: "12px 4px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 80 }}>
                   접수번호
                 </th>
@@ -255,9 +308,9 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={11} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>문의 데이터를 불러오는 중입니다...</td></tr>
+                <tr><td colSpan={12} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>문의 데이터를 불러오는 중입니다...</td></tr>
               ) : filteredCustomers.length === 0 ? (
-                <tr><td colSpan={11} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 문의가 없습니다.</td></tr>
+                <tr><td colSpan={12} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 문의가 없습니다.</td></tr>
               ) : filteredCustomers.map((row, index) => {
                 // 같은 번호로 다시 들어온 문의는 등록일이 그대로라, 마지막으로 문의가
                 // 들어온 시각을 보여준다. 목록도 그 순서로 서 있다.
@@ -272,6 +325,17 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                     onClick={() => router.push(`?menu=customer&action=detail&id=${row.id}`)}
                   >
+                    <td style={{ padding: "16px 4px", textAlign: "center", verticalAlign: "middle" }} onClick={(ev) => ev.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        aria-label={`${row.name} 선택`}
+                        style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#3b82f6" }}
+                        checked={checkedIds.includes(row.id)}
+                        onChange={(ev) =>
+                          setCheckedIds((prev) => (ev.target.checked ? [...prev, row.id] : prev.filter((id) => id !== row.id)))
+                        }
+                      />
+                    </td>
                     <td style={{ padding: "16px 4px", textAlign: "center", verticalAlign: "middle", fontWeight: 800, color: textSecondary, fontSize: 14 }} onClick={e => e.stopPropagation()}>
                       {serialNum}
                     </td>
