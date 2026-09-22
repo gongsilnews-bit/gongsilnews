@@ -1,18 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import {
-  getHomepageSettings,
-  saveHomepageSettings,
-  checkSubdomainAvailable,
-  changeHomepageSubdomain,
-  uploadHomepageFile,
-} from "@/app/actions/homepage";
+import React, { useState } from "react";
 import SiteClient from "@/app/sites/[subdomain]/SiteClient";
-import { heroSlides, youtubeId, safeExt, shrinkToWebp, HERO_DEFAULTS, MAX_HERO_SLIDES, type HeroSlide } from "@/app/sites/[subdomain]/theme";
-import { adminGetMemberDetail } from "@/app/admin/actions";
-import { getVacanciesByOwnerId } from "@/app/actions/vacancy";
-import { getMyArticles } from "@/app/actions/article";
+import HeroSlidesEditor from "@/components/admin/homepage/HeroSlidesEditor";
+import { useHomepageEditor } from "@/hooks/useHomepageEditor";
 
 /**
  * 물건접수장 편집기
@@ -57,261 +48,53 @@ export default function IntakeStudio({ theme, memberId }: Props) {
   const text = dark ? "#f3f4f6" : "#111827";
   const sub = dark ? "#9ca3af" : "#6b7280";
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [savedAt, setSavedAt] = useState<string>("");
-  const [shareNotice, setShareNotice] = useState("");
-  const [error, setError] = useState("");
+  // 속은 PC·폰 편집기가 같이 쓴다. 여기서는 화면만 그린다.
+  const {
+    loading,
+    saving,
+    savedAt,
+    shareNotice,
+    error,
+    setError,
+    member,
+    agency,
+    vacancies,
+    articles,
+    subdomain,
+    initialSubdomain,
+    onSubdomainChange,
+    subStatus,
+    requestingAddress,
+    addressMessage,
+    handleAddressChange,
+    isActive,
+    setIsActive,
+    logoUrl,
+    setLogoUrl,
+    onLogoPick,
+    siteTitle,
+    setSiteTitle,
+    contactPhone,
+    setContactPhone,
+    companyIntro,
+    setCompanyIntro,
+    intake,
+    setIntake,
+    slides,
+    setSlide,
+    setCta,
+    addSlide,
+    removeSlide,
+    onSlidePhoto,
+    handleSave,
+    handleShare,
+    previewSettings,
+    liveSubdomain,
+    liveUrl,
+  } = useHomepageEditor(memberId);
+
   const [open, setOpen] = useState<PanelKey>("basic");
   const [device, setDevice] = useState<"pc" | "mobile">("pc");
-  const [member, setMember] = useState<any>(null);
-  const [agency, setAgency] = useState<any>(null);
-  // 미리보기에도 실제 매물·기사를 넣는다. 빈 화면을 보고 "안 나온다"는 문의가 온다.
-  const [vacancies, setVacancies] = useState<any[]>([]);
-  const [articles, setArticles] = useState<any[]>([]);
-
-  const [subdomain, setSubdomain] = useState("");
-  const [initialSubdomain, setInitialSubdomain] = useState("");
-  const [requestingAddress, setRequestingAddress] = useState(false);
-  const [addressMessage, setAddressMessage] = useState("");
-  const [isActive, setIsActive] = useState(true);
-  const [subStatus, setSubStatus] = useState<"idle" | "checking" | "ok" | "taken" | "invalid">("idle");
-  const subTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [siteTitle, setSiteTitle] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [companyIntro, setCompanyIntro] = useState("");
-
-  const [intake, setIntake] = useState<Record<string, any>>({
-    theme_color: "teal",
-    brand_mode: "both",
-    logo_size: "medium",
-    // 첫 화면은 한 장으로 시작하고 필요하면 최대 세 장까지 늘린다. 빈 칸을 세 개
-    // 세워두면 안 쓰는 칸까지 채워야 할 것처럼 보인다.
-    // 기본 문구는 여기 적어만 두고 화면에서 되살리지 않는다 — 지우면 그대로 사라진다.
-    hero_slides: [
-      {
-        title: HERO_DEFAULTS.title,
-        highlight: HERO_DEFAULTS.highlight,
-        desc: HERO_DEFAULTS.desc,
-        cta: { type: "intake", label: HERO_DEFAULTS.cta },
-      },
-    ],
-    cta_label: "",
-    show_seeking: true,
-    show_photos: true,
-    show_budget: true,
-    show_notes: true,
-  });
-
-  // ── 불러오기 ──
-  useEffect(() => {
-    (async () => {
-      const res = await getHomepageSettings(memberId);
-      if (res.success && res.data) {
-        const d: any = res.data;
-        setSubdomain(d.subdomain || "");
-        setInitialSubdomain(d.subdomain || "");
-        setIsActive(d.is_active !== false);
-        setLogoUrl(d.logo_url || null);
-        setSiteTitle(d.site_title || "");
-        setContactPhone(d.contact_phone || "");
-        setCompanyIntro(d.company_intro || "");
-        if (d.intake) {
-          // 슬라이드가 생기기 전에 저장한 중개사는 hero_image·hero_title 만 가지고 있다.
-          // 그 값을 1번 칸으로 옮겨줘야 편집기에서 지금 쓰는 화면이 그대로 보인다.
-          const filled = heroSlides(d.intake);
-          setIntake((prev) => ({
-            ...prev,
-            ...d.intake,
-            hero_slides: filled.length ? filled : prev.hero_slides,
-          }));
-        }
-      }
-      // 회사 정보는 [정보설정]의 부동산 등록 내용을 그대로 쓴다. 여기서 따로 입력받지 않는다.
-      const md = await adminGetMemberDetail(memberId);
-      if (md.success) {
-        setMember((md as any).member || null);
-        setAgency((md as any).agency || null);
-        // 대표 전화를 아직 안 정했으면 부동산 정보의 번호를 기본값으로 쓴다
-        const ag: any = (md as any).agency;
-        if (ag) {
-          setContactPhone((prev) => prev || ag.phone || ag.cell || "");
-        }
-      }
-
-      const [vacRes, artRes] = await Promise.all([
-        getVacanciesByOwnerId(memberId),
-        getMyArticles(memberId),
-      ]);
-      if (vacRes.success && vacRes.data) setVacancies((vacRes.data as any[]).slice(0, 12));
-      if (artRes.success && artRes.data) {
-        setArticles((artRes.data as any[]).filter((a: any) => a.status === "APPROVED").slice(0, 4));
-      }
-
-      setLoading(false);
-    })();
-  }, [memberId]);
-
-  // ── 서브도메인 중복 검사 (타이핑 멈추면) ──
-  const onSubdomainChange = (v: string) => {
-    const next = v.toLowerCase().replace(/[^a-z0-9-]/g, "");
-    setSubdomain(next);
-    setAddressMessage("");
-    if (subTimer.current) clearTimeout(subTimer.current);
-    if (next === initialSubdomain) return setSubStatus("idle");
-    if (!next) return setSubStatus("idle");
-    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(next) || next.length < 2 || next.length > 30) {
-      return setSubStatus("invalid");
-    }
-    setSubStatus("checking");
-    subTimer.current = setTimeout(async () => {
-      const res = await checkSubdomainAvailable(next, memberId);
-      setSubStatus(res.success && (res as any).available ? "ok" : "taken");
-    }, 450);
-  };
-
-  const handleAddressChange = async () => {
-    setError("");
-    setAddressMessage("");
-    if (subStatus !== "ok") return;
-    setRequestingAddress(true);
-    const res = await changeHomepageSubdomain(memberId, subdomain);
-    setRequestingAddress(false);
-    if (!res.success) return setError(res.error || "주소 변경에 실패했습니다.");
-    setInitialSubdomain(subdomain);
-    setSubStatus("idle");
-    setAddressMessage("홈페이지 주소가 변경되었습니다.");
-  };
-
-  const onLogoPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setError("");
-    if (file.size > 2 * 1024 * 1024) {
-      setError("로고 파일은 2MB 이하만 업로드할 수 있습니다.");
-      return;
-    }
-    // 로고는 작게 쓰이므로 512px 로 줄이되 화질은 높게 잡는다. SVG 는 원본 그대로 올린다.
-    const shrunk = await shrinkToWebp(file, 512, 0.92);
-    const ext = shrunk.type === "image/webp" ? "webp" : safeExt(file);
-    const fd = new FormData();
-    fd.append("file", shrunk);
-    fd.append("path", `logo/${memberId}_${Date.now()}.${ext}`);
-    const up = await uploadHomepageFile(fd);
-    if (up.success) setLogoUrl((up as any).url);
-    else setError((up as any).error || "로고 업로드에 실패했습니다.");
-  };
-
-  const slides: HeroSlide[] = Array.isArray(intake.hero_slides) && intake.hero_slides.length
-    ? intake.hero_slides.slice(0, MAX_HERO_SLIDES)
-    : [{}];
-
-  const editSlides = (fn: (list: HeroSlide[]) => HeroSlide[]) => {
-    setIntake((prev) => {
-      const current: HeroSlide[] = Array.isArray(prev.hero_slides) && prev.hero_slides.length
-        ? [...prev.hero_slides].slice(0, MAX_HERO_SLIDES)
-        : [{}];
-      return { ...prev, hero_slides: fn(current).slice(0, MAX_HERO_SLIDES) };
-    });
-  };
-
-  const setSlide = (i: number, patch: Partial<HeroSlide>) => {
-    editSlides((list) => {
-      while (list.length <= i) list.push({});
-      list[i] = { ...list[i], ...patch };
-      return list;
-    });
-  };
-
-  /** 버튼은 장 안에 들어있다. 장마다 다른 곳으로 보낼 수 있어야 한다 */
-  const setCta = (i: number, patch: Partial<NonNullable<HeroSlide["cta"]>>) => {
-    editSlides((list) => {
-      while (list.length <= i) list.push({});
-      list[i] = { ...list[i], cta: { ...(list[i].cta || {}), ...patch } };
-      return list;
-    });
-  };
-
-  const addSlide = () => editSlides((list) => [...list, { cta: { type: "intake", label: "" } }]);
-  const removeSlide = (i: number) => editSlides((list) => list.filter((_, n) => n !== i));
-
-  const onSlidePhoto = async (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setError("");
-    // 첫 화면은 화면을 가득 채우는 자리다. 폰으로 찍은 4~8MB 사진을 그대로 올리면
-    // 방문자가 그걸 다 받고 나서야 문구가 보인다. 긴 변 1280px WebP 로 줄여 보낸다.
-    const shrunk = await shrinkToWebp(file);
-    const fd = new FormData();
-    fd.append("file", shrunk);
-    fd.append("path", `hero/${memberId}_${i}_${Date.now()}.webp`);
-    const up = await uploadHomepageFile(fd);
-    if (up.success) setSlide(i, { image: (up as any).url });
-    else setError((up as any).error || "사진 업로드에 실패했습니다.");
-  };
-
-  const handleSave = async () => {
-    setError("");
-    if (!subdomain) return setError("주소(서브도메인)를 입력해 주세요.");
-    if (subStatus === "taken") return setError("이미 사용 중인 주소입니다.");
-    if (subStatus === "invalid") return setError("주소는 영문 소문자·숫자·하이픈으로 2~30자입니다.");
-
-    setSaving(true);
-    const res = await saveHomepageSettings(memberId, {
-      subdomain,
-      theme_name: "intake",
-      logo_url: logoUrl,
-      site_title: siteTitle,
-      contact_phone: contactPhone,
-      company_intro: companyIntro,
-      is_active: isActive,
-      intake,
-    });
-    setSaving(false);
-    if (!res.success) return setError(res.error || "저장에 실패했습니다.");
-    setSavedAt(new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
-  };
-
-  const handleShare = async () => {
-    if (!liveUrl) return;
-    setShareNotice("");
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: siteTitle || "물건접수장",
-          text: `${siteTitle || "물건접수장"} 홈페이지`,
-          url: liveUrl,
-        });
-        setShareNotice("공유 완료");
-      } else {
-        await navigator.clipboard.writeText(liveUrl);
-        setShareNotice("주소 복사됨");
-      }
-      window.setTimeout(() => setShareNotice(""), 2000);
-    } catch (shareError) {
-      if (shareError instanceof DOMException && shareError.name === "AbortError") return;
-      try {
-        await navigator.clipboard.writeText(liveUrl);
-        setShareNotice("주소 복사됨");
-        window.setTimeout(() => setShareNotice(""), 2000);
-      } catch {
-        setError("공유하지 못했습니다. URL 바로가기를 길게 눌러 주소를 복사해 주세요.");
-      }
-    }
-  };
-
-  // 미리보기에 넘길 값. 저장 전에도 편집 중인 값이 그대로 보인다.
-  const previewSettings = {
-    site_title: siteTitle,
-    logo_url: logoUrl,
-    contact_phone: contactPhone,
-    company_intro: companyIntro,
-    intake,
-  };
 
   const field: React.CSSProperties = {
     width: "100%",
@@ -349,9 +132,6 @@ export default function IntakeStudio({ theme, memberId }: Props) {
       </div>
     );
   }
-
-  const liveSubdomain = initialSubdomain || subdomain;
-  const liveUrl = liveSubdomain ? `https://${liveSubdomain}.gongsilnews.com` : "";
 
   return (
     <div style={{ flex: 1, display: "flex", gap: 16, margin: 16, marginBottom: 0, minHeight: 0 }}>
@@ -556,203 +336,17 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                         </div>
 
                         <div style={group}>
-                          <label style={label}>첫 화면 (최대 3장)</label>
-                          <p style={{ margin: "0 0 12px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
-                            한 장으로 시작합니다. 아래 <strong>[+ 장 추가]</strong>로 최대 3장까지 늘릴 수 있고,
-                            두 장 이상이면 6초(영상은 14초)마다 저절로 넘어갑니다.
-                            사진도 영상도 안 넣으면 고른 색으로 채워집니다.
-                            <br />
-                            <strong>문구 칸을 비우면 그 줄은 화면에 나오지 않습니다.</strong> 사진만 크게 보이게 하려면 문구를 모두 비우세요.
-                          </p>
-
-                          {slides.map((sl, i) => {
-                            const vid = youtubeId(sl.youtube);
-                            return (
-                              <div
-                                key={i}
-                                style={{ border: `1px solid ${border}`, borderRadius: 10, padding: "14px 14px 4px", marginBottom: 12, background: dark ? "#111827" : "#fcfdfe" }}
-                              >
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                                  <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 800, color: text }}>
-                                    <span style={{ width: 20, height: 20, borderRadius: "50%", background: "#059669", color: "#fff", fontSize: 11.5, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                      {i + 1}
-                                    </span>
-                                    {i === 0 ? "첫 장" : `${i + 1}번째 장`}
-                                  </span>
-                                  <span style={{ display: "flex", gap: 6 }}>
-                                    {(sl.image || sl.youtube || sl.title || sl.highlight || sl.desc) && (
-                                      <button
-                                        type="button"
-                                        onClick={() => setSlide(i, { image: "", youtube: "", title: "", highlight: "", desc: "" })}
-                                        style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${border}`, background: "transparent", color: sub, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                                      >
-                                        비우기
-                                      </button>
-                                    )}
-                                    {slides.length > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => removeSlide(i)}
-                                        style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #fca5a5", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                                      >
-                                        장 삭제
-                                      </button>
-                                    )}
-                                  </span>
-                                </div>
-
-                                {sl.image && !vid ? (
-                                  <div style={{ position: "relative", borderRadius: 8, overflow: "hidden", border: `1px solid ${border}`, marginBottom: 12 }}>
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={sl.image} alt="" style={{ width: "100%", height: 104, objectFit: "cover", display: "block" }} />
-                                    <button
-                                      type="button"
-                                      onClick={() => setSlide(i, { image: "" })}
-                                      style={{ position: "absolute", top: 8, right: 8, padding: "5px 10px", borderRadius: 6, border: "none", background: "rgba(0,0,0,.66)", color: "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer" }}
-                                    >
-                                      사진 빼기
-                                    </button>
-                                  </div>
-                                ) : vid ? (
-                                  <div style={{ position: "relative", borderRadius: 8, overflow: "hidden", border: `1px solid ${border}`, marginBottom: 12 }}>
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={`https://img.youtube.com/vi/${vid}/mqdefault.jpg`} alt="" style={{ width: "100%", height: 104, objectFit: "cover", display: "block" }} />
-                                    <span style={{ position: "absolute", left: 8, top: 8, padding: "4px 9px", borderRadius: 5, background: "#ef4444", color: "#fff", fontSize: 11.5, fontWeight: 800 }}>
-                                      유튜브
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <label
-                                    style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 64, border: `1px dashed ${border}`, borderRadius: 8, fontSize: 13, fontWeight: 700, color: sub, cursor: "pointer", marginBottom: 12 }}
-                                  >
-                                    + 사진 올리기
-                                    <input type="file" accept="image/*" hidden onChange={(e) => onSlidePhoto(i, e)} />
-                                  </label>
-                                )}
-
-                                <div style={{ marginBottom: 12 }}>
-                                  <label style={{ ...label, marginBottom: 5 }}>유튜브 주소 (넣으면 영상이 먼저입니다)</label>
-                                  <input
-                                    style={field}
-                                    value={sl.youtube || ""}
-                                    onChange={(e) => setSlide(i, { youtube: e.target.value })}
-                                    placeholder="https://youtu.be/..."
-                                  />
-                                  {sl.youtube && !vid && (
-                                    <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444", fontWeight: 700 }}>
-                                      유튜브 주소가 아닌 것 같습니다. 주소창에 있는 것을 그대로 붙여넣어 주세요.
-                                    </p>
-                                  )}
-                                </div>
-
-                                <div style={{ marginBottom: 12 }}>
-                                  <label style={{ ...label, marginBottom: 5 }}>첫 줄</label>
-                                  <input style={field} value={sl.title || ""} onChange={(e) => setSlide(i, { title: e.target.value })} placeholder="내놓을 물건이 있으신가요?" />
-                                </div>
-                                <div style={{ marginBottom: 12 }}>
-                                  <label style={{ ...label, marginBottom: 5 }}>둘째 줄 (강조)</label>
-                                  <input style={field} value={sl.highlight || ""} onChange={(e) => setSlide(i, { highlight: e.target.value })} placeholder="여기에 접수해 주세요" />
-                                </div>
-                                <div style={{ marginBottom: 14 }}>
-                                  <label style={{ ...label, marginBottom: 5 }}>설명</label>
-                                  <textarea
-                                    style={{ ...field, minHeight: 60, resize: "vertical", fontFamily: "inherit" }}
-                                    value={sl.desc || ""}
-                                    onChange={(e) => setSlide(i, { desc: e.target.value })}
-                                    placeholder="연락처만 남겨 주시면 확인 후 바로 연락드립니다."
-                                  />
-                                </div>
-
-                                {/* 버튼 — 장마다 보내는 곳이 다를 수 있다 */}
-                                <div style={{ borderTop: `1px solid ${border}`, paddingTop: 12, marginBottom: 14 }}>
-                                  <label style={{ ...label, marginBottom: 5 }}>버튼 문구</label>
-                                  <input
-                                    style={field}
-                                    value={sl.cta?.label ?? ""}
-                                    onChange={(e) => setCta(i, { label: e.target.value })}
-                                    placeholder="1분이면 접수 끝"
-                                  />
-                                  <p style={{ margin: "6px 0 12px", fontSize: 12, color: sub }}>비우면 이 장에는 버튼이 나오지 않습니다.</p>
-
-                                  <label style={{ ...label, marginBottom: 5 }}>누르면</label>
-                                  <select
-                                    style={field}
-                                    value={sl.cta?.type || "intake"}
-                                    onChange={(e) => setCta(i, { type: e.target.value as any })}
-                                  >
-                                    <option value="intake">물건 접수로 이동</option>
-                                    <option value="location">오시는 길로 이동</option>
-                                    <option value="vacancy">매물 하나 열기</option>
-                                    <option value="article">기사 하나 열기</option>
-                                    <option value="url">주소 직접 입력</option>
-                                  </select>
-
-                                  {sl.cta?.type === "vacancy" && (
-                                    <div style={{ marginTop: 8 }}>
-                                      <select
-                                        style={field}
-                                        value={sl.cta?.vacancyId || ""}
-                                        onChange={(e) => setCta(i, { vacancyId: e.target.value })}
-                                      >
-                                        <option value="">매물을 고르세요</option>
-                                        {vacancies.map((v: any) => (
-                                          <option key={v.id} value={v.id}>
-                                            {[v.trade_type, v.building_name || [v.sigungu, v.dong].filter(Boolean).join(" ")].filter(Boolean).join(" · ")}
-                                          </option>
-                                        ))}
-                                      </select>
-                                      {!vacancies.length && (
-                                        <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444", fontWeight: 700 }}>
-                                          공실등록에 올린 매물이 없습니다.
-                                        </p>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  {sl.cta?.type === "article" && (
-                                    <div style={{ marginTop: 8 }}>
-                                      <select
-                                        style={field}
-                                        value={sl.cta?.articleId || ""}
-                                        onChange={(e) => setCta(i, { articleId: e.target.value })}
-                                      >
-                                        <option value="">기사를 고르세요</option>
-                                        {articles.map((a: any) => (
-                                          <option key={a.id} value={String(a.article_no || a.id)}>
-                                            {a.title}
-                                          </option>
-                                        ))}
-                                      </select>
-                                      {!articles.length && (
-                                        <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444", fontWeight: 700 }}>
-                                          발행된 기사가 없습니다.
-                                        </p>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  {sl.cta?.type === "url" && (
-                                    <input
-                                      style={{ ...field, marginTop: 8 }}
-                                      value={sl.cta?.url || ""}
-                                      onChange={(e) => setCta(i, { url: e.target.value })}
-                                      placeholder="https://..."
-                                    />
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-
-                          {slides.length < MAX_HERO_SLIDES && (
-                            <button
-                              type="button"
-                              onClick={addSlide}
-                              style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1px dashed ${border}`, background: "transparent", color: sub, fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}
-                            >
-                              + 장 추가 ({slides.length}/{MAX_HERO_SLIDES})
-                            </button>
-                          )}
+                          <HeroSlidesEditor
+                            skin={{ field, label, border, text, sub, dark }}
+                            slides={slides}
+                            setSlide={setSlide}
+                            setCta={setCta}
+                            addSlide={addSlide}
+                            removeSlide={removeSlide}
+                            onSlidePhoto={onSlidePhoto}
+                            vacancies={vacancies}
+                            articles={articles}
+                          />
                         </div>
 
                       </>

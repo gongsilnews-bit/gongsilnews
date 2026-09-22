@@ -178,7 +178,30 @@ export default function SiteClient({
       />
 
       <footer style={{ background: theme.dark, color: "rgba(255,255,255,0.55)", padding: "28px 20px", textAlign: "center", fontSize: 13, lineHeight: 1.8 }}>
-        <div>{officeName}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
+          <span>{officeName}</span>
+          {/*
+            관리자로 가는 문. 서브도메인에는 관리자 화면이 없으므로 포털 주소로 바로 보낸다.
+            중개사가 홈페이지를 보다가 고칠 곳을 발견했을 때 주소를 다시 칠 필요가 없다.
+          */}
+          <a
+            href="https://gongsilnews.com/realty_admin?menu=homepage"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: "2px 9px",
+              borderRadius: 999,
+              border: "1px solid rgba(255,255,255,0.25)",
+              color: "rgba(255,255,255,0.7)",
+              fontSize: 11.5,
+              fontWeight: 700,
+              letterSpacing: "0.5px",
+              textDecoration: "none",
+            }}
+          >
+            admin
+          </a>
+        </div>
         <div>
           powered by{" "}
           <a href="https://gongsilnews.com" style={{ color: theme.secondary, textDecoration: "none" }}>공실뉴스</a>
