@@ -180,7 +180,7 @@ export default function SiteClient({
 
       <HeroSection officeName={officeName} theme={theme} cfg={cfg} onJump={jump} hrefFor={hrefFor} />
 
-      {showVacancy && <VacancySection officeName={officeName} theme={theme} vacancies={vacancies} hrefFor={hrefFor} />}
+      {showVacancy && <VacancySection officeName={officeName} theme={theme} vacancies={vacancies} hrefFor={hrefFor} phone={agentMobile || phone} onJump={jump} />}
 
       {showArticle && <ArticleSection officeName={officeName} theme={theme} articles={articles} hrefFor={hrefFor} />}
 
