@@ -204,7 +204,16 @@ export default function SiteClient({
           clip 은 가로 넘침만 잘라내고 스크롤 주체는 건드리지 않는다.
         */
         html, body { overflow-x: clip; }
-        html { scroll-behavior: smooth; scroll-padding-top: 104px; }
+        /*
+          scroll-behavior: smooth 는 여기 두면 안 된다. 메뉴 이동뿐 아니라
+          브라우저의 "뒤로 가면 보던 자리로" 복원까지 애니메이션으로 만든다.
+          폰에서 기사는 같은 창에서 열리므로, 닫고 돌아올 때마다 맨 위에서
+          읽던 자리까지 굴러 내려가는 게 그대로 보인다.
+          메뉴를 눌렀을 때의 부드러운 이동은 scrollToSection() 이 JS 로 한다.
+          scroll-padding-top 은 남긴다 — 스크립트가 막힌 곳에서 #앵커 로 갈 때
+          헤더에 글자가 가리는 걸 막는 줄이다.
+        */
+        html { scroll-padding-top: 104px; }
         .gs-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
         .gs-scroll-x::-webkit-scrollbar { display: none; }
         .gs-page { padding-bottom: 74px; }
