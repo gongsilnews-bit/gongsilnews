@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import { usePathname } from "next/navigation";
 import SiteClient from "@/app/sites/[subdomain]/SiteClient";
 import HeroSlidesEditor from "@/components/admin/homepage/HeroSlidesEditor";
 import { useHomepageEditor } from "@/hooks/useHomepageEditor";
+import { INTRO_MAX } from "@/app/sites/[subdomain]/theme";
 
 /**
  * 물건접수장 편집기
@@ -47,6 +49,16 @@ export default function IntakeStudio({ theme, memberId }: Props) {
   const border = dark ? "#374151" : "#e5e7eb";
   const text = dark ? "#f3f4f6" : "#111827";
   const sub = dark ? "#9ca3af" : "#6b7280";
+
+  /*
+   * [정보설정]으로 가는 주소.
+   *
+   * 이 편집기는 /realty_admin, /admin, /user_admin 세 관리자에 같이 얹혀 있다.
+   * 주소를 박아두면 다른 관리자에서 남의 화면으로 튀므로, 지금 서 있는 관리자의
+   * 정보설정으로 보낸다.
+   */
+  const pathname = usePathname();
+  const settingsHref = `${pathname || "/realty_admin"}?menu=settings`;
 
   // 속은 PC·폰 편집기가 같이 쓴다. 여기서는 화면만 그린다.
   const {
@@ -379,7 +391,33 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                       <>
                         {/* 상호·대표·등록번호·주소는 [정보설정]에서 한 번 넣은 것을 그대로 가져온다 */}
                         <div style={{ ...group, background: dark ? "#111827" : "#f8fafc", border: `1px solid ${border}`, borderRadius: 10, padding: "14px 16px" }}>
-                          <div style={{ fontSize: 12.5, fontWeight: 800, color: sub, marginBottom: 10 }}>정보설정에서 자동으로 가져옵니다</div>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 800, color: sub }}>정보설정에서 자동으로 가져옵니다</div>
+                            {/*
+                              고치려면 [정보설정]으로 가야 하는 값들이다. 새 창으로 여는 건
+                              편집 중인 내용을 두고 나갔다가 저장을 잃는 일이 없게 하려는 것.
+                              돌아와서 [새로고침]을 누르면 고친 값이 들어온다.
+                            */}
+                            <a
+                              href={settingsHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                flexShrink: 0,
+                                padding: "5px 10px",
+                                borderRadius: 999,
+                                border: `1px solid ${border}`,
+                                background: dark ? "#1f2937" : "#fff",
+                                color: text,
+                                fontSize: 11.5,
+                                fontWeight: 800,
+                                textDecoration: "none",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              정보설정 ↗
+                            </a>
+                          </div>
                           {agency ? (
                             <dl style={{ margin: 0, display: "grid", gridTemplateColumns: "72px 1fr", gap: "8px 10px", fontSize: 13.5 }}>
                               {([
@@ -404,12 +442,63 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                         </div>
 
                         <div style={group}>
-                          <label style={label}>대표 전화 <span style={{ fontWeight: 600 }}>(비워두면 위 번호를 씁니다)</span></label>
-                          <input style={field} value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder={agency?.phone || "02-000-0000"} />
+                          <label style={label}>전화번호</label>
+                          <p style={{ margin: "0 0 10px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
+                            홈페이지 <strong>연락처</strong>에 나옵니다. 두 번호가 같으면 한 줄만 나옵니다.
+                            <br />
+                            <strong>사무실</strong>은 표시·광고법상 밝혀야 하는 중개사무소 연락처라 반드시 나옵니다
+                            — 비우면 [정보설정]의 번호({agency?.phone || "미등록"})가 대신 나옵니다.
+                            <br />
+                            <strong>휴대폰</strong>은 선택입니다. 비우면 안 나옵니다.
+                          </p>
+
+                          {([
+                            { key: "office" as const, label: "사무실", value: contactPhone, set: setContactPhone, ph: agency?.phone || "02-000-0000" },
+                            { key: "mobile" as const, label: "휴대폰", value: intake.contact_mobile || "", set: (v: string) => setIntake({ ...intake, contact_mobile: v }), ph: agency?.cell || "010-0000-0000" },
+                          ]).map((row) => {
+                            const picked = (intake.call_target || "mobile") === row.key;
+                            return (
+                              <div key={row.key} style={{ marginBottom: 10 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span style={{ flexShrink: 0, width: 46, fontSize: 13, fontWeight: 700, color: sub }}>{row.label}</span>
+                                  <input
+                                    style={{ ...field, flex: 1 }}
+                                    value={row.value}
+                                    onChange={(e) => row.set(e.target.value)}
+                                    placeholder={row.ph}
+                                  />
+                                </div>
+                                <label style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 6, marginLeft: 54, fontSize: 12.5, color: picked ? text : sub, fontWeight: picked ? 700 : 600, cursor: "pointer" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={picked}
+                                    onChange={() => setIntake({ ...intake, call_target: row.key })}
+                                    style={{ width: 15, height: 15, accentColor: "#059669" }}
+                                  />
+                                  폰 [전화] 버튼을 이 번호로
+                                </label>
+                              </div>
+                            );
+                          })}
                         </div>
                         <div style={group}>
                           <label style={label}>사무소 소개</label>
-                          <textarea style={{ ...field, minHeight: 88, resize: "vertical", fontFamily: "inherit" }} value={companyIntro} onChange={(e) => setCompanyIntro(e.target.value)} placeholder="어떤 물건을 주로 다루는지 짧게 적어주세요" />
+                          <textarea
+                            style={{ ...field, minHeight: 88, resize: "vertical", fontFamily: "inherit" }}
+                            value={companyIntro}
+                            onChange={(e) => setCompanyIntro(e.target.value.slice(0, INTRO_MAX))}
+                            maxLength={INTRO_MAX}
+                            placeholder="어떤 물건을 주로 다루는지 100자 이내로 짧게 적어주세요"
+                          />
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: "7px 0 0" }}>
+                            <p style={{ margin: 0, flex: 1, fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
+                              홈페이지 맨 아래 <strong>연락처</strong>에 상호·대표 이름 밑으로 나옵니다.
+                              비우면 [정보설정]의 부동산 소개가 대신 쓰입니다.
+                            </p>
+                            <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: companyIntro.length >= INTRO_MAX ? "#dc2626" : sub }}>
+                              {companyIntro.length}/{INTRO_MAX}
+                            </span>
+                          </div>
                         </div>
                       </>
                     )}

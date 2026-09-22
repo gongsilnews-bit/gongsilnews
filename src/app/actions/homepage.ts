@@ -55,7 +55,9 @@ function flattenRow(row: any) {
     logo_url: row.logo_url || null,
     favicon_url: row.favicon_url || null,
     site_title: row.site_title || null,
-    contact_phone: row.contact_phone || null,
+    // 빈 문자열("")은 "지웠다", null 은 "아직 정한 적 없다". 편집기가 둘을 구분해야
+    // 지운 칸을 부동산 정보로 다시 채우지 않는다.
+    contact_phone: row.contact_phone ?? null,
     company_intro: row.company_intro || null,
     intake: ds.intake || {},
   };
@@ -111,6 +113,10 @@ export async function saveHomepageSettings(ownerId: string, inputData: {
     hero_highlight?: string;
     hero_desc?: string;
     cta_label?: string;
+    /** 홈페이지에 띄울 휴대폰 번호. 빈 문자열이면 화면에 안 나온다 */
+    contact_mobile?: string;
+    /** 폰 하단 [전화] 버튼이 어느 번호로 걸릴지. 기본은 휴대폰 */
+    call_target?: "office" | "mobile";
     /** 섹션 노출. 내용이 없으면 켜 두어도 화면에서 자동으로 빠진다 */
     show_vacancy?: boolean;
     show_article?: boolean;

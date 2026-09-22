@@ -8,7 +8,7 @@ import ArticleSection from "./sections/ArticleSection";
 import IntakeFormSection from "./sections/IntakeFormSection";
 import ContactSection from "./sections/ContactSection";
 import MobileBottomBar from "./sections/MobileBottomBar";
-import { pickTheme, scrollToSection } from "./theme";
+import { clampIntro, pickTheme, scrollToSection } from "./theme";
 
 interface Props {
   subdomain: string;
@@ -54,9 +54,35 @@ export default function SiteClient({
     "부동산";
 
   const address = [companyProfile?.address, companyProfile?.address_detail].filter(Boolean).join(" ");
+  /*
+   * 등록된 중개사무소 명칭.
+   *
+   * 홈페이지 제목(officeName)은 브랜드 이름으로 얼마든지 바꿀 수 있지만,
+   * 표시·광고법상 밝혀야 하는 건 등록된 상호다. 그래서 부동산 정보(연락처의
+   * 등록번호·소재지 줄)와 맨 아래 푸터에는 제목과 상관없이 늘 이 이름을 쓴다.
+   */
+  const legalName = companyProfile?.name || companyProfile?.company_name || officeName;
+  /*
+   * 두 번호는 성격이 다르다.
+   *
+   * 사무실 번호는 표시·광고법상 중개대상물 광고에 밝혀야 하는 중개사무소 연락처다.
+   * 그래서 홈페이지에서 지울 수 없다 — 비워두면 [정보설정]에 등록된 번호가 나온다.
+   *
+   * 휴대폰은 중개사 개인 번호라 선택이다. 한 번이라도 정한 적 있으면 적힌 그대로 쓰고,
+   * 지웠으면(빈 문자열) 안 나온다. 아직 정한 적 없을 때만(null) [정보설정]에서 채운다.
+   */
   const phone = settings?.contact_phone || companyProfile?.phone || member?.phone || "";
-  const agentMobile = companyProfile?.cell || member?.phone || "";
+  const agentMobile =
+    cfg.contact_mobile != null
+      ? cfg.contact_mobile
+      : companyProfile?.cell || member?.phone || "";
+  // 폰 하단 [전화] 버튼이 걸 번호. 중개사가 고른 쪽을 따르고, 그 번호가 없으면 남은 쪽으로.
+  const callNumber =
+    cfg.call_target === "office" ? phone || agentMobile : agentMobile || phone;
   const representative = companyProfile?.ceo_name ? `대표 공인중개사 ${companyProfile.ceo_name}` : "";
+  // 편집기의 [사무소 소개]가 먼저다. 눈앞에서 고치는 칸이 화면을 이겨야 한다.
+  // 비워두면 정보설정의 부동산 소개로 채운다 — 빈 자리를 남기지 않는다.
+  const introText = clampIntro(settings?.company_intro || companyProfile?.intro);
 
   // 중개사가 끈 섹션과 내용이 없는 섹션은 아예 빼고 칩도 만들지 않는다.
   // 눌렀더니 빈 칸이 나오는 것보다 없는 편이 낫다.
@@ -204,7 +230,7 @@ export default function SiteClient({
 
       <HeroSection officeName={officeName} theme={theme} cfg={cfg} anchor={anchor} hrefFor={hrefFor} />
 
-      {showVacancy && <VacancySection officeName={officeName} theme={theme} vacancies={vacancies} hrefFor={hrefFor} phone={agentMobile || phone} anchor={anchor} />}
+      {showVacancy && <VacancySection officeName={officeName} theme={theme} vacancies={vacancies} hrefFor={hrefFor} phone={callNumber} anchor={anchor} />}
 
       {showArticle && <ArticleSection officeName={officeName} theme={theme} articles={articles} hrefFor={hrefFor} />}
 
@@ -216,14 +242,16 @@ export default function SiteClient({
         phone={phone}
         agentMobile={agentMobile}
         representative={representative}
+        intro={introText}
         address={address}
         regNum={companyProfile?.reg_num}
+        legalName={legalName}
         snsLinks={member?.sns_links}
       />
 
       <footer style={{ background: theme.dark, color: "rgba(255,255,255,0.55)", padding: "28px 20px", textAlign: "center", fontSize: 13, lineHeight: 1.8 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
-          <span>{officeName}</span>
+          <span>{legalName}</span>
           {/*
             관리자로 가는 문. 서브도메인에는 관리자 화면이 없으므로 포털 주소로 보낸다.
             폰에서 PC 관리자를 열면 표가 화면 밖으로 나가므로 기기에 맞는 쪽으로 보낸다.
@@ -255,7 +283,7 @@ export default function SiteClient({
       {preview !== "pc" && (
         <MobileBottomBar
           theme={theme}
-          phone={agentMobile || phone}
+          phone={callNumber}
           anchor={anchor}
           preview={Boolean(preview)}
         />

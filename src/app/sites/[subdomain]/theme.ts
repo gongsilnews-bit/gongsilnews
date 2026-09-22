@@ -25,6 +25,20 @@ export function pickTheme(name?: string): Theme {
 /** 헤더(로고줄 + 칩바) 높이. 앵커로 뛸 때 이만큼 비워둬야 제목이 안 가린다. */
 export const HEADER_H = 104;
 
+/** 사무소 소개 길이. 연락처에 두세 줄로 붙는 자리라 넘기면 화면이 무너진다 */
+export const INTRO_MAX = 100;
+
+/**
+ * 소개글을 화면에 올릴 만큼만 자른다.
+ *
+ * 편집기는 100자에서 막지만, 제한이 생기기 전에 저장된 [정보설정] 소개는 더 길 수 있다.
+ * 잘라낸 경우에만 말줄임표를 붙여, 원래 짧은 글에 군더더기가 붙지 않게 한다.
+ */
+export function clampIntro(v?: string | null): string {
+  const t = String(v || "").trim();
+  return t.length > INTRO_MAX ? t.slice(0, INTRO_MAX).trimEnd() + "…" : t;
+}
+
 /** 만원 단위 숫자만 남긴다 */
 export function onlyDigits(v: string): string {
   return v.replace(/[^0-9]/g, "").slice(0, 9);

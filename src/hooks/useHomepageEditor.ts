@@ -68,6 +68,7 @@ export function useHomepageEditor(memberId: string) {
       },
     ],
     cta_label: "",
+    call_target: "mobile",
     show_seeking: true,
     show_photos: true,
     show_budget: true,
@@ -78,6 +79,8 @@ export function useHomepageEditor(memberId: string) {
   useEffect(() => {
     (async () => {
       const res = await getHomepageSettings(memberId);
+      // 한 번이라도 저장했는지 본다. 저장한 적 있으면 빈 칸도 그 사람의 뜻이다.
+      const savedPhone = res.success && res.data ? (res.data as any).contact_phone : undefined;
       if (res.success && res.data) {
         const d: any = res.data;
         setSubdomain(d.subdomain || "");
@@ -106,7 +109,13 @@ export function useHomepageEditor(memberId: string) {
         // 대표 전화를 아직 안 정했으면 부동산 정보의 번호를 기본값으로 쓴다
         const ag: any = (md as any).agency;
         if (ag) {
-          setContactPhone((prev) => prev || ag.phone || ag.cell || "");
+          // 아직 정한 적 없을 때만 부동산 정보에서 가져온다. 지운 칸은 지운 채로 둔다.
+          if (savedPhone == null) setContactPhone((prev) => prev || ag.phone || ag.cell || "");
+          // 휴대폰도 처음에는 부동산 정보에서 가져온다. 한 번이라도 저장했으면 그 값을 둔다.
+          setIntake((prev) => ({
+            ...prev,
+            contact_mobile: prev.contact_mobile ?? (ag.cell || ""),
+          }));
         }
       }
 

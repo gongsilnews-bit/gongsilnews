@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useHomepageEditor } from "@/hooks/useHomepageEditor";
 import HeroSlidesEditor from "@/components/admin/homepage/HeroSlidesEditor";
 import SiteClient from "@/app/sites/[subdomain]/SiteClient";
+import { INTRO_MAX } from "@/app/sites/[subdomain]/theme";
 
 /** 물건보고서 편집기와 같은 색 구성 */
 const THEME_COLORS = [
@@ -217,6 +218,90 @@ function Editor({ memberId }: { memberId: string }) {
                               <input type="file" accept="image/*" hidden onChange={e.onLogoPick} />
                             </label>
                           )}
+                        </div>
+
+                        {/*
+                          상호·대표·등록번호는 여기서 못 고친다. 폰에는 요약 상자를 놓을
+                          자리가 없으니 가는 길만 둔다. 새 창이라 편집하던 내용을 잃지 않는다.
+                        */}
+                        <a
+                          href="/m/admin/settings"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 8,
+                            padding: "12px 14px",
+                            borderRadius: 12,
+                            background: "#f8fafc",
+                            border: "1px solid #e5e7eb",
+                            textDecoration: "none",
+                          }}
+                        >
+                          <span style={{ fontSize: 12.5, fontWeight: 800, color: sub }}>
+                            상호·대표·등록번호·소재지는 정보설정에서
+                          </span>
+                          <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 800, color: "#111827" }}>정보설정 ↗</span>
+                        </a>
+
+                        <div>
+                          <label style={label}>전화번호</label>
+                          <p style={{ margin: "0 0 10px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
+                            <strong>사무실</strong>은 표시·광고법상 밝혀야 하는 중개사무소 연락처라 반드시 나옵니다
+                            — 비우면 [정보설정]의 번호가 대신 나옵니다.
+                            <br />
+                            <strong>휴대폰</strong>은 선택입니다. 비우면 안 나옵니다.
+                          </p>
+                          {([
+                            { key: "office" as const, label: "사무실", value: e.contactPhone, set: (v: string) => e.setContactPhone(v), ph: e.agency?.phone || "02-000-0000" },
+                            { key: "mobile" as const, label: "휴대폰", value: e.intake.contact_mobile || "", set: (v: string) => e.setIntake({ ...e.intake, contact_mobile: v }), ph: e.agency?.cell || "010-0000-0000" },
+                          ]).map((row) => {
+                            const picked = (e.intake.call_target || "mobile") === row.key;
+                            return (
+                              <div key={row.key} style={{ marginBottom: 12 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span style={{ flexShrink: 0, width: 46, fontSize: 13, fontWeight: 700, color: sub }}>{row.label}</span>
+                                  <input
+                                    style={{ ...field, flex: 1 }}
+                                    value={row.value}
+                                    onChange={(ev) => row.set(ev.target.value)}
+                                    placeholder={row.ph}
+                                    inputMode="tel"
+                                  />
+                                </div>
+                                <label style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 7, marginLeft: 54, fontSize: 13, color: picked ? text : sub, fontWeight: picked ? 700 : 600 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={picked}
+                                    onChange={() => e.setIntake({ ...e.intake, call_target: row.key })}
+                                    style={{ width: 16, height: 16, accentColor: "#059669" }}
+                                  />
+                                  하단 [전화] 버튼을 이 번호로
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div>
+                          <label style={label}>사무소 소개</label>
+                          <textarea
+                            style={{ ...field, minHeight: 84, resize: "vertical", fontFamily: "inherit" }}
+                            value={e.companyIntro}
+                            onChange={(ev) => e.setCompanyIntro(ev.target.value.slice(0, INTRO_MAX))}
+                            maxLength={INTRO_MAX}
+                            placeholder="어떤 물건을 주로 다루는지 100자 이내로 짧게 적어주세요"
+                          />
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: "7px 0 0" }}>
+                            <p style={{ margin: 0, flex: 1, fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
+                              맨 아래 연락처에 상호·대표 이름 밑으로 나옵니다. 비우면 [정보설정]의 부동산 소개가 쓰입니다.
+                            </p>
+                            <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: e.companyIntro.length >= INTRO_MAX ? "#dc2626" : sub }}>
+                              {e.companyIntro.length}/{INTRO_MAX}
+                            </span>
+                          </div>
                         </div>
 
                         <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>

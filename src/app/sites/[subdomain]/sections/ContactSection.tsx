@@ -10,6 +10,10 @@ interface Props {
   phone?: string;
   agentMobile?: string;
   representative?: string;
+  /** 등록된 중개사무소 명칭. 홈페이지 제목을 바꿔도 이 줄은 늘 나온다 */
+  legalName?: string;
+  /** [정보설정]의 부동산 소개. 홈페이지에서 따로 입력받지 않는다 */
+  intro?: string;
   address?: string;
   regNum?: string;
   /** members.sns_links — [정보설정]에 넣어둔 블로그·카페·유튜브 주소 */
@@ -22,7 +26,7 @@ interface Props {
  * 폼을 끝까지 안 채우고 내려온 사람을 위한 마지막 출구다. 여기서는 접수보다
  * 전화가 낫다. 이미 폼을 지나쳐 온 사람이다.
  */
-export default function ContactSection({ officeName, theme, phone, agentMobile, representative, address, regNum, snsLinks }: Props) {
+export default function ContactSection({ officeName, theme, phone, agentMobile, representative, intro, address, regNum, legalName, snsLinks }: Props) {
   return (
     <section id="contact" style={{ background: "#16202b", padding: "60px 16px", scrollMarginTop: 54 }}>
       <div style={{ maxWidth: 620, margin: "0 auto", background: "#fff", borderRadius: 4, padding: "44px 26px", textAlign: "center" }}>
@@ -35,39 +39,58 @@ export default function ContactSection({ officeName, theme, phone, agentMobile, 
         </p>
 
         {representative && (
-          <p style={{ margin: "0 0 20px 0", fontSize: 14.5, fontWeight: 600, color: "#6b7280" }}>{representative}</p>
+          <p style={{ margin: "0 0 14px 0", fontSize: 14.5, fontWeight: 600, color: "#6b7280" }}>{representative}</p>
+        )}
+
+        {intro && (
+          <p style={{ margin: "0 auto 20px", maxWidth: 420, fontSize: 14.5, lineHeight: 1.75, color: "#6b7684", wordBreak: "keep-all" }}>
+            {intro}
+          </p>
         )}
 
         <div aria-hidden style={{ width: 40, height: 2, background: "#d1d5db", margin: "0 auto 24px" }} />
 
         {(phone || agentMobile) && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap", marginBottom: 22 }}>
-            <span
-              aria-hidden
-              style={{ width: 42, height: 42, borderRadius: "50%", background: theme.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
-            >
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-              </svg>
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-              {phone && (
-                <a href={`tel:${phone}`} style={{ fontSize: 24, fontWeight: 900, color: "#111827", textDecoration: "none", letterSpacing: "-0.5px" }}>
-                  {phone}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginBottom: 22 }}>
+            {/*
+              번호 자체가 버튼이다. 폰에서 누르면 바로 전화가 걸린다.
+              앞에 있던 동그란 전화 아이콘은 뺐다 — 누를 수 있는 것처럼 보이는데
+              아무 일도 안 하는 그림이라, 번호를 가리기만 했다.
+            */}
+            {[
+              { label: "사무실", value: phone },
+              { label: "휴대폰", value: agentMobile },
+            ]
+              .filter((t) => t.value)
+              // 대표 전화에 휴대폰 번호를 그대로 적어둔 중개사가 흔하다. 그대로 두면
+              // 같은 번호가 사무실·휴대폰 두 줄로 나온다. 하이픈을 떼고 비교해 하나만 남긴다.
+              .filter((t, i, list) => {
+                const digits = (v: any) => String(v).replace(/[^0-9]/g, "");
+                return list.findIndex((x) => digits(x.value) === digits(t.value)) === i;
+              })
+              .map((t) => (
+                <a
+                  key={t.label}
+                  href={`tel:${String(t.value).replace(/[^0-9+]/g, "")}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "baseline",
+                    gap: 10,
+                    padding: "4px 2px",
+                    color: "#111827",
+                    textDecoration: "none",
+                  }}
+                >
+                  <span style={{ fontSize: 12.5, fontWeight: 800, color: "#98a2ad", letterSpacing: "0.3px" }}>{t.label}</span>
+                  <span style={{ fontSize: 25, fontWeight: 900, letterSpacing: "-0.5px" }}>{t.value}</span>
                 </a>
-              )}
-              {phone && agentMobile && <span style={{ color: "#d1d5db", fontSize: 22, fontWeight: 300 }}>|</span>}
-              {agentMobile && (
-                <a href={`tel:${agentMobile}`} style={{ fontSize: 24, fontWeight: 900, color: "#111827", textDecoration: "none", letterSpacing: "-0.5px" }}>
-                  {agentMobile}
-                </a>
-              )}
-            </span>
+              ))}
           </div>
         )}
 
         <SnsLinks theme={theme} snsLinks={snsLinks} />
 
+        {legalName && <p style={{ margin: "0 0 4px 0", fontSize: 13.5, color: "#6b7280" }}>상호: {legalName}</p>}
         {regNum && <p style={{ margin: "0 0 4px 0", fontSize: 13.5, color: "#6b7280" }}>등록번호: {regNum}</p>}
         {address && <p style={{ margin: "0 0 26px 0", fontSize: 13.5, color: "#6b7280", wordBreak: "keep-all" }}>소재지: {address}</p>}
 
