@@ -87,7 +87,7 @@ function RealtyAdminContent() {
     planType === "news_basic" ||
     planType === "news_premium" ||
     planType === "vacancy_basic" ||
-    planType === "vacancy_premium" ||
+    planType === "study_premium" ||
     planType === "business";
 
   /* ── 프리페치 데이터 저장소 ── */
@@ -278,7 +278,7 @@ function RealtyAdminContent() {
               <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#f3f4f6", color: "#4b5563" }}>무료부동산(Free)</span>
             ) : (
               <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#ebf5ff", color: "#3b82f6" }}>
-                {planType === 'news_basic' || planType === 'news_premium' ? '공실뉴스' : planType === 'vacancy_basic' || planType === 'vacancy_premium' ? '공실등록' : '부동산회원(유료)'}
+                {planType === 'news_basic' || planType === 'news_premium' ? '공실뉴스' : planType === 'vacancy_basic' || planType === 'study_premium' ? '공실스터디' : '부동산회원(유료)'}
               </span>
             )}
             {agencyStatus === "REJECTED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#be123c", background: "#fee2e2", border: "1px solid #ef4444", display: "inline-flex", alignItems: "center", gap: 4 }}>🚨 심사 반려 (서류보완)</span>}

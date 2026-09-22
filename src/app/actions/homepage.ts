@@ -211,7 +211,7 @@ export async function getHomepageSettingsBySubdomain(subdomain: string) {
       member.role === 'ADMIN' ||
       member.role === '최고관리자' ||
       ((member.plan_type === 'news_premium' ||
-        member.plan_type === 'vacancy_premium' ||
+        member.plan_type === 'study_premium' ||
         member.plan_type === 'biz_premium') &&
         (!member.plan_end_date || new Date(member.plan_end_date) >= new Date()));
 

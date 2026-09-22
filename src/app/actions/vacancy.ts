@@ -73,8 +73,8 @@ export async function createVacancy(data: {
     // 유틸리티를 통해 실제 적용 중인 플랜(만료 시 free) 판별
     const plan = getEffectivePlan(member);
     
-    // 2. 관리자나 공실등록부동산이 아니면 한도 체크
-    if (plan !== 'vacancy_premium' && plan !== 'admin') {
+    // 2. 관리자나 공실스터디부동산이 아니면 한도 체크
+    if (plan !== 'study_premium' && plan !== 'admin') {
       const { count, error: countErr } = await supabase
         .from('vacancies')
         .select('*', { count: 'exact', head: true })

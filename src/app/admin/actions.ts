@@ -110,7 +110,7 @@ export async function adminUpdateMember(memberId: string, updates: {
       if (plan === 'news_premium') {
         if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_REALTOR_NEWS_VACANCY;
         if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_REALTOR_NEWS_ARTICLE;
-      } else if (plan === 'vacancy_premium') {
+      } else if (plan === 'study_premium') {
         if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_REALTOR_VACANCY_VACANCY;
         if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_REALTOR_VACANCY_ARTICLE;
       } else {
@@ -236,7 +236,7 @@ export async function adminApproveRealtorApplication(memberId: string) {
     if (planType === 'news_premium') {
       maxVacancies = policies.LIMIT_REALTOR_NEWS_VACANCY;
       maxArticles = policies.LIMIT_REALTOR_NEWS_ARTICLE;
-    } else if (planType === 'vacancy_premium') {
+    } else if (planType === 'study_premium') {
       maxVacancies = policies.LIMIT_REALTOR_VACANCY_VACANCY;
       maxArticles = policies.LIMIT_REALTOR_VACANCY_ARTICLE;
     }
@@ -753,7 +753,7 @@ export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_PO
       await supabaseAdmin.from('members').update({
         max_vacancies: policies.LIMIT_REALTOR_VACANCY_VACANCY,
         max_articles_per_month: policies.LIMIT_REALTOR_VACANCY_ARTICLE
-      }).eq('role', 'REALTOR').eq('plan_type', 'vacancy_premium');
+      }).eq('role', 'REALTOR').eq('plan_type', 'study_premium');
     }
 
     return { success: true };

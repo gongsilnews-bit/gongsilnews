@@ -527,7 +527,7 @@ export default function MemberArticleSection({
                 return;
               }
               if (!isPaidRealtor) {
-                alert("공실뉴스부동산 / 공실등록부동산 유료 회원 전용 기능입니다.");
+                alert("공실뉴스부동산 / 공실스터디부동산 유료 회원 전용 기능입니다.");
                 return;
               }
               setBulkSelectedVacancyId("NONE");
@@ -549,7 +549,7 @@ export default function MemberArticleSection({
               transition: "all 0.15s",
               opacity: isPaidRealtor ? 1 : 0.6,
             }}
-            title={!isPaidRealtor ? "공실뉴스부동산 / 공실등록부동산 유료 회원 전용 기능입니다." : undefined}
+            title={!isPaidRealtor ? "공실뉴스부동산 / 공실스터디부동산 유료 회원 전용 기능입니다." : undefined}
           >
             🏢 공실 일괄적용
           </button>

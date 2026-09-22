@@ -17,7 +17,7 @@ function getAdminClient() {
 /**
  * 유료 부동산 회원 자격 검사
  * - 공실뉴스부동산 (news_premium)
- * - 공실등록부동산 (vacancy_premium)
+ * - 공실스터디부동산 (study_premium)
  * - 최고관리자 / 관리자 (admin, SUPER_ADMIN)
  */
 export async function checkRealtorPaidPlan(authorId: string): Promise<{
@@ -38,7 +38,7 @@ export async function checkRealtorPaidPlan(authorId: string): Promise<{
 
   const effectivePlan = getEffectivePlan(member);
   const isSuper = member.role === "SUPER_ADMIN" || member.role === "ADMIN" || member.role === "최고관리자";
-  const isPaid = isSuper || effectivePlan === "news_premium" || effectivePlan === "vacancy_premium";
+  const isPaid = isSuper || effectivePlan === "news_premium" || effectivePlan === "study_premium";
 
   return { isPaid, plan: effectivePlan, role: member.role };
 }
@@ -127,7 +127,7 @@ export async function getEligibleVacanciesByAuthors(authorIds: string[]): Promis
     (members || []).forEach((m: { id: string; role?: string; plan_type?: string; plan_end_date?: string | null }) => {
       const plan = getEffectivePlan(m);
       const isSuper = m.role === "SUPER_ADMIN" || m.role === "ADMIN" || m.role === "최고관리자";
-      const isPaid = isSuper || plan === "news_premium" || plan === "vacancy_premium";
+      const isPaid = isSuper || plan === "news_premium" || plan === "study_premium";
       optionsByAuthor[m.id] = { isPaid, vacancies: [] };
       if (isPaid) paidIds.push(m.id);
     });

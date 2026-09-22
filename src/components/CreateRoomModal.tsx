@@ -19,7 +19,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreateRoom, userRol
   const [description, setDescription] = useState("");
   const [avatar, setAvatar] = useState("🏢");
 
-  // 권한 체크: 공실뉴스부동산 또는 공실등록부동산만 생성 가능
+  // 권한 체크: 공실뉴스부동산 또는 공실스터디부동산만 생성 가능
   const canCreate = userRole === "news_premium" || userRole === "registered" || userRole === "ADMIN";
 
   const EMOJI_OPTIONS = ["🏢", "🏠", "🔥", "💼", "🤝", "📊", "🏙️", "⭐", "💬", "🎯"];
@@ -56,7 +56,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreateRoom, userRol
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "#333", margin: "0 0 8px" }}>채팅방 생성 권한이 없습니다</h3>
             <p style={{ fontSize: 13, color: "#888", lineHeight: 1.6, margin: "0 0 20px" }}>
               채팅방은 <strong style={{ color: BLUE }}>공실뉴스부동산</strong> 또는<br/>
-              <strong style={{ color: BLUE }}>공실등록부동산</strong> 회원만 만들 수 있습니다.
+              <strong style={{ color: BLUE }}>공실스터디부동산</strong> 회원만 만들 수 있습니다.
             </p>
             <button onClick={onClose} style={{ padding: "10px 28px", borderRadius: 10, background: NAVY, color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer" }}>확인</button>
           </div>

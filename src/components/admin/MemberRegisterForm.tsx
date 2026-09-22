@@ -366,7 +366,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           } else if (val === "news_premium") {
             next.max_vacancies = currentPolicies.LIMIT_REALTOR_NEWS_VACANCY;
             next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_NEWS_ARTICLE;
-          } else if (val === "vacancy_premium") {
+          } else if (val === "study_premium") {
             next.max_vacancies = currentPolicies.LIMIT_REALTOR_VACANCY_VACANCY;
             next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_VACANCY_ARTICLE;
           }
@@ -825,7 +825,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
                 <select name="plan_type" value={formData.plan_type} onChange={handleMemberChange} disabled={!isAdmin} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 180 }}>
                   <option value="free">무료부동산 (Free)</option>
                   <option value="news_premium">공실뉴스부동산</option>
-                  <option value="vacancy_premium">공실등록부동산</option>
+                  <option value="study_premium">공실스터디부동산</option>
                 </select>
               </div>
             </div>

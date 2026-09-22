@@ -75,7 +75,7 @@ export default function ArticleVacancyDropdown({
           fontWeight: 600,
           cursor: "not-allowed",
         }}
-        title="공실뉴스부동산 / 공실등록부동산 유료 회원 전용 기능입니다."
+        title="공실뉴스부동산 / 공실스터디부동산 유료 회원 전용 기능입니다."
       >
         🔒 유료회원
       </span>

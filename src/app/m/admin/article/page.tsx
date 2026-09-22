@@ -776,7 +776,7 @@ function MobileArticleAdmin() {
                     <button
                       onClick={() => {
                         if (!isAdmin && !isPaidRealtor) {
-                          showToast("공실뉴스부동산 / 공실등록부동산 유료 회원 전용 기능입니다.", "info");
+                          showToast("공실뉴스부동산 / 공실스터디부동산 유료 회원 전용 기능입니다.", "info");
                           return;
                         }
                         const authorId = a.author_id || memberId || "";
@@ -1008,7 +1008,7 @@ function MobileArticleAdmin() {
                     ) : vacancyList.length === 0 ? (
                       <div style={{ padding: "18px 20px", fontSize: 12.5, color: "#9ca3af", lineHeight: 1.6 }}>
                         {authorIsPaid === false
-                          ? <>작성자가 공실뉴스부동산 / 공실등록부동산 유료 회원이 아니어서<br />연결할 수 있는 공실이 없습니다.</>
+                          ? <>작성자가 공실뉴스부동산 / 공실스터디부동산 유료 회원이 아니어서<br />연결할 수 있는 공실이 없습니다.</>
                           : <>연결할 수 있는 공실이 없습니다.<br />&apos;부동산노출 + 일반인노출&apos;로 설정된 진행중 매물만 선택할 수 있습니다.</>}
                       </div>
                     ) : vacancyList.map(v => (

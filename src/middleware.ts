@@ -88,7 +88,7 @@ async function isSitePaused(subdomain: string): Promise<boolean> {
       m.role === 'ADMIN' ||
       m.role === '최고관리자' ||
       ((m.plan_type === 'news_premium' ||
-        m.plan_type === 'vacancy_premium' ||
+        m.plan_type === 'study_premium' ||
         m.plan_type === 'biz_premium') &&
         (!m.plan_end_date || new Date(m.plan_end_date) >= new Date()));
 

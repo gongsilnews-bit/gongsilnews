@@ -73,7 +73,7 @@ const used = new Set(taken.map((t) => t.subdomain));
 const agencyOf = Object.fromEntries(agencies.map((a) => [a.owner_id, a]));
 const bizOf = Object.fromEntries((Array.isArray(bizList) ? bizList : []).map((b) => [b.user_id, b]));
 
-const plans = new Set(["news_premium", "vacancy_premium", "biz_premium"]);
+const plans = new Set(["news_premium", "study_premium", "biz_premium"]);
 const paid = (m) => plans.has(m.plan_type) && (!m.plan_end_date || new Date(m.plan_end_date) >= new Date());
 
 const rows = [];

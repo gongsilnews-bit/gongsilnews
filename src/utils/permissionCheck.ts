@@ -23,7 +23,7 @@ export function getPermissionLevel(member: {
     }
 
     if (member.plan_type === 'news_premium') return 3;
-    if (member.plan_type === 'vacancy_premium') return 4;
+    if (member.plan_type === 'study_premium') return 4;
     return 2; // 무료부동산회원
   }
 
@@ -66,7 +66,7 @@ export function getLevelName(level: number): string {
     case 1: return "일반회원";
     case 2: return "무료부동산회원";
     case 3: return "공실뉴스부동산 회원";
-    case 4: return "공실등록부동산 회원";
+    case 4: return "공실스터디부동산 회원";
     case 5: return "최고관리자";
     default: return "회원";
   }

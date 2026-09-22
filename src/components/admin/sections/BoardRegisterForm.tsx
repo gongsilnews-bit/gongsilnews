@@ -116,7 +116,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
     { label: "1레벨 (일반회원 이상)", value: 1 },
     { label: "2레벨 (무료부동산회원 이상)", value: 2 },
     { label: "3레벨 (공실뉴스부동산 이상)", value: 3 },
-    { label: "4레벨 (공실등록부동산 이상)", value: 4 },
+    { label: "4레벨 (공실스터디부동산 이상)", value: 4 },
     { label: "5레벨 (최고관리자 이상)", value: 5 },
   ];
 
