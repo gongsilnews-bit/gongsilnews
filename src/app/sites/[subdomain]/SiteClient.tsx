@@ -148,6 +148,8 @@ export default function SiteClient({
       <SiteHeader
         officeName={officeName}
         logoUrl={settings?.logo_url}
+        brandMode={cfg.brand_mode || "both"}
+        logoSize={cfg.logo_size || "medium"}
         theme={theme}
         items={navItems}
         activeId={activeId}

@@ -88,6 +88,8 @@ export default function IntakeStudio({ theme, memberId }: Props) {
 
   const [intake, setIntake] = useState<Record<string, any>>({
     theme_color: "teal",
+    brand_mode: "both",
+    logo_size: "medium",
     // 첫 화면 슬라이드. 칸 세 개를 미리 깔아두고 중개사가 채우는 만큼만 화면에 나간다.
     // 첫 장에는 기본 문구를 미리 적어 둔다 — 화면에서 되살리지 않으므로, 여기서
     // 지우면 그대로 사라진다.
@@ -186,6 +188,10 @@ export default function IntakeStudio({ theme, memberId }: Props) {
     e.target.value = "";
     if (!file) return;
     setError("");
+    if (file.size > 2 * 1024 * 1024) {
+      setError("로고 파일은 2MB 이하만 업로드할 수 있습니다.");
+      return;
+    }
     // 로고는 작게 쓰이므로 512px 로 줄이되 화질은 높게 잡는다. SVG 는 원본 그대로 올린다.
     const shrunk = await shrinkToWebp(file, 512, 0.92);
     const ext = shrunk.type === "image/webp" ? "webp" : safeExt(file);
@@ -392,6 +398,27 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                         </div>
 
                         <div style={group}>
+                          <label style={label}>헤더 표시 방식</label>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                            {([
+                              ["text", "텍스트만"],
+                              ["logo", "로고만"],
+                              ["both", "로고 + 텍스트"],
+                            ] as const).map(([value, title]) => {
+                              const selected = (intake.brand_mode || "both") === value;
+                              return (
+                                <button key={value} type="button" onClick={() => setIntake({ ...intake, brand_mode: value })} style={{ padding: "9px 5px", border: selected ? "2px solid #059669" : `1px solid ${border}`, borderRadius: 8, background: selected ? (dark ? "#063d31" : "#ecfdf5") : "transparent", color: selected ? "#059669" : sub, fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+                                  {title}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {!logoUrl && intake.brand_mode === "logo" && (
+                            <p style={{ margin: "7px 0 0", fontSize: 12, color: "#d97706", fontWeight: 700 }}>로고를 올리기 전까지 상호가 대신 표시됩니다.</p>
+                          )}
+                        </div>
+
+                        <div style={group}>
                           <label style={label}>로고</label>
                           {logoUrl && (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -401,6 +428,30 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                             {logoUrl ? "로고 바꾸기" : "+ 로고 올리기"}
                             <input type="file" accept="image/*" hidden onChange={onLogoPick} />
                           </label>
+                          {logoUrl && (
+                            <button type="button" onClick={() => setLogoUrl(null)} style={{ width: "100%", marginTop: 7, padding: "8px 10px", border: "none", background: "transparent", color: "#dc2626", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+                              로고 삭제
+                            </button>
+                          )}
+                          <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>PNG · WebP · SVG 권장 · 최대 2MB · 표시 최대 너비 160px</p>
+                        </div>
+
+                        <div style={group}>
+                          <label style={label}>로고 크기</label>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            {([
+                              ["small", "작게", "22px"],
+                              ["medium", "보통", "28px"],
+                              ["large", "크게", "34px"],
+                            ] as const).map(([value, title, size]) => {
+                              const selected = (intake.logo_size || "medium") === value;
+                              return (
+                                <button key={value} type="button" onClick={() => setIntake({ ...intake, logo_size: value })} style={{ flex: 1, padding: "9px 4px", border: selected ? "2px solid #059669" : `1px solid ${border}`, borderRadius: 8, background: selected ? (dark ? "#063d31" : "#ecfdf5") : "transparent", color: selected ? "#059669" : sub, fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+                                  {title}<span style={{ display: "block", marginTop: 2, fontSize: 10.5, fontWeight: 600 }}>{size}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
 
                         <label style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}>

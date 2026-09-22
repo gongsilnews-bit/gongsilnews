@@ -19,6 +19,11 @@ interface Props {
  */
 export default function SubdomainArticleBar({ subdomain, settings, member, companyProfile }: Props) {
   const theme = pickTheme(settings?.intake?.theme_color);
+  const brandMode = settings?.intake?.brand_mode || "both";
+  const logoSize = settings?.intake?.logo_size || "medium";
+  const logoHeight = logoSize === "small" ? 20 : logoSize === "large" ? 30 : 24;
+  const showLogo = Boolean(settings?.logo_url) && brandMode !== "text";
+  const showText = brandMode !== "logo" || !settings?.logo_url;
 
   // 서브도메인 없이 /sites/{주소} 로 들어온 경우(로컬·미리보기)에는 홈 링크에도 같은 접두어를 붙인다
   const home =
@@ -50,13 +55,13 @@ export default function SubdomainArticleBar({ subdomain, settings, member, compa
       }}
     >
       <a href={home || "/"} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, textDecoration: "none" }}>
-        {settings?.logo_url ? (
+        {showLogo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={settings.logo_url} alt={officeName} style={{ height: 24, objectFit: "contain" }} />
+          <img src={settings.logo_url} alt={officeName} style={{ height: logoHeight, width: "auto", maxWidth: brandMode === "logo" ? 150 : 100, objectFit: "contain" }} />
         ) : null}
-        <span style={{ fontSize: 15.5, fontWeight: 900, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.4px" }}>
+        {showText && <span style={{ fontSize: 15.5, fontWeight: 900, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.4px" }}>
           {officeName}
-        </span>
+        </span>}
       </a>
     </div>
   );

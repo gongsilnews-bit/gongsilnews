@@ -11,6 +11,8 @@ export interface NavItem {
 interface Props {
   officeName: string;
   logoUrl?: string | null;
+  brandMode?: "text" | "logo" | "both";
+  logoSize?: "small" | "medium" | "large";
   theme: Theme;
   items: NavItem[];
   activeId: string;
@@ -26,10 +28,13 @@ interface Props {
  * 섹션에 밑줄을 넣으면, 열어보지 않아도 페이지에 뭐가 있는지까지 같이 알려준다.
  * 햄버거로 감추면 탭이 한 번 더 들고 대부분은 열어보지 않는다.
  */
-export default function SiteHeader({ officeName, logoUrl, theme, items, activeId, onJump, preview }: Props) {
+export default function SiteHeader({ officeName, logoUrl, brandMode = "both", logoSize = "medium", theme, items, activeId, onJump, preview }: Props) {
   const barRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const [compact, setCompact] = useState(false);
+  const logoHeight = logoSize === "small" ? 22 : logoSize === "large" ? 34 : 28;
+  const showLogo = Boolean(logoUrl) && brandMode !== "text";
+  const showText = brandMode !== "logo" || !logoUrl;
 
   // 공개 페이지는 전역 body overflow 설정과 무관하게 window를 기준으로 삼는다.
   // 관리자 미리보기에서만 가장 가까운 세로 스크롤 패널을 찾는다.
@@ -129,11 +134,11 @@ export default function SiteHeader({ officeName, logoUrl, theme, items, activeId
             cursor: "pointer",
           }}
         >
-          {logoUrl ? (
+          {showLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt={officeName} style={{ height: 28, objectFit: "contain" }} />
+            <img src={logoUrl!} alt={officeName} style={{ height: logoHeight, width: "auto", maxWidth: brandMode === "logo" ? 160 : 110, objectFit: "contain" }} />
           ) : null}
-          <span
+          {showText && <span
             style={{
               fontSize: 17,
               fontWeight: 900,
@@ -145,7 +150,7 @@ export default function SiteHeader({ officeName, logoUrl, theme, items, activeId
             }}
           >
             {officeName}
-          </span>
+          </span>}
         </button>
 
         <button

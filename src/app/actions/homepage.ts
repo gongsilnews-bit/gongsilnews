@@ -92,6 +92,8 @@ export async function saveHomepageSettings(ownerId: string, inputData: {
   /** 중개사 홈페이지 설정 (색상·사진·문구·섹션·받을 항목) */
   intake?: {
     theme_color?: string;
+    brand_mode?: "text" | "logo" | "both";
+    logo_size?: "small" | "medium" | "large";
     /** 첫 화면 슬라이드 (최대 3장). 사진이나 유튜브를 깔고 문구를 따로 얹는다 */
     hero_slides?: {
       image?: string;
