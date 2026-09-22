@@ -436,7 +436,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                           {logoUrl && (
                             <div style={{ position: "relative", display: "inline-flex", alignItems: "center", marginBottom: 8, padding: "4px 7px", border: `1px solid ${border}`, borderRadius: 7, background: dark ? "#111827" : "#f8fafc" }}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={logoUrl} alt="업로드된 로고" style={{ height: 34, maxWidth: 160, objectFit: "contain" }} />
+                              <img src={logoUrl} alt="업로드된 로고" style={{ height: 50, maxWidth: 220, objectFit: "contain" }} />
                               <button
                                 type="button"
                                 aria-label="로고 삭제"
@@ -459,9 +459,9 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                           <label style={label}>로고 크기</label>
                           <div style={{ display: "flex", gap: 6 }}>
                             {([
-                              ["small", "작게", "22px"],
-                              ["medium", "보통", "28px"],
-                              ["large", "크게", "34px"],
+                              ["small", "작게", "30px"],
+                              ["medium", "보통", "40px"],
+                              ["large", "크게", "50px"],
                             ] as const).map(([value, title, size]) => {
                               const selected = (intake.logo_size || "medium") === value;
                               return (

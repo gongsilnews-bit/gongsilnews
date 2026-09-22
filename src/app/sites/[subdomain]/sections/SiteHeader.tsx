@@ -32,7 +32,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
   const barRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const [compact, setCompact] = useState(false);
-  const logoHeight = logoSize === "small" ? 22 : logoSize === "large" ? 34 : 28;
+  const logoHeight = logoSize === "small" ? 30 : logoSize === "large" ? 50 : 40;
   const showLogo = Boolean(logoUrl) && brandMode !== "text";
   const showText = brandMode !== "logo" || !logoUrl;
 
@@ -88,7 +88,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
 
   return (
     <>
-      {!preview && <div aria-hidden style={{ height: 102 }} />}
+      {!preview && <div aria-hidden style={{ height: 118 }} />}
       <header
       ref={headerRef}
       style={{
@@ -106,7 +106,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
       {/* 로고 줄 */}
       <div
         style={{
-          height: compact ? 0 : 56,
+          height: compact ? 0 : 72,
           padding: "0 16px",
           display: "flex",
           alignItems: "center",
@@ -127,6 +127,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
             display: "flex",
             alignItems: "center",
             gap: 8,
+            flex: 1,
             minWidth: 0,
             background: "none",
             border: "none",
@@ -136,7 +137,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
         >
           {showLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl!} alt={officeName} style={{ height: logoHeight, width: "auto", maxWidth: brandMode === "logo" ? 160 : 110, objectFit: "contain" }} />
+            <img src={logoUrl!} alt={officeName} style={{ height: logoHeight, width: "auto", maxWidth: brandMode === "logo" ? 220 : 150, objectFit: "contain", flexShrink: 1 }} />
           ) : null}
           {showText && <span
             style={{
