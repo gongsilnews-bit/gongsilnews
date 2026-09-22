@@ -42,12 +42,13 @@ function getAdminClient() {
  */
 function flattenRow(row: any) {
   const ds = row?.design_settings || {};
+  const subdomainChange = ds.subdomain_change || {};
   return {
     id: row.id,
     owner_id: row.owner_id,
     subdomain: row.subdomain,
-    subdomain_change_count: row.subdomain_change_count || 0,
-    subdomain_changed_at: row.subdomain_changed_at || null,
+    subdomain_change_count: Math.max(Number(row.subdomain_change_count || 0), Number(subdomainChange.count || 0)),
+    subdomain_changed_at: row.subdomain_changed_at || subdomainChange.changed_at || null,
     is_active: row.is_active,
     created_at: row.created_at,
     theme_name: row.theme_name || null,
@@ -277,10 +278,13 @@ export async function changeHomepageSubdomain(ownerId: string, requestedSubdomai
   try {
     const { data: homepage, error: homepageError } = await supabase
       .from('homepage_settings')
-      .select('subdomain, subdomain_change_count, subdomain_changed_at')
+      .select('*')
       .eq('owner_id', ownerId)
-      .single();
-    if (homepageError || !homepage?.subdomain) {
+      .maybeSingle();
+    if (homepageError) {
+      return { success: false, error: homepageError.message };
+    }
+    if (!homepage?.subdomain) {
       return { success: false, error: "먼저 홈페이지 주소를 최초 설정해 주세요." };
     }
     if (homepage.subdomain === next) {
@@ -292,9 +296,17 @@ export async function changeHomepageSubdomain(ownerId: string, requestedSubdomai
       return { success: false, error: availability.error || "이미 사용 중인 주소입니다." };
     }
 
-    const changeCount = homepage.subdomain_change_count || 0;
-    if (changeCount >= 3 && homepage.subdomain_changed_at) {
-      const nextAllowedAt = new Date(homepage.subdomain_changed_at);
+    // 변경 이력은 기존 DB에서도 즉시 작동하도록 이미 존재하는 design_settings에 저장한다.
+    // 전용 컬럼 마이그레이션이 적용된 환경에서는 그 값도 함께 읽어 이전 기록을 보존한다.
+    const designSettings = homepage.design_settings || {};
+    const storedChange = designSettings.subdomain_change || {};
+    const changeCount = Math.max(
+      Number(homepage.subdomain_change_count || 0),
+      Number(storedChange.count || 0),
+    );
+    const lastChangedAt = homepage.subdomain_changed_at || storedChange.changed_at || null;
+    if (changeCount >= 3 && lastChangedAt) {
+      const nextAllowedAt = new Date(lastChangedAt);
       nextAllowedAt.setMonth(nextAllowedAt.getMonth() + 3);
       if (nextAllowedAt > new Date()) {
         return {
@@ -306,17 +318,26 @@ export async function changeHomepageSubdomain(ownerId: string, requestedSubdomai
     }
 
     const changedAt = new Date().toISOString();
-    const { error } = await supabase
+    const nextChangeCount = changeCount + 1;
+    const { data: updated, error } = await supabase
       .from('homepage_settings')
       .update({
         subdomain: next,
-        subdomain_change_count: changeCount + 1,
-        subdomain_changed_at: changedAt,
+        design_settings: {
+          ...designSettings,
+          subdomain_change: {
+            count: nextChangeCount,
+            changed_at: changedAt,
+          },
+        },
       })
       .eq('owner_id', ownerId)
-      .eq('subdomain', homepage.subdomain);
+      .eq('subdomain', homepage.subdomain)
+      .select('subdomain')
+      .maybeSingle();
     if (error) return { success: false, error: error.message };
-    return { success: true, subdomain: next, changeCount: changeCount + 1, changedAt };
+    if (!updated) return { success: false, error: "주소가 다른 곳에서 먼저 변경되었습니다. 새로고침 후 다시 시도해 주세요." };
+    return { success: true, subdomain: next, changeCount: nextChangeCount, changedAt };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
