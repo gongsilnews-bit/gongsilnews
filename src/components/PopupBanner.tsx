@@ -39,7 +39,13 @@ function addSessionClosedId(id: string) {
 
 export default function PopupBanner() {
   const pathname = usePathname();
-  const isMainPage = pathname === "/" || pathname === "/m";
+  const hostname = typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
+  const isPortalHost =
+    hostname === "gongsilnews.com" ||
+    hostname === "www.gongsilnews.com" ||
+    hostname === "localhost" ||
+    hostname === "127.0.0.1";
+  const isMainPage = isPortalHost && (pathname === "/" || pathname === "/m");
 
   const [popups, setPopups] = useState<any[]>([]);
   const [closedIds, setClosedIds] = useState<Set<string>>(new Set());
