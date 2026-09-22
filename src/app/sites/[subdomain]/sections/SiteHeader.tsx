@@ -31,23 +31,29 @@ export default function SiteHeader({ officeName, logoUrl, theme, items, activeId
   const headerRef = useRef<HTMLElement>(null);
   const [compact, setCompact] = useState(false);
 
-  // 공개 페이지는 window, 관리자 미리보기는 미리보기 패널이 스크롤 주체다.
-  // 가장 가까운 세로 스크롤 부모를 찾아 두 화면에서 같은 축소 헤더를 보여준다.
+  // 공개 페이지는 전역 body overflow 설정과 무관하게 window를 기준으로 삼는다.
+  // 관리자 미리보기에서만 가장 가까운 세로 스크롤 패널을 찾는다.
   useEffect(() => {
     const header = headerRef.current;
     if (!header) return;
 
-    let parent = header.parentElement;
-    while (parent) {
-      const { overflowY } = window.getComputedStyle(parent);
-      if (/auto|scroll|overlay/.test(overflowY)) break;
-      parent = parent.parentElement;
+    let scrollTarget: Window | HTMLElement = window;
+    if (preview) {
+      let parent = header.parentElement;
+      while (parent && parent !== document.body) {
+        const { overflowY } = window.getComputedStyle(parent);
+        if (/auto|scroll|overlay/.test(overflowY)) {
+          scrollTarget = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
     }
 
-    const scrollTarget: Window | HTMLElement = parent || window;
     const update = () => {
       const top = scrollTarget === window ? window.scrollY : (scrollTarget as HTMLElement).scrollTop;
-      setCompact(top > 40);
+      // 접힐 때와 펼칠 때의 기준을 달리해 헤더 높이 변화 구간에서 왕복하지 않게 한다.
+      setCompact((current) => (current ? top > 16 : top > 72));
     };
 
     update();
@@ -76,11 +82,15 @@ export default function SiteHeader({ officeName, logoUrl, theme, items, activeId
   }, [activeId]);
 
   return (
-    <header
+    <>
+      {!preview && <div aria-hidden style={{ height: 102 }} />}
+      <header
       ref={headerRef}
       style={{
-        position: "sticky",
+        position: preview ? "sticky" : "fixed",
         top: 0,
+        left: preview ? undefined : 0,
+        right: preview ? undefined : 0,
         zIndex: 40,
         background: "rgba(255,255,255,0.96)",
         backdropFilter: "saturate(180%) blur(8px)",
@@ -211,6 +221,7 @@ export default function SiteHeader({ officeName, logoUrl, theme, items, activeId
           );
         })}
       </div>
-    </header>
+      </header>
+    </>
   );
 }
