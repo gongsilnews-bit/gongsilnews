@@ -403,10 +403,6 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Prop
                 >
                   {submitting ? "접수 중…" : "접 수 하 기"}
                 </button>
-
-                <p style={{ margin: 0, fontSize: 13, color: "#94a3b8", textAlign: "center" }}>
-                  물건 정보는 접수 후에 여쭤봅니다. 안 쓰셔도 됩니다.
-                </p>
               </div>
             </form>
           )}
