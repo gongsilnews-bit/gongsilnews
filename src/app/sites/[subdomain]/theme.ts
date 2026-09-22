@@ -277,3 +277,55 @@ export function heroSlides(cfg: any): HeroSlide[] {
     },
   ];
 }
+
+/**
+ * 섹션으로 스크롤한다 — 되는 방법을 찾을 때까지.
+ *
+ * 인앱 브라우저는 저마다 다르게 군다. 네이버 앱(안드로이드)에서는 부드러운 스크롤을
+ * 지원한다고 해놓고 scrollIntoView 가 아무 일도 하지 않았다. 그래서 한 가지 방법에
+ * 기대지 않고, 움직였는지 확인한 뒤 다음 수단으로 넘어간다.
+ *
+ *   1. window.scrollTo (부드럽게, 지원하면)
+ *   2. 0.26초 뒤에도 제자리면 → 옛 방식 window.scrollTo(x, y)
+ *   3. 그래도 제자리면 → documentElement/body 의 scrollTop 을 직접 만진다
+ *   4. 그래도 제자리면 → 주소 해시로 넘겨 브라우저가 하게 둔다
+ *
+ * 마지막까지 가면 방문 기록이 하나 쌓이지만, 안 움직이는 것보다 낫다.
+ */
+export function scrollToSection(id: string, offset = HEADER_H) {
+  if (typeof window === "undefined") return;
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  const readTop = () => window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+  const start = readTop();
+  const target = Math.max(0, el.getBoundingClientRect().top + start - offset);
+  const smooth = "scrollBehavior" in document.documentElement.style;
+
+  if (smooth) {
+    try {
+      window.scrollTo({ top: target, behavior: "smooth" });
+    } catch {
+      window.scrollTo(0, target);
+    }
+  } else {
+    window.scrollTo(0, target);
+  }
+
+  window.setTimeout(() => {
+    if (Math.abs(readTop() - start) > 2) return;
+
+    try {
+      window.scrollTo(0, target);
+    } catch {
+      /* 다음 수단으로 */
+    }
+    if (Math.abs(readTop() - start) > 2) return;
+
+    document.documentElement.scrollTop = target;
+    document.body.scrollTop = target;
+    if (Math.abs(readTop() - start) > 2) return;
+
+    window.location.hash = id;
+  }, 260);
+}

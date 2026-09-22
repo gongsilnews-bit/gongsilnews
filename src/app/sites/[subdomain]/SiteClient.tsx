@@ -8,7 +8,7 @@ import ArticleSection from "./sections/ArticleSection";
 import IntakeFormSection from "./sections/IntakeFormSection";
 import ContactSection from "./sections/ContactSection";
 import MobileBottomBar from "./sections/MobileBottomBar";
-import { pickTheme } from "./theme";
+import { pickTheme, scrollToSection } from "./theme";
 
 interface Props {
   subdomain: string;
@@ -128,16 +128,12 @@ export default function SiteClient({
    * 가로챌 때는 replaceState 로 주소만 바꾼다. pushState 면 메뉴를 누를 때마다
    * 방문 기록이 쌓여, 뒤로가기가 페이지를 벗어나지 못하고 섹션을 거슬러 오른다.
    */
-  const canSmoothScroll = () =>
-    typeof document !== "undefined" && "scrollBehavior" in document.documentElement.style;
-
   const anchor = useCallback((id: string) => ({
     href: `#${id}`,
     onClick: (ev: React.MouseEvent) => {
-      const el = typeof document === "undefined" ? null : document.getElementById(id);
-      if (!el || !canSmoothScroll()) return;
+      if (typeof document === "undefined" || !document.getElementById(id)) return;
       ev.preventDefault();
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      scrollToSection(id);
       window.history.replaceState(null, "", `#${id}`);
       setActiveId(id);
     },
@@ -174,7 +170,15 @@ export default function SiteClient({
     >
       {/* 이 페이지에서만 쓰는 몇 줄. 가로 스크롤 막대를 감추고, 하단 고정바를 폰에서만 띄운다 */}
       <style>{`
-        html { scroll-behavior: smooth; }
+        /*
+          전역 CSS 의 body { overflow-x: hidden } 은 세로 축까지 auto 로 바꿔 body 를
+          스크롤 상자로 만든다. 그러면 브라우저에 따라 스크롤 주체가 문서가 아니라
+          body 가 되고, 앵커 이동과 부드러운 스크롤이 통째로 먹히지 않는다.
+          (데스크톱 크롬은 멀쩡한데 안드로이드 웹뷰에서만 안 움직이던 이유)
+          clip 은 가로 넘침만 잘라내고 스크롤 주체는 건드리지 않는다.
+        */
+        html, body { overflow-x: clip; }
+        html { scroll-behavior: smooth; scroll-padding-top: 104px; }
         .gs-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
         .gs-scroll-x::-webkit-scrollbar { display: none; }
         .gs-page { padding-bottom: 74px; }
