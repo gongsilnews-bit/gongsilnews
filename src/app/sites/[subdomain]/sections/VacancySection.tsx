@@ -95,7 +95,7 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor }
   };
 
   return (
-    <section id="vacancy" style={{ background: "#f1f3f5", padding: "56px 0 60px", scrollMarginTop: 104 }}>
+    <section id="vacancy" style={{ background: "#f1f3f5", padding: "56px 0 60px", scrollMarginTop: 54 }}>
       <SectionTitle
         theme={theme}
         label="OUR LISTINGS"

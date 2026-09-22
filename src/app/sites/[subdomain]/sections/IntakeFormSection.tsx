@@ -294,7 +294,7 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Prop
   ) : null;
 
   return (
-    <section id="intake" style={{ background: "#fff", padding: "56px 0 64px", scrollMarginTop: 104 }}>
+    <section id="intake" style={{ background: "#fff", padding: "56px 0 64px", scrollMarginTop: 54 }}>
       <SectionTitle
         theme={theme}
         label="SUBMIT"

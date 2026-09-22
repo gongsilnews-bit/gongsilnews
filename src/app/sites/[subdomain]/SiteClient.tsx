@@ -121,7 +121,7 @@ export default function SiteClient({
         if (hit?.target?.id) setActiveId(hit.target.id);
       },
       // 헤더 두 줄(104px) 아래로 들어온 섹션부터 '보고 있는 것'으로 친다
-      { rootMargin: "-112px 0px -62% 0px", threshold: 0 }
+      { rootMargin: "-58px 0px -62% 0px", threshold: 0 }
     );
     targets.forEach((t) => io.observe(t));
     return () => io.disconnect();

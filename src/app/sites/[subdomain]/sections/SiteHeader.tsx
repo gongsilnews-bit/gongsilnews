@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { Theme } from "../theme";
 
 export interface NavItem {
@@ -28,6 +28,32 @@ interface Props {
  */
 export default function SiteHeader({ officeName, logoUrl, theme, items, activeId, onJump, preview }: Props) {
   const barRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const [compact, setCompact] = useState(false);
+
+  // 공개 페이지는 window, 관리자 미리보기는 미리보기 패널이 스크롤 주체다.
+  // 가장 가까운 세로 스크롤 부모를 찾아 두 화면에서 같은 축소 헤더를 보여준다.
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    let parent = header.parentElement;
+    while (parent) {
+      const { overflowY } = window.getComputedStyle(parent);
+      if (/auto|scroll|overlay/.test(overflowY)) break;
+      parent = parent.parentElement;
+    }
+
+    const scrollTarget: Window | HTMLElement = parent || window;
+    const update = () => {
+      const top = scrollTarget === window ? window.scrollY : (scrollTarget as HTMLElement).scrollTop;
+      setCompact(top > 40);
+    };
+
+    update();
+    scrollTarget.addEventListener("scroll", update, { passive: true });
+    return () => scrollTarget.removeEventListener("scroll", update);
+  }, [preview]);
 
   // 보고 있는 섹션의 칩이 화면 밖에 있으면 칩 줄만 옆으로 민다.
   // scrollIntoView는 가로 메뉴의 스크롤 조상뿐 아니라 문서의 세로 스크롤도
@@ -51,8 +77,9 @@ export default function SiteHeader({ officeName, logoUrl, theme, items, activeId
 
   return (
     <header
+      ref={headerRef}
       style={{
-        position: preview ? "relative" : "sticky",
+        position: "sticky",
         top: 0,
         zIndex: 40,
         background: "rgba(255,255,255,0.96)",
@@ -64,7 +91,7 @@ export default function SiteHeader({ officeName, logoUrl, theme, items, activeId
       {/* 로고 줄 */}
       <div
         style={{
-          height: 56,
+          height: compact ? 0 : 56,
           padding: "0 16px",
           display: "flex",
           alignItems: "center",
@@ -72,6 +99,10 @@ export default function SiteHeader({ officeName, logoUrl, theme, items, activeId
           gap: 12,
           maxWidth: 1100,
           margin: "0 auto",
+          opacity: compact ? 0 : 1,
+          overflow: "hidden",
+          pointerEvents: compact ? "none" : "auto",
+          transition: "height 180ms ease, opacity 140ms ease",
         }}
       >
         <button

@@ -50,7 +50,7 @@ export default function ArticleSection({ officeName, theme, articles, hrefFor }:
   };
 
   return (
-    <section id="article" style={{ background: "#fff", padding: "56px 0 60px", scrollMarginTop: 104 }}>
+    <section id="article" style={{ background: "#fff", padding: "56px 0 60px", scrollMarginTop: 54 }}>
       <SectionTitle theme={theme} label="COLUMN" title="기사 · 칼럼" desc={`${officeName}가 직접 쓴 글입니다`} />
 
       <div style={{ maxWidth: 940, margin: "0 auto", padding: "0 16px" }}>

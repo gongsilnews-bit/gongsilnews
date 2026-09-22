@@ -24,7 +24,7 @@ interface Props {
  */
 export default function ContactSection({ officeName, theme, phone, agentMobile, representative, address, regNum, snsLinks }: Props) {
   return (
-    <section id="contact" style={{ background: "#16202b", padding: "60px 16px", scrollMarginTop: 104 }}>
+    <section id="contact" style={{ background: "#16202b", padding: "60px 16px", scrollMarginTop: 54 }}>
       <div style={{ maxWidth: 620, margin: "0 auto", background: "#fff", borderRadius: 4, padding: "44px 26px", textAlign: "center" }}>
         <span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: "3px", color: theme.primary, marginBottom: 20 }}>
           CONTACT AGENT
