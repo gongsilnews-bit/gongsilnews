@@ -7,8 +7,8 @@ interface Props {
   officeName: string;
   theme: Theme;
   cfg: any;
-  /** 같은 페이지 안의 섹션으로 보낸다 (접수 폼·오시는 길) */
-  onJump: (id: string) => void;
+  /** 섹션으로 보내는 진짜 링크. 스크립트가 막혀도 브라우저가 이동시킨다 */
+  anchor: (id: string) => { href: string; onClick: (ev: React.MouseEvent) => void };
   /** 새 창 주소를 만든다. 로컬·미리보기에서는 /sites/{주소} 가 앞에 붙는다 */
   hrefFor: (path: string) => string;
 }
@@ -30,7 +30,7 @@ const VIDEO_MS = 14000;
  * 문구는 편집기에 적힌 그대로만 그린다. 비어 있으면 그 줄은 없다 — 여기서 기본
  * 문구로 되돌리면 중개사가 지워도 계속 살아나서 지울 방법이 없어진다.
  */
-export default function HeroSection({ officeName, theme, cfg, onJump, hrefFor }: Props) {
+export default function HeroSection({ officeName, theme, cfg, anchor, hrefFor }: Props) {
   const slides: HeroSlide[] = heroSlides(cfg);
   const [idx, setIdx] = useState(0);
   const [muted, setMuted] = useState(true);
@@ -69,39 +69,53 @@ export default function HeroSection({ officeName, theme, cfg, onJump, hrefFor }:
    */
   const cta = current.cta || {};
   const ctaLabel = cta.label ?? "";
-  const handleCta = () => {
-    switch (cta.type) {
-      case "location":
-        onJump("location");
-        break;
-      case "vacancy":
-        if (!cta.vacancyId) return onJump("vacancy");
-        openDetailFromHome({
-          phoneHref: hrefFor(`/m/gongsil/detail/${cta.vacancyId}`),
-          pcHref: hrefFor(`/gongsil/detail/${cta.vacancyId}`),
-          windowName: `gongsil_popup_${cta.vacancyId}`,
-        });
-        break;
-      case "article":
-        if (!cta.articleId) return onJump("article");
-        openDetailFromHome({
-          phoneHref: hrefFor(`/m/news/${cta.articleId}`),
-          pcHref: hrefFor(`/news/${cta.articleId}`),
-          windowName: `gongsil_article_popup_${cta.articleId}`,
-          width: Math.min(1180, Math.max(900, (typeof window !== "undefined" ? window.screen.width : 1280) - 260)),
-          height: Math.max(700, (typeof window !== "undefined" ? window.screen.height : 900) - 160),
-        });
-        break;
-      case "url":
-        if (cta.url) {
-          const href = cta.url.startsWith("http") ? cta.url : `https://${cta.url}`;
-          window.open(href, "_blank", "noopener,noreferrer");
-        }
-        break;
-      default:
-        onJump("intake");
-    }
-  };
+
+  /**
+   * 버튼도 진짜 링크로 만든다.
+   *
+   * 스크립트가 막힌 곳(인앱 브라우저 등)에서도 눌리면 어디든 가야 한다. 접수·연락처는
+   * 같은 페이지 앵커로, 매물·기사는 상세 주소로, 직접 입력은 그 주소로 건다.
+   * 스크립트가 살아 있으면 onClick 이 가로채 더 나은 방식(팝업·부드러운 이동)으로 연다.
+   */
+  const jumpTo = cta.type === "location" ? "contact" : "intake";
+  const sectionAnchor = anchor(jumpTo);
+
+  let ctaHref = sectionAnchor.href;
+  let onCtaClick: (ev: React.MouseEvent) => void = sectionAnchor.onClick;
+  let ctaTarget: string | undefined;
+
+  if (cta.type === "vacancy" && cta.vacancyId) {
+    ctaHref = hrefFor(`/gongsil/detail/${cta.vacancyId}`);
+    onCtaClick = (ev) => {
+      ev.preventDefault();
+      openDetailFromHome({
+        phoneHref: hrefFor(`/m/gongsil/detail/${cta.vacancyId}`),
+        pcHref: hrefFor(`/gongsil/detail/${cta.vacancyId}`),
+        windowName: `gongsil_popup_${cta.vacancyId}`,
+      });
+    };
+  } else if (cta.type === "article" && cta.articleId) {
+    ctaHref = hrefFor(`/news/${cta.articleId}`);
+    onCtaClick = (ev) => {
+      ev.preventDefault();
+      openDetailFromHome({
+        phoneHref: hrefFor(`/m/news/${cta.articleId}`),
+        pcHref: hrefFor(`/news/${cta.articleId}`),
+        windowName: `gongsil_article_popup_${cta.articleId}`,
+        width: Math.min(1180, Math.max(900, (typeof window !== "undefined" ? window.screen.width : 1280) - 260)),
+        height: Math.max(700, (typeof window !== "undefined" ? window.screen.height : 900) - 160),
+      });
+    };
+  } else if (cta.type === "url" && cta.url) {
+    ctaHref = cta.url.startsWith("http") ? cta.url : `https://${cta.url}`;
+    ctaTarget = "_blank";
+    onCtaClick = () => {};
+  } else if (cta.type === "vacancy" || cta.type === "article") {
+    // 고르지 않은 채 저장한 경우. 그 섹션으로만 보낸다.
+    const fallback = anchor(cta.type === "vacancy" ? "vacancy" : "article");
+    ctaHref = fallback.href;
+    onCtaClick = fallback.onClick;
+  }
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchX.current = e.touches[0]?.clientX ?? null;
@@ -234,10 +248,14 @@ export default function HeroSection({ officeName, theme, cfg, onJump, hrefFor }:
         )}
 
         {ctaLabel && (
-          <button
-            type="button"
-            onClick={handleCta}
+          <a
+            href={ctaHref}
+            onClick={onCtaClick}
+            target={ctaTarget}
+            rel={ctaTarget ? "noopener noreferrer" : undefined}
             style={{
+              display: "inline-block",
+              textDecoration: "none",
               padding: "17px 42px",
               background: theme.primary,
               color: "#fff",
@@ -250,7 +268,7 @@ export default function HeroSection({ officeName, theme, cfg, onJump, hrefFor }:
             }}
           >
             {ctaLabel}
-          </button>
+          </a>
         )}
       </div>
 

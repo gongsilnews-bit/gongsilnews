@@ -114,15 +114,34 @@ export default function SiteClient({
     window.open(`${origin}${path}`, "_blank", "noopener,noreferrer");
   }, []);
 
-  const jump = useCallback((id: string) => {
-    if (id === "top") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      setActiveId("top");
-      return;
-    }
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setActiveId(id);
-  }, []);
+  /**
+   * 섹션으로 보내는 링크.
+   *
+   * 예전에는 버튼 onClick 으로만 움직였다. 그러면 스크롤 명령이 막히는 곳에서
+   * 아무 일도 일어나지 않는다 — 네이버 앱 인앱 브라우저가 그랬다. 자바스크립트는
+   * 살아 있는데(사진은 넘어갔다) 스크롤만 안 먹었다.
+   *
+   * 그래서 진짜 링크(href="#vacancy")를 깔아두고, 부드러운 스크롤을 지원하는
+   * 브라우저에서만 기본 동작을 가로챈다. 지원하지 않으면 손을 떼고 브라우저가
+   * 직접 이동하게 둔다 — 덜컥 움직여도 움직이는 편이 낫다.
+   *
+   * 가로챌 때는 replaceState 로 주소만 바꾼다. pushState 면 메뉴를 누를 때마다
+   * 방문 기록이 쌓여, 뒤로가기가 페이지를 벗어나지 못하고 섹션을 거슬러 오른다.
+   */
+  const canSmoothScroll = () =>
+    typeof document !== "undefined" && "scrollBehavior" in document.documentElement.style;
+
+  const anchor = useCallback((id: string) => ({
+    href: `#${id}`,
+    onClick: (ev: React.MouseEvent) => {
+      const el = typeof document === "undefined" ? null : document.getElementById(id);
+      if (!el || !canSmoothScroll()) return;
+      ev.preventDefault();
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.history.replaceState(null, "", `#${id}`);
+      setActiveId(id);
+    },
+  }), []);
 
   // 보고 있는 섹션을 칩에 표시한다.
   // 미리보기는 스크롤 주체가 화면이 아니라 편집기 안쪽 상자라 관찰자를 걸지 않는다.
@@ -155,6 +174,7 @@ export default function SiteClient({
     >
       {/* 이 페이지에서만 쓰는 몇 줄. 가로 스크롤 막대를 감추고, 하단 고정바를 폰에서만 띄운다 */}
       <style>{`
+        html { scroll-behavior: smooth; }
         .gs-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
         .gs-scroll-x::-webkit-scrollbar { display: none; }
         .gs-page { padding-bottom: 74px; }
@@ -174,13 +194,13 @@ export default function SiteClient({
         theme={theme}
         items={navItems}
         activeId={activeId}
-        onJump={jump}
+        anchor={anchor}
         preview={Boolean(preview)}
       />
 
-      <HeroSection officeName={officeName} theme={theme} cfg={cfg} onJump={jump} hrefFor={hrefFor} />
+      <HeroSection officeName={officeName} theme={theme} cfg={cfg} anchor={anchor} hrefFor={hrefFor} />
 
-      {showVacancy && <VacancySection officeName={officeName} theme={theme} vacancies={vacancies} hrefFor={hrefFor} phone={agentMobile || phone} onJump={jump} />}
+      {showVacancy && <VacancySection officeName={officeName} theme={theme} vacancies={vacancies} hrefFor={hrefFor} phone={agentMobile || phone} anchor={anchor} />}
 
       {showArticle && <ArticleSection officeName={officeName} theme={theme} articles={articles} hrefFor={hrefFor} />}
 
@@ -232,7 +252,7 @@ export default function SiteClient({
         <MobileBottomBar
           theme={theme}
           phone={agentMobile || phone}
-          onIntake={() => jump("intake")}
+          anchor={anchor}
           preview={Boolean(preview)}
         />
       )}

@@ -10,8 +10,8 @@ interface Props {
   theme: Theme;
   /** 잠긴 매물을 눌렀을 때 바로 걸 수 있게 */
   phone?: string;
-  /** 접수 폼으로 보낸다 */
-  onJump: (id: string) => void;
+  /** 섹션으로 보내는 진짜 링크. 스크립트가 막혀도 브라우저가 이동시킨다 */
+  anchor: (id: string) => { href: string; onClick: (ev: React.MouseEvent) => void };
   vacancies: any[];
   /** 새 창 주소를 만든다. 로컬·미리보기에서는 /sites/{주소} 가 앞에 붙는다 */
   hrefFor: (path: string) => string;
@@ -64,7 +64,7 @@ function SpecIcon({ kind }: { kind: "area" | "room" | "bath" | "floor" }) {
  * 주소는 카드에서 동까지만 쓴다. 상세주소 공개 여부는 매물마다 다르고,
  * 카드처럼 목록으로 깔리는 자리에서 정책을 어기기 가장 쉽다.
  */
-export default function VacancySection({ officeName, theme, vacancies, hrefFor, phone, onJump }: Props) {
+export default function VacancySection({ officeName, theme, vacancies, hrefFor, phone, anchor }: Props) {
   const [filter, setFilter] = useState("전체");
   const lastCode = officeName.charCodeAt(officeName.length - 1);
   const hasBatchim = lastCode >= 0xac00 && lastCode <= 0xd7a3 && (lastCode - 0xac00) % 28 !== 0;
@@ -400,16 +400,16 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
                   전화하기
                 </a>
               )}
-              <button
-                type="button"
-                onClick={() => {
+              <a
+                {...anchor("intake")}
+                onClick={(ev) => {
+                  anchor("intake").onClick(ev);
                   setLocked(null);
-                  onJump("intake");
                 }}
-                style={{ flex: 1, padding: "14px 10px", background: theme.primary, color: "#fff", border: "none", borderRadius: 6, fontSize: 15, fontWeight: 800, cursor: "pointer" }}
+                style={{ flex: 1, padding: "14px 10px", background: theme.primary, color: "#fff", borderRadius: 6, fontSize: 15, fontWeight: 800, textDecoration: "none" }}
               >
                 문의 남기기
-              </button>
+              </a>
             </div>
 
             <button

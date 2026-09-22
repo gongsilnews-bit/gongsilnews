@@ -16,7 +16,8 @@ interface Props {
   theme: Theme;
   items: NavItem[];
   activeId: string;
-  onJump: (id: string) => void;
+  /** 섹션으로 보내는 진짜 링크. 스크립트가 막혀도 브라우저가 이동시킨다 */
+  anchor: (id: string) => { href: string; onClick: (ev: React.MouseEvent) => void };
   /** 편집기 미리보기 안에서는 화면에 붙이지 않는다 */
   preview?: boolean;
 }
@@ -28,7 +29,7 @@ interface Props {
  * 섹션에 밑줄을 넣으면, 열어보지 않아도 페이지에 뭐가 있는지까지 같이 알려준다.
  * 햄버거로 감추면 탭이 한 번 더 들고 대부분은 열어보지 않는다.
  */
-export default function SiteHeader({ officeName, logoUrl, brandMode = "both", logoSize = "medium", theme, items, activeId, onJump, preview }: Props) {
+export default function SiteHeader({ officeName, logoUrl, brandMode = "both", logoSize = "medium", theme, items, activeId, anchor, preview }: Props) {
   const barRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const [compact, setCompact] = useState(false);
@@ -120,18 +121,15 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
           transition: "height 180ms ease, opacity 140ms ease",
         }}
       >
-        <button
-          type="button"
-          onClick={() => onJump("top")}
+        <a
+          {...anchor("top")}
           style={{
             display: "flex",
             alignItems: "center",
             gap: 8,
             flex: 1,
             minWidth: 0,
-            background: "none",
-            border: "none",
-            padding: 0,
+            textDecoration: "none",
             cursor: "pointer",
           }}
         >
@@ -152,13 +150,15 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
           >
             {officeName}
           </span>}
-        </button>
+        </a>
 
-        <button
-          type="button"
-          onClick={() => onJump("intake")}
+        <a
+          {...anchor("intake")}
           style={{
             flexShrink: 0,
+            display: "inline-block",
+            textAlign: "center",
+            textDecoration: "none",
             padding: "9px 16px",
             background: theme.primary,
             color: "#fff",
@@ -170,7 +170,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
           }}
         >
           물건 접수
-        </button>
+        </a>
       </div>
 
       {/* 카테고리 칩 줄 */}
@@ -191,13 +191,15 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
         {items.map((it) => {
           const on = activeId === it.id;
           return (
-            <button
+            <a
               key={it.id}
-              type="button"
               data-chip={it.id}
-              onClick={() => onJump(it.id)}
+              {...anchor(it.id)}
               style={{
                 position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                textDecoration: "none",
                 flexShrink: 0,
                 padding: "0 14px",
                 height: 45,
@@ -223,7 +225,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
                   background: on ? theme.primary : "transparent",
                 }}
               />
-            </button>
+            </a>
           );
         })}
       </div>

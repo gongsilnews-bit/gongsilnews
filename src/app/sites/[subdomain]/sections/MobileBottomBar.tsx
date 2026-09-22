@@ -6,7 +6,8 @@ import type { Theme } from "../theme";
 interface Props {
   theme: Theme;
   phone?: string;
-  onIntake: () => void;
+  /** 섹션으로 보내는 진짜 링크. 스크립트가 막혀도 브라우저가 이동시킨다 */
+  anchor: (id: string) => { href: string; onClick: (ev: React.MouseEvent) => void };
   /** 편집기 미리보기에서는 화면이 아니라 미리보기 틀 아래에 붙인다 */
   preview?: boolean;
 }
@@ -17,7 +18,7 @@ interface Props {
  * 원페이지는 길다. 매물을 보다 마음이 생긴 사람이 다시 위로 올라가 버튼을 찾게
  * 두면 대부분 거기서 끝난다. 급한 사람은 전화, 아닌 사람은 접수로 갈라진다.
  */
-export default function MobileBottomBar({ theme, phone, onIntake, preview }: Props) {
+export default function MobileBottomBar({ theme, phone, anchor, preview }: Props) {
   const barRef = useRef<HTMLDivElement>(null);
   const lastScrollTopRef = useRef(0);
   const [scrollingUp, setScrollingUp] = useState(true);
@@ -128,11 +129,14 @@ export default function MobileBottomBar({ theme, phone, onIntake, preview }: Pro
         </a>
       )}
 
-      <button
-        type="button"
-        onClick={onIntake}
+      <a
+        {...anchor("intake")}
         style={{
           flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textDecoration: "none",
           padding: "15px 14px",
           background: theme.primary,
           color: "#fff",
@@ -144,7 +148,7 @@ export default function MobileBottomBar({ theme, phone, onIntake, preview }: Pro
         }}
       >
         물건 접수하기
-      </button>
+      </a>
     </div>
   );
 }
