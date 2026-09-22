@@ -62,6 +62,8 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Prop
   const showNotes = cfg?.show_notes !== false;
 
   const [step, setStep] = useState<"lead" | "detail" | "done">("lead");
+  // 1걸음에서 만들어진 접수 건. 2걸음은 새 건을 만들지 않고 여기에 붙는다.
+  const [customerId, setCustomerId] = useState<string>("");
 
   const [type, setType] = useState<IntakeType>("매물내놔요");
   const [name, setName] = useState("");
@@ -144,6 +146,7 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Prop
         setError((res as any).message || "접수에 실패했습니다.");
         return;
       }
+      setCustomerId((res as any).customerId || "");
       setStep("detail");
     } catch {
       setError("접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
@@ -224,6 +227,7 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Prop
         notes: composedNotes,
         photoUrls,
         phase: "detail",
+        customerId,
       });
 
       if (!res.success) {

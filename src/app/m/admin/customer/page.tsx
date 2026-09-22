@@ -332,7 +332,8 @@ function MobileCustomerAdmin() {
         ) : filtered.length === 0 ? (
           <div style={{ padding: "60px 0", textAlign: "center", color: "#9ca3af" }}><div style={{ fontSize: 40, marginBottom: 12 }}>👥</div><div style={{ fontSize: 15, fontWeight: 600 }}>등록된 고객이 없습니다.</div></div>
         ) : filtered.map(c => {
-          const dateStr = c.created_at ? new Date(c.created_at).toISOString().split("T")[0] : "-";
+          // 마지막으로 문의가 들어온 날. 목록도 이 순서로 서 있다
+          const dateStr = (c.last_contact_at || c.created_at) ? new Date(c.last_contact_at || c.created_at).toISOString().split("T")[0] : "-";
           return (
             <div key={c.id} onClick={() => openDetail(c)} style={{ background: "#fff", borderRadius: 14, padding: 16, marginBottom: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: c.status === "신규" ? "2px solid #fca5a5" : "1px solid #f0f0f0", cursor: "pointer" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>

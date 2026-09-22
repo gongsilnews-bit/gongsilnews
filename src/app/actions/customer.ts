@@ -30,7 +30,43 @@ export async function getCustomers(ownerId: string) {
     return { success: false, message: error.message };
   }
 
-  return { success: true, data };
+  const rows = data || [];
+  if (!rows.length) return { success: true, data: rows };
+
+  // 같은 번호로 다시 접수하면 새 고객이 생기지 않고 기존 고객에 붙는다(아래 참고).
+  // 그때 crm_customers.created_at 은 그대로라, 등록일 순으로 세우면 오늘 들어온
+  // 문의가 몇 달 전 자리에 박혀 목록에서 안 보인다. 접수는 들어왔는데 중개사는
+  // 모르는 상태가 된다.
+  //
+  // 접수는 매번 crm_logs 에 시각과 함께 남으므로, 그 마지막 기록을 "최근 문의
+  // 시각"으로 삼아 정렬한다. 컬럼을 새로 만들지 않아도 지금 있는 것으로 된다.
+  const ids = rows.map((r: any) => r.id);
+  const lastContact = new Map<string, string>();
+
+  const { data: logs } = await supabase
+    .from("crm_logs")
+    .select("customer_id, created_at")
+    .in("customer_id", ids)
+    .order("created_at", { ascending: false })
+    .limit(1000);
+
+  // 내림차순이라 고객별로 처음 만나는 것이 가장 최근이다
+  (logs || []).forEach((l: any) => {
+    if (!lastContact.has(l.customer_id)) lastContact.set(l.customer_id, l.created_at);
+  });
+
+  const withContact = rows.map((r: any) => {
+    const last = lastContact.get(r.id);
+    return {
+      ...r,
+      // 기록이 없는 옛 고객은 등록일을 그대로 쓴다
+      last_contact_at: last && last > r.created_at ? last : r.created_at,
+    };
+  });
+
+  withContact.sort((a: any, b: any) => (a.last_contact_at < b.last_contact_at ? 1 : -1));
+
+  return { success: true, data: withContact };
 }
 
 export async function createCustomer(ownerId: string, data: {
@@ -200,33 +236,60 @@ export async function registerIncomingInquiry(ownerId: string, data: {
   source_flyer_id?: string;
   photo_urls?: string[];
   move_in_date?: string;
+  /**
+   * 이미 만들어 둔 접수 건에 이어 붙인다 (물건접수장 2걸음째).
+   * 없으면 새 건으로 쌓는다.
+   */
+  attach_to_customer_id?: string;
 }) {
   const supabase = getAdminClient();
-  
+
   // 1. 소속 부동산 ID 찾기
   const { data: agency } = await supabase.from("agencies").select("id").eq("owner_id", ownerId).single();
   if (!agency) return { success: false, message: "부동산 정보를 찾을 수 없습니다." };
 
-  // 2. 동일 연락처 중복 여부 확인
-  const { data: existingCustomer } = await supabase
-    .from("crm_customers")
-    .select("*")
-    .eq("agency_id", agency.id)
-    .eq("phone", data.phone)
-    .limit(1);
-
-  let customer = existingCustomer && existingCustomer.length > 0 ? existingCustomer[0] : null;
+  /*
+   * 2. 접수는 건별로 쌓는다.
+   *
+   * 예전에는 같은 번호가 들어오면 기존 고객에 합쳤다. 그러면 오늘 들어온 접수가
+   * 몇 달 전 고객 자리에 붙어버려 중개사는 새 문의가 온 줄 모른다. 한 사람이 두 번
+   * 문의했다면 두 번 응대할 일이지 한 줄로 합칠 일이 아니다.
+   *
+   * 예외는 하나 — 물건접수장은 연락처(1걸음)와 물건 내용(2걸음)을 나눠 받는다.
+   * 2걸음째는 방금 만든 그 건에 붙어야 하므로 id 를 들고 온다.
+   */
+  let customer: any = null;
+  if (data.attach_to_customer_id) {
+    const { data: found } = await supabase
+      .from("crm_customers")
+      .select("*")
+      .eq("id", data.attach_to_customer_id)
+      .eq("agency_id", agency.id)
+      .maybeSingle();
+    customer = found || null;
+  }
 
   if (customer) {
-    // [중복된 경우]: 기존 고객 상태를 "신규"로 복구하고 최신 유입 정보 갱신
+    // [이어 붙이는 경우]: 1걸음에서 만든 건에 물건 내용을 채운다
+    const previousName = customer.name;
     const { data: updatedCustomer, error: updateError } = await supabase
       .from("crm_customers")
       .update({
         status: "신규",
+        // 같은 번호로 다른 이름이 들어오면 최신 이름을 쓴다. 알림에는 새 이름이,
+        // 목록에는 옛 이름이 떠서 같은 사람인지 알 수 없던 문제를 막는다.
+        // 바뀐 사실은 바로 아래 이력에 남긴다.
+        name: data.name || customer.name,
         is_registered_member: data.is_registered_member ?? customer.is_registered_member,
         target_vacancy_id: data.target_vacancy_id ?? customer.target_vacancy_id,
         source_flyer_id: data.source_flyer_id ?? customer.source_flyer_id,
         source: data.source,
+        // 1걸음에서는 비워둔 칸들이다. 2걸음에서 들어온 값으로 채운다.
+        // 내놔요/구해요는 1걸음에서 고른 값이 그대로 오지만, 이어 붙이는 쪽에서도
+        // 최신 값을 쓴다 — 갱신하지 않으면 구해요로 낸 건이 내놔요로 남는다.
+        type: data.type || customer.type,
+        area: data.area || customer.area,
+        budget: data.budget || customer.budget,
         photo_urls: data.photo_urls?.length ? data.photo_urls : customer.photo_urls,
         move_in_date: data.move_in_date ?? customer.move_in_date
       })
@@ -242,7 +305,10 @@ export async function registerIncomingInquiry(ownerId: string, data: {
     customer = updatedCustomer;
 
     // 추가 의뢰 로그 등록
-    let logContent = `[🖥️ 추가 문의 자동 연동]\n• 유입 경로: ${data.source}\n`;
+    let logContent = `[🖥️ 접수 내용 추가]\n• 유입 경로: ${data.source}\n`;
+    if (data.name && previousName && data.name !== previousName) {
+      logContent += `• 이름 변경: ${previousName} → ${data.name}\n`;
+    }
     if (data.area) logContent += `• 희망 조건: ${data.area}\n`;
     if (data.budget) logContent += `• 희망 예산: ${data.budget}\n`;
     if (data.move_in_date) logContent += `• 입주 희망일: ${data.move_in_date}\n`;
@@ -255,7 +321,7 @@ export async function registerIncomingInquiry(ownerId: string, data: {
       content: logContent
     }]);
   } else {
-    // [신규 고객인 경우]: 신규 레코드 생성
+    // [새 접수]: 같은 번호가 이미 있어도 새 건으로 쌓는다
     const { data: newCustomer, error: insertError } = await supabase
       .from("crm_customers")
       .insert([{

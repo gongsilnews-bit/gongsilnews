@@ -249,7 +249,7 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
                 <th style={{ padding: "12px 10px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 180 }}>의뢰예산</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>입주일</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 120 }}>유입경로</th>
-                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>접수일</th>
+                <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 100 }}>최근 문의</th>
                 <th style={{ padding: "12px 10px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110 }}>관리</th>
               </tr>
             </thead>
@@ -259,7 +259,9 @@ export default function CustomerSection({ theme, role, memberId }: CustomerSecti
               ) : filteredCustomers.length === 0 ? (
                 <tr><td colSpan={11} style={{ padding: 40, textAlign: "center", color: textSecondary, fontSize: 14 }}>조건에 맞는 문의가 없습니다.</td></tr>
               ) : filteredCustomers.map((row, index) => {
-                const dateStr = new Date(row.created_at).toLocaleDateString('ko-KR', { timeZone: "Asia/Seoul", month: '2-digit', day: '2-digit' });
+                // 같은 번호로 다시 들어온 문의는 등록일이 그대로라, 마지막으로 문의가
+                // 들어온 시각을 보여준다. 목록도 그 순서로 서 있다.
+                const dateStr = new Date(row.last_contact_at || row.created_at).toLocaleDateString('ko-KR', { timeZone: "Asia/Seoul", month: '2-digit', day: '2-digit' });
                 const isNew = row.status === "신규";
                 const badgeColor = row.status === "신규" ? "#8b5cf6" : row.status === "진행중" ? "#3b82f6" : row.status === "계약완료" ? "#10b981" : "#9ca3af";
                 const serialNum = filteredCustomers.length - index;
