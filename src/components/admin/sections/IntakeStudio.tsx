@@ -434,18 +434,24 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                         <div style={group}>
                           <label style={label}>로고</label>
                           {logoUrl && (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={logoUrl} alt="" style={{ height: 34, marginBottom: 8, objectFit: "contain" }} />
+                            <div style={{ position: "relative", display: "inline-flex", alignItems: "center", marginBottom: 8, padding: "4px 7px", border: `1px solid ${border}`, borderRadius: 7, background: dark ? "#111827" : "#f8fafc" }}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={logoUrl} alt="업로드된 로고" style={{ height: 34, maxWidth: 160, objectFit: "contain" }} />
+                              <button
+                                type="button"
+                                aria-label="로고 삭제"
+                                title="로고 삭제"
+                                onClick={() => setLogoUrl(null)}
+                                style={{ position: "absolute", top: -8, right: -8, width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, border: `2px solid ${dark ? "#111827" : "#fff"}`, borderRadius: "50%", background: "#dc2626", color: "#fff", fontSize: 15, fontWeight: 900, lineHeight: 1, cursor: "pointer" }}
+                              >
+                                ×
+                              </button>
+                            </div>
                           )}
                           <label style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 44, border: `1px dashed ${border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, color: sub, cursor: "pointer" }}>
                             {logoUrl ? "로고 바꾸기" : "+ 로고 올리기"}
                             <input type="file" accept="image/*" hidden onChange={onLogoPick} />
                           </label>
-                          {logoUrl && (
-                            <button type="button" onClick={() => setLogoUrl(null)} style={{ width: "100%", marginTop: 7, padding: "8px 10px", border: "none", background: "transparent", color: "#dc2626", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
-                              로고 삭제
-                            </button>
-                          )}
                           <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>PNG · WebP · SVG 권장 · 최대 2MB · 표시 최대 너비 160px</p>
                         </div>
 
