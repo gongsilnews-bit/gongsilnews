@@ -1248,6 +1248,28 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     padding-top: 30px;
 }
 
+/* 중개사 홈페이지 기사: 광고 없이 모바일 기사형 단일 컬럼 */
+.subdomain-article-view .news-read-area {
+    width: 100%;
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.subdomain-article-view .news-layout {
+    width: 100%;
+}
+
+.subdomain-article-view .detail-title {
+    font-size: clamp(22px, 4.5vw, 30px) !important;
+}
+
+@media (max-width: 768px) {
+    .subdomain-article-view .news-read-area {
+        max-width: none;
+    }
+}
+
 .mobile-news-detail-wrapper .detail-title {
     font-size: 22px;
     line-height: 1.4;

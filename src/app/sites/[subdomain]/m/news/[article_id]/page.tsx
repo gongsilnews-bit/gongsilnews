@@ -59,7 +59,7 @@ export default async function SubdomainMobileArticlePage({ params }: PageProps) 
   const shareUrl = `https://${subdomain}.gongsilnews.com/news/${article.article_no || article.id}`;
 
   return (
-    <>
+    <div className="subdomain-article-view mobile-news-detail-wrapper">
       <SubdomainArticleBar subdomain={subdomain} settings={site.settings} member={site.member} companyProfile={site.companyProfile} />
       <NewsReadContent
         article={article}
@@ -67,10 +67,12 @@ export default async function SubdomainMobileArticlePage({ params }: PageProps) 
         showPopularNews={false}
         shareUrl={shareUrl}
         shareSiteName={officeName}
+        compactArticleLayout
+        hideSidebar
         initialAuthorRole={authorRole}
         initialAuthorEmail={authorEmail}
         initialAttachedVacancy={attachedVacancy}
       />
-    </>
+    </div>
   );
 }

@@ -42,6 +42,10 @@ interface NewsReadContentProps {
   shareUrl?: string;
   /** 공유 카드에 붙는 매체 이름. 비우면 "공실뉴스" */
   shareSiteName?: string;
+  /** 중개사 홈페이지 기사처럼 모바일 중심의 단일 컬럼으로 표시한다. */
+  compactArticleLayout?: boolean;
+  /** 추천 매물·인기 기사·배너가 들어가는 우측 사이드바를 숨긴다. */
+  hideSidebar?: boolean;
 }
 
 const FONT_SIZES = [
@@ -62,10 +66,12 @@ export default function NewsReadContent({
   showPopularNews = true,
   shareUrl,
   shareSiteName,
+  compactArticleLayout = false,
+  hideSidebar = false,
 }: NewsReadContentProps) {
   const pathname = usePathname() || "";
   const router = useRouter();
-  const isMobile = pathname.startsWith("/m");
+  const isMobile = compactArticleLayout || pathname.startsWith("/m");
   const basePath = isMobile ? "/m" : "";
 
   const scrollBarRef = useRef<HTMLDivElement>(null);
@@ -797,7 +803,7 @@ export default function NewsReadContent({
                     const a = target.closest('a');
                     if (a && a.href) {
                       e.preventDefault();
-                      let url = a.href;
+                      const url = a.href;
                       try {
                         const urlObj = new URL(url);
                         if (urlObj.pathname === '/gongsil' || urlObj.pathname === '/m/gongsil') {
@@ -1110,7 +1116,7 @@ export default function NewsReadContent({
           </div>
 
           {/* 사이드바 */}
-          <div className="news-sidebar">
+          {!hideSidebar && <div className="news-sidebar">
             {/* 1. 기사 연결 추천 공실 (유료 부동산 전용 1개 실매물 카드) */}
             {attachedVacancy && (
               <ArticleAttachedVacancyCard vacancy={attachedVacancy} isMobile={isMobile} />
@@ -1139,7 +1145,7 @@ export default function NewsReadContent({
             <div style={{ marginBottom: 20 }}>
               <BannerSlot placement="SIDEBAR" />
             </div>
-          </div>
+          </div>}
         </div>
       </main>
 

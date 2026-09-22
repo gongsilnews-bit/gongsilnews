@@ -43,7 +43,7 @@ export default function SubdomainArticleBar({ subdomain, settings, member, compa
         padding: "0 16px",
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
+        justifyContent: "flex-start",
         gap: 12,
         background: theme.dark,
         fontFamily: "'Pretendard Variable', -apple-system, sans-serif",
@@ -57,13 +57,6 @@ export default function SubdomainArticleBar({ subdomain, settings, member, compa
         <span style={{ fontSize: 15.5, fontWeight: 900, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.4px" }}>
           {officeName}
         </span>
-      </a>
-
-      <a
-        href={`${home}/#intake`}
-        style={{ flexShrink: 0, padding: "8px 15px", background: theme.primary, color: "#fff", borderRadius: 999, fontSize: 13.5, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap" }}
-      >
-        물건 접수
       </a>
     </div>
   );
