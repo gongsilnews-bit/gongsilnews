@@ -46,6 +46,8 @@ function flattenRow(row: any) {
     id: row.id,
     owner_id: row.owner_id,
     subdomain: row.subdomain,
+    subdomain_change_count: row.subdomain_change_count || 0,
+    subdomain_changed_at: row.subdomain_changed_at || null,
     is_active: row.is_active,
     created_at: row.created_at,
     theme_name: row.theme_name || null,
@@ -136,7 +138,7 @@ export async function saveHomepageSettings(ownerId: string, inputData: {
     const ds = existingData?.design_settings || {};
 
     if (existingData?.subdomain && existingData.subdomain !== inputData.subdomain) {
-      return { success: false, error: "공개된 홈페이지 주소는 직접 변경할 수 없습니다. 주소 변경 신청을 이용해 주세요." };
+      return { success: false, error: "공개된 홈페이지 주소는 일반 저장으로 변경할 수 없습니다. 기본설정의 주소 변경 버튼을 이용해 주세요." };
     }
 
     // 3. 넘어온 키만 덮어쓴다. 편집기가 일부만 저장해도 나머지가 날아가지 않는다.
@@ -266,11 +268,7 @@ export async function checkSubdomainAvailable(subdomain: string, ownerId?: strin
   }
 }
 
-export async function requestHomepageSubdomainChange(
-  ownerId: string,
-  requestedSubdomain: string,
-  reason?: string
-) {
+export async function changeHomepageSubdomain(ownerId: string, requestedSubdomain: string) {
   const supabase = getAdminClient();
   const next = requestedSubdomain.trim().toLowerCase();
   const validationError = validateSubdomain(next);
@@ -279,7 +277,7 @@ export async function requestHomepageSubdomainChange(
   try {
     const { data: homepage, error: homepageError } = await supabase
       .from('homepage_settings')
-      .select('subdomain')
+      .select('subdomain, subdomain_change_count, subdomain_changed_at')
       .eq('owner_id', ownerId)
       .single();
     if (homepageError || !homepage?.subdomain) {
@@ -294,42 +292,31 @@ export async function requestHomepageSubdomainChange(
       return { success: false, error: availability.error || "이미 사용 중인 주소입니다." };
     }
 
-    const { data: pending } = await supabase
-      .from('homepage_subdomain_change_requests')
-      .select('id')
-      .eq('owner_id', ownerId)
-      .eq('status', 'PENDING')
-      .maybeSingle();
-    if (pending) return { success: false, error: "이미 검토 중인 주소 변경 신청이 있습니다." };
+    const changeCount = homepage.subdomain_change_count || 0;
+    if (changeCount >= 3 && homepage.subdomain_changed_at) {
+      const nextAllowedAt = new Date(homepage.subdomain_changed_at);
+      nextAllowedAt.setMonth(nextAllowedAt.getMonth() + 3);
+      if (nextAllowedAt > new Date()) {
+        return {
+          success: false,
+          error: `${nextAllowedAt.toLocaleDateString('ko-KR')}부터 다시 변경할 수 있습니다.`,
+          nextAllowedAt: nextAllowedAt.toISOString(),
+        };
+      }
+    }
 
+    const changedAt = new Date().toISOString();
     const { error } = await supabase
-      .from('homepage_subdomain_change_requests')
-      .insert({
-        owner_id: ownerId,
-        current_subdomain: homepage.subdomain,
-        requested_subdomain: next,
-        reason: reason?.trim() || null,
-      });
-    if (error) return { success: false, error: error.message };
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-export async function getPendingHomepageSubdomainChange(ownerId: string) {
-  const supabase = getAdminClient();
-  try {
-    const { data, error } = await supabase
-      .from('homepage_subdomain_change_requests')
-      .select('id, current_subdomain, requested_subdomain, reason, status, created_at')
+      .from('homepage_settings')
+      .update({
+        subdomain: next,
+        subdomain_change_count: changeCount + 1,
+        subdomain_changed_at: changedAt,
+      })
       .eq('owner_id', ownerId)
-      .eq('status', 'PENDING')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq('subdomain', homepage.subdomain);
     if (error) return { success: false, error: error.message };
-    return { success: true, data };
+    return { success: true, subdomain: next, changeCount: changeCount + 1, changedAt };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
