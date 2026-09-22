@@ -52,7 +52,7 @@ function SpecIcon({ kind }: { kind: "area" | "room" | "bath" | "floor" }) {
 }
 
 /**
- * 우리 매물.
+ * 추천매물.
  *
  * 공실등록에 올려둔 것을 그대로 끌어온다. 홈페이지 때문에 같은 매물을 두 번
  * 입력하게 만들면 두 곳 다 관리가 안 된다.
@@ -62,6 +62,9 @@ function SpecIcon({ kind }: { kind: "area" | "room" | "bath" | "floor" }) {
  */
 export default function VacancySection({ officeName, theme, vacancies, hrefFor }: Props) {
   const [filter, setFilter] = useState("전체");
+  const lastCode = officeName.charCodeAt(officeName.length - 1);
+  const hasBatchim = lastCode >= 0xac00 && lastCode <= 0xd7a3 && (lastCode - 0xac00) % 28 !== 0;
+  const officeNameWithParticle = `${officeName}${hasBatchim ? "이" : "가"}`;
 
   // 실제로 가진 거래유형만 칩으로 만든다. 없는 칸을 눌러 빈 화면을 보게 할 이유가 없다.
   const tradeTypes = useMemo(() => {
@@ -99,8 +102,8 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor }
       <SectionTitle
         theme={theme}
         label="OUR LISTINGS"
-        title="우리 매물"
-        desc={`${officeName}가 직접 관리하는 매물입니다`}
+        title="추천매물"
+        desc={`${officeNameWithParticle} 추천하는 물건입니다!\n더 많은 매물이 궁금할 땐 직접 연락주세요.`}
         badge={`${vacancies.length}건`}
       />
 
@@ -133,7 +136,7 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor }
         </div>
       )}
 
-      <Carousel theme={theme} count={shown.length}>
+      <Carousel theme={theme} count={shown.length} centerOnDesktop>
         {shown.map((v) => {
           const photo = v.images?.[0] || null;
           const where = [v.sigungu, v.dong].filter(Boolean).join(" ");

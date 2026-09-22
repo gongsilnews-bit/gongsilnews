@@ -73,7 +73,7 @@ export default function SectionTitle({ theme, label, title, desc, badge }: Props
       />
 
       {desc && (
-        <p style={{ margin: "14px 0 0 0", fontSize: 14.5, color: "#7b8794", fontWeight: 600, wordBreak: "keep-all" }}>
+        <p style={{ margin: "14px 0 0 0", fontSize: 14.5, color: "#7b8794", fontWeight: 600, wordBreak: "keep-all", whiteSpace: "pre-line", lineHeight: 1.65 }}>
           {desc}
         </p>
       )}

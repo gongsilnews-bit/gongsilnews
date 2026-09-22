@@ -142,6 +142,7 @@ export default function SiteClient({
         @media (min-width: 821px) {
           .gs-page { padding-bottom: 0; }
           .gs-bottombar { display: none; }
+          .gs-carousel-center-desktop { width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }
         }
       `}</style>
 

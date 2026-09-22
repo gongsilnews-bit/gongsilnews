@@ -7,6 +7,8 @@ interface Props {
   theme: Theme;
   count: number;
   children: React.ReactNode;
+  /** 카드 묶음이 화면 안에 들어올 때 PC에서 가운데에 놓는다 */
+  centerOnDesktop?: boolean;
 }
 
 /**
@@ -15,7 +17,7 @@ interface Props {
  * 폰에서 카드를 세로로 쌓으면 매물 12건에 화면 열두 판이 나오고, 그 아래 있는
  * 접수 폼까지 아무도 못 내려온다. 옆으로 밀게 하면 섹션 하나가 화면 한 판으로 끝난다.
  */
-export default function Carousel({ theme, count, children }: Props) {
+export default function Carousel({ theme, count, children, centerOnDesktop = false }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [idx, setIdx] = useState(0);
 
@@ -33,7 +35,7 @@ export default function Carousel({ theme, count, children }: Props) {
       <div
         ref={ref}
         onScroll={onScroll}
-        className="gs-scroll-x"
+        className={`gs-scroll-x${centerOnDesktop ? " gs-carousel-center-desktop" : ""}`}
         style={{
           display: "flex",
           gap: 12,
