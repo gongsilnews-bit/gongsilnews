@@ -39,7 +39,8 @@ export default function ArticleSection({ officeName, theme, articles, hrefFor }:
     const key = a.article_no || a.id;
     const isPhone = typeof window !== "undefined" && window.innerWidth < 821;
     if (isPhone) {
-      window.open(hrefFor(`/m/news/${key}`), "_blank", "noopener,noreferrer");
+      // 같은 탭으로 이동해야 뒤로가기로 원래 홈페이지와 스크롤 위치에 돌아온다
+      window.location.assign(hrefFor(`/m/news/${key}`));
       return;
     }
     const popupW = Math.min(1180, Math.max(900, window.screen.width - 260));

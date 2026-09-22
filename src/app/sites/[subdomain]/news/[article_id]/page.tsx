@@ -73,6 +73,9 @@ export default async function SubdomainArticlePage({ params }: PageProps) {
         shareSiteName={officeName}
         compactArticleLayout
         hideSidebar
+        showBookmark={false}
+        showEngagement={false}
+        showAuthorAd={false}
         initialAuthorRole={authorRole}
         initialAuthorEmail={authorEmail}
         initialAttachedVacancy={attachedVacancy}

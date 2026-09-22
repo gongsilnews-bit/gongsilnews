@@ -46,6 +46,26 @@ interface NewsReadContentProps {
   compactArticleLayout?: boolean;
   /** 추천 매물·인기 기사·배너가 들어가는 우측 사이드바를 숨긴다. */
   hideSidebar?: boolean;
+  /**
+   * 카테고리 줄 앞에 붙는 ‹ 뒤로가기.
+   * 중개사 홈페이지에서 기사를 같은 탭으로 열었을 때만 쓴다 — 누르면 기사 화면이
+   * 옆으로 밀려나가고 보고 있던 목록으로 돌아간다. 포털에는 목록으로 가는 길이
+   * 따로 있어 켜지 않는다.
+   */
+  showBack?: boolean;
+  /**
+   * 찜하기.
+   * 공실뉴스 계정으로 로그인해야 동작하는데 중개사 도메인에는 로그인 쿠키가
+   * 따라가지 않는다. 눌러도 로그인 창만 뜨므로 그쪽에서는 끈다.
+   */
+  showBookmark?: boolean;
+  /**
+   * 추천(리액션)과 댓글.
+   * 둘 다 공실뉴스 로그인이 있어야 쓰는 기능이라 중개사 도메인에서는 끈다.
+   */
+  showEngagement?: boolean;
+  /** 기사 작성자 맞춤 광고(부동산 프로필) 슬롯 */
+  showAuthorAd?: boolean;
 }
 
 const FONT_SIZES = [
@@ -68,6 +88,10 @@ export default function NewsReadContent({
   shareSiteName,
   compactArticleLayout = false,
   hideSidebar = false,
+  showBack = false,
+  showBookmark = true,
+  showEngagement = true,
+  showAuthorAd = true,
 }: NewsReadContentProps) {
   const pathname = usePathname() || "";
   const router = useRouter();
@@ -492,6 +516,36 @@ export default function NewsReadContent({
     }
   };
 
+  /**
+   * 화면을 오른쪽으로 밀어낸 뒤 뒤로 간다.
+   *
+   * 곧바로 history.back() 을 부르면 기사가 툭 사라져서 어디로 갔는지 모른다.
+   * 밀려나는 0.2초가 "이 화면이 닫히고 아래 있던 목록으로 돌아간다"를 말해준다.
+   * 감쌀 상자가 없으면(포털) 그냥 뒤로만 간다.
+   */
+  const handleSlideBack = () => {
+    // 카카오톡으로 받은 링크를 바로 연 사람은 뒤로 갈 곳이 없다. 그때는 이 중개사의
+    // 홈페이지로 보낸다. 로컬·미리보기는 /sites/{주소} 아래라 그 경로를 살려서 간다.
+    const leave = () => {
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      const m = window.location.pathname.match(/^\/sites\/[^/]+/);
+      window.location.assign(m ? m[0] : "/");
+    };
+
+    const shell = document.getElementById("gs-article-slide");
+    if (!shell) {
+      leave();
+      return;
+    }
+    shell.style.transition = "transform .22s ease-in, opacity .22s ease-in";
+    shell.style.transform = "translateX(100%)";
+    shell.style.opacity = "0";
+    setTimeout(leave, 200);
+  };
+
   // 내보낼 주소. 중개사 도메인에서 읽고 있으면 그 주소로 나간다.
   const outboundUrl = shareUrl || `https://gongsilnews.com/news/${article.article_no || article.id}`;
   const outboundSite = shareSiteName || "공실뉴스";
@@ -624,7 +678,32 @@ export default function NewsReadContent({
         <div className="news-layout">
           {/* 본문 영역 */}
           <div className="news-read-area">
-            <div className="detail-breadcrumb">
+            <div className="detail-breadcrumb" style={showBack ? { display: "flex", alignItems: "center", gap: 2 } : undefined}>
+              {showBack && (
+                <button
+                  type="button"
+                  onClick={handleSlideBack}
+                  aria-label="뒤로"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 26,
+                    height: 26,
+                    marginLeft: -6,
+                    padding: 0,
+                    background: "none",
+                    border: "none",
+                    color: "inherit",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+              )}
               [{formatSection1(article.section1)} &gt; {article.section2 || "전체"}]
             </div>
             <h1 className="detail-title" style={{ fontSize: `${currentFontSize + 10}px`, lineHeight: 1.35, transition: "font-size 0.2s ease" }}>{article.title}</h1>
@@ -672,9 +751,11 @@ export default function NewsReadContent({
                 </div>
                 
                 <div className="meta-stats" style={{ display: "flex", gap: isMobile ? "14px" : "18px", alignItems: "center", height: "100%" }}>
+                  {showBookmark && (
                   <span className="meta-icon" title={isBookmarked ? "찜 해제" : "찜하기"} onClick={toggleBookmark} style={{ cursor: "pointer", color: isBookmarked ? "#1a73e8" : "#222", display: "flex", alignItems: "center" }}>
                     <svg width={isMobile ? "15" : "21"} height={isMobile ? "15" : "21"} viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
                   </span>
+                  )}
                   
                   <span className="meta-icon" title="글자 크기" style={{ fontWeight: "400", display: "flex", alignItems: "baseline", gap: isMobile ? "1px" : "2px", letterSpacing: "-1px", cursor: "pointer", color: showFontSizePopup ? "#1a73e8" : "#222" }} onClick={() => { setShowFontSizePopup(!showFontSizePopup); setShowShareDropdown(false); }}>
                     <span style={{ fontSize: isMobile ? "10px" : "14px", lineHeight: 1 }}>가</span><span style={{ fontSize: isMobile ? "14px" : "20px", lineHeight: 1 }}>가</span>
@@ -914,8 +995,11 @@ export default function NewsReadContent({
             </div>
 
             {/* ── 기사 작성자 맞춤 광고/배너 슬롯 (등록자정보와 추천합니다 사이) ── */}
-            <ArticleAuthorAdSlot article={article} />
+            {showAuthorAd && <ArticleAuthorAdSlot article={article} />}
 
+            {/* 추천·댓글은 공실뉴스 로그인이 있어야 쓴다. 중개사 도메인에서는 통째로 뺀다 */}
+            {showEngagement && (
+              <>
             {/* ── 추천 (리액션) 섹션 ── */}
             <div className="recommend-section" style={{ marginTop: 40, paddingBottom: 24, borderBottom: "8px solid #f3f4f6" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16 }}>
@@ -1103,6 +1187,8 @@ export default function NewsReadContent({
                 </div>
               )}
             </div>
+              </>
+            )}
 
             <AuthModal
               isOpen={isAuthModalOpen}
@@ -1111,7 +1197,7 @@ export default function NewsReadContent({
             />
 
             <div style={{ marginTop: 60, paddingTop: 20, borderTop: "1px solid #ccc", textAlign: "center" }}>
-              <button className="back-to-list" onClick={() => window.history.back()}>목록으로 돌아가기</button>
+              <button className="back-to-list" onClick={showBack ? handleSlideBack : () => window.history.back()}>목록으로 돌아가기</button>
             </div>
           </div>
 

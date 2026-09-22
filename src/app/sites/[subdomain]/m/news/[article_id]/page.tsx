@@ -59,8 +59,10 @@ export default async function SubdomainMobileArticlePage({ params }: PageProps) 
   const shareUrl = `https://${subdomain}.gongsilnews.com/news/${article.article_no || article.id}`;
 
   return (
-    <div className="subdomain-article-view mobile-news-detail-wrapper">
-      <SubdomainArticleBar subdomain={subdomain} settings={site.settings} member={site.member} companyProfile={site.companyProfile} />
+    // 폰에서는 상호 띠를 얹지 않는다. 주소창에 이미 중개사 도메인이 보이고,
+    // 좁은 화면에서 한 줄이라도 기사에 내주는 편이 낫다. 대신 카테고리 줄 앞에
+    // 뒤로가기를 넣고, 이 상자째로 옆으로 밀어내며 목록으로 돌아간다.
+    <div id="gs-article-slide" className="subdomain-article-view mobile-news-detail-wrapper">
       <NewsReadContent
         article={article}
         popularArticles={[]}
@@ -69,6 +71,10 @@ export default async function SubdomainMobileArticlePage({ params }: PageProps) 
         shareSiteName={officeName}
         compactArticleLayout
         hideSidebar
+        showBack
+        showBookmark={false}
+        showEngagement={false}
+        showAuthorAd={false}
         initialAuthorRole={authorRole}
         initialAuthorEmail={authorEmail}
         initialAttachedVacancy={attachedVacancy}
