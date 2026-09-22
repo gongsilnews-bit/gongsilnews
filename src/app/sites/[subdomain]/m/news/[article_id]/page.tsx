@@ -73,6 +73,9 @@ export default async function SubdomainMobileArticlePage({ params }: PageProps) 
         hideSidebar
         showBack
         showBookmark={false}
+        showAuthorLinks={false}
+        copyrightName={officeName}
+        copyOnlyShare
         showEngagement={false}
         showAuthorAd={false}
         initialAuthorRole={authorRole}

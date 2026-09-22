@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { pickTheme } from "../../theme";
 
 interface Props {
   subdomain: string;
@@ -18,7 +17,6 @@ interface Props {
  * 접수 버튼은 이 창이 아니라 원래 홈페이지의 접수 폼으로 보낸다.
  */
 export default function SubdomainArticleBar({ subdomain, settings, member, companyProfile }: Props) {
-  const theme = pickTheme(settings?.intake?.theme_color);
   const brandMode = settings?.intake?.brand_mode || "both";
   const logoSize = settings?.intake?.logo_size || "medium";
   const logoHeight = logoSize === "small" ? 20 : logoSize === "large" ? 30 : 24;
@@ -50,7 +48,9 @@ export default function SubdomainArticleBar({ subdomain, settings, member, compa
         alignItems: "center",
         justifyContent: "flex-start",
         gap: 12,
-        background: theme.dark,
+        // 색을 깔면 기사 위에 띠가 하나 더 생긴 것처럼 보인다. 흰 바탕에 상호만 둔다.
+        background: "#fff",
+        borderBottom: "1px solid #eef1f4",
         fontFamily: "'Pretendard Variable', -apple-system, sans-serif",
       }}
     >
@@ -59,7 +59,7 @@ export default function SubdomainArticleBar({ subdomain, settings, member, compa
           // eslint-disable-next-line @next/next/no-img-element
           <img src={settings.logo_url} alt={officeName} style={{ height: logoHeight, width: "auto", maxWidth: brandMode === "logo" ? 150 : 100, objectFit: "contain" }} />
         ) : null}
-        {showText && <span style={{ fontSize: 15.5, fontWeight: 900, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.4px" }}>
+        {showText && <span style={{ fontSize: 15.5, fontWeight: 900, color: "#16202b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.4px" }}>
           {officeName}
         </span>}
       </a>

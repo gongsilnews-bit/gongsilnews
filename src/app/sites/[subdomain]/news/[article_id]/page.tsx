@@ -74,6 +74,10 @@ export default async function SubdomainArticlePage({ params }: PageProps) {
         compactArticleLayout
         hideSidebar
         showBookmark={false}
+        showAuthorLinks={false}
+        copyrightName={officeName}
+        copyOnlyShare
+        showBackToList={false}
         showEngagement={false}
         showAuthorAd={false}
         initialAuthorRole={authorRole}

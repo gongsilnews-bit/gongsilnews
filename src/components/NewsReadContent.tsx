@@ -60,6 +60,21 @@ interface NewsReadContentProps {
    */
   showBookmark?: boolean;
   /**
+   * 기자 이름과 [다른기사 보기] 링크.
+   * 포털에는 기자 프로필 화면이 있지만 중개사 도메인에는 없다. 눌러도 포털로
+   * 나가버리므로 그쪽에서는 글자만 남긴다.
+   */
+  showAuthorLinks?: boolean;
+  /** 저작권 줄에 적히는 이름. 비우면 "공실뉴스" */
+  copyrightName?: string;
+  /**
+   * 공유를 [URL 복사] 하나로만 둔다.
+   * 고를 것이 둘이면 한 번 더 눌러야 하고, 카카오톡 공유는 SDK가 떠 있어야 한다.
+   */
+  copyOnlyShare?: boolean;
+  /** 맨 아래 [목록으로 돌아가기] 버튼 */
+  showBackToList?: boolean;
+  /**
    * 추천(리액션)과 댓글.
    * 둘 다 공실뉴스 로그인이 있어야 쓰는 기능이라 중개사 도메인에서는 끈다.
    */
@@ -90,6 +105,10 @@ export default function NewsReadContent({
   hideSidebar = false,
   showBack = false,
   showBookmark = true,
+  showAuthorLinks = true,
+  copyrightName,
+  copyOnlyShare = false,
+  showBackToList = true,
   showEngagement = true,
   showAuthorAd = true,
 }: NewsReadContentProps) {
@@ -674,36 +693,42 @@ export default function NewsReadContent({
         />
       )}
 
+      {/* 닫기 — 공실 상세와 같은 모양. 화면에 붙여둬야 기사를 한참 내려가도 손이 닿는다 */}
+      {showBack && (
+        <button
+          type="button"
+          onClick={handleSlideBack}
+          aria-label="닫기"
+          style={{
+            position: "fixed",
+            top: 12,
+            right: 12,
+            width: 36,
+            height: 36,
+            background: "rgba(255,255,255,0.92)",
+            border: "1px solid #ddd",
+            borderRadius: "50%",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 22,
+            fontWeight: "bold",
+            color: "#333",
+            lineHeight: 1,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
+            zIndex: 100,
+          }}
+        >
+          ×
+        </button>
+      )}
+
       <main className="container px-20 news-detail-page-container" style={{ position: "relative" }}>
         <div className="news-layout">
           {/* 본문 영역 */}
           <div className="news-read-area">
-            <div className="detail-breadcrumb" style={showBack ? { display: "flex", alignItems: "center", gap: 2 } : undefined}>
-              {showBack && (
-                <button
-                  type="button"
-                  onClick={handleSlideBack}
-                  aria-label="뒤로"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 26,
-                    height: 26,
-                    marginLeft: -6,
-                    padding: 0,
-                    background: "none",
-                    border: "none",
-                    color: "inherit",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
-                </button>
-              )}
+            <div className="detail-breadcrumb">
               [{formatSection1(article.section1)} &gt; {article.section2 || "전체"}]
             </div>
             <h1 className="detail-title" style={{ fontSize: `${currentFontSize + 10}px`, lineHeight: 1.35, transition: "font-size 0.2s ease" }}>{article.title}</h1>
@@ -712,7 +737,7 @@ export default function NewsReadContent({
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   <div style={{ fontSize: "15px", color: "#111", display: "flex", alignItems: "center", gap: "4px" }}>
-                    {article.author_id ? (
+                    {article.author_id && showAuthorLinks ? (
                       <Link 
                         href={`/${isMobile ? "m/" : ""}reporter/${article.author_id}`} 
                         style={{ 
@@ -761,12 +786,25 @@ export default function NewsReadContent({
                     <span style={{ fontSize: isMobile ? "10px" : "14px", lineHeight: 1 }}>가</span><span style={{ fontSize: isMobile ? "14px" : "20px", lineHeight: 1 }}>가</span>
                   </span>
                   
-                  <span className="meta-icon" title="공유하기" onClick={() => { setShowShareDropdown(!showShareDropdown); setShowFontSizePopup(false); }} style={{ cursor: "pointer", color: showShareDropdown ? "#1a73e8" : "#222", display: "flex", alignItems: "center" }}>
-                    <svg width={isMobile ? "15" : "21"} height={isMobile ? "15" : "21"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                  <span
+                    className="meta-icon"
+                    title={copyOnlyShare ? "URL 복사" : "공유하기"}
+                    onClick={() => {
+                      setShowFontSizePopup(false);
+                      if (copyOnlyShare) handleCopyUrl();
+                      else setShowShareDropdown(!showShareDropdown);
+                    }}
+                    style={{ cursor: "pointer", color: showShareDropdown ? "#1a73e8" : "#222", display: "flex", alignItems: "center" }}
+                  >
+                    {copyOnlyShare ? (
+                      <svg width={isMobile ? "15" : "21"} height={isMobile ? "15" : "21"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    ) : (
+                      <svg width={isMobile ? "15" : "21"} height={isMobile ? "15" : "21"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                    )}
                   </span>
                   
                   {/* Share Dropdown */}
-                  {showShareDropdown && (
+                  {!copyOnlyShare && showShareDropdown && (
                     <div ref={shareDropdownRef} style={{ position: "absolute", top: "100%", right: 0, marginTop: "8px", background: "#fff", border: "1px solid #e0e0e0", borderRadius: "10px", boxShadow: "0 6px 24px rgba(0,0,0,0.15)", width: "200px", zIndex: 9999, overflow: "hidden", animation: "dropdownFadeIn 0.15s ease" }}>
                       <button onClick={handleKakaoShare} style={{ width: "100%", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", background: "none", border: "none", borderBottom: "1px solid #f0f0f0", cursor: "pointer", fontSize: "14px", color: "#333", fontFamily: "inherit", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = '#f8f9fa'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                         <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#FEE500", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -948,7 +986,7 @@ export default function NewsReadContent({
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                    {article.author_id ? (
+                    {article.author_id && showAuthorLinks ? (
                       <Link 
                         href={isMobile ? `/m/reporter/${article.author_id}` : `/reporter/${article.author_id}`}
                         style={{ 
@@ -968,7 +1006,7 @@ export default function NewsReadContent({
                       <span style={{ fontWeight: 800, color: "#111", fontSize: 16 }}>{article.author_name || "공실뉴스"}</span>
                     )}
                     <span style={{ color: "#666", fontSize: 14 }}>{authorRole === "ADMIN" ? "기자" : "객원기자"}</span>
-                    {article.author_id && (
+                    {article.author_id && showAuthorLinks && (
                       <>
                         <span style={{ color: "#ddd", fontSize: "12px" }}>|</span>
                         <Link 
@@ -990,7 +1028,7 @@ export default function NewsReadContent({
                   </div>
                   {authorEmail && <div style={{ color: "#888", fontSize: 13 }}>{authorEmail}</div>}
                 </div>
-                <div style={{ color: "#888", fontSize: 13, borderTop: "1px solid #f0f0f0", paddingTop: 12 }}>저작권자 © 공실뉴스 무단전재 및 재배포 금지</div>
+                <div style={{ color: "#888", fontSize: 13, borderTop: "1px solid #f0f0f0", paddingTop: 12 }}>저작권자 © {copyrightName || "공실뉴스"} 무단전재 및 재배포 금지</div>
               </div>
             </div>
 
@@ -1196,9 +1234,11 @@ export default function NewsReadContent({
               initialTab="login"
             />
 
-            <div style={{ marginTop: 60, paddingTop: 20, borderTop: "1px solid #ccc", textAlign: "center" }}>
-              <button className="back-to-list" onClick={showBack ? handleSlideBack : () => window.history.back()}>목록으로 돌아가기</button>
-            </div>
+            {showBackToList && (
+              <div style={{ marginTop: 60, paddingTop: 20, borderTop: "1px solid #ccc", textAlign: "center" }}>
+                <button className="back-to-list" onClick={showBack ? handleSlideBack : () => window.history.back()}>목록으로 돌아가기</button>
+              </div>
+            )}
           </div>
 
           {/* 사이드바 */}
