@@ -34,6 +34,14 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
   const headerRef = useRef<HTMLElement>(null);
   const [compact, setCompact] = useState(false);
   const logoHeight = logoSize === "small" ? 30 : logoSize === "large" ? 50 : 40;
+  /*
+   * 상호 글씨도 같이 간다.
+   *
+   * 이 값은 "로고 크기"가 아니라 머리글 전체의 크기다. [텍스트만]으로 두면 로고가
+   * 아예 없고, [로고만]이어도 로고를 아직 안 올렸으면 상호가 대신 나온다.
+   * 로고만 키우면 큰 그림 옆에 작은 글씨가 남아 한쪽만 큰 머리가 된다.
+   */
+  const titleSize = logoSize === "small" ? 15 : logoSize === "large" ? 21 : 17;
   const showLogo = Boolean(logoUrl) && brandMode !== "text";
   const showText = brandMode !== "logo" || !logoUrl;
 
@@ -139,7 +147,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
           ) : null}
           {showText && <span
             style={{
-              fontSize: 17,
+              fontSize: titleSize,
               fontWeight: 900,
               color: theme.dark,
               whiteSpace: "nowrap",

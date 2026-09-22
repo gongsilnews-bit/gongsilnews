@@ -91,10 +91,10 @@ export default function SiteClient({
 
   const navItems = useMemo<NavItem[]>(() => {
     const items: NavItem[] = [{ id: "top", label: "홈" }];
-    if (showVacancy) items.push({ id: "vacancy", label: "우리 매물" });
+    if (showVacancy) items.push({ id: "vacancy", label: "추천공실" });
     if (showArticle) items.push({ id: "article", label: "기사·칼럼" });
     items.push({ id: "intake", label: "물건 접수" });
-    items.push({ id: "contact", label: "연락처" });
+    items.push({ id: "contact", label: "문의하기" });
     return items;
   }, [showVacancy, showArticle]);
 
@@ -218,9 +218,11 @@ export default function SiteClient({
         .gs-scroll-x::-webkit-scrollbar { display: none; }
         .gs-page { padding-bottom: 74px; }
         .gs-bottombar { display: flex; }
+        .gs-hero-nav { display: none; }
         @media (min-width: 821px) {
           .gs-page { padding-bottom: 0; }
           .gs-bottombar { display: none; }
+          .gs-hero-nav { display: flex; }
           .gs-carousel-center-desktop { width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }
         }
       `}</style>

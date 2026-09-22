@@ -292,7 +292,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                         </div>
 
                         <div style={group}>
-                          <label style={label}>로고 크기</label>
+                          <label style={label}>헤더 크기</label>
                           <div style={{ display: "flex", gap: 6 }}>
                             {([
                               ["small", "작게", "30px"],
@@ -307,6 +307,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                               );
                             })}
                           </div>
+                          <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>로고와 상호가 함께 커집니다. px 는 로고 높이입니다.</p>
                         </div>
 
                       </>
@@ -367,10 +368,10 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                     {p.key === "sections" && (
                       <>
                         <p style={{ margin: "0 0 6px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
-                          순서는 고정입니다 — 첫 화면 → 매물 → 기사 → 접수 → 연락처.
+                          순서는 고정입니다 — 첫 화면 → 추천공실 → 기사 → 접수 → 문의하기.
                           내용이 없는 섹션은 켜 두어도 자동으로 숨습니다.
                         </p>
-                        {toggle("show_vacancy", "우리 매물", "공실등록에 올린 매물을 그대로 보여줍니다")}
+                        {toggle("show_vacancy", "추천공실", "공실등록에 올린 매물을 그대로 보여줍니다")}
                         {toggle("show_article", "기사 · 칼럼", "승인된 기사 최신 4건을 보여줍니다")}
                       </>
                     )}
@@ -444,7 +445,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                         <div style={group}>
                           <label style={label}>전화번호</label>
                           <p style={{ margin: "0 0 10px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
-                            홈페이지 <strong>연락처</strong>에 나옵니다. 두 번호가 같으면 한 줄만 나옵니다.
+                            홈페이지 <strong>문의하기</strong>에 나옵니다. 두 번호가 같으면 한 줄만 나옵니다.
                             <br />
                             <strong>사무실</strong>은 표시·광고법상 밝혀야 하는 중개사무소 연락처라 반드시 나옵니다
                             — 비우면 [정보설정]의 번호({agency?.phone || "미등록"})가 대신 나옵니다.
@@ -492,7 +493,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                           />
                           <div style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: "7px 0 0" }}>
                             <p style={{ margin: 0, flex: 1, fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
-                              홈페이지 맨 아래 <strong>연락처</strong>에 상호·대표 이름 밑으로 나옵니다.
+                              홈페이지 맨 아래 <strong>문의하기</strong>에 상호·대표 이름 밑으로 나옵니다.
                               비우면 [정보설정]의 부동산 소개가 대신 쓰입니다.
                             </p>
                             <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: companyIntro.length >= INTRO_MAX ? "#dc2626" : sub }}>

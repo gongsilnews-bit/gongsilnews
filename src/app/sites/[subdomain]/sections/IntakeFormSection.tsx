@@ -419,7 +419,7 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Prop
                 <p style={{ margin: 0, fontSize: 14.5, color: "#334155", lineHeight: 1.7, wordBreak: "keep-all" }}>
                   <strong style={{ color: theme.dark }}>{name}</strong>님, 접수가 끝났습니다. 확인 후 연락드리겠습니다.
                   <br />
-                  아래는 <strong>안 쓰셔도 되는 칸</strong>입니다. 아는 것만 채워 주시면 상담이 훨씬 빨라집니다.
+                  <strong>상세정보</strong>를 입력해 주시면, 더욱 빠르게 물건을 홍보할 수 있습니다.
                 </p>
               </div>
 
@@ -789,7 +789,7 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Prop
                     boxShadow: submitting ? "none" : `0 8px 20px ${theme.primary}44`,
                   }}
                 >
-                  {submitting ? "보내는 중…" : "추가로 알려주기"}
+                  {submitting ? "보내는 중…" : "등록완료"}
                 </button>
 
                 <button

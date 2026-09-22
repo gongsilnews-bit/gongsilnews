@@ -272,6 +272,51 @@ export default function HeroSection({ officeName, theme, cfg, anchor, hrefFor }:
         )}
       </div>
 
+      {/*
+        장 넘기는 화살표 — PC 에서만 나온다(.gs-hero-nav).
+        폰은 손으로 밀면 되고, 좁은 화면에서는 사진을 가린다.
+        display 는 일부러 안 적는다. 인라인으로 적으면 클래스의 미디어 쿼리를 이겨서
+        폰에서도 나와버린다.
+      */}
+      {slides.length > 1 && (
+        <>
+          {([
+            { key: "prev", to: idx - 1, label: "이전 화면", side: { left: 22 }, d: "M15 18L9 12L15 6" },
+            { key: "next", to: idx + 1, label: "다음 화면", side: { right: 22 }, d: "M9 6L15 12L9 18" },
+          ] as const).map((b) => (
+            <button
+              key={b.key}
+              type="button"
+              className="gs-hero-nav"
+              aria-label={b.label}
+              onClick={() => go(b.to)}
+              style={{
+                position: "absolute",
+                top: "50%",
+                ...b.side,
+                transform: "translateY(-50%)",
+                width: 48,
+                height: 48,
+                padding: 0,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                border: "none",
+                background: "rgba(255,255,255,0.94)",
+                color: "#16202b",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.22)",
+                cursor: "pointer",
+                zIndex: 3,
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d={b.d} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          ))}
+        </>
+      )}
+
       {/* 장 넘기는 점 */}
       {slides.length > 1 && (
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 22, display: "flex", justifyContent: "center", gap: 8 }}>
