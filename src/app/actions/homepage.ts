@@ -177,12 +177,18 @@ export async function getHomepageSettingsBySubdomain(subdomain: string) {
   try {
     const { data: hs, error } = await supabase
       .from('homepage_settings')
+      // is_active 로 거르지 않는다. 걸러버리면 "없는 주소"와 "닫힌 홈페이지"가
+      // 똑같이 빈 결과로 와서 둘을 구분할 수 없다.
       .select('*')
       .eq('subdomain', subdomain)
-      .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
-    if (error || !hs) return { success: false, error: "존재하지 않거나 비활성화된 홈페이지입니다." };
+    // 없는 주소인지, 닫힌 홈페이지인지 구분해서 알려준다. 화면이 다르고,
+    // 검색엔진에 돌려줄 답(404 / 503)도 다르다.
+    if (error || !hs) return { success: false, reason: "not_found" as const, error: "존재하지 않는 주소입니다." };
+    if (hs.is_active === false) {
+      return { success: false, reason: "paused" as const, error: "일시적으로 중단된 페이지입니다." };
+    }
 
     // 회원 정보 조회
     const { data: member } = await supabase
@@ -191,7 +197,7 @@ export async function getHomepageSettingsBySubdomain(subdomain: string) {
       .eq('id', hs.owner_id)
       .single();
 
-    if (!member) return { success: false, error: "회원 정보를 찾을 수 없습니다." };
+    if (!member) return { success: false, reason: "not_found" as const, error: "회원 정보를 찾을 수 없습니다." };
 
     // 요금제 혜택 등급 검사
     const isPremium =
@@ -204,7 +210,7 @@ export async function getHomepageSettingsBySubdomain(subdomain: string) {
         (!member.plan_end_date || new Date(member.plan_end_date) >= new Date()));
 
     if (!isPremium) {
-      return { success: false, error: "유료 프리미엄 회원 전용 서비스입니다. 이용권 결제 또는 연장이 필요합니다." };
+      return { success: false, reason: "paused" as const, error: "일시적으로 중단된 페이지입니다." };
     }
 
     let companyProfile: any = null;
