@@ -5,6 +5,8 @@ import {
   getHomepageSettings,
   saveHomepageSettings,
   checkSubdomainAvailable,
+  getPendingHomepageSubdomainChange,
+  requestHomepageSubdomainChange,
   uploadHomepageFile,
 } from "@/app/actions/homepage";
 import SiteClient from "@/app/sites/[subdomain]/SiteClient";
@@ -69,6 +71,12 @@ export default function IntakeStudio({ theme, memberId }: Props) {
   const [articles, setArticles] = useState<any[]>([]);
 
   const [subdomain, setSubdomain] = useState("");
+  const [initialSubdomain, setInitialSubdomain] = useState("");
+  const [changeAddressOpen, setChangeAddressOpen] = useState(false);
+  const [requestedSubdomain, setRequestedSubdomain] = useState("");
+  const [changeReason, setChangeReason] = useState("");
+  const [pendingAddress, setPendingAddress] = useState<string | null>(null);
+  const [requestingAddress, setRequestingAddress] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [subStatus, setSubStatus] = useState<"idle" | "checking" | "ok" | "taken" | "invalid">("idle");
   const subTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -102,6 +110,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
       if (res.success && res.data) {
         const d: any = res.data;
         setSubdomain(d.subdomain || "");
+        setInitialSubdomain(d.subdomain || "");
         setIsActive(d.is_active !== false);
         setLogoUrl(d.logo_url || null);
         setSiteTitle(d.site_title || "");
@@ -114,6 +123,10 @@ export default function IntakeStudio({ theme, memberId }: Props) {
           const padded: HeroSlide[] = [0, 1, 2].map((i) => filled[i] || {});
           setIntake((prev) => ({ ...prev, ...d.intake, hero_slides: padded }));
         }
+      }
+      const pendingRes = await getPendingHomepageSubdomainChange(memberId);
+      if (pendingRes.success && pendingRes.data) {
+        setPendingAddress((pendingRes.data as any).requested_subdomain || null);
       }
       // 회사 정보는 [정보설정]의 부동산 등록 내용을 그대로 쓴다. 여기서 따로 입력받지 않는다.
       const md = await adminGetMemberDetail(memberId);
@@ -154,6 +167,18 @@ export default function IntakeStudio({ theme, memberId }: Props) {
       const res = await checkSubdomainAvailable(next, memberId);
       setSubStatus(res.success && (res as any).available ? "ok" : "taken");
     }, 450);
+  };
+
+  const handleAddressChangeRequest = async () => {
+    setError("");
+    setRequestingAddress(true);
+    const res = await requestHomepageSubdomainChange(memberId, requestedSubdomain, changeReason);
+    setRequestingAddress(false);
+    if (!res.success) return setError(res.error || "주소 변경 신청에 실패했습니다.");
+    setPendingAddress(requestedSubdomain.trim().toLowerCase());
+    setChangeAddressOpen(false);
+    setRequestedSubdomain("");
+    setChangeReason("");
   };
 
   const onLogoPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -315,7 +340,13 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                         <div style={group}>
                           <label style={label}>접수장 주소</label>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <input style={{ ...field, flex: 1 }} value={subdomain} onChange={(e) => onSubdomainChange(e.target.value)} placeholder="gongsilmarketing" />
+                            <input
+                              style={{ ...field, flex: 1, background: initialSubdomain ? (dark ? "#1f2937" : "#f3f4f6") : field.background }}
+                              value={subdomain}
+                              onChange={(e) => onSubdomainChange(e.target.value)}
+                              placeholder="gongsilmarketing"
+                              readOnly={Boolean(initialSubdomain)}
+                            />
                             <span style={{ fontSize: 12.5, color: sub, whiteSpace: "nowrap" }}>.gongsilnews.com</span>
                           </div>
                           <p style={{ margin: "7px 0 0", fontSize: 12.5, fontWeight: 700, color: subStatus === "ok" ? "#059669" : subStatus === "idle" || subStatus === "checking" ? sub : "#dc2626" }}>
@@ -323,8 +354,36 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                             {subStatus === "ok" && "사용할 수 있는 주소입니다"}
                             {subStatus === "taken" && "이미 사용 중입니다"}
                             {subStatus === "invalid" && "영문 소문자·숫자·하이픈 2~30자"}
-                            {subStatus === "idle" && "명함이나 문자로 보낼 주소입니다"}
+                            {subStatus === "idle" && (initialSubdomain ? "공개된 주소입니다. 변경 시 기존 링크와 명함에 영향을 줍니다." : "명함이나 문자로 보낼 주소입니다")}
                           </p>
+                          {initialSubdomain && pendingAddress && (
+                            <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 8, background: dark ? "#2b2111" : "#fffbeb", color: dark ? "#fcd34d" : "#92400e", fontSize: 12.5, fontWeight: 700 }}>
+                              변경 신청 검토 중: {pendingAddress}.gongsilnews.com
+                            </div>
+                          )}
+                          {initialSubdomain && !pendingAddress && !changeAddressOpen && (
+                            <button type="button" onClick={() => setChangeAddressOpen(true)} style={{ marginTop: 10, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 8, background: "transparent", color: text, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+                              주소 변경 신청
+                            </button>
+                          )}
+                          {initialSubdomain && changeAddressOpen && (
+                            <div style={{ marginTop: 10, padding: 12, border: `1px solid ${border}`, borderRadius: 8 }}>
+                              <p style={{ margin: "0 0 10px", fontSize: 12, color: sub, lineHeight: 1.55 }}>
+                                변경하면 기존 명함·QR·공유 링크와 검색 노출에 영향을 줄 수 있습니다. 최고관리자 검토 후 변경됩니다.
+                              </p>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                                <input style={{ ...field, flex: 1 }} value={requestedSubdomain} onChange={(e) => setRequestedSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="새 주소" />
+                                <span style={{ fontSize: 12, color: sub }}>.gongsilnews.com</span>
+                              </div>
+                              <textarea style={{ ...field, minHeight: 60, resize: "vertical" }} value={changeReason} onChange={(e) => setChangeReason(e.target.value)} placeholder="변경 사유 (선택)" />
+                              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+                                <button type="button" onClick={() => setChangeAddressOpen(false)} style={{ padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 7, background: "transparent", color: sub, cursor: "pointer" }}>취소</button>
+                                <button type="button" disabled={requestingAddress || !requestedSubdomain} onClick={handleAddressChangeRequest} style={{ padding: "8px 12px", border: "none", borderRadius: 7, background: "#059669", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: requestingAddress || !requestedSubdomain ? 0.55 : 1 }}>
+                                  {requestingAddress ? "신청 중..." : "변경 신청"}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div style={group}>

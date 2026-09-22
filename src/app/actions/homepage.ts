@@ -2,6 +2,25 @@
 
 import { createClient } from "@supabase/supabase-js"
 
+const RESERVED_SUBDOMAINS = new Set([
+  'www', 'api', 'm', 'admin', 'news', 'study', 'biz', 'flyer', 'sites',
+  'mail', 'static', 'cdn', 'app', 'support', 'help', 'login', 'signup',
+]);
+
+function validateSubdomain(subdomain: string): string | null {
+  const value = subdomain.trim().toLowerCase();
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(value)) {
+    return "주소는 영문 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.";
+  }
+  if (value.length < 2 || value.length > 30) {
+    return "주소는 2~30자로 입력해 주세요.";
+  }
+  if (RESERVED_SUBDOMAINS.has(value)) {
+    return "공실뉴스 서비스에서 사용하는 예약 주소입니다.";
+  }
+  return null;
+}
+
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -101,23 +120,22 @@ export async function saveHomepageSettings(ownerId: string, inputData: {
   try {
     // 1. 서브도메인 유효성 검사
     if (inputData.subdomain) {
-      const subdomainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
-      if (!subdomainRegex.test(inputData.subdomain)) {
-        return { success: false, error: "서브도메인은 영문 소문자, 숫자, 하이픈(-)만 사용 가능합니다." };
-      }
-      if (inputData.subdomain.length < 2 || inputData.subdomain.length > 30) {
-        return { success: false, error: "서브도메인은 2~30자로 입력해주세요." };
-      }
+      const validationError = validateSubdomain(inputData.subdomain);
+      if (validationError) return { success: false, error: validationError };
     }
 
     // 2. design_settings 안에 이미 들어있던 설정을 먼저 가져온다
     const { data: existingData } = await supabase
       .from('homepage_settings')
-      .select('design_settings')
+      .select('subdomain, design_settings')
       .eq('owner_id', ownerId)
       .maybeSingle();
 
     const ds = existingData?.design_settings || {};
+
+    if (existingData?.subdomain && existingData.subdomain !== inputData.subdomain) {
+      return { success: false, error: "공개된 홈페이지 주소는 직접 변경할 수 없습니다. 주소 변경 신청을 이용해 주세요." };
+    }
 
     // 3. 넘어온 키만 덮어쓴다. 편집기가 일부만 저장해도 나머지가 날아가지 않는다.
     const payload: Record<string, any> = {
@@ -224,6 +242,9 @@ export async function getHomepageSettingsBySubdomain(subdomain: string) {
 export async function checkSubdomainAvailable(subdomain: string, ownerId?: string) {
   const supabase = getAdminClient();
   try {
+    const validationError = validateSubdomain(subdomain);
+    if (validationError) return { success: true, available: false, error: validationError };
+
     let query = supabase
       .from('homepage_settings')
       .select('id, owner_id')
@@ -238,6 +259,75 @@ export async function checkSubdomainAvailable(subdomain: string, ownerId?: strin
 
     if (error) return { success: false, error: error.message };
     return { success: true, available: !data || data.length === 0 };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function requestHomepageSubdomainChange(
+  ownerId: string,
+  requestedSubdomain: string,
+  reason?: string
+) {
+  const supabase = getAdminClient();
+  const next = requestedSubdomain.trim().toLowerCase();
+  const validationError = validateSubdomain(next);
+  if (validationError) return { success: false, error: validationError };
+
+  try {
+    const { data: homepage, error: homepageError } = await supabase
+      .from('homepage_settings')
+      .select('subdomain')
+      .eq('owner_id', ownerId)
+      .single();
+    if (homepageError || !homepage?.subdomain) {
+      return { success: false, error: "먼저 홈페이지 주소를 최초 설정해 주세요." };
+    }
+    if (homepage.subdomain === next) {
+      return { success: false, error: "현재 사용 중인 주소와 같습니다." };
+    }
+
+    const availability = await checkSubdomainAvailable(next, ownerId);
+    if (!availability.success || !availability.available) {
+      return { success: false, error: availability.error || "이미 사용 중인 주소입니다." };
+    }
+
+    const { data: pending } = await supabase
+      .from('homepage_subdomain_change_requests')
+      .select('id')
+      .eq('owner_id', ownerId)
+      .eq('status', 'PENDING')
+      .maybeSingle();
+    if (pending) return { success: false, error: "이미 검토 중인 주소 변경 신청이 있습니다." };
+
+    const { error } = await supabase
+      .from('homepage_subdomain_change_requests')
+      .insert({
+        owner_id: ownerId,
+        current_subdomain: homepage.subdomain,
+        requested_subdomain: next,
+        reason: reason?.trim() || null,
+      });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getPendingHomepageSubdomainChange(ownerId: string) {
+  const supabase = getAdminClient();
+  try {
+    const { data, error } = await supabase
+      .from('homepage_subdomain_change_requests')
+      .select('id, current_subdomain, requested_subdomain, reason, status, created_at')
+      .eq('owner_id', ownerId)
+      .eq('status', 'PENDING')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return { success: false, error: error.message };
+    return { success: true, data };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
