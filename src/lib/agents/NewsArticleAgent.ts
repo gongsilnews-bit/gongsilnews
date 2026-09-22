@@ -5,6 +5,8 @@ export interface NewsArticleRequest {
   sourceText: string; // 검색된 여러 기사들의 원문이나 요약본 (팩트 덩어리)
   category: string;   // 예: "부동산정책/정치", "AI/NEWS", "인물/인터뷰", "맛집/여행/건강" 등
   userEmail?: string; // 호출한 사용자 이메일 (기본: SYSTEM)
+  articleStyle?: "auto" | "narration" | "editorial"; // 기사 스타일 (auto: AI 자동 분석, narration: 방송 자막·나레이션 대본형, editorial: 정통 신문 분석형)
+  userFeedback?: string; // 관리자 특별 지시 및 스타일 요청사항
 }
 
 export interface NewsArticleResult {
@@ -12,6 +14,7 @@ export interface NewsArticleResult {
   subtitle: string;
   content: string; // HTML 포맷의 본문
   keywords: string;
+  articleStyle?: "narration" | "editorial"; // 실제 채택된 스타일
   imageKeyword?: string;
   youtubeSearchQuery?: string;
   mediaType?: "image" | "video";
@@ -66,6 +69,7 @@ function safeJsonParse(rawText: string): any {
       const isHeadline = text.includes('"isHeadline": true');
       const isImportant = text.includes('"isImportant": true') || isHeadline;
       const sourceUrl = extractField('sourceUrl') || '';
+      const articleStyle = (text.includes('"articleStyle": "narration"') || text.includes('"articleStyle":"narration"')) ? 'narration' : 'editorial';
 
       if (title && content) {
         return {
@@ -73,6 +77,7 @@ function safeJsonParse(rawText: string): any {
           subtitle,
           content,
           keywords,
+          articleStyle,
           imageKeyword,
           youtubeSearchQuery,
           chosenCandidateId,
@@ -96,7 +101,21 @@ export class NewsArticleAgent {
   static async writeArticle(req: NewsArticleRequest): Promise<NewsArticleResult> {
     const category = req.category;
 
-    // 카테고리별 성격 판별
+    // 1. 수동 요청 감지 (userFeedback, sourceText, articleStyle)
+    const rawHint = `${req.articleStyle || ''} ${req.userFeedback || ''} ${req.sourceText.slice(0, 300)}`.toLowerCase();
+    const isExplicitNarration = req.articleStyle === 'narration' || /나레이션|대본|자막뉴스|존댓말|방송\s*뉴스/i.test(rawHint);
+    const isExplicitEditorial = req.articleStyle === 'editorial' || /신문\s*기사|평서체|분석형|소제목/i.test(rawHint);
+
+    let styleMode: 'narration' | 'editorial' | 'auto' = 'auto';
+    if (isExplicitNarration) {
+      styleMode = 'narration';
+    } else if (isExplicitEditorial) {
+      styleMode = 'editorial';
+    } else {
+      styleMode = 'auto';
+    }
+
+    // 2. 카테고리별 성격 판별
     const isBoxCategory = [
       "부동산정책/정치",
       "세무/법률/기타",
@@ -109,27 +128,63 @@ export class NewsArticleAgent {
       "부동산유튜브/블로그"
     ].includes(category);
 
-    let conclusionInstruction = "";
-    if (isBoxCategory) {
-      conclusionInstruction = `
-5. ■ 공실뉴스 시장전망 & 체크포인트:
-   기사 하단에 반드시 아래 박스 포맷을 사용하여, 기사 주제에 대한 [시장 전망]과 함께 [임대인·공인중개사·투자자]가 현장에서 챙겨야 할 [핵심 실무 체크포인트]를 4~5줄의 완성도 높은 종합 리포트 문맥으로 작성하라.
-   
-   <div style="background:#f8fafc;padding:16px 18px;border-left:4px solid #2563eb;border-radius:6px;margin-top:24px;line-height:1.75;">
-     <p style="margin:0 0 8px 0;font-weight:700;color:#1e3a8a;font-size:15px;">■ 공실뉴스 시장전망 & 체크포인트</p>
-     <p style="margin:0;font-size:14px;color:#334155;">(향후 시장·정책·금리 전망 1~2줄 서술 후, 임대인·중개사·투자자가 현장에서 반드시 챙겨야 할 계약 특약, 절세, 공실 방어 등 실무 체크포인트 2~3줄을 매끄럽게 연결하여 서술)</p>
-   </div>`;
+    let styleGuidance = "";
+    if (styleMode === 'narration') {
+      styleGuidance = `
+[★ 기사 스타일: 방송 자막·나레이션 대본형 (최고관리자 수동 지정) ★]
+- 문체: 방송 앵커 및 기자의 신뢰감 있고 귀에 쏙쏙 박히는 정중한 표준 존댓말 리포트체 (~했습니다, ~인 겁니다, ~것으로 나타났습니다, ~조언했습니다, ~있습니다).
+- 구조 및 호흡:
+  1. ★ [절대 금지 1] '■ 소제목'을 절대 넣지 마라! (소제목 일체 배제)
+  2. ★ [절대 금지 2] '[왜 올랐나]', '[주의사항]' 등 미니 라벨도 절대 넣지 마라!
+  3. ★ [문단 나열] 오직 1~2문장 단위로 짧고 호흡감 있게 끊어서 <p> 태그로 나열하라.
+     (모바일 화면에서 한눈에 들어오고, 숏폼 자막 및 TTS 음성 나레이션으로 바로 낭독 가능한 자연스러운 대본 호흡)
+  4. ★ [전개 흐름]:
+     - 1~2문단: 사건/이슈 핵심 팩트 브리핑
+     - 3~4문단: 원인, 시장 심리, 배경 상황 분석
+     - 5~6문단: 현상 확장 및 유사 사례/과거 비교/파급 효과
+     - 마지막 1~2문단: 전문가 조언 및 투자자/소비자 주의사항 당부로 자연스럽게 마무리
+  5. ★ 하단 [■ 공실뉴스 시장전망 & 체크포인트] 박스는 일체 넣지 마라!`;
+    } else if (styleMode === 'editorial') {
+      styleGuidance = `
+[★ 기사 스타일: 정통 신문 분석형 (최고관리자 수동 지정) ★]
+- 문체: 정통 경제지 전문 기자 평서체 (~로 분석된다, ~로 집계됐다, ~라는 지적이다, ~가 불가피할 전망이다).
+- 구조:
+  1. 도입부 문단 (3~4줄)
+  2. 본문 내 3개의 생생한 맞춤형 소제목 ('<b>■ [맞춤 소제목]</b><br>내용' - 숫자 1, 2, 3 제외!)
+  3. ${isBoxCategory ? `기사 최하단에 [■ 공실뉴스 시장전망 & 체크포인트] 심층 분석 박스 포함:
+     <div style="background:#f8fafc;padding:16px 18px;border-left:4px solid #2563eb;border-radius:6px;margin-top:24px;line-height:1.75;">
+       <p style="margin:0 0 8px 0;font-weight:700;color:#1e3a8a;font-size:15px;">■ 공실뉴스 시장전망 & 체크포인트</p>
+       <p style="margin:0;font-size:14px;color:#334155;">(시장 전망 및 임대인·중개사·투자자 실무 체크포인트 서술)</p>
+     </div>` : `기사 마지막에 <p><b>■ 향후 트렌드 및 전망</b><br>내용</p> 문단으로 마무리`}`;
     } else {
-      // 라이프·문화·인물형 (맛집/여행/건강, 스포츠/연예/기타, 인물/인터뷰)
-      conclusionInstruction = `
-5. ■ 향후 트렌드 및 전망:
-   억지스러운 박스나 팁을 넣지 말고, 정통 신문 문화면/오피니언 기사처럼 자연스러운 본문 문단으로 산뜻하게 기사를 마무리하라.
-   
-   <p><b>■ 향후 트렌드 및 전망</b><br>(해당 사안이 소비자 라이프스타일, 지역 상권 또는 업계 트렌드에 미칠 의미를 자연스러운 문단으로 2~3줄 서술)</p>`;
+      // auto: AI가 소재와 카테고리를 정밀 분석하여 결정
+      styleGuidance = `
+[★ 기사 스타일: AI 자동 스마트 분석 모드 (기본값) ★]
+너는 제공된 뉴스 소재와 카테고리를 정밀 분석하여 아래 2가지 스타일 중 가장 적합한 스타일을 스스로 판단하여 작성하고, JSON의 "articleStyle" 필드에 명시하라:
+
+1) 【스타일 A: 방송 자막·나레이션 대본형 (narration)】 선택 기준:
+   - 카테고리가 'AI/NEWS', '경제/재테크/주식', '부동산유튜브/블로그', '맛집/여행/건강', '스포츠/연예/기타', '인물/인터뷰'이거나,
+   - 소재가 화제성 테마주(예: 상어 출몰과 주가 급등 등), 밈, 소비자 트렌드, 사건 브리핑, 실시간 이슈처럼 방송 앵커 브리핑이나 숏폼 자막뉴스 형태로 전달할 때 전달력과 몰입감이 훨씬 뛰어난 경우.
+   - [작성 규칙]:
+     * 문체: 방송 앵커/기자 리포트 존댓말 대본체 (~했습니다, ~인 겁니다, ~있습니다, ~조언했습니다).
+     * ★ 소제목('■') 완전 배제! 미니라벨('[...]')도 완전 배제!
+     * 오직 1~2문장 단위로 짧게 끊어서 <p> 태그로 나열.
+     * 하단 분석 박스 없이, 마지막 문단에서 전문가 제언과 주의 당부로 자연스럽게 마무리.
+
+2) 【스타일 B: 정통 신문 분석형 (editorial)】 선택 기준:
+   - 카테고리가 '부동산정책/정치', '세무/법률/기타', '상가/사무실/공장/토지', '신축/분양/경매', '공실/임대관리' 등 제도 개편, 법률 판례, 세무 쟁점, 심층 수급 통계 분석 중심인 경우.
+   - [작성 규칙]:
+     * 문체: 정통 경제지 전문 기자 평서체 (~로 분석된다, ~로 집계됐다).
+     * 맞춤형 소제목 3개 ('<b>■ [맞춤 소제목]</b><br>내용' - 숫자 1, 2, 3 제외).
+     * ${isBoxCategory ? `기사 최하단에 [■ 공실뉴스 시장전망 & 체크포인트] 심층 분석 박스 포함:
+       <div style="background:#f8fafc;padding:16px 18px;border-left:4px solid #2563eb;border-radius:6px;margin-top:24px;line-height:1.75;">
+         <p style="margin:0 0 8px 0;font-weight:700;color:#1e3a8a;font-size:15px;">■ 공실뉴스 시장전망 & 체크포인트</p>
+         <p style="margin:0;font-size:14px;color:#334155;">(시장 전망 및 임대인·중개사·투자자 실무 체크포인트 서술)</p>
+       </div>` : `기사 마지막에 <p><b>■ 향후 트렌드 및 전망</b><br>내용</p> 문단으로 마무리`}`;
     }
 
     const systemPrompt = `너는 대한민국 1등 부동산·경제 전문 미디어 '공실뉴스'의 수석 편집국장이야.
-너의 임무는 제공된 최신 뉴스 후보들 중 가장 대중의 관심이 집중되고 가치 있는 핵심 뉴스 1개를 엄선하여, **한국경제·조선비즈 수준의 깊이 있는 전문 기사**로 재창조하는 거야.
+너의 임무는 제공된 최신 뉴스 후보들 중 가장 가치 있는 핵심 뉴스를 엄선하여 독보적인 고품질 기사로 작성하는 것이다.
 
 [절대 지켜야 할 리라이팅 및 저작권 원칙]
 1. 완벽한 표절 방지: 제공된 원문의 문장 구조, 표현, 단어 배열을 절대로 그대로 복사하지 마라.
@@ -137,28 +192,10 @@ export class NewsArticleAgent {
 3. 타사 출처 배제: "OO일보에 따르면", "OO뉴스 보도에 의하면" 등 타사 언론사 명칭은 절대 언급하지 마라.
 4. 원문 링크 본문 부착 금지: 기사 본문에 원문 링크나 출처 URL을 절대 쓰지 마라. (sourceUrl 필드에만 기입)
 5. JSON 내 따옴표 주의: 제목(title)이나 본문(content) 안에서 강조할 때는 쌍따옴표(") 대신 반드시 작은따옴표(')를 사용하라.
+6. 핵심 수치와 중요 키워드는 <b> 태그로 강조하여 전문성과 가독성을 높여라.
+7. HTML 태그는 오직 <p>, <b>, <br>, <div>만 사용하라. (<h3>, <style> 태그 일체 금지)
 
-[문체 (Tone & Manner)]
-- 네가 작성할 기사의 카테고리는 [${category}]야.
-- 정통 경제지 전문 기자체(~로 분석된다, ~로 집계됐다, ~가 불가피할 전망이다, ~에 주목할 필요가 있다, ~라는 지적이다 등)를 사용하라.
-- 블로그 같은 가벼운 말투(~해요, ~있답니다)는 일체 금지하며, 인과관계와 시장 파급효과를 날카롭게 짚어주는 단단하고 분석적인 문장으로 작성하라.
-- 핵심 수치와 중요 키워드는 <b> 태그로 강조하여 전문성과 가독성을 높여라.
-
-[소제목 작성 규칙 - ★매우 중요★]
-- '■ 현황 및 핵심 지표', '■ 원인 및 파급 효과', '■ 관련 정책 및 데이터 분석' 같은 **기계적이고 고정된 틀(박제된 라벨)을 절대 쓰지 마라!**
-- 대신 **기사 본문 내용의 핵심 수치, 사건 팩트, 현장 목소리가 생생하게 살아있는 [맞춤형 소제목 3개]**를 스스로 창작하여 <b> 태그로 달아라.
-  - 예시 1: <b>■ 전용 84㎡ 분양가 27억 돌파… '강남 뺨치는' 고분양가 논란</b><br>
-  - 예시 2: <b>■ '지금 안 사면 더 뛴다'… 공급 가뭄 공포에 쏠린 청약</b><br>
-  - 예시 3: <b>■ 대출 규제 조이자 '현금 부자' 잔치… 당첨 양극화 심화</b><br>
-
-[기사 본문 구조]
-반드시 아래 구조를 엄격히 준수하여 HTML 태그(<p>, <b>, <br>, <div>)로 작성해라. (<h3>, <style> 태그 일체 금지)
-
-1. 도입부 (3~4줄): 사건의 핵심 팩트와 함께 이 사안이 지금 경제/부동산/사회에서 갖는 배경과 중요성을 두괄식으로 서술.
-2. <b>■ [핵심 팩트와 수치를 관통하는 생생한 맞춤 소제목 1]</b><br>내용 서술 (중요 수치 <b> 강조).
-3. <b>■ [원인과 시장 파급력을 날카롭게 짚는 맞춤 소제목 2]</b><br>내용 서술.
-4. <b>■ [제도·정책·데이터 등 심층 맥락을 담은 맞춤 소제목 3]</b><br>내용 서술.
-${conclusionInstruction}
+${styleGuidance}
 
 [이미지 키워드 작성 주의사항]
 - 기사가 [인물/인터뷰] 카테고리이거나 실존 인물에 관한 내용인 경우, 외국인 모델이나 사람 얼굴 사진 검색을 절대 하지 마라.
@@ -174,9 +211,10 @@ ${conclusionInstruction}
 
 {
   "chosenCandidateId": "CANDIDATE_1 등 선택한 후보의 ID",
+  "articleStyle": "narration 또는 editorial",
   "title": "시선을 사로잡으면서도 신뢰감을 주는 전문적인 기사 제목 (최대 32자)",
   "subtitle": "핵심 브리핑 1 (명사형 종결)\\n핵심 브리핑 2 (명사형 종결)\\n핵심 브리핑 3 (명사형 종결)\\n(반드시 3줄로 작성. 특수기호나 번호 없이 순수 텍스트만 줄바꿈. 문장 끝은 ~기록, ~돌파, ~전망, ~개최 등 간결한 명사형 종결)",
-  "content": "<p>도입부...</p><p><b>■ 맞춤 소제목 1</b><br>내용...</p><p><b>■ 맞춤 소제목 2</b><br>내용...</p><p><b>■ 맞춤 소제목 3</b><br>내용...</p>...",
+  "content": "<p>내용...</p>",
   "keywords": "키워드1,키워드2,키워드3,키워드4,키워드5",
   "imageKeyword": "고품질 배경/사옥/기술 스톡 사진 검색용 영어 키워드 2~4단어",
   "youtubeSearchQuery": "관련 유튜브 영상 검색용 한국어 키워드",
@@ -186,7 +224,7 @@ ${conclusionInstruction}
   "sourceUrl": "선택한 원본 기사의 URL"
 }`;
 
-    const userPrompt = `[오늘의 최신 뉴스 후보 목록]\n${req.sourceText}\n\n위 후보들 중 대중의 관심이 가장 높고 완성도 높은 1개의 뉴스를 선택하여, 반드시 해당 후보의 [ID]와 [URL]을 정확히 매칭하고, 기사 내용에 꼭 맞는 [생생한 맞춤형 소제목]을 적용한 [${category}] 카테고리 프리미엄 기사를 JSON으로 작성해라.`;
+    const userPrompt = `[오늘의 최신 뉴스 후보 목록]\n${req.sourceText}\n\n위 후보들 중 대중의 관심이 가장 높고 완성도 높은 1개의 뉴스를 선택하여, 반드시 해당 후보의 [ID]와 [URL]을 정확히 매칭하고, 기사 소재에 가장 어울리는 최적의 스타일을 적용한 [${category}] 카테고리 프리미엄 기사를 JSON으로 작성해라.`;
 
     try {
       const result = await generateWithGemini(`${systemPrompt}\n\n${userPrompt}`, { temperature: 0.7 });
@@ -196,7 +234,7 @@ ${conclusionInstruction}
       await logAiUsage({
         channelId: "article",
         userEmail: req.userEmail || "gongsilnews@gmail.com",
-        summary: `[기사 작성] "${(parsed.title || '').slice(0, 30)}"`,
+        summary: `[기사 작성 (${parsed.articleStyle || styleMode})] "${(parsed.title || '').slice(0, 30)}"`,
         model: "gemini-3.6-flash",
         type: "text",
         inputTokens: result.usage?.inputTokens || 0,
@@ -209,6 +247,7 @@ ${conclusionInstruction}
         subtitle: parsed.subtitle,
         content: parsed.content,
         keywords: parsed.keywords,
+        articleStyle: parsed.articleStyle || (styleMode === 'narration' ? 'narration' : 'editorial'),
         imageKeyword: parsed.imageKeyword,
         youtubeSearchQuery: parsed.youtubeSearchQuery,
         mediaType: parsed.mediaType,

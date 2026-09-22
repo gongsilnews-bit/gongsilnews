@@ -848,6 +848,24 @@ export async function adminReviseArticleWithFeedback(articleId: string, feedback
 
     const { generateWithGemini } = await import("@/lib/agents/core");
 
+    const isNarrationFeedback = /나레이션|대본|자막뉴스|존댓말|소제목\s*빼/i.test(feedback);
+
+    const styleInstruction = isNarrationFeedback
+      ? `3. **방송 자막·나레이션 대본형 포맷 필수 적용 (최고관리자 지시사항)**:
+   - 문체: 정중하고 귀에 쏙쏙 박히는 방송 앵커/기자 표준 존댓말 대본체 (~했습니다, ~인 겁니다, ~있습니다, ~조언했습니다).
+   - ★ [절대 금지 1] '■ 소제목'을 절대 넣지 마라! (소제목 일체 배제)
+   - ★ [절대 금지 2] '[왜 올랐나]', '[주의사항]' 등 미니 라벨도 절대 넣지 마라!
+   - ★ [문단 나열] 오직 1~2문장 단위로 짧고 호흡감 있게 끊어서 <p> 태그로 나열하라.
+   - ★ 하단 [■ 공실뉴스 시장전망 & 체크포인트] 박스는 일체 넣지 말고, 마지막 문단에서 전문가 제언과 향후 전망으로 자연스럽게 마무리하라.`
+      : `3. **공실뉴스 시그니처 포맷 유지**:
+   - 3줄 핵심 요약 부제목 (각 줄은 줄바꿈 \\n으로 구분)
+   - 본문 내 3개의 맞춤형 소제목 (<b>■ [소제목]</b><br> - 숫자 1, 2, 3 제외!)
+   - 본문 최하단에 [■ 공실뉴스 시장전망 & 체크포인트] 심층 분석 박스 포함`;
+
+    const sampleContent = isNarrationFeedback
+      ? `"<p>사건 핵심 브리핑 1~2문장...</p><p>원인 및 배경 분석 1~2문장...</p><p>현상 확장 및 유사 사례 1~2문장...</p><p>전문가 조언 및 당부 1~2문장...</p>"`
+      : `"<p>수정된 기사 본문 문단들...</p><p><b>■ 맞춤 소제목 1</b><br>문단 내용...</p><p><b>■ 맞춤 소제목 2</b><br>문단 내용...</p><p><b>■ 맞춤 소제목 3</b><br>문단 내용...</p><div style=\\"margin-top:28px;padding:20px;background:#f8fafc;border-left:4px solid #3b82f6;border-radius:8px;\\"><h4 style=\\"margin:0 0 10px 0;font-size:15px;color:#1e293b;font-weight:800;\\">■ 공실뉴스 시장전망 & 체크포인트</h4><p style=\\"margin:0;font-size:13.5px;line-height:1.7;color:#475569;\\">수정된 시장 전망 및 전문가 체크포인트 분석 내용...</p></div>"`;
+
     const prompt = `너는 대한민국 1등 경제·부동산 종합 언론사 '공실뉴스'의 [수석 편집국장 AI]야.
 방금 작성된 기사에 대해 최고관리자(발행인)로부터 다음과 같은 [반려 사유 및 수정 지시사항]이 접수되었다.
 
@@ -864,20 +882,17 @@ ${article.content}
 [재작성 및 수정 지침 - ★필수 준수★]
 1. **최고관리자의 지적 및 요구사항을 100% 철저하게 반영**하여 기사를 전문적이고 완성도 높게 재구성하라.
 2. 기존 기사의 팩트와 구조를 살리면서, 지적된 미흡한 부분(예: 구체적 통계 수치 보강, 법적/세무 쟁점 상세화, 시장 영향 분석 심화 등)을 완벽히 보완하라.
-3. **공실뉴스 시그니처 포맷 유지**:
-   - 3줄 핵심 요약 부제목 (각 줄은 줄바꿈 \\n으로 구분)
-   - 본문 내 3개의 맞춤형 소제목 (<b>■ ...</b>)
-   - 본문 최하단에 [■ 공실뉴스 시장전망 & 체크포인트] 심층 분석 박스 포함
+${styleInstruction}
 4. 타 언론사 명칭 및 외부 링크는 일체 기재하지 않는다.
 
 출력 포맷: 반드시 아래 JSON 형식으로만 순수 JSON을 출력하라:
-\`\`\`json
+\\\`\\\`\\\`json
 {
   "title": "수정 및 고도화된 메인 헤드라인",
   "subtitle": "수정된 3줄 부제목 1행\\n수정된 3줄 부제목 2행\\n수정된 3줄 부제목 3행",
-  "content": "<p>수정된 기사 본문 문단들...</p><p><b>■ 소제목 1</b><br>문단 내용...</p><p><b>■ 소제목 2</b><br>문단 내용...</p><p><b>■ 소제목 3</b><br>문단 내용...</p><div style=\\"margin-top:28px;padding:20px;background:#f8fafc;border-left:4px solid #3b82f6;border-radius:8px;\\"><h4 style=\\"margin:0 0 10px 0;font-size:15px;color:#1e293b;font-weight:800;\\">■ 공실뉴스 시장전망 & 체크포인트</h4><p style=\\"margin:0;font-size:13.5px;line-height:1.7;color:#475569;\\">수정된 시장 전망 및 전문가 체크포인트 분석 내용...</p></div>"
+  "content": ${sampleContent}
 }
-\`\`\``;
+\\\`\\\`\\\``;
 
     const res = await generateWithGemini(prompt, { temperature: 0.3 });
     const text = res.text;

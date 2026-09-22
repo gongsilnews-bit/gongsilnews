@@ -320,7 +320,12 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Prop
               <div style={{ fontSize: 44, marginBottom: 14 }}>✅</div>
               <h3 style={{ fontSize: 23, fontWeight: 900, color: theme.dark, margin: "0 0 12px 0" }}>접수되었습니다</h3>
               <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.7, margin: "0 0 26px 0", wordBreak: "keep-all" }}>
-                확인 후 {phone ? <strong>{phone}</strong> : "담당자"} 번호로 연락드리겠습니다.
+                {/*
+                  손님이 방금 적어 넣은 번호다. 중개사 번호(phone)를 쓰면 "확인 후
+                  02-542-3011 로 연락드리겠습니다" 가 되어, 손님이 자기 번호가 제대로
+                  들어갔는지 확인할 방법이 없어진다.
+                */}
+                확인 후 {phoneInput ? <strong>{phoneInput}</strong> : "남겨주신"} 번호로 연락드리겠습니다.
               </p>
               <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "18px 20px", textAlign: "left" }}>
                 <p style={{ fontSize: 14.5, fontWeight: 800, color: theme.dark, margin: "0 0 6px 0" }}>사진을 못 올리셨나요?</p>
