@@ -23,8 +23,6 @@ interface Props {
  * 전화가 낫다. 이미 폼을 지나쳐 온 사람이다.
  */
 export default function ContactSection({ officeName, theme, phone, agentMobile, representative, address, regNum, snsLinks }: Props) {
-  const primaryTel = agentMobile || phone;
-
   return (
     <section id="contact" style={{ background: "#16202b", padding: "60px 16px", scrollMarginTop: 104 }}>
       <div style={{ maxWidth: 620, margin: "0 auto", background: "#fff", borderRadius: 4, padding: "44px 26px", textAlign: "center" }}>
@@ -68,26 +66,24 @@ export default function ContactSection({ officeName, theme, phone, agentMobile, 
           </div>
         )}
 
-        <SnsLinks theme={theme} snsLinks={snsLinks} mapAddress={address} />
+        <SnsLinks theme={theme} snsLinks={snsLinks} />
 
         {regNum && <p style={{ margin: "0 0 4px 0", fontSize: 13.5, color: "#6b7280" }}>등록번호: {regNum}</p>}
         {address && <p style={{ margin: "0 0 26px 0", fontSize: 13.5, color: "#6b7280", wordBreak: "keep-all" }}>소재지: {address}</p>}
 
-        {primaryTel && (
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-            <a
-              href={`tel:${primaryTel}`}
-              style={{ flex: "1 1 150px", maxWidth: 220, padding: "15px 10px", background: theme.primary, color: "#fff", borderRadius: 4, fontSize: 15.5, fontWeight: 800, textDecoration: "none", letterSpacing: "0.5px" }}
-            >
-              전화하기
-            </a>
-            <a
-              href={`sms:${primaryTel}`}
-              style={{ flex: "1 1 150px", maxWidth: 220, padding: "15px 10px", background: theme.secondary, color: theme.dark, borderRadius: 4, fontSize: 15.5, fontWeight: 800, textDecoration: "none", letterSpacing: "0.5px" }}
-            >
-              문자보내기
-            </a>
-          </div>
+        {address && (
+          <a
+            href={`https://map.kakao.com/link/search/${encodeURIComponent(address)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "16px 12px", background: theme.dark, color: "#fff", borderRadius: 4, fontSize: 15.5, fontWeight: 800, textDecoration: "none", letterSpacing: "0.3px" }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            지도에서 길찾기
+          </a>
         )}
       </div>
     </section>

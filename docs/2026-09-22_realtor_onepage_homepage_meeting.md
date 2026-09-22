@@ -12,7 +12,7 @@
 ### 1-1. 현재 상태 (As-Is)
 
 중개사 서브도메인(`{아이디}.gongsilnews.com`)은 `src/app/sites/[subdomain]/IntakeClient.tsx`
-한 파일로 그려지며, 구성은 **헤더 → 히어로 → 접수 폼 → 오시는 길 → CONTACT AGENT → 푸터**다.
+한 파일로 그려지며, 구성은 **헤더 → 히어로 → 접수 폼 → CONTACT AGENT → 푸터**다.
 접근은 유료 프리미엄 회원 전용(`getHomepageSettingsBySubdomain`)이고, 편집기
 (`IntakeStudio.tsx`)는 색상 5종만 고르게 하고 배치는 잠가두었다.
 
@@ -54,9 +54,8 @@
 | 1 | 히어로 (배경사진 + 문구 + CTA) | `settings.intake` | 배경사진 추가 |
 | 2 | **우리 매물** | `getVacanciesByOwnerId()` + `vacancy_photos` | **신규** |
 | 3 | **중개사 기사·칼럼** | `articles` (author_id, APPROVED) | **복구** |
-| 4 | 오시는 길 (+ 지도) | `agencies.address / lat / lng` | 지도 추가 |
-| 5 | **접수 폼** | → `crm_customers` + `crm_logs` | 위치 이동 |
-| 6 | CONTACT AGENT | `agencies` | 유지 |
+| 4 | **접수 폼** | → `crm_customers` + `crm_logs` | 위치 이동 |
+| 5 | CONTACT AGENT + 지도 길찾기 | `agencies` | 전화·문자 CTA 대신 길찾기 배치 |
 | 푸터 | powered by 공실뉴스 | — | 유지 |
 | 고정 | 모바일 하단바 (전화 / 접수) | — | **신규** |
 
@@ -128,7 +127,7 @@ Vercel 프로젝트에 와일드카드 도메인 `*.gongsilnews.com`이 등록�
 | 패널 | 추가 항목 |
 |------|-----------|
 | 디자인 | 히어로 배경사진 업로드, 오버레이 밝기, 카드 모서리(라운드/각짐) |
-| 섹션 | 매물 / 기사 / 오시는 길 on·off, 매물 노출 개수, 기사 노출 개수 |
+| 섹션 | 매물 / 기사 on·off, 매물 노출 개수, 기사 노출 개수 |
 | 회사정보 | 사무실 사진, 대표 사진 (현행 `agencies` 값 그대로 읽는 방식 유지) |
 
 업로드는 기존 `uploadHomepageFile()` + `homepage_assets` 버킷을 그대로 쓴다.
@@ -145,7 +144,7 @@ Vercel 프로젝트에 와일드카드 도메인 `*.gongsilnews.com`이 등록�
 | 1 | 우리 매물 섹션 + 매물 상세 새창 페이지 | `sites/[subdomain]/vacancy/[no]` |
 | 2 | 기사 섹션 복구 + 기사 상세 새창 페이지 | `e0c5f7f7` 역방향 |
 | 3 | 폼을 맨 아래로 이동, 앵커내비 · 모바일 하단바 | `IntakeClient.tsx` 재배치 |
-| 4 | 오시는 길 지도 | `agencies.lat/lng` |
+| 4 | CONTACT AGENT에 지도 길찾기 배치 | `agencies.address` |
 | 5 | 편집기 확장 (사진 업로드 · 섹션 on/off) | `IntakeStudio.tsx` |
 | 6 | 일시중지 화면 분리 (503 · noindex) | `sites/[subdomain]/page.tsx` |
 | 7 | 주소 자동 발급 + 예약어 + 백필 스크립트 + `custom_domain` 칸 | `homepage.ts`, `scripts/`, SQL |

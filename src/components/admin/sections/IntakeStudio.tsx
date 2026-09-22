@@ -497,12 +497,11 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                     {p.key === "sections" && (
                       <>
                         <p style={{ margin: "0 0 6px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
-                          순서는 고정입니다 — 첫 화면 → 매물 → 기사 → 오시는 길 → 접수 → 연락처.
+                          순서는 고정입니다 — 첫 화면 → 매물 → 기사 → 접수 → 연락처.
                           내용이 없는 섹션은 켜 두어도 자동으로 숨습니다.
                         </p>
                         {toggle("show_vacancy", "우리 매물", "공실등록에 올린 매물을 그대로 보여줍니다")}
                         {toggle("show_article", "기사 · 칼럼", "승인된 기사 최신 4건을 보여줍니다")}
-                        {toggle("show_location", "오시는 길", "주소 · 전화 · 영업시간과 길찾기 버튼")}
                       </>
                     )}
 

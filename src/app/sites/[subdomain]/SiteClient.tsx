@@ -5,7 +5,6 @@ import SiteHeader, { type NavItem } from "./sections/SiteHeader";
 import HeroSection from "./sections/HeroSection";
 import VacancySection from "./sections/VacancySection";
 import ArticleSection from "./sections/ArticleSection";
-import LocationSection from "./sections/LocationSection";
 import IntakeFormSection from "./sections/IntakeFormSection";
 import ContactSection from "./sections/ContactSection";
 import MobileBottomBar from "./sections/MobileBottomBar";
@@ -27,7 +26,7 @@ interface Props {
 /**
  * 중개사 원페이지 홈페이지.
  *
- * 순서는 고정이다 — 히어로 → 매물 → 기사 → 오시는 길 → 접수 폼 → 연락처.
+ * 순서는 고정이다 — 히어로 → 매물 → 기사 → 접수 폼 → 연락처.
  * 믿을 재료를 먼저 보여주고 마지막에 접수를 받는다. 중개사가 순서를 고르게 두면
  * 보기 좋은 쪽을 고르지 접수가 잘 되는 쪽을 고르지 않는다.
  *
@@ -63,17 +62,15 @@ export default function SiteClient({
   // 눌렀더니 빈 칸이 나오는 것보다 없는 편이 낫다.
   const showVacancy = cfg.show_vacancy !== false && vacancies.length > 0;
   const showArticle = cfg.show_article !== false && articles.length > 0;
-  const showLocation = cfg.show_location !== false && Boolean(address || phone);
 
   const navItems = useMemo<NavItem[]>(() => {
     const items: NavItem[] = [{ id: "top", label: "홈" }];
     if (showVacancy) items.push({ id: "vacancy", label: "우리 매물" });
     if (showArticle) items.push({ id: "article", label: "기사·칼럼" });
-    if (showLocation) items.push({ id: "location", label: "오시는 길" });
     items.push({ id: "intake", label: "물건 접수" });
     items.push({ id: "contact", label: "연락처" });
     return items;
-  }, [showVacancy, showArticle, showLocation]);
+  }, [showVacancy, showArticle]);
 
   const [activeId, setActiveId] = useState("top");
   const rootRef = useRef<HTMLDivElement>(null);
@@ -163,18 +160,6 @@ export default function SiteClient({
       {showVacancy && <VacancySection officeName={officeName} theme={theme} vacancies={vacancies} hrefFor={hrefFor} />}
 
       {showArticle && <ArticleSection officeName={officeName} theme={theme} articles={articles} hrefFor={hrefFor} />}
-
-      {showLocation && (
-        <LocationSection
-          officeName={officeName}
-          theme={theme}
-          address={address}
-          phone={phone}
-          businessHours={companyProfile?.business_hours}
-          regNum={companyProfile?.reg_num}
-          onCta={() => jump("intake")}
-        />
-      )}
 
       <IntakeFormSection subdomain={subdomain} theme={theme} cfg={cfg} phone={phone} />
 
