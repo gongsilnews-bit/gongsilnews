@@ -30,12 +30,23 @@ export default function SiteHeader({ officeName, logoUrl, theme, items, activeId
   const barRef = useRef<HTMLDivElement>(null);
 
   // 보고 있는 섹션의 칩이 화면 밖에 있으면 칩 줄만 옆으로 민다.
-  // block: "nearest" 를 빼면 페이지 전체가 같이 튄다.
+  // scrollIntoView는 가로 메뉴의 스크롤 조상뿐 아니라 문서의 세로 스크롤도
+  // 함께 움직일 수 있으므로 메뉴 바의 scrollLeft만 직접 조정한다.
   useEffect(() => {
     const bar = barRef.current;
     if (!bar) return;
     const chip = bar.querySelector<HTMLElement>(`[data-chip="${activeId}"]`);
-    chip?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    if (!chip) return;
+
+    const barRect = bar.getBoundingClientRect();
+    const chipRect = chip.getBoundingClientRect();
+    const nextLeft =
+      bar.scrollLeft +
+      chipRect.left -
+      barRect.left -
+      (bar.clientWidth - chipRect.width) / 2;
+
+    bar.scrollTo({ left: Math.max(0, nextLeft), behavior: "smooth" });
   }, [activeId]);
 
   return (
