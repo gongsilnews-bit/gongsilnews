@@ -153,6 +153,21 @@ export function shrinkToWebp(file: File, maxEdge = 1280, quality = 0.75): Promis
   });
 }
 
+/** 첫 화면 버튼이 하는 일 */
+export type HeroCtaType = "intake" | "location" | "vacancy" | "article" | "url";
+
+export interface HeroCta {
+  type?: HeroCtaType;
+  /** 버튼에 적히는 말. 비우면 버튼을 만들지 않는다 */
+  label?: string;
+  /** type === "vacancy" 일 때 보여줄 매물 */
+  vacancyId?: string;
+  /** type === "article" 일 때 열 기사 (article_no 또는 id) */
+  articleId?: string;
+  /** type === "url" 일 때 열 주소 */
+  url?: string;
+}
+
 /** 히어로 슬라이드 한 장. 사진이나 유튜브 중 하나를 배경으로 깐다 */
 export interface HeroSlide {
   image?: string;
@@ -160,6 +175,33 @@ export interface HeroSlide {
   title?: string;
   highlight?: string;
   desc?: string;
+  cta?: HeroCta;
+}
+
+/**
+ * 매물·기사 상세를 여는 방식.
+ *
+ * 폰에는 팝업 창이 없다. 띄우면 새 탭이 되고 뒤로가기가 목록으로 돌아오지 않으므로
+ * 같은 탭에서 연다. PC 는 팝업으로 띄워야 원래 탭의 접수 폼이 그대로 남는다.
+ * 홈페이지 어디서 눌러도 같게 움직여야 해서 여기 한 군데 둔다.
+ */
+export function openDetailFromHome(opts: {
+  phoneHref: string;
+  pcHref: string;
+  windowName: string;
+  width?: number;
+  height?: number;
+}) {
+  if (typeof window === "undefined") return;
+  if (window.innerWidth < 821) {
+    window.location.assign(opts.phoneHref);
+    return;
+  }
+  const w = opts.width ?? 620;
+  const h = opts.height ?? 880;
+  const left = Math.max(20, Math.round((window.screen.width - w) / 2));
+  const features = `width=${w},height=${h},left=${left},top=60,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
+  window.open(opts.pcHref, opts.windowName, features);
 }
 
 export const MAX_HERO_SLIDES = 3;
@@ -209,6 +251,15 @@ export function heroSlides(cfg: any): HeroSlide[] {
         title: s?.title || "",
         highlight: s?.highlight || "",
         desc: s?.desc || "",
+        cta: {
+          type: (s?.cta?.type as HeroCtaType) || "intake",
+          // 버튼이 생기기 전에 저장한 장은 label 이 없다. 그때는 예전 공통 문구를 쓴다.
+          // 빈 문자열은 "지웠다"는 뜻이므로 그대로 둔다.
+          label: s?.cta?.label ?? (cfg?.cta_label || HERO_DEFAULTS.cta),
+          vacancyId: s?.cta?.vacancyId || "",
+          articleId: s?.cta?.articleId || "",
+          url: s?.cta?.url || "",
+        },
       }))
       .filter((s) => s.image || s.youtube || s.title || s.highlight || s.desc);
   }
@@ -222,6 +273,7 @@ export function heroSlides(cfg: any): HeroSlide[] {
       title: cfg?.hero_title || HERO_DEFAULTS.title,
       highlight: cfg?.hero_highlight || HERO_DEFAULTS.highlight,
       desc: cfg?.hero_desc || HERO_DEFAULTS.desc,
+      cta: { type: "intake", label: cfg?.cta_label || HERO_DEFAULTS.cta },
     },
   ];
 }

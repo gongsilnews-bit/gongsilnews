@@ -158,7 +158,7 @@ export default function SiteClient({
         preview={Boolean(preview)}
       />
 
-      <HeroSection officeName={officeName} theme={theme} cfg={cfg} onCta={() => jump("intake")} />
+      <HeroSection officeName={officeName} theme={theme} cfg={cfg} onJump={jump} hrefFor={hrefFor} />
 
       {showVacancy && <VacancySection officeName={officeName} theme={theme} vacancies={vacancies} hrefFor={hrefFor} />}
 

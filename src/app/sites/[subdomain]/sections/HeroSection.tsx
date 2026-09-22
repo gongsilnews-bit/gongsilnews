@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { heroSlides, youtubeId, type HeroSlide, type Theme } from "../theme";
+import { heroSlides, openDetailFromHome, youtubeId, type HeroSlide, type Theme } from "../theme";
 
 interface Props {
   officeName: string;
   theme: Theme;
   cfg: any;
-  onCta: () => void;
+  /** 같은 페이지 안의 섹션으로 보낸다 (접수 폼·오시는 길) */
+  onJump: (id: string) => void;
+  /** 새 창 주소를 만든다. 로컬·미리보기에서는 /sites/{주소} 가 앞에 붙는다 */
+  hrefFor: (path: string) => string;
 }
 
 /** 사진은 6초, 영상은 14초 뒤에 다음 장으로. 영상을 6초 만에 끊으면 본 것도 안 본 것도 아니다 */
@@ -27,7 +30,7 @@ const VIDEO_MS = 14000;
  * 문구는 편집기에 적힌 그대로만 그린다. 비어 있으면 그 줄은 없다 — 여기서 기본
  * 문구로 되돌리면 중개사가 지워도 계속 살아나서 지울 방법이 없어진다.
  */
-export default function HeroSection({ officeName, theme, cfg, onCta }: Props) {
+export default function HeroSection({ officeName, theme, cfg, onJump, hrefFor }: Props) {
   const slides: HeroSlide[] = heroSlides(cfg);
   const [idx, setIdx] = useState(0);
   const [muted, setMuted] = useState(true);
@@ -58,6 +61,47 @@ export default function HeroSection({ officeName, theme, cfg, onCta }: Props) {
   };
 
   const go = (next: number) => setIdx((next + slides.length) % slides.length);
+
+  /**
+   * 버튼이 하는 일은 장마다 다르다. 접수·오시는 길은 이 페이지 안에서 움직이고,
+   * 매물·기사는 다른 섹션에서 카드를 눌렀을 때와 똑같이 연다 — 같은 물건이
+   * 어디서 눌렀느냐에 따라 다르게 열리면 안 된다.
+   */
+  const cta = current.cta || {};
+  const ctaLabel = cta.label ?? "";
+  const handleCta = () => {
+    switch (cta.type) {
+      case "location":
+        onJump("location");
+        break;
+      case "vacancy":
+        if (!cta.vacancyId) return onJump("vacancy");
+        openDetailFromHome({
+          phoneHref: hrefFor(`/m/gongsil/detail/${cta.vacancyId}`),
+          pcHref: hrefFor(`/gongsil/detail/${cta.vacancyId}`),
+          windowName: `gongsil_popup_${cta.vacancyId}`,
+        });
+        break;
+      case "article":
+        if (!cta.articleId) return onJump("article");
+        openDetailFromHome({
+          phoneHref: hrefFor(`/m/news/${cta.articleId}`),
+          pcHref: hrefFor(`/news/${cta.articleId}`),
+          windowName: `gongsil_article_popup_${cta.articleId}`,
+          width: Math.min(1180, Math.max(900, (typeof window !== "undefined" ? window.screen.width : 1280) - 260)),
+          height: Math.max(700, (typeof window !== "undefined" ? window.screen.height : 900) - 160),
+        });
+        break;
+      case "url":
+        if (cta.url) {
+          const href = cta.url.startsWith("http") ? cta.url : `https://${cta.url}`;
+          window.open(href, "_blank", "noopener,noreferrer");
+        }
+        break;
+      default:
+        onJump("intake");
+    }
+  };
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchX.current = e.touches[0]?.clientX ?? null;
@@ -189,23 +233,25 @@ export default function HeroSection({ officeName, theme, cfg, onCta }: Props) {
           </p>
         )}
 
-        <button
-          type="button"
-          onClick={onCta}
-          style={{
-            padding: "17px 42px",
-            background: theme.primary,
-            color: "#fff",
-            border: "none",
-            borderRadius: 999,
-            fontSize: 17,
-            fontWeight: 900,
-            cursor: "pointer",
-            boxShadow: `0 12px 30px ${theme.primary}66`,
-          }}
-        >
-          {cfg?.cta_label || "1분이면 접수 끝"}
-        </button>
+        {ctaLabel && (
+          <button
+            type="button"
+            onClick={handleCta}
+            style={{
+              padding: "17px 42px",
+              background: theme.primary,
+              color: "#fff",
+              border: "none",
+              borderRadius: 999,
+              fontSize: 17,
+              fontWeight: 900,
+              cursor: "pointer",
+              boxShadow: `0 12px 30px ${theme.primary}66`,
+            }}
+          >
+            {ctaLabel}
+          </button>
+        )}
       </div>
 
       {/* 장 넘기는 점 */}

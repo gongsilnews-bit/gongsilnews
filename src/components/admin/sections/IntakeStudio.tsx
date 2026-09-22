@@ -87,13 +87,16 @@ export default function IntakeStudio({ theme, memberId }: Props) {
     theme_color: "teal",
     brand_mode: "both",
     logo_size: "medium",
-    // 첫 화면 슬라이드. 칸 세 개를 미리 깔아두고 중개사가 채우는 만큼만 화면에 나간다.
-    // 첫 장에는 기본 문구를 미리 적어 둔다 — 화면에서 되살리지 않으므로, 여기서
-    // 지우면 그대로 사라진다.
+    // 첫 화면은 한 장으로 시작하고 필요하면 최대 세 장까지 늘린다. 빈 칸을 세 개
+    // 세워두면 안 쓰는 칸까지 채워야 할 것처럼 보인다.
+    // 기본 문구는 여기 적어만 두고 화면에서 되살리지 않는다 — 지우면 그대로 사라진다.
     hero_slides: [
-      { title: HERO_DEFAULTS.title, highlight: HERO_DEFAULTS.highlight, desc: HERO_DEFAULTS.desc },
-      {},
-      {},
+      {
+        title: HERO_DEFAULTS.title,
+        highlight: HERO_DEFAULTS.highlight,
+        desc: HERO_DEFAULTS.desc,
+        cta: { type: "intake", label: HERO_DEFAULTS.cta },
+      },
     ],
     cta_label: "",
     show_seeking: true,
@@ -119,8 +122,11 @@ export default function IntakeStudio({ theme, memberId }: Props) {
           // 슬라이드가 생기기 전에 저장한 중개사는 hero_image·hero_title 만 가지고 있다.
           // 그 값을 1번 칸으로 옮겨줘야 편집기에서 지금 쓰는 화면이 그대로 보인다.
           const filled = heroSlides(d.intake);
-          const padded: HeroSlide[] = [0, 1, 2].map((i) => filled[i] || {});
-          setIntake((prev) => ({ ...prev, ...d.intake, hero_slides: padded }));
+          setIntake((prev) => ({
+            ...prev,
+            ...d.intake,
+            hero_slides: filled.length ? filled : prev.hero_slides,
+          }));
         }
       }
       // 회사 정보는 [정보설정]의 부동산 등록 내용을 그대로 쓴다. 여기서 따로 입력받지 않는다.
@@ -201,15 +207,36 @@ export default function IntakeStudio({ theme, memberId }: Props) {
 
   const slides: HeroSlide[] = Array.isArray(intake.hero_slides) && intake.hero_slides.length
     ? intake.hero_slides.slice(0, MAX_HERO_SLIDES)
-    : [{}, {}, {}];
+    : [{}];
 
-  const setSlide = (i: number, patch: Partial<HeroSlide>) => {
+  const editSlides = (fn: (list: HeroSlide[]) => HeroSlide[]) => {
     setIntake((prev) => {
-      const list: HeroSlide[] = [0, 1, 2].map((n) => (prev.hero_slides?.[n] as HeroSlide) || {});
-      list[i] = { ...list[i], ...patch };
-      return { ...prev, hero_slides: list };
+      const current: HeroSlide[] = Array.isArray(prev.hero_slides) && prev.hero_slides.length
+        ? [...prev.hero_slides].slice(0, MAX_HERO_SLIDES)
+        : [{}];
+      return { ...prev, hero_slides: fn(current).slice(0, MAX_HERO_SLIDES) };
     });
   };
+
+  const setSlide = (i: number, patch: Partial<HeroSlide>) => {
+    editSlides((list) => {
+      while (list.length <= i) list.push({});
+      list[i] = { ...list[i], ...patch };
+      return list;
+    });
+  };
+
+  /** 버튼은 장 안에 들어있다. 장마다 다른 곳으로 보낼 수 있어야 한다 */
+  const setCta = (i: number, patch: Partial<NonNullable<HeroSlide["cta"]>>) => {
+    editSlides((list) => {
+      while (list.length <= i) list.push({});
+      list[i] = { ...list[i], cta: { ...(list[i].cta || {}), ...patch } };
+      return list;
+    });
+  };
+
+  const addSlide = () => editSlides((list) => [...list, { cta: { type: "intake", label: "" } }]);
+  const removeSlide = (i: number) => editSlides((list) => list.filter((_, n) => n !== i));
 
   const onSlidePhoto = async (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -531,10 +558,11 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                         <div style={group}>
                           <label style={label}>첫 화면 (최대 3장)</label>
                           <p style={{ margin: "0 0 12px", fontSize: 12.5, color: sub, lineHeight: 1.6 }}>
-                            사진이나 유튜브 주소를 넣으면 6초(영상은 14초)마다 넘어갑니다.
-                            한 장만 채우면 넘어가지 않고 그 장만 뜹니다. 아무것도 안 넣으면 고른 색으로 채워집니다.
+                            한 장으로 시작합니다. 아래 <strong>[+ 장 추가]</strong>로 최대 3장까지 늘릴 수 있고,
+                            두 장 이상이면 6초(영상은 14초)마다 저절로 넘어갑니다.
+                            사진도 영상도 안 넣으면 고른 색으로 채워집니다.
                             <br />
-                            <strong>문구 칸을 비우면 그 줄은 화면에 나오지 않습니다.</strong> 사진만 크게 보이게 하려면 세 칸을 모두 비우세요.
+                            <strong>문구 칸을 비우면 그 줄은 화면에 나오지 않습니다.</strong> 사진만 크게 보이게 하려면 문구를 모두 비우세요.
                           </p>
 
                           {slides.map((sl, i) => {
@@ -551,15 +579,26 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                                     </span>
                                     {i === 0 ? "첫 장" : `${i + 1}번째 장`}
                                   </span>
-                                  {(sl.image || sl.youtube || sl.title || sl.highlight || sl.desc) && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setSlide(i, { image: "", youtube: "", title: "", highlight: "", desc: "" })}
-                                      style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${border}`, background: "transparent", color: sub, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                                    >
-                                      비우기
-                                    </button>
-                                  )}
+                                  <span style={{ display: "flex", gap: 6 }}>
+                                    {(sl.image || sl.youtube || sl.title || sl.highlight || sl.desc) && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setSlide(i, { image: "", youtube: "", title: "", highlight: "", desc: "" })}
+                                        style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${border}`, background: "transparent", color: sub, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                                      >
+                                        비우기
+                                      </button>
+                                    )}
+                                    {slides.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => removeSlide(i)}
+                                        style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #fca5a5", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                                      >
+                                        장 삭제
+                                      </button>
+                                    )}
+                                  </span>
                                 </div>
 
                                 {sl.image && !vid ? (
@@ -623,15 +662,99 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                                     placeholder="연락처만 남겨 주시면 확인 후 바로 연락드립니다."
                                   />
                                 </div>
+
+                                {/* 버튼 — 장마다 보내는 곳이 다를 수 있다 */}
+                                <div style={{ borderTop: `1px solid ${border}`, paddingTop: 12, marginBottom: 14 }}>
+                                  <label style={{ ...label, marginBottom: 5 }}>버튼 문구</label>
+                                  <input
+                                    style={field}
+                                    value={sl.cta?.label ?? ""}
+                                    onChange={(e) => setCta(i, { label: e.target.value })}
+                                    placeholder="1분이면 접수 끝"
+                                  />
+                                  <p style={{ margin: "6px 0 12px", fontSize: 12, color: sub }}>비우면 이 장에는 버튼이 나오지 않습니다.</p>
+
+                                  <label style={{ ...label, marginBottom: 5 }}>누르면</label>
+                                  <select
+                                    style={field}
+                                    value={sl.cta?.type || "intake"}
+                                    onChange={(e) => setCta(i, { type: e.target.value as any })}
+                                  >
+                                    <option value="intake">물건 접수로 이동</option>
+                                    <option value="location">오시는 길로 이동</option>
+                                    <option value="vacancy">매물 하나 열기</option>
+                                    <option value="article">기사 하나 열기</option>
+                                    <option value="url">주소 직접 입력</option>
+                                  </select>
+
+                                  {sl.cta?.type === "vacancy" && (
+                                    <div style={{ marginTop: 8 }}>
+                                      <select
+                                        style={field}
+                                        value={sl.cta?.vacancyId || ""}
+                                        onChange={(e) => setCta(i, { vacancyId: e.target.value })}
+                                      >
+                                        <option value="">매물을 고르세요</option>
+                                        {vacancies.map((v: any) => (
+                                          <option key={v.id} value={v.id}>
+                                            {[v.trade_type, v.building_name || [v.sigungu, v.dong].filter(Boolean).join(" ")].filter(Boolean).join(" · ")}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      {!vacancies.length && (
+                                        <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444", fontWeight: 700 }}>
+                                          공실등록에 올린 매물이 없습니다.
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {sl.cta?.type === "article" && (
+                                    <div style={{ marginTop: 8 }}>
+                                      <select
+                                        style={field}
+                                        value={sl.cta?.articleId || ""}
+                                        onChange={(e) => setCta(i, { articleId: e.target.value })}
+                                      >
+                                        <option value="">기사를 고르세요</option>
+                                        {articles.map((a: any) => (
+                                          <option key={a.id} value={String(a.article_no || a.id)}>
+                                            {a.title}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      {!articles.length && (
+                                        <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444", fontWeight: 700 }}>
+                                          발행된 기사가 없습니다.
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {sl.cta?.type === "url" && (
+                                    <input
+                                      style={{ ...field, marginTop: 8 }}
+                                      value={sl.cta?.url || ""}
+                                      onChange={(e) => setCta(i, { url: e.target.value })}
+                                      placeholder="https://..."
+                                    />
+                                  )}
+                                </div>
                               </div>
                             );
                           })}
+
+                          {slides.length < MAX_HERO_SLIDES && (
+                            <button
+                              type="button"
+                              onClick={addSlide}
+                              style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1px dashed ${border}`, background: "transparent", color: sub, fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}
+                            >
+                              + 장 추가 ({slides.length}/{MAX_HERO_SLIDES})
+                            </button>
+                          )}
                         </div>
 
-                        <div style={group}>
-                          <label style={label}>버튼 문구</label>
-                          <input style={field} value={intake.cta_label || ""} onChange={(e) => setIntake({ ...intake, cta_label: e.target.value })} placeholder="1분이면 접수 끝" />
-                        </div>
                       </>
                     )}
 
