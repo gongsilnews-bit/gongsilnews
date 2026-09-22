@@ -60,6 +60,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string>("");
+  const [shareNotice, setShareNotice] = useState("");
   const [error, setError] = useState("");
   const [open, setOpen] = useState<PanelKey>("basic");
   const [device, setDevice] = useState<"pc" | "mobile">("pc");
@@ -254,6 +255,34 @@ export default function IntakeStudio({ theme, memberId }: Props) {
     setSavedAt(new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
   };
 
+  const handleShare = async () => {
+    if (!liveUrl) return;
+    setShareNotice("");
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: siteTitle || "물건접수장",
+          text: `${siteTitle || "물건접수장"} 홈페이지`,
+          url: liveUrl,
+        });
+        setShareNotice("공유 완료");
+      } else {
+        await navigator.clipboard.writeText(liveUrl);
+        setShareNotice("주소 복사됨");
+      }
+      window.setTimeout(() => setShareNotice(""), 2000);
+    } catch (shareError) {
+      if (shareError instanceof DOMException && shareError.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(liveUrl);
+        setShareNotice("주소 복사됨");
+        window.setTimeout(() => setShareNotice(""), 2000);
+      } catch {
+        setError("공유하지 못했습니다. URL 바로가기를 길게 눌러 주소를 복사해 주세요.");
+      }
+    }
+  };
+
   // 미리보기에 넘길 값. 저장 전에도 편집 중인 값이 그대로 보인다.
   const previewSettings = {
     site_title: siteTitle,
@@ -315,9 +344,33 @@ export default function IntakeStudio({ theme, memberId }: Props) {
     <div style={{ flex: 1, display: "flex", gap: 16, margin: 16, marginBottom: 0, minHeight: 0 }}>
       {/* ── 좌측: 편집 패널 ── */}
       <div style={{ width: 400, flexShrink: 0, display: "flex", flexDirection: "column", background: cardBg, border: `1px solid ${border}`, borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ padding: "18px 20px", borderBottom: `1px solid ${border}` }}>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: text }}>물건접수장</h2>
+        <div style={{ padding: "18px 20px 14px", borderBottom: `1px solid ${border}` }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: text }}>물건접수장</h2>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isActive}
+              onClick={() => setIsActive((current) => !current)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0, padding: "6px 10px", border: `1px solid ${isActive ? "#86efac" : border}`, borderRadius: 999, background: isActive ? (dark ? "#052e24" : "#f0fdf4") : (dark ? "#111827" : "#f8fafc"), color: isActive ? "#059669" : sub, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}
+            >
+              <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "#10b981" : "#9ca3af" }} />
+              {isActive ? "사용 중" : "사용 안 함"}
+            </button>
+          </div>
           <p style={{ margin: "5px 0 0", fontSize: 12.5, color: sub }}>임대인이 물건을 맡기는 페이지입니다</p>
+          {liveUrl && (
+            <div style={{ display: "flex", alignItems: "stretch", gap: 7, marginTop: 13 }}>
+              <a href={liveUrl} target="_blank" rel="noreferrer" title={liveUrl} style={{ minWidth: 0, flex: 1, display: "flex", alignItems: "center", gap: 6, padding: "9px 11px", border: `1px solid ${border}`, borderRadius: 8, background: dark ? "#111827" : "#f8fafc", color: text, fontSize: 12.5, fontWeight: 700, textDecoration: "none" }}>
+                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{liveUrl}</span>
+                <span aria-hidden style={{ flexShrink: 0 }}>↗</span>
+              </a>
+              <button type="button" onClick={handleShare} style={{ flexShrink: 0, padding: "0 12px", border: `1px solid ${border}`, borderRadius: 8, background: cardBg, color: text, fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>
+                공유하기
+              </button>
+            </div>
+          )}
+          {shareNotice && <p role="status" style={{ margin: "7px 0 0", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#059669" }}>{shareNotice}</p>}
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
@@ -473,11 +526,6 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                           </div>
                         </div>
 
-                        <label style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}>
-                          <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} style={{ width: 17, height: 17, accentColor: "#059669" }} />
-                          <span style={{ fontSize: 14, fontWeight: 700, color: text }}>접수 받는 중</span>
-                        </label>
-                        <p style={{ margin: "5px 0 0 26px", fontSize: 12.5, color: sub }}>끄면 주소로 들어와도 접수가 되지 않습니다</p>
                       </>
                     )}
 
@@ -702,11 +750,6 @@ export default function IntakeStudio({ theme, memberId }: Props) {
           >
             {saving ? "저장 중…" : "저장하기"}
           </button>
-          {liveUrl && (
-            <a href={liveUrl} target="_blank" rel="noreferrer" style={{ display: "block", marginTop: 9, textAlign: "center", fontSize: 12.5, fontWeight: 700, color: sub, textDecoration: "none" }}>
-              {liveUrl} ↗
-            </a>
-          )}
         </div>
       </div>
 
