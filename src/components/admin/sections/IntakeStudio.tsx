@@ -72,11 +72,8 @@ export default function IntakeStudio({ theme, memberId }: Props) {
 
   const [subdomain, setSubdomain] = useState("");
   const [initialSubdomain, setInitialSubdomain] = useState("");
-  const [changeAddressOpen, setChangeAddressOpen] = useState(false);
-  const [requestedSubdomain, setRequestedSubdomain] = useState("");
   const [requestingAddress, setRequestingAddress] = useState(false);
-  const [subdomainChangeCount, setSubdomainChangeCount] = useState(0);
-  const [subdomainChangedAt, setSubdomainChangedAt] = useState<string | null>(null);
+  const [addressMessage, setAddressMessage] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [subStatus, setSubStatus] = useState<"idle" | "checking" | "ok" | "taken" | "invalid">("idle");
   const subTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -113,8 +110,6 @@ export default function IntakeStudio({ theme, memberId }: Props) {
         const d: any = res.data;
         setSubdomain(d.subdomain || "");
         setInitialSubdomain(d.subdomain || "");
-        setSubdomainChangeCount(d.subdomain_change_count || 0);
-        setSubdomainChangedAt(d.subdomain_changed_at || null);
         setIsActive(d.is_active !== false);
         setLogoUrl(d.logo_url || null);
         setSiteTitle(d.site_title || "");
@@ -157,7 +152,9 @@ export default function IntakeStudio({ theme, memberId }: Props) {
   const onSubdomainChange = (v: string) => {
     const next = v.toLowerCase().replace(/[^a-z0-9-]/g, "");
     setSubdomain(next);
+    setAddressMessage("");
     if (subTimer.current) clearTimeout(subTimer.current);
+    if (next === initialSubdomain) return setSubStatus("idle");
     if (!next) return setSubStatus("idle");
     if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(next) || next.length < 2 || next.length > 30) {
       return setSubStatus("invalid");
@@ -171,18 +168,15 @@ export default function IntakeStudio({ theme, memberId }: Props) {
 
   const handleAddressChange = async () => {
     setError("");
+    setAddressMessage("");
+    if (subStatus !== "ok") return;
     setRequestingAddress(true);
-    const res = await changeHomepageSubdomain(memberId, requestedSubdomain);
+    const res = await changeHomepageSubdomain(memberId, subdomain);
     setRequestingAddress(false);
     if (!res.success) return setError(res.error || "주소 변경에 실패했습니다.");
-    const next = requestedSubdomain.trim().toLowerCase();
-    setSubdomain(next);
-    setInitialSubdomain(next);
-    setSubdomainChangeCount((res as any).changeCount || subdomainChangeCount + 1);
-    setSubdomainChangedAt((res as any).changedAt || new Date().toISOString());
-    setChangeAddressOpen(false);
-    setRequestedSubdomain("");
-    setSavedAt(new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
+    setInitialSubdomain(subdomain);
+    setSubStatus("idle");
+    setAddressMessage("홈페이지 주소가 변경되었습니다.");
   };
 
   const onLogoPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,16 +323,8 @@ export default function IntakeStudio({ theme, memberId }: Props) {
     );
   }
 
-  const liveUrl = subdomain ? `https://${subdomain}.gongsilnews.com` : "";
-  const nextAddressChangeAt = subdomainChangeCount >= 3 && subdomainChangedAt
-    ? (() => {
-        const date = new Date(subdomainChangedAt);
-        date.setMonth(date.getMonth() + 3);
-        return date;
-      })()
-    : null;
-  const canChangeAddress = !nextAddressChangeAt || nextAddressChangeAt <= new Date();
-  const immediateChangesLeft = Math.max(0, 3 - subdomainChangeCount);
+  const liveSubdomain = initialSubdomain || subdomain;
+  const liveUrl = liveSubdomain ? `https://${liveSubdomain}.gongsilnews.com` : "";
 
   return (
     <div style={{ flex: 1, display: "flex", gap: 16, margin: 16, marginBottom: 0, minHeight: 0 }}>
@@ -410,51 +396,29 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                           <label style={label}>접수장 주소</label>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <input
-                              style={{ ...field, flex: 1, background: initialSubdomain ? (dark ? "#1f2937" : "#f3f4f6") : field.background }}
+                              style={{ ...field, flex: 1 }}
                               value={subdomain}
                               onChange={(e) => onSubdomainChange(e.target.value)}
                               placeholder="gongsilmarketing"
-                              readOnly={Boolean(initialSubdomain)}
                             />
                             <span style={{ fontSize: 12.5, color: sub, whiteSpace: "nowrap" }}>.gongsilnews.com</span>
                           </div>
-                          <p style={{ margin: "7px 0 0", fontSize: 12.5, fontWeight: 700, color: subStatus === "ok" ? "#059669" : subStatus === "idle" || subStatus === "checking" ? sub : "#dc2626" }}>
+                          <p style={{ margin: "7px 0 0", fontSize: 12.5, fontWeight: 700, color: subStatus === "ok" || addressMessage ? "#059669" : subStatus === "idle" || subStatus === "checking" ? sub : "#dc2626" }}>
                             {subStatus === "checking" && "확인 중…"}
                             {subStatus === "ok" && "사용할 수 있는 주소입니다"}
-                            {subStatus === "taken" && "이미 사용 중입니다"}
-                            {subStatus === "invalid" && "영문 소문자·숫자·하이픈 2~30자"}
-                            {subStatus === "idle" && (initialSubdomain ? "공개된 주소입니다. 변경 시 기존 링크와 명함에 영향을 줍니다." : "명함이나 문자로 보낼 주소입니다")}
-                          </p>
-                          {initialSubdomain && (
-                            <div style={{ marginTop: 10, padding: "9px 11px", borderRadius: 8, background: dark ? "#111827" : "#f8fafc", color: sub, fontSize: 12, lineHeight: 1.55 }}>
-                              {immediateChangesLeft > 0
-                                ? `대기 없이 ${immediateChangesLeft}번 더 변경할 수 있습니다.`
-                                : canChangeAddress
-                                  ? "지금 변경할 수 있습니다. 이후에는 다시 3개월을 기다려야 합니다."
-                                  : `다음 변경 가능일: ${nextAddressChangeAt!.toLocaleDateString("ko-KR")}`}
-                            </div>
-                          )}
-                          {initialSubdomain && !changeAddressOpen && (
-                            <button type="button" disabled={!canChangeAddress} onClick={() => setChangeAddressOpen(true)} style={{ marginTop: 10, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 8, background: "transparent", color: text, fontSize: 12.5, fontWeight: 700, cursor: canChangeAddress ? "pointer" : "not-allowed", opacity: canChangeAddress ? 1 : 0.5 }}>
-                              주소 변경
+                             {subStatus === "taken" && "이미 사용 중입니다"}
+                             {subStatus === "invalid" && "영문 소문자·숫자·하이픈 2~30자"}
+                             {subStatus === "idle" && (addressMessage || (initialSubdomain ? "현재 사용 중인 주소입니다" : "명함이나 문자로 보낼 주소입니다"))}
+                           </p>
+                          {initialSubdomain && subdomain !== initialSubdomain && (
+                            <button
+                              type="button"
+                              disabled={requestingAddress || subStatus !== "ok"}
+                              onClick={handleAddressChange}
+                              style={{ width: "100%", marginTop: 10, padding: "10px 12px", border: "none", borderRadius: 8, background: "#059669", color: "#fff", fontSize: 13, fontWeight: 800, cursor: requestingAddress || subStatus !== "ok" ? "not-allowed" : "pointer", opacity: requestingAddress || subStatus !== "ok" ? 0.5 : 1 }}
+                            >
+                              {requestingAddress ? "변경 중…" : "변경하기"}
                             </button>
-                          )}
-                          {initialSubdomain && changeAddressOpen && (
-                            <div style={{ marginTop: 10, padding: 12, border: `1px solid ${border}`, borderRadius: 8 }}>
-                              <p style={{ margin: "0 0 10px", fontSize: 12, color: sub, lineHeight: 1.55 }}>
-                                변경하면 기존 명함·QR·공유 링크와 검색 노출에 영향을 줄 수 있습니다. 저장 즉시 새 주소로 변경됩니다.
-                              </p>
-                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                                <input style={{ ...field, flex: 1 }} value={requestedSubdomain} onChange={(e) => setRequestedSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="새 주소" />
-                                <span style={{ fontSize: 12, color: sub }}>.gongsilnews.com</span>
-                              </div>
-                              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-                                <button type="button" onClick={() => setChangeAddressOpen(false)} style={{ padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 7, background: "transparent", color: sub, cursor: "pointer" }}>취소</button>
-                                <button type="button" disabled={requestingAddress || !requestedSubdomain} onClick={handleAddressChange} style={{ padding: "8px 12px", border: "none", borderRadius: 7, background: "#059669", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: requestingAddress || !requestedSubdomain ? 0.55 : 1 }}>
-                                  {requestingAddress ? "변경 중..." : "바로 변경"}
-                                </button>
-                              </div>
-                            </div>
                           )}
                         </div>
 
