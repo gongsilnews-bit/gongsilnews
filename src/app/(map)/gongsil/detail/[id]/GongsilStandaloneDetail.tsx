@@ -11,6 +11,19 @@ interface GongsilStandaloneDetailProps {
   photos: any[];
   flyer: any;
   agencyInfo: any;
+  hideFalseListingReport?: boolean;
+  /** 인쇄 버튼 숨김 */
+  hidePrint?: boolean;
+  /** 찜(관심공실광고) 버튼 숨김 */
+  hideWishlist?: boolean;
+  /**
+   * 공유(카카오톡·URL 복사)로 내보낼 주소.
+   * 비워두면 공실뉴스 포털 주소로 나간다. 중개사 도메인에서 열렸을 때는 그 중개사
+   * 주소를 넘긴다 — 퍼 나른 링크가 포털이 아니라 중개사에게 사람을 보낸다.
+   */
+  shareUrl?: string;
+  /** 공유 카드에 붙는 이름. 비우면 "공실뉴스" */
+  shareSiteName?: string;
 }
 
 export default function GongsilStandaloneDetail({
@@ -18,6 +31,11 @@ export default function GongsilStandaloneDetail({
   photos,
   flyer,
   agencyInfo: initialAgencyInfo,
+  hideFalseListingReport = false,
+  hidePrint = false,
+  hideWishlist = false,
+  shareUrl,
+  shareSiteName,
 }: GongsilStandaloneDetailProps) {
   // Combine photos to ensure images array is complete
   const [vacancy, setVacancy] = useState(() => {
@@ -335,25 +353,26 @@ export default function GongsilStandaloneDetail({
     }
     const addrText = getCleanAddrText(prop);
     const priceText = getPriceText(prop);
-    const shareUrl = `https://gongsilnews.com/gongsil/detail/${prop.id}`;
+    const outboundUrl = shareUrl || `https://gongsilnews.com/gongsil/detail/${prop.id}`;
+    const outboundSite = shareSiteName || "공실뉴스";
     const imageUrl = prop.images?.[0] || "";
 
     Kakao.Share.sendDefault({
       objectType: "feed",
       content: {
         title: `${addrText} ${priceText}`,
-        description: `${prop.property_type || "부동산"} · ${prop.exclusive_m2 || 0}㎡`,
+        description: `${prop.property_type || "부동산"} · ${prop.exclusive_m2 || 0}㎡ | ${outboundSite}`,
         imageUrl: imageUrl,
-        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+        link: { mobileWebUrl: outboundUrl, webUrl: outboundUrl },
       },
-      buttons: [{ title: "공실 상세 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }],
+      buttons: [{ title: "공실 상세 보기", link: { mobileWebUrl: outboundUrl, webUrl: outboundUrl } }],
     });
     setShowShareDropdown(false);
   };
 
   // Copy URL
   const handleCopyUrl = (propId: any) => {
-    const url = `${window.location.origin}/gongsil/detail/${propId}`;
+    const url = shareUrl || `${window.location.origin}/gongsil/detail/${propId}`;
     navigator.clipboard
       .writeText(url)
       .then(() => setToastMessage("상세보기 링크가 복사되었습니다."))
@@ -452,6 +471,9 @@ export default function GongsilStandaloneDetail({
         isAuctionMode={isAuctionMode}
         isStandalone={true}
         isAuthChecking={authChecking}
+        hideFalseListingReport={hideFalseListingReport}
+        hidePrint={hidePrint}
+        hideWishlist={hideWishlist}
       />
 
       {/* 갤러리 풀스크린 모달 */}

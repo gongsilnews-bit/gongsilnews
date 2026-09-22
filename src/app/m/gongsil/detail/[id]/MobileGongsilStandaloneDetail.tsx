@@ -10,6 +10,11 @@ interface MobileGongsilStandaloneDetailProps {
   photos: any[];
   agencyInfo: any;
   ownerVacancies?: any[];
+  hideFalseListingReport?: boolean;
+  /** 공유로 내보낼 주소. 비우면 지금 보고 있는 주소 그대로 */
+  shareUrl?: string;
+  /** 공유 카드에 붙는 이름. 비우면 "공실뉴스" */
+  shareSiteName?: string;
 }
 
 // 🌟 글로벌 금액 포맷터 (기존 소스 100% 동일)
@@ -70,6 +75,9 @@ export default function MobileGongsilStandaloneDetail({
   vacancy,
   photos,
   agencyInfo,
+  hideFalseListingReport = false,
+  shareUrl,
+  shareSiteName,
 }: MobileGongsilStandaloneDetailProps) {
   const router = useRouter();
   const [detailTab, setDetailTab] = useState<"info" | "realtor">("info");
@@ -102,7 +110,7 @@ export default function MobileGongsilStandaloneDetail({
 
   const handleCopyUrl = () => {
     if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(shareUrl || window.location.href);
       alert("URL이 복사되었습니다.");
       setShowShareDropdown(false);
     }
@@ -118,10 +126,13 @@ export default function MobileGongsilStandaloneDetail({
       kakao.Share.sendDefault({
         objectType: "feed",
         content: {
-          title: getCleanAddrText(selectedVacancy) || "공실뉴스 매물",
-          description: `${selectedVacancy.trade_type} ${formatPrice(selectedVacancy)}`,
+          title: getCleanAddrText(selectedVacancy) || `${shareSiteName || "공실뉴스"} 매물`,
+          description: `${selectedVacancy.trade_type} ${formatPrice(selectedVacancy)} | ${shareSiteName || "공실뉴스"}`,
           imageUrl: selectedVacancy.images?.[0] || "",
-          link: { mobileWebUrl: window.location.href, webUrl: window.location.href },
+          link: {
+            mobileWebUrl: shareUrl || window.location.href,
+            webUrl: shareUrl || window.location.href,
+          },
         },
       });
       setShowShareDropdown(false);
@@ -345,12 +356,14 @@ export default function MobileGongsilStandaloneDetail({
                   {selectedVacancy.created_at ? new Date(selectedVacancy.created_at).toLocaleDateString("ko-KR").slice(0, -1) : ""}
                 </span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "bold", display: "inline-flex", alignItems: "center", gap: "3px", cursor: "pointer" }} onClick={() => alert("허위공실광고 신고 센터로 연결됩니다.")}>
-                  <span style={{ display: "inline-block", width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#ef4444" }}></span>
-                  허위공실광고신고
-                </span>
-              </div>
+              {!hideFalseListingReport && (
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <span style={{ fontSize: "12px", color: "#ef4444", fontWeight: "bold", display: "inline-flex", alignItems: "center", gap: "3px", cursor: "pointer" }} onClick={() => alert("허위공실광고 신고 센터로 연결됩니다.")}>
+                    <span style={{ display: "inline-block", width: "5px", height: "5px", borderRadius: "50%", backgroundColor: "#ef4444" }}></span>
+                    허위공실광고신고
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Row 2: Title */}

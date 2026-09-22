@@ -87,7 +87,8 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor }
   const openDetail = (v: any) => {
     const isPhone = typeof window !== "undefined" && window.innerWidth < 821;
     if (isPhone) {
-      window.open(hrefFor(`/m/gongsil/detail/${v.id}`), "_blank", "noopener,noreferrer");
+      // 같은 탭으로 이동해야 뒤로가기로 원래 홈페이지와 스크롤 위치에 복귀한다.
+      window.location.assign(hrefFor(`/m/gongsil/detail/${v.id}`));
       return;
     }
     const popupW = 620;

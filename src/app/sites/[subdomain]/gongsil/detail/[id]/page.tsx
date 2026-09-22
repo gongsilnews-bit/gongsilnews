@@ -58,6 +58,16 @@ export default async function SubdomainGongsilDetailPage({ params }: PageProps) 
     if (agencyRes.success) agencyInfo = agencyRes.data;
   }
 
+  // 퍼 나른 링크가 포털이 아니라 이 중개사에게 사람을 보내도록 공유 주소를 중개사 것으로 준다.
+  // 로컬에서 누르든 어디서 누르든 공유는 실제 서비스 주소여야 하므로 여기서 직접 만든다.
+  const officeName =
+    siteRes.data?.settings?.site_title ||
+    siteRes.data?.companyProfile?.name ||
+    siteRes.data?.companyProfile?.company_name ||
+    siteRes.data?.member?.name ||
+    "부동산";
+  const shareUrl = `https://${subdomain}.gongsilnews.com/gongsil/detail/${vacancy.id}`;
+
   return (
     <Suspense
       fallback={
@@ -71,6 +81,11 @@ export default async function SubdomainGongsilDetailPage({ params }: PageProps) 
         photos={(res as any)?.photos || []}
         flyer={(res as any)?.flyer || null}
         agencyInfo={agencyInfo}
+        hideFalseListingReport
+        hidePrint
+        hideWishlist
+        shareUrl={shareUrl}
+        shareSiteName={officeName}
       />
     </Suspense>
   );

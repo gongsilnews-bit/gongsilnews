@@ -56,6 +56,11 @@ interface GongsilDetailPanelProps {
   isAuctionMode: boolean;
   isStandalone?: boolean;
   isAuthChecking?: boolean;
+  hideFalseListingReport?: boolean;
+  /** 인쇄 버튼 숨김 */
+  hidePrint?: boolean;
+  /** 찜(관심공실광고) 버튼 숨김. 공실뉴스 로그인이 있어야 동작한다 */
+  hideWishlist?: boolean;
 }
 
 export default function GongsilDetailPanel({
@@ -99,6 +104,9 @@ export default function GongsilDetailPanel({
   isAuctionMode,
   isStandalone = false,
   isAuthChecking = false,
+  hideFalseListingReport = false,
+  hidePrint = false,
+  hideWishlist = false,
   onPanToMap,
 }: GongsilDetailPanelProps) {
   if (!showDetail || !activeProperty) return null;
@@ -327,38 +335,42 @@ export default function GongsilDetailPanel({
               )}
             </div>
             <div style={{ display: "flex", gap: 10, fontSize: 11 }}>
-              <button
-                onClick={() => alert("준비중입니다.")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#ff5a5f",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: 0,
-                  fontSize: 11,
-                }}
-              >
-                ● 허위공실광고신고
-              </button>
-              <button
-                onClick={() => handlePrint(prop)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#666",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: 0,
-                  fontSize: 11,
-                }}
-              >
-                🖨 인쇄
-              </button>
+              {!hideFalseListingReport && (
+                <button
+                  onClick={() => alert("준비중입니다.")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#ff5a5f",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: 0,
+                    fontSize: 11,
+                  }}
+                >
+                  ● 허위공실광고신고
+                </button>
+              )}
+              {!hidePrint && (
+                <button
+                  onClick={() => handlePrint(prop)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#666",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: 0,
+                    fontSize: 11,
+                  }}
+                >
+                  🖨 인쇄
+                </button>
+              )}
             </div>
           </div>
           <h2 style={{ fontSize: 15, fontWeight: "bold", color: "#333", margin: "0 0 6px 0" }}>{getCleanAddrText(prop)}</h2>
@@ -425,6 +437,7 @@ export default function GongsilDetailPanel({
               <h1 style={{ fontSize: 26, fontWeight: 800, color: isAuctionMode ? "#1a4282" : "#1f5edb", margin: 0 }}>{getPriceText(prop)}</h1>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
+              {!hideWishlist && (
               <button
                 onClick={() => toggleWishlist(prop.id)}
                 style={{
@@ -454,6 +467,7 @@ export default function GongsilDetailPanel({
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
                 </svg>
               </button>
+              )}
               <button
                 onClick={() => setShowShareDropdown(!showShareDropdown)}
                 style={{
