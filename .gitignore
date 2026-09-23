@@ -54,4 +54,5 @@ next-env.d.ts
 # scratch and temp files
 /scratch/
 scratch_*
+chrome-extension/_metadata/
 

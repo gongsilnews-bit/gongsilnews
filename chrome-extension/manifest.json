@@ -1,0 +1,62 @@
+{
+  "manifest_version": 3,
+  "name": "공실뉴스 매물기사초안 V1.0",
+  "version": "1.0.0",
+  "description": "웹서핑 중 기사 및 매물 정보를 챗GPT·제미나이 웹 로그인을 통해 방송 나레이션 대본, 정통 분석 기사, 블로그 원고로 원클릭 재가공합니다.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "공실뉴스 매물기사초안 V1.0 열기"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "sidePanel",
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs",
+    "contextMenus",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://*.chatgpt.com/*",
+    "https://gemini.google.com/*",
+    "https://*.google.com/*",
+    "<all_urls>"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+G",
+        "mac": "Alt+G"
+      },
+      "description": "공실뉴스 사이드패널 열기"
+    }
+  }
+}
