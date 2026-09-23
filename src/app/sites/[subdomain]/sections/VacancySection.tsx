@@ -5,7 +5,6 @@ import Carousel from "./Carousel";
 import SectionTitle from "./SectionTitle";
 import { vacancyPrice, toPyeong, type Theme } from "../theme";
 import OpenVeil from "./OpenVeil";
-import { supportsViewTransition } from "../viewTransition";
 
 interface Props {
   officeName: string;
@@ -123,17 +122,15 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
     const isPhone = typeof window !== "undefined" && window.innerWidth < 821;
     if (isPhone) {
       // 같은 탭으로 이동해야 뒤로가기로 원래 홈페이지와 스크롤 위치에 복귀한다.
-      if (supportsViewTransition()) {
-        /*
-         * 누른 카드의 사진에 다음 화면의 첫 사진과 같은 이름을 단다. 그러면
-         * 브라우저가 이 사진이 저 사진으로 자라나는 움직임을 알아서 그린다.
-         * 이름은 문서에 하나만 있어야 하므로 누른 것에만 붙인다.
-         */
-        card?.querySelector<HTMLElement>(".gs-card-shot")?.style.setProperty("view-transition-name", "gs-open");
-      } else {
-        // 전환을 모르는 브라우저에서는 기다리는 동안 막을 덮는다
-        setOpening(true);
-      }
+      /*
+       * 눌리자마자 막을 덮는다.
+       *
+       * 문서 간 View Transition 도 붙여 보았으나, 그것은 새 화면이 다 준비된
+       * 뒤에야 움직이기 시작한다 — 느릴 때는 여전히 아무 일도 일어나지 않고,
+       * 출발과 도착 사진의 모양이 달라 찌그러지며 잔상이 남았다.
+       * 늦게 뜨는 것을 가려주는 일은 막이 더 잘한다.
+       */
+      setOpening(true);
       window.location.assign(hrefFor(`/m/gongsil/detail/${v.id}`));
       return;
     }

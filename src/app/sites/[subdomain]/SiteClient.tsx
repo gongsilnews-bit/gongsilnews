@@ -10,7 +10,6 @@ import ContactSection from "./sections/ContactSection";
 import MobileBottomBar from "./sections/MobileBottomBar";
 import { clampIntro, pickTheme, scrollToSection } from "./theme";
 import { isPermissionAlive } from "@/utils/planCheck";
-import { VIEW_TRANSITION_CSS } from "./viewTransition";
 
 interface Props {
   subdomain: string;
@@ -241,7 +240,6 @@ export default function SiteClient({
           .gs-vacancy-card:hover { box-shadow: 0 6px 18px rgba(16,24,40,.14); transform: translateY(-2px); }
         }
         .gs-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-        ${VIEW_TRANSITION_CSS}
         .gs-scroll-x::-webkit-scrollbar { display: none; }
         .gs-page { padding-bottom: 74px; }
         .gs-bottombar { display: flex; }
