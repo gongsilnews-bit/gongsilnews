@@ -201,6 +201,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
           return (
             <a
               key={it.id}
+              className="gs-nav-link"
               data-chip={it.id}
               {...anchor(it.id)}
               style={{
@@ -213,9 +214,10 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
                 height: 45,
                 background: "none",
                 border: "none",
-                fontSize: 15,
-                fontWeight: on ? 900 : 600,
-                color: on ? theme.primary : "#8b95a1",
+                // 메뉴는 손님이 길을 찾는 곳이다. 흐린 회색이면 눌러도 되는 줄 모른다.
+                // 글자 크기는 .gs-nav-link 에서 잡는다 — 폰 17px, PC 19px.
+                fontWeight: on ? 900 : 800,
+                color: on ? theme.primary : "#111827",
                 cursor: "pointer",
                 whiteSpace: "nowrap",
                 letterSpacing: "-0.3px",
