@@ -19,54 +19,29 @@ export async function getCustomers(ownerId: string) {
   const { data: agency } = await supabase.from("agencies").select("id").eq("owner_id", ownerId).single();
   if (!agency) return { success: false, message: "부동산 정보를 찾을 수 없습니다." };
 
+  /*
+   * 최근 문의 순으로 준다.
+   *
+   * 예전에는 고객을 전부 불러온 뒤 그 id 를 한 줄에 붙여 crm_logs 를 조회하고
+   * 앱에서 정렬했다. 로그를 1,000건까지만 봤기 때문에 그 선을 넘은 고객은
+   * 최근 문의가 비어 뒤로 밀렸다 — 오늘 들어온 문의를 중개사가 못 보는 것이다.
+   * 고객이 수천이면 id 를 붙인 요청이 길이 제한을 넘어 조회 자체가 실패했다.
+   *
+   * 지금은 last_contact_at 컬럼을 crm_logs 트리거가 올려 주므로, 여기서는
+   * 정렬만 하면 된다. 조회가 한 번으로 줄고 위 두 가지가 모두 사라진다.
+   */
   const { data, error } = await supabase
     .from("crm_customers")
     .select("*")
     .eq("agency_id", agency.id)
-    .order("created_at", { ascending: false });
+    .order("last_contact_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching customers:", error);
     return { success: false, message: error.message };
   }
 
-  const rows = data || [];
-  if (!rows.length) return { success: true, data: rows };
-
-  // 같은 번호로 다시 접수하면 새 고객이 생기지 않고 기존 고객에 붙는다(아래 참고).
-  // 그때 crm_customers.created_at 은 그대로라, 등록일 순으로 세우면 오늘 들어온
-  // 문의가 몇 달 전 자리에 박혀 목록에서 안 보인다. 접수는 들어왔는데 중개사는
-  // 모르는 상태가 된다.
-  //
-  // 접수는 매번 crm_logs 에 시각과 함께 남으므로, 그 마지막 기록을 "최근 문의
-  // 시각"으로 삼아 정렬한다. 컬럼을 새로 만들지 않아도 지금 있는 것으로 된다.
-  const ids = rows.map((r: any) => r.id);
-  const lastContact = new Map<string, string>();
-
-  const { data: logs } = await supabase
-    .from("crm_logs")
-    .select("customer_id, created_at")
-    .in("customer_id", ids)
-    .order("created_at", { ascending: false })
-    .limit(1000);
-
-  // 내림차순이라 고객별로 처음 만나는 것이 가장 최근이다
-  (logs || []).forEach((l: any) => {
-    if (!lastContact.has(l.customer_id)) lastContact.set(l.customer_id, l.created_at);
-  });
-
-  const withContact = rows.map((r: any) => {
-    const last = lastContact.get(r.id);
-    return {
-      ...r,
-      // 기록이 없는 옛 고객은 등록일을 그대로 쓴다
-      last_contact_at: last && last > r.created_at ? last : r.created_at,
-    };
-  });
-
-  withContact.sort((a: any, b: any) => (a.last_contact_at < b.last_contact_at ? 1 : -1));
-
-  return { success: true, data: withContact };
+  return { success: true, data: data || [] };
 }
 
 export async function createCustomer(ownerId: string, data: {
