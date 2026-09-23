@@ -7,7 +7,7 @@ import VacancySection from "./sections/VacancySection";
 import ArticleSection from "./sections/ArticleSection";
 import IntakeFormSection from "./sections/IntakeFormSection";
 import ContactSection from "./sections/ContactSection";
-import MobileBottomBar from "./sections/MobileBottomBar";
+import MobileQuickActions from "./sections/MobileQuickActions";
 import { clampIntro, pickTheme, scrollToSection } from "./theme";
 import { isPermissionAlive } from "@/utils/planCheck";
 
@@ -204,10 +204,9 @@ export default function SiteClient({
   return (
     <div
       ref={rootRef}
-      className={preview ? undefined : "gs-page"}
       style={{ fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#16202b", background: "#fff" }}
     >
-      {/* 이 페이지에서만 쓰는 몇 줄. 가로 스크롤 막대를 감추고, 하단 고정바를 폰에서만 띄운다 */}
+      {/* 이 페이지에서만 쓰는 몇 줄. 가로 스크롤 막대를 감추고, 따라다니는 버튼을 폰에서만 띄운다 */}
       <style>{`
         /*
           전역 CSS 의 body { overflow-x: hidden } 은 세로 축까지 auto 로 바꿔 body 를
@@ -241,14 +240,12 @@ export default function SiteClient({
         }
         .gs-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
         .gs-scroll-x::-webkit-scrollbar { display: none; }
-        .gs-page { padding-bottom: 74px; }
-        .gs-bottombar { display: flex; }
+        .gs-quickstack { display: flex; }
         .gs-hero-nav { display: none; }
         /* 폰·PC 같은 크기로 둔다. PC 에서 19px 까지 키워 보았으나 컸다. */
         .gs-nav-link { font-size: 17px; }
         @media (min-width: 821px) {
-          .gs-page { padding-bottom: 0; }
-          .gs-bottombar { display: none; }
+          .gs-quickstack { display: none; }
           .gs-hero-nav { display: flex; }
           .gs-carousel-center-desktop { width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }
         }
@@ -323,7 +320,7 @@ export default function SiteClient({
       </footer>
 
       {preview !== "pc" && (
-        <MobileBottomBar
+        <MobileQuickActions
           theme={theme}
           phone={callNumber}
           anchor={anchor}
