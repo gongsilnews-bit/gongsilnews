@@ -52,6 +52,8 @@ const AMOUNT_STEPS = [
  * 목돈(매매·전세)과 다달이 내는 돈(월세·단기)은 자릿수가 달라 따로 둔다.
  */
 const BUDGET_LUMP = ["5천만", "1억", "2억", "3억", "5억", "7억", "10억", "15억", "20억", "30억", "50억", "100억"];
+/** 월세·단기의 보증금은 자릿수가 다르다. 매매가와 같은 목록을 쓰면 고를 것이 없다 */
+const BUDGET_DEPOSIT = ["500만", "1000만", "2000만", "3000만", "5000만", "7000만", "1억", "2억", "3억", "5억", "10억"];
 const BUDGET_MONTHLY = ["30만", "50만", "70만", "100만", "150만", "200만", "300만", "500만", "700만", "1000만"];
 
 const MOVE_IN_LISTING = ["공실", "1주 이내", "1달 이내", "협의"];
@@ -109,6 +111,9 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
   /** 구하는 쪽이 고른 금액대 */
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
+  /** 월세·단기일 때만 쓴다. 위 둘은 그때 보증금이 된다 */
+  const [monthlyMin, setMonthlyMin] = useState("");
+  const [monthlyMax, setMonthlyMax] = useState("");
   const [exclusivePy, setExclusivePy] = useState("");
   const [supplyPy, setSupplyPy] = useState("");
   const [floor, setFloor] = useState("");
@@ -226,11 +231,21 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
 
       let priceText = "";
       if (isSeeking) {
-        // 구하는 쪽은 고른 구간을 그대로 싣는다. 한쪽만 골랐으면 그쪽만 적는다.
-        priceText = budgetMin && budgetMax ? `${budgetMin} ~ ${budgetMax}`
-          : budgetMin ? `${budgetMin} 이상`
-          : budgetMax ? `${budgetMax} 이하`
-          : "";
+        /*
+         * 구하는 쪽은 고른 구간을 그대로 싣는다. 한쪽만 골랐으면 그쪽만 적는다.
+         * 월세·단기는 내놓는 쪽과 같은 꼴로 적어야 중개사가 한 줄로 읽는다 —
+         *   "보증금 3000만 ~ 5000만 / 월 100만 ~ 200만"
+         */
+        const band = (min: string, max: string) =>
+          min && max ? `${min} ~ ${max}` : min ? `${min} 이상` : max ? `${max} 이하` : "";
+        const depositBand = band(budgetMin, budgetMax);
+        if (tradeType === "월세" || tradeType === "단기") {
+          priceText = [depositBand && `보증금 ${depositBand}`, band(monthlyMin, monthlyMax) && `월 ${band(monthlyMin, monthlyMax)}`]
+            .filter(Boolean)
+            .join(" / ");
+        } else {
+          priceText = depositBand;
+        }
       } else if (tradeType === "월세" || tradeType === "단기") {
         priceText = [deposit && `보증금 ${withComma(deposit)}만원`, monthly && `월 ${withComma(monthly)}만원`].filter(Boolean).join(" / ");
       } else if (deposit) {
@@ -595,32 +610,60 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
                   </div>
                 </div>
 
-                {/* 구하는 쪽은 금액대만 고른다. 없는 물건의 값을 만원 단위로 적을 수는 없다 */}
+                {/*
+                  구하는 쪽은 금액대만 고른다. 없는 물건의 값을 만원 단위로 적을 수는 없다.
+                  칸 이름은 거래 구분을 따라간다 — 매매면 매매가, 전세면 보증금,
+                  월세·단기면 보증금과 월세를 따로 받는다. 내놓는 쪽과 같은 짜임이다.
+                */}
                 {showBudget && isSeeking && (
-                  <div>
-                    <label style={labelStyle}>희망 금액대<span style={{ marginLeft: 8, fontSize: 13, fontWeight: 600, color: "#94a3b8" }}>대략적인 금액이면 됩니다</span></label>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                      {([
-                        { key: "min", label: "최저", value: budgetMin, set: setBudgetMin },
-                        { key: "max", label: "최고", value: budgetMax, set: setBudgetMax },
-                      ] as const).map((f, i) => (
-                        <React.Fragment key={f.key}>
-                          {i === 1 && <span style={{ color: "#94a3b8", fontWeight: 800 }}>~</span>}
-                          <div style={{ flex: "1 1 150px", minWidth: 140 }}>
-                            <select
-                              value={f.value}
-                              onChange={(e) => f.set(e.target.value)}
-                              style={{ ...inputStyle, cursor: "pointer" }}
-                            >
-                              <option value="">{f.label} 무관</option>
-                              {(tradeType === "월세" || tradeType === "단기" ? BUDGET_MONTHLY : BUDGET_LUMP).map((b) => (
-                                <option key={b} value={b}>{b}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </React.Fragment>
-                      ))}
-                    </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                    {([
+                      {
+                        key: "deposit",
+                        label: tradeType === "매매" ? "희망 매매가" : tradeType ? "희망 보증금" : "희망 금액대",
+                        steps: tradeType === "월세" || tradeType === "단기" ? BUDGET_DEPOSIT : BUDGET_LUMP,
+                        min: budgetMin, setMin: setBudgetMin, max: budgetMax, setMax: setBudgetMax,
+                      },
+                      ...(tradeType === "월세" || tradeType === "단기"
+                        ? [{
+                            key: "monthly",
+                            label: "희망 월세",
+                            steps: BUDGET_MONTHLY,
+                            min: monthlyMin, setMin: setMonthlyMin, max: monthlyMax, setMax: setMonthlyMax,
+                          }]
+                        : []),
+                    ] as const).map((row, rowIdx) => (
+                      <div key={row.key}>
+                        <label style={labelStyle}>
+                          {row.label}
+                          {rowIdx === 0 && (
+                            <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 600, color: "#94a3b8" }}>대략적인 금액이면 됩니다</span>
+                          )}
+                        </label>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                          {([
+                            { key: "min", label: "최저", value: row.min, set: row.setMin },
+                            { key: "max", label: "최고", value: row.max, set: row.setMax },
+                          ] as const).map((f, i) => (
+                            <React.Fragment key={f.key}>
+                              {i === 1 && <span style={{ color: "#94a3b8", fontWeight: 800 }}>~</span>}
+                              <div style={{ flex: "1 1 150px", minWidth: 140 }}>
+                                <select
+                                  value={f.value}
+                                  onChange={(e) => f.set(e.target.value)}
+                                  style={{ ...inputStyle, cursor: "pointer" }}
+                                >
+                                  <option value="">{f.label} 무관</option>
+                                  {row.steps.map((b) => (
+                                    <option key={b} value={b}>{b}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
