@@ -1,6 +1,7 @@
 import NewsReadContent from "@/components/NewsReadContent";
 import { loadSubdomainArticle } from "../../../news/loadArticle";
 import SubdomainArticleBar from "../../../news/[article_id]/SubdomainArticleBar";
+import { pickTheme } from "../../../theme";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -57,12 +58,19 @@ export default async function SubdomainMobileArticlePage({ params }: PageProps) 
     site.member?.name ||
     "부동산";
   const shareUrl = `https://${subdomain}.gongsilnews.com/news/${article.article_no || article.id}`;
+  const theme = pickTheme(site.settings?.intake?.theme_color);
 
   return (
     // 폰에서는 상호 띠를 얹지 않는다. 주소창에 이미 중개사 도메인이 보이고,
     // 좁은 화면에서 한 줄이라도 기사에 내주는 편이 낫다. 대신 카테고리 줄 앞에
     // 뒤로가기를 넣고, 이 상자째로 옆으로 밀어내며 목록으로 돌아간다.
     <div id="gs-article-slide" className="subdomain-article-view mobile-news-detail-wrapper">
+      {/*
+        말머리 색만 중개사 테마로 덮는다. 포털에서는 공실뉴스 남색이지만
+        여기는 중개사 자기 페이지다 — 머리글·버튼과 색이 따로 놀면 남의 것을
+        퍼온 화면처럼 보인다. 전역 CSS 는 건드리지 않고 이 화면 안에서만 덮는다.
+      */}
+      <style>{`.subdomain-article-view .detail-breadcrumb { color: ${theme.primary}; }`}</style>
       <NewsReadContent
         article={article}
         popularArticles={[]}

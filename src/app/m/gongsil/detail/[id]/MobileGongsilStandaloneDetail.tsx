@@ -17,6 +17,11 @@ interface MobileGongsilStandaloneDetailProps {
   shareSiteName?: string;
   /** 공유를 [URL 복사] 하나로만 둔다 (중개사 홈페이지) */
   copyOnlyShare?: boolean;
+  /**
+   * 강조색. 중개사 홈페이지에서 띄울 때 그 중개사의 테마색을 받는다.
+   * 이 화면은 포털 공실열람과 같이 쓰므로, 줄 때만 바꾸고 안 주면 그대로 둔다.
+   */
+  accentColor?: string;
 }
 
 // 🌟 글로벌 금액 포맷터 (기존 소스 100% 동일)
@@ -81,6 +86,7 @@ export default function MobileGongsilStandaloneDetail({
   shareUrl,
   shareSiteName,
   copyOnlyShare = false,
+  accentColor,
 }: MobileGongsilStandaloneDetailProps) {
   const router = useRouter();
   const [detailTab, setDetailTab] = useState<"info" | "realtor">("info");
@@ -386,7 +392,7 @@ export default function MobileGongsilStandaloneDetail({
 
             {/* Row 3: Price */}
             <div style={{ display: "flex", alignItems: "baseline", gap: "6px", marginBottom: "10px" }}>
-              <span style={{ fontSize: "24px", fontWeight: 800, color: "#1a73e8" }}>
+              <span style={{ fontSize: "24px", fontWeight: 800, color: accentColor || "#1a73e8" }}>
                 {selectedVacancy.trade_type} {formatPrice(selectedVacancy)}
               </span>
             </div>
@@ -852,7 +858,7 @@ export default function MobileGongsilStandaloneDetail({
               alert("등록된 연락처가 없습니다.");
             }
           }}
-          style={{ width: "100%", height: "52px", borderRadius: "6px", background: "#1a73e8", color: "#fff", fontSize: "18px", fontWeight: 800, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          style={{ width: "100%", height: "52px", borderRadius: "6px", background: accentColor || "#1a73e8", color: "#fff", fontSize: "18px", fontWeight: 800, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
         >
           연락하기
         </button>

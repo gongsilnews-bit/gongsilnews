@@ -1,6 +1,7 @@
 import NewsReadContent from "@/components/NewsReadContent";
 import { loadSubdomainArticle } from "../loadArticle";
 import SubdomainArticleBar from "./SubdomainArticleBar";
+import { pickTheme } from "../../theme";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -61,9 +62,16 @@ export default async function SubdomainArticlePage({ params }: PageProps) {
     site.member?.name ||
     "부동산";
   const shareUrl = `https://${subdomain}.gongsilnews.com/news/${article.article_no || article.id}`;
+  const theme = pickTheme(site.settings?.intake?.theme_color);
 
   return (
     <div className="subdomain-article-view mobile-news-detail-wrapper">
+      {/*
+        말머리 색만 중개사 테마로 덮는다. 포털에서는 공실뉴스 남색이지만
+        여기는 중개사 자기 페이지다 — 머리글·버튼과 색이 따로 놀면 남의 것을
+        퍼온 화면처럼 보인다. 전역 CSS 는 건드리지 않고 이 화면 안에서만 덮는다.
+      */}
+      <style>{`.subdomain-article-view .detail-breadcrumb { color: ${theme.primary}; }`}</style>
       <SubdomainArticleBar subdomain={subdomain} settings={site.settings} member={site.member} companyProfile={site.companyProfile} />
       <NewsReadContent
         article={article}

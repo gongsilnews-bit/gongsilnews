@@ -4,6 +4,7 @@ import { getHomepageSettingsBySubdomain } from "@/app/actions/homepage";
 import GongsilStandaloneDetail from "@/app/(map)/gongsil/detail/[id]/GongsilStandaloneDetail";
 import NotFoundVacancy from "@/app/(map)/gongsil/detail/[id]/NotFoundVacancy";
 import { getCleanAddrText, getPriceText } from "@/app/(map)/gongsil/gongsilHelpers";
+import { pickTheme } from "../../../theme";
 
 export const revalidate = 60;
 
@@ -87,6 +88,7 @@ export default async function SubdomainGongsilDetailPage({ params }: PageProps) 
         hideWishlist
         shareUrl={shareUrl}
         shareSiteName={officeName}
+        accentColor={pickTheme(siteRes.data?.settings?.intake?.theme_color).primary}
       />
     </Suspense>
   );

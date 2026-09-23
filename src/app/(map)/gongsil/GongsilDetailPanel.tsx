@@ -67,6 +67,14 @@ interface GongsilDetailPanelProps {
    * 카카오 SDK가 준비돼야 하고, 고를 게 두 개면 한 번 더 눌러야 한다.
    */
   copyOnlyShare?: boolean;
+  /**
+   * 강조색. 중개사 홈페이지에서 띄울 때 그 중개사의 테마색을 받는다.
+   *
+   * 이 화면은 포털 공실열람과 중개사 홈페이지가 같이 쓴다. 색을 여기서 고치면
+   * 포털까지 따라 바뀌므로, 줄 때만 바꾸고 안 주면 지금 쓰던 파란색 그대로 둔다.
+   * 경매 화면은 제 색이 따로 있어 건드리지 않는다.
+   */
+  accentColor?: string;
 }
 
 export default function GongsilDetailPanel({
@@ -114,6 +122,7 @@ export default function GongsilDetailPanel({
   hidePrint = false,
   hideWishlist = false,
   copyOnlyShare = false,
+  accentColor,
   onPanToMap,
 }: GongsilDetailPanelProps) {
   if (!showDetail || !activeProperty) return null;
@@ -230,7 +239,16 @@ export default function GongsilDetailPanel({
         </div>
       )}
 
-      <div id="detail-scroll-container" style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+      {/* 공실 매물 상세 스크롤 컨테이너 (데이터셋 탑재로 AI 스크립터 완전 연동) */}
+      <div
+        id="detail-scroll-container"
+        data-vacancy-id={prop.id}
+        data-images={JSON.stringify(prop.images || [])}
+        data-infra={JSON.stringify(prop.infrastructure || {})}
+        data-lat={prop.latitude || prop.lat || ""}
+        data-lng={prop.longitude || prop.lng || ""}
+        style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}
+      >
         {/* 갤러리 */}
         {prop.images && prop.images.length > 0 && prop.images[0] && (
           <div style={{ position: "relative", width: "100%", height: 200, background: "transparent" }}>
@@ -378,6 +396,41 @@ export default function GongsilDetailPanel({
                   🖨 인쇄
                 </button>
               )}
+              <button
+                onClick={() => {
+                  const buildingText = getCleanAddrText(prop);
+                  const priceStr = prop.trade_type === "경매" ? "경매" : getPriceText(prop);
+                  const draftPayload = {
+                    title: `[공실뉴스 추천매물] ${buildingText} ${priceStr} 시장 출회`,
+                    subtitle: `${prop.sido || ""} ${prop.sigungu || ""} 핵심 입지 주거 가치\n${prop.themes && prop.themes.length > 0 ? prop.themes.join(" ") : "특올수리"} 쾌적한 공간\n주변 시세 대비 합리적 조건… 실수요자 이목 집중`,
+                    content: `<p>부동산 시장의 관심이 집중되는 가운데, ${buildingText}이(가) ${priceStr}의 조건으로 시장에 공식 출회되었습니다.</p><p>해당 매물은 뛰어난 입지 조건과 쾌적한 주거 설계를 갖추고 있으며, 자세한 정보는 공실뉴스에서 확인하실 수 있습니다.</p>`,
+                    section1: "공실뉴스",
+                    section2: prop.property_type && prop.property_type.includes("아파트") ? "아파트/오피스텔" : "상가/사무실/공장/토지",
+                    imageUrl: prop.images && prop.images.length > 0 ? prop.images[0] : "",
+                    vacancyId: prop.id,
+                  };
+                  try {
+                    localStorage.setItem("gongsil_ai_incoming_draft", JSON.stringify(draftPayload));
+                  } catch (e) {}
+                  window.open(`/admin?menu=article&action=write&vacancy_id=${prop.id}`, "_blank");
+                }}
+                style={{
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                  color: "#1d4ed8",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "2px 8px",
+                  fontSize: 11,
+                  fontWeight: "bold",
+                }}
+                title="이 매물로 공실뉴스 AI 기사 작성"
+              >
+                ✨ AI 기사작성
+              </button>
             </div>
           </div>
           <h2 style={{ fontSize: 15, fontWeight: "bold", color: "#333", margin: "0 0 6px 0" }}>{getCleanAddrText(prop)}</h2>
@@ -441,7 +494,7 @@ export default function GongsilDetailPanel({
                 );
               })()
             ) : (
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: isAuctionMode ? "#1a4282" : "#1f5edb", margin: 0 }}>{getPriceText(prop)}</h1>
+              <h1 style={{ fontSize: 26, fontWeight: 800, color: isAuctionMode ? "#1a4282" : (accentColor || "#1f5edb"), margin: 0 }}>{getPriceText(prop)}</h1>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
               {!hideWishlist && (
@@ -656,7 +709,7 @@ export default function GongsilDetailPanel({
                   key={idx}
                   style={{
                     background: "#f8fafc",
-                    color: "#3b82f6",
+                    color: accentColor || "#3b82f6",
                     fontSize: 13,
                     padding: "4px 12px",
                     borderRadius: 16,
@@ -1145,7 +1198,7 @@ const filteredFields = fields.filter(field => {
                   background: "#e8eaed",
                 }}
               >
-                <div ref={itemMapRef} style={{ width: "100%", height: "100%" }} />
+                <div id="gongsil-detail-map" ref={itemMapRef} style={{ width: "100%", height: "100%" }} />
 
                 {/* 지도 하단: 지도에서 보기 플로팅 버튼 */}
                 <div
@@ -1219,6 +1272,7 @@ const filteredFields = fields.filter(field => {
                 }}
               >
                 <div
+                  id="gongsil-detail-roadview"
                   ref={roadviewRef}
                   style={{
                     width: "100%",
@@ -2502,7 +2556,7 @@ const filteredFields = fields.filter(field => {
               }, 100);
             }}
             style={{
-              background: "#1a73e8",
+              background: accentColor || "#1a73e8",
               color: "#fff",
               border: "none",
               padding: "10px 28px",

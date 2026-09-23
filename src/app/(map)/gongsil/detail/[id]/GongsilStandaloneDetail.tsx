@@ -18,6 +18,8 @@ interface GongsilStandaloneDetailProps {
   hideWishlist?: boolean;
   /** 공유를 [URL 복사] 하나로만 둔다 */
   copyOnlyShare?: boolean;
+  /** 중개사 홈페이지에서 띄울 때 그 중개사의 테마색. 포털에서는 주지 않는다 */
+  accentColor?: string;
   /**
    * 공유(카카오톡·URL 복사)로 내보낼 주소.
    * 비워두면 공실뉴스 포털 주소로 나간다. 중개사 도메인에서 열렸을 때는 그 중개사
@@ -37,6 +39,7 @@ export default function GongsilStandaloneDetail({
   hidePrint = false,
   hideWishlist = false,
   copyOnlyShare = false,
+  accentColor,
   shareUrl,
   shareSiteName,
 }: GongsilStandaloneDetailProps) {
@@ -478,6 +481,7 @@ export default function GongsilStandaloneDetail({
         hidePrint={hidePrint}
         hideWishlist={hideWishlist}
         copyOnlyShare={copyOnlyShare}
+        accentColor={accentColor}
       />
 
       {/* 갤러리 풀스크린 모달 */}
