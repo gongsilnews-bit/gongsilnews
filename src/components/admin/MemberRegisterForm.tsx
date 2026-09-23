@@ -349,10 +349,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         LIMIT_USER_ARTICLE: 0,
         LIMIT_REALTOR_FREE_VACANCY: 10,
         LIMIT_REALTOR_FREE_ARTICLE: 0,
-        LIMIT_REALTOR_NEWS_VACANCY: 20,
-        LIMIT_REALTOR_NEWS_ARTICLE: 10,
-        LIMIT_REALTOR_STUDY_VACANCY: 50,
-        LIMIT_REALTOR_STUDY_ARTICLE: 20,
+        LIMIT_REALTOR_NEWS_VACANCY: 50,
+        LIMIT_REALTOR_NEWS_ARTICLE: 4,
+        LIMIT_REALTOR_STUDY_VACANCY: 20,
+        LIMIT_REALTOR_STUDY_ARTICLE: 4,
         LIMIT_BIZ_VACANCY: 0,
         LIMIT_BIZ_ARTICLE: 10,
         PERM_USER_ARTICLE_BANNER: 0,
@@ -374,7 +374,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         PERM_REALTOR_FREE_HERO_VIDEO: 0,
         PERM_REALTOR_FREE_SNS_LINKS: 0,
         PERM_REALTOR_STUDY_ARTICLE_BANNER: 1,
-        PERM_REALTOR_STUDY_ARTICLE_VACANCY: 1,
+        PERM_REALTOR_STUDY_ARTICLE_VACANCY: 0,
         PERM_REALTOR_STUDY_HOMEPAGE: 1,
         LIMIT_REALTOR_STUDY_HERO_SLIDES: 3,
         PERM_REALTOR_STUDY_FOOTER_HIDE: 1,
@@ -1002,7 +1002,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               </div>
             </div>
             <div style={rowStyle}>
-              <div style={labelStyle}>개별 권한 설정</div>
+              <div style={labelStyle}>기사 권한</div>
               <div style={{ ...contentStyle, gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
                   <input type="checkbox" name="can_article_banner" checked={!!formData.can_article_banner} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
@@ -1012,35 +1012,52 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
                   <input type="checkbox" name="can_article_vacancy_banner" checked={!!formData.can_article_vacancy_banner} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
                   <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>기사 공실배너 권한</span>
                 </label>
+                <div style={{ width: '100%', fontSize: 12, color: "#888" }}>회원구분·요금제를 바꾸면 그 등급의 기본값으로 다시 채워집니다. 그 뒤에 여기서 끄거나 켜면 등급과 상관없이 이 회원에게만 적용됩니다.</div>
+              </div>
+            </div>
+
+            {/* 홈페이지는 딸린 항목이 여섯이라 한 줄에 같이 두면 읽히지 않는다.
+                등급별 한도 설정 화면도 이것만 따로 떼어놓았다 — 두 화면을 같은 모양으로 둔다. */}
+            <div style={rowStyle}>
+              <div style={labelStyle}>물건접수웹페이지</div>
+              <div style={{ ...contentStyle, flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
                   <input type="checkbox" name="can_homepage" checked={!!formData.can_homepage} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>물건접수웹페이지 권한</span>
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>홈페이지 사용</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
-                  <input type="checkbox" name="can_hide_footer_badge" checked={!!formData.can_hide_footer_badge} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>공실뉴스 표시 숨김</span>
+
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', paddingLeft: 22, opacity: formData.can_homepage ? 1 : 0.45 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_hide_footer_badge" checked={!!formData.can_hide_footer_badge} onChange={handleMemberChange} disabled={!isAdmin || !formData.can_homepage} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: (!formData.can_homepage ? '#b0b0b0' : (darkMode ? '#ccc' : '#444')) }}>공실뉴스 표시 숨김</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
-                  <input type="checkbox" name="can_intake_photo" checked={!!formData.can_intake_photo} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>접수 사진 첨부</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_intake_photo" checked={!!formData.can_intake_photo} onChange={handleMemberChange} disabled={!isAdmin || !formData.can_homepage} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: (!formData.can_homepage ? '#b0b0b0' : (darkMode ? '#ccc' : '#444')) }}>접수 사진 첨부</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
-                  <input type="checkbox" name="can_site_logo" checked={!!formData.can_site_logo} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>로고 올리기</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_site_logo" checked={!!formData.can_site_logo} onChange={handleMemberChange} disabled={!isAdmin || !formData.can_homepage} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: (!formData.can_homepage ? '#b0b0b0' : (darkMode ? '#ccc' : '#444')) }}>로고 올리기</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
-                  <input type="checkbox" name="can_hero_video" checked={!!formData.can_hero_video} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>첫 화면 영상</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_hero_video" checked={!!formData.can_hero_video} onChange={handleMemberChange} disabled={!isAdmin || !formData.can_homepage} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: (!formData.can_homepage ? '#b0b0b0' : (darkMode ? '#ccc' : '#444')) }}>첫 화면 영상</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
-                  <input type="checkbox" name="can_sns_links" checked={!!formData.can_sns_links} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>SNS 링크</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_sns_links" checked={!!formData.can_sns_links} onChange={handleMemberChange} disabled={!isAdmin || !formData.can_homepage} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: (!formData.can_homepage ? '#b0b0b0' : (darkMode ? '#ccc' : '#444')) }}>SNS 링크</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>첫 화면 장수:</span>
-                  <input type="number" name="max_hero_slides" value={formData.max_hero_slides} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 70, textAlign: 'right' }} min={1} max={3} />
-                </label>
-                <div style={{ width: '100%', fontSize: 12, color: "#888" }}>회원구분·요금제를 바꾸면 그 등급의 기본값으로 다시 채워집니다. 그 뒤에 여기서 끄거나 켜면 등급과 상관없이 이 회원에게만 적용됩니다.</div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                    <span style={{ fontWeight: 600, color: !formData.can_homepage ? '#b0b0b0' : (darkMode ? '#ccc' : '#444') }}>첫 화면 장수:</span>
+                    <input type="number" name="max_hero_slides" value={formData.max_hero_slides} onChange={handleMemberChange} disabled={!isAdmin || !formData.can_homepage} style={{ ...inputStyle, flex: "none", width: 70, textAlign: 'right' }} min={1} max={3} />
+                  </label>
+                </div>
+
+                <div style={{ fontSize: 12, color: "#888" }}>
+                  {formData.can_homepage
+                    ? "위 항목을 끄면 그 기능만 잠기고, 중개사가 이미 올려둔 로고·영상·슬라이드는 지워지지 않습니다."
+                    : "홈페이지 사용을 끄면 주소로 들어와도 열리지 않습니다. 아래 항목은 다시 켤 때 쓰던 그대로 돌아옵니다."}
+                </div>
               </div>
             </div>
           </>

@@ -321,9 +321,12 @@ export async function adminGetMembers() {
     // 걸려 11,477건 중 1,000건만 집계되어 공실 건수가 실제보다 적게 표시됐다.
     // (덤으로 회원수 x 공실수 만큼의 JS 반복과 전체 행 전송도 사라진다)
     // 회원 수만큼 카운트 쿼리가 나가므로 회원이 수백 명 규모가 되면 GROUP BY RPC 로 옮길 것.
-    const [bizProfilesRes, memberCounts] = await Promise.all([
+    const [bizProfilesRes, homepagesRes, memberCounts] = await Promise.all([
       // 비즈니스 프로필은 별도 쿼리 (FK 관계가 members가 아닌 auth.users를 참조하므로)
       supabaseAdmin.from('business_profiles').select('*'),
+      // 홈페이지 주소는 homepage_settings 에 있다. agencies 에는 없다 —
+      // 그래서 목록의 [홈페이지ID] 칸이 줄곧 비어 있었다.
+      supabaseAdmin.from('homepage_settings').select('owner_id, subdomain, is_active'),
       Promise.all((members as any[]).map(async (m: any) => {
         const [vRes, aRes] = await Promise.all([
           // 기존 동작과 동일하게 status 필터 없이 전체를 센다
@@ -334,6 +337,7 @@ export async function adminGetMembers() {
       })),
     ]);
     const bizProfiles = bizProfilesRes.data;
+    const homepageByOwner = new Map((homepagesRes.data || []).map((h: any) => [h.owner_id, h]));
     const countsById = new Map(memberCounts.map(c => [c.id, c]));
 
     const data = members.map((m: any) => {
@@ -341,13 +345,11 @@ export async function adminGetMembers() {
       const vCount = counts?.vCount || 0;
       const aCount = counts?.aCount || 0;
       
-      let homepage_id = '';
-      if (m.agencies) {
-         const ag = Array.isArray(m.agencies) ? m.agencies[0] : m.agencies;
-         if (ag) {
-           homepage_id = ag.homepage_id || ag.subdomain || ag.domain || ag.site_id || '';
-         }
-      }
+      // 주소가 없으면 아직 발급 전이다. is_active 는 중개사가 스스로 내린 스위치,
+      // can_homepage 는 최고관리자가 여는 권한 — 둘 다 켜져야 실제로 열린다.
+      const hp: any = homepageByOwner.get(m.id);
+      const homepage_id = hp?.subdomain || '';
+      const homepage_is_active = hp ? hp.is_active !== false : false;
 
       // 비즈니스 프로필 매칭
       const bizProfile = bizProfiles?.find((bp: any) => bp.user_id === m.id) || null;
@@ -357,11 +359,33 @@ export async function adminGetMembers() {
         business_profiles: bizProfile,
         vacancies_count: vCount,
         articles_count: aCount,
-        homepage_id
+        homepage_id,
+        homepage_is_active
       }
     });
 
     return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * 회원 목록에서 홈페이지를 바로 열고 닫는다.
+ *
+ * 회원 하나를 고치려고 [수정] 화면까지 들어갔다 나오는 것이 성가시다.
+ * 목록에서 누르면 그 자리에서 can_homepage 만 뒤집는다. 세부 기능(로고·영상·
+ * 사진 첨부 등)은 그대로 두므로, 다시 켜면 쓰던 그대로 돌아온다.
+ */
+export async function adminToggleMemberHomepage(memberId: string, open: boolean) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { error } = await supabaseAdmin
+      .from('members')
+      .update({ can_homepage: open })
+      .eq('id', memberId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -688,10 +712,10 @@ const DEFAULT_LIMIT_POLICIES = {
   LIMIT_USER_ARTICLE: 0,
   LIMIT_REALTOR_FREE_VACANCY: 10,
   LIMIT_REALTOR_FREE_ARTICLE: 0,
-  LIMIT_REALTOR_NEWS_VACANCY: 20,
-  LIMIT_REALTOR_NEWS_ARTICLE: 10,
-  LIMIT_REALTOR_STUDY_VACANCY: 50,
-  LIMIT_REALTOR_STUDY_ARTICLE: 20,
+  LIMIT_REALTOR_NEWS_VACANCY: 50,
+  LIMIT_REALTOR_NEWS_ARTICLE: 4,
+  LIMIT_REALTOR_STUDY_VACANCY: 20,
+  LIMIT_REALTOR_STUDY_ARTICLE: 4,
   LIMIT_BIZ_VACANCY: 0,
   LIMIT_BIZ_ARTICLE: 10,
   // 권한은 켜짐 1 / 꺼짐 0 으로 둔다. point_settings 가 숫자만 담기 때문이다.
@@ -714,7 +738,7 @@ const DEFAULT_LIMIT_POLICIES = {
   PERM_REALTOR_FREE_HERO_VIDEO: 0,
   PERM_REALTOR_FREE_SNS_LINKS: 0,
   PERM_REALTOR_STUDY_ARTICLE_BANNER: 1,
-  PERM_REALTOR_STUDY_ARTICLE_VACANCY: 1,
+  PERM_REALTOR_STUDY_ARTICLE_VACANCY: 0,
   PERM_REALTOR_STUDY_HOMEPAGE: 1,
   LIMIT_REALTOR_STUDY_HERO_SLIDES: 3,
   PERM_REALTOR_STUDY_FOOTER_HIDE: 1,
@@ -852,44 +876,70 @@ export async function adminGetLimitPolicies() {
   }
 }
 
-export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_POLICIES, applyToExisting: boolean = false) {
+/**
+ * 등급별 한도·권한 저장.
+ *
+ * 저장하면 그 등급 회원에게 바로 내려간다. 정책만 바꾸고 회원은 그대로 두면
+ * 화면에 적어둔 값과 실제로 돌아가는 값이 갈라진다 — 실제로 갈라져 있었다.
+ * 정책은 공실 50인데 회원은 20, 같은 등급 안에서도 사람마다 달랐다.
+ *
+ * 다만 최고관리자가 회원 화면에서 따로 손봐 둔 사람은 건드리지 않는다.
+ * 바뀌기 전 기본값을 그대로 쓰고 있던 회원만 새 기본값으로 따라간다.
+ * 그 구분은 "지금 값이 옛 기본값과 같은가" 하나로 한다 — 컬럼을 더 두지 않는다.
+ *
+ * force 가 켜지면 개별로 바꿔둔 것까지 전부 새 기본값으로 되돌린다.
+ */
+export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_POLICIES, force: boolean = false) {
   const supabaseAdmin = getAdminClient();
   try {
-    const rows = Object.entries(policies).map(([key, value]) => ({
-      key,
-      value
-    }));
+    // 바꾸기 전 값을 먼저 잡아둔다. 누가 기본값을 따르고 있었는지 이것으로 가린다.
+    const { policies: previous } = await adminGetLimitPolicies();
 
+    const rows = Object.entries(policies).map(([key, value]) => ({ key, value }));
     const { error: upsertError } = await supabaseAdmin
       .from('point_settings')
       .upsert(rows, { onConflict: 'key' });
-
     if (upsertError) return { success: false, error: upsertError.message };
 
-    if (applyToExisting) {
-      // 한도뿐 아니라 권한 체크까지 같이 내려간다. 회원별로 열어둔 예외도 함께 덮인다.
-      await supabaseAdmin.from('members')
-        .update(planDefaults(policies, 'USER'))
-        .eq('role', 'USER');
+    const FIELDS = [
+      'max_vacancies',
+      'max_articles_per_month',
+      'can_article_banner',
+      'can_article_vacancy_banner',
+      'can_homepage',
+      'max_hero_slides',
+      'can_hide_footer_badge',
+      'can_intake_photo',
+      'can_site_logo',
+      'can_hero_video',
+      'can_sns_links',
+    ] as const;
 
-      await supabaseAdmin.from('members')
-        .update(planDefaults(policies, 'BIZ'))
-        .eq('role', 'BIZ');
+    const { data: members } = await supabaseAdmin
+      .from('members')
+      .select(['id', 'role', 'plan_type', ...FIELDS].join(', '))
+      .in('role', ['USER', 'BIZ', 'REALTOR']);
 
-      await supabaseAdmin.from('members')
-        .update(planDefaults(policies, 'REALTOR', 'free'))
-        .eq('role', 'REALTOR').eq('plan_type', 'free');
+    let applied = 0;
+    for (const m of (members || []) as any[]) {
+      const before = planDefaults(previous, m.role, m.plan_type) as any;
+      const after = planDefaults(policies, m.role, m.plan_type) as any;
 
-      await supabaseAdmin.from('members')
-        .update(planDefaults(policies, 'REALTOR', 'news_premium'))
-        .eq('role', 'REALTOR').eq('plan_type', 'news_premium');
+      const patch: Record<string, any> = {};
+      for (const f of FIELDS) {
+        if (after[f] === undefined) continue;
+        if (after[f] === m[f]) continue;               // 이미 새 값이다
+        if (!force && m[f] !== before[f]) continue;    // 개별로 손본 회원은 둔다
+        patch[f] = after[f];
+      }
 
-      await supabaseAdmin.from('members')
-        .update(planDefaults(policies, 'REALTOR', 'study_premium'))
-        .eq('role', 'REALTOR').eq('plan_type', 'study_premium');
+      if (Object.keys(patch).length) {
+        await supabaseAdmin.from('members').update(patch).eq('id', m.id);
+        applied += 1;
+      }
     }
 
-    return { success: true };
+    return { success: true, applied };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

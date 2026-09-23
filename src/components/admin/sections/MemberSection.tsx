@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminSectionProps } from "./types";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
-import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminApproveRealtorApplication, adminRejectRealtorApplication, adminApproveBusinessApplication, adminRejectBusinessApplication, adminGetLimitPolicies, adminUpdateLimitPolicies } from "@/app/admin/actions";
+import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminApproveRealtorApplication, adminRejectRealtorApplication, adminApproveBusinessApplication, adminRejectBusinessApplication, adminGetLimitPolicies, adminUpdateLimitPolicies, adminToggleMemberHomepage } from "@/app/admin/actions";
 
 interface MemberSectionProps extends AdminSectionProps {
   activeSubmenu: string;
@@ -30,6 +30,22 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
   const [searchRole, setSearchRole] = useState("전체");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeFilters, setActiveFilters] = useState({ memberId: "", role: "전체", keyword: "" });
+
+  /**
+   * 목록에서 홈페이지를 바로 열고 닫는다.
+   *
+   * 화면을 먼저 바꾸고 서버에 보낸다. 실패하면 되돌린다 — 화면만 바뀌어
+   * 있으면 켰다고 착각한 채 넘어간다.
+   */
+  const toggleHomepage = async (member: any) => {
+    const next = !member.can_homepage;
+    setDbMembers((prev: any[]) => prev.map((x) => (x.id === member.id ? { ...x, can_homepage: next } : x)));
+    const res = await adminToggleMemberHomepage(member.id, next);
+    if (!res.success) {
+      setDbMembers((prev: any[]) => prev.map((x) => (x.id === member.id ? { ...x, can_homepage: !next } : x)));
+      alert("홈페이지 상태를 바꾸지 못했습니다: " + ((res as any).error || ""));
+    }
+  };
 
   useEffect(() => {
     if (!editId) {
@@ -326,7 +342,39 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                       {member.articles_count ?? 0} / {member.max_articles_per_month ?? 0}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary, fontWeight: 600 }}>
-                      {member.homepage_id || '-'}
+                      {member.homepage_id ? (
+                        <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+                          {/* 주소를 누르면 그 중개사의 홈페이지가 새 창에서 바로 열린다 */}
+                          <a
+                            href={`https://${member.homepage_id}.gongsilnews.com`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={`${member.homepage_id}.gongsilnews.com 열기`}
+                            style={{ color: "#2563eb", fontWeight: 700, textDecoration: "none" }}
+                          >
+                            {member.homepage_id} ↗
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => toggleHomepage(member)}
+                            title={member.can_homepage ? "누르면 홈페이지를 닫습니다" : "누르면 홈페이지를 엽니다"}
+                            style={{
+                              padding: "2px 9px",
+                              borderRadius: 999,
+                              border: `1px solid ${member.can_homepage ? "#86efac" : border}`,
+                              background: member.can_homepage ? (darkMode ? "#052e24" : "#f0fdf4") : (darkMode ? "#111827" : "#f8fafc"),
+                              color: member.can_homepage ? "#059669" : textSecondary,
+                              fontSize: 11.5,
+                              fontWeight: 800,
+                              cursor: "pointer",
+                            }}
+                          >
+                            {member.can_homepage ? "사용 중" : "중지"}
+                          </button>
+                        </div>
+                      ) : (
+                        <span title="정보설정(상호·등록번호)을 채우면 주소가 발급됩니다">미발급</span>
+                      )}
                     </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>
                       {member.plan_type !== 'free' && member.plan_end_date ? new Date(member.plan_end_date).toISOString().split('T')[0] : '-'}
@@ -461,10 +509,10 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
     LIMIT_USER_ARTICLE: 0,
     LIMIT_REALTOR_FREE_VACANCY: 10,
     LIMIT_REALTOR_FREE_ARTICLE: 0,
-    LIMIT_REALTOR_NEWS_VACANCY: 20,
-    LIMIT_REALTOR_NEWS_ARTICLE: 10,
-    LIMIT_REALTOR_STUDY_VACANCY: 50,
-    LIMIT_REALTOR_STUDY_ARTICLE: 20,
+    LIMIT_REALTOR_NEWS_VACANCY: 50,
+    LIMIT_REALTOR_NEWS_ARTICLE: 4,
+    LIMIT_REALTOR_STUDY_VACANCY: 20,
+    LIMIT_REALTOR_STUDY_ARTICLE: 4,
     LIMIT_BIZ_VACANCY: 0,
     LIMIT_BIZ_ARTICLE: 10,
     PERM_USER_ARTICLE_BANNER: 0,
@@ -486,7 +534,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
     PERM_REALTOR_FREE_HERO_VIDEO: 0,
     PERM_REALTOR_FREE_SNS_LINKS: 0,
     PERM_REALTOR_STUDY_ARTICLE_BANNER: 1,
-    PERM_REALTOR_STUDY_ARTICLE_VACANCY: 1,
+    PERM_REALTOR_STUDY_ARTICLE_VACANCY: 0,
     PERM_REALTOR_STUDY_HOMEPAGE: 1,
     LIMIT_REALTOR_STUDY_HERO_SLIDES: 3,
     PERM_REALTOR_STUDY_FOOTER_HIDE: 1,
@@ -533,7 +581,8 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
     const res = await adminUpdateLimitPolicies(formData, applyToExisting);
     setSaving(false);
     if (res.success) {
-      alert("등급별 한도 정책이 성공적으로 저장 및 적용되었습니다.");
+      const n = (res as any).applied ?? 0;
+      alert(n > 0 ? `저장했습니다. 회원 ${n}명에게 적용되었습니다.` : "저장했습니다. 바뀐 회원은 없습니다.");
     } else {
       alert("오류가 발생했습니다: " + res.error);
     }
@@ -725,7 +774,13 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
       <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: textPrimary, cursor: "pointer" }}>
           <input type="checkbox" checked={applyToExisting} onChange={e => setApplyToExisting(e.target.checked)} style={{ accentColor: "#3b82f6", width: 16, height: 16 }} />
-          저장 시 기존에 등록된 모든 회원에게도 새로운 기본 한도를 소급 적용합니다.
+          <span>
+            회원 화면에서 따로 조정해 둔 사람까지 <strong>전부 이 값으로 되돌립니다</strong>
+            <br />
+            <span style={{ fontSize: 12.5, color: textSecondary, fontWeight: 600 }}>
+              체크하지 않아도 저장하면 이 값이 해당 등급 회원에게 바로 적용됩니다. 개별 조정한 회원만 그대로 둡니다.
+            </span>
+          </span>
         </label>
 
         <button
