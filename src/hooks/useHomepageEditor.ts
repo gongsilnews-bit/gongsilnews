@@ -19,6 +19,7 @@ import {
 import { adminGetMemberDetail } from "@/app/admin/actions";
 import { getVacanciesByOwnerId } from "@/app/actions/vacancy";
 import { getMyArticles } from "@/app/actions/article";
+import { isPermissionAlive } from "@/utils/planCheck";
 
 /**
  * 홈페이지(물건접수웹페이지) 편집기의 속.
@@ -183,16 +184,33 @@ export function useHomepageEditor(memberId: string) {
     else setError((up as any).error || "로고 업로드에 실패했습니다.");
   };
 
+  /*
+   * 이 회원이 쓸 수 있는 첫 화면 장수. 무료는 1장, 유료는 3장이다.
+   * 요금제가 끝나면 1장으로 돌아오지만 저장된 2·3번 장은 지우지 않는다 —
+   * 재결제하면 그대로 다시 보인다.
+   */
+  const maxSlides = Math.max(
+    1,
+    Math.min(MAX_HERO_SLIDES, (isPermissionAlive(member, true) ? member?.max_hero_slides : 1) || 1)
+  );
+
+  /* 요금제가 여는 편집 기능. 잠긴 것은 입력칸 대신 안내를 보여준다. */
+  const allowLogo = isPermissionAlive(member, member?.can_site_logo);
+  const allowHeroVideo = isPermissionAlive(member, member?.can_hero_video);
+
   const slides: HeroSlide[] = Array.isArray(intake.hero_slides) && intake.hero_slides.length
-    ? intake.hero_slides.slice(0, MAX_HERO_SLIDES)
+    ? intake.hero_slides.slice(0, maxSlides)
     : [{}];
 
   const editSlides = (fn: (list: HeroSlide[]) => HeroSlide[]) => {
     setIntake((prev) => {
-      const current: HeroSlide[] = Array.isArray(prev.hero_slides) && prev.hero_slides.length
-        ? [...prev.hero_slides].slice(0, MAX_HERO_SLIDES)
+      const saved: HeroSlide[] = Array.isArray(prev.hero_slides) && prev.hero_slides.length
+        ? [...prev.hero_slides]
         : [{}];
-      return { ...prev, hero_slides: fn(current).slice(0, MAX_HERO_SLIDES) };
+      // 쓸 수 있는 앞쪽만 고치고, 권한 밖의 뒷장은 저장된 대로 붙여 되돌려 놓는다
+      const editable = saved.slice(0, maxSlides);
+      const locked = saved.slice(maxSlides, MAX_HERO_SLIDES);
+      return { ...prev, hero_slides: [...fn(editable).slice(0, maxSlides), ...locked] };
     });
   };
 
@@ -326,6 +344,9 @@ export function useHomepageEditor(memberId: string) {
     intake,
     setIntake,
     slides,
+    maxSlides,
+    allowLogo,
+    allowHeroVideo,
     setSlide,
     setCta,
     addSlide,

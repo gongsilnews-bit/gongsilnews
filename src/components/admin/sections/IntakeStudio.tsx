@@ -93,6 +93,9 @@ export default function IntakeStudio({ theme, memberId }: Props) {
     intake,
     setIntake,
     slides,
+    maxSlides,
+    allowLogo,
+    allowHeroVideo,
     setSlide,
     setCta,
     addSlide,
@@ -284,11 +287,21 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                               </button>
                             </div>
                           )}
-                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 44, border: `1px dashed ${border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, color: sub, cursor: "pointer" }}>
-                            {logoUrl ? "로고 바꾸기" : "+ 로고 올리기"}
-                            <input type="file" accept="image/*" hidden onChange={onLogoPick} />
-                          </label>
-                          <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>PNG · WebP · SVG 권장 · 최대 2MB · 표시 최대 너비 160px</p>
+                          {allowLogo ? (
+                            <>
+                              <label style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 44, border: `1px dashed ${border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, color: sub, cursor: "pointer" }}>
+                                {logoUrl ? "로고 바꾸기" : "+ 로고 올리기"}
+                                <input type="file" accept="image/*" hidden onChange={onLogoPick} />
+                              </label>
+                              <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>PNG · WebP · SVG 권장 · 최대 2MB · 표시 최대 너비 160px</p>
+                            </>
+                          ) : (
+                            <div style={{ padding: "12px 14px", border: `1px dashed ${border}`, borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: sub, lineHeight: 1.6, textAlign: "center" }}>
+                              로고를 올리면 상호 글자 대신 내 로고가 걸립니다
+                              <br />
+                              <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다</span>
+                            </div>
+                          )}
                         </div>
 
                         <div style={group}>
@@ -355,6 +368,8 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                             setSlide={setSlide}
                             setCta={setCta}
                             addSlide={addSlide}
+                            maxSlides={maxSlides}
+                            allowVideo={allowHeroVideo}
                             removeSlide={removeSlide}
                             onSlidePhoto={onSlidePhoto}
                             vacancies={vacancies}

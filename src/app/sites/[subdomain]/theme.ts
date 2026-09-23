@@ -252,13 +252,21 @@ export function youtubeId(url?: string): string {
  * 슬라이드가 생기기 전에 저장한 중개사는 hero_image·hero_title 같은 낱개 값만
  * 가지고 있다. 그 값들을 1번 슬라이드로 읽어 줘야 어제까지 쓰던 화면이 그대로 뜬다.
  */
-export function heroSlides(cfg: any): HeroSlide[] {
+/**
+ * 첫 화면 슬라이드.
+ *
+ * max 는 그 회원이 쓸 수 있는 장수다 — 무료는 1장, 유료는 3장. 유료였다가
+ * 무료로 내려가도 저장된 2·3번 장은 지우지 않는다. 화면에서 빠질 뿐이고
+ * 재결제하면 그대로 돌아온다.
+ */
+export function heroSlides(cfg: any, max: number = MAX_HERO_SLIDES): HeroSlide[] {
+  const limit = Math.max(1, Math.min(MAX_HERO_SLIDES, max || MAX_HERO_SLIDES));
   const raw: any[] = Array.isArray(cfg?.hero_slides) ? cfg.hero_slides : [];
 
   if (raw.length) {
     // 새 형식 — 저장된 그대로 쓴다. 비워둔 줄은 비워둔 대로 화면에서 빠진다.
     return raw
-      .slice(0, MAX_HERO_SLIDES)
+      .slice(0, limit)
       .map((s) => ({
         image: s?.image || "",
         youtube: s?.youtube || "",

@@ -18,6 +18,8 @@ interface Props {
   regNum?: string;
   /** members.sns_links — [정보설정]에 넣어둔 블로그·카페·유튜브 주소 */
   snsLinks?: any;
+  /** SNS 링크를 붙일 수 있는가 */
+  allowSns?: boolean;
 }
 
 /**
@@ -26,7 +28,7 @@ interface Props {
  * 폼을 끝까지 안 채우고 내려온 사람을 위한 마지막 출구다. 여기서는 접수보다
  * 전화가 낫다. 이미 폼을 지나쳐 온 사람이다.
  */
-export default function ContactSection({ officeName, theme, phone, agentMobile, representative, intro, address, regNum, legalName, snsLinks }: Props) {
+export default function ContactSection({ officeName, theme, phone, agentMobile, representative, intro, address, regNum, legalName, snsLinks, allowSns = true }: Props) {
   return (
     <section id="contact" style={{ background: "#16202b", padding: "60px 16px", scrollMarginTop: 54 }}>
       <div style={{ maxWidth: 620, margin: "0 auto", background: "#fff", borderRadius: 4, padding: "44px 26px", textAlign: "center" }}>
@@ -88,7 +90,7 @@ export default function ContactSection({ officeName, theme, phone, agentMobile, 
           </div>
         )}
 
-        <SnsLinks theme={theme} snsLinks={snsLinks} />
+        {allowSns && <SnsLinks theme={theme} snsLinks={snsLinks} />}
 
         {legalName && <p style={{ margin: "0 0 4px 0", fontSize: 13.5, color: "#6b7280" }}>상호: {legalName}</p>}
         {regNum && <p style={{ margin: "0 0 4px 0", fontSize: 13.5, color: "#6b7280" }}>등록번호: {regNum}</p>}

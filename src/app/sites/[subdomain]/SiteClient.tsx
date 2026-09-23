@@ -9,6 +9,7 @@ import IntakeFormSection from "./sections/IntakeFormSection";
 import ContactSection from "./sections/ContactSection";
 import MobileBottomBar from "./sections/MobileBottomBar";
 import { clampIntro, pickTheme, scrollToSection } from "./theme";
+import { isPermissionAlive } from "@/utils/planCheck";
 
 interface Props {
   subdomain: string;
@@ -44,6 +45,18 @@ export default function SiteClient({
 }: Props) {
   // 편집기가 저장하는 값은 settings.intake 에 모여 있다
   const cfg = settings?.intake || {};
+
+  /*
+   * 요금제가 여는 기능. 판정은 회원 칸을 보고, 요금제가 끝나면 같이 닫힌다.
+   * 미리보기(편집기)에서는 회원 정보가 그대로 넘어오므로 같은 값이 쓰인다 —
+   * 중개사가 자기 화면에서 유료 기능을 미리 보고 착각하는 일이 없다.
+   */
+  const maxSlides = isPermissionAlive(member, true) ? (member?.max_hero_slides ?? 1) : 1;
+  const hideFooterBadge = isPermissionAlive(member, member?.can_hide_footer_badge);
+  const allowIntakePhoto = isPermissionAlive(member, member?.can_intake_photo);
+  const allowLogo = isPermissionAlive(member, member?.can_site_logo);
+  const allowHeroVideo = isPermissionAlive(member, member?.can_hero_video);
+  const allowSns = isPermissionAlive(member, member?.can_sns_links);
   const theme = pickTheme(cfg.theme_color);
 
   const officeName =
@@ -229,7 +242,7 @@ export default function SiteClient({
 
       <SiteHeader
         officeName={officeName}
-        logoUrl={settings?.logo_url}
+        logoUrl={allowLogo ? settings?.logo_url : null}
         brandMode={cfg.brand_mode || "both"}
         logoSize={cfg.logo_size || "medium"}
         theme={theme}
@@ -239,13 +252,13 @@ export default function SiteClient({
         preview={Boolean(preview)}
       />
 
-      <HeroSection officeName={officeName} theme={theme} cfg={cfg} anchor={anchor} hrefFor={hrefFor} />
+      <HeroSection officeName={officeName} theme={theme} cfg={cfg} anchor={anchor} hrefFor={hrefFor} maxSlides={maxSlides} allowVideo={allowHeroVideo} />
 
       {showVacancy && <VacancySection officeName={officeName} theme={theme} vacancies={vacancies} hrefFor={hrefFor} phone={callNumber} anchor={anchor} />}
 
       {showArticle && <ArticleSection officeName={officeName} theme={theme} articles={articles} hrefFor={hrefFor} />}
 
-      <IntakeFormSection subdomain={subdomain} theme={theme} cfg={cfg} phone={phone} />
+      <IntakeFormSection subdomain={subdomain} theme={theme} cfg={cfg} phone={phone} allowPhoto={allowIntakePhoto} />
 
       <ContactSection
         officeName={officeName}
@@ -258,6 +271,7 @@ export default function SiteClient({
         regNum={companyProfile?.reg_num}
         legalName={legalName}
         snsLinks={member?.sns_links}
+        allowSns={allowSns}
       />
 
       <footer style={{ background: theme.dark, color: "rgba(255,255,255,0.55)", padding: "28px 20px", textAlign: "center", fontSize: 13, lineHeight: 1.8 }}>
@@ -285,10 +299,13 @@ export default function SiteClient({
             admin
           </a>
         </div>
-        <div>
-          powered by{" "}
-          <a href="https://gongsilnews.com" style={{ color: theme.secondary, textDecoration: "none" }}>공실뉴스</a>
-        </div>
+        {/* 무료 회원 페이지에는 남는다. 없애고 싶은 마음이 곧 결제 이유가 된다. */}
+        {!hideFooterBadge && (
+          <div>
+            powered by{" "}
+            <a href="https://gongsilnews.com" style={{ color: theme.secondary, textDecoration: "none" }}>공실뉴스</a>
+          </div>
+        )}
       </footer>
 
       {preview !== "pc" && (

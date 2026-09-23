@@ -250,13 +250,19 @@ function Editor({ memberId }: { memberId: string }) {
                                 로고 빼기
                               </button>
                             </div>
-                          ) : (
+                          ) : e.allowLogo ? (
                             <label style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 56, border: `1px dashed ${border}`, borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: sub, background: "#fafbfc" }}>
                               + 로고 올리기
                               <input type="file" accept="image/*" hidden onChange={e.onLogoPick} />
                             </label>
+                          ) : (
+                            <div style={{ padding: "12px 14px", border: `1px dashed ${border}`, borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: sub, lineHeight: 1.6, textAlign: "center" }}>
+                              로고를 올리면 상호 글자 대신 내 로고가 걸립니다
+                              <br />
+                              <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다</span>
+                            </div>
                           )}
-                          <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>PNG · WebP · SVG 권장 · 최대 2MB · 표시 최대 너비 160px</p>
+                          {e.allowLogo && <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>PNG · WebP · SVG 권장 · 최대 2MB · 표시 최대 너비 160px</p>}
                         </div>
 
                         <div>
@@ -325,6 +331,8 @@ function Editor({ memberId }: { memberId: string }) {
                           setSlide={e.setSlide}
                           setCta={e.setCta}
                           addSlide={e.addSlide}
+                          maxSlides={e.maxSlides}
+                          allowVideo={e.allowHeroVideo}
                           removeSlide={e.removeSlide}
                           onSlidePhoto={e.onSlidePhoto}
                           vacancies={e.vacancies}

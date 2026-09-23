@@ -40,7 +40,13 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     max_articles_per_month: 0,
     can_article_banner: false,
     can_article_vacancy_banner: false,
-    can_homepage: false
+    can_homepage: false,
+    max_hero_slides: 1,
+    can_hide_footer_badge: false,
+    can_intake_photo: false,
+    can_site_logo: false,
+    can_hero_video: false,
+    can_sns_links: false
   });
 
   const [agencyData, setAgencyData] = useState({
@@ -160,7 +166,13 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             max_articles_per_month: res.member.max_articles_per_month ?? 0,
             can_article_banner: !!res.member.can_article_banner,
             can_article_vacancy_banner: !!res.member.can_article_vacancy_banner,
-            can_homepage: !!res.member.can_homepage
+            can_homepage: !!res.member.can_homepage,
+            max_hero_slides: res.member.max_hero_slides ?? 1,
+            can_hide_footer_badge: !!res.member.can_hide_footer_badge,
+            can_intake_photo: !!res.member.can_intake_photo,
+            can_site_logo: !!res.member.can_site_logo,
+            can_hero_video: !!res.member.can_hero_video,
+            can_sns_links: !!res.member.can_sns_links
           });
           if (res.member.profile_image_url) {
             setProfilePhotoPreview(res.member.profile_image_url);
@@ -346,18 +358,48 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         PERM_USER_ARTICLE_BANNER: 0,
         PERM_USER_ARTICLE_VACANCY: 0,
         PERM_USER_HOMEPAGE: 0,
+        LIMIT_USER_HERO_SLIDES: 1,
+        PERM_USER_FOOTER_HIDE: 0,
+        PERM_USER_INTAKE_PHOTO: 0,
+        PERM_USER_SITE_LOGO: 0,
+        PERM_USER_HERO_VIDEO: 0,
+        PERM_USER_SNS_LINKS: 0,
         PERM_REALTOR_FREE_ARTICLE_BANNER: 0,
         PERM_REALTOR_FREE_ARTICLE_VACANCY: 0,
-        PERM_REALTOR_FREE_HOMEPAGE: 0,
+        PERM_REALTOR_FREE_HOMEPAGE: 1,
+        LIMIT_REALTOR_FREE_HERO_SLIDES: 1,
+        PERM_REALTOR_FREE_FOOTER_HIDE: 0,
+        PERM_REALTOR_FREE_INTAKE_PHOTO: 0,
+        PERM_REALTOR_FREE_SITE_LOGO: 0,
+        PERM_REALTOR_FREE_HERO_VIDEO: 0,
+        PERM_REALTOR_FREE_SNS_LINKS: 0,
         PERM_REALTOR_STUDY_ARTICLE_BANNER: 1,
         PERM_REALTOR_STUDY_ARTICLE_VACANCY: 1,
         PERM_REALTOR_STUDY_HOMEPAGE: 1,
+        LIMIT_REALTOR_STUDY_HERO_SLIDES: 3,
+        PERM_REALTOR_STUDY_FOOTER_HIDE: 1,
+        PERM_REALTOR_STUDY_INTAKE_PHOTO: 1,
+        PERM_REALTOR_STUDY_SITE_LOGO: 1,
+        PERM_REALTOR_STUDY_HERO_VIDEO: 1,
+        PERM_REALTOR_STUDY_SNS_LINKS: 1,
         PERM_REALTOR_NEWS_ARTICLE_BANNER: 1,
         PERM_REALTOR_NEWS_ARTICLE_VACANCY: 1,
         PERM_REALTOR_NEWS_HOMEPAGE: 1,
+        LIMIT_REALTOR_NEWS_HERO_SLIDES: 3,
+        PERM_REALTOR_NEWS_FOOTER_HIDE: 1,
+        PERM_REALTOR_NEWS_INTAKE_PHOTO: 1,
+        PERM_REALTOR_NEWS_SITE_LOGO: 1,
+        PERM_REALTOR_NEWS_HERO_VIDEO: 1,
+        PERM_REALTOR_NEWS_SNS_LINKS: 1,
         PERM_BIZ_ARTICLE_BANNER: 1,
         PERM_BIZ_ARTICLE_VACANCY: 0,
         PERM_BIZ_HOMEPAGE: 1,
+        LIMIT_BIZ_HERO_SLIDES: 3,
+        PERM_BIZ_FOOTER_HIDE: 1,
+        PERM_BIZ_INTAKE_PHOTO: 1,
+        PERM_BIZ_SITE_LOGO: 1,
+        PERM_BIZ_HERO_VIDEO: 1,
+        PERM_BIZ_SNS_LINKS: 1,
       };
 
       if (e.target.name === "role") {
@@ -368,6 +410,12 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           next.can_article_banner = !!currentPolicies.PERM_USER_ARTICLE_BANNER;
           next.can_article_vacancy_banner = !!currentPolicies.PERM_USER_ARTICLE_VACANCY;
           next.can_homepage = !!currentPolicies.PERM_USER_HOMEPAGE;
+          next.max_hero_slides = currentPolicies.LIMIT_USER_HERO_SLIDES;
+          next.can_hide_footer_badge = !!currentPolicies.PERM_USER_FOOTER_HIDE;
+          next.can_intake_photo = !!currentPolicies.PERM_USER_INTAKE_PHOTO;
+          next.can_site_logo = !!currentPolicies.PERM_USER_SITE_LOGO;
+          next.can_hero_video = !!currentPolicies.PERM_USER_HERO_VIDEO;
+          next.can_sns_links = !!currentPolicies.PERM_USER_SNS_LINKS;
         } else if (val === "비즈니스회원") {
           next.plan_type = "biz_premium";
           next.max_vacancies = currentPolicies.LIMIT_BIZ_VACANCY;
@@ -375,6 +423,12 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           next.can_article_banner = !!currentPolicies.PERM_BIZ_ARTICLE_BANNER;
           next.can_article_vacancy_banner = !!currentPolicies.PERM_BIZ_ARTICLE_VACANCY;
           next.can_homepage = !!currentPolicies.PERM_BIZ_HOMEPAGE;
+          next.max_hero_slides = currentPolicies.LIMIT_BIZ_HERO_SLIDES;
+          next.can_hide_footer_badge = !!currentPolicies.PERM_BIZ_FOOTER_HIDE;
+          next.can_intake_photo = !!currentPolicies.PERM_BIZ_INTAKE_PHOTO;
+          next.can_site_logo = !!currentPolicies.PERM_BIZ_SITE_LOGO;
+          next.can_hero_video = !!currentPolicies.PERM_BIZ_HERO_VIDEO;
+          next.can_sns_links = !!currentPolicies.PERM_BIZ_SNS_LINKS;
         } else if (val === "부동산회원") {
           next.plan_type = "free";
           next.max_vacancies = currentPolicies.LIMIT_REALTOR_FREE_VACANCY;
@@ -382,6 +436,12 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           next.can_article_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_BANNER;
           next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_VACANCY;
           next.can_homepage = !!currentPolicies.PERM_REALTOR_FREE_HOMEPAGE;
+          next.max_hero_slides = currentPolicies.LIMIT_REALTOR_FREE_HERO_SLIDES;
+          next.can_hide_footer_badge = !!currentPolicies.PERM_REALTOR_FREE_FOOTER_HIDE;
+          next.can_intake_photo = !!currentPolicies.PERM_REALTOR_FREE_INTAKE_PHOTO;
+          next.can_site_logo = !!currentPolicies.PERM_REALTOR_FREE_SITE_LOGO;
+          next.can_hero_video = !!currentPolicies.PERM_REALTOR_FREE_HERO_VIDEO;
+          next.can_sns_links = !!currentPolicies.PERM_REALTOR_FREE_SNS_LINKS;
         }
       } else if (e.target.name === "plan_type") {
         if (next.role === "일반회원") {
@@ -390,12 +450,24 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           next.can_article_banner = !!currentPolicies.PERM_USER_ARTICLE_BANNER;
           next.can_article_vacancy_banner = !!currentPolicies.PERM_USER_ARTICLE_VACANCY;
           next.can_homepage = !!currentPolicies.PERM_USER_HOMEPAGE;
+          next.max_hero_slides = currentPolicies.LIMIT_USER_HERO_SLIDES;
+          next.can_hide_footer_badge = !!currentPolicies.PERM_USER_FOOTER_HIDE;
+          next.can_intake_photo = !!currentPolicies.PERM_USER_INTAKE_PHOTO;
+          next.can_site_logo = !!currentPolicies.PERM_USER_SITE_LOGO;
+          next.can_hero_video = !!currentPolicies.PERM_USER_HERO_VIDEO;
+          next.can_sns_links = !!currentPolicies.PERM_USER_SNS_LINKS;
         } else if (next.role === "비즈니스회원") {
           next.max_vacancies = currentPolicies.LIMIT_BIZ_VACANCY;
           next.max_articles_per_month = currentPolicies.LIMIT_BIZ_ARTICLE;
           next.can_article_banner = !!currentPolicies.PERM_BIZ_ARTICLE_BANNER;
           next.can_article_vacancy_banner = !!currentPolicies.PERM_BIZ_ARTICLE_VACANCY;
           next.can_homepage = !!currentPolicies.PERM_BIZ_HOMEPAGE;
+          next.max_hero_slides = currentPolicies.LIMIT_BIZ_HERO_SLIDES;
+          next.can_hide_footer_badge = !!currentPolicies.PERM_BIZ_FOOTER_HIDE;
+          next.can_intake_photo = !!currentPolicies.PERM_BIZ_INTAKE_PHOTO;
+          next.can_site_logo = !!currentPolicies.PERM_BIZ_SITE_LOGO;
+          next.can_hero_video = !!currentPolicies.PERM_BIZ_HERO_VIDEO;
+          next.can_sns_links = !!currentPolicies.PERM_BIZ_SNS_LINKS;
         } else {
           // REALTOR
           if (val === "free") {
@@ -404,18 +476,36 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           next.can_article_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_BANNER;
           next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_VACANCY;
           next.can_homepage = !!currentPolicies.PERM_REALTOR_FREE_HOMEPAGE;
+          next.max_hero_slides = currentPolicies.LIMIT_REALTOR_FREE_HERO_SLIDES;
+          next.can_hide_footer_badge = !!currentPolicies.PERM_REALTOR_FREE_FOOTER_HIDE;
+          next.can_intake_photo = !!currentPolicies.PERM_REALTOR_FREE_INTAKE_PHOTO;
+          next.can_site_logo = !!currentPolicies.PERM_REALTOR_FREE_SITE_LOGO;
+          next.can_hero_video = !!currentPolicies.PERM_REALTOR_FREE_HERO_VIDEO;
+          next.can_sns_links = !!currentPolicies.PERM_REALTOR_FREE_SNS_LINKS;
           } else if (val === "news_premium") {
             next.max_vacancies = currentPolicies.LIMIT_REALTOR_NEWS_VACANCY;
             next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_NEWS_ARTICLE;
           next.can_article_banner = !!currentPolicies.PERM_REALTOR_NEWS_ARTICLE_BANNER;
           next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_NEWS_ARTICLE_VACANCY;
           next.can_homepage = !!currentPolicies.PERM_REALTOR_NEWS_HOMEPAGE;
+          next.max_hero_slides = currentPolicies.LIMIT_REALTOR_NEWS_HERO_SLIDES;
+          next.can_hide_footer_badge = !!currentPolicies.PERM_REALTOR_NEWS_FOOTER_HIDE;
+          next.can_intake_photo = !!currentPolicies.PERM_REALTOR_NEWS_INTAKE_PHOTO;
+          next.can_site_logo = !!currentPolicies.PERM_REALTOR_NEWS_SITE_LOGO;
+          next.can_hero_video = !!currentPolicies.PERM_REALTOR_NEWS_HERO_VIDEO;
+          next.can_sns_links = !!currentPolicies.PERM_REALTOR_NEWS_SNS_LINKS;
           } else if (val === "study_premium") {
             next.max_vacancies = currentPolicies.LIMIT_REALTOR_STUDY_VACANCY;
             next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_STUDY_ARTICLE;
           next.can_article_banner = !!currentPolicies.PERM_REALTOR_STUDY_ARTICLE_BANNER;
           next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_STUDY_ARTICLE_VACANCY;
           next.can_homepage = !!currentPolicies.PERM_REALTOR_STUDY_HOMEPAGE;
+          next.max_hero_slides = currentPolicies.LIMIT_REALTOR_STUDY_HERO_SLIDES;
+          next.can_hide_footer_badge = !!currentPolicies.PERM_REALTOR_STUDY_FOOTER_HIDE;
+          next.can_intake_photo = !!currentPolicies.PERM_REALTOR_STUDY_INTAKE_PHOTO;
+          next.can_site_logo = !!currentPolicies.PERM_REALTOR_STUDY_SITE_LOGO;
+          next.can_hero_video = !!currentPolicies.PERM_REALTOR_STUDY_HERO_VIDEO;
+          next.can_sns_links = !!currentPolicies.PERM_REALTOR_STUDY_SNS_LINKS;
           }
         }
       }
@@ -539,6 +629,12 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           can_article_banner: !!formData.can_article_banner,
           can_article_vacancy_banner: !!formData.can_article_vacancy_banner,
           can_homepage: !!formData.can_homepage,
+          max_hero_slides: Number(formData.max_hero_slides) || 1,
+          can_hide_footer_badge: !!formData.can_hide_footer_badge,
+          can_intake_photo: !!formData.can_intake_photo,
+          can_site_logo: !!formData.can_site_logo,
+          can_hero_video: !!formData.can_hero_video,
+          can_sns_links: !!formData.can_sns_links,
           ...(profileImageUrl !== undefined ? { profile_image_url: profileImageUrl } : {})
         });
         if (!updateRes.success) throw new Error(updateRes.error || "회원 수정에 실패했습니다.");
@@ -918,7 +1014,31 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
                   <input type="checkbox" name="can_homepage" checked={!!formData.can_homepage} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>물건접수 홈페이지 권한</span>
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>물건접수웹페이지 권한</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_hide_footer_badge" checked={!!formData.can_hide_footer_badge} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>공실뉴스 표시 숨김</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_intake_photo" checked={!!formData.can_intake_photo} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>접수 사진 첨부</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_site_logo" checked={!!formData.can_site_logo} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>로고 올리기</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_hero_video" checked={!!formData.can_hero_video} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>첫 화면 영상</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_sns_links" checked={!!formData.can_sns_links} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>SNS 링크</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>첫 화면 장수:</span>
+                  <input type="number" name="max_hero_slides" value={formData.max_hero_slides} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 70, textAlign: 'right' }} min={1} max={3} />
                 </label>
                 <div style={{ width: '100%', fontSize: 12, color: "#888" }}>회원구분·요금제를 바꾸면 그 등급의 기본값으로 다시 채워집니다. 그 뒤에 여기서 끄거나 켜면 등급과 상관없이 이 회원에게만 적용됩니다.</div>
               </div>

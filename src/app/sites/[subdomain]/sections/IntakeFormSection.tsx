@@ -19,6 +19,8 @@ interface Props {
   subdomain: string;
   theme: Theme;
   cfg: any;
+  /** 이 중개사가 접수에서 사진을 받을 수 있는가. 무료 요금제는 받지 않는다 */
+  allowPhoto?: boolean;
   /** 접수 후 "이 번호로 연락드립니다" 에 쓴다 */
   phone?: string;
 }
@@ -54,10 +56,15 @@ const MOVE_IN_SEEKING = ["즉시", "1주 이내", "1달 이내", "협의"];
  * 폼의 목적은 물건 정보를 다 받는 것이 아니라 연락처를 받는 것이다. 나머지는
  * 전화로 물으면 된다. 열여섯 칸을 한 번에 세워두면 대부분 세 번째 칸에서 나간다.
  */
-export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Props) {
+export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowPhoto = false }: Props) {
   // 받을 항목 on/off. 저장된 적 없으면 전부 켠 상태가 기본이다.
   const showSeeking = cfg?.show_seeking !== false;
-  const showPhotos = cfg?.show_photos !== false;
+  /*
+   * 사진 단계는 두 조건을 다 넘어야 나온다 — 중개사가 켜두었고(show_photos),
+   * 요금제가 사진 첨부를 허락해야(allowPhoto) 한다. 무료 회원 페이지에서는
+   * 사진 없이도 접수가 끝까지 되므로 임대인이 막히지는 않는다.
+   */
+  const showPhotos = cfg?.show_photos !== false && allowPhoto;
   const showBudget = cfg?.show_budget !== false;
   const showNotes = cfg?.show_notes !== false;
 
@@ -69,6 +76,14 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Prop
   const [name, setName] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
   const [agreed, setAgreed] = useState(false);
+
+  /*
+   * 스팸 방어용 두 가지. 손님은 존재를 모른다.
+   *  - website : 사람 눈에 안 보이는 칸. 자동 채우기 봇만 채운다
+   *  - openedAt: 폼이 화면에 뜬 시각. 뜨자마자 제출되는 것은 사람이 아니다
+   */
+  const [website, setWebsite] = useState("");
+  const openedAt = useRef<number>(Date.now());
 
   const [area, setArea] = useState("");
   const [propertyType, setPropertyType] = useState("");
@@ -141,6 +156,8 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Prop
         name,
         phone: phoneInput,
         phase: "lead",
+        website,
+        openedAt: openedAt.current,
       });
       if (!res.success) {
         setError((res as any).message || "접수에 실패했습니다.");
@@ -377,13 +394,32 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone }: Prop
                   <input style={inputStyle} value={phoneInput} onChange={(e) => setPhoneInput(formatPhone(e.target.value))} placeholder="010-0000-0000" inputMode="numeric" maxLength={13} />
                 </div>
 
+                {/*
+                  보이지 않는 칸. 화면에서 빼지 않고 감추기만 해야 한다 —
+                  display:none 으로 지우면 알아채는 봇이 있다.
+                */}
+                <div aria-hidden="true" style={{ position: "absolute", left: -9999, width: 1, height: 1, overflow: "hidden" }}>
+                  <label htmlFor="gs-website">홈페이지 주소</label>
+                  <input
+                    id="gs-website"
+                    name="website"
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                  />
+                </div>
+
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: "#475569", lineHeight: 1.6, cursor: "pointer" }}>
                   <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0, accentColor: theme.primary }} />
                   <span>
                     <strong>개인정보 수집 · 이용에 동의합니다.</strong>
                     <br />
                     <span style={{ color: "#94a3b8", fontSize: 13 }}>
-                      수집 항목: 이름 · 연락처 · 문의 내용 / 목적: 접수 물건 상담 / 보유: 상담 종료 후 1년
+                      수집 항목: 이름 · 연락처 · 문의 내용{allowPhoto ? " · 첨부 사진" : ""} · 접속 정보(가림 처리) / 목적: 접수 물건 상담
+                      <br />
+                      보유: 마지막 상담일로부터 1년 · 이후 연락처는 가림 처리{allowPhoto ? "되고 사진은 삭제됩니다" : "됩니다"}
                     </span>
                   </span>
                 </label>

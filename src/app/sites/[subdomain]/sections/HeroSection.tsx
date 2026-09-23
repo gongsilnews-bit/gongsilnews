@@ -7,6 +7,10 @@ interface Props {
   officeName: string;
   theme: Theme;
   cfg: any;
+  /** 이 회원이 쓸 수 있는 슬라이드 장수 */
+  maxSlides?: number;
+  /** 첫 화면에 영상을 넣을 수 있는가. 없으면 사진까지만 나온다 */
+  allowVideo?: boolean;
   /** 섹션으로 보내는 진짜 링크. 스크립트가 막혀도 브라우저가 이동시킨다 */
   anchor: (id: string) => { href: string; onClick: (ev: React.MouseEvent) => void };
   /** 새 창 주소를 만든다. 로컬·미리보기에서는 /sites/{주소} 가 앞에 붙는다 */
@@ -30,8 +34,11 @@ const VIDEO_MS = 14000;
  * 문구는 편집기에 적힌 그대로만 그린다. 비어 있으면 그 줄은 없다 — 여기서 기본
  * 문구로 되돌리면 중개사가 지워도 계속 살아나서 지울 방법이 없어진다.
  */
-export default function HeroSection({ officeName, theme, cfg, anchor, hrefFor }: Props) {
-  const slides: HeroSlide[] = heroSlides(cfg);
+export default function HeroSection({ officeName, theme, cfg, anchor, hrefFor, maxSlides, allowVideo = true }: Props) {
+  // 영상 권한이 없으면 저장된 유튜브 주소는 그대로 두고 화면에서만 뺀다.
+  // 재결제하면 손대지 않은 그대로 다시 재생된다.
+  const rawSlides: HeroSlide[] = heroSlides(cfg, maxSlides);
+  const slides: HeroSlide[] = allowVideo ? rawSlides : rawSlides.map((s) => ({ ...s, youtube: "" }));
   const [idx, setIdx] = useState(0);
   const [muted, setMuted] = useState(true);
   const frameRef = useRef<HTMLIFrameElement | null>(null);

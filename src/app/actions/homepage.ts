@@ -200,7 +200,7 @@ export async function getHomepageSettingsBySubdomain(subdomain: string) {
     // 회원 정보 조회
     const { data: member } = await supabase
       .from('members')
-      .select('id, name, email, role, phone, plan_type, plan_end_date, profile_image_url, sns_links, can_homepage')
+      .select('id, name, email, role, phone, plan_type, plan_end_date, profile_image_url, sns_links, can_homepage, max_hero_slides, can_hide_footer_badge, can_intake_photo, can_site_logo, can_hero_video, can_sns_links')
       .eq('id', hs.owner_id)
       .single();
 

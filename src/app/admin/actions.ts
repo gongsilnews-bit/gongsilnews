@@ -78,6 +78,12 @@ export async function adminUpdateMember(memberId: string, updates: {
   can_article_banner?: boolean;
   can_article_vacancy_banner?: boolean;
   can_homepage?: boolean;
+  max_hero_slides?: number;
+  can_hide_footer_badge?: boolean;
+  can_intake_photo?: boolean;
+  can_site_logo?: boolean;
+  can_hero_video?: boolean;
+  can_sns_links?: boolean;
 }) {
   const supabaseAdmin = getAdminClient();
   try {
@@ -96,6 +102,12 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.can_article_banner !== undefined) dbUpdates.can_article_banner = updates.can_article_banner;
     if (updates.can_article_vacancy_banner !== undefined) dbUpdates.can_article_vacancy_banner = updates.can_article_vacancy_banner;
     if (updates.can_homepage !== undefined) dbUpdates.can_homepage = updates.can_homepage;
+    if (updates.max_hero_slides !== undefined) dbUpdates.max_hero_slides = updates.max_hero_slides;
+    if (updates.can_hide_footer_badge !== undefined) dbUpdates.can_hide_footer_badge = updates.can_hide_footer_badge;
+    if (updates.can_intake_photo !== undefined) dbUpdates.can_intake_photo = updates.can_intake_photo;
+    if (updates.can_site_logo !== undefined) dbUpdates.can_site_logo = updates.can_site_logo;
+    if (updates.can_hero_video !== undefined) dbUpdates.can_hero_video = updates.can_hero_video;
+    if (updates.can_sns_links !== undefined) dbUpdates.can_sns_links = updates.can_sns_links;
 
     if (updates.role === 'USER' || updates.role === 'BIZ' || updates.role === 'REALTOR') {
       const { policies } = await adminGetLimitPolicies();
@@ -109,6 +121,12 @@ export async function adminUpdateMember(memberId: string, updates: {
       if (updates.can_article_banner === undefined) dbUpdates.can_article_banner = defaults.can_article_banner;
       if (updates.can_article_vacancy_banner === undefined) dbUpdates.can_article_vacancy_banner = defaults.can_article_vacancy_banner;
       if (updates.can_homepage === undefined) dbUpdates.can_homepage = defaults.can_homepage;
+      if (updates.max_hero_slides === undefined) dbUpdates.max_hero_slides = defaults.max_hero_slides;
+      if (updates.can_hide_footer_badge === undefined) dbUpdates.can_hide_footer_badge = defaults.can_hide_footer_badge;
+      if (updates.can_intake_photo === undefined) dbUpdates.can_intake_photo = defaults.can_intake_photo;
+      if (updates.can_site_logo === undefined) dbUpdates.can_site_logo = defaults.can_site_logo;
+      if (updates.can_hero_video === undefined) dbUpdates.can_hero_video = defaults.can_hero_video;
+      if (updates.can_sns_links === undefined) dbUpdates.can_sns_links = defaults.can_sns_links;
 
       if (updates.role === 'USER') {
         // Update agencies and business_profiles status to REJECTED
@@ -680,18 +698,48 @@ const DEFAULT_LIMIT_POLICIES = {
   PERM_USER_ARTICLE_BANNER: 0,
   PERM_USER_ARTICLE_VACANCY: 0,
   PERM_USER_HOMEPAGE: 0,
+  LIMIT_USER_HERO_SLIDES: 1,
+  PERM_USER_FOOTER_HIDE: 0,
+  PERM_USER_INTAKE_PHOTO: 0,
+  PERM_USER_SITE_LOGO: 0,
+  PERM_USER_HERO_VIDEO: 0,
+  PERM_USER_SNS_LINKS: 0,
   PERM_REALTOR_FREE_ARTICLE_BANNER: 0,
   PERM_REALTOR_FREE_ARTICLE_VACANCY: 0,
-  PERM_REALTOR_FREE_HOMEPAGE: 0,
+  PERM_REALTOR_FREE_HOMEPAGE: 1,
+  LIMIT_REALTOR_FREE_HERO_SLIDES: 1,
+  PERM_REALTOR_FREE_FOOTER_HIDE: 0,
+  PERM_REALTOR_FREE_INTAKE_PHOTO: 0,
+  PERM_REALTOR_FREE_SITE_LOGO: 0,
+  PERM_REALTOR_FREE_HERO_VIDEO: 0,
+  PERM_REALTOR_FREE_SNS_LINKS: 0,
   PERM_REALTOR_STUDY_ARTICLE_BANNER: 1,
   PERM_REALTOR_STUDY_ARTICLE_VACANCY: 1,
   PERM_REALTOR_STUDY_HOMEPAGE: 1,
+  LIMIT_REALTOR_STUDY_HERO_SLIDES: 3,
+  PERM_REALTOR_STUDY_FOOTER_HIDE: 1,
+  PERM_REALTOR_STUDY_INTAKE_PHOTO: 1,
+  PERM_REALTOR_STUDY_SITE_LOGO: 1,
+  PERM_REALTOR_STUDY_HERO_VIDEO: 1,
+  PERM_REALTOR_STUDY_SNS_LINKS: 1,
   PERM_REALTOR_NEWS_ARTICLE_BANNER: 1,
   PERM_REALTOR_NEWS_ARTICLE_VACANCY: 1,
   PERM_REALTOR_NEWS_HOMEPAGE: 1,
+  LIMIT_REALTOR_NEWS_HERO_SLIDES: 3,
+  PERM_REALTOR_NEWS_FOOTER_HIDE: 1,
+  PERM_REALTOR_NEWS_INTAKE_PHOTO: 1,
+  PERM_REALTOR_NEWS_SITE_LOGO: 1,
+  PERM_REALTOR_NEWS_HERO_VIDEO: 1,
+  PERM_REALTOR_NEWS_SNS_LINKS: 1,
   PERM_BIZ_ARTICLE_BANNER: 1,
   PERM_BIZ_ARTICLE_VACANCY: 0,
   PERM_BIZ_HOMEPAGE: 1,
+  LIMIT_BIZ_HERO_SLIDES: 3,
+  PERM_BIZ_FOOTER_HIDE: 1,
+  PERM_BIZ_INTAKE_PHOTO: 1,
+  PERM_BIZ_SITE_LOGO: 1,
+  PERM_BIZ_HERO_VIDEO: 1,
+  PERM_BIZ_SNS_LINKS: 1,
 };
 
 /**
@@ -713,6 +761,12 @@ function planDefaults(
       can_article_banner: !!policies.PERM_USER_ARTICLE_BANNER,
       can_article_vacancy_banner: !!policies.PERM_USER_ARTICLE_VACANCY,
       can_homepage: !!policies.PERM_USER_HOMEPAGE,
+      max_hero_slides: policies.LIMIT_USER_HERO_SLIDES,
+      can_hide_footer_badge: !!policies.PERM_USER_FOOTER_HIDE,
+      can_intake_photo: !!policies.PERM_USER_INTAKE_PHOTO,
+      can_site_logo: !!policies.PERM_USER_SITE_LOGO,
+      can_hero_video: !!policies.PERM_USER_HERO_VIDEO,
+      can_sns_links: !!policies.PERM_USER_SNS_LINKS,
     };
   }
   if (role === 'BIZ') {
@@ -722,6 +776,12 @@ function planDefaults(
       can_article_banner: !!policies.PERM_BIZ_ARTICLE_BANNER,
       can_article_vacancy_banner: !!policies.PERM_BIZ_ARTICLE_VACANCY,
       can_homepage: !!policies.PERM_BIZ_HOMEPAGE,
+      max_hero_slides: policies.LIMIT_BIZ_HERO_SLIDES,
+      can_hide_footer_badge: !!policies.PERM_BIZ_FOOTER_HIDE,
+      can_intake_photo: !!policies.PERM_BIZ_INTAKE_PHOTO,
+      can_site_logo: !!policies.PERM_BIZ_SITE_LOGO,
+      can_hero_video: !!policies.PERM_BIZ_HERO_VIDEO,
+      can_sns_links: !!policies.PERM_BIZ_SNS_LINKS,
     };
   }
   if (planType === 'news_premium') {
@@ -731,6 +791,12 @@ function planDefaults(
       can_article_banner: !!policies.PERM_REALTOR_NEWS_ARTICLE_BANNER,
       can_article_vacancy_banner: !!policies.PERM_REALTOR_NEWS_ARTICLE_VACANCY,
       can_homepage: !!policies.PERM_REALTOR_NEWS_HOMEPAGE,
+      max_hero_slides: policies.LIMIT_REALTOR_NEWS_HERO_SLIDES,
+      can_hide_footer_badge: !!policies.PERM_REALTOR_NEWS_FOOTER_HIDE,
+      can_intake_photo: !!policies.PERM_REALTOR_NEWS_INTAKE_PHOTO,
+      can_site_logo: !!policies.PERM_REALTOR_NEWS_SITE_LOGO,
+      can_hero_video: !!policies.PERM_REALTOR_NEWS_HERO_VIDEO,
+      can_sns_links: !!policies.PERM_REALTOR_NEWS_SNS_LINKS,
     };
   }
   if (planType === 'study_premium') {
@@ -740,6 +806,12 @@ function planDefaults(
       can_article_banner: !!policies.PERM_REALTOR_STUDY_ARTICLE_BANNER,
       can_article_vacancy_banner: !!policies.PERM_REALTOR_STUDY_ARTICLE_VACANCY,
       can_homepage: !!policies.PERM_REALTOR_STUDY_HOMEPAGE,
+      max_hero_slides: policies.LIMIT_REALTOR_STUDY_HERO_SLIDES,
+      can_hide_footer_badge: !!policies.PERM_REALTOR_STUDY_FOOTER_HIDE,
+      can_intake_photo: !!policies.PERM_REALTOR_STUDY_INTAKE_PHOTO,
+      can_site_logo: !!policies.PERM_REALTOR_STUDY_SITE_LOGO,
+      can_hero_video: !!policies.PERM_REALTOR_STUDY_HERO_VIDEO,
+      can_sns_links: !!policies.PERM_REALTOR_STUDY_SNS_LINKS,
     };
   }
   return {
@@ -748,6 +820,12 @@ function planDefaults(
     can_article_banner: !!policies.PERM_REALTOR_FREE_ARTICLE_BANNER,
     can_article_vacancy_banner: !!policies.PERM_REALTOR_FREE_ARTICLE_VACANCY,
     can_homepage: !!policies.PERM_REALTOR_FREE_HOMEPAGE,
+    max_hero_slides: policies.LIMIT_REALTOR_FREE_HERO_SLIDES,
+    can_hide_footer_badge: !!policies.PERM_REALTOR_FREE_FOOTER_HIDE,
+    can_intake_photo: !!policies.PERM_REALTOR_FREE_INTAKE_PHOTO,
+    can_site_logo: !!policies.PERM_REALTOR_FREE_SITE_LOGO,
+    can_hero_video: !!policies.PERM_REALTOR_FREE_HERO_VIDEO,
+    can_sns_links: !!policies.PERM_REALTOR_FREE_SNS_LINKS,
   };
 }
 

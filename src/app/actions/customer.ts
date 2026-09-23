@@ -241,6 +241,8 @@ export async function registerIncomingInquiry(ownerId: string, data: {
    * 없으면 새 건으로 쌓는다.
    */
   attach_to_customer_id?: string;
+  /** 접수 당시 접속 정보의 해시. 스팸 방지에만 쓰고 원본 IP 는 받지 않는다 */
+  submit_ip_hash?: string;
 }) {
   const supabase = getAdminClient();
 
@@ -255,7 +257,7 @@ export async function registerIncomingInquiry(ownerId: string, data: {
    * 몇 달 전 고객 자리에 붙어버려 중개사는 새 문의가 온 줄 모른다. 한 사람이 두 번
    * 문의했다면 두 번 응대할 일이지 한 줄로 합칠 일이 아니다.
    *
-   * 예외는 하나 — 물건접수웹페이지은 연락처(1걸음)와 물건 내용(2걸음)을 나눠 받는다.
+   * 예외는 하나 — 물건접수웹페이지는 연락처(1걸음)와 물건 내용(2걸음)을 나눠 받는다.
    * 2걸음째는 방금 만든 그 건에 붙어야 하므로 id 를 들고 온다.
    */
   let customer: any = null;
@@ -337,7 +339,8 @@ export async function registerIncomingInquiry(ownerId: string, data: {
         target_vacancy_id: data.target_vacancy_id || null,
         source_flyer_id: data.source_flyer_id || null,
         photo_urls: data.photo_urls?.length ? data.photo_urls : null,
-        move_in_date: data.move_in_date || null
+        move_in_date: data.move_in_date || null,
+        submit_ip_hash: data.submit_ip_hash || null
       }])
       .select()
       .single();

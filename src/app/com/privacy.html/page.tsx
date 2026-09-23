@@ -45,6 +45,24 @@ export default function PrivacyHtmlPage() {
         </p>
       </section>
 
+      <section style={{ marginBottom: "32px" }}>
+        <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#1a73e8", marginBottom: "16px" }}>3. 물건접수웹페이지를 통해 수집되는 정보</h2>
+        <p style={{ marginBottom: "12px" }}>
+          공실뉴스는 중개사 회원에게 물건접수웹페이지(<code>&#123;아이디&#125;.gongsilnews.com</code>)를 제공합니다.
+          이 페이지의 접수 폼을 통해 임대인·임차인 등 <strong>회원이 아닌 분의 정보</strong>가 수집될 수 있으며, 그 처리 기준은 다음과 같습니다.
+        </p>
+        <ul style={{ marginBottom: "12px", paddingLeft: "20px", lineHeight: 1.9 }}>
+          <li><strong>수집 항목</strong> — 이름, 연락처, 문의 내용(지역·희망 금액·메모·입주 희망일), 접수자가 직접 첨부한 물건 사진, 접속 정보(스팸 방지 목적으로만 쓰며 <strong>원본은 저장하지 않고 가림 처리한 값만</strong> 보관합니다)</li>
+          <li><strong>수집 목적</strong> — 접수하신 물건에 대한 중개사의 상담 및 연락</li>
+          <li><strong>보유 기간</strong> — <strong>마지막 상담일로부터 1년</strong>. 상담이 이어지는 동안에는 마지막 연락 시점을 기준으로 다시 계산합니다</li>
+          <li><strong>기간이 지난 뒤</strong> — 첨부하신 사진은 삭제되고, 이름과 연락처는 다시 알아볼 수 없도록 가림 처리(예: 홍○○ / 010-****-1234)됩니다. 접수가 있었다는 기록만 남습니다</li>
+          <li><strong>파기·열람 요청</strong> — 기간이 지나기 전이라도 접수하신 중개사무소 또는 공실뉴스(gongsilnews@gmail.com)로 요청하시면 지체 없이 파기합니다</li>
+        </ul>
+        <p style={{ marginBottom: "12px", color: "#666", fontSize: "14px" }}>
+          접수하신 정보는 해당 중개사무소와 공실뉴스가 함께 보관하며, 상담 외의 목적으로 이용하거나 제3자에게 제공하지 않습니다.
+        </p>
+      </section>
+
       <div style={{ textAlign: "center", marginTop: "48px" }}>
         <Link href="/" style={{ display: "inline-block", background: "#1a73e8", color: "#fff", padding: "12px 24px", borderRadius: "8px", textDecoration: "none", fontWeight: "bold" }}>
           공실뉴스 홈으로 돌아가기

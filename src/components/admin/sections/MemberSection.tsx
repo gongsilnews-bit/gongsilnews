@@ -442,6 +442,15 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
   );
 }
 
+/** 물건접수웹페이지 구역의 줄 순서. 위 표와 같은 순서로 세운다. */
+const HOMEPAGE_ROWS: [string, string][] = [
+  ["일반회원", "USER"],
+  ["부동산회원 (무료)", "REALTOR_FREE"],
+  ["부동산회원 (공실스터디부동산)", "REALTOR_STUDY"],
+  ["부동산회원 (공실뉴스부동산)", "REALTOR_NEWS"],
+  ["비즈니스회원", "BIZ"],
+];
+
 function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boolean }) {
   const { cardBg, textPrimary, textSecondary, border } = theme;
   const [loading, setLoading] = useState(false);
@@ -461,18 +470,48 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
     PERM_USER_ARTICLE_BANNER: 0,
     PERM_USER_ARTICLE_VACANCY: 0,
     PERM_USER_HOMEPAGE: 0,
+    LIMIT_USER_HERO_SLIDES: 1,
+    PERM_USER_FOOTER_HIDE: 0,
+    PERM_USER_INTAKE_PHOTO: 0,
+    PERM_USER_SITE_LOGO: 0,
+    PERM_USER_HERO_VIDEO: 0,
+    PERM_USER_SNS_LINKS: 0,
     PERM_REALTOR_FREE_ARTICLE_BANNER: 0,
     PERM_REALTOR_FREE_ARTICLE_VACANCY: 0,
-    PERM_REALTOR_FREE_HOMEPAGE: 0,
+    PERM_REALTOR_FREE_HOMEPAGE: 1,
+    LIMIT_REALTOR_FREE_HERO_SLIDES: 1,
+    PERM_REALTOR_FREE_FOOTER_HIDE: 0,
+    PERM_REALTOR_FREE_INTAKE_PHOTO: 0,
+    PERM_REALTOR_FREE_SITE_LOGO: 0,
+    PERM_REALTOR_FREE_HERO_VIDEO: 0,
+    PERM_REALTOR_FREE_SNS_LINKS: 0,
     PERM_REALTOR_STUDY_ARTICLE_BANNER: 1,
     PERM_REALTOR_STUDY_ARTICLE_VACANCY: 1,
     PERM_REALTOR_STUDY_HOMEPAGE: 1,
+    LIMIT_REALTOR_STUDY_HERO_SLIDES: 3,
+    PERM_REALTOR_STUDY_FOOTER_HIDE: 1,
+    PERM_REALTOR_STUDY_INTAKE_PHOTO: 1,
+    PERM_REALTOR_STUDY_SITE_LOGO: 1,
+    PERM_REALTOR_STUDY_HERO_VIDEO: 1,
+    PERM_REALTOR_STUDY_SNS_LINKS: 1,
     PERM_REALTOR_NEWS_ARTICLE_BANNER: 1,
     PERM_REALTOR_NEWS_ARTICLE_VACANCY: 1,
     PERM_REALTOR_NEWS_HOMEPAGE: 1,
+    LIMIT_REALTOR_NEWS_HERO_SLIDES: 3,
+    PERM_REALTOR_NEWS_FOOTER_HIDE: 1,
+    PERM_REALTOR_NEWS_INTAKE_PHOTO: 1,
+    PERM_REALTOR_NEWS_SITE_LOGO: 1,
+    PERM_REALTOR_NEWS_HERO_VIDEO: 1,
+    PERM_REALTOR_NEWS_SNS_LINKS: 1,
     PERM_BIZ_ARTICLE_BANNER: 1,
     PERM_BIZ_ARTICLE_VACANCY: 0,
     PERM_BIZ_HOMEPAGE: 1,
+    LIMIT_BIZ_HERO_SLIDES: 3,
+    PERM_BIZ_FOOTER_HIDE: 1,
+    PERM_BIZ_INTAKE_PHOTO: 1,
+    PERM_BIZ_SITE_LOGO: 1,
+    PERM_BIZ_HERO_VIDEO: 1,
+    PERM_BIZ_SNS_LINKS: 1,
   });
 
   useEffect(() => {
@@ -574,7 +613,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 100, textAlign: "center" }}>월간 최대 기사 작성</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>기사 배너광고 권한</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>기사 공실배너 권한</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>물건접수 홈페이지 권한</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>물건접수웹페이지 권한</span>
         </div>
       </div>
 
@@ -636,6 +675,50 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           {perm("PERM_BIZ_ARTICLE_VACANCY")}
           {perm("PERM_BIZ_HOMEPAGE")}
         </div>
+      </div>
+
+      {/* ── 물건접수웹페이지 ──
+          위 표는 등급이 가로로 늘어나 있어서 항목을 더 붙이면 화면 밖으로 나간다.
+          홈페이지 쪽은 등급을 세로로 놓고 따로 본다. */}
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: `2px solid ${border}` }}>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: textPrimary, margin: "0 0 6px 0" }}>물건접수웹페이지</h3>
+        <p style={{ fontSize: 13, color: textSecondary, margin: "0 0 18px 0" }}>
+          홈페이지는 부동산회원 전원에게 열고, 여기서 기능으로 등급을 나눕니다.
+          추천공실·기사 노출은 위의 공실·기사 한도를 그대로 따라가므로 따로 설정하지 않습니다.
+        </p>
+
+        <div style={sectionStyle}>
+          <div style={rowStyle}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary, width: 250 }}>회원 구분 / 요금제</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 100, textAlign: "center" }}>첫 화면 장수</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>공실뉴스 표시 숨김</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>접수 사진 첨부</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>로고 올리기</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>첫 화면 영상</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>SNS 링크</span>
+          </div>
+        </div>
+
+        {HOMEPAGE_ROWS.map(([label, g]) => (
+          <div key={g} style={sectionStyle}>
+            <div style={rowStyle}>
+              <span style={labelStyle}>{label}</span>
+              <input
+                type="number"
+                value={(formData as any)[`LIMIT_${g}_HERO_SLIDES`]}
+                onChange={e => handleChange(`LIMIT_${g}_HERO_SLIDES`, parseInt(e.target.value) || 0)}
+                style={inputStyle}
+                min={1}
+                max={3}
+              />
+              {perm(`PERM_${g}_FOOTER_HIDE` as keyof typeof formData)}
+              {perm(`PERM_${g}_INTAKE_PHOTO` as keyof typeof formData)}
+              {perm(`PERM_${g}_SITE_LOGO` as keyof typeof formData)}
+              {perm(`PERM_${g}_HERO_VIDEO` as keyof typeof formData)}
+              {perm(`PERM_${g}_SNS_LINKS` as keyof typeof formData)}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* 옵션 및 저장 버튼 */}

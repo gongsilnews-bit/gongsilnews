@@ -18,6 +18,10 @@ interface Props {
   setSlide: (i: number, patch: Partial<HeroSlide>) => void;
   setCta: (i: number, patch: Partial<NonNullable<HeroSlide["cta"]>>) => void;
   addSlide: () => void;
+  /** 이 회원이 쓸 수 있는 장수. 무료는 1장이다 */
+  maxSlides?: number;
+  /** 첫 화면에 영상을 넣을 수 있는가 */
+  allowVideo?: boolean;
   removeSlide: (i: number) => void;
   onSlidePhoto: (i: number, e: React.ChangeEvent<HTMLInputElement>) => void;
   vacancies: any[];
@@ -36,6 +40,8 @@ export default function HeroSlidesEditor({
   setSlide,
   setCta,
   addSlide,
+  maxSlides = MAX_HERO_SLIDES,
+  allowVideo = true,
   removeSlide,
   onSlidePhoto,
   vacancies,
@@ -126,20 +132,28 @@ export default function HeroSlidesEditor({
               </label>
             )}
 
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ ...label, marginBottom: 5 }}>유튜브 주소 (넣으면 영상이 먼저입니다)</label>
-              <input
-                style={field}
-                value={sl.youtube || ""}
-                onChange={(e) => setSlide(i, { youtube: e.target.value })}
-                placeholder="https://youtu.be/..."
-              />
-              {sl.youtube && !vid && (
-                <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444", fontWeight: 700 }}>
-                  유튜브 주소가 아닌 것 같습니다. 주소창에 있는 것을 그대로 붙여넣어 주세요.
-                </p>
-              )}
-            </div>
+            {allowVideo ? (
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ ...label, marginBottom: 5 }}>유튜브 주소 (넣으면 영상이 먼저입니다)</label>
+                <input
+                  style={field}
+                  value={sl.youtube || ""}
+                  onChange={(e) => setSlide(i, { youtube: e.target.value })}
+                  placeholder="https://youtu.be/..."
+                />
+                {sl.youtube && !vid && (
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "#ef4444", fontWeight: 700 }}>
+                    유튜브 주소가 아닌 것 같습니다. 주소창에 있는 것을 그대로 붙여넣어 주세요.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div style={{ marginBottom: 12, padding: "12px 14px", border: `1px dashed ${border}`, borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: sub, lineHeight: 1.6, textAlign: "center" }}>
+                첫 화면에 유튜브 영상을 걸 수 있습니다
+                <br />
+                <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다</span>
+              </div>
+            )}
 
             <div style={{ marginBottom: 12 }}>
               <label style={{ ...label, marginBottom: 5 }}>첫 줄</label>
@@ -228,14 +242,25 @@ export default function HeroSlidesEditor({
         );
       })}
 
-      {slides.length < MAX_HERO_SLIDES && (
+      {slides.length < maxSlides && (
         <button
           type="button"
           onClick={addSlide}
           style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1px dashed ${border}`, background: "transparent", color: sub, fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}
         >
-          + 장 추가 ({slides.length}/{MAX_HERO_SLIDES})
+          + 장 추가 ({slides.length}/{maxSlides})
         </button>
+      )}
+
+      {/* 더 쓸 수 있다는 것을 보여준다. 잠긴 자리를 본 사람만 열고 싶어진다. */}
+      {maxSlides < MAX_HERO_SLIDES && (
+        <div
+          style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1px dashed ${border}`, background: "transparent", color: sub, fontSize: 12.5, fontWeight: 700, textAlign: "center", lineHeight: 1.6 }}
+        >
+          첫 화면을 {MAX_HERO_SLIDES}장까지 넘길 수 있습니다
+          <br />
+          <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다</span>
+        </div>
       )}
     </div>
   );
