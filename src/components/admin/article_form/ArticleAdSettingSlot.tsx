@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AuthorBanner, getAuthorBanners } from "@/app/actions/articleAd";
+import { AuthorBanner, getAuthorBanners, canUseArticleBanner } from "@/app/actions/articleAd";
 import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import { compressToWebP } from "./articleFormUtils";
 
@@ -66,6 +66,33 @@ export default function ArticleAdSettingSlot({
   textSecondary = "#64748b",
   textMuted = "#94a3b8",
 }: ArticleAdSettingSlotProps) {
+  /*
+   * 배너광고 권한. 없는 회원에게는 [배너등록] 칸 자체를 보여주지 않는다.
+   * 조회가 끝나기 전에는 잠깐 감춰둔다 — 없는 권한이 깜빡 보였다가
+   * 사라지는 것보다, 잠깐 늦게 나타나는 쪽이 낫다.
+   */
+  const adAuthorId = memberAuthorId || currentUserId || null;
+  const [canBanner, setCanBanner] = React.useState(false);
+
+  React.useEffect(() => {
+    let alive = true;
+    if (!adAuthorId) {
+      setCanBanner(false);
+      return;
+    }
+    canUseArticleBanner(adAuthorId).then((ok) => {
+      if (alive) setCanBanner(ok);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [adAuthorId]);
+
+  // 권한을 잃은 회원이 예전에 배너로 맞춰둔 기사를 열면 기본프로필로 되돌린다
+  React.useEffect(() => {
+    if (!canBanner && writeAdType === "BANNER") setWriteAdType("DEFAULT");
+  }, [canBanner, writeAdType, setWriteAdType]);
+
   return (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 32, minWidth: 0 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80, paddingTop: 4, flexShrink: 0 }}>광고등록</label>
@@ -84,16 +111,18 @@ export default function ArticleAdSettingSlot({
                     <span>기본프로필 선택 (등록자 프로필 카드)</span>
                   </label>
 
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14, fontWeight: 600, color: writeAdType === "BANNER" ? "#2563eb" : textPrimary }}>
-                    <input
-                      type="radio"
-                      name="write_ad_type"
-                      checked={writeAdType === "BANNER"}
-                      onChange={() => setWriteAdType("BANNER")}
-                      style={{ accentColor: "#2563eb", width: 16, height: 16, cursor: "pointer" }}
-                    />
-                    <span>배너등록 (이미지 첨부 + 링크 첨부)</span>
-                  </label>
+                  {canBanner && (
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14, fontWeight: 600, color: writeAdType === "BANNER" ? "#2563eb" : textPrimary }}>
+                      <input
+                        type="radio"
+                        name="write_ad_type"
+                        checked={writeAdType === "BANNER"}
+                        onChange={() => setWriteAdType("BANNER")}
+                        style={{ accentColor: "#2563eb", width: 16, height: 16, cursor: "pointer" }}
+                      />
+                      <span>배너등록 (이미지 첨부 + 링크 첨부)</span>
+                    </label>
+                  )}
 
                   <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: textSecondary }}>
                     <input
@@ -124,7 +153,7 @@ export default function ArticleAdSettingSlot({
                 )}
 
                 {/* 배너등록 선택 시: 등록 방식 먼저 선택 -> 분기 렌더링 (대표님 지시) */}
-                {writeAdType === "BANNER" && (
+                {canBanner && writeAdType === "BANNER" && (
                   <div style={{ padding: "18px 20px", background: "#f8fafc", borderRadius: 10, border: `1px solid ${border}`, display: "flex", flexDirection: "column", gap: 14, minWidth: 0, boxSizing: "border-box" }}>
                     {/* [1순위] 등록 방식 선택 (새 배너 직접 등록 vs 기존 배너 가져오기) */}
                     <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, paddingBottom: 12, borderBottom: `1px dashed ${border}` }}>

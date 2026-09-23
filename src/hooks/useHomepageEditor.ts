@@ -21,7 +21,7 @@ import { getVacanciesByOwnerId } from "@/app/actions/vacancy";
 import { getMyArticles } from "@/app/actions/article";
 
 /**
- * 홈페이지(물건접수장) 편집기의 속.
+ * 홈페이지(물건접수웹페이지) 편집기의 속.
  *
  * 불러오기·저장·사진 업로드·슬라이드 다루기·주소 변경은 PC 편집기와 폰 편집기가
  * 똑같이 한다. 화면만 다르다. 두 벌로 짜두면 칸을 하나 늘릴 때마다 두 곳을 고쳐야
@@ -263,8 +263,8 @@ export function useHomepageEditor(memberId: string) {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: siteTitle || "물건접수장",
-          text: `${siteTitle || "물건접수장"} 홈페이지`,
+          title: siteTitle || "물건접수웹페이지",
+          text: `${siteTitle || "물건접수웹페이지"} 웹페이지`,
           url: liveUrl,
         });
         setShareNotice("공유 완료");

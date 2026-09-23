@@ -45,7 +45,7 @@ const field: React.CSSProperties = {
 const label: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 700, color: sub, marginBottom: 7 };
 
 /**
- * 폰에서 하는 홈페이지 관리.
+ * 폰에서 하는 물건접수웹페이지 관리.
  *
  * 속(불러오기·저장·사진·슬라이드)은 PC 편집기와 같은 훅을 쓴다. 화면만 폰에 맞춘다.
  *
@@ -118,7 +118,7 @@ function Editor({ memberId }: { memberId: string }) {
           <button onClick={() => router.back()} aria-label="뒤로" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          <h1 style={{ fontSize: 17, fontWeight: 800, color: text, margin: 0, whiteSpace: "nowrap" }}>홈페이지 관리</h1>
+          <h1 style={{ fontSize: 17, fontWeight: 800, color: text, margin: 0, whiteSpace: "nowrap" }}>물건접수웹페이지</h1>
           {/* PC 와 같은 자리, 같은 역할. 딱지가 아니라 눌러서 여닫는 스위치다 */}
           <button
             type="button"
@@ -183,7 +183,7 @@ function Editor({ memberId }: { memberId: string }) {
                     {p.key === "basic" && (
                       <div style={{ paddingTop: 16, display: "flex", flexDirection: "column", gap: 18 }}>
                         <div>
-                          <label style={label}>접수장 주소</label>
+                          <label style={label}>웹페이지 주소</label>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <input style={field} value={e.subdomain} onChange={(ev) => e.onSubdomainChange(ev.target.value)} placeholder="myoffice" />
                             <span style={{ flexShrink: 0, fontSize: 12.5, color: sub, fontWeight: 700 }}>.gongsilnews.com</span>

@@ -12,7 +12,7 @@ function getAdminClient() {
   });
 }
 
-/** 물건접수장에서 들어오는 접수 유형. 기본은 물건을 내놓는 쪽이다. */
+/** 물건접수웹페이지에서 들어오는 접수 유형. 기본은 물건을 내놓는 쪽이다. */
 export type IntakeType = "매물내놔요" | "매물구해요";
 
 export interface IntakeInput {
@@ -75,7 +75,7 @@ export async function submitPropertyIntake(subdomain: string, input: IntakeInput
       area: input.area?.trim() || undefined,
       budget: input.budget?.trim() || undefined,
       notes: input.notes?.trim() || undefined,
-      source: "물건접수장",
+      source: "물건접수웹페이지",
       attach_to_customer_id: input.customerId || undefined,
       photo_urls: input.photoUrls?.length ? input.photoUrls : undefined,
       // 입주 희망일은 구하는 쪽에서만 의미가 있다

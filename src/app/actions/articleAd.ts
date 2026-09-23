@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { isPermissionAlive } from "@/utils/planCheck";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -10,6 +11,27 @@ function getAdminClient() {
     auth: { autoRefreshToken: false, persistSession: false },
     global: { fetch: (url, init) => fetch(url, { ...init, cache: "no-store" }) },
   });
+}
+
+const NO_BANNER_PERMISSION = "기사 배너광고 권한이 없는 회원입니다.";
+
+/**
+ * 기사에 배너광고를 붙일 수 있는가.
+ *
+ * 화면에서 입력칸을 감추는 것만으로는 막히지 않는다. 저장 요청을 직접
+ * 보내면 그대로 들어오므로, 배너가 만들어지고 기사에 붙는 길목 두 곳에서
+ * 서버가 다시 본다. 판정은 회원의 can_article_banner 한 칸이다.
+ */
+export async function canUseArticleBanner(memberId: string): Promise<boolean> {
+  if (!memberId) return false;
+  const supabase = getAdminClient();
+  const { data: member } = await supabase
+    .from("members")
+    .select("role, plan_type, plan_end_date, can_article_banner")
+    .eq("id", memberId)
+    .single();
+  if (!member) return false;
+  return isPermissionAlive(member, member.can_article_banner);
 }
 
 export interface AuthorBanner {
@@ -113,6 +135,10 @@ export async function saveAuthorBanner(formData: FormData): Promise<{ success: b
 
     if (!authorId) {
       return { success: false, error: "작성자 정보가 없습니다." };
+    }
+
+    if (!(await canUseArticleBanner(authorId))) {
+      return { success: false, error: NO_BANNER_PERMISSION };
     }
 
     // 이미지 업로드
@@ -535,6 +561,12 @@ export async function updateArticlesAdSettings(
   if (!articleIds || articleIds.length === 0 || !authorId) {
     return { success: false, error: "적용할 기사를 선택해주세요." };
   }
+
+  // 권한이 없으면 배너로는 못 바꾼다. 기본 프로필 카드나 노출 안 함은 막지 않는다.
+  if (settings.ad_type === "BANNER" && !(await canUseArticleBanner(authorId))) {
+    return { success: false, error: NO_BANNER_PERMISSION };
+  }
+
   const supabase = getAdminClient();
 
   try {

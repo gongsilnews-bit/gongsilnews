@@ -132,7 +132,7 @@ function MobileDashboard() {
     { icon: "📝", label: "기사관리", href: "/m/admin/article", roles: ["admin", "realtor", "user"] },
     { icon: "👥", label: "회원관리", href: "/m/admin/member", roles: ["admin"] },
     { icon: "👥", label: "고객/문의", href: "/m/admin/customer", roles: ["realtor"] },
-    { icon: "🏠", label: "물건접수장", href: "/m/admin/homepage", roles: ["realtor"] },
+    { icon: "🏠", label: "물건접수웹페이지", href: "/m/admin/homepage", roles: ["realtor"] },
     { icon: (
       <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: 'linear-gradient(135deg, #F59E0B, #D97706)', color: '#fff', fontSize: '13px', fontWeight: 900, boxShadow: '0 2px 4px rgba(245, 158, 11, 0.4)', fontFamily: 'system-ui, sans-serif' }}>
         G
@@ -142,7 +142,7 @@ function MobileDashboard() {
     { icon: "📋", label: "게시판관리", href: "/m/admin/board", roles: ["admin"] },
     { icon: "✉️", label: "문의관리", href: "/m/admin/inquiry", roles: ["admin"] },
     // 폰에서 PC 편집기를 열면 표가 화면 밖으로 나간다. 폰은 폰 편집기로 보낸다.
-    { icon: "📥", label: "물건접수장", href: "/m/admin/homepage", roles: ["realtor"] },
+    { icon: "📥", label: "물건접수웹페이지", href: "/m/admin/homepage", roles: ["realtor"] },
     { icon: "⚙️", label: "설정", href: "/m/admin/settings", roles: ["admin", "realtor", "user"] },
   ].filter(link => link.roles.includes(role));
 

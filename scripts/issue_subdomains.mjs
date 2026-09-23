@@ -6,7 +6,7 @@
  *
  * 주소는 이메일 아이디에서 딴다. 이미 쓰는 buildon·mgongsil·gongsilmarketing 이
  * 그렇게 생겼고, 이메일은 겹치지 않으니 주소도 겹치지 않는다. 마음에 안 들면
- * 중개사가 [물건접수장] 편집기에서 직접 바꾼다.
+ * 중개사가 [물건접수웹페이지] 편집기에서 직접 바꾼다.
  *
  * is_active 는 늘 true 로 넣는다. 돈을 안 냈을 때 닫는 일은 미들웨어와
  * getHomepageSettingsBySubdomain 이 요금제를 보고 알아서 한다 — 여기서 미리

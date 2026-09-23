@@ -127,7 +127,7 @@ export default function MenuPage() {
     };
     const member = { icon: '👥', label: '회원관리', href: '/m/admin/member', badgeCount: isAdmin ? pendingCounts.members : 0 };
     const realtor: any[] = [
-      { icon: '📥', label: '물건접수장', href: '/m/admin/homepage' },
+      { icon: '📥', label: '물건접수웹페이지', href: '/m/admin/homepage' },
       { icon: '👥', label: '고객/문의', href: '/m/admin/customer' },
       { icon: '⚙️', label: '정보설정', href: '/m/admin/settings' },
     ];

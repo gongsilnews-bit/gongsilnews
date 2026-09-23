@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
+import { isPermissionAlive } from "@/utils/planCheck";
 
 const RESERVED_SUBDOMAINS = new Set([
   'www', 'api', 'm', 'admin', 'news', 'study', 'biz', 'flyer', 'sites',
@@ -199,21 +200,15 @@ export async function getHomepageSettingsBySubdomain(subdomain: string) {
     // 회원 정보 조회
     const { data: member } = await supabase
       .from('members')
-      .select('id, name, email, role, phone, plan_type, plan_end_date, profile_image_url, sns_links')
+      .select('id, name, email, role, phone, plan_type, plan_end_date, profile_image_url, sns_links, can_homepage')
       .eq('id', hs.owner_id)
       .single();
 
     if (!member) return { success: false, reason: "not_found" as const, error: "회원 정보를 찾을 수 없습니다." };
 
-    // 요금제 혜택 등급 검사
-    const isPremium =
-      member.role === 'SUPER_ADMIN' ||
-      member.role === 'ADMIN' ||
-      member.role === '최고관리자' ||
-      ((member.plan_type === 'news_premium' ||
-        member.plan_type === 'study_premium' ||
-        member.plan_type === 'biz_premium') &&
-        (!member.plan_end_date || new Date(member.plan_end_date) >= new Date()));
+    // 홈페이지 권한 검사. 최고관리자가 회원별로 켜둔 칸을 보고,
+    // 요금제로 받은 권한이면 요금제가 끝나는 날 같이 닫힌다.
+    const isPremium = isPermissionAlive(member, member.can_homepage);
 
     if (!isPremium) {
       return { success: false, reason: "paused" as const, error: "일시적으로 중단된 페이지입니다." };

@@ -2,7 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
-import { getEffectivePlan } from "@/utils/planCheck";
+import { getEffectivePlan, isPermissionAlive } from "@/utils/planCheck";
 import type { EligibleVacancy, AuthorVacancyOptions } from "@/types/vacancy";
 
 function getAdminClient() {
@@ -15,10 +15,12 @@ function getAdminClient() {
 }
 
 /**
- * 유료 부동산 회원 자격 검사
- * - 공실뉴스부동산 (news_premium)
- * - 공실스터디부동산 (study_premium)
- * - 최고관리자 / 관리자 (admin, SUPER_ADMIN)
+ * 기사에 공실을 붙일 수 있는가.
+ *
+ * 판정은 회원의 can_article_vacancy_banner 한 칸만 본다. 등급은 가입·승인·
+ * 요금제 변경 때 그 칸에 기본값을 넣어줄 뿐이다. 그래야 최고관리자가
+ * 등급과 상관없이 한 사람씩 열고 닫을 수 있다.
+ * 최고관리자·관리자는 언제나 열려 있다.
  */
 export async function checkRealtorPaidPlan(authorId: string): Promise<{
   isPaid: boolean;
@@ -28,7 +30,7 @@ export async function checkRealtorPaidPlan(authorId: string): Promise<{
   const supabase = getAdminClient();
   const { data: member } = await supabase
     .from("members")
-    .select("id, role, plan_type, plan_end_date")
+    .select("id, role, plan_type, plan_end_date, can_article_vacancy_banner")
     .eq("id", authorId)
     .single();
 
@@ -37,8 +39,7 @@ export async function checkRealtorPaidPlan(authorId: string): Promise<{
   }
 
   const effectivePlan = getEffectivePlan(member);
-  const isSuper = member.role === "SUPER_ADMIN" || member.role === "ADMIN" || member.role === "최고관리자";
-  const isPaid = isSuper || effectivePlan === "news_premium" || effectivePlan === "study_premium";
+  const isPaid = isPermissionAlive(member, member.can_article_vacancy_banner);
 
   return { isPaid, plan: effectivePlan, role: member.role };
 }
@@ -118,16 +119,14 @@ export async function getEligibleVacanciesByAuthors(authorIds: string[]): Promis
 
     const { data: members, error: mErr } = await supabase
       .from("members")
-      .select("id, role, plan_type, plan_end_date")
+      .select("id, role, plan_type, plan_end_date, can_article_vacancy_banner")
       .in("id", ids);
 
     if (mErr) return { success: false, optionsByAuthor, error: mErr.message };
 
     const paidIds: string[] = [];
-    (members || []).forEach((m: { id: string; role?: string; plan_type?: string; plan_end_date?: string | null }) => {
-      const plan = getEffectivePlan(m);
-      const isSuper = m.role === "SUPER_ADMIN" || m.role === "ADMIN" || m.role === "최고관리자";
-      const isPaid = isSuper || plan === "news_premium" || plan === "study_premium";
+    (members || []).forEach((m: { id: string; role?: string; plan_type?: string; plan_end_date?: string | null; can_article_vacancy_banner?: boolean }) => {
+      const isPaid = isPermissionAlive(m, m.can_article_vacancy_banner);
       optionsByAuthor[m.id] = { isPaid, vacancies: [] };
       if (isPaid) paidIds.push(m.id);
     });

@@ -34,7 +34,7 @@ const REALTY_MENU: MenuItem[] = [
   { key: "customer", label: "고객문의", icon: <IconCustomer /> },
   { key: "inquiry_board", label: "1:1문의", icon: <IconCustomer /> },
   { key: "point", label: "포인트", icon: <IconPoint /> },
-  { key: "homepage", label: "물건접수장", icon: <IconHomepage /> },
+  { key: "homepage", label: "물건접수웹페이지", icon: <IconHomepage /> },
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
 ];
@@ -128,7 +128,7 @@ function RealtyAdminContent() {
       const { data: { user } } = await supabase.auth.getUser();
 
       // 🔐 비로그인 → 로그인 화면으로 보내고, 끝나면 보던 화면으로 되돌린다.
-      //    메인으로 떨구면 물건접수장을 고치러 온 사람이 다시 메뉴를 찾아 들어와야 한다.
+      //    메인으로 떨구면 물건접수웹페이지을 고치러 온 사람이 다시 메뉴를 찾아 들어와야 한다.
       if (!user) {
         const returnTo = window.location.pathname + window.location.search;
         window.location.href = `/login?returnTo=${encodeURIComponent(returnTo)}`;

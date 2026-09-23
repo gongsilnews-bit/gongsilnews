@@ -8,13 +8,13 @@ import { useHomepageEditor } from "@/hooks/useHomepageEditor";
 import { INTRO_MAX } from "@/app/sites/[subdomain]/theme";
 
 /**
- * 물건접수장 편집기
+ * 물건접수웹페이지 편집기
  *
  * 전단지 편집기(marketing/ai-detail)와 같은 구조 — 좌측에서 고치면 우측 미리보기가
  * 즉시 바뀐다. 다만 미리보기를 따로 그리지 않고 실제 공개 페이지 컴포넌트를
  * 그대로 렌더한다. 편집 화면과 실물이 어긋날 일이 없다.
  *
- * 배치는 고르지 못하게 하고 색만 고르게 한다. 접수장은 배치가 곧 성능이라
+ * 배치는 고르지 못하게 하고 색만 고르게 한다. 물건접수웹페이지는 배치가 곧 성능이라
  * 열어두면 보기 좋은 쪽을 고르지 접수가 잘 되는 쪽을 고르지 않는다.
  */
 
@@ -151,7 +151,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
       <div style={{ width: 400, flexShrink: 0, display: "flex", flexDirection: "column", background: cardBg, border: `1px solid ${border}`, borderRadius: 12, overflow: "hidden" }}>
         <div style={{ padding: "18px 20px 14px", borderBottom: `1px solid ${border}` }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: text }}>물건접수장</h2>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: text }}>물건접수웹페이지</h2>
             <button
               type="button"
               role="switch"
@@ -212,7 +212,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                     {p.key === "basic" && (
                       <>
                         <div style={group}>
-                          <label style={label}>접수장 주소</label>
+                          <label style={label}>웹페이지 주소</label>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <input
                               style={{ ...field, flex: 1 }}

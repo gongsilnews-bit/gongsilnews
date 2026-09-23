@@ -37,7 +37,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     plan_start_date: "",
     plan_end_date: "",
     max_vacancies: 5,
-    max_articles_per_month: 0
+    max_articles_per_month: 0,
+    can_article_banner: false,
+    can_article_vacancy_banner: false,
+    can_homepage: false
   });
 
   const [agencyData, setAgencyData] = useState({
@@ -154,12 +157,15 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             plan_start_date: res.member.plan_start_date ? new Date(res.member.plan_start_date).toISOString().split('T')[0] : "",
             plan_end_date: res.member.plan_end_date ? new Date(res.member.plan_end_date).toISOString().split('T')[0] : "",
             max_vacancies: res.member.max_vacancies ?? 5,
-            max_articles_per_month: res.member.max_articles_per_month ?? 0
+            max_articles_per_month: res.member.max_articles_per_month ?? 0,
+            can_article_banner: !!res.member.can_article_banner,
+            can_article_vacancy_banner: !!res.member.can_article_vacancy_banner,
+            can_homepage: !!res.member.can_homepage
           });
           if (res.member.profile_image_url) {
             setProfilePhotoPreview(res.member.profile_image_url);
           }
-          // [문의하기] 는 비어 있으면 본인 물건접수장 주소를 기본값으로 넣어준다.
+          // [문의하기] 는 비어 있으면 본인 물건접수웹페이지 주소를 기본값으로 넣어준다.
           // 중개사가 링크를 따로 만들 필요 없이 바로 쓰게 하려는 것이고,
           // 직접 입력한 값이 있으면 건드리지 않는다.
           getHomepageSettings(editMemberId).then(hs => {
@@ -316,8 +322,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   };
 
   const handleMemberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    let val = e.target.value;
-    if (e.target.name === "phone") val = formatPhone(val);
+    // 체크박스는 value 가 늘 "on" 이라 checked 를 봐야 한다
+    const isCheckbox = e.target instanceof HTMLInputElement && e.target.type === "checkbox";
+    let val: string | boolean = isCheckbox ? (e.target as HTMLInputElement).checked : e.target.value;
+    if (e.target.name === "phone") val = formatPhone(val as string);
     if (e.target.name === "role" && val === "일반회원") {
       setActiveTab(0);
     }
@@ -331,10 +339,25 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         LIMIT_REALTOR_FREE_ARTICLE: 0,
         LIMIT_REALTOR_NEWS_VACANCY: 20,
         LIMIT_REALTOR_NEWS_ARTICLE: 10,
-        LIMIT_REALTOR_VACANCY_VACANCY: 50,
-        LIMIT_REALTOR_VACANCY_ARTICLE: 20,
+        LIMIT_REALTOR_STUDY_VACANCY: 50,
+        LIMIT_REALTOR_STUDY_ARTICLE: 20,
         LIMIT_BIZ_VACANCY: 0,
         LIMIT_BIZ_ARTICLE: 10,
+        PERM_USER_ARTICLE_BANNER: 0,
+        PERM_USER_ARTICLE_VACANCY: 0,
+        PERM_USER_HOMEPAGE: 0,
+        PERM_REALTOR_FREE_ARTICLE_BANNER: 0,
+        PERM_REALTOR_FREE_ARTICLE_VACANCY: 0,
+        PERM_REALTOR_FREE_HOMEPAGE: 0,
+        PERM_REALTOR_STUDY_ARTICLE_BANNER: 1,
+        PERM_REALTOR_STUDY_ARTICLE_VACANCY: 1,
+        PERM_REALTOR_STUDY_HOMEPAGE: 1,
+        PERM_REALTOR_NEWS_ARTICLE_BANNER: 1,
+        PERM_REALTOR_NEWS_ARTICLE_VACANCY: 1,
+        PERM_REALTOR_NEWS_HOMEPAGE: 1,
+        PERM_BIZ_ARTICLE_BANNER: 1,
+        PERM_BIZ_ARTICLE_VACANCY: 0,
+        PERM_BIZ_HOMEPAGE: 1,
       };
 
       if (e.target.name === "role") {
@@ -342,33 +365,57 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           next.plan_type = "free";
           next.max_vacancies = currentPolicies.LIMIT_USER_VACANCY;
           next.max_articles_per_month = currentPolicies.LIMIT_USER_ARTICLE;
+          next.can_article_banner = !!currentPolicies.PERM_USER_ARTICLE_BANNER;
+          next.can_article_vacancy_banner = !!currentPolicies.PERM_USER_ARTICLE_VACANCY;
+          next.can_homepage = !!currentPolicies.PERM_USER_HOMEPAGE;
         } else if (val === "비즈니스회원") {
           next.plan_type = "biz_premium";
           next.max_vacancies = currentPolicies.LIMIT_BIZ_VACANCY;
           next.max_articles_per_month = currentPolicies.LIMIT_BIZ_ARTICLE;
+          next.can_article_banner = !!currentPolicies.PERM_BIZ_ARTICLE_BANNER;
+          next.can_article_vacancy_banner = !!currentPolicies.PERM_BIZ_ARTICLE_VACANCY;
+          next.can_homepage = !!currentPolicies.PERM_BIZ_HOMEPAGE;
         } else if (val === "부동산회원") {
           next.plan_type = "free";
           next.max_vacancies = currentPolicies.LIMIT_REALTOR_FREE_VACANCY;
           next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_FREE_ARTICLE;
+          next.can_article_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_BANNER;
+          next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_VACANCY;
+          next.can_homepage = !!currentPolicies.PERM_REALTOR_FREE_HOMEPAGE;
         }
       } else if (e.target.name === "plan_type") {
         if (next.role === "일반회원") {
           next.max_vacancies = currentPolicies.LIMIT_USER_VACANCY;
           next.max_articles_per_month = currentPolicies.LIMIT_USER_ARTICLE;
+          next.can_article_banner = !!currentPolicies.PERM_USER_ARTICLE_BANNER;
+          next.can_article_vacancy_banner = !!currentPolicies.PERM_USER_ARTICLE_VACANCY;
+          next.can_homepage = !!currentPolicies.PERM_USER_HOMEPAGE;
         } else if (next.role === "비즈니스회원") {
           next.max_vacancies = currentPolicies.LIMIT_BIZ_VACANCY;
           next.max_articles_per_month = currentPolicies.LIMIT_BIZ_ARTICLE;
+          next.can_article_banner = !!currentPolicies.PERM_BIZ_ARTICLE_BANNER;
+          next.can_article_vacancy_banner = !!currentPolicies.PERM_BIZ_ARTICLE_VACANCY;
+          next.can_homepage = !!currentPolicies.PERM_BIZ_HOMEPAGE;
         } else {
           // REALTOR
           if (val === "free") {
             next.max_vacancies = currentPolicies.LIMIT_REALTOR_FREE_VACANCY;
             next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_FREE_ARTICLE;
+          next.can_article_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_BANNER;
+          next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_VACANCY;
+          next.can_homepage = !!currentPolicies.PERM_REALTOR_FREE_HOMEPAGE;
           } else if (val === "news_premium") {
             next.max_vacancies = currentPolicies.LIMIT_REALTOR_NEWS_VACANCY;
             next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_NEWS_ARTICLE;
+          next.can_article_banner = !!currentPolicies.PERM_REALTOR_NEWS_ARTICLE_BANNER;
+          next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_NEWS_ARTICLE_VACANCY;
+          next.can_homepage = !!currentPolicies.PERM_REALTOR_NEWS_HOMEPAGE;
           } else if (val === "study_premium") {
-            next.max_vacancies = currentPolicies.LIMIT_REALTOR_VACANCY_VACANCY;
-            next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_VACANCY_ARTICLE;
+            next.max_vacancies = currentPolicies.LIMIT_REALTOR_STUDY_VACANCY;
+            next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_STUDY_ARTICLE;
+          next.can_article_banner = !!currentPolicies.PERM_REALTOR_STUDY_ARTICLE_BANNER;
+          next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_STUDY_ARTICLE_VACANCY;
+          next.can_homepage = !!currentPolicies.PERM_REALTOR_STUDY_HOMEPAGE;
           }
         }
       }
@@ -489,6 +536,9 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
           plan_end_date: formData.plan_end_date || null,
           max_vacancies: Number(formData.max_vacancies) || 0,
           max_articles_per_month: Number(formData.max_articles_per_month) || 0,
+          can_article_banner: !!formData.can_article_banner,
+          can_article_vacancy_banner: !!formData.can_article_vacancy_banner,
+          can_homepage: !!formData.can_homepage,
           ...(profileImageUrl !== undefined ? { profile_image_url: profileImageUrl } : {})
         });
         if (!updateRes.success) throw new Error(updateRes.error || "회원 수정에 실패했습니다.");
@@ -824,8 +874,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
               <div style={contentStyle}>
                 <select name="plan_type" value={formData.plan_type} onChange={handleMemberChange} disabled={!isAdmin} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 180 }}>
                   <option value="free">무료부동산 (Free)</option>
-                  <option value="news_premium">공실뉴스부동산</option>
                   <option value="study_premium">공실스터디부동산</option>
+                  <option value="news_premium">공실뉴스부동산</option>
                 </select>
               </div>
             </div>
@@ -853,6 +903,24 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
                   <input type="number" name="max_articles_per_month" value={formData.max_articles_per_month} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
                 </label>
                 <div style={{ width: '100%', fontSize: 12, color: "#888" }}>0으로 설정 시 해당 기능을 사용할 수 없으며, 매우 높은 숫자 입력 시 무제한과 동일합니다. (기본값: 공실광고 5, 기사 0)</div>
+              </div>
+            </div>
+            <div style={rowStyle}>
+              <div style={labelStyle}>개별 권한 설정</div>
+              <div style={{ ...contentStyle, gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_article_banner" checked={!!formData.can_article_banner} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>기사 배너광고 권한</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_article_vacancy_banner" checked={!!formData.can_article_vacancy_banner} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>기사 공실배너 권한</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
+                  <input type="checkbox" name="can_homepage" checked={!!formData.can_homepage} onChange={handleMemberChange} disabled={!isAdmin} style={{ accentColor: '#3b82f6', width: 16, height: 16 }} />
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>물건접수 홈페이지 권한</span>
+                </label>
+                <div style={{ width: '100%', fontSize: 12, color: "#888" }}>회원구분·요금제를 바꾸면 그 등급의 기본값으로 다시 채워집니다. 그 뒤에 여기서 끄거나 켜면 등급과 상관없이 이 회원에게만 적용됩니다.</div>
               </div>
             </div>
           </>

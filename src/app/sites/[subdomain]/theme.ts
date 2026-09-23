@@ -96,7 +96,7 @@ export function formatPhone(v: string): string {
   return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7, 11)}`;
 }
 
-/** 다음 우편번호 위젯. 공실등록과 같은 것을 쓰되 접수장에는 주소만 있으면 된다. */
+/** 다음 우편번호 위젯. 공실등록과 같은 것을 쓰되 물건접수웹페이지에는 주소만 있으면 된다. */
 export function openPostcode(onPick: (addr: string) => void) {
   if (typeof window === "undefined") return;
   const run = () => {

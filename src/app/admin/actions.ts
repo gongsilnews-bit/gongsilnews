@@ -75,6 +75,9 @@ export async function adminUpdateMember(memberId: string, updates: {
   max_vacancies?: number;
   max_articles_per_month?: number;
   profile_image_url?: string | null;
+  can_article_banner?: boolean;
+  can_article_vacancy_banner?: boolean;
+  can_homepage?: boolean;
 }) {
   const supabaseAdmin = getAdminClient();
   try {
@@ -89,33 +92,28 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.max_vacancies !== undefined) dbUpdates.max_vacancies = updates.max_vacancies;
     if (updates.max_articles_per_month !== undefined) dbUpdates.max_articles_per_month = updates.max_articles_per_month;
     if (updates.profile_image_url !== undefined) dbUpdates.profile_image_url = updates.profile_image_url;
+    // 최고관리자가 회원 화면에서 직접 체크한 값. 등급과 무관하게 이 값이 그대로 들어간다.
+    if (updates.can_article_banner !== undefined) dbUpdates.can_article_banner = updates.can_article_banner;
+    if (updates.can_article_vacancy_banner !== undefined) dbUpdates.can_article_vacancy_banner = updates.can_article_vacancy_banner;
+    if (updates.can_homepage !== undefined) dbUpdates.can_homepage = updates.can_homepage;
 
-    if (updates.role === 'USER') {
+    if (updates.role === 'USER' || updates.role === 'BIZ' || updates.role === 'REALTOR') {
       const { policies } = await adminGetLimitPolicies();
-      dbUpdates.plan_type = 'free';
-      if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_USER_VACANCY;
-      if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_USER_ARTICLE;
-      
-      // Update agencies and business_profiles status to REJECTED
-      await supabaseAdmin.from('agencies').update({ status: 'REJECTED', reject_reason: '관리자에 의한 일반회원 전환' }).eq('owner_id', memberId);
-      await supabaseAdmin.from('business_profiles').update({ status: 'REJECTED', rejection_reason: '관리자에 의한 일반회원 전환', updated_at: new Date().toISOString() }).eq('user_id', memberId);
-    } else if (updates.role === 'BIZ') {
-      const { policies } = await adminGetLimitPolicies();
-      dbUpdates.plan_type = 'biz_premium';
-      if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_BIZ_VACANCY;
-      if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_BIZ_ARTICLE;
-    } else if (updates.role === 'REALTOR') {
-      const { policies } = await adminGetLimitPolicies();
-      const plan = updates.plan_type || 'free';
-      if (plan === 'news_premium') {
-        if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_REALTOR_NEWS_VACANCY;
-        if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_REALTOR_NEWS_ARTICLE;
-      } else if (plan === 'study_premium') {
-        if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_REALTOR_VACANCY_VACANCY;
-        if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_REALTOR_VACANCY_ARTICLE;
-      } else {
-        if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = policies.LIMIT_REALTOR_FREE_VACANCY;
-        if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = policies.LIMIT_REALTOR_FREE_ARTICLE;
+      if (updates.role === 'USER') dbUpdates.plan_type = 'free';
+      if (updates.role === 'BIZ') dbUpdates.plan_type = 'biz_premium';
+
+      // 화면이 보내지 않은 항목만 등급 기본값으로 채운다. 보낸 값은 건드리지 않는다.
+      const defaults = planDefaults(policies, updates.role, dbUpdates.plan_type ?? updates.plan_type);
+      if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = defaults.max_vacancies;
+      if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = defaults.max_articles_per_month;
+      if (updates.can_article_banner === undefined) dbUpdates.can_article_banner = defaults.can_article_banner;
+      if (updates.can_article_vacancy_banner === undefined) dbUpdates.can_article_vacancy_banner = defaults.can_article_vacancy_banner;
+      if (updates.can_homepage === undefined) dbUpdates.can_homepage = defaults.can_homepage;
+
+      if (updates.role === 'USER') {
+        // Update agencies and business_profiles status to REJECTED
+        await supabaseAdmin.from('agencies').update({ status: 'REJECTED', reject_reason: '관리자에 의한 일반회원 전환' }).eq('owner_id', memberId);
+        await supabaseAdmin.from('business_profiles').update({ status: 'REJECTED', rejection_reason: '관리자에 의한 일반회원 전환', updated_at: new Date().toISOString() }).eq('user_id', memberId);
       }
     }
 
@@ -230,23 +228,12 @@ export async function adminApproveRealtorApplication(memberId: string) {
 
     const planType = member?.plan_type || 'free';
     const { policies } = await adminGetLimitPolicies();
-    let maxVacancies = policies.LIMIT_REALTOR_FREE_VACANCY;
-    let maxArticles = policies.LIMIT_REALTOR_FREE_ARTICLE;
-
-    if (planType === 'news_premium') {
-      maxVacancies = policies.LIMIT_REALTOR_NEWS_VACANCY;
-      maxArticles = policies.LIMIT_REALTOR_NEWS_ARTICLE;
-    } else if (planType === 'study_premium') {
-      maxVacancies = policies.LIMIT_REALTOR_VACANCY_VACANCY;
-      maxArticles = policies.LIMIT_REALTOR_VACANCY_ARTICLE;
-    }
 
     const { error: memberError } = await supabaseAdmin
       .from('members')
-      .update({ 
+      .update({
         role: 'REALTOR',
-        max_vacancies: maxVacancies,
-        max_articles_per_month: maxArticles
+        ...planDefaults(policies, 'REALTOR', planType),
       })
       .eq('id', memberId);
     if (memberError) return { success: false, error: memberError.message };
@@ -651,8 +638,7 @@ export async function adminApproveBusinessApplication(memberId: string) {
       .update({
         role: 'BIZ',
         plan_type: 'biz_premium',
-        max_vacancies: policies.LIMIT_BIZ_VACANCY,
-        max_articles_per_month: policies.LIMIT_BIZ_ARTICLE
+        ...planDefaults(policies, 'BIZ'),
       })
       .eq('id', memberId);
     if (memberError) return { success: false, error: memberError.message };
@@ -686,11 +672,84 @@ const DEFAULT_LIMIT_POLICIES = {
   LIMIT_REALTOR_FREE_ARTICLE: 0,
   LIMIT_REALTOR_NEWS_VACANCY: 20,
   LIMIT_REALTOR_NEWS_ARTICLE: 10,
-  LIMIT_REALTOR_VACANCY_VACANCY: 50,
-  LIMIT_REALTOR_VACANCY_ARTICLE: 20,
+  LIMIT_REALTOR_STUDY_VACANCY: 50,
+  LIMIT_REALTOR_STUDY_ARTICLE: 20,
   LIMIT_BIZ_VACANCY: 0,
   LIMIT_BIZ_ARTICLE: 10,
+  // 권한은 켜짐 1 / 꺼짐 0 으로 둔다. point_settings 가 숫자만 담기 때문이다.
+  PERM_USER_ARTICLE_BANNER: 0,
+  PERM_USER_ARTICLE_VACANCY: 0,
+  PERM_USER_HOMEPAGE: 0,
+  PERM_REALTOR_FREE_ARTICLE_BANNER: 0,
+  PERM_REALTOR_FREE_ARTICLE_VACANCY: 0,
+  PERM_REALTOR_FREE_HOMEPAGE: 0,
+  PERM_REALTOR_STUDY_ARTICLE_BANNER: 1,
+  PERM_REALTOR_STUDY_ARTICLE_VACANCY: 1,
+  PERM_REALTOR_STUDY_HOMEPAGE: 1,
+  PERM_REALTOR_NEWS_ARTICLE_BANNER: 1,
+  PERM_REALTOR_NEWS_ARTICLE_VACANCY: 1,
+  PERM_REALTOR_NEWS_HOMEPAGE: 1,
+  PERM_BIZ_ARTICLE_BANNER: 1,
+  PERM_BIZ_ARTICLE_VACANCY: 0,
+  PERM_BIZ_HOMEPAGE: 1,
 };
+
+/**
+ * 등급이 회원에게 내려주는 기본값 한 벌.
+ *
+ * 가입·승인·요금제 변경 때만 쓴다. 한 번 내려간 뒤에는 회원 값이 주인이고,
+ * 최고관리자가 회원별로 덮어쓴 것을 등급이 다시 끌어내리지 않는다.
+ * 여기 한 곳에서만 등급을 값으로 옮기므로, 등급이 늘어도 고칠 곳은 하나다.
+ */
+function planDefaults(
+  policies: typeof DEFAULT_LIMIT_POLICIES,
+  role: string,
+  planType?: string | null
+) {
+  if (role === 'USER') {
+    return {
+      max_vacancies: policies.LIMIT_USER_VACANCY,
+      max_articles_per_month: policies.LIMIT_USER_ARTICLE,
+      can_article_banner: !!policies.PERM_USER_ARTICLE_BANNER,
+      can_article_vacancy_banner: !!policies.PERM_USER_ARTICLE_VACANCY,
+      can_homepage: !!policies.PERM_USER_HOMEPAGE,
+    };
+  }
+  if (role === 'BIZ') {
+    return {
+      max_vacancies: policies.LIMIT_BIZ_VACANCY,
+      max_articles_per_month: policies.LIMIT_BIZ_ARTICLE,
+      can_article_banner: !!policies.PERM_BIZ_ARTICLE_BANNER,
+      can_article_vacancy_banner: !!policies.PERM_BIZ_ARTICLE_VACANCY,
+      can_homepage: !!policies.PERM_BIZ_HOMEPAGE,
+    };
+  }
+  if (planType === 'news_premium') {
+    return {
+      max_vacancies: policies.LIMIT_REALTOR_NEWS_VACANCY,
+      max_articles_per_month: policies.LIMIT_REALTOR_NEWS_ARTICLE,
+      can_article_banner: !!policies.PERM_REALTOR_NEWS_ARTICLE_BANNER,
+      can_article_vacancy_banner: !!policies.PERM_REALTOR_NEWS_ARTICLE_VACANCY,
+      can_homepage: !!policies.PERM_REALTOR_NEWS_HOMEPAGE,
+    };
+  }
+  if (planType === 'study_premium') {
+    return {
+      max_vacancies: policies.LIMIT_REALTOR_STUDY_VACANCY,
+      max_articles_per_month: policies.LIMIT_REALTOR_STUDY_ARTICLE,
+      can_article_banner: !!policies.PERM_REALTOR_STUDY_ARTICLE_BANNER,
+      can_article_vacancy_banner: !!policies.PERM_REALTOR_STUDY_ARTICLE_VACANCY,
+      can_homepage: !!policies.PERM_REALTOR_STUDY_HOMEPAGE,
+    };
+  }
+  return {
+    max_vacancies: policies.LIMIT_REALTOR_FREE_VACANCY,
+    max_articles_per_month: policies.LIMIT_REALTOR_FREE_ARTICLE,
+    can_article_banner: !!policies.PERM_REALTOR_FREE_ARTICLE_BANNER,
+    can_article_vacancy_banner: !!policies.PERM_REALTOR_FREE_ARTICLE_VACANCY,
+    can_homepage: !!policies.PERM_REALTOR_FREE_HOMEPAGE,
+  };
+}
 
 export async function adminGetLimitPolicies() {
   const supabaseAdmin = getAdminClient();
@@ -730,30 +789,26 @@ export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_PO
     if (upsertError) return { success: false, error: upsertError.message };
 
     if (applyToExisting) {
-      await supabaseAdmin.from('members').update({
-        max_vacancies: policies.LIMIT_USER_VACANCY,
-        max_articles_per_month: policies.LIMIT_USER_ARTICLE
-      }).eq('role', 'USER');
+      // 한도뿐 아니라 권한 체크까지 같이 내려간다. 회원별로 열어둔 예외도 함께 덮인다.
+      await supabaseAdmin.from('members')
+        .update(planDefaults(policies, 'USER'))
+        .eq('role', 'USER');
 
-      await supabaseAdmin.from('members').update({
-        max_vacancies: policies.LIMIT_BIZ_VACANCY,
-        max_articles_per_month: policies.LIMIT_BIZ_ARTICLE
-      }).eq('role', 'BIZ');
+      await supabaseAdmin.from('members')
+        .update(planDefaults(policies, 'BIZ'))
+        .eq('role', 'BIZ');
 
-      await supabaseAdmin.from('members').update({
-        max_vacancies: policies.LIMIT_REALTOR_FREE_VACANCY,
-        max_articles_per_month: policies.LIMIT_REALTOR_FREE_ARTICLE
-      }).eq('role', 'REALTOR').eq('plan_type', 'free');
+      await supabaseAdmin.from('members')
+        .update(planDefaults(policies, 'REALTOR', 'free'))
+        .eq('role', 'REALTOR').eq('plan_type', 'free');
 
-      await supabaseAdmin.from('members').update({
-        max_vacancies: policies.LIMIT_REALTOR_NEWS_VACANCY,
-        max_articles_per_month: policies.LIMIT_REALTOR_NEWS_ARTICLE
-      }).eq('role', 'REALTOR').eq('plan_type', 'news_premium');
+      await supabaseAdmin.from('members')
+        .update(planDefaults(policies, 'REALTOR', 'news_premium'))
+        .eq('role', 'REALTOR').eq('plan_type', 'news_premium');
 
-      await supabaseAdmin.from('members').update({
-        max_vacancies: policies.LIMIT_REALTOR_VACANCY_VACANCY,
-        max_articles_per_month: policies.LIMIT_REALTOR_VACANCY_ARTICLE
-      }).eq('role', 'REALTOR').eq('plan_type', 'study_premium');
+      await supabaseAdmin.from('members')
+        .update(planDefaults(policies, 'REALTOR', 'study_premium'))
+        .eq('role', 'REALTOR').eq('plan_type', 'study_premium');
     }
 
     return { success: true };

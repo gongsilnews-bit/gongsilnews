@@ -454,10 +454,25 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
     LIMIT_REALTOR_FREE_ARTICLE: 0,
     LIMIT_REALTOR_NEWS_VACANCY: 20,
     LIMIT_REALTOR_NEWS_ARTICLE: 10,
-    LIMIT_REALTOR_VACANCY_VACANCY: 50,
-    LIMIT_REALTOR_VACANCY_ARTICLE: 20,
+    LIMIT_REALTOR_STUDY_VACANCY: 50,
+    LIMIT_REALTOR_STUDY_ARTICLE: 20,
     LIMIT_BIZ_VACANCY: 0,
     LIMIT_BIZ_ARTICLE: 10,
+    PERM_USER_ARTICLE_BANNER: 0,
+    PERM_USER_ARTICLE_VACANCY: 0,
+    PERM_USER_HOMEPAGE: 0,
+    PERM_REALTOR_FREE_ARTICLE_BANNER: 0,
+    PERM_REALTOR_FREE_ARTICLE_VACANCY: 0,
+    PERM_REALTOR_FREE_HOMEPAGE: 0,
+    PERM_REALTOR_STUDY_ARTICLE_BANNER: 1,
+    PERM_REALTOR_STUDY_ARTICLE_VACANCY: 1,
+    PERM_REALTOR_STUDY_HOMEPAGE: 1,
+    PERM_REALTOR_NEWS_ARTICLE_BANNER: 1,
+    PERM_REALTOR_NEWS_ARTICLE_VACANCY: 1,
+    PERM_REALTOR_NEWS_HOMEPAGE: 1,
+    PERM_BIZ_ARTICLE_BANNER: 1,
+    PERM_BIZ_ARTICLE_VACANCY: 0,
+    PERM_BIZ_HOMEPAGE: 1,
   });
 
   useEffect(() => {
@@ -527,6 +542,24 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
     gap: 16,
   };
 
+  /* 권한 칸. 숫자 입력칸과 같은 폭을 잡아 열이 어긋나지 않게 한다 */
+  const permCellStyle = {
+    width: 140,
+    display: "flex",
+    justifyContent: "center",
+  };
+
+  const perm = (key: keyof typeof formData) => (
+    <div style={permCellStyle}>
+      <input
+        type="checkbox"
+        checked={!!formData[key]}
+        onChange={e => handleChange(key, e.target.checked ? 1 : 0)}
+        style={{ accentColor: "#3b82f6", width: 18, height: 18, cursor: "pointer" }}
+      />
+    </div>
+  );
+
   return (
     <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: `1px solid ${border}`, padding: 28 }}>
       <h2 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, margin: "0 0 8px 0" }}>회원 등급별 기본 한도 설정</h2>
@@ -539,6 +572,9 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary, width: 250 }}>회원 구분 / 요금제</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 100, textAlign: "center" }}>최대 공실 등록</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 100, textAlign: "center" }}>월간 최대 기사 작성</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>기사 배너광고 권한</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>기사 공실배너 권한</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>물건접수 홈페이지 권한</span>
         </div>
       </div>
 
@@ -548,6 +584,9 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={labelStyle}>일반회원</span>
           <input type="number" value={formData.LIMIT_USER_VACANCY} onChange={e => handleChange("LIMIT_USER_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_USER_ARTICLE} onChange={e => handleChange("LIMIT_USER_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          {perm("PERM_USER_ARTICLE_BANNER")}
+          {perm("PERM_USER_ARTICLE_VACANCY")}
+          {perm("PERM_USER_HOMEPAGE")}
         </div>
       </div>
 
@@ -557,24 +596,33 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={labelStyle}>부동산회원 (무료)</span>
           <input type="number" value={formData.LIMIT_REALTOR_FREE_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_FREE_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_FREE_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_FREE_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          {perm("PERM_REALTOR_FREE_ARTICLE_BANNER")}
+          {perm("PERM_REALTOR_FREE_ARTICLE_VACANCY")}
+          {perm("PERM_REALTOR_FREE_HOMEPAGE")}
         </div>
       </div>
 
-      {/* 부동산회원 (공실뉴스 요금제) */}
+      {/* 부동산회원 (공실스터디부동산) */}
       <div style={sectionStyle}>
         <div style={rowStyle}>
-          <span style={labelStyle}>부동산회원 (공실뉴스 Premium 요금제)</span>
+          <span style={labelStyle}>부동산회원 (공실스터디부동산)</span>
+          <input type="number" value={formData.LIMIT_REALTOR_STUDY_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_STUDY_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_REALTOR_STUDY_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_STUDY_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          {perm("PERM_REALTOR_STUDY_ARTICLE_BANNER")}
+          {perm("PERM_REALTOR_STUDY_ARTICLE_VACANCY")}
+          {perm("PERM_REALTOR_STUDY_HOMEPAGE")}
+        </div>
+      </div>
+
+      {/* 부동산회원 (공실뉴스부동산) */}
+      <div style={sectionStyle}>
+        <div style={rowStyle}>
+          <span style={labelStyle}>부동산회원 (공실뉴스부동산)</span>
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_NEWS_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
-        </div>
-      </div>
-
-      {/* 부동산회원 (공실등록 요금제) */}
-      <div style={sectionStyle}>
-        <div style={rowStyle}>
-          <span style={labelStyle}>부동산회원 (공실등록 Premium 요금제)</span>
-          <input type="number" value={formData.LIMIT_REALTOR_VACANCY_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_VACANCY_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
-          <input type="number" value={formData.LIMIT_REALTOR_VACANCY_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_VACANCY_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          {perm("PERM_REALTOR_NEWS_ARTICLE_BANNER")}
+          {perm("PERM_REALTOR_NEWS_ARTICLE_VACANCY")}
+          {perm("PERM_REALTOR_NEWS_HOMEPAGE")}
         </div>
       </div>
 
@@ -584,6 +632,9 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={labelStyle}>비즈니스회원</span>
           <input type="number" value={formData.LIMIT_BIZ_VACANCY} onChange={e => handleChange("LIMIT_BIZ_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_BIZ_ARTICLE} onChange={e => handleChange("LIMIT_BIZ_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          {perm("PERM_BIZ_ARTICLE_BANNER")}
+          {perm("PERM_BIZ_ARTICLE_VACANCY")}
+          {perm("PERM_BIZ_HOMEPAGE")}
         </div>
       </div>
 

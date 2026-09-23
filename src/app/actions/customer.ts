@@ -237,7 +237,7 @@ export async function registerIncomingInquiry(ownerId: string, data: {
   photo_urls?: string[];
   move_in_date?: string;
   /**
-   * 이미 만들어 둔 접수 건에 이어 붙인다 (물건접수장 2걸음째).
+   * 이미 만들어 둔 접수 건에 이어 붙인다 (물건접수웹페이지 2걸음째).
    * 없으면 새 건으로 쌓는다.
    */
   attach_to_customer_id?: string;
@@ -255,7 +255,7 @@ export async function registerIncomingInquiry(ownerId: string, data: {
    * 몇 달 전 고객 자리에 붙어버려 중개사는 새 문의가 온 줄 모른다. 한 사람이 두 번
    * 문의했다면 두 번 응대할 일이지 한 줄로 합칠 일이 아니다.
    *
-   * 예외는 하나 — 물건접수장은 연락처(1걸음)와 물건 내용(2걸음)을 나눠 받는다.
+   * 예외는 하나 — 물건접수웹페이지은 연락처(1걸음)와 물건 내용(2걸음)을 나눠 받는다.
    * 2걸음째는 방금 만든 그 건에 붙어야 하므로 id 를 들고 온다.
    */
   let customer: any = null;

@@ -344,7 +344,7 @@ export default function CustomerDetailPanel({ theme, customerId, customer, onClo
             <div style={{ color: textPrimary, fontWeight: 800 }}>{dateStr}</div>
           </div>
 
-          {/* 물건접수장에서 첨부한 사진. 클릭하면 원본이 새 탭에서 열린다. */}
+          {/* 물건접수웹페이지에서 첨부한 사진. 클릭하면 원본이 새 탭에서 열린다. */}
           {Array.isArray(localCustomer.photo_urls) && localCustomer.photo_urls.length > 0 && (
             <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${border}` }}>
               <div style={{ fontSize: 15, color: textSecondary, fontWeight: 700, marginBottom: 12 }}>
