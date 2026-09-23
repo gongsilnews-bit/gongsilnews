@@ -686,6 +686,8 @@ export async function enrollLecture(lectureId: string, userId: string) {
       if (existing.expires_at && new Date(existing.expires_at) < new Date()) {
         await supabase.from("lecture_enrollments").delete().eq("id", existing.id);
       } else {
+        // 뺐던 강의를 다시 신청했다. 숨김만 풀어 준다 — 포인트를 또 받지 않는다.
+        await supabase.from("lecture_enrollments").update({ hidden_at: null }).eq("id", existing.id);
         return { success: true, already: true, message: "이미 수강 중인 강의입니다." };
       }
     }
@@ -800,13 +802,41 @@ export async function checkEnrollment(lectureId: string, userId: string) {
   }
 }
 
+/**
+ * 수강생이 [내 강의실] 에서 강의를 뺀다.
+ *
+ * 지우지 않고 숨긴다. 포인트로 산 수강을 지워버리면 다시 신청할 때 포인트가
+ * 또 빠진다 — 낸 값을 두 번 받는 셈이다. 숨긴 수강은 자격이 그대로 살아 있고,
+ * 다시 신청하면 숨김만 풀려 쓰던 그대로 돌아온다.
+ *
+ * 포인트는 돌려주지 않는다. 환불 규칙을 따로 정하기 전까지 이 기능은
+ * "목록에서 안 보이게 한다" 까지만 한다.
+ */
+export async function hideMyEnrollment(lectureId: string, userId: string) {
+  const supabase = getAdminClient();
+  try {
+    const { error } = await supabase
+      .from("lecture_enrollments")
+      .update({ hidden_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("lecture_id", lectureId)
+      .is("hidden_at", null);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
 // ── 내 수강 특강 목록 ──
 export async function getMyEnrollments(userId: string) {
   const supabase = getAdminClient();
   try {
     const { data: enrollments } = await supabase.from("lecture_enrollments")
       .select("id, lecture_id, points_paid, created_at, expires_at, status")
-      .eq("user_id", userId).eq("status", "ACTIVE").order("created_at", { ascending: false });
+      // 수강생이 뺀 것은 목록에서 빠진다. 자격은 그대로다.
+      .eq("user_id", userId).eq("status", "ACTIVE").is("hidden_at", null)
+      .order("created_at", { ascending: false });
     if (!enrollments || enrollments.length === 0) return { success: true, data: [] };
     const ids = enrollments.map(e => e.lecture_id);
     const { data: lectures } = await supabase.from("lectures")

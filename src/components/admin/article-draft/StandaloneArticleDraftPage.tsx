@@ -41,7 +41,7 @@ export default function StandaloneArticleDraftPage() {
 
       const { data, error } = await supabase
         .from("vacancies")
-        .select("id, vacancy_no, building_name, property_type, sido, sigungu, dong, trade_type, deposit, monthly_rent, sale_price")
+        .select("id, vacancy_no, building_name, property_type, sido, sigungu, dong, trade_type, deposit, monthly_rent")
         .eq("owner_id", user.id)
         .neq("status", "DELETED")
         .order("created_at", { ascending: false })

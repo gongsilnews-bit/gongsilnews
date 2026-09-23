@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { getMyEnrollments } from "@/app/actions/lecture";
+import { getMyEnrollments, hideMyEnrollment } from "@/app/actions/lecture";
 
 export default function MyLecturesPage() {
   const router = useRouter();
@@ -23,6 +23,32 @@ export default function MyLecturesPage() {
     };
     load();
   }, [router]);
+
+  /**
+   * [내 강의실] 에서 뺀다.
+   *
+   * 포인트는 돌려주지 않는다. 그 말을 물어보는 자리에 그대로 적어야 한다 —
+   * "삭제" 만 보고 누르면 환불로 오해한다.
+   * 자격은 살아 있어 다시 신청하면 포인트 없이 그대로 돌아온다.
+   */
+  const hideOne = async (lectureId: string, title: string) => {
+    const paid = enrollments.find((x: any) => x.lecture_id === lectureId)?.points_paid || 0;
+    const msg = paid > 0
+      ? `"${title}" 를 내 강의실에서 뺍니다.
+
+결제하신 ${paid.toLocaleString()}P 는 돌려드리지 않습니다.
+수강 자격은 만료일까지 그대로이고, 다시 신청하시면 포인트 없이 돌아옵니다.`
+      : `"${title}" 를 내 강의실에서 뺍니다.
+
+다시 신청하시면 그대로 돌아옵니다.`;
+    if (!confirm(msg)) return;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const res = await hideMyEnrollment(lectureId, user.id);
+    if (!res.success) { alert((res as any).error || "빼지 못했습니다."); return; }
+    setEnrollments((prev: any[]) => prev.filter((x) => x.lecture_id !== lectureId));
+  };
 
   return (
     <div className="bg-[#f8f9fa] font-sans text-[#222] min-h-[80vh]">
@@ -105,7 +131,14 @@ export default function MyLecturesPage() {
                               </div>
                             </div>
                             
-                            <div style={{ marginLeft: "auto", paddingLeft: 20 }}>
+                            <div style={{ marginLeft: "auto", paddingLeft: 20, display: "flex", alignItems: "center", gap: 14 }}>
+                               <button
+                                 type="button"
+                                 onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); hideOne(en.lecture_id, lecture?.title || "이 강의"); }}
+                                 style={{ background: "none", border: "none", padding: 0, color: "#9ca3af", fontSize: 13, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}
+                               >
+                                 빼기
+                               </button>
                                <span style={{ display: "inline-block", padding: "8px 16px", background: isExpired ? "#fef2f2" : "#eff6ff", color: isExpired ? "#ef4444" : "#2563eb", borderRadius: 6, fontSize: 14, fontWeight: 700 }}>
                                  {isExpired ? "재수강하기" : "수강하기 ▶"}
                                </span>

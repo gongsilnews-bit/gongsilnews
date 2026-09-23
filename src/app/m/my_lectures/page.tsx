@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { getMyEnrollments } from "@/app/actions/lecture";
+import { getMyEnrollments, hideMyEnrollment } from "@/app/actions/lecture";
 
 export default function MyLecturesPage() {
   const router = useRouter();
@@ -23,6 +23,33 @@ export default function MyLecturesPage() {
     };
     load();
   }, [router]);
+
+
+  /**
+   * [내 강의실] 에서 뺀다.
+   *
+   * 포인트는 돌려주지 않는다. 그 말을 물어보는 자리에 그대로 적어야 한다 —
+   * "삭제" 만 보고 누르면 환불로 오해한다.
+   * 자격은 살아 있어 다시 신청하면 포인트 없이 그대로 돌아온다.
+   */
+  const hideOne = async (lectureId: string, title: string) => {
+    const paid = enrollments.find((x: any) => x.lecture_id === lectureId)?.points_paid || 0;
+    const msg = paid > 0
+      ? `"${title}" 를 내 강의실에서 뺍니다.
+
+결제하신 ${paid.toLocaleString()}P 는 돌려드리지 않습니다.
+수강 자격은 만료일까지 그대로이고, 다시 신청하시면 포인트 없이 돌아옵니다.`
+      : `"${title}" 를 내 강의실에서 뺍니다.
+
+다시 신청하시면 그대로 돌아옵니다.`;
+    if (!confirm(msg)) return;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const res = await hideMyEnrollment(lectureId, user.id);
+    if (!res.success) { alert((res as any).error || "빼지 못했습니다."); return; }
+    setEnrollments((prev: any[]) => prev.filter((x) => x.lecture_id !== lectureId));
+  };
 
   return (
     <div style={{ width: "100%", maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f4f5f7", fontFamily: "'Pretendard Variable', -apple-system, sans-serif" }}>
@@ -122,8 +149,17 @@ export default function MyLecturesPage() {
                     <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 500 }}>
                       결제 포인트: {en.points_paid.toLocaleString()}P
                     </span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: isExpired ? "#ef4444" : "#2563eb" }}>
-                      {isExpired ? "재수강하기" : "이어서 수강하기 ▶"}
+                    <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <button
+                        type="button"
+                        onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); hideOne(en.lecture_id, lecture?.title || "이 강의"); }}
+                        style={{ background: "none", border: "none", padding: 0, color: "#9ca3af", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}
+                      >
+                        빼기
+                      </button>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: isExpired ? "#ef4444" : "#2563eb" }}>
+                        {isExpired ? "재수강하기" : "이어서 수강하기 ▶"}
+                      </span>
                     </span>
                   </div>
                 </Link>
