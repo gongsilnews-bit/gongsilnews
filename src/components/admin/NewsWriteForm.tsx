@@ -13,7 +13,7 @@ import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import ArticleAdSettingSlot from "./article_form/ArticleAdSettingSlot";
 import ArticlePhotoLibraryDrawer from "./article_form/ArticlePhotoLibraryDrawer";
 import ArticlePhotoModals from "./article_form/ArticlePhotoModals";
-import { STANDALONE_ARTICLE_DRAFT_KEY } from "./article-draft/constants";
+import ArticleAiWizardModal from "./article_form/ArticleAiWizardModal";
 
 import Link from "next/link";
 
@@ -87,6 +87,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const originalArticleRef = React.useRef<{ title: string; subtitle: string; content: string; section1: string; section2: string; youtubeUrl: string; keywords: string[] } | null>(null);
 
   /* ═══ ✨ AI 마법사 통합 상태 ═══ */
+  const [showAiWizardModal, setShowAiWizardModal] = useState(false);
   const [aiWizardTab, setAiWizardTab] = useState<"vacancy" | "news">("vacancy");
   const [myVacancies, setMyVacancies] = useState<any[]>([]);
   const [isLoadingVacancies, setIsLoadingVacancies] = useState(false);
@@ -248,97 +249,21 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
   // (AI 초안 생성 로직은 ArticleAiWizardModal로 모듈화 분리)
 
-  // ── 부제목 3줄 엄격 포맷팅 헬퍼 ──
-  const formatThreeLineSubtitle = (sub: string): string => {
-    if (!sub) return "";
-    let text = String(sub).replace(/\\n/g, "\n").replace(/\r/g, "").trim();
-
-    // 1. 이미 줄바꿈이 있는 경우 (2줄 이상)
-    let lines = text.split("\n").map(l => l.replace(/^[-•*·\d.\s]+/, "").trim()).filter(Boolean);
-    if (lines.length >= 3) {
-      return lines.slice(0, 3).join("\n");
-    }
-    if (lines.length === 2) {
-      return lines.join("\n");
-    }
-
-    // 2. 한 줄로 뭉쳐져 있는 경우 (공백으로 연결됨)
-    let single = lines[0] || text;
-
-    let normalized = single
-      .replace(/(교통망|역세권|더블\s*역세권|트리플\s*역세권|사통팔달\s*입지|직주근접\s*입지)\s+/g, (m, p1) => p1 + "\n")
-      .replace(/(완비|구비|조망권\s*완비|인테리어\s*완비|특올수리\s*완료|올수리\s*완료)\s+/g, (m, p1) => p1 + "\n");
-
-    let reSplit = normalized.split("\n").map(l => l.trim()).filter(Boolean);
-    if (reSplit.length >= 3) {
-      return reSplit.slice(0, 3).join("\n");
-    }
-
-    if (reSplit.length === 2) {
-      let parts: string[] = [];
-      for (let part of reSplit) {
-        if (part.length > 35 && part.includes("…")) {
-          const subParts = part.split(/…\s*/);
-          if (subParts.length > 1) {
-            parts.push(subParts[0] + "…", subParts.slice(1).join(" "));
-          } else {
-            parts.push(part);
-          }
-        } else {
-          parts.push(part);
-        }
-      }
-      if (parts.length >= 3) return parts.slice(0, 3).join("\n");
-      return reSplit.join("\n");
-    }
-
-    return single;
-  };
-
   /* ── AI 초안 결과를 에디터에 즉시 주입하는 헬퍼 ── */
   const applyDraftToEditor = (draftData: any) => {
     if (!draftData) return;
     if (draftData.title) setTitle(draftData.title);
-    if (draftData.subtitle) setSubtitle(formatThreeLineSubtitle(draftData.subtitle));
+    if (draftData.subtitle) setSubtitle(draftData.subtitle.replaceAll('\\n', '\n'));
     setSection1("공실뉴스");
     if (draftData.section2) setSection2(draftData.section2);
     if (draftData.keywords && Array.isArray(draftData.keywords)) {
       setKeywords(draftData.keywords);
     }
-    if (draftData.content_article) {
-      const draftHtml = parseMarkdownToHtml(draftData.content_article);
-      setContent(draftHtml);
-      if (editorRef.current) editorRef.current.innerHTML = draftHtml;
+    if (editorRef.current && draftData.content_article) {
+      editorRef.current.innerHTML = parseMarkdownToHtml(draftData.content_article);
+      setContent(editorRef.current.innerHTML);
     }
-    if (draftData.imageUrl) {
-      setPhotoFiles([{
-        file: null,
-        preview: draftData.imageUrl,
-        caption: draftData.imageCaption || `${draftData.title || "기사"} 매물 사진`,
-        isCover: true,
-        size: 600,
-        align: "center",
-        captionAlign: "center",
-      }]);
-    }
-    if (draftData.vacancyId) setSelectedVacancyId(draftData.vacancyId);
   };
-
-  // 독립형 매물기사초안 작성기에서 전달한 결과를 한 번만 적용합니다.
-  useEffect(() => {
-    try {
-      const storedDraft = sessionStorage.getItem(STANDALONE_ARTICLE_DRAFT_KEY);
-      if (!storedDraft) return;
-      sessionStorage.removeItem(STANDALONE_ARTICLE_DRAFT_KEY);
-      const draftData = JSON.parse(storedDraft);
-      setAiDrafts(draftData);
-      applyDraftToEditor(draftData);
-    } catch (error) {
-      console.error("standalone article draft apply error", error);
-    }
-    // 첫 진입에서만 세션 초안을 소비합니다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   /* ── ✨ 옵션 위자드 공실 매물 기반 기사 및 멀티채널 원고 생성 ── */
   const executeOptionWizardGenerate = async (extraPrompt?: string) => {
@@ -424,6 +349,13 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
     html = html.replace(/\n/g, '<br />');
     return html;
   };
+
+  // 모달 열 때 매물 로드
+  useEffect(() => {
+    if (showAiWizardModal) {
+      fetchMyVacancies();
+    }
+  }, [showAiWizardModal]);
 
   // (과거 히스토리 로드는 ArticleAiWizardModal 내부에서 자동 처리)
 
@@ -2066,14 +1998,18 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
                 border: `1px solid ${border}`,
               }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary, marginBottom: 6 }}>
-                  공실뉴스 매물기사초안
+                  AI 공실뉴스초안작성
                 </div>
                 <div style={{ fontSize: 12, color: textSecondary, lineHeight: 1.5, marginBottom: 14 }}>
-                  외부 AI 없이 내 매물 정보로 기사와 블로그 초안을 작성합니다.
+                  공실 매물 정보로 기사, 블로그, 쇼츠, SNS 원고를 한 번에 자동 작성합니다.
                 </div>
                 <button 
                   type="button"
-                  onClick={() => router.push("/admin/article-draft")}
+                  onClick={() => {
+                    setLeftSidebarMode("ai_chat");
+                    setAiPanelTab("create");
+                    fetchMyVacancies();
+                  }}
                   style={{
                     width: "100%",
                     padding: "11px 0",
@@ -2790,8 +2726,8 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
             {/* ── 부제목 ── */}
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 24 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80, paddingTop: 10 }}>부제목</label>
-              <textarea value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="부제목을 입력하세요 (엔터로 구분된 3줄 요약)" rows={3}
-                style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.6, whiteSpace: "pre-wrap" }} />
+              <textarea value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="부제목을 입력하세요(여러 줄 입력도 가능합니다.)" rows={3}
+                style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.6 }} />
             </div>
 
             {/* ── 구분선 ── */}
@@ -3394,7 +3330,7 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
                       type="button"
                       onClick={() => {
                         setTitle(aiDrafts.title);
-                        setSubtitle(aiDrafts.subtitle ? formatThreeLineSubtitle(aiDrafts.subtitle) : "");
+                        setSubtitle(aiDrafts.subtitle ? aiDrafts.subtitle.replaceAll('\\n', '\n') : "");
                         setSection1("공실뉴스");
                         if (aiDrafts.section2) {
                           setSection2(aiDrafts.section2);
@@ -3674,6 +3610,27 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
           </div>
         </div>
       )}
+      {/* ── ⚡ 모듈화 분리된 AI 초안 마법사 및 히스토리 모달 ── */}
+      <ArticleAiWizardModal
+        isOpen={showAiWizardModal}
+        onClose={() => setShowAiWizardModal(false)}
+        isHistoryOpen={false}
+        onCloseHistory={() => setShowAiHistoryModal(false)}
+        onApplyDraft={(draftData) => {
+          setAiDrafts(draftData);
+          applyDraftToEditor(draftData);
+          setActiveSidebarType("ai_library");
+          setAiActiveSidebarTab("article");
+        }}
+        myVacancies={myVacancies}
+        isLoadingVacancies={isLoadingVacancies}
+        fetchMyVacancies={fetchMyVacancies}
+        border={border}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+        textMuted={textMuted}
+      />
+
     </div>
   );
 }
