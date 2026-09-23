@@ -9,6 +9,7 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 
 import LectureMaterialsEditor from "./LectureMaterialsEditor";
 import type { LectureMaterial } from "@/types/lectureMaterial";
+import { LECTURE_PLAN_KEYS, LECTURE_PLAN_LABELS } from '@/utils/lectureAccess';
 
 /* ── 타입 ── */
 type Chapter = {
@@ -97,6 +98,8 @@ export default function StudyWriteForm() {
   const [discountPrice, setDiscountPrice] = useState<number | "">("");
   const [discountLabel, setDiscountLabel] = useState("");
   const [durationMonths, setDurationMonths] = useState(5);
+  /** 포인트 없이 들을 수 있는 등급 */
+  const [freeForPlans, setFreeForPlans] = useState<string[]>([]);
   const [totalDuration, setTotalDuration] = useState("");
 
   /* ── 자료 첨부 ── */
@@ -158,6 +161,7 @@ export default function StudyWriteForm() {
             setDiscountPrice(d.discount_price ?? "");
             setDiscountLabel(d.discount_label || "");
             setDurationMonths(d.duration_months || 5);
+            setFreeForPlans(Array.isArray(d.free_for_plans) ? d.free_for_plans : []);
             setTotalDuration(d.total_duration || "");
             setMaterials((d.materials || []).filter((m: LectureMaterial) => !m.scope || m.scope === "common"));
 
@@ -541,6 +545,7 @@ export default function StudyWriteForm() {
         discount_price: discountPrice === "" ? undefined : Number(discountPrice),
         discount_label: discountLabel,
         duration_months: durationMonths,
+        free_for_plans: freeForPlans,
         total_duration: totalDuration,
         materials: [
           ...materials.map(m => ({ ...m, scope: 'common' as const, chapter_no: undefined, lesson_no: undefined })),
@@ -1064,6 +1069,46 @@ export default function StudyWriteForm() {
               <div>
                 <label style={labelStyle}>할인 라벨</label>
                 <input type="text" value={discountLabel} onChange={(e) => setDiscountLabel(e.target.value)} placeholder='예: "🔥 기간 한정 30% 얼리버드 혜택"' style={inputStyle} />
+              </div>
+
+              {/*
+                등급으로 주는 무료.
+                포인트 차감과 따로 논다 — 수강료가 있어도 여기 고른 등급은
+                포인트 없이 바로 듣는다. 판매 페이지의 "공실스터디 회원은 무료"
+                같은 약속이 실제로 동작하는 자리다.
+              */}
+              <div>
+                <label style={labelStyle}>
+                  무료로 듣는 등급
+                  <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>고른 등급은 포인트가 빠지지 않습니다</span>
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {LECTURE_PLAN_KEYS.map((key) => {
+                    const on = freeForPlans.includes(key);
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setFreeForPlans((prev) => (on ? prev.filter((x) => x !== key) : [...prev, key]))}
+                        style={{
+                          padding: '9px 14px',
+                          borderRadius: 8,
+                          border: `1px solid ${on ? '#059669' : '#dfe4ea'}`,
+                          background: on ? '#059669' : '#fff',
+                          color: on ? '#fff' : '#475569',
+                          fontSize: 14,
+                          fontWeight: on ? 800 : 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {LECTURE_PLAN_LABELS[key]}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p style={{ margin: '8px 0 0', fontSize: 13, color: '#94a3b8' }}>
+                  최고관리자는 고르지 않아도 늘 무료입니다. 요금제가 끝나면 그 회원의 수강도 함께 닫힙니다.
+                </p>
               </div>
             </div>
 

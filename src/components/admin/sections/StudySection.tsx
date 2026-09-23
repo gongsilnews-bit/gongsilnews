@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { AdminSectionProps } from "./types";
-import { getLectures, deleteLecture, updateLectureStatus } from "@/app/actions/lecture";
+import { getLectures, deleteLecture, updateLectureStatus, setLectureFreePlans } from "@/app/actions/lecture";
+import { LECTURE_PLAN_KEYS, LECTURE_PLAN_LABELS } from "@/utils/lectureAccess";
 import { assignLectureGuide, getLectureGuides, type LectureGuide } from "@/app/actions/lectureGuides";
 import StudyWriteForm from "@/components/admin/StudyWriteForm";
 
@@ -109,6 +110,24 @@ export default function StudySection({ theme }: AdminSectionProps) {
   const formatPrice = (p: number) => {
     if (!p) return "무료";
     return p.toLocaleString() + " P";
+  };
+
+  /**
+   * 목록에서 무료 등급을 바로 뒤집는다.
+   *
+   * 화면을 먼저 바꾸고 서버에 보낸다. 실패하면 되돌린다 — 화면만 바뀌어
+   * 있으면 열어준 줄 알고 넘어간다.
+   */
+  const toggleFreePlan = async (lectureId: string, key: string) => {
+    const row = lectures.find((l) => l.id === lectureId);
+    const before: string[] = Array.isArray(row?.free_for_plans) ? row.free_for_plans : [];
+    const next = before.includes(key) ? before.filter((x: string) => x !== key) : [...before, key];
+    setLectures((prev) => prev.map((l) => (l.id === lectureId ? { ...l, free_for_plans: next } : l)));
+    const res = await setLectureFreePlans(lectureId, next);
+    if (!res.success) {
+      setLectures((prev) => prev.map((l) => (l.id === lectureId ? { ...l, free_for_plans: before } : l)));
+      alert((res as any).error || "무료 등급을 저장하지 못했습니다.");
+    }
   };
 
   const handleGuideAssignment = async (lectureId: string, guideId: string) => {
@@ -234,7 +253,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900 }}>
               <thead>
                 <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                  {[{ w: 40, t: "" }, { w: 80, t: "공개상태" }, { w: 0, t: "강의명", a: "left" }, { w: 100, t: "카테고리" }, { w: 150, t: "수강안내" }, { w: 120, t: "수강료" }, { w: 180, t: "최초등록일" }, { w: 160, t: "관리" }].map((h, i) => (
+                  {[{ w: 40, t: "" }, { w: 80, t: "공개상태" }, { w: 0, t: "강의명", a: "left" }, { w: 100, t: "카테고리" }, { w: 150, t: "수강안내" }, { w: 230, t: "무료 등급" }, { w: 120, t: "수강료" }, { w: 180, t: "최초등록일" }, { w: 160, t: "관리" }].map((h, i) => (
                     <th key={i} style={{ padding: "12px 10px", textAlign: (h.a || "center") as any, fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, ...(h.w ? { width: h.w } : {}) }}>
                       {i === 0 ? <input type="checkbox" checked={selectedIds.size === filtered.length && filtered.length > 0} onChange={toggleSelectAll} style={{ accentColor: "#3b82f6" }} /> : h.t}
                     </th>
@@ -275,6 +294,35 @@ export default function StudySection({ theme }: AdminSectionProps) {
                             </option>
                           ))}
                         </select>
+                      </td>
+                      {/* 어느 등급이 공짜로 듣는지 한눈에 보이고, 누르면 그 자리에서 바뀐다 */}
+                      <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
+                          {LECTURE_PLAN_KEYS.map((key) => {
+                            const on = (row.free_for_plans || []).includes(key);
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() => toggleFreePlan(row.id, key)}
+                                title={`${LECTURE_PLAN_LABELS[key]} — ${on ? "무료" : "포인트 차감"}`}
+                                style={{
+                                  padding: "3px 7px",
+                                  borderRadius: 5,
+                                  border: `1px solid ${on ? "#059669" : border}`,
+                                  background: on ? "#059669" : (darkMode ? "#2c2d31" : "#fff"),
+                                  color: on ? "#fff" : textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: on ? 800 : 600,
+                                  cursor: "pointer",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {LECTURE_PLAN_LABELS[key].replace("부동산", "").replace("회원", "")}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </td>
                       <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 700, color: "#3b82f6" }}>
                         {row.discount_price ? formatPrice(row.discount_price) : formatPrice(row.price)}

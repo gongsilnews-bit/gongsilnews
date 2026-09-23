@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createClient as createSessionClient } from '@/utils/supabase/server';
 import { isAdminRole } from '@/utils/permissionCheck';
 import { openMaterialUrl } from '@/utils/lectureMaterialSecrets';
+import { canTakeFree } from '@/utils/lectureAccess';
 
 const db = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
 const bucket = 'lecture-materials';
@@ -30,7 +31,7 @@ export async function uploadLectureMaterial(file: { name: string; size: number }
 export async function getLectureMaterialUrl(lectureId: string, index: number) {
   try {
     const client = db();
-    const { data: lecture, error } = await client.from('lectures').select('author_id,status,is_deleted,materials').eq('id', lectureId).single();
+    const { data: lecture, error } = await client.from('lectures').select('author_id,status,is_deleted,materials,free_for_plans').eq('id', lectureId).single();
     if (error || !lecture || lecture.is_deleted) throw new Error('강의를 찾을 수 없습니다.');
     if (!Number.isInteger(index) || index < 0) throw new Error('자료를 찾을 수 없습니다.');
     const material = lecture.materials?.[index];
@@ -40,10 +41,18 @@ export async function getLectureMaterialUrl(lectureId: string, index: number) {
     let editor = false;
     let enrolled = false;
     if (user) {
-      const { data: member } = await client.from('members').select('role').eq('id', user.id).single();
+      const { data: member } = await client.from('members').select('role, plan_type, plan_end_date').eq('id', user.id).single();
       editor = lecture.author_id === user.id || isAdminRole(member?.role);
-      const { data: enrollments } = await client.from('lecture_enrollments').select('expires_at').eq('lecture_id', lectureId).eq('user_id', user.id).eq('status', 'ACTIVE');
-      enrolled = (enrollments || []).some(e => !e.expires_at || Date.parse(e.expires_at) > Date.now());
+      const { data: enrollments } = await client.from('lecture_enrollments').select('expires_at, granted_by_plan').eq('lecture_id', lectureId).eq('user_id', user.id).eq('status', 'ACTIVE');
+      /*
+       * 등급 덕분에 공짜로 듣던 수강은 그 등급이 살아 있어야 자료도 열린다.
+       * 요금제가 끝나면 영상뿐 아니라 자료도 같이 닫혀야 한다.
+       */
+      enrolled = (enrollments || []).some(
+        (e: any) =>
+          (!e.expires_at || Date.parse(e.expires_at) > Date.now()) &&
+          (!e.granted_by_plan || canTakeFree(member, (lecture as any).free_for_plans))
+      );
     }
     if (!editor && (lecture.status !== 'ACTIVE' || (!enrolled && !material.is_preview))) throw new Error('수강 등록 후 이용할 수 있는 자료입니다.');
     const url = openMaterialUrl(material.url || '');

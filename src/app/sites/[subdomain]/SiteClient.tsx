@@ -150,7 +150,10 @@ export default function SiteClient({
     // 홈페이지 편집 화면이 아니라 관리자 첫 화면으로 보낸다. 여기를 누르는
     // 중개사가 늘 홈페이지를 고치러 오는 것은 아니다 — 공실도 기사도 고객문의도
     // 거기서 시작한다. 홈페이지는 그 안에 메뉴로 있다.
-    const path = isPhone ? "/m/admin/dashboard" : "/realty_admin";
+    //
+    // 폰에서는 대시보드가 아니라 메뉴판(/m/menu)으로 보낸다. 관리 메뉴가 한
+    // 화면에 다 깔려 있어 어디로 갈지 고르기 좋다. 대시보드는 그중 하나다.
+    const path = isPhone ? "/m/menu" : "/realty_admin";
     // 로컬에서 볼 때는 같은 서버의 관리자를 연다. 운영 주소로 튀면 확인이 안 된다.
     const origin = window.location.hostname === "localhost" ? window.location.origin : "https://gongsilnews.com";
     window.open(`${origin}${path}`, "_blank", "noopener,noreferrer");
@@ -294,7 +297,7 @@ export default function SiteClient({
           {/*
             관리자로 가는 문. 서브도메인에는 관리자 화면이 없으므로 포털 주소로 보낸다.
             폰에서 PC 관리자를 열면 표가 화면 밖으로 나가므로 기기에 맞는 쪽으로 보낸다 —
-            PC 는 /realty_admin, 폰은 /m/admin/dashboard.
+            PC 는 /realty_admin, 폰은 /m/menu.
             로그인이 안 돼 있으면 각 관리자 화면이 로그인으로 보냈다가 여기로 되돌린다.
           */}
           <a

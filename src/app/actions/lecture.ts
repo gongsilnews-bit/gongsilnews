@@ -6,6 +6,7 @@ import type { LectureMaterial } from '@/types/lectureMaterial';
 import { createClient as createSessionClient } from '@/utils/supabase/server';
 import { isAdminRole } from '@/utils/permissionCheck';
 import { sealMaterialUrl, openMaterialUrl } from '@/utils/lectureMaterialSecrets';
+import { canTakeFree, lecturePlanOf, LECTURE_PLAN_KEYS } from '@/utils/lectureAccess';
 
 async function lectureEditor(lectureAuthor?: string | null) {
   const session = await createSessionClient();
@@ -45,6 +46,8 @@ export async function saveLecture(data: {
   discount_price?: number;
   discount_label?: string;
   duration_months?: number;
+  /** 포인트 없이 들을 수 있는 등급 목록 */
+  free_for_plans?: string[];
   total_duration?: string;
   materials?: LectureMaterial[];
   chapters?: {
@@ -133,6 +136,7 @@ export async function saveLecture(data: {
       discount_price: data.discount_price || null,
       discount_label: data.discount_label || null,
       duration_months: data.duration_months || 5,
+      free_for_plans: data.free_for_plans || [],
       total_duration: data.total_duration || null,
       materials: storedMaterials,
       updated_at: new Date().toISOString(),
@@ -686,15 +690,26 @@ export async function enrollLecture(lectureId: string, userId: string) {
       }
     }
     const { data: lecture, error: lErr } = await supabase
-      .from("lectures").select("price, discount_price, author_id, duration_months, title")
+      .from("lectures").select("price, discount_price, author_id, duration_months, title, free_for_plans")
       .eq("id", lectureId).single();
     if (lErr || !lecture) return { success: false, error: "강의 정보를 찾을 수 없습니다." };
-    const pointsRequired = lecture.discount_price || lecture.price || 0;
+
+    /*
+     * 등급 덕분에 공짜로 듣는 사람인가.
+     *
+     * 무엇 때문에 공짜였는지 적어 둔다. 적어두지 않으면 나중에 요금제가
+     * 끝났을 때 이 수강을 닫아야 하는지 가릴 방법이 없다.
+     */
+    const { data: me } = await supabase
+      .from("members").select("role, plan_type, plan_end_date").eq("id", userId).single();
+    const freePlan = canTakeFree(me, lecture.free_for_plans) ? (lecturePlanOf(me) || "admin") : null;
+
+    const pointsRequired = freePlan ? 0 : (lecture.discount_price || lecture.price || 0);
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + (lecture.duration_months || 5));
 
     if (pointsRequired <= 0) {
-      await supabase.from("lecture_enrollments").insert({ user_id: userId, lecture_id: lectureId, points_paid: 0, expires_at: expiresAt.toISOString(), status: "ACTIVE" });
+      await supabase.from("lecture_enrollments").insert({ user_id: userId, lecture_id: lectureId, points_paid: 0, expires_at: expiresAt.toISOString(), status: "ACTIVE", granted_by_plan: freePlan });
       const { count } = await supabase.from("lecture_enrollments").select("*", { count: "exact", head: true }).eq("lecture_id", lectureId).eq("status", "ACTIVE");
       await supabase.from("lectures").update({ student_count: count || 0 }).eq("id", lectureId);
       return { success: true, pointsPaid: 0 };
@@ -727,12 +742,31 @@ export async function enrollLecture(lectureId: string, userId: string) {
   }
 }
 
+/**
+ * 목록에서 무료 등급을 바로 고친다.
+ *
+ * 강의 하나 고치려고 편집 화면까지 들어갔다 나오는 것이 성가시다. 수강안내를
+ * 목록에서 바꾸는 것과 같은 방식이다.
+ */
+export async function setLectureFreePlans(lectureId: string, plans: string[]) {
+  const supabase = getAdminClient();
+  try {
+    const allowed = (plans || []).filter((p) => (LECTURE_PLAN_KEYS as readonly string[]).includes(p));
+    const { error } = await supabase.from("lectures").update({ free_for_plans: allowed }).eq("id", lectureId);
+    if (error) return { success: false, error: error.message };
+    revalidateTag("lectures");
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
 // ── 수강 등록 여부 확인 ──
 export async function checkEnrollment(lectureId: string, userId: string) {
   const supabase = getAdminClient();
   try {
     const { data, error } = await supabase.from("lecture_enrollments")
-      .select("id, status, expires_at, points_paid")
+      .select("id, status, expires_at, points_paid, granted_by_plan")
       .eq("user_id", userId).eq("lecture_id", lectureId).eq("status", "ACTIVE")
       .order("created_at", { ascending: false }).limit(1);
     
@@ -743,6 +777,22 @@ export async function checkEnrollment(lectureId: string, userId: string) {
     if (!data || data.length === 0) return { success: true, enrolled: false };
     const latest = data[0];
     if (latest.expires_at && new Date(latest.expires_at) < new Date()) return { success: true, enrolled: false, expired: true };
+
+    /*
+     * 등급 덕분에 공짜로 듣던 사람은 그 등급이 살아 있어야 계속 본다.
+     * 요금제가 끝나는 날 강의도 닫힌다 — 끊고도 계속 보는 일이 없어야 한다.
+     * 포인트로 산 수강(granted_by_plan 이 비어 있다)은 이 검사를 타지 않는다.
+     */
+    if (latest.granted_by_plan) {
+      const [{ data: me }, { data: lec }] = await Promise.all([
+        supabase.from("members").select("role, plan_type, plan_end_date").eq("id", userId).single(),
+        supabase.from("lectures").select("free_for_plans").eq("id", lectureId).single(),
+      ]);
+      if (!canTakeFree(me, lec?.free_for_plans)) {
+        return { success: true, enrolled: false, planEnded: true };
+      }
+    }
+
     return { success: true, enrolled: true, enrollment: latest };
   } catch (err: any) { 
     console.error("checkEnrollment exception:", err);
