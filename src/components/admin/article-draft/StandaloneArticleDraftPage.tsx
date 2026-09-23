@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { isAdminRole } from "@/utils/permissionCheck";
 import ArticleDraftStudio from "./ArticleDraftStudio";
 import { STANDALONE_ARTICLE_DRAFT_KEY } from "./constants";
 import type { ArticleDraftResult, DraftVacancy } from "./types";
@@ -14,6 +15,7 @@ export default function StandaloneArticleDraftPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [vacancies, setVacancies] = useState<DraftVacancy[]>([]);
   const [isLoadingVacancies, setIsLoadingVacancies] = useState(false);
+  const [articlePortal, setArticlePortal] = useState("/user_admin");
 
   useEffect(() => {
     let active = true;
@@ -25,6 +27,17 @@ export default function StandaloneArticleDraftPage() {
         router.replace("/");
         return;
       }
+
+      const { data: member } = await supabase
+        .from("members")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const role = member?.role || "";
+      if (isAdminRole(role)) setArticlePortal("/admin");
+      else if (role === "REALTOR" || role === "부동산회원") setArticlePortal("/realty_admin");
+      else setArticlePortal("/user_admin");
 
       if (active) setAuthChecked(true);
     })();
@@ -59,7 +72,7 @@ export default function StandaloneArticleDraftPage() {
 
   const applyToArticleEditor = (draft: ArticleDraftResult) => {
     sessionStorage.setItem(STANDALONE_ARTICLE_DRAFT_KEY, JSON.stringify(draft));
-    router.push("/admin?menu=article&action=write&draft_source=standalone");
+    router.push(`${articlePortal}?menu=article&action=write&draft_source=standalone`);
   };
 
   if (!authChecked) return <div className={styles.loading}>권한을 확인하고 있습니다...</div>;
@@ -69,9 +82,9 @@ export default function StandaloneArticleDraftPage() {
       <header className={styles.topbar}>
         <div className={styles.brand}>
           <div className={styles.mark}>공</div>
-          <div><strong>공실뉴스 매물기사초안 V1.0</strong><span>관리자 독립형 기사 초안 작성기</span></div>
+          <div><strong>공실뉴스 매물기사초안 V1.0</strong><span>독립형 기사 초안 작성기</span></div>
         </div>
-        <button type="button" className={styles.back} onClick={() => router.push("/admin?menu=article")}>기사관리로 돌아가기</button>
+        <button type="button" className={styles.back} onClick={() => router.push(`${articlePortal}?menu=article`)}>기사관리로 돌아가기</button>
       </header>
 
       <ArticleDraftStudio
