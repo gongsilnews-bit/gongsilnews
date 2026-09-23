@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { saveLecture, getLectureDetail, uploadLectureImage } from "@/app/actions/lecture";
 import { getStudySettings } from "@/app/actions/studySettings";
+import { getLectureGuides, type LectureGuide } from "@/app/actions/lectureGuides";
 import { createClient } from "@/utils/supabase/client";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
@@ -72,7 +73,9 @@ export default function StudyWriteForm() {
   const [keywords, setKeywords] = useState<string[]>(["1년(365일) 무제한 수강", "실무 서식 100% 제공"]);
   const [newKeyword, setNewKeyword] = useState("");
   const [description, setDescription] = useState("");
-  const [sidebarCopy, setSidebarCopy] = useState({ benefits: "", assurance_title: "", assurance_body: "" });
+  const [sidebarCopy, setSidebarCopy] = useState({ benefits: "" });
+  const [lectureGuides, setLectureGuides] = useState<LectureGuide[]>([]);
+  const [lectureGuideId, setLectureGuideId] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [coverIndex, setCoverIndex] = useState(0);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -121,6 +124,9 @@ export default function StudyWriteForm() {
         setCategoryList(res.categories);
       }
     });
+    getLectureGuides().then((res) => {
+      if (res.success) setLectureGuides(res.data);
+    });
 
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -141,7 +147,8 @@ export default function StudyWriteForm() {
               setKeywords(["1년(365일) 무제한 수강", "실무 서식 100% 제공"]);
             }
             setDescription(d.description || "");
-            setSidebarCopy({ benefits: d.sidebar_copy?.benefits || "", assurance_title: d.sidebar_copy?.assurance_title || "", assurance_body: d.sidebar_copy?.assurance_body || "" });
+            setSidebarCopy({ benefits: d.sidebar_copy?.benefits || "" });
+            setLectureGuideId(d.lecture_guide_id || "");
             // 이미지 배열 복원
             const loadedImages: string[] = d.images || [];
             if (d.thumbnail_url && !loadedImages.includes(d.thumbnail_url)) {
@@ -532,6 +539,7 @@ export default function StudyWriteForm() {
         subtitle,
         keywords,
         description,
+        lecture_guide_id: lectureGuideId || null,
         sidebar_copy: { ...sidebarCopy, keywords },
         thumbnail_url: images.length > 0 ? images[coverIndex] || images[0] : "",
         images,
@@ -1073,10 +1081,16 @@ export default function StudyWriteForm() {
               <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>수강 신청 영역에 표시됩니다. 비워 둔 항목은 표시하지 않습니다. 수강료와 이용 기간은 위의 가격·수강 기간 설정을 따릅니다.</p>
               <label style={labelStyle} htmlFor="lecture-benefits">수강 혜택 — 한 줄에 하나씩 입력</label>
               <textarea id="lecture-benefits" rows={4} value={sidebarCopy.benefits} onChange={e => setSidebarCopy(prev => ({ ...prev, benefits: e.target.value }))} style={{ ...inputStyle, height: 'auto', resize: 'vertical', marginBottom: 16 }} placeholder="예: 실습 예제 파일 제공" />
-              <label style={labelStyle} htmlFor="lecture-assurance-title">하단 안내 제목</label>
-              <input id="lecture-assurance-title" value={sidebarCopy.assurance_title} onChange={e => setSidebarCopy(prev => ({ ...prev, assurance_title: e.target.value }))} style={{ ...inputStyle, marginBottom: 16 }} placeholder="예: 수강 전 확인해 주세요" />
-              <label style={labelStyle} htmlFor="lecture-assurance-body">하단 안내 내용</label>
-              <textarea id="lecture-assurance-body" rows={6} value={sidebarCopy.assurance_body} onChange={e => setSidebarCopy(prev => ({ ...prev, assurance_body: e.target.value }))} style={{ ...inputStyle, height: 'auto', resize: 'vertical' }} placeholder="강의별 안내 내용을 입력하세요. 줄바꿈이 그대로 표시됩니다." />
+              <label style={labelStyle} htmlFor="lecture-guide">수강안내 선택</label>
+              <select id="lecture-guide" value={lectureGuideId} onChange={e => setLectureGuideId(e.target.value)} style={inputStyle}>
+                <option value="">수강안내를 표시하지 않음</option>
+                {lectureGuides.map(guide => (
+                  <option key={guide.id} value={guide.id} disabled={!guide.is_active && guide.id !== lectureGuideId}>
+                    {guide.name}{!guide.is_active ? " (사용 중지)" : ""}
+                  </option>
+                ))}
+              </select>
+              {lectureGuides.length === 0 && <p style={{ margin: "8px 0 0", fontSize: 12, color: "#b45309" }}>특강관리의 ‘수강안내 관리’에서 안내를 먼저 등록해 주세요.</p>}
             </div>
 
             {/* ========== 5. 커리큘럼 빌더 ========== */}

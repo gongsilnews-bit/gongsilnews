@@ -34,6 +34,7 @@ export async function saveLecture(data: {
   subtitle?: string;
   keywords?: string[];
   description?: string;
+  lecture_guide_id?: string | null;
   sidebar_copy?: { benefits?: string; assurance_title?: string; assurance_body?: string; keywords?: string[] };
   thumbnail_url?: string;
   images?: string[];
@@ -111,6 +112,8 @@ export async function saveLecture(data: {
       ...(data.sidebar_copy || {}),
       ...(data.keywords !== undefined ? { keywords: data.keywords } : {}),
     };
+    delete mergedSidebarCopy.assurance_title;
+    delete mergedSidebarCopy.assurance_body;
 
     const lectureData = {
       author_id: existingLecture?.author_id || editor.id,
@@ -119,6 +122,7 @@ export async function saveLecture(data: {
       title: data.title,
       subtitle: data.subtitle || null,
       description: data.description || null,
+      lecture_guide_id: data.lecture_guide_id || null,
       sidebar_copy: mergedSidebarCopy,
       thumbnail_url: data.thumbnail_url || null,
       images: data.images || [],
@@ -236,9 +240,16 @@ export async function getLectures(filters?: {
 
     const { data, error } = await query;
     if (error) return { success: false, error: error.message };
+    const guideIds = Array.from(new Set((data || []).map((lec: any) => lec.lecture_guide_id).filter(Boolean)));
+    const guideNames = new Map<string, string>();
+    if (guideIds.length > 0) {
+      const { data: guides } = await supabase.from("lecture_guides").select("id,name").in("id", guideIds);
+      for (const guide of guides || []) guideNames.set(guide.id, guide.name);
+    }
     const mapped = (data || []).map((lec: any) => ({
       ...lec,
       keywords: lec.keywords || lec.sidebar_copy?.keywords || [],
+      lecture_guide_name: lec.lecture_guide_id ? guideNames.get(lec.lecture_guide_id) || null : null,
     }));
     return { success: true, data: mapped };
   } catch (err: any) {
@@ -260,6 +271,15 @@ export async function getLectureDetail(lectureId: string) {
     if (error) return { success: false, error: error.message };
 
     const keywords = lecture.keywords || lecture.sidebar_copy?.keywords || [];
+    let lectureGuide = null;
+    if (lecture.lecture_guide_id) {
+      const { data: guide } = await supabase
+        .from("lecture_guides")
+        .select("id,name,title,body,is_active")
+        .eq("id", lecture.lecture_guide_id)
+        .maybeSingle();
+      lectureGuide = guide;
+    }
 
     // 챕터 조회
     const editor = await lectureEditor(lecture.author_id);
@@ -348,6 +368,10 @@ export async function getLectureDetail(lectureId: string) {
       data: {
         ...lecture,
         keywords,
+        lecture_guide: lectureGuide,
+        sidebar_copy: lectureGuide
+          ? { ...(lecture.sidebar_copy || {}), assurance_title: lectureGuide.title, assurance_body: lectureGuide.body }
+          : lecture.sidebar_copy,
         chapters: chaptersWithLessons,
         reviews: enrichedReviews,
       },

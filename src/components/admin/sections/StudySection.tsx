@@ -10,6 +10,9 @@ import StudyWriteForm from "@/components/admin/StudyWriteForm";
 const StudySettingsModal = dynamic(() => import("@/components/admin/study/StudySettingsModal"), {
   ssr: false,
 });
+const LectureGuideManagerModal = dynamic(() => import("@/components/admin/study/LectureGuideManagerModal"), {
+  ssr: false,
+});
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
   DRAFT: { label: "임시저장", color: "#6b7280", bg: "#f3f4f6", border: "#d1d5db" },
@@ -28,6 +31,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
   const [searchKw, setSearchKw] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
   
   const searchParams = useSearchParams();
   const action = searchParams.get("action");
@@ -178,6 +182,13 @@ export default function StudySection({ theme }: AdminSectionProps) {
             <span>강의 설정</span>
           </button>
           <button
+            type="button"
+            onClick={() => setShowGuideModal(true)}
+            style={{ height: 36, padding: "0 16px", background: "#059669", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+          >
+            수강안내 관리
+          </button>
+          <button
             onClick={handleBulkDelete}
             disabled={selectedIds.size === 0}
             style={{ height: 36, padding: "0 16px", background: darkMode ? "#2c2d31" : "#fff", color: selectedIds.size > 0 ? "#ef4444" : textSecondary, border: `1px solid ${selectedIds.size > 0 ? "#fca5a5" : border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: selectedIds.size > 0 ? "pointer" : "not-allowed", opacity: selectedIds.size === 0 ? 0.5 : 1 }}
@@ -200,7 +211,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900 }}>
               <thead>
                 <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                  {[{ w: 40, t: "" }, { w: 80, t: "공개상태" }, { w: 0, t: "강의명", a: "left" }, { w: 100, t: "카테고리" }, { w: 120, t: "수강료" }, { w: 180, t: "최초등록일" }, { w: 160, t: "관리" }].map((h, i) => (
+                  {[{ w: 40, t: "" }, { w: 80, t: "공개상태" }, { w: 0, t: "강의명", a: "left" }, { w: 100, t: "카테고리" }, { w: 150, t: "수강안내" }, { w: 120, t: "수강료" }, { w: 180, t: "최초등록일" }, { w: 160, t: "관리" }].map((h, i) => (
                     <th key={i} style={{ padding: "12px 10px", textAlign: (h.a || "center") as any, fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, ...(h.w ? { width: h.w } : {}) }}>
                       {i === 0 ? <input type="checkbox" checked={selectedIds.size === filtered.length && filtered.length > 0} onChange={toggleSelectAll} style={{ accentColor: "#3b82f6" }} /> : h.t}
                     </th>
@@ -226,6 +237,7 @@ export default function StudySection({ theme }: AdminSectionProps) {
                         </span>
                       </td>
                       <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: "#8a3ffc", fontWeight: 600 }}>{row.category}</td>
+                      <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.lecture_guide_name || "선택 안 함"}</td>
                       <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 700, color: "#3b82f6" }}>
                         {row.discount_price ? formatPrice(row.discount_price) : formatPrice(row.price)}
                       </td>
@@ -271,6 +283,13 @@ export default function StudySection({ theme }: AdminSectionProps) {
           darkMode={darkMode}
           onClose={() => setShowSettingsModal(false)}
           onCategoriesUpdated={() => fetchData()}
+        />
+      )}
+      {showGuideModal && (
+        <LectureGuideManagerModal
+          darkMode={darkMode}
+          onClose={() => setShowGuideModal(false)}
+          onUpdated={fetchData}
         />
       )}
     </div>
