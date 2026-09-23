@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { isAdminRole } from "@/utils/permissionCheck";
 import ArticleDraftStudio from "./ArticleDraftStudio";
 import { STANDALONE_ARTICLE_DRAFT_KEY } from "./constants";
 import type { ArticleDraftResult, DraftVacancy } from "./types";
@@ -23,18 +22,6 @@ export default function StandaloneArticleDraftPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.replace("/");
-        return;
-      }
-
-      const { data: member } = await supabase
-        .from("members")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (!member || !isAdminRole(member.role)) {
-        alert("접근 권한이 없습니다.");
         router.replace("/");
         return;
       }
