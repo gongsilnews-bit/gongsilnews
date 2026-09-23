@@ -97,13 +97,30 @@ export function formatPhone(v: string): string {
 }
 
 /** 다음 우편번호 위젯. 공실등록과 같은 것을 쓰되 물건접수웹페이지에는 주소만 있으면 된다. */
-export function openPostcode(onPick: (addr: string) => void) {
+/**
+ * 시·군·동만 고른다.
+ *
+ * 구하는 손님에게는 번지까지 필요 없다. 아직 정해진 건물이 없으니 물어봐야
+ * 답할 수가 없다. 같은 검색창을 쓰되 돌려받는 값에서 앞쪽 세 토막만 남긴다 —
+ * 손으로 치는 것보다 빠르고, 지역 이름이 늘 같은 꼴로 저장돼 나중에 찾기도 쉽다.
+ */
+export function openRegionPostcode(onPick: (region: string) => void) {
+  openPostcode(() => {}, (data: any) => {
+    const region = [data.sido, data.sigungu, data.bname].filter(Boolean).join(" ").trim();
+    onPick(region || data.address || "");
+  });
+}
+
+export function openPostcode(onPick: (addr: string) => void, onRaw?: (data: any) => void) {
   if (typeof window === "undefined") return;
   const run = () => {
     const daum = (window as any).daum;
     if (!daum?.Postcode) return;
     new daum.Postcode({
-      oncomplete: (data: any) => onPick(data.roadAddress || data.jibunAddress || data.address || ""),
+      oncomplete: (data: any) => {
+        if (onRaw) return onRaw(data);
+        onPick(data.roadAddress || data.jibunAddress || data.address || "");
+      },
     }).open();
   };
   if ((window as any).daum?.Postcode) return run();

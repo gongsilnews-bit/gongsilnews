@@ -339,7 +339,7 @@ export default function MobileGongsilStandaloneDetail({
       <div style={{ flex: 1, overflowY: "auto", paddingBottom: "90px" }}>
         {/* 이미지 슬라이더 (맨 위로 이동) */}
         {selectedVacancy.images?.[0] && (
-          <div style={{ position: "relative", width: "100%", height: "220px", backgroundColor: "transparent", overflow: "hidden" }}>
+          <div className="gs-hero-shot" style={{ position: "relative", width: "100%", height: "220px", backgroundColor: "transparent", overflow: "hidden" }}>
             <img 
               src={selectedVacancy.images[galleryIndex] || selectedVacancy.images[0]} 
               alt="" 

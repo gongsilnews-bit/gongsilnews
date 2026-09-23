@@ -5,6 +5,7 @@ import MobileGongsilStandaloneDetail from "@/app/m/gongsil/detail/[id]/MobileGon
 import NotFoundVacancy from "@/app/(map)/gongsil/detail/[id]/NotFoundVacancy";
 import { getCleanAddrText, getPriceText } from "@/app/(map)/gongsil/gongsilHelpers";
 import { pickTheme } from "../../../../theme";
+import { VIEW_TRANSITION_CSS, HERO_SHOT_CSS } from "../../../../viewTransition";
 
 export const revalidate = 60;
 
@@ -71,6 +72,7 @@ export default async function SubdomainMobileGongsilDetailPage({ params }: PageP
         </div>
       }
     >
+      <style>{VIEW_TRANSITION_CSS + HERO_SHOT_CSS}</style>
       <MobileGongsilStandaloneDetail
         vacancy={vacancy}
         photos={(res as any)?.photos || []}

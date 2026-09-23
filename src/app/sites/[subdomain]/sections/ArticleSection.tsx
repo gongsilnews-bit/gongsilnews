@@ -3,6 +3,8 @@
 import React from "react";
 import SectionTitle from "./SectionTitle";
 import type { Theme } from "../theme";
+import OpenVeil from "./OpenVeil";
+import { supportsViewTransition } from "../viewTransition";
 
 interface Props {
   officeName: string;
@@ -35,11 +37,34 @@ export default function ArticleSection({ officeName, theme, articles, hrefFor }:
    * 매물과 같은 방식으로 새 창에 띄운다. 기사는 읽는 물건이라 창을 좀 더 넓게 잡는다.
    * 폰에는 팝업 창이 없으므로 모바일 서식(/m)으로 보낸다.
    */
-  const open = (a: any) => {
+  const [opening, setOpening] = React.useState(false);
+
+  /*
+   * 뒤로가기로 돌아오면 브라우저가 화면을 캐시에서 그대로 되살린다.
+   * 그때 막이 덮인 채로 남으면 홈페이지가 영영 안 보인다. pageshow 에서 걷는다.
+   */
+  React.useEffect(() => {
+    const clear = () => setOpening(false);
+    window.addEventListener("pageshow", clear);
+    return () => window.removeEventListener("pageshow", clear);
+  }, []);
+
+  const open = (a: any, card?: HTMLElement | null) => {
     const key = a.article_no || a.id;
     const isPhone = typeof window !== "undefined" && window.innerWidth < 821;
     if (isPhone) {
-      // 같은 탭으로 이동해야 뒤로가기로 원래 홈페이지와 스크롤 위치에 돌아온다
+      // 같은 탭으로 이동해야 뒤로가기로 원래 홈페이지와 스크롤 위치에 돌아온다.
+      if (supportsViewTransition()) {
+        /*
+         * 누른 줄의 사진에 다음 화면의 첫 사진과 같은 이름을 단다. 그러면
+         * 브라우저가 이 사진이 저 사진으로 자라나는 움직임을 알아서 그린다.
+         * 이름은 문서에 하나만 있어야 하므로 누른 것에만 붙인다.
+         */
+        card?.querySelector<HTMLElement>(".gs-card-shot")?.style.setProperty("view-transition-name", "gs-open");
+      } else {
+        // 전환을 모르는 브라우저에서는 기다리는 동안 막을 덮는다
+        setOpening(true);
+      }
       window.location.assign(hrefFor(`/m/news/${key}`));
       return;
     }
@@ -52,13 +77,14 @@ export default function ArticleSection({ officeName, theme, articles, hrefFor }:
 
   return (
     <section id="article" style={{ background: "#fff", padding: "56px 0 60px", scrollMarginTop: 54 }}>
+      <OpenVeil show={opening} variant="article" theme={theme} />
       <SectionTitle theme={theme} label="COLUMN" title="기사 · 칼럼" desc={`${officeName}가 직접 쓴 글입니다`} />
 
       <div style={{ maxWidth: 940, margin: "0 auto", padding: "0 16px" }}>
         {articles.map((a, i) => (
           <article
             key={a.id}
-            onClick={() => open(a)}
+            onClick={(ev) => open(a, ev.currentTarget as HTMLElement)}
             className="gs-article-row"
             style={{
               display: "flex",
@@ -71,6 +97,7 @@ export default function ArticleSection({ officeName, theme, articles, hrefFor }:
             }}
           >
             <div
+              className="gs-card-shot"
               style={{
                 flex: "0 0 auto",
                 width: "clamp(112px, 20vw, 190px)",

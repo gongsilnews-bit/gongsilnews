@@ -4,6 +4,8 @@ import React, { useMemo, useState } from "react";
 import Carousel from "./Carousel";
 import SectionTitle from "./SectionTitle";
 import { vacancyPrice, toPyeong, type Theme } from "../theme";
+import OpenVeil from "./OpenVeil";
+import { supportsViewTransition } from "../viewTransition";
 
 interface Props {
   officeName: string;
@@ -97,9 +99,21 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
    * 공실등록에서 고르는 값이 둘이다 — "부동산노출"(중개업소만), "부동산노출 +
    * 일반인노출"(모두에게). 앞의 것만 가린다. 기사에 공실을 붙일 때 쓰는 기준과 같다.
    */
+  const [opening, setOpening] = React.useState(false);
+
+  /*
+   * 뒤로가기로 돌아오면 브라우저가 화면을 캐시에서 그대로 되살린다.
+   * 그때 막이 덮인 채로 남으면 홈페이지가 영영 안 보인다. pageshow 에서 걷는다.
+   */
+  React.useEffect(() => {
+    const clear = () => setOpening(false);
+    window.addEventListener("pageshow", clear);
+    return () => window.removeEventListener("pageshow", clear);
+  }, []);
+
   const isLocked = (v: any) => !String(v?.exposure_type || "").includes("일반인노출");
 
-  const openDetail = (v: any) => {
+  const openDetail = (v: any, card?: HTMLElement | null) => {
     // 가려진 매물은 상세로 보내지 않는다. 포털의 잠금 화면으로 넘기면 중개사가
     // 데려온 손님에게 "중개업소로 가입하세요"라고 말하는 꼴이 된다.
     if (isLocked(v)) {
@@ -109,6 +123,17 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
     const isPhone = typeof window !== "undefined" && window.innerWidth < 821;
     if (isPhone) {
       // 같은 탭으로 이동해야 뒤로가기로 원래 홈페이지와 스크롤 위치에 복귀한다.
+      if (supportsViewTransition()) {
+        /*
+         * 누른 카드의 사진에 다음 화면의 첫 사진과 같은 이름을 단다. 그러면
+         * 브라우저가 이 사진이 저 사진으로 자라나는 움직임을 알아서 그린다.
+         * 이름은 문서에 하나만 있어야 하므로 누른 것에만 붙인다.
+         */
+        card?.querySelector<HTMLElement>(".gs-card-shot")?.style.setProperty("view-transition-name", "gs-open");
+      } else {
+        // 전환을 모르는 브라우저에서는 기다리는 동안 막을 덮는다
+        setOpening(true);
+      }
       window.location.assign(hrefFor(`/m/gongsil/detail/${v.id}`));
       return;
     }
@@ -121,6 +146,7 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
 
   return (
     <section id="vacancy" style={{ background: "#f1f3f5", padding: "56px 0 60px", scrollMarginTop: 54 }}>
+      <OpenVeil show={opening} variant="vacancy" theme={theme} />
       <SectionTitle
         theme={theme}
         label="OUR LISTINGS"
@@ -183,7 +209,8 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
           return (
             <article
               key={v.id}
-              onClick={() => openDetail(v)}
+              onClick={(ev) => openDetail(v, ev.currentTarget as HTMLElement)}
+              className="gs-vacancy-card"
               style={{
                 flex: "0 0 auto",
                 width: 268,
@@ -196,7 +223,7 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
               }}
             >
               {/* 사진 + 거래유형 리본 */}
-              <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", background: "#e8ecf0" }}>
+              <div className="gs-card-shot" style={{ position: "relative", width: "100%", aspectRatio: "4/3", background: "#e8ecf0" }}>
                 {photo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />

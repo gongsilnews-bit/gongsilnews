@@ -10,6 +10,7 @@ import ContactSection from "./sections/ContactSection";
 import MobileBottomBar from "./sections/MobileBottomBar";
 import { clampIntro, pickTheme, scrollToSection } from "./theme";
 import { isPermissionAlive } from "@/utils/planCheck";
+import { VIEW_TRANSITION_CSS } from "./viewTransition";
 
 interface Props {
   subdomain: string;
@@ -227,7 +228,20 @@ export default function SiteClient({
           헤더에 글자가 가리는 걸 막는 줄이다.
         */
         html { scroll-padding-top: 104px; }
+        /*
+          목록에 마우스를 올리면 바탕이 살짝 밝아진다. 포털 기사 목록과 같은 톤이다.
+          누를 수 있는 줄인지 손이 먼저 안다.
+          손가락으로 쓰는 화면에서는 hover 가 눌린 뒤에도 남으므로, 마우스가
+          있는 기기에서만 건다.
+        */
+        @media (hover: hover) {
+          .gs-article-row { transition: background-color .18s ease; }
+          .gs-article-row:hover { background-color: #f9f9f9; }
+          .gs-vacancy-card { transition: box-shadow .18s ease, transform .18s ease; }
+          .gs-vacancy-card:hover { box-shadow: 0 6px 18px rgba(16,24,40,.14); transform: translateY(-2px); }
+        }
         .gs-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        ${VIEW_TRANSITION_CSS}
         .gs-scroll-x::-webkit-scrollbar { display: none; }
         .gs-page { padding-bottom: 74px; }
         .gs-bottombar { display: flex; }

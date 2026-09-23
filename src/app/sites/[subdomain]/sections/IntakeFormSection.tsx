@@ -8,6 +8,7 @@ import {
   formatPhone,
   onlyDigits,
   openPostcode,
+  openRegionPostcode,
   readMoney,
   shrinkToWebp,
   toPyeong,
@@ -43,6 +44,16 @@ const AMOUNT_STEPS = [
 ];
 
 /** 입주 시점. 달력에서 날짜를 고르게 하면 대부분 대충 찍거나 그냥 건너뛴다. */
+/*
+ * 구하는 쪽이 고르는 금액대.
+ *
+ * 내놓는 사람은 자기 물건을 보고 숫자를 적으면 되지만, 구하는 사람은 아직
+ * 물건이 없다. 보증금·월세를 만원 단위까지 적어 넣으라 하면 거기서 창을 닫는다.
+ * 목돈(매매·전세)과 다달이 내는 돈(월세·단기)은 자릿수가 달라 따로 둔다.
+ */
+const BUDGET_LUMP = ["5천만", "1억", "2억", "3억", "5억", "7억", "10억", "15억", "20억", "30억", "50억", "100억"];
+const BUDGET_MONTHLY = ["30만", "50만", "70만", "100만", "150만", "200만", "300만", "500만", "700만", "1000만"];
+
 const MOVE_IN_LISTING = ["공실", "1주 이내", "1달 이내", "협의"];
 const MOVE_IN_SEEKING = ["즉시", "1주 이내", "1달 이내", "협의"];
 
@@ -95,6 +106,9 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
   const [exclusiveM2, setExclusiveM2] = useState("");
   const [supplyM2, setSupplyM2] = useState("");
   const [maintenance, setMaintenance] = useState("");
+  /** 구하는 쪽이 고른 금액대 */
+  const [budgetMin, setBudgetMin] = useState("");
+  const [budgetMax, setBudgetMax] = useState("");
   const [exclusivePy, setExclusivePy] = useState("");
   const [supplyPy, setSupplyPy] = useState("");
   const [floor, setFloor] = useState("");
@@ -211,12 +225,18 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
         : fullAddr;
 
       let priceText = "";
-      if (tradeType === "월세" || tradeType === "단기") {
+      if (isSeeking) {
+        // 구하는 쪽은 고른 구간을 그대로 싣는다. 한쪽만 골랐으면 그쪽만 적는다.
+        priceText = budgetMin && budgetMax ? `${budgetMin} ~ ${budgetMax}`
+          : budgetMin ? `${budgetMin} 이상`
+          : budgetMax ? `${budgetMax} 이하`
+          : "";
+      } else if (tradeType === "월세" || tradeType === "단기") {
         priceText = [deposit && `보증금 ${withComma(deposit)}만원`, monthly && `월 ${withComma(monthly)}만원`].filter(Boolean).join(" / ");
       } else if (deposit) {
         priceText = `${readMoney(deposit)}`;
       }
-      if (maintenance) priceText = `${priceText} (관리비 ${withComma(maintenance)}만원)`.trim();
+      if (!isSeeking && maintenance) priceText = `${priceText} (관리비 ${withComma(maintenance)}만원)`.trim();
       const composedBudget = tradeType ? `[${tradeType}] ${priceText}`.trim() : priceText;
 
       // 방·욕실·면적은 담을 컬럼이 없어 메모(crm_logs)에 붙여 보낸다.
@@ -456,14 +476,18 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
                 <p style={{ margin: 0, fontSize: 14.5, color: "#334155", lineHeight: 1.7, wordBreak: "keep-all" }}>
                   <strong style={{ color: theme.dark }}>{name}</strong>님, 접수가 끝났습니다. 확인 후 연락드리겠습니다.
                   <br />
-                  <strong>상세정보</strong>를 입력해 주시면, 더욱 빠르게 물건을 홍보할 수 있습니다.
+                  {isSeeking
+                    ? <>더 자세한 정보를 주시면 <strong>원하시는 물건을 더 빠르게</strong> 찾아드릴 수 있어요.</>
+                    : <><strong>상세정보</strong>를 입력해 주시면, 더욱 빠르게 물건을 홍보할 수 있습니다.</>}
                 </p>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                {/* 주소 — 직접 치는 것보다 검색해서 고르는 편이 빠르고 정확하다 */}
+                {/* 주소 — 직접 치는 것보다 검색해서 고르는 편이 빠르고 정확하다.
+                    구하는 쪽에는 번지가 필요 없어 아래에서 시·군·동만 따로 받는다 */}
+                {!isSeeking && (
                 <div>
-                  <label style={labelStyle}>{isSeeking ? "희망 지역" : "물건 소재지"}</label>
+                  <label style={labelStyle}>물건 소재지</label>
                   <div style={{ display: "flex", gap: 8 }}>
                     <input
                       style={{ ...inputStyle, flex: 1, background: "#f8fafc", cursor: "pointer" }}
@@ -489,6 +513,7 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
                     />
                   )}
                 </div>
+                )}
 
                 {/* 매물 종류 — 타이핑보다 탭 한 번이 빠르다 */}
                 <div>
@@ -543,8 +568,60 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
                   </div>
                 </div>
 
+                {/* 구하는 쪽은 금액대만 고른다. 없는 물건의 값을 만원 단위로 적을 수는 없다 */}
+                {showBudget && isSeeking && (
+                  <div>
+                    <label style={labelStyle}>희망 금액대<span style={{ marginLeft: 8, fontSize: 13, fontWeight: 600, color: "#94a3b8" }}>대략적인 금액이면 됩니다</span></label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      {([
+                        { key: "min", label: "최저", value: budgetMin, set: setBudgetMin },
+                        { key: "max", label: "최고", value: budgetMax, set: setBudgetMax },
+                      ] as const).map((f, i) => (
+                        <React.Fragment key={f.key}>
+                          {i === 1 && <span style={{ color: "#94a3b8", fontWeight: 800 }}>~</span>}
+                          <div style={{ flex: "1 1 150px", minWidth: 140 }}>
+                            <select
+                              value={f.value}
+                              onChange={(e) => f.set(e.target.value)}
+                              style={{ ...inputStyle, cursor: "pointer" }}
+                            >
+                              <option value="">{f.label} 무관</option>
+                              {(tradeType === "월세" || tradeType === "단기" ? BUDGET_MONTHLY : BUDGET_LUMP).map((b) => (
+                                <option key={b} value={b}>{b}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 구하는 쪽의 지역 — 번지는 묻지 않는다. 시·군·동이면 충분하다 */}
+                {isSeeking && (
+                  <div>
+                    <label style={labelStyle}>희망 지역<span style={{ marginLeft: 8, fontSize: 13, fontWeight: 600, color: "#94a3b8" }}>찾고 계신 지역이면 됩니다</span></label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input
+                        style={{ ...inputStyle, flex: 1, background: "#f8fafc", cursor: "pointer" }}
+                        value={area}
+                        readOnly
+                        onClick={() => openRegionPostcode(setArea)}
+                        placeholder="예: 서울 강남구 논현동"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => openRegionPostcode(setArea)}
+                        style={{ flexShrink: 0, padding: "0 18px", borderRadius: 8, border: "none", background: "#16202b", color: "#fff", fontSize: 14.5, fontWeight: 800, cursor: "pointer" }}
+                      >
+                        지역 찾기
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* 금액 — 공실등록과 같은 방식. 거래유형에 따라 칸이 바뀐다 */}
-                {showBudget && (
+                {showBudget && !isSeeking && (
                   <div>
                     <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                       <div style={{ flex: "1 1 200px", minWidth: 180 }}>
@@ -590,7 +667,8 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
                       )}
                     </div>
 
-                    {/* 관리비 */}
+                    {/* 관리비 — 구하는 쪽에는 묻지 않는다. 관리비를 정해두고 구하는 손님은 없다 */}
+                    {!isSeeking && (
                     <div style={{ marginTop: 18 }}>
                       <label style={labelStyle}>
                         관리비
@@ -609,10 +687,12 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
                         <span style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", fontSize: 14, fontWeight: 700, color: "#94a3b8" }}>만원</span>
                       </div>
                     </div>
+                    )}
                   </div>
                 )}
 
-                {/* 방 · 욕실 */}
+                {/* 구하는 쪽에는 묻지 않는다. 아직 없는 물건의 방/욕실 수를 적을 수는 없다 */}
+                {!isSeeking && (
                 <div>
                   <label style={labelStyle}>방 / 욕실</label>
                   <div style={{ display: "flex", gap: 12 }}>
@@ -647,8 +727,10 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
                     ))}
                   </div>
                 </div>
+                )}
 
-                {/* 면적 — 평과 ㎡ 중 아무 쪽이나 치면 반대쪽이 따라온다 */}
+                {/* 구하는 쪽에는 묻지 않는다. 아직 없는 물건의 면적을 적을 수는 없다 */}
+                {!isSeeking && (
                 <div>
                   <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                     {([
@@ -688,8 +770,10 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
                     ))}
                   </div>
                 </div>
+                )}
 
-                {/* 층수 */}
+                {/* 구하는 쪽에는 묻지 않는다. 아직 없는 물건의 층수을 적을 수는 없다 */}
+                {!isSeeking && (
                 <div>
                   <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                     <div style={{ flex: "1 1 160px", minWidth: 140 }}>
@@ -719,6 +803,7 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* 입주 시점 — 내놓는 쪽은 '가능일', 구하는 쪽은 '희망일' */}
                 <div>
@@ -799,7 +884,7 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
                 )}
 
                 <div style={{ display: showNotes ? "block" : "none" }}>
-                  <label style={labelStyle}>남기실 말씀</label>
+                  <label style={labelStyle}>{isSeeking ? "기타 요청사항" : "남기실 말씀"}{isSeeking && <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 600, color: "#94a3b8" }}>층·면적 등 원하시는 조건</span>}</label>
                   <textarea
                     style={{ ...inputStyle, minHeight: 92, resize: "vertical", fontFamily: "inherit" }}
                     value={notes}
