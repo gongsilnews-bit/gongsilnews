@@ -364,12 +364,39 @@ export default function IntakeFormSection({ subdomain, theme, cfg, phone, allowP
                 */}
                 확인 후 {phoneInput ? <strong>{phoneInput}</strong> : "남겨주신"} 번호로 연락드리겠습니다.
               </p>
-              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "18px 20px", textAlign: "left" }}>
-                <p style={{ fontSize: 14.5, fontWeight: 800, color: theme.dark, margin: "0 0 6px 0" }}>사진을 못 올리셨나요?</p>
-                <p style={{ fontSize: 14, color: "#64748b", lineHeight: 1.7, margin: 0, wordBreak: "keep-all" }}>
-                  괜찮습니다. 연락드릴 때 문자나 카카오톡으로 보내 주셔도 됩니다.
-                </p>
-              </div>
+              {/*
+                기다리기 답답한 손님에게 길을 하나 더 준다. 접수가 끝난 자리가
+                전화를 걸기에 가장 좋은 자리다 — 방금 무엇을 맡겼는지 기억이
+                생생하고, 중개사도 그 건으로 바로 상담할 수 있다.
+                번호는 눌러서 바로 걸리게 둔다. 폰에서는 그게 전부다.
+              */}
+              {phone && (
+                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "18px 20px" }}>
+                  <p style={{ fontSize: 14.5, color: "#475569", lineHeight: 1.8, margin: "0 0 12px 0", wordBreak: "keep-all" }}>
+                    사무실 <strong style={{ color: theme.dark }}>{phone}</strong> 번호로 문의주시면
+                    <br />
+                    더 빠르게 {isSeeking ? "찾아드릴" : "도와드릴"} 수 있습니다.
+                  </p>
+                  <a
+                    href={`tel:${phone}`}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 7,
+                      padding: "11px 22px",
+                      borderRadius: 8,
+                      background: theme.primary,
+                      color: "#fff",
+                      fontSize: 15,
+                      fontWeight: 800,
+                      textDecoration: "none",
+                    }}
+                  >
+                    전화 걸기
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
