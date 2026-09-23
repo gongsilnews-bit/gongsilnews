@@ -72,3 +72,62 @@ export function getLevelName(level: number): string {
     default: return "회원";
   }
 }
+
+/**
+ * 회원 등급의 이름.
+ *
+ * 화면마다 따로 조합하던 것을 한 곳으로 모은다. 전에는 헤더 다섯 군데가
+ * role 만 보고 부동산회원을 전부 "부동산회원"으로 불러, 돈을 낸 사람과
+ * 무료 회원이 같은 글자를 봤다.
+ */
+export function getPlanLabel(member: {
+  role?: string | null;
+  plan_type?: string | null;
+} | null | undefined): string {
+  const role = member?.role;
+  if (isAdminRole(role)) return '최고관리자';
+  if (role === 'BIZ' || role === '비즈니스회원') return '비즈니스회원';
+
+  if (role === 'REALTOR' || role === '부동산회원') {
+    const plan = member?.plan_type;
+    if (plan === 'news_premium' || plan === 'news_basic') return '공실뉴스부동산';
+    if (plan === 'study_premium' || plan === 'vacancy_premium' || plan === 'vacancy_basic') return '공실스터디부동산';
+    return '무료부동산';
+  }
+
+  return '일반회원';
+}
+
+/** 사이트 헤더에서 관리자 화면으로 들어가는 버튼에 쓸 글자 */
+export function getAdminEntryLabel(
+  member: { role?: string | null; plan_type?: string | null } | null | undefined,
+  agencyStatus?: string | null
+): string {
+  const role = member?.role;
+  // 서류가 반려된 중개사에게는 등급보다 먼저 알려줄 것이 있다
+  if ((role === 'REALTOR' || role === '부동산회원') && agencyStatus === 'REJECTED') {
+    return '서류보완 >>';
+  }
+  return `${getPlanLabel(member)} admin >>`;
+}
+
+/** 요금제 만료일을 배지에 붙일 짧은 꼴로. 없으면 빈 글자 */
+export function formatPlanEnd(planEndDate?: string | Date | null): string {
+  if (!planEndDate) return '';
+  const d = new Date(planEndDate);
+  if (Number.isNaN(d.getTime())) return '';
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `(~${yy}.${mm}.${dd})`;
+}
+
+/** 만료가 코앞인가. 배지 색을 바꿔 연장을 놓치지 않게 한다 */
+export function isPlanEndingSoon(planEndDate?: string | Date | null, days: number = 7): boolean {
+  if (!planEndDate) return false;
+  const d = new Date(planEndDate);
+  if (Number.isNaN(d.getTime())) return false;
+  d.setHours(23, 59, 59, 999);
+  const left = d.getTime() - Date.now();
+  return left >= 0 && left <= days * 24 * 60 * 60 * 1000;
+}

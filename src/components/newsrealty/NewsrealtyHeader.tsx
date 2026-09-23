@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getEffectiveMemberRole } from "@/utils/permissionCheck";
+import { getAdminEntryLabel } from "@/utils/permissionCheck";
 
 interface NewsrealtyHeaderProps {
   onOpenGuide?: () => void;
@@ -21,6 +22,7 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
   const guideDropdownTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const [user, setUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>("");
+  const [planType, setPlanType] = useState<string>("");
   const [agencyStatus, setAgencyStatus] = useState<string>("");
 
   const handleMouseEnterDropdown = () => {
@@ -61,10 +63,11 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
         setAgencyStatus("");
         return;
       }
-      const { data: member } = await supabase.from("members").select("role").eq("id", u.id).single();
+      const { data: member } = await supabase.from("members").select("role, plan_type").eq("id", u.id).single();
       const { data: agency } = await supabase.from("agencies").select("status").eq("owner_id", u.id).single();
       setAgencyStatus(agency?.status || "");
       setUserRole(getEffectiveMemberRole(member?.role, agency?.status));
+      setPlanType((member as any)?.plan_type || "");
     };
 
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -693,7 +696,7 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                     onMouseLeave={(e) => (e.currentTarget.style.background = userRole === "ADMIN" ? "#111827" : "#ef4444")}
                     title="내 관리자 페이지로 이동"
                   >
-                    {userRole === "ADMIN" ? "최고관리자 >>" : (userRole === "REALTOR" && agencyStatus === "REJECTED") ? "서류보완 >>" : userRole === "REALTOR" ? "부동산회원 >>" : "일반회원 >>"}
+                    {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
                   </button>
                   <button
                     type="button"

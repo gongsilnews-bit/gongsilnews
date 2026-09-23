@@ -88,11 +88,6 @@ export default function ArticleAdSettingSlot({
     };
   }, [adAuthorId]);
 
-  // 권한을 잃은 회원이 예전에 배너로 맞춰둔 기사를 열면 기본프로필로 되돌린다
-  React.useEffect(() => {
-    if (!canBanner && writeAdType === "BANNER") setWriteAdType("DEFAULT");
-  }, [canBanner, writeAdType, setWriteAdType]);
-
   return (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 32, minWidth: 0 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80, paddingTop: 4, flexShrink: 0 }}>광고등록</label>
@@ -111,18 +106,25 @@ export default function ArticleAdSettingSlot({
                     <span>기본프로필 선택 (등록자 프로필 카드)</span>
                   </label>
 
-                  {canBanner && (
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14, fontWeight: 600, color: writeAdType === "BANNER" ? "#2563eb" : textPrimary }}>
-                      <input
-                        type="radio"
-                        name="write_ad_type"
-                        checked={writeAdType === "BANNER"}
-                        onChange={() => setWriteAdType("BANNER")}
-                        style={{ accentColor: "#2563eb", width: 16, height: 16, cursor: "pointer" }}
-                      />
-                      <span>배너등록 (이미지 첨부 + 링크 첨부)</span>
-                    </label>
-                  )}
+                  {/*
+                    권한이 없어도 선택지를 지우지 않는다. 지우면 이미 배너로 맞춰둔
+                    기사가 다른 값으로 표시되고, 중개사가 무심코 저장하는 순간
+                    설정이 날아가 재결제해도 돌아올 값이 없다. 잠긴 채로 보여준다.
+                  */}
+                  <label
+                    title={canBanner ? undefined : "공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다"}
+                    style={{ display: "flex", alignItems: "center", gap: 6, cursor: canBanner ? "pointer" : "not-allowed", fontSize: 14, fontWeight: 600, color: !canBanner ? textMuted : writeAdType === "BANNER" ? "#2563eb" : textPrimary }}
+                  >
+                    <input
+                      type="radio"
+                      name="write_ad_type"
+                      checked={writeAdType === "BANNER"}
+                      disabled={!canBanner}
+                      onChange={() => setWriteAdType("BANNER")}
+                      style={{ accentColor: "#2563eb", width: 16, height: 16, cursor: canBanner ? "pointer" : "not-allowed" }}
+                    />
+                    <span>배너등록 (이미지 첨부 + 링크 첨부){canBanner ? "" : " 🔒"}</span>
+                  </label>
 
                   <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: textSecondary }}>
                     <input
@@ -153,6 +155,14 @@ export default function ArticleAdSettingSlot({
                 )}
 
                 {/* 배너등록 선택 시: 등록 방식 먼저 선택 -> 분기 렌더링 (대표님 지시) */}
+                {!canBanner && writeAdType === "BANNER" && (
+                  <div style={{ padding: "14px 16px", background: "#f8fafc", borderRadius: 10, border: `1px dashed ${border}`, fontSize: 13, fontWeight: 700, color: textSecondary, lineHeight: 1.7 }}>
+                    이 기사에는 배너광고가 걸려 있지만 지금 요금제에서는 노출되지 않습니다.
+                    <br />
+                    <span style={{ fontWeight: 600 }}>설정은 그대로 두었습니다 — 결제하시면 손대지 않아도 다시 노출됩니다.</span>
+                  </div>
+                )}
+
                 {canBanner && writeAdType === "BANNER" && (
                   <div style={{ padding: "18px 20px", background: "#f8fafc", borderRadius: 10, border: `1px solid ${border}`, display: "flex", flexDirection: "column", gap: 14, minWidth: 0, boxSizing: "border-box" }}>
                     {/* [1순위] 등록 방식 선택 (새 배너 직접 등록 vs 기존 배너 가져오기) */}

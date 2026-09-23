@@ -14,6 +14,7 @@ import NavHighlightBubble, { useNavHighlightBubbles, NavCategoryHighlightMarker,
 import { createPortal } from "react-dom";
 import { adminApproveRealtorApplication } from "@/app/admin/actions";
 import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
+import { getAdminEntryLabel } from "@/utils/permissionCheck";
 
 
 export default function Header({ topFullBanners, headerTextBanners, navCounts }: { topFullBanners?: any[], headerTextBanners?: any[], navCounts?: NavCounts }) {
@@ -36,6 +37,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
   const [showDocWarning, setShowDocWarning] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('');
+  const [planType, setPlanType] = useState<string>('');
   const [agencyStatus, setAgencyStatus] = useState<string>('');
 
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -145,12 +147,13 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
         // members 테이블에서 현재 회원의 상태 파악
         const { data, error } = await supabase
           .from('members')
-          .select('signup_completed, email, name, role')
+          .select('signup_completed, email, name, role, plan_type')
           .eq('id', user.id)
           .single();
         if (data) {
           setCurrentUser(user);
           setUserRole(data.role);
+          setPlanType(data.plan_type || '');
 
           const { data: agencyData } = await supabase
             .from('agencies')
@@ -268,7 +271,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                 else if (userRole === 'REALTOR') router.push('/realty_admin');
                 else router.push('/user_admin');
               }}>
-                {userRole === 'ADMIN' ? '최고관리자 >>' : (userRole === 'REALTOR' && agencyStatus === 'REJECTED') ? '서류보완 >>' : userRole === 'REALTOR' ? '부동산회원 >>' : '일반회원 >>'}
+                {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
               </div>
               <div style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} onClick={async () => {
                 const supabase = createClient();
@@ -458,7 +461,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#1f2937" : "#dc2626"}
                     onMouseLeave={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#111827" : "#ef4444"}>
-                    {userRole === 'ADMIN' ? '최고관리자 >>' : (userRole === 'REALTOR' && agencyStatus === 'REJECTED') ? '서류보완 >>' : userRole === 'REALTOR' ? '부동산회원 >>' : '일반회원 >>'}
+                    {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
                   </button>
                 ) : (
                   <button onClick={() => router.push('/login?returnTo=' + encodeURIComponent('/realty_admin?menu=gongsil&action=write'))}

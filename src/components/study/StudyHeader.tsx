@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getEffectiveMemberRole } from "@/utils/permissionCheck";
 import { STUDY_BENEFITS } from "@/components/study/StudyBenefitsSubNav";
+import { getAdminEntryLabel } from "@/utils/permissionCheck";
 
 /**
  * 공실스터디 전용 상단 헤더 (공실뉴스부동산 헤더와 동일 포맷 / 포인트 컬러만 에메랄드)
@@ -30,6 +31,7 @@ export default function StudyHeader() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>("");
+  const [planType, setPlanType] = useState<string>("");
   const [agencyStatus, setAgencyStatus] = useState<string>("");
   const [benefitsOpen, setBenefitsOpen] = useState(false);
   const benefitsTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,10 +55,11 @@ export default function StudyHeader() {
         setAgencyStatus("");
         return;
       }
-      const { data: member } = await supabase.from("members").select("role").eq("id", u.id).single();
+      const { data: member } = await supabase.from("members").select("role, plan_type").eq("id", u.id).single();
       const { data: agency } = await supabase.from("agencies").select("status").eq("owner_id", u.id).single();
       setAgencyStatus(agency?.status || "");
       setUserRole(getEffectiveMemberRole(member?.role, agency?.status));
+      setPlanType((member as any)?.plan_type || "");
     };
 
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -300,7 +303,7 @@ export default function StudyHeader() {
                   onMouseLeave={(e) => (e.currentTarget.style.background = userRole === "ADMIN" ? "#111827" : "#ef4444")}
                   title="내 관리자 페이지로 이동"
                 >
-                  {userRole === "ADMIN" ? "최고관리자 >>" : (userRole === "REALTOR" && agencyStatus === "REJECTED") ? "서류보완 >>" : userRole === "REALTOR" ? "부동산회원 >>" : "일반회원 >>"}
+                  {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
                 </button>
                 <button
                   type="button"

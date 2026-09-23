@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import { getMyArticles, adminUpdateArticleStatus, checkArticleWritePermission, deleteArticle } from "@/app/actions/article";
-import { getAuthorArticlesAdSettingsMap, updateArticlesAdSettings, AuthorBanner } from "@/app/actions/articleAd";
+import { getAuthorArticlesAdSettingsMap, updateArticlesAdSettings, canUseArticleBanner, AuthorBanner } from "@/app/actions/articleAd";
 import { getAuthorEligibleVacancies, getAuthorArticlesVacancyMap, updateArticleAttachedVacancy, updateMultipleArticlesAttachedVacancy } from "@/app/actions/articleVacancy";
 import ArticleVacancyDropdown from "@/components/admin/ArticleVacancyDropdown";
 import Link from "next/link";
@@ -55,6 +55,8 @@ export default function MemberArticleSection({
   // 공실 연결 (유료 부동산 전용) state
   const [eligibleVacancies, setEligibleVacancies] = useState<any[]>([]);
   const [isPaidRealtor, setIsPaidRealtor] = useState(false);
+  /* 배너광고 권한은 공실배너와 따로 논다. 등급별로 하나만 열어줄 수 있다 */
+  const [canBanner, setCanBanner] = useState(false);
   const [vacancySettingsMap, setVacancySettingsMap] = useState<Record<string, { vacancy_id: string; title: string; snapshot: any }>>({});
   const [isBulkVacancyModalOpen, setIsBulkVacancyModalOpen] = useState(false);
   const [bulkSelectedVacancyId, setBulkSelectedVacancyId] = useState<string>("NONE");
@@ -109,6 +111,7 @@ export default function MemberArticleSection({
 
   useEffect(() => {
     if (!memberId) return;
+    canUseArticleBanner(memberId).then(setCanBanner);
     getAuthorEligibleVacancies(memberId).then(res => {
       if (res.success) {
         setEligibleVacancies(res.vacancies || []);
@@ -495,7 +498,13 @@ export default function MemberArticleSection({
             📋 승인신청
           </button>
           <button
+            disabled={!canBanner}
+            title={canBanner ? undefined : "공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다"}
             onClick={() => {
+              if (!canBanner) {
+                alert("기사 배너광고는 공실뉴스부동산 · 공실스터디부동산 요금제 전용 기능입니다.");
+                return;
+              }
               if (checkedIds.length === 0) {
                 alert("배너를 일괄 적용할 기사를 먼저 체크박스로 선택해주세요.");
                 return;
@@ -505,20 +514,21 @@ export default function MemberArticleSection({
             style={{
               height: 36,
               padding: "0 16px",
+              opacity: canBanner ? 1 : 0.55,
               background: "#059669",
               color: "#fff",
               border: "none",
               borderRadius: 6,
               fontSize: 13,
               fontWeight: 700,
-              cursor: "pointer",
+              cursor: canBanner ? "pointer" : "not-allowed",
               display: "flex",
               alignItems: "center",
               gap: 6,
               transition: "all 0.15s",
             }}
           >
-            🏷️ 배너 일괄적용
+            🏷️ 배너 일괄적용{canBanner ? "" : " 🔒"}
           </button>
           <button
             onClick={() => {
@@ -654,6 +664,9 @@ export default function MemberArticleSection({
                         btnBorder = darkMode ? "#444" : "#d1d5db";
                       } else if (adType === "BANNER" && bannerName) {
                         label = bannerName;
+                        // 라벨은 저장된 그대로 둔다. 다른 값으로 바꿔 보여주면
+                        // 중개사가 그 값으로 저장해 설정이 날아간다.
+
                         btnBg = darkMode ? "#064e3b" : "#ecfdf5";
                         btnColor = "#059669";
                         btnBorder = darkMode ? "#065f46" : "#a7f3d0";
@@ -663,6 +676,10 @@ export default function MemberArticleSection({
                         <div style={{ position: "relative", display: "inline-block" }}>
                           <button
                             type="button"
+                            disabled={!canBanner}
+                            title={canBanner ? undefined : (adType === "BANNER"
+                              ? "설정은 그대로 있습니다. 결제하시면 다시 노출됩니다."
+                              : "공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다")}
                             onClick={(e) => {
                               e.stopPropagation();
                               setActiveDropdownArticleId(isOpen ? null : a.id);
@@ -676,7 +693,8 @@ export default function MemberArticleSection({
                               borderRadius: 6,
                               fontSize: 12,
                               fontWeight: 700,
-                              cursor: "pointer",
+                              opacity: canBanner ? 1 : 0.55,
+                              cursor: canBanner ? "pointer" : "not-allowed",
                               display: "inline-flex",
                               alignItems: "center",
                               gap: 4,

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import AuthModal from "./AuthModal";
 import SignupCompleteModal from "./SignupCompleteModal";
 import { createClient } from "@/utils/supabase/client";
+import { getAdminEntryLabel } from "@/utils/permissionCheck";
 
 export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeColor?: string }) {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>('');
+  const [planType, setPlanType] = useState<string>('');
   const [agencyStatus, setAgencyStatus] = useState<string>('');
 
   const searchWrapRef = useRef<HTMLDivElement>(null);
@@ -29,7 +31,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
       if (user) {
         const { data } = await supabase
           .from('members')
-          .select('signup_completed, email, name, role')
+          .select('signup_completed, email, name, role, plan_type')
           .eq('id', user.id)
           .single();
           
@@ -47,6 +49,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
           }
 
           setUserRole(data.role === 'REALTOR' && agencyData?.status !== 'APPROVED' ? 'USER' : (data.role || 'USER'));
+          setPlanType((data as any).plan_type || '');
 
           if (data.signup_completed === false) {
             setSignupEmail(data.email || user.email || '');
@@ -108,7 +111,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
               else if (userRole === 'REALTOR') router.push('/realty_admin');
               else router.push('/user_admin');
             }}>
-              {userRole === 'ADMIN' ? '최고관리자 >>' : (userRole === 'REALTOR' && agencyStatus === 'REJECTED') ? '서류보완 >>' : userRole === 'REALTOR' ? '부동산회원 >>' : '일반회원 >>'}
+              {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
             </div>
             <div style={{ color: "#555", cursor: "pointer", fontWeight: "600", fontSize: "13px" }} onClick={handleLogout}>
               로그아웃

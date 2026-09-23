@@ -1,6 +1,7 @@
 import { getArticleDetail } from "@/app/actions/article";
 import { getHomepageSettingsBySubdomain } from "@/app/actions/homepage";
 import { createClient } from "@supabase/supabase-js";
+import { isPermissionAlive } from "@/utils/planCheck";
 
 /**
  * 중개사 서브도메인에서 기사 한 건을 띄우는 데 필요한 것들을 모은다.
@@ -54,12 +55,17 @@ export async function loadSubdomainArticle(subdomain: string, articleId: string)
     );
     const { data: member } = await supabase
       .from("members")
-      .select("role, email")
+      .select("role, email, plan_type, plan_end_date, can_article_vacancy_banner")
       .eq("id", article.author_id)
       .single();
     if (member) {
       authorRole = member.role;
       authorEmail = member.email;
+    /*
+     * 작성자가 권한을 잃었으면 추천 공실을 내린다. 저장된 스냅샷은 그대로
+     * 두므로 재결제하면 손대지 않아도 다시 붙는다.
+     */
+      if (!isPermissionAlive(member, member.can_article_vacancy_banner)) attachedVacancy = null;
     }
   }
 

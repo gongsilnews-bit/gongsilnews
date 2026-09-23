@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getArticleDetail, getArticles } from "@/app/actions/article";
 import { createClient } from "@supabase/supabase-js";
 import NewsReadContent from "@/components/NewsReadContent";
+import { isPermissionAlive } from "@/utils/planCheck";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -69,10 +70,15 @@ export default async function NewsReadPage({ params }: { params: Promise<{ artic
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const supabase = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
     
-    const { data: member } = await supabase.from("members").select("role, email").eq("id", article.author_id).single();
+    const { data: member } = await supabase.from("members").select("role, email, plan_type, plan_end_date, can_article_vacancy_banner").eq("id", article.author_id).single();
     if (member) {
       authorRole = member.role;
       authorEmail = member.email;
+    /*
+     * 작성자가 권한을 잃었으면 추천 공실을 내린다. 저장된 스냅샷은 그대로
+     * 두므로 재결제하면 손대지 않아도 다시 붙는다.
+     */
+      if (!isPermissionAlive(member, member.can_article_vacancy_banner)) attachedVacancy = null;
     }
   }
 

@@ -743,8 +743,23 @@ export async function getArticleAdInfo(articleId: string, authorId?: string): Pr
       stats.total = stats.maemae + stats.jeonse + stats.rent + stats.short;
     }
 
-    // 3) 배너형 광고 유효성 체크 (기사 설정 또는 배너 자체의 노출 기간 모두 완벽 반영)
-    if (adSetting && adSetting.ad_type === "BANNER" && adSetting.custom_banner) {
+    /*
+     * 3) 배너형 광고 유효성 체크 (기사 설정 또는 배너 자체의 노출 기간 모두 완벽 반영)
+     *
+     * 요금제가 끝났거나 권한이 닫힌 작성자의 배너는 여기서 내린다. 저장된 설정은
+     * 손대지 않는다 — 화면에서만 빠지므로 재결제하면 그대로 다시 걸린다.
+     * 기간이 지난 배너와 똑같이 기본형(등록자 카드)으로 떨어진다.
+     */
+    const bannerAllowed = await canUseArticleBanner(targetAuthorId);
+
+    // 권한이 닫혔으면 배너 자리를 비운다. 등록자 카드로 바꿔치지 않는다 —
+    // 배너를 걸어둔 자리는 그냥 사라지는 것이 맞다.
+    // (기간이 지난 배너는 예전처럼 기본형으로 떨어진다. 그건 권한 문제가 아니다.)
+    if (!bannerAllowed && adSetting && adSetting.ad_type === "BANNER") {
+      return { success: true, ad_type: "NONE", banner: null, agencyInfo: agency, memberInfo: member, businessProfile: bProfile || null, vacancyStats: stats };
+    }
+
+    if (bannerAllowed && adSetting && adSetting.ad_type === "BANNER" && adSetting.custom_banner) {
       const b = normalizeAuthorBanner(adSetting.custom_banner);
       const effectiveStartDate = adSetting.start_date || b.start_date;
       const effectiveEndDate = adSetting.end_date || b.end_date;
