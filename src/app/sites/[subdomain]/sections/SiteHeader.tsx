@@ -33,7 +33,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
   const barRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const [compact, setCompact] = useState(false);
-  const logoHeight = logoSize === "small" ? 30 : logoSize === "large" ? 50 : 40;
+  const logoHeight = logoSize === "small" ? 36 : logoSize === "large" ? 60 : 48;
   /*
    * 상호 글씨도 같이 간다.
    *
@@ -41,7 +41,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
    * 아예 없고, [로고만]이어도 로고를 아직 안 올렸으면 상호가 대신 나온다.
    * 로고만 키우면 큰 그림 옆에 작은 글씨가 남아 한쪽만 큰 머리가 된다.
    */
-  const titleSize = logoSize === "small" ? 15 : logoSize === "large" ? 21 : 17;
+  const titleSize = logoSize === "small" ? 17 : logoSize === "large" ? 25 : 20;
   const showLogo = Boolean(logoUrl) && brandMode !== "text";
   const showText = brandMode !== "logo" || !logoUrl;
 
@@ -143,7 +143,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
         >
           {showLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl!} alt={officeName} style={{ height: logoHeight, width: "auto", maxWidth: brandMode === "logo" ? 220 : 150, objectFit: "contain", flexShrink: 1 }} />
+            <img src={logoUrl!} alt={officeName} style={{ height: logoHeight, width: "auto", maxWidth: brandMode === "logo" ? 260 : 180, objectFit: "contain", flexShrink: 1 }} />
           ) : null}
           {showText && <span
             style={{
@@ -215,7 +215,7 @@ export default function SiteHeader({ officeName, logoUrl, brandMode = "both", lo
                 background: "none",
                 border: "none",
                 // 메뉴는 손님이 길을 찾는 곳이다. 흐린 회색이면 눌러도 되는 줄 모른다.
-                // 글자 크기는 .gs-nav-link 에서 잡는다 — 폰 17px, PC 19px.
+                // 글자 크기는 .gs-nav-link 에서 잡는다 (17px).
                 fontWeight: on ? 900 : 800,
                 color: on ? theme.primary : "#111827",
                 cursor: "pointer",

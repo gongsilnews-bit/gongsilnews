@@ -232,12 +232,12 @@ export default function SiteClient({
         .gs-page { padding-bottom: 74px; }
         .gs-bottombar { display: flex; }
         .gs-hero-nav { display: none; }
+        /* 폰·PC 같은 크기로 둔다. PC 에서 19px 까지 키워 보았으나 컸다. */
         .gs-nav-link { font-size: 17px; }
         @media (min-width: 821px) {
           .gs-page { padding-bottom: 0; }
           .gs-bottombar { display: none; }
           .gs-hero-nav { display: flex; }
-          .gs-nav-link { font-size: 19px; }
           .gs-carousel-center-desktop { width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }
         }
       `}</style>

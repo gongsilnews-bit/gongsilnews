@@ -293,7 +293,7 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                                 {logoUrl ? "로고 바꾸기" : "+ 로고 올리기"}
                                 <input type="file" accept="image/*" hidden onChange={onLogoPick} />
                               </label>
-                              <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>PNG · WebP · SVG 권장 · 최대 2MB · 표시 최대 너비 160px</p>
+                              <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>PNG · WebP · SVG 권장 · 최대 2MB · 표시 최대 너비 180px</p>
                             </>
                           ) : (
                             <div style={{ padding: "12px 14px", border: `1px dashed ${border}`, borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: sub, lineHeight: 1.6, textAlign: "center" }}>
@@ -308,9 +308,9 @@ export default function IntakeStudio({ theme, memberId }: Props) {
                           <label style={label}>헤더 크기</label>
                           <div style={{ display: "flex", gap: 6 }}>
                             {([
-                              ["small", "작게", "30px"],
-                              ["medium", "보통", "40px"],
-                              ["large", "크게", "50px"],
+                              ["small", "작게", "36px"],
+                              ["medium", "보통", "48px"],
+                              ["large", "크게", "60px"],
                             ] as const).map(([value, title, size]) => {
                               const selected = (intake.logo_size || "medium") === value;
                               return (

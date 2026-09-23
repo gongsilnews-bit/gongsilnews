@@ -262,16 +262,16 @@ function Editor({ memberId }: { memberId: string }) {
                               <span style={{ fontWeight: 600, fontSize: 12 }}>공실뉴스부동산 · 공실스터디부동산 요금제에서 열립니다</span>
                             </div>
                           )}
-                          {e.allowLogo && <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>PNG · WebP · SVG 권장 · 최대 2MB · 표시 최대 너비 160px</p>}
+                          {e.allowLogo && <p style={{ margin: "7px 0 0", fontSize: 11.5, color: sub, lineHeight: 1.5 }}>PNG · WebP · SVG 권장 · 최대 2MB · 표시 최대 너비 180px</p>}
                         </div>
 
                         <div>
                           <label style={label}>헤더 크기</label>
                           <div style={{ display: "flex", gap: 6 }}>
                             {([
-                              ["small", "작게", "30px"],
-                              ["medium", "보통", "40px"],
-                              ["large", "크게", "50px"],
+                              ["small", "작게", "36px"],
+                              ["medium", "보통", "48px"],
+                              ["large", "크게", "60px"],
                             ] as const).map(([value, title, size]) => {
                               const on = (e.intake.logo_size || "medium") === value;
                               return (
