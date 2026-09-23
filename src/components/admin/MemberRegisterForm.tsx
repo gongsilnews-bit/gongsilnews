@@ -333,6 +333,34 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     return `${raw.slice(0, 3)}-${raw.slice(3, 5)}-${raw.slice(5, 10)}`;
   };
 
+/**
+ * 등급이 내려주는 기본값 한 벌.
+ *
+ * 서버의 planDefaults 와 같은 표다. 화면에서도 "지금 값이 기본값인가" 를
+ * 가려야 하므로 여기 한 벌을 둔다. 한쪽만 고치면 어긋나니 같이 고칠 것.
+ */
+function gradeDefaults(p: any, role: string, planType?: string) {
+  const g =
+    role === "일반회원" || role === "최고관리자" ? "USER"
+    : role === "비즈니스회원" ? "BIZ"
+    : planType === "news_premium" ? "REALTOR_NEWS"
+    : planType === "study_premium" ? "REALTOR_STUDY"
+    : "REALTOR_FREE";
+  return {
+    max_vacancies: p[`LIMIT_${g}_VACANCY`],
+    max_articles_per_month: p[`LIMIT_${g}_ARTICLE`],
+    can_article_banner: !!p[`PERM_${g}_ARTICLE_BANNER`],
+    can_article_vacancy_banner: !!p[`PERM_${g}_ARTICLE_VACANCY`],
+    can_homepage: !!p[`PERM_${g}_HOMEPAGE`],
+    max_hero_slides: p[`LIMIT_${g}_HERO_SLIDES`],
+    can_hide_footer_badge: !!p[`PERM_${g}_FOOTER_HIDE`],
+    can_intake_photo: !!p[`PERM_${g}_INTAKE_PHOTO`],
+    can_site_logo: !!p[`PERM_${g}_SITE_LOGO`],
+    can_hero_video: !!p[`PERM_${g}_HERO_VIDEO`],
+    can_sns_links: !!p[`PERM_${g}_SNS_LINKS`],
+  };
+}
+
   const handleMemberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     // 체크박스는 value 가 늘 "on" 이라 checked 를 봐야 한다
     const isCheckbox = e.target instanceof HTMLInputElement && e.target.type === "checkbox";
@@ -402,111 +430,34 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         PERM_BIZ_SNS_LINKS: 1,
       };
 
-      if (e.target.name === "role") {
-        if (val === "일반회원") {
-          next.plan_type = "free";
-          next.max_vacancies = currentPolicies.LIMIT_USER_VACANCY;
-          next.max_articles_per_month = currentPolicies.LIMIT_USER_ARTICLE;
-          next.can_article_banner = !!currentPolicies.PERM_USER_ARTICLE_BANNER;
-          next.can_article_vacancy_banner = !!currentPolicies.PERM_USER_ARTICLE_VACANCY;
-          next.can_homepage = !!currentPolicies.PERM_USER_HOMEPAGE;
-          next.max_hero_slides = currentPolicies.LIMIT_USER_HERO_SLIDES;
-          next.can_hide_footer_badge = !!currentPolicies.PERM_USER_FOOTER_HIDE;
-          next.can_intake_photo = !!currentPolicies.PERM_USER_INTAKE_PHOTO;
-          next.can_site_logo = !!currentPolicies.PERM_USER_SITE_LOGO;
-          next.can_hero_video = !!currentPolicies.PERM_USER_HERO_VIDEO;
-          next.can_sns_links = !!currentPolicies.PERM_USER_SNS_LINKS;
-        } else if (val === "비즈니스회원") {
-          next.plan_type = "biz_premium";
-          next.max_vacancies = currentPolicies.LIMIT_BIZ_VACANCY;
-          next.max_articles_per_month = currentPolicies.LIMIT_BIZ_ARTICLE;
-          next.can_article_banner = !!currentPolicies.PERM_BIZ_ARTICLE_BANNER;
-          next.can_article_vacancy_banner = !!currentPolicies.PERM_BIZ_ARTICLE_VACANCY;
-          next.can_homepage = !!currentPolicies.PERM_BIZ_HOMEPAGE;
-          next.max_hero_slides = currentPolicies.LIMIT_BIZ_HERO_SLIDES;
-          next.can_hide_footer_badge = !!currentPolicies.PERM_BIZ_FOOTER_HIDE;
-          next.can_intake_photo = !!currentPolicies.PERM_BIZ_INTAKE_PHOTO;
-          next.can_site_logo = !!currentPolicies.PERM_BIZ_SITE_LOGO;
-          next.can_hero_video = !!currentPolicies.PERM_BIZ_HERO_VIDEO;
-          next.can_sns_links = !!currentPolicies.PERM_BIZ_SNS_LINKS;
-        } else if (val === "부동산회원") {
-          next.plan_type = "free";
-          next.max_vacancies = currentPolicies.LIMIT_REALTOR_FREE_VACANCY;
-          next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_FREE_ARTICLE;
-          next.can_article_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_BANNER;
-          next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_VACANCY;
-          next.can_homepage = !!currentPolicies.PERM_REALTOR_FREE_HOMEPAGE;
-          next.max_hero_slides = currentPolicies.LIMIT_REALTOR_FREE_HERO_SLIDES;
-          next.can_hide_footer_badge = !!currentPolicies.PERM_REALTOR_FREE_FOOTER_HIDE;
-          next.can_intake_photo = !!currentPolicies.PERM_REALTOR_FREE_INTAKE_PHOTO;
-          next.can_site_logo = !!currentPolicies.PERM_REALTOR_FREE_SITE_LOGO;
-          next.can_hero_video = !!currentPolicies.PERM_REALTOR_FREE_HERO_VIDEO;
-          next.can_sns_links = !!currentPolicies.PERM_REALTOR_FREE_SNS_LINKS;
-        }
-      } else if (e.target.name === "plan_type") {
-        if (next.role === "일반회원") {
-          next.max_vacancies = currentPolicies.LIMIT_USER_VACANCY;
-          next.max_articles_per_month = currentPolicies.LIMIT_USER_ARTICLE;
-          next.can_article_banner = !!currentPolicies.PERM_USER_ARTICLE_BANNER;
-          next.can_article_vacancy_banner = !!currentPolicies.PERM_USER_ARTICLE_VACANCY;
-          next.can_homepage = !!currentPolicies.PERM_USER_HOMEPAGE;
-          next.max_hero_slides = currentPolicies.LIMIT_USER_HERO_SLIDES;
-          next.can_hide_footer_badge = !!currentPolicies.PERM_USER_FOOTER_HIDE;
-          next.can_intake_photo = !!currentPolicies.PERM_USER_INTAKE_PHOTO;
-          next.can_site_logo = !!currentPolicies.PERM_USER_SITE_LOGO;
-          next.can_hero_video = !!currentPolicies.PERM_USER_HERO_VIDEO;
-          next.can_sns_links = !!currentPolicies.PERM_USER_SNS_LINKS;
-        } else if (next.role === "비즈니스회원") {
-          next.max_vacancies = currentPolicies.LIMIT_BIZ_VACANCY;
-          next.max_articles_per_month = currentPolicies.LIMIT_BIZ_ARTICLE;
-          next.can_article_banner = !!currentPolicies.PERM_BIZ_ARTICLE_BANNER;
-          next.can_article_vacancy_banner = !!currentPolicies.PERM_BIZ_ARTICLE_VACANCY;
-          next.can_homepage = !!currentPolicies.PERM_BIZ_HOMEPAGE;
-          next.max_hero_slides = currentPolicies.LIMIT_BIZ_HERO_SLIDES;
-          next.can_hide_footer_badge = !!currentPolicies.PERM_BIZ_FOOTER_HIDE;
-          next.can_intake_photo = !!currentPolicies.PERM_BIZ_INTAKE_PHOTO;
-          next.can_site_logo = !!currentPolicies.PERM_BIZ_SITE_LOGO;
-          next.can_hero_video = !!currentPolicies.PERM_BIZ_HERO_VIDEO;
-          next.can_sns_links = !!currentPolicies.PERM_BIZ_SNS_LINKS;
+      /*
+       * 회원구분·요금제를 바꾸면 그 등급의 기본값으로 채운다.
+       *
+       * 다만 최고관리자가 따로 손봐 둔 값은 지킨다. 전에는 무조건 덮었다 —
+       * 기사 한도를 50 으로 고쳐놓고 바로 위 요금제를 한 번 다시 고르면
+       * 아무 말 없이 4 로 돌아갔다. 고쳤는데 안 먹는 것처럼 보이는 이유였다.
+       *
+       * 가르는 기준은 "지금 값이 바뀌기 전 등급의 기본값과 같은가" 하나다.
+       * 등급별 한도 설정을 저장할 때 서버가 쓰는 규칙과 같다.
+       */
+      if (e.target.name === "role" || e.target.name === "plan_type") {
+        const beforeRole = prev.role;
+        const beforePlan = prev.plan_type;
+        let afterRole = beforeRole;
+        let afterPlan = beforePlan;
+
+        if (e.target.name === "role") {
+          afterRole = val as string;
+          afterPlan = val === "비즈니스회원" ? "biz_premium" : "free";
+          next.plan_type = afterPlan;
         } else {
-          // REALTOR
-          if (val === "free") {
-            next.max_vacancies = currentPolicies.LIMIT_REALTOR_FREE_VACANCY;
-            next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_FREE_ARTICLE;
-          next.can_article_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_BANNER;
-          next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_FREE_ARTICLE_VACANCY;
-          next.can_homepage = !!currentPolicies.PERM_REALTOR_FREE_HOMEPAGE;
-          next.max_hero_slides = currentPolicies.LIMIT_REALTOR_FREE_HERO_SLIDES;
-          next.can_hide_footer_badge = !!currentPolicies.PERM_REALTOR_FREE_FOOTER_HIDE;
-          next.can_intake_photo = !!currentPolicies.PERM_REALTOR_FREE_INTAKE_PHOTO;
-          next.can_site_logo = !!currentPolicies.PERM_REALTOR_FREE_SITE_LOGO;
-          next.can_hero_video = !!currentPolicies.PERM_REALTOR_FREE_HERO_VIDEO;
-          next.can_sns_links = !!currentPolicies.PERM_REALTOR_FREE_SNS_LINKS;
-          } else if (val === "news_premium") {
-            next.max_vacancies = currentPolicies.LIMIT_REALTOR_NEWS_VACANCY;
-            next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_NEWS_ARTICLE;
-          next.can_article_banner = !!currentPolicies.PERM_REALTOR_NEWS_ARTICLE_BANNER;
-          next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_NEWS_ARTICLE_VACANCY;
-          next.can_homepage = !!currentPolicies.PERM_REALTOR_NEWS_HOMEPAGE;
-          next.max_hero_slides = currentPolicies.LIMIT_REALTOR_NEWS_HERO_SLIDES;
-          next.can_hide_footer_badge = !!currentPolicies.PERM_REALTOR_NEWS_FOOTER_HIDE;
-          next.can_intake_photo = !!currentPolicies.PERM_REALTOR_NEWS_INTAKE_PHOTO;
-          next.can_site_logo = !!currentPolicies.PERM_REALTOR_NEWS_SITE_LOGO;
-          next.can_hero_video = !!currentPolicies.PERM_REALTOR_NEWS_HERO_VIDEO;
-          next.can_sns_links = !!currentPolicies.PERM_REALTOR_NEWS_SNS_LINKS;
-          } else if (val === "study_premium") {
-            next.max_vacancies = currentPolicies.LIMIT_REALTOR_STUDY_VACANCY;
-            next.max_articles_per_month = currentPolicies.LIMIT_REALTOR_STUDY_ARTICLE;
-          next.can_article_banner = !!currentPolicies.PERM_REALTOR_STUDY_ARTICLE_BANNER;
-          next.can_article_vacancy_banner = !!currentPolicies.PERM_REALTOR_STUDY_ARTICLE_VACANCY;
-          next.can_homepage = !!currentPolicies.PERM_REALTOR_STUDY_HOMEPAGE;
-          next.max_hero_slides = currentPolicies.LIMIT_REALTOR_STUDY_HERO_SLIDES;
-          next.can_hide_footer_badge = !!currentPolicies.PERM_REALTOR_STUDY_FOOTER_HIDE;
-          next.can_intake_photo = !!currentPolicies.PERM_REALTOR_STUDY_INTAKE_PHOTO;
-          next.can_site_logo = !!currentPolicies.PERM_REALTOR_STUDY_SITE_LOGO;
-          next.can_hero_video = !!currentPolicies.PERM_REALTOR_STUDY_HERO_VIDEO;
-          next.can_sns_links = !!currentPolicies.PERM_REALTOR_STUDY_SNS_LINKS;
-          }
+          afterPlan = val as string;
+        }
+
+        const before: Record<string, any> = gradeDefaults(currentPolicies, beforeRole, beforePlan);
+        const after: Record<string, any> = gradeDefaults(currentPolicies, afterRole, afterPlan);
+        for (const key of Object.keys(after)) {
+          if (String((prev as any)[key]) === String(before[key])) (next as any)[key] = after[key];
         }
       }
       return next;
