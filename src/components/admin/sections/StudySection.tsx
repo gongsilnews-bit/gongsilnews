@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { AdminSectionProps } from "./types";
 import { getLectures, deleteLecture, updateLectureStatus } from "@/app/actions/lecture";
+import { assignLectureGuide, getLectureGuides, type LectureGuide } from "@/app/actions/lectureGuides";
 import StudyWriteForm from "@/components/admin/StudyWriteForm";
 
 const StudySettingsModal = dynamic(() => import("@/components/admin/study/StudySettingsModal"), {
@@ -26,6 +27,8 @@ export default function StudySection({ theme }: AdminSectionProps) {
   const router = useRouter();
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
   const [lectures, setLectures] = useState<any[]>([]);
+  const [lectureGuides, setLectureGuides] = useState<LectureGuide[]>([]);
+  const [assigningGuideTo, setAssigningGuideTo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("전체");
   const [searchKw, setSearchKw] = useState("");
@@ -39,8 +42,9 @@ export default function StudySection({ theme }: AdminSectionProps) {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const res = await getLectures();
-    if (res.success) setLectures(res.data || []);
+    const [lectureRes, guideRes] = await Promise.all([getLectures(), getLectureGuides()]);
+    if (lectureRes.success) setLectures(lectureRes.data || []);
+    if (guideRes.success) setLectureGuides(guideRes.data);
     setLoading(false);
   }, []);
 
@@ -105,6 +109,25 @@ export default function StudySection({ theme }: AdminSectionProps) {
   const formatPrice = (p: number) => {
     if (!p) return "무료";
     return p.toLocaleString() + " P";
+  };
+
+  const handleGuideAssignment = async (lectureId: string, guideId: string) => {
+    const previousGuideId = lectures.find(lecture => lecture.id === lectureId)?.lecture_guide_id || null;
+    const nextGuideId = guideId || null;
+    setAssigningGuideTo(lectureId);
+    setLectures(prev => prev.map(lecture => lecture.id === lectureId
+      ? { ...lecture, lecture_guide_id: nextGuideId }
+      : lecture));
+    const res = await assignLectureGuide(lectureId, nextGuideId);
+    if (!res.success) {
+      setLectures(prev => prev.map(lecture => lecture.id === lectureId
+        ? { ...lecture, lecture_guide_id: previousGuideId }
+        : lecture));
+      alert(res.error || "수강안내를 저장하지 못했습니다.");
+    } else {
+      await fetchData();
+    }
+    setAssigningGuideTo(null);
   };
 
   if (showWriteForm) {
@@ -237,7 +260,22 @@ export default function StudySection({ theme }: AdminSectionProps) {
                         </span>
                       </td>
                       <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 13, color: "#8a3ffc", fontWeight: 600 }}>{row.category}</td>
-                      <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 12, color: textSecondary }}>{row.lecture_guide_name || "선택 안 함"}</td>
+                      <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                        <select
+                          aria-label={`${row.title} 수강안내 선택`}
+                          value={row.lecture_guide_id || ""}
+                          disabled={assigningGuideTo === row.id}
+                          onChange={(event) => handleGuideAssignment(row.id, event.target.value)}
+                          style={{ width: "100%", minWidth: 140, height: 34, padding: "0 8px", border: `1px solid ${border}`, borderRadius: 6, background: darkMode ? "#2c2d31" : "#fff", color: textPrimary, fontSize: 12, cursor: assigningGuideTo === row.id ? "wait" : "pointer" }}
+                        >
+                          <option value="">선택 안 함</option>
+                          {lectureGuides.map(guide => (
+                            <option key={guide.id} value={guide.id} disabled={!guide.is_active && guide.id !== row.lecture_guide_id}>
+                              {guide.name}{!guide.is_active ? " (사용 중지)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
                       <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 700, color: "#3b82f6" }}>
                         {row.discount_price ? formatPrice(row.discount_price) : formatPrice(row.price)}
                       </td>

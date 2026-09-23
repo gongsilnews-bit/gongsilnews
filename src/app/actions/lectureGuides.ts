@@ -117,3 +117,35 @@ export async function deleteLectureGuide(id: string): Promise<{ success: boolean
   revalidatePath("/admin");
   return { success: true };
 }
+
+export async function assignLectureGuide(
+  lectureId: string,
+  guideId: string | null,
+): Promise<{ success: boolean; error?: string }> {
+  const admin = await requireAdmin();
+  if (!admin) return { success: false, error: "최고관리자 권한이 필요합니다." };
+  if (!lectureId) return { success: false, error: "수강안내를 지정할 강의가 없습니다." };
+
+  const supabase = getAdminClient();
+  if (guideId) {
+    const { data: guide, error: guideError } = await supabase
+      .from("lecture_guides")
+      .select("id,is_active")
+      .eq("id", guideId)
+      .maybeSingle();
+    if (guideError) return { success: false, error: guideError.message };
+    if (!guide) return { success: false, error: "선택한 수강안내를 찾을 수 없습니다." };
+    if (!guide.is_active) return { success: false, error: "사용 중지된 수강안내는 새로 지정할 수 없습니다." };
+  }
+
+  const { error } = await supabase
+    .from("lectures")
+    .update({ lecture_guide_id: guideId, updated_at: new Date().toISOString() })
+    .eq("id", lectureId)
+    .eq("is_deleted", false);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath("/study_read");
+  return { success: true };
+}

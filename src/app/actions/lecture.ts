@@ -122,7 +122,7 @@ export async function saveLecture(data: {
       title: data.title,
       subtitle: data.subtitle || null,
       description: data.description || null,
-      lecture_guide_id: data.lecture_guide_id || null,
+      ...(data.lecture_guide_id !== undefined ? { lecture_guide_id: data.lecture_guide_id || null } : {}),
       sidebar_copy: mergedSidebarCopy,
       thumbnail_url: data.thumbnail_url || null,
       images: data.images || [],
