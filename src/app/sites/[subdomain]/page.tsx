@@ -22,6 +22,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {
       title,
       description: desc,
+      /*
+       * 바탕화면에 깔릴 때 쓸 앱 정보. 중개사마다 이름과 아이콘이 다르므로
+       * manifest 도 이 주소 아래에서 따로 만들어 준다.
+       */
+      manifest: "/manifest.webmanifest",
+      appleWebApp: { capable: true, title, statusBarStyle: "default" },
+      icons: {
+        icon: [{ url: "/icon/192", sizes: "192x192", type: "image/png" }],
+        apple: [{ url: "/icon/192", sizes: "192x192" }],
+      },
       openGraph: {
         title,
         description: desc,

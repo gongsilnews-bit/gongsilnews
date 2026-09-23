@@ -31,6 +31,66 @@ interface Props {
 export default function MobileQuickActions({ theme, phone, anchor, preview }: Props) {
   const [showTop, setShowTop] = React.useState(false);
 
+  /*
+   * 바탕화면에 깔기.
+   *
+   * 안드로이드는 브라우저가 "이제 설치할 수 있다"고 알려줄 때만 설치창을 띄울
+   * 수 있다. 그 신호를 붙잡아 두었다가 버튼을 누를 때 쓴다.
+   *
+   * 아이폰은 설치창을 띄울 방법이 아예 없다. [공유] → [홈 화면에 추가] 를
+   * 손님이 직접 눌러야 하므로 그 순서를 그림처럼 적어 보여준다.
+   *
+   * 이미 깔아둔 사람에게는 버튼을 보이지 않는다.
+   */
+  const [installEvent, setInstallEvent] = React.useState<any>(null);
+  const [isIOS, setIsIOS] = React.useState(false);
+  const [installed, setInstalled] = React.useState(true);
+  const [showIOSGuide, setShowIOSGuide] = React.useState(false);
+
+  React.useEffect(() => {
+    if (preview) return;
+
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+    setInstalled(standalone);
+    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream);
+
+    const onPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallEvent(e);
+    };
+    const onInstalled = () => {
+      setInstalled(true);
+      setInstallEvent(null);
+    };
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+
+    // 설치 조건을 채우는 최소 워커. 화면을 가로채지 않는다.
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+    }
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, [preview]);
+
+  const canInstall = !preview && !installed && (Boolean(installEvent) || isIOS);
+
+  const install = async () => {
+    if (installEvent) {
+      installEvent.prompt();
+      const res = await installEvent.userChoice.catch(() => null);
+      if (res?.outcome === "accepted") setInstalled(true);
+      setInstallEvent(null);
+      return;
+    }
+    setShowIOSGuide(true);
+  };
+
   React.useEffect(() => {
     if (preview) return;
     const onScroll = () => setShowTop(window.scrollY > 600);
@@ -89,6 +149,23 @@ export default function MobileQuickActions({ theme, phone, anchor, preview }: Pr
         접수
       </a>
 
+      {/* 깔 수 있을 때만 보인다. 이미 깔았거나 지원하지 않으면 자리도 안 잡는다 */}
+      {canInstall && (
+        <button
+          type="button"
+          onClick={install}
+          aria-label="바탕화면에 추가"
+          style={{ ...round, background: "rgba(255,255,255,0.96)", color: theme.primary, border: `1px solid ${theme.primary}55` }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 3v12" />
+            <path d="M7 10l5 5 5-5" />
+            <path d="M5 21h14" />
+          </svg>
+          바탕
+        </button>
+      )}
+
       {/* 조금 내려갔을 때만. 첫 화면에서는 올라갈 곳이 없다 */}
       {showTop && (
         <button
@@ -102,6 +179,63 @@ export default function MobileQuickActions({ theme, phone, anchor, preview }: Pr
           </svg>
           위로
         </button>
+      )}
+
+      {/*
+        아이폰 안내.
+        버튼을 눌러도 설치창이 안 뜨니, 무엇을 눌러야 하는지 그대로 적어준다.
+        화면 아래에서 올라오게 두어 공유 버튼이 있는 쪽을 가리킨다.
+      */}
+      {showIOSGuide && (
+        <div
+          onClick={() => setShowIOSGuide(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 60,
+            background: "rgba(15,23,42,.45)",
+            display: "flex",
+            alignItems: "flex-end",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              background: "#fff",
+              borderRadius: "16px 16px 0 0",
+              padding: "22px 20px calc(22px + env(safe-area-inset-bottom))",
+              textAlign: "left",
+            }}
+          >
+            <p style={{ margin: "0 0 14px", fontSize: 17, fontWeight: 900, color: theme.dark }}>
+              바탕화면에 추가하기
+            </p>
+            <ol style={{ margin: 0, paddingLeft: 20, fontSize: 15, color: "#475569", lineHeight: 2 }}>
+              <li>화면 아래 <strong>공유</strong> 버튼을 누르세요</li>
+              <li>목록을 내려 <strong>홈 화면에 추가</strong>를 고르세요</li>
+              <li>오른쪽 위 <strong>추가</strong>를 누르면 끝입니다</li>
+            </ol>
+            <button
+              type="button"
+              onClick={() => setShowIOSGuide(false)}
+              style={{
+                width: "100%",
+                marginTop: 18,
+                padding: "13px 0",
+                border: "none",
+                borderRadius: 10,
+                background: theme.primary,
+                color: "#fff",
+                fontSize: 15.5,
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              알겠습니다
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
