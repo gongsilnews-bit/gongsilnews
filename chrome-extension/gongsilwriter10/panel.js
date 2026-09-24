@@ -441,7 +441,8 @@
     S.article = parsed.article;
     draftInsertSlot = null;
     pendingAiInsertSlot = null;
-    pendingAiPreviousUrl = null;
+    pendingAiPreviousImage = null;
+    pendingAiRequestKey = "";
     renderDraft();
     save();
   }
@@ -476,7 +477,8 @@
   let replaceIndex = -1;
   let fileInsertSlot = null;
   let pendingAiInsertSlot = null;
-  let pendingAiPreviousUrl = null;
+  let pendingAiPreviousImage = null;
+  let pendingAiRequestKey = "";
   let draftInsertSlot = null;
 
   function directDraftParagraphs() {
@@ -756,6 +758,16 @@
       if (!S.aiTabId) throw new Error("AI 탭이 없습니다.");
       if (!S.article) throw new Error("먼저 초안을 가져와 주세요.");
 
+      S.imageRequest = el.imageRequest.value.trim();
+      const currentRequestKey = JSON.stringify([S.imageStyle, S.imageRequest]);
+
+      /* 이전 요청과 다른 스타일·내용이면 기다리지 않고 새 이미지 요청으로 전환한다. */
+      if (Number.isInteger(pendingAiInsertSlot) && pendingAiRequestKey !== currentRequestKey) {
+        pendingAiInsertSlot = null;
+        pendingAiPreviousImage = null;
+        pendingAiRequestKey = "";
+      }
+
       const slot = Number.isInteger(pendingAiInsertSlot)
         ? pendingAiInsertSlot
         : requireDraftInsertSlot();
@@ -764,14 +776,17 @@
       /* 요청한 뒤 두 번째 클릭이면 새로 완성된 그림만 집는다. */
       if (Number.isInteger(pendingAiInsertSlot)) {
         const already = await askTab(S.aiTabId, { type: "GW_GET_IMAGE" }).catch(() => null);
+        const beforeCount = Number(pendingAiPreviousImage && pendingAiPreviousImage.count) || 0;
+        const nowCount = Number(already && already.count) || 0;
         const isNewImage = already && already.ok && already.url &&
-          already.url !== pendingAiPreviousUrl &&
+          (already.url !== (pendingAiPreviousImage && pendingAiPreviousImage.url) || nowCount > beforeCount) &&
           !S.media.some((m) => m.url === already.url);
 
         if (isNewImage) {
           addAiImage(already.url, slot);
           pendingAiInsertSlot = null;
-          pendingAiPreviousUrl = null;
+          pendingAiPreviousImage = null;
+          pendingAiRequestKey = "";
           toast("AI 이미지를 커서 위치에 넣었습니다.", "ok");
           return;
         }
@@ -782,10 +797,11 @@
       }
 
       harvestEdits();
-      S.imageRequest = el.imageRequest.value.trim();
       save();
       const beforeImage = await askTab(S.aiTabId, { type: "GW_GET_IMAGE" }).catch(() => null);
-      pendingAiPreviousUrl = beforeImage && beforeImage.ok ? beforeImage.url : null;
+      pendingAiPreviousImage = beforeImage && beforeImage.ok
+        ? { url: beforeImage.url, count: Number(beforeImage.count) || 0 }
+        : { url: "", count: 0 };
       await chrome.tabs.update(S.aiTabId, { active: true });
 
       const fill = await askTab(S.aiTabId, {
@@ -801,6 +817,7 @@
       if (!sent.ok) throw new Error(sent.reason || "전송하지 못했습니다.");
 
       pendingAiInsertSlot = slot;
+      pendingAiRequestKey = currentRequestKey;
       const imageStyle = GW_IMAGE_STYLE[S.imageStyle] || GW_IMAGE_STYLE.news;
       toast(`${imageStyle.label} 이미지를 요청했습니다. 그림이 다 나온 뒤 [AI 이미지 만들기] 를 한 번 더 누르세요.`, "info", 7000);
       status("이미지 생성 중", "busy");

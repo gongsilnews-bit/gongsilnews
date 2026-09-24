@@ -125,23 +125,34 @@ const GwAi = (() => {
      아바타·아이콘·이모지가 섞이지 않게 충분히 큰 것만 고른다. */
   function getImage(conf) {
     const list = conf.IMAGE || [];
-    let best = null;
+    const candidates = [];
+    const seen = new Set();
 
     for (const sel of list) {
       for (const img of document.querySelectorAll(sel)) {
+        if (seen.has(img)) continue;
+        seen.add(img);
         const src = img.currentSrc || img.src || "";
         if (!src || src.startsWith("data:image/svg")) continue;
         const w = img.naturalWidth || img.width || 0;
         const h = img.naturalHeight || img.height || 0;
         if (w < 200 || h < 150) continue;
-        best = src; /* 뒤로 갈수록 최근 것이므로 마지막 것이 남는다 */
+        candidates.push({ img, src });
       }
     }
 
-    if (!best) {
+    if (!candidates.length) {
       return { ok: false, reason: "생성된 그림을 찾지 못했습니다." };
     }
-    return { ok: true, url: best };
+
+    /* 셀렉터가 여러 개여도 실제 화면의 DOM 순서로 가장 마지막 그림을 고른다. */
+    candidates.sort((a, b) => {
+      if (a.img === b.img) return 0;
+      return a.img.compareDocumentPosition(b.img) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
+
+    const best = candidates[candidates.length - 1];
+    return { ok: true, url: best.src, count: candidates.length };
   }
 
   /* ══════════════════════════════════════════════════════════════

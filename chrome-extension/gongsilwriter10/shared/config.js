@@ -45,7 +45,12 @@ const GW = {
     /* 응답 말풍선 — 마지막 것을 읽는다 */
     ANSWER: ['div[data-message-author-role="assistant"]', ".markdown.prose"],
     /* 생성된 그림 — 아바타·아이콘과 섞이지 않게 응답 안쪽만 본다 */
-    IMAGE: ['div[data-message-author-role="assistant"] img'],
+    IMAGE: [
+      'div[data-message-author-role="assistant"] img',
+      'article[data-testid^="conversation-turn"] img',
+      'img[src*="oaiusercontent.com"]',
+      'img[src*="/backend-api/files/"]',
+    ],
   },
 
   /* ── Gemini ── */

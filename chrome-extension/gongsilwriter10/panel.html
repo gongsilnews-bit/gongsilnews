@@ -189,6 +189,12 @@
       </button>
     </div>
 
+    <div class="img-row">
+      <button id="btnMakeImage" class="btn-sub" type="button">AI 이미지 만들기</button>
+      <button id="btnChangeImage" class="btn-sub" type="button" title="본문에서 위치를 클릭한 뒤 내 PC 이미지를 삽입합니다">이미지 삽입</button>
+      <input id="fileImage" type="file" accept="image/*" class="hidden">
+    </div>
+
     <div class="image-options">
       <div class="image-options-title">AI 이미지 스타일</div>
       <div class="image-style-row" role="group" aria-label="AI 이미지 스타일 선택">
@@ -200,12 +206,6 @@
       </div>
       <textarea id="imageRequest" class="image-request" rows="2" maxlength="1600"
                 placeholder="표현할 내용이나 스타일을 입력하세요. 기사 일부를 붙여 넣어도 됩니다. 비워 두면 기사에서 자동 선택합니다."></textarea>
-    </div>
-
-    <div class="img-row">
-      <button id="btnMakeImage" class="btn-sub" type="button">AI 이미지 만들기</button>
-      <button id="btnChangeImage" class="btn-sub" type="button" title="본문에서 위치를 클릭한 뒤 내 PC 이미지를 삽입합니다">이미지 삽입</button>
-      <input id="fileImage" type="file" accept="image/*" class="hidden">
     </div>
 
     <button id="btnSendGongsil" class="btn-send" type="button">
