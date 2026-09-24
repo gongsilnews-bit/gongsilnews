@@ -41,6 +41,8 @@ function MobileArticleWrite() {
 
   /* ── 상태 ── */
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // 수정 모드: 원래 기사 작성자 (관리자가 남의 기사를 저장해도 작성자가 바뀌지 않도록)
+  const [originalAuthorId, setOriginalAuthorId] = useState<string | null>(null);
   const [reporterName, setReporterName] = useState("");
   const [reporterEmail, setReporterEmail] = useState("");
   const [title, setTitle] = useState("");
@@ -186,6 +188,9 @@ function MobileArticleWrite() {
         const res = await getArticleDetail(editId);
         if (res.success && res.data) {
           const d = res.data;
+          if (d.author_id) setOriginalAuthorId(d.author_id);
+          if (d.author_name) setReporterName(d.author_name);
+          if (d.author_email) setReporterEmail(d.author_email);
           setTitle(d.title || "");
           setSubtitle(d.subtitle || "");
           setSection1(d.section1 || "");
@@ -664,7 +669,7 @@ function MobileArticleWrite() {
 
       const res = await saveArticle({
         id: editId || undefined,
-        author_id: currentUserId,
+        author_id: originalAuthorId || currentUserId,
         author_name: reporterName,
         author_email: reporterEmail,
         status,
@@ -728,7 +733,7 @@ function MobileArticleWrite() {
         if ((thumbnailUrl && thumbnailUrl !== coverPhoto?.preview) || htmlChanged) {
           await saveArticle({
             id: articleId,
-            author_id: currentUserId,
+            author_id: originalAuthorId || currentUserId,
             author_name: reporterName,
             author_email: reporterEmail,
             status,
