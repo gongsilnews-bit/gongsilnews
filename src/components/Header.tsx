@@ -252,7 +252,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
 
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
-              <Link href="/study" style={{ color: "#34d399", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
+              <Link href="/study/lectures" style={{ color: "#34d399", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
                 공실스터디
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
@@ -293,7 +293,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                 공실등록 &gt;&gt;
               </div>
 
-               <Link href="/study" style={{ color: "#34d399", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
+               <Link href="/study/lectures" style={{ color: "#34d399", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
                 공실스터디
               </Link>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
@@ -365,7 +365,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     <NavHighlightBubble show={navBubble.key === "gongsil"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="gongsil" />
                   </div>
                   <div className="gnb-bubble-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                    <Link href="/study" className={pathname === "/study" || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
+                    <Link href="/study/lectures" className={pathname === "/study" || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
                       <span style={{ position: "relative", zIndex: 1 }}>공실스터디</span>
                       <NavCategoryHighlightMarker categoryKey="study" active={navBubble.key === "study" && !navBubble.leaving && !isSmallHeader} />
                     </Link>
@@ -415,13 +415,13 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
               <div style={{ display: "flex", alignItems: "center", gap: isSmallHeader ? "8px" : "12px", flexShrink: 0 }}>
                 {currentUser ? (
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Link href="/study" style={{ color: "#059669", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
+                    <Link href="/study/lectures" style={{ color: "#059669", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
                       공실스터디
                     </Link>
                   </div>
                 ) : (
                   <>
-                    <Link href="/study" style={{ color: "#059669", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
+                    <Link href="/study/lectures" style={{ color: "#059669", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
                       공실스터디
                     </Link>
                     <span style={{ color: "#ddd", fontSize: "13px" }}>|</span>
@@ -666,7 +666,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실열람</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_map"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>우리동네뉴스</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실스터디</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study/lectures"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실스터디</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/board"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자료실</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/board?id=free"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>커뮤니티</a></li>
                 </ul>

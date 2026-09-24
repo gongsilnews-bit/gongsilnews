@@ -7,7 +7,8 @@ import { adminGetMembers } from "@/app/admin/actions";
 import { uploadArticleMediaDirect } from "@/utils/uploadDirect";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
-import { generateMarketingDrafts, saveAiDraft, getAiDraftHistory, deleteAiDraft } from "@/app/actions/gemini";
+import { saveAiDraft, getAiDraftHistory, deleteAiDraft } from "@/app/actions/gemini";
+import { generateLocalVacancyArticle, type ArticleStyle, type ArticleLength } from "@/utils/generateLocalVacancyArticle";
 import { getAuthorBanners, saveAuthorBanner, updateArticlesAdSettings, getArticleAdInfo, AuthorBanner } from "@/app/actions/articleAd";
 import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import ArticleAdSettingSlot from "./article_form/ArticleAdSettingSlot";
@@ -159,26 +160,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   /* ═══ ✨ 좌측 패널 모드: 기본 글쓰기도구 vs AI 공실뉴스초안작성 ═══ */
   const [leftSidebarMode, setLeftSidebarMode] = useState<"tools" | "ai_chat">("tools");
   
-  // ── ✨ AI 공실뉴스초안작성 올인원 상세 옵션 상태 ──
-  const [optTone, setOptTone] = useState("정통 언론 보도형");
-  const [optHighlights, setOptHighlights] = useState<string[]>(["초역세권·교통망"]);
-  const [optBenefits, setOptBenefits] = useState("선택 안함");
-  const [optUsage, setOptUsage] = useState("전체·일반");
-  const [optTarget, setOptTarget] = useState("2030 직장인·청년");
-
-  const toggleHighlight = (item: string) => {
-    setOptHighlights(prev => {
-      if (prev.includes(item)) {
-        if (prev.length === 1) return prev;
-        return prev.filter(x => x !== item);
-      } else {
-        if (prev.length >= 3) {
-          return [...prev.slice(1), item];
-        }
-        return [...prev, item];
-      }
-    });
-  };
+  // ── 공실뉴스 매물 기사 초안 옵션 (스타일 · 분량) ──
+  const [articleStyle, setArticleStyle] = useState<ArticleStyle>("news");
+  const [articleLength, setArticleLength] = useState<ArticleLength>("normal");
   
   const [aiHistory, setAiHistory] = useState<any[]>([]);
   const [showAiHistoryModal, setShowAiHistoryModal] = useState(false);
@@ -267,70 +251,54 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     }
   };
 
-  /* ── ✨ 옵션 위자드 공실 매물 기반 기사 및 멀티채널 원고 생성 ── */
-  const executeOptionWizardGenerate = async (extraPrompt?: string) => {
+  /* ── 공실 매물 정보로 기사 초안 생성 (API 호출 없이 로컬 템플릿) ── */
+  const executeOptionWizardGenerate = async () => {
+    if (!selectedVacancyId) return;
     setIsGeneratingAi(true);
-
-    const curVac = myVacancies.find(v => v.id === selectedVacancyId);
-    const vacTitle = curVac ? `[${curVac.trade_type}] ${curVac.building_name || "공실매물"} (${curVac.sido || ""} ${curVac.dong || ""})` : "선택된 공실 매물";
-    const promptContent = `[공실 매물 시장 출회 정통 보도 및 5대 플랫폼 원고 작성 요청]
-- 대상 매물: ${vacTitle}
-- 기사 논조(보도 스타일): ${optTone}
-- 핵심 부각 매력: ${optHighlights.join(", ")}
-${optBenefits !== "선택 안함" ? `- 계약·입주 특전: ${optBenefits}\n` : ""}${optUsage !== "전체·일반" ? `- 권장 입점·활용 용도: ${optUsage}\n` : ""}- 주요 타깃 독자: ${optTarget}
-${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 원칙: 단순 중개사 호객 광고가 아닌, 해당 지역의 시장 동향과 매물 출회(시장 진입) 현상을 객관적으로 다루는 영구 보존용 경제 저널리즘 기사 및 블로그, 쇼츠 대본, 페이스북·쓰레드, 인스타그램 맞춤 원고로 완성할 것.`;
 
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         alert("로그인이 필요합니다.");
-        setIsGeneratingAi(false);
         return;
       }
 
-      const res = await generateMarketingDrafts({
-        memberId: user.id,
-        vacancyId: selectedVacancyId || undefined,
-        sourceText: promptContent,
-        tone: optTone === "정통 언론 보도형" ? "오피셜 칼럼" : optTone === "상권·입지 분석형" ? "전문가 정보 제공" : "친근한 대화체",
-        audience: optTarget,
-        styleType: optTone,
-        endingType: "하십시오체",
-        layoutPattern: "targeted"
+      const { data: vacancy, error } = await supabase.from("vacancies").select("*").eq("id", selectedVacancyId).single();
+      if (error || !vacancy) {
+        alert("매물 정보를 불러오지 못했습니다." + (error ? `\n\n${error.message}` : ""));
+        return;
+      }
+
+      const draft = generateLocalVacancyArticle(vacancy, articleStyle, articleLength);
+      const draftData = {
+        ...draft,
+        content_blog: "",
+        content_shorts: "",
+        content_sns: "",
+      };
+      setAiDrafts(draftData);
+      applyDraftToEditor(draftData);
+
+      await saveAiDraft({
+        member_id: user.id,
+        vacancy_id: selectedVacancyId,
+        source_type: "VACANCY",
+        original_source: `로컬 초안 · ${articleStyle === "summary" ? "단락별 요약" : "뉴스기사형"} · ${{ short: "짧게", normal: "보통", long: "길게" }[articleLength]}`,
+        title: draft.title,
+        subtitle: draft.subtitle,
+        content_article: draft.content_article,
+        content_blog: "",
+        content_shorts: "",
+        content_sns: "",
+        image_urls: []
       });
 
-      if (res.success && res.data) {
-        setAiDrafts(res.data);
-        applyDraftToEditor(res.data);
-
-        await saveAiDraft({
-          member_id: user.id,
-          vacancy_id: selectedVacancyId || undefined,
-          source_type: "VACANCY",
-          original_source: promptContent,
-          title: res.data.title,
-          subtitle: res.data.subtitle,
-          content_article: res.data.content_article,
-          content_blog: res.data.content_blog,
-          content_shorts: res.data.content_shorts,
-          content_sns: res.data.content_sns || res.data.content_threads || res.data.content_insta || "",
-          image_urls: []
-        });
-
-        setActiveSidebarType("ai_library");
-        setAiActiveSidebarTab("article");
-        alert("공실뉴스 보도기사 및 5대 플랫폼 원고가 완성되어 에디터에 자동 반영되었습니다!");
-      } else {
-        const rawErr = res.error || "알 수 없는 오류";
-        let userFriendlyMsg = `기사 작성 중 오류가 발생했습니다.\n\n${rawErr}`;
-        if (rawErr.includes("prepayment") || rawErr.includes("depleted") || rawErr.includes("RESOURCE_EXHAUSTED") || rawErr.includes("429")) {
-          userFriendlyMsg = `구글 Gemini API 크레딧이 소진되었거나 일일 한도에 도달했습니다. 새 API 키를 등록해 주세요.`;
-        }
-        alert(userFriendlyMsg);
-      }
+      setActiveSidebarType("ai_library");
+      setAiActiveSidebarTab("article");
+      alert("매물 기사 초안이 에디터에 반영되었습니다.\n반드시 내용을 읽어보시고 실제 매물 정보에 맞게 다듬어 주세요.");
     } catch (err: any) {
-      alert(`서버 통신 오류: ${err.message}`);
+      alert(`초안 작성 중 오류: ${err.message}`);
     } finally {
       setIsGeneratingAi(false);
     }
@@ -2078,7 +2046,7 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
                     AI 공실뉴스초안작성
                   </div>
                   <div style={{ fontSize: 11.5, color: textSecondary, marginTop: 2 }}>
-                    공실 매물 기반 멀티채널 기사·원고 올인원 작성
+                    공실 매물 정보로 기사 초안을 바로 작성
                   </div>
                 </div>
 
@@ -2320,194 +2288,71 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
                   )}
                 </div>
 
-                {/* 2. 기사 논조 (톤앤매너) */}
+                {/* 2. 기사 스타일 */}
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151" }}>기사 논조 (보도 스타일)</label>
-                    <span style={{ fontSize: 11, color: textSecondary }}>단일 선택</span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
-                    {["정통 언론 보도형", "상권·입지 분석형", "실수요자 추천형", "투자 수익형"].map(item => {
-                      const active = optTone === item;
+                  <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>기사 스타일</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {([
+                      { key: "news", label: "뉴스기사형", desc: "자연스럽게 이어지는 문단 중심의 일반 뉴스 기사" },
+                      { key: "summary", label: "단락별 요약", desc: "첫 문단에 핵심 요약, 이후 ■ 소제목으로 단락 구분" },
+                    ] as { key: ArticleStyle; label: string; desc: string }[]).map(item => {
+                      const active = articleStyle === item.key;
                       return (
                         <button
-                          key={item}
+                          key={item.key}
                           type="button"
-                          onClick={() => setOptTone(item)}
+                          onClick={() => setArticleStyle(item.key)}
                           style={{
-                            padding: "6px 8px",
-                            borderRadius: 6,
-                            fontSize: 11.5,
-                            fontWeight: active ? 700 : 500,
-                            background: active ? "#1e293b" : "#ffffff",
-                            color: active ? "#ffffff" : "#475569",
-                            border: `1px solid ${active ? "#1e293b" : "#d1d5db"}`,
+                            padding: "9px 12px",
+                            borderRadius: 8,
+                            background: active ? "#eff6ff" : "#ffffff",
+                            border: `1px solid ${active ? "#2563eb" : "#d1d5db"}`,
+                            cursor: "pointer",
+                            textAlign: "left",
+                            transition: "all 0.12s"
+                          }}
+                        >
+                          <div style={{ fontSize: 13, fontWeight: 800, color: active ? "#1d4ed8" : textPrimary }}>{item.label}</div>
+                          <div style={{ fontSize: 11, color: textSecondary, marginTop: 2 }}>{item.desc}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. 분량 */}
+                <div>
+                  <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>분량</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                    {([
+                      { key: "short", label: "짧게", desc: "700~1,000자" },
+                      { key: "normal", label: "보통", desc: "1,400~1,800자" },
+                      { key: "long", label: "길게", desc: "2,800~3,500자" },
+                    ] as { key: ArticleLength; label: string; desc: string }[]).map(item => {
+                      const active = articleLength === item.key;
+                      return (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => setArticleLength(item.key)}
+                          style={{
+                            padding: "8px 4px",
+                            borderRadius: 8,
+                            background: active ? "#eff6ff" : "#ffffff",
+                            border: `1px solid ${active ? "#2563eb" : "#d1d5db"}`,
                             cursor: "pointer",
                             textAlign: "center",
                             transition: "all 0.12s"
                           }}
                         >
-                          {item}
+                          <div style={{ fontSize: 13, fontWeight: 800, color: active ? "#1d4ed8" : textPrimary }}>{item.label}</div>
+                          <div style={{ fontSize: 10.5, color: textSecondary, marginTop: 2 }}>{item.desc}</div>
                         </button>
                       );
                     })}
                   </div>
-                </div>
-
-                {/* 3. 핵심 부각 매력 (최대 3개 다중 선택) */}
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151" }}>핵심 부각 매력</label>
-                    <span style={{ fontSize: 11, color: textSecondary }}>최대 3개 선택 ({optHighlights.length}/3)</span>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                    {[
-                      "초역세권·교통망",
-                      "시세 대비 급매",
-                      "신축·풀옵션",
-                      "상권·유동인구",
-                      "조망·쾌적성",
-                      "대단지·배후수요"
-                    ].map(item => {
-                      const active = optHighlights.includes(item);
-                      return (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => toggleHighlight(item)}
-                          style={{
-                            padding: "5px 9px",
-                            borderRadius: 6,
-                            fontSize: 11.5,
-                            fontWeight: active ? 700 : 500,
-                            background: active ? "#0284c7" : "#ffffff",
-                            color: active ? "#ffffff" : "#475569",
-                            border: `1px solid ${active ? "#0284c7" : "#d1d5db"}`,
-                            cursor: "pointer",
-                            transition: "all 0.12s"
-                          }}
-                        >
-                          {active ? `✓ ${item}` : item}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 4. 계약·입주 특전 */}
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151" }}>계약·입주 특전</label>
-                    <span style={{ fontSize: 11, color: textSecondary }}>단일 선택</span>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                    {[
-                      "선택 안함",
-                      "렌트프리 지원",
-                      "권리금 없음 (무권리)",
-                      "관리비·주차 혜택",
-                      "시설완비·즉시입주"
-                    ].map(item => {
-                      const active = optBenefits === item;
-                      return (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => setOptBenefits(item)}
-                          style={{
-                            padding: "5px 9px",
-                            borderRadius: 6,
-                            fontSize: 11.5,
-                            fontWeight: active ? 700 : 500,
-                            background: active ? "#1e293b" : "#ffffff",
-                            color: active ? "#ffffff" : "#475569",
-                            border: `1px solid ${active ? "#1e293b" : "#d1d5db"}`,
-                            cursor: "pointer",
-                            transition: "all 0.12s"
-                          }}
-                        >
-                          {item}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 5. 권장 업종 / 용도 */}
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151" }}>권장 업종 / 용도</label>
-                    <span style={{ fontSize: 11, color: textSecondary }}>단일 선택</span>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                    {[
-                      "전체·일반",
-                      "카페·식음료",
-                      "IT·사무실",
-                      "병원·약국·뷰티",
-                      "학원·스튜디오",
-                      "주거·오피스텔"
-                    ].map(item => {
-                      const active = optUsage === item;
-                      return (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => setOptUsage(item)}
-                          style={{
-                            padding: "5px 9px",
-                            borderRadius: 6,
-                            fontSize: 11.5,
-                            fontWeight: active ? 700 : 500,
-                            background: active ? "#1e293b" : "#ffffff",
-                            color: active ? "#ffffff" : "#475569",
-                            border: `1px solid ${active ? "#1e293b" : "#d1d5db"}`,
-                            cursor: "pointer",
-                            transition: "all 0.12s"
-                          }}
-                        >
-                          {item}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 6. 타깃 독자층 */}
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151" }}>타깃 독자층</label>
-                    <span style={{ fontSize: 11, color: textSecondary }}>단일 선택</span>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                    {[
-                      "2030 직장인·청년",
-                      "신혼부부·가족",
-                      "창업 소상공인·사옥",
-                      "임대수익·투자자"
-                    ].map(item => {
-                      const active = optTarget === item;
-                      return (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => setOptTarget(item)}
-                          style={{
-                            padding: "5px 9px",
-                            borderRadius: 6,
-                            fontSize: 11.5,
-                            fontWeight: active ? 700 : 500,
-                            background: active ? "#1e293b" : "#ffffff",
-                            color: active ? "#ffffff" : "#475569",
-                            border: `1px solid ${active ? "#1e293b" : "#d1d5db"}`,
-                            cursor: "pointer",
-                            transition: "all 0.12s"
-                          }}
-                        >
-                          {item}
-                        </button>
-                      );
-                    })}
+                  <div style={{ fontSize: 11, color: textSecondary, marginTop: 6, lineHeight: 1.5 }}>
+                    매물 정보만으로는 길게 쓰기 어려워, 분량을 늘리면 지역·거래 해설과 확인할 점 같은 <b>해설 부분</b>이 길어집니다.
                   </div>
                 </div>
 
@@ -2544,7 +2389,7 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
                     {isGeneratingAi ? "공실뉴스 매물 기사 작성 중..." : "공실뉴스 매물 기사 작성하기 >>"}
                   </button>
                   <div style={{ fontSize: 11, color: textSecondary, textAlign: "center", marginTop: 6, lineHeight: 1.4 }}>
-                    계약 완료 후에도 지울 필요 없는 객관적 시장 출회 보도기사로 작성됩니다.
+                    등록된 매물 정보로 즉시 작성됩니다. 작성 후 반드시 내용을 확인해 주세요.
                   </div>
                 </div>
               </div>

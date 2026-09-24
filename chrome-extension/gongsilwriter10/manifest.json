@@ -1,0 +1,100 @@
+{
+  "manifest_version": 3,
+  "name": "공실뉴스 AI 기사작성기",
+  "version": "2.0.0",
+  "description": "오른쪽 작업창에서 공실 매물을 가져와 ChatGPT·Gemini 로 기사를 쓰고, 다듬어서 공실뉴스 기사작성 페이지로 보냅니다.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "공실뉴스 AI 기사작성기 열기"
+  },
+  "side_panel": {
+    "default_path": "panel.html"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "sidePanel",
+    "activeTab",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://gongsilnews.com/*",
+    "https://*.gongsilnews.com/*",
+    "http://localhost/*",
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*",
+    "https://aijfktzqtnwhfotfwcka.supabase.co/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://gongsilnews.com/gongsil*",
+        "https://*.gongsilnews.com/gongsil*",
+        "http://localhost/gongsil*"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "content-gongsil.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gongsilnews.com/admin*",
+        "https://*.gongsilnews.com/admin*",
+        "http://localhost/admin*"
+      ],
+      "css": [
+        "shared/ui.css"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "content-admin.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "shared/ai-common.js",
+        "content-chatgpt.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gemini.google.com/*"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "shared/ai-common.js",
+        "content-gemini.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+G"
+      },
+      "description": "공실뉴스 작업창 열기"
+    }
+  }
+}

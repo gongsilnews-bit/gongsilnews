@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { createVacancy, updateVacancy, getVacancyDetail, syncVacancyPhotos, uploadVacancyPhoto } from "@/app/actions/vacancy";
 import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { geocodeAddress } from "@/app/actions/geocode";
-import { generatePropertyDescription } from "@/app/actions/gemini";
+import { generateLocalPropertyDescription, type ToneType } from "@/utils/generateLocalPropertyDescription";
 import imageCompression from "browser-image-compression";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
@@ -156,50 +156,55 @@ function MobileVacancyWrite() {
   const [hasFreightElevator, setHasFreightElevator] = useState(false);
   const [freeParkingCnt, setFreeParkingCnt] = useState("");
   const [description, setDescription] = useState("");
-  const [isAIGenerating, setIsAIGenerating] = useState(false);
+  const [aiTone, setAiTone] = useState<ToneType>("formal");
 
-  const handleGenerateAI = async () => {
-    setIsAIGenerating(true);
-    try {
-      const payload = {
-        propertyType,
-        subCategory,
-        tradeType,
-        deposit,
-        monthly,
-        maintenance,
-        currentFloor,
-        totalFloor,
-        exclusivePy,
-        supplyPy,
-        roomCount,
-        bathCount,
-        direction,
-        selectedOptions,
-        parking,
-        moveInDate,
-        infrastructure,
-        realtorInfo: userRole === "realtor" ? {
-          company: rCompany,
-          boss: rBoss,
-          tel: rTel,
-          cell: rCell,
-          addr: rAddr
-        } : null
-      };
-      const res = await generatePropertyDescription(payload);
-      if (res.success && res.text) {
-        setDescription(res.text);
-        alert("✨ AI 초안 작성이 완료되었습니다!\n반드시 내용을 읽어보시고, 실제 매물 정보에 맞게 꼼꼼히 체크 및 수정해 주세요.");
-      } else {
-        alert(res.error || "AI 마법사 생성에 실패했습니다.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("AI 마법사 생성 중 오류가 발생했습니다.");
-    } finally {
-      setIsAIGenerating(false);
-    }
+  const handleGenerateAI = () => {
+    const payload = {
+      propertyType,
+      subCategory,
+      tradeType,
+      deposit,
+      monthly,
+      maintenance,
+      currentFloor,
+      totalFloor,
+      exclusivePy,
+      supplyPy,
+      roomCount,
+      bathCount,
+      direction,
+      selectedOptions,
+      parking,
+      moveInDate,
+      infrastructure,
+      buildingName,
+      dong,
+      sido,
+      sigungu,
+      ceilingHeight,
+      powerCapacity,
+      hasDriveIn,
+      hasDoorToDoor,
+      hasFreightElevator,
+      freeParkingCnt,
+      zoning,
+      landPurpose,
+      terrain,
+      developmentPotential,
+      roadWidth,
+      groundFloors,
+      undergroundFloors,
+      realtorInfo: userRole === "realtor" ? {
+        company: rCompany,
+        boss: rBoss,
+        tel: rTel,
+        cell: rCell,
+        addr: rAddr
+      } : null
+    };
+    const text = generateLocalPropertyDescription(payload, aiTone);
+    setDescription(text);
+    alert("✨ 초안 작성이 완료되었습니다!\n반드시 내용을 읽어보시고, 실제 매물 정보에 맞게 꼼꼼히 수정해 주세요.");
   };
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
@@ -1887,37 +1892,38 @@ function MobileVacancyWrite() {
           </div>
 
           <div style={{ marginTop: 16, borderTop: "1px dashed #e5e7eb", paddingTop: 16, position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>전달사항 / 공실광고설명</label>
-              <button 
-                type="button" 
-                onClick={handleGenerateAI}
-                disabled={isAIGenerating}
-                style={{ 
-                  height: 28, padding: "0 12px", border: "none", borderRadius: 14, 
-                  background: isAIGenerating ? "#e5e7eb" : "#fef3c7", 
-                  cursor: isAIGenerating ? "not-allowed" : "pointer", 
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontSize: 12, fontWeight: 700, 
-                  color: isAIGenerating ? "#9ca3af" : "#d97706", transition: "all 0.2s" 
-                }} 
-              >
-                {isAIGenerating ? "⏳ 생성 중..." : "✨ AI초안글쓰기"}
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {/* 톤 토글 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 0, borderRadius: 14, overflow: "hidden", border: "1px solid #d1d5db" }}>
+                  <button type="button" onClick={() => setAiTone("formal")} style={{
+                    padding: "3px 8px", border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer",
+                    background: aiTone === "formal" ? "#4f46e5" : "#f9fafb",
+                    color: aiTone === "formal" ? "#fff" : "#6b7280",
+                  }}>하십시오</button>
+                  <button type="button" onClick={() => setAiTone("friendly")} style={{
+                    padding: "3px 8px", border: "none", borderLeft: "1px solid #d1d5db", fontSize: 11, fontWeight: 700, cursor: "pointer",
+                    background: aiTone === "friendly" ? "#4f46e5" : "#f9fafb",
+                    color: aiTone === "friendly" ? "#fff" : "#6b7280",
+                  }}>해요체</button>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={handleGenerateAI}
+                  style={{ 
+                    height: 28, padding: "0 12px", border: "none", borderRadius: 14, 
+                    background: "#fef3c7", 
+                    cursor: "pointer", 
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontSize: 12, fontWeight: 700, 
+                    color: "#d97706", transition: "all 0.2s" 
+                  }} 
+                >
+                  ✨ AI초안글쓰기
+                </button>
+              </div>
             </div>
             <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="공실광고에 대한 추가 설명을 입력하세요" rows={4} style={{ ...inputStyle, height:"auto", padding:12, resize:"vertical", lineHeight:1.5 }}/>
-            
-            {/* AI 글쓰기 로딩 오버레이 (textarea 덮기) */}
-            {isAIGenerating && (
-              <div style={{ position: "absolute", top: 38, left: 0, right: 0, bottom: 0, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(2px)", borderRadius: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 10 }}>
-                <style>{`
-                  @keyframes ai-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-                `}</style>
-                <div style={{ width: 30, height: 30, border: "3px solid #fef3c7", borderTop: "3px solid #d97706", borderRadius: "50%", animation: "ai-spin 1s linear infinite", marginBottom: 12 }} />
-                <div style={{ color: "#d97706", fontSize: 13, fontWeight: 800 }}>AI가 초안을 작성 중입니다...</div>
-                <div style={{ color: "#9ca3af", fontSize: 11, marginTop: 4, marginBottom: 8 }}>잠시만 기다려주세요</div>
-                <div style={{ background: "#fef2f2", color: "#ef4444", fontSize: 11, fontWeight: 700, padding: "4px 8px", borderRadius: 6, border: "1px solid #fca5a5" }}>⚠️ 완료 후 반드시 내용을 체크해 주세요!</div>
-              </div>
-            )}
           </div>
         </div>
 

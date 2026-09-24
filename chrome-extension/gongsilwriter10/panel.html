@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>공실뉴스 AI 기사작성기</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ─────────── 헤더 ─────────── -->
+  <header class="header">
+    <div class="logo-area">
+      <img src="icons/icon48.png" alt="" class="logo-img">
+      <div class="logo-text">
+        <span class="brand-name">공실뉴스</span>
+        <span class="brand-sub">AI 기사작성기</span>
+      </div>
+    </div>
+    <span id="statusPill" class="status-pill">준비됨</span>
+  </header>
+
+  <!-- ─────────── 탭 ─────────── -->
+  <nav class="nav-tabs">
+    <button id="tabWork" class="nav-tab active" type="button">
+      <span class="step-number">1</span> 매물 · AI
+    </button>
+    <button id="tabDraft" class="nav-tab" type="button">
+      <span class="step-number">2</span> 초안 다듬기
+      <span id="draftBadge" class="tab-badge hidden">NEW</span>
+    </button>
+  </nav>
+
+  <div class="scroll-area">
+
+    <!-- ═══════════ 뷰 1 — 매물 · AI ═══════════ -->
+    <section id="viewWork" class="view active">
+
+      <!-- ── 1단계 매물 ── -->
+      <div class="card">
+        <label class="card-label">1단계 · 매물 가져오기</label>
+
+        <button id="btnGoGongsil" class="btn-line" type="button">
+          공실열람 페이지 이동
+        </button>
+
+        <button id="btnGrab" class="btn-fill" type="button">
+          물건 가져오기
+        </button>
+        <p class="hint">공실열람에서 매물을 하나 펼쳐 놓고 누르세요.</p>
+
+        <section id="vacancyCard" class="vacancy-card hidden">
+          <div class="vacancy-head">
+            <span>가져온 공실 물건</span>
+            <strong id="vacancyName">-</strong>
+          </div>
+          <dl id="vacancyFields" class="vacancy-fields"></dl>
+        </section>
+      </div>
+
+      <!-- ── 2단계 AI ── -->
+      <div class="card">
+        <label class="card-label">2단계 · AI 선택</label>
+
+        <div class="choice-grid">
+          <button class="choice active" data-platform="chatgpt" type="button">
+            <span class="choice-dot gpt"></span>
+            <span class="choice-body">
+              <strong>ChatGPT</strong>
+              <small>chatgpt.com 로그인 필요</small>
+            </span>
+          </button>
+          <button class="choice" data-platform="gemini" type="button">
+            <span class="choice-dot gemini"></span>
+            <span class="choice-body">
+              <strong>Gemini</strong>
+              <small>gemini.google.com 로그인 필요</small>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── 3단계 기사 스타일·분량 ── -->
+      <div class="card">
+        <label class="card-label">3단계 · 기사 스타일</label>
+
+        <div class="choice-grid">
+          <button class="choice kind active" data-kind="news" type="button">
+            <span class="choice-body">
+              <strong>뉴스기사형</strong>
+              <small>현재 스타일 · 자연스럽게 이어지는 뉴스 기사</small>
+            </span>
+          </button>
+          <button class="choice kind" data-kind="summary" type="button">
+            <span class="choice-body">
+              <strong>단락별 요약</strong>
+              <small>도입 요약 뒤 ■ 소제목으로 내용을 구분</small>
+            </span>
+          </button>
+        </div>
+
+        <div class="divider"></div>
+
+        <label class="card-label">분량</label>
+        <div class="chips-row">
+          <button class="chip" data-length="short" type="button">짧게<small>700~1,000자</small></button>
+          <button class="chip active" data-length="normal" type="button">보통<small>1,400~1,800자</small></button>
+          <button class="chip" data-length="long" type="button">길게<small>2,800~3,500자</small></button>
+        </div>
+        <p class="hint">
+          매물 스펙만으로는 길게 쓸 수 없습니다. 분량을 늘리면 지역·수요·확인할 점 같은
+          <b>해설 부분</b>이 길어집니다.
+        </p>
+      </div>
+
+      <!-- ── 4단계 작성 ── -->
+      <div class="card">
+        <label class="card-label">4단계 · 기사 작성</label>
+
+        <button id="btnOpenAi" class="btn-fill" type="button" disabled>
+          <span class="n">①</span> AI 기사 작성
+          <small>AI 탭을 열고 프롬프트를 채웁니다</small>
+        </button>
+
+        <button id="btnSubmit" class="btn-fill" type="button" disabled>
+          <span class="n">②</span> 작성하기
+          <small>전송을 눌러 AI가 글을 씁니다</small>
+        </button>
+
+        <button id="btnPullDraft" class="btn-fill green" type="button" disabled>
+          <span class="n">③</span> 초안 보내기
+          <small>다 나온 기사를 이 작업창으로 가져옵니다</small>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ═══════════ 뷰 2 — 초안 다듬기 ═══════════ -->
+    <section id="viewDraft" class="view">
+
+      <div id="draftEmpty" class="empty-note">
+        아직 초안이 없습니다.<br>
+        <b>1 · 매물 · AI</b> 탭에서 <b>초안 보내기</b>까지 진행해 주세요.
+      </div>
+
+      <div id="draftBody" class="hidden">
+
+        <!-- 미리보기 -->
+        <div class="preview-doc">
+          <div class="preview-top">
+            <span class="cat-badge">공실뉴스</span>
+            <span id="pvDate" class="pub-date"></span>
+          </div>
+
+          <h2 id="pvTitle" class="doc-title" contenteditable="true" spellcheck="false"
+              title="클릭해서 직접 고칠 수 있습니다"></h2>
+
+          <p id="pvSubtitle" class="doc-subtitle" contenteditable="true" spellcheck="false"
+             title="클릭해서 직접 고칠 수 있습니다"></p>
+
+          <div class="byline">
+            <div class="byline-avatar">공</div>
+            <div class="byline-info">
+              <span class="rep-name">공실뉴스</span>
+              <span class="rep-desc">부동산 전문기자</span>
+            </div>
+          </div>
+
+          <div id="pvCover" class="media-wrap hidden"></div>
+
+          <div id="pvContent" class="doc-body" contenteditable="true" spellcheck="false"></div>
+
+          <div id="pvKeywords" class="kw-wrap"></div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ─────────── 뷰 2 하단 고정 바 ─────────── -->
+  <div id="draftActions" class="bottom-bar hidden">
+    <div class="revise-row">
+      <input id="reviseInput" type="text" class="revise-input"
+             placeholder="고칠 점을 적어 주세요 (예: 둘째 문단을 더 짧게)">
+      <button id="btnRevise" class="btn-revise" type="button" title="같은 대화에 이어서 AI에게 수정을 요청합니다">
+        수정 요청
+      </button>
+    </div>
+
+    <div class="image-options">
+      <div class="image-options-title">AI 이미지 스타일</div>
+      <div class="image-style-row" role="group" aria-label="AI 이미지 스타일 선택">
+        <button class="image-style active" data-image-style="news" type="button">보도 실사</button>
+        <button class="image-style" data-image-style="building" type="button">건물 전경</button>
+        <button class="image-style" data-image-style="area" type="button">거리·상권</button>
+        <button class="image-style" data-image-style="animation" type="button">애니메이션</button>
+        <button class="image-style" data-image-style="infographic" type="button">통계 도표</button>
+      </div>
+      <textarea id="imageRequest" class="image-request" rows="2" maxlength="1600"
+                placeholder="표현할 내용이나 스타일을 입력하세요. 기사 일부를 붙여 넣어도 됩니다. 비워 두면 기사에서 자동 선택합니다."></textarea>
+    </div>
+
+    <div class="img-row">
+      <button id="btnMakeImage" class="btn-sub" type="button">AI 이미지 만들기</button>
+      <button id="btnChangeImage" class="btn-sub" type="button" title="본문에서 위치를 클릭한 뒤 내 PC 이미지를 삽입합니다">이미지 삽입</button>
+      <input id="fileImage" type="file" accept="image/*" class="hidden">
+    </div>
+
+    <button id="btnSendGongsil" class="btn-send" type="button">
+      <span class="send-icon">📰</span>
+      <span class="send-text">
+        <strong>공실뉴스로 보내기</strong>
+        <small>기사쓰기 폼에 채웁니다 · 등록은 직접 누르세요</small>
+      </span>
+    </button>
+  </div>
+
+  <div id="toastHost"></div>
+</div>
+
+<script src="shared/config.js"></script>
+<script src="shared/prompt.js"></script>
+<script src="shared/media.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>

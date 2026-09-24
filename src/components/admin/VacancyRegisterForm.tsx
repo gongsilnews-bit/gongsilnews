@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { createVacancy, syncVacancyPhotos, updateVacancy, uploadVacancyPhoto } from "@/app/actions/vacancy";
 import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
 import { extractPropertyInfoFromImage } from "@/app/actions/ai";
-import { generatePropertyDescription } from "@/app/actions/gemini";
+import { generateLocalPropertyDescription, type ToneType } from "@/utils/generateLocalPropertyDescription";
 import { useRouter } from "next/navigation";
 
 /* ──────────────────────────────────────────────
@@ -206,50 +206,55 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   // 전달사항
   const [description, setDescription] = useState("");
-  const [isAIGenerating, setIsAIGenerating] = useState(false);
+  const [aiTone, setAiTone] = useState<ToneType>("formal");
 
-  const handleGenerateAI = async () => {
-    setIsAIGenerating(true);
-    try {
-      const payload = {
-        propertyType,
-        subCategory,
-        tradeType,
-        deposit,
-        monthly,
-        maintenance,
-        currentFloor,
-        totalFloor,
-        exclusivePy,
-        supplyPy,
-        roomCount,
-        bathCount,
-        direction,
-        selectedOptions,
-        parking,
-        moveInDate,
-        infrastructure,
-        realtorInfo: userRole === "realtor" ? {
-          company: rCompany,
-          boss: rBoss,
-          tel: rTel,
-          cell: rCell,
-          addr: rAddr
-        } : null
-      };
-      const res = await generatePropertyDescription(payload);
-      if (res.success && res.text) {
-        setDescription(res.text);
-        alert("✨ AI 초안 작성이 완료되었습니다!\n반드시 내용을 읽어보시고, 실제 매물 정보에 맞게 꼼꼼히 체크 및 수정해 주세요.");
-      } else {
-        alert(res.error || "AI 마법사 생성에 실패했습니다.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("AI 마법사 생성 중 오류가 발생했습니다.");
-    } finally {
-      setIsAIGenerating(false);
-    }
+  const handleGenerateAI = () => {
+    const payload = {
+      propertyType,
+      subCategory,
+      tradeType,
+      deposit,
+      monthly,
+      maintenance,
+      currentFloor,
+      totalFloor,
+      exclusivePy,
+      supplyPy,
+      roomCount,
+      bathCount,
+      direction,
+      selectedOptions,
+      parking,
+      moveInDate,
+      infrastructure,
+      buildingName,
+      dong,
+      sido,
+      sigungu,
+      ceilingHeight,
+      powerCapacity,
+      hasDriveIn,
+      hasDoorToDoor,
+      hasFreightElevator,
+      freeParkingCnt,
+      zoning,
+      landPurpose,
+      terrain,
+      developmentPotential,
+      roadWidth,
+      groundFloors,
+      undergroundFloors,
+      realtorInfo: userRole === "realtor" ? {
+        company: rCompany,
+        boss: rBoss,
+        tel: rTel,
+        cell: rCell,
+        addr: rAddr
+      } : null
+    };
+    const text = generateLocalPropertyDescription(payload, aiTone);
+    setDescription(text);
+    alert("✨ 초안 작성이 완료되었습니다!\n반드시 내용을 읽어보시고, 실제 매물 정보에 맞게 꼼꼼히 수정해 주세요.");
   };
 
   // 의뢰인
@@ -1008,48 +1013,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         @keyframes aiPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
       `}</style>
       
-      {/* ── AI 멘트 마법사 로딩 오버레이 ── */}
-      {isAIGenerating && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.45)", backdropFilter: "blur(3px)",
-          zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <div style={{
-            background: darkMode ? "#25262b" : "#fff", borderRadius: 20, padding: "40px 48px",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.3)", textAlign: "center", maxWidth: 380,
-          }}>
-            <div style={{
-              width: 60, height: 60, margin: "0 auto 20px",
-              border: "4px solid #e5e7eb", borderTopColor: "#8b5cf6",
-              borderRadius: "50%",
-              animation: "aiSpin 1s linear infinite",
-              display: "flex", alignItems: "center", justifyContent: "center"
-            }}>
-              <span style={{ animation: "aiSpin 3s linear infinite reverse", fontSize: 24 }}>✨</span>
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: darkMode ? "#e1e4e8" : "#111827", marginBottom: 8 }}>
-              AI가 초안을 작성 중입니다...
-            </div>
-            <div style={{ fontSize: 13, color: darkMode ? "#9ca3af" : "#6b7280", lineHeight: 1.6, marginBottom: 16 }}>
-              매물 정보를 바탕으로 매력적인<br />소개글을 작성하고 있습니다. 잠시만 기다려주세요.
-            </div>
-            <div style={{ background: "#fef2f2", color: "#ef4444", fontSize: 12, fontWeight: 700, padding: "8px 12px", borderRadius: 8, border: "1px solid #fca5a5", display: "inline-block" }}>
-              ⚠️ 완료 후 반드시 내용을 체크해 주세요!
-            </div>
-            <div style={{
-              marginTop: 20, height: 4, background: darkMode ? "#333" : "#e5e7eb", borderRadius: 2, overflow: "hidden",
-            }}>
-              <div style={{
-                height: "100%", background: "linear-gradient(90deg, #8b5cf6, #a78bfa, #8b5cf6)",
-                backgroundSize: "200% 100%",
-                animation: "aiProgress 1.5s ease-in-out infinite",
-                borderRadius: 2,
-              }} />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* AI 멘트 로딩 오버레이 제거됨 - 로컬 템플릿 기반 즉시 생성 */}
       {/* ── 타이틀 및 백버튼 ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "28px 24px 20px", borderBottom: `1px solid ${border}`, background: cardBg }}>
         <button type="button" onClick={onBack} style={{ height: 36, padding: "0 16px", background: "#fff", color: "#4b5563", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
@@ -2271,23 +2235,35 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             </div>
 
             {/* ── 전달사항 ── */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 12, marginTop: 32, marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 12, marginTop: 32, marginBottom: 10, flexWrap: "wrap" }}>
               <label style={{ ...labelStyle, margin: 0 }}>전달사항 (특징, 입주일 등)</label>
+              {/* 톤 토글 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 0, borderRadius: 8, overflow: "hidden", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}` }}>
+                <button type="button" onClick={() => setAiTone("formal")} style={{
+                  padding: "4px 10px", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                  background: aiTone === "formal" ? (darkMode ? "#4338ca" : "#4f46e5") : (darkMode ? "#1f2937" : "#f9fafb"),
+                  color: aiTone === "formal" ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"),
+                }}>하십시오체</button>
+                <button type="button" onClick={() => setAiTone("friendly")} style={{
+                  padding: "4px 10px", border: "none", borderLeft: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                  background: aiTone === "friendly" ? (darkMode ? "#4338ca" : "#4f46e5") : (darkMode ? "#1f2937" : "#f9fafb"),
+                  color: aiTone === "friendly" ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"),
+                }}>해요체</button>
+              </div>
               <button 
                 type="button" 
                 onClick={handleGenerateAI}
-                disabled={isAIGenerating}
                 style={{ 
                   height: 32, padding: "0 14px", border: "none", borderRadius: 8, 
-                  background: isAIGenerating ? "#e5e7eb" : (darkMode ? "#3b2f1e" : "#fef3c7"), 
-                  cursor: isAIGenerating ? "not-allowed" : "pointer", 
+                  background: darkMode ? "#3b2f1e" : "#fef3c7", 
+                  cursor: "pointer", 
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 700, 
-                  color: isAIGenerating ? "#9ca3af" : "#d97706", transition: "all 0.2s" 
+                  color: "#d97706", transition: "all 0.2s" 
                 }} 
-                onMouseEnter={e => !isAIGenerating && (e.currentTarget.style.opacity = "0.8")} 
-                onMouseLeave={e => !isAIGenerating && (e.currentTarget.style.opacity = "1")}
+                onMouseEnter={e => (e.currentTarget.style.opacity = "0.8")} 
+                onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
               >
-                {isAIGenerating ? "⏳ 초안 작성 중..." : "✨ AI초안글쓰기"}
+                ✨ AI초안글쓰기
               </button>
             </div>
             <textarea
