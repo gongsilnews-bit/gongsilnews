@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import StudyHeader from "@/components/study/StudyHeader";
-import { createClient } from "@/utils/supabase/client";
 
 /**
  * 공실스터디 금액안내
@@ -17,20 +16,11 @@ const POINT_BORDER = "#a7f3d0";
 
 export default function StudyPricingClient() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUser(user);
-    });
-  }, []);
-
-  // 멤버십 신청 (로그인 여부에 따라 분기)
+  // 멤버십 신청 (로그인 전이면 신청 페이지에서 바로 로그인한다)
   const handleJoinClick = () => {
-    if (user) router.push("/study/lectures");
-    else router.push("/login?returnTo=" + encodeURIComponent("/study/pricing"));
+    router.push("/study/apply");
   };
 
   // 바로 위 서브카피가 말하는 4가지와 순서까지 1:1로 맞춘다

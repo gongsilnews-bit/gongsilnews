@@ -62,6 +62,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 const MENU_NOTIFICATION_TYPES: Record<string, string[]> = {
   members: ["member_signup"],
   newsrealty: ["newsrealty_apply"],
+  study: ["study_apply"],
   gongsil: ["vacancy_new"],
   article: ["article_pending"],
   inquiry_board: ["inquiry_new", "inquiry_reply"],

@@ -181,31 +181,40 @@ export default function StudyLecturesClient({
                 <span style={{ color: "#34d399" }}>나만 못 쓰고 있는 것 같으신가요?</span>
               </h1>
 
-              {/* 멤버십 신청 + 가격 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 13, flexWrap: "wrap" }}>
+              {/* 공실스터디란? + 멤버십 신청 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
                 <Link
-                  href="/study/pricing"
+                  href="/study"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: 6,
-                    padding: "9px 18px",
+                    padding: "10px 22px",
                     background: "#059669",
                     color: "#ffffff",
                     borderRadius: 8,
-                    fontSize: 13.5,
+                    fontSize: 14,
                     fontWeight: 800,
                     textDecoration: "none",
                     boxShadow: "0 3px 10px rgba(5, 150, 105, 0.3)",
                     transition: "all 0.2s",
                   }}
                 >
-                  <span>멤버십 신청하기</span>
-                  <span>→</span>
+                  공실스터디란?
                 </Link>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(167,243,208,0.85)" }}>
-                  12개월 <strong style={{ color: "#ffffff", fontSize: 14.5, fontWeight: 800, marginLeft: 1 }}>36만원</strong>
-                </span>
+                <Link
+                  href="/study/apply"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    padding: "10px 4px",
+                    color: "#ffffff",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    textDecoration: "none",
+                  }}
+                >
+                  멤버십 신청하기 &gt;&gt;
+                </Link>
               </div>
             </div>
 

@@ -10,7 +10,7 @@ import { getAdminEntryLabel } from "@/utils/permissionCheck";
 
 /**
  * 공실스터디 전용 상단 헤더 (공실뉴스부동산 헤더와 동일 포맷 / 포인트 컬러만 에메랄드)
- * 2차 카테고리: 홈 · 강의목록 · 멤버십혜택(드롭다운) · 금액안내 · 나의 강의실 · Q&A게시판
+ * 2차 카테고리: 홈 · 강의목록 · 멤버십혜택(드롭다운) · 금액안내 · 멤버십신청 · 나의 강의실 · Q&A게시판
  * 홈은 따로 두지 않고 /study 가 곧 '공실스터디란?' 이다.
  */
 const POINT = "#059669";
@@ -22,6 +22,7 @@ const NAV_BEFORE = [
 
 const NAV_AFTER = [
   { label: "금액안내", href: "/study/pricing", match: (p: string) => p.startsWith("/study/pricing") },
+  { label: "멤버십신청", href: "/study/apply", match: (p: string) => p.startsWith("/study/apply") },
   { label: "나의 강의실", href: "/study/classroom", match: (p: string) => p.startsWith("/study/classroom") },
   { label: "Q&A게시판", href: "/study/qna", match: (p: string) => p.startsWith("/study/qna") },
 ];
@@ -145,7 +146,7 @@ export default function StudyHeader() {
           </Link>
         </div>
 
-        {/* ━━━ 우측 내비게이션 (홈 / 강의목록 / 멤버십혜택 / 금액안내 / 나의 강의실 / Q&A게시판) ━━━ */}
+        {/* ━━━ 우측 내비게이션 (홈 / 강의목록 / 멤버십혜택 / 금액안내 / 멤버십신청 / 나의 강의실 / Q&A게시판) ━━━ */}
         <nav style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "nowrap" }}>
           {NAV_BEFORE.map((item) => {
             const isActive = item.match(pathname);

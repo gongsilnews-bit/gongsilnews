@@ -23,6 +23,7 @@ export type NotificationType =
   | "member_signup"      // 회원가입 신규
   | "article_pending"    // 신규 기사 등록(승인대기)
   | "newsrealty_apply"   // 공실뉴스부동산 접수
+  | "study_apply"        // 공실스터디 멤버십 신청
   | "vacancy_new"        // 공실 등록
   | "inquiry_new"        // 1:1문의 접수
   | "inquiry_reply"      // 1:1문의에 회원이 단 추가 질문

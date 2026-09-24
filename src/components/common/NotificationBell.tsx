@@ -15,6 +15,7 @@ const TYPE_LABEL: Record<string, { icon: string; color: string }> = {
   member_signup: { icon: "👤", color: "#2563eb" },
   article_pending: { icon: "📝", color: "#d97706" },
   newsrealty_apply: { icon: "🏢", color: "#059669" },
+  study_apply: { icon: "🎓", color: "#059669" },
   inquiry_new: { icon: "💬", color: "#dc2626" },
   intake_new: { icon: "📥", color: "#059669" },
   inquiry_reply: { icon: "💬", color: "#dc2626" },
