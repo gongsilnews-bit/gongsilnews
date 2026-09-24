@@ -51,6 +51,8 @@ function MobileVacancyWrite() {
   const [authChecked, setAuthChecked] = useState(false);
   const [fetchingLedger, setFetchingLedger] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submittingLabel, setSubmittingLabel] = useState("공실 등록 중입니다...");
+  const submittingRef = React.useRef(false);
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const TOTAL_STEPS = 4;
@@ -693,7 +695,12 @@ function MobileVacancyWrite() {
   const handleSubmit = async (status: string) => {
     if (!propertyType || !tradeType) { alert("공실광고 분류와 거래유형을 선택하세요."); return; }
     if (!sido || !dong) { alert("주소를 입력하세요."); return; }
+    // 느린 응답 중 연타로 인한 중복 등록 방지
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmittingLabel(status === "DRAFT" ? "임시저장 중입니다..." : editId ? "공실 수정 중입니다..." : "공실 등록 중입니다...");
     setSubmitting(true);
+    let navigating = false;
     try {
       const payload: any = {
         owner_id: memberId, owner_role: "USER",
@@ -797,8 +804,15 @@ function MobileVacancyWrite() {
       }
 
       alert(status === "DRAFT" ? "임시저장 완료!" : editId ? "수정 완료!" : "등록 완료! 광고가 바로 시작됩니다.");
+      // 목록으로 이동하는 동안에도 로딩 화면을 유지해 재클릭을 막는다
+      navigating = true;
       router.replace("/m/admin/vacancy");
-    } catch (err: any) { alert("오류: " + err.message); } finally { setSubmitting(false); }
+    } catch (err: any) { alert("오류: " + err.message); } finally {
+      if (!navigating) {
+        submittingRef.current = false;
+        setSubmitting(false);
+      }
+    }
   };
 
   const inputStyle: React.CSSProperties = { 
@@ -2082,6 +2096,21 @@ function MobileVacancyWrite() {
       </div>
 
       <BottomNav />
+
+      {/* ── 공실 등록/임시저장 로딩 오버레이 ── */}
+      {submitting && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 20000, background: "rgba(17,24,39,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <style>{`
+            @keyframes save-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          `}</style>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "28px 24px", width: "100%", maxWidth: 300, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}>
+            <div style={{ width: 40, height: 40, margin: "0 auto 16px", border: "4px solid #dbeafe", borderTop: "4px solid #2563eb", borderRadius: "50%", animation: "save-spin 1s linear infinite" }} />
+            <div style={{ color: "#1d4ed8", fontSize: 16, fontWeight: 800 }}>{submittingLabel}</div>
+            <div style={{ color: "#6b7280", fontSize: 13, marginTop: 6 }}>잠시만 기다려주세요!</div>
+            <div style={{ color: "#9ca3af", fontSize: 11, marginTop: 10 }}>사진이 많으면 시간이 조금 걸릴 수 있어요</div>
+          </div>
+        </div>
+      )}
 
       {/* ── 포토 DB 모달 ── */}
       {showPhotoDbModal && (

@@ -76,6 +76,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [videoCollapsed, setVideoCollapsed] = useState(false);
   const [fileCollapsed, setFileCollapsed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingLabel, setSavingLabel] = useState("저장 중입니다...");
+  const savingRef = React.useRef(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [articleCoords, setArticleCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
@@ -1720,7 +1722,20 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
       return;
     }
 
+    // 느린 응답 중 연타로 인한 중복 저장 방지
+    if (savingRef.current) return;
+    savingRef.current = true;
+
+    const labelStatus = overrideStatus || status;
+    setSavingLabel(
+      labelStatus === "PENDING" || labelStatus === "승인신청" ? "승인신청 중입니다..."
+      : labelStatus === "REJECTED" ? "반려 처리 중입니다..."
+      : labelStatus === "DRAFT" ? "임시저장 중입니다..."
+      : overrideStatus === "APPROVED" && currentUserRole === "ADMIN" ? "승인 처리 중입니다..."
+      : "저장 중입니다..."
+    );
     setSaving(true);
+    let navigating = false;
     try {
       const finalStatus = overrideStatus || status;
 
@@ -1925,6 +1940,8 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
         }
 
         alert("✅ 기사가 저장되었습니다!");
+        // 페이지 이동이 끝날 때까지 로딩 화면을 유지해 재클릭을 막는다
+        navigating = true;
         window.location.href = isMemberMode ? memberReturnPath : "/admin?menu=article";
       } else {
         alert("❌ 저장 실패: " + result.error);
@@ -1932,7 +1949,10 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
     } catch (err: any) {
       alert("❌ 오류 발생: " + err.message);
     } finally {
-      setSaving(false);
+      if (!navigating) {
+        savingRef.current = false;
+        setSaving(false);
+      }
     }
   };
 
@@ -3610,6 +3630,21 @@ ${extraPrompt ? `- 추가 요청사항: ${extraPrompt}\n` : ""}- 작성 불변 �
           </div>
         </div>
       )}
+      {/* ── 저장/승인신청 로딩 오버레이 ── */}
+      {saving && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 20000, background: "rgba(17,24,39,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <style>{`
+            @keyframes save-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          `}</style>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", width: "100%", maxWidth: 340, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}>
+            <div style={{ width: 44, height: 44, margin: "0 auto 18px", border: "4px solid #dbeafe", borderTop: "4px solid #2563eb", borderRadius: "50%", animation: "save-spin 1s linear infinite" }} />
+            <div style={{ color: "#1d4ed8", fontSize: 17, fontWeight: 800 }}>{savingLabel}</div>
+            <div style={{ color: "#6b7280", fontSize: 14, marginTop: 6 }}>잠시만 기다려주세요!</div>
+            <div style={{ color: "#9ca3af", fontSize: 12, marginTop: 10 }}>사진이 많으면 시간이 조금 걸릴 수 있어요</div>
+          </div>
+        </div>
+      )}
+
       {/* ── ⚡ 모듈화 분리된 AI 초안 마법사 및 히스토리 모달 ── */}
       <ArticleAiWizardModal
         isOpen={showAiWizardModal}

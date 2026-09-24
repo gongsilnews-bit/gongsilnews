@@ -52,6 +52,8 @@ function MobileArticleWrite() {
   const [keyword, setKeyword] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [savingForApproval, setSavingForApproval] = useState(false);
+  const savingRef = useRef(false);
 
   /* ── 관련기사 상태 ── */
   const [relatedArticles, setRelatedArticles] = useState<{ id: string; title: string; section1: string; published_at: string }[]>([]);
@@ -621,8 +623,13 @@ function MobileArticleWrite() {
     if (!title.trim()) { alert("제목을 입력해주세요."); return; }
     if (!content.trim()) { alert("본문 내용을 입력해주세요."); return; }
     if (!currentUserId) { alert("로그인이 필요합니다."); return; }
+    // 느린 응답 중 연타로 인한 중복 저장 방지
+    if (savingRef.current) return;
+    savingRef.current = true;
 
+    setSavingForApproval(requestApproval);
     setSaving(true);
+    let navigating = false;
 
     try {
       // 1. 기사 본문에 사진을 삽입한 HTML 생성 (에디터 내 삭제 버튼 태그는 본문 저장 시 완전 제거)
@@ -678,7 +685,6 @@ function MobileArticleWrite() {
 
       if (!res.success) {
         alert("저장 실패: " + res.error);
-        setSaving(false);
         return;
       }
 
@@ -744,11 +750,16 @@ function MobileArticleWrite() {
       }
 
       alert(requestApproval ? "승인신청이 완료되었습니다." : "기사가 저장되었습니다.");
+      // 목록으로 이동하는 동안에도 로딩 화면을 유지해 재클릭을 막는다
+      navigating = true;
       router.push("/m/admin/article");
     } catch (err: any) {
       alert("오류: " + err.message);
     } finally {
-      setSaving(false);
+      if (!navigating) {
+        savingRef.current = false;
+        setSaving(false);
+      }
     }
   };
 
@@ -1335,6 +1346,23 @@ function MobileArticleWrite() {
           </button>
         </div>
       </div>
+
+      {/* ── 승인신청/임시저장 로딩 오버레이 ── */}
+      {saving && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 20000, background: "rgba(17,24,39,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <style>{`
+            @keyframes save-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          `}</style>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "28px 24px", width: "100%", maxWidth: 300, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}>
+            <div style={{ width: 40, height: 40, margin: "0 auto 16px", border: "4px solid #dbeafe", borderTop: "4px solid #2563eb", borderRadius: "50%", animation: "save-spin 1s linear infinite" }} />
+            <div style={{ color: "#1d4ed8", fontSize: 16, fontWeight: 800 }}>
+              {savingForApproval ? "승인신청 중입니다..." : "임시저장 중입니다..."}
+            </div>
+            <div style={{ color: "#6b7280", fontSize: 13, marginTop: 6 }}>잠시만 기다려주세요!</div>
+            <div style={{ color: "#9ca3af", fontSize: 11, marginTop: 10 }}>사진이 많으면 시간이 조금 걸릴 수 있어요</div>
+          </div>
+        </div>
+      )}
 
       {/* ── 포토 DB 모달 ── */}
       {showPhotoDbModal && (

@@ -118,6 +118,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [ownerRelation, setOwnerRelation] = useState<string>("본인");
   const [consent, setConsent] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [submittingLabel, setSubmittingLabel] = useState("공실 등록 중입니다...");
+  const submittingRef = React.useRef(false);
 
   // 주거형 추가 필드
   const [roomCount, setRoomCount] = useState("1");
@@ -2531,6 +2533,21 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
 
 
+            {/* ── 공실 등록/저장 로딩 오버레이 ── */}
+            {submitting && (
+              <div style={{ position: "fixed", inset: 0, zIndex: 20000, background: "rgba(17,24,39,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+                <style>{`
+                  @keyframes save-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                `}</style>
+                <div style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", width: "100%", maxWidth: 340, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}>
+                  <div style={{ width: 44, height: 44, margin: "0 auto 18px", border: "4px solid #dbeafe", borderTop: "4px solid #2563eb", borderRadius: "50%", animation: "save-spin 1s linear infinite" }} />
+                  <div style={{ color: "#1d4ed8", fontSize: 17, fontWeight: 800 }}>{submittingLabel}</div>
+                  <div style={{ color: "#6b7280", fontSize: 14, marginTop: 6 }}>잠시만 기다려주세요!</div>
+                  <div style={{ color: "#9ca3af", fontSize: 12, marginTop: 10 }}>사진이 많으면 시간이 조금 걸릴 수 있어요</div>
+                </div>
+              </div>
+            )}
+
             {/* ── 공실 등록하기 / 승인 / 반려 / 수정저장 버튼 ── */}
             {(() => {
               const handleSubmit = async (customStatus?: string) => {
@@ -2548,6 +2565,16 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   return;
                 }
 
+                // 느린 응답 중 연타로 인한 중복 등록 방지
+                if (submittingRef.current) return;
+                submittingRef.current = true;
+                setSubmittingLabel(
+                  customStatus === "DRAFT" ? "임시저장 중입니다..."
+                  : customStatus === "REJECTED" ? "반려 처리 중입니다..."
+                  : customStatus === "ACTIVE" && userRole === "admin" && editData ? "승인 처리 중입니다..."
+                  : editData ? "공실 수정 중입니다..."
+                  : "공실 등록 중입니다..."
+                );
                 setSubmitting(true);
                 try {
                   const roleMap: Record<string, string> = { admin: 'ADMIN', realtor: 'REALTOR', user: 'USER' };
@@ -2690,6 +2717,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 } catch (err: any) {
                   alert("오류 발생: " + err.message);
                 } finally {
+                  submittingRef.current = false;
                   setSubmitting(false);
                 }
               };
