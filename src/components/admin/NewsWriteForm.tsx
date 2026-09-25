@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { saveArticle, getPhotoLibrary, togglePhotoFavorite, getArticleDetail, updateArticleMediaCaption } from "@/app/actions/article";
+import { saveArticle, getPhotoLibrary, togglePhotoFavorite, getArticleDetail, updateArticleMediaCaption, purgeReplacedArticlePhotos } from "@/app/actions/article";
 import { adminGetMembers } from "@/app/admin/actions";
 import { uploadArticleMediaDirect } from "@/utils/uploadDirect";
 import { geocodeAddress } from "@/app/actions/geocode";
@@ -16,6 +16,8 @@ import ArticleAdSettingSlot from "./article_form/ArticleAdSettingSlot";
 import ArticlePhotoLibraryDrawer from "./article_form/ArticlePhotoLibraryDrawer";
 import ArticlePhotoModals from "./article_form/ArticlePhotoModals";
 import ArticleAiWizardModal from "./article_form/ArticleAiWizardModal";
+import PhotoMosaicEditor from "./article_form/PhotoMosaicEditor";
+import { pixelateCanvasRegion } from "@/utils/imageMosaic";
 
 import Link from "next/link";
 
@@ -83,7 +85,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [articleCoords, setArticleCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
-  const [photoFiles, setPhotoFiles] = useState<{ file: File | null; preview: string; caption: string; isCover: boolean; size: number; align: string; captionAlign: string; mediaId?: string }[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<{ file: File | null; preview: string; caption: string; isCover: boolean; size: number; align: string; captionAlign: string; mediaId?: string; replacedUrl?: string }[]>([]);
   const [attachFiles, setAttachFiles] = useState<{ file: File; name: string }[]>([]);
   const [loadArticleId, setLoadArticleId] = useState<string | null>(null);
   const [editCount, setEditCount] = useState<number>(0);
@@ -1002,23 +1004,13 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
     const scaleX = image.naturalWidth / previewWidth;
     const scaleY = image.naturalHeight / previewHeight;
-    const sourceX = Math.max(0, Math.round(rect.left * scaleX));
-    const sourceY = Math.max(0, Math.round(rect.top * scaleY));
-    const sourceWidth = Math.min(image.naturalWidth - sourceX, Math.round(rect.width * scaleX));
-    const sourceHeight = Math.min(image.naturalHeight - sourceY, Math.round(rect.height * scaleY));
-    if (sourceWidth <= 0 || sourceHeight <= 0) return;
-
-    const mosaicWidth = Math.max(2, Math.round(sourceWidth / 16));
-    const mosaicHeight = Math.max(2, Math.round(sourceHeight / 16));
-    const mosaicCanvas = document.createElement('canvas');
-    mosaicCanvas.width = mosaicWidth;
-    mosaicCanvas.height = mosaicHeight;
-    const mosaicContext = mosaicCanvas.getContext('2d');
-    if (!mosaicContext) return;
-    mosaicContext.imageSmoothingEnabled = false;
-    mosaicContext.drawImage(canvas, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, mosaicWidth, mosaicHeight);
-    context.imageSmoothingEnabled = false;
-    context.drawImage(mosaicCanvas, 0, 0, mosaicWidth, mosaicHeight, sourceX, sourceY, sourceWidth, sourceHeight);
+    const applied = pixelateCanvasRegion(canvas, {
+      left: rect.left * scaleX,
+      top: rect.top * scaleY,
+      width: rect.width * scaleX,
+      height: rect.height * scaleY,
+    });
+    if (!applied) return;
 
     const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.95));
     if (!blob) return;
@@ -1288,6 +1280,31 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     }
 
     setShowEditModal(false);
+  };
+
+  /* ── 등록된 사진 모자이크: 편집 결과로 에디터·사진 목록을 교체 (업로드된 원본은 저장 후 정리) ── */
+  const [mosaicEditIdx, setMosaicEditIdx] = useState<number | null>(null);
+
+  const handlePhotoMosaicComplete = (idx: number, file: File) => {
+    const target = photoFiles[idx];
+    if (!target) return;
+    const nextPreview = URL.createObjectURL(file);
+    if (editorRef.current) {
+      editorRef.current.querySelectorAll('.inserted-photo img').forEach(img => {
+        const el = img as HTMLImageElement;
+        if (el.getAttribute('src') === target.preview || el.src === target.preview) el.setAttribute('src', nextPreview);
+      });
+      setContent(editorRef.current.innerHTML || "");
+    }
+    if (target.preview.startsWith('blob:')) URL.revokeObjectURL(target.preview);
+    setPhotoFiles(prev => prev.map((p, i) => i === idx ? {
+      ...p,
+      file,
+      preview: nextPreview,
+      mediaId: undefined,
+      replacedUrl: p.replacedUrl || (p.preview.startsWith('blob:') ? undefined : p.preview),
+    } : p));
+    setMosaicEditIdx(null);
   };
 
   const removePhoto = (idx: number) => {
@@ -1787,6 +1804,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         let finalHtml = currentHtmlContent;
         let finalThumbnailUrl = thumbnailUrl;
         let htmlChanged = false;
+        const replacedPhotoUrls: string[] = [];
         const photoSortOrders = new Map(
           photoFiles
             .map(photo => ({ photo, position: currentHtmlContent.indexOf(photo.preview) }))
@@ -1825,6 +1843,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               if (res.p.isCover) {
                 finalThumbnailUrl = res.uploadResult.url;
               }
+              if (res.p.replacedUrl) replacedPhotoUrls.push(res.p.replacedUrl);
             } else if (!res.uploadResult) {
               // 기존에 DB에 있던 사진
               if (res.p.isCover) finalThumbnailUrl = res.p.preview;
@@ -1860,6 +1879,16 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             reject_reason: overrideRejectReason || undefined,
             relatedIds: relatedArticles.map(a => a.id),
           });
+        }
+
+        // 모자이크로 교체된 원본 사진 정리 (다른 기사에서 쓰는 사진은 남김)
+        if (articleId && replacedPhotoUrls.length > 0) {
+          const purgeRes = await purgeReplacedArticlePhotos(articleId, replacedPhotoUrls);
+          if (!purgeRes.success) {
+            alert("모자이크 전 원본 사진을 정리하지 못했습니다: " + purgeRes.error);
+          } else if (purgeRes.keptShared) {
+            alert(`다른 기사에서도 쓰는 사진 ${purgeRes.keptShared}장은 원본을 지우지 않았습니다.`);
+          }
         }
 
         // 첨부파일 업로드
@@ -2995,6 +3024,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                                   <button type="button" onClick={() => setAsCover(i)}
                                     style={{ padding: "2px 6px", background: "#e5e7eb", color: textSecondary, border: "none", borderRadius: 3, fontSize: 9, fontWeight: 600, cursor: "pointer" }}>대표지정</button>
                                 )}
+                                <button type="button" onClick={() => setMosaicEditIdx(i)}
+                                  style={{ padding: "2px 6px", background: "#e5e7eb", color: textSecondary, border: "none", borderRadius: 3, fontSize: 9, fontWeight: 600, cursor: "pointer" }}>모자이크</button>
                                 {/* 설정 버튼 */}
                                 <button type="button" onClick={() => openEditPhotoModal(i)}
                                   title="사진 설정"
@@ -3328,6 +3359,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       />
 
       {/* ═══ 지도 모달 (카카오맵) ═══ */}
+      {mosaicEditIdx !== null && photoFiles[mosaicEditIdx] && (
+        <PhotoMosaicEditor
+          src={photoFiles[mosaicEditIdx].preview}
+          fileName={photoFiles[mosaicEditIdx].file?.name}
+          onCancel={() => setMosaicEditIdx(null)}
+          onComplete={file => handlePhotoMosaicComplete(mosaicEditIdx, file)}
+        />
+      )}
+
       {showMapModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',

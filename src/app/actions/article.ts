@@ -797,6 +797,65 @@ export async function updateArticleMediaCaption(mediaId: string, caption: string
   }
 }
 
+/* ── 모자이크로 교체된 원본 사진 정리 ──
+ * 기사 저장이 끝난 뒤 호출한다. 다른(삭제되지 않은) 기사 본문·대표사진에서 아직 쓰는 사진은 지우지 않고,
+ * 그 외에는 사진 보관함 기록(article_media)과 스토리지 원본 파일을 삭제한다. */
+const PURGEABLE_PHOTO_BUCKETS = ["article-media", "news-images"];
+
+export async function purgeReplacedArticlePhotos(articleId: string, urls: string[]) {
+  const supabase = getAdminClient();
+  try {
+    const actor = await getArticleActor(supabase);
+    if ("error" in actor) return { success: false, error: actor.error };
+
+    const { data: article } = await supabase.from("articles").select("author_id").eq("id", articleId).maybeSingle();
+    if (!article) return { success: false, error: "기사를 찾을 수 없습니다." };
+    if (!actor.isAdmin && article.author_id !== actor.user.id) {
+      return { success: false, error: "이 기사의 사진을 정리할 권한이 없습니다." };
+    }
+
+    const storagePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`;
+    const targets = Array.from(new Set(urls.filter(u => typeof u === "string" && /^https?:\/\//.test(u)))).slice(0, 50);
+    const deleted: string[] = [];
+    const keptShared: string[] = [];
+
+    for (const url of targets) {
+      // 이 기사를 포함해 아직 이 사진을 쓰는 기사가 있으면 원본을 남긴다.
+      // 쿼리스트링을 떼고(&amp; 표기 차이 방지) 인코딩 전후 주소를 모두 검사해 애매하면 남기는 쪽으로 판단한다.
+      const base = url.split("?")[0];
+      let decodedBase = base;
+      try { decodedBase = decodeURI(base); } catch {}
+      const quote = (v: string) => `"${v.replace(/["\\]/g, m => `\\${m}`)}"`;
+      const filters = Array.from(new Set([base, decodedBase]))
+        .flatMap(v => [`content.ilike.${quote(`%${v}%`)}`, `thumbnail_url.ilike.${quote(`${v}%`)}`])
+        .join(",");
+      const { count, error: usageError } = await supabase
+        .from("articles")
+        .select("id", { count: "exact", head: true })
+        .eq("is_deleted", false)
+        .or(filters);
+      if (usageError || (count || 0) > 0) {
+        keptShared.push(url);
+        continue;
+      }
+
+      await supabase.from("article_media").delete().eq("url", url);
+
+      if (url.startsWith(storagePrefix)) {
+        const [bucket, ...pathParts] = decodeURIComponent(url.slice(storagePrefix.length).split("?")[0]).split("/");
+        if (PURGEABLE_PHOTO_BUCKETS.includes(bucket) && pathParts.length > 0) {
+          await supabase.storage.from(bucket).remove([pathParts.join("/")]);
+        }
+      }
+      deleted.push(url);
+    }
+
+    return { success: true, deleted: deleted.length, keptShared: keptShared.length };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 /* ── 관리자 기사 일괄 상태 수정 ── */
 /** 승인신청된 기사를 최고관리자 알림으로 남긴다 (본래 작업을 막지 않도록 조용히 처리) */
 async function notifyArticlesPending(articleIds: string[]) {

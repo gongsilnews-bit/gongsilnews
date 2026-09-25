@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { saveArticle, getArticleDetail, getPhotoLibrary, togglePhotoFavorite, getMyArticles } from "@/app/actions/article";
+import { saveArticle, getArticleDetail, getPhotoLibrary, togglePhotoFavorite, getMyArticles, purgeReplacedArticlePhotos } from "@/app/actions/article";
+import PhotoMosaicEditor from "@/components/admin/article_form/PhotoMosaicEditor";
 import { uploadArticleMediaDirect } from "@/utils/uploadDirect";
 
 import imageCompression from "browser-image-compression";
@@ -34,6 +35,125 @@ const compressToWebP = async (file: File, maxWidth = 1200, quality = 0.82): Prom
 
 
 
+/* ── 위치등록 전체화면 지도 (카카오맵) ── */
+type ArticleLocation = { lat: number; lng: number; name: string };
+
+function LocationPickerModal({ initial, onClose, onConfirm }: {
+  initial: ArticleLocation | null;
+  onClose: () => void;
+  onConfirm: (loc: ArticleLocation) => void;
+}) {
+  const mapElRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const [searchKw, setSearchKw] = useState("");
+  const [picked, setPicked] = useState<ArticleLocation | null>(initial);
+  const [mapError, setMapError] = useState("");
+
+  useEffect(() => {
+    const init = () => {
+      const kakao = (window as any).kakao;
+      if (!mapElRef.current || !kakao?.maps?.services) {
+        setMapError("지도를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+      const center = initial ? new kakao.maps.LatLng(initial.lat, initial.lng) : new kakao.maps.LatLng(37.498095, 127.027610); // 기본 강남역
+      mapRef.current = new kakao.maps.Map(mapElRef.current, { center, level: 4 });
+      markerRef.current = new kakao.maps.Marker({ position: center });
+      if (initial) markerRef.current.setMap(mapRef.current);
+      const geocoder = new kakao.maps.services.Geocoder();
+
+      // 지도를 누른 위치로 핀 이동 + 주소를 장소명으로 사용
+      kakao.maps.event.addListener(mapRef.current, "click", (e: any) => {
+        const latlng = e.latLng;
+        markerRef.current.setPosition(latlng);
+        markerRef.current.setMap(mapRef.current);
+        const lat = latlng.getLat();
+        const lng = latlng.getLng();
+        setPicked({ lat, lng, name: "" });
+        geocoder.coord2Address(lng, lat, (result: any, status: any) => {
+          if (status !== kakao.maps.services.Status.OK || !result[0]) return;
+          const addr = result[0].road_address?.address_name || result[0].address?.address_name || "";
+          setPicked(prev => (prev && prev.lat === lat && prev.lng === lng ? { ...prev, name: addr } : prev));
+        });
+      });
+    };
+
+    const kakao = (window as any).kakao;
+    if (kakao?.maps) {
+      kakao.maps.load(init);
+    } else {
+      const script = document.createElement("script");
+      const kakaoApiKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoApiKey}&libraries=services,clusterer,drawing&autoload=false`;
+      script.onload = () => (window as any).kakao.maps.load(init);
+      script.onerror = () => setMapError("지도를 불러오지 못했습니다. 네트워크를 확인해 주세요.");
+      document.head.appendChild(script);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const kakao = (window as any).kakao;
+    if (!searchKw.trim() || !mapRef.current || !kakao?.maps?.services) return;
+    (document.activeElement as HTMLElement | null)?.blur(); // 모바일 키보드 닫기
+    new kakao.maps.services.Places().keywordSearch(searchKw, (data: any, status: any) => {
+      if (status === kakao.maps.services.Status.OK && data.length > 0) {
+        const place = data[0];
+        const lat = parseFloat(place.y);
+        const lng = parseFloat(place.x);
+        const latlng = new kakao.maps.LatLng(lat, lng);
+        mapRef.current.setCenter(latlng);
+        markerRef.current.setPosition(latlng);
+        markerRef.current.setMap(mapRef.current);
+        setPicked({ lat, lng, name: place.place_name || place.address_name || "" });
+      } else {
+        alert("검색 결과가 없습니다.");
+      }
+    });
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#fff", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #e5e7eb" }}>
+        <span style={{ fontSize: 16, fontWeight: 800, color: "#111" }}>📍 위치등록</span>
+        <button type="button" onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, color: "#6b7280", cursor: "pointer", padding: 4 }}>✕</button>
+      </div>
+      <form onSubmit={handleSearch} style={{ display: "flex", gap: 8, padding: "10px 16px" }}>
+        <input
+          type="search"
+          value={searchKw}
+          onChange={e => setSearchKw(e.target.value)}
+          placeholder="지역명, 아파트명, 건물명 검색"
+          style={{ flex: 1, minWidth: 0, height: 42, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 16, outline: "none" }}
+        />
+        <button type="submit" style={{ height: 42, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>검색</button>
+      </form>
+      <div style={{ padding: "0 16px 8px", fontSize: 12, color: "#6b7280" }}>검색하거나 지도를 눌러 위치를 선택하세요.</div>
+      <div style={{ flex: 1, position: "relative" }}>
+        <div ref={mapElRef} style={{ position: "absolute", inset: 0 }} />
+        {mapError && (
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center", fontSize: 14, color: "#6b7280" }}>{mapError}</div>
+        )}
+      </div>
+      <div style={{ padding: "12px 16px calc(12px + env(safe-area-inset-bottom))", borderTop: "1px solid #e5e7eb" }}>
+        <div style={{ fontSize: 13, color: "#374151", marginBottom: 8, minHeight: 18 }}>
+          {picked ? `${picked.name || "선택한 위치"} · ${picked.lat.toFixed(6)}, ${picked.lng.toFixed(6)}` : "아직 선택한 위치가 없습니다."}
+        </div>
+        <button
+          type="button"
+          disabled={!picked}
+          onClick={() => picked && onConfirm(picked)}
+          style={{ width: "100%", height: 48, background: picked ? "#3b82f6" : "#d1d5db", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: picked ? "pointer" : "default" }}
+        >
+          이 위치로 등록
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MobileArticleWrite() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -63,11 +183,15 @@ function MobileArticleWrite() {
   const [relatedArticlesDb, setRelatedArticlesDb] = useState<any[]>([]);
   const [isRelatedArticlesLoading, setIsRelatedArticlesLoading] = useState(false);
   const [relatedArticleSearch, setRelatedArticleSearch] = useState("");
+  /* ── 위치등록 상태 ── */
+  const [articleLocation, setArticleLocation] = useState<ArticleLocation | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+
   const [authChecked, setAuthChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   /* ── 미디어 상태 ── */
-  const [photos, setPhotos] = useState<{ file: File | null; preview: string; caption: string; isCover: boolean; align?: 'left' | 'center' | 'right'; mediaId?: string }[]>([]);
+  const [photos, setPhotos] = useState<{ file: File | null; preview: string; caption: string; isCover: boolean; align?: 'left' | 'center' | 'right'; mediaId?: string; replacedUrl?: string }[]>([]);
   const [videos, setVideos] = useState<{ url: string; videoId: string; isCover: boolean; isShorts: boolean }[]>([]);
   const [youtubeInput, setYoutubeInput] = useState("");
   const [isShortsCheck, setIsShortsCheck] = useState(false);
@@ -209,6 +333,9 @@ function MobileArticleWrite() {
               section1: ra.section1,
               published_at: ra.published_at
             })));
+          }
+          if (d.lat && d.lng) {
+            setArticleLocation({ lat: Number(d.lat), lng: Number(d.lng), name: d.location_name || "" });
           }
 
           let htmlContent = d.content || "";
@@ -516,6 +643,31 @@ function MobileArticleWrite() {
     }
   };
 
+  /* ── 사진 모자이크: 편집 결과로 에디터·사진 목록을 교체 (업로드된 원본은 저장 후 정리) ── */
+  const [mosaicEditIdx, setMosaicEditIdx] = useState<number | null>(null);
+
+  const handlePhotoMosaicComplete = (idx: number, file: File) => {
+    const target = photos[idx];
+    if (!target) return;
+    const nextPreview = URL.createObjectURL(file);
+    if (editorRef.current) {
+      editorRef.current.querySelectorAll(".inserted-photo img").forEach(img => {
+        const el = img as HTMLImageElement;
+        if (el.getAttribute("src") === target.preview || el.src === target.preview) el.setAttribute("src", nextPreview);
+      });
+      setContent(editorRef.current.innerHTML || "");
+    }
+    if (target.preview.startsWith("blob:")) URL.revokeObjectURL(target.preview);
+    setPhotos(prev => prev.map((p, i) => i === idx ? {
+      ...p,
+      file,
+      preview: nextPreview,
+      mediaId: undefined,
+      replacedUrl: p.replacedUrl || (p.preview.startsWith("blob:") ? undefined : p.preview),
+    } : p));
+    setMosaicEditIdx(null);
+  };
+
   /* ── 사진 삭제 ── */
   const removePhoto = (idx: number) => {
     const target = photos[idx];
@@ -685,6 +837,9 @@ function MobileArticleWrite() {
         published_at,
         keywords,
         thumbnail_url: thumbnailUrl || undefined,
+        lat: articleLocation?.lat ?? null,
+        lng: articleLocation?.lng ?? null,
+        location_name: articleLocation?.name || "",
         relatedIds: relatedArticles.map(a => a.id),
       });
 
@@ -699,6 +854,7 @@ function MobileArticleWrite() {
       if (articleId) {
         let thumbnailUrl = coverPhoto?.preview || "";
         let htmlChanged = false;
+        const replacedPhotoUrls: string[] = [];
         const photoSortOrders = new Map(
           photos
             .map(photo => ({ photo, position: fullContent.indexOf(photo.preview) }))
@@ -720,6 +876,7 @@ function MobileArticleWrite() {
             });
             if (uploadRes.success && uploadRes.url) {
               if (p.isCover) thumbnailUrl = uploadRes.url;
+              if (p.replacedUrl) replacedPhotoUrls.push(p.replacedUrl);
               // 로컬 blob URL을 업로드된 실제 URL로 교체
               if (fullContent.includes(p.preview)) {
                 fullContent = fullContent.replaceAll(p.preview, uploadRes.url);
@@ -749,8 +906,21 @@ function MobileArticleWrite() {
             published_at,
             keywords,
             thumbnail_url: thumbnailUrl,
+            lat: articleLocation?.lat ?? null,
+            lng: articleLocation?.lng ?? null,
+            location_name: articleLocation?.name || "",
             relatedIds: relatedArticles.map(a => a.id),
           });
+        }
+
+        // 모자이크로 교체된 원본 사진 정리 (다른 기사에서 쓰는 사진은 남김)
+        if (replacedPhotoUrls.length > 0) {
+          const purgeRes = await purgeReplacedArticlePhotos(articleId, replacedPhotoUrls);
+          if (!purgeRes.success) {
+            alert("모자이크 전 원본 사진을 정리하지 못했습니다: " + purgeRes.error);
+          } else if (purgeRes.keptShared) {
+            alert(`다른 기사에서도 쓰는 사진 ${purgeRes.keptShared}장은 원본을 지우지 않았습니다.`);
+          }
         }
       }
 
@@ -1060,15 +1230,24 @@ function MobileArticleWrite() {
                           ))}
                         </div>
 
-                        {!p.isCover && (
+                        <div style={{ display: "flex", gap: 4 }}>
                           <button
                             type="button"
-                            onClick={() => setCover("photo", i)}
+                            onClick={() => setMosaicEditIdx(i)}
                             style={{ padding: "4px 10px", background: "#e5e7eb", color: "#374151", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
                           >
-                            대표지정
+                            모자이크
                           </button>
-                        )}
+                          {!p.isCover && (
+                            <button
+                              type="button"
+                              onClick={() => setCover("photo", i)}
+                              style={{ padding: "4px 10px", background: "#e5e7eb", color: "#374151", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                            >
+                              대표지정
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1308,6 +1487,30 @@ function MobileArticleWrite() {
           )}
         </div>
 
+        {/* 위치등록 */}
+        <div style={{ marginBottom: 16, background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: articleLocation ? 8 : 0 }}>
+            <label style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>📍 위치등록</label>
+            <button
+              onClick={() => setShowLocationModal(true)}
+              style={{ height: 36, padding: "0 14px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+            >
+              {articleLocation ? "변경" : "지도에서 선택"}
+            </button>
+          </div>
+          {articleLocation && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 10px" }}>
+              <div style={{ minWidth: 0 }}>
+                {articleLocation.name && (
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{articleLocation.name}</div>
+                )}
+                <div style={{ fontSize: 12, color: "#6b7280" }}>{articleLocation.lat.toFixed(6)}, {articleLocation.lng.toFixed(6)}</div>
+              </div>
+              <button onClick={() => setArticleLocation(null)} style={{ background: "none", border: "none", color: "#9ca3af", fontSize: 14, cursor: "pointer", padding: 0, flexShrink: 0 }}>삭제</button>
+            </div>
+          )}
+        </div>
+
         {/* 작성자 정보 */}
         <div style={{ background: "#fff", borderRadius: 14, padding: 16, border: "1px solid #e5e7eb" }}>
           <label style={{ fontSize: 14, fontWeight: 800, color: "#111", display: "block", marginBottom: 10 }}>👤 작성자 정보</label>
@@ -1416,6 +1619,25 @@ function MobileArticleWrite() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── 사진 모자이크 편집 ── */}
+      {mosaicEditIdx !== null && photos[mosaicEditIdx] && (
+        <PhotoMosaicEditor
+          src={photos[mosaicEditIdx].preview}
+          fileName={photos[mosaicEditIdx].file?.name}
+          onCancel={() => setMosaicEditIdx(null)}
+          onComplete={file => handlePhotoMosaicComplete(mosaicEditIdx, file)}
+        />
+      )}
+
+      {/* ── 위치등록 지도 ── */}
+      {showLocationModal && (
+        <LocationPickerModal
+          initial={articleLocation}
+          onClose={() => setShowLocationModal(false)}
+          onConfirm={loc => { setArticleLocation(loc); setShowLocationModal(false); }}
+        />
       )}
 
       {/* ── 관련기사 검색 모달 ── */}
