@@ -93,6 +93,7 @@
   };
   const ACCENT = "#2563eb";
   const MUTED = "#888888";
+  const SKY = "#dbeafe"; // 매거진형 소제목 하늘색 배경(형광펜)
   const BLANK = "<p><br></p>";
   const SITE_URL = "https://gongsilnews.com";
 
@@ -183,11 +184,12 @@
     return { lines, url };
   }
 
-  function paragraphHtml(text, { align, size, color, bold } = {}) {
+  function paragraphHtml(text, { align, size, color, background, bold } = {}) {
     let inner = escapeHtml(text);
     const styles = [
       size ? `font-size:${size}px` : "",
       color ? `color:${color}` : "",
+      background ? `background-color:${background}` : "",
       bold ? "font-weight:700" : "",
     ].filter(Boolean).join(";");
     if (styles) inner = `<span style="${styles}">${inner}</span>`;
@@ -297,7 +299,7 @@
           html(paragraphHtml(`■ ${text}`, { size: 19, bold: true }), { tight: true });
         } else if (design === "magazine") {
           html(paragraphHtml(String(headingNumber).padStart(2, "0"), { align: "center", color: ACCENT, bold: true }), { tight: true });
-          html(paragraphHtml(text, { align: "center", size: 24, bold: true }), { tight: true });
+          html(paragraphHtml(text, { align: "center", size: 19, background: SKY, bold: true }), { tight: true });
         } else if (design === "qna") {
           html(paragraphHtml(/^Q[.\s]/.test(text) ? text : `Q. ${text}`, { size: 19, color: ACCENT, bold: true }), { tight: true });
           answerPending = true;

@@ -112,6 +112,7 @@ test("매거진형: 제목·번호 소제목·가운데 정렬·핵심 문장 �
   const [block] = buildNaverBlocks(SAMPLE_BODY, [], { design: "magazine", title: "아크로힐스", vacancy: SAMPLE_VACANCY });
   assert.ok(block.html.startsWith('<p style="text-align:center"><span style="font-size:24px;font-weight:700">아크로힐스</span></p>'));
   assert.ok(block.html.includes(">01</span></p><p") && block.html.includes(">02<"), "번호와 소제목은 붙인다");
+  assert.ok(block.html.includes('<span style="font-size:19px;background-color:#dbeafe;font-weight:700">입지 &lt;강조&gt;</span>'), "소제목은 19px + 하늘색 배경");
   // 첫 소제목 구간의 첫 문장을 두 번째 소제목 앞에 인용구로
   assert.ok(block.html.indexOf("<blockquote><p>셋째 문단입니다.</p></blockquote>") < block.html.indexOf("가격"));
   assert.ok(block.html.lastIndexOf("<table>") > block.html.indexOf("가격"), "표는 글 끝에 둔다");
