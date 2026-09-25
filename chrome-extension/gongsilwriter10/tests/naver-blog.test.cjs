@@ -73,13 +73,13 @@ test("기본형: 사진이 끼어들 때만 글을 끊고, 요약 인용구·표
   assert.equal(blocks[2].mediaIndex, 0);
   assert.equal(blocks[1].html, "<blockquote><p>첫 문단 요약입니다. 둘째 문장.</p></blockquote>" + BLANK);
   const rest = blocks[3].html;
-  assert.ok(rest.startsWith("<table><tbody><tr><td><b>금액</b></td><td>매매 15억</td></tr>"));
-  assert.ok(!rest.includes("담당자"), "표에는 자주 보는 항목만 넣는다");
+  assert.ok(rest.startsWith("<table><tbody><tr><td><b>전용면적</b></td><td>84㎡</td></tr>"), "출처 정보가 없으면 필수 항목 순서대로");
+  assert.ok(!rest.includes("담당자"), "표에는 표시·광고 필수 항목만 넣는다");
   assert.ok(rest.indexOf("<table>") < rest.indexOf("<hr>") && rest.indexOf("<hr>") < rest.indexOf("■ 입지"));
   // 굵게 태그는 네이버가 무시하므로 크기로 강조하고, 소제목 바로 아래 문단과는 붙인다
   assert.ok(rest.includes('<p><span style="font-size:19px;font-weight:700">■ 입지 &lt;강조&gt;</span></p><p>셋째 문단'));
   assert.ok(!rest.includes("<b>■"));
-  assert.ok(rest.includes('<a href="https://gongsilnews.com/gongsil?id=1">'));
+  assert.ok(rest.includes('<a href="https://gongsilnews.com/gongsil?id=1">'), "고정 상세 주소가 없으면 처음 본 공실뉴스 주소");
 });
 
 test("문단 뒤에는 빈 줄을 두고, 모든 조각은 빈 문단으로 끝난다", () => {
@@ -155,4 +155,46 @@ test("태그는 #과 공백을 빼고 중복 없이 30개까지 만든다", () =
   const { normalizeTags } = require("../shared/naver-blog.js");
   assert.deepEqual(normalizeTags(["#논현동", "논현동", "강남 아파트", "", null]), ["논현동", "강남아파트"]);
   assert.equal(normalizeTags(Array.from({ length: 40 }, (_, i) => `태그${i}`)).length, 30);
+});
+
+const SAMPLE_LISTING = {
+  detailUrl: "https://gongsilnews.com/gongsil/detail/aa1c",
+  location: "서울 강남구 논현동",
+  propertyType: "아파트",
+  tradeType: "매매",
+  capturedAt: "2026-09-25T03:00:00Z",
+  owner: { type: "agency", name: "강남나라공인중개사", ceo: "김나라", regNo: "11680-2020-00001", address: "서울 강남구 논현동 1", phone: "02-000-0000" },
+};
+
+test("매물표는 소재지·매물종류·거래형태부터 필수 항목 순서로, 개수 제한 없이", () => {
+  const { factRows } = require("../shared/naver-blog.js");
+  const fields = ["금액", "관리비", "공급/전용면적", "해당층/총층", "방/욕실수", "방향", "준공연도", "주차가능 여부", "입주가능일", "담당자"]
+    .map((label) => ({ label, value: `${label}값` }));
+  const rows = factRows({ fields }, SAMPLE_LISTING);
+  assert.deepEqual(rows.map(([label]) => label), [
+    "소재지", "매물종류", "거래형태", "금액", "관리비", "공급/전용면적", "해당층/총층",
+    "방/욕실수", "방향", "준공연도", "주차가능 여부", "입주가능일",
+  ]);
+});
+
+test("모든 디자인 끝에 매물 정보 출처(중개사무소)와 고정 상세 링크를 넣는다", () => {
+  const { buildNaverBlocks, DESIGNS } = require("../shared/naver-blog.js");
+  for (const design of Object.keys(DESIGNS)) {
+    const html = buildNaverBlocks(SAMPLE_BODY, [], { design, listing: SAMPLE_LISTING }).map((b) => b.html || "").join("");
+    assert.ok(html.includes("[매물 정보 출처]"), design);
+    assert.ok(html.includes("공실뉴스 매물 등록 정보 (2026.09.25 기준)"), design);
+    assert.ok(html.includes("등록 중개사무소: 강남나라공인중개사 | 대표 김나라"), design);
+    assert.ok(html.includes("등록번호 11680-2020-00001 | 서울 강남구 논현동 1"), design);
+    assert.ok(html.includes("전화 02-000-0000"), design);
+    assert.ok(html.includes('<a href="https://gongsilnews.com/gongsil/detail/aa1c">'), design);
+    assert.ok(!/문의는|문의하세요/.test(html), `${design}: 문의 유도 문구 없음`);
+  }
+});
+
+test("표시·광고 필수 정보가 빠지면 무엇이 빠졌는지 알려 준다", () => {
+  const { listingProblems } = require("../shared/naver-blog.js");
+  assert.deepEqual(listingProblems(null), ["매물 출처 정보(중개사무소)"]);
+  assert.deepEqual(listingProblems(SAMPLE_LISTING), []);
+  assert.deepEqual(listingProblems({ owner: { type: "agency", name: "A", ceo: "", regNo: "1", address: "x", phone: "" } }), ["대표자", "연락처"]);
+  assert.deepEqual(listingProblems({ owner: { type: "general", name: "홍길동" } }), [], "일반회원 매물은 이름만");
 });

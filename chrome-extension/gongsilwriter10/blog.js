@@ -22,6 +22,9 @@
     imageRequest: "",
     sourceSignature: "",
     pendingImage: null,
+    // 초안을 만든 순간의 매물 정보. 이후 1번 탭에서 다른 매물을 가져와도 이 초안에는 섞이지 않는다.
+    vacancy: null,
+    listing: null,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -265,6 +268,8 @@
         B.sourceSignature = sourceSignature;
         renderBlog();
       }
+      B.vacancy = source.vacancy || null;
+      B.listing = await fetchListing(B.vacancy).catch(() => null);
 
       const config = aiConfig(source.platform);
       const tab = await chrome.tabs.create({ url: config.URL, active: true });
@@ -656,13 +661,49 @@
     }
   }
 
+  /* 매물 출처 정보(중개사무소·소재지·고정 상세 주소)를 공실뉴스에서 받아 온다.
+     API는 매물을 가져온 공실뉴스 사이트(운영 또는 localhost)에 묻고, 링크는 항상 운영 주소로 만든다. */
+  async function fetchListing(vacancy) {
+    const id = vacancy?.vacancyId;
+    if (!id) return null;
+    let origin = GWNaverBlog.SITE_URL;
+    try {
+      const pageOrigin = new URL(vacancy.url).origin;
+      if (/^https:\/\/([a-z0-9-]+\.)?gongsilnews\.com$|^http:\/\/localhost(:\d+)?$/i.test(pageOrigin)) origin = pageOrigin;
+    } catch (_) {
+      /* 주소가 없으면 운영 사이트에 묻는다 */
+    }
+    const response = await fetch(`${origin}/api/extension/vacancy-source?id=${encodeURIComponent(id)}`);
+    const data = await response.json();
+    if (!data?.success) throw new Error(data?.error || "매물 출처 정보를 가져오지 못했습니다.");
+    return {
+      detailUrl: `${GWNaverBlog.SITE_URL}${data.detailPath}`,
+      location: data.location || "",
+      propertyType: data.propertyType || "",
+      tradeType: data.tradeType || "",
+      owner: data.owner || null,
+      capturedAt: new Date().toISOString(),
+    };
+  }
+
   async function naverBlocks() {
     const media = GWMediaCover.normalize(B.media);
-    const source = await getSource().catch(() => null);
+    // 예전 초안(매물 정보 고정 전)은 지금 1번 탭의 매물 정보를 쓴다
+    const vacancy = B.vacancy || (await getSource().catch(() => null))?.vacancy || null;
+    if (!B.listing) B.listing = await fetchListing(vacancy).catch(() => null);
+    const problems = GWNaverBlog.listingProblems(B.listing);
+    if (problems.length) {
+      throw new Error(
+        `부동산 표시·광고 필수 정보가 없어 전송을 멈췄습니다: ${problems.join(", ")}. ` +
+        "공실뉴스 매물의 등록자정보를 확인한 뒤 1번 탭에서 물건을 다시 가져오고 블로그 초안을 새로 만들어 주세요."
+      );
+    }
+    await save();
     const blocks = GWNaverBlog.buildNaverBlocks(B.article.body, media, {
       design: B.design,
       title: B.article.title,
-      vacancy: source?.vacancy || null,
+      vacancy,
+      listing: B.listing,
     });
     return Promise.all(blocks.map(async (block) => (
       block.type === "image"

@@ -94,8 +94,21 @@
   const ACCENT = "#2563eb";
   const MUTED = "#888888";
   const BLANK = "<p><br></p>";
-  const CLOSING_TEXT = "매물 상세 정보와 문의는 공실뉴스에서 확인하실 수 있습니다.";
-  const FACT_LABEL = /면적|층|방|욕실|입주|주차|방향|준공|관리비|보증금|월세|매매|전세|용도|종류|구조/;
+  const SITE_URL = "https://gongsilnews.com";
+
+  /* 매물표 항목: 부동산 인터넷 표시·광고 필수 항목 순서.
+     소재지·매물종류·거래형태는 출처 API(listing), 나머지는 공실광고정보 탭 항목(vacancy.fields)에서 찾는다. */
+  const FACT_ORDER = [
+    /^(금액)$/,
+    /관리비/,
+    /면적/,
+    /해당층|총층|건물규모/,
+    /방\/욕실|방수|욕실/,
+    /방향/,
+    /준공|사용승인/,
+    /주차/,
+    /입주가능|사용 가능일/,
+  ];
 
   function isHeading(paragraph) {
     return String(paragraph).startsWith("■");
@@ -105,9 +118,8 @@
     return String(paragraph).replace(/^■\s*/, "");
   }
 
-  /* 매물 핵심 정보 표: 금액 + 자주 보는 항목만 최대 8줄 */
-  function factRows(vacancy) {
-    if (!vacancy || typeof vacancy !== "object") return [];
+  /* 매물표: 표시·광고 필수 항목을 정해진 순서로 (개수 제한 없음) */
+  function factRows(vacancy, listing) {
     const rows = [];
     const seen = new Set();
     const push = (label, value) => {
@@ -116,16 +128,59 @@
       seen.add(label);
       rows.push([label, text]);
     };
-    push("금액", vacancy.priceText);
-    (Array.isArray(vacancy.fields) ? vacancy.fields : [])
-      .filter((field) => field && FACT_LABEL.test(field.label || ""))
-      .forEach((field) => push(field.label, field.value));
-    return rows.slice(0, 8);
+    const fields = (Array.isArray(vacancy?.fields) ? vacancy.fields : []).filter((field) => field && field.label);
+
+    push("소재지", listing?.location);
+    push("매물종류", listing?.propertyType);
+    push("거래형태", listing?.tradeType || fields.find((field) => /거래구분/.test(field.label))?.value);
+    FACT_ORDER.forEach((pattern) => {
+      fields.filter((field) => pattern.test(field.label)).forEach((field) => push(field.label, field.value));
+    });
+    if (!seen.has("금액")) push("금액", vacancy?.priceText);
+    return rows;
   }
 
-  function listingUrl(vacancy) {
+  /* 링크: 매물 고정 상세 주소 → 없으면 처음 매물을 본 공실뉴스 주소 */
+  function listingUrl(vacancy, listing) {
+    if (listing?.detailUrl) return listing.detailUrl;
     const url = String(vacancy?.url || "");
     return /^https:\/\/([a-z0-9-]+\.)?gongsilnews\.com\//i.test(url) ? url : "";
+  }
+
+  function formatDate(value) {
+    const date = value ? new Date(value) : new Date();
+    if (Number.isNaN(date.getTime())) return "";
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())}`;
+  }
+
+  /* 전송 전 검사: 표시·광고 필수 정보가 빠졌으면 이유를 돌려준다 */
+  function listingProblems(listing) {
+    if (!listing) return ["매물 출처 정보(중개사무소)"];
+    const owner = listing.owner || {};
+    if (owner.type !== "agency") return owner.name ? [] : ["등록자 이름"];
+    return [
+      ["중개사무소 명칭", owner.name],
+      ["대표자", owner.ceo],
+      ["등록번호", owner.regNo],
+      ["소재지", owner.address],
+      ["연락처", owner.phone],
+    ].filter(([, value]) => !String(value || "").trim()).map(([label]) => label);
+  }
+
+  /* 글 끝 "매물 정보 출처" — 모든 디자인 공통. 문의처가 아니라 출처로 표현한다. */
+  function sourceBlockLines(listing, url) {
+    const owner = listing?.owner || {};
+    const lines = [`공실뉴스 매물 등록 정보 (${formatDate(listing?.capturedAt)} 기준)`];
+    if (owner.type === "agency") {
+      lines.push(`등록 중개사무소: ${owner.name}${owner.ceo ? ` | 대표 ${owner.ceo}` : ""}`);
+      lines.push(`등록번호 ${owner.regNo} | ${owner.address}`);
+      lines.push(`전화 ${owner.phone}`);
+    } else if (owner.name) {
+      lines.push(`등록자: ${owner.name} (일반회원 등록 매물)`);
+    }
+    lines.push("※ 매물 조건은 등록 시점 기준이며 실제와 다를 수 있습니다.");
+    return { lines, url };
   }
 
   function paragraphHtml(text, { align, size, color, bold } = {}) {
@@ -170,8 +225,8 @@
     const list = Array.isArray(media) ? media : [];
     const paragraphs = splitParagraphs(body);
     const slots = layoutMediaSlots(paragraphs.length, list);
-    const rows = factRows(options.vacancy);
-    const url = listingUrl(options.vacancy);
+    const rows = factRows(options.vacancy, options.listing);
+    const url = listingUrl(options.vacancy, options.listing);
     const blocks = [];
     let buffer = [];
 
@@ -270,31 +325,28 @@
 
     if (firstHeadingIndex < 0) afterIntro();
 
-    // 글 끝
-    if (design === "basic") {
-      html("<hr>");
-      html(paragraphHtml(CLOSING_TEXT, { align: "center" }));
-      html(linkHtml(url, "▶ 공실뉴스에서 매물 보기", "center"));
-    } else if (design === "magazine") {
+    // 글 끝: 디자인별 마무리
+    if (design === "magazine") {
       if (pullQuote && !pullQuoteDone) html(quoteHtml(pullQuote));
       html("<hr>");
       html(tableHtml(rows));
-      html(paragraphHtml(CLOSING_TEXT, { align: "center", color: MUTED }));
-      html(linkHtml(url, "공실뉴스에서 매물 보기", "center"));
     } else if (design === "qna") {
       if (leadIndex < 0) html(tableHtml(rows));
-      html("<hr>");
-      html(paragraphHtml(CLOSING_TEXT, { align: "center" }));
-      html(linkHtml(url, "▶ 공실뉴스에서 매물 보기", "center"));
-    } else {
+    } else if (design === "news") {
       if (rows.length) {
-        html(paragraphHtml("[매물 정보]", { bold: true }));
+        html(paragraphHtml("[매물 정보]", { size: 17, bold: true }), { tight: true });
         html(tableHtml(rows));
       }
-      html("<hr>");
-      html(paragraphHtml("공실뉴스 · gongsilnews.com", { size: 13, color: MUTED }));
-      html(linkHtml(url, "매물 상세 보기"));
     }
+
+    // 모든 디자인 공통: 매물 정보 출처 (표시·광고 필수 정보) + 고정 상세 링크 + 공실뉴스 서명
+    const source = sourceBlockLines(options.listing, url);
+    html("<hr>");
+    html(paragraphHtml("[매물 정보 출처]", { size: 13, color: MUTED, bold: true }), { tight: true });
+    source.lines.forEach((line) => html(paragraphHtml(line, { size: 13, color: MUTED }), { tight: true }));
+    html(BLANK, { tight: true });
+    html(linkHtml(source.url, "▶ 공실뉴스 매물 상세 보기"));
+    html(paragraphHtml("공실뉴스 · gongsilnews.com", { size: 13, color: MUTED }));
     flush();
     return blocks;
   }
@@ -311,7 +363,7 @@
   const api = {
     HOME_URL, WRITE_URL, isNaverBlogUrl, isLikelyWriteUrl, selectLikelyWriteTab,
     splitParagraphs, layoutMediaSlots, buildNaverBlocks, normalizeTags,
-    DESIGNS, factRows,
+    DESIGNS, factRows, listingProblems, SITE_URL,
   };
   global.GWNaverBlog = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

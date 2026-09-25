@@ -68,3 +68,15 @@ test("프롬프트에 선택한 스타일의 구성과 소제목 표시 규칙�
   assert.ok(prompt.includes("첫 문단은 2문장 이내의 핵심 요약"));
   assert.ok(!prompt.includes("필요한 경우에만"));
 });
+
+test("6개 스타일 모두 공실뉴스 매물 보도 원칙을 먼저 넣고 권유 표현을 막는다", () => {
+  for (const style of Object.keys(GW_BLOG_STYLE)) {
+    const prompt = gwBuildBlogPrompt(source, { style, length: "normal" });
+    assert.ok(prompt.includes('"공실뉴스에 이런 매물이 나왔다"는 객관적인 매물 보도'), style);
+    assert.ok(prompt.indexOf("[보도 원칙") < prompt.indexOf("[가장 중요한 사실 원칙]"), style);
+    assert.ok(prompt.includes("권유·호객·광고 표현 금지"), style);
+    assert.ok(prompt.includes("지하철역·버스정류장·쇼핑시설"), style);
+  }
+  assert.ok(!/한번 보세요/.test(JSON.stringify(GW_BLOG_STYLE)), "스타일 예시에도 권유 문구 없음");
+  assert.ok(gwBuildBlogRevisePrompt("짧게").includes("객관적 보도 형식을 유지"));
+});
