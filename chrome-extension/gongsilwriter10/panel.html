@@ -30,6 +30,10 @@
       <span class="step-number">2</span> 초안 다듬기
       <span id="draftBadge" class="tab-badge hidden">NEW</span>
     </button>
+    <button id="tabBlog" class="nav-tab" type="button">
+      <span class="step-number">3</span> 블로그 작성
+      <span id="blogBadge" class="tab-badge hidden">NEW</span>
+    </button>
   </nav>
 
   <div class="scroll-area">
@@ -177,6 +181,106 @@
       </div>
     </section>
 
+    <!-- ═══════════ 뷰 3 — 블로그 작성 (초안 다듬기와 완전 분리) ═══════════ -->
+    <section id="viewBlog" class="view">
+
+      <div class="card blog-source-card">
+        <label class="card-label">참조 기사</label>
+        <div id="blogSourceEmpty" class="blog-source-state warn">
+          <b>2 · 초안 다듬기</b>에 기사가 준비되면 블로그 글을 만들 수 있습니다.
+        </div>
+        <div id="blogSourceReady" class="blog-source-state hidden">
+          <span>현재 기사 참조</span>
+          <strong id="blogSourceTitle">-</strong>
+        </div>
+        <p class="hint">기사를 복사해 참고자료로만 사용합니다. 초안 다듬기의 제목·본문·사진은 변경하지 않습니다.</p>
+      </div>
+
+      <div class="card">
+        <label class="card-label">1단계 · 블로그 스타일</label>
+        <div class="blog-style-grid" role="group" aria-label="블로그 스타일 선택">
+          <button class="blog-style-card active" data-blog-style="listing" type="button">
+            <strong>① 기본 매물소개형</strong>
+            <small>깔끔하고 정보 중심</small>
+            <span>모든 매물</span>
+            <em>예: 논현동 아크로힐스 매매 15억, 3룸 남향</em>
+          </button>
+          <button class="blog-style-card" data-blog-style="visit" type="button">
+            <strong>② 현장답사형</strong>
+            <small>직접 살펴본 듯한 흐름</small>
+            <span>아파트·상가·빌딩</span>
+            <em>예: 논현동에서 직접 살펴본 아크로힐스</em>
+          </button>
+          <button class="blog-style-card" data-blog-style="story" type="button">
+            <strong>③ 스토리텔링형</strong>
+            <small>질문과 상황으로 시작</small>
+            <span>주택·아파트</span>
+            <em>예: 강남에서 15억으로 찾는다면?</em>
+          </button>
+          <button class="blog-style-card" data-blog-style="report" type="button">
+            <strong>④ 분석·리포트형</strong>
+            <small>조건과 장단점 정리</small>
+            <span>빌딩·토지·투자매물</span>
+            <em>예: 논현동 50억 건물, 조건을 하나씩 살펴보니</em>
+          </button>
+          <button class="blog-style-card" data-blog-style="consult" type="button">
+            <strong>⑤ 친근한 상담형</strong>
+            <small>고객에게 설명하는 말투</small>
+            <span>실수요 매물</span>
+            <em>예: 방 3개 찾으셨다면 이 매물 한번 보세요</em>
+          </button>
+          <button class="blog-style-card" data-blog-style="shortform" type="button">
+            <strong>⑥ 숏폼·유튜브형</strong>
+            <small>짧은 문장과 강한 도입</small>
+            <span>SNS 연계 매물</span>
+            <em>예: 강남 15억 아파트, 내부 조건이 이렇습니다</em>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="card-label">2단계 · 글자 수</label>
+        <div class="chips-row">
+          <button class="chip blog-length" data-blog-length="short" type="button">짧게<small>700~1,000자</small></button>
+          <button class="chip blog-length active" data-blog-length="normal" type="button">중간<small>1,500~2,000자</small></button>
+          <button class="chip blog-length" data-blog-length="long" type="button">길게<small>2,500~3,500자</small></button>
+        </div>
+        <p class="hint">참조 기사의 사실관계는 그대로 유지하고, 선택한 스타일과 분량으로 블로그 문장만 새로 구성합니다.</p>
+      </div>
+
+      <div class="card">
+        <label class="card-label">3단계 · 블로그 초안 작성</label>
+        <button id="btnMakeBlogDraft" class="btn-fill" type="button" disabled>
+          AI 블로그 초안 작성
+          <small>선택한 AI에서 블로그 글 작성을 시작합니다</small>
+        </button>
+        <button id="btnPullBlogDraft" class="btn-fill green" type="button" disabled>
+          완성 글 가져오기
+          <small>AI가 다 쓴 제목과 본문을 이 탭으로 가져옵니다</small>
+        </button>
+      </div>
+
+      <div id="blogDraftEmpty" class="empty-note">
+        스타일과 글자 수를 고른 뒤<br><b>AI 블로그 초안 작성</b>을 눌러 주세요.
+      </div>
+
+      <div id="blogDraftBody" class="hidden">
+        <div class="preview-doc blog-doc">
+          <div class="preview-top">
+            <span class="cat-badge blog-badge">NAVER Blog</span>
+            <span id="blogDate" class="pub-date"></span>
+          </div>
+
+          <h2 id="blogTitle" class="doc-title" contenteditable="true" spellcheck="false"
+              title="클릭해서 직접 고칠 수 있습니다"></h2>
+
+          <div id="blogCover" class="media-wrap hidden"></div>
+          <div id="blogContent" class="doc-body blog-doc-body" contenteditable="true" spellcheck="false"></div>
+          <div id="blogKeywords" class="kw-wrap"></div>
+        </div>
+      </div>
+    </section>
+
   </div>
 
   <!-- ─────────── 뷰 2 하단 고정 바 ─────────── -->
@@ -223,6 +327,54 @@
     </button>
   </div>
 
+  <!-- ─────────── 뷰 3 하단 고정 바 (뷰 2와 상태·요소를 공유하지 않음) ─────────── -->
+  <div id="blogActions" class="bottom-bar blog-actions hidden">
+    <div class="revise-row">
+      <input id="blogReviseInput" type="text" class="revise-input"
+             placeholder="블로그 글 수정 요청 (예: 도입을 더 친근하게)">
+      <button id="btnReviseBlog" class="btn-revise" type="button">
+        수정 요청
+      </button>
+    </div>
+
+    <div class="img-row">
+      <button id="btnMakeBlogImage" class="btn-sub" type="button">AI 이미지 만들기</button>
+      <button id="btnInsertBlogImage" class="btn-sub" type="button">이미지 삽입</button>
+      <input id="blogFileImage" type="file" accept="image/*" class="hidden">
+    </div>
+
+    <div class="image-options">
+      <div class="image-options-title">AI 이미지 스타일</div>
+      <div class="image-style-row" role="group" aria-label="블로그 AI 이미지 스타일 선택">
+        <button class="image-style blog-image-style active" data-blog-image-style="news" type="button">보도 실사</button>
+        <button class="image-style blog-image-style" data-blog-image-style="building" type="button">건물 전경</button>
+        <button class="image-style blog-image-style" data-blog-image-style="area" type="button">거리·상권</button>
+        <button class="image-style blog-image-style" data-blog-image-style="animation" type="button">애니메이션</button>
+        <button class="image-style blog-image-style" data-blog-image-style="infographic" type="button">통계 도표</button>
+      </div>
+      <textarea id="blogImageRequest" class="image-request" rows="2" maxlength="1600"
+                placeholder="표현할 장면을 입력하세요. 비워 두면 블로그 본문에서 핵심 장면을 고릅니다."></textarea>
+    </div>
+
+    <div class="blog-link-row">
+      <a class="btn-blog-link" href="https://blog.naver.com/" target="_blank" rel="noopener noreferrer">
+        블로그 바로가기
+      </a>
+      <a id="btnOpenBlogWrite" class="btn-blog-link primary"
+         href="https://blog.naver.com/GoBlogWrite.naver" target="_blank" rel="noopener noreferrer">
+        글쓰기
+      </a>
+    </div>
+
+    <button id="btnSendNaver" class="btn-send naver" type="button">
+      <span class="send-icon">📝</span>
+      <span class="send-text">
+        <strong>블로그글 전송하기</strong>
+        <small>열어 둔 네이버 글쓰기 화면에 제목과 본문을 채웁니다</small>
+      </span>
+    </button>
+  </div>
+
   <div id="toastHost"></div>
 </div>
 
@@ -231,6 +383,9 @@
 <script src="shared/media.js"></script>
 <script src="shared/media-cover.js"></script>
 <script src="shared/article-json.js"></script>
+<script src="shared/blog-prompt.js"></script>
+<script src="shared/naver-blog.js"></script>
 <script src="panel.js"></script>
+<script src="blog.js"></script>
 </body>
 </html>

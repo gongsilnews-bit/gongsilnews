@@ -757,3 +757,171 @@ body {
 
 /* 기사 성격 카드는 점이 없다 */
 .choice.kind { padding-left: 12px }
+
+/* ═══════════════ 블로그 작성 탭 ═══════════════
+   기사 초안 화면과 클래스·상태를 공유하지 않는 독립 화면이다. */
+.blog-source-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 11px;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-sm);
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.blog-source-state.warn {
+  display: block;
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.blog-source-state span { flex: none; font-weight: 700 }
+
+.blog-source-state strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #14532d;
+  font-size: 12px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blog-style-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.blog-style-card {
+  min-width: 0;
+  padding: 9px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: left;
+  transition: all .18s;
+}
+
+.blog-style-card:hover { background: #f1f5f9 }
+
+.blog-style-card.active {
+  border-color: #03c75a;
+  background: #ecfdf3;
+  box-shadow: 0 0 0 1px rgba(3, 199, 90, .08);
+}
+
+.blog-style-card strong {
+  display: block;
+  font-size: 11.5px;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.blog-style-card.active strong { color: #008f3f }
+
+.blog-style-card small,
+.blog-style-card span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 9.5px;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.blog-style-card span {
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.blog-style-card em {
+  display: block;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px dashed #dbe4ee;
+  color: #64748b;
+  font-size: 9px;
+  font-style: normal;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.blog-style-card.active em { border-top-color: #bbf7d0; color: #15803d }
+
+.blog-doc { border-top: 3px solid #03c75a }
+
+.blog-badge { background: #03c75a }
+
+.blog-doc .doc-title { margin-bottom: 16px }
+
+.blog-doc-body p { margin-bottom: 15px }
+
+.blog-doc-body .blog-section-heading {
+  margin-top: 22px;
+  margin-bottom: 7px;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.blog-actions { border-top-color: #bbf7d0 }
+
+.blog-link-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
+.btn-blog-link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 8px;
+  border: 1.5px solid #86efac;
+  border-radius: var(--radius-sm);
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: all .16s;
+}
+
+.btn-blog-link:hover {
+  border-color: #03c75a;
+  background: #dcfce7;
+  color: #047857;
+}
+
+.btn-blog-link.primary {
+  border-color: #03c75a;
+  background: #03c75a;
+  color: #fff;
+}
+
+.btn-blog-link.primary:hover { background: #02ad4e; color: #fff }
+
+.btn-send.naver {
+  background: linear-gradient(135deg, #03c75a, #02ad4e);
+  box-shadow: 0 4px 10px rgba(3, 199, 90, .28);
+}
+
+.btn-send.naver:hover:not(:disabled) {
+  background: linear-gradient(135deg, #02ad4e, #029a46);
+}
+
+@media (max-width: 360px) {
+  .nav-tab { gap: 3px; padding-inline: 3px; font-size: 11px }
+  .blog-style-grid { grid-template-columns: 1fr }
+}
