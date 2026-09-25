@@ -39,7 +39,14 @@ const GW = {
   /* ── ChatGPT ── */
   CHATGPT: {
     URL: "https://chatgpt.com/",
-    INPUT: ["#prompt-textarea", 'div[contenteditable="true"]#prompt-textarea', "textarea#prompt-textarea"],
+    /* 앞의 것이 기본 입력칸. ChatGPT 화면 구조가 바뀌어 id 가 없을 때를 위해 뒤에 예비 자리를 둔다. */
+    INPUT: [
+      "#prompt-textarea",
+      'div.ProseMirror[contenteditable="true"]',
+      'form [contenteditable="true"]',
+      'main [contenteditable="true"]',
+      'textarea[name="prompt-textarea"]',
+    ],
     SEND: ['button[data-testid="send-button"]', 'button[aria-label="Send prompt"]', 'button[aria-label="프롬프트 보내기"]'],
     /* 응답 말풍선 — 마지막 것을 읽는다 */
     ANSWER: ['div[data-message-author-role="assistant"]', ".markdown.prose"],

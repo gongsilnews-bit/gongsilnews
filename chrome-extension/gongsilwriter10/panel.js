@@ -332,6 +332,16 @@
 
   const aiConf = () => (S.platform === "gemini" ? GW.GEMINI : GW.CHATGPT);
 
+  /* 자동 입력이 실패해도 붙여넣기로 이어갈 수 있게 AI 에 보낼 글을 미리 복사해 둔다.
+     AI 탭으로 넘어가면 작업창이 초점을 잃어 복사가 막히므로 반드시 탭을 띄우기 전에 부른다. */
+  const copyForPaste = (text) => navigator.clipboard.writeText(text).then(() => true, () => false);
+
+  function pasteGuide(what) {
+    const name = S.platform === "gemini" ? "Gemini" : "ChatGPT";
+    const other = S.platform === "gemini" ? "ChatGPT" : "Gemini";
+    return `${name} 입력칸에 ${what}을 자동으로 넣지 못했습니다. 복사해 두었으니 입력칸을 클릭하고 Ctrl+V 로 붙여넣은 뒤 직접 전송해 주세요. 계속 안 되면 2단계에서 ${other} 를 선택해 주세요.`;
+  }
+
   /* ═════════════ 기사 스타일 · 분량 ═════════════ */
   const kindBtns = document.querySelectorAll(".choice[data-kind]");
   kindBtns.forEach((btn) => {
@@ -361,6 +371,10 @@
       if (!S.vacancy) throw new Error("먼저 [물건 가져오기] 를 해 주세요.");
 
       const conf = aiConf();
+      const job = { type: "GW_FILL", text: gwBuildPrompt(S.vacancy, promptOpts()) };
+
+      const copied = await copyForPaste(job.text);
+
       const tab = await chrome.tabs.create({ url: conf.URL, active: true });
       S.aiTabId = tab.id;
       save();
@@ -368,11 +382,23 @@
       await waitTabReady(tab.id);
       await sleep(1200);
 
-      const res = await askTab(tab.id, {
-        type: "GW_FILL",
-        text: gwBuildPrompt(S.vacancy, promptOpts()),
-      });
-      if (!res.ok) throw new Error(res.reason || "프롬프트를 넣지 못했습니다.");
+      let res = await askTab(tab.id, job).catch((e) => ({ ok: false, reason: e.message }));
+
+      /* 첫 화면이 덜 그려졌거나 탭 연결이 꼬이면 한 번 새로고침해서 다시 넣는다 */
+      if (!res.ok) {
+        status("AI 탭 새로고침 후 재시도", "busy");
+        await chrome.tabs.reload(tab.id);
+        await sleep(500);
+        await waitTabReady(tab.id);
+        await sleep(2000);
+        res = await askTab(tab.id, job).catch((e) => ({ ok: false, reason: e.message }));
+      }
+      if (!res.ok) {
+        if (!copied) throw new Error(res.reason || "프롬프트를 넣지 못했습니다.");
+        toast(pasteGuide("프롬프트") + " 전송한 뒤에는 ③ 초안 보내기 로 이어가면 됩니다.", "bad", 15000);
+        status("붙여넣기 필요", "bad");
+        return;
+      }
 
       const k = GW_KIND[S.kind] || GW_KIND.news;
       const l = GW_LENGTH[S.length] || GW_LENGTH.normal;
@@ -742,12 +768,19 @@
       if (!S.aiTabId) throw new Error("AI 탭이 없습니다. 초안을 만든 탭이 닫혔습니다.");
 
       harvestEdits();
+      const text = gwBuildRevisePrompt(want);
+      const copied = await copyForPaste(text);
       await chrome.tabs.update(S.aiTabId, { active: true });
       // 보내기 전 답변 수를 세어 두었다가 새 답변만 읽는다 (예전 AI 탭이면 세지 못한다)
       const before = await askTab(S.aiTabId, { type: "GW_COUNT" }).catch(() => null);
 
-      const fill = await askTab(S.aiTabId, { type: "GW_FILL", text: gwBuildRevisePrompt(want) });
-      if (!fill.ok) throw new Error(fill.reason || "수정 요청을 넣지 못했습니다.");
+      const fill = await askTab(S.aiTabId, { type: "GW_FILL", text }).catch((e) => ({ ok: false, reason: e.message }));
+      if (!fill.ok) {
+        if (!copied) throw new Error(fill.reason || "수정 요청을 넣지 못했습니다.");
+        toast(pasteGuide("수정 요청") + " 답변이 끝나면 [수정글 가져오기]를 눌러 주세요.", "bad", 15000);
+        status("붙여넣기 필요", "bad");
+        return;
+      }
 
       const sent = await askTab(S.aiTabId, { type: "GW_SUBMIT" });
       if (!sent.ok) throw new Error(sent.reason || "전송하지 못했습니다.");
@@ -839,16 +872,23 @@
       pendingAiPreviousImage = beforeImage && beforeImage.ok
         ? { url: beforeImage.url, count: Number(beforeImage.count) || 0 }
         : { url: "", count: 0 };
+      const text = gwBuildImagePrompt(S.vacancy, S.article, {
+        style: S.imageStyle,
+        request: S.imageRequest,
+      });
+      const copied = await copyForPaste(text);
       await chrome.tabs.update(S.aiTabId, { active: true });
 
-      const fill = await askTab(S.aiTabId, {
-        type: "GW_FILL",
-        text: gwBuildImagePrompt(S.vacancy, S.article, {
-          style: S.imageStyle,
-          request: S.imageRequest,
-        }),
-      });
-      if (!fill.ok) throw new Error(fill.reason || "이미지 요청을 넣지 못했습니다.");
+      const fill = await askTab(S.aiTabId, { type: "GW_FILL", text }).catch((e) => ({ ok: false, reason: e.message }));
+      if (!fill.ok) {
+        if (!copied) throw new Error(fill.reason || "이미지 요청을 넣지 못했습니다.");
+        /* 붙여넣어 보낸 그림도 다음 클릭에 가져올 수 있게 요청한 것으로 기억한다 */
+        pendingAiInsertSlot = slot;
+        pendingAiRequestKey = currentRequestKey;
+        toast(pasteGuide("이미지 요청") + " 그림이 다 나온 뒤 [AI 이미지 만들기]를 한 번 더 누르세요.", "bad", 15000);
+        status("붙여넣기 필요", "bad");
+        return;
+      }
 
       const sent = await askTab(S.aiTabId, { type: "GW_SUBMIT" });
       if (!sent.ok) throw new Error(sent.reason || "전송하지 못했습니다.");

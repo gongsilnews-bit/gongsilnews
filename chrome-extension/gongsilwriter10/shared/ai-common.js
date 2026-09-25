@@ -15,7 +15,8 @@ const GwAi = (() => {
 
   /* ── 프롬프트 넣기 ── */
   async function fill(conf, text) {
-    const input = await gwWaitFor(conf.INPUT, 15000);
+    /* 새 탭은 로그인 확인·화면 그리기가 늦을 때가 있어 넉넉히 기다린다 */
+    const input = await gwWaitFor(conf.INPUT, 30000);
     if (!input) {
       return { ok: false, reason: "입력칸을 찾지 못했습니다. 로그인 상태와 화면을 확인해 주세요." };
     }
