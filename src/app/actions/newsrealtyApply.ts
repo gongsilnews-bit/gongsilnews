@@ -3,6 +3,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendPpurioSms } from "@/utils/ppurio";
 import { createNotification } from "./notification";
+import { createClient as createSessionClient } from "@/utils/supabase/server";
+import { isAdminRole } from "@/utils/permissionCheck";
+import { adminUpdateMember } from "@/app/admin/actions";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -10,6 +13,91 @@ function getAdminClient() {
   return createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+}
+
+async function requireAdmin() {
+  const session = await createSessionClient();
+  const { data: { user } } = await session.auth.getUser();
+  if (!user) return null;
+  const { data: member } = await getAdminClient()
+    .from("members")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  return isAdminRole(member?.role) ? user : null;
+}
+
+const PLAN_BY_SERVICE: Record<MembershipService, { planType: string; label: string }> = {
+  newsrealty: { planType: "news_premium", label: "공실뉴스부동산" },
+  study: { planType: "study_premium", label: "공실스터디부동산" },
+};
+
+/**
+ * 승인완료된 신청의 회원 등급을 해당 멤버십으로 바꾼다.
+ * 공실뉴스부동산이 최상위라 공실스터디 승인으로 등급을 낮추지 않는다.
+ * 관리자에게 보여줄 결과 문구를 돌려준다.
+ */
+async function grantMembershipPlan(applicationId: string): Promise<string> {
+  const supabase = getAdminClient();
+
+  let memberId: string | null = null;
+  let service: MembershipService = "newsrealty";
+  const { data: app } = await supabase
+    .from("newsrealty_applications")
+    .select("*")
+    .eq("id", applicationId)
+    .maybeSingle();
+  if (app) {
+    memberId = app.member_id;
+    service = serviceOf(app);
+  } else {
+    const { data: post } = await supabase
+      .from("board_posts")
+      .select("author_id")
+      .eq("id", applicationId)
+      .maybeSingle();
+    memberId = post?.author_id || null;
+  }
+
+  if (!memberId) return "신청서에 연결된 회원 계정이 없어 회원 등급은 바뀌지 않았습니다.";
+
+  const { data: member } = await supabase
+    .from("members")
+    .select("role, plan_type")
+    .eq("id", memberId)
+    .maybeSingle();
+  if (!member) return "회원 정보를 찾지 못해 회원 등급은 바뀌지 않았습니다.";
+  if (isAdminRole(member.role)) return "관리자 계정이라 회원 등급은 바꾸지 않았습니다.";
+
+  const target = PLAN_BY_SERVICE[service];
+  if (member.plan_type === target.planType) {
+    return `이미 ${target.label} 회원이라 등급은 그대로입니다.`;
+  }
+  if (service === "study" && member.plan_type === "news_premium") {
+    return "이미 상위 등급(공실뉴스부동산) 회원이라 등급은 그대로입니다.";
+  }
+
+  const start = new Date();
+  const end = new Date(start);
+  end.setFullYear(end.getFullYear() + 1);
+  const res = await adminUpdateMember(memberId, {
+    role: "REALTOR",
+    plan_type: target.planType,
+    plan_start_date: start.toISOString(),
+    plan_end_date: end.toISOString(),
+  });
+  if (!res.success) return `회원 등급 변경 실패: ${res.error}`;
+
+  const { data: agency } = await supabase
+    .from("agencies")
+    .select("status")
+    .eq("owner_id", memberId)
+    .maybeSingle();
+  const agencyNote = agency?.status === "APPROVED"
+    ? ""
+    : " (중개사무소 승인 전이라 등급 권한은 중개소 승인 후부터 적용됩니다)";
+
+  return `회원 등급이 ${target.label}(1년)으로 변경되었습니다.${agencyNote}`;
 }
 
 export interface NewsrealtyApplicationInput {
@@ -27,10 +115,20 @@ export interface NewsrealtyApplicationInput {
   ipAddress?: string;
 }
 
+/** 멤버십 신청 종류. service 칸이 없던 시절의 행은 모두 공실뉴스부동산 신청이다. */
+export type MembershipService = "newsrealty" | "study";
+
+const serviceOf = (row: { service?: string | null }): MembershipService =>
+  row.service === "study" ? "study" : "newsrealty";
+
 /**
- * 회원의 기존 신청 내역 확인 (중복 신청 방지)
+ * 회원의 기존 신청 내역 확인 (중복 신청 방지). 서비스별로 따로 본다.
  */
-export async function checkExistingNewsrealtyApplication(memberId?: string, phone?: string) {
+export async function checkExistingNewsrealtyApplication(
+  memberId?: string,
+  phone?: string,
+  service: MembershipService = "newsrealty"
+) {
   try {
     const supabase = getAdminClient();
     const cleanPhone = phone ? phone.replace(/[^0-9]/g, "") : null;
@@ -54,10 +152,10 @@ export async function checkExistingNewsrealtyApplication(memberId?: string, phon
 
     const { data, error } = await query
       .order("created_at", { ascending: false })
-      .limit(1);
+      .limit(20);
 
-    if (!error && data && data.length > 0) {
-      const app = data[0];
+    const app = !error ? (data || []).find((row: any) => serviceOf(row) === service) : undefined;
+    if (app) {
       return {
         exists: true,
         application: {
@@ -72,8 +170,8 @@ export async function checkExistingNewsrealtyApplication(memberId?: string, phon
       };
     }
 
-    // 2. board_posts 폴백 테이블 조회
-    if (memberId) {
+    // 2. board_posts 폴백 테이블 조회 (공실뉴스부동산만 폴백이 있다)
+    if (memberId && service === "newsrealty") {
       const { data: posts, error: postErr } = await supabase
         .from("board_posts")
         .select("*")
@@ -399,6 +497,7 @@ export async function getNewsrealtyApplications(filterStatus?: string) {
           sms_sent: meta.sms_sent !== false,
           email_sent: false,
           kakao_sent: false,
+          service: "newsrealty",
         };
       });
 
@@ -409,7 +508,8 @@ export async function getNewsrealtyApplications(filterStatus?: string) {
       return { success: true, data: filtered, isFallback: true };
     }
 
-    return { success: true, data: data || [], isFallback: false };
+    const withService = (data || []).map((row: any) => ({ ...row, service: serviceOf(row) }));
+    return { success: true, data: withService, isFallback: false };
   } catch (err: any) {
     console.error("getNewsrealtyApplications error:", err);
     return { success: false, message: err.message, data: [] };
@@ -421,6 +521,10 @@ export async function getNewsrealtyApplications(filterStatus?: string) {
  */
 export async function updateNewsrealtyStatus(id: string, status: string, isFallback: boolean = false) {
   try {
+    // 승인완료는 회원 등급을 올리므로 최고관리자만 바꿀 수 있다
+    if (!(await requireAdmin())) {
+      return { success: false, message: "최고관리자만 상태를 변경할 수 있습니다." };
+    }
     const supabase = getAdminClient();
 
     // 1. newsrealty_applications 시도
@@ -462,7 +566,13 @@ export async function updateNewsrealtyStatus(id: string, status: string, isFallb
       }
     }
 
-    return { success: true };
+    // 승인완료가 되면 신청한 회원의 등급을 해당 멤버십으로 바꾼다
+    let planMessage: string | undefined;
+    if (status === "승인완료") {
+      planMessage = await grantMembershipPlan(id);
+    }
+
+    return { success: true, planMessage };
   } catch (err: any) {
     return { success: false, message: err.message };
   }

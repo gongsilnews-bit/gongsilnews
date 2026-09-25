@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { AdminTheme } from "./types";
 import {
   getNewsrealtyApplications,
@@ -10,13 +11,45 @@ import {
   deleteNewsrealtyApplications,
 } from "@/app/actions/newsrealtyApply";
 
+const SERVICE_META = {
+  newsrealty: { label: "공실뉴스부동산", planLabel: "공실뉴스부동산", icon: "🏢", color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
+  study: { label: "공실스터디", planLabel: "공실스터디부동산", icon: "🎓", color: "#047857", bg: "#ecfdf5", border: "#a7f3d0" },
+} as const;
+
+function ServiceBadge({ service }: { service?: string }) {
+  const meta = SERVICE_META[service === "study" ? "study" : "newsrealty"];
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "4px 10px",
+        borderRadius: 6,
+        fontSize: 12.5,
+        fontWeight: 800,
+        color: meta.color,
+        backgroundColor: meta.bg,
+        border: `1px solid ${meta.border}`,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {meta.icon} {meta.label}
+    </span>
+  );
+}
+
 interface NewsrealtySectionProps {
   theme: AdminTheme;
 }
 
 export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
   const { bg, cardBg, textPrimary, textSecondary, darkMode, border } = theme;
+  const searchParams = useSearchParams();
 
+  // 멤버십 구분 (알림에서 ?service=study 로 들어오면 공실스터디 탭이 열린다)
+  const [serviceTab, setServiceTab] = useState<"전체" | "newsrealty" | "study">(() => {
+    const sv = searchParams?.get("service");
+    return sv === "study" || sv === "newsrealty" ? sv : "전체";
+  });
   const [activeTab, setActiveTab] = useState("전체");
   const [searchStatus, setSearchStatus] = useState("전체");
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -67,6 +100,11 @@ export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
   // 상태 변경
   const handleStatusChange = async (newStatus: string) => {
     if (!selectedApp) return;
+    if (newStatus === "승인완료") {
+      const planLabel = SERVICE_META[selectedApp.service === "study" ? "study" : "newsrealty"].planLabel;
+      if (!confirm(`승인완료로 바꾸면 ${selectedApp.applicant_name} 님의 회원 등급이 [${planLabel}]으로 자동 변경됩니다.
+진행하시겠습니까?`)) return;
+    }
     const isFallback = Boolean(selectedApp.category);
     const res = await updateNewsrealtyStatus(selectedApp.id, newStatus, isFallback);
 
@@ -75,7 +113,10 @@ export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
         prev.map((item) => (item.id === selectedApp.id ? { ...item, status: newStatus } : item))
       );
       setSelectedApp((prev: any) => ({ ...prev, status: newStatus }));
-      showToast(`상태가 [${newStatus}](으)로 변경되었습니다.`);
+      if (res.planMessage) alert(`상태가 [${newStatus}](으)로 변경되었습니다.
+
+${res.planMessage}`);
+      else showToast(`상태가 [${newStatus}](으)로 변경되었습니다.`);
     } else {
       showToast(res.message || "상태 변경 실패", "error");
     }
@@ -159,8 +200,11 @@ export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
     }
   };
 
+  // 멤버십 구분 적용 (상태 탭 숫자도 이 범위 안에서 센다)
+  const scopedApplications = serviceTab === "전체" ? applications : applications.filter((a) => a.service === serviceTab);
+
   // 검색 및 필터 적용
-  const filteredList = applications.filter((app) => {
+  const filteredList = scopedApplications.filter((app) => {
     // 탭 필터
     if (activeTab !== "전체" && app.status !== activeTab) return false;
 
@@ -178,12 +222,12 @@ export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
   });
 
   // KPI 통계
-  const countTotal = applications.length;
-  const countNew = applications.filter((a) => a.status === "신규").length;
-  const countContacted = applications.filter((a) => a.status === "연락완료").length;
-  const countInProgress = applications.filter((a) => a.status === "진행중").length;
-  const countApproved = applications.filter((a) => a.status === "승인완료").length;
-  const countRejected = applications.filter((a) => a.status === "반려").length;
+  const countTotal = scopedApplications.length;
+  const countNew = scopedApplications.filter((a) => a.status === "신규").length;
+  const countContacted = scopedApplications.filter((a) => a.status === "연락완료").length;
+  const countInProgress = scopedApplications.filter((a) => a.status === "진행중").length;
+  const countApproved = scopedApplications.filter((a) => a.status === "승인완료").length;
+  const countRejected = scopedApplications.filter((a) => a.status === "반려").length;
 
   const tabs = [
     { key: "전체", label: "전체", count: countTotal, color: "#3b82f6" },
@@ -252,7 +296,7 @@ export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>
-            공실뉴스부동산 파트너 신청 관리
+            멤버십관리
           </h1>
           <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
             ( <span style={{ color: "#dc2626", fontWeight: 700 }}>신규 {countNew}건</span> / 연락완료 {countContacted}건 / 진행중 {countInProgress}건 / <span style={{ color: "#059669", fontWeight: 700 }}>승인완료 {countApproved}건</span> / 전체 {countTotal}건 )
@@ -381,6 +425,36 @@ export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
         </button>
       </div>
 
+      {/* ── 2-1. 멤버십 구분 (공실뉴스부동산 / 공실스터디) ── */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        {([
+          { key: "전체", label: "전체", count: applications.length },
+          { key: "newsrealty", label: `${SERVICE_META.newsrealty.icon} ${SERVICE_META.newsrealty.label}`, count: applications.filter((a) => a.service !== "study").length },
+          { key: "study", label: `${SERVICE_META.study.icon} ${SERVICE_META.study.label}`, count: applications.filter((a) => a.service === "study").length },
+        ] as const).map((sv) => {
+          const isActive = serviceTab === sv.key;
+          return (
+            <button
+              key={sv.key}
+              onClick={() => { setServiceTab(sv.key); setActiveTab("전체"); setCheckedAppIds([]); }}
+              style={{
+                height: 36,
+                padding: "0 16px",
+                borderRadius: 18,
+                border: `1px solid ${isActive ? "#111827" : border}`,
+                background: isActive ? (darkMode ? "#f3f4f6" : "#111827") : (darkMode ? "#2c2d31" : "#fff"),
+                color: isActive ? (darkMode ? "#111827" : "#fff") : textPrimary,
+                fontSize: 13.5,
+                fontWeight: isActive ? 800 : 600,
+                cursor: "pointer",
+              }}
+            >
+              {sv.label} <span style={{ marginLeft: 4, opacity: 0.75 }}>{sv.count}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── 3. 상태 탭 바: 회원관리 탭 스타일과 100% 동일한 라운드 칩 디자인 ── */}
       <div style={{ display: "flex", gap: 6, marginBottom: 16, borderBottom: `2px solid ${darkMode ? "#333" : "#e5e7eb"}`, paddingBottom: 12, overflowX: "auto" }}>
         {tabs.map((tab) => {
@@ -495,6 +569,9 @@ export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
                   <th style={{ padding: "14px 12px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 110 }}>
                     상태
                   </th>
+                  <th style={{ padding: "14px 12px", textAlign: "center", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, width: 130 }}>
+                    구분
+                  </th>
                   <th style={{ padding: "14px 16px", textAlign: "left", fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}`, minWidth: 200 }}>
                     대표자 / 연락처
                   </th>
@@ -577,6 +654,11 @@ export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
                         >
                           {app.status}
                         </span>
+                      </td>
+
+                      {/* 멤버십 구분 */}
+                      <td style={{ padding: "16px 12px", textAlign: "center", verticalAlign: "middle" }}>
+                        <ServiceBadge service={app.service} />
                       </td>
 
                       {/* 대표자 / 연락처 */}
@@ -714,6 +796,9 @@ export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
                 >
                   {selectedApp.status}
                 </span>
+                <span style={{ marginLeft: 6, verticalAlign: "top" }}>
+                  <ServiceBadge service={selectedApp.service} />
+                </span>
                 <h2 style={{ fontSize: 20, fontWeight: 900, color: textPrimary, margin: 0, letterSpacing: "-0.4px" }}>
                   {selectedApp.applicant_name} 대표
                   <span style={{ fontSize: 15, fontWeight: 700, color: textSecondary, marginLeft: 8 }}>
@@ -833,8 +918,8 @@ export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
               </div>
             </div>
 
-            {/* 파트너 안내 문자 재발송 버튼 */}
-            <div style={{ marginBottom: 20 }}>
+            {/* 파트너 안내 문자 재발송 버튼 (문구가 공실뉴스부동산 전용이다) */}
+            {selectedApp.service !== "study" && <div style={{ marginBottom: 20 }}>
               <button
                 onClick={handleResendSms}
                 disabled={resendingSms}
@@ -857,7 +942,7 @@ export default function NewsrealtySection({ theme }: NewsrealtySectionProps) {
               >
                 <span>💬</span> {resendingSms ? "문자 발송 중..." : "파트너 안내 SMS 재발송"}
               </button>
-            </div>
+            </div>}
 
             {/* 최고관리자 내부 메모 */}
             <div style={{ marginBottom: 24 }}>

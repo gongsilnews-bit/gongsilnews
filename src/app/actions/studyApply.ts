@@ -3,17 +3,15 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendPpurioSms } from "@/utils/ppurio";
 import { createNotification } from "./notification";
+import { checkExistingNewsrealtyApplication } from "./newsrealtyApply";
 
 /**
  * 공실스터디 멤버십 신청
  *
- * 전용 테이블 없이 board_posts 의 'study_apply' 보드에 저장한다.
- * 보드는 관리자 전용 inquiry 타입(마이그레이션 20260925_add_study_apply_board)이라
- * 회원은 자기 신청만 보고, 관리자는 게시판 관리에서 전체 신청을 본다.
- * 신청 상세는 external_url 에 JSON 으로 담는다 (공실뉴스부동산 보조 저장과 같은 방식).
+ * 공실뉴스부동산 신청과 같은 newsrealty_applications 표에 service='study' 로 저장한다.
+ * 관리자는 멤버십관리 화면에서 두 신청을 함께 보고, 승인완료 시 회원 등급이
+ * 공실스터디부동산(study_premium)으로 바뀐다.
  */
-const BOARD_ID = "study_apply";
-
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -35,43 +33,7 @@ export interface StudyApplicationInput {
  */
 export async function checkExistingStudyApplication(memberId?: string) {
   if (!memberId) return { exists: false, application: null };
-  try {
-    const supabase = getAdminClient();
-    const { data: posts, error } = await supabase
-      .from("board_posts")
-      .select("id, created_at, author_name, external_url")
-      .eq("board_id", BOARD_ID)
-      .eq("author_id", memberId)
-      .eq("is_deleted", false)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    if (error || !posts || posts.length === 0) return { exists: false, application: null };
-
-    const post = posts[0];
-    let meta: any = {};
-    try {
-      meta = JSON.parse(post.external_url || "{}");
-    } catch {
-      meta = {};
-    }
-
-    return {
-      exists: true,
-      application: {
-        id: post.id,
-        status: meta.status || "신규",
-        created_at: post.created_at,
-        applicant_name: meta.name || post.author_name,
-        agency_name: meta.agencyName || "",
-        phone: meta.phone || "",
-        email: meta.email || "",
-      },
-    };
-  } catch (err: any) {
-    console.error("checkExistingStudyApplication error:", err);
-    return { exists: false, application: null };
-  }
+  return checkExistingNewsrealtyApplication(memberId, undefined, "study");
 }
 
 /**
@@ -104,33 +66,22 @@ export async function submitStudyApplication(data: StudyApplicationInput) {
     const email = data.email?.trim() || "";
     const agencyName = data.agencyName?.trim() || "";
 
-    const meta = {
-      name,
-      phone: cleanPhone,
-      email,
-      agencyName,
-      status: "신규",
-      admin_notes: "",
-      sms_sent: false,
-      source: "study_apply",
-    };
-
-    const content =
-      `[공실스터디 멤버십 신청]\n- 신청자: ${name}\n- 연락처: ${cleanPhone}\n` +
-      `- 이메일: ${email || "미입력"}\n- 중개사무소: ${agencyName || "미입력"}`;
-
-    const { data: post, error } = await supabase
-      .from("board_posts")
+    const { data: inserted, error } = await supabase
+      .from("newsrealty_applications")
       .insert([
         {
-          board_id: BOARD_ID,
-          title: `[공실스터디 멤버십 신청] ${name}${agencyName ? ` (${agencyName})` : ""}`,
-          content,
-          author_name: name,
-          author_id: data.memberId,
-          external_url: JSON.stringify(meta),
-          is_notice: false,
-          is_deleted: false,
+          member_id: data.memberId,
+          applicant_name: name,
+          phone: cleanPhone,
+          email: email || null,
+          agency_name: agencyName || "-",
+          interests: ["공실스터디"],
+          memo: `[공실스터디 멤버십 신청] 신청자: ${name} / 연락처: ${cleanPhone} / 이메일: ${email || "미입력"} / 중개사무소: ${agencyName || "미입력"}`,
+          status: "신규",
+          sms_sent: false,
+          email_sent: false,
+          kakao_sent: false,
+          service: "study",
         },
       ])
       .select("id")
@@ -146,8 +97,8 @@ export async function submitStudyApplication(data: StudyApplicationInput) {
       type: "study_apply",
       title: "공실스터디 멤버십 신청이 접수되었습니다",
       body: `${name} · ${cleanPhone}${agencyName ? ` · ${agencyName}` : ""}`,
-      link: "/admin?menu=study",
-      sourceId: String(post.id),
+      link: "/admin?menu=newsrealty&service=study",
+      sourceId: String(inserted.id),
     });
 
     // 신청자 접수 확인 문자 + 관리자 알림 문자
@@ -175,10 +126,7 @@ export async function submitStudyApplication(data: StudyApplicationInput) {
       }).catch((err) => console.error("Study admin SMS failed:", err));
 
       if (smsSent) {
-        await supabase
-          .from("board_posts")
-          .update({ external_url: JSON.stringify({ ...meta, sms_sent: true }) })
-          .eq("id", post.id);
+        await supabase.from("newsrealty_applications").update({ sms_sent: true }).eq("id", inserted.id);
       }
     } catch (smsErr) {
       console.error("Study apply SMS exception:", smsErr);

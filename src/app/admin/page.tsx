@@ -33,7 +33,7 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "agent", label: "AI 비서실", icon: <IconRobot /> },
   { key: "marketing", label: "부동산마케팅", icon: <IconComment /> },
   { key: "members", label: "회원관리", icon: <IconMembers />, submenus: [{ key: "members_list", label: "회원목록" }, { key: "dormant", label: "휴지통" }, { key: "policy", label: "등급별 한도 설정" }] },
-  { key: "newsrealty", label: "공실뉴스부동산", icon: <IconBuilding /> },
+  { key: "newsrealty", label: "멤버십관리", icon: <IconBuilding /> },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
   { key: "inquiry", label: "문의관리", icon: <IconEdit /> },
@@ -61,8 +61,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 /** 사이드바 메뉴에 붙일 알림 종류 (안 읽은 건수를 뱃지로 보여준다) */
 const MENU_NOTIFICATION_TYPES: Record<string, string[]> = {
   members: ["member_signup"],
-  newsrealty: ["newsrealty_apply"],
-  study: ["study_apply"],
+  newsrealty: ["newsrealty_apply", "study_apply"],
   gongsil: ["vacancy_new"],
   article: ["article_pending"],
   inquiry_board: ["inquiry_new", "inquiry_reply"],
