@@ -13,17 +13,11 @@
     length: "normal",  // 분량 — GW_LENGTH
     imageStyle: "news",
     imageRequest: "",
-    blogPerspective: "",
     gongsilTabId: null,
     aiTabId: null,
-    blogAiTabId: null,
-    blogAiPlatform: null,
     origin: "https://gongsilnews.com",
     vacancy: null,
     article: null,   // { title, subtitles[], body, keywords[] }
-    blogDraft: null,
-    blogSourceSignature: "",
-    blogPerspectiveUsed: "",
     media: [],       // [{ kind:'photo'|'proof'|'map'|'roadview'|'ai', url, caption, isCover }]
   };
 
@@ -31,9 +25,8 @@
 
   const el = {
     status: $("statusPill"),
-    tabWork: $("tabWork"), tabDraft: $("tabDraft"), tabBlog: $("tabBlog"),
-    draftBadge: $("draftBadge"), blogBadge: $("blogBadge"),
-    viewWork: $("viewWork"), viewDraft: $("viewDraft"), viewBlog: $("viewBlog"),
+    tabWork: $("tabWork"), tabDraft: $("tabDraft"), draftBadge: $("draftBadge"),
+    viewWork: $("viewWork"), viewDraft: $("viewDraft"),
     btnGoGongsil: $("btnGoGongsil"), btnGrab: $("btnGrab"),
     vacancyCard: $("vacancyCard"), vacancyName: $("vacancyName"), vacancyFields: $("vacancyFields"),
     btnOpenAi: $("btnOpenAi"), btnSubmit: $("btnSubmit"), btnPullDraft: $("btnPullDraft"),
@@ -43,17 +36,9 @@
     reviseInput: $("reviseInput"), btnRevise: $("btnRevise"),
     imageRequest: $("imageRequest"),
     btnMakeImage: $("btnMakeImage"), btnChangeImage: $("btnChangeImage"), fileImage: $("fileImage"),
-    blogPerspective: $("blogPerspective"), btnMakeBlogDraft: $("btnMakeBlogDraft"),
-    blogEmpty: $("blogEmpty"), blogBody: $("blogBody"), blogTitle: $("blogTitle"),
-    blogCover: $("blogCover"), blogContent: $("blogContent"), blogTags: $("blogTags"),
-    qualityScore: $("qualityScore"), qualityChecks: $("qualityChecks"), blogActions: $("blogActions"),
-    btnCopyBlogTitle: $("btnCopyBlogTitle"), btnCopyBlogBody: $("btnCopyBlogBody"),
-    btnDownloadBlogPhotos: $("btnDownloadBlogPhotos"),
     btnSendGongsil: $("btnSendGongsil"),
     toastHost: $("toastHost"),
   };
-
-  let activeView = "work";
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -459,7 +444,6 @@
     pendingAiPreviousImage = null;
     pendingAiRequestKey = "";
     renderDraft();
-    if (S.blogDraft) renderBlog();
     save();
     return parsed.repaired === true;
   }
@@ -622,7 +606,7 @@
     if (!a) {
       el.draftEmpty.classList.remove("hidden");
       el.draftBody.classList.add("hidden");
-      syncActionBars();
+      el.draftActions.classList.add("hidden");
       /* 기사 전이라도 찍어 둔 사진은 볼 수 있게 한다 */
       renderCover();
       return;
@@ -630,7 +614,7 @@
 
     el.draftEmpty.classList.add("hidden");
     el.draftBody.classList.remove("hidden");
-    syncActionBars();
+    el.draftActions.classList.remove("hidden");
     el.draftBadge.classList.remove("hidden");
 
     el.pvDate.textContent = new Date().toLocaleString("ko-KR", {
@@ -736,232 +720,9 @@
   ["pvTitle", "pvSubtitle", "pvContent"].forEach((id) => {
     el[id].addEventListener("blur", () => {
       harvestEdits();
-      if (S.blogDraft) renderBlogQuality();
       save();
     });
   });
-
-  /* ═════════════ 블로그 초안 ═════════════ */
-  function renderBlog() {
-    const draft = S.blogDraft;
-    if (!draft) {
-      el.blogEmpty.classList.remove("hidden");
-      el.blogBody.classList.add("hidden");
-      syncActionBars();
-      return;
-    }
-
-    el.blogEmpty.classList.add("hidden");
-    el.blogBody.classList.remove("hidden");
-    el.blogTitle.textContent = draft.title || "";
-
-    const coverIndex = GWMediaCover.indexOf(S.media);
-    const cover = coverIndex >= 0 ? S.media[coverIndex] : null;
-    if (cover) {
-      el.blogCover.classList.remove("hidden");
-      el.blogCover.innerHTML =
-        `<img src="${esc(cover.url)}" alt="${esc(cover.caption || "대표 이미지")}">` +
-        (cover.caption ? `<p>${esc(cover.caption)}</p>` : "");
-    } else {
-      el.blogCover.classList.add("hidden");
-      el.blogCover.innerHTML = "";
-    }
-
-    el.blogContent.innerHTML = String(draft.body || "")
-      .split(/\n{2,}|\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const cls = line.startsWith("■") ? ' class="blog-section-heading"' : "";
-        return `<p${cls}>${esc(line)}</p>`;
-      })
-      .join("");
-    el.blogTags.textContent = GWBlogDraft.hashtags(draft);
-
-    renderBlogQuality();
-    syncActionBars();
-  }
-
-  function renderBlogQuality() {
-    const checks = GWBlogDraft.evaluate(
-      S.article,
-      S.blogDraft,
-      S.blogPerspectiveUsed,
-      S.blogSourceSignature
-    );
-    if (S.blogPerspective.trim() !== S.blogPerspectiveUsed.trim()) {
-      checks.unshift({
-        id: "perspective-fresh",
-        ok: false,
-        label: "현재 입력한 관점 반영 필요",
-        detail: "경험·관점을 바꿨으므로 블로그 초안을 다시 만들어 주세요.",
-      });
-    }
-    const passed = checks.filter((check) => check.ok).length;
-    el.qualityScore.textContent = `${passed}/${checks.length}`;
-    el.qualityChecks.innerHTML = checks
-      .map(
-        (check) =>
-          `<div class="quality-item ${check.ok ? "ok" : "warn"}">` +
-          `<span class="quality-icon">${check.ok ? "✓" : "!"}</span>` +
-          `<span class="quality-label">${esc(check.label)}</span>` +
-          `<span class="quality-detail">${esc(check.detail)}</span>` +
-          `</div>`
-      )
-      .join("");
-  }
-
-  function harvestBlogEdits() {
-    if (!S.blogDraft) return;
-    S.blogDraft.title = el.blogTitle.innerText.trim();
-    S.blogDraft.body = Array.from(el.blogContent.querySelectorAll("p"))
-      .map((p) => p.innerText.trim())
-      .filter(Boolean)
-      .join("\n\n");
-    S.blogDraft.keywords = GWBlogDraft.uniqueKeywords(
-      el.blogTags.innerText.split(/[\s,]+/).filter(Boolean)
-    );
-  }
-
-  ["blogTitle", "blogContent", "blogTags"].forEach((id) => {
-    el[id].addEventListener("blur", () => {
-      harvestBlogEdits();
-      renderBlog();
-      save();
-    });
-  });
-
-  el.blogPerspective.addEventListener("change", () => {
-    S.blogPerspective = el.blogPerspective.value.trim();
-    if (S.blogDraft) renderBlogQuality();
-    save();
-  });
-
-  async function getBlogAiTab() {
-    let tab = S.blogAiTabId
-      ? await chrome.tabs.get(S.blogAiTabId).catch(() => null)
-      : null;
-    const samePlatform = tab && S.blogAiPlatform === S.platform;
-
-    if (!samePlatform) {
-      const conf = aiConf();
-      tab = await chrome.tabs.create({ url: conf.URL, active: true });
-      S.blogAiTabId = tab.id;
-      S.blogAiPlatform = S.platform;
-      save();
-      await waitTabReady(tab.id);
-      await sleep(1200);
-    } else {
-      await chrome.tabs.update(tab.id, { active: true });
-    }
-
-    return tab;
-  }
-
-  el.btnMakeBlogDraft.addEventListener("click", () =>
-    guard(el.btnMakeBlogDraft, "블로그 초안 작성 중", async () => {
-      if (!S.article) throw new Error("먼저 기사 초안을 가져와 주세요.");
-
-      harvestEdits();
-      S.blogPerspective = el.blogPerspective.value.trim();
-      const tab = await getBlogAiTab();
-      const prompt = gwBuildBlogPrompt(S.vacancy, S.article, S.blogPerspective);
-
-      const filled = await askTab(tab.id, { type: "GW_FILL", text: prompt });
-      if (!filled.ok) throw new Error(filled.reason || "블로그 작성 요청을 넣지 못했습니다.");
-
-      const sent = await askTab(tab.id, { type: "GW_SUBMIT" });
-      if (!sent.ok) throw new Error(sent.reason || "블로그 작성 요청을 전송하지 못했습니다.");
-
-      toast("블로그용으로 새로 쓰고 있습니다. 완성될 때까지 기다립니다.", "info", 6000);
-      await sleep(2500);
-
-      const response = await askTab(tab.id, { type: "GW_READ" });
-      if (!response.ok) throw new Error(response.reason || "블로그 초안을 읽지 못했습니다.");
-
-      const parsed = GWArticleJson.parse(response.text);
-      if (!parsed.ok) throw new Error(parsed.reason + " AI 탭에서 JSON 형식으로 다시 요청해 주세요.");
-
-      S.blogDraft = parsed.article;
-      S.blogSourceSignature = GWBlogDraft.signature(S.article);
-      S.blogPerspectiveUsed = S.blogPerspective;
-      renderBlog();
-      save();
-      switchTab("blog");
-      toast(
-        parsed.repaired
-          ? "JSON 오류를 복구해 블로그 초안을 만들었습니다. 품질 점검을 확인해 주세요."
-          : "블로그 초안을 만들었습니다. 품질 점검을 확인해 주세요.",
-        "ok",
-        7000
-      );
-      status("블로그 초안 준비됨", "ok");
-    })
-  );
-
-  async function copyText(value) {
-    const text = String(value || "").trim();
-    if (!text) throw new Error("복사할 내용이 없습니다.");
-    await navigator.clipboard.writeText(text);
-  }
-
-  el.btnCopyBlogTitle.addEventListener("click", () =>
-    guard(el.btnCopyBlogTitle, "복사 중", async () => {
-      harvestBlogEdits();
-      await copyText(S.blogDraft && S.blogDraft.title);
-      save();
-      toast("블로그 제목을 복사했습니다.", "ok");
-      status("제목 복사됨", "ok");
-    })
-  );
-
-  el.btnCopyBlogBody.addEventListener("click", () =>
-    guard(el.btnCopyBlogBody, "복사 중", async () => {
-      harvestBlogEdits();
-      await copyText(GWBlogDraft.bodyWithTags(S.blogDraft));
-      save();
-      toast("블로그 본문과 해시태그를 복사했습니다.", "ok");
-      status("본문 복사됨", "ok");
-    })
-  );
-
-  function imageExtension(url) {
-    const mime = String(url || "").match(/^data:image\/([^;,]+)/i);
-    if (mime) return mime[1] === "jpeg" ? "jpg" : mime[1].replace("svg+xml", "svg");
-    const path = String(url || "").split(/[?#]/)[0];
-    const ext = path.match(/\.([a-z0-9]{2,5})$/i);
-    return ext ? ext[1].toLowerCase() : "webp";
-  }
-
-  function safeFilename(value) {
-    return String(value || "공실뉴스_블로그")
-      .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
-      .replace(/\s+/g, "_")
-      .replace(/[. ]+$/g, "")
-      .slice(0, 48) || "공실뉴스_블로그";
-  }
-
-  el.btnDownloadBlogPhotos.addEventListener("click", () =>
-    guard(el.btnDownloadBlogPhotos, "저장 중", async () => {
-      if (!S.media.length) throw new Error("저장할 사진이 없습니다.");
-      harvestBlogEdits();
-      const base = safeFilename(S.blogDraft && S.blogDraft.title);
-
-      for (let i = 0; i < S.media.length; i += 1) {
-        const media = S.media[i];
-        if (!media.url) continue;
-        await chrome.downloads.download({
-          url: media.url,
-          filename: `공실뉴스_블로그/${base}_${String(i + 1).padStart(2, "0")}.${imageExtension(media.url)}`,
-          conflictAction: "uniquify",
-          saveAs: false,
-        });
-      }
-
-      toast(`블로그용 사진 ${S.media.length}장을 다운로드 폴더에 저장했습니다.`, "ok", 6000);
-      status("사진 저장됨", "ok");
-    })
-  );
 
   /* ═════════════ ⑦ 수정 요청 ═════════════ */
   el.btnRevise.addEventListener("click", () => doRevise());
@@ -1169,27 +930,18 @@
   );
 
   /* ═════════════ 탭 전환 ═════════════ */
-  function syncActionBars() {
-    el.draftActions.classList.toggle("hidden", activeView !== "draft" || !S.article);
-    el.blogActions.classList.toggle("hidden", activeView !== "blog" || !S.blogDraft);
-  }
-
   function switchTab(which) {
-    activeView = ["work", "draft", "blog"].includes(which) ? which : "work";
-    el.tabWork.classList.toggle("active", activeView === "work");
-    el.tabDraft.classList.toggle("active", activeView === "draft");
-    el.tabBlog.classList.toggle("active", activeView === "blog");
-    el.viewWork.classList.toggle("active", activeView === "work");
-    el.viewDraft.classList.toggle("active", activeView === "draft");
-    el.viewBlog.classList.toggle("active", activeView === "blog");
-    syncActionBars();
-    if (activeView === "draft") el.draftBadge.classList.add("hidden");
-    if (activeView === "blog") el.blogBadge.classList.add("hidden");
+    const work = which === "work";
+    el.tabWork.classList.toggle("active", work);
+    el.tabDraft.classList.toggle("active", !work);
+    el.viewWork.classList.toggle("active", work);
+    el.viewDraft.classList.toggle("active", !work);
+    el.draftActions.classList.toggle("hidden", work || !S.article);
+    if (!work) el.draftBadge.classList.add("hidden");
   }
 
   el.tabWork.addEventListener("click", () => switchTab("work"));
   el.tabDraft.addEventListener("click", () => switchTab("draft"));
-  el.tabBlog.addEventListener("click", () => switchTab("blog"));
 
   /* ═════════════ 버튼 잠금 ═════════════ */
   function refreshButtons() {
@@ -1199,10 +951,6 @@
     el.btnRevise.disabled = !S.article || !S.aiTabId;
     el.btnMakeImage.disabled = !S.article || !S.aiTabId;
     el.btnChangeImage.disabled = !S.article;
-    el.btnMakeBlogDraft.disabled = !S.article;
-    el.btnCopyBlogTitle.disabled = !S.blogDraft;
-    el.btnCopyBlogBody.disabled = !S.blogDraft;
-    el.btnDownloadBlogPhotos.disabled = !S.blogDraft || !S.media.length;
     el.btnSendGongsil.disabled = !S.article;
   }
 
@@ -1236,20 +984,15 @@
     if (!GW_LENGTH[S.length]) S.length = "normal";
     if (!GW_IMAGE_STYLE[S.imageStyle]) S.imageStyle = "news";
     if (typeof S.imageRequest !== "string") S.imageRequest = "";
-    if (typeof S.blogPerspective !== "string") S.blogPerspective = "";
-    if (typeof S.blogSourceSignature !== "string") S.blogSourceSignature = "";
-    if (typeof S.blogPerspectiveUsed !== "string") S.blogPerspectiveUsed = "";
-    if (!S.blogDraft || typeof S.blogDraft !== "object") S.blogDraft = null;
 
     platformBtns.forEach((b) => b.classList.toggle("active", b.dataset.platform === S.platform));
     kindBtns.forEach((b) => b.classList.toggle("active", b.dataset.kind === S.kind));
     lenBtns.forEach((b) => b.classList.toggle("active", b.dataset.length === S.length));
     imageStyleBtns.forEach((b) => b.classList.toggle("active", b.dataset.imageStyle === S.imageStyle));
     el.imageRequest.value = S.imageRequest;
-    el.blogPerspective.value = S.blogPerspective;
 
     /* 기억해 둔 탭이 아직 살아 있는지 확인한다 */
-    for (const key of ["gongsilTabId", "aiTabId", "blogAiTabId"]) {
+    for (const key of ["gongsilTabId", "aiTabId"]) {
       if (S[key]) {
         const alive = await chrome.tabs.get(S[key]).catch(() => null);
         if (!alive) S[key] = null;
@@ -1258,8 +1001,6 @@
 
     if (S.vacancy) renderVacancy(S.vacancy);
     renderDraft();
-    renderBlog();
-    switchTab("work");
   }
 
   /* ═════════════ 잡동사니 ═════════════ */

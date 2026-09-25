@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "공실뉴스 AI 기사작성기",
-  "version": "2.1.0",
-  "description": "공실 매물로 기사와 블로그 초안을 만들고, 다듬어서 공실뉴스 기사작성 페이지로 보냅니다.",
+  "version": "2.0.4",
+  "description": "오른쪽 작업창에서 공실 매물을 가져와 ChatGPT·Gemini 로 기사를 쓰고, 다듬어서 공실뉴스 기사작성 페이지로 보냅니다.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -20,8 +20,6 @@
     "scripting",
     "sidePanel",
     "activeTab",
-    "clipboardWrite",
-    "downloads",
     "unlimitedStorage"
   ],
   "host_permissions": [
