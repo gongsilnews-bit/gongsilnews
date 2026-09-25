@@ -95,7 +95,7 @@
   const MUTED = "#888888";
   const SKY = "#dbeafe"; // 매거진형 소제목 하늘색 배경(형광펜)
   const BLANK = "<p><br></p>";
-  const SITE_URL = "https://gongsilnews.com";
+  const SITE_URL = "https://www.gongsilnews.com"; // gongsilnews.com은 www로 넘어간다. 로그인 쿠키도 www에 있다
 
   /* 매물표 항목: 부동산 인터넷 표시·광고 필수 항목 순서.
      소재지·매물종류·거래형태는 출처 API(listing), 나머지는 공실광고정보 탭 항목(vacancy.fields)에서 찾는다. */

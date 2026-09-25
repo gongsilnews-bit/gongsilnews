@@ -57,6 +57,11 @@
     blogFileImage: $("blogFileImage"),
     blogImageRequest: $("blogImageRequest"),
     blogDesignHint: $("blogDesignHint"),
+    blogLock: $("blogLock"),
+    blogLockTitle: $("blogLockTitle"),
+    blogLockText: $("blogLockText"),
+    blogLockLink: $("blogLockLink"),
+    btnBlogLockRetry: $("btnBlogLockRetry"),
     btnSendNaver: $("btnSendNaver"),
     status: $("statusPill"),
     toastHost: $("toastHost"),
@@ -151,6 +156,87 @@
     return el.tabBlog.classList.contains("active");
   }
 
+  /* ── 3단계 회원 잠금 ──
+     공실뉴스부동산·공실스터디부동산·최고관리자만 블로그 작성을 쓴다. 1·2단계는 누구나 쓴다(홍보용).
+     화면 잠금은 안내용이고, 실제 차단은 서버(매물 출처 API)가 한 번 더 한다. */
+  let blogAccess = null; // { canBlog, isLoggedIn, name, planLabel }
+
+  async function siteOrigin() {
+    // 매물을 localhost에서 가져왔으면 개발 서버에, 아니면 운영 사이트에 묻는다
+    const source = await getSource().catch(() => null);
+    const url = B.vacancy?.url || source?.vacancy?.url || "";
+    try {
+      const origin = new URL(url).origin;
+      if (/^http:\/\/localhost(:\d+)?$/i.test(origin)) return origin;
+    } catch (_) {
+      /* 주소가 없으면 운영 사이트 */
+    }
+    return GWNaverBlog.SITE_URL;
+  }
+
+  async function checkBlogAccess() {
+    const origin = await siteOrigin();
+    try {
+      const response = await fetch(`${origin}/api/extension/auth/me`, { credentials: "include", cache: "no-store" });
+      const data = await response.json();
+      blogAccess = {
+        origin,
+        canBlog: Boolean(data?.canBlog),
+        isLoggedIn: Boolean(data?.isLoggedIn),
+        name: data?.user?.name || "",
+        planLabel: data?.user?.planLabel || "",
+      };
+    } catch (_) {
+      blogAccess = { origin, canBlog: false, isLoggedIn: false, error: true };
+    }
+    applyBlogLock();
+    return blogAccess;
+  }
+
+  function applyBlogLock() {
+    const locked = !blogAccess?.canBlog;
+    el.viewBlog.classList.toggle("locked", locked);
+    el.blogLock.classList.toggle("hidden", !locked);
+    if (locked) el.blogActions.classList.add("hidden");
+    if (!locked) return;
+    if (!blogAccess) {
+      el.blogLockTitle.textContent = "회원 정보를 확인하는 중입니다";
+      el.blogLockText.textContent = "잠시만 기다려 주세요.";
+      el.blogLockLink.classList.add("hidden");
+      return;
+    }
+
+    const origin = blogAccess.origin || GWNaverBlog.SITE_URL;
+    if (blogAccess.error) {
+      el.blogLockTitle.textContent = "회원 정보를 확인하지 못했습니다";
+      el.blogLockText.textContent = "인터넷 연결을 확인한 뒤 [다시 확인]을 눌러 주세요.";
+      el.blogLockLink.classList.add("hidden");
+    } else if (!blogAccess.isLoggedIn) {
+      el.blogLockTitle.textContent = "공실뉴스에 로그인해 주세요";
+      el.blogLockText.textContent = "블로그 작성은 공실뉴스부동산·공실스터디부동산 회원 전용입니다. 이 브라우저에서 공실뉴스에 로그인한 뒤 [다시 확인]을 눌러 주세요.";
+      el.blogLockLink.textContent = "공실뉴스 열기";
+      el.blogLockLink.href = `${origin}/`;
+      el.blogLockLink.classList.remove("hidden");
+    } else {
+      el.blogLockTitle.textContent = "블로그 작성은 회원 전용입니다";
+      el.blogLockText.textContent = `${blogAccess.name}님은 현재 ${blogAccess.planLabel || "무료"} 등급입니다. ` +
+        "블로그 작성은 공실뉴스부동산·공실스터디부동산 회원만 사용할 수 있습니다.";
+      el.blogLockLink.textContent = "공실뉴스부동산 신청하기";
+      el.blogLockLink.href = `${origin}/newsrealty/apply`;
+      el.blogLockLink.classList.remove("hidden");
+    }
+  }
+
+  el.btnBlogLockRetry.addEventListener("click", async () => {
+    el.btnBlogLockRetry.disabled = true;
+    await checkBlogAccess();
+    el.btnBlogLockRetry.disabled = false;
+    if (blogAccess?.canBlog) {
+      el.blogActions.classList.toggle("hidden", !B.article);
+      toast("블로그 작성을 사용할 수 있습니다.", "ok");
+    }
+  });
+
   function activateBlogTab() {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     el.tabWork.classList.remove("active");
@@ -162,7 +248,11 @@
     el.draftActions.classList.add("hidden");
     el.blogActions.classList.toggle("hidden", !B.article);
     el.blogBadge.classList.add("hidden");
+    applyBlogLock();
     updateSourceCard();
+    checkBlogAccess().then((access) => {
+      if (access.canBlog && isBlogActive()) el.blogActions.classList.toggle("hidden", !B.article);
+    });
   }
 
   function leaveBlogTab() {
@@ -356,7 +446,7 @@
 
     el.blogDraftEmpty.classList.add("hidden");
     el.blogDraftBody.classList.remove("hidden");
-    el.blogActions.classList.toggle("hidden", !isBlogActive());
+    el.blogActions.classList.toggle("hidden", !isBlogActive() || el.viewBlog.classList.contains("locked"));
     el.blogDate.textContent = new Date().toLocaleString("ko-KR", {
       year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
     });
@@ -673,7 +763,9 @@
     } catch (_) {
       /* 주소가 없으면 운영 사이트에 묻는다 */
     }
-    const response = await fetch(`${origin}/api/extension/vacancy-source?id=${encodeURIComponent(id)}`);
+    const response = await fetch(`${origin}/api/extension/vacancy-source?id=${encodeURIComponent(id)}`, {
+      credentials: "include", // 서버가 로그인 회원 등급을 확인한다
+    });
     const data = await response.json();
     if (!data?.success) throw new Error(data?.error || "매물 출처 정보를 가져오지 못했습니다.");
     return {
@@ -690,7 +782,7 @@
     const media = GWMediaCover.normalize(B.media);
     // 예전 초안(매물 정보 고정 전)은 지금 1번 탭의 매물 정보를 쓴다
     const vacancy = B.vacancy || (await getSource().catch(() => null))?.vacancy || null;
-    if (!B.listing) B.listing = await fetchListing(vacancy).catch(() => null);
+    if (!B.listing) B.listing = await fetchListing(vacancy); // 권한 없음·로그인 필요 오류는 그대로 보여 준다
     const problems = GWNaverBlog.listingProblems(B.listing);
     if (problems.length) {
       throw new Error(

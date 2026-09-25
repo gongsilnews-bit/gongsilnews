@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getVacancyDetail } from "@/app/actions/vacancy";
+import { getExtensionMember } from "@/utils/extensionMember";
 
 /**
  * 크롬 확장 블로그 작성용 매물 출처 정보
@@ -23,6 +24,20 @@ export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id") || "";
   if (!/^[0-9a-f-]{36}$/i.test(id)) {
     return NextResponse.json({ success: false, error: "매물 ID가 올바르지 않습니다." }, { status: 400, headers: corsHeaders });
+  }
+
+  // 블로그 전송은 반드시 이 API를 거친다. 확장 화면 잠금을 우회해도 여기서 막힌다.
+  const requester = await getExtensionMember(req);
+  if (!requester?.canBlog) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: requester
+          ? "블로그 작성은 공실뉴스부동산·공실스터디부동산 회원만 사용할 수 있습니다."
+          : "공실뉴스에 로그인한 뒤 다시 시도해 주세요.",
+      },
+      { status: requester ? 403 : 401, headers: corsHeaders }
+    );
   }
 
   const res = await getVacancyDetail(id);

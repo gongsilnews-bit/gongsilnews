@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getEffectivePlan } from "@/utils/planCheck";
+import { getExtensionMember } from "@/utils/extensionMember";
 
-function getAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
+/**
+ * 크롬 확장 회원 확인
+ * 공실뉴스 로그인 쿠키 또는 Bearer 토큰으로만 판정한다.
+ * (예전의 ?email= 조회와 최고관리자 대체 응답은 누구나 회원 정보를 볼 수 있어 제거했다)
+ */
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Cache-Control": "no-store",
 };
 
 export async function OPTIONS() {
@@ -22,84 +20,40 @@ export async function OPTIONS() {
 
 export async function GET(req: NextRequest) {
   try {
-    const authHeader = req.headers.get("Authorization");
-    const supabase = getAdminClient();
+    const member = await getExtensionMember(req);
 
-    // 1. 토큰이 있는 경우 Supabase 유저 검증
-    let user: any = null;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.replace("Bearer ", "").trim();
-      const { data: userData, error: userError } = await supabase.auth.getUser(token);
-      if (!userError && userData?.user) {
-        user = userData.user;
-      }
-    }
-
-    // 2. 토큰이 없거나 만료된 경우: URL 쿼리의 email 또는 로컬 최고관리자 기본 프로필 반환 (개발/테스트 편의)
-    const emailParam = req.nextUrl.searchParams.get("email");
-    let memberData: any = null;
-
-    if (user?.email || emailParam) {
-      const targetEmail = user?.email || emailParam;
-      const { data: member } = await supabase
-        .from("members")
-        .select("id, name, email, role, plan_type, plan_end_date, max_articles_per_month")
-        .eq("email", targetEmail)
-        .maybeSingle();
-
-      memberData = member;
-    }
-
-    // 기본 관리자 Fallback (로컬 개발 환경 지원)
-    if (!memberData) {
-      const { data: adminMember } = await supabase
-        .from("members")
-        .select("id, name, email, role, plan_type, plan_end_date, max_articles_per_month")
-        .eq("role", "ADMIN")
-        .limit(1)
-        .maybeSingle();
-      memberData = adminMember;
-    }
-
-    if (!memberData) {
+    if (!member) {
       return NextResponse.json(
-        {
-          success: true,
-          isLoggedIn: false,
-          user: null,
-          tier: "guest",
-          dailyLimit: 3,
-          dailyUsed: 0,
-        },
+        { success: true, isLoggedIn: false, user: null, canBlog: false, tier: "guest", dailyLimit: 3, dailyUsed: 0 },
         { headers: corsHeaders }
       );
     }
 
-    const effectivePlan = getEffectivePlan(memberData);
-    const isPremium = effectivePlan === "admin" || effectivePlan === "news_premium" || memberData.role === "ADMIN";
-
+    const isPremium = member.plan === "admin" || member.plan === "news_premium" || member.role === "ADMIN";
     return NextResponse.json(
       {
         success: true,
         isLoggedIn: true,
         user: {
-          id: memberData.id,
-          name: memberData.name || "공실뉴스 회원",
-          email: memberData.email,
-          role: memberData.role,
-          planType: effectivePlan,
+          id: member.id,
+          name: member.name,
+          email: member.email,
+          role: member.role,
+          planType: member.plan,
+          planLabel: member.planLabel,
           isPremium,
         },
+        canBlog: member.canBlog,
         tier: isPremium ? "premium" : "free",
         dailyLimit: isPremium ? 9999 : 5,
         dailyUsed: 0,
       },
       { headers: corsHeaders }
     );
-  } catch (err: any) {
+  } catch (err) {
     console.error("확장프로그램 회원 조회 오류:", err);
     return NextResponse.json(
-      { success: false, error: err.message || "인증 처리 실패" },
+      { success: false, error: err instanceof Error ? err.message : "인증 처리 실패" },
       { status: 500, headers: corsHeaders }
     );
   }

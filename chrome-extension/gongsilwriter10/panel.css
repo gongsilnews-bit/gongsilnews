@@ -925,3 +925,13 @@ body {
   .nav-tab { gap: 3px; padding-inline: 3px; font-size: 11px }
   .blog-style-grid { grid-template-columns: 1fr }
 }
+
+/* ── 3단계 블로그 작성 회원 잠금 ── */
+#viewBlog.locked > :not(#blogLock) { display: none !important }
+.blog-lock { text-align: center; padding: 28px 18px }
+.blog-lock-icon { font-size: 30px; margin-bottom: 10px }
+.blog-lock strong { display: block; font-size: 15px; color: #111827; margin-bottom: 8px }
+.blog-lock p { font-size: 13px; color: #6b7280; line-height: 1.6; margin: 0 0 16px }
+.blog-lock-actions { display: flex; gap: 8px; justify-content: center }
+.blog-lock-actions .btn-fill,
+.blog-lock-actions .btn-line { padding: 10px 14px; text-decoration: none; font-size: 13px }
