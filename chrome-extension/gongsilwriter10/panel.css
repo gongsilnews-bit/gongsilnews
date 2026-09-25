@@ -554,28 +554,15 @@ body {
 .btn-sub:hover:not(:disabled) { background: #f8fafc; border-color: var(--primary) }
 .btn-sub:disabled { opacity: .45; cursor: default }
 
-.btn-article-shortcut {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
+/* 기사전송하기(.btn-send)와 같은 크기 — 색만 파란색으로 구분한다 */
+.btn-send.btn-article-shortcut {
   margin-bottom: 7px;
-  padding: 9px 12px;
-  border: 1.5px solid var(--primary);
-  border-radius: var(--radius-sm);
-  background: var(--primary-light);
-  color: var(--primary);
-  font-size: 12px;
-  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  box-shadow: 0 4px 10px rgba(37, 99, 235, .3);
   text-decoration: none;
-  transition: all .16s;
 }
 
-.btn-article-shortcut:hover {
-  background: #dbeafe;
-  border-color: var(--primary-hover);
-  color: var(--primary-hover);
-}
+.btn-send.btn-article-shortcut:hover { background: linear-gradient(135deg, var(--primary-hover), #1e40af) }
 
 .btn-send {
   display: flex;
