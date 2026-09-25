@@ -52,6 +52,7 @@
     blogKeywords: $("blogKeywords"),
     blogReviseInput: $("blogReviseInput"),
     btnReviseBlog: $("btnReviseBlog"),
+    btnPullBlogRevised: $("btnPullBlogRevised"),
     btnMakeBlogImage: $("btnMakeBlogImage"),
     btnInsertBlogImage: $("btnInsertBlogImage"),
     blogFileImage: $("blogFileImage"),
@@ -385,9 +386,9 @@
     })
   );
 
-  async function pullBlogArticle() {
+  async function pullBlogArticle(readOpts = {}) {
     if (!B.aiTabId) throw new Error("먼저 AI 블로그 초안 작성을 눌러 주세요.");
-    const response = await askTab(B.aiTabId, { type: "GW_READ" });
+    const response = await askTab(B.aiTabId, { type: "GW_READ", ...readOpts });
     if (!response.ok) throw new Error(response.reason || "AI 응답을 읽지 못했습니다.");
 
     const parsed = GWArticleJson.parse(response.text);
@@ -566,6 +567,13 @@
   el.blogCover.addEventListener("click", handleMediaButton);
 
   el.btnReviseBlog.addEventListener("click", reviseBlog);
+  el.btnPullBlogRevised.addEventListener("click", () =>
+    guard(el.btnPullBlogRevised, "수정글 읽는 중", async () => {
+      const repaired = await pullBlogArticle();
+      toast(repaired ? "JSON 오류를 복구해 수정 글을 가져왔습니다." : "수정된 블로그 글을 가져왔습니다.", "ok");
+      status("블로그 초안 갱신됨", "ok");
+    })
+  );
   el.blogReviseInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") reviseBlog();
   });
@@ -582,16 +590,22 @@
       harvestBlog();
       await save();
       await chrome.tabs.update(B.aiTabId, { active: true });
+      // 보내기 전 답변 수를 세어 두었다가 새 답변만 읽는다 (예전 AI 탭이면 세지 못한다)
+      const before = await askTab(B.aiTabId, { type: "GW_COUNT" }).catch(() => null);
 
       const filled = await askTab(B.aiTabId, { type: "GW_FILL", text: gwBuildBlogRevisePrompt(request) });
       if (!filled.ok) throw new Error(filled.reason || "수정 요청을 넣지 못했습니다.");
       const submitted = await askTab(B.aiTabId, { type: "GW_SUBMIT" });
       if (!submitted.ok) throw new Error(submitted.reason || "수정 요청을 전송하지 못했습니다.");
 
-      toast("블로그 글 수정을 요청했습니다. 완성되면 자동으로 가져옵니다.", "info");
-      await sleep(2500);
-      const repaired = await pullBlogArticle();
       el.blogReviseInput.value = "";
+      if (!before?.ok) {
+        toast("블로그 글 수정을 요청했습니다. AI 답변이 끝나면 [수정글 가져오기]를 눌러 주세요.", "info", 9000);
+        status("수정 답변 기다리는 중", "busy");
+        return;
+      }
+      toast("블로그 글 수정을 요청했습니다. 새 답변이 끝나면 자동으로 가져옵니다.", "info");
+      const repaired = await pullBlogArticle({ minCount: before.count + 1, maxMs: 180000 });
       toast(repaired ? "JSON 오류를 복구해 수정 글을 가져왔습니다." : "수정된 블로그 글을 가져왔습니다.", "ok");
       status("블로그 초안 갱신됨", "ok");
     });
@@ -895,6 +909,7 @@
     el.btnMakeBlogDraft.disabled = !hasSource;
     el.btnPullBlogDraft.disabled = !B.aiTabId;
     el.btnReviseBlog.disabled = !B.article || !B.aiTabId;
+    el.btnPullBlogRevised.disabled = !B.aiTabId;
     el.btnMakeBlogImage.disabled = !B.article || !B.aiTabId;
     el.btnInsertBlogImage.disabled = !B.article;
     el.btnSendNaver.disabled = !B.article;

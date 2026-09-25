@@ -83,6 +83,15 @@ const GwAi = (() => {
     return { ok: false, reason: "전송 버튼을 찾지 못했습니다. AI 탭에서 직접 눌러 주세요." };
   }
 
+  /* ── 응답 개수 (수정 요청 전 개수를 세어 두고 새 답변만 읽기 위해) ── */
+  function countAnswers(conf) {
+    for (const sel of conf.ANSWER) {
+      const count = document.querySelectorAll(sel).length;
+      if (count) return count;
+    }
+    return 0;
+  }
+
   /* ── 마지막 응답 읽기 ── */
   function readLast(conf) {
     for (const sel of conf.ANSWER) {
@@ -98,11 +107,19 @@ const GwAi = (() => {
 
   /* ── 응답이 멎을 때까지 기다린다 ──
      스트리밍이라 "끝" 신호가 없다. 글자가 더 늘지 않으면 끝난 것으로 본다. */
-  async function read(conf, maxMs = 120000) {
+  async function read(conf, maxMs = 120000, minCount = 0) {
     const until = Date.now() + maxMs;
     const settleMs = Number(conf.SETTLE_MS) || GW.SETTLE_MS;
     let prev = "";
     let stableSince = 0;
+
+    // minCount: 이만큼 답변이 쌓일 때까지(= 방금 보낸 요청의 새 답변이 나올 때까지) 이전 답변은 읽지 않는다
+    while (minCount && countAnswers(conf) < minCount) {
+      if (Date.now() >= until) {
+        return { ok: false, reason: "AI의 새 답변이 아직 없습니다. 답변이 끝나면 [수정글 가져오기]를 눌러 주세요." };
+      }
+      await gwSleep(500);
+    }
 
     while (Date.now() < until) {
       const now = readLast(conf);
@@ -177,7 +194,9 @@ const GwAi = (() => {
             case "GW_SUBMIT":
               return await submit(conf);
             case "GW_READ":
-              return await read(conf);
+              return await read(conf, Number(msg.maxMs) || 120000, Number(msg.minCount) || 0);
+            case "GW_COUNT":
+              return { ok: true, count: countAnswers(conf) };
             case "GW_GET_IMAGE":
               return getImage(conf);
             default:
@@ -188,7 +207,7 @@ const GwAi = (() => {
         }
       };
 
-      const known = ["GW_FILL", "GW_SUBMIT", "GW_READ", "GW_GET_IMAGE"].includes(msg.type);
+      const known = ["GW_FILL", "GW_SUBMIT", "GW_READ", "GW_COUNT", "GW_GET_IMAGE"].includes(msg.type);
       if (!known) return false;
 
       run().then(sendResponse);

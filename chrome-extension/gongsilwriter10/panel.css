@@ -935,3 +935,6 @@ body {
 .blog-lock-actions { display: flex; gap: 8px; justify-content: center }
 .blog-lock-actions .btn-fill,
 .blog-lock-actions .btn-line { padding: 10px 14px; text-decoration: none; font-size: 13px }
+
+/* 수정 요청 아래 [수정글 가져오기] */
+.btn-pull-revised { display: block; width: 100%; margin-bottom: 7px }

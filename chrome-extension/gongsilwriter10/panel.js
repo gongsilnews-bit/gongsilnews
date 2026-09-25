@@ -33,7 +33,7 @@
     draftEmpty: $("draftEmpty"), draftBody: $("draftBody"), draftActions: $("draftActions"),
     pvDate: $("pvDate"), pvTitle: $("pvTitle"), pvSubtitle: $("pvSubtitle"),
     pvCover: $("pvCover"), pvContent: $("pvContent"), pvKeywords: $("pvKeywords"),
-    reviseInput: $("reviseInput"), btnRevise: $("btnRevise"),
+    reviseInput: $("reviseInput"), btnRevise: $("btnRevise"), btnPullRevised: $("btnPullRevised"),
     imageRequest: $("imageRequest"),
     btnMakeImage: $("btnMakeImage"), btnChangeImage: $("btnChangeImage"), fileImage: $("fileImage"),
     btnSendGongsil: $("btnSendGongsil"),
@@ -427,8 +427,8 @@
     })
   );
 
-  async function pullArticle() {
-    const res = await askTab(S.aiTabId, { type: "GW_READ" });
+  async function pullArticle(readOpts = {}) {
+    const res = await askTab(S.aiTabId, { type: "GW_READ", ...readOpts });
     if (!res.ok) throw new Error(res.reason || "응답을 읽지 못했습니다.");
 
     const parsed = GWArticleJson.parse(res.text);
@@ -741,6 +741,8 @@
 
       harvestEdits();
       await chrome.tabs.update(S.aiTabId, { active: true });
+      // 보내기 전 답변 수를 세어 두었다가 새 답변만 읽는다 (예전 AI 탭이면 세지 못한다)
+      const before = await askTab(S.aiTabId, { type: "GW_COUNT" }).catch(() => null);
 
       const fill = await askTab(S.aiTabId, { type: "GW_FILL", text: gwBuildRevisePrompt(want) });
       if (!fill.ok) throw new Error(fill.reason || "수정 요청을 넣지 못했습니다.");
@@ -748,15 +750,27 @@
       const sent = await askTab(S.aiTabId, { type: "GW_SUBMIT" });
       if (!sent.ok) throw new Error(sent.reason || "전송하지 못했습니다.");
 
-      toast("수정을 요청했습니다. 다시 나오면 가져옵니다.", "info");
-      await sleep(2500);
-
-      const repaired = await pullArticle();
       el.reviseInput.value = "";
+      if (!before?.ok) {
+        toast("수정을 요청했습니다. AI 답변이 끝나면 [수정글 가져오기]를 눌러 주세요.", "info", 9000);
+        status("수정 답변 기다리는 중", "busy");
+        return;
+      }
+      toast("수정을 요청했습니다. 새 답변이 끝나면 자동으로 가져옵니다.", "info");
+      const repaired = await pullArticle({ minCount: before.count + 1, maxMs: 180000 });
       toast(repaired ? "JSON 오류를 자동 복구해 수정 기사를 가져왔습니다." : "수정된 기사를 가져왔습니다.", "ok");
       status("초안 갱신됨", "ok");
     });
   }
+
+  el.btnPullRevised.addEventListener("click", () =>
+    guard(el.btnPullRevised, "수정글 읽는 중", async () => {
+      if (!S.aiTabId) throw new Error("AI 탭이 없습니다. 초안을 만든 탭이 닫혔습니다.");
+      const repaired = await pullArticle();
+      toast(repaired ? "JSON 오류를 자동 복구해 수정 기사를 가져왔습니다." : "수정된 기사를 가져왔습니다.", "ok");
+      status("초안 갱신됨", "ok");
+    })
+  );
 
   /* ═════════════ ⑦ 이미지 ═════════════ */
   const imageStyleBtns = document.querySelectorAll(".image-style[data-image-style]");
@@ -949,6 +963,7 @@
     el.btnSubmit.disabled = !S.aiTabId;
     el.btnPullDraft.disabled = !S.aiTabId;
     el.btnRevise.disabled = !S.article || !S.aiTabId;
+    el.btnPullRevised.disabled = !S.aiTabId;
     el.btnMakeImage.disabled = !S.article || !S.aiTabId;
     el.btnChangeImage.disabled = !S.article;
     el.btnSendGongsil.disabled = !S.article;
