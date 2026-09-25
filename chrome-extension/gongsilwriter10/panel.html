@@ -30,6 +30,10 @@
       <span class="step-number">2</span> 초안 다듬기
       <span id="draftBadge" class="tab-badge hidden">NEW</span>
     </button>
+    <button id="tabBlog" class="nav-tab" type="button">
+      <span class="step-number">3</span> 블로그 초안
+      <span id="blogBadge" class="tab-badge hidden">NEW</span>
+    </button>
   </nav>
 
   <div class="scroll-area">
@@ -174,6 +178,56 @@
           <div id="pvKeywords" class="kw-wrap"></div>
         </div>
 
+        <div class="blog-convert-box">
+          <div class="image-options-title">블로그에 넣을 나의 경험·관점</div>
+          <textarea id="blogPerspective" class="image-request" rows="3" maxlength="1600"
+                    placeholder="예: 직접 보니 진입로가 좁아 큰 차량은 현장 확인이 필요했습니다. 입력한 사실만 블로그 글에 반영합니다."></textarea>
+          <button id="btnMakeBlogDraft" class="btn-blog-draft" type="button">
+            블로그 초안 만들기
+            <small>뉴스 원문을 복사하지 않고 블로그용으로 새로 씁니다</small>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════ 뷰 3 — 블로그 초안 ═══════════ -->
+    <section id="viewBlog" class="view">
+      <div id="blogEmpty" class="empty-note">
+        아직 블로그 초안이 없습니다.<br>
+        <b>2 · 초안 다듬기</b>에서 실제 경험이나 의견을 적고<br>
+        <b>블로그 초안 만들기</b>를 눌러 주세요.
+      </div>
+
+      <div id="blogBody" class="hidden">
+        <div class="policy-note">
+          네이버 화면을 자동 조작하거나 자동 발행하지 않습니다.<br>
+          내용을 검토한 뒤 복사하여 직접 붙여넣고 발행해 주세요.
+        </div>
+
+        <div class="preview-doc blog-doc">
+          <div class="preview-top">
+            <span class="cat-badge blog-badge">블로그 초안</span>
+            <span class="pub-date">직접 검토 후 발행</span>
+          </div>
+
+          <h2 id="blogTitle" class="doc-title" contenteditable="true" spellcheck="false"
+              title="클릭해서 직접 고칠 수 있습니다"></h2>
+
+          <div id="blogCover" class="blog-cover hidden"></div>
+          <div id="blogContent" class="doc-body blog-content" contenteditable="true" spellcheck="false"></div>
+          <div id="blogTags" class="blog-tags-editor" contenteditable="true" spellcheck="false"
+               title="#태그를 직접 고칠 수 있습니다"></div>
+        </div>
+
+        <div class="quality-card">
+          <div class="quality-head">
+            <strong>게시 전 내부 품질 점검</strong>
+            <span id="qualityScore">0/0</span>
+          </div>
+          <div id="qualityChecks" class="quality-checks"></div>
+          <p class="quality-foot">이 점검은 검색 노출을 보장하지 않습니다. 사실관계와 사진 출처는 발행 전에 직접 확인해 주세요.</p>
+        </div>
       </div>
     </section>
 
@@ -217,6 +271,16 @@
     </button>
   </div>
 
+  <!-- ─────────── 뷰 3 하단 고정 바 ─────────── -->
+  <div id="blogActions" class="bottom-bar hidden">
+    <div class="blog-copy-grid">
+      <button id="btnCopyBlogTitle" class="btn-sub" type="button">제목 복사</button>
+      <button id="btnCopyBlogBody" class="btn-sub" type="button">본문·태그 복사</button>
+      <button id="btnDownloadBlogPhotos" class="btn-sub" type="button">사진 저장</button>
+    </div>
+    <p class="manual-publish-note">네이버 블로그에 직접 붙여넣고 내용을 확인한 뒤 발행해 주세요.</p>
+  </div>
+
   <div id="toastHost"></div>
 </div>
 
@@ -225,6 +289,7 @@
 <script src="shared/media.js"></script>
 <script src="shared/media-cover.js"></script>
 <script src="shared/article-json.js"></script>
+<script src="shared/blog-draft.js"></script>
 <script src="panel.js"></script>
 </body>
 </html>
