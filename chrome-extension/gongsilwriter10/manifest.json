@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "공실뉴스 AI 기사작성기",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "오른쪽 작업창에서 공실 매물을 가져와 ChatGPT·Gemini 로 기사를 쓰고, 다듬어서 공실뉴스 기사작성 페이지로 보냅니다.",
   "icons": {
     "16": "icons/icon16.png",
@@ -62,6 +62,7 @@
       ],
       "js": [
         "shared/config.js",
+        "shared/write-page.js",
         "shared/media-cover.js",
         "shared/ui.js",
         "content-admin.js"

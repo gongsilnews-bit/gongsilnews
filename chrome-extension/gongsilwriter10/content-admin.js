@@ -9,8 +9,7 @@
 
   /* 기사쓰기 화면인지 */
   function isWritePage() {
-    const q = new URLSearchParams(location.search);
-    return q.get("menu") === "article" && q.get("action") === "write";
+    return GWWritePage.isNewArticleWriteUrl(location.href);
   }
 
   /* ── 본문 편집기 고르기 ──
@@ -325,38 +324,79 @@
     return done.length > 0;
   }
 
+  let applying = null;
+
+  async function applyPendingDraft() {
+    if (!isWritePage()) {
+      return { ok: false, error: "새 기사쓰기 화면이 아닙니다." };
+    }
+
+    if (applying) return applying;
+
+    applying = (async () => {
+      const store = await chrome.storage.local.get(GW.KEY.DRAFT);
+      const draft = store[GW.KEY.DRAFT];
+      if (!draft || !draft.article) {
+        return { ok: false, error: "전송할 기사 초안을 찾지 못했습니다." };
+      }
+
+      /* 10분이 지난 것은 찌꺼기로 본다 */
+      if (Date.now() - (draft.createdAt || 0) > 10 * 60 * 1000) {
+        await chrome.storage.local.remove(GW.KEY.DRAFT);
+        return { ok: false, error: "기사 초안이 만료되었습니다. 다시 보내 주세요." };
+      }
+
+      gwBusy("AI 기사 초안을 넣는 중입니다");
+      let filled = false;
+      let error = "기사쓰기 폼에 초안을 넣지 못했습니다.";
+      try {
+        filled = await fillForm(draft);
+      } catch (e) {
+        error = "자동 입력 중 오류가 났습니다: " + e.message;
+        gwToast(error, "error", 7000);
+      } finally {
+        gwBusyDone();
+      }
+
+      /* 성공했을 때만 지워 새로고침으로 같은 글을 덮어쓰지 않게 한다. */
+      if (filled) {
+        await chrome.storage.local.remove(GW.KEY.DRAFT);
+        return { ok: true, url: location.href };
+      }
+
+      return { ok: false, error };
+    })();
+
+    try {
+      return await applying;
+    } finally {
+      applying = null;
+    }
+  }
+
+  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (msg?.type === "GW_PING_WRITE_PAGE") {
+      sendResponse({ ok: isWritePage() });
+      return false;
+    }
+
+    if (msg?.type === "GW_APPLY_PENDING_DRAFT") {
+      applyPendingDraft()
+        .then(sendResponse)
+        .catch((e) => sendResponse({ ok: false, error: e.message || String(e) }));
+      return true;
+    }
+
+    return false;
+  });
+
   async function boot() {
     if (!isWritePage()) return;
 
     const store = await chrome.storage.local.get(GW.KEY.DRAFT);
     const draft = store[GW.KEY.DRAFT];
     if (!draft || !draft.article) return;
-
-    /* 10분이 지난 것은 찌꺼기로 본다 */
-    if (Date.now() - (draft.createdAt || 0) > 10 * 60 * 1000) {
-      await chrome.storage.local.remove(GW.KEY.DRAFT);
-      return;
-    }
-
-    gwBusy("AI 기사 초안을 넣는 중입니다");
-    let filled = false;
-    try {
-      filled = await fillForm(draft);
-    } catch (e) {
-      gwToast("자동 입력 중 오류가 났습니다: " + e.message, "error", 7000);
-    } finally {
-      gwBusyDone();
-    }
-
-    /* 들어갔을 때만 지운다.
-       - 지우면: 새로고침해도 다시 덮어쓰지 않는다 (쓰던 글을 지키기 위해)
-       - 안 지우면: 폼을 못 찾아 실패한 경우라 새로고침으로 다시 시도할 수 있다 */
-    if (filled) {
-      await chrome.storage.local.remove(GW.KEY.DRAFT);
-      chrome.runtime.sendMessage({ type: "GW_DRAFT_APPLIED", url: location.href }).catch(() => {});
-    } else {
-      chrome.runtime.sendMessage({ type: "GW_DRAFT_NOT_APPLIED", url: location.href }).catch(() => {});
-    }
+    await applyPendingDraft();
   }
 
   if (document.readyState === "loading") {

@@ -3,12 +3,12 @@
 
    하는 일은 둘뿐이다.
    1) 아이콘을 누르면 작업창을 연다 (페이지를 옮기지 않는다)
-   2) 작업창이 기사쓰기 폼으로 넘길 때 데이터를 맡아 두고 탭을 연다
+   2) 이미 열어 둔 새 기사쓰기 탭에 작업창의 초안을 넘긴다
 
    판단은 전부 작업창(panel.js)이 한다. 여기는 문을 여닫기만 한다.
    ══════════════════════════════════════════════════════════════ */
 
-importScripts("shared/config.js");
+importScripts("shared/config.js", "shared/write-page.js");
 
 /* ── 작업창을 아이콘 클릭으로 연다 ──
    tabId 를 주지 않고 전역으로 설정한다.
@@ -27,44 +27,50 @@ chrome.sidePanel
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   /* ── 기사쓰기 폼으로 넘기기 ── */
   if (msg.type === "GW_SEND_TO_GONGSIL") {
-    const origin = msg.origin || "https://gongsilnews.com";
-    const writeUrl = GW.writeUrl(origin, msg.vacancyId);
+    let writeTab;
 
-    chrome.storage.local
-      .set({
-        [GW.KEY.DRAFT]: {
-          article: msg.article,
-          media: msg.media || [],
-          vacancyId: msg.vacancyId || null,
-          origin,
-          createdAt: Date.now(),
-        },
-      })
-      .then(() => chrome.tabs.query({}))
+    chrome.tabs
+      .query({ currentWindow: true })
       .then((tabs) => {
-        /* 이미 열려 있는 기사작성 탭이 있으면 그리로 — 탭이 늘어나지 않게 */
-        const open = tabs.find(
-          (t) => {
-            if (!t.url || !t.url.startsWith(origin)) return false;
-            try {
-              const url = new URL(t.url);
-              return (
-                url.pathname === GW.ADMIN.WRITE_PATH ||
-                (url.searchParams.get("menu") === "article" && url.searchParams.get("action") === "write")
-              );
-            } catch (_) {
-              return false;
-            }
-          }
-        );
-        if (open && open.id) {
-          return chrome.tabs.update(open.id, { active: true, url: writeUrl });
+        writeTab = GWWritePage.selectWriteTab(tabs);
+        if (!writeTab) {
+          throw new Error("먼저 공실뉴스에 로그인하고 새 기사쓰기 화면을 열어 주세요.");
         }
-        return chrome.tabs.create({ url: writeUrl, active: true });
+
+        return chrome.tabs.update(writeTab.id, { active: true });
       })
-      /* 여기서는 탭을 연 것만 확인한다. 실제 입력 완료는 content-admin.js가 별도로 알린다. */
-      .then((tab) => sendResponse({ ok: true, tabId: tab.id, stage: "opened" }))
-      .catch((e) => sendResponse({ ok: false, error: e.message }));
+      /* 확장을 다시 로드한 뒤 탭을 새로고침하지 않은 경우를 먼저 잡는다. */
+      .then(() => chrome.tabs.sendMessage(writeTab.id, { type: "GW_PING_WRITE_PAGE" }))
+      .then((reply) => {
+        if (!reply?.ok) {
+          throw new Error("선택한 화면이 새 기사쓰기 화면이 아닙니다.");
+        }
+
+        return chrome.storage.local.set({
+          [GW.KEY.DRAFT]: {
+            article: msg.article,
+            media: msg.media || [],
+            vacancyId: msg.vacancyId || null,
+            createdAt: Date.now(),
+          },
+        });
+      })
+      .then(() => chrome.tabs.sendMessage(writeTab.id, { type: "GW_APPLY_PENDING_DRAFT" }))
+      .then((reply) => {
+        if (!reply?.ok) {
+          throw new Error(reply?.error || "기사쓰기 폼에 초안을 넣지 못했습니다.");
+        }
+        sendResponse({ ok: true, tabId: writeTab.id, stage: "applied" });
+      })
+      .catch((e) => {
+        const disconnected = /Receiving end does not exist|Could not establish connection/i.test(e.message || "");
+        sendResponse({
+          ok: false,
+          error: disconnected
+            ? "기사쓰기 탭을 새로고침(F5)한 뒤 다시 눌러 주세요."
+            : e.message,
+        });
+      });
 
     return true;
   }

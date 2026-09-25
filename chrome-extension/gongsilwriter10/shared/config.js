@@ -5,7 +5,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 const GW = {
-  VERSION: "2.0.3",
+  VERSION: "2.0.4",
 
   /* 확장이 주고받는 데이터를 담아두는 자리 (chrome.storage.local) */
   KEY: {
@@ -34,8 +34,6 @@ const GW = {
        폼이 평소 업로드와 똑같은 길(WebP 압축·대표 지정)로 처리한다. */
     PHOTO_INPUT: '#photo-upload',
     PHOTO_CAPTION: 'input[placeholder="사진 설명(캡션) 입력"]',
-    /* 로그인 회원의 역할/기사작성 권한은 공실뉴스 서버가 판정한다. */
-    WRITE_PATH: "/article/write",
   },
 
   /* ── ChatGPT ── */
@@ -87,8 +85,3 @@ GW.originOf = (url) => {
   }
 };
 
-/* 지금 페이지가 로컬인지 운영인지에 맞춰 기사작성 주소를 만든다 */
-GW.writeUrl = (origin, vacancyId) => {
-  const base = origin + GW.ADMIN.WRITE_PATH;
-  return vacancyId ? `${base}?vacancy_id=${encodeURIComponent(vacancyId)}` : base;
-};

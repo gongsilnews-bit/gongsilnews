@@ -27,7 +27,8 @@
      · [AI 이미지 만들기] / [이미지 삽입]
      · Gemini JSON 줄바꿈·괄호 오류는 초안 전송 때 자동 복구
    ↓
-⑧ [공실뉴스로 보내기]      →  로그인 회원의 권한에 맞는 기사쓰기 폼으로 이동
+⑧ 공실뉴스에 로그인하고 허용된 [새 기사쓰기] 화면을 먼저 열어 둔다
+⑨ [공실뉴스로 보내기]      →  같은 창에 열어 둔 새 기사쓰기 폼에 바로 입력
                                로그인 회원의 기자명으로 선택한 대표 이미지와 초안 자동 입력
                                ★ [기사 등록] 은 사람이 누른다
 ```
@@ -42,7 +43,7 @@
 | 파일 | 하는 일 |
 |---|---|
 | `panel.html` `panel.css` `panel.js` | **작업창.** 판단·상태·화면 전부 여기 |
-| `background.js` | 작업창 열기 + 기사쓰기 탭 열기. 판단하지 않는다 |
+| `background.js` | 작업창 열기 + 같은 창의 새 기사쓰기 탭에 초안 전달 |
 | `content-gongsil.js` | `GW_GET_VACANCY` 하나에만 답한다 |
 | `content-chatgpt.js` `content-gemini.js` | 고유 사정만. 실제 동작은 `ai-common.js` |
 | `content-admin.js` | 기사쓰기 폼 자동 입력 |
@@ -73,7 +74,7 @@ C:\Users\user\Desktop\gongsilnews\chrome-extension\gongsilwriter10
 공실열람 페이지에서 **F12 → Console** 에 파란 딱지가 떠야 한다.
 
 ```
-공실뉴스 AI 기사작성기 v2.0.3  붙었습니다 · ...
+공실뉴스 AI 기사작성기 v2.0.4  붙었습니다 · ...
 ```
 
 ---
@@ -92,6 +93,8 @@ C:\Users\user\Desktop\gongsilnews\chrome-extension\gongsilwriter10
 | `AI 응답을 찾지 못했습니다` | 응답 말풍선 셀렉터가 바뀌었다 | `shared/config.js` 의 `ANSWER` |
 | `JSON 을 찾지 못했습니다` | AI 가 형식을 안 지켰다 | AI 탭에서 "JSON 으로 다시" 요청 후 ③ 다시 |
 | `기사작성 폼을 찾지 못했습니다` | 폼 placeholder 가 바뀌었다 | `shared/config.js` 의 `ADMIN` |
+| `먼저 공실뉴스에 로그인하고 새 기사쓰기 화면을 열어 주세요` | 같은 창에 신규 기사쓰기 탭이 없다 | 로그인 후 [기사쓰기] 화면 열기 |
+| `기사쓰기 탭을 새로고침(F5)한 뒤 다시 눌러 주세요` | 확장을 다시 로드한 뒤 열린 탭이 이전 확장과 연결돼 있다 | 기사쓰기 탭에서 F5 |
 
 ---
 

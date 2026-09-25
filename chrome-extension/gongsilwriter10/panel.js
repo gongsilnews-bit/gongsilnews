@@ -40,17 +40,6 @@
     toastHost: $("toastHost"),
   };
 
-  /* 기사쓰기 페이지가 실제로 초안을 채운 뒤에만 전송 완료로 표시한다. */
-  chrome.runtime.onMessage.addListener((msg) => {
-    if (msg?.type === "GW_DRAFT_APPLIED") {
-      toast("기사쓰기 폼에 초안을 채웠습니다. 확인 후 [기사 등록]을 눌러 주세요.", "ok", 7000);
-      status("전송 완료", "ok");
-    } else if (msg?.type === "GW_DRAFT_NOT_APPLIED") {
-      toast("기사쓰기 폼에 자동 입력하지 못했습니다. 열린 화면의 안내를 확인해 주세요.", "bad", 7000);
-      status("전송 확인 필요", "bad");
-    }
-  });
-
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   /* ═════════════ 알림 ═════════════ */
@@ -914,7 +903,7 @@
     reader.readAsDataURL(file);
   });
 
-  /* ═════════════ ⑧ 공실뉴스로 보내기 ═════════════ */
+  /* ═════════════ ⑨ 공실뉴스로 보내기 ═════════════ */
   el.btnSendGongsil.addEventListener("click", () =>
     guard(el.btnSendGongsil, "보내는 중", async () => {
       if (!S.article) throw new Error("보낼 초안이 없습니다.");
@@ -931,13 +920,12 @@
         /* 대표를 첫 순서로도 보낸다. isCover 를 모르는 구버전 기사작성 폼도 안전하다. */
         media: GWMediaCover.coverFirst(S.media),
         vacancyId: S.vacancy?.vacancyId || null,
-        origin: S.origin,
       });
 
-      if (!res || !res.ok) throw new Error((res && res.error) || "기사쓰기 페이지를 열지 못했습니다.");
+      if (!res || !res.ok) throw new Error((res && res.error) || "기사쓰기 폼에 초안을 넣지 못했습니다.");
 
-      toast("기사쓰기 페이지를 열었습니다. 로그인과 권한 확인 후 초안을 자동 입력합니다.", "info", 7000);
-      status("기사쓰기 페이지 확인 중", "busy");
+      toast("열어 둔 기사쓰기 폼에 초안을 채웠습니다. 확인 후 [기사 등록]을 눌러 주세요.", "ok", 7000);
+      status("전송 완료", "ok");
     })
   );
 
