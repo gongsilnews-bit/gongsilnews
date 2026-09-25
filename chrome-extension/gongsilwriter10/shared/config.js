@@ -5,7 +5,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 const GW = {
-  VERSION: "1.0.0",
+  VERSION: "2.0.3",
 
   /* 확장이 주고받는 데이터를 담아두는 자리 (chrome.storage.local) */
   KEY: {
@@ -34,7 +34,8 @@ const GW = {
        폼이 평소 업로드와 똑같은 길(WebP 압축·대표 지정)로 처리한다. */
     PHOTO_INPUT: '#photo-upload',
     PHOTO_CAPTION: 'input[placeholder="사진 설명(캡션) 입력"]',
-    WRITE_PATH: "/admin?menu=article&action=write",
+    /* 로그인 회원의 역할/기사작성 권한은 공실뉴스 서버가 판정한다. */
+    WRITE_PATH: "/article/write",
   },
 
   /* ── ChatGPT ── */
@@ -60,10 +61,12 @@ const GW = {
     SEND: ['button[aria-label*="보내기"]', 'button[aria-label*="Send"]', "button.send-button"],
     ANSWER: ["message-content .markdown", "model-response message-content", ".model-response-text"],
     IMAGE: ["model-response img", "message-content img"],
+    /* 긴 JSON 생성 중 잠깐 멈춘 것을 완료로 오인하지 않도록 Gemini 는 더 기다린다. */
+    SETTLE_MS: 3000,
   },
 
   /* AI 응답이 멎었다고 보는 시간 (스트리밍이라 "끝" 신호가 없다) */
-  SETTLE_MS: 1200,
+  SETTLE_MS: 1800,
 };
 
 /* 확장이 이 페이지에 붙었는지 눈으로 확인하는 자리.
@@ -87,5 +90,5 @@ GW.originOf = (url) => {
 /* 지금 페이지가 로컬인지 운영인지에 맞춰 기사작성 주소를 만든다 */
 GW.writeUrl = (origin, vacancyId) => {
   const base = origin + GW.ADMIN.WRITE_PATH;
-  return vacancyId ? `${base}&vacancy_id=${encodeURIComponent(vacancyId)}` : base;
+  return vacancyId ? `${base}?vacancy_id=${encodeURIComponent(vacancyId)}` : base;
 };

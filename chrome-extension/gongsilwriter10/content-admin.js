@@ -88,13 +88,15 @@
     if (!input) return { photos: [], failed: ["사진 입력칸을 찾지 못했습니다"] };
 
     const before = document.querySelectorAll(GW.ADMIN.PHOTO_CAPTION).length;
+    /* 대표 사진을 첫 파일로 올리면 폼의 기존 자동 대표 지정 규칙을 그대로 탄다. */
+    const orderedMedia = GWMediaCover.coverFirst(media);
 
     const files = [];
     const kept = [];
     const failed = [];
 
-    for (let i = 0; i < media.length; i++) {
-      const m = media[i];
+    for (let i = 0; i < orderedMedia.length; i++) {
+      const m = orderedMedia[i];
       try {
         const f = await toFile(m.url, `gongsil_${Date.now()}_${i}.${extOf(mimeOf(m.url))}`);
         if (!f) throw new Error("빈 이미지");
@@ -129,6 +131,7 @@
         preview: previews[i],
         caption: m.caption || "",
         kind: m.kind,
+        isCover: m.isCover === true,
         insertAfterParagraph: Number.isInteger(m.insertAfterParagraph) ? m.insertAfterParagraph : null,
       });
     });
@@ -348,7 +351,12 @@
     /* 들어갔을 때만 지운다.
        - 지우면: 새로고침해도 다시 덮어쓰지 않는다 (쓰던 글을 지키기 위해)
        - 안 지우면: 폼을 못 찾아 실패한 경우라 새로고침으로 다시 시도할 수 있다 */
-    if (filled) await chrome.storage.local.remove(GW.KEY.DRAFT);
+    if (filled) {
+      await chrome.storage.local.remove(GW.KEY.DRAFT);
+      chrome.runtime.sendMessage({ type: "GW_DRAFT_APPLIED", url: location.href }).catch(() => {});
+    } else {
+      chrome.runtime.sendMessage({ type: "GW_DRAFT_NOT_APPLIED", url: location.href }).catch(() => {});
+    }
   }
 
   if (document.readyState === "loading") {

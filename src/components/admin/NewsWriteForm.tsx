@@ -9,6 +9,7 @@ import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 import { saveAiDraft, getAiDraftHistory, deleteAiDraft } from "@/app/actions/gemini";
 import { generateLocalVacancyArticle, type ArticleStyle, type ArticleLength } from "@/utils/generateLocalVacancyArticle";
+import { isAdminRole } from "@/utils/permissionCheck";
 import { getAuthorBanners, saveAuthorBanner, updateArticlesAdSettings, getArticleAdInfo, AuthorBanner } from "@/app/actions/articleAd";
 import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import ArticleAdSettingSlot from "./article_form/ArticleAdSettingSlot";
@@ -457,14 +458,18 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             // 새 글 쓰기일 때만 초기값 세팅 (기존 글 수정 시에는 DB 정보로 덮어씌워짐)
             if (!articleId) {
               setReporterName(m.name || "작성자");
-              setReporterEmail(m.email || "");
+              setReporterEmail(m.email || authData.user.email || "");
             }
-            if (m.role === 'REALTOR' || m.role === 'USER') {
+            if (!isAdminRole(m.role)) {
               setIsMemberMode(true);
               setMemberAuthorId(authData.user.id);
               // 만약 returnPath가 URL에 없었다면, 권한에 맞게 강제지정
               if (!returnPath) {
-                setMemberReturnPath(m.role === 'REALTOR' ? '/realty_admin?menu=article' : '/user_admin?menu=article');
+                setMemberReturnPath(
+                  m.role === 'REALTOR' || m.role === '부동산회원'
+                    ? '/realty_admin?menu=article'
+                    : '/user_admin?menu=article'
+                );
               }
             } else {
               setIsMemberMode(false);
@@ -1699,7 +1704,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       labelStatus === "PENDING" || labelStatus === "승인신청" ? "승인신청 중입니다..."
       : labelStatus === "REJECTED" ? "반려 처리 중입니다..."
       : labelStatus === "DRAFT" ? "임시저장 중입니다..."
-      : overrideStatus === "APPROVED" && currentUserRole === "ADMIN" ? "승인 처리 중입니다..."
+      : overrideStatus === "APPROVED" && isAdminRole(currentUserRole) ? "승인 처리 중입니다..."
       : "저장 중입니다..."
     );
     setSaving(true);
@@ -2522,12 +2527,14 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             {/* ── 기자명 ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 80 }}>기자명</label>
-              <input type="text" value={reporterName} onChange={e => setReporterName(e.target.value)}
-                style={{ width: 140, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
-              <input type="email" value={reporterEmail} onChange={e => setReporterEmail(e.target.value)}
-                style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
+              <input type="text" value={reporterName} onChange={e => setReporterName(e.target.value)} readOnly={!isAdminRole(currentUserRole)}
+                title={!isAdminRole(currentUserRole) ? "로그인한 회원정보의 기자명입니다." : undefined}
+                style={{ width: 140, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: !isAdminRole(currentUserRole) ? inputBg : cardBg, outline: "none", fontFamily: "inherit" }} />
+              <input type="email" value={reporterEmail} onChange={e => setReporterEmail(e.target.value)} readOnly={!isAdminRole(currentUserRole)}
+                title={!isAdminRole(currentUserRole) ? "로그인한 회원정보의 이메일입니다." : undefined}
+                style={{ flex: 1, padding: "10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: !isAdminRole(currentUserRole) ? inputBg : cardBg, outline: "none", fontFamily: "inherit" }} />
               {/* 관리자용 기자 변경 검색 */}
-              {currentUserRole === 'ADMIN' && (
+              {isAdminRole(currentUserRole) && (
                 <div ref={reporterDropdownRef} style={{ position: "relative" }}>
                   <button type="button" onClick={handleOpenReporterSearch}
                     style={{ height: 42, padding: "0 14px", background: "#7c3aed", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
@@ -2827,7 +2834,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             />
 
             {/* ── 저장완료 버튼 영역 (권한 분기) ── */}
-            {currentUserRole === 'ADMIN' ? (
+            {isAdminRole(currentUserRole) ? (
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="button" disabled={saving} onClick={async () => { setStatus('APPROVED'); await handleSave('APPROVED'); }}
                   style={{ flex: 1, padding: "16px 0", background: saving ? "#9ca3af" : "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "공실뉴스 AI 기사작성기",
-  "version": "2.0.0",
+  "version": "2.0.3",
   "description": "오른쪽 작업창에서 공실 매물을 가져와 ChatGPT·Gemini 로 기사를 쓰고, 다듬어서 공실뉴스 기사작성 페이지로 보냅니다.",
   "icons": {
     "16": "icons/icon16.png",
@@ -49,13 +49,20 @@
       "matches": [
         "https://gongsilnews.com/admin*",
         "https://*.gongsilnews.com/admin*",
-        "http://localhost/admin*"
+        "http://localhost/admin*",
+        "https://gongsilnews.com/realty_admin*",
+        "https://*.gongsilnews.com/realty_admin*",
+        "http://localhost/realty_admin*",
+        "https://gongsilnews.com/user_admin*",
+        "https://*.gongsilnews.com/user_admin*",
+        "http://localhost/user_admin*"
       ],
       "css": [
         "shared/ui.css"
       ],
       "js": [
         "shared/config.js",
+        "shared/media-cover.js",
         "shared/ui.js",
         "content-admin.js"
       ],
@@ -68,6 +75,7 @@
       "js": [
         "shared/config.js",
         "shared/ui.js",
+        "shared/article-json.js",
         "shared/ai-common.js",
         "content-chatgpt.js"
       ],
@@ -80,6 +88,7 @@
       "js": [
         "shared/config.js",
         "shared/ui.js",
+        "shared/article-json.js",
         "shared/ai-common.js",
         "content-gemini.js"
       ],

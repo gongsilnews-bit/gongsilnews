@@ -44,18 +44,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .then((tabs) => {
         /* 이미 열려 있는 기사작성 탭이 있으면 그리로 — 탭이 늘어나지 않게 */
         const open = tabs.find(
-          (t) =>
-            t.url &&
-            t.url.startsWith(origin) &&
-            t.url.includes("menu=article") &&
-            t.url.includes("action=write")
+          (t) => {
+            if (!t.url || !t.url.startsWith(origin)) return false;
+            try {
+              const url = new URL(t.url);
+              return (
+                url.pathname === GW.ADMIN.WRITE_PATH ||
+                (url.searchParams.get("menu") === "article" && url.searchParams.get("action") === "write")
+              );
+            } catch (_) {
+              return false;
+            }
+          }
         );
         if (open && open.id) {
           return chrome.tabs.update(open.id, { active: true, url: writeUrl });
         }
         return chrome.tabs.create({ url: writeUrl, active: true });
       })
-      .then((tab) => sendResponse({ ok: true, tabId: tab.id }))
+      /* 여기서는 탭을 연 것만 확인한다. 실제 입력 완료는 content-admin.js가 별도로 알린다. */
+      .then((tab) => sendResponse({ ok: true, tabId: tab.id, stage: "opened" }))
       .catch((e) => sendResponse({ ok: false, error: e.message }));
 
     return true;

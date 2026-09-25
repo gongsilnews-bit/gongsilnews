@@ -18,7 +18,7 @@
     origin: "https://gongsilnews.com",
     vacancy: null,
     article: null,   // { title, subtitles[], body, keywords[] }
-    media: [],       // [{ kind:'photo'|'proof'|'map'|'roadview'|'ai', url, caption }]
+    media: [],       // [{ kind:'photo'|'proof'|'map'|'roadview'|'ai', url, caption, isCover }]
   };
 
   const $ = (id) => document.getElementById(id);
@@ -39,6 +39,17 @@
     btnSendGongsil: $("btnSendGongsil"),
     toastHost: $("toastHost"),
   };
+
+  /* 기사쓰기 페이지가 실제로 초안을 채운 뒤에만 전송 완료로 표시한다. */
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg?.type === "GW_DRAFT_APPLIED") {
+      toast("기사쓰기 폼에 초안을 채웠습니다. 확인 후 [기사 등록]을 눌러 주세요.", "ok", 7000);
+      status("전송 완료", "ok");
+    } else if (msg?.type === "GW_DRAFT_NOT_APPLIED") {
+      toast("기사쓰기 폼에 자동 입력하지 못했습니다. 열린 화면의 안내를 확인해 주세요.", "bad", 7000);
+      status("전송 확인 필요", "bad");
+    }
+  });
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -116,12 +127,12 @@
         toast("이미 열려 있는 공실열람 탭으로 이동했습니다.", "info");
       } else {
         const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
-        const url = "https://www.gongsilnews.com/gongsil";
+        const url = "https://gongsilnews.com/gongsil";
         const tab = active
           ? await chrome.tabs.update(active.id, { url })
           : await chrome.tabs.create({ url });
         S.gongsilTabId = tab.id;
-        S.origin = "https://www.gongsilnews.com";
+        S.origin = "https://gongsilnews.com";
         toast("공실열람으로 이동했습니다. 매물을 하나 펼쳐 주세요.", "info");
       }
 
@@ -152,7 +163,7 @@
 
       /* 사진 4종 — 찍는 동안 공실열람 탭이 화면에 보여야 한다 */
       status("사진 찍는 중", "busy");
-      S.media = await captureMedia(tab, S.vacancy);
+      S.media = GWMediaCover.normalize(await captureMedia(tab, S.vacancy));
       renderDraft();
 
       const shots = S.media.map((m) => m.kind);
@@ -420,8 +431,8 @@
   el.btnPullDraft.addEventListener("click", () =>
     guard(el.btnPullDraft, "기사 읽는 중", async () => {
       if (!S.aiTabId) throw new Error("먼저 ① AI 기사 작성 을 눌러 주세요.");
-      await pullArticle();
-      toast("초안을 가져왔습니다.", "ok");
+      const repaired = await pullArticle();
+      toast(repaired ? "AI의 JSON 오류를 자동 복구해 초안을 가져왔습니다." : "초안을 가져왔습니다.", "ok");
       status("초안 준비됨", "ok");
       switchTab("draft");
     })
@@ -431,7 +442,7 @@
     const res = await askTab(S.aiTabId, { type: "GW_READ" });
     if (!res.ok) throw new Error(res.reason || "응답을 읽지 못했습니다.");
 
-    const parsed = gwParseArticleJson(res.text);
+    const parsed = GWArticleJson.parse(res.text);
     if (!parsed.ok) {
       throw new Error(
         parsed.reason + " AI 탭에서 'JSON 형식으로 다시 출력해줘' 라고 한 번 더 요청한 뒤 다시 눌러 주세요."
@@ -445,6 +456,7 @@
     pendingAiRequestKey = "";
     renderDraft();
     save();
+    return parsed.repaired === true;
   }
 
   /* ═════════════ 초안 미리보기 ═════════════ */
@@ -457,10 +469,14 @@
     const warn = canReshoot && m.real === false
       ? `<span class="fig-warn">캡쳐 실패 · 대체 카드</span>`
       : "";
+    const coverControl = m.isCover
+      ? `<span class="fig-cover-mark">대표 이미지</span>`
+      : `<button type="button" class="fig-btn cover" data-act="cover" data-mi="${idx}">대표지정</button>`;
     return (
       `<figure class="art-fig" contenteditable="false" data-mi="${idx}">` +
       `<img src="${esc(m.url)}" alt="">` +
       `<div class="fig-tools">` +
+      coverControl +
       warn +
       `<button type="button" class="fig-btn" data-act="replace" data-mi="${idx}">사진 바꾸기</button>` +
       (canReshoot
@@ -556,6 +572,16 @@
     const idx = Number(btn.dataset.mi);
     const act = btn.dataset.act;
 
+    if (act === "cover") {
+      /* 버튼 클릭 직전까지 고친 본문도 다시 그릴 때 잃지 않게 먼저 담는다. */
+      harvestEdits();
+      S.media = GWMediaCover.select(S.media, idx);
+      renderDraft();
+      save();
+      toast("대표 이미지로 지정했습니다.", "ok");
+      return;
+    }
+
     if (act === "replace") {
       replaceIndex = idx;
       fileInsertSlot = null;
@@ -565,6 +591,7 @@
 
     if (act === "remove") {
       S.media.splice(idx, 1);
+      S.media = GWMediaCover.normalize(S.media);
       renderDraft();
       save();
       toast("사진을 뺐습니다.", "ok");
@@ -585,6 +612,7 @@
 
   function renderDraft() {
     const a = S.article;
+    S.media = GWMediaCover.normalize(S.media);
 
     if (!a) {
       el.draftEmpty.classList.remove("hidden");
@@ -619,7 +647,9 @@
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const rest = S.media.slice(1).map((media, offset) => ({ media, index: offset + 1 }));
+    const rest = S.media
+      .map((media, index) => ({ media, index }))
+      .filter((item) => !item.media.isCover);
     const slots = Array.from({ length: paras.length + 1 }, () => []);
     const automatic = [];
 
@@ -659,14 +689,16 @@
   }
 
   function renderCover() {
-    const cover = S.media[0];
+    S.media = GWMediaCover.normalize(S.media);
+    const coverIndex = GWMediaCover.indexOf(S.media);
+    const cover = coverIndex >= 0 ? S.media[coverIndex] : null;
     if (!cover) {
       el.pvCover.classList.add("hidden");
       el.pvCover.innerHTML = "";
       return;
     }
     el.pvCover.classList.remove("hidden");
-    el.pvCover.innerHTML = figureHtml(cover, 0);
+    el.pvCover.innerHTML = figureHtml(cover, coverIndex);
     bindCaptionEdits();
   }
 
@@ -730,9 +762,9 @@
       toast("수정을 요청했습니다. 다시 나오면 가져옵니다.", "info");
       await sleep(2500);
 
-      await pullArticle();
+      const repaired = await pullArticle();
       el.reviseInput.value = "";
-      toast("수정된 기사를 가져왔습니다.", "ok");
+      toast(repaired ? "JSON 오류를 자동 복구해 수정 기사를 가져왔습니다." : "수정된 기사를 가져왔습니다.", "ok");
       status("초안 갱신됨", "ok");
     });
   }
@@ -896,15 +928,16 @@
       const res = await chrome.runtime.sendMessage({
         type: "GW_SEND_TO_GONGSIL",
         article: S.article,
-        media: S.media,
+        /* 대표를 첫 순서로도 보낸다. isCover 를 모르는 구버전 기사작성 폼도 안전하다. */
+        media: GWMediaCover.coverFirst(S.media),
         vacancyId: S.vacancy?.vacancyId || null,
         origin: S.origin,
       });
 
       if (!res || !res.ok) throw new Error((res && res.error) || "기사쓰기 페이지를 열지 못했습니다.");
 
-      toast("기사쓰기 폼에 채웠습니다. 확인 후 [기사 등록] 을 눌러 주세요.", "ok", 7000);
-      status("전송 완료", "ok");
+      toast("기사쓰기 페이지를 열었습니다. 로그인과 권한 확인 후 초안을 자동 입력합니다.", "info", 7000);
+      status("기사쓰기 페이지 확인 중", "busy");
     })
   );
 
@@ -956,6 +989,7 @@
     if (!prev) return;
     Object.assign(S, prev);
     if (!Array.isArray(S.media)) S.media = [];
+    S.media = GWMediaCover.normalize(S.media);
     /* 예전 3가지 기사 성격을 저장한 사용자는 현재 기사형으로 안전하게 옮긴다. */
     if (["listing", "area", "tenant"].includes(S.kind)) S.kind = "news";
     if (!GW_KIND[S.kind]) S.kind = "news";
@@ -986,44 +1020,6 @@
     return String(str == null ? "" : str)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;")
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
-
-  function gwParseArticleJson(rawText) {
-    if (!rawText || !rawText.trim()) return { ok: false, reason: "AI 응답이 비어 있습니다." };
-
-    let candidate = null;
-    const fenced = rawText.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (fenced && fenced[1]) candidate = fenced[1].trim();
-    else {
-      const first = rawText.indexOf("{");
-      const last = rawText.lastIndexOf("}");
-      if (first !== -1 && last > first) candidate = rawText.slice(first, last + 1);
-    }
-    if (!candidate) return { ok: false, reason: "AI 응답에서 JSON 을 찾지 못했습니다." };
-
-    let data;
-    try {
-      data = JSON.parse(candidate);
-    } catch (e) {
-      return { ok: false, reason: "AI 가 준 JSON 의 형식이 깨져 있습니다." };
-    }
-
-    const title = (data.title || "").trim();
-    const body = (data.body || "").trim();
-    if (!title || !body) return { ok: false, reason: "AI 응답에 제목 또는 본문이 없습니다." };
-
-    return {
-      ok: true,
-      article: {
-        title,
-        subtitles: [data.subtitle1, data.subtitle2, data.subtitle3]
-          .map((s) => (s || "").trim()).filter(Boolean),
-        body,
-        keywords: Array.isArray(data.keywords)
-          ? data.keywords.map((k) => String(k).replace(/^#/, "").trim()).filter(Boolean)
-          : [],
-      },
-    };
   }
 
   /* ═════════════ 시작 ═════════════ */

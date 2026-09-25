@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { unstable_cache, revalidateTag } from "next/cache";
 import { getEffectivePlan } from "@/utils/planCheck";
+import { isAdminRole } from "@/utils/permissionCheck";
 import { formatSection1 } from "@/utils/formatCategory";
 import { createNotification } from "./notification";
 
@@ -17,20 +18,51 @@ function getAdminClient() {
   });
 }
 
-export async function checkArticleWritePermission(authorId: string) {
+async function getArticleActor(supabase: ReturnType<typeof getAdminClient>) {
+  const serverSupabase = await createServerClient();
+  const {
+    data: { user },
+  } = await serverSupabase.auth.getUser();
+
+  if (!user) {
+    return { error: "로그인 후 기사를 작성할 수 있습니다." } as const;
+  }
+
+  const { data: member, error } = await supabase
+    .from("members")
+    .select("id, name, email, role, plan_type, plan_end_date, max_articles_per_month")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error || !member) {
+    return { error: "로그인 계정의 회원정보를 확인할 수 없습니다." } as const;
+  }
+
+  return { user, member, isAdmin: isAdminRole(member.role) } as const;
+}
+
+export async function checkArticleWritePermission(authorId?: string) {
   const supabase = getAdminClient();
 
   try {
+    const actor = await getArticleActor(supabase);
+    if ("error" in actor) return { allowed: false, error: actor.error };
+
+    const targetAuthorId = actor.isAdmin && authorId ? authorId : actor.user.id;
+    if (!actor.isAdmin && authorId && authorId !== actor.user.id) {
+      return { allowed: false, error: "다른 회원의 기사 작성 권한은 사용할 수 없습니다." };
+    }
+
     const { data: member, error: memberError } = await supabase
       .from("members")
       .select("role, plan_type, plan_end_date, max_articles_per_month")
-      .eq("id", authorId)
+      .eq("id", targetAuthorId)
       .single();
     if (memberError || !member) {
       return { allowed: false, error: "회원 정보를 확인할 수 없습니다." };
     }
 
-    const plan = getEffectivePlan(member);
+    const plan = isAdminRole(member.role) ? "admin" : getEffectivePlan(member);
     if (plan === "admin") return { allowed: true };
     if (plan !== "news_premium") {
       return { allowed: false, error: "뉴스 기사 작성은 '공실뉴스부동산' 요금제 전용 기능입니다." };
@@ -42,7 +74,7 @@ export async function checkArticleWritePermission(authorId: string) {
     const { count, error: countError } = await supabase
       .from("articles")
       .select("id", { count: "exact", head: true })
-      .eq("author_id", authorId)
+      .eq("author_id", targetAuthorId)
       .gte("created_at", firstDayOfMonth.toISOString())
       .eq("is_deleted", false);
     if (countError) return { allowed: false, error: "기사 작성 한도 확인 중 오류가 발생했습니다." };
@@ -89,6 +121,44 @@ export async function saveArticle(data: {
   const supabase = getAdminClient();
 
   try {
+    const actor = await getArticleActor(supabase);
+    if ("error" in actor) return { success: false, error: actor.error };
+
+    let articleId = data.id;
+    let existingAuthorId: string | null = null;
+
+    if (articleId) {
+      const { data: existingArticle, error: existingArticleError } = await supabase
+        .from("articles")
+        .select("author_id")
+        .eq("id", articleId)
+        .maybeSingle();
+
+      if (existingArticleError || !existingArticle) {
+        return { success: false, error: "수정할 기사를 찾을 수 없습니다." };
+      }
+
+      existingAuthorId = existingArticle.author_id;
+      if (!actor.isAdmin && existingAuthorId !== actor.user.id) {
+        return { success: false, error: "본인이 작성한 기사만 수정할 수 있습니다." };
+      }
+    }
+
+    // 일반 회원은 화면에서 어떤 값을 보내더라도 로그인한 본인 명의로 고정한다.
+    // 최고관리자만 기존 기자변경 기능으로 다른 회원을 작성자로 선택할 수 있다.
+    const effectiveAuthorId = actor.isAdmin
+      ? data.author_id || existingAuthorId || actor.user.id
+      : actor.user.id;
+    const { data: authorMember, error: authorMemberError } = await supabase
+      .from("members")
+      .select("id, name, email, role, plan_type, plan_end_date, max_articles_per_month")
+      .eq("id", effectiveAuthorId)
+      .maybeSingle();
+
+    if (authorMemberError || !authorMember) {
+      return { success: false, error: "기사 작성자의 회원정보를 확인할 수 없습니다." };
+    }
+
     // status 매핑 (한글 → DB 값)
     const statusMap: Record<string, string> = {
       "작성중": "DRAFT",
@@ -113,9 +183,12 @@ export async function saveArticle(data: {
     }
 
     const articleData = {
-      author_id: data.author_id || null,
-      author_name: data.author_name,
-      author_email: data.author_email,
+      author_id: effectiveAuthorId,
+      author_name: authorMember.name || "작성자",
+      author_email:
+        authorMember.email ||
+        (effectiveAuthorId === actor.user.id ? actor.user.email : null) ||
+        "",
       status: statusMap[data.status] || data.status,
       form_type: formTypeMap[data.form_type] || data.form_type,
       section1: data.section1 || null,
@@ -142,12 +215,9 @@ export async function saveArticle(data: {
       (articleData as any).is_headline = data.is_headline;
     }
 
-    let articleId = data.id;
-
     // --- [권한/요금제 검증 (신규 작성 시에만)] ---
-    if (!articleId && data.author_id) {
-      const { data: member } = await supabase.from('members').select('*').eq('id', data.author_id).single();
-      const plan = getEffectivePlan(member);
+    if (!articleId) {
+      const plan = isAdminRole(authorMember.role) ? "admin" : getEffectivePlan(authorMember);
 
       if (plan !== 'news_premium' && plan !== 'admin') {
         return { success: false, error: "뉴스 기사 작성은 '공실뉴스부동산' 요금제 전용 기능입니다." };
@@ -160,13 +230,13 @@ export async function saveArticle(data: {
         const { count, error: countErr } = await supabase
           .from('articles')
           .select('id', { count: 'exact', head: true })
-          .eq('author_id', data.author_id)
+          .eq('author_id', effectiveAuthorId)
           .gte('created_at', firstDayOfMonth)
           .eq('is_deleted', false);
 
         if (countErr) return { success: false, error: "기사 작성 한도 확인 중 오류가 발생했습니다." };
 
-        const maxArticles = member?.max_articles_per_month || 0;
+        const maxArticles = authorMember.max_articles_per_month || 0;
         if (maxArticles <= 0 || (count || 0) >= maxArticles) {
           return { success: false, error: `이번 달 기사 작성 한도(${maxArticles}건)를 초과했거나 한도가 설정되지 않았습니다.` };
         }
@@ -177,26 +247,8 @@ export async function saveArticle(data: {
     if (articleId) {
       // 수정 횟수 제한 체크 (발행된 기사만 카운트, 최고관리자는 제한 없음)
       const { data: existing } = await supabase.from("articles").select("edit_count, status, author_id").eq("id", articleId).single();
-      
-      // 관리자 여부 확인 (실제 편집을 요청한 로그인 유저가 관리자이거나 기사 작성자가 관리자인지 확인)
-      let isAdmin = false;
-      try {
-        const serverSupabase = await createServerClient();
-        const { data: { user: currentUser } } = await serverSupabase.auth.getUser();
-        if (currentUser) {
-          const { data: currentMember } = await supabase.from('members').select('role').eq('id', currentUser.id).single();
-          if (currentMember?.role === 'ADMIN') isAdmin = true;
-        }
-      } catch (err) {
-        console.error("Error checking editor role:", err);
-      }
 
-      if (!isAdmin && data.author_id) {
-        const { data: authorMember } = await supabase.from('members').select('role').eq('id', data.author_id).single();
-        if (authorMember?.role === 'ADMIN') isAdmin = true;
-      }
-      
-      if (!isAdmin && !data.skip_edit_count && existing && existing.status === "APPROVED" && (existing.edit_count || 0) >= 3) {
+      if (!actor.isAdmin && !data.skip_edit_count && existing && existing.status === "APPROVED" && (existing.edit_count || 0) >= 3) {
         return { success: false, error: "수정 가능 횟수(3회)를 초과했습니다. 배너/광고 설정만 변경 가능합니다." };
       }
       // 발행된 기사를 수정하면 edit_count 증가 (관리자도 카운트는 하되 제한만 안 걸림)
@@ -251,7 +303,7 @@ export async function saveArticle(data: {
         recipientRole: "ADMIN",
         type: "article_pending",
         title: "새 기사가 승인 대기 중입니다",
-        body: `${data.author_name || "작성자"} · ${data.title || "(제목 없음)"}`,
+        body: `${articleData.author_name || "작성자"} · ${data.title || "(제목 없음)"}`,
         link: "/admin?menu=article",
         mobileLink: "/m/admin/article",
         sourceId: String(articleId),

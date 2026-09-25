@@ -100,6 +100,7 @@ const GwAi = (() => {
      스트리밍이라 "끝" 신호가 없다. 글자가 더 늘지 않으면 끝난 것으로 본다. */
   async function read(conf, maxMs = 120000) {
     const until = Date.now() + maxMs;
+    const settleMs = Number(conf.SETTLE_MS) || GW.SETTLE_MS;
     let prev = "";
     let stableSince = 0;
 
@@ -107,7 +108,9 @@ const GwAi = (() => {
       const now = readLast(conf);
       if (now && now === prev) {
         if (!stableSince) stableSince = Date.now();
-        if (Date.now() - stableSince >= GW.SETTLE_MS) {
+        const jsonStarted = now.includes("{");
+        const responseComplete = !jsonStarted || GWArticleJson.hasCompleteObject(now);
+        if (Date.now() - stableSince >= settleMs && responseComplete) {
           return { ok: true, text: now };
         }
       } else {
@@ -117,7 +120,13 @@ const GwAi = (() => {
       await gwSleep(250);
     }
 
-    if (prev) return { ok: true, text: prev, note: "기다리는 시간이 다 돼 그때까지 나온 것을 가져왔습니다." };
+    if (prev) {
+      const jsonStarted = prev.includes("{");
+      if (jsonStarted && !GWArticleJson.hasCompleteObject(prev)) {
+        return { ok: false, reason: "AI 응답이 아직 완성되지 않았습니다. 생성이 끝난 뒤 다시 눌러 주세요." };
+      }
+      return { ok: true, text: prev, note: "기다리는 시간이 다 돼 그때까지 나온 것을 가져왔습니다." };
+    }
     return { ok: false, reason: "AI 응답을 찾지 못했습니다. 기사가 다 나온 뒤에 다시 눌러 주세요." };
   }
 
