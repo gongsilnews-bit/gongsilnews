@@ -222,14 +222,23 @@
     return new File([bytes], `gongsil-blog-${Date.now()}-${index + 1}.${extensionFor(type)}`, { type });
   }
 
+  /* 편집기 요소는 .se-components-wrap 아래에 있다. 빈 새 글 = 제목(se-documentTitle) + 본문 문단(se-text) 하나. */
+  function bodyComponents(doc) {
+    return Array.from(doc.querySelectorAll(".se-components-wrap .se-component"))
+      .filter((component) => !component.classList.contains("se-documentTitle"));
+  }
+
   function countEditorImages(doc) {
-    return doc.querySelectorAll(".se-main-container .se-component.se-image, .se-main-container .se-component.se-imageGroup img").length;
+    return bodyComponents(doc).reduce((count, component) => {
+      if (component.classList.contains("se-image")) return count + 1;
+      if (component.classList.contains("se-imageGroup")) return count + component.querySelectorAll("img").length;
+      return count;
+    }, 0);
   }
 
   function bodyHasContent(doc, body) {
     if (currentText(body)) return true;
-    const components = doc.querySelectorAll(".se-main-container .se-component");
-    return components.length > 1;
+    return bodyComponents(doc).length > 1;
   }
 
   /* ── 발행 창 태그 칸: 사용자가 [발행]을 눌러 창이 열리면 태그를 채운다 ── */

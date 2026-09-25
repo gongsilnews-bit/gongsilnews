@@ -18,6 +18,7 @@
     article: null,
     media: [],
     imageStyle: "news",
+    design: "basic",
     imageRequest: "",
     sourceSignature: "",
     pendingImage: null,
@@ -52,6 +53,7 @@
     btnInsertBlogImage: $("btnInsertBlogImage"),
     blogFileImage: $("blogFileImage"),
     blogImageRequest: $("blogImageRequest"),
+    blogDesignHint: $("blogDesignHint"),
     btnSendNaver: $("btnSendNaver"),
     status: $("statusPill"),
     toastHost: $("toastHost"),
@@ -227,6 +229,11 @@
       styleButtons.forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
       B.style = button.dataset.blogStyle;
+      const recommended = GW_BLOG_STYLE[B.style]?.design;
+      if (recommended && GWNaverBlog.DESIGNS[recommended]) {
+        B.design = recommended;
+        showDesign();
+      }
       save();
     });
   });
@@ -367,8 +374,11 @@
       .join("");
     let html = figuresAt(0);
     paragraphs.forEach((paragraph, index) => {
-      const heading = paragraph.startsWith("■") ? ' class="blog-section-heading"' : "";
-      html += `<p${heading}>${esc(paragraph)}</p>${figuresAt(index + 1)}`;
+      // ■는 "여기가 소제목"이라는 표시일 뿐이다. 미리보기에서는 떼고 굵게 보여 주고, 저장할 때 다시 붙인다.
+      const paragraphNode = paragraph.startsWith("■")
+        ? `<p class="blog-section-heading" data-heading="1">${esc(paragraph.replace(/^■\s*/, ""))}</p>`
+        : `<p>${esc(paragraph)}</p>`;
+      html += paragraphNode + figuresAt(index + 1);
     });
     el.blogContent.innerHTML = html;
     bindCaptionEdits();
@@ -392,7 +402,11 @@
     if (!B.article) return;
     B.article.title = el.blogTitle.innerText.trim();
     B.article.body = bodyParagraphs()
-      .map((paragraph) => paragraph.innerText.trim())
+      .map((paragraph) => {
+        const text = paragraph.innerText.trim();
+        if (!text) return "";
+        return paragraph.dataset.heading && !text.startsWith("■") ? `■ ${text}` : text;
+      })
       .filter(Boolean)
       .join("\n\n");
   }
@@ -487,6 +501,21 @@
       status("블로그 초안 갱신됨", "ok");
     });
   }
+
+  const designButtons = document.querySelectorAll(".blog-design[data-blog-design]");
+  function showDesign() {
+    designButtons.forEach((button) => {
+      button.classList.toggle("active", button.dataset.blogDesign === B.design);
+    });
+    el.blogDesignHint.textContent = GWNaverBlog.DESIGNS[B.design]?.hint || "";
+  }
+  designButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      B.design = button.dataset.blogDesign;
+      showDesign();
+      save();
+    });
+  });
 
   const imageStyleButtons = document.querySelectorAll(".blog-image-style[data-blog-image-style]");
   imageStyleButtons.forEach((button) => {
@@ -629,7 +658,12 @@
 
   async function naverBlocks() {
     const media = GWMediaCover.normalize(B.media);
-    const blocks = GWNaverBlog.buildNaverBlocks(B.article.body, media);
+    const source = await getSource().catch(() => null);
+    const blocks = GWNaverBlog.buildNaverBlocks(B.article.body, media, {
+      design: B.design,
+      title: B.article.title,
+      vacancy: source?.vacancy || null,
+    });
     return Promise.all(blocks.map(async (block) => (
       block.type === "image"
         ? { type: "image", dataUrl: await imageToDataUrl(media[block.mediaIndex]?.url) }
@@ -769,6 +803,8 @@
     imageStyleButtons.forEach((button) => {
       button.classList.toggle("active", button.dataset.blogImageStyle === B.imageStyle);
     });
+    if (!GWNaverBlog.DESIGNS[B.design]) B.design = "basic";
+    showDesign();
     el.blogImageRequest.value = B.imageRequest;
     renderBlog();
     await updateSourceCard();

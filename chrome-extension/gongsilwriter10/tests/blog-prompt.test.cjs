@@ -51,3 +51,20 @@ test("수정 요청은 블로그 전체 JSON 재출력을 요구한다", () => {
   assert.match(prompt, /"body"/);
 });
 
+
+test("스타일마다 구성 설계도와 어울리는 블로그 디자인이 있다", () => {
+  const { DESIGNS } = require("../shared/naver-blog.js");
+  for (const [key, style] of Object.entries(GW_BLOG_STYLE)) {
+    assert.ok(style.structure, `${key} 구성 설계도`);
+    assert.ok(DESIGNS[style.design], `${key} 디자인 ${style.design}`);
+  }
+  assert.equal(GW_BLOG_STYLE.consult.design, "qna");
+});
+
+test("프롬프트에 선택한 스타일의 구성과 소제목 표시 규칙을 넣는다", () => {
+  const prompt = gwBuildBlogPrompt(source, { style: "visit", length: "normal" });
+  assert.ok(prompt.includes(`- 구성: ${GW_BLOG_STYLE.visit.structure}`));
+  assert.ok(prompt.includes('반드시 "■ "로 시작'));
+  assert.ok(prompt.includes("첫 문단은 2문장 이내의 핵심 요약"));
+  assert.ok(!prompt.includes("필요한 경우에만"));
+});

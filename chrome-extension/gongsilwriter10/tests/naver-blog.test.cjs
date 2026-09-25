@@ -47,26 +47,97 @@ test("네이버 편집기 스크립트를 모든 프레임에 연결한다", () 
   assert.equal(naverScript.match_about_blank, true);
 });
 
-test("본문을 붙여넣을 조각으로 나누고 사진이 끼어들 때만 글을 끊는다", () => {
+const SAMPLE_BODY = "첫 문단 요약입니다. 둘째 문장.\n■ 입지 <강조>\n셋째 문단입니다. 다음 문장.\n■ 가격\n다섯째 문단";
+const SAMPLE_VACANCY = {
+  priceText: "매매 15억",
+  url: "https://gongsilnews.com/gongsil?id=1",
+  fields: [
+    { label: "전용면적", value: "84㎡" },
+    { label: "담당자", value: "홍길동" },
+    { label: "방/욕실수", value: "3개 / 2개" },
+  ],
+};
+
+const BLANK = "<p><br></p>";
+
+test("기본형: 사진이 끼어들 때만 글을 끊고, 요약 인용구·표·구분선·소제목을 넣는다", () => {
   const { buildNaverBlocks } = require("../shared/naver-blog.js");
-  const body = "첫 문단\n■ 소제목 <강조>\n셋째 문단\n넷째 문단";
   const media = [
-    { url: "a", isCover: false },
+    { url: "a", isCover: false, insertAfterParagraph: 1 },
     { url: "cover", isCover: true },
   ];
-  const blocks = buildNaverBlocks(body, media);
+  const blocks = buildNaverBlocks(SAMPLE_BODY, media, { design: "basic", vacancy: SAMPLE_VACANCY });
 
-  assert.deepEqual(blocks, [
-    { type: "image", mediaIndex: 1 },
-    { type: "html", html: "<p>첫 문단</p><p><b>■ 소제목 &lt;강조&gt;</b></p>" },
-    { type: "image", mediaIndex: 0 },
-    { type: "html", html: "<p>셋째 문단</p><p>넷째 문단</p>" },
-  ]);
+  assert.deepEqual(blocks.map((block) => block.type), ["image", "html", "image", "html"]);
+  assert.equal(blocks[0].mediaIndex, 1);
+  assert.equal(blocks[2].mediaIndex, 0);
+  assert.equal(blocks[1].html, "<blockquote><p>첫 문단 요약입니다. 둘째 문장.</p></blockquote>" + BLANK);
+  const rest = blocks[3].html;
+  assert.ok(rest.startsWith("<table><tbody><tr><td><b>금액</b></td><td>매매 15억</td></tr>"));
+  assert.ok(!rest.includes("담당자"), "표에는 자주 보는 항목만 넣는다");
+  assert.ok(rest.indexOf("<table>") < rest.indexOf("<hr>") && rest.indexOf("<hr>") < rest.indexOf("■ 입지"));
+  // 굵게 태그는 네이버가 무시하므로 크기로 강조하고, 소제목 바로 아래 문단과는 붙인다
+  assert.ok(rest.includes('<p><span style="font-size:19px;font-weight:700">■ 입지 &lt;강조&gt;</span></p><p>셋째 문단'));
+  assert.ok(!rest.includes("<b>■"));
+  assert.ok(rest.includes('<a href="https://gongsilnews.com/gongsil?id=1">'));
 });
 
-test("사진이 없으면 본문 전체가 한 조각이다", () => {
+test("문단 뒤에는 빈 줄을 두고, 모든 조각은 빈 문단으로 끝난다", () => {
   const { buildNaverBlocks } = require("../shared/naver-blog.js");
-  assert.deepEqual(buildNaverBlocks("가\n\n나", []), [{ type: "html", html: "<p>가</p><p>나</p>" }]);
+  const blocks = buildNaverBlocks(SAMPLE_BODY, [{ url: "a", insertAfterParagraph: 3 }], { design: "basic" });
+  const htmlBlocks = blocks.filter((block) => block.type === "html");
+  assert.ok(htmlBlocks.length >= 2);
+  htmlBlocks.forEach((block) => assert.ok(block.html.endsWith(BLANK), "조각 끝이 빈 문단이 아니면 다음 조각이 이어 붙는다"));
+  assert.ok(htmlBlocks[0].html.includes("<p>셋째 문단입니다. 다음 문장.</p>" + BLANK));
+});
+
+test("사진이 소제목 바로 뒤에 오면 그 소제목의 첫 문단 뒤로 넘긴다", () => {
+  const { buildNaverBlocks } = require("../shared/naver-blog.js");
+  // insertAfterParagraph 2 = 둘째 문단(■ 입지) 뒤 → 셋째 문단 뒤로
+  const blocks = buildNaverBlocks(SAMPLE_BODY, [{ url: "a", insertAfterParagraph: 2 }], { design: "qna" });
+  const imageAt = blocks.findIndex((block) => block.type === "image");
+  const before = blocks[imageAt - 1].html;
+  assert.ok(before.endsWith("셋째 문단입니다. 다음 문장.</p>" + BLANK), "사진 바로 앞은 소제목이 아니라 그 첫 문단");
+});
+
+test("사진이 없으면 글 전체가 한 조각이다", () => {
+  const { buildNaverBlocks } = require("../shared/naver-blog.js");
+  const blocks = buildNaverBlocks("가\n\n나", []);
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0].type, "html");
+});
+
+test("매거진형: 제목·번호 소제목·가운데 정렬·핵심 문장 인용구", () => {
+  const { buildNaverBlocks } = require("../shared/naver-blog.js");
+  const [block] = buildNaverBlocks(SAMPLE_BODY, [], { design: "magazine", title: "아크로힐스", vacancy: SAMPLE_VACANCY });
+  assert.ok(block.html.startsWith('<p style="text-align:center"><span style="font-size:24px;font-weight:700">아크로힐스</span></p>'));
+  assert.ok(block.html.includes(">01</span></p><p") && block.html.includes(">02<"), "번호와 소제목은 붙인다");
+  // 첫 소제목 구간의 첫 문장을 두 번째 소제목 앞에 인용구로
+  assert.ok(block.html.indexOf("<blockquote><p>셋째 문단입니다.</p></blockquote>") < block.html.indexOf("가격"));
+  assert.ok(block.html.lastIndexOf("<table>") > block.html.indexOf("가격"), "표는 글 끝에 둔다");
+});
+
+test("Q&A형: 소제목은 Q., 뒤 첫 문단은 A.", () => {
+  const { buildNaverBlocks } = require("../shared/naver-blog.js");
+  const [block] = buildNaverBlocks(SAMPLE_BODY, [], { design: "qna" });
+  assert.ok(block.html.includes("Q. 입지 &lt;강조&gt;"));
+  assert.ok(block.html.includes('<p><span style="color:#2563eb">A.</span> 셋째 문단입니다. 다음 문장.</p>'));
+  assert.ok(block.html.includes('<p><span style="color:#2563eb">A.</span> 다섯째 문단</p>'));
+});
+
+test("뉴스기사형: 큰 리드문, 대표사진 설명, 공실뉴스 서명", () => {
+  const { buildNaverBlocks } = require("../shared/naver-blog.js");
+  const blocks = buildNaverBlocks(SAMPLE_BODY, [{ url: "c", isCover: true, caption: "현장 전경" }], { design: "news" });
+  const text = blocks.filter((block) => block.type === "html").map((block) => block.html).join("");
+  assert.ok(text.startsWith('<p style="text-align:center"><span style="font-size:13px;color:#888888">현장 전경</span></p>'));
+  assert.ok(text.includes('<p><span style="font-size:17px;font-weight:700">첫 문단 요약입니다. 둘째 문장.</span></p>'));
+  assert.ok(text.includes("공실뉴스 · gongsilnews.com"));
+});
+
+test("공실뉴스 주소가 아니면 링크를 넣지 않는다", () => {
+  const { buildNaverBlocks } = require("../shared/naver-blog.js");
+  const [block] = buildNaverBlocks(SAMPLE_BODY, [], { vacancy: { url: "http://localhost/gongsil?id=1" } });
+  assert.ok(!block.html.includes("<a "));
 });
 
 test("지정한 문단 뒤 사진 위치를 지키고 남는 사진은 글 끝에 둔다", () => {
