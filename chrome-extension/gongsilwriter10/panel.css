@@ -85,6 +85,19 @@ body {
 .status-pill.ok { background: #d1fae5; color: #047857 }
 .status-pill.bad { background: #fee2e2; color: #b91c1c }
 
+.btn-reset {
+  flex: none;
+  padding: 8px 14px;
+  border: 1.5px solid #fca5a5;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.btn-reset:hover { background: #fee2e2; border-color: #ef4444 }
+
 /* ─────────────── 탭 ─────────────── */
 .nav-tabs { display: flex; border-bottom: 1px solid var(--border); flex: none }
 

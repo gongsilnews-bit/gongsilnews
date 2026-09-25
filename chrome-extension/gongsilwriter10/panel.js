@@ -614,8 +614,10 @@
 
     el.draftEmpty.classList.add("hidden");
     el.draftBody.classList.remove("hidden");
-    el.draftActions.classList.remove("hidden");
-    el.draftBadge.classList.remove("hidden");
+    /* 하단 수정 바는 2번 탭을 보고 있을 때만 — 1번·3번 탭에서 다시 그려져도 튀어나오지 않게 */
+    const onDraftTab = el.viewDraft.classList.contains("active");
+    el.draftActions.classList.toggle("hidden", !onDraftTab);
+    if (!onDraftTab) el.draftBadge.classList.remove("hidden");
 
     el.pvDate.textContent = new Date().toLocaleString("ko-KR", {
       year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
@@ -1017,6 +1019,37 @@
     if (S.vacancy) renderVacancy(S.vacancy);
     renderDraft();
   }
+
+  /* ═════════════ 초기화 ═════════════
+     매물·초안·사진·블로그 글은 지우고, 고른 AI와 스타일 설정만 남긴다.
+     저장소를 비운 뒤 작업창을 새로 불러와 세 탭을 한 번에 깨끗하게 만든다. */
+  const BLOG_STATE_KEY = "gw_blog_state";
+
+  $("btnReset").addEventListener("click", async () => {
+    if (!confirm("가져온 매물, 초안, 사진, 블로그 글이 모두 지워집니다.\n초기화할까요?")) return;
+    try {
+      const got = await chrome.storage.local.get(BLOG_STATE_KEY);
+      const blog = got[BLOG_STATE_KEY] || {};
+      await chrome.storage.local.set({
+        [STATE_KEY]: {
+          platform: S.platform,
+          kind: S.kind,
+          length: S.length,
+          imageStyle: S.imageStyle,
+        },
+        [BLOG_STATE_KEY]: {
+          style: blog.style,
+          length: blog.length,
+          imageStyle: blog.imageStyle,
+          design: blog.design,
+        },
+      });
+      await chrome.storage.local.remove([GW.KEY.JOB, GW.KEY.DRAFT]).catch(() => {});
+      location.reload();
+    } catch (e) {
+      toast("초기화하지 못했습니다 — " + (e.message || String(e)), "bad", 7000);
+    }
+  });
 
   /* ═════════════ 잡동사니 ═════════════ */
   function esc(str) {
