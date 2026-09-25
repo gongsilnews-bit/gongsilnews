@@ -903,7 +903,7 @@
     reader.readAsDataURL(file);
   });
 
-  /* ═════════════ ⑨ 공실뉴스로 보내기 ═════════════ */
+  /* ═════════════ ⑨ 기사전송하기 ═════════════ */
   el.btnSendGongsil.addEventListener("click", () =>
     guard(el.btnSendGongsil, "보내는 중", async () => {
       if (!S.article) throw new Error("보낼 초안이 없습니다.");
