@@ -62,7 +62,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
         sendResponse({ ok: true, tabId: writeTab.id, stage: "applied" });
       })
-      .catch((e) => {
+      .catch(async (e) => {
+        /* 실패한 초안이 나중에 뜻하지 않게 입력되지 않도록 전송함을 비운다. */
+        await chrome.storage.local.remove(GW.KEY.DRAFT).catch(() => {});
         const disconnected = /Receiving end does not exist|Could not establish connection/i.test(e.message || "");
         sendResponse({
           ok: false,

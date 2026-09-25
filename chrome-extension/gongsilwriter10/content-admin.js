@@ -390,18 +390,4 @@
     return false;
   });
 
-  async function boot() {
-    if (!isWritePage()) return;
-
-    const store = await chrome.storage.local.get(GW.KEY.DRAFT);
-    const draft = store[GW.KEY.DRAFT];
-    if (!draft || !draft.article) return;
-    await applyPendingDraft();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
 })();
