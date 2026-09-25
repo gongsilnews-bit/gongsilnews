@@ -139,6 +139,14 @@
         </button>
       </div>
 
+      <!-- 자동으로 못 읽을 때만 보인다 -->
+      <div id="pasteBox" class="paste-box hidden">
+        <p class="paste-guide">AI 답변을 자동으로 읽지 못했습니다.<br>
+          AI 탭의 JSON 상자 오른쪽 위 <b>복사</b> 버튼을 누른 뒤, 아래 칸에 <b>Ctrl+V</b> 로 붙여넣어 주세요.</p>
+        <textarea id="pasteJson" class="paste-json" rows="5" placeholder='{ "title": ... } 를 여기에 붙여넣기'></textarea>
+        <button id="btnPasteDraft" class="btn-line" type="button">붙여넣은 글로 초안 만들기</button>
+      </div>
+
     </section>
 
     <!-- ═══════════ 뷰 2 — 초안 다듬기 ═══════════ -->

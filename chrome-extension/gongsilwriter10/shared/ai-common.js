@@ -99,15 +99,32 @@ const GwAi = (() => {
       const nodes = document.querySelectorAll(sel);
       if (nodes.length) {
         const last = nodes[nodes.length - 1];
-        const text = (last.innerText || last.textContent || "").trim();
+        const text = readNode(last);
         if (text) return text;
       }
     }
     return "";
   }
 
+  /* 화면에 보이는 글자(innerText)는 코드 상자가 가로로 밀려 있거나 일부만 그려지면 빠지는 곳이 생긴다.
+     JSON 이 온전히 읽히지 않으면 코드 상자의 원본 텍스트(textContent)로 다시 읽는다. */
+  function readNode(node) {
+    const shown = (node.innerText || "").trim();
+    if (!shown.includes("{") || GWArticleJson.hasCompleteObject(shown)) {
+      return shown || (node.textContent || "").trim();
+    }
+    for (const code of node.querySelectorAll("pre, code, .cm-content")) {
+      const raw = (code.textContent || "").trim();
+      if (raw.includes("{") && GWArticleJson.hasCompleteObject(raw)) return raw;
+    }
+    const whole = (node.textContent || "").trim();
+    return GWArticleJson.hasCompleteObject(whole) ? whole : shown;
+  }
+
   /* ── 응답이 멎을 때까지 기다린다 ──
      스트리밍이라 "끝" 신호가 없다. 글자가 더 늘지 않으면 끝난 것으로 본다. */
+  const STUCK_MS = 6000;
+
   async function read(conf, maxMs = 120000, minCount = 0) {
     const until = Date.now() + maxMs;
     const settleMs = Number(conf.SETTLE_MS) || GW.SETTLE_MS;
@@ -131,6 +148,11 @@ const GwAi = (() => {
         if (Date.now() - stableSince >= settleMs && responseComplete) {
           return { ok: true, text: now };
         }
+        /* 글자가 6초 넘게 그대로인데 JSON 이 안 닫혔다 = 생성은 끝났는데 제대로 못 읽는 것. 2분을 다 기다리지 않는다. */
+        if (!responseComplete && Date.now() - stableSince >= STUCK_MS) {
+          console.warn("[공실뉴스] JSON 을 끝까지 읽지 못함", { length: now.length, tail: now.slice(-200) });
+          return { ok: false, unreadable: true, reason: "AI 답변의 JSON 을 끝까지 읽지 못했습니다." };
+        }
       } else {
         stableSince = 0;
         prev = now;
@@ -141,11 +163,12 @@ const GwAi = (() => {
     if (prev) {
       const jsonStarted = prev.includes("{");
       if (jsonStarted && !GWArticleJson.hasCompleteObject(prev)) {
-        return { ok: false, reason: "AI 응답이 아직 완성되지 않았습니다. 생성이 끝난 뒤 다시 눌러 주세요." };
+        return { ok: false, unreadable: true, reason: "AI 응답이 아직 완성되지 않았습니다." };
       }
       return { ok: true, text: prev, note: "기다리는 시간이 다 돼 그때까지 나온 것을 가져왔습니다." };
     }
-    return { ok: false, reason: "AI 응답을 찾지 못했습니다. 기사가 다 나온 뒤에 다시 눌러 주세요." };
+    console.warn("[공실뉴스] AI 응답을 찾지 못함", conf.ANSWER.map((sel) => [sel, document.querySelectorAll(sel).length]));
+    return { ok: false, unreadable: true, reason: "AI 응답을 찾지 못했습니다." };
   }
 
   /* ── 마지막 그림 주소 ──

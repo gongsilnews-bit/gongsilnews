@@ -5,7 +5,8 @@
    ══════════════════════════════════════════════════════════════ */
 
 const GW = {
-  VERSION: "2.1.1",
+  /* 콘솔에 찍히는 버전 — manifest 와 어긋나지 않게 거기서 읽는다 */
+  VERSION: (globalThis.chrome && chrome.runtime && chrome.runtime.getManifest && chrome.runtime.getManifest().version) || "",
 
   /* 확장이 주고받는 데이터를 담아두는 자리 (chrome.storage.local) */
   KEY: {

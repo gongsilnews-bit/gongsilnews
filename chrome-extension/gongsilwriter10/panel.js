@@ -443,21 +443,121 @@
   );
 
   /* ═════════════ ⑥ 초안 보내기 ═════════════ */
+  const pasteBox = $("pasteBox");
+  const pasteJson = $("pasteJson");
+
   el.btnPullDraft.addEventListener("click", () =>
     guard(el.btnPullDraft, "기사 읽는 중", async () => {
       if (!S.aiTabId) throw new Error("먼저 ① AI 기사 작성 을 눌러 주세요.");
-      const repaired = await pullArticle();
-      toast(repaired ? "AI의 JSON 오류를 자동 복구해 초안을 가져왔습니다." : "초안을 가져왔습니다.", "ok");
-      status("초안 준비됨", "ok");
-      switchTab("draft");
+      let repaired;
+      try {
+        repaired = await pullArticle();
+      } catch (e) {
+        /* 자동으로 못 읽으면 직접 붙여넣는 길을 연다 */
+        if (e.unreadable) {
+          pasteJson.focus();
+          toast(e.message, "bad", 9000);
+          status("붙여넣기 필요", "bad");
+          return;
+        }
+        throw e;
+      }
+      afterDraftPulled(repaired);
     })
   );
 
-  async function pullArticle(readOpts = {}) {
-    const res = await askTab(S.aiTabId, { type: "GW_READ", ...readOpts });
-    if (!res.ok) throw new Error(res.reason || "응답을 읽지 못했습니다.");
+  $("btnPasteDraft").addEventListener("click", () =>
+    guard($("btnPasteDraft"), "초안 만드는 중", async () => {
+      const text = pasteJson.value.trim();
+      if (!text) throw new Error("AI 답변의 JSON 을 먼저 붙여넣어 주세요.");
+      afterDraftPulled(applyArticleText(text));
+    })
+  );
 
-    const parsed = GWArticleJson.parse(res.text);
+  function afterDraftPulled(repaired) {
+    pasteBox.classList.add("hidden");
+    pasteJson.value = "";
+    toast(repaired ? "AI의 JSON 오류를 자동 복구해 초안을 가져왔습니다." : "초안을 가져왔습니다.", "ok");
+    status("초안 준비됨", "ok");
+    switchTab("draft");
+  }
+
+  /* AI 답변 아래 [복사] 버튼을 대신 눌러 원문을 받는다.
+     ChatGPT 는 JSON 을 스크롤 상자에 담아 보이는 줄만 그리므로 화면 글자로는 끝까지 읽을 수 없다.
+     복사 버튼은 답변이 다 끝나야 생기므로, 복사로 받은 글은 곧 완성된 답변이다.
+     페이지의 클립보드 쓰기를 잠깐 가로채야 해서 페이지 쪽(MAIN)에서 실행한다. */
+  async function readByCopyButton(tabId) {
+    try {
+      const [run] = await chrome.scripting.executeScript({
+        target: { tabId },
+        world: "MAIN",
+        func: async () => {
+          const answers = document.querySelectorAll('[data-message-author-role="assistant"]');
+          const last = answers[answers.length - 1];
+          if (!last) return null;
+          const turn = last.closest('article, [data-testid^="conversation-turn"]');
+          if (!turn) return null;
+          const buttons = turn.querySelectorAll('button[data-testid="copy-turn-action-button"]');
+          const btn = buttons[buttons.length - 1];
+          if (!btn) return null;
+
+          const clip = navigator.clipboard;
+          const keep = { writeText: clip.writeText, write: clip.write };
+          let got = null;
+          clip.writeText = async (text) => { got = String(text); };
+          clip.write = async (items) => {
+            for (const item of items) {
+              if (item.types.includes("text/plain")) {
+                got = await (await item.getType("text/plain")).text();
+                return;
+              }
+            }
+          };
+          try {
+            btn.click();
+            for (let i = 0; i < 30 && got === null; i += 1) {
+              await new Promise((r) => setTimeout(r, 100));
+            }
+          } finally {
+            clip.writeText = keep.writeText;
+            clip.write = keep.write;
+          }
+          return got;
+        },
+      });
+      const text = run && run.result;
+      return typeof text === "string" && GWArticleJson.hasCompleteObject(text) ? text : "";
+    } catch (e) {
+      console.warn("[공실뉴스] 복사 버튼으로 읽기 실패", e);
+      return "";
+    }
+  }
+
+  async function pullArticle(readOpts = {}) {
+    /* 새 답변을 기다리는 중(수정 요청 직후)이 아니면 복사 버튼부터 — 가장 정확하고 기다릴 필요도 없다 */
+    if (!readOpts.minCount && S.platform === "chatgpt") {
+      const copied = await readByCopyButton(S.aiTabId);
+      if (copied) return applyArticleText(copied);
+    }
+
+    let res = await askTab(S.aiTabId, { type: "GW_READ", ...readOpts });
+    if (!res.ok && res.unreadable && S.platform === "chatgpt") {
+      const copied = await readByCopyButton(S.aiTabId);
+      if (copied) res = { ok: true, text: copied };
+    }
+    if (!res.ok) {
+      if (!res.unreadable) throw new Error(res.reason || "응답을 읽지 못했습니다.");
+      /* 수정글도 같은 칸에 붙여넣으면 초안이 바뀐다 */
+      pasteBox.classList.remove("hidden");
+      const err = new Error(res.reason + " ① 매물·AI 탭 아래 붙여넣기 칸에 JSON 을 직접 붙여넣어 주세요.");
+      err.unreadable = true;
+      throw err;
+    }
+    return applyArticleText(res.text);
+  }
+
+  function applyArticleText(text) {
+    const parsed = GWArticleJson.parse(text);
     if (!parsed.ok) {
       throw new Error(
         parsed.reason + " AI 탭에서 'JSON 형식으로 다시 출력해줘' 라고 한 번 더 요청한 뒤 다시 눌러 주세요."
