@@ -301,15 +301,9 @@
       <button id="btnRevise" class="btn-revise" type="button" title="같은 대화에 이어서 AI에게 수정을 요청합니다">
         수정 요청
       </button>
-    </div>
-    <button id="btnPullRevised" class="btn-sub btn-pull-revised" type="button" title="AI 탭에 나온 마지막 답변을 초안으로 가져옵니다">
-      수정글 가져오기
-    </button>
-
-    <div class="img-row">
-      <button id="btnMakeImage" class="btn-sub" type="button">AI 이미지 만들기</button>
-      <button id="btnChangeImage" class="btn-sub" type="button" title="본문에서 위치를 클릭한 뒤 내 PC 이미지를 삽입합니다">이미지 삽입</button>
-      <input id="fileImage" type="file" accept="image/*" class="hidden">
+      <button id="btnPullRevised" class="btn-sub btn-pull-revised" type="button" title="AI 탭에 나온 마지막 답변을 초안으로 가져옵니다">
+        수정글 가져오기
+      </button>
     </div>
 
     <div class="image-options">
@@ -323,6 +317,12 @@
       </div>
       <textarea id="imageRequest" class="image-request" rows="2" maxlength="1600"
                 placeholder="표현할 내용이나 스타일을 입력하세요. 기사 일부를 붙여 넣어도 됩니다. 비워 두면 기사에서 자동 선택합니다."></textarea>
+      <button id="btnMakeImage" class="btn-sub btn-in-box" type="button">AI 이미지 만들기</button>
+    </div>
+
+    <div class="image-options">
+      <button id="btnChangeImage" class="btn-sub btn-in-box" type="button" title="본문에서 위치를 클릭한 뒤 내 PC 이미지를 삽입합니다">이미지 삽입</button>
+      <input id="fileImage" type="file" accept="image/*" class="hidden">
     </div>
 
     <a class="btn-article-shortcut"
@@ -348,15 +348,9 @@
       <button id="btnReviseBlog" class="btn-revise" type="button">
         수정 요청
       </button>
-    </div>
-    <button id="btnPullBlogRevised" class="btn-sub btn-pull-revised" type="button" title="AI 탭에 나온 마지막 답변을 블로그 초안으로 가져옵니다">
-      수정글 가져오기
-    </button>
-
-    <div class="img-row">
-      <button id="btnMakeBlogImage" class="btn-sub" type="button">AI 이미지 만들기</button>
-      <button id="btnInsertBlogImage" class="btn-sub" type="button">이미지 삽입</button>
-      <input id="blogFileImage" type="file" accept="image/*" class="hidden">
+      <button id="btnPullBlogRevised" class="btn-sub btn-pull-revised" type="button" title="AI 탭에 나온 마지막 답변을 블로그 초안으로 가져옵니다">
+        수정글 가져오기
+      </button>
     </div>
 
     <div class="image-options">
@@ -370,6 +364,22 @@
       </div>
       <textarea id="blogImageRequest" class="image-request" rows="2" maxlength="1600"
                 placeholder="표현할 장면을 입력하세요. 비워 두면 블로그 본문에서 핵심 장면을 고릅니다."></textarea>
+      <button id="btnMakeBlogImage" class="btn-sub btn-in-box" type="button">AI 이미지 만들기</button>
+    </div>
+
+    <div class="image-options">
+      <button id="btnInsertBlogImage" class="btn-sub btn-in-box" type="button">이미지 삽입</button>
+      <input id="blogFileImage" type="file" accept="image/*" class="hidden">
+    </div>
+
+    <div class="blog-link-row">
+      <a class="btn-blog-link" href="https://blog.naver.com/" target="_blank" rel="noopener noreferrer">
+        블로그 바로가기
+      </a>
+      <a id="btnOpenBlogWrite" class="btn-blog-link primary"
+         href="https://blog.naver.com/GoBlogWrite.naver" target="_blank" rel="noopener noreferrer">
+        글쓰기
+      </a>
     </div>
 
     <div class="image-options">
@@ -381,16 +391,6 @@
         <button class="image-style blog-design" data-blog-design="news" type="button">뉴스기사형</button>
       </div>
       <p id="blogDesignHint" class="hint"></p>
-    </div>
-
-    <div class="blog-link-row">
-      <a class="btn-blog-link" href="https://blog.naver.com/" target="_blank" rel="noopener noreferrer">
-        블로그 바로가기
-      </a>
-      <a id="btnOpenBlogWrite" class="btn-blog-link primary"
-         href="https://blog.naver.com/GoBlogWrite.naver" target="_blank" rel="noopener noreferrer">
-        글쓰기
-      </a>
     </div>
 
     <button id="btnSendNaver" class="btn-send naver" type="button">

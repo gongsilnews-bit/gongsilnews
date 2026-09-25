@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "공실뉴스 AI 기사작성기",
-  "version": "2.1.9",
+  "version": "2.1.10",
   "description": "오른쪽 작업창에서 공실 매물을 기사와 네이버 블로그 초안으로 만들고 각 글쓰기 화면으로 보냅니다.",
   "icons": {
     "16": "icons/icon16.png",

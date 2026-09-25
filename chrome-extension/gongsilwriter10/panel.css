@@ -937,4 +937,8 @@ body {
 .blog-lock-actions .btn-line { padding: 10px 14px; text-decoration: none; font-size: 13px }
 
 /* 수정 요청 아래 [수정글 가져오기] */
-.btn-pull-revised { display: block; width: 100%; margin-bottom: 7px }
+/* 수정 요청 옆 [수정글 가져오기] */
+.revise-row .btn-pull-revised { flex: none; padding: 9px 10px; white-space: nowrap }
+/* 박스 안 전체 폭 버튼 ([AI 이미지 만들기], [이미지 삽입]) */
+.btn-sub.btn-in-box { display: block; width: 100% }
+.image-request + .btn-in-box { margin-top: 6px }
