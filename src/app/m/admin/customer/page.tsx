@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { getCustomers, createCustomer, getCustomerLogs, addCustomerLog, updateCustomerStatus } from "@/app/actions/customer";
+import { getCustomers, createCustomer, getCustomerLogs, addCustomerLog, updateCustomerStatus, deleteCustomer } from "@/app/actions/customer";
 
 type View = "list" | "create" | "detail";
 
@@ -81,7 +81,10 @@ function MobileCustomerAdmin() {
 
   useEffect(() => { if (memberId) refresh(); }, [memberId]);
 
+  // 휴지통으로 옮긴 문의는 휴지통 탭에서만 보인다 (PC와 동일)
+  const activeCustomers = customers.filter(c => c.status !== "휴지통");
   const filtered = customers.filter(c => {
+    if (filter === "휴지통" ? c.status !== "휴지통" : c.status === "휴지통") return false;
     if (filter !== "전체" && c.status !== filter) return false;
     if (activeKeyword) {
       const k = activeKeyword.toLowerCase();
@@ -90,13 +93,14 @@ function MobileCustomerAdmin() {
     return true;
   });
 
-  const statusColor: Record<string, string> = { "신규": "#ef4444", "진행중": "#3b82f6", "계약완료": "#10b981", "보류/종료": "#9ca3af" };
+  const statusColor: Record<string, string> = { "신규": "#ef4444", "진행중": "#3b82f6", "계약완료": "#10b981", "보류/종료": "#9ca3af", "휴지통": "#6b7280" };
   const tabs = [
-    { key: "전체", count: customers.length },
+    { key: "전체", count: activeCustomers.length },
     { key: "신규", count: customers.filter(c => c.status === "신규").length },
     { key: "진행중", count: customers.filter(c => c.status === "진행중").length },
     { key: "계약완료", count: customers.filter(c => c.status === "계약완료").length },
     { key: "보류/종료", count: customers.filter(c => c.status === "보류/종료").length },
+    { key: "휴지통", count: customers.filter(c => c.status === "휴지통").length },
   ];
 
   const openDetail = async (c: any) => {
@@ -126,6 +130,33 @@ function MobileCustomerAdmin() {
     setSelectedCustomer({ ...selectedCustomer, status: newStatus });
     const res = await getCustomerLogs(selectedCustomer.id);
     if (res.success) setMemos(res.data || []);
+  };
+
+  /* ── 삭제: 휴지통으로 이동 → 휴지통에서 복구 또는 영구삭제 (PC와 동일) ── */
+  const handleMoveToTrash = async (c: any) => {
+    if (!confirm("이 문의를 휴지통으로 옮기시겠습니까?")) return;
+    const res = await updateCustomerStatus(c.id, "휴지통");
+    if (!res.success) { alert("삭제 실패: " + res.message); return; }
+    alert("휴지통으로 옮겼습니다.");
+    if (view === "detail") goBack();
+    refresh();
+  };
+
+  const handleRestore = async (c: any) => {
+    if (!confirm("이 문의를 복구하시겠습니까? (신규 상태로 돌아갑니다)")) return;
+    const res = await updateCustomerStatus(c.id, "신규");
+    if (!res.success) { alert("복구 실패: " + res.message); return; }
+    if (view === "detail") goBack();
+    refresh();
+  };
+
+  const handlePermanentDelete = async (c: any) => {
+    if (!confirm("이 문의를 영구적으로 삭제하시겠습니까?\n상담 기록도 함께 지워지며 되돌릴 수 없습니다.")) return;
+    const res = await deleteCustomer(c.id);
+    if (!res.success) { alert("삭제 실패: " + res.message); return; }
+    alert("영구 삭제되었습니다.");
+    if (view === "detail") goBack();
+    refresh();
   };
 
   const handleCreate = async () => {
@@ -185,6 +216,7 @@ function MobileCustomerAdmin() {
         </div>
 
         {/* 상태 변경 */}
+        {sc.status !== "휴지통" && (
         <div style={{ margin: "0 16px 16px", background: "#fff", borderRadius: 14, padding: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>진행 상태 변경</div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -197,6 +229,7 @@ function MobileCustomerAdmin() {
             ))}
           </div>
         </div>
+        )}
 
         {/* 메모 입력 */}
         <div style={{ margin: "0 16px 16px", background: "#fff", borderRadius: 14, padding: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
@@ -236,6 +269,18 @@ function MobileCustomerAdmin() {
               </div>
             );
           })}
+
+          {/* 삭제 */}
+          <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+            {sc.status === "휴지통" ? (
+              <>
+                <button onClick={() => handleRestore(sc)} style={{ flex: 1, height: 44, background: "#10b981", color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>♻️ 복구</button>
+                <button onClick={() => handlePermanentDelete(sc)} style={{ flex: 1, height: 44, background: "#fff", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>영구삭제</button>
+              </>
+            ) : (
+              <button onClick={() => handleMoveToTrash(sc)} style={{ flex: 1, height: 44, background: "#fff", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>🗑️ 이 문의 삭제</button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -293,7 +338,7 @@ function MobileCustomerAdmin() {
           </button>
           <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111", margin: 0 }}>고객/문의</h1>
           <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
-            진행중 {customers.filter(c => c.status === "진행중").length}명 / 전체 {customers.length}명
+            진행중 {customers.filter(c => c.status === "진행중").length}명 / 전체 {activeCustomers.length}명
           </span>
         </div>
         <button onClick={() => setSearchOpen(!searchOpen)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
@@ -349,11 +394,19 @@ function MobileCustomerAdmin() {
                 {c.area && <span>📍 {c.area}</span>}
                 {c.budget && <span>💰 {c.budget}</span>}
               </div>
+              {c.status === "휴지통" ? (
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button onClick={e => { e.stopPropagation(); handleRestore(c); }} style={{ flex: 1, height: 36, background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>♻️ 복구</button>
+                <button onClick={e => { e.stopPropagation(); handlePermanentDelete(c); }} style={{ flex: 1, height: 36, background: "#fff", color: "#ef4444", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>영구삭제</button>
+              </div>
+              ) : (
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                 <button onClick={e => { e.stopPropagation(); openDetail(c); }} style={{ flex: 1, height: 36, background: "#f3f4f6", color: "#374151", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>📝 상세</button>
                 <a href={`sms:${c.phone}`} onClick={e => e.stopPropagation()} style={{ flex: 1, height: 36, background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, textDecoration: "none" }}>💬 문자</a>
                 <a href={`tel:${c.phone}`} onClick={e => e.stopPropagation()} style={{ flex: 1, height: 36, background: "#10b981", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, textDecoration: "none" }}>📞 전화</a>
+                <button onClick={e => { e.stopPropagation(); handleMoveToTrash(c); }} aria-label="삭제" style={{ width: 36, height: 36, flexShrink: 0, background: "#fff", color: "#9ca3af", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>🗑️</button>
               </div>
+              )}
             </div>
           );
         })}
