@@ -1,2 +1,9 @@
-GYWAI.listen(GYW.CHATGPT);
-
+/* ══════════════════════════════════════════════════════════════
+   ChatGPT 탭 (chatgpt.com)
+   실제 일은 shared/ai-common.js 가 한다.
+   이 파일에는 ChatGPT 고유 사정만 둔다.
+   ══════════════════════════════════════════════════════════════ */
+(() => {
+  "use strict";
+  GwAi.listen(GW.CHATGPT);
+})();

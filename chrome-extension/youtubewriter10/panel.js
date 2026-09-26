@@ -1,1059 +1,1155 @@
+/* ══════════════════════════════════════════════════════════════
+   작업창 — 이 확장의 두뇌
+
+   페이지들은 시키는 일만 한다. 판단과 상태는 전부 여기 있다.
+   ══════════════════════════════════════════════════════════════ */
 (() => {
   "use strict";
 
-  const $ = (selector, root = document) => root.querySelector(selector);
-  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
-  const DEFAULT_STATE = {
+  /* ─────────── 상태 ─────────── */
+  const S = {
     platform: "chatgpt",
-    sourceType: "article",
-    source: null,
-    settings: {
-      videoType: "listing",
-      duration: "short",
-      sceneLength: "medium",
-      aspectRatio: "9:16",
-      tone: "news",
-      imageStyle: "news",
-      styleLocked: true,
-    },
-    script: null,
+    kind: "news",      // 기사 스타일 — GW_KIND
+    length: "normal",  // 분량 — GW_LENGTH
+    imageStyle: "news",
+    imageRequest: "",
+    gongsilTabId: null,
     aiTabId: null,
-    pendingRevisionCount: 0,
-    thumbnail: { text: "", suggestions: [], candidates: [], selectedMediaId: null },
+    origin: "https://gongsilnews.com",
+    vacancy: null,
+    article: null,   // { title, subtitles[], body, keywords[] }
+    media: [],       // [{ kind:'photo'|'proof'|'map'|'roadview'|'ai', url, caption, isCover }]
   };
 
-  let state = structuredClone(DEFAULT_STATE);
-  let accessGranted = false;
-  let queueStop = false;
-  let queueRunning = false;
-  let replaceSceneId = null;
-  let pendingImport = [];
+  const $ = (id) => document.getElementById(id);
 
-  const statusLabel = {
-    empty: "이미지 없음",
-    generating: "생성 중",
-    complete: "완성",
-    failed: "실패",
-    recheck: "재확인 필요",
+  const el = {
+    status: $("statusPill"),
+    tabWork: $("tabWork"), tabDraft: $("tabDraft"), draftBadge: $("draftBadge"),
+    viewWork: $("viewWork"), viewDraft: $("viewDraft"),
+    btnGoGongsil: $("btnGoGongsil"), btnGrab: $("btnGrab"),
+    vacancyCard: $("vacancyCard"), vacancyName: $("vacancyName"), vacancyFields: $("vacancyFields"),
+    btnOpenAi: $("btnOpenAi"), btnSubmit: $("btnSubmit"), btnPullDraft: $("btnPullDraft"),
+    draftEmpty: $("draftEmpty"), draftBody: $("draftBody"), draftActions: $("draftActions"),
+    pvDate: $("pvDate"), pvTitle: $("pvTitle"), pvSubtitle: $("pvSubtitle"),
+    pvCover: $("pvCover"), pvContent: $("pvContent"), pvKeywords: $("pvKeywords"),
+    reviseInput: $("reviseInput"), btnRevise: $("btnRevise"), btnPullRevised: $("btnPullRevised"),
+    imageRequest: $("imageRequest"),
+    btnMakeImage: $("btnMakeImage"), btnChangeImage: $("btnChangeImage"), fileImage: $("fileImage"),
+    btnSendGongsil: $("btnSendGongsil"),
+    toastHost: $("toastHost"),
   };
 
-  function setStatus(text, kind = "") {
-    const node = $("#statusPill");
-    node.textContent = text;
-    node.className = `status-pill ${kind}`.trim();
-  }
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  function toast(message, kind = "") {
-    const node = document.createElement("div");
-    node.className = `toast ${kind}`.trim();
-    node.textContent = message;
-    $("#toastHost").appendChild(node);
-    requestAnimationFrame(() => node.classList.add("in"));
+  /* ═════════════ 알림 ═════════════ */
+  function toast(message, kind = "info", ms = 4000) {
+    const box = document.createElement("div");
+    box.className = `toast ${kind}`;
+    box.textContent = message;
+    el.toastHost.appendChild(box);
+    requestAnimationFrame(() => box.classList.add("in"));
     setTimeout(() => {
-      node.classList.remove("in");
-      setTimeout(() => node.remove(), 240);
-    }, 3200);
+      box.classList.remove("in");
+      setTimeout(() => box.remove(), 260);
+    }, ms);
   }
 
-  function save() {
-    return chrome.storage.local.set({ [GYW.KEY.STATE]: state });
+  function status(text, kind = "") {
+    el.status.textContent = text;
+    el.status.className = "status-pill" + (kind ? " " + kind : "");
   }
 
-  async function load() {
-    const stored = await chrome.storage.local.get(GYW.KEY.STATE);
-    const value = stored[GYW.KEY.STATE];
-    if (!value || typeof value !== "object") return;
-    state = {
-      ...structuredClone(DEFAULT_STATE),
-      ...value,
-      settings: { ...DEFAULT_STATE.settings, ...(value.settings || {}) },
-      thumbnail: { ...DEFAULT_STATE.thumbnail, ...(value.thumbnail || {}) },
-    };
-    if (state.script?.scenes) state.script.scenes = state.script.scenes.map(normalizeScene);
+  /* 누르는 동안 잠가 둔다 — 두 번 눌러 생기는 사고를 막는다 */
+  async function guard(btn, busyText, fn) {
+    const keep = btn.innerHTML;
+    btn.disabled = true;
+    status(busyText, "busy");
+    try {
+      await fn();
+    } catch (e) {
+      console.error("[공실뉴스 작업창]", e);
+      toast(e.message || String(e), "bad", 7000);
+      status("문제 발생", "bad");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = keep;
+      refreshButtons();
+    }
   }
 
-  function normalizeScene(scene, index = 0) {
-    const candidates = Array.isArray(scene?.mediaCandidates) ? scene.mediaCandidates : [];
-    return {
-      sceneId: scene?.sceneId || gywUid(`scene-${index + 1}`),
-      heading: String(scene?.heading || `장면 ${index + 1}`).trim(),
-      narration: String(scene?.narration || "").trim(),
-      caption: String(scene?.caption || "").trim(),
-      visualType: String(scene?.visualType || "auto").trim(),
-      visualPrompt: String(scene?.visualPrompt || "").trim(),
-      imageStyle: String(scene?.imageStyle || "").trim(),
-      mediaCandidates: candidates,
-      selectedMediaId: scene?.selectedMediaId || candidates.at(-1)?.id || null,
-      imageStatus: scene?.imageStatus || (candidates.length ? "complete" : "empty"),
-    };
+  /* ═════════════ 탭 다루기 ═════════════ */
+  const GONGSIL_URLS = [
+    "https://gongsilnews.com/gongsil*",
+    "https://*.gongsilnews.com/gongsil*",
+    "http://localhost/gongsil*",
+  ];
+
+  async function findTab(patterns) {
+    const tabs = await chrome.tabs.query({ url: patterns });
+    return tabs.length ? tabs[0] : null;
   }
 
-  function getSelectedMedia(scene) {
-    if (!scene) return null;
-    return scene.mediaCandidates?.find((item) => item.id === scene.selectedMediaId) || null;
+  async function askTab(tabId, msg) {
+    if (!tabId) throw new Error("대상 탭이 없습니다.");
+    try {
+      const res = await chrome.tabs.sendMessage(tabId, msg);
+      if (res === undefined) throw new Error("탭이 응답하지 않았습니다.");
+      return res;
+    } catch (e) {
+      throw new Error(
+        "탭과 연결되지 않았습니다. 그 탭을 한 번 새로고침(F5)한 뒤 다시 눌러 주세요. (" + e.message + ")"
+      );
+    }
   }
 
-  async function mediaUrl(ref) {
-    if (!ref) return "";
-    if (ref.kind === "idb" && ref.storageId) return GYWMediaStore.url(ref.storageId);
-    return ref.url || "";
+  /* ═════════════ ① 공실열람 페이지 이동 ═════════════ */
+  el.btnGoGongsil.addEventListener("click", () =>
+    guard(el.btnGoGongsil, "공실열람 여는 중", async () => {
+      const found = await findTab(GONGSIL_URLS);
+
+      if (found) {
+        await chrome.tabs.update(found.id, { active: true });
+        await chrome.windows.update(found.windowId, { focused: true });
+        S.gongsilTabId = found.id;
+        S.origin = new URL(found.url).origin;
+        toast("이미 열려 있는 공실열람 탭으로 이동했습니다.", "info");
+      } else {
+        const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const url = "https://gongsilnews.com/gongsil";
+        const tab = active
+          ? await chrome.tabs.update(active.id, { url })
+          : await chrome.tabs.create({ url });
+        S.gongsilTabId = tab.id;
+        S.origin = "https://gongsilnews.com";
+        toast("공실열람으로 이동했습니다. 매물을 하나 펼쳐 주세요.", "info");
+      }
+
+      status("공실열람 열림", "ok");
+      save();
+    })
+  );
+
+  /* ═════════════ ② 물건 가져오기 (+ 사진 4종) ═════════════ */
+  el.btnGrab.addEventListener("click", () =>
+    guard(el.btnGrab, "매물 읽는 중", async () => {
+      let tab = S.gongsilTabId ? await chrome.tabs.get(S.gongsilTabId).catch(() => null) : null;
+      if (!tab || !/\/gongsil/.test(tab.url || "")) tab = await findTab(GONGSIL_URLS);
+
+      if (!tab) throw new Error("공실열람 탭이 없습니다. 먼저 [공실열람 페이지 이동] 을 눌러 주세요.");
+
+      S.gongsilTabId = tab.id;
+      S.origin = new URL(tab.url).origin;
+
+      const res = await askTab(tab.id, { type: "GW_GET_VACANCY" });
+      if (!res.ok) throw new Error(res.reason || "매물을 읽지 못했습니다.");
+
+      S.vacancy = res.vacancy;
+      renderVacancy(S.vacancy);
+
+      const n = (S.vacancy.fields || []).length;
+      toast(`매물 정보 ${n}개 항목을 가져왔습니다. 이제 사진을 찍습니다.`, "ok");
+
+      /* 사진 4종 — 찍는 동안 공실열람 탭이 화면에 보여야 한다 */
+      status("사진 찍는 중", "busy");
+      S.media = GWMediaCover.normalize(await captureMedia(tab, S.vacancy));
+      renderDraft();
+
+      const shots = S.media.map((m) => m.kind);
+      toast(
+        `사진 ${S.media.length}장 준비됨 (매물 ${shots.filter((k) => k === "photo").length}장 · 검증 · 지도 · 로드뷰)`,
+        "ok",
+        5000
+      );
+      status("매물 준비됨", "ok");
+      save();
+    })
+  );
+
+  function renderVacancy(v) {
+    const rows = [];
+    if (v.priceText) rows.push(["금액", v.priceText]);
+    for (const f of v.fields || []) rows.push([f.label, f.value]);
+    if ((v.themes || []).length) rows.push(["특징", v.themes.join(" ")]);
+    if (v.infra) rows.push(["주변환경", v.infra]);
+    if ((v.images || []).length) rows.push(["등록 사진", `${v.images.length}장`]);
+
+    el.vacancyName.textContent = v.title || "-";
+    el.vacancyFields.innerHTML = rows
+      .map(([k, val]) => `<div class="vf-row"><dt>${esc(k)}</dt><dd>${esc(val)}</dd></div>`)
+      .join("");
+    el.vacancyCard.classList.remove("hidden");
   }
 
-  function activateView(name) {
-    $$(".nav-tab").forEach((button) => button.classList.toggle("active", button.dataset.tab === name));
-    $$(".view").forEach((view) => view.classList.toggle("active", view.id === `view${name[0].toUpperCase()}${name.slice(1)}`));
-    if (name === "script") renderScript();
-    if (name === "images") renderImages();
+  /* ═════════════ 사진 4종 만들기 ═════════════ */
+  async function captureMedia(tab, v) {
+    const media = [];
+
+    /* 1. 매물 등록 사진 — 있는 만큼 전부 */
+    (v.images || []).forEach((url, i) => {
+      media.push({ kind: "photo", url, caption: gwCaptionFor("photo", v, i) });
+    });
+
+    /* 캡쳐는 그 탭이 화면에 보일 때만 된다 */
+    tab = await activateCaptureTab(tab);
+
+    /* 2·3·4. 공실열람 검증 · 지도 · 로드뷰 */
+    const failures = [];
+
+    for (const shot of SHOTS) {
+      const got = await captureOne(tab, shot);
+      if (got.url) {
+        media.push({ kind: shot.target, url: got.url, caption: gwCaptionFor(shot.target, v), real: true });
+      } else {
+        failures.push(`${shot.name}: ${got.reason}`);
+        media.push({ kind: shot.target, url: shot.fallback(v), caption: gwCaptionFor(shot.target, v), real: false });
+      }
+    }
+
+    await askTab(tab.id, { type: "GW_RESTORE_SCROLL" }).catch(() => {});
+
+    /* 실패를 감추지 않는다. 무엇이 왜 안 됐는지 그대로 말한다. */
+    if (failures.length) {
+      console.warn("[공실뉴스] 캡쳐 실패\n" + failures.join("\n"));
+      toast("캡쳐 안 된 것 — " + failures.join(" / "), "bad", 12000);
+    }
+
+    return media;
   }
 
-  async function getSiteOrigin() {
-    const candidates = [state.source?.url];
-    const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
-    candidates.push(active?.url);
-    for (const value of candidates) {
+  const SHOTS = [
+    { target: "proof", name: "공실열람 검증", force16x9: true, fallback: gwProofCard },
+    { target: "map", name: "지도", force16x9: false, fallback: gwMapCard },
+    { target: "roadview", name: "로드뷰", force16x9: false, fallback: gwRoadviewCard },
+  ];
+
+  /* 화면 캡쳐는 초당 두 번까지만 허용된다. 그 간격을 지킨다. */
+  let lastShotAt = 0;
+  async function throttleShot() {
+    const gap = Date.now() - lastShotAt;
+    if (gap < 700) await sleep(700 - gap);
+    lastShotAt = Date.now();
+  }
+
+  async function activateCaptureTab(tab) {
+    if (!tab || !tab.id) throw new Error("캡쳐할 공실열람 탭이 없습니다.");
+
+    const liveTab = await chrome.tabs.get(tab.id);
+    await chrome.tabs.update(liveTab.id, { active: true });
+    await chrome.windows.update(liveTab.windowId, { focused: true });
+    await sleep(250);
+
+    const [active] = await chrome.tabs.query({ active: true, windowId: liveTab.windowId });
+    if (!active || active.id !== liveTab.id) {
+      throw new Error("공실열람 탭을 화면 앞으로 가져오지 못했습니다.");
+    }
+
+    return active;
+  }
+
+  async function captureOne(tab, shot) {
+    try {
+      tab = await activateCaptureTab(tab);
+    } catch (e) {
+      return { url: null, reason: e.message || "공실열람 탭 활성화 실패" };
+    }
+
+    /* ① 찍을 곳으로 굴리고 좌표를 받는다 */
+    let prep;
+    try {
+      prep = await askTab(tab.id, { type: "GW_PREPARE_SHOT", target: shot.target });
+    } catch (e) {
+      return { url: null, reason: e.message || "탭과 연결 안 됨" };
+    }
+    if (!prep.ok) return { url: null, reason: prep.reason || "화면에서 못 찾음" };
+
+    /* ② 화면을 찍는다 — 한 번 실패하면 한 번 더 */
+    let raw = null;
+    let lastErr = "";
+    for (let attempt = 0; attempt < 2 && !raw; attempt++) {
+      await throttleShot();
       try {
-        const parsed = new URL(value || "");
-        if (/^(localhost|127\.0\.0\.1|(?:www\.)?gongsilnews\.com)$/i.test(parsed.hostname)) return parsed.origin;
-      } catch (_error) {
-        // 다음 후보를 확인한다.
+        tab = await activateCaptureTab(tab);
+        raw = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "jpeg", quality: 90 });
+      } catch (e) {
+        lastErr = e.message || String(e);
+        await sleep(500);
       }
     }
-    return GYW.SITE_URL;
+    if (!raw) return { url: null, reason: "화면 촬영 실패 — " + (lastErr || "알 수 없음") };
+
+    /* ③ 좌표대로 잘라낸다 */
+    const url = await gwCropRegion(raw, prep.rect, prep.viewport, shot.force16x9);
+    if (!url) return { url: null, reason: "자르기 실패" };
+
+    return { url, reason: "" };
   }
 
-  async function checkAccess() {
-    setStatus("권한 확인 중", "busy");
-    $("#accessLock").classList.remove("hidden");
-    $("#lockTitle").textContent = "회원 정보를 확인하는 중입니다";
-    $("#lockText").textContent = "잠시만 기다려 주세요.";
-    $("#lockLink").classList.add("hidden");
-    try {
-      const origin = await getSiteOrigin();
-      const response = await fetch(`${origin}/api/extension/auth/me`, { credentials: "include", cache: "no-store" });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.isLoggedIn) {
-        accessGranted = false;
-        $("#lockTitle").textContent = "공실뉴스 로그인이 필요합니다";
-        $("#lockText").textContent = "공실뉴스에 로그인한 뒤 다시 확인해 주세요.";
-        $("#lockLink").href = `${origin}/login`;
-        $("#lockLink").classList.remove("hidden");
-        setStatus("로그인 필요", "bad");
-        return;
-      }
-      if (!data.canYoutubeWriter) {
-        accessGranted = false;
-        $("#lockTitle").textContent = "유튜브작성기 이용 권한이 없습니다";
-        $("#lockText").textContent = "공실뉴스부동산·공실스터디부동산 회원 또는 최고관리자 계정으로 이용할 수 있습니다.";
-        $("#lockLink").href = origin;
-        $("#lockLink").textContent = "공실뉴스 열기";
-        $("#lockLink").classList.remove("hidden");
-        setStatus("권한 없음", "bad");
-        return;
-      }
-      accessGranted = true;
-      $("#accessLock").classList.add("hidden");
-      setStatus("사용 가능", "ok");
-    } catch (error) {
-      accessGranted = false;
-      $("#lockTitle").textContent = "공실뉴스 연결을 확인해 주세요";
-      $("#lockText").textContent = error.message || "회원 정보를 불러오지 못했습니다.";
-      $("#lockLink").href = GYW.SITE_URL;
-      $("#lockLink").classList.remove("hidden");
-      setStatus("연결 실패", "bad");
-    }
-  }
-
-  function sourcePath() {
-    return state.sourceType === "vacancy" ? "/gongsil" : "/";
-  }
-
-  async function openSourcePage(url = "") {
-    const input = String(url || "").trim();
-    const origin = await getSiteOrigin();
-    const target = input && state.sourceType === "vacancy" && !/^https?:\/\//i.test(input)
-      ? `${origin}/gongsil?id=${encodeURIComponent(input)}`
-      : input || `${origin}${sourcePath()}`;
-    const parsed = new URL(target);
-    if (!/^(gongsilnews\.com|www\.gongsilnews\.com|localhost|127\.0\.0\.1)$/i.test(parsed.hostname)) {
-      throw new Error("공실뉴스 기사 또는 매물 주소만 열 수 있습니다.");
-    }
-    const tab = await chrome.tabs.create({ url: parsed.href, active: true });
-    return tab;
-  }
-
-  async function waitTabLoaded(tabId, maxMs = 20000) {
-    const end = Date.now() + maxMs;
-    while (Date.now() < end) {
-      const tab = await chrome.tabs.get(tabId).catch(() => null);
-      if (tab?.status === "complete") return tab;
-      await gywSleep(300);
-    }
-    return chrome.tabs.get(tabId);
-  }
-
-  async function ensureSourceBridge(tabId) {
-    const file = state.sourceType === "vacancy" ? "content-gongsil.js" : "content-article.js";
-    await chrome.scripting.executeScript({ target: { tabId }, files: ["shared/config.js", file] });
-    await gywSleep(250);
-  }
-
-  async function grabSource() {
-    if (state.sourceType === "manual") return applyManualSource();
-    const messageType = state.sourceType === "vacancy" ? "GYW_GET_VACANCY" : "GYW_GET_ARTICLE";
-    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.url?.includes("gongsilnews.com") && !/^https?:\/\/(localhost|127\.0\.0\.1)/.test(tab?.url || "")) {
-      const patterns = state.sourceType === "vacancy"
-        ? ["https://gongsilnews.com/gongsil*", "http://localhost/*", "http://127.0.0.1/*"]
-        : ["https://gongsilnews.com/*", "http://localhost/*", "http://127.0.0.1/*"];
-      const tabs = await chrome.tabs.query({ url: patterns });
-      tab = tabs.at(-1);
-    }
-    if (!tab?.id) throw new Error("가져올 공실뉴스 페이지를 먼저 열어 주세요.");
-    let result = await chrome.tabs.sendMessage(tab.id, { type: messageType }).catch(() => null);
-    if (!result) {
-      await ensureSourceBridge(tab.id);
-      result = await chrome.tabs.sendMessage(tab.id, { type: messageType }).catch(() => null);
-    }
-    if (!result?.ok) throw new Error(result?.reason || "이 페이지에서 자료를 가져오지 못했습니다. 페이지를 새로고침해 주세요.");
-    state.source = result.source;
-    await save();
-    renderSource();
-    toast("자료를 가져왔습니다.", "ok");
-  }
-
-  async function applyManualSource() {
-    const title = $("#manualTitle").value.trim();
-    const body = $("#manualBody").value.trim();
-    if (!title || !body) throw new Error("제목과 참고 내용을 모두 입력해 주세요.");
-    state.source = { type: "manual", title, body, facts: [], images: [], url: "", capturedAt: Date.now() };
-    await save();
-    renderSource();
-    toast("직접 입력한 자료를 사용합니다.", "ok");
-  }
-
-  function renderSource() {
-    $$("#sourceTypeGroup button").forEach((button) => button.classList.toggle("active", button.dataset.value === state.sourceType));
-    $("#pageSourceBox").classList.toggle("hidden", state.sourceType === "manual");
-    $("#manualSourceBox").classList.toggle("hidden", state.sourceType !== "manual");
-    $$("#platformGroup button").forEach((button) => button.classList.toggle("active", button.dataset.value === state.platform));
-    const source = state.source;
-    $("#sourceEmpty").classList.toggle("hidden", Boolean(source));
-    $("#sourcePreview").classList.toggle("hidden", !source);
-    if (!source) return;
-    $("#sourceBadge").textContent = source.type === "vacancy" ? "공실 매물" : source.type === "manual" ? "직접 입력" : "공실뉴스 기사";
-    $("#sourceTitle").textContent = source.title || "제목 없음";
-    const meta = [];
-    if (source.url) meta.push(source.url);
-    if (source.images?.length) meta.push(`실제 이미지 ${source.images.length}개`);
-    $("#sourceMeta").textContent = meta.join(" · ") || "확인된 참고 자료";
-    const facts = Array.isArray(source.facts) && source.facts.length ? source.facts : (Array.isArray(source.fields) ? source.fields : []);
-    $("#sourceFacts").innerHTML = facts.slice(0, 16).map((fact) => {
-      const label = typeof fact === "object" ? fact.label || fact.key || "정보" : "정보";
-      const value = typeof fact === "object" ? fact.value || fact.text || "" : fact;
-      return `<div class="fact-row"><b>${gywEscape(label)}</b><span>${gywEscape(value)}</span></div>`;
-    }).join("");
-    const excerpt = source.body || source.text || [source.priceText, ...(source.themes || [])].filter(Boolean).join(" · ");
-    $("#sourceExcerpt").textContent = String(excerpt || "확인된 구조화 자료를 대본에 사용합니다.").slice(0, 5000);
-  }
-
-  function renderSettings() {
-    $$('[data-setting]').forEach((group) => {
-      const key = group.dataset.setting;
-      $$('button[data-value]', group).forEach((button) => button.classList.toggle("active", state.settings[key] === button.dataset.value));
-    });
-    const sceneLength = GYW_SCENE_LENGTH[state.settings.sceneLength];
-    $("#sceneLengthHint").textContent = sceneLength ? `장면당 약 ${sceneLength.seconds} · ${sceneLength.guide}` : "";
-  }
-
-  function renderScript() {
-    renderSettings();
-    $("#scriptSourceWarning").classList.toggle("hidden", Boolean(state.source));
-    $("#scriptWorkspace").classList.toggle("hidden", !state.source);
-    if (!state.source) return;
-    $("#scriptSourceTitle").textContent = state.source.title || "참고 자료";
-    const script = state.script;
-    $("#scriptEmpty").classList.toggle("hidden", Boolean(script));
-    $("#scriptEditor").classList.toggle("hidden", !script);
-    if (!script) return;
-    $("#videoTitle").value = script.title || "";
-    $("#videoDescription").value = script.description || "";
-    renderSceneEditors();
-  }
-
-  function estimateDuration() {
-    const seconds = { short: 4, medium: 7.5, long: 12.5 }[state.settings.sceneLength] || 7.5;
-    return Math.round((state.script?.scenes?.length || 0) * seconds);
-  }
-
-  function durationText(seconds) {
-    if (seconds < 60) return `예상 ${seconds}초`;
-    const min = Math.floor(seconds / 60);
-    const sec = seconds % 60;
-    return `예상 ${min}분${sec ? ` ${sec}초` : ""}`;
-  }
-
-  function renderSceneEditors() {
-    const scenes = state.script?.scenes || [];
-    $("#sceneCount").textContent = `${scenes.length}개 장면`;
-    $("#estimatedDuration").textContent = durationText(estimateDuration());
-    $("#sceneList").innerHTML = scenes.map((scene, index) => `
-      <article class="scene-card" data-scene-id="${gywEscape(scene.sceneId)}">
-        <div class="scene-head">
-          <span class="scene-number">${String(index + 1).padStart(2, "0")}</span>
-          <strong>${gywEscape(scene.heading || `장면 ${index + 1}`)}</strong>
-          <div class="scene-actions">
-            <button type="button" data-action="up" title="위로">↑</button>
-            <button type="button" data-action="down" title="아래로">↓</button>
-            <button type="button" data-action="split" title="나누기">✂</button>
-            <button type="button" data-action="merge" title="다음 장면과 합치기">＋</button>
-            <button type="button" data-action="delete" title="삭제">×</button>
-          </div>
-        </div>
-        <div class="scene-body">
-          <label class="field-label">장면 제목</label>
-          <input type="text" data-field="heading" value="${gywEscape(scene.heading)}">
-          <label class="field-label">내레이션</label>
-          <textarea data-field="narration">${gywEscape(scene.narration)}</textarea>
-          <div class="scene-mini-grid">
-            <div><label class="field-label">화면 자막</label><input type="text" data-field="caption" value="${gywEscape(scene.caption)}"></div>
-            <div><label class="field-label">장면 종류</label><input type="text" data-field="visualType" value="${gywEscape(scene.visualType)}"></div>
-          </div>
-          <label class="field-label">이미지 장면 설명</label>
-          <textarea data-field="visualPrompt">${gywEscape(scene.visualPrompt)}</textarea>
-        </div>
-      </article>`).join("");
-  }
-
-  function markSceneChanged(scene, field, value) {
-    scene[field] = value;
-    if (["narration", "caption", "visualType", "visualPrompt"].includes(field) && scene.mediaCandidates?.length) scene.imageStatus = "recheck";
-  }
-
-  async function applyScript(parsed) {
-    const previous = state.script?.scenes || [];
-    const scenes = parsed.scenes.map((scene, index) => {
-      const old = previous[index];
-      const normalized = normalizeScene({ ...scene, sceneId: old?.sceneId || scene.sceneId }, index);
-      if (old) {
-        normalized.imageStyle = old.imageStyle || "";
-        normalized.mediaCandidates = old.mediaCandidates || [];
-        normalized.selectedMediaId = old.selectedMediaId || null;
-        normalized.imageStatus = old.mediaCandidates?.length ? "recheck" : "empty";
-      }
-      return normalized;
-    });
-    state.script = { title: parsed.title, description: parsed.description || "", scenes };
-    await assignActualImages();
-    await save();
-    renderScript();
-    toast(`${scenes.length}개 장면 대본을 가져왔습니다.`, "ok");
-  }
-
-  async function askTab(tabId, message, timeoutMs = 195000) {
-    return Promise.race([
-      chrome.tabs.sendMessage(tabId, message),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("AI 응답 대기 시간이 지났습니다.")), timeoutMs)),
-    ]);
-  }
-
-  async function ensureAiTab() {
-    let tab = null;
-    if (state.aiTabId) {
-      const existing = await chrome.tabs.get(state.aiTabId).catch(() => null);
-      if (existing?.url?.startsWith(GYW.aiConfig(state.platform).URL.split("/app")[0])) tab = existing;
-    }
-    const config = GYW.aiConfig(state.platform);
-    const matches = tab ? [] : await chrome.tabs.query({ url: state.platform === "gemini" ? "https://gemini.google.com/*" : "https://chatgpt.com/*" });
-    tab = tab || matches.at(-1);
-    if (!tab) tab = await chrome.tabs.create({ url: config.URL, active: true });
-    await waitTabLoaded(tab.id, 30000);
-    state.aiTabId = tab.id;
-    await save();
-    await gywSleep(1000);
-    const ping = await chrome.tabs.sendMessage(tab.id, { type: "GYW_PING" }).catch(() => null);
-    if (!ping?.ok) {
-      const platformFile = state.platform === "gemini" ? "content-gemini.js" : "content-chatgpt.js";
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: [
-          "shared/config.js",
-          "shared/ui.js",
-          "shared/youtube-json.js",
-          "shared/ai-common.js",
-          platformFile,
-        ],
-      });
-      await gywSleep(300);
-    }
-    return tab;
-  }
-
-  async function sendPrompt(prompt) {
-    const tab = await ensureAiTab();
-    const filled = await askTab(tab.id, { type: "GYW_FILL", text: prompt }, 40000);
-    if (!filled?.ok) throw new Error(filled?.reason || "AI 입력창에 내용을 넣지 못했습니다.");
-    const count = await askTab(tab.id, { type: "GYW_COUNT" }, 10000).catch(() => ({ count: 0 }));
-    const submitted = await askTab(tab.id, { type: "GYW_SUBMIT" }, 15000);
-    if (!submitted?.ok) throw new Error(submitted?.reason || "AI 전송에 실패했습니다.");
-    return { tab, previousCount: count.count || 0 };
-  }
-
-  async function createScript() {
-    if (!state.source) throw new Error("참고 자료를 먼저 가져와 주세요.");
-    setStatus("대본 요청 중", "busy");
-    const sent = await sendPrompt(gywBuildScriptPrompt(state.source, state.settings));
-    state.pendingRevisionCount = sent.previousCount;
-    await save();
-    setStatus("AI 작성 중", "busy");
-    toast("AI에 대본 작성을 요청했습니다. 완성된 뒤 ‘완성 대본 가져오기’를 누르세요.", "ok");
-  }
-
-  async function pullScript(isRevision = false) {
-    const tab = await ensureAiTab();
-    setStatus("대본 가져오는 중", "busy");
-    const response = await askTab(tab.id, {
-      type: "GYW_READ",
-      minCount: Number(state.pendingRevisionCount) + 1,
-      maxMs: 180000,
-    });
-    if (!response?.ok) throw new Error(response?.reason || "완성 대본을 읽지 못했습니다.");
-    const parsed = GYWYoutubeJson.parse(response.text);
-    if (!parsed.ok) throw new Error(parsed.reason || "대본 JSON 형식을 확인해 주세요.");
-    await applyScript(parsed.script);
-    setStatus(isRevision ? "수정 완료" : "대본 완료", "ok");
-  }
-
-  async function requestRevision() {
-    if (!state.script) throw new Error("수정할 대본이 없습니다.");
-    const request = $("#reviseRequest").value.trim();
-    if (!request) throw new Error("수정 요청을 입력해 주세요.");
-    setStatus("수정 요청 중", "busy");
-    const sent = await sendPrompt(gywBuildRevisePrompt(state.script, request));
-    state.pendingRevisionCount = sent.previousCount;
-    await save();
-    setStatus("AI 수정 중", "busy");
-    toast("AI에 대본 수정을 요청했습니다.", "ok");
-  }
-
-  async function assignActualImages() {
-    const images = (state.source?.images || []).filter(Boolean);
-    const scenes = state.script?.scenes || [];
-    if (!images.length || !scenes.length) return;
-    let imageIndex = 0;
-    for (const scene of scenes) {
-      if (scene.mediaCandidates?.length || imageIndex >= images.length) continue;
-      const raw = images[imageIndex++];
-      const url = typeof raw === "string" ? raw : raw.url || raw.src;
-      if (!url) continue;
-      const ref = { id: gywUid("media"), kind: "url", url, name: `actual-${imageIndex}`, source: "actual", createdAt: Date.now() };
-      scene.mediaCandidates = [ref];
-      scene.selectedMediaId = ref.id;
-      scene.imageStatus = "complete";
-    }
-  }
-
-  function renderStyles() {
-    $("#imageStyleGrid").innerHTML = Object.entries(GYW_IMAGE_STYLE).map(([key, item]) =>
-      `<button type="button" class="style-btn ${state.settings.imageStyle === key ? "active" : ""}" data-style="${gywEscape(key)}">${gywEscape(item.label)}</button>`
-    ).join("");
-    $("#styleLocked").checked = Boolean(state.settings.styleLocked);
-  }
-
-  function renderImages() {
-    const hasScript = Boolean(state.script?.scenes?.length);
-    $("#imageScriptWarning").classList.toggle("hidden", hasScript);
-    $("#imageWorkspace").classList.toggle("hidden", !hasScript);
-    if (!hasScript) return;
-    renderStyles();
-    $("#imageScriptTitle").textContent = state.script.title || "유튜브 대본";
-    $("#imageSceneCount").textContent = `${state.script.scenes.length}개 장면`;
-    renderImageScenes();
-    renderThumbnail();
-  }
-
-  function renderImageScenes() {
-    const list = $("#imageSceneList");
-    list.innerHTML = state.script.scenes.map((scene, index) => {
-      const selected = getSelectedMedia(scene);
-      const activeStyle = state.settings.styleLocked ? state.settings.imageStyle : (scene.imageStyle || state.settings.imageStyle);
-      const ppt = activeStyle === "presentation";
-      return `<article class="scene-card" data-scene-id="${gywEscape(scene.sceneId)}">
-        <div class="scene-head">
-          <span class="scene-number">${String(index + 1).padStart(2, "0")}</span>
-          <strong>${gywEscape(scene.heading || `장면 ${index + 1}`)}</strong>
-          <span class="scene-status ${gywEscape(scene.imageStatus)}">${gywEscape(statusLabel[scene.imageStatus] || statusLabel.empty)}</span>
-        </div>
-        <div class="image-preview ${state.settings.aspectRatio === "9:16" ? "vertical" : ""}" data-preview>
-          ${selected ? `<span class="image-placeholder">이미지 불러오는 중…</span>` : `<span class="image-placeholder">직접 넣거나 AI로 만들어 주세요.</span>`}
-          ${selected && ppt ? `<div class="ppt-overlay"><small>공실뉴스</small><strong>${gywEscape(scene.caption || scene.heading)}</strong></div>` : ""}
-        </div>
-        <div class="image-controls">
-          <button type="button" class="primary-action" data-action="generate">${selected ? "수정하기" : "만들기"}</button>
-          <button type="button" data-action="replace">바꾸기</button>
-          <button type="button" data-action="previous">이전 이미지</button>
-          <button type="button" data-action="download">저장</button>
-          <button type="button" data-action="delete">이미지 삭제</button>
-        </div>
-        ${state.settings.styleLocked ? "" : `<div class="scene-body"><label class="field-label">이 장면 스타일</label><select data-scene-style>${Object.entries(GYW_IMAGE_STYLE).map(([key, item]) => `<option value="${gywEscape(key)}" ${key === activeStyle ? "selected" : ""}>${gywEscape(item.label)}</option>`).join("")}</select></div>`}
-      </article>`;
-    }).join("");
-    state.script.scenes.forEach(async (scene) => {
-      const ref = getSelectedMedia(scene);
-      if (!ref) return;
-      const card = list.querySelector(`[data-scene-id="${CSS.escape(scene.sceneId)}"]`);
-      const preview = card?.querySelector("[data-preview]");
-      const url = await mediaUrl(ref).catch(() => "");
-      if (!preview || !url) return;
-      const image = document.createElement("img");
-      image.src = url;
-      image.alt = scene.heading;
-      preview.querySelector(".image-placeholder")?.remove();
-      preview.prepend(image);
-    });
-  }
-
-  function dataUrlToBlob(dataUrl) {
-    const [header, content] = String(dataUrl).split(",");
-    const mime = header.match(/data:([^;]+)/)?.[1] || "image/png";
-    const binary = atob(content || "");
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-    return new Blob([bytes], { type: mime });
-  }
-
-  async function mediaFromGeneratedUrl(url, name) {
-    let blob = null;
-    try {
-      const response = await fetch(url, { credentials: "include" });
-      if (response.ok) blob = await response.blob();
-    } catch (_error) {
-      // AI 페이지에서 다시 읽는다.
-    }
-    if (!blob && state.aiTabId) {
-      const response = await askTab(state.aiTabId, { type: "GYW_GET_IMAGE_DATA", url }, 50000).catch(() => null);
-      if (response?.ok && response.dataUrl) blob = dataUrlToBlob(response.dataUrl);
-    }
-    if (!blob) return { id: gywUid("media"), kind: "url", url, name, source: "generated", createdAt: Date.now() };
-    const storageId = await GYWMediaStore.put(blob, { name, source: "generated" });
-    return { id: gywUid("media"), kind: "idb", storageId, name, source: "generated", createdAt: Date.now() };
-  }
-
-  async function mediaFromFile(file, source = "uploaded") {
-    const storageId = await GYWMediaStore.put(file, { name: file.name, source });
-    return { id: gywUid("media"), kind: "idb", storageId, name: file.name, source, createdAt: Date.now() };
-  }
-
-  async function generateSceneImage(scene, extraRequest = "") {
-    scene.imageStatus = "generating";
-    renderImageScenes();
-    await save();
-    try {
-      const tab = await ensureAiTab();
-      const before = await askTab(tab.id, { type: "GYW_IMAGE_LIST" }, 15000);
-      const imageSettings = {
-        ...state.settings,
-        imageStyle: state.settings.styleLocked ? state.settings.imageStyle : (scene.imageStyle || state.settings.imageStyle),
-      };
-      const filled = await askTab(tab.id, { type: "GYW_FILL", text: gywBuildImagePrompt(scene, imageSettings, extraRequest) }, 40000);
-      if (!filled?.ok) throw new Error(filled?.reason || "이미지 요청을 입력하지 못했습니다.");
-      const submitted = await askTab(tab.id, { type: "GYW_SUBMIT" }, 15000);
-      if (!submitted?.ok) throw new Error(submitted?.reason || "이미지 요청을 전송하지 못했습니다.");
-      const generated = await askTab(tab.id, { type: "GYW_WAIT_IMAGE", minCount: before?.images?.length || 0, maxMs: 180000 }, 195000);
-      if (!generated?.ok || !generated.image?.url) throw new Error(generated?.reason || "생성된 이미지를 찾지 못했습니다.");
-      const ref = await mediaFromGeneratedUrl(generated.image.url, `${scene.sceneId}.png`);
-      scene.mediaCandidates = [...(scene.mediaCandidates || []), ref];
-      scene.selectedMediaId = ref.id;
-      scene.imageStatus = "complete";
-      await save();
-      renderImageScenes();
-      return true;
-    } catch (error) {
-      scene.imageStatus = "failed";
-      await save();
-      renderImageScenes();
-      toast(`${scene.heading}: ${error.message}`, "bad");
-      return false;
-    }
-  }
-
-  function updateQueueProgress(done, total, label = "") {
-    const percent = total ? Math.round((done / total) * 100) : 0;
-    $("#imageProgressBar").style.width = `${percent}%`;
-    $("#imageProgressText").textContent = total ? `${done}/${total} ${label}` : "대기 중";
-  }
-
-  async function runImageQueue(mode = "missing") {
-    if (queueRunning) return;
-    const targets = state.script.scenes.filter((scene) => mode === "failed" ? scene.imageStatus === "failed" : !getSelectedMedia(scene));
-    if (!targets.length) {
-      toast(mode === "failed" ? "실패한 이미지가 없습니다." : "모든 장면에 이미지가 있습니다.", "ok");
+  /* 사진 한 장만 다시 찍기 */
+  async function recapture(index) {
+    const m = S.media[index];
+    if (!m) return;
+    const shot = SHOTS.find((s) => s.target === m.kind);
+    if (!shot) {
+      toast("이 사진은 다시 찍을 수 없습니다 (캡쳐로 만든 것이 아닙니다).", "bad");
       return;
     }
-    queueRunning = true;
-    queueStop = false;
-    $("#btnStopQueue").classList.remove("hidden");
-    setStatus("이미지 생성 중", "busy");
-    let done = 0;
-    updateQueueProgress(done, targets.length, "시작");
-    for (const scene of targets) {
-      if (queueStop) break;
-      updateQueueProgress(done, targets.length, scene.heading);
-      await generateSceneImage(scene);
-      done += 1;
-      updateQueueProgress(done, targets.length, scene.heading);
+
+    let tab = S.gongsilTabId ? await chrome.tabs.get(S.gongsilTabId).catch(() => null) : null;
+    if (!tab) tab = await findTab(GONGSIL_URLS);
+    if (!tab) throw new Error("공실열람 탭이 없습니다.");
+
+    await chrome.tabs.update(tab.id, { active: true });
+    await chrome.windows.update(tab.windowId, { focused: true });
+    await sleep(400);
+
+    const got = await captureOne(tab, shot);
+    await askTab(tab.id, { type: "GW_RESTORE_SCROLL" }).catch(() => {});
+
+    if (!got.url) {
+      toast(`${shot.name} 다시 찍기 실패 — ${got.reason}`, "bad", 9000);
+      return;
     }
-    queueRunning = false;
-    $("#btnStopQueue").classList.add("hidden");
-    setStatus(queueStop ? "생성 중지" : "이미지 완료", queueStop ? "bad" : "ok");
-    toast(queueStop ? `이미지 생성을 중지했습니다. (${done}/${targets.length})` : `${done}개 장면 이미지 작업을 마쳤습니다.`, queueStop ? "bad" : "ok");
+
+    S.media[index] = Object.assign({}, m, { url: got.url, real: true });
+    renderDraft();
+    save();
+    toast(`${shot.name} 을(를) 다시 찍었습니다.`, "ok");
   }
 
-  function createThumbSuggestions() {
-    const title = state.script?.title || state.source?.title || "";
-    const first = state.script?.scenes?.[0]?.caption || "";
-    const clean = title.replace(/[\[\](){}]/g, "").trim();
-    return [
-      clean.slice(0, 28),
-      first.slice(0, 28) || clean.slice(0, 28),
-      `${state.settings.videoType === "listing" ? "이 매물" : "핵심 내용"}, 꼭 확인하세요`.slice(0, 28),
-    ].filter((item, index, array) => item && array.indexOf(item) === index);
+  /* ═════════════ ③ AI 선택 ═════════════ */
+  const platformBtns = document.querySelectorAll(".choice[data-platform]");
+  platformBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      platformBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      S.platform = btn.dataset.platform;
+      S.aiTabId = null; /* AI 를 바꾸면 이전 탭은 우리 대화가 아니다 */
+      refreshButtons();
+      save();
+    });
+  });
+
+  const aiConf = () => (S.platform === "gemini" ? GW.GEMINI : GW.CHATGPT);
+
+  /* 자동 입력이 실패해도 붙여넣기로 이어갈 수 있게 AI 에 보낼 글을 미리 복사해 둔다.
+     AI 탭으로 넘어가면 작업창이 초점을 잃어 복사가 막히므로 반드시 탭을 띄우기 전에 부른다. */
+  const copyForPaste = (text) => navigator.clipboard.writeText(text).then(() => true, () => false);
+
+  function pasteGuide(what) {
+    const name = S.platform === "gemini" ? "Gemini" : "ChatGPT";
+    const other = S.platform === "gemini" ? "ChatGPT" : "Gemini";
+    return `${name} 입력칸에 ${what}을 자동으로 넣지 못했습니다. 복사해 두었으니 입력칸을 클릭하고 Ctrl+V 로 붙여넣은 뒤 직접 전송해 주세요. 계속 안 되면 2단계에서 ${other} 를 선택해 주세요.`;
   }
 
-  function renderThumbnail() {
-    const thumb = state.thumbnail;
-    $("#thumbText").value = thumb.text || "";
-    $("#thumbOverlay").textContent = thumb.text || "";
-    $("#thumbSuggestions").innerHTML = (thumb.suggestions || []).map((text) => `<button type="button" data-thumb-text="${gywEscape(text)}">${gywEscape(text)}</button>`).join("");
-    const preview = $("#thumbPreview");
-    preview.querySelector("img")?.remove();
-    const ref = thumb.candidates?.find((item) => item.id === thumb.selectedMediaId);
-    preview.classList.toggle("empty", !ref);
-    if (!ref) return;
-    mediaUrl(ref).then((url) => {
-      if (!url) return;
-      const image = document.createElement("img");
-      image.src = url;
-      image.alt = "유튜브 썸네일";
-      preview.prepend(image);
+  /* ═════════════ 기사 스타일 · 분량 ═════════════ */
+  const kindBtns = document.querySelectorAll(".choice[data-kind]");
+  kindBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      kindBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      S.kind = btn.dataset.kind;
+      save();
+    });
+  });
+
+  const lenBtns = document.querySelectorAll(".chip[data-length]");
+  lenBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      lenBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      S.length = btn.dataset.length;
+      save();
+    });
+  });
+
+  const promptOpts = () => ({ kind: S.kind, length: S.length });
+
+  /* ═════════════ ④ AI 기사 작성 ═════════════ */
+  el.btnOpenAi.addEventListener("click", () =>
+    guard(el.btnOpenAi, "AI 탭 여는 중", async () => {
+      if (!S.vacancy) throw new Error("먼저 [물건 가져오기] 를 해 주세요.");
+
+      const conf = aiConf();
+      const job = { type: "GW_FILL", text: gwBuildPrompt(S.vacancy, promptOpts()) };
+
+      const copied = await copyForPaste(job.text);
+
+      const tab = await chrome.tabs.create({ url: conf.URL, active: true });
+      S.aiTabId = tab.id;
+      save();
+
+      await waitTabReady(tab.id);
+      await sleep(1200);
+
+      let res = await askTab(tab.id, job).catch((e) => ({ ok: false, reason: e.message }));
+
+      /* 첫 화면이 덜 그려졌거나 탭 연결이 꼬이면 한 번 새로고침해서 다시 넣는다 */
+      if (!res.ok) {
+        status("AI 탭 새로고침 후 재시도", "busy");
+        await chrome.tabs.reload(tab.id);
+        await sleep(500);
+        await waitTabReady(tab.id);
+        await sleep(2000);
+        res = await askTab(tab.id, job).catch((e) => ({ ok: false, reason: e.message }));
+      }
+      if (!res.ok) {
+        if (!copied) throw new Error(res.reason || "프롬프트를 넣지 못했습니다.");
+        toast(pasteGuide("프롬프트") + " 전송한 뒤에는 ③ 초안 보내기 로 이어가면 됩니다.", "bad", 15000);
+        status("붙여넣기 필요", "bad");
+        return;
+      }
+
+      const k = GW_KIND[S.kind] || GW_KIND.news;
+      const l = GW_LENGTH[S.length] || GW_LENGTH.normal;
+      toast(`${k.label} · ${l.chars} 로 프롬프트를 넣었습니다. ② 작성하기 를 누르세요.`, "ok", 6000);
+      status("프롬프트 입력됨", "ok");
+    })
+  );
+
+  function waitTabReady(tabId, timeoutMs = 30000) {
+    return new Promise((resolve) => {
+      const finish = () => {
+        chrome.tabs.onUpdated.removeListener(onUpd);
+        resolve();
+      };
+      const timer = setTimeout(finish, timeoutMs);
+      const onUpd = (id, info) => {
+        if (id === tabId && info.status === "complete") {
+          clearTimeout(timer);
+          finish();
+        }
+      };
+      chrome.tabs.onUpdated.addListener(onUpd);
+      chrome.tabs.get(tabId).then((t) => {
+        if (t.status === "complete") {
+          clearTimeout(timer);
+          finish();
+        }
+      }).catch(() => {});
     });
   }
 
-  async function generateThumbnail() {
-    const text = $("#thumbText").value.trim() || state.script?.title || "유튜브 영상";
-    state.thumbnail.text = text;
-    const scene = {
-      sceneId: "thumbnail",
-      heading: text,
-      narration: state.script?.description || "",
-      caption: text,
-      visualType: "title",
-      visualPrompt: `한국 유튜브 썸네일에 어울리는 강한 한 장면의 배경. 주제: ${state.script?.title || text}. 글자는 그리지 않는다.`,
+  /* ═════════════ ⑤ 작성하기 ═════════════ */
+  el.btnSubmit.addEventListener("click", () =>
+    guard(el.btnSubmit, "전송 중", async () => {
+      if (!S.aiTabId) throw new Error("먼저 ① AI 기사 작성 을 눌러 주세요.");
+      await chrome.tabs.update(S.aiTabId, { active: true });
+      const res = await askTab(S.aiTabId, { type: "GW_SUBMIT" });
+      if (!res.ok) throw new Error(res.reason || "전송 버튼을 누르지 못했습니다.");
+      toast("전송했습니다. 기사가 다 나오면 ③ 초안 보내기 를 누르세요.", "ok");
+      status("AI 작성 중", "busy");
+    })
+  );
+
+  /* ═════════════ ⑥ 초안 보내기 ═════════════ */
+  const pasteBox = $("pasteBox");
+  const pasteJson = $("pasteJson");
+
+  el.btnPullDraft.addEventListener("click", () =>
+    guard(el.btnPullDraft, "기사 읽는 중", async () => {
+      if (!S.aiTabId) throw new Error("먼저 ① AI 기사 작성 을 눌러 주세요.");
+      let repaired;
+      try {
+        repaired = await pullArticle();
+      } catch (e) {
+        /* 자동으로 못 읽으면 직접 붙여넣는 길을 연다 */
+        if (e.unreadable) {
+          pasteJson.focus();
+          toast(e.message, "bad", 9000);
+          status("붙여넣기 필요", "bad");
+          return;
+        }
+        throw e;
+      }
+      afterDraftPulled(repaired);
+    })
+  );
+
+  $("btnPasteDraft").addEventListener("click", () =>
+    guard($("btnPasteDraft"), "초안 만드는 중", async () => {
+      const text = pasteJson.value.trim();
+      if (!text) throw new Error("AI 답변의 JSON 을 먼저 붙여넣어 주세요.");
+      afterDraftPulled(applyArticleText(text));
+    })
+  );
+
+  function afterDraftPulled(repaired) {
+    pasteBox.classList.add("hidden");
+    pasteJson.value = "";
+    toast(repaired ? "AI의 JSON 오류를 자동 복구해 초안을 가져왔습니다." : "초안을 가져왔습니다.", "ok");
+    status("초안 준비됨", "ok");
+    switchTab("draft");
+  }
+
+  async function pullArticle(readOpts = {}) {
+    /* 새 답변을 기다리는 중(수정 요청 직후)이 아니면 복사 버튼부터 — 가장 정확하고 기다릴 필요도 없다 */
+    if (!readOpts.minCount) {
+      const direct = await GWChatGptDirect.read(S.aiTabId, (stage) => status(`기사 읽는 중 (${stage})`, "busy"));
+      if (direct) return applyArticleText(direct);
+    }
+
+    let res = await askTab(S.aiTabId, { type: "GW_READ", ...readOpts });
+    if (!res.ok && res.unreadable) {
+      const direct = await GWChatGptDirect.read(S.aiTabId, (stage) => status(`기사 읽는 중 (${stage})`, "busy"));
+      if (direct) res = { ok: true, text: direct };
+    }
+    if (!res.ok) {
+      if (!res.unreadable) throw new Error(res.reason || "응답을 읽지 못했습니다.");
+      /* 수정글도 같은 칸에 붙여넣으면 초안이 바뀐다 */
+      pasteBox.classList.remove("hidden");
+      const err = new Error(res.reason + " ① 매물·AI 탭 아래 붙여넣기 칸에 JSON 을 직접 붙여넣어 주세요.");
+      err.unreadable = true;
+      throw err;
+    }
+    return applyArticleText(res.text);
+  }
+
+  function applyArticleText(text) {
+    const parsed = GWArticleJson.parse(text);
+    if (!parsed.ok) {
+      throw new Error(
+        parsed.reason + " AI 탭에서 'JSON 형식으로 다시 출력해줘' 라고 한 번 더 요청한 뒤 다시 눌러 주세요."
+      );
+    }
+
+    S.article = parsed.article;
+    draftInsertSlot = null;
+    pendingAiInsertSlot = null;
+    pendingAiPreviousImage = null;
+    pendingAiRequestKey = "";
+    renderDraft();
+    save();
+    return parsed.repaired === true;
+  }
+
+  /* ═════════════ 초안 미리보기 ═════════════ */
+
+  /* 사진 한 장을 기사 안에 넣는 모양.
+     contenteditable="false" 라 본문을 고쳐도 사진이 망가지지 않는다.
+     설명글만 따로 고칠 수 있게 열어 둔다. */
+  function figureHtml(m, idx) {
+    const canReshoot = SHOTS.some((s) => s.target === m.kind);
+    const warn = canReshoot && m.real === false
+      ? `<span class="fig-warn">캡쳐 실패 · 대체 카드</span>`
+      : "";
+    const coverControl = m.isCover
+      ? `<span class="fig-cover-mark">대표 이미지</span>`
+      : `<button type="button" class="fig-btn cover" data-act="cover" data-mi="${idx}">대표지정</button>`;
+    return (
+      `<figure class="art-fig" contenteditable="false" data-mi="${idx}">` +
+      `<img src="${esc(m.url)}" alt="">` +
+      `<div class="fig-tools">` +
+      coverControl +
+      warn +
+      `<button type="button" class="fig-btn" data-act="replace" data-mi="${idx}">사진 바꾸기</button>` +
+      (canReshoot
+        ? `<button type="button" class="fig-btn" data-act="reshoot" data-mi="${idx}">다시 찍기</button>`
+        : "") +
+      `<button type="button" class="fig-btn del" data-act="remove" data-mi="${idx}">삭제</button>` +
+      `</div>` +
+      `<figcaption class="art-cap" contenteditable="true" spellcheck="false">${esc(m.caption || "")}</figcaption>` +
+      `</figure>`
+    );
+  }
+
+  /* 사진 버튼은 새로 그릴 때마다 생기므로 위임해서 받는다 */
+  let replaceIndex = -1;
+  let fileInsertSlot = null;
+  let pendingAiInsertSlot = null;
+  let pendingAiPreviousImage = null;
+  let pendingAiRequestKey = "";
+  let draftInsertSlot = null;
+
+  function directDraftParagraphs() {
+    return Array.from(el.pvContent.children).filter((node) => node.tagName === "P");
+  }
+
+  /*
+     커서는 버튼을 누르는 순간 본문에서 사라진다. 그래서 본문 안에서 움직일 때마다
+     "앞에 문단이 몇 개 있는 자리인지"를 기억한다. 사진은 그 문단 슬롯에 꽂힌다.
+  */
+  function rememberDraftCursor() {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || !S.article) return;
+
+    const range = sel.getRangeAt(0);
+    if (!el.pvContent.contains(range.startContainer) && range.startContainer !== el.pvContent) return;
+
+    const paras = directDraftParagraphs();
+    const startElm = range.startContainer.nodeType === Node.ELEMENT_NODE
+      ? range.startContainer
+      : range.startContainer.parentElement;
+    const currentP = startElm && startElm.closest ? startElm.closest("p") : null;
+
+    if (currentP && currentP.parentElement === el.pvContent) {
+      const index = paras.indexOf(currentP);
+      const beforeCaret = document.createRange();
+      beforeCaret.selectNodeContents(currentP);
+      try {
+        beforeCaret.setEnd(range.startContainer, range.startOffset);
+      } catch (e) {
+        draftInsertSlot = Math.max(0, index + 1);
+        return;
+      }
+      draftInsertSlot = Math.max(0, index + (beforeCaret.toString().length > 0 ? 1 : 0));
+      return;
+    }
+
+    if (range.startContainer === el.pvContent) {
+      draftInsertSlot = Array.from(el.pvContent.children)
+        .slice(0, range.startOffset)
+        .filter((node) => node.tagName === "P").length;
+    }
+  }
+
+  function requireDraftInsertSlot() {
+    rememberDraftCursor();
+    if (!Number.isInteger(draftInsertSlot)) {
+      toast("초안 본문에서 이미지를 넣을 위치를 먼저 클릭해 주세요.", "bad", 6000);
+      return null;
+    }
+    return Math.max(0, Math.min(draftInsertSlot, directDraftParagraphs().length));
+  }
+
+  function focusInsertedFigure(index) {
+    requestAnimationFrame(() => {
+      const fig = el.pvContent.querySelector(`.art-fig[data-mi="${index}"]`);
+      if (!fig) return;
+      fig.scrollIntoView({ behavior: "smooth", block: "center" });
+      const range = document.createRange();
+      range.setStartAfter(fig);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      rememberDraftCursor();
+    });
+  }
+
+  function onFigClick(e) {
+    const btn = e.target.closest(".fig-btn");
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const idx = Number(btn.dataset.mi);
+    const act = btn.dataset.act;
+
+    if (act === "cover") {
+      /* 버튼 클릭 직전까지 고친 본문도 다시 그릴 때 잃지 않게 먼저 담는다. */
+      harvestEdits();
+      S.media = GWMediaCover.select(S.media, idx);
+      renderDraft();
+      save();
+      toast("대표 이미지로 지정했습니다.", "ok");
+      return;
+    }
+
+    if (act === "replace") {
+      replaceIndex = idx;
+      fileInsertSlot = null;
+      el.fileImage.click();
+      return;
+    }
+
+    if (act === "remove") {
+      S.media.splice(idx, 1);
+      S.media = GWMediaCover.normalize(S.media);
+      renderDraft();
+      save();
+      toast("사진을 뺐습니다.", "ok");
+      return;
+    }
+
+    if (act === "reshoot") {
+      guard(btn, "다시 찍는 중", () => recapture(idx));
+    }
+  }
+
+  el.pvContent.addEventListener("click", onFigClick);
+  el.pvCover.addEventListener("click", onFigClick);
+  ["mouseup", "keyup", "input", "focus"].forEach((eventName) => {
+    el.pvContent.addEventListener(eventName, rememberDraftCursor);
+  });
+  document.addEventListener("selectionchange", rememberDraftCursor);
+
+  function renderDraft() {
+    const a = S.article;
+    S.media = GWMediaCover.normalize(S.media);
+
+    if (!a) {
+      el.draftEmpty.classList.remove("hidden");
+      el.draftBody.classList.add("hidden");
+      el.draftActions.classList.add("hidden");
+      /* 기사 전이라도 찍어 둔 사진은 볼 수 있게 한다 */
+      renderCover();
+      return;
+    }
+
+    el.draftEmpty.classList.add("hidden");
+    el.draftBody.classList.remove("hidden");
+    /* 하단 수정 바는 2번 탭을 보고 있을 때만 — 1번·3번 탭에서 다시 그려져도 튀어나오지 않게 */
+    const onDraftTab = el.viewDraft.classList.contains("active");
+    el.draftActions.classList.toggle("hidden", !onDraftTab);
+    if (!onDraftTab) el.draftBadge.classList.remove("hidden");
+
+    el.pvDate.textContent = new Date().toLocaleString("ko-KR", {
+      year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+    });
+    el.pvTitle.textContent = a.title || "";
+    el.pvSubtitle.textContent = (a.subtitles || []).join("\n");
+    el.pvKeywords.innerHTML = (a.keywords || [])
+      .map((k) => `<span class="kw-tag">#${esc(k)}</span>`)
+      .join("");
+
+    renderCover();
+
+    /* ── 본문과 사진을 번갈아 놓는다 ──
+       첫 장은 제목 아래 대표로 올라갔으니, 나머지를 문단 사이에 하나씩 끼운다.
+       "각각 내용 위에" — 사진이 그 다음 문단을 이끄는 모양이 된다. */
+    const paras = String(a.body || "")
+      .split(/\n{2,}|\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const rest = S.media
+      .map((media, index) => ({ media, index }))
+      .filter((item) => !item.media.isCover);
+    const slots = Array.from({ length: paras.length + 1 }, () => []);
+    const automatic = [];
+
+    rest.forEach((item) => {
+      if (Number.isInteger(item.media.insertAfterParagraph)) {
+        const slot = Math.max(0, Math.min(item.media.insertAfterParagraph, paras.length));
+        slots[slot].push(item);
+      } else {
+        automatic.push(item);
+      }
+    });
+
+    /* 위치를 직접 지정하지 않은 기존 사진은 예전처럼 문단 사이에 자동 배치한다. */
+    let autoIndex = 0;
+    for (let slot = 1; slot < paras.length && autoIndex < automatic.length; slot += 1) {
+      slots[slot].push(automatic[autoIndex]);
+      autoIndex += 1;
+    }
+    while (autoIndex < automatic.length) {
+      slots[paras.length].push(automatic[autoIndex]);
+      autoIndex += 1;
+    }
+
+    const figuresAt = (slot) => slots[slot]
+      .map((item) => figureHtml(item.media, item.index))
+      .join("");
+
+    let html = figuresAt(0);
+    paras.forEach((p, i) => {
+      const headingClass = p.startsWith("■") ? ' class="article-section-heading"' : "";
+      html += `<p${headingClass}>${esc(p)}</p>`;
+      html += figuresAt(i + 1);
+    });
+
+    el.pvContent.innerHTML = html;
+    bindCaptionEdits();
+  }
+
+  function renderCover() {
+    S.media = GWMediaCover.normalize(S.media);
+    const coverIndex = GWMediaCover.indexOf(S.media);
+    const cover = coverIndex >= 0 ? S.media[coverIndex] : null;
+    if (!cover) {
+      el.pvCover.classList.add("hidden");
+      el.pvCover.innerHTML = "";
+      return;
+    }
+    el.pvCover.classList.remove("hidden");
+    el.pvCover.innerHTML = figureHtml(cover, coverIndex);
+    bindCaptionEdits();
+  }
+
+  /* 설명글을 고치면 상태에 담는다 */
+  function bindCaptionEdits() {
+    document.querySelectorAll(".art-fig").forEach((fig) => {
+      const idx = Number(fig.dataset.mi);
+      const cap = fig.querySelector(".art-cap");
+      if (!cap || cap.dataset.bound) return;
+      cap.dataset.bound = "1";
+      cap.addEventListener("blur", () => {
+        if (S.media[idx]) S.media[idx].caption = cap.innerText.trim();
+        save();
+      });
+    });
+  }
+
+  /* 손으로 고친 것을 상태에 담는다 — 보낼 때 그대로 나가야 한다.
+     본문은 <p> 만 읽는다. 사진(figure)은 건드리지 않는다. */
+  function harvestEdits() {
+    if (!S.article) return;
+    S.article.title = el.pvTitle.innerText.trim();
+    S.article.subtitles = el.pvSubtitle.innerText.split("\n").map((s) => s.trim()).filter(Boolean);
+    S.article.body = Array.from(el.pvContent.querySelectorAll("p"))
+      .map((p) => p.innerText.trim())
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
+  ["pvTitle", "pvSubtitle", "pvContent"].forEach((id) => {
+    el[id].addEventListener("blur", () => {
+      harvestEdits();
+      save();
+    });
+  });
+
+  /* ═════════════ ⑦ 수정 요청 ═════════════ */
+  el.btnRevise.addEventListener("click", () => doRevise());
+  el.reviseInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doRevise();
+  });
+
+  function doRevise() {
+    const want = el.reviseInput.value.trim();
+    if (!want) {
+      toast("고칠 점을 적어 주세요.", "bad");
+      return;
+    }
+    guard(el.btnRevise, "수정 요청 중", async () => {
+      if (!S.aiTabId) throw new Error("AI 탭이 없습니다. 초안을 만든 탭이 닫혔습니다.");
+
+      harvestEdits();
+      const text = gwBuildRevisePrompt(want);
+      const copied = await copyForPaste(text);
+      await chrome.tabs.update(S.aiTabId, { active: true });
+      // 보내기 전 답변 수를 세어 두었다가 새 답변만 읽는다 (예전 AI 탭이면 세지 못한다)
+      const before = await askTab(S.aiTabId, { type: "GW_COUNT" }).catch(() => null);
+
+      const fill = await askTab(S.aiTabId, { type: "GW_FILL", text }).catch((e) => ({ ok: false, reason: e.message }));
+      if (!fill.ok) {
+        if (!copied) throw new Error(fill.reason || "수정 요청을 넣지 못했습니다.");
+        toast(pasteGuide("수정 요청") + " 답변이 끝나면 [수정글 가져오기]를 눌러 주세요.", "bad", 15000);
+        status("붙여넣기 필요", "bad");
+        return;
+      }
+
+      const sent = await askTab(S.aiTabId, { type: "GW_SUBMIT" });
+      if (!sent.ok) throw new Error(sent.reason || "전송하지 못했습니다.");
+
+      el.reviseInput.value = "";
+      if (!before?.ok) {
+        toast("수정을 요청했습니다. AI 답변이 끝나면 [수정글 가져오기]를 눌러 주세요.", "info", 9000);
+        status("수정 답변 기다리는 중", "busy");
+        return;
+      }
+      toast("수정을 요청했습니다. 새 답변이 끝나면 자동으로 가져옵니다.", "info");
+      const repaired = await pullArticle({ minCount: before.count + 1, maxMs: 180000 });
+      toast(repaired ? "JSON 오류를 자동 복구해 수정 기사를 가져왔습니다." : "수정된 기사를 가져왔습니다.", "ok");
+      status("초안 갱신됨", "ok");
+    });
+  }
+
+  el.btnPullRevised.addEventListener("click", () =>
+    guard(el.btnPullRevised, "수정글 읽는 중", async () => {
+      if (!S.aiTabId) throw new Error("AI 탭이 없습니다. 초안을 만든 탭이 닫혔습니다.");
+      const repaired = await pullArticle();
+      toast(repaired ? "JSON 오류를 자동 복구해 수정 기사를 가져왔습니다." : "수정된 기사를 가져왔습니다.", "ok");
+      status("초안 갱신됨", "ok");
+    })
+  );
+
+  /* ═════════════ ⑦ 이미지 ═════════════ */
+  const imageStyleBtns = document.querySelectorAll(".image-style[data-image-style]");
+  imageStyleBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      imageStyleBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      S.imageStyle = btn.dataset.imageStyle;
+      save();
+    });
+  });
+
+  el.imageRequest.addEventListener("change", () => {
+    S.imageRequest = el.imageRequest.value.trim();
+    save();
+  });
+
+  el.btnMakeImage.addEventListener("click", () =>
+    guard(el.btnMakeImage, "이미지 요청 중", async () => {
+      if (!S.aiTabId) throw new Error("AI 탭이 없습니다.");
+      if (!S.article) throw new Error("먼저 초안을 가져와 주세요.");
+
+      S.imageRequest = el.imageRequest.value.trim();
+      const currentRequestKey = JSON.stringify([S.imageStyle, S.imageRequest]);
+
+      /* 이전 요청과 다른 스타일·내용이면 기다리지 않고 새 이미지 요청으로 전환한다. */
+      if (Number.isInteger(pendingAiInsertSlot) && pendingAiRequestKey !== currentRequestKey) {
+        pendingAiInsertSlot = null;
+        pendingAiPreviousImage = null;
+        pendingAiRequestKey = "";
+      }
+
+      const slot = Number.isInteger(pendingAiInsertSlot)
+        ? pendingAiInsertSlot
+        : requireDraftInsertSlot();
+      if (!Number.isInteger(slot)) return;
+
+      /* 요청한 뒤 두 번째 클릭이면 새로 완성된 그림만 집는다. */
+      if (Number.isInteger(pendingAiInsertSlot)) {
+        const already = await askTab(S.aiTabId, { type: "GW_GET_IMAGE" }).catch(() => null);
+        const beforeCount = Number(pendingAiPreviousImage && pendingAiPreviousImage.count) || 0;
+        const nowCount = Number(already && already.count) || 0;
+        const isNewImage = already && already.ok && already.url &&
+          (already.url !== (pendingAiPreviousImage && pendingAiPreviousImage.url) || nowCount > beforeCount) &&
+          !S.media.some((m) => m.url === already.url);
+
+        if (isNewImage) {
+          addAiImage(already.url, slot);
+          pendingAiInsertSlot = null;
+          pendingAiPreviousImage = null;
+          pendingAiRequestKey = "";
+          toast("AI 이미지를 커서 위치에 넣었습니다.", "ok");
+          return;
+        }
+
+        toast("AI 이미지가 아직 만들어지는 중입니다. 완성된 뒤 다시 눌러 주세요.", "info", 5000);
+        status("이미지 생성 중", "busy");
+        return;
+      }
+
+      harvestEdits();
+      save();
+      const beforeImage = await askTab(S.aiTabId, { type: "GW_GET_IMAGE" }).catch(() => null);
+      pendingAiPreviousImage = beforeImage && beforeImage.ok
+        ? { url: beforeImage.url, count: Number(beforeImage.count) || 0 }
+        : { url: "", count: 0 };
+      const text = gwBuildImagePrompt(S.vacancy, S.article, {
+        style: S.imageStyle,
+        request: S.imageRequest,
+      });
+      const copied = await copyForPaste(text);
+      await chrome.tabs.update(S.aiTabId, { active: true });
+
+      const fill = await askTab(S.aiTabId, { type: "GW_FILL", text }).catch((e) => ({ ok: false, reason: e.message }));
+      if (!fill.ok) {
+        if (!copied) throw new Error(fill.reason || "이미지 요청을 넣지 못했습니다.");
+        /* 붙여넣어 보낸 그림도 다음 클릭에 가져올 수 있게 요청한 것으로 기억한다 */
+        pendingAiInsertSlot = slot;
+        pendingAiRequestKey = currentRequestKey;
+        toast(pasteGuide("이미지 요청") + " 그림이 다 나온 뒤 [AI 이미지 만들기]를 한 번 더 누르세요.", "bad", 15000);
+        status("붙여넣기 필요", "bad");
+        return;
+      }
+
+      const sent = await askTab(S.aiTabId, { type: "GW_SUBMIT" });
+      if (!sent.ok) throw new Error(sent.reason || "전송하지 못했습니다.");
+
+      pendingAiInsertSlot = slot;
+      pendingAiRequestKey = currentRequestKey;
+      const imageStyle = GW_IMAGE_STYLE[S.imageStyle] || GW_IMAGE_STYLE.news;
+      toast(`${imageStyle.label} 이미지를 요청했습니다. 그림이 다 나온 뒤 [AI 이미지 만들기] 를 한 번 더 누르세요.`, "info", 7000);
+      status("이미지 생성 중", "busy");
+    })
+  );
+
+  function addAiImage(url, insertAfterParagraph) {
+    S.media.push({
+      kind: "ai",
+      url,
+      caption: gwCaptionFor("photo", S.vacancy || {}, 0),
+      insertAfterParagraph,
+    });
+    const insertedIndex = S.media.length - 1;
+    renderDraft();
+    save();
+    focusInsertedFigure(insertedIndex);
+    status("이미지 추가됨", "ok");
+  }
+
+  /* 하단 바의 [이미지 삽입] 은 PC 사진을 커서 위치에 넣는다. */
+  el.btnChangeImage.addEventListener("click", () => {
+    const slot = requireDraftInsertSlot();
+    if (!Number.isInteger(slot)) return;
+    replaceIndex = -1;
+    fileInsertSlot = slot;
+    el.fileImage.click();
+  });
+
+  el.fileImage.addEventListener("change", () => {
+    const file = el.fileImage.files && el.fileImage.files[0];
+    el.fileImage.value = "";
+    if (!file) return;
+
+    const idx = replaceIndex;
+    const slot = fileInsertSlot;
+    replaceIndex = -1;
+    fileInsertSlot = null;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = reader.result;
+      if (idx >= 0 && S.media[idx]) {
+        S.media[idx] = Object.assign({}, S.media[idx], { url, kind: "upload", real: true });
+        toast(`${idx === 0 ? "대표 " : ""}사진을 바꿨습니다.`, "ok");
+      } else {
+        S.media.push({
+          kind: "upload",
+          url,
+          caption: "",
+          real: true,
+          insertAfterParagraph: Number.isInteger(slot) ? slot : directDraftParagraphs().length,
+        });
+        toast("사진을 커서 위치에 넣었습니다.", "ok");
+      }
+      const insertedIndex = idx >= 0 ? idx : S.media.length - 1;
+      renderDraft();
+      save();
+      if (idx < 0) focusInsertedFigure(insertedIndex);
     };
-    setStatus("썸네일 생성 중", "busy");
-    const tab = await ensureAiTab();
-    const before = await askTab(tab.id, { type: "GYW_IMAGE_LIST" }, 15000);
-    await sendPrompt(gywBuildImagePrompt(scene, { ...state.settings, aspectRatio: "16:9" }, "유튜브 썸네일 배경용. 큰 제목 글자는 확장 프로그램에서 따로 넣으므로 배경에 글자를 생성하지 마세요."));
-    const generated = await askTab(tab.id, { type: "GYW_WAIT_IMAGE", minCount: before?.images?.length || 0, maxMs: 180000 }, 195000);
-    if (!generated?.ok || !generated.image?.url) throw new Error(generated?.reason || "썸네일 이미지를 찾지 못했습니다.");
-    const ref = await mediaFromGeneratedUrl(generated.image.url, "youtube-thumbnail.png");
-    state.thumbnail.candidates = [...(state.thumbnail.candidates || []), ref];
-    state.thumbnail.selectedMediaId = ref.id;
-    await save();
-    renderThumbnail();
-    setStatus("썸네일 완료", "ok");
-  }
+    reader.onerror = () => toast("이미지를 읽지 못했습니다.", "bad");
+    reader.readAsDataURL(file);
+  });
 
-  async function blobForMedia(ref) {
-    if (!ref) return null;
-    if (ref.kind === "idb") return (await GYWMediaStore.get(ref.storageId))?.blob || null;
-    const response = await fetch(ref.url, { credentials: "include" });
-    if (!response.ok) throw new Error("이미지를 저장용으로 불러오지 못했습니다.");
-    return response.blob();
-  }
+  /* ═════════════ ⑨ 기사전송하기 ═════════════ */
+  el.btnSendGongsil.addEventListener("click", () =>
+    guard(el.btnSendGongsil, "보내는 중", async () => {
+      if (!S.article) throw new Error("보낼 초안이 없습니다.");
 
-  async function composeImage(ref, title, ratio = "16:9", addText = false) {
-    const blob = await blobForMedia(ref);
-    if (!blob) throw new Error("저장할 이미지가 없습니다.");
-    if (!addText) return blob;
-    const bitmap = await createImageBitmap(blob);
-    const width = ratio === "9:16" ? 1080 : 1920;
-    const height = ratio === "9:16" ? 1920 : 1080;
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d");
-    const scale = Math.max(width / bitmap.width, height / bitmap.height);
-    const drawWidth = bitmap.width * scale;
-    const drawHeight = bitmap.height * scale;
-    context.drawImage(bitmap, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
-    const gradient = context.createLinearGradient(0, height * 0.38, 0, height);
-    gradient.addColorStop(0, "rgba(8,15,35,0)");
-    gradient.addColorStop(1, "rgba(8,15,35,.92)");
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, width, height);
-    context.fillStyle = "#c4b5fd";
-    context.font = `800 ${Math.round(width * 0.028)}px sans-serif`;
-    context.fillText("공실뉴스", width * 0.06, height * 0.72);
-    context.fillStyle = "#ffffff";
-    context.font = `900 ${Math.round(width * 0.065)}px sans-serif`;
-    context.textAlign = "center";
-    const words = String(title || "").split(/\s+/);
-    const lines = [];
-    let current = "";
-    for (const word of words) {
-      const test = current ? `${current} ${word}` : word;
-      if (context.measureText(test).width > width * 0.86 && current) {
-        lines.push(current);
-        current = word;
-      } else current = test;
-    }
-    if (current) lines.push(current);
-    const lineHeight = width * 0.08;
-    const baseY = height * 0.84 - (lines.length - 1) * lineHeight;
-    lines.slice(0, 3).forEach((line, index) => context.fillText(line, width / 2, baseY + index * lineHeight));
-    return new Promise((resolve) => canvas.toBlob(resolve, "image/png", 0.96));
-  }
+      harvestEdits();
 
-  function safeName(value) {
-    return String(value || "image").replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim().slice(0, 80) || "image";
-  }
-
-  async function downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    try {
-      await chrome.downloads.download({ url, filename, saveAs: false, conflictAction: "uniquify" });
-    } finally {
-      setTimeout(() => URL.revokeObjectURL(url), 15000);
-    }
-  }
-
-  async function downloadScene(scene, index) {
-    const ref = getSelectedMedia(scene);
-    if (!ref) throw new Error("이 장면에 저장할 이미지가 없습니다.");
-    const activeStyle = state.settings.styleLocked ? state.settings.imageStyle : (scene.imageStyle || state.settings.imageStyle);
-    const ppt = activeStyle === "presentation";
-    const blob = await composeImage(ref, scene.caption || scene.heading, state.settings.aspectRatio, ppt);
-    await downloadBlob(blob, `공실뉴스-유튜브/${String(index + 1).padStart(2, "0")}-${safeName(scene.heading)}.png`);
-  }
-
-  async function downloadThumbnail() {
-    const ref = state.thumbnail.candidates?.find((item) => item.id === state.thumbnail.selectedMediaId);
-    if (!ref) throw new Error("썸네일 이미지를 먼저 만들거나 직접 넣어 주세요.");
-    const blob = await composeImage(ref, state.thumbnail.text || state.script?.title, "16:9", true);
-    await downloadBlob(blob, `공실뉴스-유튜브/${safeName(state.thumbnail.text || "thumbnail")}-썸네일.png`);
-  }
-
-  function fullScriptText() {
-    if (!state.script) return "";
-    const scenes = state.script.scenes.map((scene, index) => [
-      `[장면 ${String(index + 1).padStart(2, "0")}] ${scene.heading}`,
-      scene.narration,
-      scene.caption ? `화면 자막: ${scene.caption}` : "",
-      scene.visualPrompt ? `화면: ${scene.visualPrompt}` : "",
-    ].filter(Boolean).join("\n")).join("\n\n");
-    return `${state.script.title}\n\n${state.script.description || ""}\n\n${scenes}`.trim();
-  }
-
-  function prepareBulkImport(files) {
-    const sorted = Array.from(files).sort((a, b) => gywNaturalCompare(a.name, b.name));
-    pendingImport.forEach((item) => URL.revokeObjectURL(item.preview));
-    pendingImport = sorted.map((file, index) => {
-      const match = file.name.match(/(?:scene|장면)?[\s_-]*(\d{1,3})/i);
-      const parsedIndex = match ? Number(match[1]) - 1 : index;
-      return { file, preview: URL.createObjectURL(file), sceneIndex: Math.min(Math.max(parsedIndex, 0), state.script.scenes.length - 1) };
-    });
-    $("#importMappingList").innerHTML = pendingImport.map((item, index) => `
-      <div class="mapping-row" data-import-index="${index}">
-        <img src="${item.preview}" alt="">
-        <div><small>${gywEscape(item.file.name)}</small><select>${state.script.scenes.map((scene, sceneIndex) =>
-          `<option value="${sceneIndex}" ${sceneIndex === item.sceneIndex ? "selected" : ""}>${String(sceneIndex + 1).padStart(2, "0")} · ${gywEscape(scene.heading)}</option>`
-        ).join("")}</select></div>
-      </div>`).join("");
-    $("#importDialog").showModal();
-  }
-
-  async function applyBulkImport() {
-    const replace = $('input[name="importMode"]:checked')?.value === "replace";
-    let applied = 0;
-    for (const [index, item] of pendingImport.entries()) {
-      const select = $(`[data-import-index="${index}"] select`, $("#importMappingList"));
-      const scene = state.script.scenes[Number(select.value)];
-      if (!scene || (!replace && getSelectedMedia(scene))) continue;
-      const ref = await mediaFromFile(item.file);
-      scene.mediaCandidates = [...(scene.mediaCandidates || []), ref];
-      scene.selectedMediaId = ref.id;
-      scene.imageStatus = "complete";
-      applied += 1;
-    }
-    pendingImport.forEach((item) => URL.revokeObjectURL(item.preview));
-    pendingImport = [];
-    $("#importDialog").close();
-    await save();
-    renderImageScenes();
-    toast(`${applied}개 장면에 이미지를 넣었습니다.`, "ok");
-  }
-
-  async function handleSceneEditorClick(event) {
-    const action = event.target.closest("button[data-action]")?.dataset.action;
-    if (!action) return;
-    const card = event.target.closest("[data-scene-id]");
-    const index = state.script.scenes.findIndex((scene) => scene.sceneId === card?.dataset.sceneId);
-    if (index < 0) return;
-    const scenes = state.script.scenes;
-    if (action === "up" && index > 0) [scenes[index - 1], scenes[index]] = [scenes[index], scenes[index - 1]];
-    if (action === "down" && index < scenes.length - 1) [scenes[index + 1], scenes[index]] = [scenes[index], scenes[index + 1]];
-    if (action === "delete" && scenes.length > 1 && confirm("이 장면을 삭제할까요?")) scenes.splice(index, 1);
-    if (action === "split") {
-      const scene = scenes[index];
-      const parts = scene.narration.split(/(?<=[.!?。])\s+/).filter(Boolean);
-      const cut = parts.length > 1 ? Math.ceil(parts.length / 2) : Math.ceil(scene.narration.length / 2);
-      const first = parts.length > 1 ? parts.slice(0, cut).join(" ") : scene.narration.slice(0, cut);
-      const second = parts.length > 1 ? parts.slice(cut).join(" ") : scene.narration.slice(cut);
-      scene.narration = first.trim();
-      scene.imageStatus = scene.mediaCandidates.length ? "recheck" : "empty";
-      scenes.splice(index + 1, 0, normalizeScene({ ...scene, sceneId: gywUid("scene"), heading: `${scene.heading} 2`, narration: second.trim(), mediaCandidates: [], selectedMediaId: null, imageStatus: "empty" }, index + 1));
-    }
-    if (action === "merge" && index < scenes.length - 1) {
-      const next = scenes[index + 1];
-      scenes[index].narration = `${scenes[index].narration} ${next.narration}`.trim();
-      scenes[index].visualPrompt = `${scenes[index].visualPrompt} ${next.visualPrompt}`.trim();
-      scenes[index].imageStatus = scenes[index].mediaCandidates.length ? "recheck" : "empty";
-      scenes.splice(index + 1, 1);
-    }
-    await save();
-    renderSceneEditors();
-  }
-
-  async function handleImageClick(event) {
-    const button = event.target.closest("button[data-action]");
-    if (!button) return;
-    const card = button.closest("[data-scene-id]");
-    const scene = state.script.scenes.find((item) => item.sceneId === card?.dataset.sceneId);
-    if (!scene) return;
-    const index = state.script.scenes.indexOf(scene);
-    if (button.dataset.action === "generate") {
-      let extra = "";
-      if (getSelectedMedia(scene)) {
-        const request = prompt("어떻게 수정할까요? 비워 두면 같은 장면의 새 버전을 만듭니다.", "");
-        if (request === null) return;
-        extra = request.trim();
+      if (!S.article.title || !S.article.body) {
+        throw new Error("제목과 본문이 있어야 보낼 수 있습니다.");
       }
-      await generateSceneImage(scene, extra);
-    }
-    if (button.dataset.action === "replace") {
-      replaceSceneId = scene.sceneId;
-      $("#replaceImageInput").click();
-    }
-    if (button.dataset.action === "previous") {
-      const candidates = scene.mediaCandidates || [];
-      if (candidates.length < 2) return toast("이전 이미지가 없습니다.");
-      const current = candidates.findIndex((item) => item.id === scene.selectedMediaId);
-      scene.selectedMediaId = candidates[(current - 1 + candidates.length) % candidates.length].id;
-      scene.imageStatus = "complete";
-      await save();
-      renderImageScenes();
-    }
-    if (button.dataset.action === "delete") {
-      scene.selectedMediaId = null;
-      scene.imageStatus = "empty";
-      await save();
-      renderImageScenes();
-    }
-    if (button.dataset.action === "download") await downloadScene(scene, index);
+
+      const res = await chrome.runtime.sendMessage({
+        type: "GW_SEND_TO_GONGSIL",
+        article: S.article,
+        /* 대표를 첫 순서로도 보낸다. isCover 를 모르는 구버전 기사작성 폼도 안전하다. */
+        media: GWMediaCover.coverFirst(S.media),
+        vacancyId: S.vacancy?.vacancyId || null,
+      });
+
+      if (!res || !res.ok) throw new Error((res && res.error) || "기사쓰기 폼에 초안을 넣지 못했습니다.");
+
+      toast("열어 둔 기사쓰기 폼에 초안을 채웠습니다. 확인 후 [기사 등록]을 눌러 주세요.", "ok", 7000);
+      status("전송 완료", "ok");
+    })
+  );
+
+  /* ═════════════ 탭 전환 ═════════════ */
+  function switchTab(which) {
+    const work = which === "work";
+    /* 3·4번 유튜브 탭과 그 하단 바는 youtube.js 가 관리한다. 1·2번으로 올 때 내려놓게 알린다. */
+    document.dispatchEvent(new CustomEvent("gw:leave-youtube"));
+    el.tabWork.classList.toggle("active", work);
+    el.tabDraft.classList.toggle("active", !work);
+    el.viewWork.classList.toggle("active", work);
+    el.viewDraft.classList.toggle("active", !work);
+    el.draftActions.classList.toggle("hidden", work || !S.article);
+    if (!work) el.draftBadge.classList.add("hidden");
   }
 
-  function bind() {
-    $("#brandVersion").textContent = `v${GYW.VERSION}`;
-    $$(".nav-tab").forEach((button) => button.addEventListener("click", () => activateView(button.dataset.tab)));
-    $("#btnRetryAccess").addEventListener("click", checkAccess);
-    $("#sourceTypeGroup").addEventListener("click", async (event) => {
-      const button = event.target.closest("button[data-value]");
-      if (!button) return;
-      state.sourceType = button.dataset.value;
-      await save();
-      renderSource();
-    });
-    $("#platformGroup").addEventListener("click", async (event) => {
-      const button = event.target.closest("button[data-value]");
-      if (!button) return;
-      state.platform = button.dataset.value;
-      state.aiTabId = null;
-      await save();
-      renderSource();
-    });
-    $$('[data-setting]').forEach((group) => group.addEventListener("click", async (event) => {
-      const button = event.target.closest("button[data-value]");
-      if (!button) return;
-      state.settings[group.dataset.setting] = button.dataset.value;
-      await save();
-      renderSettings();
-    }));
-    $("#btnOpenSourcePage").addEventListener("click", () => runAction(() => openSourcePage()));
-    $("#btnGrabSource").addEventListener("click", () => runAction(grabSource));
-    $("#btnLoadUrl").addEventListener("click", () => runAction(async () => {
-      const tab = await openSourcePage($("#sourceUrl").value.trim());
-      await waitTabLoaded(tab.id);
-      toast("페이지가 열렸습니다. 내용을 확인한 뒤 가져오기를 눌러 주세요.", "ok");
-    }));
-    $("#btnUseManual").addEventListener("click", () => runAction(applyManualSource));
-    $("#btnGoScript").addEventListener("click", () => activateView("script"));
-    $("#btnCreateScript").addEventListener("click", () => runAction(createScript));
-    $("#btnPullScript").addEventListener("click", () => runAction(() => pullScript(false)));
-    $("#videoTitle").addEventListener("input", async (event) => { state.script.title = event.target.value; await save(); });
-    $("#videoDescription").addEventListener("input", async (event) => { state.script.description = event.target.value; await save(); });
-    $("#sceneList").addEventListener("input", async (event) => {
-      const field = event.target.dataset.field;
-      const sceneId = event.target.closest("[data-scene-id]")?.dataset.sceneId;
-      const scene = state.script.scenes.find((item) => item.sceneId === sceneId);
-      if (!scene || !field) return;
-      markSceneChanged(scene, field, event.target.value);
-      await save();
-      if (field === "heading") event.target.closest(".scene-card").querySelector(".scene-head strong").textContent = event.target.value;
-    });
-    $("#sceneList").addEventListener("click", (event) => runAction(() => handleSceneEditorClick(event)));
-    $("#btnAddScene").addEventListener("click", () => runAction(async () => {
-      state.script.scenes.push(normalizeScene({ heading: `장면 ${state.script.scenes.length + 1}` }, state.script.scenes.length));
-      await save();
-      renderSceneEditors();
-    }));
-    $("#btnRequestRevise").addEventListener("click", () => runAction(requestRevision));
-    $("#btnPullRevision").addEventListener("click", () => runAction(() => pullScript(true)));
-    $("#btnGoImages").addEventListener("click", () => activateView("images"));
-    $("#imageStyleGrid").addEventListener("click", async (event) => {
-      const button = event.target.closest("[data-style]");
-      if (!button) return;
-      state.settings.imageStyle = button.dataset.style;
-      await save();
-      renderImages();
-    });
-    $("#styleLocked").addEventListener("change", async (event) => {
-      state.settings.styleLocked = event.target.checked;
-      await save();
-      renderImages();
-    });
-    $("#btnGenerateAll").addEventListener("click", () => runAction(() => runImageQueue("missing")));
-    $("#btnRetryFailed").addEventListener("click", () => runAction(() => runImageQueue("failed")));
-    $("#btnStopQueue").addEventListener("click", () => { queueStop = true; toast("현재 장면이 끝나면 중지합니다."); });
-    $("#btnImportAll").addEventListener("click", () => $("#bulkImageInput").click());
-    $("#bulkImageInput").addEventListener("change", (event) => {
-      if (event.target.files?.length) prepareBulkImport(event.target.files);
-      event.target.value = "";
-    });
-    $("#btnCancelImport").addEventListener("click", () => {
-      pendingImport.forEach((item) => URL.revokeObjectURL(item.preview));
-      pendingImport = [];
-      $("#importDialog").close();
-    });
-    $("#importDialog").addEventListener("close", () => {
-      pendingImport.forEach((item) => URL.revokeObjectURL(item.preview));
-      pendingImport = [];
-    });
-    $("#btnApplyImport").addEventListener("click", () => runAction(applyBulkImport));
-    $("#imageSceneList").addEventListener("click", (event) => runAction(() => handleImageClick(event)));
-    $("#imageSceneList").addEventListener("change", async (event) => {
-      if (!event.target.matches("[data-scene-style]")) return;
-      const sceneId = event.target.closest("[data-scene-id]")?.dataset.sceneId;
-      const scene = state.script.scenes.find((item) => item.sceneId === sceneId);
-      if (!scene) return;
-      scene.imageStyle = event.target.value;
-      if (scene.mediaCandidates?.length) scene.imageStatus = "recheck";
-      await save();
-      renderImageScenes();
-    });
-    $("#replaceImageInput").addEventListener("change", (event) => runAction(async () => {
-      const file = event.target.files?.[0];
-      const scene = state.script.scenes.find((item) => item.sceneId === replaceSceneId);
-      event.target.value = "";
-      replaceSceneId = null;
-      if (!file || !scene) return;
-      const ref = await mediaFromFile(file);
-      scene.mediaCandidates = [...(scene.mediaCandidates || []), ref];
-      scene.selectedMediaId = ref.id;
-      scene.imageStatus = "complete";
-      await save();
-      renderImageScenes();
-    }));
-    $("#btnSuggestThumb").addEventListener("click", async () => {
-      state.thumbnail.suggestions = createThumbSuggestions();
-      if (!state.thumbnail.text) state.thumbnail.text = state.thumbnail.suggestions[0] || "";
-      await save();
-      renderThumbnail();
-    });
-    $("#thumbSuggestions").addEventListener("click", async (event) => {
-      const button = event.target.closest("[data-thumb-text]");
-      if (!button) return;
-      state.thumbnail.text = button.dataset.thumbText;
-      await save();
-      renderThumbnail();
-    });
-    $("#thumbText").addEventListener("input", async (event) => {
-      state.thumbnail.text = event.target.value;
-      $("#thumbOverlay").textContent = event.target.value;
-      await save();
-    });
-    $("#btnGenerateThumb").addEventListener("click", () => runAction(generateThumbnail));
-    $("#btnImportThumb").addEventListener("click", () => $("#thumbImageInput").click());
-    $("#thumbImageInput").addEventListener("change", (event) => runAction(async () => {
-      const file = event.target.files?.[0];
-      event.target.value = "";
-      if (!file) return;
-      const ref = await mediaFromFile(file);
-      state.thumbnail.candidates = [...(state.thumbnail.candidates || []), ref];
-      state.thumbnail.selectedMediaId = ref.id;
-      await save();
-      renderThumbnail();
-    }));
-    $("#btnDownloadThumb").addEventListener("click", () => runAction(downloadThumbnail));
-    $("#btnCopyScript").addEventListener("click", () => runAction(async () => {
-      await navigator.clipboard.writeText(fullScriptText());
-      toast("전체 대본을 복사했습니다.", "ok");
-    }));
-    $("#btnDownloadImages").addEventListener("click", () => runAction(async () => {
-      let count = 0;
-      for (const [index, scene] of state.script.scenes.entries()) {
-        if (!getSelectedMedia(scene)) continue;
-        await downloadScene(scene, index);
-        count += 1;
+  el.tabWork.addEventListener("click", () => switchTab("work"));
+  el.tabDraft.addEventListener("click", () => switchTab("draft"));
+
+  /* ═════════════ 버튼 잠금 ═════════════ */
+  function refreshButtons() {
+    el.btnOpenAi.disabled = !S.vacancy;
+    el.btnSubmit.disabled = !S.aiTabId;
+    el.btnPullDraft.disabled = !S.aiTabId;
+    el.btnRevise.disabled = !S.article || !S.aiTabId;
+    el.btnPullRevised.disabled = !S.aiTabId;
+    el.btnMakeImage.disabled = !S.article || !S.aiTabId;
+    el.btnChangeImage.disabled = !S.article;
+    el.btnSendGongsil.disabled = !S.article;
+  }
+
+  /* ═════════════ 상태 보관 ═════════════ */
+  const STATE_KEY = "gw_panel_state";
+
+  let lastSaveError = "";
+
+  function save() {
+    chrome.storage.local.set({ [STATE_KEY]: S }).catch((e) => {
+      const msg = e.message || String(e);
+      console.warn("[공실뉴스] 상태 저장 실패:", msg);
+      /* 같은 말을 반복해서 띄우지 않는다 */
+      if (msg !== lastSaveError) {
+        lastSaveError = msg;
+        toast("작업 내용을 저장하지 못했습니다 — " + msg, "bad", 9000);
       }
-      toast(`${count}개 장면 이미지를 저장했습니다.`, "ok");
-    }));
-    $("#btnReset").addEventListener("click", () => runAction(async () => {
-      if (!confirm("유튜브 작업 내용과 직접 넣은 이미지를 모두 초기화할까요?")) return;
-      await GYWMediaStore.clear();
-      state = structuredClone(DEFAULT_STATE);
-      await save();
-      renderAll();
-      toast("작업 내용을 초기화했습니다.", "ok");
-    }));
+    });
   }
 
-  async function runAction(work) {
-    try {
-      if (!accessGranted && work !== checkAccess) return;
-      await work();
-    } catch (error) {
-      console.error(error);
-      setStatus("확인 필요", "bad");
-      toast(error.message || String(error), "bad");
+  async function restore() {
+    const got = await chrome.storage.local.get(STATE_KEY);
+    const prev = got[STATE_KEY];
+    if (!prev) return;
+    Object.assign(S, prev);
+    if (!Array.isArray(S.media)) S.media = [];
+    S.media = GWMediaCover.normalize(S.media);
+    /* 예전 3가지 기사 성격을 저장한 사용자는 현재 기사형으로 안전하게 옮긴다. */
+    if (["listing", "area", "tenant"].includes(S.kind)) S.kind = "news";
+    if (!GW_KIND[S.kind]) S.kind = "news";
+    if (!GW_LENGTH[S.length]) S.length = "normal";
+    if (!GW_IMAGE_STYLE[S.imageStyle]) S.imageStyle = "news";
+    if (typeof S.imageRequest !== "string") S.imageRequest = "";
+
+    platformBtns.forEach((b) => b.classList.toggle("active", b.dataset.platform === S.platform));
+    kindBtns.forEach((b) => b.classList.toggle("active", b.dataset.kind === S.kind));
+    lenBtns.forEach((b) => b.classList.toggle("active", b.dataset.length === S.length));
+    imageStyleBtns.forEach((b) => b.classList.toggle("active", b.dataset.imageStyle === S.imageStyle));
+    el.imageRequest.value = S.imageRequest;
+
+    /* 기억해 둔 탭이 아직 살아 있는지 확인한다 */
+    for (const key of ["gongsilTabId", "aiTabId"]) {
+      if (S[key]) {
+        const alive = await chrome.tabs.get(S[key]).catch(() => null);
+        if (!alive) S[key] = null;
+      }
     }
+
+    if (S.vacancy) renderVacancy(S.vacancy);
+    renderDraft();
   }
 
-  function renderAll() {
-    renderSource();
-    renderScript();
-    renderImages();
-  }
+  /* ═════════════ 초기화 ═════════════
+     물건·초안·사진·유튜브 대본과 이미지는 지우고, 고른 AI와 설정만 남긴다.
+     저장소를 비운 뒤 작업창을 새로 불러와 네 탭을 한 번에 깨끗하게 만든다. */
+  const YOUTUBE_STATE_KEY = "gw_youtube_state";
 
-  document.addEventListener("DOMContentLoaded", async () => {
+  $("btnReset").addEventListener("click", async () => {
+    if (!confirm("가져온 물건, 초안, 사진, 유튜브 대본과 이미지가 모두 지워집니다.\n초기화할까요?")) return;
     try {
-      await load();
-      bind();
-      renderAll();
-      await checkAccess();
-    } catch (error) {
-      console.error(error);
-      toast(error.message || String(error), "bad");
-      setStatus("초기화 실패", "bad");
+      const got = await chrome.storage.local.get(YOUTUBE_STATE_KEY);
+      const youtube = got[YOUTUBE_STATE_KEY] || {};
+      await chrome.storage.local.set({
+        [STATE_KEY]: {
+          platform: S.platform,
+          kind: S.kind,
+          length: S.length,
+          imageStyle: S.imageStyle,
+        },
+        [YOUTUBE_STATE_KEY]: { settings: youtube.settings },
+      });
+      await GWMediaStore.clear().catch(() => {});
+      await chrome.storage.local.remove([GW.KEY.JOB, GW.KEY.DRAFT]).catch(() => {});
+      location.reload();
+    } catch (e) {
+      toast("초기화하지 못했습니다 — " + (e.message || String(e)), "bad", 7000);
     }
   });
+
+  /* ═════════════ 잡동사니 ═════════════ */
+  function esc(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  /* ═════════════ 시작 ═════════════ */
+  $("brandVersion").textContent = "v" + chrome.runtime.getManifest().version;
+  (async () => {
+    await restore();
+    refreshButtons();
+    status(S.article ? "초안 있음" : S.vacancy ? "매물 준비됨" : "준비됨", S.article ? "ok" : "");
+  })();
 })();

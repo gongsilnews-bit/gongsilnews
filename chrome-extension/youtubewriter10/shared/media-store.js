@@ -1,5 +1,5 @@
 /* 장면 이미지 원본은 IndexedDB에 보관하고 chrome.storage에는 메타데이터만 둔다. */
-const GYWMediaStore = (() => {
+const GWMediaStore = (() => {
   const DB_NAME = "gongsil-youtube-writer";
   const DB_VERSION = 1;
   const STORE = "media";
@@ -40,7 +40,7 @@ const GYWMediaStore = (() => {
   }
 
   async function put(blob, meta = {}) {
-    const id = meta.id || gywUid("media");
+    const id = meta.id || `media-${crypto.randomUUID()}`;
     await transact("readwrite", (store) => store.put({
       id,
       blob,

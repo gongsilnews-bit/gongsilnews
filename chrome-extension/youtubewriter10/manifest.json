@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
   "name": "공실뉴스 AI 유튜브작성기",
-  "version": "1.0.0",
+  "version": "1.1.2",
+  "description": "오른쪽 작업창에서 공실 매물로 기사 초안을 만들고, 그 기사로 유튜브 장면 대본과 장면 이미지·썸네일을 만듭니다.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -23,66 +24,81 @@
   "permissions": [
     "storage",
     "tabs",
+    "scripting",
     "sidePanel",
     "activeTab",
-    "scripting",
+    "clipboardWrite",
     "unlimitedStorage",
     "downloads"
   ],
   "host_permissions": [
+    "<all_urls>",
     "https://gongsilnews.com/*",
     "https://*.gongsilnews.com/*",
     "http://localhost/*",
-    "http://127.0.0.1/*",
     "https://chatgpt.com/*",
     "https://gemini.google.com/*",
-    "https://*.oaiusercontent.com/*",
-    "https://*.googleusercontent.com/*"
+    "https://aijfktzqtnwhfotfwcka.supabase.co/*"
   ],
   "content_scripts": [
     {
       "matches": [
         "https://gongsilnews.com/gongsil*",
         "https://*.gongsilnews.com/gongsil*",
-        "http://localhost/gongsil*",
-        "http://127.0.0.1/gongsil*"
+        "http://localhost/gongsil*"
       ],
-      "js": ["shared/config.js", "content-gongsil.js"],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "content-gongsil.js"
+      ],
       "run_at": "document_idle"
     },
     {
       "matches": [
-        "https://gongsilnews.com/*",
-        "https://*.gongsilnews.com/*",
-        "http://localhost/*",
-        "http://127.0.0.1/*"
+        "https://gongsilnews.com/admin*",
+        "https://*.gongsilnews.com/admin*",
+        "http://localhost/admin*",
+        "https://gongsilnews.com/realty_admin*",
+        "https://*.gongsilnews.com/realty_admin*",
+        "http://localhost/realty_admin*",
+        "https://gongsilnews.com/user_admin*",
+        "https://*.gongsilnews.com/user_admin*",
+        "http://localhost/user_admin*"
       ],
-      "exclude_matches": [
-        "https://gongsilnews.com/gongsil*",
-        "https://*.gongsilnews.com/gongsil*",
-        "http://localhost/gongsil*",
-        "http://127.0.0.1/gongsil*"
+      "css": [
+        "shared/ui.css"
       ],
-      "js": ["shared/config.js", "content-article.js"],
+      "js": [
+        "shared/config.js",
+        "shared/write-page.js",
+        "shared/media-cover.js",
+        "shared/ui.js",
+        "content-admin.js"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://chatgpt.com/*"],
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
       "js": [
         "shared/config.js",
         "shared/ui.js",
-        "shared/youtube-json.js",
+        "shared/article-json.js",
         "shared/ai-common.js",
         "content-chatgpt.js"
       ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://gemini.google.com/*"],
+      "matches": [
+        "https://gemini.google.com/*"
+      ],
       "js": [
         "shared/config.js",
         "shared/ui.js",
-        "shared/youtube-json.js",
+        "shared/article-json.js",
         "shared/ai-common.js",
         "content-gemini.js"
       ],
@@ -94,7 +110,9 @@
   },
   "commands": {
     "_execute_action": {
-      "suggested_key": { "default": "Alt+Y" },
+      "suggested_key": {
+        "default": "Alt+Y"
+      },
       "description": "공실뉴스 AI 유튜브작성기 열기"
     }
   }

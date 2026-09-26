@@ -127,8 +127,23 @@
     return { ok: true, script, repaired };
   }
 
-  const api = { extract, hasCompleteObject, normalize, parse };
-  globalThis.GYWYoutubeJson = api;
+  /* 모양을 따지지 않고 JSON 객체만 꺼낸다 — 완성 대본·장면 설명처럼 형식이 다른 답변에 쓴다 */
+  function parseObject(raw) {
+    const candidate = extract(raw);
+    if (!candidate) return { ok: false, reason: "AI 응답에서 JSON을 찾지 못했습니다." };
+    try {
+      return { ok: true, data: JSON.parse(candidate), repaired: false };
+    } catch (_strictError) {
+      try {
+        return { ok: true, data: JSON.parse(repair(candidate)), repaired: true };
+      } catch (error) {
+        return { ok: false, reason: `AI JSON 형식이 깨져 있습니다: ${error.message}` };
+      }
+    }
+  }
+
+  const api = { extract, hasCompleteObject, normalize, parse, parseObject };
+  globalThis.GWYoutubeJson = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })();
 
