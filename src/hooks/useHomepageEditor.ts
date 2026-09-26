@@ -21,6 +21,28 @@ import { getVacanciesByOwnerId } from "@/app/actions/vacancy";
 import { getMyArticles } from "@/app/actions/article";
 import { isPermissionAlive } from "@/utils/planCheck";
 
+/** 관리자 상단 바와 편집기가 "사용 중" 저장값을 서로 맞추는 이벤트. detail 은 저장된 is_active */
+export const HOMEPAGE_ACTIVE_EVENT = "homepage-active-change";
+
+/**
+ * 물건접수웹페이지 주소 공유. 공유창이 있으면 띄우고, 없으면 주소를 복사한다.
+ * 사용자가 공유창을 닫으면 "aborted" 를 돌려준다.
+ */
+export async function shareHomepageUrl(url: string, title: string): Promise<"shared" | "copied" | "aborted"> {
+  try {
+    if (navigator.share) {
+      await navigator.share({ title, text: `${title} 웹페이지`, url });
+      return "shared";
+    }
+    await navigator.clipboard.writeText(url);
+    return "copied";
+  } catch (shareError) {
+    if (shareError instanceof DOMException && shareError.name === "AbortError") return "aborted";
+    await navigator.clipboard.writeText(url);
+    return "copied";
+  }
+}
+
 /**
  * 홈페이지(물건접수웹페이지) 편집기의 속.
  *
@@ -75,6 +97,13 @@ export function useHomepageEditor(memberId: string) {
     show_budget: true,
     show_notes: true,
   });
+
+  // 상단 바에서 "사용 중"을 바꿔 저장하면 편집기 스위치도 따라간다
+  useEffect(() => {
+    const onActive = (e: Event) => setIsActive((e as CustomEvent<boolean>).detail);
+    window.addEventListener(HOMEPAGE_ACTIVE_EVENT, onActive);
+    return () => window.removeEventListener(HOMEPAGE_ACTIVE_EVENT, onActive);
+  }, []);
 
   // ── 불러오기 ──
   useEffect(() => {
@@ -269,6 +298,7 @@ export function useHomepageEditor(memberId: string) {
     });
     setSaving(false);
     if (!res.success) return setError(res.error || "저장에 실패했습니다.");
+    window.dispatchEvent(new CustomEvent(HOMEPAGE_ACTIVE_EVENT, { detail: isActive }));
     setSavedAt(new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
   };
 
@@ -279,27 +309,12 @@ export function useHomepageEditor(memberId: string) {
     if (!liveUrl) return;
     setShareNotice("");
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: siteTitle || "물건접수웹페이지",
-          text: `${siteTitle || "물건접수웹페이지"} 웹페이지`,
-          url: liveUrl,
-        });
-        setShareNotice("공유 완료");
-      } else {
-        await navigator.clipboard.writeText(liveUrl);
-        setShareNotice("주소 복사됨");
-      }
+      const result = await shareHomepageUrl(liveUrl, siteTitle || "물건접수웹페이지");
+      if (result === "aborted") return;
+      setShareNotice(result === "shared" ? "공유 완료" : "주소 복사됨");
       window.setTimeout(() => setShareNotice(""), 2000);
-    } catch (shareError) {
-      if (shareError instanceof DOMException && shareError.name === "AbortError") return;
-      try {
-        await navigator.clipboard.writeText(liveUrl);
-        setShareNotice("주소 복사됨");
-        window.setTimeout(() => setShareNotice(""), 2000);
-      } catch {
-        setError("공유하지 못했습니다. URL 바로가기를 길게 눌러 주소를 복사해 주세요.");
-      }
+    } catch {
+      setError("공유하지 못했습니다. URL 바로가기를 길게 눌러 주소를 복사해 주세요.");
     }
   };
 
