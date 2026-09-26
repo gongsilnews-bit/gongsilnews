@@ -1,0 +1,125 @@
+{
+  "manifest_version": 3,
+  "name": "공실뉴스 AI 경매기사작성기",
+  "version": "1.0.0",
+  "description": "오른쪽 작업창에서 공실열람 경매·공매 물건을 기사와 네이버 블로그 초안으로 만들고 각 글쓰기 화면으로 보냅니다.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "공실뉴스 AI 경매기사작성기 열기"
+  },
+  "side_panel": {
+    "default_path": "panel.html"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "webNavigation",
+    "sidePanel",
+    "activeTab",
+    "clipboardWrite",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://gongsilnews.com/*",
+    "https://*.gongsilnews.com/*",
+    "http://localhost/*",
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*",
+    "https://aijfktzqtnwhfotfwcka.supabase.co/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://gongsilnews.com/gongsil*",
+        "https://*.gongsilnews.com/gongsil*",
+        "http://localhost/gongsil*"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "content-gongsil.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gongsilnews.com/admin*",
+        "https://*.gongsilnews.com/admin*",
+        "http://localhost/admin*",
+        "https://gongsilnews.com/realty_admin*",
+        "https://*.gongsilnews.com/realty_admin*",
+        "http://localhost/realty_admin*",
+        "https://gongsilnews.com/user_admin*",
+        "https://*.gongsilnews.com/user_admin*",
+        "http://localhost/user_admin*"
+      ],
+      "css": [
+        "shared/ui.css"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/write-page.js",
+        "shared/media-cover.js",
+        "shared/ui.js",
+        "content-admin.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "shared/article-json.js",
+        "shared/ai-common.js",
+        "content-chatgpt.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gemini.google.com/*"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "shared/article-json.js",
+        "shared/ai-common.js",
+        "content-gemini.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://blog.naver.com/*",
+        "https://blog.editor.naver.com/*"
+      ],
+      "js": [
+        "shared/naver-blog.js",
+        "content-naver.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+J"
+      },
+      "description": "공실뉴스 경매 작업창 열기"
+    }
+  }
+}
