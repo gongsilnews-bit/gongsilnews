@@ -7,15 +7,15 @@ import { adminGetMembers } from "@/app/admin/actions";
 import { uploadArticleMediaDirect } from "@/utils/uploadDirect";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
-import { saveAiDraft, getAiDraftHistory, deleteAiDraft } from "@/app/actions/gemini";
 import { generateLocalVacancyArticle, type ArticleStyle, type ArticleLength } from "@/utils/generateLocalVacancyArticle";
 import { isAdminRole } from "@/utils/permissionCheck";
 import { getAuthorBanners, saveAuthorBanner, updateArticlesAdSettings, getArticleAdInfo, AuthorBanner } from "@/app/actions/articleAd";
 import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import ArticleAdSettingSlot from "./article_form/ArticleAdSettingSlot";
+import ArticleVacancySlot from "./article_form/ArticleVacancySlot";
+import { getAuthorEligibleVacancies, updateArticleAttachedVacancy } from "@/app/actions/articleVacancy";
 import ArticlePhotoLibraryDrawer from "./article_form/ArticlePhotoLibraryDrawer";
 import ArticlePhotoModals from "./article_form/ArticlePhotoModals";
-import ArticleAiWizardModal from "./article_form/ArticleAiWizardModal";
 import PhotoMosaicEditor from "./article_form/PhotoMosaicEditor";
 import { pixelateCanvasRegion } from "@/utils/imageMosaic";
 
@@ -23,7 +23,6 @@ import Link from "next/link";
 
 /* ─── 타입 ─── */
 type StatusType = "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | string;
-type FormType = "일반" | "카드뉴스" | "갤러리";
 
 /* ─── 가격 포맷터 ─── */
 const formatKoreanPrice = (price: number | undefined | null) => {
@@ -45,7 +44,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
   /* ─── 상태 ─── */
   const [status, setStatus] = useState<StatusType>("DRAFT");
-  const [formType, setFormType] = useState<FormType>("일반");
   const [publishDate, setPublishDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -57,7 +55,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [isReserved, setIsReserved] = useState(false);
   const [section1, setSection1] = useState("");
   const [section2, setSection2] = useState("");
-  const [series, setSeries] = useState("");
   const [reporterName, setReporterName] = useState("김미숙");
   const [reporterEmail, setReporterEmail] = useState("master@gongsilnews.com");
   const [title, setTitle] = useState("");
@@ -92,44 +89,14 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   /* 기사 콘텐츠 원본 스냅샷: 배너/광고만 변경 시 edit_count 증가 방지용 */
   const originalArticleRef = React.useRef<{ title: string; subtitle: string; content: string; section1: string; section2: string; youtubeUrl: string; keywords: string[] } | null>(null);
 
-  /* ═══ ✨ AI 마법사 통합 상태 ═══ */
-  const [showAiWizardModal, setShowAiWizardModal] = useState(false);
-  const [aiWizardTab, setAiWizardTab] = useState<"vacancy" | "news">("vacancy");
+  /* ═══ ✨ AI 공실뉴스초안작성 상태 ═══ */
   const [myVacancies, setMyVacancies] = useState<any[]>([]);
   const [isLoadingVacancies, setIsLoadingVacancies] = useState(false);
   const [selectedVacancyId, setSelectedVacancyId] = useState("");
-  const [aiNewsSourceText, setAiNewsSourceText] = useState("");
-  const [aiTone, setAiTone] = useState("오피셜 칼럼");
-  const [aiAudience, setAiAudience] = useState("일반 매수자/세입자");
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
-  // 직접 매물 입력 관련 상태 추가
-  const [directVacancyMode, setDirectVacancyMode] = useState<"select" | "direct">("select");
-  const [directBuildingName, setDirectBuildingName] = useState("");
-  const [directPropertyType, setDirectPropertyType] = useState("아파트");
-  const [directTradeType, setDirectTradeType] = useState("월세");
-  const [directDeposit, setDirectDeposit] = useState("");
-  const [directMonthlyRent, setDirectMonthlyRent] = useState("");
-  const [directExclusivePy, setDirectExclusivePy] = useState("");
-  const [directSupplyPy, setDirectSupplyPy] = useState("");
-  const [directRoomCount, setDirectRoomCount] = useState("");
-  const [directBathCount, setDirectBathCount] = useState("");
-  const [directCurrentFloor, setDirectCurrentFloor] = useState("");
-  const [directTotalFloor, setDirectTotalFloor] = useState("");
-  const [directDirection, setDirectDirection] = useState("");
-  const [directParking, setDirectParking] = useState("가능");
-  const [directOptions, setDirectOptions] = useState<string[]>([]);
-  const [directMoveInDate, setDirectMoveInDate] = useState("즉시 입주");
-  const [directAddress, setDirectAddress] = useState("");
-  const [directDescription, setDirectDescription] = useState("");
-
-  // 전문적인 스타일 및 분량 설정 상태 추가
-  const [aiLengthType, setAiLengthType] = useState("보통");
-  const [aiCustomLength, setAiCustomLength] = useState(1000);
-  const [aiStyleType, setAiStyleType] = useState("기본");
-
   // ── 기사 하단 광고등록 상태 (대표님 지시) ──
-  const [writeAdType, setWriteAdType] = useState<"DEFAULT" | "BANNER" | "NONE">("DEFAULT");
+  const [writeAdType, setWriteAdType] = useState<"DEFAULT" | "BANNER" | "NONE">("NONE");
   const [writeAdMode, setWriteAdMode] = useState<"NEW" | "EXISTING">("NEW"); // 새 배너 등록하기 vs 기존 배너 가져오기
   const [writeAdBannerId, setWriteAdBannerId] = useState<string>("");
   const [writeAdBannerName, setWriteAdBannerName] = useState<string>("");
@@ -139,73 +106,13 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [writeAdStartDate, setWriteAdStartDate] = useState<string>("");
   const [writeAdEndDate, setWriteAdEndDate] = useState<string>("");
   const [authorBanners, setAuthorBanners] = useState<AuthorBanner[]>([]);
-  const [aiEndingType, setAiEndingType] = useState("하십시오체");
-  const [aiLayoutPattern, setAiLayoutPattern] = useState<"standard" | "summary_header" | "targeted">("summary_header");
-  const [aiAttachedImage, setAiAttachedImage] = useState<{ data: string; mimeType: string; name: string } | null>(null);
 
-
-  const [aiDrafts, setAiDrafts] = useState<{
-    title: string;
-    subtitle: string;
-    content_article: string;
-    content_blog: string;
-    content_shorts: string;
-    content_threads?: string;
-    content_insta?: string;
-    content_sns: string;
-    section2?: string;
-    keywords?: string[];
-  } | null>(null);
-  
-  const [activeSidebarType, setActiveSidebarType] = useState<"library" | "ai_library">("library");
-  const [aiActiveSidebarTab, setAiActiveSidebarTab] = useState<"article" | "blog" | "shorts" | "threads" | "insta">("article");
-  
   /* ═══ ✨ 좌측 패널 모드: 기본 글쓰기도구 vs AI 공실뉴스초안작성 ═══ */
   const [leftSidebarMode, setLeftSidebarMode] = useState<"tools" | "ai_chat">("tools");
   
   // ── 공실뉴스 매물 기사 초안 옵션 (스타일 · 분량) ──
   const [articleStyle, setArticleStyle] = useState<ArticleStyle>("news");
   const [articleLength, setArticleLength] = useState<ArticleLength>("normal");
-  
-  const [aiHistory, setAiHistory] = useState<any[]>([]);
-  const [showAiHistoryModal, setShowAiHistoryModal] = useState(false);
-  const [aiPanelTab, setAiPanelTab] = useState<"create" | "history">("create");
-
-  const loadAiHistory = async () => {
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const res = await getAiDraftHistory(user.id);
-        if (res.success && res.data) {
-          setAiHistory(res.data);
-        }
-      }
-    } catch (err) {
-      console.error("loadAiHistory error:", err);
-    }
-  };
-
-  const handleDeleteHistoryItem = async (e: React.MouseEvent, draftId: string) => {
-    e.stopPropagation();
-    if (!confirm("이 AI 보관 초안을 삭제하시겠습니까?")) return;
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        alert("로그인이 필요합니다.");
-        return;
-      }
-      const res = await deleteAiDraft(draftId, user.id);
-      if (res.success) {
-        setAiHistory(prev => prev.filter(item => item.id !== draftId));
-      } else {
-        alert("삭제에 실패했습니다: " + res.error);
-      }
-    } catch (err: any) {
-      alert("삭제 중 오류: " + err.message);
-    }
-  };
 
   // 내 매물 목록 조회
   const fetchMyVacancies = async () => {
@@ -236,8 +143,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     }
   };
 
-  // (AI 초안 생성 로직은 ArticleAiWizardModal로 모듈화 분리)
-
   /* ── AI 초안 결과를 에디터에 즉시 주입하는 헬퍼 ── */
   const applyDraftToEditor = (draftData: any) => {
     if (!draftData) return;
@@ -261,12 +166,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        alert("로그인이 필요합니다.");
-        return;
-      }
-
       const { data: vacancy, error } = await supabase.from("vacancies").select("*").eq("id", selectedVacancyId).single();
       if (error || !vacancy) {
         alert("매물 정보를 불러오지 못했습니다." + (error ? `\n\n${error.message}` : ""));
@@ -274,31 +173,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       }
 
       const draft = generateLocalVacancyArticle(vacancy, articleStyle, articleLength);
-      const draftData = {
-        ...draft,
-        content_blog: "",
-        content_shorts: "",
-        content_sns: "",
-      };
-      setAiDrafts(draftData);
-      applyDraftToEditor(draftData);
+      applyDraftToEditor(draft);
 
-      await saveAiDraft({
-        member_id: user.id,
-        vacancy_id: selectedVacancyId,
-        source_type: "VACANCY",
-        original_source: `로컬 초안 · ${articleStyle === "summary" ? "단락별 요약" : "뉴스기사형"} · ${{ short: "짧게", normal: "보통", long: "길게" }[articleLength]}`,
-        title: draft.title,
-        subtitle: draft.subtitle,
-        content_article: draft.content_article,
-        content_blog: "",
-        content_shorts: "",
-        content_sns: "",
-        image_urls: []
-      });
-
-      setActiveSidebarType("ai_library");
-      setAiActiveSidebarTab("article");
       alert("매물 기사 초안이 에디터에 반영되었습니다.\n반드시 내용을 읽어보시고 실제 매물 정보에 맞게 다듬어 주세요.");
     } catch (err: any) {
       alert(`초안 작성 중 오류: ${err.message}`);
@@ -306,8 +182,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       setIsGeneratingAi(false);
     }
   };
-
-  // (AI 히스토리 로직은 ArticleAiWizardModal로 모듈화 분리)
 
   const parseMarkdownToHtml = (md: string): string => {
     if (!md) return "";
@@ -323,19 +197,28 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     return html;
   };
 
-  // 모달 열 때 매물 로드
-  useEffect(() => {
-    if (showAiWizardModal) {
-      fetchMyVacancies();
-    }
-  }, [showAiWizardModal]);
-
-  // (과거 히스토리 로드는 ArticleAiWizardModal 내부에서 자동 처리)
-
   /* ── 회원 모드 (URL 파라미터: role=member) ── */
   const [isMemberMode, setIsMemberMode] = useState(initialIsMemberMode);
   const [memberReturnPath, setMemberReturnPath] = useState("/admin?menu=article");
   const [memberAuthorId, setMemberAuthorId] = useState<string | null>(null);
+
+  /* ── 기사 하단 공실광고 연결 (유료 부동산 전용) ── */
+  const [canAttachVacancy, setCanAttachVacancy] = useState(false);
+  const [eligibleVacancies, setEligibleVacancies] = useState<any[]>([]);
+  const [attachedVacancyId, setAttachedVacancyId] = useState("");
+  const [attachedVacancyTitle, setAttachedVacancyTitle] = useState("");
+
+  useEffect(() => {
+    const authorId = memberAuthorId || currentUserId;
+    if (!authorId) return;
+    let alive = true;
+    getAuthorEligibleVacancies(authorId).then(res => {
+      if (!alive) return;
+      setCanAttachVacancy(res.isPaid);
+      setEligibleVacancies(res.vacancies || []);
+    });
+    return () => { alive = false; };
+  }, [memberAuthorId, currentUserId]);
 
   /* ── 기자명 검색 (관리자 전용) ── */
   const [reporterSearchQuery, setReporterSearchQuery] = useState("");
@@ -498,10 +381,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             else if (d.status === "APPROVED") setStatus("APPROVED");
             else setStatus("작성중");
             
-            if (d.form_type === "CARD_NEWS") setFormType("카드뉴스");
-            else if (d.form_type === "GALLERY") setFormType("갤러리");
-            else setFormType("일반");
-            
             if (d.published_at) {
               const dt = new Date(d.published_at);
               // KST 기준으로 날짜/시간 파싱 (Vercel UTC 서버에서도 정확하게)
@@ -517,7 +396,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             }
             if (d.section1) setSection1(d.section1);
             if (d.section2) setSection2(d.section2);
-            if (d.series) setSeries(d.series);
             if (d.author_name) setReporterName(d.author_name);
             if (d.author_email) setReporterEmail(d.author_email);
             if (d.edit_count !== undefined) setEditCount(d.edit_count || 0);
@@ -589,6 +467,19 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   }
                 }
               });
+
+            // [기사 하단에 연결된 공실광고 불러오기]
+            const attachedMedia = (d.article_media || []).find((m: any) =>
+              m.media_type === "ATTACHED_VACANCY" || (m.media_type === "FILE" && m.filename === "ATTACHED_VACANCY")
+            );
+            if (attachedMedia?.url) {
+              setAttachedVacancyId(attachedMedia.url);
+              try {
+                setAttachedVacancyTitle(JSON.parse(attachedMedia.caption || "{}").title || "");
+              } catch {
+                setAttachedVacancyTitle("");
+              }
+            }
 
             // [기존 DB 파일(사진) 불러오기]
             let existingPhotos: any[] = [];
@@ -1779,10 +1670,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         author_name: reporterName,
         author_email: reporterEmail,
         status: finalStatus,
-        form_type: formType,
         section1,
         section2,
-        series,
         title,
         subtitle,
         content: currentHtmlContent,
@@ -1864,8 +1753,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             author_id: memberAuthorId || currentUserId || undefined,
             author_name: reporterName,
             author_email: reporterEmail,
-            status: finalStatus, form_type: formType,
-            section1, section2, series,
+            status: finalStatus,
+            section1, section2,
             title, subtitle, 
             content: finalHtml,
             youtube_url: youtubeUrl,
@@ -1939,6 +1828,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
           }
         } catch (adErr) {
           console.warn("기사 광고 설정 저장 중 오류 (기사는 정상 저장됨):", adErr);
+        }
+
+        // ── 기사 하단 공실광고 연결 저장 (권한 없는 회원은 기존 연결을 건드리지 않음) ──
+        if (articleId && canAttachVacancy) {
+          try {
+            await updateArticleAttachedVacancy(articleId, attachedVacancyId || null);
+          } catch (vacErr) {
+            console.warn("기사 공실광고 연결 저장 중 오류 (기사는 정상 저장됨):", vacErr);
+          }
         }
 
         alert("✅ 기사가 저장되었습니다!");
@@ -2029,7 +1927,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   type="button"
                   onClick={() => {
                     setLeftSidebarMode("ai_chat");
-                    setAiPanelTab("create");
                     fetchMyVacancies();
                   }}
                   style={{
@@ -2088,7 +1985,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                   type="button"
                   onClick={() => {
                     setLeftSidebarMode("tools");
-                    setActiveSidebarType("library");
                   }}
                   title="닫기"
                   style={{
@@ -2110,324 +2006,154 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 </button>
               </div>
 
-              {/* ── 탭: [새 초안 작성] | [과거 보관 초안] ── */}
-              <div style={{ display: "flex", borderBottom: `1px solid ${border}`, background: "#f8fafc" }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAiPanelTab("create");
-                    fetchMyVacancies();
-                  }}
-                  style={{
-                    flex: 1, padding: "10px 0", border: "none",
-                    borderBottom: aiPanelTab === "create" ? "2px solid #059669" : "2px solid transparent",
-                    background: aiPanelTab === "create" ? "#ffffff" : "transparent",
-                    fontWeight: aiPanelTab === "create" ? 800 : 600,
-                    color: aiPanelTab === "create" ? "#059669" : "#64748b",
-                    fontSize: 13, cursor: "pointer",
-                    transition: "all 0.12s"
-                  }}
-                >
-                  ✍️ 새 초안 작성
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAiPanelTab("history");
-                    loadAiHistory();
-                  }}
-                  style={{
-                    flex: 1, padding: "10px 0", border: "none",
-                    borderBottom: aiPanelTab === "history" ? "2px solid #059669" : "2px solid transparent",
-                    background: aiPanelTab === "history" ? "#ffffff" : "transparent",
-                    fontWeight: aiPanelTab === "history" ? 800 : 600,
-                    color: aiPanelTab === "history" ? "#059669" : "#64748b",
-                    fontSize: 13, cursor: "pointer",
-                    transition: "all 0.12s"
-                  }}
-                >
-                  🕒 과거 보관 초안 {aiHistory.length > 0 ? `(${aiHistory.length})` : ""}
-                </button>
-              </div>
-
-              {aiPanelTab === "history" ? (
-                /* ── 🕒 과거 보관 초안 목록 (팝업 없이 좌측 패널 내에서 인라인 표시) ── */
-                <div style={{
-                  padding: "16px 14px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 10,
-                  maxHeight: "calc(100vh - 160px)",
-                  overflowY: "auto",
-                  background: "#f8fafc"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 700, color: textPrimary }}>보관된 기사·원고 목록</span>
-                    <button
-                      type="button"
-                      onClick={loadAiHistory}
-                      style={{ fontSize: 11.5, color: textSecondary, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
-                    >
-                      새로고침
-                    </button>
-                  </div>
-                  {aiHistory.length === 0 ? (
-                    <div style={{ textAlign: "center", color: textSecondary, padding: "80px 0", fontSize: 12.5, lineHeight: 1.6 }}>
-                      <div style={{ fontSize: 32, marginBottom: 8 }}>📬</div>
-                      <b>아직 보관된 AI 초안이 없습니다.</b><br />
-                      상단 [새 초안 작성] 탭에서 공실 매물 기사를 작성해 보세요!
-                    </div>
-                  ) : (
-                    aiHistory.map(item => (
-                      <div
-                        key={item.id}
-                        onClick={() => {
-                          const draftData = {
-                            title: item.title || "",
-                            subtitle: item.subtitle || "",
-                            content_article: item.content_article || "",
-                            content_blog: item.content_blog || "",
-                            content_shorts: item.content_shorts || "",
-                            content_threads: item.content_threads || item.content_sns || "",
-                            content_insta: item.content_insta || item.content_sns || "",
-                            content_sns: item.content_sns || "",
-                            section2: item.section2 || "",
-                            keywords: item.keywords || []
-                          };
-                          setAiDrafts(draftData);
-                          applyDraftToEditor(draftData);
-                          setActiveSidebarType("ai_library");
-                          setAiActiveSidebarTab("article");
-                          alert("선택하신 과거 AI 초안이 에디터와 우측 보관소에 성공적으로 반영되었습니다!");
-                        }}
-                        style={{
-                          background: "#ffffff",
-                          padding: "12px 14px",
-                          borderRadius: 8,
-                          border: `1px solid ${border}`,
-                          cursor: "pointer",
-                          transition: "all 0.15s",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
-                        }}
-                        onMouseOver={e => {
-                          e.currentTarget.style.borderColor = "#059669";
-                          e.currentTarget.style.boxShadow = "0 2px 8px rgba(5, 150, 105, 0.12)";
-                        }}
-                        onMouseOut={e => {
-                          e.currentTarget.style.borderColor = border;
-                          e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.03)";
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                          <span style={{
-                            padding: "2px 6px", borderRadius: 4, fontSize: 10.5, fontWeight: 700,
-                            background: "#e0f2fe", color: "#0369a1"
-                          }}>
-                            {item.source_type === "VACANCY" ? "공실매물 연동" : "일반참조"}
-                          </span>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontSize: 11, color: textSecondary }}>
-                              {new Date(item.created_at).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => handleDeleteHistoryItem(e, item.id)}
-                              title="초안 삭제"
-                              style={{
-                                background: "none",
-                                border: "none",
-                                color: "#94a3b8",
-                                cursor: "pointer",
-                                padding: "2px 5px",
-                                borderRadius: 4,
-                                fontSize: 13,
-                                fontWeight: 700,
-                                lineHeight: 1,
-                                transition: "all 0.12s"
-                              }}
-                              onMouseOver={e => {
-                                e.currentTarget.style.color = "#ef4444";
-                                e.currentTarget.style.background = "#fee2e2";
-                              }}
-                              onMouseOut={e => {
-                                e.currentTarget.style.color = "#94a3b8";
-                                e.currentTarget.style.background = "none";
-                              }}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: textPrimary, marginBottom: 4, lineHeight: 1.4 }}>
-                          {item.title || "무제 기사"}
-                        </div>
-                        {item.subtitle && (
-                          <div style={{ fontSize: 11.5, color: textSecondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 6 }}>
-                            {item.subtitle}
-                          </div>
-                        )}
-                        {item.vacancies && (
-                          <div style={{ fontSize: 11, color: "#059669", fontWeight: 600 }}>
-                            📍 {item.vacancies.building_name || "매물"} ({item.vacancies.sido || ""} {item.vacancies.dong || ""})
-                          </div>
-                        )}
-                        <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px dashed #f1f5f9", display: "flex", justifyContent: "flex-end" }}>
-                          <span style={{ fontSize: 11, color: "#059669", fontWeight: 700 }}>에디터에 불러오기 ➔</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              ) : (
-                /* 메인 옵션 설정 영역 (올인원 스크롤 뷰) */
-                <div style={{
-                  padding: "16px 16px 20px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 14,
-                  maxHeight: "calc(100vh - 160px)",
-                  overflowY: "auto"
-                }}>
-                {/* 1. 보도 대상 공실 매물 */}
-                <div>
-                  <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>
-                    보도 대상 공실 매물
-                  </label>
-                  {isLoadingVacancies ? (
-                    <div style={{ fontSize: 12.5, color: textSecondary, padding: "8px 0" }}>매물 목록을 불러오는 중입니다...</div>
-                  ) : myVacancies.length === 0 ? (
-                    <div style={{ fontSize: 12.5, color: "#b45309", padding: "8px 0" }}>⚠️ 등록된 매물이 없습니다. 공실매물을 먼저 등록해 주세요.</div>
-                  ) : (
-                    <select
-                      value={selectedVacancyId}
-                      onChange={e => setSelectedVacancyId(e.target.value)}
-                      style={{
-                        width: "100%",
-                        padding: "8px 10px",
-                        fontSize: 13,
-                        borderRadius: 6,
-                        border: "1px solid #d1d5db",
-                        outline: "none",
-                        background: "#ffffff",
-                        fontWeight: 600,
-                        color: textPrimary
-                      }}
-                    >
-                      {myVacancies.map(v => (
-                        <option key={v.id} value={v.id}>
-                          [{v.trade_type}] {v.building_name || "무제"} ({v.sido || ""} {v.dong || ""})
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* 2. 기사 스타일 */}
-                <div>
-                  <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>기사 스타일</label>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {([
-                      { key: "news", label: "뉴스기사형", desc: "자연스럽게 이어지는 문단 중심의 일반 뉴스 기사" },
-                      { key: "summary", label: "단락별 요약", desc: "첫 문단에 핵심 요약, 이후 ■ 소제목으로 단락 구분" },
-                    ] as { key: ArticleStyle; label: string; desc: string }[]).map(item => {
-                      const active = articleStyle === item.key;
-                      return (
-                        <button
-                          key={item.key}
-                          type="button"
-                          onClick={() => setArticleStyle(item.key)}
-                          style={{
-                            padding: "9px 12px",
-                            borderRadius: 8,
-                            background: active ? "#eff6ff" : "#ffffff",
-                            border: `1px solid ${active ? "#2563eb" : "#d1d5db"}`,
-                            cursor: "pointer",
-                            textAlign: "left",
-                            transition: "all 0.12s"
-                          }}
-                        >
-                          <div style={{ fontSize: 13, fontWeight: 800, color: active ? "#1d4ed8" : textPrimary }}>{item.label}</div>
-                          <div style={{ fontSize: 11, color: textSecondary, marginTop: 2 }}>{item.desc}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 3. 분량 */}
-                <div>
-                  <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>분량</label>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-                    {([
-                      { key: "short", label: "짧게", desc: "700~1,000자" },
-                      { key: "normal", label: "보통", desc: "1,400~1,800자" },
-                      { key: "long", label: "길게", desc: "2,800~3,500자" },
-                    ] as { key: ArticleLength; label: string; desc: string }[]).map(item => {
-                      const active = articleLength === item.key;
-                      return (
-                        <button
-                          key={item.key}
-                          type="button"
-                          onClick={() => setArticleLength(item.key)}
-                          style={{
-                            padding: "8px 4px",
-                            borderRadius: 8,
-                            background: active ? "#eff6ff" : "#ffffff",
-                            border: `1px solid ${active ? "#2563eb" : "#d1d5db"}`,
-                            cursor: "pointer",
-                            textAlign: "center",
-                            transition: "all 0.12s"
-                          }}
-                        >
-                          <div style={{ fontSize: 13, fontWeight: 800, color: active ? "#1d4ed8" : textPrimary }}>{item.label}</div>
-                          <div style={{ fontSize: 10.5, color: textSecondary, marginTop: 2 }}>{item.desc}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div style={{ fontSize: 11, color: textSecondary, marginTop: 6, lineHeight: 1.5 }}>
-                    매물 정보만으로는 길게 쓰기 어려워, 분량을 늘리면 지역·거래 해설과 확인할 점 같은 <b>해설 부분</b>이 길어집니다.
-                  </div>
-                </div>
-
-                {/* 맨 밑: 공실뉴스 매물 기사 작성하기 >> 버튼 */}
-                <div style={{ marginTop: 4, paddingTop: 10, borderTop: `1px solid #f1f5f9` }}>
-                  <button
-                    type="button"
-                    disabled={isGeneratingAi || myVacancies.length === 0}
-                    onClick={() => executeOptionWizardGenerate()}
+              {/* 메인 옵션 설정 영역 (올인원 스크롤 뷰) */}
+              <div style={{
+                padding: "16px 16px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+                maxHeight: "calc(100vh - 160px)",
+                overflowY: "auto"
+              }}>
+              {/* 1. 보도 대상 공실 매물 */}
+              <div>
+                <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>
+                  보도 대상 공실 매물
+                </label>
+                {isLoadingVacancies ? (
+                  <div style={{ fontSize: 12.5, color: textSecondary, padding: "8px 0" }}>매물 목록을 불러오는 중입니다...</div>
+                ) : myVacancies.length === 0 ? (
+                  <div style={{ fontSize: 12.5, color: "#b45309", padding: "8px 0" }}>⚠️ 등록된 매물이 없습니다. 공실매물을 먼저 등록해 주세요.</div>
+                ) : (
+                  <select
+                    value={selectedVacancyId}
+                    onChange={e => setSelectedVacancyId(e.target.value)}
                     style={{
                       width: "100%",
-                      padding: "12px 0",
-                      background: isGeneratingAi || myVacancies.length === 0 ? "#94a3b8" : "#059669",
-                      color: "#ffffff",
-                      border: "none",
+                      padding: "8px 10px",
+                      fontSize: 13,
                       borderRadius: 6,
-                      fontSize: 14,
-                      fontWeight: 700,
-                      cursor: isGeneratingAi || myVacancies.length === 0 ? "not-allowed" : "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 6,
-                      boxShadow: "0 2px 4px rgba(5, 150, 105, 0.2)",
-                      transition: "background 0.15s"
-                    }}
-                    onMouseOver={e => {
-                      if (!isGeneratingAi && myVacancies.length > 0) e.currentTarget.style.background = "#047857";
-                    }}
-                    onMouseOut={e => {
-                      if (!isGeneratingAi && myVacancies.length > 0) e.currentTarget.style.background = "#059669";
+                      border: "1px solid #d1d5db",
+                      outline: "none",
+                      background: "#ffffff",
+                      fontWeight: 600,
+                      color: textPrimary
                     }}
                   >
-                    {isGeneratingAi ? "공실뉴스 매물 기사 작성 중..." : "공실뉴스 매물 기사 작성하기 >>"}
-                  </button>
-                  <div style={{ fontSize: 11, color: textSecondary, textAlign: "center", marginTop: 6, lineHeight: 1.4 }}>
-                    등록된 매물 정보로 즉시 작성됩니다. 작성 후 반드시 내용을 확인해 주세요.
-                  </div>
+                    {myVacancies.map(v => (
+                      <option key={v.id} value={v.id}>
+                        [{v.trade_type}] {v.building_name || "무제"} ({v.sido || ""} {v.dong || ""})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* 2. 기사 스타일 */}
+              <div>
+                <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>기사 스타일</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {([
+                    { key: "news", label: "뉴스기사형", desc: "자연스럽게 이어지는 문단 중심의 일반 뉴스 기사" },
+                    { key: "summary", label: "단락별 요약", desc: "첫 문단에 핵심 요약, 이후 ■ 소제목으로 단락 구분" },
+                  ] as { key: ArticleStyle; label: string; desc: string }[]).map(item => {
+                    const active = articleStyle === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setArticleStyle(item.key)}
+                        style={{
+                          padding: "9px 12px",
+                          borderRadius: 8,
+                          background: active ? "#eff6ff" : "#ffffff",
+                          border: `1px solid ${active ? "#2563eb" : "#d1d5db"}`,
+                          cursor: "pointer",
+                          textAlign: "left",
+                          transition: "all 0.12s"
+                        }}
+                      >
+                        <div style={{ fontSize: 13, fontWeight: 800, color: active ? "#1d4ed8" : textPrimary }}>{item.label}</div>
+                        <div style={{ fontSize: 11, color: textSecondary, marginTop: 2 }}>{item.desc}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              )}
+
+              {/* 3. 분량 */}
+              <div>
+                <label style={{ fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6, display: "block" }}>분량</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                  {([
+                    { key: "short", label: "짧게", desc: "700~1,000자" },
+                    { key: "normal", label: "보통", desc: "1,400~1,800자" },
+                    { key: "long", label: "길게", desc: "2,800~3,500자" },
+                  ] as { key: ArticleLength; label: string; desc: string }[]).map(item => {
+                    const active = articleLength === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setArticleLength(item.key)}
+                        style={{
+                          padding: "8px 4px",
+                          borderRadius: 8,
+                          background: active ? "#eff6ff" : "#ffffff",
+                          border: `1px solid ${active ? "#2563eb" : "#d1d5db"}`,
+                          cursor: "pointer",
+                          textAlign: "center",
+                          transition: "all 0.12s"
+                        }}
+                      >
+                        <div style={{ fontSize: 13, fontWeight: 800, color: active ? "#1d4ed8" : textPrimary }}>{item.label}</div>
+                        <div style={{ fontSize: 10.5, color: textSecondary, marginTop: 2 }}>{item.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 11, color: textSecondary, marginTop: 6, lineHeight: 1.5 }}>
+                  매물 정보만으로는 길게 쓰기 어려워, 분량을 늘리면 지역·거래 해설과 확인할 점 같은 <b>해설 부분</b>이 길어집니다.
+                </div>
+              </div>
+
+              {/* 맨 밑: 공실뉴스 매물 기사 작성하기 >> 버튼 */}
+              <div style={{ marginTop: 4, paddingTop: 10, borderTop: `1px solid #f1f5f9` }}>
+                <button
+                  type="button"
+                  disabled={isGeneratingAi || myVacancies.length === 0}
+                  onClick={() => executeOptionWizardGenerate()}
+                  style={{
+                    width: "100%",
+                    padding: "12px 0",
+                    background: isGeneratingAi || myVacancies.length === 0 ? "#94a3b8" : "#059669",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: 6,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: isGeneratingAi || myVacancies.length === 0 ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    boxShadow: "0 2px 4px rgba(5, 150, 105, 0.2)",
+                    transition: "background 0.15s"
+                  }}
+                  onMouseOver={e => {
+                    if (!isGeneratingAi && myVacancies.length > 0) e.currentTarget.style.background = "#047857";
+                  }}
+                  onMouseOut={e => {
+                    if (!isGeneratingAi && myVacancies.length > 0) e.currentTarget.style.background = "#059669";
+                  }}
+                >
+                  {isGeneratingAi ? "공실뉴스 매물 기사 작성 중..." : "공실뉴스 매물 기사 작성하기 >>"}
+                </button>
+                <div style={{ fontSize: 11, color: textSecondary, textAlign: "center", marginTop: 6, lineHeight: 1.4 }}>
+                  등록된 매물 정보로 즉시 작성됩니다. 작성 후 반드시 내용을 확인해 주세요.
+                </div>
+              </div>
+              </div>
             </div>
           )}
         </aside>
@@ -2456,24 +2182,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                     color: status === s ? "#fff" : textSecondary,
                     transition: "all 0.15s",
                   }}>{s}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* ── 형태 ── */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, padding: "16px 20px", background: inputBg, borderRadius: 8, border: `1px solid ${border}` }}>
-              <label style={{ fontSize: 14, fontWeight: 600, color: textPrimary, minWidth: 60, display: "flex", alignItems: "center", gap: 4 }}>
-                형태
-                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: "50%", border: `1px solid ${textMuted}`, fontSize: 10, color: textMuted, cursor: "help" }}>ⓘ</span>
-              </label>
-              <div style={{ display: "flex", gap: 0, background: "#e5e7eb", borderRadius: 6, padding: 2 }}>
-                {(["일반", "카드뉴스", "갤러리"] as FormType[]).map(ft => (
-                  <button key={ft} onClick={() => setFormType(ft)} style={{
-                    padding: "7px 16px", border: "none", borderRadius: 5, fontSize: 13, fontWeight: 600, cursor: "pointer",
-                    background: formType === ft ? "#374151" : "transparent",
-                    color: formType === ft ? "#fff" : textSecondary,
-                    transition: "all 0.15s",
-                  }}>{ft}</button>
                 ))}
               </div>
             </div>
@@ -2546,10 +2254,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                     <option value="스포츠/연예/기타">스포츠/연예/기타</option>
                   </>
                 )}
-              </select>
-              <select value={series} onChange={e => setSeries(e.target.value)}
-                style={{ width: 180, padding: "8px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 14, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
-                <option value="" disabled style={{ color: textMuted }}>연재</option>
               </select>
             </div>
 
@@ -2862,6 +2566,18 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
               textMuted={textMuted}
             />
 
+            {/* ── 기사 하단 공실광고 선택 ── */}
+            <ArticleVacancySlot
+              canAttach={canAttachVacancy}
+              vacancies={eligibleVacancies}
+              attachedVacancyId={attachedVacancyId}
+              setAttachedVacancyId={setAttachedVacancyId}
+              attachedVacancyTitle={attachedVacancyTitle}
+              border={border}
+              textPrimary={textPrimary}
+              textMuted={textMuted}
+            />
+
             {/* ── 저장완료 버튼 영역 (권한 분기) ── */}
             {isAdminRole(currentUserRole) ? (
               <div style={{ display: 'flex', gap: 8 }}>
@@ -2907,371 +2623,226 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
         {/* ═══ 우측 사이드바 ═══ */}
         <aside style={{ width: 280, minWidth: 280, position: "sticky", top: 80, flexShrink: 0 }}>
-          {activeSidebarType === "library" ? (
-            <div style={{ background: cardBg, borderRadius: 12, border: `1px solid ${border}`, padding: "20px 18px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 800, color: textPrimary, margin: 0 }}>라이브러리</h3>
-                {aiDrafts && (
-                  <button 
-                    onClick={() => setActiveSidebarType("ai_library")}
-                    style={{ padding: "4px 8px", background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-                  >
-                    ✨ AI 보관소 ➔
-                  </button>
-                )}
-              </div>
-
-              {/* 포토DB 간편검색 */}
-              <form onSubmit={handlePhotoDbSearch} style={{ position: "relative", marginBottom: 20 }}>
-                <input type="text" placeholder="포토DB 간편검색"
-                  value={photoDbSearch} onChange={e => setPhotoDbSearch(e.target.value)}
-                  onClick={openPhotoDbModal}
-                  style={{ width: "100%", padding: "10px 36px 10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                <button type="button" onClick={openPhotoDbModal} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                </button>
-              </form>
-
-              {/* ── 사진 섹션 ── */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>사진</span>
-                  <button onClick={() => setPhotoCollapsed(!photoCollapsed)} style={{ width: 24, height: 24, border: `1px solid ${border}`, borderRadius: 4, background: cardBg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: textMuted }}>
-                    {photoCollapsed ? "+" : "−"}
-                  </button>
-                </div>
-                {!photoCollapsed && (
-                  <>
-                    <input type="file" id="photo-upload" accept="image/*" multiple hidden
-                      onChange={e => handlePhotoSelect(e.target.files)} />
-                    <div 
-                      onClick={() => document.getElementById('photo-upload')?.click()}
-                      onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#3b82f6'; }}
-                      onDragLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; }}
-                      onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#d1d5db'; handlePhotoSelect(e.dataTransfer.files); }}
-                      style={{
-                        border: `2px dashed #d1d5db`, borderRadius: 8, padding: "18px 16px",
-                        textAlign: "center", color: textMuted, fontSize: 12, lineHeight: 1.6, cursor: "pointer",
-                        background: "#fdfdfd", transition: "border-color 0.2s",
-                      }}>
-                      📷 마우스로 이미지를 끌어오거나, 클릭해주세요.<br />
-                      <span style={{ fontSize: 11, color: "#b0b0b0" }}>(WebP 자동 압축 · 허용용량 10MB)</span>
-                    </div>
-                    {photoFiles.length > 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
-                        {photoFiles.map((p, i) => (
-                          <div key={i} style={{
-                            background: "#f9fafb", borderRadius: 8,
-                            border: p.isCover ? "2px solid #3b82f6" : `1px solid ${border}`,
-                            overflow: "hidden", transition: "border-color 0.2s",
-                          }}>
-                            {/* 썸네일 + 삭제/대표 버튼 */}
-                            <div style={{ position: "relative" }}>
-                              <img src={p.preview} alt="" style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
-                              {/* 대표 라벨 */}
-                              {p.isCover && (
-                                <div style={{
-                                  position: "absolute", top: 6, left: 6, padding: "2px 8px",
-                                  background: "rgba(59,130,246,0.9)", color: "#fff", fontSize: 10, fontWeight: 700,
-                                  borderRadius: 4,
-                                }}>대표</div>
-                              )}
-                              {/* 삭제 버튼 */}
-                              <button type="button" onClick={() => removePhoto(i)}
-                                style={{
-                                  position: "absolute", top: 5, right: 5, width: 20, height: 20,
-                                  background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", borderRadius: "50%",
-                                  fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                                }}>✕</button>
-                            </div>
-
-                            {/* 캡션 입력 */}
-                            <div style={{ padding: "8px 8px 0 8px" }}>
-                              <input 
-                                type="text" 
-                                value={p.caption || ""} 
-                                onChange={(e) => updatePhotoCaption(i, e.target.value)} 
-                                placeholder="사진 설명(캡션) 입력" 
-                                style={{
-                                  width: "100%", padding: "6px 8px", fontSize: 12, border: `1px solid ${border}`,
-                                  borderRadius: 4, background: "#fff", color: textPrimary, outline: "none",
-                                }} 
-                              />
-                            </div>
-
-                            {/* 정렬 버튼 + 설정 버튼 */}
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", gap: 4 }}>
-                              {/* 좌/중앙/우 정렬 버튼 */}
-                              <div style={{ display: "flex", gap: 2 }}>
-                                {([{ k: 'left' as const, icon: '◧', tip: '좌측' }, { k: 'center' as const, icon: '▣', tip: '중앙' }, { k: 'right' as const, icon: '◨', tip: '우측' }]).map(({ k, icon, tip }) => (
-                                  <button key={k} type="button" title={tip}
-                                    onClick={() => updatePhotoAlign(i, k)}
-                                    style={{
-                                      width: 28, height: 26, borderRadius: 4, fontSize: 14, cursor: "pointer",
-                                      border: p.align === k ? "2px solid #3b82f6" : `1px solid ${border}`,
-                                      background: p.align === k ? "#dbeafe" : "#fff",
-                                      color: p.align === k ? "#3b82f6" : textMuted,
-                                      display: "flex", alignItems: "center", justifyContent: "center",
-                                      transition: "all 0.12s",
-                                    }}>{icon}</button>
-                                ))}
-                              </div>
-
-                              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                                {!p.isCover && (
-                                  <button type="button" onClick={() => setAsCover(i)}
-                                    style={{ padding: "2px 6px", background: "#e5e7eb", color: textSecondary, border: "none", borderRadius: 3, fontSize: 9, fontWeight: 600, cursor: "pointer" }}>대표지정</button>
-                                )}
-                                <button type="button" onClick={() => setMosaicEditIdx(i)}
-                                  style={{ padding: "2px 6px", background: "#e5e7eb", color: textSecondary, border: "none", borderRadius: 3, fontSize: 9, fontWeight: 600, cursor: "pointer" }}>모자이크</button>
-                                {/* 설정 버튼 */}
-                                <button type="button" onClick={() => openEditPhotoModal(i)}
-                                  title="사진 설정"
-                                  style={{
-                                    width: 26, height: 26, borderRadius: 4, cursor: "pointer",
-                                    border: `1px solid ${border}`, background: "#fff",
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    color: textSecondary, fontSize: 14,
-                                  }}>⚙</button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {/* ── 영상 섹션 ── */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>영상</span>
-                  <button onClick={() => setVideoCollapsed(!videoCollapsed)} style={{ width: 24, height: 24, border: `1px solid ${border}`, borderRadius: 4, background: cardBg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: textMuted }}>
-                    {videoCollapsed ? "+" : "−"}
-                  </button>
-                </div>
-                {!videoCollapsed && (
-                  <div>
-                    <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                      <input id="right-sidebar-video-input" type="text" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)}
-                        placeholder="YouTube영상링크입력"
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddVideo(); } }}
-                        style={{ flex: 1, padding: "8px 10px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
-                      <button onClick={handleAddVideo}
-                        style={{ padding: "8px 12px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>입력하기</button>
-                    </div>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: textSecondary, cursor: "pointer", marginBottom: 8 }}>
-                      <input type="checkbox" checked={isShortsRatio} onChange={e => setIsShortsRatio(e.target.checked)} style={{ accentColor: accentBlue }} />
-                      쇼츠(세로) 영상으로 크기 맞춤
-                    </label>
-
-                    {/* 등록된 영상 목록 */}
-                    {videoItems.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {videoItems.map((v, i) => (
-                          <div key={i} style={{
-                            background: '#f9fafb', borderRadius: 8,
-                            border: v.isCover ? '2px solid #3b82f6' : `1px solid ${border}`,
-                            overflow: 'hidden', transition: 'border-color 0.2s',
-                          }}>
-                            {/* 썸네일 */}
-                            <div style={{ position: 'relative' }}>
-                              <img src={getYoutubeThumbnail(v.videoId)} alt=""
-                                style={{ width: '100%', height: 100, objectFit: 'cover', display: 'block' }} />
-                              {/* 재생 아이콘 */}
-                              <div style={{
-                                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                                width: 36, height: 36, borderRadius: '50%', background: 'rgba(0,0,0,0.6)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              }}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="6 3 20 12 6 21" /></svg>
-                              </div>
-                              {/* 삭제 버튼 */}
-                              <button type="button" onClick={() => removeVideo(i)}
-                                style={{
-                                  position: 'absolute', top: 4, right: 4, width: 20, height: 20,
-                                  background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: '50%',
-                                  fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}>✕</button>
-                              {/* 대표 라벨 */}
-                              {v.isCover && (
-                                <div style={{
-                                  position: 'absolute', top: 6, left: 6, padding: '2px 8px',
-                                  background: 'rgba(59,130,246,0.9)', color: '#fff', fontSize: 10, fontWeight: 700,
-                                  borderRadius: 4,
-                                }}>대표</div>
-                              )}
-                            </div>
-                            {/* 버튼 영역 */}
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px' }}>
-                              <button type="button" onClick={() => reinsertVideo(i)}
-                                style={{
-                                  padding: '3px 10px', background: '#e5e7eb', color: textSecondary, border: 'none',
-                                  borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                                  display: 'flex', alignItems: 'center', gap: 4,
-                                }}>□ 삽입</button>
-                              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                                {!v.isCover && (
-                                  <button type="button" onClick={() => setVideoCover(i)}
-                                    style={{ padding: '2px 6px', background: '#e5e7eb', color: textSecondary, border: 'none', borderRadius: 3, fontSize: 9, fontWeight: 600, cursor: 'pointer' }}>대표지정</button>
-                                )}
-                                <button type="button" onClick={() => openEditVideoModal(i)}
-                                  title="영상 설정"
-                                  style={{
-                                    width: 26, height: 26, borderRadius: 4, cursor: 'pointer',
-                                    border: `1px solid ${border}`, background: '#fff',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: textSecondary, fontSize: 14,
-                                  }}>⚙</button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+          <div style={{ background: cardBg, borderRadius: 12, border: `1px solid ${border}`, padding: "20px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 800, color: textPrimary, margin: 0 }}>라이브러리</h3>
             </div>
-          ) : (
-            <div style={{
-              background: "#ffffff",
-              borderRadius: 12,
-              border: `1px solid ${border}`,
-              padding: "20px 18px",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: textPrimary }}>
-                    AI 멀티채널 원고 보관소
-                  </div>
-                  <div style={{ fontSize: 12, color: textSecondary, marginTop: 2 }}>
-                    작성된 5개 플랫폼 맞춤 원고 미리보기
-                  </div>
-                </div>
-                <button 
-                  type="button"
-                  onClick={() => setActiveSidebarType("library")}
-                  style={{ padding: "4px 10px", background: "#f8fafc", color: textSecondary, border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-                >
-                  기본도구 ➔
+
+            {/* 포토DB 간편검색 */}
+            <form onSubmit={handlePhotoDbSearch} style={{ position: "relative", marginBottom: 20 }}>
+              <input type="text" placeholder="포토DB 간편검색"
+                value={photoDbSearch} onChange={e => setPhotoDbSearch(e.target.value)}
+                onClick={openPhotoDbModal}
+                style={{ width: "100%", padding: "10px 36px 10px 14px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 13, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+              <button type="button" onClick={openPhotoDbModal} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </button>
+            </form>
+
+            {/* ── 사진 섹션 ── */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>사진</span>
+                <button onClick={() => setPhotoCollapsed(!photoCollapsed)} style={{ width: 24, height: 24, border: `1px solid ${border}`, borderRadius: 4, background: cardBg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: textMuted }}>
+                  {photoCollapsed ? "+" : "−"}
                 </button>
               </div>
-
-              {/* 5개 채널 탭 헤더 */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 2, background: "#f1f5f9", borderRadius: 8, padding: 3, marginBottom: 14 }}>
-                {([
-                  { k: "article" as const, l: "기사" },
-                  { k: "blog" as const, l: "블로그" },
-                  { k: "shorts" as const, l: "쇼츠" },
-                  { k: "threads" as const, l: "쓰레드" },
-                  { k: "insta" as const, l: "인스타" }
-                ]).map(tab => (
-                  <button 
-                    key={tab.k} 
-                    type="button"
-                    onClick={() => setAiActiveSidebarTab(tab.k)}
+              {!photoCollapsed && (
+                <>
+                  <input type="file" id="photo-upload" accept="image/*" multiple hidden
+                    onChange={e => handlePhotoSelect(e.target.files)} />
+                  <div 
+                    onClick={() => document.getElementById('photo-upload')?.click()}
+                    onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#3b82f6'; }}
+                    onDragLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; }}
+                    onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#d1d5db'; handlePhotoSelect(e.dataTransfer.files); }}
                     style={{
-                      padding: "7px 0", border: "none", borderRadius: 6, fontSize: 11.5, fontWeight: aiActiveSidebarTab === tab.k ? 700 : 500, cursor: "pointer",
-                      background: aiActiveSidebarTab === tab.k ? "#ffffff" : "transparent",
-                      color: aiActiveSidebarTab === tab.k ? "#0f172a" : "#64748b",
-                      boxShadow: aiActiveSidebarTab === tab.k ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-                      transition: "all 0.12s"
-                    }}
-                  >
-                    {tab.l}
-                  </button>
-                ))}
-              </div>
-
-              {/* 탭 본문 내용 */}
-              <div style={{ background: "#f8fafc", borderRadius: 8, padding: 14, minHeight: 280, maxHeight: 380, overflowY: "auto", fontSize: 12.5, lineHeight: 1.65, color: "#334155", border: `1px solid ${border}` }}>
-                {aiDrafts ? (
-                  aiActiveSidebarTab === "article" ? (
-                    <div>
-                      <div style={{ fontWeight: 800, color: "#0f172a", marginBottom: 4, fontSize: 13.5 }}>제목: {aiDrafts.title}</div>
-                      <div style={{ fontSize: 11.5, color: textSecondary, marginBottom: 10, whiteSpace: "pre-wrap" }}>부제: {aiDrafts.subtitle ? aiDrafts.subtitle.replaceAll('\\n', '\n') : ""}</div>
-                      <div style={{ whiteSpace: "pre-wrap" }}>{aiDrafts.content_article}</div>
-                    </div>
-                  ) : aiActiveSidebarTab === "blog" ? (
-                    <div>
-                      <div style={{ fontWeight: 800, color: "#0f172a", marginBottom: 8, fontSize: 13 }}>네이버 블로그 원고</div>
-                      <div style={{ whiteSpace: "pre-wrap" }}>{aiDrafts.content_blog}</div>
-                    </div>
-                  ) : aiActiveSidebarTab === "shorts" ? (
-                    <div>
-                      <div style={{ fontWeight: 800, color: "#0f172a", marginBottom: 8, fontSize: 13 }}>유튜브 쇼츠 대본</div>
-                      <div style={{ whiteSpace: "pre-wrap" }}>{aiDrafts.content_shorts}</div>
-                    </div>
-                  ) : aiActiveSidebarTab === "threads" ? (
-                    <div>
-                      <div style={{ fontWeight: 800, color: "#0f172a", marginBottom: 8, fontSize: 13 }}>페이스북 · 쓰레드 (Threads)</div>
-                      <div style={{ whiteSpace: "pre-wrap" }}>{aiDrafts.content_threads || aiDrafts.content_sns}</div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ fontWeight: 800, color: "#0f172a", marginBottom: 8, fontSize: 13 }}>인스타그램 피드 캡션</div>
-                      <div style={{ whiteSpace: "pre-wrap" }}>{aiDrafts.content_insta || aiDrafts.content_sns}</div>
-                    </div>
-                  )
-                ) : (
-                  <div style={{ textAlign: "center", color: textSecondary, paddingTop: 110, fontSize: 12 }}>
-                    생성된 원고가 없습니다.<br />왼쪽 'AI 공실뉴스초안작성'에서 [공실뉴스 매물 기사 작성하기 &gt;&gt;]를 실행해 주세요.
+                      border: `2px dashed #d1d5db`, borderRadius: 8, padding: "18px 16px",
+                      textAlign: "center", color: textMuted, fontSize: 12, lineHeight: 1.6, cursor: "pointer",
+                      background: "#fdfdfd", transition: "border-color 0.2s",
+                    }}>
+                    📷 마우스로 이미지를 끌어오거나, 클릭해주세요.<br />
+                    <span style={{ fontSize: 11, color: "#b0b0b0" }}>(WebP 자동 압축 · 허용용량 10MB)</span>
                   </div>
-                )}
-              </div>
+                  {photoFiles.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
+                      {photoFiles.map((p, i) => (
+                        <div key={i} style={{
+                          background: "#f9fafb", borderRadius: 8,
+                          border: p.isCover ? "2px solid #3b82f6" : `1px solid ${border}`,
+                          overflow: "hidden", transition: "border-color 0.2s",
+                        }}>
+                          {/* 썸네일 + 삭제/대표 버튼 */}
+                          <div style={{ position: "relative" }}>
+                            <img src={p.preview} alt="" style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
+                            {/* 대표 라벨 */}
+                            {p.isCover && (
+                              <div style={{
+                                position: "absolute", top: 6, left: 6, padding: "2px 8px",
+                                background: "rgba(59,130,246,0.9)", color: "#fff", fontSize: 10, fontWeight: 700,
+                                borderRadius: 4,
+                              }}>대표</div>
+                            )}
+                            {/* 삭제 버튼 */}
+                            <button type="button" onClick={() => removePhoto(i)}
+                              style={{
+                                position: "absolute", top: 5, right: 5, width: 20, height: 20,
+                                background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", borderRadius: "50%",
+                                fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                              }}>✕</button>
+                          </div>
 
-              {/* 마케팅 액션 버튼 */}
-              {aiDrafts && (
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-                  {aiActiveSidebarTab === "article" && (
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        setTitle(aiDrafts.title);
-                        setSubtitle(aiDrafts.subtitle ? aiDrafts.subtitle.replaceAll('\\n', '\n') : "");
-                        setSection1("공실뉴스");
-                        if (aiDrafts.section2) {
-                          setSection2(aiDrafts.section2);
-                        }
-                        if (aiDrafts.keywords && Array.isArray(aiDrafts.keywords)) {
-                          setKeywords(aiDrafts.keywords);
-                        }
-                        if (editorRef.current) {
-                          editorRef.current.innerHTML = parseMarkdownToHtml(aiDrafts.content_article);
-                          setContent(editorRef.current.innerHTML);
-                        }
-                        alert("기사 제목, 부제목, 본문, 섹션, 키워드가 에디터에 자동 반영되었습니다.");
-                      }}
-                      style={{ width: "100%", padding: "10px 0", background: "#059669", color: "#fff", border: "none", borderRadius: 6, fontSize: 12.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
-                    >
-                      에디터 본문에 즉시 반영하기
-                    </button>
+                          {/* 캡션 입력 */}
+                          <div style={{ padding: "8px 8px 0 8px" }}>
+                            <input 
+                              type="text" 
+                              value={p.caption || ""} 
+                              onChange={(e) => updatePhotoCaption(i, e.target.value)} 
+                              placeholder="사진 설명(캡션) 입력" 
+                              style={{
+                                width: "100%", padding: "6px 8px", fontSize: 12, border: `1px solid ${border}`,
+                                borderRadius: 4, background: "#fff", color: textPrimary, outline: "none",
+                              }} 
+                            />
+                          </div>
+
+                          {/* 정렬 버튼 + 설정 버튼 */}
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", gap: 4 }}>
+                            {/* 좌/중앙/우 정렬 버튼 */}
+                            <div style={{ display: "flex", gap: 2 }}>
+                              {([{ k: 'left' as const, icon: '◧', tip: '좌측' }, { k: 'center' as const, icon: '▣', tip: '중앙' }, { k: 'right' as const, icon: '◨', tip: '우측' }]).map(({ k, icon, tip }) => (
+                                <button key={k} type="button" title={tip}
+                                  onClick={() => updatePhotoAlign(i, k)}
+                                  style={{
+                                    width: 28, height: 26, borderRadius: 4, fontSize: 14, cursor: "pointer",
+                                    border: p.align === k ? "2px solid #3b82f6" : `1px solid ${border}`,
+                                    background: p.align === k ? "#dbeafe" : "#fff",
+                                    color: p.align === k ? "#3b82f6" : textMuted,
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    transition: "all 0.12s",
+                                  }}>{icon}</button>
+                              ))}
+                            </div>
+
+                            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                              {!p.isCover && (
+                                <button type="button" onClick={() => setAsCover(i)}
+                                  style={{ padding: "2px 6px", background: "#e5e7eb", color: textSecondary, border: "none", borderRadius: 3, fontSize: 9, fontWeight: 600, cursor: "pointer" }}>대표지정</button>
+                              )}
+                              <button type="button" onClick={() => setMosaicEditIdx(i)}
+                                style={{ padding: "2px 6px", background: "#e5e7eb", color: textSecondary, border: "none", borderRadius: 3, fontSize: 9, fontWeight: 600, cursor: "pointer" }}>모자이크</button>
+                              {/* 설정 버튼 */}
+                              <button type="button" onClick={() => openEditPhotoModal(i)}
+                                title="사진 설정"
+                                style={{
+                                  width: 26, height: 26, borderRadius: 4, cursor: "pointer",
+                                  border: `1px solid ${border}`, background: "#fff",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  color: textSecondary, fontSize: 14,
+                                }}>⚙</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      let textToCopy = "";
-                      if (aiActiveSidebarTab === "article") textToCopy = `제목: ${aiDrafts.title}\n부제: ${aiDrafts.subtitle}\n\n${aiDrafts.content_article}`;
-                      else if (aiActiveSidebarTab === "blog") textToCopy = aiDrafts.content_blog;
-                      else if (aiActiveSidebarTab === "shorts") textToCopy = aiDrafts.content_shorts;
-                      else if (aiActiveSidebarTab === "threads") textToCopy = aiDrafts.content_threads || aiDrafts.content_sns;
-                      else textToCopy = aiDrafts.content_insta || aiDrafts.content_sns;
+                </>
+              )}
+            </div>
 
-                      navigator.clipboard.writeText(textToCopy);
-                      alert("선택한 탭의 원고가 클립보드에 복사되었습니다.");
-                    }}
-                    style={{ width: "100%", padding: "8px 0", background: "#ffffff", color: "#374151", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-                  >
-                    현재 탭 내용 복사하기
-                  </button>
+            {/* ── 영상 섹션 ── */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary }}>영상</span>
+                <button onClick={() => setVideoCollapsed(!videoCollapsed)} style={{ width: 24, height: 24, border: `1px solid ${border}`, borderRadius: 4, background: cardBg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: textMuted }}>
+                  {videoCollapsed ? "+" : "−"}
+                </button>
+              </div>
+              {!videoCollapsed && (
+                <div>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                    <input id="right-sidebar-video-input" type="text" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)}
+                      placeholder="YouTube영상링크입력"
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddVideo(); } }}
+                      style={{ flex: 1, padding: "8px 10px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, color: textPrimary, background: cardBg, outline: "none", fontFamily: "inherit" }} />
+                    <button onClick={handleAddVideo}
+                      style={{ padding: "8px 12px", background: "#374151", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>입력하기</button>
+                  </div>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: textSecondary, cursor: "pointer", marginBottom: 8 }}>
+                    <input type="checkbox" checked={isShortsRatio} onChange={e => setIsShortsRatio(e.target.checked)} style={{ accentColor: accentBlue }} />
+                    쇼츠(세로) 영상으로 크기 맞춤
+                  </label>
+
+                  {/* 등록된 영상 목록 */}
+                  {videoItems.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {videoItems.map((v, i) => (
+                        <div key={i} style={{
+                          background: '#f9fafb', borderRadius: 8,
+                          border: v.isCover ? '2px solid #3b82f6' : `1px solid ${border}`,
+                          overflow: 'hidden', transition: 'border-color 0.2s',
+                        }}>
+                          {/* 썸네일 */}
+                          <div style={{ position: 'relative' }}>
+                            <img src={getYoutubeThumbnail(v.videoId)} alt=""
+                              style={{ width: '100%', height: 100, objectFit: 'cover', display: 'block' }} />
+                            {/* 재생 아이콘 */}
+                            <div style={{
+                              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                              width: 36, height: 36, borderRadius: '50%', background: 'rgba(0,0,0,0.6)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><polygon points="6 3 20 12 6 21" /></svg>
+                            </div>
+                            {/* 삭제 버튼 */}
+                            <button type="button" onClick={() => removeVideo(i)}
+                              style={{
+                                position: 'absolute', top: 4, right: 4, width: 20, height: 20,
+                                background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: '50%',
+                                fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}>✕</button>
+                            {/* 대표 라벨 */}
+                            {v.isCover && (
+                              <div style={{
+                                position: 'absolute', top: 6, left: 6, padding: '2px 8px',
+                                background: 'rgba(59,130,246,0.9)', color: '#fff', fontSize: 10, fontWeight: 700,
+                                borderRadius: 4,
+                              }}>대표</div>
+                            )}
+                          </div>
+                          {/* 버튼 영역 */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px' }}>
+                            <button type="button" onClick={() => reinsertVideo(i)}
+                              style={{
+                                padding: '3px 10px', background: '#e5e7eb', color: textSecondary, border: 'none',
+                                borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: 4,
+                              }}>□ 삽입</button>
+                            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                              {!v.isCover && (
+                                <button type="button" onClick={() => setVideoCover(i)}
+                                  style={{ padding: '2px 6px', background: '#e5e7eb', color: textSecondary, border: 'none', borderRadius: 3, fontSize: 9, fontWeight: 600, cursor: 'pointer' }}>대표지정</button>
+                              )}
+                              <button type="button" onClick={() => openEditVideoModal(i)}
+                                title="영상 설정"
+                                style={{
+                                  width: 26, height: 26, borderRadius: 4, cursor: 'pointer',
+                                  border: `1px solid ${border}`, background: '#fff',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  color: textSecondary, fontSize: 14,
+                                }}>⚙</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}            </div>
-          )}
+              )}
+            </div>
+          </div>
         </aside>
 
       </div>
@@ -3537,26 +3108,6 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
         </div>
       )}
 
-      {/* ── ⚡ 모듈화 분리된 AI 초안 마법사 및 히스토리 모달 ── */}
-      <ArticleAiWizardModal
-        isOpen={showAiWizardModal}
-        onClose={() => setShowAiWizardModal(false)}
-        isHistoryOpen={false}
-        onCloseHistory={() => setShowAiHistoryModal(false)}
-        onApplyDraft={(draftData) => {
-          setAiDrafts(draftData);
-          applyDraftToEditor(draftData);
-          setActiveSidebarType("ai_library");
-          setAiActiveSidebarTab("article");
-        }}
-        myVacancies={myVacancies}
-        isLoadingVacancies={isLoadingVacancies}
-        fetchMyVacancies={fetchMyVacancies}
-        border={border}
-        textPrimary={textPrimary}
-        textSecondary={textSecondary}
-        textMuted={textMuted}
-      />
 
     </div>
   );

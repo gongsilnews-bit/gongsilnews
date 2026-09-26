@@ -97,10 +97,8 @@ export async function saveArticle(data: {
   author_name: string;
   author_email: string;
   status: string;
-  form_type: string;
   section1: string;
   section2: string;
-  series: string;
   title: string;
   subtitle: string;
   content: string;
@@ -168,11 +166,6 @@ export async function saveArticle(data: {
       "반려": "REJECTED",
       "삭제": "DELETED",
     };
-    const formTypeMap: Record<string, string> = {
-      "일반": "NORMAL",
-      "카드뉴스": "CARD_NEWS",
-      "갤러리": "GALLERY",
-    };
 
     let finalYoutubeUrl = data.youtube_url || null;
     if (!finalYoutubeUrl && data.content) {
@@ -190,10 +183,8 @@ export async function saveArticle(data: {
         (effectiveAuthorId === actor.user.id ? actor.user.email : null) ||
         "",
       status: statusMap[data.status] || data.status,
-      form_type: formTypeMap[data.form_type] || data.form_type,
       section1: data.section1 || null,
       section2: data.section2 || null,
-      series: data.series || null,
       title: data.title,
       subtitle: data.subtitle || null,
       content: data.content || null,
@@ -736,13 +727,17 @@ export async function getPhotoLibrary(filters?: {
 }) {
   const supabase = getAdminClient();
 
-  try {
+  const buildQuery = (excludeHidden: boolean) => {
     let query = supabase
       .from("article_media")
       .select(`id, url, filename, caption, is_favorite, created_at, file_size${filters?.authorId ? ', articles!inner(author_id)' : ''}`)
       .eq("media_type", "PHOTO")
       .order("created_at", { ascending: false });
 
+    // 포토DB에서 삭제(숨김)한 사진 제외
+    if (excludeHidden) {
+      query = query.eq("hidden_from_library", false);
+    }
     if (filters?.authorId) {
       query = query.eq('articles.author_id', filters.authorId);
     }
@@ -756,11 +751,35 @@ export async function getPhotoLibrary(filters?: {
     if (filters?.limit) {
       query = query.limit(filters.limit);
     }
+    return query;
+  };
 
-    const { data, error } = await query;
+  try {
+    let { data, error } = await buildQuery(true);
+    // hidden_from_library 컬럼 마이그레이션 적용 전이면 숨김 필터 없이 조회해 포토DB가 멈추지 않게 한다.
+    if (error && error.message?.includes("hidden_from_library")) {
+      ({ data, error } = await buildQuery(false));
+    }
     if (error) return { success: false, error: error.message };
 
     return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/* ── 포토DB에서 삭제 (보관함 목록에서만 숨김, 사진 파일·기사 첨부는 그대로 유지) ── */
+export async function hidePhotoFromLibrary(mediaId: string) {
+  const supabase = getAdminClient();
+
+  try {
+    const { error } = await supabase
+      .from("article_media")
+      .update({ hidden_from_library: true })
+      .eq("id", mediaId);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

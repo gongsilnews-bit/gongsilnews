@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { createVacancy, updateVacancy, getVacancyDetail, syncVacancyPhotos, uploadVacancyPhoto } from "@/app/actions/vacancy";
-import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
+import { getPhotoLibrary, togglePhotoFavorite, hidePhotoFromLibrary } from "@/app/actions/article";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { generateLocalPropertyDescription, type ToneType } from "@/utils/generateLocalPropertyDescription";
 import imageCompression from "browser-image-compression";
@@ -467,6 +467,17 @@ function MobileVacancyWrite() {
       }
     } else {
       alert("상태 변경에 실패했습니다.");
+    }
+  };
+
+  const handleHidePhoto = async (e: React.MouseEvent, photoId: string) => {
+    e.stopPropagation();
+    if (!confirm("이 사진을 내 포토DB에서 삭제할까요?\n기사·공실에 이미 쓰인 사진은 그대로 남습니다.")) return;
+    const res = await hidePhotoFromLibrary(photoId);
+    if (res.success) {
+      setPhotoDbItems(prev => prev.filter(p => p.id !== photoId));
+    } else {
+      alert("삭제에 실패했습니다.");
     }
   };
 
@@ -2216,6 +2227,9 @@ function MobileVacancyWrite() {
                   {photoDbItems.map((item, idx) => (
                     <div key={idx} style={{ background: "#fff", borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb", cursor: "pointer", position: "relative" }} onClick={() => handleSelectFromPhotoDb(item)}>
                       <div style={{ width: "100%", aspectRatio: "1/1", background: "#f3f4f6", backgroundImage: `url(${item.url})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+                      <button type="button" title="내 포토DB에서 삭제" onClick={(e) => handleHidePhoto(e, item.id)} style={{ position: "absolute", top: 4, left: 4, width: 24, height: 24, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                      </button>
                       <button type="button" onClick={(e) => handleToggleFav(e, item.id, item.is_favorite)} style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                         {item.is_favorite ? "⭐️" : "☆"}
                       </button>

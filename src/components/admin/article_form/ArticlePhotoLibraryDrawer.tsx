@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
+import { getPhotoLibrary, togglePhotoFavorite, hidePhotoFromLibrary } from "@/app/actions/article";
 
 export interface ArticlePhotoLibraryDrawerProps {
   isOpen: boolean;
@@ -62,6 +62,17 @@ export default function ArticlePhotoLibraryDrawer({
       }
     } else {
       alert("상태 변경에 실패했습니다.");
+    }
+  };
+
+  const handleHidePhoto = async (e: React.MouseEvent, photoId: string) => {
+    e.stopPropagation();
+    if (!confirm("이 사진을 내 포토DB에서 삭제할까요?\n기사·공실에 이미 쓰인 사진은 그대로 남습니다.")) return;
+    const res = await hidePhotoFromLibrary(photoId);
+    if (res.success) {
+      setPhotoDbItems(prev => prev.filter(p => p.id !== photoId));
+    } else {
+      alert("삭제에 실패했습니다.");
     }
   };
 
@@ -142,6 +153,15 @@ export default function ArticlePhotoLibraryDrawer({
                     onClick={() => handleSelectFromPhotoDb(photo)}>
                       <div style={{ position: "relative", width: "100%", paddingTop: "100%", background: "#f3f4f6" }}>
                         <img src={photo.url} alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                        {/* 포토DB에서 삭제(숨김) 버튼 */}
+                        <button type="button" title="내 포토DB에서 삭제" onClick={(e) => handleHidePhoto(e, photo.id)}
+                          style={{
+                            position: "absolute", top: 6, left: 6, width: 28, height: 28, background: "rgba(255,255,255,0.9)",
+                            borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                            boxShadow: "0 1px 4px rgba(0,0,0,0.2)"
+                          }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        </button>
                         {/* 즐겨찾기 별모양 버튼 */}
                         <button type="button" onClick={(e) => handleToggleFav(e, photo.id, photo.is_favorite)}
                           style={{
