@@ -1,0 +1,101 @@
+{
+  "manifest_version": 3,
+  "name": "공실뉴스 AI 유튜브작성기",
+  "version": "1.0.0",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "공실뉴스 AI 유튜브작성기 열기",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "panel.html"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "sidePanel",
+    "activeTab",
+    "scripting",
+    "unlimitedStorage",
+    "downloads"
+  ],
+  "host_permissions": [
+    "https://gongsilnews.com/*",
+    "https://*.gongsilnews.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*",
+    "https://*.oaiusercontent.com/*",
+    "https://*.googleusercontent.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://gongsilnews.com/gongsil*",
+        "https://*.gongsilnews.com/gongsil*",
+        "http://localhost/gongsil*",
+        "http://127.0.0.1/gongsil*"
+      ],
+      "js": ["shared/config.js", "content-gongsil.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gongsilnews.com/*",
+        "https://*.gongsilnews.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "exclude_matches": [
+        "https://gongsilnews.com/gongsil*",
+        "https://*.gongsilnews.com/gongsil*",
+        "http://localhost/gongsil*",
+        "http://127.0.0.1/gongsil*"
+      ],
+      "js": ["shared/config.js", "content-article.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://chatgpt.com/*"],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "shared/youtube-json.js",
+        "shared/ai-common.js",
+        "content-chatgpt.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "shared/youtube-json.js",
+        "shared/ai-common.js",
+        "content-gemini.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Y" },
+      "description": "공실뉴스 AI 유튜브작성기 열기"
+    }
+  }
+}

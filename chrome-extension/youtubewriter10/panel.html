@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>공실뉴스 AI 유튜브작성기</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand-mark">▶</div>
+    <div class="brand-copy">
+      <strong>공실뉴스</strong>
+      <span>AI 유튜브작성기 <b id="brandVersion"></b></span>
+    </div>
+    <span id="statusPill" class="status-pill">확인 중</span>
+    <button id="btnReset" class="btn-reset" type="button">초기화</button>
+  </header>
+
+  <nav class="nav-tabs" aria-label="유튜브 작성 단계">
+    <button class="nav-tab active" data-tab="source" type="button"><b>1</b> 자료</button>
+    <button class="nav-tab" data-tab="script" type="button"><b>2</b> 대본</button>
+    <button class="nav-tab" data-tab="images" type="button"><b>3</b> 이미지</button>
+  </nav>
+
+  <div id="accessLock" class="access-lock">
+    <div class="lock-card">
+      <span class="lock-icon">🔒</span>
+      <strong id="lockTitle">회원 정보를 확인하는 중입니다</strong>
+      <p id="lockText">잠시만 기다려 주세요.</p>
+      <div class="lock-actions">
+        <a id="lockLink" class="btn primary hidden" href="https://gongsilnews.com/" target="_blank" rel="noopener">공실뉴스 열기</a>
+        <button id="btnRetryAccess" class="btn secondary" type="button">다시 확인</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="scroll-area">
+    <section id="viewSource" class="view active">
+      <div class="card">
+        <div class="card-head"><span>1단계</span><strong>자료 종류</strong></div>
+        <div class="segmented" id="sourceTypeGroup">
+          <button class="active" data-value="article" type="button">공실뉴스 기사</button>
+          <button data-value="vacancy" type="button">공실 매물</button>
+          <button data-value="manual" type="button">직접 입력</button>
+        </div>
+        <p class="hint">열어 둔 기사나 공실 매물에서 확인된 사실과 실제 사진을 가져옵니다.</p>
+      </div>
+
+      <div id="pageSourceBox" class="card">
+        <button id="btnOpenSourcePage" class="btn secondary full" type="button">공실뉴스 페이지 열기</button>
+        <button id="btnGrabSource" class="btn primary full" type="button">열린 페이지에서 가져오기</button>
+        <div class="inline-row">
+          <input id="sourceUrl" type="text" placeholder="기사 주소 또는 공실번호">
+          <button id="btnLoadUrl" class="btn secondary" type="button">주소 열기</button>
+        </div>
+      </div>
+
+      <div id="manualSourceBox" class="card hidden">
+        <label class="field-label" for="manualTitle">자료 제목</label>
+        <input id="manualTitle" type="text" placeholder="영상의 참고 제목">
+        <label class="field-label" for="manualBody">기사·보도자료·메모</label>
+        <textarea id="manualBody" rows="10" placeholder="확인된 자료를 붙여 넣으세요. 없는 사실은 AI가 만들지 않도록 원문을 충분히 넣어 주세요."></textarea>
+        <button id="btnUseManual" class="btn primary full" type="button">이 자료 사용하기</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span>AI</span><strong>대본·이미지 생성 서비스</strong></div>
+        <div class="platform-grid" id="platformGroup">
+          <button class="platform active" data-value="chatgpt" type="button"><strong>ChatGPT</strong><small>로그인 필요</small></button>
+          <button class="platform" data-value="gemini" type="button"><strong>Gemini</strong><small>로그인 필요</small></button>
+        </div>
+      </div>
+
+      <div id="sourceEmpty" class="empty-note">아직 가져온 자료가 없습니다.</div>
+      <div id="sourcePreview" class="card source-preview hidden">
+        <div class="source-badge" id="sourceBadge">기사</div>
+        <h2 id="sourceTitle"></h2>
+        <p id="sourceMeta"></p>
+        <div id="sourceFacts" class="fact-list"></div>
+        <div id="sourceExcerpt" class="source-excerpt"></div>
+        <button id="btnGoScript" class="btn next full" type="button">대본 작성으로 이동 →</button>
+      </div>
+    </section>
+
+    <section id="viewScript" class="view">
+      <div id="scriptSourceWarning" class="empty-note">먼저 1 · 자료에서 참고 자료를 가져와 주세요.</div>
+      <div id="scriptWorkspace" class="hidden">
+        <div class="card source-strip">
+          <span>참고 자료</span><strong id="scriptSourceTitle"></strong>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span>설정</span><strong>영상 구성</strong></div>
+          <label class="field-label">콘텐츠 유형</label>
+          <div class="segmented three" data-setting="videoType">
+            <button class="active" data-value="listing" type="button">매물 소개</button>
+            <button data-value="news" type="button">뉴스</button>
+            <button data-value="area" type="button">지역 분석</button>
+          </div>
+          <label class="field-label">영상 길이</label>
+          <div class="segmented three" data-setting="duration">
+            <button class="active" data-value="short" type="button">60초</button>
+            <button data-value="medium" type="button">약 2분</button>
+            <button data-value="long" type="button">약 5분</button>
+          </div>
+          <label class="field-label">장면 길이</label>
+          <div class="segmented three" data-setting="sceneLength">
+            <button data-value="short" type="button">짧게</button>
+            <button class="active" data-value="medium" type="button">중간</button>
+            <button data-value="long" type="button">길게</button>
+          </div>
+          <p id="sceneLengthHint" class="hint">장면당 약 6~9초 · 정보와 화면 변화의 균형</p>
+          <label class="field-label">화면 비율</label>
+          <div class="segmented" data-setting="aspectRatio">
+            <button class="active" data-value="9:16" type="button">9:16 쇼츠</button>
+            <button data-value="16:9" type="button">16:9 일반</button>
+          </div>
+          <label class="field-label">말투</label>
+          <div class="segmented three" data-setting="tone">
+            <button class="active" data-value="news" type="button">뉴스형</button>
+            <button data-value="friendly" type="button">친근한 설명</button>
+            <button data-value="expert" type="button">전문가 분석</button>
+          </div>
+        </div>
+
+        <div class="card action-stack">
+          <button id="btnCreateScript" class="btn primary full" type="button">AI 유튜브 대본 작성</button>
+          <button id="btnPullScript" class="btn success full" type="button">완성 대본 가져오기</button>
+          <p class="hint">AI 탭이 열리면 생성이 끝난 뒤 완성 대본 가져오기를 누르세요.</p>
+        </div>
+
+        <div id="scriptEmpty" class="empty-note">아직 유튜브 대본이 없습니다.</div>
+        <div id="scriptEditor" class="hidden">
+          <div class="card script-summary">
+            <label class="field-label" for="videoTitle">유튜브 제목</label>
+            <input id="videoTitle" type="text">
+            <label class="field-label" for="videoDescription">영상 설명</label>
+            <textarea id="videoDescription" rows="4"></textarea>
+            <div class="summary-row"><span id="sceneCount">0개 장면</span><span id="estimatedDuration">예상 0초</span></div>
+          </div>
+          <div id="sceneList" class="scene-list"></div>
+          <button id="btnAddScene" class="btn secondary full" type="button">＋ 장면 추가</button>
+          <div class="card revise-card">
+            <label class="field-label" for="reviseRequest">전체 대본 수정 요청</label>
+            <textarea id="reviseRequest" rows="3" placeholder="예: 첫 장면을 더 짧고 강하게 바꿔줘"></textarea>
+            <div class="button-pair">
+              <button id="btnRequestRevise" class="btn secondary" type="button">AI 수정 요청</button>
+              <button id="btnPullRevision" class="btn success" type="button">수정 대본 가져오기</button>
+            </div>
+          </div>
+          <button id="btnGoImages" class="btn next full" type="button">대본 확정하고 이미지 작성으로 이동 →</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="viewImages" class="view">
+      <div id="imageScriptWarning" class="empty-note">먼저 2 · 대본에서 장면 대본을 완성해 주세요.</div>
+      <div id="imageWorkspace" class="hidden">
+        <div class="card source-strip">
+          <span>현재 대본</span><strong id="imageScriptTitle"></strong><small id="imageSceneCount"></small>
+        </div>
+        <div class="card">
+          <div class="card-head"><span>스타일</span><strong>한국형 장면 이미지</strong></div>
+          <div id="imageStyleGrid" class="style-grid"></div>
+          <label class="check-row"><input id="styleLocked" type="checkbox" checked> 모든 장면에 스타일 잠금</label>
+        </div>
+        <div class="card action-stack">
+          <button id="btnGenerateAll" class="btn primary full" type="button">전체 장면 이미지 만들기</button>
+          <button id="btnImportAll" class="btn secondary full" type="button">전체 장면 이미지 직접 넣기</button>
+          <button id="btnRetryFailed" class="btn secondary full" type="button">실패한 이미지만 다시 만들기</button>
+          <button id="btnStopQueue" class="btn danger full hidden" type="button">이미지 생성 중지</button>
+          <input id="bulkImageInput" class="hidden" type="file" accept="image/*" multiple>
+          <div class="progress"><span id="imageProgressBar"></span></div>
+          <p id="imageProgressText" class="hint">대기 중</p>
+        </div>
+        <div id="imageSceneList" class="image-scene-list"></div>
+        <input id="replaceImageInput" class="hidden" type="file" accept="image/*">
+
+        <div class="card thumbnail-card">
+          <div class="card-head"><span>마지막</span><strong>유튜브 썸네일</strong></div>
+          <button id="btnSuggestThumb" class="btn secondary full" type="button">썸네일 문구 3개 추천</button>
+          <div id="thumbSuggestions" class="thumb-suggestions"></div>
+          <label class="field-label" for="thumbText">썸네일 문구</label>
+          <input id="thumbText" type="text" maxlength="40" placeholder="짧고 정확한 문구">
+          <div id="thumbPreview" class="thumb-preview empty"><span>썸네일 이미지 없음</span><strong id="thumbOverlay"></strong></div>
+          <div class="button-pair">
+            <button id="btnGenerateThumb" class="btn primary" type="button">AI 썸네일 만들기</button>
+            <button id="btnImportThumb" class="btn secondary" type="button">직접 넣기</button>
+          </div>
+          <input id="thumbImageInput" class="hidden" type="file" accept="image/*">
+          <button id="btnDownloadThumb" class="btn success full" type="button">완성 썸네일 저장</button>
+        </div>
+
+        <div class="card export-card">
+          <div class="card-head"><span>내보내기</span><strong>영상 편집 준비</strong></div>
+          <button id="btnCopyScript" class="btn secondary full" type="button">전체 대본 복사</button>
+          <button id="btnDownloadImages" class="btn success full" type="button">완성 장면 이미지 모두 저장</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div id="toastHost" class="toast-host"></div>
+</div>
+
+<dialog id="importDialog" class="import-dialog">
+  <form method="dialog">
+    <div class="dialog-head"><strong>전체 장면 이미지 직접 넣기</strong><button value="cancel" aria-label="닫기">×</button></div>
+    <p class="hint">파일명에 scene-001 같은 번호가 있으면 먼저 자동 연결합니다. 적용 전에 장면을 바꿀 수 있습니다.</p>
+    <label class="check-row"><input type="radio" name="importMode" value="empty" checked> 빈 장면만 채우기</label>
+    <label class="check-row"><input type="radio" name="importMode" value="replace"> 기존 이미지까지 바꾸기</label>
+    <div id="importMappingList" class="mapping-list"></div>
+    <div class="button-pair sticky-buttons">
+      <button id="btnCancelImport" class="btn secondary" value="cancel">취소</button>
+      <button id="btnApplyImport" class="btn primary" value="default" type="button">확인하고 적용</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="shared/config.js"></script>
+<script src="shared/ui.js"></script>
+<script src="shared/youtube-json.js"></script>
+<script src="shared/youtube-prompt.js"></script>
+<script src="shared/media-store.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>

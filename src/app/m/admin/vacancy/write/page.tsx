@@ -1101,7 +1101,7 @@ function MobileVacancyWrite() {
         {/* 1. 공실광고분류 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>공실광고분류</div>
-          <label style={labelStyle}>대분류</label>
+          <label style={labelStyle}>대분류 <span style={{color:"#ef4444"}}>*</span></label>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:12 }}>
             {Object.keys(SUB_CATEGORIES).map(t => <SBtn key={t} label={t} sel={propertyType===t} onClick={() => { 
               setPropertyType(t); 
@@ -1133,11 +1133,11 @@ function MobileVacancyWrite() {
             </div>
           )}
           <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-            <div style={{flex:1}}><label style={labelStyle}>시/도</label><input id="input-sido" type="text" value={sido} onChange={e=>setSido(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 자동입력" style={{...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>시/도 <span style={{color:"#ef4444"}}>*</span></label><input id="input-sido" type="text" value={sido} onChange={e=>setSido(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 자동입력" style={{...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/></div>
             <div style={{flex:1}}><label style={labelStyle}>시/군/구</label><input id="input-sigungu" type="text" value={sigungu} onChange={e=>setSigungu(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 자동입력" style={{...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/></div>
           </div>
           <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-            <div style={{flex:1}}><label style={labelStyle}>동/읍/면</label><input id="input-dong" type="text" value={dong} onChange={e=>setDong(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 자동입력" style={{...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>동/읍/면 <span style={{color:"#ef4444"}}>*</span></label><input id="input-dong" type="text" value={dong} onChange={e=>setDong(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 자동입력" style={{...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/></div>
             <div style={{flex:1}}><label style={labelStyle}>건물명 {!isFieldExposed("buildingName") && isRealtor && <PrivateTag/>}</label><input type="text" value={buildingName} onChange={e=>setBuildingName(e.target.value)} placeholder="건물명" style={inputStyle}/></div>
           </div>
           <label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && isRealtor && <PrivateTag/>}</label>
@@ -1219,7 +1219,7 @@ function MobileVacancyWrite() {
         {/* 2. 거래 및 상세 정보 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
           <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>거래 및 상세 정보</div>
-          <label style={labelStyle}>거래유형</label>
+          <label style={labelStyle}>거래유형 <span style={{color:"#ef4444"}}>*</span></label>
           <div style={{ display:"flex", gap:8, marginBottom:14 }}>
             {["매매","전세","월세","단기"]
               .filter(t => !(propertyType === "원룸·투룸(풀옵션)" && t === "매매"))
@@ -1656,7 +1656,7 @@ function MobileVacancyWrite() {
             </div>
             
             <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>호실 용도 (필수)</label>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6, display: "block" }}>호실 용도</label>
               <select value={jisanUsage} onChange={(e) => setJisanUsage(e.target.value)} style={{ width: "100%", height: 46, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 14px", fontSize: 14, background: "#fff" }}>
                 <option value="">선택</option>
                 {["제조형 공장", "업무형 공장", "지원시설(상가)", "지원시설(업무)", "창고", "기숙사", "기타"].map(v => (
@@ -2045,7 +2045,7 @@ function MobileVacancyWrite() {
           <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
             <div style={{ fontSize:16, fontWeight:800, color:"#1a73e8", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>부동산 전용</div>
 
-            <label style={labelStyle}>중개보수 지급 <span style={{color:"#ef4444"}}>*</span></label>
+            <label style={labelStyle}>중개보수 지급</label>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
               {["공동중개","수수료25%","수수료50%","수수료75%","수수료100%"].map(opt => (
                 <button 
@@ -2070,7 +2070,7 @@ function MobileVacancyWrite() {
               ))}
             </div>
 
-            <label style={labelStyle}>노출선택 <span style={{color:"#ef4444"}}>*</span></label>
+            <label style={labelStyle}>노출선택</label>
             <div style={{ display:"flex", gap:10, marginBottom:14 }}>
               <div onClick={()=>setExposureType("부동산노출")} style={{ flex:1, padding:12, borderRadius:10, cursor:"pointer", border: exposureType==="부동산노출"?"1px solid #1a73e8":"1px solid #e5e7eb", background: exposureType==="부동산노출"?"#eff6ff":"#fff", transition:"all 0.15s ease" }}>
                 <div style={{ fontSize:14, fontWeight:800, color: exposureType==="부동산노출"?"#1a73e8":"#374151", marginBottom:4 }}>부동산노출</div>

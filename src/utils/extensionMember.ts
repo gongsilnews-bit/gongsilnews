@@ -2,16 +2,19 @@ import type { NextRequest } from "next/server";
 import { createClient as createAdminSupabase } from "@supabase/supabase-js";
 import { createClient as createCookieSupabase } from "@/utils/supabase/server";
 import { getEffectivePlan } from "@/utils/planCheck";
+import { isAdminRole } from "@/utils/permissionCheck";
 
 /**
  * 크롬 확장(공실뉴스 AI 기사작성기) 회원 판정
  *
  * - 공실뉴스 로그인 쿠키(확장은 gongsilnews.com 권한으로 쿠키를 함께 보낸다) 또는 Bearer 토큰으로만 판정한다.
  * - 3단계 블로그 작성: 공실뉴스부동산·공실스터디부동산(요금제 기간 내)·최고관리자만.
+ * - AI 유튜브작성기: 위와 같은 회원 범위지만 별도 권한 값으로 응답한다.
  *   1·2단계는 비회원도 쓸 수 있으므로 여기서 막지 않는다.
  */
 
 export const BLOG_PLANS = ["admin", "news_premium", "study_premium"] as const;
+export const YOUTUBE_WRITER_PLANS = ["admin", "news_premium", "study_premium"] as const;
 
 export const PLAN_LABELS: Record<string, string> = {
   admin: "최고관리자",
@@ -28,6 +31,7 @@ export type ExtensionMember = {
   plan: string;
   planLabel: string;
   canBlog: boolean;
+  canYoutubeWriter: boolean;
 };
 
 function getAdminClient() {
@@ -61,7 +65,7 @@ export async function getExtensionMember(req: NextRequest): Promise<ExtensionMem
 
   const plan = getEffectivePlan(member);
   const role = member.role || "";
-  const isAdmin = plan === "admin" || role === "ADMIN";
+  const isAdmin = plan === "admin" || isAdminRole(role);
   return {
     id: member.id,
     name: member.name || "공실뉴스 회원",
@@ -70,5 +74,6 @@ export async function getExtensionMember(req: NextRequest): Promise<ExtensionMem
     plan,
     planLabel: PLAN_LABELS[plan] || (role === "REALTOR" ? "무료부동산" : "일반회원"),
     canBlog: isAdmin || (BLOG_PLANS as readonly string[]).includes(plan),
+    canYoutubeWriter: isAdmin || (YOUTUBE_WRITER_PLANS as readonly string[]).includes(plan),
   };
 }

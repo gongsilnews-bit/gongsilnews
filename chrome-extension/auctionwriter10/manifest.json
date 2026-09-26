@@ -5,11 +5,18 @@
   "description": "오른쪽 작업창에서 공실열람 경매·공매 물건을 기사와 네이버 블로그 초안으로 만들고 각 글쓰기 화면으로 보냅니다.",
   "icons": {
     "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "공실뉴스 AI 경매기사작성기 열기"
+    "default_title": "공실뉴스 AI 경매기사작성기 열기",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "side_panel": {
     "default_path": "panel.html"

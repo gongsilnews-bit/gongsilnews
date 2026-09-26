@@ -24,12 +24,21 @@ export async function GET(req: NextRequest) {
 
     if (!member) {
       return NextResponse.json(
-        { success: true, isLoggedIn: false, user: null, canBlog: false, tier: "guest", dailyLimit: 3, dailyUsed: 0 },
+        {
+          success: true,
+          isLoggedIn: false,
+          user: null,
+          canBlog: false,
+          canYoutubeWriter: false,
+          tier: "guest",
+          dailyLimit: 3,
+          dailyUsed: 0,
+        },
         { headers: corsHeaders }
       );
     }
 
-    const isPremium = member.plan === "admin" || member.plan === "news_premium" || member.role === "ADMIN";
+    const isPremium = member.canBlog || member.canYoutubeWriter;
     return NextResponse.json(
       {
         success: true,
@@ -44,6 +53,7 @@ export async function GET(req: NextRequest) {
           isPremium,
         },
         canBlog: member.canBlog,
+        canYoutubeWriter: member.canYoutubeWriter,
         tier: isPremium ? "premium" : "free",
         dailyLimit: isPremium ? 9999 : 5,
         dailyUsed: 0,

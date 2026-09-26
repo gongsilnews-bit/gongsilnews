@@ -1152,7 +1152,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {/* 상세 종류 선택 (2차) */}
             {SUB_CATEGORIES[propertyType] && (
               <div style={{ marginBottom: 24 }}>
-                <label style={{ ...labelStyle, color: "#f97316", fontSize: 13 }}>상세 종류 선택 (2차) {reqMark}</label>
+                <label style={{ ...labelStyle, color: "#f97316", fontSize: 13 }}>상세 종류 선택 (2차)</label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {SUB_CATEGORIES[propertyType].map(s => (
                     <SelectBtn key={s} label={s} selected={subCategory === s} onClick={() => {
@@ -1991,7 +1991,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 
                 <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{...labelStyle, marginBottom: 6}}>호실 용도 (필수)</label>
+                    <label style={{...labelStyle, marginBottom: 6}}>호실 용도</label>
                     <select value={jisanUsage} onChange={(e) => setJisanUsage(e.target.value)} style={{...inputStyle, background: "#fff", width: "100%"}}>
                       <option value="">선택</option>
                       {["제조형 공장", "업무형 공장", "지원시설(상가)", "지원시설(업무)", "창고", "기숙사", "기타"].map(v => (
@@ -2345,7 +2345,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ borderTop: `1px dashed ${border}`, margin: "32px 0" }} />
 
                 {/* ── 섹션 3: 중개수수료 ── */}
-                <label style={labelStyle}>중개수수료 {reqMark}</label>
+                <label style={labelStyle}>중개수수료</label>
                 <div style={{ border: `1px solid ${border}`, borderRadius: 10, padding: "20px 24px", marginBottom: 24 }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2389,7 +2389,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 
                 {/* ── 중개보수 지급 / 노출 선택 ── */}
                 <div style={{ marginBottom: 24 }}>
-                  <label style={labelStyle}>중개보수 지급 <span style={{ color: "#ef4444" }}>*</span></label>
+                  <label style={labelStyle}>중개보수 지급</label>
                   <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
                     {["공동중개", "수수료25%", "수수료50%", "수수료75%", "수수료100%"].map(opt => (
                       <button
@@ -2405,7 +2405,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     ))}
                   </div>
 
-                  <label style={labelStyle}>노출선택 <span style={{ color: "#ef4444" }}>*</span></label>
+                  <label style={labelStyle}>노출선택</label>
                   <div style={{ display: "flex", gap: 16 }}>
                     <div
                       onClick={() => setExposureType("부동산노출")}
@@ -2482,11 +2482,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ border: `1px solid ${darkMode ? "#f9731655" : "#fed7aa"}`, borderRadius: 10, background: darkMode ? "#331c12" : "#fff7ed", padding: "20px 24px", position: "relative", overflow: "hidden", marginBottom: 24 }}>
                   <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: "#ea580c" }} />
                   <label style={{ ...labelStyle, marginTop: 0 }}>
-                    임대인명 <span style={{ color: "#ea580c", fontSize: 12, fontWeight: 600 }}>[중개사님만 확인 가능한 비공개 메모 정보입니다.]</span> <span style={{ color: "#ef4444" }}>*</span>
+                    임대인명 <span style={{ color: "#ea580c", fontSize: 12, fontWeight: 600 }}>[중개사님만 확인 가능한 비공개 메모 정보입니다.]</span>
                   </label>
                   <input type="text" placeholder="예: 착한임대" value={landlordName} onChange={(e) => setLandlordName(e.target.value)} style={{ ...inputStyle, marginBottom: 16, background: cardBg }} />
 
-                  <label style={labelStyle}>임대인 연락처 <span style={{ color: "#ef4444" }}>*</span></label>
+                  <label style={labelStyle}>임대인 연락처</label>
                   <input type="text" placeholder="예: 010-8831-9450" value={landlordPhone} onChange={(e) => setLandlordPhone(formatPhoneNumber(e.target.value))} style={{ ...inputStyle, marginBottom: 16, background: cardBg }} />
 
                   <label style={labelStyle}>메모</label>
@@ -2501,7 +2501,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <input type="checkbox" id="consent" checked={consent} onChange={(e) => setConsent(e.target.checked)}
                   style={{ marginTop: 3, accentColor: "#3b82f6", width: 18, height: 18, flexShrink: 0, cursor: "pointer" }} />
                 <label htmlFor="consent" style={{ fontSize: 13, color: textSecondary, lineHeight: 1.6, cursor: "pointer" }}>
-                  <strong style={{ color: textPrimary }}>공실광고 광고 진행에 동의합니다. (필수)</strong><br />
+                  <strong style={{ color: textPrimary }}>공실광고 광고 진행에 동의합니다.</strong><br />
                   공실뉴스 부동산이 빠른 계약을 위해 네이버부동산, 유튜브, 블로그 등 다양한 광고를 진행하는 것에 동의합니다.
                 </label>
               </div>

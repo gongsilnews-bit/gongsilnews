@@ -1,0 +1,2 @@
+GYWAI.listen(GYW.CHATGPT);
+
