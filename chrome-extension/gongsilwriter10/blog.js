@@ -388,10 +388,22 @@
 
   async function pullBlogArticle(readOpts = {}) {
     if (!B.aiTabId) throw new Error("먼저 AI 블로그 초안 작성을 눌러 주세요.");
-    const response = await askTab(B.aiTabId, { type: "GW_READ", ...readOpts });
-    if (!response.ok) throw new Error(response.reason || "AI 응답을 읽지 못했습니다.");
+    const onStage = (stage) => status(`블로그 글 읽는 중 (${stage})`, "busy");
+    /* 새 답변을 기다리는 중(수정 요청 직후)이 아니면 원문부터 — 화면 읽기는 ChatGPT 코드 상자에서 자주 끊긴다 */
+    let text = readOpts.minCount ? "" : await GWChatGptDirect.read(B.aiTabId, onStage);
+    if (!text) {
+      const response = await askTab(B.aiTabId, { type: "GW_READ", ...readOpts });
+      if (response.ok) text = response.text;
+      else if (response.unreadable) text = await GWChatGptDirect.read(B.aiTabId, onStage);
+      if (!text) {
+        throw new Error(
+          (response.reason || "AI 응답을 읽지 못했습니다.") +
+          " 답변이 다 끝났는지 확인하고 AI 탭을 새로고침(F5)한 뒤 다시 눌러 주세요."
+        );
+      }
+    }
 
-    const parsed = GWArticleJson.parse(response.text);
+    const parsed = GWArticleJson.parse(text);
     if (!parsed.ok) {
       throw new Error(
         parsed.reason + " AI 탭에서 'JSON 형식으로 다시 출력해줘'라고 요청한 뒤 다시 눌러 주세요."

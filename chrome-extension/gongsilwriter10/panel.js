@@ -482,68 +482,17 @@
     switchTab("draft");
   }
 
-  /* AI 답변 아래 [복사] 버튼을 대신 눌러 원문을 받는다.
-     ChatGPT 는 JSON 을 스크롤 상자에 담아 보이는 줄만 그리므로 화면 글자로는 끝까지 읽을 수 없다.
-     복사 버튼은 답변이 다 끝나야 생기므로, 복사로 받은 글은 곧 완성된 답변이다.
-     페이지의 클립보드 쓰기를 잠깐 가로채야 해서 페이지 쪽(MAIN)에서 실행한다. */
-  async function readByCopyButton(tabId) {
-    try {
-      const [run] = await chrome.scripting.executeScript({
-        target: { tabId },
-        world: "MAIN",
-        func: async () => {
-          const answers = document.querySelectorAll('[data-message-author-role="assistant"]');
-          const last = answers[answers.length - 1];
-          if (!last) return null;
-          const turn = last.closest('article, [data-testid^="conversation-turn"]');
-          if (!turn) return null;
-          const buttons = turn.querySelectorAll('button[data-testid="copy-turn-action-button"]');
-          const btn = buttons[buttons.length - 1];
-          if (!btn) return null;
-
-          const clip = navigator.clipboard;
-          const keep = { writeText: clip.writeText, write: clip.write };
-          let got = null;
-          clip.writeText = async (text) => { got = String(text); };
-          clip.write = async (items) => {
-            for (const item of items) {
-              if (item.types.includes("text/plain")) {
-                got = await (await item.getType("text/plain")).text();
-                return;
-              }
-            }
-          };
-          try {
-            btn.click();
-            for (let i = 0; i < 30 && got === null; i += 1) {
-              await new Promise((r) => setTimeout(r, 100));
-            }
-          } finally {
-            clip.writeText = keep.writeText;
-            clip.write = keep.write;
-          }
-          return got;
-        },
-      });
-      const text = run && run.result;
-      return typeof text === "string" && GWArticleJson.hasCompleteObject(text) ? text : "";
-    } catch (e) {
-      console.warn("[공실뉴스] 복사 버튼으로 읽기 실패", e);
-      return "";
-    }
-  }
-
   async function pullArticle(readOpts = {}) {
     /* 새 답변을 기다리는 중(수정 요청 직후)이 아니면 복사 버튼부터 — 가장 정확하고 기다릴 필요도 없다 */
-    if (!readOpts.minCount && S.platform === "chatgpt") {
-      const copied = await readByCopyButton(S.aiTabId);
-      if (copied) return applyArticleText(copied);
+    if (!readOpts.minCount) {
+      const direct = await GWChatGptDirect.read(S.aiTabId, (stage) => status(`기사 읽는 중 (${stage})`, "busy"));
+      if (direct) return applyArticleText(direct);
     }
 
     let res = await askTab(S.aiTabId, { type: "GW_READ", ...readOpts });
-    if (!res.ok && res.unreadable && S.platform === "chatgpt") {
-      const copied = await readByCopyButton(S.aiTabId);
-      if (copied) res = { ok: true, text: copied };
+    if (!res.ok && res.unreadable) {
+      const direct = await GWChatGptDirect.read(S.aiTabId, (stage) => status(`기사 읽는 중 (${stage})`, "busy"));
+      if (direct) res = { ok: true, text: direct };
     }
     if (!res.ok) {
       if (!res.unreadable) throw new Error(res.reason || "응답을 읽지 못했습니다.");
@@ -1199,6 +1148,7 @@
   }
 
   /* ═════════════ 시작 ═════════════ */
+  $("brandVersion").textContent = "v" + chrome.runtime.getManifest().version;
   (async () => {
     await restore();
     refreshButtons();
