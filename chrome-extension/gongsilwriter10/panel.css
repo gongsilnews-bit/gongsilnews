@@ -904,14 +904,6 @@ body {
   color: #047857;
 }
 
-.btn-blog-link.primary {
-  border-color: #03c75a;
-  background: #03c75a;
-  color: #fff;
-}
-
-.btn-blog-link.primary:hover { background: #02ad4e; color: #fff }
-
 .btn-send.naver {
   background: linear-gradient(135deg, #03c75a, #02ad4e);
   box-shadow: 0 4px 10px rgba(3, 199, 90, .28);
