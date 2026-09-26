@@ -5,7 +5,6 @@ import { geocodeAddress } from "@/app/actions/geocode";
 import { createClient } from "@/utils/supabase/client";
 import { createVacancy, syncVacancyPhotos, updateVacancy, uploadVacancyPhoto } from "@/app/actions/vacancy";
 import { getPhotoLibrary, togglePhotoFavorite } from "@/app/actions/article";
-import { extractPropertyInfoFromImage } from "@/app/actions/ai";
 import { generateLocalPropertyDescription, type ToneType } from "@/utils/generateLocalPropertyDescription";
 import { useRouter } from "next/navigation";
 
@@ -110,6 +109,11 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [propertyType, setPropertyType] = useState<string>("아파트·오피스텔");
   const [subCategory, setSubCategory] = useState<string>("아파트");
   const [tradeType, setTradeType] = useState<string>("매매");
+
+  // 원룸·투룸(풀옵션)은 매매 버튼이 없으므로, 기본값 "매매"가 남아 금액 칸이 "매매가"로 뜨지 않게 전세로 맞춘다.
+  useEffect(() => {
+    if (propertyType === "원룸·투룸(풀옵션)" && tradeType === "매매") setTradeType("전세");
+  }, [propertyType, tradeType]);
   const [commissionType, setCommissionType] = useState<string>("법정수수료");
   const [commissionAmount, setCommissionAmount] = useState("");
   const [commissionEtc, setCommissionEtc] = useState("");
@@ -122,8 +126,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const submittingRef = React.useRef(false);
 
   // 주거형 추가 필드
-  const [roomCount, setRoomCount] = useState("1");
-  const [bathCount, setBathCount] = useState("1");
+  const [roomCount, setRoomCount] = useState("");
+  const [bathCount, setBathCount] = useState("");
   const [direction, setDirection] = useState("");
 
   // 상업형 추가 필드
@@ -315,9 +319,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   };
 
   // AI 연동
-  const aiFileRef = React.useRef<HTMLInputElement>(null);
-  const [parsingAi, setParsingAi] = useState(false);
-  const [aiDone, setAiDone] = useState(false); // AI 분석 완료 후 수동 입력 필드 강조용
 
   useEffect(() => {
     if (initialClientName) setClientName(initialClientName);
@@ -893,6 +894,38 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   };
 
   const reqMark = <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>;
+  // 분류별 필수 입력 항목 (모바일 등록폼과 동일)
+  // - 아파트·오피스텔: 금액(매매가/보증금/월세)·공급/전용면적·방/욕실 개수
+  // - 빌라·주택: 금액(매매가/보증금/월세)·방/욕실 개수
+  // - 원룸·투룸(풀옵션): 금액(보증금/월세)·방/욕실 개수
+  // - 상가·사무실·건물·공장·토지: 금액(매매가/보증금/월세)·공급/전용면적
+  //   (단, 공급/전용면적 칸이 없는 토지와 건물/빌딩·공장/창고 매매는 면적 제외, 토지는 대지면적 필수)
+  // - 분양(주거형: 아파트·오피스텔·빌라·도시형생활주택·생활숙박시설): 금액(매매가/보증금/월세)·방/욕실 개수
+  // - 분양(상가/업무): 금액(매매가/보증금/월세)·공급/전용면적
+  const isApt = propertyType === "아파트·오피스텔";
+  const isVilla = propertyType === "빌라·주택";
+  const isOneRoom = propertyType === "원룸·투룸(풀옵션)";
+  const isBunyang = propertyType === "분양";
+  const isBunyangBiz = isBunyang && subCategory === "상가/업무";
+  const hasRequiredRule = isApt || isVilla || isOneRoom || isCommercial || isBunyang;
+  const isWholeBuildingSale = tradeType === "매매" && ((isVilla && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory)));
+  const areaRequired = (isApt || isCommercial || isBunyangBiz) && subCategory !== "토지" && !isWholeBuildingSale;
+  const roomRequired = isApt || isVilla || isOneRoom || (isBunyang && !isBunyangBiz);
+  const priceReq = hasRequiredRule ? reqMark : null;
+  const areaReq = areaRequired ? reqMark : null;
+  const landReq = isCommercial && isLand ? reqMark : null;
+  const getRequiredMissing = () => {
+    const missing: string[] = [];
+    if (!hasRequiredRule) return missing;
+    if (!deposit) missing.push(tradeType === "매매" ? "매매가" : "보증금");
+    if ((tradeType === "월세" || tradeType === "단기") && !monthly) missing.push("월세");
+    if (areaRequired && !supplyM2 && !supplyPy) missing.push("공급면적");
+    if (areaRequired && !exclusiveM2 && !exclusivePy) missing.push("전용면적");
+    if (landReq && !landShareM2 && !landSharePy) missing.push("대지면적");
+    if (roomRequired && !roomCount) missing.push("방 개수");
+    if (roomRequired && !bathCount) missing.push("욕실 개수");
+    return missing;
+  };
 
   // ── 선택 버튼 렌더러 ──
   const SelectBtn = ({ label, selected, onClick, flex }: { label: string; selected: boolean; onClick: () => void; flex?: number }) => (
@@ -971,48 +1004,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
   return (
     <div style={{ flex: 1, background: bg, position: "relative", overflowY: "auto", height: "100%" }}>
-      {/* ── AI 이미지 분석 로딩 오버레이 ── */}
-      {parsingAi && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)",
-          zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <div style={{
-            background: darkMode ? "#25262b" : "#fff", borderRadius: 20, padding: "48px 56px",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.3)", textAlign: "center", maxWidth: 400,
-          }}>
-            <div style={{
-              width: 64, height: 64, margin: "0 auto 24px",
-              border: "4px solid #e5e7eb", borderTopColor: "#f59e0b",
-              borderRadius: "50%",
-              animation: "aiSpin 1s linear infinite",
-            }} />
-            <div style={{ fontSize: 20, fontWeight: 800, color: darkMode ? "#e1e4e8" : "#111827", marginBottom: 10 }}>
-              ✨ AI가 매물 정보를 분석 중입니다
-            </div>
-            <div style={{ fontSize: 14, color: darkMode ? "#9ca3af" : "#6b7280", lineHeight: 1.6 }}>
-              이미지에서 매물 유형, 금액, 면적, 층수 등을<br />자동으로 추출하여 입력하고 있습니다...
-            </div>
-            <div style={{
-              marginTop: 24, height: 4, background: darkMode ? "#333" : "#e5e7eb", borderRadius: 2, overflow: "hidden",
-            }}>
-              <div style={{
-                height: "100%", background: "linear-gradient(90deg, #f59e0b, #f97316, #f59e0b)",
-                backgroundSize: "200% 100%",
-                animation: "aiProgress 1.5s ease-in-out infinite",
-                borderRadius: 2,
-              }} />
-            </div>
-          </div>
-        </div>
-      )}
-      <style>{`
-        @keyframes aiSpin { to { transform: rotate(360deg); } }
-        @keyframes aiProgress { 0% { background-position: 200% 0; width: 30%; } 50% { width: 70%; } 100% { background-position: -200% 0; width: 30%; } }
-        @keyframes aiPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
-      `}</style>
-      
       {/* AI 멘트 로딩 오버레이 제거됨 - 로컬 템플릿 기반 즉시 생성 */}
       {/* ── 타이틀 및 백버튼 ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "28px 24px 20px", borderBottom: `1px solid ${border}`, background: cardBg }}>
@@ -1034,77 +1025,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <button type="button" onClick={openPrevMenuModal} style={{ width: "100%", height: 48, border: `1px solid ${border}`, borderRadius: 8, background: cardBg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, fontWeight: 600, color: textPrimary, marginTop: 16 }}>
               ↻ 이전 공실광고 불러오기
             </button>
-
-            {/* 이미지로 등록하기 */}
-            <input type="file" ref={aiFileRef} hidden onChange={async (e) => {
-              if (e.target.files && e.target.files[0]) {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = async () => {
-                  const base64Params = (reader.result as string).split(',');
-                  if (base64Params.length !== 2) return;
-                  const base64Data = base64Params[1];
-                  const mimeType = file.type;
-                  
-                  setParsingAi(true);
-                  try {
-                    const res = await extractPropertyInfoFromImage(base64Data, mimeType, ownerId);
-                    if (!res.success || !res.data) {
-                      alert('이미지 분석 실패: ' + (res.error || "알 수 없는 오류"));
-                      return;
-                    }
-                    
-                    const p = res.data;
-                    if (p.property_type) {
-                      setPropertyType(p.property_type);
-                      setSubCategory(SUB_CATEGORIES[p.property_type]?.[0] || "");
-                    }
-                    if (p.trade_type) setTradeType(p.trade_type);
-                    // 매매가: trade_type이 매매일 때 sale_price를 deposit(보증금) 필드에 매핑
-                    if (p.trade_type === "매매" && p.sale_price) {
-                      setDeposit(String(p.sale_price));
-                    } else if (p.deposit) {
-                      setDeposit(String(p.deposit));
-                    }
-                    if (p.monthly_rent) setMonthly(String(p.monthly_rent));
-                    if (p.maintenance_fee) setMaintenance(String(p.maintenance_fee));
-                    if (p.current_floor) setCurrentFloor(String(p.current_floor));
-                    if (p.total_floor) setTotalFloor(String(p.total_floor));
-                    if (p.room_count) setRoomCount(String(p.room_count));
-                    if (p.bath_count) setBathCount(String(p.bath_count));
-                    if (p.supply_m2) {
-                      setSupplyM2(String(p.supply_m2));
-                      setSupplyPy((Number(p.supply_m2) * 0.3025).toFixed(1));
-                    }
-                    if (p.exclusive_m2) {
-                      setExclusiveM2(String(p.exclusive_m2));
-                      setExclusivePy((Number(p.exclusive_m2) * 0.3025).toFixed(1));
-                    }
-                    if (p.direction) setDirection(p.direction);
-                    if (p.building_name) setBuildingName(p.building_name);
-                    if (p.description) setDescription(p.description);
-                    
-                    setAiDone(true);
-                    alert('✅ AI 이미지 분석 완료! 추출된 정보가 자동으로 입력되었습니다.\n\n※ 빨간 테두리로 표시된 항목은 직접 입력해주세요.');
-                  } catch(err: any) {
-                    alert('오류 발생: ' + err.message);
-                  } finally {
-                    setParsingAi(false);
-                    if(aiFileRef.current) aiFileRef.current.value = "";
-                  }
-                };
-                reader.readAsDataURL(file);
-              }
-            }} accept="image/*" />
-            <button type="button" onClick={() => aiFileRef.current?.click()} disabled={parsingAi} style={{ width: "100%", height: 56, border: "none", borderRadius: 8, background: darkMode ? "#3b2f1e" : "#fef3c7", cursor: parsingAi ? "wait" : "pointer", display: "flex", alignItems: "center", gap: 10, padding: "0 16px", marginTop: 10, transition: "opacity 0.2s", opacity: parsingAi ? 0.6 : 1 }} onMouseEnter={e => { if(!parsingAi) e.currentTarget.style.opacity = "0.8" }} onMouseLeave={e => { if(!parsingAi) e.currentTarget.style.opacity = "1" }}>
-              <span style={{ fontSize: 22 }}>✨</span>
-              <div style={{ textAlign: "left" }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#d97706" }}>{parsingAi ? "AI 분석 중..." : "이미지로 등록하기"}</div>
-                <div style={{ fontSize: 11, color: "#b45309", marginTop: 2 }}>{parsingAi ? "잠시만 기다려주세요..." : "네이버부동산, 전단지, 캡처 자동 분석"}</div>
-              </div>
-            </button>
-
-
 
             {/* 구분선 */}
             <div style={{ borderTop: `1px dashed ${border}`, margin: "20px 0" }} />
@@ -1264,7 +1184,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <input type="text" placeholder="주소검색 후 자동입력" value={dong} onChange={(e) => setDong(e.target.value)} disabled={!addressSearchCompleted} style={{ ...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed" }} />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>나머지 주소 {!isFieldExposed("detailAddr") && userRole !== "user" && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
+                <label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && userRole !== "user" && <span style={{ color: "#f97316", fontSize: 12 }}>(비공개)</span>}</label>
                 <input type="text" placeholder="주소검색 후 상세주소 입력" value={detailAddr} onChange={(e) => setDetailAddr(e.target.value)} disabled={!addressSearchCompleted} style={{ ...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed" }} />
               </div>
             </div>
@@ -1459,7 +1379,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {tradeType === "매매" && (
               <div style={{ marginBottom: 24 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <label style={{ ...labelStyle, marginBottom: 0 }}>매매가</label>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>매매가{priceReq}</label>
                   {deposit && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -1472,7 +1392,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {(tradeType === "전세") && (
               <div style={{ marginBottom: 24 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <label style={{ ...labelStyle, marginBottom: 0 }}>보증금</label>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>보증금{priceReq}</label>
                   {deposit && <span style={{ color: "#f97316", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -1487,7 +1407,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <label style={{ ...labelStyle, marginBottom: 0 }}>보증금</label>
+                      <label style={{ ...labelStyle, marginBottom: 0 }}>보증금{priceReq}</label>
                       {deposit && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(deposit)}</span>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -1498,7 +1418,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                       <label style={{ ...labelStyle, marginBottom: 0 }}>월세</label>
+                       <label style={{ ...labelStyle, marginBottom: 0 }}>월세{priceReq}</label>
                        {monthly && <span style={{ color: "#3b82f6", fontSize: 13, fontWeight: 700 }}>{formatKoreanAmount(monthly)}</span>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -1526,7 +1446,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             {!isLand && !(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory)))) && (
             <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>공급면적</label>
+                <label style={labelStyle}>공급면적{areaReq}</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <input type="number" placeholder="예: 25.4" value={supplyPy}
                     onChange={(e) => handlePyChange(e.target.value, setSupplyPy, setSupplyM2)}
@@ -1540,7 +1460,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 </div>
               </div>
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>전용면적</label>
+                <label style={labelStyle}>전용면적{areaReq}</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <input type="number" placeholder="예: 18.8" value={exclusivePy}
                     onChange={(e) => handlePyChange(e.target.value, setExclusivePy, setExclusiveM2)}
@@ -1561,7 +1481,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               {/* 1행: 대지면적 | 용도지역 (또는 연면적) */}
               <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>대지면적</label>
+                  <label style={labelStyle}>대지면적{landReq}</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <input type="number" placeholder="예: 10" value={landSharePy}
                       onChange={(e) => handlePyChange(e.target.value, setLandSharePy, setLandShareM2)}
@@ -1891,14 +1811,16 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               <>
                 <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>방 개수</label>
+                    <label style={labelStyle}>방 개수{priceReq}</label>
                     <select value={roomCount} onChange={(e) => setRoomCount(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                      <option value="">선택</option>
                       {["1","2","3","4","5","6","7개 이상"].map(n => <option key={n}>{n}</option>)}
                     </select>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>욕실 개수</label>
+                    <label style={labelStyle}>욕실 개수{priceReq}</label>
                     <select value={bathCount} onChange={(e) => setBathCount(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                      <option value="">선택</option>
                       {["1","2","3","4","5개 이상"].map(n => <option key={n}>{n}</option>)}
                     </select>
                   </div>
@@ -2536,6 +2458,13 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   alert("시/도, 시/군/구, 읍/면/동/리는 필수입니다.");
                   return;
                 }
+                if (!isDraft) {
+                  const reqMissing = getRequiredMissing();
+                  if (reqMissing.length) {
+                    alert(`${propertyType} 필수 입력 항목을 채워주세요.\n\n- ${reqMissing.join("\n- ")}`);
+                    return;
+                  }
+                }
                 if (!isDraft && userRole !== 'realtor' && (!clientName || !clientPhone)) {
                   alert("의뢰인 이름과 연락처는 필수입니다.");
                   return;
@@ -2837,28 +2766,21 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <h2 style={{ fontSize: 17, fontWeight: 800, color: textPrimary, margin: "0 0 16px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 12 }}>작성 체크리스트</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
               {checkItems.map((item, i) => {
-                const needsManual = aiDone && !item.done;
                 return (
-                  <div key={i} style={{
-                    display: "flex", alignItems: "center", gap: 8, fontSize: 14,
-                    ...(needsManual ? { background: darkMode ? "#3b1c1c" : "#fef2f2", padding: "8px 12px", borderRadius: 8, border: "1px solid #fca5a5", animation: "aiPulse 2s ease-in-out infinite" } : {})
-                  }}>
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
                     {item.done ? (
                       <span style={{ color: "#10b981", fontWeight: 700 }}>✓</span>
-                    ) : needsManual ? (
-                      <span style={{ color: "#ef4444", fontSize: 16 }}>⚠</span>
                     ) : (
                       <span style={{ color: "#d1d5db", fontSize: 16 }}>○</span>
                     )}
-                    <span style={{ color: item.done ? "#10b981" : needsManual ? "#ef4444" : textSecondary, fontWeight: item.done ? 600 : needsManual ? 700 : 400 }}>{item.label}</span>
-                    {needsManual && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: "#ef4444", background: darkMode ? "#5c1a1a" : "#fee2e2", padding: "2px 8px", borderRadius: 10 }}>📌 직접 입력</span>}
+                    <span style={{ color: item.done ? "#10b981" : textSecondary, fontWeight: item.done ? 600 : 400 }}>{item.label}</span>
                   </div>
                 );
               })}
             </div>
             {/* 프로그레스 바 */}
             <div style={{ height: 8, background: darkMode ? "#333" : "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${progress}%`, background: progress === 100 ? "#10b981" : aiDone ? "#f59e0b" : "#10b981", borderRadius: 4, transition: "width 0.4s ease" }} />
+              <div style={{ height: "100%", width: `${progress}%`, background: "#10b981", borderRadius: 4, transition: "width 0.4s ease" }} />
             </div>
             <div style={{ textAlign: "right", fontSize: 12, color: textSecondary, marginTop: 6 }}>진행률 {progress}%</div>
           </div>

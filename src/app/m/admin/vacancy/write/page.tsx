@@ -86,6 +86,11 @@ function MobileVacancyWrite() {
   }, [subCategory, propertyType]);
   const [tradeType, setTradeType] = useState("매매");
 
+  // 원룸·투룸(풀옵션)은 매매 버튼이 없으므로, 기본값 "매매"가 남아 금액 칸이 "매매가"로 뜨지 않게 전세로 맞춘다.
+  useEffect(() => {
+    if (propertyType === "원룸·투룸(풀옵션)" && tradeType === "매매") setTradeType("전세");
+  }, [propertyType, tradeType]);
+
   // 금액
   const [deposit, setDeposit] = useState("");
   const [monthly, setMonthly] = useState("");
@@ -106,8 +111,8 @@ function MobileVacancyWrite() {
   const [areaUnit, setAreaUnit] = useState<"m2"|"py">("py");
   const [currentFloor, setCurrentFloor] = useState("");
   const [totalFloor, setTotalFloor] = useState("");
-  const [roomCount, setRoomCount] = useState("1");
-  const [bathCount, setBathCount] = useState("1");
+  const [roomCount, setRoomCount] = useState("");
+  const [bathCount, setBathCount] = useState("");
   const [direction, setDirection] = useState("");
   const [approvalYear, setApprovalYear] = useState("");
 
@@ -248,6 +253,39 @@ function MobileVacancyWrite() {
   const [isPhotoDbLoading, setIsPhotoDbLoading] = useState(false);
 
   const isCommercial = propertyType === "상가·사무실·건물·공장·토지";
+  // 분류별 필수 입력 항목 (PC 등록폼과 동일)
+  // - 아파트·오피스텔: 금액(매매가/보증금/월세)·공급/전용면적·방/욕실 개수
+  // - 빌라·주택: 금액(매매가/보증금/월세)·방/욕실 개수
+  // - 원룸·투룸(풀옵션): 금액(보증금/월세)·방/욕실 개수
+  // - 상가·사무실·건물·공장·토지: 금액(매매가/보증금/월세)·공급/전용면적
+  //   (단, 공급/전용면적 칸이 없는 토지와 건물/빌딩·공장/창고 매매는 면적 제외, 토지는 대지면적 필수)
+  // - 분양(주거형: 아파트·오피스텔·빌라·도시형생활주택·생활숙박시설): 금액(매매가/보증금/월세)·방/욕실 개수
+  // - 분양(상가/업무): 금액(매매가/보증금/월세)·공급/전용면적
+  const isApt = propertyType === "아파트·오피스텔";
+  const isVilla = propertyType === "빌라·주택";
+  const isOneRoom = propertyType === "원룸·투룸(풀옵션)";
+  const isBunyang = propertyType === "분양";
+  const isBunyangBiz = isBunyang && subCategory === "상가/업무";
+  const hasRequiredRule = isApt || isVilla || isOneRoom || isCommercial || isBunyang;
+  const isWholeBuildingSale = tradeType === "매매" && ((isVilla && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (isCommercial && ["건물/빌딩", "공장/창고"].includes(subCategory)));
+  const areaRequired = (isApt || isCommercial || isBunyangBiz) && subCategory !== "토지" && !isWholeBuildingSale;
+  const roomRequired = isApt || isVilla || isOneRoom || (isBunyang && !isBunyangBiz);
+  const reqStar = <span style={{color:"#ef4444"}}>*</span>;
+  const priceReq = hasRequiredRule ? reqStar : null;
+  const areaReq = areaRequired ? reqStar : null;
+  const landReq = isCommercial && subCategory === "토지" ? reqStar : null;
+  const getRequiredMissing = () => {
+    const missing: { label: string; id: string }[] = [];
+    if (!hasRequiredRule) return missing;
+    if (!deposit) missing.push({ label: tradeType === "매매" ? "매매가" : "보증금", id: "input-deposit" });
+    if ((tradeType === "월세" || tradeType === "단기") && !monthly) missing.push({ label: "월세", id: "input-monthly" });
+    if (areaRequired && !supplyM2 && !supplyPy) missing.push({ label: "공급면적", id: areaUnit === "m2" ? "input-supplyM2" : "input-supplyPy" });
+    if (areaRequired && !exclusiveM2 && !exclusivePy) missing.push({ label: "전용면적", id: areaUnit === "m2" ? "input-exclusiveM2" : "input-exclusivePy" });
+    if (landReq && !landShareM2 && !landSharePy) missing.push({ label: "대지면적", id: areaUnit === "m2" ? "input-landShareM2" : "input-landSharePy" });
+    if (roomRequired && !roomCount) missing.push({ label: "방 개수", id: "input-roomCount" });
+    if (roomRequired && !bathCount) missing.push({ label: "욕실 개수", id: "input-bathCount" });
+    return missing;
+  };
   const isRealtor = userRole === "REALTOR" || userRole === "ADMIN";
 
   // 모바일 키보드 감지 (하단 버튼 숨김용)
@@ -700,6 +738,10 @@ function MobileVacancyWrite() {
   const handleSubmit = async (status: string) => {
     if (!propertyType || !tradeType) { alert("공실광고 분류와 거래유형을 선택하세요."); return; }
     if (!sido || !dong) { alert("주소를 입력하세요."); return; }
+    if (status !== "DRAFT") {
+      const reqMissing = getRequiredMissing();
+      if (reqMissing.length) { alert(`${propertyType} 필수 입력 항목을 채워주세요.\n\n- ${reqMissing.map(m => m.label).join("\n- ")}`); return; }
+    }
     // 느린 응답 중 연타로 인한 중복 등록 방지
     if (submittingRef.current) return;
     submittingRef.current = true;
@@ -935,23 +977,34 @@ function MobileVacancyWrite() {
 
   const handleNextStep = () => {
     if (currentStep === 2) {
-      if (!deposit) {
-        const el = document.getElementById("input-deposit");
-        el?.scrollIntoView({ behavior: "smooth", block: "center" });
-        el?.focus();
-        return;
-      }
-      if ((tradeType === "월세" || tradeType === "단기") && !monthly) {
-        const el = document.getElementById("input-monthly");
-        el?.scrollIntoView({ behavior: "smooth", block: "center" });
-        el?.focus();
-        return;
-      }
-      if (!exclusiveM2 && !exclusivePy) {
-        const el = areaUnit === "m2" ? document.getElementById("input-exclusiveM2") : document.getElementById("input-exclusivePy");
-        el?.scrollIntoView({ behavior: "smooth", block: "center" });
-        el?.focus();
-        return;
+      if (hasRequiredRule) {
+        const reqMissing = getRequiredMissing();
+        if (reqMissing.length) {
+          alert(`${propertyType} 필수 입력 항목을 채워주세요.\n\n- ${reqMissing.map(m => m.label).join("\n- ")}`);
+          const el = document.getElementById(reqMissing[0].id);
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+          el?.focus();
+          return;
+        }
+      } else {
+        if (!deposit) {
+          const el = document.getElementById("input-deposit");
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+          el?.focus();
+          return;
+        }
+        if ((tradeType === "월세" || tradeType === "단기") && !monthly) {
+          const el = document.getElementById("input-monthly");
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+          el?.focus();
+          return;
+        }
+        if (!exclusiveM2 && !exclusivePy) {
+          const el = areaUnit === "m2" ? document.getElementById("input-exclusiveM2") : document.getElementById("input-exclusivePy");
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+          el?.focus();
+          return;
+        }
       }
     }
     
@@ -1138,10 +1191,10 @@ function MobileVacancyWrite() {
           </div>
           <div style={{ display:"flex", gap:8, marginBottom:10 }}>
             <div style={{flex:1}}><label style={labelStyle}>동/읍/면 <span style={{color:"#ef4444"}}>*</span></label><input id="input-dong" type="text" value={dong} onChange={e=>setDong(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 자동입력" style={{...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/></div>
-            <div style={{flex:1}}><label style={labelStyle}>건물명 {!isFieldExposed("buildingName") && isRealtor && <PrivateTag/>}</label><input type="text" value={buildingName} onChange={e=>setBuildingName(e.target.value)} placeholder="건물명" style={inputStyle}/></div>
+            <div style={{flex:1}}><label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && isRealtor && <PrivateTag/>}</label><input id="input-detailAddr" type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 상세주소 입력" style={{...inputStyle, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/></div>
           </div>
-          <label style={labelStyle}>상세주소 {!isFieldExposed("detailAddr") && isRealtor && <PrivateTag/>}</label>
-          <input id="input-detailAddr" type="text" value={detailAddr} onChange={e=>setDetailAddr(e.target.value)} disabled={!addressSearchCompleted} placeholder="주소검색 후 상세주소 입력" style={{...inputStyle, marginBottom:10, background: addressSearchCompleted ? inputStyle.background : "#f3f4f6", cursor: addressSearchCompleted ? "text" : "not-allowed"}}/>
+          <label style={labelStyle}>{propertyType === "아파트·오피스텔" ? "단지명" : "건물명"} {!isFieldExposed("buildingName") && isRealtor && <PrivateTag/>}</label>
+          <input type="text" value={buildingName} onChange={e=>setBuildingName(e.target.value)} placeholder={propertyType === "아파트·오피스텔" ? "단지명" : "건물명"} style={{...inputStyle, marginBottom:10}}/>
 
           {/* 동/호수 (아파트 또는 지식산업센터인 경우) */}
           {(propertyType === "아파트·오피스텔" || subCategory === "지식산업센터") ? (
@@ -1226,7 +1279,7 @@ function MobileVacancyWrite() {
               .map(t => <SBtn key={t} label={t} sel={tradeType===t} onClick={() => setTradeType(t)} />)}
           </div>
 
-          <label style={labelStyle}>{tradeType==="매매"?"매매가":"보증금"} {deposit && <span style={{color:"#1a73e8", fontWeight:600}}>{formatKorean(deposit)}</span>}</label>
+          <label style={labelStyle}>{tradeType==="매매"?"매매가":"보증금"} {priceReq} {deposit && <span style={{color:"#1a73e8", fontWeight:600}}>{formatKorean(deposit)}</span>}</label>
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
             <input id="input-deposit" type="number" value={deposit} onChange={e=>setDeposit(e.target.value)} placeholder="만원 단위" style={inputStyle} />
             <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
@@ -1238,7 +1291,7 @@ function MobileVacancyWrite() {
 
           {(tradeType==="월세"||tradeType==="단기") && (
             <>
-              <label style={labelStyle}>월세 {monthly && <span style={{color:"#1a73e8",fontWeight:600}}>{formatKorean(monthly)}</span>}</label>
+              <label style={labelStyle}>월세 {priceReq} {monthly && <span style={{color:"#1a73e8",fontWeight:600}}>{formatKorean(monthly)}</span>}</label>
               <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
                 <input id="input-monthly" type="number" value={monthly} onChange={e=>setMonthly(e.target.value)} placeholder="만원 단위" style={inputStyle} />
                 <span style={{ color:"#6b7280", fontSize:13, flexShrink:0 }}>만원</span>
@@ -1264,19 +1317,19 @@ function MobileVacancyWrite() {
               <button type="button" onClick={()=>setAreaUnit("m2")} style={{ padding:"6px 14px", fontSize:12, fontWeight:800, border:"none", cursor:"pointer", background: areaUnit==="m2"?"#1a73e8":"#fff", color: areaUnit==="m2"?"#fff":"#6b7280" }}>m²</button>
             </div>
           </div>
-          {!(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory)))) && (
+          {subCategory !== "토지" && !(tradeType === "매매" && ((propertyType === "빌라·주택" && ["단독/다가구", "전원주택", "상가주택"].includes(subCategory)) || (propertyType === "상가·사무실·건물·공장·토지" && ["건물/빌딩", "공장/창고"].includes(subCategory)))) && (
           <>
           <div style={{ display:"flex", gap:10, marginBottom:4 }}>
             <div style={{flex:1}}>
-              <label style={labelStyle}>공급면적({areaUnit==="m2"?"m²":"평"})</label>
+              <label style={labelStyle}>공급면적({areaUnit==="m2"?"m²":"평"}) {areaReq}</label>
               {areaUnit==="m2" ? (
-                <input type="number" value={supplyM2} onChange={e=>handleM2Change(e.target.value, setSupplyM2, setSupplyPy)} placeholder="84" style={inputStyle}/>
+                <input id="input-supplyM2" type="number" value={supplyM2} onChange={e=>handleM2Change(e.target.value, setSupplyM2, setSupplyPy)} placeholder="84" style={inputStyle}/>
               ) : (
-                <input type="number" value={supplyPy} onChange={e=>handlePyChange(e.target.value, setSupplyPy, setSupplyM2)} placeholder="25.4" style={inputStyle}/>
+                <input id="input-supplyPy" type="number" value={supplyPy} onChange={e=>handlePyChange(e.target.value, setSupplyPy, setSupplyM2)} placeholder="25.4" style={inputStyle}/>
               )}
             </div>
             <div style={{flex:1}}>
-              <label style={labelStyle}>전용면적({areaUnit==="m2"?"m²":"평"})</label>
+              <label style={labelStyle}>전용면적({areaUnit==="m2"?"m²":"평"}) {areaReq}</label>
               {areaUnit==="m2" ? (
                 <input id="input-exclusiveM2" type="number" value={exclusiveM2} onChange={e=>handleM2Change(e.target.value, setExclusiveM2, setExclusivePy)} placeholder="59" style={inputStyle}/>
               ) : (
@@ -1290,15 +1343,15 @@ function MobileVacancyWrite() {
           </div>
           </>
           )}
-          {(propertyType === "빌라·주택" || propertyType === "상가·사무실·건물·공장·토지") && tradeType === "매매" && subCategory !== "지식산업센터" && (
+          {(propertyType === "빌라·주택" || propertyType === "상가·사무실·건물·공장·토지") && (tradeType === "매매" || subCategory === "토지") && subCategory !== "지식산업센터" && (
             <>
               <div style={{ display:"flex", gap:10, marginBottom:4 }}>
                 <div style={{flex:1}}>
-                  <label style={labelStyle}>대지면적 ({areaUnit==="m2"?"m²":"평"})</label>
+                  <label style={labelStyle}>대지면적 ({areaUnit==="m2"?"m²":"평"}) {landReq}</label>
                   {areaUnit==="m2" ? (
-                    <input type="number" value={landShareM2} onChange={e=>handleM2Change(e.target.value, setLandShareM2, setLandSharePy)} placeholder="33" style={inputStyle}/>
+                    <input id="input-landShareM2" type="number" value={landShareM2} onChange={e=>handleM2Change(e.target.value, setLandShareM2, setLandSharePy)} placeholder="33" style={inputStyle}/>
                   ) : (
-                    <input type="number" value={landSharePy} onChange={e=>handlePyChange(e.target.value, setLandSharePy, setLandShareM2)} placeholder="10" style={inputStyle}/>
+                    <input id="input-landSharePy" type="number" value={landSharePy} onChange={e=>handlePyChange(e.target.value, setLandSharePy, setLandShareM2)} placeholder="10" style={inputStyle}/>
                   )}
                 </div>
                 <div style={{flex:1}}>
@@ -1579,14 +1632,16 @@ function MobileVacancyWrite() {
           {!isCommercial && (
             <div style={{ display:"flex", gap:10 }}>
               <div style={{flex:1}}>
-                <label style={labelStyle}>방</label>
-                <select value={roomCount} onChange={e=>setRoomCount(e.target.value)} style={{...inputStyle, cursor:"pointer"}}>
+                <label style={labelStyle}>방 {priceReq}</label>
+                <select id="input-roomCount" value={roomCount} onChange={e=>setRoomCount(e.target.value)} style={{...inputStyle, cursor:"pointer"}}>
+                  <option value="">선택</option>
                   {["1","2","3","4","5","6","7개 이상"].map(n=><option key={n}>{n}</option>)}
                 </select>
               </div>
               <div style={{flex:1}}>
-                <label style={labelStyle}>욕실</label>
-                <select value={bathCount} onChange={e=>setBathCount(e.target.value)} style={{...inputStyle, cursor:"pointer"}}>
+                <label style={labelStyle}>욕실 {priceReq}</label>
+                <select id="input-bathCount" value={bathCount} onChange={e=>setBathCount(e.target.value)} style={{...inputStyle, cursor:"pointer"}}>
+                  <option value="">선택</option>
                   {["1","2","3","4","5개 이상"].map(n=><option key={n}>{n}</option>)}
                 </select>
               </div>
@@ -1965,7 +2020,7 @@ function MobileVacancyWrite() {
             <div style={{ borderTop:"1px dashed #e5e7eb", paddingTop:10 }} />
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>위치</span><span style={{fontWeight:700}}>{[sido,sigungu,dong].filter(Boolean).join(" ") || "미입력"}</span></div>
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>면적</span><span style={{fontWeight:700}}>{exclusiveM2 ? `전용 ${exclusiveM2}m²` : "미입력"}{supplyM2 ? ` / 공급 ${supplyM2}m²` : ""}</span></div>
-            {!isCommercial && <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>방/욕실/방향</span><span style={{fontWeight:700}}>{roomCount}방 {bathCount}욕실 {direction}</span></div>}
+            {!isCommercial && <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>방/욕실/방향</span><span style={{fontWeight:700}}>{roomCount||"-"}방 {bathCount||"-"}욕실 {direction}</span></div>}
             <div style={{ borderTop:"1px dashed #e5e7eb", paddingTop:10 }} />
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>사진</span><span style={{fontWeight:700}}>{photoPreview.length}장 등록됨</span></div>
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>좌표</span><span style={{fontWeight:700, color: coords ? "#10b981" : "#ef4444"}}>{coords ? "✓ 설정됨" : "✗ 미설정"}</span></div>
@@ -1989,7 +2044,13 @@ function MobileVacancyWrite() {
         {/* 7. 등록자 / 부동산 기업 정보 */}
         {isRealtor ? (
           <div style={{ background:"#f9fafb", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #e5e7eb" }}>
-            <div style={{ fontSize:15, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>부동산 / 기업 정보</div>
+            <div style={{ fontSize:15, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14, display:"flex", alignItems:"center" }}>
+              부동산 / 기업 정보
+              <button type="button" onClick={() => router.push("/m/admin/settings?tab=agency")} style={{ marginLeft:"auto", padding:"4px 12px", fontSize:12, fontWeight:700, color:"#e11d48", background:"#ffe4e6", border:"1px solid #fda4af", borderRadius:6, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                수정
+              </button>
+            </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 10px", marginBottom:12 }}>
               <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>상호명</label><input type="text" value={rCompany} onChange={e=>setRCompany(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
               <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>중개등록번호</label><input type="text" value={rRegNum} onChange={e=>setRRegNum(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
