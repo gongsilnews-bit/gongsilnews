@@ -99,7 +99,7 @@ export default function StudyHeader() {
     >
       <div
         style={{
-          maxWidth: "1080px",
+          maxWidth: "1152px",
           margin: "0 auto",
           height: "100%",
           padding: "0 20px",
@@ -114,8 +114,8 @@ export default function StudyHeader() {
           <Link
             href="/"
             style={{
-              fontSize: "18px",
-              fontWeight: 800,
+              fontSize: "23px",
+              fontWeight: 900,
               color: "#111827",
               textDecoration: "none",
               letterSpacing: "-0.5px",
@@ -126,14 +126,14 @@ export default function StudyHeader() {
           >
             공실뉴스
           </Link>
-          <span style={{ fontSize: "15px", color: "#cbd5e1", fontWeight: 300, margin: "0 4px", userSelect: "none" }}>
+          <span style={{ fontSize: "19px", color: "#cbd5e1", fontWeight: 300, margin: "0 4px", userSelect: "none" }}>
             |
           </span>
           <Link
             href="/study"
             style={{
-              fontSize: "18px",
-              fontWeight: 800,
+              fontSize: "23px",
+              fontWeight: 900,
               color: POINT,
               textDecoration: "none",
               letterSpacing: "-0.5px",
@@ -155,9 +155,10 @@ export default function StudyHeader() {
                 key={item.href}
                 href={item.href}
                 style={{
-                  fontSize: "14px",
-                  fontWeight: isActive ? 800 : 600,
-                  color: isActive ? POINT : "#475569",
+                  fontSize: "17px",
+                  fontWeight: isActive ? 900 : 800,
+                  color: isActive ? POINT : "#111827",
+                  letterSpacing: "-0.3px",
                   textDecoration: "none",
                   transition: "color 0.15s ease",
                   position: "relative",
@@ -168,7 +169,7 @@ export default function StudyHeader() {
                   if (!isActive) e.currentTarget.style.color = POINT;
                 }}
                 onMouseLeave={(e) => {
-                  if (!isActive) e.currentTarget.style.color = "#475569";
+                  if (!isActive) e.currentTarget.style.color = "#111827";
                 }}
               >
                 {item.label}
@@ -194,9 +195,10 @@ export default function StudyHeader() {
             <Link
               href={STUDY_BENEFITS[0].href}
               style={{
-                fontSize: "14px",
-                fontWeight: isBenefitsActive ? 800 : 600,
-                color: isBenefitsActive || benefitsOpen ? POINT : "#475569",
+                fontSize: "17px",
+                fontWeight: isBenefitsActive ? 900 : 800,
+                color: isBenefitsActive || benefitsOpen ? POINT : "#111827",
+                letterSpacing: "-0.3px",
                 textDecoration: "none",
                 transition: "color 0.15s ease",
                 padding: "6px 0",
@@ -219,7 +221,7 @@ export default function StudyHeader() {
             {benefitsOpen && (
               <div style={{ position: "absolute", top: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", zIndex: 100, paddingTop: "6px" }}>
                 <div style={{ width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderBottom: "6px solid #22242a", margin: "0 auto" }} />
-                <div style={{ backgroundColor: "#22242a", borderRadius: "4px", boxShadow: "0 10px 25px rgba(0,0,0,0.35)", padding: "8px 0", minWidth: "200px" }}>
+                <div style={{ backgroundColor: "#22242a", borderRadius: "4px", boxShadow: "0 10px 25px rgba(0,0,0,0.35)", padding: "8px 0", minWidth: "220px" }}>
                   {STUDY_BENEFITS.map((b) => (
                     <Link
                       key={b.slug}
@@ -227,10 +229,10 @@ export default function StudyHeader() {
                       onClick={() => setBenefitsOpen(false)}
                       style={{
                         display: "block",
-                        padding: "10px 20px",
+                        padding: "12px 22px",
                         color: "#ffffff",
-                        fontSize: "13px",
-                        fontWeight: 500,
+                        fontSize: "15px",
+                        fontWeight: 600,
                         textDecoration: "none",
                         whiteSpace: "nowrap",
                         letterSpacing: "-0.2px",
@@ -254,9 +256,10 @@ export default function StudyHeader() {
                 key={item.href}
                 href={item.href}
                 style={{
-                  fontSize: "14px",
-                  fontWeight: isActive ? 800 : 600,
-                  color: isActive ? POINT : "#475569",
+                  fontSize: "17px",
+                  fontWeight: isActive ? 900 : 800,
+                  color: isActive ? POINT : "#111827",
+                  letterSpacing: "-0.3px",
                   textDecoration: "none",
                   transition: "color 0.15s ease",
                   position: "relative",
@@ -264,7 +267,7 @@ export default function StudyHeader() {
                   whiteSpace: "nowrap",
                 }}
                 onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.color = POINT; }}
-                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.color = "#475569"; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.color = "#111827"; }}
               >
                 {item.label}
                 {isActive && (
