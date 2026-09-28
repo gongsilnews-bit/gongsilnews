@@ -75,7 +75,8 @@ export async function GET(req: NextRequest) {
   // 최근 블로그 무료 체험을 쓴 회원만 쓴다.
   if (req.nextUrl.searchParams.get("for") === "blog") {
     const requester = await getExtensionMember(req);
-    if (!(await canSendBlog(requester))) {
+    // 리모델링 작성기(유료회원·비즈니스회원)는 물건을 가져올 때 이 출처를 함께 받는다
+    if (!requester?.canRemodel && !(await canSendBlog(requester))) {
       return NextResponse.json(
         {
           success: false,

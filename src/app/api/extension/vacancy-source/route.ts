@@ -29,7 +29,8 @@ export async function GET(req: NextRequest) {
   // 블로그 전송은 반드시 이 API를 거친다. 확장 화면 잠금을 우회해도 여기서 막힌다.
   // 유료 회원 또는 최근 블로그 무료 체험을 쓴 회원만 받는다.
   const requester = await getExtensionMember(req);
-  if (!(await canSendBlog(requester))) {
+  // 리모델링 작성기(유료회원·비즈니스회원)는 물건을 가져올 때 이 정보를 함께 받는다
+  if (!requester?.canRemodel && !(await canSendBlog(requester))) {
     return NextResponse.json(
       {
         success: false,
