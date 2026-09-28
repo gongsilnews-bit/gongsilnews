@@ -101,8 +101,9 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - static image files (.png, .jpg, etc.)
+     * - manual/ (회원 매뉴얼 정적 HTML. 휴대폰에서 /m 으로 바뀌면 404 가 난다)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|svg)).*)',
+    '/((?!api|manual/|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|svg)).*)',
   ],
 };
 

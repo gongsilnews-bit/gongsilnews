@@ -24,6 +24,8 @@ const MyPointSection = lazy(() => import("@/components/admin/sections/MyPointSec
 const IntakeStudio = lazy(() => import("@/components/admin/sections/IntakeStudio"));
 const CustomerSection = lazy(() => import("@/components/admin/sections/CustomerSection"));
 const InquiryBoardSection = lazy(() => import("@/components/admin/sections/InquiryBoardSection"));
+const StudySection = lazy(() => import("@/components/admin/sections/StudySection"));
+const ManualFrame = lazy(() => import("@/components/admin/sections/ManualFrame"));
 
 /* ── 부동산관리자 메뉴 ── */
 const REALTY_MENU: MenuItem[] = [
@@ -350,15 +352,8 @@ function RealtyAdminContent() {
           {activeMenu === "homepage" && memberId && <IntakeStudio theme={theme} memberId={memberId} planType={planType} />}
           {activeMenu === "inquiry_board" && memberId && <InquiryBoardSection theme={theme} memberId={memberId} replyAuthorId={memberId} replyAuthorName={userName} />}
           {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
-          {["study", "manual"].includes(activeMenu) && (
-            <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ textAlign: "center", color: "#9ca3af" }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: theme.textPrimary }}>{REALTY_MENU.find(m => m.key === activeMenu)?.label || activeMenu}</div>
-                <div style={{ marginTop: 8, fontSize: 14 }}>준비 중인 기능입니다.</div>
-              </div>
-            </div>
-          )}
+          {activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
+          {activeMenu === "manual" && <ManualFrame kind="realtor" />}
         </Suspense>
 
         {/* 공실뉴스기자 멤버십 안내 모달 */}
