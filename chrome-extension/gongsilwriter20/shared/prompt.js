@@ -1,6 +1,14 @@
 /* ══════════════════════════════════════════════════════════════
    공실뉴스 전용 프롬프트 — 기사 기본틀은 여기 한 곳에만 있다
+
+   일반 매물과 경매·공매 물건을 함께 쓴다. 경매·공매 물건은 서버에서 받을 때
+   saleKind("경매"·"공매")가 붙어 오므로, 그것으로 어느 지시문을 쓸지 가른다.
    ══════════════════════════════════════════════════════════════ */
+
+/* 경매·공매 물건인가 */
+function gwIsAuction(v) {
+  return Boolean(v && v.saleKind);
+}
 
 /* ── 매물 정보를 프롬프트에 넣을 줄로 만든다 ──
    상세 표는 매물 종류마다 항목이 다르다. 그래서 정해진 목록을 쓰지 않고
@@ -16,6 +24,13 @@ function gwFactLines(v) {
     seen.add(label);
     lines.push(`- ${label}: ${val}`);
   };
+
+  if (gwIsAuction(v)) {
+    push("물건", v.title);
+    push("가격 요약", v.priceText);
+    for (const f of v.fields || []) push(f.label, f.value);
+    return lines.join("\n");
+  }
 
   push("매물", v.title);
   push("금액", v.priceText);
@@ -37,6 +52,13 @@ function gwField(v, ...labels) {
 
 /* 기사 본문에 넣을 매물 표기 이름 */
 function gwSubjectName(v) {
+  if (gwIsAuction(v)) {
+    return (
+      (v.title && v.title.trim()) ||
+      gwField(v, "물건명", "소재지(지번)", "소재지") ||
+      "해당 물건"
+    );
+  }
   return (
     (v.title && v.title.trim()) ||
     gwField(v, "단지명", "건물명", "소재지") ||
@@ -49,13 +71,17 @@ function gwSubjectName(v) {
 
    매물 정보를 다시 설명하지 않는다. AI 가 앞서 쓴 기사를 기억하고 있다.
    ══════════════════════════════════════════════════════════════ */
-function gwBuildRevisePrompt(request) {
+function gwBuildRevisePrompt(request, vacancy) {
+  const keep = gwIsAuction(vacancy)
+    ? `- [물건 정보]에 있던 조건(감정가·최저입찰가·유찰 횟수·입찰 일정·면적·주소·관리번호)은 바꾸거나 새로 만들지 마십시오.
+- 투자 권유, 낙찰가·수익 예측, 온비드 고객센터 연락처, 입찰 전 법적 주의사항 안내문은 넣지 마십시오.`
+    : "- [매물 정보]에 있던 매물 조건(면적·금액·층·주소·번호)은 바꾸거나 새로 만들지 마십시오.";
   return `위에서 작성한 기사를 아래 요청대로 고쳐 주십시오.
 
 요청: ${request}
 
 [지킬 것]
-- [매물 정보]에 있던 매물 조건(면적·금액·층·주소·번호)은 바꾸거나 새로 만들지 마십시오.
+${keep}
 - 그 밖에는 요청하신 대로 자유롭게 고치십시오.
   분량을 늘리라고 하면 실제로 그만큼 늘리십시오. 앞서 드린 분량 지시는 이 요청으로 대체됩니다.
 - 설명이나 인사말 없이, 고친 기사 전체를 처음과 똑같은 JSON 형식으로
@@ -106,9 +132,14 @@ const GW_IMAGE_STYLE = {
 
 function gwBuildImagePrompt(vacancy, article, opts) {
   const o = opts || {};
+  const auction = gwIsAuction(vacancy);
   const subject = vacancy ? gwSubjectName(vacancy) : "해당 매물";
-  const where = vacancy ? gwField(vacancy, "소재지") : "";
-  const kind = vacancy ? gwField(vacancy, "매물종류", "용도구분", "주용도") : "";
+  const where = !vacancy ? ""
+    : auction ? gwField(vacancy, "소재지(지번)", "소재지(도로명)", "소재지")
+    : gwField(vacancy, "소재지");
+  const kind = !vacancy ? ""
+    : auction ? gwField(vacancy, "물건종류", "용도분류")
+    : gwField(vacancy, "매물종류", "용도구분", "주용도");
   const style = GW_IMAGE_STYLE[o.style] || GW_IMAGE_STYLE.news;
   const request = String(o.request || "").trim();
   const articleText = [article && article.title, article && article.body]
@@ -116,7 +147,8 @@ function gwBuildImagePrompt(vacancy, article, opts) {
     .join("\n")
     .trim();
   const focus = (request || articleText || subject).slice(0, 1600);
-  const facts = vacancy ? gwFactLines(vacancy) : "- 확인된 매물 정보 없음";
+  const noun = auction ? "물건" : "매물";
+  const facts = vacancy ? gwFactLines(vacancy) : `- 확인된 ${noun} 정보 없음`;
   const focusRule = request
     ? "아래 입력이 기사 문장이면 그중 시각적으로 표현할 핵심 장면을 고르고, 연출 지시이면 그대로 반영하십시오."
     : "아래 기사 내용에서 가장 시각적으로 전달력이 높은 한 가지 핵심을 스스로 골라 장면으로 만드십시오.";
@@ -133,7 +165,7 @@ ${style.prompt}
 ${focusRule}
 ${focus}
 
-[확인된 매물 사실]
+[확인된 ${noun} 사실]
 ${facts}
 
 [기본 장면 정보]
@@ -181,6 +213,54 @@ const GW_KIND = {
   },
 };
 
+/* 경매·공매 물건일 때의 기사 스타일 — 이름은 같고 설명·부제 구성만 다르다 */
+const GW_AUCTION_KIND = {
+  news: {
+    label: "뉴스기사형",
+    brief:
+      "도입부터 결론까지 문단이 자연스럽게 이어지는 경매·공매 뉴스 기사입니다. " +
+      "가격 조건과 물건 현황, 지역, 입찰 일정과 입찰 전 확인할 점을 기사 흐름 안에서 풀어 주십시오.",
+    subs: "1) 가격 — 감정가·최저입찰가·유찰  2) 물건 현황과 입지  3) 입찰 일정·방법",
+  },
+  summary: {
+    label: "단락별 요약",
+    brief:
+      "첫 문단에서 기사 전체를 요약한 뒤, 핵심 내용을 '■ 소제목' 단위로 나누어 " +
+      "독자가 내용을 빠르게 훑어볼 수 있게 작성하십시오.",
+    subs: "1) 핵심 가격 조건  2) 물건 현황과 입지  3) 입찰 일정과 확인할 점",
+  },
+};
+
+/* 소제목 기사 본문 규칙 — 일반·경매 공통 */
+function gwBodyStyle(o, len) {
+  return o.kind === "summary"
+    ? `- 첫 문단은 소제목 없이 기사 전체 핵심을 요약한 리드문으로 쓰십시오.
+- 그 다음부터는 반드시 "■ 소제목"을 한 줄에 단독으로 쓰고, 바로 다음 줄에 해당 내용을 설명하는 문단을 쓰십시오.
+- "■ 소제목 + 설명 문단" 묶음을 ${len.sections}로 구성하십시오.
+- 소제목 앞에는 정확히 ■ 기호 하나만 쓰십시오. ##, 번호, 불릿 목록, 굵은 글씨 표시는 쓰지 마십시오.`
+    : `- 일반 뉴스 기사처럼 도입부터 결론까지 자연스러운 문단으로 이어 쓰십시오.
+- 본문 중간에 소제목, ■ 기호, 번호, 불릿 목록을 넣지 마십시오.`;
+}
+
+/* 기사 JSON 출력 형식 — 일반·경매 공통 */
+const GW_ARTICLE_OUTPUT = `[출력 형식]
+설명이나 인사말 없이, 아래 JSON 하나만 \`\`\`json 코드블록으로 출력하십시오.
+- body는 반드시 JSON 배열이어야 하며, 각 문단과 "■ 소제목" 한 줄을 각각 별도 문자열 항목으로 넣으십시오.
+- 문자열 항목 안에 실제 줄바꿈을 넣지 마십시오. 문단 구분은 배열 항목으로만 표현하십시오.
+- 모든 문자열은 큰따옴표로 감싸고, 마지막 항목 뒤에 쉼표를 넣지 마십시오.
+- 출력 전에 JSON.parse가 가능한 유효한 JSON인지 괄호와 쉼표를 확인하십시오.
+
+\`\`\`json
+{
+  "title": "",
+  "subtitle1": "",
+  "subtitle2": "",
+  "subtitle3": "",
+  "body": ["첫 문단", "둘째 문단"],
+  "keywords": []
+}
+\`\`\``;
+
 /* ══════════════════════════════════════════════════════════════
    기사 작성 프롬프트
 
@@ -189,20 +269,16 @@ const GW_KIND = {
    - 해설 구역: 기자가 아는 일반 지식으로 쓴다. 여기가 AI 를 쓰는 값어치다
 
    전에는 둘 다 막아 놔서 AI 가 표를 문장으로 옮겨 적는 일밖에 못 했다.
+   경매·공매 물건은 아래 gwBuildAuctionPrompt 로 넘긴다.
    ══════════════════════════════════════════════════════════════ */
 function gwBuildPrompt(v, opts) {
+  if (gwIsAuction(v)) return gwBuildAuctionPrompt(v, opts);
   const o = opts || {};
   const len = GW_LENGTH[o.length] || GW_LENGTH.normal;
   const kind = GW_KIND[o.kind] || GW_KIND.news;
   const facts = gwFactLines(v);
   const subject = gwSubjectName(v);
-  const bodyStyle = o.kind === "summary"
-    ? `- 첫 문단은 소제목 없이 기사 전체 핵심을 요약한 리드문으로 쓰십시오.
-- 그 다음부터는 반드시 "■ 소제목"을 한 줄에 단독으로 쓰고, 바로 다음 줄에 해당 내용을 설명하는 문단을 쓰십시오.
-- "■ 소제목 + 설명 문단" 묶음을 ${len.sections}로 구성하십시오.
-- 소제목 앞에는 정확히 ■ 기호 하나만 쓰십시오. ##, 번호, 불릿 목록, 굵은 글씨 표시는 쓰지 마십시오.`
-    : `- 일반 뉴스 기사처럼 도입부터 결론까지 자연스러운 문단으로 이어 쓰십시오.
-- 본문 중간에 소제목, ■ 기호, 번호, 불릿 목록을 넣지 마십시오.`;
+  const bodyStyle = gwBodyStyle(o, len);
 
   return `당신은 부동산 전문 매체 "공실뉴스"의 경제 담당 기자입니다.
 아래 매물을 소재로 기사 1건을 작성하십시오.
@@ -257,21 +333,85 @@ ${bodyStyle}
               마지막 문단은 "자세한 내용은 공실뉴스 공실열람에서 확인할 수 있다."로 맺을 것
 - keywords  : 5~8개. # 없이 낱말만. 지역명·매물종류·거래구분을 포함할 것
 
-[출력 형식]
-설명이나 인사말 없이, 아래 JSON 하나만 \`\`\`json 코드블록으로 출력하십시오.
-- body는 반드시 JSON 배열이어야 하며, 각 문단과 "■ 소제목" 한 줄을 각각 별도 문자열 항목으로 넣으십시오.
-- 문자열 항목 안에 실제 줄바꿈을 넣지 마십시오. 문단 구분은 배열 항목으로만 표현하십시오.
-- 모든 문자열은 큰따옴표로 감싸고, 마지막 항목 뒤에 쉼표를 넣지 마십시오.
-- 출력 전에 JSON.parse가 가능한 유효한 JSON인지 괄호와 쉼표를 확인하십시오.
-
-\`\`\`json
-{
-  "title": "",
-  "subtitle1": "",
-  "subtitle2": "",
-  "subtitle3": "",
-  "body": ["첫 문단", "둘째 문단"],
-  "keywords": []
+${GW_ARTICLE_OUTPUT}`;
 }
-\`\`\``;
+
+/* ══════════════════════════════════════════════════════════════
+   경매·공매 기사 작성 프롬프트
+
+   두 구역을 가른다.
+   - 사실 구역: 서버에서 받은 물건 정보에 있는 것만. 가격·일정을 지어내면 큰 사고다
+   - 해설 구역: 경매·공매 제도와 지역에 대한 기자의 일반 지식
+   투자 권유·낙찰가 예측은 어느 구역에서도 쓰지 않는다.
+   ══════════════════════════════════════════════════════════════ */
+function gwBuildAuctionPrompt(v, opts) {
+  const o = opts || {};
+  const len = GW_LENGTH[o.length] || GW_LENGTH.normal;
+  const kind = GW_AUCTION_KIND[o.kind] || GW_AUCTION_KIND.news;
+  const facts = gwFactLines(v);
+  const subject = gwSubjectName(v);
+  const saleKind = v && v.saleKind === "경매" ? "경매" : "공매";
+  const saleName = saleKind === "공매" ? "공매(온비드)" : "법원 경매";
+  const bodyStyle = gwBodyStyle(o, len);
+
+  return `당신은 부동산 전문 매체 "공실뉴스"의 경매·공매 담당 기자입니다.
+아래 ${saleName} 물건을 소재로 기사 1건을 작성하십시오.
+
+[물건 정보 — 확인된 사실]
+${facts}
+
+════════ 두 구역을 구분해서 쓰십시오 ════════
+
+【사실 구역】 위 [물건 정보]에 적힌 것
+- 감정가·최저입찰가·감정가 대비 비율·유찰 횟수·입찰 시작/마감·개찰일시·입찰보증금·면적·주소·관리번호(사건번호)·공고번호·집행기관은
+  한 글자도 바꾸거나 더하지 마십시오. 금액은 원 단위 숫자와 억·만원 표기가 일치해야 합니다.
+- 위에 없는 항목(권리관계·임차인·선순위 채권·체납액·건물 연식 등)을 추측해 채우지 마십시오.
+  없으면 그 이야기를 아예 하지 마십시오.
+- 소재지가 주어진 범위까지만 쓰십시오.
+- 입찰 일정이 없으면 날짜를 만들지 마십시오.
+
+【해설 구역】 기자로서 쓰는 부분   ★ 기사 분량의 절반 가까이를 여기에 쓰십시오
+당신이 아는 일반 지식으로 쓰십시오.
+- 이 지역이 어떤 곳인지 — 업무지구·학군·상권·교통의 성격
+- 이 물건 종류와 면적이 일반적으로 어떤 쓰임에 맞는지
+- ${saleKind} 제도의 일반 설명 — 유찰되면 최저입찰가가 어떻게 낮아지는지, 입찰보증금, 개찰 절차, 명도의 의미 등
+- ${saleKind} 물건을 볼 때 일반적으로 확인하는 점 — 현장 상태, 점유·명도, 권리관계, 추가 비용(관리비 체납 등)
+
+해설 구역에서도 다음은 금지합니다.
+- 투자 권유 — "싸게 살 기회", "놓치지 말아야 할", "적극 추천", "수익이 기대된다"
+- 낙찰가·낙찰가율·수익률·시세 상승 예측
+- 단정 — "안전한 물건이다", "권리상 문제가 없다", "반드시 낙찰된다"
+- 이 물건의 조건이나 가격을 지어내기
+- 실재하지 않는 단지명·업체명·기관명을 만들어 쓰기
+
+[넣지 말 것]
+- 온비드 고객센터 등 정보제공업체 연락처(전화번호)
+- "본 정보는 참고용 데이터이며… 법적 책임을 지지 않습니다" 같은 입찰 전 법적 주의사항 안내문
+  (단, 마지막 문단의 한 줄 확인 문구는 아래 [구성]대로 넣으십시오)
+
+[기사 스타일] ${kind.label}
+${kind.brief}
+
+[분량]   ★ 반드시 지키십시오
+- 본문 전체 ${len.chars}
+- 문단 ${len.paras}
+- 분량이 모자라면 【해설 구역】을 더 쓰십시오.
+  물건 정보를 다시 늘어놓아 길이를 채우지 마십시오.
+
+[문체]
+- 평서체 경제 기사체 ("~했습니다" 아닌 "~했다")
+- 물건은 "${subject}"로 지칭
+- 과장 광고 표현을 쓰지 마십시오
+
+[구성]
+- title     : 25~45자. 대괄호 말머리 [공실열람 ${saleKind}] 로 시작. 지역·물건 종류·최저입찰가(또는 유찰 횟수)를 담을 것
+- subtitle  : 세 줄. 각 30~50자, 마침표 없이 끝낼 것
+              ${kind.subs}
+- body      : 위 분량대로 쓴 문단별 문자열 배열. 배열 항목 하나가 문단 하나이며 HTML 태그를 쓰지 말 것
+${bodyStyle}
+              첫 문단에 ${saleKind} 구분, 소재지, 물건 종류, 감정가와 최저입찰가를 밝힐 것
+              마지막 문단은 "권리관계와 물건 상태는 입찰 전 공고문과 현장에서 직접 확인할 필요가 있다. 자세한 내용은 공실뉴스 공실열람 경매/공매에서 확인할 수 있다."로 맺을 것
+- keywords  : 5~8개. # 없이 낱말만. 지역명·물건 종류·"${saleKind}"를 포함할 것
+
+${GW_ARTICLE_OUTPUT}`;
 }

@@ -51,6 +51,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             article: msg.article,
             media: msg.media || [],
             vacancyId: msg.vacancyId || null,
+            saleKind: msg.saleKind || null,
             createdAt: Date.now(),
           },
         });

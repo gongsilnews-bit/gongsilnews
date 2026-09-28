@@ -22,6 +22,7 @@
     imageRequest: "",
     sourceSignature: "",
     pendingImage: null,
+    writing: false, // AI 에 블로그 글을 맡기고 아직 가져오지 않았다
     // 초안을 만든 순간의 매물 정보. 이후 1번 탭에서 다른 매물을 가져와도 이 초안에는 섞이지 않는다.
     vacancy: null,
     listing: null,
@@ -64,6 +65,7 @@
     blogLockLink: $("blogLockLink"),
     btnBlogLockRetry: $("btnBlogLockRetry"),
     btnSendNaver: $("btnSendNaver"),
+    blogWriting: $("blogWriting"),
     status: $("statusPill"),
     toastHost: $("toastHost"),
   };
@@ -99,9 +101,10 @@
     el.status.className = "status-pill" + (kind ? " " + kind : "");
   }
 
-  async function guard(button, busyText, job) {
+  async function guard(button, busyText, job, cover = null) {
     const original = button.innerHTML;
     button.disabled = true;
+    GWBusy.start(button, busyText, cover);
     status(busyText, "busy");
     try {
       await job();
@@ -110,6 +113,7 @@
       toast(error.message || String(error), "bad", 8000);
       status("문제 발생", "bad");
     } finally {
+      GWBusy.stop(button);
       button.disabled = false;
       button.innerHTML = original;
       refreshButtons();
@@ -151,6 +155,20 @@
         }
       }).catch(() => {});
     });
+  }
+
+  /* AI 에 블로그 글을 맡긴 뒤 [완성 글 가져오기]로 가져올 때까지 띄워 둔다 */
+  function showWriting() {
+    GWBusy.writing(el.blogWriting, Boolean(B.writing), "AI가 블로그 글을 작성 중입니다", "다 쓰면 이 안내가 꺼집니다. 그때 완성 글 가져오기를 누르세요");
+    /* AI 가 다 쓰면 안내만 끈다 — 가져오기는 [완성 글 가져오기]로 직접 한다 */
+    if (B.writing) {
+      GWBusy.watchAi("blog", () => B.aiTabId, () => B.writing, (why) => {
+        B.writing = false;
+        showWriting();
+        save();
+        status(why === "closed" ? "AI 탭이 닫힘" : "블로그 글 작성 완료", why === "closed" ? "" : "ok");
+      });
+    }
   }
 
   function isBlogActive() {
@@ -314,7 +332,22 @@
     el.blogSourceEmpty.classList.toggle("hidden", ready);
     el.blogSourceReady.classList.toggle("hidden", !ready);
     el.blogSourceTitle.textContent = ready ? sourceCache.article.title : "-";
+    renderStyleCards();
+    showDesign();
     refreshButtons();
+  }
+
+  /* 스타일 카드 글자는 물건 종류에 맞춘다 — 경매·공매 물건이면 경매용 예시로 바뀐다 */
+  const CARD_NUMBERS = ["①", "②", "③", "④", "⑤", "⑥"];
+  function renderStyleCards() {
+    const styles = gwBlogStyles(B.article ? B.vacancy : sourceCache?.vacancy || B.vacancy);
+    styleButtons.forEach((button, index) => {
+      const style = styles[button.dataset.blogStyle];
+      if (!style) return;
+      button.querySelector("strong").textContent = `${CARD_NUMBERS[index] || ""} ${style.label}`.trim();
+      button.querySelector("span").textContent = style.fit;
+      button.querySelector("em").textContent = `예: ${style.titleExample}`;
+    });
   }
 
   const styleButtons = document.querySelectorAll(".blog-style-card[data-blog-style]");
@@ -323,7 +356,7 @@
       styleButtons.forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
       B.style = button.dataset.blogStyle;
-      const recommended = GW_BLOG_STYLE[B.style]?.design;
+      const recommended = gwBlogStyles(B.vacancy || sourceCache?.vacancy)[B.style]?.design;
       if (recommended && GWNaverBlog.DESIGNS[recommended]) {
         B.design = recommended;
         showDesign();
@@ -347,7 +380,7 @@
   }
 
   el.btnMakeBlogDraft.addEventListener("click", () =>
-    guard(el.btnMakeBlogDraft, "블로그 작성 준비 중", async () => {
+    guard(el.btnMakeBlogDraft, "블로그 글 작성 요청 중", async () => {
       const source = await getSource();
       if (!source) throw new Error("먼저 2 · 초안 다듬기에 기사를 준비해 주세요.");
 
@@ -379,10 +412,14 @@
       const submitted = await askTab(tab.id, { type: "GW_SUBMIT" });
       if (!submitted.ok) throw new Error(submitted.reason || "AI 전송 버튼을 누르지 못했습니다.");
 
-      const style = GW_BLOG_STYLE[B.style] || GW_BLOG_STYLE.listing;
+      const styles = gwBlogStyles(source.vacancy);
+      const style = styles[B.style] || styles.listing;
       const length = GW_BLOG_LENGTH[B.length] || GW_BLOG_LENGTH.normal;
       toast(`${style.label} · ${length.chars}로 작성을 시작했습니다. 다 나오면 [완성 글 가져오기]를 누르세요.`, "ok", 8000);
       status("블로그 작성 중", "busy");
+      B.writing = true;
+      showWriting();
+      save();
     })
   );
 
@@ -411,6 +448,8 @@
     }
 
     B.article = parsed.article;
+    B.writing = false;
+    showWriting();
     blogInsertSlot = null;
     B.pendingImage = null;
     renderBlog();
@@ -419,12 +458,12 @@
   }
 
   el.btnPullBlogDraft.addEventListener("click", () =>
-    guard(el.btnPullBlogDraft, "블로그 글 읽는 중", async () => {
+    guard(el.btnPullBlogDraft, "블로그 글 가져오는 중", async () => {
       const repaired = await pullBlogArticle();
       toast(repaired ? "AI의 JSON 오류를 복구해 블로그 글을 가져왔습니다." : "블로그 글을 가져왔습니다.", "ok");
       status("블로그 초안 준비됨", "ok");
       el.blogBadge.classList.toggle("hidden", isBlogActive());
-    })
+    }, el.blogDraftBody)
   );
 
   function blogFigureHtml(media, index) {
@@ -580,11 +619,11 @@
 
   el.btnReviseBlog.addEventListener("click", reviseBlog);
   el.btnPullBlogRevised.addEventListener("click", () =>
-    guard(el.btnPullBlogRevised, "수정글 읽는 중", async () => {
+    guard(el.btnPullBlogRevised, "수정글 가져오는 중", async () => {
       const repaired = await pullBlogArticle();
       toast(repaired ? "JSON 오류를 복구해 수정 글을 가져왔습니다." : "수정된 블로그 글을 가져왔습니다.", "ok");
       status("블로그 초안 갱신됨", "ok");
-    })
+    }, el.blogDraftBody)
   );
   el.blogReviseInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") reviseBlog();
@@ -597,7 +636,7 @@
       return;
     }
 
-    guard(el.btnReviseBlog, "블로그 수정 요청 중", async () => {
+    guard(el.btnReviseBlog, "수정 요청 중", async () => {
       if (!B.aiTabId) throw new Error("블로그 초안을 만든 AI 탭이 없습니다.");
       harvestBlog();
       await save();
@@ -605,12 +644,13 @@
       // 보내기 전 답변 수를 세어 두었다가 새 답변만 읽는다 (예전 AI 탭이면 세지 못한다)
       const before = await askTab(B.aiTabId, { type: "GW_COUNT" }).catch(() => null);
 
-      const filled = await askTab(B.aiTabId, { type: "GW_FILL", text: gwBuildBlogRevisePrompt(request) });
+      const filled = await askTab(B.aiTabId, { type: "GW_FILL", text: gwBuildBlogRevisePrompt(request, B.vacancy) });
       if (!filled.ok) throw new Error(filled.reason || "수정 요청을 넣지 못했습니다.");
       const submitted = await askTab(B.aiTabId, { type: "GW_SUBMIT" });
       if (!submitted.ok) throw new Error(submitted.reason || "수정 요청을 전송하지 못했습니다.");
 
       el.blogReviseInput.value = "";
+      GWBusy.label(el.btnReviseBlog, "AI가 블로그 글을 수정하는 중");
       if (!before?.ok) {
         toast("블로그 글 수정을 요청했습니다. AI 답변이 끝나면 [수정글 가져오기]를 눌러 주세요.", "info", 9000);
         status("수정 답변 기다리는 중", "busy");
@@ -620,7 +660,7 @@
       const repaired = await pullBlogArticle({ minCount: before.count + 1, maxMs: 180000 });
       toast(repaired ? "JSON 오류를 복구해 수정 글을 가져왔습니다." : "수정된 블로그 글을 가져왔습니다.", "ok");
       status("블로그 초안 갱신됨", "ok");
-    });
+    }, el.blogDraftBody);
   }
 
   const designButtons = document.querySelectorAll(".blog-design[data-blog-design]");
@@ -628,7 +668,7 @@
     designButtons.forEach((button) => {
       button.classList.toggle("active", button.dataset.blogDesign === B.design);
     });
-    el.blogDesignHint.textContent = GWNaverBlog.DESIGNS[B.design]?.hint || "";
+    el.blogDesignHint.textContent = GWNaverBlog.designHint(B.design, Boolean((B.vacancy || sourceCache?.vacancy)?.saleKind));
   }
   designButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -668,7 +708,7 @@
   }
 
   el.btnMakeBlogImage.addEventListener("click", () =>
-    guard(el.btnMakeBlogImage, "블로그 이미지 요청 중", async () => {
+    guard(el.btnMakeBlogImage, "이미지 요청 중", async () => {
       if (!B.article) throw new Error("먼저 블로그 초안을 만들어 주세요.");
       if (!B.aiTabId) throw new Error("블로그 초안을 만든 AI 탭이 없습니다.");
 
@@ -789,6 +829,7 @@
     } catch (_) {
       /* 주소가 없으면 운영 사이트에 묻는다 */
     }
+    if (vacancy.saleKind) return fetchAuctionListing(origin, id);
     const response = await fetch(`${origin}/api/extension/vacancy-source?id=${encodeURIComponent(id)}`, {
       credentials: "include", // 서버가 로그인 회원 등급을 확인한다
     });
@@ -804,12 +845,39 @@
     };
   }
 
+  /* 경매·공매 물건 출처 정보(구분·관리번호·집행기관·고정 상세 주소)를 공실뉴스에서 받아 온다. */
+  async function fetchAuctionListing(origin, id) {
+    const response = await fetch(`${origin}/api/extension/auction-source?id=${encodeURIComponent(id)}&for=blog`, {
+      credentials: "include", // 서버가 로그인 회원 등급을 확인한다
+    });
+    const data = await response.json();
+    if (!data?.success) throw new Error(data?.error || "경매·공매 물건 정보를 가져오지 못했습니다.");
+    const fact = (...labels) => (data.facts || []).find((f) => labels.includes(f.label))?.value || "";
+    return {
+      detailUrl: `${GWNaverBlog.SITE_URL}${data.detailPath}`,
+      location: data.location || "",
+      propertyType: data.propertyType || "",
+      saleKind: data.saleKind || "",
+      caseLabel: fact("관리번호") ? "관리번호" : "사건번호",
+      caseNo: fact("관리번호", "사건번호"),
+      agency: fact("집행기관", "관할법원"),
+      capturedAt: new Date().toISOString(),
+    };
+  }
+
   async function naverBlocks() {
     const media = GWMediaCover.normalize(B.media);
     // 예전 초안(매물 정보 고정 전)은 지금 1번 탭의 매물 정보를 쓴다
     const vacancy = B.vacancy || (await getSource().catch(() => null))?.vacancy || null;
     if (!B.listing) B.listing = await fetchListing(vacancy); // 권한 없음·로그인 필요 오류는 그대로 보여 준다
-    const problems = GWNaverBlog.listingProblems(B.listing);
+    const auction = Boolean(vacancy?.saleKind);
+    const problems = GWNaverBlog.listingProblems(B.listing, auction);
+    if (problems.length && auction) {
+      throw new Error(
+        `물건 정보가 없어 전송을 멈췄습니다: ${problems.join(", ")}. ` +
+        "1번 탭에서 물건을 다시 가져오고 블로그 초안을 새로 만들어 주세요."
+      );
+    }
     if (problems.length) {
       throw new Error(
         `부동산 표시·광고 필수 정보가 없어 전송을 멈췄습니다: ${problems.join(", ")}. ` +
@@ -864,7 +932,7 @@
   }
 
   el.btnSendNaver.addEventListener("click", () =>
-    guard(el.btnSendNaver, "네이버 블로그로 보내는 중", async () => {
+    guard(el.btnSendNaver, "블로그글 전송 중", async () => {
       if (!B.article) throw new Error("보낼 블로그 초안이 없습니다.");
       harvestBlog();
       if (!B.article.title || !B.article.body) throw new Error("블로그 제목과 본문이 있어야 합니다.");
@@ -953,6 +1021,8 @@
       const live = await chrome.tabs.get(B.aiTabId).catch(() => null);
       if (!live) B.aiTabId = null;
     }
+    if (!B.aiTabId) B.writing = false; // 글을 쓰던 AI 탭이 닫혔으면 안내도 내린다
+    showWriting();
 
     styleButtons.forEach((button) => {
       button.classList.toggle("active", button.dataset.blogStyle === B.style);

@@ -119,5 +119,112 @@ const GWChatGptDirect = (() => {
   }
 
 
-  return { read };
+  /* ══════════════════════════════════════════════════════════════
+     AI 가 만든 그림 — 화면이 아니라 대화 원문에서 찾는다
+
+     ChatGPT 는 그림을 화면에 어떻게 그릴지 자주 바꾼다. 대화 원문에는
+     "이 요청 다음에 이 그림 파일이 나왔다"가 그대로 남으므로 여기서 찾는다.
+     ══════════════════════════════════════════════════════════════ */
+
+  /* 현재 대화 가지의 메시지 수, 그림 목록(순서대로), 마지막 메시지 상태 */
+  async function imageState(tabId) {
+    const tab = await chrome.tabs.get(tabId).catch(() => null);
+    if (!tab || !/^https:\/\/chatgpt\.com\//.test(tab.url || "")) return { ok: false, error: "ChatGPT 탭이 아님" };
+    try {
+      const [run] = await chrome.scripting.executeScript({
+        target: { tabId },
+        world: "MAIN",
+        func: async () => {
+          const withTimeout = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("timeout")), ms))]);
+          const id = (location.pathname.match(/\/c\/([0-9a-f-]{36})/) || [])[1];
+          if (!id) return { ok: false, error: "대화 주소 없음" };
+          const session = await withTimeout(fetch("/api/auth/session", { credentials: "include" }).then((r) => r.json()), 8000);
+          const token = session && session.accessToken;
+          if (!token) return { ok: false, error: "로그인 토큰 없음" };
+          const res = await withTimeout(fetch("/backend-api/conversation/" + id, {
+            credentials: "include",
+            headers: { Authorization: "Bearer " + token },
+          }), 12000);
+          if (!res.ok) return { ok: false, error: "HTTP " + res.status };
+          const data = await res.json();
+
+          /* 끝에서 처음까지 거슬러 모은 뒤 뒤집어 대화 순서로 만든다 */
+          const chain = [];
+          let node = data.mapping && data.mapping[data.current_node];
+          while (node) {
+            if (node.message) chain.push(node.message);
+            node = node.parent ? data.mapping[node.parent] : null;
+          }
+          chain.reverse();
+
+          const messages = chain.filter((m) => m.author && m.author.role !== "system");
+          const images = [];
+          for (const message of messages) {
+            if (message.author.role === "user") continue; // 사용자가 올린 그림은 제외
+            for (const part of (message.content && message.content.parts) || []) {
+              if (part && typeof part === "object" && part.content_type === "image_asset_pointer" && part.asset_pointer) {
+                images.push({
+                  fileId: String(part.asset_pointer).replace(/^[a-z-]+:\/\//, ""),
+                  done: message.status === "finished_successfully",
+                });
+              }
+            }
+          }
+          const textOf = (m) => (m && m.content
+            ? ((m.content.parts || []).filter((p) => typeof p === "string").join("\n") || m.content.text || "").trim()
+            : "");
+          const last = messages[messages.length - 1] || null;
+          /* 끝에서 세 개 안에 아직 쓰는 중인 메시지가 있으면 AI 가 바쁜 것이다 */
+          const busy = messages.slice(-3).some((m) => m.status === "in_progress");
+          return {
+            ok: true,
+            conversationId: id,
+            messageCount: messages.length,
+            images,
+            busy,
+            last: last ? { role: last.author.role, status: last.status || "", text: textOf(last) } : null,
+          };
+        },
+      });
+      return (run && run.result) || { ok: false, error: "결과 없음" };
+    } catch (e) {
+      return { ok: false, error: e.message || String(e) };
+    }
+  }
+
+  /* 그림 파일을 내려받아 data URL 로 돌려준다 */
+  async function downloadImage(tabId, fileId) {
+    try {
+      const [run] = await chrome.scripting.executeScript({
+        target: { tabId },
+        world: "MAIN",
+        func: async (file) => {
+          const id = (location.pathname.match(/\/c\/([0-9a-f-]{36})/) || [])[1] || "";
+          const session = await fetch("/api/auth/session", { credentials: "include" }).then((r) => r.json());
+          const token = session && session.accessToken;
+          if (!token) return null;
+          const meta = await fetch(`/backend-api/files/download/${encodeURIComponent(file)}?conversation_id=${id}&inline=false`, {
+            credentials: "include",
+            headers: { Authorization: "Bearer " + token },
+          }).then((r) => (r.ok ? r.json() : null));
+          if (!meta || !meta.download_url) return null;
+          const blob = await fetch(meta.download_url, { credentials: "include" }).then((r) => (r.ok ? r.blob() : null));
+          if (!blob) return null;
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        },
+        args: [fileId],
+      });
+      return (run && run.result) || null;
+    } catch (e) {
+      console.warn("[공실뉴스] 그림 받기 실패", e);
+      return null;
+    }
+  }
+
+  return { read, imageState, downloadImage };
 })();

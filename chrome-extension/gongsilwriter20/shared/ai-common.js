@@ -59,6 +59,12 @@ const GwAi = (() => {
     let btn = null;
     while (Date.now() < until) {
       btn = gwPick(conf.SEND);
+      /* 답변 중에는 전송 버튼이 중지 버튼으로 바뀐다 — 누르면 생성이 멈추므로 절대 누르지 않는다 */
+      if (btn && isStop(conf, btn)) {
+        btn = null;
+        await gwSleep(300);
+        continue;
+      }
       if (btn && !btn.disabled && btn.getAttribute("aria-disabled") !== "true") break;
       btn = null;
       await gwSleep(200);
@@ -68,6 +74,8 @@ const GwAi = (() => {
       btn.click();
       return { ok: true };
     }
+
+    if (isBusy(conf)) return { ok: false, busy: true, reason: "AI가 아직 답변 중이라 전송하지 못했습니다." };
 
     /* 버튼을 못 찾으면 엔터로도 보내진다 — 마지막 수단 */
     const input = gwPick(conf.INPUT);
@@ -82,6 +90,56 @@ const GwAi = (() => {
     }
 
     return { ok: false, reason: "전송 버튼을 찾지 못했습니다. AI 탭에서 직접 눌러 주세요." };
+  }
+
+  /* ── 답변 중인가 — 중지 버튼이 보이면 아직 답변 중이다 ── */
+  function isStop(conf, btn) {
+    if (!btn) return false;
+    if ((conf.STOP || []).some((sel) => btn.matches(sel))) return true;
+    return /중지|stop/i.test(btn.getAttribute("aria-label") || "");
+  }
+
+  function isBusy(conf) {
+    return (conf.STOP || []).some((sel) => {
+      const node = document.querySelector(sel);
+      return node && node.offsetParent !== null;
+    });
+  }
+
+  /* ── 대화 상태 — 답변 턴 수, 내 요청 수, 답변 중인지, after 번째 이후 새 답변 안의 그림·글 ──
+     그림은 "새 답변 안"에서만 고른다. 앞 그림 주소가 고화질로 바뀌어도 새 그림으로 착각하지 않는다. */
+  function turnState(conf, after = 0) {
+    const pickAll = (list) => {
+      for (const sel of list || []) {
+        const nodes = document.querySelectorAll(sel);
+        if (nodes.length) return Array.from(nodes);
+      }
+      return [];
+    };
+    const turns = pickAll(conf.TURN);
+    const users = pickAll(conf.USER_TURN);
+    const fresh = turns.slice(Math.max(0, after));
+    const images = [];
+    for (const turn of fresh) {
+      for (const img of turn.querySelectorAll("img")) {
+        const src = img.currentSrc || img.src || "";
+        if (!src || src.startsWith("data:image/svg")) continue;
+        const w = img.naturalWidth || img.width || 0;
+        const h = img.naturalHeight || img.height || 0;
+        if (w < 200 || h < 150) continue; // 화면 밖이라 덜 불러온 그림도 주소로는 받을 수 있다
+        images.push(src);
+      }
+    }
+    const last = fresh[fresh.length - 1];
+    return {
+      /* 턴을 하나도 못 찾으면(화면 구조가 바뀌었거나 빈 대화) 작업창이 예전 방식으로 돌아가게 ok: false */
+      ok: turns.length > 0 || users.length > 0,
+      turns: turns.length,
+      users: users.length,
+      busy: isBusy(conf),
+      images,
+      text: last ? (last.innerText || "").trim().slice(0, 400) : "",
+    };
   }
 
   /* ── 응답 개수 (수정 요청 전 개수를 세어 두고 새 답변만 읽기 위해) ── */
@@ -202,7 +260,7 @@ const GwAi = (() => {
     });
 
     const best = candidates[candidates.length - 1];
-    return { ok: true, url: best.src, count: candidates.length };
+    return { ok: true, url: best.src, count: candidates.length, busy: isBusy(conf) };
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -223,6 +281,8 @@ const GwAi = (() => {
               return { ok: true, count: countAnswers(conf) };
             case "GW_GET_IMAGE":
               return getImage(conf);
+            case "GW_TURN_STATE":
+              return turnState(conf, Number(msg.after) || 0);
             default:
               return null;
           }
@@ -231,7 +291,7 @@ const GwAi = (() => {
         }
       };
 
-      const known = ["GW_FILL", "GW_SUBMIT", "GW_READ", "GW_COUNT", "GW_GET_IMAGE"].includes(msg.type);
+      const known = ["GW_FILL", "GW_SUBMIT", "GW_READ", "GW_COUNT", "GW_GET_IMAGE", "GW_TURN_STATE"].includes(msg.type);
       if (!known) return false;
 
       run().then(sendResponse);

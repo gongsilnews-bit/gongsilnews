@@ -270,7 +270,7 @@
   function collectVacancy() {
     const detail = document.querySelector(GW.GONGSIL.DETAIL);
     if (!detail) {
-      return { ok: false, reason: "펼쳐 놓은 매물이 없습니다. 공실열람에서 매물을 하나 열어 주세요." };
+      return { ok: false, reason: "펼쳐 놓은 물건이 없습니다. 공실열람에서 매물이나 [경매/공매] 물건을 하나 열어 주세요." };
     }
 
     /* 0순위 — 페이지가 정식으로 실어준 값이 있으면 그것만 쓴다 */
@@ -291,10 +291,12 @@
 
     const vacancy = collectFromDom(detail);
 
-    if (!vacancy.fields.length) {
+    /* 경매·공매 물건 정보는 작업창이 서버에서 통째로 받는다. 물건 번호만 있으면 된다.
+       일반 매물인데 상세 표가 비었으면 작업창이 다시 알려 준다. */
+    if (!vacancy.vacancyId && !vacancy.fields.length) {
       return {
         ok: false,
-        reason: "매물 상세 표를 읽지 못했습니다. 매물이 다 펼쳐진 뒤에 다시 눌러 주세요.",
+        reason: "물건 상세를 읽지 못했습니다. 물건이 다 펼쳐진 뒤에 다시 눌러 주세요.",
       };
     }
 
@@ -309,7 +311,7 @@
       try {
         sendResponse(collectVacancy());
       } catch (e) {
-        sendResponse({ ok: false, reason: "매물을 읽는 중 오류: " + e.message });
+        sendResponse({ ok: false, reason: "물건을 읽는 중 오류: " + e.message });
       }
       return true;
     }

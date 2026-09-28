@@ -9,6 +9,7 @@
   /* ─────────── 상태 ─────────── */
   const S = {
     platform: "chatgpt",
+    saleMode: "auto",  // 물건 종류 — auto(자동 판별) · listing(일반 매물) · auction(경매·공매)
     kind: "news",      // 기사 스타일 — GW_KIND
     length: "normal",  // 분량 — GW_LENGTH
     imageStyle: "news",
@@ -18,6 +19,7 @@
     origin: "https://gongsilnews.com",
     vacancy: null,
     article: null,   // { title, subtitles[], body, keywords[] }
+    writing: false,  // AI 에 기사를 보내고 아직 가져오지 않았다 — 작성 중 안내를 띄운다
     media: [],       // [{ kind:'photo'|'proof'|'map'|'roadview'|'ai', url, caption, isCover }]
   };
 
@@ -28,7 +30,7 @@
     tabWork: $("tabWork"), tabDraft: $("tabDraft"), draftBadge: $("draftBadge"),
     viewWork: $("viewWork"), viewDraft: $("viewDraft"),
     btnGoGongsil: $("btnGoGongsil"), btnGrab: $("btnGrab"),
-    vacancyCard: $("vacancyCard"), vacancyName: $("vacancyName"), vacancyFields: $("vacancyFields"),
+    vacancyCard: $("vacancyCard"), vacancyKind: $("vacancyKind"), vacancyName: $("vacancyName"), vacancyFields: $("vacancyFields"),
     btnOpenAi: $("btnOpenAi"), btnSubmit: $("btnSubmit"), btnPullDraft: $("btnPullDraft"),
     draftEmpty: $("draftEmpty"), draftBody: $("draftBody"), draftActions: $("draftActions"),
     pvDate: $("pvDate"), pvTitle: $("pvTitle"), pvSubtitle: $("pvSubtitle"),
@@ -37,6 +39,7 @@
     imageRequest: $("imageRequest"),
     btnMakeImage: $("btnMakeImage"), btnChangeImage: $("btnChangeImage"), fileImage: $("fileImage"),
     btnSendGongsil: $("btnSendGongsil"),
+    articleWriting: $("articleWriting"),
     toastHost: $("toastHost"),
   };
 
@@ -60,10 +63,12 @@
     el.status.className = "status-pill" + (kind ? " " + kind : "");
   }
 
-  /* 누르는 동안 잠가 둔다 — 두 번 눌러 생기는 사고를 막는다 */
-  async function guard(btn, busyText, fn) {
+  /* 누르는 동안 잠가 둔다 — 두 번 눌러 생기는 사고를 막는다.
+     cover 를 주면 그 글 영역에 반투명 흰 막과 같은 멘트를 띄운다. */
+  async function guard(btn, busyText, fn, cover = null) {
     const keep = btn.innerHTML;
     btn.disabled = true;
+    GWBusy.start(btn, busyText, cover);
     status(busyText, "busy");
     try {
       await fn();
@@ -72,6 +77,7 @@
       toast(e.message || String(e), "bad", 7000);
       status("문제 발생", "bad");
     } finally {
+      GWBusy.stop(btn);
       btn.disabled = false;
       btn.innerHTML = keep;
       refreshButtons();
@@ -122,7 +128,7 @@
           : await chrome.tabs.create({ url });
         S.gongsilTabId = tab.id;
         S.origin = "https://gongsilnews.com";
-        toast("공실열람으로 이동했습니다. 매물을 하나 펼쳐 주세요.", "info");
+        toast("공실열람으로 이동했습니다. 매물이나 [경매/공매] 물건을 하나 펼쳐 주세요.", "info");
       }
 
       status("공실열람 열림", "ok");
@@ -132,7 +138,7 @@
 
   /* ═════════════ ② 물건 가져오기 (+ 사진 4종) ═════════════ */
   el.btnGrab.addEventListener("click", () =>
-    guard(el.btnGrab, "매물 읽는 중", async () => {
+    guard(el.btnGrab, "물건 가져오는 중", async () => {
       let tab = S.gongsilTabId ? await chrome.tabs.get(S.gongsilTabId).catch(() => null) : null;
       if (!tab || !/\/gongsil/.test(tab.url || "")) tab = await findTab(GONGSIL_URLS);
 
@@ -142,29 +148,99 @@
       S.origin = new URL(tab.url).origin;
 
       const res = await askTab(tab.id, { type: "GW_GET_VACANCY" });
-      if (!res.ok) throw new Error(res.reason || "매물을 읽지 못했습니다.");
+      if (!res.ok) throw new Error(res.reason || "물건을 읽지 못했습니다.");
 
-      S.vacancy = res.vacancy;
+      S.vacancy = await resolveVacancy(res.vacancy);
       renderVacancy(S.vacancy);
 
       const n = (S.vacancy.fields || []).length;
-      toast(`매물 정보 ${n}개 항목을 가져왔습니다. 이제 사진을 찍습니다.`, "ok");
+      const what = S.vacancy.saleKind ? `${S.vacancy.saleKind} 물건` : "매물";
+      toast(`${what} 정보 ${n}개 항목을 가져왔습니다. 이제 사진을 찍습니다.`, "ok");
 
       /* 사진 4종 — 찍는 동안 공실열람 탭이 화면에 보여야 한다 */
       status("사진 찍는 중", "busy");
+      GWBusy.label(el.btnGrab, "사진 찍는 중");
       S.media = GWMediaCover.normalize(await captureMedia(tab, S.vacancy));
       renderDraft();
 
       const shots = S.media.map((m) => m.kind);
       toast(
-        `사진 ${S.media.length}장 준비됨 (매물 ${shots.filter((k) => k === "photo").length}장 · 검증 · 지도 · 로드뷰)`,
+        `사진 ${S.media.length}장 준비됨 (${nounOf(S.vacancy)} ${shots.filter((k) => k === "photo").length}장 · 검증 · 지도 · 로드뷰)`,
         "ok",
         5000
       );
-      status("매물 준비됨", "ok");
+      status(`${nounOf(S.vacancy)} 준비됨`, "ok");
       save();
     })
   );
+
+  /* 일반 매물은 "매물", 경매·공매는 "물건" */
+  const nounOf = (v) => (v && v.saleKind ? "물건" : "매물");
+
+  /* ═════════════ 일반 매물 / 경매·공매 가르기 ═════════════
+     일반 매물은 화면의 공실광고정보 표를 그대로 쓴다.
+     경매·공매 상세는 4개 탭으로 나뉘어 화면으로는 열린 탭만 읽히므로, 물건 정보를 서버에서 통째로 받는다.
+     자동 판별은 서버에 경매·공매 물건인지 물어서 정한다. */
+  const saleModeBtns = document.querySelectorAll(".chip[data-sale-mode]");
+  saleModeBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      saleModeBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      S.saleMode = btn.dataset.saleMode;
+      save();
+    });
+  });
+
+  async function resolveVacancy(domVacancy) {
+    if (S.saleMode !== "listing") {
+      const auction = await fetchAuction(domVacancy, S.saleMode === "auction");
+      if (auction) return auction;
+    }
+    if (!(domVacancy.fields || []).length) {
+      throw new Error("매물 상세 표를 읽지 못했습니다. 매물이 다 펼쳐진 뒤에 다시 눌러 주세요.");
+    }
+    return domVacancy;
+  }
+
+  /* 기사에 쓰지 않는 공고 부속 정보 — 정보제공처(온비드 고객센터 연락처)와 입찰 전 법적 주의사항 */
+  const EXCLUDED_FACT = /정보\s*제공|고객\s*센터|주의\s*사항|1588-?5321/;
+
+  /* 경매·공매 물건이면 서버 정보를, 아니면 null 을 돌려준다.
+     strict(경매·공매를 직접 고른 경우)이면 경매·공매 물건이 아닐 때 오류로 알린다. */
+  async function fetchAuction(domVacancy, strict) {
+    const id = domVacancy.vacancyId;
+    if (!id) {
+      if (!strict) return null;
+      throw new Error("물건 번호를 읽지 못했습니다. 공실열람에서 물건을 다시 펼친 뒤 눌러 주세요.");
+    }
+
+    const response = await fetch(`${S.origin}/api/extension/auction-source?id=${encodeURIComponent(id)}`, {
+      credentials: "include",
+      cache: "no-store",
+    }).catch(() => null);
+    const data = response ? await response.json().catch(() => null) : null;
+    if (!data?.success) {
+      /* 서버가 "경매·공매 물건이 아니다"라고 답했으면 일반 매물이다 */
+      if (!strict && response && response.status >= 400 && response.status < 500) return null;
+      throw new Error(
+        (data && data.error) ||
+        "경매·공매 물건인지 확인하지 못했습니다. 잠시 뒤 다시 누르거나, 일반 매물이면 1단계에서 [일반 매물]을 골라 주세요."
+      );
+    }
+
+    return {
+      vacancyId: data.id,
+      saleKind: data.saleKind,
+      title: data.title,
+      priceText: data.priceText,
+      location: data.location,
+      propertyType: data.propertyType,
+      detailPath: data.detailPath,
+      fields: (data.facts || []).filter((f) => !EXCLUDED_FACT.test(`${f.label} ${f.value}`)),
+      images: (domVacancy.images || []).length ? domVacancy.images : data.images || [],
+      url: domVacancy.url,
+    };
+  }
 
   function renderVacancy(v) {
     const rows = [];
@@ -174,6 +250,7 @@
     if (v.infra) rows.push(["주변환경", v.infra]);
     if ((v.images || []).length) rows.push(["등록 사진", `${v.images.length}장`]);
 
+    el.vacancyKind.textContent = v.saleKind ? `가져온 ${v.saleKind} 물건` : "가져온 일반 매물";
     el.vacancyName.textContent = v.title || "-";
     el.vacancyFields.innerHTML = rows
       .map(([k, val]) => `<div class="vf-row"><dt>${esc(k)}</dt><dd>${esc(val)}</dd></div>`)
@@ -367,7 +444,7 @@
 
   /* ═════════════ ④ AI 기사 작성 ═════════════ */
   el.btnOpenAi.addEventListener("click", () =>
-    guard(el.btnOpenAi, "AI 탭 여는 중", async () => {
+    guard(el.btnOpenAi, "기사 작성 요청 중", async () => {
       if (!S.vacancy) throw new Error("먼저 [물건 가져오기] 를 해 주세요.");
 
       const conf = aiConf();
@@ -432,13 +509,14 @@
 
   /* ═════════════ ⑤ 작성하기 ═════════════ */
   el.btnSubmit.addEventListener("click", () =>
-    guard(el.btnSubmit, "전송 중", async () => {
+    guard(el.btnSubmit, "AI에 보내는 중", async () => {
       if (!S.aiTabId) throw new Error("먼저 ① AI 기사 작성 을 눌러 주세요.");
       await chrome.tabs.update(S.aiTabId, { active: true });
       const res = await askTab(S.aiTabId, { type: "GW_SUBMIT" });
       if (!res.ok) throw new Error(res.reason || "전송 버튼을 누르지 못했습니다.");
       toast("전송했습니다. 기사가 다 나오면 ③ 초안 보내기 를 누르세요.", "ok");
       status("AI 작성 중", "busy");
+      setWriting(true);
     })
   );
 
@@ -447,7 +525,7 @@
   const pasteJson = $("pasteJson");
 
   el.btnPullDraft.addEventListener("click", () =>
-    guard(el.btnPullDraft, "기사 읽는 중", async () => {
+    guard(el.btnPullDraft, "기사 가져오는 중", async () => {
       if (!S.aiTabId) throw new Error("먼저 ① AI 기사 작성 을 눌러 주세요.");
       let repaired;
       try {
@@ -463,7 +541,7 @@
         throw e;
       }
       afterDraftPulled(repaired);
-    })
+    }, el.draftBody)
   );
 
   $("btnPasteDraft").addEventListener("click", () =>
@@ -498,7 +576,7 @@
       if (!res.unreadable) throw new Error(res.reason || "응답을 읽지 못했습니다.");
       /* 수정글도 같은 칸에 붙여넣으면 초안이 바뀐다 */
       pasteBox.classList.remove("hidden");
-      const err = new Error(res.reason + " ① 매물·AI 탭 아래 붙여넣기 칸에 JSON 을 직접 붙여넣어 주세요.");
+      const err = new Error(res.reason + " ① 물건·AI 탭 아래 붙여넣기 칸에 JSON 을 직접 붙여넣어 주세요.");
       err.unreadable = true;
       throw err;
     }
@@ -514,6 +592,8 @@
     }
 
     S.article = parsed.article;
+    S.writing = false;
+    showWriting();
     draftInsertSlot = null;
     pendingAiInsertSlot = null;
     pendingAiPreviousImage = null;
@@ -817,7 +897,7 @@
       if (!S.aiTabId) throw new Error("AI 탭이 없습니다. 초안을 만든 탭이 닫혔습니다.");
 
       harvestEdits();
-      const text = gwBuildRevisePrompt(want);
+      const text = gwBuildRevisePrompt(want, S.vacancy);
       const copied = await copyForPaste(text);
       await chrome.tabs.update(S.aiTabId, { active: true });
       // 보내기 전 답변 수를 세어 두었다가 새 답변만 읽는다 (예전 AI 탭이면 세지 못한다)
@@ -835,6 +915,7 @@
       if (!sent.ok) throw new Error(sent.reason || "전송하지 못했습니다.");
 
       el.reviseInput.value = "";
+      GWBusy.label(el.btnRevise, "AI가 기사를 수정하는 중");
       if (!before?.ok) {
         toast("수정을 요청했습니다. AI 답변이 끝나면 [수정글 가져오기]를 눌러 주세요.", "info", 9000);
         status("수정 답변 기다리는 중", "busy");
@@ -844,16 +925,16 @@
       const repaired = await pullArticle({ minCount: before.count + 1, maxMs: 180000 });
       toast(repaired ? "JSON 오류를 자동 복구해 수정 기사를 가져왔습니다." : "수정된 기사를 가져왔습니다.", "ok");
       status("초안 갱신됨", "ok");
-    });
+    }, el.draftBody);
   }
 
   el.btnPullRevised.addEventListener("click", () =>
-    guard(el.btnPullRevised, "수정글 읽는 중", async () => {
+    guard(el.btnPullRevised, "수정글 가져오는 중", async () => {
       if (!S.aiTabId) throw new Error("AI 탭이 없습니다. 초안을 만든 탭이 닫혔습니다.");
       const repaired = await pullArticle();
       toast(repaired ? "JSON 오류를 자동 복구해 수정 기사를 가져왔습니다." : "수정된 기사를 가져왔습니다.", "ok");
       status("초안 갱신됨", "ok");
-    })
+    }, el.draftBody)
   );
 
   /* ═════════════ ⑦ 이미지 ═════════════ */
@@ -1010,7 +1091,7 @@
 
   /* ═════════════ ⑨ 기사전송하기 ═════════════ */
   el.btnSendGongsil.addEventListener("click", () =>
-    guard(el.btnSendGongsil, "보내는 중", async () => {
+    guard(el.btnSendGongsil, "기사 전송 중", async () => {
       if (!S.article) throw new Error("보낼 초안이 없습니다.");
 
       harvestEdits();
@@ -1025,6 +1106,8 @@
         /* 대표를 첫 순서로도 보낸다. isCover 를 모르는 구버전 기사작성 폼도 안전하다. */
         media: GWMediaCover.coverFirst(S.media),
         vacancyId: S.vacancy?.vacancyId || null,
+        /* 경매·공매 기사는 기사쓰기 폼에서 섹션(공실뉴스 > 신축/분양/경매)까지 고른다 */
+        saleKind: S.vacancy?.saleKind || null,
       });
 
       if (!res || !res.ok) throw new Error((res && res.error) || "기사쓰기 폼에 초안을 넣지 못했습니다.");
@@ -1034,8 +1117,31 @@
     })
   );
 
+  /* ═════════════ AI 작성 중 안내 ═════════════
+     [작성하기]로 보낸 뒤 [초안 보내기]로 가져올 때까지 띄워 둔다. */
+  function showWriting() {
+    GWBusy.writing(el.articleWriting, Boolean(S.writing), "AI가 기사를 작성 중입니다", "다 쓰면 이 안내가 꺼집니다. 그때 ③ 초안 보내기를 누르세요");
+    /* AI 가 다 쓰면 안내만 끈다 — 가져오기는 [초안 보내기]로 직접 한다 */
+    if (S.writing) {
+      GWBusy.watchAi("article", () => S.aiTabId, () => S.writing, (why) => {
+        setWriting(false);
+        status(why === "closed" ? "AI 탭이 닫힘" : "기사 작성 완료", why === "closed" ? "" : "ok");
+      });
+    }
+  }
+
+  function setWriting(on) {
+    S.writing = on;
+    showWriting();
+    save();
+  }
+
   /* ═════════════ 탭 전환 ═════════════ */
   function switchTab(which) {
+    /* 3번 블로그·4번 유튜브 탭과 그 하단 바는 blog.js·youtube.js 가 관리한다. 1·2번으로 올 때 내려놓는다. */
+    ["tabBlog", "viewBlog", "tabScript", "viewScript"].forEach((id) => $(id)?.classList.remove("active"));
+    ["blogActions", "scriptActions"].forEach((id) => $(id)?.classList.add("hidden"));
+    document.dispatchEvent(new CustomEvent("gw:leave-youtube"));
     const work = which === "work";
     el.tabWork.classList.toggle("active", work);
     el.tabDraft.classList.toggle("active", !work);
@@ -1089,9 +1195,11 @@
     if (!GW_KIND[S.kind]) S.kind = "news";
     if (!GW_LENGTH[S.length]) S.length = "normal";
     if (!GW_IMAGE_STYLE[S.imageStyle]) S.imageStyle = "news";
+    if (!["auto", "listing", "auction"].includes(S.saleMode)) S.saleMode = "auto";
     if (typeof S.imageRequest !== "string") S.imageRequest = "";
 
     platformBtns.forEach((b) => b.classList.toggle("active", b.dataset.platform === S.platform));
+    saleModeBtns.forEach((b) => b.classList.toggle("active", b.dataset.saleMode === S.saleMode));
     kindBtns.forEach((b) => b.classList.toggle("active", b.dataset.kind === S.kind));
     lenBtns.forEach((b) => b.classList.toggle("active", b.dataset.length === S.length));
     imageStyleBtns.forEach((b) => b.classList.toggle("active", b.dataset.imageStyle === S.imageStyle));
@@ -1106,22 +1214,27 @@
     }
 
     if (S.vacancy) renderVacancy(S.vacancy);
+    if (!S.aiTabId) S.writing = false; // 기사를 쓰던 AI 탭이 닫혔으면 안내도 내린다
+    showWriting();
     renderDraft();
   }
 
   /* ═════════════ 초기화 ═════════════
-     매물·초안·사진·블로그 글은 지우고, 고른 AI와 스타일 설정만 남긴다.
-     저장소를 비운 뒤 작업창을 새로 불러와 세 탭을 한 번에 깨끗하게 만든다. */
+     물건·초안·사진·블로그 글·유튜브 대본은 지우고, 고른 AI와 스타일 설정만 남긴다.
+     저장소를 비운 뒤 작업창을 새로 불러와 네 탭을 한 번에 깨끗하게 만든다. */
   const BLOG_STATE_KEY = "gw_blog_state";
+  const YOUTUBE_STATE_KEY = "gw_youtube_state";
 
   $("btnReset").addEventListener("click", async () => {
-    if (!confirm("가져온 매물, 초안, 사진, 블로그 글이 모두 지워집니다.\n초기화할까요?")) return;
+    if (!confirm("가져온 물건, 초안, 사진, 블로그 글, 유튜브 대본이 모두 지워집니다.\n초기화할까요?")) return;
     try {
-      const got = await chrome.storage.local.get(BLOG_STATE_KEY);
+      const got = await chrome.storage.local.get([BLOG_STATE_KEY, YOUTUBE_STATE_KEY]);
       const blog = got[BLOG_STATE_KEY] || {};
+      const youtube = got[YOUTUBE_STATE_KEY] || {};
       await chrome.storage.local.set({
         [STATE_KEY]: {
           platform: S.platform,
+          saleMode: S.saleMode,
           kind: S.kind,
           length: S.length,
           imageStyle: S.imageStyle,
@@ -1132,6 +1245,7 @@
           imageStyle: blog.imageStyle,
           design: blog.design,
         },
+        [YOUTUBE_STATE_KEY]: { settings: youtube.settings },
       });
       await chrome.storage.local.remove([GW.KEY.JOB, GW.KEY.DRAFT]).catch(() => {});
       location.reload();
@@ -1152,6 +1266,6 @@
   (async () => {
     await restore();
     refreshButtons();
-    status(S.article ? "초안 있음" : S.vacancy ? "매물 준비됨" : "준비됨", S.article ? "ok" : "");
+    status(S.article ? "초안 있음" : S.vacancy ? `${nounOf(S.vacancy)} 준비됨` : "준비됨", S.article ? "ok" : "");
   })();
 })();

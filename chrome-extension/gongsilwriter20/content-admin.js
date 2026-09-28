@@ -260,6 +260,12 @@
       done.push("제목");
     }
 
+    /* 1-1. 섹션 — 경매·공매 기사는 공실뉴스 > 신축/분양/경매 */
+    if (draft.saleKind) {
+      if (await fillSection()) done.push("섹션");
+      else failed.push("섹션");
+    }
+
     /* 2. 부제목 1·2·3 — 한 칸에 줄바꿈으로 */
     const subs = (article.subtitles || []).filter(Boolean);
     if (subs.length) {
@@ -322,6 +328,33 @@
 
     titleEl.scrollIntoView({ behavior: "smooth", block: "center" });
     return done.length > 0;
+  }
+
+  /* ── 섹션 고르기 ──
+     1차 섹션을 고르면 React 가 2차 섹션 목록을 새로 그린다. 그 목록이 나올 때까지 기다렸다 고른다. */
+  function setSelectValue(select, value) {
+    if (!Array.from(select.options).some((option) => option.value === value)) return false;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value")?.set;
+    if (setter) setter.call(select, value);
+    else select.value = value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  }
+
+  const findSelectWith = (value) =>
+    Array.from(document.querySelectorAll("select")).find((select) =>
+      Array.from(select.options).some((option) => option.value === value)
+    );
+
+  async function fillSection() {
+    const first = findSelectWith(GW.ADMIN.SECTION1);
+    if (!first || !setSelectValue(first, GW.ADMIN.SECTION1)) return false;
+    for (let i = 0; i < 20; i += 1) {
+      const second = findSelectWith(GW.ADMIN.SECTION2);
+      if (second && setSelectValue(second, GW.ADMIN.SECTION2)) return true;
+      await gwSleep(150);
+    }
+    return false;
   }
 
   let applying = null;

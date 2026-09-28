@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>공실뉴스 AI 물건기사 & 블로그 작성기</title>
+  <title>공실뉴스 AI 기사 & 블로그·유튜브 작성기</title>
   <link rel="stylesheet" href="panel.css">
 </head>
 <body>
@@ -15,17 +15,17 @@
       <img src="icons/icon48.png" alt="" class="logo-img">
       <div class="logo-text">
         <span class="brand-name">공실뉴스</span>
-        <span class="brand-sub">AI 물건기사 & 블로그 작성기 <span id="brandVersion"></span></span>
+        <span class="brand-sub">AI 기사 & 블로그·유튜브 작성기 <span id="brandVersion"></span></span>
       </div>
       <span id="statusPill" class="status-pill">준비됨</span>
     </div>
-    <button id="btnReset" class="btn-reset" type="button" title="가져온 매물·초안·사진·블로그 글을 모두 지웁니다">↺ 초기화</button>
+    <button id="btnReset" class="btn-reset" type="button" title="가져온 물건·초안·사진·블로그 글·유튜브 대본을 모두 지웁니다">↺ 초기화</button>
   </header>
 
   <!-- ─────────── 탭 ─────────── -->
   <nav class="nav-tabs">
     <button id="tabWork" class="nav-tab active" type="button">
-      <span class="step-number">1</span> 매물 · AI
+      <span class="step-number">1</span> 물건 · AI
     </button>
     <button id="tabDraft" class="nav-tab" type="button">
       <span class="step-number">2</span> 초안 다듬기
@@ -35,16 +35,27 @@
       <span class="step-number">3</span> 블로그 작성
       <span id="blogBadge" class="tab-badge hidden">NEW</span>
     </button>
+    <button id="tabScript" class="nav-tab" type="button">
+      <span class="step-number">4</span> 유튜브 대본
+      <span id="scriptBadge" class="tab-badge hidden">NEW</span>
+    </button>
   </nav>
 
   <div class="scroll-area">
 
-    <!-- ═══════════ 뷰 1 — 매물 · AI ═══════════ -->
+    <!-- ═══════════ 뷰 1 — 물건 · AI ═══════════ -->
     <section id="viewWork" class="view active">
 
       <!-- ── 1단계 매물 ── -->
       <div class="card">
-        <label class="card-label">1단계 · 매물 가져오기</label>
+        <label class="card-label">1단계 · 물건 가져오기</label>
+
+        <!-- 일반 매물 / 경매·공매 — 자동 판별이 기본. 틀렸을 때만 직접 고른다 -->
+        <div class="chips-row sale-mode-row" role="group" aria-label="물건 종류 선택">
+          <button class="chip active" data-sale-mode="auto" type="button">자동 판별<small>추천</small></button>
+          <button class="chip" data-sale-mode="listing" type="button">일반 매물<small>공실광고</small></button>
+          <button class="chip" data-sale-mode="auction" type="button">경매·공매<small>공실열람 경매</small></button>
+        </div>
 
         <button id="btnGoGongsil" class="btn-line" type="button">
           공실열람 페이지 이동
@@ -53,11 +64,11 @@
         <button id="btnGrab" class="btn-fill" type="button">
           물건 가져오기
         </button>
-        <p class="hint">공실열람에서 매물을 하나 펼쳐 놓고 누르세요.</p>
+        <p class="hint">공실열람에서 매물이나 [경매/공매] 물건을 하나 펼쳐 놓고 누르세요. 자동 판별은 경매·공매 물건을 알아서 구분해 경매용 기사·블로그·유튜브 지시문을 씁니다.</p>
 
         <section id="vacancyCard" class="vacancy-card hidden">
           <div class="vacancy-head">
-            <span>가져온 공실 물건</span>
+            <span id="vacancyKind">가져온 공실 물건</span>
             <strong id="vacancyName">-</strong>
           </div>
           <dl id="vacancyFields" class="vacancy-fields"></dl>
@@ -114,7 +125,7 @@
           <button class="chip" data-length="long" type="button">길게<small>2,800~3,500자</small></button>
         </div>
         <p class="hint">
-          매물 스펙만으로는 길게 쓸 수 없습니다. 분량을 늘리면 지역·수요·확인할 점 같은
+          물건 정보만으로는 길게 쓸 수 없습니다. 분량을 늘리면 지역·수요·확인할 점 같은
           <b>해설 부분</b>이 길어집니다.
         </p>
       </div>
@@ -133,6 +144,7 @@
           <small>전송을 눌러 AI가 글을 씁니다</small>
         </button>
 
+        <div id="articleWriting" class="gw-writing hidden" role="status" aria-live="polite"></div>
         <button id="btnPullDraft" class="btn-fill green" type="button" disabled>
           <span class="n">③</span> 초안 보내기
           <small>다 나온 기사를 이 작업창으로 가져옵니다</small>
@@ -154,7 +166,7 @@
 
       <div id="draftEmpty" class="empty-note">
         아직 초안이 없습니다.<br>
-        <b>1 · 매물 · AI</b> 탭에서 <b>초안 보내기</b>까지 진행해 주세요.
+        <b>1 · 물건 · AI</b> 탭에서 <b>초안 보내기</b>까지 진행해 주세요.
       </div>
 
       <div id="draftBody" class="hidden">
@@ -273,6 +285,7 @@
           AI 블로그 초안 작성
           <small>선택한 AI에서 블로그 글 작성을 시작합니다</small>
         </button>
+        <div id="blogWriting" class="gw-writing hidden" role="status" aria-live="polite"></div>
         <button id="btnPullBlogDraft" class="btn-fill green" type="button" disabled>
           완성 글 가져오기
           <small>AI가 다 쓴 제목과 본문을 이 탭으로 가져옵니다</small>
@@ -297,6 +310,94 @@
           <div id="blogContent" class="doc-body blog-doc-body" contenteditable="true" spellcheck="false"></div>
           <div id="blogKeywords" class="kw-wrap"></div>
         </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 뷰 4 — 유튜브 대본 (완성 원고만 쓴다 · 장면·이미지는 넣지 않음) ═══════════ -->
+    <section id="viewScript" class="view">
+      <div id="scriptLock" class="card blog-lock hidden">
+        <div class="blog-lock-icon">🔒</div>
+        <strong id="scriptLockTitle">유튜브 대본은 회원 전용입니다</strong>
+        <p id="scriptLockText">공실뉴스부동산·공실스터디부동산 회원과 최고관리자만 사용할 수 있습니다.</p>
+        <div class="blog-lock-actions">
+          <a id="scriptLockLink" class="btn-fill" href="https://www.gongsilnews.com/newsrealty/apply" target="_blank" rel="noopener noreferrer">공실뉴스부동산 신청하기</a>
+          <button id="btnScriptLockRetry" class="btn-line" type="button">다시 확인</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="card-label">참조 기사</label>
+        <div id="ytSourceEmpty" class="blog-source-state warn">
+          <b>2 · 초안 다듬기</b>에 기사가 준비되면 유튜브 대본을 만들 수 있습니다.
+        </div>
+        <div id="ytSourceReady" class="blog-source-state hidden">
+          <span>현재 기사 참조</span>
+          <strong id="ytSourceTitle">-</strong>
+        </div>
+        <p id="ytSourceKind" class="hint yt-source-kind hidden"></p>
+        <p class="hint">기사·물건 정보를 참고자료로만 씁니다. 초안 다듬기의 내용은 바뀌지 않습니다.</p>
+      </div>
+
+      <div class="card">
+        <label class="card-label">대본 쓰기</label>
+        <div class="yt-field-title">콘텐츠 유형</div>
+        <div class="chips-row" data-yt-setting="videoType">
+          <button class="chip" data-value="listing" type="button">매물 소개</button>
+          <button class="chip" data-value="news" type="button">부동산 뉴스</button>
+          <button class="chip" data-value="area" type="button">지역 분석</button>
+        </div>
+        <div class="yt-field-title">영상 길이</div>
+        <div class="chips-row" data-yt-setting="duration">
+          <button class="chip" data-value="short" type="button">60초<small>쇼츠</small></button>
+          <button class="chip" data-value="medium" type="button">약 2분<small>일반</small></button>
+          <button class="chip" data-value="long" type="button">약 5분<small>심층</small></button>
+        </div>
+        <div class="yt-field-title">말투</div>
+        <div class="chips-row" data-yt-setting="tone">
+          <button class="chip" data-value="news" type="button">뉴스형</button>
+          <button class="chip" data-value="friendly" type="button">친근한 설명</button>
+          <button class="chip" data-value="expert" type="button">전문가 분석</button>
+        </div>
+        <div class="yt-actions">
+          <button id="btnMakeScript" class="btn-fill" type="button" disabled>
+            AI 유튜브 대본 작성
+            <small>2번에서 쓴 AI(ChatGPT·Gemini)에 새 대화로 원고를 요청합니다</small>
+          </button>
+          <div id="ytWriting" class="gw-writing hidden" role="status" aria-live="polite"></div>
+          <button id="btnPullScript" class="btn-fill green" type="button" disabled>
+            완성 대본 가져오기
+            <small>AI가 다 쓴 원고를 이 탭으로 가져옵니다</small>
+          </button>
+        </div>
+        <div id="ytPasteBox" class="paste-box hidden">
+          <p class="paste-guide">AI 답변을 자동으로 읽지 못했습니다.<br>
+            AI 탭의 JSON 상자 오른쪽 위 <b>복사</b> 버튼을 누른 뒤, 아래 칸에 <b>Ctrl+V</b> 로 붙여넣어 주세요.</p>
+          <textarea id="ytPasteJson" class="paste-json" rows="5" placeholder="AI가 쓴 JSON 원고를 여기에 붙여넣기"></textarea>
+          <button id="btnYtPaste" class="btn-line" type="button">붙여넣은 글로 대본 만들기</button>
+        </div>
+      </div>
+
+      <div id="scriptEmpty" class="empty-note">
+        콘텐츠 유형·영상 길이·말투를 고른 뒤<br><b>AI 유튜브 대본 작성</b>을 눌러 주세요.
+      </div>
+
+      <div id="scriptBody" class="card hidden">
+        <label class="card-label">완성 대본</label>
+        <label class="yt-label">유튜브 제목</label>
+        <input id="ytTitle" class="yt-input" type="text" placeholder="유튜브 제목">
+        <div class="yt-label-row">
+          <label class="yt-label">내레이션 원고 <span class="yt-label-note">— 직접 고칠 수 있습니다.</span></label>
+          <div class="yt-label-tools">
+            <button id="btnCopyNarration" class="yt-icon-btn" type="button" title="원고 전체 복사" aria-label="원고 전체 복사">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+            </button>
+            <button id="btnDownloadNarration" class="yt-icon-btn" type="button" title="메모장(.txt)으로 다운로드" aria-label="메모장(.txt)으로 다운로드">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+            </button>
+          </div>
+        </div>
+        <textarea id="ytFullText" class="yt-input yt-textarea yt-full" rows="16" spellcheck="false"></textarea>
+        <div id="ytFullMeta" class="yt-meta"></div>
       </div>
     </section>
 
@@ -411,10 +512,25 @@
     </button>
   </div>
 
+  <!-- ─────────── 뷰 4 하단 고정 바 (대본 수정) ─────────── -->
+  <div id="scriptActions" class="bottom-bar hidden">
+    <div class="revise-row">
+      <input id="ytReviseInput" type="text" class="revise-input"
+             placeholder="대본 수정 요청 (예: 오프닝을 더 짧고 강하게)">
+      <button id="btnReviseScript" class="btn-revise" type="button" title="같은 대화에 이어서 AI에게 수정을 요청합니다">
+        수정 요청
+      </button>
+      <button id="btnPullScriptRevised" class="btn-sub btn-pull-revised" type="button" title="AI 탭에 나온 마지막 답변을 대본으로 가져옵니다">
+        수정 대본 가져오기
+      </button>
+    </div>
+  </div>
+
   <div id="toastHost"></div>
 </div>
 
 <script src="shared/config.js"></script>
+<script src="shared/busy.js"></script>
 <script src="shared/prompt.js"></script>
 <script src="shared/media.js"></script>
 <script src="shared/media-cover.js"></script>
@@ -422,7 +538,10 @@
 <script src="shared/blog-prompt.js"></script>
 <script src="shared/naver-blog.js"></script>
 <script src="shared/chatgpt-direct.js"></script>
+<script src="shared/youtube-prompt.js"></script>
+<script src="shared/youtube-json.js"></script>
 <script src="panel.js"></script>
 <script src="blog.js"></script>
+<script src="youtube.js"></script>
 </body>
 </html>

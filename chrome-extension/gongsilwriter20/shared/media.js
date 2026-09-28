@@ -158,6 +158,7 @@ function gwCard(lines, opts = {}) {
 }
 
 function gwProofCard(v) {
+  if (v && v.saleKind) return gwAuctionProofCard(v);
   return gwCard(
     [
       { text: v.title || "공실 매물", size: 28, weight: "800" },
@@ -171,10 +172,25 @@ function gwProofCard(v) {
   );
 }
 
+/* 경매·공매 물건 — 공실열람 물건 정보 카드 */
+function gwAuctionProofCard(v) {
+  return gwCard(
+    [
+      { text: v.title || "경매·공매 물건", size: 28, weight: "800" },
+      { text: v.priceText || "", size: 24, color: "#2563eb", weight: "800" },
+      { text: gwField(v, "소재지(지번)", "소재지") || "", size: 17, color: "#475569", weight: "600" },
+      { text: gwField(v, "관리번호", "사건번호")
+          ? `${gwField(v, "관리번호") ? "관리번호" : "사건번호"} ${gwField(v, "관리번호", "사건번호")}`
+          : "", size: 15, color: "#64748b", weight: "600" },
+    ],
+    { badge: `공실열람 ${v.saleKind || "경매"} 물건 정보`, accent: "#2563eb" }
+  );
+}
+
 function gwMapCard(v) {
   return gwCard(
     [
-      { text: gwField(v, "소재지") || v.title || "", size: 24, weight: "800" },
+      { text: (v && v.saleKind ? gwField(v, "소재지(지번)", "소재지") : gwField(v, "소재지")) || v.title || "", size: 24, weight: "800" },
       { text: v.infra || "", size: 15, color: "#475569", weight: "600" },
     ],
     { badge: "위치 정보", accent: "#059669", bg: "#f0fdf4" }
@@ -197,6 +213,7 @@ function gwRoadviewCard(v) {
    기사 본문에 그대로 들어간다. 가진 값만 쓴다.
    ══════════════════════════════════════════════════════════════ */
 function gwCaptionFor(kind, v, index = 0) {
+  if (v && v.saleKind) return gwAuctionCaptionFor(kind, v, index);
   const name = (v && (v.title || gwField(v, "소재지"))) || "해당 매물";
   const price = (v && v.priceText) || "";
 
@@ -207,6 +224,28 @@ function gwCaptionFor(kind, v, index = 0) {
       return index === 0
         ? `${name} 현장 실물 전경 (자료: 공실뉴스)`
         : `${name} 현장 실물 ${index + 1} (자료: 공실뉴스)`;
+    case "map":
+      return `[위치 지도] ${name} 위치 및 주변 환경 (자료: 위치정보 지도)`;
+    case "roadview":
+      return `[현장 로드뷰] ${name} 진입로 및 가로변 전경 (자료: 로드뷰)`;
+    default:
+      return name;
+  }
+}
+
+/* 경매·공매 물건의 사진 설명글 — "실매물 등록" 대신 공실열람 경매·공매 물건 정보로 적는다 */
+function gwAuctionCaptionFor(kind, v, index = 0) {
+  const name = (v && (v.title || gwField(v, "소재지(지번)", "소재지"))) || "해당 물건";
+  const price = (v && v.priceText) || "";
+  const saleKind = (v && v.saleKind) || "경매";
+
+  switch (kind) {
+    case "proof":
+      return `[공실열람 ${saleKind} 물건 정보] 공실뉴스 공실열람에 게재된 '${name}'${price ? ` (${price})` : ""} ${saleKind} 물건 현황`;
+    case "photo":
+      return index === 0
+        ? `${name} 전경 (자료: 공실뉴스)`
+        : `${name} 사진 ${index + 1} (자료: 공실뉴스)`;
     case "map":
       return `[위치 지도] ${name} 위치 및 주변 환경 (자료: 위치정보 지도)`;
     case "roadview":

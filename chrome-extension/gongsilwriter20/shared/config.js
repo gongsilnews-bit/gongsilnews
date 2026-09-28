@@ -35,6 +35,9 @@ const GW = {
        폼이 평소 업로드와 똑같은 길(WebP 압축·대표 지정)로 처리한다. */
     PHOTO_INPUT: '#photo-upload',
     PHOTO_CAPTION: 'input[placeholder="사진 설명(캡션) 입력"]',
+    /* 경매·공매 기사가 올라갈 섹션 */
+    SECTION1: "공실뉴스",
+    SECTION2: "신축/분양/경매",
   },
 
   /* ── ChatGPT ── */
@@ -51,12 +54,20 @@ const GW = {
     SEND: ['button[data-testid="send-button"]', 'button[aria-label="Send prompt"]', 'button[aria-label="프롬프트 보내기"]'],
     /* 응답 말풍선 — 마지막 것을 읽는다 */
     ANSWER: ['div[data-message-author-role="assistant"]', ".markdown.prose"],
+    /* 대화 한 턴(내 요청·답변 모두) — 요청 뒤에 새로 생긴 턴 안의 그림만 본다 */
+    TURN: ['article[data-testid^="conversation-turn"]', 'section[data-testid^="conversation-turn"]', "[data-message-author-role]"],
+    USER_TURN: ['div[data-message-author-role="user"]'],
+    /* 답변 중에만 보이는 중지 버튼 */
+    STOP: ['button[data-testid="stop-button"]', 'button[aria-label*="중지"]', 'button[aria-label*="Stop"]'],
     /* 생성된 그림 — 아바타·아이콘과 섞이지 않게 응답 안쪽만 본다 */
     IMAGE: [
       'div[data-message-author-role="assistant"] img',
       'article[data-testid^="conversation-turn"] img',
       'img[src*="oaiusercontent.com"]',
       'img[src*="/backend-api/files/"]',
+      'img[src*="/backend-api/estuary/"]',
+      'img[alt*="생성된 이미지"]',
+      'img[alt*="Generated image"]',
     ],
   },
 
@@ -67,6 +78,11 @@ const GW = {
     SEND: ['button[aria-label*="보내기"]', 'button[aria-label*="Send"]', "button.send-button"],
     ANSWER: ["message-content .markdown", "model-response message-content", ".model-response-text"],
     IMAGE: ["model-response img", "message-content img"],
+    /* 답변 한 턴 · 내 요청 한 턴 — 새 답변 안의 그림만 고르고, 전송됐는지 확인하는 데 쓴다 */
+    TURN: ["model-response"],
+    USER_TURN: ["user-query"],
+    /* 답변하는 동안 전송 버튼 자리에 뜨는 중지 버튼 — 이게 보이면 아직 답변 중이다 */
+    STOP: ["button.send-button.stop", 'button[aria-label*="중지"]', 'button[aria-label*="Stop"]'],
     /* 긴 JSON 생성 중 잠깐 멈춘 것을 완료로 오인하지 않도록 Gemini 는 더 기다린다. */
     SETTLE_MS: 3000,
   },

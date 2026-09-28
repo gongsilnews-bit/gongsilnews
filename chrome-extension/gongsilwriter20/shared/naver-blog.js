@@ -91,6 +91,14 @@
     qna: { label: "Q&A형", hint: "소제목을 질문으로, 본문을 답변으로. 질문형 검색에 유리합니다." },
     news: { label: "뉴스기사형", hint: "큰 리드문 · 기사체 · 공실뉴스 서명. 언론사 느낌을 살립니다." },
   };
+  /* 경매·공매 물건일 때 바뀌는 디자인 설명 */
+  const AUCTION_HINTS = {
+    basic: "요약 인용구 · 물건표 · 큰 소제목. 어떤 물건에나 무난합니다.",
+    magazine: "가운데 정렬 · 번호 소제목 · 핵심 문장 강조. 아파트·건물 물건에 어울립니다.",
+  };
+  function designHint(design, auction) {
+    return (auction && AUCTION_HINTS[design]) || DESIGNS[design]?.hint || "";
+  }
   const ACCENT = "#2563eb";
   const MUTED = "#888888";
   const SKY = "#dbeafe"; // 매거진형 소제목 하늘색 배경(형광펜)
@@ -111,6 +119,26 @@
     /입주가능|사용 가능일/,
   ];
 
+  /* 경매·공매 물건표 항목: 경매·공매 물건을 볼 때 먼저 찾는 순서.
+     소재지·물건종류는 출처 API(listing), 나머지는 서버에서 받은 물건 정보(vacancy.fields)에서 찾는다.
+     정보제공처 연락처와 입찰 전 주의사항은 서버가 애초에 보내지 않는다. */
+  const AUCTION_FACT_ORDER = [
+    /^구분$/,
+    /^감정가$/,
+    /^최저입찰가$/,
+    /감정가 대비/,
+    /유찰/,
+    /토지면적|건물면적/,
+    /입찰 시작|입찰 마감|개찰일시/,
+    /입찰보증금$/,
+    /명도책임/,
+    /관리번호|사건번호/,
+    /집행기관|관할법원/,
+  ];
+
+  /* 경매·공매 물건인가 — 출처 API 나 물건 정보에 경매·공매 구분이 붙어 있다 */
+  const isAuction = (vacancy, listing) => Boolean(listing?.saleKind || vacancy?.saleKind);
+
   function isHeading(paragraph) {
     return String(paragraph).startsWith("■");
   }
@@ -130,6 +158,16 @@
       rows.push([label, text]);
     };
     const fields = (Array.isArray(vacancy?.fields) ? vacancy.fields : []).filter((field) => field && field.label);
+
+    if (isAuction(vacancy, listing)) {
+      push("소재지", fields.find((field) => field.label === "소재지(지번)")?.value || listing?.location);
+      push("물건종류", listing?.propertyType || fields.find((field) => field.label === "물건종류")?.value);
+      AUCTION_FACT_ORDER.forEach((pattern) => {
+        fields.filter((field) => pattern.test(field.label)).forEach((field) => push(field.label, field.value));
+      });
+      if (!seen.has("최저입찰가")) push("가격", vacancy?.priceText);
+      return rows;
+    }
 
     push("소재지", listing?.location);
     push("매물종류", listing?.propertyType);
@@ -156,7 +194,12 @@
   }
 
   /* 전송 전 검사: 표시·광고 필수 정보가 빠졌으면 이유를 돌려준다 */
-  function listingProblems(listing) {
+  function listingProblems(listing, auction = false) {
+    /* 경매·공매: 물건 정보를 서버에서 받았는지만 본다 */
+    if (auction || listing?.saleKind) {
+      if (!listing) return ["경매·공매 물건 정보"];
+      return listing.saleKind ? [] : ["경매·공매 구분"];
+    }
     if (!listing) return ["매물 출처 정보(중개사무소)"];
     const owner = listing.owner || {};
     if (owner.type !== "agency") return owner.name ? [] : ["등록자 이름"];
@@ -171,6 +214,19 @@
 
   /* 글 끝 "매물 정보 출처" — 모든 디자인 공통. 문의처가 아니라 출처로 표현한다. */
   function sourceBlockLines(listing, url) {
+    /* 경매·공매: 정보제공처(온비드 고객센터) 연락처와 입찰 전 법적 주의사항 안내문은 넣지 않는다 */
+    if (listing?.saleKind) {
+      const saleKind = listing.saleKind;
+      const lines = [`공실뉴스 공실열람 ${saleKind} 물건 정보 (${formatDate(listing.capturedAt)} 기준)`];
+      const numberLabel = listing.caseLabel || (saleKind === "공매" ? "관리번호" : "사건번호");
+      const parts = [
+        listing.caseNo ? `${numberLabel} ${listing.caseNo}` : "",
+        listing.agency ? `${saleKind === "공매" ? "집행기관" : "관할법원"} ${listing.agency}` : "",
+      ].filter(Boolean);
+      if (parts.length) lines.push(parts.join(" | "));
+      lines.push("※ 입찰 조건은 공고 시점 기준이며 변경될 수 있습니다.");
+      return { lines, url };
+    }
     const owner = listing?.owner || {};
     const lines = [`공실뉴스 매물 등록 정보 (${formatDate(listing?.capturedAt)} 기준)`];
     if (owner.type === "agency") {
@@ -228,6 +284,7 @@
     const paragraphs = splitParagraphs(body);
     const slots = layoutMediaSlots(paragraphs.length, list);
     const rows = factRows(options.vacancy, options.listing);
+    const noun = isAuction(options.vacancy, options.listing) ? "물건" : "매물";
     const url = listingUrl(options.vacancy, options.listing);
     const blocks = [];
     let buffer = [];
@@ -336,7 +393,7 @@
       if (leadIndex < 0) html(tableHtml(rows));
     } else if (design === "news") {
       if (rows.length) {
-        html(paragraphHtml("[매물 정보]", { size: 17, bold: true }), { tight: true });
+        html(paragraphHtml(noun === "물건" ? "[물건 정보]" : "[매물 정보]", { size: 17, bold: true }), { tight: true });
         html(tableHtml(rows));
       }
     }
@@ -344,10 +401,10 @@
     // 모든 디자인 공통: 매물 정보 출처 (표시·광고 필수 정보) + 고정 상세 링크 + 공실뉴스 서명
     const source = sourceBlockLines(options.listing, url);
     html("<hr>");
-    html(paragraphHtml("[매물 정보 출처]", { size: 13, color: MUTED, bold: true }), { tight: true });
+    html(paragraphHtml(`[${noun} 정보 출처]`, { size: 13, color: MUTED, bold: true }), { tight: true });
     source.lines.forEach((line) => html(paragraphHtml(line, { size: 13, color: MUTED }), { tight: true }));
     html(BLANK, { tight: true });
-    html(linkHtml(source.url, "▶ 공실뉴스 매물 상세 보기"));
+    html(linkHtml(source.url, noun === "물건" ? "▶ 공실뉴스 경매·공매 물건 상세 보기" : "▶ 공실뉴스 매물 상세 보기"));
     html(paragraphHtml("공실뉴스 · gongsilnews.com", { size: 13, color: MUTED }));
     flush();
     return blocks;
@@ -365,7 +422,7 @@
   const api = {
     HOME_URL, WRITE_URL, isNaverBlogUrl, isLikelyWriteUrl, selectLikelyWriteTab,
     splitParagraphs, layoutMediaSlots, buildNaverBlocks, normalizeTags,
-    DESIGNS, factRows, listingProblems, SITE_URL,
+    DESIGNS, designHint, factRows, listingProblems, SITE_URL,
   };
   global.GWNaverBlog = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
