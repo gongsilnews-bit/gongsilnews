@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminSupabase } from "@supabase/supabase-js";
 import { getVacancyDetail } from "@/app/actions/vacancy";
-import { getExtensionMember } from "@/utils/extensionMember";
+import { canSendBlog, getExtensionMember } from "@/utils/extensionMember";
 import { getAuctionInfo, formatAreaWithPy } from "@/app/(map)/gongsil/gongsilHelpers";
 
 /**
@@ -71,15 +71,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: "물건 ID가 올바르지 않습니다." }, { status: 400, headers: corsHeaders });
   }
 
-  // 블로그 작성은 기존 기사작성기와 같은 권한(공실뉴스부동산·공실스터디부동산·최고관리자)만 쓴다.
+  // 블로그 작성은 기존 기사작성기와 같은 권한(공실뉴스부동산·공실스터디부동산·최고관리자)과
+  // 최근 블로그 무료 체험을 쓴 회원만 쓴다.
   if (req.nextUrl.searchParams.get("for") === "blog") {
     const requester = await getExtensionMember(req);
-    if (!requester?.canBlog) {
+    if (!(await canSendBlog(requester))) {
       return NextResponse.json(
         {
           success: false,
           error: requester
-            ? "블로그 작성은 공실뉴스부동산·공실스터디부동산 회원만 사용할 수 있습니다."
+            ? "블로그 작성은 공실뉴스부동산·공실스터디부동산 회원 전용입니다. 무료 체험은 [AI 블로그 초안 작성]으로 시작해 주세요."
             : "공실뉴스에 로그인한 뒤 다시 시도해 주세요.",
         },
         { status: requester ? 403 : 401, headers: corsHeaders }

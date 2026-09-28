@@ -226,5 +226,43 @@ const GWChatGptDirect = (() => {
     }
   }
 
-  return { read, imageState, downloadImage };
+  /* ══════════════════════════════════════════════════════════════
+     수정 요청의 새 답변 기다리기 — 화면이 아니라 대화 원문으로
+
+     화면에서 답변 수를 세면, 탭이 뒤에 있거나 긴 JSON 이 다 그려지지 않을 때 놓친다.
+     대화 원문은 "보내기 전 메시지 수"보다 늘어난 뒤 끝난 AI 답변만 돌려주므로,
+     보낸 요청(빈 JSON 양식)이나 이전 답변이 섞이지 않는다. ChatGPT 가 아니면 ok:false.
+     ══════════════════════════════════════════════════════════════ */
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  /* AI 가 아직 답하는 중이면 끝날 때까지(최대 2분) 기다린 뒤 지금 상태를 돌려준다 */
+  async function waitIdle(tabId, onWait = () => {}) {
+    let state = await imageState(tabId);
+    const until = Date.now() + 120000;
+    while (state.ok && state.busy && Date.now() < until) {
+      onWait();
+      await sleep(2000);
+      state = await imageState(tabId);
+    }
+    return state;
+  }
+
+  /* beforeCount 뒤에 새로 끝난 AI 답변의 글을 돌려준다. 시간 안에 못 받으면 "" */
+  async function waitNewAnswer(tabId, beforeCount, maxMs = 240000) {
+    const until = Date.now() + maxMs;
+    while (Date.now() < until) {
+      await sleep(2500);
+      if (!(await chrome.tabs.get(tabId).catch(() => null))) return "";
+      const now = await imageState(tabId);
+      if (!now.ok) continue; // 잠깐 못 읽어도 시간 안에서는 다시 본다
+      const last = now.last;
+      if (now.messageCount > beforeCount + 1 && !now.busy && last?.role === "assistant" &&
+          last.status === "finished_successfully" && last.text) {
+        return last.text;
+      }
+    }
+    return "";
+  }
+
+  return { read, imageState, downloadImage, waitIdle, waitNewAnswer };
 })();

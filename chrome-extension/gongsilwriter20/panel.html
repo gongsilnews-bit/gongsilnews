@@ -144,6 +144,7 @@
           <small>전송을 눌러 AI가 글을 씁니다</small>
         </button>
 
+        <div id="articleFail" class="gw-fail-slot hidden"></div>
         <div id="articleWriting" class="gw-writing hidden" role="status" aria-live="polite"></div>
         <button id="btnPullDraft" class="btn-fill green" type="button" disabled>
           <span class="n">③</span> 초안 보내기
@@ -225,6 +226,7 @@
           <strong id="blogSourceTitle">-</strong>
         </div>
         <p class="hint">기사를 복사해 참고자료로만 사용합니다. 초안 다듬기의 제목·본문·사진은 변경하지 않습니다.</p>
+        <div id="blogTrial" class="gw-trial hidden"></div>
       </div>
 
       <div class="card">
@@ -285,6 +287,7 @@
           AI 블로그 초안 작성
           <small>선택한 AI에서 블로그 글 작성을 시작합니다</small>
         </button>
+        <div id="blogFail" class="gw-fail-slot hidden"></div>
         <div id="blogWriting" class="gw-writing hidden" role="status" aria-live="polite"></div>
         <button id="btnPullBlogDraft" class="btn-fill green" type="button" disabled>
           완성 글 가져오기
@@ -336,6 +339,7 @@
         </div>
         <p id="ytSourceKind" class="hint yt-source-kind hidden"></p>
         <p class="hint">기사·물건 정보를 참고자료로만 씁니다. 초안 다듬기의 내용은 바뀌지 않습니다.</p>
+        <div id="ytTrial" class="gw-trial hidden"></div>
       </div>
 
       <div class="card">
@@ -363,6 +367,7 @@
             AI 유튜브 대본 작성
             <small>2번에서 쓴 AI(ChatGPT·Gemini)에 새 대화로 원고를 요청합니다</small>
           </button>
+          <div id="ytFail" class="gw-fail-slot hidden"></div>
           <div id="ytWriting" class="gw-writing hidden" role="status" aria-live="polite"></div>
           <button id="btnPullScript" class="btn-fill green" type="button" disabled>
             완성 대본 가져오기
@@ -531,6 +536,7 @@
 
 <script src="shared/config.js"></script>
 <script src="shared/busy.js"></script>
+<script src="shared/trial.js"></script>
 <script src="shared/prompt.js"></script>
 <script src="shared/media.js"></script>
 <script src="shared/media-cover.js"></script>

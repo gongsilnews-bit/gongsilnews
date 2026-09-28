@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getExtensionMember } from "@/utils/extensionMember";
+import { getExtensionMember, getTrialUsage } from "@/utils/extensionMember";
 
 /**
  * 크롬 확장 회원 확인
@@ -39,6 +39,13 @@ export async function GET(req: NextRequest) {
     }
 
     const isPremium = member.canBlog || member.canYoutubeWriter;
+    /* 유료 회원이 아니면 이번 달 블로그·유튜브 무료 체험 남은 횟수를 함께 알려 준다 */
+    const trial = isPremium
+      ? null
+      : await getTrialUsage(member.id).catch((error) => {
+          console.error("확장 무료 체험 조회 오류:", error);
+          return null;
+        });
     return NextResponse.json(
       {
         success: true,
@@ -54,6 +61,7 @@ export async function GET(req: NextRequest) {
         },
         canBlog: member.canBlog,
         canYoutubeWriter: member.canYoutubeWriter,
+        trial,
         tier: isPremium ? "premium" : "free",
         dailyLimit: isPremium ? 9999 : 5,
         dailyUsed: 0,

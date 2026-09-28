@@ -51,6 +51,36 @@
     }
   }
 
+  /* ── 실패 안내 카드 ──
+     안 되면 안 된다고 분명히 알린다. 알림(토스트)처럼 사라지지 않고, 닫거나 다시 할 때까지 남는다.
+     box 가 .gw-fail-slot 이면 그 칸 자체를 보이고, 글 영역이면 맨 위에 붙인다. */
+  function fail(box, title, reason, retryButton = null) {
+    if (!box) return;
+    clearFail(box);
+    const card = document.createElement("div");
+    card.className = "gw-fail";
+    card.setAttribute("role", "alert");
+    card.innerHTML =
+      `<div class="gw-fail-head"><span class="gw-fail-icon">⚠️</span><strong>${esc(title)}</strong>` +
+      `<button type="button" class="gw-fail-close" aria-label="닫기" title="닫기">✕</button></div>` +
+      `<p class="gw-fail-reason">${esc(reason)}</p>` +
+      (retryButton ? `<div class="gw-fail-actions"><button type="button" class="gw-fail-retry">다시 가져오기</button></div>` : "");
+    card.querySelector(".gw-fail-close").addEventListener("click", () => clearFail(box));
+    card.querySelector(".gw-fail-retry")?.addEventListener("click", () => {
+      clearFail(box);
+      if (!retryButton.disabled) retryButton.click();
+    });
+    box.prepend(card);
+    if (box.classList.contains("gw-fail-slot")) box.classList.remove("hidden");
+    card.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+  }
+
+  function clearFail(box) {
+    if (!box) return;
+    box.querySelectorAll(":scope > .gw-fail").forEach((card) => card.remove());
+    if (box.classList.contains("gw-fail-slot")) box.classList.add("hidden");
+  }
+
   /* 글 영역 위 반투명 흰 막 + 가운데 멘트 */
   function coverOn(box, text) {
     let layer = box.querySelector(":scope > .gw-cover");
@@ -132,5 +162,5 @@
     })();
   }
 
-  globalThis.GWBusy = { start, label, stop, writing, watchAi };
+  globalThis.GWBusy = { start, label, stop, writing, watchAi, fail, clearFail };
 })();

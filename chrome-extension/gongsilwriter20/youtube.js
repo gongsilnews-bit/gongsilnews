@@ -37,12 +37,12 @@
     scriptLock: $("scriptLock"), scriptLockTitle: $("scriptLockTitle"), scriptLockText: $("scriptLockText"),
     scriptLockLink: $("scriptLockLink"), btnScriptLockRetry: $("btnScriptLockRetry"),
     ytSourceEmpty: $("ytSourceEmpty"), ytSourceReady: $("ytSourceReady"), ytSourceTitle: $("ytSourceTitle"),
-    ytSourceKind: $("ytSourceKind"),
+    ytSourceKind: $("ytSourceKind"), ytTrial: $("ytTrial"),
     btnMakeScript: $("btnMakeScript"), btnPullScript: $("btnPullScript"),
     ytPasteBox: $("ytPasteBox"), ytPasteJson: $("ytPasteJson"), btnYtPaste: $("btnYtPaste"),
     scriptEmpty: $("scriptEmpty"), scriptBody: $("scriptBody"),
     ytTitle: $("ytTitle"), btnCopyNarration: $("btnCopyNarration"), btnDownloadNarration: $("btnDownloadNarration"),
-    ytFullText: $("ytFullText"), ytFullMeta: $("ytFullMeta"), ytWriting: $("ytWriting"),
+    ytFullText: $("ytFullText"), ytFullMeta: $("ytFullMeta"), ytWriting: $("ytWriting"), ytFail: $("ytFail"),
     ytReviseInput: $("ytReviseInput"), btnReviseScript: $("btnReviseScript"),
     btnPullScriptRevised: $("btnPullScriptRevised"),
     status: $("statusPill"), toastHost: $("toastHost"),
@@ -69,10 +69,13 @@
     el.status.className = "status-pill" + (kind ? " " + kind : "");
   }
 
-  async function guard(button, busyText, job, cover = null) {
+  /* opts 는 panel.js 의 guard 와 같다 — cover(흰 막) · fail/failTitle(빨간 안내 카드) · retry */
+  async function guard(button, busyText, job, opts = {}) {
     const original = button.innerHTML;
+    const failBox = opts.fail || opts.cover;
     button.disabled = true;
-    GWBusy.start(button, busyText, cover);
+    GWBusy.clearFail(failBox);
+    GWBusy.start(button, busyText, opts.cover);
     status(busyText, "busy");
     try {
       await job();
@@ -80,6 +83,7 @@
       console.error("[공실뉴스 유튜브]", error);
       toast(error.message || String(error), "bad", 8000);
       status("문제 발생", "bad");
+      if (opts.failTitle) GWBusy.fail(failBox, opts.failTitle, error.message || String(error), opts.retry);
     } finally {
       GWBusy.stop(button);
       button.disabled = false;
@@ -180,13 +184,7 @@
     try {
       const response = await fetch(`${origin}/api/extension/auth/me`, { credentials: "include", cache: "no-store" });
       const data = await response.json();
-      access = {
-        origin,
-        canUse: Boolean(data?.canYoutubeWriter),
-        isLoggedIn: Boolean(data?.isLoggedIn),
-        name: data?.user?.name || "",
-        planLabel: data?.user?.planLabel || "",
-      };
+      access = GWTrial.accessFrom(data, "youtube", origin);
     } catch (_) {
       access = { origin, canUse: false, isLoggedIn: false, error: true };
     }
@@ -198,6 +196,8 @@
     const locked = !access?.canUse;
     el.viewScript.classList.toggle("locked", locked);
     el.scriptLock.classList.toggle("hidden", !locked);
+    GWTrial.render(el.ytTrial, locked ? null : access, "유튜브 대본");
+    refreshButtons();
     if (locked) {
       if (!access) {
         el.scriptLockTitle.textContent = "회원 정보를 확인하는 중입니다";
@@ -208,15 +208,16 @@
         el.scriptLockText.textContent = "인터넷 연결을 확인한 뒤 [다시 확인]을 눌러 주세요.";
         el.scriptLockLink.classList.add("hidden");
       } else if (!access.isLoggedIn) {
-        el.scriptLockTitle.textContent = "공실뉴스에 로그인해 주세요";
-        el.scriptLockText.textContent = "유튜브 대본은 공실뉴스부동산·공실스터디부동산 회원 전용입니다. 이 브라우저에서 공실뉴스에 로그인한 뒤 [다시 확인]을 눌러 주세요.";
+        el.scriptLockTitle.textContent = "공실뉴스에 로그인하면 무료로 체험할 수 있습니다";
+        el.scriptLockText.textContent = "유튜브 대본은 공실뉴스 회원이면 매월 3번 무료로 체험할 수 있고, 공실뉴스부동산·공실스터디부동산 회원은 무제한입니다. 이 브라우저에서 공실뉴스에 로그인한 뒤 [다시 확인]을 눌러 주세요.";
         el.scriptLockLink.textContent = "공실뉴스 열기";
         el.scriptLockLink.href = `${access.origin}/`;
         el.scriptLockLink.classList.remove("hidden");
       } else {
-        el.scriptLockTitle.textContent = "유튜브 대본은 회원 전용입니다";
+        /* 로그인은 했는데 무료 체험 횟수를 읽지 못한 경우 */
+        el.scriptLockTitle.textContent = "무료 체험 횟수를 확인하지 못했습니다";
         el.scriptLockText.textContent = `${access.name}님은 현재 ${access.planLabel || "무료"} 등급입니다. ` +
-          "유튜브 대본은 공실뉴스부동산·공실스터디부동산 회원만 사용할 수 있습니다.";
+          "잠시 뒤 [다시 확인]을 눌러 주세요. 공실뉴스부동산·공실스터디부동산 회원은 무제한으로 쓸 수 있습니다.";
         el.scriptLockLink.textContent = "공실뉴스부동산 신청하기";
         el.scriptLockLink.href = `${access.origin}/newsrealty/apply`;
         el.scriptLockLink.classList.remove("hidden");
@@ -235,6 +236,24 @@
   /* ═════════════ 탭 전환 ═════════════
      1·2번은 panel.js, 3번은 blog.js, 4번은 여기서 관리한다.
      4번을 열 때는 다른 탭과 하단 바를 모두 내려놓는다. */
+  /* 유료 회원이 아니면 작성할 때마다 무료 체험 1번을 쓴다. 다 썼으면 여기서 멈춘다. */
+  async function useTrial() {
+    if (!access) await checkAccess();
+    if (!access?.canUse) throw new Error("유튜브 대본을 쓸 수 없습니다. 탭 위의 안내를 확인해 주세요.");
+    if (access.unlimited) return;
+    const result = await GWTrial.consume(access.origin, "youtube");
+    if (!result.ok) {
+      if (result.exhausted) access.trial.remaining = 0;
+      applyLock();
+      throw new Error(result.error);
+    }
+    if (!result.unlimited) {
+      access.trial = { remaining: result.remaining, limit: result.limit };
+      applyLock();
+      if (result.remaining === 0) toast("이번이 이번 달 마지막 유튜브 대본 무료 체험입니다.", "info", 8000);
+    }
+  }
+
   const isScriptActive = () => el.tabScript.classList.contains("active");
 
   function showBottomBar() {
@@ -479,6 +498,7 @@
       const source = await getSource();
       if (!source) throw new Error("먼저 2 · 초안 다듬기에 기사를 준비해 주세요.");
       if (Y.full && !confirm("지금 완성 대본을 새 대본으로 바꿉니다. 계속할까요?")) return;
+      await useTrial();
       Y.sourceSignature = signatureOf(source);
       /* 수정 요청도 처음 대본을 쓴 물건 기준으로 지킬 것을 정한다 */
       Y.saleKind = source.vacancy?.saleKind || "";
@@ -497,7 +517,7 @@
       Y.writing = true;
       showWriting();
       save();
-    })
+    }, { fail: el.ytFail, failTitle: "대본 작성을 시작하지 못했습니다" })
   );
 
   function applyFullScript(text) {
@@ -528,7 +548,7 @@
     guard(el.btnPullScript, "대본 가져오는 중", async () => {
       const text = await readAnswer({});
       afterScriptPulled(applyFullScript(text));
-    }, el.scriptBody)
+    }, { cover: el.scriptBody, fail: el.ytFail, failTitle: "대본을 가져오지 못했습니다", retry: el.btnPullScript })
   );
 
   el.btnYtPaste.addEventListener("click", () =>
@@ -547,7 +567,10 @@
     }
     guard(el.btnReviseScript, "수정 요청 중", async () => {
       if (!Y.full) throw new Error("수정할 대본이 없습니다.");
-      if (!(await aiTabAlive())) throw new Error("대본을 만든 AI 탭이 닫혔습니다. [AI 유튜브 대본 작성]으로 새로 만들어 주세요.");
+      if (!(await aiTabAlive())) {
+        Y.aiTabId = null;
+        throw new Error("대본을 쓴 AI 탭이 닫혔습니다. [AI 유튜브 대본 작성]으로 새로 만들어 주세요.");
+      }
       const prompt = gwBuildYtRevisePrompt(Y.full, request, { saleKind: Y.saleKind || "" });
       const result = await sendInSameTab(prompt, "수정 요청");
       if (!result.sent) {
@@ -565,7 +588,7 @@
       toast("대본 수정을 요청했습니다. 새 답변이 끝나면 자동으로 가져옵니다.", "info");
       const text = await readAnswer({ minCount: result.before + 1, maxMs: 240000 }, result.apiBefore);
       afterScriptPulled(applyFullScript(text), true);
-    }, el.scriptBody);
+    }, { cover: el.scriptBody, failTitle: "수정 대본을 받지 못했습니다", retry: el.btnPullScriptRevised });
   }
 
   el.btnReviseScript.addEventListener("click", reviseScript);
@@ -576,7 +599,7 @@
     guard(el.btnPullScriptRevised, "수정 대본 가져오는 중", async () => {
       const text = await readAnswer({});
       afterScriptPulled(applyFullScript(text), true);
-    }, el.scriptBody)
+    }, { cover: el.scriptBody, failTitle: "수정 대본을 가져오지 못했습니다", retry: el.btnPullScriptRevised })
   );
 
   /* AI 에 대본을 맡긴 뒤 [완성 대본 가져오기]로 가져올 때까지 띄워 둔다 */
@@ -652,7 +675,8 @@
 
   /* ═════════════ 버튼 잠금 · 저장 · 복원 ═════════════ */
   function refreshButtons() {
-    el.btnMakeScript.disabled = !sourceCache;
+    /* 무료 체험을 다 썼으면 새 대본은 못 만든다 — 이미 만든 대본은 계속 고칠 수 있다 */
+    el.btnMakeScript.disabled = !sourceCache || GWTrial.exhausted(access);
     el.btnPullScript.disabled = !Y.aiTabId;
     el.btnReviseScript.disabled = !Y.full || !Y.aiTabId;
     el.btnPullScriptRevised.disabled = !Y.aiTabId;

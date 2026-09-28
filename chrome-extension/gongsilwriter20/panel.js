@@ -39,7 +39,7 @@
     imageRequest: $("imageRequest"),
     btnMakeImage: $("btnMakeImage"), btnChangeImage: $("btnChangeImage"), fileImage: $("fileImage"),
     btnSendGongsil: $("btnSendGongsil"),
-    articleWriting: $("articleWriting"),
+    articleWriting: $("articleWriting"), articleFail: $("articleFail"),
     toastHost: $("toastHost"),
   };
 
@@ -64,11 +64,15 @@
   }
 
   /* 누르는 동안 잠가 둔다 — 두 번 눌러 생기는 사고를 막는다.
-     cover 를 주면 그 글 영역에 반투명 흰 막과 같은 멘트를 띄운다. */
-  async function guard(btn, busyText, fn, cover = null) {
+     opts.cover   : 그 글 영역에 반투명 흰 막과 같은 멘트를 띄운다
+     opts.failTitle: 실패하면 빨간 안내 카드를 남긴다 (opts.fail 칸, 없으면 cover 맨 위)
+     opts.retry   : 카드의 [다시 가져오기]가 누를 버튼 */
+  async function guard(btn, busyText, fn, opts = {}) {
     const keep = btn.innerHTML;
+    const failBox = opts.fail || opts.cover;
     btn.disabled = true;
-    GWBusy.start(btn, busyText, cover);
+    GWBusy.clearFail(failBox);
+    GWBusy.start(btn, busyText, opts.cover);
     status(busyText, "busy");
     try {
       await fn();
@@ -76,6 +80,7 @@
       console.error("[공실뉴스 작업창]", e);
       toast(e.message || String(e), "bad", 7000);
       status("문제 발생", "bad");
+      if (opts.failTitle) GWBusy.fail(failBox, opts.failTitle, e.message || String(e), opts.retry);
     } finally {
       GWBusy.stop(btn);
       btn.disabled = false;
@@ -481,7 +486,7 @@
       const l = GW_LENGTH[S.length] || GW_LENGTH.normal;
       toast(`${k.label} · ${l.chars} 로 프롬프트를 넣었습니다. ② 작성하기 를 누르세요.`, "ok", 6000);
       status("프롬프트 입력됨", "ok");
-    })
+    }, { fail: el.articleFail, failTitle: "AI 기사 작성을 시작하지 못했습니다" })
   );
 
   function waitTabReady(tabId, timeoutMs = 30000) {
@@ -517,7 +522,7 @@
       toast("전송했습니다. 기사가 다 나오면 ③ 초안 보내기 를 누르세요.", "ok");
       status("AI 작성 중", "busy");
       setWriting(true);
-    })
+    }, { fail: el.articleFail, failTitle: "AI에 보내지 못했습니다" })
   );
 
   /* ═════════════ ⑥ 초안 보내기 ═════════════ */
@@ -541,7 +546,7 @@
         throw e;
       }
       afterDraftPulled(repaired);
-    }, el.draftBody)
+    }, { cover: el.draftBody, fail: el.articleFail, failTitle: "기사를 가져오지 못했습니다", retry: el.btnPullDraft })
   );
 
   $("btnPasteDraft").addEventListener("click", () =>
@@ -894,12 +899,17 @@
       return;
     }
     guard(el.btnRevise, "수정 요청 중", async () => {
-      if (!S.aiTabId) throw new Error("AI 탭이 없습니다. 초안을 만든 탭이 닫혔습니다.");
+      if (!S.aiTabId || !(await chrome.tabs.get(S.aiTabId).catch(() => null))) {
+        S.aiTabId = null;
+        throw new Error("기사를 쓴 AI 탭이 닫혔습니다. ① 물건·AI 탭에서 [AI 기사 작성]으로 새로 만들어 주세요.");
+      }
 
       harvestEdits();
       const text = gwBuildRevisePrompt(want, S.vacancy);
       const copied = await copyForPaste(text);
       await chrome.tabs.update(S.aiTabId, { active: true });
+      /* ChatGPT: AI 가 아직 답하는 중이면 기다리고, 보내기 전 대화 메시지 수를 세어 둔다 */
+      const api = await GWChatGptDirect.waitIdle(S.aiTabId, () => status("AI 답변이 끝나길 기다리는 중", "busy"));
       // 보내기 전 답변 수를 세어 두었다가 새 답변만 읽는다 (예전 AI 탭이면 세지 못한다)
       const before = await askTab(S.aiTabId, { type: "GW_COUNT" }).catch(() => null);
 
@@ -916,6 +926,23 @@
 
       el.reviseInput.value = "";
       GWBusy.label(el.btnRevise, "AI가 기사를 수정하는 중");
+      status("AI가 기사를 수정하는 중", "busy");
+
+      /* ChatGPT 는 대화 원문에서 "새로 끝난 AI 답변"만 받는다 — 보낸 양식·이전 답변이 섞이지 않는다 */
+      if (api.ok) {
+        const answer = await GWChatGptDirect.waitNewAnswer(S.aiTabId, api.messageCount, 240000);
+        if (answer) {
+          const repaired = applyArticleText(answer);
+          toast(repaired ? "JSON 오류를 자동 복구해 수정 기사를 가져왔습니다." : "수정된 기사를 가져왔습니다.", "ok");
+          status("초안 갱신됨", "ok");
+          return;
+        }
+        if (!(await chrome.tabs.get(S.aiTabId).catch(() => null))) {
+          throw new Error("AI 탭이 닫혀 수정 기사를 받지 못했습니다.");
+        }
+        /* 원문으로 못 받았으면 아래 화면 읽기로 한 번 더 시도한다 */
+      }
+
       if (!before?.ok) {
         toast("수정을 요청했습니다. AI 답변이 끝나면 [수정글 가져오기]를 눌러 주세요.", "info", 9000);
         status("수정 답변 기다리는 중", "busy");
@@ -925,7 +952,7 @@
       const repaired = await pullArticle({ minCount: before.count + 1, maxMs: 180000 });
       toast(repaired ? "JSON 오류를 자동 복구해 수정 기사를 가져왔습니다." : "수정된 기사를 가져왔습니다.", "ok");
       status("초안 갱신됨", "ok");
-    }, el.draftBody);
+    }, { cover: el.draftBody, failTitle: "수정 기사를 받지 못했습니다", retry: el.btnPullRevised });
   }
 
   el.btnPullRevised.addEventListener("click", () =>
@@ -934,7 +961,7 @@
       const repaired = await pullArticle();
       toast(repaired ? "JSON 오류를 자동 복구해 수정 기사를 가져왔습니다." : "수정된 기사를 가져왔습니다.", "ok");
       status("초안 갱신됨", "ok");
-    }, el.draftBody)
+    }, { cover: el.draftBody, failTitle: "수정 기사를 가져오지 못했습니다", retry: el.btnPullRevised })
   );
 
   /* ═════════════ ⑦ 이미지 ═════════════ */

@@ -65,7 +65,7 @@
     blogLockLink: $("blogLockLink"),
     btnBlogLockRetry: $("btnBlogLockRetry"),
     btnSendNaver: $("btnSendNaver"),
-    blogWriting: $("blogWriting"),
+    blogWriting: $("blogWriting"), blogFail: $("blogFail"), blogTrial: $("blogTrial"),
     status: $("statusPill"),
     toastHost: $("toastHost"),
   };
@@ -101,10 +101,13 @@
     el.status.className = "status-pill" + (kind ? " " + kind : "");
   }
 
-  async function guard(button, busyText, job, cover = null) {
+  /* opts 는 panel.js 의 guard 와 같다 — cover(흰 막) · fail/failTitle(빨간 안내 카드) · retry */
+  async function guard(button, busyText, job, opts = {}) {
     const original = button.innerHTML;
+    const failBox = opts.fail || opts.cover;
     button.disabled = true;
-    GWBusy.start(button, busyText, cover);
+    GWBusy.clearFail(failBox);
+    GWBusy.start(button, busyText, opts.cover);
     status(busyText, "busy");
     try {
       await job();
@@ -112,6 +115,7 @@
       console.error("[공실뉴스 블로그 작성]", error);
       toast(error.message || String(error), "bad", 8000);
       status("문제 발생", "bad");
+      if (opts.failTitle) GWBusy.fail(failBox, opts.failTitle, error.message || String(error), opts.retry);
     } finally {
       GWBusy.stop(button);
       button.disabled = false;
@@ -178,7 +182,7 @@
   /* ── 3단계 회원 잠금 ──
      공실뉴스부동산·공실스터디부동산·최고관리자만 블로그 작성을 쓴다. 1·2단계는 누구나 쓴다(홍보용).
      화면 잠금은 안내용이고, 실제 차단은 서버(매물 출처 API)가 한 번 더 한다. */
-  let blogAccess = null; // { canBlog, isLoggedIn, name, planLabel }
+  let blogAccess = null; // GWTrial.accessFrom — { unlimited, trial, canUse, isLoggedIn, name, planLabel }
 
   async function siteOrigin() {
     // 매물을 localhost에서 가져왔으면 개발 서버에, 아니면 운영 사이트에 묻는다
@@ -198,24 +202,20 @@
     try {
       const response = await fetch(`${origin}/api/extension/auth/me`, { credentials: "include", cache: "no-store" });
       const data = await response.json();
-      blogAccess = {
-        origin,
-        canBlog: Boolean(data?.canBlog),
-        isLoggedIn: Boolean(data?.isLoggedIn),
-        name: data?.user?.name || "",
-        planLabel: data?.user?.planLabel || "",
-      };
+      blogAccess = GWTrial.accessFrom(data, "blog", origin);
     } catch (_) {
-      blogAccess = { origin, canBlog: false, isLoggedIn: false, error: true };
+      blogAccess = { origin, canUse: false, isLoggedIn: false, error: true };
     }
     applyBlogLock();
     return blogAccess;
   }
 
   function applyBlogLock() {
-    const locked = !blogAccess?.canBlog;
+    const locked = !blogAccess?.canUse;
     el.viewBlog.classList.toggle("locked", locked);
     el.blogLock.classList.toggle("hidden", !locked);
+    GWTrial.render(el.blogTrial, locked ? null : blogAccess, "블로그 작성");
+    refreshButtons();
     if (locked) el.blogActions.classList.add("hidden");
     if (!locked) return;
     if (!blogAccess) {
@@ -231,15 +231,16 @@
       el.blogLockText.textContent = "인터넷 연결을 확인한 뒤 [다시 확인]을 눌러 주세요.";
       el.blogLockLink.classList.add("hidden");
     } else if (!blogAccess.isLoggedIn) {
-      el.blogLockTitle.textContent = "공실뉴스에 로그인해 주세요";
-      el.blogLockText.textContent = "블로그 작성은 공실뉴스부동산·공실스터디부동산 회원 전용입니다. 이 브라우저에서 공실뉴스에 로그인한 뒤 [다시 확인]을 눌러 주세요.";
+      el.blogLockTitle.textContent = "공실뉴스에 로그인하면 무료로 체험할 수 있습니다";
+      el.blogLockText.textContent = "블로그 작성은 공실뉴스 회원이면 매월 3번 무료로 체험할 수 있고, 공실뉴스부동산·공실스터디부동산 회원은 무제한입니다. 이 브라우저에서 공실뉴스에 로그인한 뒤 [다시 확인]을 눌러 주세요.";
       el.blogLockLink.textContent = "공실뉴스 열기";
       el.blogLockLink.href = `${origin}/`;
       el.blogLockLink.classList.remove("hidden");
     } else {
-      el.blogLockTitle.textContent = "블로그 작성은 회원 전용입니다";
+      /* 로그인은 했는데 무료 체험 횟수를 읽지 못한 경우 */
+      el.blogLockTitle.textContent = "무료 체험 횟수를 확인하지 못했습니다";
       el.blogLockText.textContent = `${blogAccess.name}님은 현재 ${blogAccess.planLabel || "무료"} 등급입니다. ` +
-        "블로그 작성은 공실뉴스부동산·공실스터디부동산 회원만 사용할 수 있습니다.";
+        "잠시 뒤 [다시 확인]을 눌러 주세요. 공실뉴스부동산·공실스터디부동산 회원은 무제한으로 쓸 수 있습니다.";
       el.blogLockLink.textContent = "공실뉴스부동산 신청하기";
       el.blogLockLink.href = `${origin}/newsrealty/apply`;
       el.blogLockLink.classList.remove("hidden");
@@ -250,7 +251,7 @@
     el.btnBlogLockRetry.disabled = true;
     await checkBlogAccess();
     el.btnBlogLockRetry.disabled = false;
-    if (blogAccess?.canBlog) {
+    if (blogAccess?.canUse) {
       el.blogActions.classList.toggle("hidden", !B.article);
       toast("블로그 작성을 사용할 수 있습니다.", "ok");
     }
@@ -270,8 +271,26 @@
     applyBlogLock();
     updateSourceCard();
     checkBlogAccess().then((access) => {
-      if (access.canBlog && isBlogActive()) el.blogActions.classList.toggle("hidden", !B.article);
+      if (access.canUse && isBlogActive()) el.blogActions.classList.toggle("hidden", !B.article);
     });
+  }
+
+  /* 유료 회원이 아니면 작성할 때마다 무료 체험 1번을 쓴다. 다 썼으면 여기서 멈춘다. */
+  async function useTrial() {
+    if (!blogAccess) await checkBlogAccess();
+    if (!blogAccess?.canUse) throw new Error("블로그 작성을 쓸 수 없습니다. 탭 위의 안내를 확인해 주세요.");
+    if (blogAccess.unlimited) return;
+    const result = await GWTrial.consume(blogAccess.origin, "blog");
+    if (!result.ok) {
+      if (result.exhausted) blogAccess.trial.remaining = 0;
+      applyBlogLock();
+      throw new Error(result.error);
+    }
+    if (!result.unlimited) {
+      blogAccess.trial = { remaining: result.remaining, limit: result.limit };
+      applyBlogLock();
+      if (result.remaining === 0) toast("이번이 이번 달 마지막 블로그 무료 체험입니다.", "info", 8000);
+    }
   }
 
   function leaveBlogTab() {
@@ -383,6 +402,7 @@
     guard(el.btnMakeBlogDraft, "블로그 글 작성 요청 중", async () => {
       const source = await getSource();
       if (!source) throw new Error("먼저 2 · 초안 다듬기에 기사를 준비해 주세요.");
+      await useTrial();
 
       const sourceSignature = signatureOf(source);
       if (B.sourceSignature !== sourceSignature) {
@@ -420,7 +440,7 @@
       B.writing = true;
       showWriting();
       save();
-    })
+    }, { fail: el.blogFail, failTitle: "블로그 글 작성을 시작하지 못했습니다" })
   );
 
   async function pullBlogArticle(readOpts = {}) {
@@ -439,7 +459,11 @@
         );
       }
     }
+    return applyBlogText(text);
+  }
 
+  /* AI 가 쓴 블로그 JSON 을 블로그 초안으로 넣는다. JSON 을 고쳐 읽었으면 true */
+  async function applyBlogText(text) {
     const parsed = GWArticleJson.parse(text);
     if (!parsed.ok) {
       throw new Error(
@@ -463,7 +487,7 @@
       toast(repaired ? "AI의 JSON 오류를 복구해 블로그 글을 가져왔습니다." : "블로그 글을 가져왔습니다.", "ok");
       status("블로그 초안 준비됨", "ok");
       el.blogBadge.classList.toggle("hidden", isBlogActive());
-    }, el.blogDraftBody)
+    }, { cover: el.blogDraftBody, fail: el.blogFail, failTitle: "블로그 글을 가져오지 못했습니다", retry: el.btnPullBlogDraft })
   );
 
   function blogFigureHtml(media, index) {
@@ -623,7 +647,7 @@
       const repaired = await pullBlogArticle();
       toast(repaired ? "JSON 오류를 복구해 수정 글을 가져왔습니다." : "수정된 블로그 글을 가져왔습니다.", "ok");
       status("블로그 초안 갱신됨", "ok");
-    }, el.blogDraftBody)
+    }, { cover: el.blogDraftBody, failTitle: "수정 블로그 글을 가져오지 못했습니다", retry: el.btnPullBlogRevised })
   );
   el.blogReviseInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") reviseBlog();
@@ -637,10 +661,15 @@
     }
 
     guard(el.btnReviseBlog, "수정 요청 중", async () => {
-      if (!B.aiTabId) throw new Error("블로그 초안을 만든 AI 탭이 없습니다.");
+      if (!B.aiTabId || !(await chrome.tabs.get(B.aiTabId).catch(() => null))) {
+        B.aiTabId = null;
+        throw new Error("블로그 글을 쓴 AI 탭이 닫혔습니다. [AI 블로그 초안 작성]으로 새로 만들어 주세요.");
+      }
       harvestBlog();
       await save();
       await chrome.tabs.update(B.aiTabId, { active: true });
+      /* ChatGPT: AI 가 아직 답하는 중이면 기다리고, 보내기 전 대화 메시지 수를 세어 둔다 */
+      const api = await GWChatGptDirect.waitIdle(B.aiTabId, () => status("AI 답변이 끝나길 기다리는 중", "busy"));
       // 보내기 전 답변 수를 세어 두었다가 새 답변만 읽는다 (예전 AI 탭이면 세지 못한다)
       const before = await askTab(B.aiTabId, { type: "GW_COUNT" }).catch(() => null);
 
@@ -651,6 +680,23 @@
 
       el.blogReviseInput.value = "";
       GWBusy.label(el.btnReviseBlog, "AI가 블로그 글을 수정하는 중");
+      status("AI가 블로그 글을 수정하는 중", "busy");
+
+      /* ChatGPT 는 대화 원문에서 "새로 끝난 AI 답변"만 받는다 — 보낸 양식·이전 답변이 섞이지 않는다 */
+      if (api.ok) {
+        const answer = await GWChatGptDirect.waitNewAnswer(B.aiTabId, api.messageCount, 240000);
+        if (answer) {
+          const repaired = await applyBlogText(answer);
+          toast(repaired ? "JSON 오류를 복구해 수정 글을 가져왔습니다." : "수정된 블로그 글을 가져왔습니다.", "ok");
+          status("블로그 초안 갱신됨", "ok");
+          return;
+        }
+        if (!(await chrome.tabs.get(B.aiTabId).catch(() => null))) {
+          throw new Error("AI 탭이 닫혀 수정 블로그 글을 받지 못했습니다.");
+        }
+        /* 원문으로 못 받았으면 아래 화면 읽기로 한 번 더 시도한다 */
+      }
+
       if (!before?.ok) {
         toast("블로그 글 수정을 요청했습니다. AI 답변이 끝나면 [수정글 가져오기]를 눌러 주세요.", "info", 9000);
         status("수정 답변 기다리는 중", "busy");
@@ -660,7 +706,7 @@
       const repaired = await pullBlogArticle({ minCount: before.count + 1, maxMs: 180000 });
       toast(repaired ? "JSON 오류를 복구해 수정 글을 가져왔습니다." : "수정된 블로그 글을 가져왔습니다.", "ok");
       status("블로그 초안 갱신됨", "ok");
-    }, el.blogDraftBody);
+    }, { cover: el.blogDraftBody, failTitle: "수정 블로그 글을 받지 못했습니다", retry: el.btnPullBlogRevised });
   }
 
   const designButtons = document.querySelectorAll(".blog-design[data-blog-design]");
@@ -986,7 +1032,8 @@
 
   function refreshButtons() {
     const hasSource = Boolean(sourceCache);
-    el.btnMakeBlogDraft.disabled = !hasSource;
+    /* 무료 체험을 다 썼으면 새 글은 못 만든다 — 이미 만든 글은 계속 고치고 보낼 수 있다 */
+    el.btnMakeBlogDraft.disabled = !hasSource || GWTrial.exhausted(blogAccess);
     el.btnPullBlogDraft.disabled = !B.aiTabId;
     el.btnReviseBlog.disabled = !B.article || !B.aiTabId;
     el.btnPullBlogRevised.disabled = !B.aiTabId;
