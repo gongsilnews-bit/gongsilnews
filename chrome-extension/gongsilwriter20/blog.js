@@ -843,25 +843,9 @@
     return GWNaverBlog.normalizeTags(B.article?.keywords);
   }
 
-  /* 네이버 페이지에서는 외부 사진을 못 받을 수 있으므로 작업창(확장 권한)에서 미리 받아 넘긴다. */
-  async function imageToDataUrl(url) {
-    if (!url) return null;
-    if (url.startsWith("data:")) return url;
-    try {
-      const response = await fetch(url);
-      if (!response.ok) return null;
-      const blob = await response.blob();
-      if (!blob.type.startsWith("image/")) return null;
-      return await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => resolve(null);
-        reader.readAsDataURL(blob);
-      });
-    } catch (_) {
-      return null;
-    }
-  }
+  /* 네이버 페이지에서는 외부 사진을 못 받을 수 있으므로 작업창(확장 권한)에서 미리 받아 넘긴다.
+     온비드처럼 "다운로드 파일"로 오는 사진도 JPG 로 바꿔 넘긴다 (shared/media.js). */
+  const imageToDataUrl = (url) => gwImageToDataUrl(url);
 
   /* 매물 출처 정보(중개사무소·소재지·고정 상세 주소)를 공실뉴스에서 받아 온다.
      API는 매물을 가져온 공실뉴스 사이트(운영 또는 localhost)에 묻고, 링크는 항상 운영 주소로 만든다. */
@@ -1005,8 +989,15 @@
       }
 
       const tab = found.tab;
+      GWBusy.label(el.btnSendNaver, "사진 준비 중");
       const blocks = await naverBlocks();
+      GWBusy.label(el.btnSendNaver, "블로그글 전송 중");
       const imagesTotal = blocks.filter((block) => block.type === "image").length;
+      /* 받지 못한 사진은 조용히 빼지 않고 알려 준다 */
+      const imagesMissing = blocks.filter((block) => block.type === "image" && !block.dataUrl).length;
+      if (imagesMissing) {
+        toast(`사진 ${imagesMissing}장을 받지 못해 빼고 보냅니다. 네이버 글쓰기에서 직접 올려 주세요.`, "bad", 9000);
+      }
       await chrome.tabs.update(tab.id, { active: true });
       const result = await chrome.tabs.sendMessage(
         tab.id,

@@ -254,3 +254,51 @@ function gwAuctionCaptionFor(kind, v, index = 0) {
       return name;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   바깥 사진을 보낼 수 있는 모양(data URL)으로 바꾸기
+
+   온비드 같은 곳의 사진은 "사진"이 아니라 "다운로드 파일"(application/octet-stream)로 오고,
+   실제 내용이 3MB 넘는 BMP 인 경우도 있다. 기사쓰기 폼·네이버 블로그는 이런 사진을 직접 받지 못한다.
+   그래서 작업창(확장 권한)에서 받아 그림으로 읽을 수 있는지 확인하고 JPG 로 바꿔 넘긴다.
+   그림이 아니거나 받지 못하면 null.
+   ══════════════════════════════════════════════════════════════ */
+async function gwImageToDataUrl(url, maxSide = 1600) {
+  if (!url) return null;
+  if (String(url).startsWith("data:")) return url;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    /* 파일 형식 표시를 믿지 않고 내용으로 그림인지 본다 */
+    const bitmap = await createImageBitmap(blob).catch(() => null);
+    if (!bitmap) return null;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff"; // 투명한 부분은 흰 바탕으로
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    return canvas.toDataURL("image/jpeg", 0.9);
+  } catch (_) {
+    return null;
+  }
+}
+
+/* 사진 목록의 바깥 주소를 모두 data URL 로 바꾼다. 못 바꾼 사진은 원래 주소 그대로 두고 failed 로 알린다. */
+async function gwMediaToDataUrls(media) {
+  const failed = [];
+  const out = await Promise.all((media || []).map(async (item, index) => {
+    if (!item || !item.url || String(item.url).startsWith("data:")) return item;
+    const dataUrl = await gwImageToDataUrl(item.url);
+    if (!dataUrl) {
+      failed.push(index);
+      return item;
+    }
+    return { ...item, url: dataUrl };
+  }));
+  return { media: out, failed };
+}

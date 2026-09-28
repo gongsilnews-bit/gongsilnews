@@ -1127,11 +1127,20 @@
         throw new Error("제목과 본문이 있어야 보낼 수 있습니다.");
       }
 
+      /* 기사쓰기 폼(공실뉴스 페이지)은 온비드 같은 바깥 사진을 직접 받지 못한다.
+         작업창에서 미리 받아 JPG 로 바꿔 넘긴다. */
+      GWBusy.label(el.btnSendGongsil, "사진 준비 중");
+      const prepared = await gwMediaToDataUrls(GWMediaCover.coverFirst(S.media));
+      if (prepared.failed.length) {
+        toast(`사진 ${prepared.failed.length}장을 받지 못해 빼고 보냅니다. 기사쓰기 화면에서 직접 올려 주세요.`, "bad", 9000);
+      }
+      GWBusy.label(el.btnSendGongsil, "기사 전송 중");
+
       const res = await chrome.runtime.sendMessage({
         type: "GW_SEND_TO_GONGSIL",
         article: S.article,
         /* 대표를 첫 순서로도 보낸다. isCover 를 모르는 구버전 기사작성 폼도 안전하다. */
-        media: GWMediaCover.coverFirst(S.media),
+        media: prepared.media.filter((item, index) => !prepared.failed.includes(index)),
         vacancyId: S.vacancy?.vacancyId || null,
         /* 경매·공매 기사는 기사쓰기 폼에서 섹션(공실뉴스 > 신축/분양/경매)까지 고른다 */
         saleKind: S.vacancy?.saleKind || null,
