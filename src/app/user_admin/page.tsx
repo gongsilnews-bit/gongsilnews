@@ -15,6 +15,7 @@ const VacancySection = lazy(() => import("@/components/admin/sections/VacancySec
 const MemberArticleSection = lazy(() => import("@/components/admin/sections/MemberArticleSection"));
 const MyPointSection = lazy(() => import("@/components/admin/sections/MyPointSection"));
 const InquiryBoardSection = lazy(() => import("@/components/admin/sections/InquiryBoardSection"));
+const StudySection = lazy(() => import("@/components/admin/sections/StudySection"));
 
 /* ── 일반회원 관리자 메뉴 ── */
 const USER_MENU: MenuItem[] = [
@@ -206,7 +207,8 @@ function UserAdminContent() {
               {memberId ? <MemberRegisterForm editMemberId={memberId} onBack={() => setActiveMenu("dashboard")} /> : <div style={{ textAlign: "center", padding: 40, color: theme.textSecondary }}>사용자 정보를 불러오는 중입니다...</div>}
             </div>
           )}
-          {["study", "customer", "manual"].includes(activeMenu) && (
+          {activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
+          {["customer", "manual"].includes(activeMenu) && (
             <div style={{ flex: 1, margin: 16, marginBottom: 0, background: theme.cardBg, borderTopLeftRadius: 12, borderTopRightRadius: 12, boxShadow: "0 4px 6px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center", color: "#9ca3af" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>

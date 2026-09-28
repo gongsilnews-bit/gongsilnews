@@ -57,7 +57,15 @@ const compressToWebP = (file: File, maxWidth = 1920, quality = 0.82): Promise<Fi
   });
 };
 
-export default function StudyWriteForm() {
+/**
+ * mode="member" 는 회원이 자기 강의를 올리는 화면이다.
+ * [공개 등록] 대신 [승인 요청]이고, 무료 등급은 최고관리자 몫이라 보이지 않는다.
+ * (서버 saveLecture 도 같은 규칙으로 한 번 더 막는다)
+ */
+export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "member" }) {
+  const isMember = mode === "member";
+  const publishStatus = isMember ? "PENDING" : "ACTIVE";
+  const publishLabel = isMember ? "📨 승인 요청" : "🚀 공개 등록";
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [materialUploads, setMaterialUploads] = useState(0);
@@ -556,8 +564,12 @@ export default function StudyWriteForm() {
         chapters: savedChapters,
       });
       if (res.success) {
-        alert(status === "DRAFT" ? "임시저장 완료!" : "등록 완료!");
-        router.push("/admin?menu=study");
+        alert(
+          status === "DRAFT" ? "임시저장 완료!"
+          : isMember ? "승인 요청을 보냈습니다. 최고관리자 승인 후 판매중으로 공개됩니다."
+          : "등록 완료!"
+        );
+        router.push("?menu=study");
       } else {
         alert("저장 실패: " + (res.error || ""));
       }
@@ -605,7 +617,7 @@ export default function StudyWriteForm() {
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => router.push("?menu=study")} style={{ height: 40, padding: "0 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>취소</button>
             <button onClick={() => handleSave("DRAFT")} disabled={saving || materialUploads > 0} style={{ height: 40, padding: "0 20px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
-            <button onClick={() => handleSave("ACTIVE")} disabled={saving || materialUploads > 0} style={{ height: 40, padding: "0 24px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>🚀 공개 등록</button>
+            <button onClick={() => handleSave(publishStatus)} disabled={saving || materialUploads > 0} style={{ height: 40, padding: "0 24px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>{publishLabel}</button>
           </div>
         </div>
 
@@ -1077,6 +1089,7 @@ export default function StudyWriteForm() {
                 포인트 없이 바로 듣는다. 판매 페이지의 "공실스터디 회원은 무료"
                 같은 약속이 실제로 동작하는 자리다.
               */}
+              {!isMember && (
               <div>
                 <label style={labelStyle}>
                   무료로 듣는 등급
@@ -1110,6 +1123,7 @@ export default function StudyWriteForm() {
                   최고관리자는 고르지 않아도 늘 무료입니다. 요금제가 끝나면 그 회원의 수강도 함께 닫힙니다.
                 </p>
               </div>
+              )}
             </div>
 
             <div style={sectionStyle}>
@@ -1168,9 +1182,9 @@ export default function StudyWriteForm() {
 
             {/* ========== 하단 버튼 ========== */}
             <div style={{ display: "flex", justifyContent: "center", gap: 16, padding: "20px 0 60px" }}>
-              <button onClick={() => router.push("/admin?menu=study")} style={{ height: 48, padding: "0 32px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>취소</button>
+              <button onClick={() => router.push("?menu=study")} style={{ height: 48, padding: "0 32px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>취소</button>
               <button onClick={() => handleSave("DRAFT")} disabled={saving || materialUploads > 0} style={{ height: 48, padding: "0 32px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
-              <button onClick={() => handleSave("ACTIVE")} disabled={saving || materialUploads > 0} style={{ height: 48, padding: "0 40px", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, boxShadow: "0 4px 14px rgba(245,158,11,0.3)" }}>🚀 공개 등록</button>
+              <button onClick={() => handleSave(publishStatus)} disabled={saving || materialUploads > 0} style={{ height: 48, padding: "0 40px", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, boxShadow: "0 4px 14px rgba(245,158,11,0.3)" }}>{publishLabel}</button>
             </div>
       </div>
     </div>

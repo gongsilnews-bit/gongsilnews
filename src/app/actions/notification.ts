@@ -28,7 +28,10 @@ export type NotificationType =
   | "inquiry_new"        // 1:1문의 접수
   | "inquiry_reply"      // 1:1문의에 회원이 단 추가 질문
   | "inquiry_answered"  // 내 문의에 답변이 달림 (회원용)
-  | "intake_new";       // 물건접수웹페이지 접수
+  | "intake_new"        // 물건접수웹페이지 접수
+  | "lecture_pending"   // 회원이 강의 승인 요청 (최고관리자용)
+  | "lecture_approved"  // 내 강의가 승인됨 (회원용)
+  | "lecture_rejected"; // 내 강의가 반려됨 (회원용)
 
 export type NotificationRow = {
   id: string;

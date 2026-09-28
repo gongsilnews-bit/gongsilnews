@@ -64,6 +64,7 @@ const MENU_NOTIFICATION_TYPES: Record<string, string[]> = {
   newsrealty: ["newsrealty_apply", "study_apply"],
   gongsil: ["vacancy_new"],
   article: ["article_pending"],
+  study: ["lecture_pending"],
   inquiry_board: ["inquiry_new", "inquiry_reply"],
 };
 

@@ -7,6 +7,8 @@ import { createClient as createSessionClient } from '@/utils/supabase/server';
 import { isAdminRole } from '@/utils/permissionCheck';
 import { sealMaterialUrl, openMaterialUrl } from '@/utils/lectureMaterialSecrets';
 import { canTakeFree, lecturePlanOf, LECTURE_PLAN_KEYS } from '@/utils/lectureAccess';
+import { getLectureActor, getLectureAdmin, lectureQuotaFor } from '@/utils/lectureActor';
+import { createNotification } from '@/app/actions/notification';
 
 async function lectureEditor(lectureAuthor?: string | null) {
   const session = await createSessionClient();
@@ -71,10 +73,24 @@ export async function saveLecture(data: {
 
   try {
     const { data: existingLecture } = data.id
-      ? await supabase.from('lectures').select('author_id,materials,sidebar_copy').eq('id', data.id).single()
+      ? await supabase.from('lectures').select('author_id,materials,sidebar_copy,free_for_plans').eq('id', data.id).single()
       : { data: null };
-    const editor = await lectureEditor(data.id ? existingLecture?.author_id : data.author_id);
-    if (!editor) return { success: false, error: '강의를 편집할 권한이 없습니다.' };
+    /*
+     * 누가 저장하나.
+     * 최고관리자는 무엇이든. 회원은 자기 강의만 고치고, 새 강의는 유료등급·한도 안에서만.
+     * 브라우저가 보낸 author_id 는 믿지 않는다 — 로그인한 사람으로 정한다.
+     */
+    const actor = await getLectureActor();
+    if (!actor) return { success: false, error: '로그인이 필요합니다.' };
+    const isAdmin = actor.isAdmin;
+    if (data.id && !isAdmin && existingLecture?.author_id !== actor.id) {
+      return { success: false, error: '강의를 편집할 권한이 없습니다.' };
+    }
+    if (!data.id && !isAdmin) {
+      const quota = await lectureQuotaFor(actor);
+      if (!quota.canCreate) return { success: false, error: quota.reason || '강의를 등록할 수 없습니다.' };
+    }
+    const editor = { id: actor.id };
     if (data.chapters?.some(ch => ch.lessons.length > 0)) {
       const { error } = await supabase.from('lecture_lessons').select('description').limit(0);
       if (error) return { success: false, error: '강의 설명 저장 준비가 필요합니다: ' + error.message };
@@ -118,14 +134,23 @@ export async function saveLecture(data: {
     delete mergedSidebarCopy.assurance_title;
     delete mergedSidebarCopy.assurance_body;
 
+    /*
+     * 회원은 임시저장 아니면 승인대기뿐이다. 판매중인 강의를 고쳐도 다시 승인대기로
+     * 돌아간다 — 가격이나 내용을 몰래 바꾸지 못하게. 무료 등급·수강안내는 최고관리자 몫이라
+     * 회원이 보낸 값은 버리고 원래 값을 둔다.
+     */
+    const requestedStatus = statusMap[data.status || ""] || data.status || "DRAFT";
+    const status = isAdmin ? requestedStatus : (requestedStatus === "DRAFT" ? "DRAFT" : "PENDING");
+
     const lectureData = {
       author_id: existingLecture?.author_id || editor.id,
-      status: statusMap[data.status || ""] || data.status || "DRAFT",
+      status,
+      ...(!isAdmin && status === "PENDING" ? { reject_reason: null } : {}),
       category: data.category,
       title: data.title,
       subtitle: data.subtitle || null,
       description: data.description || null,
-      ...(data.lecture_guide_id !== undefined ? { lecture_guide_id: data.lecture_guide_id || null } : {}),
+      ...(isAdmin && data.lecture_guide_id !== undefined ? { lecture_guide_id: data.lecture_guide_id || null } : {}),
       sidebar_copy: mergedSidebarCopy,
       thumbnail_url: data.thumbnail_url || null,
       images: data.images || [],
@@ -136,7 +161,7 @@ export async function saveLecture(data: {
       discount_price: data.discount_price || null,
       discount_label: data.discount_label || null,
       duration_months: data.duration_months || 5,
-      free_for_plans: data.free_for_plans || [],
+      free_for_plans: isAdmin ? (data.free_for_plans || []) : (existingLecture?.free_for_plans || []),
       total_duration: data.total_duration || null,
       materials: storedMaterials,
       updated_at: new Date().toISOString(),
@@ -212,10 +237,23 @@ export async function saveLecture(data: {
       );
     }
 
+    // 회원이 승인 요청을 하면 최고관리자가 처리해야 하므로 알린다
+    if (!isAdmin && status === "PENDING" && lectureId) {
+      await createNotification({
+        recipientRole: "ADMIN",
+        type: "lecture_pending",
+        title: "새 강의가 승인 대기 중입니다",
+        body: `${actor.name || "회원"} · ${data.title || "(제목 없음)"}`,
+        link: "/admin?menu=study",
+        sourceId: String(lectureId),
+        revive: true,
+      });
+    }
+
     // @ts-ignore
     revalidateTag("lectures");
 
-    return { success: true, lectureId };
+    return { success: true, lectureId, status };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -389,6 +427,13 @@ export async function getLectureDetail(lectureId: string) {
 export async function deleteLecture(lectureId: string) {
   const supabase = getAdminClient();
   try {
+    // 최고관리자 또는 강의를 올린 본인만
+    const actor = await getLectureActor();
+    if (!actor) return { success: false, error: "로그인이 필요합니다." };
+    if (!actor.isAdmin) {
+      const { data: owned } = await supabase.from("lectures").select("author_id").eq("id", lectureId).maybeSingle();
+      if (owned?.author_id !== actor.id) return { success: false, error: "강의를 삭제할 권한이 없습니다." };
+    }
     const { error } = await supabase
       .from("lectures")
       .update({ is_deleted: true, status: "DELETED" })
@@ -419,6 +464,8 @@ export async function deleteLecture(lectureId: string) {
 export async function updateLectureStatus(lectureId: string, newStatus: string) {
   const supabase = getAdminClient();
   try {
+    // 판매중으로 여는 일이라 최고관리자만. 회원은 saveLecture 로 승인 요청만 한다.
+    if (!(await getLectureAdmin())) return { success: false, error: "최고관리자만 상태를 바꿀 수 있습니다." };
     const { error } = await supabase
       .from("lectures")
       .update({ status: newStatus, updated_at: new Date().toISOString() })
@@ -753,6 +800,7 @@ export async function enrollLecture(lectureId: string, userId: string) {
 export async function setLectureFreePlans(lectureId: string, plans: string[]) {
   const supabase = getAdminClient();
   try {
+    if (!(await getLectureAdmin())) return { success: false, error: "최고관리자만 무료 등급을 바꿀 수 있습니다." };
     const allowed = (plans || []).filter((p) => (LECTURE_PLAN_KEYS as readonly string[]).includes(p));
     const { error } = await supabase.from("lectures").update({ free_for_plans: allowed }).eq("id", lectureId);
     if (error) return { success: false, error: error.message };

@@ -515,6 +515,11 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
     LIMIT_REALTOR_STUDY_ARTICLE: 4,
     LIMIT_BIZ_VACANCY: 0,
     LIMIT_BIZ_ARTICLE: 10,
+    LIMIT_USER_LECTURE: 0,
+    LIMIT_REALTOR_FREE_LECTURE: 0,
+    LIMIT_REALTOR_STUDY_LECTURE: 3,
+    LIMIT_REALTOR_NEWS_LECTURE: 3,
+    LIMIT_BIZ_LECTURE: 3,
     PERM_USER_ARTICLE_BANNER: 0,
     PERM_USER_ARTICLE_VACANCY: 0,
     PERM_USER_HOMEPAGE: 0,
@@ -660,6 +665,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={{ fontSize: 14, fontWeight: 700, color: textPrimary, width: 250 }}>회원 구분 / 요금제</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 100, textAlign: "center" }}>최대 공실 등록</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 100, textAlign: "center" }}>월간 최대 기사 작성</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 100, textAlign: "center" }}>최대 강의 등록</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>기사 배너광고 권한</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>기사 공실배너 권한</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: textSecondary, width: 140, textAlign: "center" }}>물건접수웹페이지 권한</span>
@@ -672,6 +678,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={labelStyle}>일반회원</span>
           <input type="number" value={formData.LIMIT_USER_VACANCY} onChange={e => handleChange("LIMIT_USER_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_USER_ARTICLE} onChange={e => handleChange("LIMIT_USER_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_USER_LECTURE} onChange={e => handleChange("LIMIT_USER_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           {perm("PERM_USER_ARTICLE_BANNER")}
           {perm("PERM_USER_ARTICLE_VACANCY")}
           {perm("PERM_USER_HOMEPAGE")}
@@ -684,6 +691,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={labelStyle}>부동산회원 (무료)</span>
           <input type="number" value={formData.LIMIT_REALTOR_FREE_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_FREE_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_FREE_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_FREE_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_REALTOR_FREE_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_FREE_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           {perm("PERM_REALTOR_FREE_ARTICLE_BANNER")}
           {perm("PERM_REALTOR_FREE_ARTICLE_VACANCY")}
           {perm("PERM_REALTOR_FREE_HOMEPAGE")}
@@ -696,6 +704,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={labelStyle}>부동산회원 (공실스터디부동산)</span>
           <input type="number" value={formData.LIMIT_REALTOR_STUDY_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_STUDY_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_STUDY_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_STUDY_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_REALTOR_STUDY_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_STUDY_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           {perm("PERM_REALTOR_STUDY_ARTICLE_BANNER")}
           {perm("PERM_REALTOR_STUDY_ARTICLE_VACANCY")}
           {perm("PERM_REALTOR_STUDY_HOMEPAGE")}
@@ -708,6 +717,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={labelStyle}>부동산회원 (공실뉴스부동산)</span>
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_VACANCY} onChange={e => handleChange("LIMIT_REALTOR_NEWS_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_REALTOR_NEWS_ARTICLE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_REALTOR_NEWS_LECTURE} onChange={e => handleChange("LIMIT_REALTOR_NEWS_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           {perm("PERM_REALTOR_NEWS_ARTICLE_BANNER")}
           {perm("PERM_REALTOR_NEWS_ARTICLE_VACANCY")}
           {perm("PERM_REALTOR_NEWS_HOMEPAGE")}
@@ -720,6 +730,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
           <span style={labelStyle}>비즈니스회원</span>
           <input type="number" value={formData.LIMIT_BIZ_VACANCY} onChange={e => handleChange("LIMIT_BIZ_VACANCY", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           <input type="number" value={formData.LIMIT_BIZ_ARTICLE} onChange={e => handleChange("LIMIT_BIZ_ARTICLE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
+          <input type="number" value={formData.LIMIT_BIZ_LECTURE} onChange={e => handleChange("LIMIT_BIZ_LECTURE", parseInt(e.target.value) || 0)} style={inputStyle} min={0} />
           {perm("PERM_BIZ_ARTICLE_BANNER")}
           {perm("PERM_BIZ_ARTICLE_VACANCY")}
           {perm("PERM_BIZ_HOMEPAGE")}

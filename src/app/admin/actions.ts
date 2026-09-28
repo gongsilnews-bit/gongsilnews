@@ -52,7 +52,8 @@ export async function adminCreateMember(formData: FormData) {
         plan_start_date: formData.get("plan_start_date") as string || null,
         plan_end_date: formData.get("plan_end_date") as string || null,
         max_vacancies: parseInt(formData.get("max_vacancies") as string || "5", 10),
-        max_articles_per_month: parseInt(formData.get("max_articles_per_month") as string || "0", 10)
+        max_articles_per_month: parseInt(formData.get("max_articles_per_month") as string || "0", 10),
+        max_lectures: parseInt(formData.get("max_lectures") as string || "0", 10)
       }, { onConflict: 'id' });
       if (memberError) return { success: false, error: memberError.message };
     }
@@ -74,6 +75,7 @@ export async function adminUpdateMember(memberId: string, updates: {
   plan_end_date?: string | null;
   max_vacancies?: number;
   max_articles_per_month?: number;
+  max_lectures?: number;
   profile_image_url?: string | null;
   can_article_banner?: boolean;
   can_article_vacancy_banner?: boolean;
@@ -97,6 +99,7 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.plan_end_date !== undefined) dbUpdates.plan_end_date = updates.plan_end_date;
     if (updates.max_vacancies !== undefined) dbUpdates.max_vacancies = updates.max_vacancies;
     if (updates.max_articles_per_month !== undefined) dbUpdates.max_articles_per_month = updates.max_articles_per_month;
+    if (updates.max_lectures !== undefined) dbUpdates.max_lectures = updates.max_lectures;
     if (updates.profile_image_url !== undefined) dbUpdates.profile_image_url = updates.profile_image_url;
     // 최고관리자가 회원 화면에서 직접 체크한 값. 등급과 무관하게 이 값이 그대로 들어간다.
     if (updates.can_article_banner !== undefined) dbUpdates.can_article_banner = updates.can_article_banner;
@@ -118,6 +121,7 @@ export async function adminUpdateMember(memberId: string, updates: {
       const defaults = planDefaults(policies, updates.role, dbUpdates.plan_type ?? updates.plan_type);
       if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = defaults.max_vacancies;
       if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = defaults.max_articles_per_month;
+      if (updates.max_lectures === undefined) dbUpdates.max_lectures = defaults.max_lectures;
       if (updates.can_article_banner === undefined) dbUpdates.can_article_banner = defaults.can_article_banner;
       if (updates.can_article_vacancy_banner === undefined) dbUpdates.can_article_vacancy_banner = defaults.can_article_vacancy_banner;
       if (updates.can_homepage === undefined) dbUpdates.can_homepage = defaults.can_homepage;
@@ -718,6 +722,12 @@ const DEFAULT_LIMIT_POLICIES = {
   LIMIT_REALTOR_STUDY_ARTICLE: 4,
   LIMIT_BIZ_VACANCY: 0,
   LIMIT_BIZ_ARTICLE: 10,
+  // 강의 등록 한도(총 건수). 유료회원만 등록할 수 있게 무료 등급은 0 이다.
+  LIMIT_USER_LECTURE: 0,
+  LIMIT_REALTOR_FREE_LECTURE: 0,
+  LIMIT_REALTOR_STUDY_LECTURE: 3,
+  LIMIT_REALTOR_NEWS_LECTURE: 3,
+  LIMIT_BIZ_LECTURE: 3,
   // 권한은 켜짐 1 / 꺼짐 0 으로 둔다. point_settings 가 숫자만 담기 때문이다.
   PERM_USER_ARTICLE_BANNER: 0,
   PERM_USER_ARTICLE_VACANCY: 0,
@@ -782,6 +792,7 @@ function planDefaults(
     return {
       max_vacancies: policies.LIMIT_USER_VACANCY,
       max_articles_per_month: policies.LIMIT_USER_ARTICLE,
+      max_lectures: policies.LIMIT_USER_LECTURE,
       can_article_banner: !!policies.PERM_USER_ARTICLE_BANNER,
       can_article_vacancy_banner: !!policies.PERM_USER_ARTICLE_VACANCY,
       can_homepage: !!policies.PERM_USER_HOMEPAGE,
@@ -797,6 +808,7 @@ function planDefaults(
     return {
       max_vacancies: policies.LIMIT_BIZ_VACANCY,
       max_articles_per_month: policies.LIMIT_BIZ_ARTICLE,
+      max_lectures: policies.LIMIT_BIZ_LECTURE,
       can_article_banner: !!policies.PERM_BIZ_ARTICLE_BANNER,
       can_article_vacancy_banner: !!policies.PERM_BIZ_ARTICLE_VACANCY,
       can_homepage: !!policies.PERM_BIZ_HOMEPAGE,
@@ -812,6 +824,7 @@ function planDefaults(
     return {
       max_vacancies: policies.LIMIT_REALTOR_NEWS_VACANCY,
       max_articles_per_month: policies.LIMIT_REALTOR_NEWS_ARTICLE,
+      max_lectures: policies.LIMIT_REALTOR_NEWS_LECTURE,
       can_article_banner: !!policies.PERM_REALTOR_NEWS_ARTICLE_BANNER,
       can_article_vacancy_banner: !!policies.PERM_REALTOR_NEWS_ARTICLE_VACANCY,
       can_homepage: !!policies.PERM_REALTOR_NEWS_HOMEPAGE,
@@ -827,6 +840,7 @@ function planDefaults(
     return {
       max_vacancies: policies.LIMIT_REALTOR_STUDY_VACANCY,
       max_articles_per_month: policies.LIMIT_REALTOR_STUDY_ARTICLE,
+      max_lectures: policies.LIMIT_REALTOR_STUDY_LECTURE,
       can_article_banner: !!policies.PERM_REALTOR_STUDY_ARTICLE_BANNER,
       can_article_vacancy_banner: !!policies.PERM_REALTOR_STUDY_ARTICLE_VACANCY,
       can_homepage: !!policies.PERM_REALTOR_STUDY_HOMEPAGE,
@@ -841,6 +855,7 @@ function planDefaults(
   return {
     max_vacancies: policies.LIMIT_REALTOR_FREE_VACANCY,
     max_articles_per_month: policies.LIMIT_REALTOR_FREE_ARTICLE,
+    max_lectures: policies.LIMIT_REALTOR_FREE_LECTURE,
     can_article_banner: !!policies.PERM_REALTOR_FREE_ARTICLE_BANNER,
     can_article_vacancy_banner: !!policies.PERM_REALTOR_FREE_ARTICLE_VACANCY,
     can_homepage: !!policies.PERM_REALTOR_FREE_HOMEPAGE,
@@ -904,6 +919,7 @@ export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_PO
     const FIELDS = [
       'max_vacancies',
       'max_articles_per_month',
+      'max_lectures',
       'can_article_banner',
       'can_article_vacancy_banner',
       'can_homepage',

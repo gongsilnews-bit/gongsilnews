@@ -38,6 +38,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     plan_end_date: "",
     max_vacancies: 5,
     max_articles_per_month: 0,
+    max_lectures: 0,
     can_article_banner: false,
     can_article_vacancy_banner: false,
     can_homepage: false,
@@ -164,6 +165,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             plan_end_date: res.member.plan_end_date ? new Date(res.member.plan_end_date).toISOString().split('T')[0] : "",
             max_vacancies: res.member.max_vacancies ?? 5,
             max_articles_per_month: res.member.max_articles_per_month ?? 0,
+            max_lectures: res.member.max_lectures ?? 0,
             can_article_banner: !!res.member.can_article_banner,
             can_article_vacancy_banner: !!res.member.can_article_vacancy_banner,
             can_homepage: !!res.member.can_homepage,
@@ -349,6 +351,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
   return {
     max_vacancies: p[`LIMIT_${g}_VACANCY`],
     max_articles_per_month: p[`LIMIT_${g}_ARTICLE`],
+    max_lectures: p[`LIMIT_${g}_LECTURE`],
     can_article_banner: !!p[`PERM_${g}_ARTICLE_BANNER`],
     can_article_vacancy_banner: !!p[`PERM_${g}_ARTICLE_VACANCY`],
     can_homepage: !!p[`PERM_${g}_HOMEPAGE`],
@@ -546,6 +549,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
         if (formData.plan_end_date) form.append("plan_end_date", formData.plan_end_date);
         form.append("max_vacancies", String(formData.max_vacancies));
         form.append("max_articles_per_month", String(formData.max_articles_per_month));
+        form.append("max_lectures", String(formData.max_lectures));
 
         const memberRes = await adminCreateMember(form);
 
@@ -577,6 +581,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           plan_end_date: formData.plan_end_date || null,
           max_vacancies: Number(formData.max_vacancies) || 0,
           max_articles_per_month: Number(formData.max_articles_per_month) || 0,
+          max_lectures: Number(formData.max_lectures) || 0,
           can_article_banner: !!formData.can_article_banner,
           can_article_vacancy_banner: !!formData.can_article_vacancy_banner,
           can_homepage: !!formData.can_homepage,
@@ -949,6 +954,10 @@ function gradeDefaults(p: any, role: string, planType?: string) {
                   <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>뉴스 작성(월 단위):</span>
                   <input type="number" name="max_articles_per_month" value={formData.max_articles_per_month} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
                 </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>강의 등록(총 건수):</span>
+                  <input type="number" name="max_lectures" value={formData.max_lectures} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
+                </label>
                 <div style={{ width: '100%', fontSize: 12, color: "#888" }}>0으로 설정 시 해당 기능을 사용할 수 없으며, 매우 높은 숫자 입력 시 무제한과 동일합니다. (기본값: 공실광고 5, 기사 0)</div>
               </div>
             </div>
@@ -1043,6 +1052,10 @@ function gradeDefaults(p: any, role: string, planType?: string) {
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
                   <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>뉴스 작성(월 단위):</span>
                   <input type="number" name="max_articles_per_month" value={formData.max_articles_per_month} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>강의 등록(총 건수):</span>
+                  <input type="number" name="max_lectures" value={formData.max_lectures} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
                 </label>
                 <div style={{ width: '100%', fontSize: 12, color: "#888" }}>0으로 설정 시 해당 기능을 사용할 수 없으며, 매우 높은 숫자 입력 시 무제한과 동일합니다. (기본값: 공실광고 0, 기사 0)</div>
               </div>

@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { getLectureAdmin } from "@/utils/lectureActor";
 
 const DEFAULT_CATEGORIES = ["중개실무", "법률", "세무", "분양", "마케팅", "기타"];
 
@@ -89,6 +90,8 @@ export async function saveStudyCategories(
   categories: string[]
 ): Promise<{ success: boolean; categories: string[]; error?: string }> {
   try {
+    // 강의 설정은 최고관리자만 (회원도 특강관리를 쓰게 되면서 막아 둔다)
+    if (!(await getLectureAdmin())) return { success: false, categories, error: "최고관리자만 강의 설정을 바꿀 수 있습니다." };
     const cleanList = categories
       .map((c) => c.trim())
       .filter((c, idx, arr) => c.length > 0 && arr.indexOf(c) === idx);
@@ -140,6 +143,7 @@ export async function renameStudyCategory(
   newName: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    if (!(await getLectureAdmin())) return { success: false, error: "최고관리자만 강의 설정을 바꿀 수 있습니다." };
     const trimmedOld = oldName.trim();
     const trimmedNew = newName.trim();
 
