@@ -211,8 +211,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   // 전달사항
   const [description, setDescription] = useState("");
   const [aiTone, setAiTone] = useState<ToneType>("formal");
+  /** 초안을 쓰는 중(1초) / 방금 채웠음 — 글이 한꺼번에 튀어나오지 않고, 알림창 대신 칸 아래 안내로 알린다 */
+  const [aiWriting, setAiWriting] = useState(false);
+  const [aiFilled, setAiFilled] = useState(false);
 
   const handleGenerateAI = () => {
+    if (aiWriting) return;
     const payload = {
       propertyType,
       subCategory,
@@ -257,8 +261,14 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
       } : null
     };
     const text = generateLocalPropertyDescription(payload, aiTone);
-    setDescription(text);
-    alert("✨ 초안 작성이 완료되었습니다!\n반드시 내용을 읽어보시고, 실제 매물 정보에 맞게 꼼꼼히 수정해 주세요.");
+    // 글은 바로 만들어지지만, 1초쯤 "작성 중"을 보여 준 뒤 채운다
+    setAiFilled(false);
+    setAiWriting(true);
+    setTimeout(() => {
+      setDescription(text);
+      setAiWriting(false);
+      setAiFilled(true);
+    }, 1000);
   };
 
   // 의뢰인
@@ -2186,26 +2196,46 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               <button 
                 type="button" 
                 onClick={handleGenerateAI}
-                style={{ 
-                  height: 32, padding: "0 14px", border: "none", borderRadius: 8, 
-                  background: darkMode ? "#3b2f1e" : "#fef3c7", 
-                  cursor: "pointer", 
+                disabled={aiWriting}
+                style={{
+                  height: 32, padding: "0 14px", border: "none", borderRadius: 8,
+                  background: darkMode ? "#3b2f1e" : "#fef3c7",
+                  cursor: aiWriting ? "wait" : "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, fontWeight: 700, 
                   color: "#d97706", transition: "all 0.2s" 
                 }} 
                 onMouseEnter={e => (e.currentTarget.style.opacity = "0.8")} 
                 onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
               >
-                ✨ AI초안글쓰기
+                {aiWriting ? "✨ 작성 중..." : "✨ AI초안글쓰기"}
               </button>
             </div>
-            <textarea
-              placeholder="공실광고의 특징, 입주 가능일 등 상세 내용을 입력해주세요."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={6}
-              style={{ ...inputStyle, height: "auto", padding: "14px 16px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }}
-            />
+            <style>{`
+              @keyframes aiDraftDot { 0%, 80%, 100% { opacity: .2 } 40% { opacity: 1 } }
+              @keyframes aiDraftIn { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
+            `}</style>
+            {aiWriting ? (
+              <div style={{ ...inputStyle, height: 162, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "center", gap: 2, fontSize: 15, fontWeight: 700, color: "#d97706", background: darkMode ? "#2a2418" : "#fffbeb", borderColor: "#fcd34d" }}>
+                ✨ AI가 전달사항 초안을 작성 중입니다
+                {[0, 1, 2].map(i => (
+                  <span key={i} style={{ animation: `aiDraftDot 1s ${i * 0.2}s infinite`, marginLeft: i === 0 ? 4 : 0 }}>·</span>
+                ))}
+              </div>
+            ) : (
+              <textarea
+                key={aiFilled ? "ai-filled" : "plain"}
+                placeholder="공실광고의 특징, 입주 가능일 등 상세 내용을 입력해주세요."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={6}
+                style={{ ...inputStyle, height: "auto", padding: "14px 16px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6, ...(aiFilled ? { animation: "aiDraftIn .5s ease-out" } : {}) }}
+              />
+            )}
+            {aiFilled && !aiWriting && (
+              <div style={{ marginTop: 8, fontSize: 13, fontWeight: 600, color: "#b45309" }}>
+                ✨ 초안을 채웠습니다. 꼭 읽어 보시고 실제 매물 정보에 맞게 고쳐 주세요.
+              </div>
+            )}
 
             {/* ── 섹션 3: 사진 ── */}
             <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "32px 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>

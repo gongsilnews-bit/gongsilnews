@@ -94,6 +94,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const [isLoadingVacancies, setIsLoadingVacancies] = useState(false);
   const [selectedVacancyId, setSelectedVacancyId] = useState("");
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  /** 방금 초안을 채웠음 — 알림창 대신 패널 안내로 알린다 */
+  const [aiDraftDone, setAiDraftDone] = useState(false);
 
   // ── 기사 하단 광고등록 상태 (대표님 지시) ──
   const [writeAdType, setWriteAdType] = useState<"DEFAULT" | "BANNER" | "NONE">("NONE");
@@ -163,6 +165,9 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const executeOptionWizardGenerate = async () => {
     if (!selectedVacancyId) return;
     setIsGeneratingAi(true);
+    setAiDraftDone(false);
+    // 초안은 순식간에 만들어진다. 최소 1초는 "작성 중"을 보여 준 뒤 채운다
+    const startedAt = Date.now();
 
     try {
       const supabase = createClient();
@@ -173,9 +178,10 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       }
 
       const draft = generateLocalVacancyArticle(vacancy, articleStyle, articleLength);
+      const wait = 1000 - (Date.now() - startedAt);
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
       applyDraftToEditor(draft);
-
-      alert("매물 기사 초안이 에디터에 반영되었습니다.\n반드시 내용을 읽어보시고 실제 매물 정보에 맞게 다듬어 주세요.");
+      setAiDraftDone(true);
     } catch (err: any) {
       alert(`초안 작성 중 오류: ${err.message}`);
     } finally {
@@ -2149,9 +2155,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 >
                   {isGeneratingAi ? "공실뉴스 매물 기사 작성 중..." : "공실뉴스 매물 기사 작성하기 >>"}
                 </button>
-                <div style={{ fontSize: 11, color: textSecondary, textAlign: "center", marginTop: 6, lineHeight: 1.4 }}>
-                  등록된 매물 정보로 즉시 작성됩니다. 작성 후 반드시 내용을 확인해 주세요.
-                </div>
+                {aiDraftDone && !isGeneratingAi ? (
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#b45309", textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
+                    ✨ 초안을 에디터에 채웠습니다.<br />꼭 읽어 보시고 실제 매물 정보에 맞게 다듬어 주세요.
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 11, color: textSecondary, textAlign: "center", marginTop: 6, lineHeight: 1.4 }}>
+                    등록된 매물 정보로 즉시 작성됩니다. 작성 후 반드시 내용을 확인해 주세요.
+                  </div>
+                )}
               </div>
               </div>
             </div>
@@ -2410,10 +2422,23 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             </div>
 
             {/* ── 에디터 본문 영역 ── */}
+            <style>{`
+              .ai-drafting { position: relative; }
+              .ai-drafting::after {
+                content: "✨ AI가 기사 초안을 작성 중입니다 · · ·";
+                position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+                background: rgba(255, 251, 235, .96); color: #d97706; font-size: 16px; font-weight: 700;
+                animation: aiDraftPulse 1s ease-in-out infinite;
+              }
+              .ai-drafted { animation: aiDraftIn .5s ease-out; }
+              @keyframes aiDraftPulse { 0%, 100% { opacity: .65 } 50% { opacity: 1 } }
+              @keyframes aiDraftIn { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
+            `}</style>
             <div
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
+              className={isGeneratingAi ? "ai-drafting" : aiDraftDone ? "ai-drafted" : undefined}
               style={{
                 minHeight: 360, padding: "20px 16px", border: `1px solid ${border}`, borderTop: "none",
                 fontSize: 15, lineHeight: 1.8, color: textPrimary, outline: "none", background: cardBg,

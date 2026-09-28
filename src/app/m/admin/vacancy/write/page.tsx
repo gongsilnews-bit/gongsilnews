@@ -162,8 +162,12 @@ function MobileVacancyWrite() {
   const [freeParkingCnt, setFreeParkingCnt] = useState("");
   const [description, setDescription] = useState("");
   const [aiTone, setAiTone] = useState<ToneType>("formal");
+  /** 초안을 쓰는 중(1초) / 방금 채웠음 — PC 공실등록과 같게, 알림창 대신 칸 아래 안내로 알린다 */
+  const [aiWriting, setAiWriting] = useState(false);
+  const [aiFilled, setAiFilled] = useState(false);
 
   const handleGenerateAI = () => {
+    if (aiWriting) return;
     const payload = {
       propertyType,
       subCategory,
@@ -208,8 +212,14 @@ function MobileVacancyWrite() {
       } : null
     };
     const text = generateLocalPropertyDescription(payload, aiTone);
-    setDescription(text);
-    alert("✨ 초안 작성이 완료되었습니다!\n반드시 내용을 읽어보시고, 실제 매물 정보에 맞게 꼼꼼히 수정해 주세요.");
+    // 글은 바로 만들어지지만, 1초쯤 "작성 중"을 보여 준 뒤 채운다
+    setAiFilled(false);
+    setAiWriting(true);
+    setTimeout(() => {
+      setDescription(text);
+      setAiWriting(false);
+      setAiFilled(true);
+    }, 1000);
   };
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
@@ -1630,7 +1640,7 @@ function MobileVacancyWrite() {
               {tradeType !== "매매" && (
                 <div style={{flex:1}}>
                   <label style={labelStyle}>권리금
-                    {premiumFee && <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700 }}> {formatKoreanAmount(premiumFee)}</span>}
+                    {premiumFee && <span style={{ color: "#3b82f6", fontSize: 12, fontWeight: 700 }}> {formatKorean(premiumFee)}</span>}
                   </label>
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <input type="number" placeholder="예: 3000" value={premiumFee} onChange={(e) => setPremiumFee(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
@@ -1977,19 +1987,38 @@ function MobileVacancyWrite() {
                 <button 
                   type="button" 
                   onClick={handleGenerateAI}
-                  style={{ 
-                    height: 28, padding: "0 12px", border: "none", borderRadius: 14, 
-                    background: "#fef3c7", 
-                    cursor: "pointer", 
+                  disabled={aiWriting}
+                  style={{
+                    height: 28, padding: "0 12px", border: "none", borderRadius: 14,
+                    background: "#fef3c7",
+                    cursor: aiWriting ? "wait" : "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontSize: 12, fontWeight: 700, 
                     color: "#d97706", transition: "all 0.2s" 
                   }} 
                 >
-                  ✨ AI초안글쓰기
+                  {aiWriting ? "✨ 작성 중..." : "✨ AI초안글쓰기"}
                 </button>
               </div>
             </div>
-            <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="공실광고에 대한 추가 설명을 입력하세요" rows={4} style={{ ...inputStyle, height:"auto", padding:12, resize:"vertical", lineHeight:1.5 }}/>
+            <style>{`
+              @keyframes aiDraftDot { 0%, 80%, 100% { opacity: .2 } 40% { opacity: 1 } }
+              @keyframes aiDraftIn { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
+            `}</style>
+            {aiWriting ? (
+              <div style={{ ...inputStyle, height: 110, padding: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 2, fontSize: 14, fontWeight: 700, color: "#d97706", background: "#fffbeb", borderColor: "#fcd34d", textAlign: "center" }}>
+                ✨ AI가 전달사항 초안을 작성 중입니다
+                {[0, 1, 2].map(i => (
+                  <span key={i} style={{ animation: `aiDraftDot 1s ${i * 0.2}s infinite`, marginLeft: i === 0 ? 3 : 0 }}>·</span>
+                ))}
+              </div>
+            ) : (
+              <textarea key={aiFilled ? "ai-filled" : "plain"} value={description} onChange={e=>setDescription(e.target.value)} placeholder="공실광고에 대한 추가 설명을 입력하세요" rows={4} style={{ ...inputStyle, height:"auto", padding:12, resize:"vertical", lineHeight:1.5, ...(aiFilled ? { animation: "aiDraftIn .5s ease-out" } : {}) }}/>
+            )}
+            {aiFilled && !aiWriting && (
+              <div style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: "#b45309", lineHeight: 1.5 }}>
+                ✨ 초안을 채웠습니다. 꼭 읽어 보시고 실제 매물 정보에 맞게 고쳐 주세요.
+              </div>
+            )}
           </div>
         </div>
 
