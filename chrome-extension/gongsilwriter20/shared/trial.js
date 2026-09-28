@@ -70,10 +70,9 @@
     box.className = "gw-trial is-exhausted";
     box.innerHTML =
       `<strong>🔒 이번 달 ${esc(featureName)} 무료 체험 ${limit}회를 모두 사용했습니다</strong>` +
-      `<small>횟수 제한 없이 쓰려면 공실뉴스부동산 또는 공실스터디부동산 회원이 되어 주세요. ` +
+      `<small>횟수 제한 없이 쓰려면 공실스터디부동산 회원이 되어 주세요. ` +
       `다음 달 1일에 무료 체험 ${limit}회가 다시 생깁니다. 이미 만든 글은 계속 고치고 보낼 수 있습니다.</small>` +
       `<div class="gw-trial-links">` +
-      `<a href="${esc(origin)}/newsrealty" target="_blank" rel="noopener noreferrer">공실뉴스부동산 알아보기</a>` +
       `<a href="${esc(origin)}/study" target="_blank" rel="noopener noreferrer">공실스터디부동산 알아보기</a>` +
       `</div>`;
   }

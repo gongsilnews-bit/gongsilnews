@@ -218,8 +218,8 @@
         el.scriptLockTitle.textContent = "무료 체험 횟수를 확인하지 못했습니다";
         el.scriptLockText.textContent = `${access.name}님은 현재 ${access.planLabel || "무료"} 등급입니다. ` +
           "잠시 뒤 [다시 확인]을 눌러 주세요. 공실뉴스부동산·공실스터디부동산 회원은 무제한으로 쓸 수 있습니다.";
-        el.scriptLockLink.textContent = "공실뉴스부동산 신청하기";
-        el.scriptLockLink.href = `${access.origin}/newsrealty/apply`;
+        el.scriptLockLink.textContent = "공실스터디 신청하기";
+        el.scriptLockLink.href = `${access.origin}/study/apply`;
         el.scriptLockLink.classList.remove("hidden");
       }
     }
