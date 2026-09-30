@@ -288,11 +288,11 @@ function MobileSettings() {
             const verifyResult = await verifyRes.json();
             
             if (verifyResult.status === "APPROVED") {
-              saveStatus = "APPROVED"; // AI가 검증 통과시키면 자동 승인
+              saveStatus = "APPROVED";
               setAgencyStatus("APPROVED");
-            } else if (verifyResult.status === "NEEDS_REVIEW") {
-              saveStatus = "PENDING";
-              setAgencyStatus("PENDING");
+            } else {
+              saveStatus = "REJECTED";
+              setAgencyStatus("REJECTED");
               let diffMsg = "";
               if (verifyResult.diff && verifyResult.diff.found) {
                 const isNameDiff = verifyResult.diff.expected?.companyName !== verifyResult.diff.found?.companyName;
@@ -300,10 +300,13 @@ function MobileSettings() {
                 if (isNameDiff) diffMsg += `상호명 불일치(입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName}) `;
                 if (isRepDiff) diffMsg += `대표자 불일치(입력: ${verifyResult.diff.expected?.representative} / 서류: ${verifyResult.diff.found?.representative})`;
               }
-              aiReason = diffMsg ? `AI 자동검증 참고: ${diffMsg}` : "서류 확인 필요 (관리자 검토)";
+              aiReason = diffMsg ? `서류 확인 필요: ${diffMsg}` : (verifyResult.message || "제출된 파일이 공식 개설등록증/사업자등록증 원본 서류가 아니거나 판독할 수 없습니다. 실제 원본 서류를 업로드해 주세요.");
             }
           } catch (e) {
             console.error("AI Verify Error:", e);
+            saveStatus = "REJECTED";
+            setAgencyStatus("REJECTED");
+            aiReason = "서류 확인 중 오류가 발생했습니다. 원본 서류를 선명하게 다시 업로드해 주세요.";
           }
         }
 
@@ -317,10 +320,13 @@ function MobileSettings() {
           reject_reason: aiReason,
         });
 
-        if (saveStatus === "APPROVED" && agencyStatus !== "APPROVED") {
+        if (saveStatus === "APPROVED") {
           const { adminApproveRealtorApplication } = await import("@/app/admin/actions");
           await adminApproveRealtorApplication(memberId);
           setIsRealtor(true);
+        } else if (saveStatus === "REJECTED") {
+          const { adminRejectRealtorApplication } = await import("@/app/admin/actions");
+          await adminRejectRealtorApplication(memberId, aiReason || "서류보완이 필요합니다.");
         }
       }
 
