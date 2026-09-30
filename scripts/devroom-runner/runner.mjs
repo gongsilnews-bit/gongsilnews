@@ -141,8 +141,8 @@ const INTENT_SCHEMA = {
   type: "object",
   properties: {
     action: {
-      type: "string", enum: ["edit_code", "explain_only", "just_question"],
-      description: "사장님이 지금 코드를 고치라고 했으면 edit_code. 고치지 말고 이해한 내용/계획만 먼저 말하라고 했으면 explain_only. 코드 작업과 상관없이 사용법·진행 상황·링크 위치 등을 묻는 단순 질문이면 just_question",
+      type: "string", enum: ["edit_code", "explain_only", "just_question", "approve"],
+      description: "사장님이 지금 코드를 고치라고 했으면 edit_code. 고치지 말고 이해한 내용/계획만 먼저 말하라고 했으면 explain_only. 코드 작업과 상관없이 사용법·진행 상황·링크 위치 등을 묻는 단순 질문이면 just_question. 지금 수정이 좋으니 실서버에 반영·업로드·커밋·승인하라는 뜻이면 approve",
     },
     discard_previous: { type: "boolean", description: "에이전트가 이전에 한 수정을 취소/되돌리라고 했으면 true" },
   },
@@ -163,6 +163,7 @@ function classifyIntent(message) {
     "- '이해했는지 먼저 확인', '설명만', '고치기 전에 물어봐' 는 explain_only 다.",
     "- '미리보기 링크 어디 있어?', '지금 뭐 하고 있어?', '승인은 어떻게 해?' 처럼 코드 수정 없이 답만 하면 되는 질문은 just_question 이다.",
     "- '안 열려', '링크가 안 돼', '미리보기가 안 보여' 처럼 링크·미리보기를 여는 과정의 문제도 just_question 이다 (코드를 고칠 일이 아니다).",
+    "- '좋아 올려 줘', '깃허브 업로딩하고 커밋해 줘', '반영해 줘', '승인', '배포해 줘' 처럼 지금 수정을 실서버에 반영하라는 말은 approve 다.",
     "",
     `[사장님 메시지]\n${message}`,
   ].join("\n");
@@ -179,8 +180,9 @@ function classifyIntent(message) {
       clearTimeout(timer);
       try {
         const r = JSON.parse(out).structured_output;
-        if (r && ["edit_code", "explain_only", "just_question"].includes(r.action)) {
+        if (r && ["edit_code", "explain_only", "just_question", "approve"].includes(r.action)) {
           if (r.action === "just_question") return resolve({ fresh: false, confirm: false, question: true });
+          if (r.action === "approve") return resolve({ fresh: false, confirm: false, approve: true });
           // 이전 수정 버리기는 되돌리기 어려우니 AI 판단이 아니라 분명한 단어("취소·되돌려…")가 있을 때만 한다
           // ("안 열리는데"를 AI 가 취소로 오해한 적이 있음, 2026-09-30)
           return resolve({ fresh, confirm: r.action === "explain_only" });
@@ -479,6 +481,18 @@ async function handle(task) {
   const rework = task.attempt > 1;
   const lastWord = rework ? task.reject_reason || "" : "";
   const mode = await classifyIntent(lastWord);
+
+  // 대화로 "올려 줘/반영해 줘/승인" → [승인] 버튼과 같다. 승인대기(PR 열림)일 때만, 아니면 질문으로 답한다
+  if (mode.approve) {
+    const prev = previousStatus(task);
+    if (prev === "review") {
+      log(`▶ ${task.task_no} 대화로 승인 → 병합 대기`);
+      await say(task.id, "승인하신 것으로 알고 실서버에 반영하겠습니다. main 에 합친 뒤 2~3분이면 www.gongsilnews.com 에 나타납니다.");
+      await report(task.id, { status: "restore", restore_to: "approved" }).catch((e) => log(`승인 처리 실패: ${e.message}`));
+      return;
+    }
+    mode.question = true;
+  }
 
   if (mode.question) {
     const prev = previousStatus(task);

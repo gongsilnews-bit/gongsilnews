@@ -33,7 +33,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // 질문에만 답하고 끝난 작업: 작업중(running) → 원래 상태로 되돌림 (다른 기록은 그대로)
   if (body.status === "restore") {
     const to = body.restore_to;
-    if (!["review", "failed", "merged"].includes(to)) return NextResponse.json({ error: "INVALID_STATUS" }, { status: 400 });
+    // approved: 사장님이 대화로 "올려 줘/승인"이라고 한 경우 (Runner 가 PR 이 열려 있는지 확인한 뒤에만 보낸다)
+    if (!["review", "failed", "merged", "approved"].includes(to)) return NextResponse.json({ error: "INVALID_STATUS" }, { status: 400 });
     const { data, error } = await db
       .from("dev_tasks")
       .update({ status: to, finished_at: new Date().toISOString() })
