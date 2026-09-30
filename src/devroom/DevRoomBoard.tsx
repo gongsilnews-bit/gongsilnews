@@ -179,7 +179,7 @@ export default function DevRoomBoard({ theme }: Props) {
           </button>
         </div>
         <p style={{ margin: "0 0 18px", fontSize: 13, color: textSecondary, lineHeight: 1.6 }}>
-          오류·수정 요청을 한국어로 등록하면 사장님 PC의 로컬 에이전트가 가져가 코드를 고치고, 검증 후 GitHub 브랜치에 올려 승인을 기다립니다.
+          오류·수정 요청을 한국어로 등록하면 대표님 PC의 로컬 에이전트가 가져가 코드를 고치고, 검증 후 GitHub 브랜치에 올려 승인을 기다립니다.
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           {FLOW.map((step, i) => (
