@@ -12,7 +12,6 @@
     "studio2:render": "npm --prefix marketing/studio2 run render",
     "studio2:scenes": "npm --prefix marketing/studio2 run scenes",
     "start": "next start",
-    "agent:verify": "node scripts/member-verify-daemon.cjs",
     "lint": "eslint"
   },
   "dependencies": {
