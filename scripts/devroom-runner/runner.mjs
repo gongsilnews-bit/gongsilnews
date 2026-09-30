@@ -133,9 +133,56 @@ async function ensureDeps() {
   fs.writeFileSync(mark, hash);
 }
 
-/** 사장님 최근 메시지에서 "이전 수정 버리기"와 "고치지 말고 먼저 확인" 요청을 읽는다 */
-const WANTS_FRESH = /취소|되돌|원래대로|처음부터|롤백|없던\s*일/;
-const WANTS_CONFIRM = /이해\s*했는지|이해했나|먼저\s*(확인|살펴|설명|물어)|설명해|확인만|고치지\s*말|수정하지\s*말|손대지\s*말|어떻게\s*할\s*건지/;
+/**
+ * 사장님 최근 메시지가 "이전 수정 버리기(fresh)"와 "고치지 말고 먼저 확인(confirm)"을 원하는지 AI 가 문장 뜻으로 판단한다.
+ * (단어로만 보면 "다른 건 수정하지 말고 그렇게 작업해 줘"를 확인 요청으로 오해한다)
+ */
+const INTENT_SCHEMA = {
+  type: "object",
+  properties: {
+    action: { type: "string", enum: ["edit_code", "explain_only"], description: "사장님이 지금 코드를 고치라고 했으면 edit_code. 고치지 말고 이해한 내용/계획만 먼저 말하라고 했으면 explain_only" },
+    discard_previous: { type: "boolean", description: "에이전트가 이전에 한 수정을 취소/되돌리라고 했으면 true" },
+  },
+  required: ["action", "discard_previous"],
+};
+// "취소" 는 AI 가 가끔 놓쳐서 단어로도 잡는다 (이 단어들은 오해할 일이 적다)
+const WANTS_FRESH = /취소|되돌|원래대로|처음부터|롤백/;
+
+// 시험 결과(2026-09-30): Haiku + 아래 기준 설명으로 "그렇게 작업해 줘 다른 건 수정하지 말고"=edit_code 등 3건 모두 정답, 약 10초
+function classifyIntent(message) {
+  const fresh = WANTS_FRESH.test(message);
+  const fallback = { fresh, confirm: /이해\s*했는지|먼저\s*(확인|살펴|설명)|설명만|확인만/.test(message) };
+  if (!message.trim()) return Promise.resolve({ fresh: false, confirm: false });
+  const prompt = [
+    "사장님이 개발 에이전트에게 보낸 메시지다. 사장님이 원하는 것을 판단하라.",
+    "- '그렇게 해 줘', '수정해 줘', '진행해' 는 코드를 고치라는 뜻(edit_code)이다.",
+    "- '다른 건 수정하지 말고' 는 '그 부분만 고치라'는 뜻이라 edit_code 다.",
+    "- '이해했는지 먼저 확인', '설명만', '고치기 전에 물어봐' 는 explain_only 다.",
+    "",
+    `[사장님 메시지]\n${message}`,
+  ].join("\n");
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [
+      CLAUDE_CLI, "-p", "--output-format", "json", "--model", "haiku",
+      "--permission-mode", "dontAsk", "--allowedTools", "",
+      "--json-schema", JSON.stringify(INTENT_SCHEMA), "--no-session-persistence",
+    ], { cwd: RUNNER_DIR, env: process.env });
+    let out = "";
+    child.stdout.on("data", (d) => { out += d; });
+    const timer = setTimeout(() => child.kill(), 60 * 1000);
+    child.on("close", () => {
+      clearTimeout(timer);
+      try {
+        const r = JSON.parse(out).structured_output;
+        if (r && (r.action === "edit_code" || r.action === "explain_only")) {
+          return resolve({ fresh: fresh || r.discard_previous === true, confirm: r.action === "explain_only" });
+        }
+      } catch { /* 아래 fallback */ }
+      resolve(fallback);
+    });
+    child.stdin.end(prompt);
+  });
+}
 
 function checkoutBranch(branch, rework, fresh = false) {
   git(["fetch", "origin"]);
@@ -371,7 +418,7 @@ async function handle(task) {
   const branch = `devroom/${task.task_no.toLowerCase()}`;
   const rework = task.attempt > 1;
   const lastWord = rework ? task.reject_reason || "" : "";
-  const mode = { fresh: WANTS_FRESH.test(lastWord), confirm: WANTS_CONFIRM.test(lastWord) };
+  const mode = await classifyIntent(lastWord);
   log(`▶ ${task.task_no} "${task.title}" (${task.attempt}차${mode.fresh ? ", 이전 수정 취소" : ""}${mode.confirm ? ", 확인만" : ""}) 시작 → ${branch}`);
   fs.writeFileSync(STATE_FILE, JSON.stringify({ id: task.id, task_no: task.task_no }));
 
