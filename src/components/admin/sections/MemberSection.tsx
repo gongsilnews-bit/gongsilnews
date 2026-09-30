@@ -421,13 +421,15 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                           {isDormant ? "영구삭제" : "삭제"}
                         </button>
                         <button style={{ height: 30, padding: "0 12px", background: darkMode ? "#2c2d31" : "#fff", color: "#6b7280", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>수정내역</button>
-                        {/* 승인대기/서류보완 상태 원클릭 버튼 (부동산 + 비즈니스) */}
-                        {(member.computedStatus === '승인대기' || member.computedStatus === '서류보완') && (member.role === 'REALTOR' || member.role === 'BIZ') && (
+                        {/* 승인대기/서류보완 상태 원클릭 버튼 (부동산 + 비즈니스 + USER 신청자) */}
+                        {(member.computedStatus === '승인대기' || member.computedStatus === '서류보완') && (member.role === 'REALTOR' || member.role === 'BIZ' || memberAgency || memberBiz) && (
                           <>
                             <button onClick={async () => {
-                              const roleLabel = member.role === 'BIZ' ? '비즈니스회원' : '부동산회원';
+                              const hasAgency = memberAgency;
+                              const hasBiz = memberBiz && !memberAgency;
+                              const roleLabel = hasBiz ? '비즈니스회원' : '부동산회원';
                               if (confirm(`'${member.name || member.email}' 회원을 ${roleLabel}으로 승인하시겠습니까?`)) {
-                                const res = member.role === 'BIZ'
+                                const res = hasBiz
                                   ? await adminApproveBusinessApplication(member.id)
                                   : await adminApproveRealtorApplication(member.id);
                                 if (res.success) { alert('✅ 승인 완료!'); adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) }); }
@@ -483,9 +485,12 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
               <button onClick={async () => {
                 const finalReason = rejectReason === "기타" ? "기타 사유" : rejectReason;
                 if (!finalReason.trim()) { alert("반려 사유를 입력해주세요."); return; }
-                // 해당 회원의 role을 찾아서 적절한 반려 함수 호출
+                // 해당 회원의 agency/biz 신청을 찾아서 적절한 반려 함수 호출
                 const targetMember = dbMembers.find(m => m.id === rejectModalFor);
-                const res = targetMember?.role === 'BIZ'
+                const targetBiz = targetMember?.business_profiles && (Array.isArray(targetMember.business_profiles) ? targetMember.business_profiles[0] : targetMember.business_profiles);
+                const targetAgency = targetMember?.agencies && (Array.isArray(targetMember.agencies) ? targetMember.agencies[0] : targetMember.agencies);
+                const isBizReject = (targetMember?.role === 'BIZ') || (targetBiz && !targetAgency);
+                const res = isBizReject
                   ? await adminRejectBusinessApplication(rejectModalFor, finalReason)
                   : await adminRejectRealtorApplication(rejectModalFor, finalReason);
                 if (res.success) { alert('반려 처리 완료'); adminGetMembers().then(r => { if (r.success) setDbMembers(r.data || []) }); setRejectModalFor(null); setRejectReason("사업자등록증이 불분명합니다"); }

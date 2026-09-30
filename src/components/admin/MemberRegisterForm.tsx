@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember, adminUpdateBusinessProfile, adminGetLimitPolicies } from "@/app/admin/actions";
+import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember, adminUpdateBusinessProfile, adminGetLimitPolicies, adminApproveRealtorApplication, adminRejectRealtorApplication } from "@/app/admin/actions";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { getHomepageSettings } from "@/app/actions/homepage";
 
@@ -17,6 +17,10 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const [loading, setLoading] = useState(false);
   const [initialFetchDone, setInitialFetchDone] = useState(!editMemberId);
   const [policies, setPolicies] = useState<any>(null);
+  // 관리자 전용: role은 일반회원이지만 부동산 가입신청(agency)이 있는 경우 true
+  const [hasAgencyApplication, setHasAgencyApplication] = useState(false);
+  const [adminRejectModalOpen, setAdminRejectModalOpen] = useState(false);
+  const [adminRejectReason, setAdminRejectReason] = useState("사업자등록증이 불분명합니다");
 
   useEffect(() => {
     adminGetLimitPolicies().then(res => {
@@ -146,8 +150,13 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
         if (res.success && res.member) {
           const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '부동산회원', 'BIZ': '비즈니스회원', 'USER': '일반회원' };
           let resolvedRole = roleMap[res.member.role] || "일반회원";
+          // 일반 사용자(본인) 화면: agency가 있으면 부동산회원 탭을 보여줌
           if (!isAdmin && res.agency && (res.agency.status === "PENDING" || res.agency.status === "REJECTED" || res.agency.status === "APPROVED")) {
             resolvedRole = "부동산회원";
+          }
+          // 관리자 화면: role은 일반회원 유지하되, agency 신청이 있음을 별도 플래그로 기록
+          if (isAdmin && res.agency && res.member.role === 'USER') {
+            setHasAgencyApplication(true);
           }
           // 무료 중개업소 등록(newsrealty) 진입 플로우: 별도 전환신청 클릭 없이 바로 부동산정보 입력
           if (!isAdmin && resolvedRole === "일반회원" && initialTab === 1 && typeof window !== "undefined" && localStorage.getItem("signup_member_type") === "broker") {
@@ -791,15 +800,68 @@ function gradeDefaults(p: any, role: string, planType?: string) {
         </h1>
       </div>
 
+      {/* 관리자 전용: 부동산 가입신청 심사 배너 */}
+      {isAdmin && hasAgencyApplication && formData.role === "일반회원" && (agencyData.status === "PENDING" || agencyData.status === "REJECTED") && (
+        <div style={{ marginBottom: 20, padding: "16px 20px", borderRadius: 12, background: agencyData.status === "PENDING" ? (darkMode ? "#422814" : "#fffbeb") : (darkMode ? "#451a1a" : "#fef2f2"), border: `2px solid ${agencyData.status === "PENDING" ? (darkMode ? "#78350f" : "#fde68a") : (darkMode ? "#7f1d1d" : "#fecaca")}` }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 22 }}>{agencyData.status === "PENDING" ? "⏳" : "🚨"}</span>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: agencyData.status === "PENDING" ? (darkMode ? "#fde68a" : "#92400e") : (darkMode ? "#fca5a5" : "#b91c1c"), marginBottom: 2 }}>
+                  {agencyData.status === "PENDING" ? "부동산회원 가입신청 - 심사 대기중" : "부동산회원 가입신청 - 서류보완 반려됨"}
+                </div>
+                <div style={{ fontSize: 13, color: darkMode ? "#9ca3af" : "#6b7280" }}>
+                  {agencyData.name && `${agencyData.name}`}{agencyData.ceo_name && ` · 대표: ${agencyData.ceo_name}`}{agencyData.reg_num && ` · 등록번호: ${agencyData.reg_num}`}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={async () => {
+                if (confirm(`'${formData.name || formData.email}' 회원을 부동산회원으로 승인하시겠습니까?`)) {
+                  setLoading(true);
+                  try {
+                    const res = await adminApproveRealtorApplication(editMemberId!);
+                    if (res.success) {
+                      alert('✅ 승인 완료! 부동산회원으로 전환되었습니다.');
+                      setFormData(prev => ({ ...prev, role: "부동산회원" }));
+                      setAgencyData(prev => ({ ...prev, status: "APPROVED" }));
+                      setHasAgencyApplication(false);
+                    } else {
+                      alert('승인 실패: ' + (res as any).error);
+                    }
+                  } finally { setLoading(false); }
+                }
+              }} disabled={loading} style={{ height: 36, padding: "0 18px", background: "#10b981", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}>
+                ✓ 승인 (부동산회원 전환)
+              </button>
+              <button onClick={() => setAdminRejectModalOpen(true)} disabled={loading} style={{ height: 36, padding: "0 18px", background: "#fff3cd", color: "#92400e", border: "1px solid #fbbf24", borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}>
+                ✗ 반려 (서류보완)
+              </button>
+            </div>
+          </div>
+          {agencyData.status === "REJECTED" && rejectReason && (
+            <div style={{ marginTop: 10, padding: "8px 12px", background: darkMode ? "rgba(0,0,0,0.2)" : "#fff", border: `1px solid ${darkMode ? "#7f1d1d" : "#fecaca"}`, borderRadius: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: darkMode ? "#fca5a5" : "#b91c1c" }}>📌 이전 반려 사유: </span>
+              <span style={{ fontSize: 13, color: darkMode ? "#fca5a5" : "#991b1b" }}>{rejectReason}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: "2px", marginBottom: "20px" }}>
         <button onClick={() => setActiveTab(0)} style={{ flex: 1, padding: "14px", background: activeTab === 0 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 0 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 0 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 0 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>기본정보</button>
-        {formData.role === "부동산회원" && (
-          <button onClick={() => setActiveTab(1)} style={{ flex: 1, padding: "14px", background: activeTab === 1 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 1 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 1 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 1 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>부동산정보</button>
+        {(formData.role === "부동산회원" || (isAdmin && hasAgencyApplication)) && (
+          <button onClick={() => setActiveTab(1)} style={{ flex: 1, padding: "14px", background: activeTab === 1 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 1 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 1 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 1 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s", position: "relative" }}>
+            부동산정보
+            {isAdmin && hasAgencyApplication && agencyData.status === "PENDING" && (
+              <span style={{ position: "absolute", top: 4, right: 4, width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", animation: "pulseBlink 1.5s infinite ease-in-out" }} />
+            )}
+          </button>
         )}
         {formData.role === "비즈니스회원" && (
           <button onClick={() => setActiveTab(3)} style={{ flex: 1, padding: "14px", background: activeTab === 3 ? (darkMode ? "#8b5cf6" : "#7c3aed") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 3 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 3 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 3 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>비즈니스정보</button>
         )}
-        {formData.role !== "일반회원" && (
+        {(formData.role !== "일반회원" || (isAdmin && hasAgencyApplication)) && (
           <button onClick={() => setActiveTab(2)} style={{ flex: 1, padding: "14px", background: activeTab === 2 ? (darkMode ? "#3b82f6" : "#2563eb") : (darkMode ? "#2c2d31" : "#fff"), color: activeTab === 2 ? "#fff" : (darkMode ? "#9ca3af" : "#6b7280"), border: activeTab !== 2 ? `1px solid ${darkMode ? "#333" : "#e5e7eb"}` : "none", borderBottom: activeTab === 2 ? "none" : `1px solid ${darkMode ? "#333" : "#e5e7eb"}`, borderRadius: "8px 8px 0 0", cursor: "pointer", fontWeight: "bold", transition: "all 0.2s" }}>마케팅정보</button>
         )}
       </div>
@@ -1065,13 +1127,18 @@ function gradeDefaults(p: any, role: string, planType?: string) {
         <div style={rowStyle}>
           <div style={labelStyle}>가입 완료 여부</div>
           <div style={contentStyle}>
-            {formData.role === "부동산회원" ? (
+            {(formData.role === "부동산회원" || (isAdmin && hasAgencyApplication)) ? (
               isAdmin ? (
-                <select name="status" value={agencyData.status} onChange={(e) => setAgencyData({...agencyData, status: e.target.value})} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 160 }}>
-                  <option value="PENDING">승인대기</option>
-                  <option value="APPROVED">정상승인</option>
-                  <option value="REJECTED">서류보완</option>
-                </select>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <select name="status" value={agencyData.status} onChange={(e) => setAgencyData({...agencyData, status: e.target.value})} style={{ height: 40, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#2c2d31" : "#fff", outline: "none", width: 160 }}>
+                    <option value="PENDING">승인대기</option>
+                    <option value="APPROVED">정상승인</option>
+                    <option value="REJECTED">서류보완</option>
+                  </select>
+                  {hasAgencyApplication && formData.role === "일반회원" && (
+                    <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 700, background: "#fef3c7", padding: "3px 8px", borderRadius: 4 }}>부동산 신청중 (일반회원)</span>
+                  )}
+                </div>
               ) : (
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span 
@@ -1728,6 +1795,52 @@ function gradeDefaults(p: any, role: string, planType?: string) {
             &times;
           </button>
           <img src={previewImage} alt="크게 보기" style={{ maxWidth: "90%", maxHeight: "90%", objectFit: "contain", borderRadius: 8, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)" }} />
+        </div>
+      )}
+
+      {/* 관리자 전용: 반려 사유 입력 모달 */}
+      {adminRejectModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setAdminRejectModalOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: darkMode ? "#2c2d31" : "#fff", borderRadius: 14, padding: "28px 32px", width: 440, maxWidth: "90%", boxShadow: "0 25px 50px rgba(0,0,0,0.25)" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: darkMode ? "#e1e4e8" : "#111827", margin: "0 0 16px" }}>반려 사유</h3>
+            <select value={adminRejectReason} onChange={(e) => setAdminRejectReason(e.target.value)} style={{ width: "100%", height: 42, padding: "0 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#25262b" : "#fff", outline: "none", marginBottom: 12 }}>
+              <option value="사업자등록증이 불분명합니다">사업자등록증이 불분명합니다</option>
+              <option value="중개업등록증이 누락되었습니다">중개업등록증이 누락되었습니다</option>
+              <option value="서류 정보가 일치하지 않습니다">서류 정보가 일치하지 않습니다</option>
+              <option value="필수 정보가 미입력 되었습니다">필수 정보가 미입력 되었습니다</option>
+              <option value="기타">기타 (직접 입력)</option>
+            </select>
+            {adminRejectReason === "기타" && (
+              <textarea
+                placeholder="반려 사유를 직접 입력해주세요..."
+                onChange={(e) => setAdminRejectReason(e.target.value)}
+                style={{ width: "100%", height: 80, padding: "12px 14px", border: `1px solid ${darkMode ? "#444" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, color: darkMode ? "#e1e4e8" : "#111827", background: darkMode ? "#25262b" : "#fff", outline: "none", marginBottom: 12, resize: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+              />
+            )}
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+              <button onClick={() => setAdminRejectModalOpen(false)} style={{ height: 38, padding: "0 18px", background: darkMode ? "#374151" : "#f3f4f6", color: darkMode ? "#e1e4e8" : "#374151", border: `1px solid ${darkMode ? "#555" : "#d1d5db"}`, borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>취소</button>
+              <button onClick={async () => {
+                if (!adminRejectReason || adminRejectReason === "기타") {
+                  alert("반려 사유를 입력해주세요.");
+                  return;
+                }
+                setLoading(true);
+                try {
+                  const res = await adminRejectRealtorApplication(editMemberId!, adminRejectReason);
+                  if (res.success) {
+                    alert("반려 처리되었습니다. 회원에게 서류보완 알림이 전송됩니다.");
+                    setAgencyData(prev => ({ ...prev, status: "REJECTED" }));
+                    setRejectReason(adminRejectReason);
+                    setAdminRejectModalOpen(false);
+                  } else {
+                    alert("반려 실패: " + (res as any).error);
+                  }
+                } finally { setLoading(false); }
+              }} disabled={loading} style={{ height: 38, padding: "0 18px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}>
+                반려 확정
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
