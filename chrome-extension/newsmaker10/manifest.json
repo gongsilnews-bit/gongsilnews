@@ -1,0 +1,118 @@
+{
+  "manifest_version": 3,
+  "name": "공실뉴스 AI 뉴스메이커",
+  "version": "1.0.0",
+  "description": "뉴스를 가져오거나 주제만 넣으면 공실뉴스 기사, 네이버 블로그 초안, 유튜브 대본을 만들고 각 글쓰기 화면으로 보냅니다.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "공실뉴스 AI 뉴스메이커 열기",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "panel.html"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "webNavigation",
+    "sidePanel",
+    "activeTab",
+    "clipboardWrite",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://gongsilnews.com/*",
+    "https://*.gongsilnews.com/*",
+    "http://localhost/*",
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://gongsilnews.com/admin*",
+        "https://*.gongsilnews.com/admin*",
+        "http://localhost/admin*",
+        "https://gongsilnews.com/realty_admin*",
+        "https://*.gongsilnews.com/realty_admin*",
+        "http://localhost/realty_admin*",
+        "https://gongsilnews.com/user_admin*",
+        "https://*.gongsilnews.com/user_admin*",
+        "http://localhost/user_admin*"
+      ],
+      "css": [
+        "shared/ui.css"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/write-page.js",
+        "shared/media-cover.js",
+        "shared/ui.js",
+        "content-admin.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "shared/article-json.js",
+        "shared/ai-common.js",
+        "content-chatgpt.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gemini.google.com/*"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/ui.js",
+        "shared/article-json.js",
+        "shared/ai-common.js",
+        "content-gemini.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://blog.naver.com/*",
+        "https://blog.editor.naver.com/*"
+      ],
+      "js": [
+        "shared/naver-blog.js",
+        "content-naver.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+N"
+      },
+      "description": "공실뉴스 뉴스메이커 작업창 열기"
+    }
+  }
+}

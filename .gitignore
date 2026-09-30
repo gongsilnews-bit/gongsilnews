@@ -48,6 +48,8 @@ next-env.d.ts
 /public/marketing/remodeling/assets/
 /public/marketing/home-interior/assets/
 /public/marketing/studio/assets/
+/public/marketing/studio2/assets/
+/public/marketing/studyhtml/assets/
 
 
 
@@ -55,4 +57,7 @@ next-env.d.ts
 /scratch/
 scratch_*
 chrome-extension/_metadata/
-
+.vscode/
+output/
+scenes/
+chrome-extension/*.zip

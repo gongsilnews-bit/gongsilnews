@@ -4,8 +4,9 @@ import { consumeTrial, getExtensionMember, type TrialFeature } from "@/utils/ext
 /**
  * 크롬 확장 무료 체험 1번 쓰기
  *
- * [AI 블로그 초안 작성]·[AI 유튜브 대본 작성]을 누를 때 부른다. body: { feature: "blog" | "youtube" }
+ * [AI 블로그 초안 작성]·[AI 유튜브 대본 작성]을 누를 때 부른다. body: { feature: "blog" | "youtube", app?: "newsmaker" }
  * - 공실뉴스부동산·공실스터디부동산·최고관리자: 세지 않는다 (unlimited)
+ * - 뉴스메이커(app: "newsmaker")는 비즈니스회원도 세지 않는다. 체험 횟수는 기사 작성기와 함께 센다
  * - 그 외 로그인 회원: 이번 달 3번까지. 다 썼으면 403 + exhausted
  * - 로그인 안 함: 401
  */
@@ -39,7 +40,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const unlimited = feature === "blog" ? member.canBlog : member.canYoutubeWriter;
+    const unlimited = body?.app === "newsmaker"
+      ? member.canNewsMaker
+      : feature === "blog" ? member.canBlog : member.canYoutubeWriter;
     if (unlimited) {
       return NextResponse.json({ success: true, unlimited: true }, { headers: corsHeaders });
     }

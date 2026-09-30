@@ -68,6 +68,14 @@ const nextConfig: NextConfig = {
           source: '/marketing/studio/:path*',
           destination: 'http://localhost:3009/marketing/studio/:path*',
         },
+        {
+          source: '/marketing/studyhtml',
+          destination: 'http://localhost:3010/marketing/studyhtml/',
+        },
+        {
+          source: '/marketing/studyhtml/:path*',
+          destination: 'http://localhost:3010/marketing/studyhtml/:path*',
+        },
       ];
     }
     return [
@@ -110,6 +118,14 @@ const nextConfig: NextConfig = {
       {
         source: '/marketing/studio/',
         destination: '/marketing/studio/index.html',
+      },
+      {
+        source: '/marketing/studyhtml',
+        destination: '/marketing/studyhtml/index.html',
+      },
+      {
+        source: '/marketing/studyhtml/',
+        destination: '/marketing/studyhtml/index.html',
       },
     ];
   },

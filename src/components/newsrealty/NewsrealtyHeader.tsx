@@ -146,7 +146,7 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
       >
         <div
           style={{
-            maxWidth: "1080px",
+            maxWidth: "1152px",
             margin: "0 auto",
             height: "100%",
             padding: "0 20px",
@@ -161,8 +161,8 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
             <Link
               href="/"
               style={{
-                fontSize: "18px",
-                fontWeight: 800,
+                fontSize: "23px",
+                fontWeight: 900,
                 color: "#111827",
                 textDecoration: "none",
                 letterSpacing: "-0.5px",
@@ -175,7 +175,7 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
             </Link>
             <span
               style={{
-                fontSize: "15px",
+                fontSize: "19px",
                 color: "#cbd5e1",
                 fontWeight: 300,
                 margin: "0 4px",
@@ -187,8 +187,8 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
             <Link
               href="/newsrealty"
               style={{
-                fontSize: "18px",
-                fontWeight: 800,
+                fontSize: "23px",
+                fontWeight: 900,
                 color: "#ff8e15",
                 textDecoration: "none",
                 letterSpacing: "-0.5px",
@@ -214,9 +214,9 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
             <Link
               href="/newsrealty"
               style={{
-                fontSize: "14px",
-                fontWeight: isHomeActive ? 800 : 600,
-                color: isHomeActive ? "#ff8e15" : "#475569",
+                fontSize: "17px",
+                fontWeight: isHomeActive ? 900 : 800,
+                color: isHomeActive ? "#ff8e15" : "#111827",
                 textDecoration: "none",
                 transition: "color 0.15s ease",
                 position: "relative",
@@ -249,9 +249,9 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
               <Link
                 href="/newsrealty/benefits/brokerage-article"
                 style={{
-                  fontSize: "14px",
-                  fontWeight: isBenefitsActive ? 800 : 600,
-                  color: isBenefitsActive ? "#ff8e15" : dropdownOpen ? "#ff8e15" : "#475569",
+                  fontSize: "17px",
+                  fontWeight: isBenefitsActive ? 900 : 800,
+                  color: isBenefitsActive ? "#ff8e15" : dropdownOpen ? "#ff8e15" : "#111827",
                   textDecoration: "none",
                   transition: "color 0.15s ease",
                   padding: "6px 0",
@@ -329,10 +329,10 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                       onClick={() => setDropdownOpen(false)}
                       style={{
                         display: "block",
-                        padding: "10px 20px",
+                        padding: "12px 22px",
                         color: "#ffffff",
-                        fontSize: "13px",
-                        fontWeight: 500,
+                        fontSize: "15px",
+                        fontWeight: 600,
                         textDecoration: "none",
                         whiteSpace: "nowrap",
                         letterSpacing: "-0.2px",
@@ -355,10 +355,10 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                       onClick={() => setDropdownOpen(false)}
                       style={{
                         display: "block",
-                        padding: "10px 20px",
+                        padding: "12px 22px",
                         color: "#ffffff",
-                        fontSize: "13px",
-                        fontWeight: 500,
+                        fontSize: "15px",
+                        fontWeight: 600,
                         textDecoration: "none",
                         whiteSpace: "nowrap",
                         letterSpacing: "-0.2px",
@@ -381,10 +381,10 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                       onClick={() => setDropdownOpen(false)}
                       style={{
                         display: "block",
-                        padding: "10px 20px",
+                        padding: "12px 22px",
                         color: "#ffffff",
-                        fontSize: "13px",
-                        fontWeight: 500,
+                        fontSize: "15px",
+                        fontWeight: 600,
                         textDecoration: "none",
                         whiteSpace: "nowrap",
                         letterSpacing: "-0.2px",
@@ -410,9 +410,9 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
             <Link
               href="/newsrealty/pricing"
               style={{
-                fontSize: "14px",
-                fontWeight: isPricingActive ? 800 : 600,
-                color: isPricingActive ? "#ff8e15" : "#475569",
+                fontSize: "17px",
+                fontWeight: isPricingActive ? 900 : 800,
+                color: isPricingActive ? "#ff8e15" : "#111827",
                 textDecoration: "none",
                 transition: "color 0.15s ease",
                 padding: "6px 0",
@@ -424,7 +424,7 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                 if (!isPricingActive) e.currentTarget.style.color = "#ff8e15";
               }}
               onMouseLeave={(e) => {
-                if (!isPricingActive) e.currentTarget.style.color = "#475569";
+                if (!isPricingActive) e.currentTarget.style.color = "#111827";
               }}
             >
               금액안내
@@ -447,9 +447,9 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
             <Link
               href="/newsrealty/apply"
               style={{
-                fontSize: "14px",
-                fontWeight: isApplyActive ? 800 : 600,
-                color: isApplyActive ? "#ff8e15" : "#475569",
+                fontSize: "17px",
+                fontWeight: isApplyActive ? 900 : 800,
+                color: isApplyActive ? "#ff8e15" : "#111827",
                 textDecoration: "none",
                 transition: "color 0.15s ease",
                 position: "relative",
@@ -482,9 +482,9 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
               <Link
                 href="/newsrealty/guide/notice"
                 style={{
-                  fontSize: "14px",
-                  fontWeight: isGuideActive ? 800 : 600,
-                  color: isGuideActive ? "#ff8e15" : guideDropdownOpen ? "#ff8e15" : "#475569",
+                  fontSize: "17px",
+                  fontWeight: isGuideActive ? 900 : 800,
+                  color: isGuideActive ? "#ff8e15" : guideDropdownOpen ? "#ff8e15" : "#111827",
                   textDecoration: "none",
                   transition: "color 0.15s ease",
                   padding: "6px 0",
@@ -564,8 +564,8 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                         display: "block",
                         padding: "9px 20px",
                         color: pathname === "/newsrealty/guide/notice" ? "#ff8e15" : "#ffffff",
-                        fontSize: "13px",
-                        fontWeight: 500,
+                        fontSize: "15px",
+                        fontWeight: 600,
                         textDecoration: "none",
                         whiteSpace: "nowrap",
                         letterSpacing: "-0.2px",
@@ -590,8 +590,8 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                         display: "block",
                         padding: "9px 20px",
                         color: pathname === "/newsrealty/guide/manual" ? "#ff8e15" : "#ffffff",
-                        fontSize: "13px",
-                        fontWeight: 500,
+                        fontSize: "15px",
+                        fontWeight: 600,
                         textDecoration: "none",
                         whiteSpace: "nowrap",
                         letterSpacing: "-0.2px",
@@ -616,8 +616,8 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                         display: "block",
                         padding: "9px 20px",
                         color: pathname === "/newsrealty/guide/inquiry" ? "#ff8e15" : "#ffffff",
-                        fontSize: "13px",
-                        fontWeight: 500,
+                        fontSize: "15px",
+                        fontWeight: 600,
                         textDecoration: "none",
                         whiteSpace: "nowrap",
                         letterSpacing: "-0.2px",
@@ -642,8 +642,8 @@ export default function NewsrealtyHeader({ onOpenGuide }: NewsrealtyHeaderProps)
                         display: "block",
                         padding: "9px 20px",
                         color: pathname === "/newsrealty/guide/chat" ? "#ff8e15" : "#ffffff",
-                        fontSize: "13px",
-                        fontWeight: 500,
+                        fontSize: "15px",
+                        fontWeight: 600,
                         textDecoration: "none",
                         whiteSpace: "nowrap",
                         letterSpacing: "-0.2px",

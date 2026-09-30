@@ -1,5 +1,5 @@
 import React from "react";
-import StudyHomeClient from "./StudyHomeClient";
+import StudyHomeYunClient from "./StudyHomeYunClient";
 
 export const metadata = {
   title: "공실스터디란? | 공실스터디",
@@ -8,5 +8,5 @@ export const metadata = {
 };
 
 export default function StudyHomePage() {
-  return <StudyHomeClient />;
+  return <StudyHomeYunClient />;
 }

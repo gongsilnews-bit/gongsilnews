@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "공실뉴스 AI 유튜브작성기",
-  "version": "1.1.2",
-  "description": "오른쪽 작업창에서 공실 매물로 기사 초안을 만들고, 그 기사로 유튜브 장면 대본과 장면 이미지·썸네일을 만듭니다.",
+  "version": "1.2.1",
+  "description": "오른쪽 작업창에서 공실 매물로 기사 초안을 만들고, 그 기사로 유튜브 장면 대본과 장면 이미지를 만듭니다.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",

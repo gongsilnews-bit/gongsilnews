@@ -83,7 +83,32 @@ test("이미지 프롬프트는 스타일·비율을 넣고 글자·달러를 �
   assert.ok(prompt.includes("[추가 요청]\n해 질 녘으로"));
 });
 
+test("스타일마다 그리는 방식을 넣고, 장면 설명보다 스타일을 우선하게 한다", () => {
+  const scene = { heading: "위치", narration: "문장", visualPrompt: "실사 사진으로 본 논현동 골목", visualType: "street" };
+  const image = yt.gwBuildYtImagePrompt(scene, { imageStyle: "illustration" });
+  assert.ok(image.includes("[이미지 스타일 — 최우선] 한국형 일러스트·웹툰"));
+  assert.ok(image.includes(yt.GW_YT_IMAGE_STYLE.illustration.render));
+  assert.ok(image.includes("반드시 위 스타일로 그리십시오"));
+  assert.ok(image.indexOf("[이미지 스타일") < image.indexOf("[장면]"), "스타일이 장면 설명보다 먼저 온다");
+  const scenes = yt.gwBuildYtScenePrompt(["문장."], { imageStyle: "infographic" }, "제목");
+  assert.ok(scenes.includes(yt.GW_YT_IMAGE_STYLE.infographic.scene));
+  for (const style of Object.values(yt.GW_YT_IMAGE_STYLE)) assert.ok(style.render && style.scene && style.avoid, style.label);
+});
+
 test("읽는 시간은 공백 제외 글자 수 ÷ 5.5초로 계산한다", () => {
   assert.equal(yt.gwYtSpeechSeconds("가".repeat(55)), 10);
   assert.equal(Object.keys(yt.GW_YT_IMAGE_STYLE).length, 7);
+});
+
+test("이미지 프롬프트 파일은 [clip01] · Narrative · Style · Visual Prompt 형식으로 만든다", () => {
+  const text = yt.gwBuildYtVisualPromptsText(
+    [{ narration: "첫 문장.", visualPrompt: "A street in Seoul." }, { narration: "둘째 문장.", visualPrompt: "A map." }],
+    () => "news"
+  );
+  const blocks = text.trim().split("\n\n");
+  assert.equal(blocks.length, 2);
+  assert.ok(blocks[0].startsWith("[clip01]\nNarrative: 첫 문장.\nStyle: Style: Korean News Photo."));
+  assert.ok(blocks[0].includes("**NO TEXT**. **NO SPEECH BUBBLES**. **NO WORDS**.\nVisual Prompt: A street in Seoul.\n-----------------------------------"));
+  assert.ok(blocks[1].startsWith("[clip02]"));
+  for (const style of Object.values(yt.GW_YT_IMAGE_STYLE)) assert.ok(style.en, style.label);
 });

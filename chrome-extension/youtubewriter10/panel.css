@@ -981,7 +981,7 @@ body {
 .yt-label { display: block; margin: 4px 0 4px; font-size: 11px; font-weight: 700; color: var(--text-muted) }
 
 .yt-scene { padding: 10px 11px }
-.yt-scene-head { display: flex; align-items: center; gap: 7px; margin-bottom: 8px }
+.yt-scene-head { display: flex; align-items: center; justify-content: space-between; gap: 7px; margin-bottom: 8px }
 .yt-scene-no {
   flex: none;
   min-width: 26px;
@@ -993,19 +993,6 @@ body {
   font-weight: 800;
   text-align: center;
 }
-.yt-scene-heading {
-  flex: 1;
-  min-width: 0;
-  padding: 5px 7px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--text-main);
-}
-.yt-scene-heading:hover, .yt-scene-heading:focus { border-color: var(--border); background: #fff; outline: none }
 .yt-scene-title { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .yt-scene-tools { display: flex; gap: 5px; margin: -2px 0 8px }
 .yt-scene-tools button {
@@ -1051,6 +1038,26 @@ body {
 .yt-frame.vertical { aspect-ratio: 9 / 16; max-height: 360px; margin-left: auto; margin-right: auto }
 .yt-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover }
 .yt-frame-empty { padding: 12px; font-size: 11.5px; color: var(--text-muted); text-align: center }
+/* 이미지 제작중 — 빈 칸이면 가운데 안내, 기존 그림이 있으면 그 위에 반투명으로 덮는다 */
+.yt-frame-busy {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--primary);
+}
+.yt-frame-busy.over { background: rgba(15, 23, 42, 0.55); color: #fff }
+.yt-dots { display: flex; gap: 6px }
+.yt-dots i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: yt-dot 1.2s infinite ease-in-out }
+.yt-dots i:nth-child(2) { animation-delay: 0.2s }
+.yt-dots i:nth-child(3) { animation-delay: 0.4s }
+@keyframes yt-dot { 0%, 80%, 100% { opacity: 0.25; transform: scale(0.8) } 40% { opacity: 1; transform: scale(1.1) } }
 .yt-caption {
   position: absolute;
   left: 0;
@@ -1066,46 +1073,18 @@ body {
 .yt-caption:not(.ppt) { opacity: .75 }
 
 .yt-image-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px }
-.yt-image-tools .btn-sub { padding: 7px 4px; font-size: 11.5px }
+.yt-image-tools .btn-sub { padding: 9px 4px; font-size: 12px }
+.yt-image-tools .yt-image-prev { grid-column: 1 / -1; padding: 6px 4px; font-size: 11px }
 .btn-sub.yt-primary { border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: 800 }
 .yt-scene-style { margin-bottom: 7px }
 
-.yt-style-grid { flex-wrap: wrap }
+.yt-style-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px }
+.yt-style-grid .image-style { padding: 10px 8px; border-radius: 8px; font-size: 12.5px; text-align: center }
 .yt-check { display: flex; align-items: center; gap: 6px; margin: 8px 0 2px; font-size: 12px; font-weight: 600; cursor: pointer }
 
 .yt-progress { height: 6px; margin-top: 4px; overflow: hidden; border-radius: 9999px; background: #e2e8f0 }
 .yt-progress > div { width: 0; height: 100%; background: var(--primary); transition: width .3s }
 #ytProgressText { margin-top: 5px }
-
-.yt-suggestions { display: flex; flex-direction: column; gap: 5px; margin: 7px 0 }
-.yt-suggestions .chip { text-align: left }
-.yt-thumb {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 16 / 9;
-  margin-bottom: 8px;
-  overflow: hidden;
-  border-radius: var(--radius-sm);
-  background: #e2e8f0;
-}
-.yt-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover }
-.yt-thumb-empty { font-size: 11.5px; color: var(--text-muted) }
-.yt-thumb:not(.empty) .yt-thumb-empty { display: none }
-.yt-thumb.empty .yt-thumb-overlay { display: none }
-.yt-thumb-overlay {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 24px 12px 12px;
-  background: linear-gradient(transparent, rgba(10, 20, 40, .88));
-  color: #fff;
-  text-align: center;
-}
-.yt-thumb-overlay small { display: block; font-size: 10px; font-weight: 800; color: #93c5fd }
-.yt-thumb-overlay strong { display: block; font-size: 17px; font-weight: 900; line-height: 1.3 }
 
 .yt-dialog {
   width: min(94vw, 420px);
@@ -1116,20 +1095,27 @@ body {
 }
 .yt-dialog::backdrop { background: rgba(15, 23, 42, .45) }
 .yt-dialog-head { margin-bottom: 6px; font-size: 14px; font-weight: 800 }
-.yt-import-list { max-height: 50vh; margin: 8px 0; overflow-y: auto }
-.yt-import-row { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border) }
-.yt-import-row img { width: 64px; height: 40px; flex: none; object-fit: cover; border-radius: 4px }
-.yt-import-row > div { flex: 1; min-width: 0 }
-.yt-import-row small { display: block; margin-bottom: 3px; font-size: 10.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-.yt-import-row .yt-input { margin-bottom: 0 }
 .btn-sub.yt-stop { border-color: #fca5a5; color: #b91c1c; font-weight: 800 }
 #ytQueueControls .btn-sub { flex: 1; padding: 10px 6px; font-size: 12.5px; font-weight: 800 }
 
 .yt-actions { margin-top: 10px }
 .yt-label-note { font-weight: 600; color: var(--text-sub) }
 .yt-full { min-height: 280px; font-size: 13px; line-height: 1.7 }
+.yt-label-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px }
+.yt-label-tools { display: flex; gap: 4px; margin-bottom: 4px; flex-shrink: 0 }
+.yt-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 1px solid var(--border, #d9dde3); border-radius: 6px; background: #fff; color: var(--text-sub, #555); cursor: pointer }
+.yt-icon-btn:hover { color: var(--text, #111); border-color: var(--text-muted, #999) }
+.yt-icon-btn:disabled { opacity: .45; cursor: default }
 .yt-narration { background: #f8fafc; color: var(--text-main); cursor: text }
 .yt-count-row { display: flex; align-items: center; gap: 7px; margin: 8px 0 2px; font-size: 11.5px; font-weight: 700; color: var(--text-muted) }
 .yt-count-row .yt-input { width: 72px; margin: 0; padding: 5px 7px; text-align: center }
 .yt-count-row small { font-weight: 600; color: var(--text-sub) }
 #btnDownloadAll { margin-bottom: 7px }
+
+/* 장면 이미지 만들기·일시정지·중지·진행 막대 — 장면 목록을 스크롤해도 화면 아래에 떠 있는다 */
+.yt-queue-card {
+  position: sticky;
+  bottom: 8px;
+  z-index: 5;
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, .12), var(--shadow-sm);
+}

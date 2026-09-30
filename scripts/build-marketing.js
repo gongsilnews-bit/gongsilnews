@@ -6,7 +6,8 @@ const subprojects = [
   'marketing/report',
   'marketing/remodeling',
   'marketing/home-interior',
-  'marketing/studio'
+  'marketing/studio',
+  'marketing/studyhtml'
 ];
 
 try {

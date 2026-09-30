@@ -18,6 +18,8 @@ export const BLOG_PLANS = ["admin", "news_premium", "study_premium"] as const;
 export const YOUTUBE_WRITER_PLANS = ["admin", "news_premium", "study_premium"] as const;
 /** 리모델링 작성기: 위 요금제 + 비즈니스회원(역할로 판정) */
 export const REMODEL_PLANS = ["admin", "news_premium", "study_premium"] as const;
+/** 뉴스메이커(newsmaker10) 블로그·유튜브 무제한: 위 요금제 + 비즈니스회원(역할로 판정). 그 외 회원은 무료 체험 */
+export const NEWSMAKER_PLANS = ["admin", "news_premium", "study_premium"] as const;
 
 export const PLAN_LABELS: Record<string, string> = {
   admin: "최고관리자",
@@ -37,6 +39,8 @@ export type ExtensionMember = {
   canYoutubeWriter: boolean;
   /** 리모델링 작성기(remodeling10) — 유료회원 전용. 비즈니스회원도 포함한다 */
   canRemodel: boolean;
+  /** 뉴스메이커(newsmaker10) 블로그·유튜브 대본 무제한 — 비즈니스회원도 포함한다 */
+  canNewsMaker: boolean;
 };
 
 function getAdminClient() {
@@ -139,6 +143,8 @@ export async function getExtensionMember(req: NextRequest): Promise<ExtensionMem
   const plan = getEffectivePlan(member);
   const role = member.role || "";
   const isAdmin = plan === "admin" || isAdminRole(role);
+  // getEffectivePlan 은 비즈니스회원을 free 로 보므로 역할로 따로 연다
+  const isBiz = role === "BIZ" || role === "비즈니스회원";
   return {
     id: member.id,
     name: member.name || "공실뉴스 회원",
@@ -148,7 +154,7 @@ export async function getExtensionMember(req: NextRequest): Promise<ExtensionMem
     planLabel: PLAN_LABELS[plan] || (role === "REALTOR" ? "무료부동산" : role === "BIZ" ? "비즈니스회원" : "일반회원"),
     canBlog: isAdmin || (BLOG_PLANS as readonly string[]).includes(plan),
     canYoutubeWriter: isAdmin || (YOUTUBE_WRITER_PLANS as readonly string[]).includes(plan),
-    // getEffectivePlan 은 비즈니스회원을 free 로 보므로 역할로 따로 연다
-    canRemodel: isAdmin || (REMODEL_PLANS as readonly string[]).includes(plan) || role === "BIZ" || role === "비즈니스회원",
+    canRemodel: isAdmin || (REMODEL_PLANS as readonly string[]).includes(plan) || isBiz,
+    canNewsMaker: isAdmin || (NEWSMAKER_PLANS as readonly string[]).includes(plan) || isBiz,
   };
 }

@@ -29,15 +29,74 @@ const GW_YT_TONE = {
   expert: { label: "전문가 분석", prompt: "차분하고 논리적인 부동산 전문가 분석형" },
 };
 
+/* prompt: 한 줄 요약 · render: 그리는 방식 · scene: 장면 설명을 쓸 때 고를 구도 · avoid: 섞이면 안 되는 표현
+   en: 이미지 프롬프트 파일(Flow 등)에 넣는 영어 스타일 문구 */
 const GW_YT_IMAGE_STYLE = {
-  news: { label: "한국형 보도 실사", prompt: "한국 부동산 뉴스 현장사진 같은 자연스럽고 과장 없는 고해상도 실사" },
-  cinematic: { label: "부동산 시네마틱", prompt: "한국 고급 부동산을 세련된 영화 조명과 안정적인 구도로 표현한 실사" },
-  documentary: { label: "현장 취재 다큐", prompt: "한국 현장을 직접 취재한 다큐멘터리 사진처럼 사실적인 실사" },
-  bright: { label: "밝은 매물 홍보", prompt: "밝은 자연광과 정돈된 구도의 한국 부동산 홍보 실사" },
-  infographic: { label: "한국형 인포그래픽", prompt: "한국 방송 뉴스형 데이터 인포그래픽 배경. 글자와 숫자는 넣지 않고 텍스트를 올릴 여백을 확보" },
-  illustration: { label: "한국형 일러스트·웹툰", prompt: "현대적인 한국형 편집 일러스트. 친근하지만 유아적이지 않은 스타일" },
-  presentation: { label: "프리미엄 PPT", prompt: "공실뉴스 브랜드의 세련된 프레젠테이션 배경 사진. 아래쪽 3분의 1에 자막을 올릴 차분한 여백, 글자는 넣지 않음" },
+  news: {
+    label: "한국형 보도 실사",
+    prompt: "한국 부동산 뉴스 현장사진 같은 자연스럽고 과장 없는 고해상도 실사",
+    render: "보도 사진기자가 35mm 렌즈로 찍은 듯한 사진. 자연광, 사실적인 색, 눈높이 구도, 보정이 과하지 않은 뉴스 사진 질감",
+    scene: "건물 외관·골목·역 출구·상가 거리처럼 기자가 실제로 찍을 수 있는 현장을 눈높이에서 보여 준다",
+    avoid: "일러스트, 3D 렌더, 과한 색보정, 영화 같은 조명, 광고 사진 느낌",
+    en: "Korean News Photo. Realistic Korean real estate news photograph shot on a 35mm lens at eye level. Natural daylight, true-to-life colors, subtle editing, photojournalism texture. Modern South Korean buildings, streets and neighborhoods.",
+  },
+  cinematic: {
+    label: "부동산 시네마틱",
+    prompt: "한국 고급 부동산을 세련된 영화 조명과 안정적인 구도로 표현한 실사",
+    render: "영화 스틸컷 같은 실사. 골든아워·블루아워 조명, 얕은 심도, 와이드 앵글 또는 드론 부감, 시네마틱 색보정(틸·오렌지), 대비 있는 명암",
+    scene: "해 질 녘 건물 전경, 드론으로 내려다본 동네, 창으로 빛이 드는 실내처럼 분위기 있는 한 장면을 크게 잡는다",
+    avoid: "평범한 스냅사진, 한낮의 밋밋한 빛, 일러스트, 인포그래픽",
+    en: "Real Estate Cinematic. Photorealistic cinematic film still. Golden-hour or blue-hour lighting, shallow depth of field, wide-angle or drone aerial view, teal-and-orange color grading, dramatic contrast. Premium South Korean real estate.",
+  },
+  documentary: {
+    label: "현장 취재 다큐",
+    prompt: "한국 현장을 직접 취재한 다큐멘터리 사진처럼 사실적인 실사",
+    render: "다큐멘터리 사진. 핸드헬드 느낌의 자연스러운 구도, 흐린 날 또는 있는 그대로의 빛, 약간 낮은 채도, 필름 같은 입자, 생활감이 보이는 디테일",
+    scene: "골목 바닥·계단·우편함·외벽 균열·주변 상가처럼 현장을 걸으며 확인하는 시선으로 가까이 보여 준다",
+    avoid: "깨끗한 광고 사진, 화려한 조명, 일러스트, 3D 렌더",
+    en: "Field Documentary. Documentary photograph with a handheld feel. Overcast or available light, slightly muted colors, subtle film grain, lived-in details of South Korean neighborhoods.",
+  },
+  bright: {
+    label: "밝은 매물 홍보",
+    prompt: "밝은 자연광과 정돈된 구도의 한국 부동산 홍보 실사",
+    render: "부동산 매물 홍보 사진. 맑은 날의 밝은 자연광, 하얗고 깨끗한 톤, 광각 렌즈로 넓어 보이는 수평 맞춘 구도, 정리된 공간",
+    scene: "밝은 실내, 넓게 보이는 방, 파란 하늘 아래 건물 외관처럼 매물의 장점이 한눈에 보이는 정돈된 장면",
+    avoid: "어두운 조명, 흐린 날, 거친 필름 질감, 일러스트",
+    en: "Bright Listing Photo. Bright real estate listing photography. Clear sunny daylight, clean white tones, wide-angle lens, straight verticals, tidy and spacious look. South Korean homes and buildings.",
+  },
+  infographic: {
+    label: "한국형 인포그래픽",
+    prompt: "한국 방송 뉴스형 데이터 인포그래픽 배경. 글자와 숫자는 넣지 않고 텍스트를 올릴 여백을 확보",
+    render: "방송 뉴스 그래픽. 평면(플랫) 또는 반입체 벡터 그래픽, 남색·하늘색 중심의 깔끔한 색, 지도 실루엣·아이콘·막대/원형 그래프 모양·화살표·위치 핀 같은 도형 요소",
+    scene: "내용을 도식으로 바꾼다: 위치는 지도와 핀, 교통은 노선과 화살표, 가격·면적은 그래프 모양과 건물 아이콘, 조건 비교는 나란한 카드 모양",
+    avoid: "실사 사진, 사람 얼굴, 실제 글자·숫자",
+    en: "Korean News Infographic. Broadcast-news flat vector infographic. Navy and sky-blue palette, map silhouettes, location pins, simple icons, bar and pie chart shapes, arrows. Clean layout with empty space for captions. No real photos.",
+  },
+  illustration: {
+    label: "한국형 일러스트·웹툰",
+    prompt: "현대적인 한국형 편집 일러스트. 친근하지만 유아적이지 않은 스타일",
+    render: "한국 웹툰·편집 일러스트. 깔끔한 선화, 평면 채색과 부드러운 음영, 파스텔보다 조금 진한 색, 성인 독자를 위한 세련된 그림체",
+    scene: "건물·거리·실내를 그림으로 재구성하고, 필요하면 뒷모습이나 작은 인물로 상황(집 보러 가는 사람, 출근길 등)을 보여 준다",
+    avoid: "실사 사진, 3D 렌더, 유아용 캐릭터, 일본 애니메이션풍",
+    en: "Korean Webtoon Illustration. Modern Korean webtoon and editorial illustration. Clean line art, flat colors with soft shading, slightly saturated palette, sophisticated style for adult readers. Not childish, not anime.",
+  },
+  presentation: {
+    label: "프리미엄 PPT",
+    prompt: "공실뉴스 브랜드의 세련된 프레젠테이션 배경 사진. 아래쪽 3분의 1에 자막을 올릴 차분한 여백, 글자는 넣지 않음",
+    render: "기업 발표 자료 배경. 차분한 남색·회색 톤, 부드럽게 흐린(아웃포커스) 건물·도시 사진 또는 추상적인 기하 도형, 고급스럽고 여백이 많은 미니멀 구도",
+    scene: "주제를 상징하는 한 가지 대상(건물 윤곽, 도시 야경, 열쇠, 창문 등)을 화면 위쪽에 작게 두고 아래쪽 3분의 1은 비워 둔다",
+    avoid: "복잡한 장면, 강한 원색, 화면을 꽉 채운 피사체, 글자",
+    en: "Premium Presentation. Elegant corporate presentation background. Calm navy and gray tones, softly blurred city or building photo or abstract geometric shapes, minimal composition with lots of empty space. Keep the bottom third clear for captions.",
+  },
 };
+
+/* 스타일을 AI 에 알려 주는 공통 블록 — 장면 설명과 이미지 요청에 같은 내용을 쓴다 */
+function gwYtStyleBlock(style) {
+  return `[이미지 스타일 — 최우선] ${style.label}
+- 그리는 방식: ${style.render || style.prompt}
+- 장면 구성: ${style.scene || style.prompt}
+- 쓰지 말 것: ${style.avoid || "다른 화풍"}`;
+}
 
 /* 영상 길이 ÷ 장면 길이 — 대본을 요청하기 전에 보여 주는 대략의 장면 수 */
 function gwYtEstimateScenes(settings) {
@@ -69,7 +128,6 @@ function gwYtSourceText(source) {
 const GW_YT_SCRIPT_SHAPE = `\`\`\`json
 {
   "title": "유튜브 제목",
-  "description": "영상 설명 2~4문장",
   "narration": ["읽을 원고 첫 문단", "둘째 문단"]
 }
 \`\`\``;
@@ -118,7 +176,6 @@ ${GW_YT_SCRIPT_SHAPE}`;
 function gwBuildYtRevisePrompt(full, request) {
   const current = {
     title: full?.title || "",
-    description: full?.description || "",
     narration: String(full?.text || "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean),
   };
   return `아래 현재 유튜브 원고를 요청대로 고쳐 주십시오.
@@ -247,7 +304,8 @@ ${JSON.stringify(list, null, 2)}
 
 [영상 화면]
 - 비율: ${aspect}
-- 이미지 스타일: ${style.label} — ${style.prompt}
+
+${gwYtStyleBlock(style)}
 
 [쓸 것 — 장면마다]
 - heading: 장면 제목 (10자 안팎, 예: 오프닝·가격·위치·정리)
@@ -255,9 +313,15 @@ ${JSON.stringify(list, null, 2)}
   금액·면적·부동산 용어(예: 매매 50억, 대지 70평, 유찰 3회)가 나오면 내레이션 그대로 정확히 쓰고,
   깔끔하고 신뢰감 있는 말투로 쓸 것
 - visualType: building-exterior, interior, street, map, data, people, title, summary 중 하나
-- visualPrompt: 위 이미지 스타일로 만들 화면 설명. 배경은 현대 한국이며 한국의 건물·도로·상권을 반영.
+- visualPrompt: 위 이미지 스타일의 "장면 구성" 방식대로 그 장면 내레이션을 보여 줄 이미지 생성 프롬프트.
+  반드시 영어(English)로 쓰십시오. heading·caption 은 한국어, visualPrompt 만 영어입니다.
+  무엇을(피사체), 어디서(장소), 어떤 구도·빛·화풍으로 보여 줄지 이미지 AI 가 바로 쓸 수 있는 영어 문장 2~3개로 구체적으로 쓰십시오.
+  지명은 영어로 옮기되 한국임을 밝히십시오 (예: Nonhyeon-dong, Gangnam, Seoul, South Korea).
+  모든 장면을 같은 스타일로 쓰고, "쓰지 말 것"에 있는 화풍(예: 실사 스타일인데 일러스트, 인포그래픽인데 사진)을 섞지 마십시오.
+  배경은 현대 한국이며 한국의 건물·도로·상권을 반영.
   이미지 안에 글자·숫자·간판 문구·말풍선을 넣지 않는 장면으로 구체적으로 묘사.
   돈을 표현해야 하면 원화(₩)만 쓰고 달러($)는 쓰지 말 것
+  (영어 예: "Street-level photo of a mid-rise residential building in Nonhyeon-dong, Gangnam, Seoul, South Korea, natural daylight, no text or signage.")
 
 [지킬 것]
 - 장면 수와 번호(no)를 그대로 유지하십시오. 장면을 합치거나 나누지 마십시오.
@@ -282,14 +346,14 @@ function gwBuildYtImagePrompt(scene, settings, extraRequest = "") {
   const extra = String(extraRequest || "").trim();
   return `다음 유튜브 장면에 쓸 이미지 1장을 만들어 주십시오.
 
+${gwYtStyleBlock(style)}
+아래 화면 설명에 다른 화풍이 적혀 있더라도 반드시 위 스타일로 그리십시오.
+
 [장면]
 - 제목: ${scene?.heading || ""}
 - 내레이션: ${scene?.narration || ""}
-- 화면 설명: ${scene?.visualPrompt || ""}
+- 화면 설명 (image prompt): ${scene?.visualPrompt || ""}
 - 장면 종류: ${scene?.visualType || "auto"}
-
-[스타일] ${style.label}
-${style.prompt}
 
 [조건]
 - 비율: ${ratio}
@@ -302,24 +366,21 @@ ${style.prompt}
 이미지 1장만 출력하고 설명은 붙이지 마십시오.`;
 }
 
-function gwBuildYtThumbPrompt(full, settings, text) {
-  const s = settings || {};
-  const style = GW_YT_IMAGE_STYLE[s.imageStyle] || GW_YT_IMAGE_STYLE.news;
-  return `이 영상의 유튜브 썸네일 배경 이미지 1장을 만들어 주십시오.
+/* ── 이미지 프롬프트 파일 (Flow 등에 그대로 붙여 쓰는 형식) ── */
+const GW_YT_NO_TEXT = "**NO TEXT**. **NO SPEECH BUBBLES**. **NO WORDS**.";
 
-[영상 제목] ${full?.title || ""}
-[썸네일 문구] ${String(text || "").trim()} (문구는 작성기가 따로 올립니다)
-
-[스타일] ${style.label}
-${style.prompt}
-
-[조건]
-- 16:9 가로형, 한눈에 주제가 보이는 강한 한 장면
-- 아래쪽 절반에 큰 제목을 올릴 수 있도록 복잡하지 않은 구도
-- 한국의 건물·거리 분위기를 반영하고 외국식 요소를 섞지 말 것
-- 이미지 안에 글자·숫자·로고·워터마크를 그리지 말 것
-
-이미지 1장만 출력하고 설명은 붙이지 마십시오.`;
+function gwBuildYtVisualPromptsText(scenes, styleKeyOf) {
+  return (scenes || []).map((scene, index) => {
+    const key = typeof styleKeyOf === "function" ? styleKeyOf(scene) : styleKeyOf;
+    const style = GW_YT_IMAGE_STYLE[key] || GW_YT_IMAGE_STYLE.news;
+    return [
+      `[clip${String(index + 1).padStart(2, "0")}]`,
+      `Narrative: ${String(scene?.narration || "").trim()}`,
+      `Style: Style: ${style.en} ${GW_YT_NO_TEXT}`,
+      `Visual Prompt: ${String(scene?.visualPrompt || "").trim()}`,
+      "-----------------------------------",
+    ].join("\n");
+  }).join("\n\n") + "\n";
 }
 
 if (typeof module !== "undefined" && module.exports) {
@@ -329,6 +390,8 @@ if (typeof module !== "undefined" && module.exports) {
     GW_YT_SCENE_LENGTH,
     GW_YT_TONE,
     GW_YT_IMAGE_STYLE,
+    gwYtStyleBlock,
+    gwBuildYtVisualPromptsText,
     gwYtEstimateScenes,
     gwYtSourceText,
     gwBuildYtScriptPrompt,
@@ -339,6 +402,5 @@ if (typeof module !== "undefined" && module.exports) {
     gwYtSplitScenes,
     gwBuildYtScenePrompt,
     gwBuildYtImagePrompt,
-    gwBuildYtThumbPrompt,
   };
 }

@@ -1,0 +1,29 @@
+{
+  "name": "gongsilnews-ai-studio2-local",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:open": "vite --open",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "render": "node scripts/render-workspace.cjs",
+    "scenes": "node scripts/preview-scenes.cjs"
+  },
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "@google/genai": "^1.34.0",
+    "lucide-react": "^0.562.0",
+    "jszip": "3.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "playwright": "^1.63.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
