@@ -1463,7 +1463,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
             >
               {CATEGORIES.map((cat) => {
                 const isActive = (cat.key === "news" || cat.key === "news_gongsil")
-                  ? (!activeTab || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc" || activeTab === "local")
+                  ? (!activeTab || activeTab === "all" || activeTab === "news" || activeTab === "news_gongsil" || activeTab === "news_politics" || activeTab === "news_marketing" || activeTab === "news_etc" || activeTab === "local")
                   : (cat.key === "study" ? (activeTab === "study" || activeTab?.startsWith("board_")) : activeTab === cat.key);
                 return (
                   <button
