@@ -5,8 +5,6 @@ import type { AdminTheme } from "@/components/admin/sections/types";
 import { 
   getAgentCostSummary, 
   getAgentWorkStats, 
-  generateDailyReport, 
-  loadDailyReports, 
   getOnbidCount, 
   getOnbidHistoryStats, 
   getRecentAgentCallLogs,
@@ -137,12 +135,6 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
   // GCP Cloud Billing 실시간 통합 데이터
   const [gcpBilling, setGcpBilling] = useState<GcpBillingSummary | null>(null);
 
-  const [reportLoading, setReportLoading] = useState(false);
-  const [dailyReport, setDailyReport] = useState<string | null>(null);
-  const [reportDate, setReportDate] = useState<string>("");
-  const [reportHistory, setReportHistory] = useState<{ id: string; content: string; created_at: string }[]>([]);
-  const [selectedReportIdx, setSelectedReportIdx] = useState<number>(0);
-
   // Fetch Stats
   const fetchStats = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoadingStats(true);
@@ -219,20 +211,6 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
     }, 15000);
     return () => clearInterval(timer);
   }, [fetchStats]);
-
-  // DB에서 저장된 보고서 불러오기
-  useEffect(() => {
-    const fetchReports = async () => {
-      const res = await loadDailyReports(10);
-      if (res.success && res.data.length > 0) {
-        setReportHistory(res.data);
-        setDailyReport(res.data[0].content);
-        setReportDate(new Date(res.data[0].created_at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }));
-        setSelectedReportIdx(0);
-      }
-    };
-    fetchReports();
-  }, []);
 
   const saveName = (id: string) => {
     if (editValue.trim()) {
@@ -1248,105 +1226,6 @@ export default function AgentDashboardTab({ theme, agentNames, onNameChange }: P
             </div>
           );
         })}
-      </div>
-
-      {/* ── 일간보고 ── */}
-      <div style={cardStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>
-            📋 일간 업무 보고
-          </h3>
-          <button
-            onClick={async () => {
-              setReportLoading(true);
-              try {
-                const res = await generateDailyReport();
-                if (res.success) {
-                  setDailyReport(res.report);
-                  setReportDate(res.date);
-                  const updated = await loadDailyReports(10);
-                  if (updated.success) {
-                    setReportHistory(updated.data);
-                    setSelectedReportIdx(0);
-                  }
-                }
-              } catch (e: any) {
-                alert("보고서 생성 중 오류: " + e.message);
-              } finally {
-                setReportLoading(false);
-              }
-            }}
-            disabled={reportLoading}
-            style={{
-              padding: "8px 20px", borderRadius: 8,
-              background: reportLoading ? "#93c5fd" : "#2563eb",
-              color: "#fff", border: "none", fontSize: 13, fontWeight: 700,
-              cursor: reportLoading ? "wait" : "pointer", fontFamily: "inherit",
-              display: "flex", alignItems: "center", gap: 6,
-            }}
-          >
-            {reportLoading ? "⏳ 보고서 생성 중..." : "📝 일간보고 생성"}
-          </button>
-        </div>
-
-        {/* 보고서 히스토리 탭 */}
-        {reportHistory.length > 0 && (
-          <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-            {reportHistory.map((r, i) => {
-              const d = new Date(r.created_at);
-              const label = `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
-              return (
-                <button
-                  key={r.id}
-                  onClick={() => {
-                    setSelectedReportIdx(i);
-                    setDailyReport(r.content);
-                    setReportDate(d.toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }));
-                  }}
-                  style={{
-                    padding: "5px 12px", fontSize: 12, fontWeight: selectedReportIdx === i ? 700 : 500,
-                    background: selectedReportIdx === i ? "#2563eb" : (theme.darkMode ? "#2c2d33" : "#f1f5f9"),
-                    color: selectedReportIdx === i ? "#fff" : theme.textSecondary,
-                    border: "none", borderRadius: 16, cursor: "pointer", fontFamily: "inherit",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {i === 0 ? `📌 ${label} (최신)` : label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {dailyReport ? (
-          <>
-            {reportDate && (
-              <div style={{ fontSize: 12, color: theme.textSecondary, marginBottom: 10, fontWeight: 600 }}>
-                🕐 {reportDate} 생성
-              </div>
-            )}
-            <div style={{
-              padding: "20px 24px",
-              background: theme.darkMode ? "#1a1b1e" : "#f8fafc",
-              borderRadius: 10,
-              border: `1px solid ${theme.border}`,
-              whiteSpace: "pre-wrap",
-              fontSize: 14,
-              lineHeight: 1.8,
-              color: theme.textPrimary,
-              maxHeight: 500,
-              overflowY: "auto",
-            }}>
-              {dailyReport}
-            </div>
-          </>
-        ) : (
-          <div style={{ textAlign: "center", padding: "40px 0", color: theme.textSecondary }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>📋</div>
-            <div style={{ fontSize: 14 }}>아직 보고서가 없습니다.</div>
-            <div style={{ fontSize: 12, marginTop: 4 }}>"일간보고 생성" 버튼을 누르면 에이전트가 오늘의 업무 현황을 자동으로 분석해 보고합니다.</div>
-          </div>
-        )}
       </div>
 
       {/* ⚙️ 구글 AI Studio 잔액 기준점 동기화 모달 */}

@@ -3,7 +3,7 @@
 import { generateWithGemini } from "@/lib/agents/core";
 import { ArticleReviewAgent } from "@/lib/agents/ArticleReviewAgent";
 import { createClient } from "@supabase/supabase-js";
-import { kstTodayStart, kstDaysAgoStart, kstYesterdayStart, kstYesterdayEnd, formatKSTFullDate, formatKSTDate, formatKSTTime } from "@/utils/kst";
+import { kstTodayStart, kstDaysAgoStart, kstYesterdayStart, kstYesterdayEnd, formatKSTDate, formatKSTTime } from "@/utils/kst";
 
 function getAdminClient() {
   return createClient(
@@ -459,134 +459,6 @@ export async function reviewArticleByAI(params: {
       details: null,
     };
   }
-}
-
-/**
- * 에이전트별 일간 업무 보고서를 생성합니다.
- */
-export async function generateDailyReport() {
-  const supabase = getAdminClient();
-  const todayISO = kstTodayStart();
-  const dateStr = formatKSTFullDate(new Date());
-
-  // ── 오늘 회원 관련 데이터 수집 ──
-  const [totalMembers, todayApproved, todayRejected, todayPending, todaySupplement, totalApproved, totalRejected] = await Promise.all([
-    supabase.from("members").select("id", { count: "exact", head: true }),
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "APPROVED").gte("updated_at", todayISO),
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "REJECTED").gte("updated_at", todayISO),
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "PENDING"),
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "SUPPLEMENT"),
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "APPROVED"),
-    supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "REJECTED"),
-  ]);
-
-  // ── 오늘 기사 관련 데이터 수집 ──
-  const [totalArticles, todayArticleApproved, todayArticleRejected, articlePending, articleDraft] = await Promise.all([
-    supabase.from("articles").select("id", { count: "exact", head: true }).eq("is_deleted", false),
-    supabase.from("articles").select("id", { count: "exact", head: true }).eq("status", "APPROVED").eq("is_deleted", false).gte("updated_at", todayISO),
-    supabase.from("articles").select("id", { count: "exact", head: true }).eq("status", "REJECTED").eq("is_deleted", false).gte("updated_at", todayISO),
-    supabase.from("articles").select("id", { count: "exact", head: true }).eq("status", "PENDING").eq("is_deleted", false),
-    supabase.from("articles").select("id", { count: "exact", head: true }).eq("status", "DRAFT").eq("is_deleted", false),
-  ]);
-
-  // ── 오늘 온비드 관련 데이터 수집 ──
-  const [totalOnbid, todayOnbidCount] = await Promise.all([
-    supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("trade_type", "경매").neq("status", "DELETED"),
-    supabase.from("vacancies").select("id", { count: "exact", head: true }).eq("trade_type", "경매").neq("status", "DELETED").gte("created_at", todayISO),
-  ]);
-
-  // ── API 비용 데이터 ──
-  const { data: costData } = await supabase
-    .from("agent_chats")
-    .select("channel_id, cost_krw, total_tokens")
-    .eq("role", "agent")
-    .gte("created_at", todayISO);
-
-  const todayCostByAgent: Record<string, { cost: number; tokens: number; count: number }> = {};
-  for (const row of (costData || [])) {
-    if (!todayCostByAgent[row.channel_id]) todayCostByAgent[row.channel_id] = { cost: 0, tokens: 0, count: 0 };
-    todayCostByAgent[row.channel_id].cost += Number(row.cost_krw) || 0;
-    todayCostByAgent[row.channel_id].tokens += row.total_tokens || 0;
-    todayCostByAgent[row.channel_id].count += 1;
-  }
-
-  // ── Gemini에게 보고서 작성 요청 ──
-  const reportPrompt = `
-너는 공실뉴스 AI 비서실의 총괄 비서야. 아래 데이터를 바탕으로 ${dateStr} 일간 업무 보고서를 작성해.
-존댓말(해요체)로, 간결하면서도 핵심을 짚는 보고서를 작성해줘.
-
-[회원 승인 현황]
-- 전체 회원 수: ${totalMembers.count || 0}명
-- 오늘 승인: ${todayApproved.count || 0}건
-- 오늘 반려: ${todayRejected.count || 0}건
-- 현재 승인 대기: ${todayPending.count || 0}건
-- 현재 서류 보완: ${todaySupplement.count || 0}건
-- 누적 승인: ${totalApproved.count || 0}건
-- 누적 반려: ${totalRejected.count || 0}건
-
-[기사 관리 현황]
-- 전체 기사 수: ${totalArticles.count || 0}건
-- 오늘 승인(게시): ${todayArticleApproved.count || 0}건
-- 오늘 반려: ${todayArticleRejected.count || 0}건
-- 현재 승인 대기: ${articlePending.count || 0}건
-- 현재 작성 중: ${articleDraft.count || 0}건
-
-[온비드 경공매 수집 현황]
-- 전체 수집 매물: ${totalOnbid.count || 0}건
-- 오늘 신규 등록: ${todayOnbidCount.count || 0}건
-
-[AI API 사용량 (오늘)]
-${Object.entries(todayCostByAgent).map(([k, v]) => `- ${k}: ${v.count}건 대화, ${v.tokens}토큰, ₩${v.cost.toFixed(1)}`).join("\n") || "- 오늘 사용 내역 없음"}
-
-[보고서 형식]
-📊 {날짜} AI 비서실 일간보고
-
-1. 🛡️ 승인과장 보고
-   - 오늘 처리 현황 요약
-   - 특이사항 (대기 건이 많으면 경고)
-
-2. 🔍 심사과장 보고
-   - 오늘 기사 심사 현황 요약
-   - 특이사항
-
-3. 🤖 온비드 동기화 에이전트 보고
-   - 오늘 온비드 경공매 매물 수집 현황 및 만료 매물 자동 정리 사항 브리핑
-
-4. 💸 비용 현황
-   - 오늘 API 사용량 요약
-
-5. 📌 총괄 코멘트
-   - 전반적인 운영 상태 평가 (1~2문장)
-`;
-
-  const reportResult = await generateWithGemini(reportPrompt, { temperature: 0.5 });
-  const reportText = reportResult.text;
-
-  // 보고서를 DB에 저장
-  await supabase.from("agent_chats").insert({
-    channel_id: "daily_report",
-    role: "agent",
-    content: reportText,
-  });
-
-  return { success: true, report: reportText, date: dateStr };
-}
-
-/**
- * 저장된 일간보고서 목록을 불러옵니다.
- */
-export async function loadDailyReports(limit: number = 10) {
-  const supabase = getAdminClient();
-  const { data, error } = await supabase
-    .from("agent_chats")
-    .select("id, content, created_at")
-    .eq("channel_id", "daily_report")
-    .eq("role", "agent")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) return { success: false, data: [] };
-  return { success: true, data: data || [] };
 }
 
 /**
