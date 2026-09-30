@@ -133,11 +133,22 @@ async function ensureDeps() {
   fs.writeFileSync(mark, hash);
 }
 
-function checkoutBranch(branch, rework) {
+/** 사장님 최근 메시지에서 "이전 수정 버리기"와 "고치지 말고 먼저 확인" 요청을 읽는다 */
+const WANTS_FRESH = /취소|되돌|원래대로|처음부터|롤백|없던\s*일/;
+const WANTS_CONFIRM = /이해\s*했는지|이해했나|먼저\s*(확인|살펴|설명|물어)|설명해|확인만|고치지\s*말|수정하지\s*말|손대지\s*말|어떻게\s*할\s*건지/;
+
+function checkoutBranch(branch, rework, fresh = false) {
   git(["fetch", "origin"]);
   git(["reset", "--hard"]);
   git(["clean", "-fd"]);
   const remoteExists = git(["rev-parse", "--verify", "--quiet", `origin/${branch}`], { allowFail: true }).ok;
+  if (fresh && remoteExists) {
+    // 이전 수정을 버린다: 올려 둔 브랜치를 최신 main 으로 되돌려 두어야 다음 재작업에서도 되살아나지 않는다
+    git(["push", "--force", "origin", `origin/main:refs/heads/${branch}`]);
+    git(["checkout", "-B", branch, "origin/main"]);
+    log("  이전 수정을 취소하고 최신 main 에서 새로 시작합니다");
+    return;
+  }
   // 반려 후 재작업이면 올려 둔 브랜치 위에서 이어서, 아니면 최신 main 에서 새로 시작
   git(["checkout", "-B", branch, rework && remoteExists ? `origin/${branch}` : "origin/main"]);
   if (rework && remoteExists) {
@@ -183,7 +194,7 @@ async function downloadShots(task) {
 
 const TYPE_LABEL = { bug: "오류수정", feature: "기능추가", design: "디자인수정", urgent: "긴급수정" };
 
-function buildPrompt(task, shots) {
+function buildPrompt(task, shots, mode = {}) {
   const lines = [
     `작업번호: ${task.task_no}`,
     `종류: ${TYPE_LABEL[task.type] || task.type}`,
@@ -202,9 +213,23 @@ function buildPrompt(task, shots) {
   if (task.attempt > 1 && task.reject_reason) {
     lines.push(
       ``,
-      `⚠️ 이번은 ${task.attempt}차 작업이다. 현재 브랜치에 이전 수정이 들어 있을 수 있다.`,
+      `⚠️ 이번은 ${task.attempt}차 작업이다.`,
+      mode.fresh
+        ? `사장님이 이전 수정을 취소하라고 했다. 이전 수정은 이미 모두 되돌려 두었다(현재 코드는 최신 main). 이전 에이전트 보고는 틀린 방향이었을 수 있으니 참고만 한다.`
+        : `현재 브랜치에 이전 수정이 들어 있다.`,
       `사장님의 최근 메시지: ${task.reject_reason}`,
-      `이 메시지(질문에 대한 답이면 그 답)를 100% 반영해 작업한다.`,
+      `이 메시지(질문에 대한 답이면 그 답)를 가장 우선해서 따른다.`,
+    );
+  }
+  if (mode.confirm) {
+    lines.push(
+      ``,
+      `🛑 이번에는 코드를 수정하지 않는다 (수정 도구도 막혀 있다). 사장님이 먼저 이해했는지 확인하길 원한다.`,
+      `코드와 첨부 이미지를 살펴본 뒤 changed=false 로 두고, question 에 아래를 쉬운 말로 적어 확인받는다:`,
+      `  1) 요청을 어떻게 이해했는지 (어느 화면의 무엇이, 지금 어떻고, 어떻게 되길 원하는지)`,
+      `  2) 원인으로 보이는 곳`,
+      `  3) 어떻게 고칠 계획인지`,
+      `  마지막에 "이렇게 진행할까요?" 로 묻는다.`,
     );
   }
   lines.push(
@@ -263,13 +288,14 @@ function describeTool(name, input = {}) {
  * Claude Code 를 화면 없이 실행한다. 도구를 쓸 때마다 진행 상황을 onProgress 로 알린다.
  * 결과는 RESULT_SCHEMA 모양으로 받는다.
  */
-function runClaude(prompt, shotsDir, onProgress) {
+function runClaude(prompt, shotsDir, onProgress, readOnly = false) {
+  const tools = readOnly ? ALLOWED_TOOLS.filter((t) => t !== "Edit" && t !== "Write") : ALLOWED_TOOLS;
   return new Promise((resolve) => {
     const args = [
       CLAUDE_CLI, "-p",
       "--output-format", "stream-json", "--verbose",
       "--permission-mode", "dontAsk",
-      "--allowedTools", ALLOWED_TOOLS.join(","),
+      "--allowedTools", tools.join(","),
       "--add-dir", shotsDir,
       "--json-schema", JSON.stringify(RESULT_SCHEMA),
       "--no-session-persistence",
@@ -344,7 +370,9 @@ const say = (taskId, body) => api("POST", `/api/devroom/tasks/${taskId}/messages
 async function handle(task) {
   const branch = `devroom/${task.task_no.toLowerCase()}`;
   const rework = task.attempt > 1;
-  log(`▶ ${task.task_no} "${task.title}" (${task.attempt}차) 시작 → ${branch}`);
+  const lastWord = rework ? task.reject_reason || "" : "";
+  const mode = { fresh: WANTS_FRESH.test(lastWord), confirm: WANTS_CONFIRM.test(lastWord) };
+  log(`▶ ${task.task_no} "${task.title}" (${task.attempt}차${mode.fresh ? ", 이전 수정 취소" : ""}${mode.confirm ? ", 확인만" : ""}) 시작 → ${branch}`);
   fs.writeFileSync(STATE_FILE, JSON.stringify({ id: task.id, task_no: task.task_no }));
 
   const logs = [];
@@ -358,18 +386,23 @@ async function handle(task) {
   };
 
   try {
-    await say(task.id, rework
-      ? `말씀하신 내용 반영해서 다시 작업을 시작합니다. (${task.attempt}차)`
-      : `작업을 시작했습니다. 진행 상황은 위 "실시간 진행 상황"에서 보실 수 있어요.`);
+    await say(task.id, !rework
+      ? `작업을 시작했습니다. 진행 상황은 위 "실시간 진행 상황"에서 보실 수 있어요.`
+      : [
+          mode.fresh && "말씀대로 이전 수정은 취소했습니다.",
+          mode.confirm
+            ? "코드는 고치지 않고, 제가 제대로 이해했는지 먼저 정리해서 여쭤보겠습니다."
+            : `말씀하신 내용 반영해서 다시 작업을 시작합니다. (${task.attempt}차)`,
+        ].filter(Boolean).join(" "));
     progress.add("🚀 작업 준비 (최신 코드 받는 중)");
     await prepareWorktree();
-    checkoutBranch(branch, rework);
+    checkoutBranch(branch, rework, mode.fresh);
     await ensureDeps();
     const shots = await downloadShots(task);
 
     log(`  Claude 작업 중...`);
-    progress.add(`🤖 AI 분석 시작 (${CLAUDE_MODEL})`);
-    const ai = await runClaude(buildPrompt(task, shots.files), shots.dir, (t) => progress.add(t));
+    progress.add(`🤖 AI 분석 시작 (${CLAUDE_MODEL}${mode.confirm ? ", 확인만 — 수정 안 함" : ""})`);
+    const ai = await runClaude(buildPrompt(task, shots.files, mode), shots.dir, (t) => progress.add(t), mode.confirm);
     if (!ai.ok) return await fail("AI 에이전트 실행에 실패했습니다.", ai.raw, "AI 에이전트 실행이 중간에 멈췄습니다. 잠시 뒤 메시지를 보내 주시면 다시 시도하겠습니다.");
     const { changed, cause, summary, question } = ai.result;
     const report_text = `원인: ${cause}\n\n${summary}`;

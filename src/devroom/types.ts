@@ -64,5 +64,5 @@ export const TASK_STATUSES: { key: DevTaskStatus; label: string; color: string; 
   { key: "approved", label: "승인됨", color: "#0d9488", description: "승인 완료, PC 에이전트가 main 에 병합하는 중" },
   { key: "merged", label: "반영완료", color: "#16a34a", description: "main 병합 → 실서버 배포" },
   { key: "rejected", label: "반려", color: "#dc2626", description: "사유를 반영해 재작업" },
-  { key: "failed", label: "실패", color: "#7c3aed", description: "빌드 실패 또는 원인 분석만 가능" },
+  { key: "failed", label: "확인필요", color: "#7c3aed", description: "에이전트가 질문했거나 끝내지 못함 — 대화창을 확인해 주세요" },
 ];
