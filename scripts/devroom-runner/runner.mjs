@@ -24,7 +24,7 @@ const LOG_FILE = path.join(WORK, "runner.log");
 
 loadEnv(path.join(RUNNER_DIR, ".env"));
 
-const BASE_URL = (process.env.DEVROOM_BASE_URL || "https://gongsilnews.com").replace(/\/$/, "");
+const BASE_URL = (process.env.DEVROOM_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const TOKEN = process.env.DEVROOM_AGENT_TOKEN || "";
 const REPO = path.resolve(process.env.DEVROOM_REPO || path.join(RUNNER_DIR, "..", ".."));
 const WORKTREE = path.resolve(process.env.DEVROOM_WORKTREE || path.join(REPO, "..", "gongsilnews-devroom"));
