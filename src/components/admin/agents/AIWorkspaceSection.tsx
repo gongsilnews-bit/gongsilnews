@@ -5,6 +5,7 @@ import type { AdminTheme } from "@/components/admin/sections/types";
 import AgentDashboardTab from "./tabs/AgentDashboardTab";
 import AgentChatTab from "./tabs/AgentChatTab";
 import AgentSettingsTab from "./tabs/AgentSettingsTab";
+import DevRoomBoard from "@/devroom/DevRoomBoard";
 
 /* 에이전트 기본 이름 */
 const DEFAULT_NAMES: Record<string, string> = {
@@ -23,6 +24,7 @@ const TABS = [
   { key: "dashboard", label: "현황판", icon: "📊" },
   { key: "chat", label: "업무 회의실", icon: "💬" },
   { key: "settings", label: "규칙 설정", icon: "⚙️" },
+  { key: "devroom", label: "AI 개발실", icon: "🛠️" },
 ] as const;
 
 type TabKey = typeof TABS[number]["key"];
@@ -104,6 +106,7 @@ export default function AIWorkspaceSection({ theme }: Props) {
         {activeTab === "dashboard" && <AgentDashboardTab theme={theme} agentNames={agentNames} onNameChange={updateAgentName} />}
         {activeTab === "chat" && <AgentChatTab theme={theme} agentNames={agentNames} />}
         {activeTab === "settings" && <AgentSettingsTab theme={theme} agentNames={agentNames} />}
+        {activeTab === "devroom" && <DevRoomBoard theme={theme} />}
       </div>
     </div>
   );
