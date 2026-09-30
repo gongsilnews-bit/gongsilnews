@@ -23,7 +23,7 @@ function MobileVacancyAdmin() {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [activeKeyword, setActiveKeyword] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [flyerMap, setFlyerMap] = useState<Record<string, { flyer: boolean; report: boolean }>>({});
+  const [flyerMap, setFlyerMap] = useState<Record<string, { flyer: boolean; report: boolean; reportAgent?: string }>>({});
   const [userRole, setUserRole] = useState<string | null>(null);
   const [shareTarget, setShareTarget] = useState<{ id: string; type: "report" | "flyer"; row: any } | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
@@ -126,7 +126,12 @@ function MobileVacancyAdmin() {
       : `${formatAmount(row.deposit)}/${formatAmount(row.monthly_rent)}`;
 
     const title = type === "report" ? `[AI 물건보고서] ${addrText}` : `[AI 온라인전단지] ${addrText}`;
-    const description = `${priceText}\n공실뉴스에서 제공하는 검증된 매물 정보입니다.`;
+    // 보고서는 보고서에 들어간 중개사무소 이름으로. 이름이 없거나 기본값이면 공실뉴스
+    const agent = flyerMap[id]?.reportAgent;
+    const provider = agent && agent !== "공실뉴스 중개소" ? agent : "공실뉴스";
+    const description = type === "report"
+      ? `${priceText}\n${provider}에서 제공하는 검증된 물건 보고서입니다.`
+      : `${priceText}\n공실뉴스에서 제공하는 검증된 매물 정보입니다.`;
     const imageUrl = row.vacancy_photos?.[0]?.url || "https://gongsilnews.com/logo.png";
 
     Kakao.Share.sendDefault({
@@ -138,7 +143,7 @@ function MobileVacancyAdmin() {
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
       },
       buttons: [
-        { title: type === "report" ? "보고서 보기" : "전단지 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
+        { title: type === "report" ? "물건보고서 열람하기" : "전단지 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
       ],
     });
     setShareTarget(null);
@@ -183,12 +188,13 @@ function MobileVacancyAdmin() {
           .in("vacancy_id", ids);
           
         if (flyers) {
-          const map: Record<string, { flyer: boolean; report: boolean }> = {};
+          const map: Record<string, { flyer: boolean; report: boolean; reportAgent?: string }> = {};
           flyers.forEach((f: any) => {
             const state = f.flyer_state;
             const hasFlyer = state ? (('flyer' in state) ? !!state.flyer : true) : false;
             const hasReport = state ? (('report' in state) ? !!state.report : false) : false;
-            map[f.vacancy_id] = { flyer: hasFlyer, report: hasReport };
+            // 카톡 공유 문구 "○○에서 제공하는 검증된 물건 보고서입니다" 에 쓸 중개사무소 이름
+            map[f.vacancy_id] = { flyer: hasFlyer, report: hasReport, reportAgent: state?.report?.info?.agentName };
           });
           setFlyerMap(prev => append ? { ...prev, ...map } : map);
         }

@@ -1150,16 +1150,21 @@ function App() {
     // First, save the current flyer state before sharing
     await handleSaveToStorageQuietly();
 
+    // 보고서에 들어간 중개사무소 이름으로 "○○에서 제공하는 검증된 물건 보고서입니다".
+    // 홍보 문구와 관계없이 항상 이 문장 (카톡 카드 설명은 두 줄 정도만 보인다)
+    const agent = state.info.agentName;
+    const provider = agent && agent !== "공실뉴스 중개소" ? agent : "공실뉴스";
+
     Kakao.Share.sendDefault({
       objectType: "feed",
       content: {
-        title: state.info.address || "매물 전단지",
-        description: state.info.promotionText || "공실뉴스에서 제공하는 검증된 매물 전단지입니다.",
+        title: state.info.address || "물건보고서",
+        description: `${provider}에서 제공하는 검증된 물건 보고서입니다.`,
         imageUrl: state.mainImage || "https://gongsilnews.com/logo.png",
         link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
       },
       buttons: [
-        { title: "전단지 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
+        { title: "물건보고서 열람하기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
       ],
     });
     setShowSharePopover(false);
@@ -1509,7 +1514,7 @@ function App() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1122, user-scalable=yes">
-<title>${state.info.address || "공실뉴스 매물 전단지"} - 매매 ${state.info.priceMain || ""}</title>
+<title>${state.info.address || "물건보고서"} - 물건보고서</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <link href="https://fonts.googleapis.com/css2?family=Song+Myung:wght@400&display=swap" rel="stylesheet">
