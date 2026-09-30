@@ -10,6 +10,32 @@ export type DevTaskStatus =
   | "rejected"   // 반려
   | "failed";    // 실패
 
+export interface DevTask {
+  id: number;
+  task_no: string;
+  type: DevTaskType;
+  title: string;
+  description: string;
+  page_url: string | null;
+  repro_steps: string | null;
+  attachments: string[];
+  status: DevTaskStatus;
+  attempt: number;
+  branch: string | null;
+  commit_sha: string | null;
+  pr_url: string | null;
+  preview_url: string | null;
+  result_summary: string | null;
+  changed_files: string[];
+  log: string | null;
+  reject_reason: string | null;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  /** 화면 표시용 스크린샷 임시 주소 (서버가 붙여 준다) */
+  attachment_urls?: string[];
+}
+
 export const TASK_TYPES: { key: DevTaskType; label: string; icon: string }[] = [
   { key: "bug", label: "오류수정", icon: "🐞" },
   { key: "feature", label: "기능추가", icon: "✨" },
