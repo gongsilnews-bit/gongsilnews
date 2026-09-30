@@ -11,6 +11,7 @@ function getAdminClient() {
 }
 
 import { createNotification } from "./notification";
+import { getGradeDefaults } from "@/app/admin/actions";
 
 export async function completeMemberSignup(params: {
   userId: string;
@@ -29,9 +30,13 @@ export async function completeMemberSignup(params: {
     // 1. 기존 회원이 존재하는지 확인
     const { data: existing, error: selectError } = await supabase
       .from("members")
-      .select("id, role")
+      .select("id, role, signup_completed")
       .eq("id", userId)
       .single();
+
+    // 처음 가입을 마치는 일반회원은 [회원관리 → 등급별 기본 한도 설정]의 일반회원 값을 받는다.
+    // 넣지 않으면 DB 칸 기본값(공실 5건 등)이 남아, 표에 3건을 적어도 새 회원은 5건이 됐다.
+    const userDefaults = await getGradeDefaults("USER", "free");
 
     if (existing) {
       // 기존 회원 정보 업데이트
@@ -43,6 +48,9 @@ export async function completeMemberSignup(params: {
       };
       if (!existing.role) {
         updateData.role = "USER";
+      }
+      if (!existing.signup_completed && (!existing.role || existing.role === "USER")) {
+        Object.assign(updateData, userDefaults);
       }
 
       const { error: updateError } = await supabase
@@ -61,6 +69,7 @@ export async function completeMemberSignup(params: {
         role: "USER",
         status: "active",
         signup_completed: true,
+        ...userDefaults,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });

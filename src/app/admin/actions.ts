@@ -907,6 +907,15 @@ function planDefaults(
   };
 }
 
+/**
+ * 지금 등급별 설정 기준으로 그 등급 회원이 받을 한도·권한 한 벌.
+ * 회원가입을 마칠 때처럼 관리자 화면 밖에서 등급 기본값을 넣어야 할 때 쓴다.
+ */
+export async function getGradeDefaults(role: string, planType?: string | null) {
+  const { policies } = await adminGetLimitPolicies();
+  return planDefaults(policies, role, planType);
+}
+
 export async function adminGetLimitPolicies() {
   const supabaseAdmin = getAdminClient();
   try {
