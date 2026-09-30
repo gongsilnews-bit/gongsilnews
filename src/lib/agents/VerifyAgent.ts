@@ -119,11 +119,11 @@ export class VerifyAgent {
         }
       }
 
-      return { status: "ERROR", message: "제출된 파일이 공식 개설등록증/사업자등록증 원본 서류가 아니거나 판독할 수 없습니다. 실제 원본 서류를 선명하게 다시 업로드해 주세요." };
+      return { status: "ERROR", message: `AI 서류 인식 실패: ${lastError}` };
 
     } catch (error: any) {
       console.error("VerifyAgent Execution Error:", error);
-      return { status: "ERROR", message: "제출된 파일이 공식 개설등록증/사업자등록증 원본 서류가 아니거나 판독할 수 없습니다. 실제 원본 서류를 선명하게 다시 업로드해 주세요." };
+      return { status: "ERROR", message: error.message || "AI 서류 인식 중 오류가 발생했습니다." };
     }
   }
 }

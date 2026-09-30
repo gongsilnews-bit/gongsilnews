@@ -148,10 +148,7 @@ async function processPendingAgency(agency) {
     const aiResult = await analyzeDocumentWithGemini(buffer, mimeType);
 
     if (!aiResult.success) {
-      console.warn(`[VerifyDaemon] AI 판독 불가 (${aiResult.error || 'API 응답 없음'}) - 기본 규칙 검증 진행`);
-      // 파일 크기나 URL 유효성 검사: 만약 이미지가 깨졌거나 불러올 수 없다면 즉시 반려
-      const reason = '사업자등록증 및 개설등록증 서류를 정상적으로 판독할 수 없습니다. 원본 증빙 서류를 선명하게 다시 업로드해 주세요.';
-      await rejectAgency(agencyId, memberId, reason, applicantName, agency.name);
+      console.warn('[VerifyDaemon] AI 판독 실패, 관리자 수동 검토 대기');
       return;
     }
 
@@ -183,9 +180,7 @@ async function processPendingAgency(agency) {
     // 판정 3: 적합 서류 -> 승인!
     await approveAgency(agencyId, memberId, applicantName, agency.name, doc, aiResult.usage);
   } catch (err) {
-    console.error('[VerifyDaemon] 심사 중 오류 발생 (파일 누락 또는 404):', err.message);
-    const reason = '제출된 서류 파일이 손상되었거나 정상적으로 등록되지 않았습니다 (파일 누락). 원본 서류를 다시 첨부해 주세요.';
-    await rejectAgency(agencyId, memberId, reason, applicantName, agency.name);
+    console.error('[VerifyDaemon] 심사 중 오류 발생:', err);
   }
 }
 

@@ -616,50 +616,37 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           if (uploadRes.success) bizCertUrl = uploadRes.url || null;
         }
 
-        // --- 즉시 AI 서류 검증 및 자동 판정 (Instant Verification) ---
-        let aiReason: string | null = null;
-        let finalStatus = agencyData.status === "APPROVED"
+        finalStatus = agencyData.status === "APPROVED"
           ? "APPROVED"
           : isAdmin ? agencyData.status : "PENDING";
 
-        if (!isAdmin && agencyData.status !== "APPROVED") {
-          if (!regCertUrl && !bizCertUrl) {
-            finalStatus = "REJECTED";
-            aiReason = "사업자등록증 또는 중개사무소 개설등록증 서류가 첨부되지 않았습니다. 원본 서류를 업로드해 주세요.";
-          } else if (files.biz_cert || files.reg_cert) {
-            try {
-              const verifyFd = new FormData();
-              if (files.biz_cert) verifyFd.append("file", files.biz_cert);
-              else if (files.reg_cert) verifyFd.append("file", files.reg_cert);
-              verifyFd.append("companyName", agencyData.name);
-              verifyFd.append("representative", agencyData.ceo_name);
+        // --- 백그라운드 AI 서류 참고 검증 (관리자 심사용 참고 메모 생성) ---
+        let aiReason: string | null = null;
+        if (files.biz_cert && !isAdmin && agencyData.status !== "APPROVED") {
+          try {
+            const verifyFd = new FormData();
+            verifyFd.append("file", files.biz_cert);
+            verifyFd.append("companyName", agencyData.name);
+            verifyFd.append("representative", agencyData.ceo_name);
 
-              const verifyRes = await fetch("/api/agents/verify", {
-                method: "POST",
-                body: verifyFd,
-              });
-              const verifyResult = await verifyRes.json();
-
-              if (verifyResult.status === "APPROVED") {
-                finalStatus = "APPROVED";
-                aiReason = null;
-              } else {
-                finalStatus = "REJECTED";
-                let diffMsg = "";
-                if (verifyResult.diff && verifyResult.diff.found) {
-                  const isNameDiff = verifyResult.diff.expected?.companyName !== verifyResult.diff.found?.companyName;
-                  const isRepDiff = verifyResult.diff.expected?.representative !== verifyResult.diff.found?.representative;
-                  if (isNameDiff) diffMsg += `상호명 불일치(입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName}) `;
-                const safeMsg = (verifyResult.message && !verifyResult.message.includes("prepayment") && !verifyResult.message.includes("http") && !verifyResult.message.includes("402") && !verifyResult.message.includes("API")) 
-                  ? verifyResult.message 
-                  : "제출된 파일이 공식 개설등록증/사업자등록증 원본 서류가 아니거나 판독할 수 없습니다. 실제 원본 서류를 업로드해 주세요.";
-                aiReason = diffMsg ? `서류 확인 필요: ${diffMsg}` : safeMsg;
+            const verifyRes = await fetch("/api/agents/verify", {
+              method: "POST",
+              body: verifyFd,
+            });
+            const verifyResult = await verifyRes.json();
+            
+            if (verifyResult.status === "NEEDS_REVIEW" || verifyResult.status === "ERROR") {
+              let diffMsg = "";
+              if (verifyResult.diff && verifyResult.diff.found) {
+                const isNameDiff = verifyResult.diff.expected?.companyName !== verifyResult.diff.found?.companyName;
+                const isRepDiff = verifyResult.diff.expected?.representative !== verifyResult.diff.found?.representative;
+                if (isNameDiff) diffMsg += `상호명 불일치(입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName}) `;
+                if (isRepDiff) diffMsg += `대표자 불일치(입력: ${verifyResult.diff.expected?.representative} / 서류: ${verifyResult.diff.found?.representative})`;
               }
-            } catch (e) {
-              console.error("AI Verify Error:", e);
-              finalStatus = "REJECTED";
-              aiReason = "제출된 파일이 공식 개설등록증/사업자등록증 원본 서류가 아니거나 판독할 수 없습니다. 실제 원본 서류를 업로드해 주세요.";
+              aiReason = diffMsg ? `AI 자동검증 참고: ${diffMsg}` : "서류 확인 필요 (관리자 검토)";
             }
+          } catch (e) {
+            console.error("AI Verify Error:", e);
           }
         }
 
@@ -695,9 +682,6 @@ function gradeDefaults(p: any, role: string, planType?: string) {
         if (finalStatus === "APPROVED") {
           const { adminApproveRealtorApplication } = await import("@/app/admin/actions");
           await adminApproveRealtorApplication(memberId);
-        } else if (finalStatus === "REJECTED") {
-          const { adminRejectRealtorApplication } = await import("@/app/admin/actions");
-          await adminRejectRealtorApplication(memberId, aiReason || "서류보완이 필요합니다.");
         }
       }
 
