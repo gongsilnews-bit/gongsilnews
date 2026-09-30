@@ -434,14 +434,10 @@ function gradeDefaults(p: any, role: string, planType?: string) {
       };
 
       /*
-       * 회원구분·요금제를 바꾸면 그 등급의 기본값으로 채운다.
-       *
-       * 다만 최고관리자가 따로 손봐 둔 값은 지킨다. 전에는 무조건 덮었다 —
-       * 기사 한도를 50 으로 고쳐놓고 바로 위 요금제를 한 번 다시 고르면
-       * 아무 말 없이 4 로 돌아갔다. 고쳤는데 안 먹는 것처럼 보이는 이유였다.
-       *
-       * 가르는 기준은 "지금 값이 바뀌기 전 등급의 기본값과 같은가" 하나다.
-       * 등급별 한도 설정을 저장할 때 서버가 쓰는 규칙과 같다.
+       * 회원구분·요금제를 바꾸면 한도·권한 칸을 모두 새 등급의 기본값으로 바꾼다.
+       * "최고관리자가 등급을 바꾸면 바뀌어야 한다" (2026-09-30 사장님).
+       * 예전에는 따로 손본 칸을 지켰는데, 등급을 바꿔도 한도가 그대로 남아 헷갈렸다.
+       * 바뀐 숫자가 화면에 바로 보이므로, 이 회원만 다르게 줄 값은 저장 전에 다시 고치면 된다.
        */
       if (e.target.name === "role" || e.target.name === "plan_type") {
         const beforeRole = prev.role;
@@ -457,10 +453,9 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           afterPlan = val as string;
         }
 
-        const before: Record<string, any> = gradeDefaults(currentPolicies, beforeRole, beforePlan);
-        const after: Record<string, any> = gradeDefaults(currentPolicies, afterRole, afterPlan);
-        for (const key of Object.keys(after)) {
-          if (String((prev as any)[key]) === String(before[key])) (next as any)[key] = after[key];
+        if (afterRole !== beforeRole || afterPlan !== beforePlan) {
+          const after: Record<string, any> = gradeDefaults(currentPolicies, afterRole, afterPlan);
+          for (const key of Object.keys(after)) (next as any)[key] = after[key];
         }
       }
       return next;

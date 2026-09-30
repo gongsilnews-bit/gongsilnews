@@ -937,16 +937,17 @@ export async function adminGetLimitPolicies() {
  * 화면에 적어둔 값과 실제로 돌아가는 값이 갈라진다 — 실제로 갈라져 있었다.
  * 정책은 공실 50인데 회원은 20, 같은 등급 안에서도 사람마다 달랐다.
  *
- * 다만 최고관리자가 회원 화면에서 따로 손봐 둔 사람은 건드리지 않는다.
- * 바뀌기 전 기본값을 그대로 쓰고 있던 회원만 새 기본값으로 따라간다.
- * 그 구분은 "지금 값이 옛 기본값과 같은가" 하나로 한다 — 컬럼을 더 두지 않는다.
+ * 표에서 바꾼 칸은 그 등급 회원 전원에게 똑같이 내려간다. 회원 화면에서 따로 손봐 둔
+ * 사람도 따라간다 — "최고관리자가 등급을 바꾸면 바뀌어야 한다" (2026-09-30 사장님).
+ * 예전에는 손본 사람을 건너뛰어서, 일반회원 기사 한도를 3으로 바꿔도 0인 채 남은 회원이 있었다.
+ * 표에서 바꾸지 않은 칸은 회원별 값을 그대로 둔다 (다른 칸을 저장하다 개별 설정이 지워지지 않도록).
  *
- * force 가 켜지면 개별로 바꿔둔 것까지 전부 새 기본값으로 되돌린다.
+ * force 가 켜지면 바꾸지 않은 칸까지 전부 새 기본값으로 되돌린다.
  */
 export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_POLICIES, force: boolean = false) {
   const supabaseAdmin = getAdminClient();
   try {
-    // 바꾸기 전 값을 먼저 잡아둔다. 누가 기본값을 따르고 있었는지 이것으로 가린다.
+    // 바꾸기 전 값을 먼저 잡아둔다. 어느 칸을 바꿨는지 이것으로 가린다.
     const { policies: previous } = await adminGetLimitPolicies();
 
     const rows = Object.entries(policies).map(([key, value]) => ({ key, value }));
@@ -983,8 +984,8 @@ export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_PO
       const patch: Record<string, any> = {};
       for (const f of FIELDS) {
         if (after[f] === undefined) continue;
-        if (after[f] === m[f]) continue;               // 이미 새 값이다
-        if (!force && m[f] !== before[f]) continue;    // 개별로 손본 회원은 둔다
+        if (after[f] === m[f]) continue;                    // 이미 새 값이다
+        if (!force && after[f] === before[f]) continue;     // 표에서 이 칸은 안 바꿨다 → 회원별 값 유지
         patch[f] = after[f];
       }
 
