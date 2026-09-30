@@ -102,6 +102,39 @@ export async function createDevTask(formData: FormData): Promise<{ success: bool
   return { success: true, task_no: data.task_no };
 }
 
+/** [승인] 승인대기 작업을 승인됨으로. PC 에이전트가 PR 을 main 에 병합하면 반영완료가 된다. */
+export async function approveDevTask(id: number): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: "권한이 없습니다." };
+  const { data, error } = await devroomDb()
+    .from("dev_tasks")
+    .update({ status: "approved" })
+    .eq("id", id)
+    .eq("status", "review")
+    .select("id");
+  if (error) return { success: false, error: error.message };
+  if (!data || data.length === 0) return { success: false, error: "승인대기 상태인 작업만 승인할 수 있습니다." };
+  return { success: true };
+}
+
+/**
+ * [반려] 피드백을 남기면 PC 에이전트가 같은 브랜치에서 피드백을 반영해 다시 작업한다.
+ * 승인대기뿐 아니라 실패한 작업도 피드백을 붙여 다시 맡길 수 있다.
+ */
+export async function rejectDevTask(id: number, reason: string): Promise<{ success: boolean; error?: string }> {
+  if (!(await requireAdmin())) return { success: false, error: "권한이 없습니다." };
+  const text = reason.trim();
+  if (!text) return { success: false, error: "피드백 내용을 입력해 주세요." };
+  const { data, error } = await devroomDb()
+    .from("dev_tasks")
+    .update({ status: "rejected", reject_reason: text })
+    .eq("id", id)
+    .in("status", ["review", "failed"])
+    .select("id");
+  if (error) return { success: false, error: error.message };
+  if (!data || data.length === 0) return { success: false, error: "승인대기·실패 상태인 작업만 반려할 수 있습니다." };
+  return { success: true };
+}
+
 /** 아직 에이전트가 가져가지 않은(접수) 작업만 삭제할 수 있다. */
 export async function deleteDevTask(id: number): Promise<{ success: boolean; error?: string }> {
   if (!(await requireAdmin())) return { success: false, error: "권한이 없습니다." };

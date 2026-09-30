@@ -7,7 +7,8 @@ const MAX_LOG = 20000;
 
 /**
  * Runner가 처리 결과를 보고한다.
- * - status 가 있으면 작업중(running) 작업만 review(승인대기) 또는 failed(실패)로 바꾼다.
+ * - status 가 review/failed 면 작업중(running) 작업만 승인대기 또는 실패로 바꾼다.
+ * - status 가 merged/merge_failed 면 승인됨(approved) 작업의 PR 병합 결과를 기록한다.
  * - status 없이 preview_url 만 보내면 미리보기 주소만 채운다 (Vercel 배포가 늦게 끝나는 경우).
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,6 +27,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!preview) return NextResponse.json({ error: "NOTHING_TO_UPDATE" }, { status: 400 });
     const { error } = await db.from("dev_tasks").update({ preview_url: preview }).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  // 병합 결과: 승인됨(approved) → 반영완료(merged) 또는 병합 실패 시 승인대기(review)로 되돌림
+  if (body.status === "merged" || body.status === "merge_failed") {
+    const merged = body.status === "merged";
+    const { data, error } = await db
+      .from("dev_tasks")
+      .update(merged
+        ? { status: "merged", finished_at: new Date().toISOString() }
+        : { status: "review", log: str(body.log) })
+      .eq("id", id)
+      .eq("status", "approved")
+      .select("id");
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!data || data.length === 0) return NextResponse.json({ error: "NOT_APPROVED" }, { status: 409 });
     return NextResponse.json({ ok: true });
   }
 

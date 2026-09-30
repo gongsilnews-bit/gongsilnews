@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import imageCompression from "browser-image-compression";
 import type { AdminTheme } from "@/components/admin/sections/types";
 import { TASK_STATUSES, TASK_TYPES, type DevTask, type DevTaskStatus, type DevTaskType } from "./types";
-import { createDevTask, deleteDevTask, listDevTasks } from "./actions";
+import { approveDevTask, createDevTask, deleteDevTask, listDevTasks, rejectDevTask } from "./actions";
 
 interface Props {
   theme: AdminTheme;
@@ -43,6 +43,13 @@ export default function DevRoomBoard({ theme }: Props) {
   const [shots, setShots] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // 승인·반려
+  const [confirmApproveId, setConfirmApproveId] = useState<number | null>(null);
+  const [rejectId, setRejectId] = useState<number | null>(null);
+  const [rejectText, setRejectText] = useState("");
+  const [acting, setActing] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   const load = useCallback(async () => {
     const res = await listDevTasks();
@@ -117,6 +124,21 @@ export default function DevRoomBoard({ theme }: Props) {
       return;
     }
     setOpenId(null);
+    await load();
+  };
+
+  const act = async (run: () => Promise<{ success: boolean; error?: string }>) => {
+    setActing(true);
+    setActionError("");
+    const res = await run();
+    setActing(false);
+    if (!res.success) {
+      setActionError(res.error || "처리하지 못했습니다.");
+      return;
+    }
+    setConfirmApproveId(null);
+    setRejectId(null);
+    setRejectText("");
     await load();
   };
 
@@ -362,7 +384,55 @@ export default function DevRoomBoard({ theme }: Props) {
                           )}
                         </div>
                       )}
-                      {t.reject_reason && <Field label="반려 사유" color="#dc2626">{t.reject_reason}</Field>}
+                      {t.reject_reason && <Field label="반려 사유 (피드백)" color="#dc2626">{t.reject_reason}</Field>}
+
+                      {/* ── 승인 / 반려 ── */}
+                      {(t.status === "review" || t.status === "failed") && (
+                        <div style={{ borderTop: `1px solid ${border}`, paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                          {rejectId === t.id ? (
+                            <>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: textSecondary }}>
+                                피드백 — 무엇을 어떻게 다시 고쳐야 하는지 적어 주세요. 에이전트가 반영해 다시 작업합니다.
+                              </span>
+                              <textarea
+                                style={{ ...inputStyle, minHeight: 90, resize: "vertical", lineHeight: 1.6 }}
+                                value={rejectText}
+                                onChange={(e) => setRejectText(e.target.value)}
+                                placeholder="예: 문구는 맞는데 글자 크기도 14px 로 키워 줘."
+                                autoFocus
+                              />
+                              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                                <button onClick={() => { setRejectId(null); setRejectText(""); setActionError(""); }} style={smallBtn(border, inputBg, textPrimary)}>취소</button>
+                                <button disabled={acting} onClick={() => act(() => rejectDevTask(t.id, rejectText))} style={smallBtn("#dc2626", "#dc2626", "#fff")}>
+                                  {acting ? "보내는 중..." : "피드백 보내고 재작업"}
+                                </button>
+                              </div>
+                            </>
+                          ) : confirmApproveId === t.id ? (
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "#0d9488" }}>승인하면 main 에 병합되어 실서버에 배포됩니다. 진행할까요?</span>
+                              <button onClick={() => { setConfirmApproveId(null); setActionError(""); }} style={smallBtn(border, inputBg, textPrimary)}>취소</button>
+                              <button disabled={acting} onClick={() => act(() => approveDevTask(t.id))} style={smallBtn("#0d9488", "#0d9488", "#fff")}>
+                                {acting ? "처리 중..." : "네, 승인"}
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+                              <button onClick={() => { setRejectId(t.id); setConfirmApproveId(null); setActionError(""); }} style={smallBtn("#dc2626", inputBg, "#dc2626")}>
+                                {t.status === "failed" ? "피드백 주고 다시 작업" : "반려 (피드백)"}
+                              </button>
+                              {t.status === "review" && (
+                                <button onClick={() => { setConfirmApproveId(t.id); setRejectId(null); setActionError(""); }} style={smallBtn("#0d9488", "#0d9488", "#fff")}>
+                                  승인
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          {actionError && (rejectId === t.id || confirmApproveId === t.id) && (
+                            <div style={{ color: "#dc2626", fontSize: 12, fontWeight: 600, textAlign: "right" }}>{actionError}</div>
+                          )}
+                        </div>
+                      )}
 
                       {t.status === "waiting" && (
                         <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -384,6 +454,13 @@ export default function DevRoomBoard({ theme }: Props) {
       </div>
     </div>
   );
+}
+
+function smallBtn(borderColor: string, background: string, color: string): React.CSSProperties {
+  return {
+    padding: "7px 16px", borderRadius: 8, border: `1px solid ${borderColor}`, background, color,
+    fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+  };
 }
 
 function Field({ label, color, children }: { label: string; color: string; children: React.ReactNode }) {

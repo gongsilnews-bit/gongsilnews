@@ -138,6 +138,15 @@ function checkoutBranch(branch, rework) {
   const remoteExists = git(["rev-parse", "--verify", "--quiet", `origin/${branch}`], { allowFail: true }).ok;
   // 반려 후 재작업이면 올려 둔 브랜치 위에서 이어서, 아니면 최신 main 에서 새로 시작
   git(["checkout", "-B", branch, rework && remoteExists ? `origin/${branch}` : "origin/main"]);
+  if (rework && remoteExists) {
+    // 그사이 main 이 바뀌었으면 먼저 합친다. 충돌하면 최신 main 에서 새로 시작 (피드백은 지시서에 그대로 들어간다)
+    const m = git(["merge", "--no-edit", "origin/main"], { allowFail: true });
+    if (!m.ok) {
+      git(["merge", "--abort"], { allowFail: true });
+      git(["checkout", "-B", branch, "origin/main"]);
+      log("  main 과 충돌해 최신 main 에서 새로 작업합니다");
+    }
+  }
 }
 
 async function downloadShots(task) {
@@ -291,7 +300,8 @@ async function handle(task) {
     git(["add", "-A"]);
     git(["commit", "-m", `fix(devroom): ${task.task_no} ${task.title}\n\n${report_text}\n\nCo-Authored-By: Claude <noreply@anthropic.com>`]);
     const sha = git(["rev-parse", "HEAD"]).out;
-    git(["push", "-u", "origin", branch]);
+    // devroom/ 브랜치는 Runner 전용이라 재작업 때 이력이 바뀌어도 덮어쓴다 (main 에는 push 하지 않음)
+    git(["push", "--force-with-lease", "-u", "origin", branch]);
     log(`  push 완료 ${sha.slice(0, 8)}`);
 
     let prUrl = gh(["pr", "list", "--repo", GH_REPO, "--head", branch, "--state", "open", "--json", "url", "--jq", ".[0].url"], { allowFail: true }).out;
@@ -336,10 +346,40 @@ async function checkPreviews() {
   }
 }
 
+/**
+ * 사장님이 [승인]한 작업의 PR 을 main 에 병합한다 → Vercel 이 실서버에 배포.
+ * 로컬 폴더는 건드리지 않고 GitHub API 로만 병합·브랜치 삭제를 한다.
+ */
+async function mergeApproved() {
+  const { tasks } = await api("GET", "/api/devroom/tasks/approved");
+  for (const t of tasks) {
+    const prNo = (t.pr_url || "").match(/\/pull\/(\d+)/)?.[1];
+    if (!prNo) {
+      await report(t.id, { status: "merge_failed", log: "PR 주소가 없어 병합하지 못했습니다." });
+      continue;
+    }
+    log(`▶ ${t.task_no} 승인됨 → PR #${prNo} 병합`);
+    const merge = gh(["api", "-X", "PUT", `repos/${GH_REPO}/pulls/${prNo}/merge`,
+      "-f", "merge_method=squash", "-f", `commit_title=${t.task_no} ${t.title} (#${prNo})`], { allowFail: true });
+    if (!merge.ok) {
+      log(`✖ ${t.task_no} 병합 실패`);
+      await report(t.id, {
+        status: "merge_failed",
+        log: `[병합 실패] main 과 충돌했을 수 있습니다. 반려(피드백)로 다시 맡기면 최신 코드 기준으로 재작업합니다.\n\n${merge.err || merge.out}`,
+      });
+      continue;
+    }
+    if (t.branch) gh(["api", "-X", "DELETE", `repos/${GH_REPO}/git/refs/heads/${t.branch}`], { allowFail: true });
+    await report(t.id, { status: "merged" });
+    log(`✔ ${t.task_no} 반영완료 (main 병합 → 실서버 배포 시작)`);
+  }
+}
+
 // ───────────────────────── 시작 ─────────────────────────
 
 async function tick() {
   await checkPreviews();
+  await mergeApproved().catch((e) => log(`병합 확인 실패: ${e.message}`));
   const { task } = await api("GET", "/api/devroom/tasks");
   if (task) await handle(task);
   return !!task;
