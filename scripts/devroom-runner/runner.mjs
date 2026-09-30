@@ -155,14 +155,26 @@ async function downloadShots(task) {
   const dir = path.join(WORK, task.task_no);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
+  const save = async (url, name) => {
+    const res = await fetch(url).catch(() => null);
+    if (!res?.ok) return null;
+    const ext = (new URL(url).pathname.split(".").pop() || "png").toLowerCase();
+    const file = path.join(dir, `${name}.${ext}`);
+    fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+    return file;
+  };
   const files = [];
   for (const [i, url] of (task.attachment_urls || []).entries()) {
-    const res = await fetch(url);
-    if (!res.ok) continue;
-    const ext = (new URL(url).pathname.split(".").pop() || "png").toLowerCase();
-    const file = path.join(dir, `screenshot-${i + 1}.${ext}`);
-    fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()));
-    files.push(file);
+    const f = await save(url, `screenshot-${i + 1}`);
+    if (f) files.push(f);
+  }
+  // 대화에 붙인 이미지는 메시지별로 내려받아 지시서의 해당 메시지 옆에 경로를 적는다
+  for (const [i, m] of (task.messages || []).entries()) {
+    m.files = [];
+    for (const [j, url] of (m.attachment_urls || []).entries()) {
+      const f = await save(url, `screenshot-chat${i + 1}-${j + 1}`);
+      if (f) m.files.push(f);
+    }
   }
   return { dir, files };
 }
@@ -183,7 +195,9 @@ function buildPrompt(task, shots) {
   if (task.page_url) lines.push(``, `관련 URL: ${task.page_url}`);
   if (task.repro_steps) lines.push(``, `재현 방법: ${task.repro_steps}`);
   if (shots.length) lines.push(``, `첨부 스크린샷 (Read 도구로 열어 볼 것):`, ...shots.map((f) => `- ${f}`));
-  const convo = (task.messages || []).map((m) => `[${m.role === "admin" ? "사장님" : "에이전트"}] ${m.body}`);
+  const convo = (task.messages || []).map((m) =>
+    `[${m.role === "admin" ? "사장님" : "에이전트"}] ${m.body}` +
+    (m.files?.length ? `\n  (첨부 이미지 — Read 도구로 열어 볼 것: ${m.files.join(", ")})` : ""));
   if (convo.length) lines.push(``, `지금까지의 대화 (오래된 순):`, ...convo);
   if (task.attempt > 1 && task.reject_reason) {
     lines.push(

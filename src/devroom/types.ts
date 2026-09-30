@@ -44,7 +44,10 @@ export interface DevTaskMessage {
   task_id: number;
   role: "admin" | "agent";
   body: string;
+  attachments?: string[];
   created_at: string;
+  /** 화면 표시용 이미지 임시 주소 (서버가 붙여 준다) */
+  attachment_urls?: string[];
 }
 
 export const TASK_TYPES: { key: DevTaskType; label: string; icon: string }[] = [

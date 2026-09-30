@@ -13,7 +13,13 @@ interface Props {
 const FLOW = ["작업 등록", "PC 에이전트가 가져감", "코드 수정·빌드", "브랜치 push·미리보기", "대표 승인", "실서버 반영"];
 const MAX_SHOTS = 5;
 
-const statusOf = (key: DevTaskStatus) => TASK_STATUSES.find((s) => s.key === key)!;
+/** 서버 전송 한도(10MB) 안에 5장이 들어가도록 한 장당 1MB 안팎으로 줄인다 */
+async function shrink(f: File): Promise<File> {
+  const small = await imageCompression(f, { maxSizeMB: 1, maxWidthOrHeight: 2000, useWebWorker: true });
+  return new File([small], f.name || "image.png", { type: small.type });
+}
+
+const statusOf =(key: DevTaskStatus) => TASK_STATUSES.find((s) => s.key === key)!;
 const typeOf = (key: DevTaskType) => TASK_TYPES.find((t) => t.key === key)!;
 
 function formatDate(iso: string | null) {
@@ -48,6 +54,7 @@ export default function DevRoomBoard({ theme }: Props) {
   const [confirmApproveId, setConfirmApproveId] = useState<number | null>(null);
   const [chatId, setChatId] = useState<number | null>(null);
   const [chatText, setChatText] = useState("");
+  const [chatImages, setChatImages] = useState<File[]>([]);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState("");
 
@@ -101,11 +108,7 @@ export default function DevRoomBoard({ theme }: Props) {
       fd.append("description", description);
       fd.append("page_url", pageUrl);
       fd.append("repro_steps", reproSteps);
-      // 서버 전송 한도(10MB) 안에 5장이 들어가도록 한 장당 1MB 안팎으로 줄인다
-      for (const f of shots) {
-        const small = await imageCompression(f, { maxSizeMB: 1, maxWidthOrHeight: 2000, useWebWorker: true });
-        fd.append("screenshots", new File([small], f.name, { type: small.type }));
-      }
+      for (const f of shots) fd.append("screenshots", await shrink(f));
       const res = await createDevTask(fd);
       if (!res.success) {
         setFormError(res.error || "등록하지 못했습니다.");
@@ -143,8 +146,26 @@ export default function DevRoomBoard({ theme }: Props) {
     setConfirmApproveId(null);
     setChatId(null);
     setChatText("");
+    setChatImages([]);
     await load();
   };
+
+  /** 대화창 이미지 추가 (📎 선택 또는 Ctrl+V 붙여넣기) */
+  const addChatImages = (taskId: number, files: File[]) => {
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    if (images.length === 0) return false;
+    if (chatId !== taskId) { setChatId(taskId); setChatText(""); setChatImages([]); }
+    setChatImages((prev) => [...(chatId === taskId ? prev : []), ...images].slice(0, MAX_SHOTS));
+    return true;
+  };
+
+  const sendChat = (taskId: number) => act(async () => {
+    const fd = new FormData();
+    fd.append("task_id", String(taskId));
+    fd.append("body", chatText);
+    for (const f of chatImages) fd.append("images", await shrink(f));
+    return sendDevTaskMessage(fd);
+  });
 
   const cardStyle: React.CSSProperties = {
     background: cardBg,
@@ -415,19 +436,58 @@ export default function DevRoomBoard({ theme }: Props) {
                               }}>
                                 {!mine && <div style={{ fontSize: 11, fontWeight: 800, color: textSecondary, marginBottom: 2 }}>🤖 에이전트</div>}
                                 {m.body}
+                                {m.attachment_urls && m.attachment_urls.length > 0 && (
+                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                                    {m.attachment_urls.map((u) => (
+                                      <a key={u} href={u} target="_blank" rel="noreferrer">
+                                        <img src={u} alt="" style={{ width: 110, height: 82, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(255,255,255,0.4)" }} />
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
                                 <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4, textAlign: "right" }}>{formatDate(m.created_at)}</div>
                               </div>
                             </div>
                           );
                         })}
 
+                        {t.status !== "approved" && chatId === t.id && chatImages.length > 0 && (
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+                            {chatImages.map((f, i) => (
+                              <div key={i} style={{ position: "relative" }}>
+                                <img src={URL.createObjectURL(f)} alt="" style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 8, border: `1px solid ${border}` }} />
+                                <button
+                                  onClick={() => setChatImages((prev) => prev.filter((_, j) => j !== i))}
+                                  style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", border: "none", background: "#111827", color: "#fff", fontSize: 11, cursor: "pointer" }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                         {t.status !== "approved" && (
                           <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginTop: 4 }}>
+                            <label
+                              title="이미지 첨부 (캡처 후 입력칸에 Ctrl+V 해도 됩니다)"
+                              style={{ ...smallBtn(border, inputBg, textPrimary), display: "flex", alignItems: "center", height: 44, boxSizing: "border-box" }}
+                            >
+                              📎
+                              <input
+                                type="file" accept="image/*" multiple hidden
+                                onChange={(e) => { addChatImages(t.id, Array.from(e.target.files || [])); e.target.value = ""; }}
+                              />
+                            </label>
                             <textarea
                               style={{ ...inputStyle, minHeight: 44, resize: "vertical", lineHeight: 1.5, flex: 1 }}
                               value={chatId === t.id ? chatText : ""}
-                              onFocus={() => { if (chatId !== t.id) { setChatId(t.id); setChatText(""); setActionError(""); } }}
+                              onFocus={() => { if (chatId !== t.id) { setChatId(t.id); setChatText(""); setChatImages([]); setActionError(""); } }}
                               onChange={(e) => { setChatId(t.id); setChatText(e.target.value); }}
+                              onPaste={(e) => {
+                                const files = Array.from(e.clipboardData.files || []);
+                                if (addChatImages(t.id, files)) e.preventDefault();
+                              }}
                               placeholder={
                                 t.status === "review" ? "수정할 점이나 답변을 적으면 에이전트가 반영해 다시 작업합니다."
                                   : t.status === "failed" ? "에이전트 질문에 답하거나 보충 설명을 적으면 다시 작업합니다."
@@ -436,9 +496,9 @@ export default function DevRoomBoard({ theme }: Props) {
                               }
                             />
                             <button
-                              disabled={acting || chatId !== t.id || !chatText.trim()}
-                              onClick={() => act(() => sendDevTaskMessage(t.id, chatText))}
-                              style={{ ...smallBtn("#2563eb", "#2563eb", "#fff"), opacity: chatId === t.id && chatText.trim() ? 1 : 0.5 }}
+                              disabled={acting || chatId !== t.id || (!chatText.trim() && chatImages.length === 0)}
+                              onClick={() => sendChat(t.id)}
+                              style={{ ...smallBtn("#2563eb", "#2563eb", "#fff"), height: 44, opacity: chatId === t.id && (chatText.trim() || chatImages.length > 0) ? 1 : 0.5 }}
                             >
                               {acting && chatId === t.id ? "보내는 중..." : "보내기"}
                             </button>
