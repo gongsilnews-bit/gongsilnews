@@ -121,8 +121,8 @@ AI API 키 없이, 이미 쓰고 있는 Claude Code를 그대로 활용한다.
 src/devroom/                  AI 개발실 전용 폴더
   ├─ DevRoomBoard.tsx          게시판 화면 (등록·목록·상세·승인/반려)
   ├─ actions.ts                저장·조회·승인·반려 처리
-  ├─ types.ts                  상태값·작업 형식 정의
-  └─ schema.sql                dev_tasks 테이블
+  └─ types.ts                  상태값·작업 형식 정의
+supabase/migrations/20260930_create_dev_tasks.sql   dev_tasks 테이블 (프로젝트 SQL 모음 규칙을 따름)
 src/app/api/devroom/tasks/    Runner 접속 주소 (Next.js 규칙상 이 위치 필수)
 scripts/devroom-runner/       사장님 PC에서 돌아가는 Runner
 ```
