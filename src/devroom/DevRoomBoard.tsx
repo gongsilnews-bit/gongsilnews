@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import imageCompression from "browser-image-compression";
 import type { AdminTheme } from "@/components/admin/sections/types";
 import { TASK_STATUSES, TASK_TYPES, type DevTask, type DevTaskStatus, type DevTaskType } from "./types";
-import { approveDevTask, createDevTask, deleteDevTask, listDevTasks, rejectDevTask } from "./actions";
+import { approveDevTask, createDevTask, deleteDevTask, listDevTasks, sendDevTaskMessage } from "./actions";
 
 interface Props {
   theme: AdminTheme;
@@ -46,8 +46,8 @@ export default function DevRoomBoard({ theme }: Props) {
 
   // 승인·반려
   const [confirmApproveId, setConfirmApproveId] = useState<number | null>(null);
-  const [rejectId, setRejectId] = useState<number | null>(null);
-  const [rejectText, setRejectText] = useState("");
+  const [chatId, setChatId] = useState<number | null>(null);
+  const [chatText, setChatText] = useState("");
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState("");
 
@@ -64,10 +64,14 @@ export default function DevRoomBoard({ theme }: Props) {
 
   useEffect(() => {
     load();
-    // 에이전트가 상태를 바꾸므로 30초마다 새로 불러온다
-    const timer = setInterval(load, 30000);
-    return () => clearInterval(timer);
   }, [load]);
+
+  // 에이전트가 상태를 바꾸므로 주기적으로 새로 불러온다. 작업중·승인됨일 때는 진행 상황을 보려고 5초마다.
+  const busy = tasks.some((t) => t.status === "running" || t.status === "approved");
+  useEffect(() => {
+    const timer = setInterval(load, busy ? 5000 : 30000);
+    return () => clearInterval(timer);
+  }, [load, busy]);
 
   const resetForm = () => {
     setType("bug");
@@ -137,8 +141,8 @@ export default function DevRoomBoard({ theme }: Props) {
       return;
     }
     setConfirmApproveId(null);
-    setRejectId(null);
-    setRejectText("");
+    setChatId(null);
+    setChatText("");
     await load();
   };
 
@@ -366,7 +370,17 @@ export default function DevRoomBoard({ theme }: Props) {
                         </Field>
                       )}
 
-                      {(t.result_summary || t.branch || t.log) && (
+                      {/* ── 작업중: 실시간 진행 상황 ── */}
+                      {t.status === "running" && (
+                        <div style={{ background: softBg, borderRadius: 8, padding: "12px 14px" }}>
+                          <div style={{ fontWeight: 800, marginBottom: 6 }}>⏳ 실시간 진행 상황 {t.attempt > 1 && `(${t.attempt}차 작업)`}</div>
+                          <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, margin: 0, fontFamily: "inherit", lineHeight: 1.7, color: textSecondary }}>
+                            {t.log ? t.log.split("\n").slice(-12).join("\n") : "에이전트가 작업을 준비하고 있습니다..."}
+                          </pre>
+                        </div>
+                      )}
+
+                      {t.status !== "running" && (t.result_summary || t.branch || t.log) && (
                         <div style={{ background: softBg, borderRadius: 8, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
                           <div style={{ fontWeight: 800 }}>🤖 처리 결과 {t.attempt > 1 && `(${t.attempt}차 작업)`}</div>
                           {t.result_summary && <div style={{ whiteSpace: "pre-wrap" }}>{t.result_summary}</div>}
@@ -384,31 +398,55 @@ export default function DevRoomBoard({ theme }: Props) {
                           )}
                         </div>
                       )}
-                      {t.reject_reason && <Field label="반려 사유 (피드백)" color="#dc2626">{t.reject_reason}</Field>}
-
-                      {/* ── 승인 / 반려 ── */}
-                      {(t.status === "review" || t.status === "failed") && (
-                        <div style={{ borderTop: `1px solid ${border}`, paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                          {rejectId === t.id ? (
-                            <>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: textSecondary }}>
-                                피드백 — 무엇을 어떻게 다시 고쳐야 하는지 적어 주세요. 에이전트가 반영해 다시 작업합니다.
-                              </span>
-                              <textarea
-                                style={{ ...inputStyle, minHeight: 90, resize: "vertical", lineHeight: 1.6 }}
-                                value={rejectText}
-                                onChange={(e) => setRejectText(e.target.value)}
-                                placeholder="예: 문구는 맞는데 글자 크기도 14px 로 키워 줘."
-                                autoFocus
-                              />
-                              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                                <button onClick={() => { setRejectId(null); setRejectText(""); setActionError(""); }} style={smallBtn(border, inputBg, textPrimary)}>취소</button>
-                                <button disabled={acting} onClick={() => act(() => rejectDevTask(t.id, rejectText))} style={smallBtn("#dc2626", "#dc2626", "#fff")}>
-                                  {acting ? "보내는 중..." : "피드백 보내고 재작업"}
-                                </button>
+                      {/* ── 대화 ── */}
+                      <div style={{ borderTop: `1px solid ${border}`, paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ fontWeight: 800 }}>💬 대화</div>
+                        {(t.messages || []).length === 0 && (
+                          <div style={{ fontSize: 12, color: textSecondary }}>아직 대화가 없습니다. 에이전트가 작업을 시작하면 여기에 소식을 남깁니다.</div>
+                        )}
+                        {(t.messages || []).map((m) => {
+                          const mine = m.role === "admin";
+                          return (
+                            <div key={m.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
+                              <div style={{
+                                maxWidth: "80%", padding: "8px 12px", borderRadius: 12, whiteSpace: "pre-wrap", lineHeight: 1.6,
+                                background: mine ? "#2563eb" : (darkMode ? "#2c2d33" : "#f1f5f9"),
+                                color: mine ? "#fff" : textPrimary,
+                              }}>
+                                {!mine && <div style={{ fontSize: 11, fontWeight: 800, color: textSecondary, marginBottom: 2 }}>🤖 에이전트</div>}
+                                {m.body}
+                                <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4, textAlign: "right" }}>{formatDate(m.created_at)}</div>
                               </div>
-                            </>
-                          ) : confirmApproveId === t.id ? (
+                            </div>
+                          );
+                        })}
+
+                        {t.status !== "approved" && (
+                          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginTop: 4 }}>
+                            <textarea
+                              style={{ ...inputStyle, minHeight: 44, resize: "vertical", lineHeight: 1.5, flex: 1 }}
+                              value={chatId === t.id ? chatText : ""}
+                              onFocus={() => { if (chatId !== t.id) { setChatId(t.id); setChatText(""); setActionError(""); } }}
+                              onChange={(e) => { setChatId(t.id); setChatText(e.target.value); }}
+                              placeholder={
+                                t.status === "review" ? "수정할 점이나 답변을 적으면 에이전트가 반영해 다시 작업합니다."
+                                  : t.status === "failed" ? "에이전트 질문에 답하거나 보충 설명을 적으면 다시 작업합니다."
+                                  : t.status === "merged" ? "추가로 고칠 점을 적으면 다시 작업합니다."
+                                  : "메모를 남기면 에이전트가 다음 작업 때 읽습니다."
+                              }
+                            />
+                            <button
+                              disabled={acting || chatId !== t.id || !chatText.trim()}
+                              onClick={() => act(() => sendDevTaskMessage(t.id, chatText))}
+                              style={{ ...smallBtn("#2563eb", "#2563eb", "#fff"), opacity: chatId === t.id && chatText.trim() ? 1 : 0.5 }}
+                            >
+                              {acting && chatId === t.id ? "보내는 중..." : "보내기"}
+                            </button>
+                          </div>
+                        )}
+
+                        {t.status === "review" && (
+                          confirmApproveId === t.id ? (
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
                               <span style={{ fontSize: 13, fontWeight: 700, color: "#0d9488" }}>승인하면 main 에 병합되어 실서버에 배포됩니다. 진행할까요?</span>
                               <button onClick={() => { setConfirmApproveId(null); setActionError(""); }} style={smallBtn(border, inputBg, textPrimary)}>취소</button>
@@ -417,22 +455,17 @@ export default function DevRoomBoard({ theme }: Props) {
                               </button>
                             </div>
                           ) : (
-                            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
-                              <button onClick={() => { setRejectId(t.id); setConfirmApproveId(null); setActionError(""); }} style={smallBtn("#dc2626", inputBg, "#dc2626")}>
-                                {t.status === "failed" ? "피드백 주고 다시 작업" : "반려 (피드백)"}
+                            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                              <button onClick={() => { setConfirmApproveId(t.id); setActionError(""); }} style={smallBtn("#0d9488", "#0d9488", "#fff")}>
+                                ✅ 승인 (실서버 반영)
                               </button>
-                              {t.status === "review" && (
-                                <button onClick={() => { setConfirmApproveId(t.id); setRejectId(null); setActionError(""); }} style={smallBtn("#0d9488", "#0d9488", "#fff")}>
-                                  승인
-                                </button>
-                              )}
                             </div>
-                          )}
-                          {actionError && (rejectId === t.id || confirmApproveId === t.id) && (
-                            <div style={{ color: "#dc2626", fontSize: 12, fontWeight: 600, textAlign: "right" }}>{actionError}</div>
-                          )}
-                        </div>
-                      )}
+                          )
+                        )}
+                        {actionError && (chatId === t.id || confirmApproveId === t.id) && (
+                          <div style={{ color: "#dc2626", fontSize: 12, fontWeight: 600, textAlign: "right" }}>{actionError}</div>
+                        )}
+                      </div>
 
                       {t.status === "waiting" && (
                         <div style={{ display: "flex", justifyContent: "flex-end" }}>

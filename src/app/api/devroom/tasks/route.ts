@@ -18,11 +18,21 @@ export async function GET(request: Request) {
   const task = Array.isArray(data) ? data[0] : data;
   if (!task) return NextResponse.json({ task: null });
 
+  // 이번 작업의 실시간 진행 상황을 새로 쌓도록 지난 기록을 비운다
+  await db.from("dev_tasks").update({ log: null }).eq("id", task.id);
+
   const paths: string[] = task.attachments || [];
   let attachment_urls: string[] = [];
   if (paths.length > 0) {
     const { data: signed } = await db.storage.from("devroom").createSignedUrls(paths, 60 * 60);
     attachment_urls = (signed || []).map((s) => s.signedUrl).filter(Boolean) as string[];
   }
-  return NextResponse.json({ task: { ...task, attachment_urls } });
+  // 지금까지의 대화 (재작업 때 사장님 메시지를 지시서에 넣는다)
+  const { data: messages } = await db
+    .from("dev_task_messages")
+    .select("role, body, created_at")
+    .eq("task_id", task.id)
+    .order("created_at");
+
+  return NextResponse.json({ task: { ...task, attachment_urls, messages: messages || [] } });
 }

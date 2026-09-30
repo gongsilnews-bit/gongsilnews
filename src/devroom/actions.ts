@@ -3,7 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { createClient as createSessionClient } from "@/utils/supabase/server";
 import { isAdminRole } from "@/utils/permissionCheck";
-import type { DevTask, DevTaskType } from "./types";
+import type { DevTask, DevTaskMessage, DevTaskType } from "./types";
 
 const BUCKET = "devroom";
 const MAX_SHOTS = 5;
@@ -41,6 +41,16 @@ export async function listDevTasks(): Promise<{ success: boolean; data: DevTask[
   if (error) return { success: false, data: [], error: error.message };
 
   const tasks = (data || []) as DevTask[];
+
+  if (tasks.length > 0) {
+    const { data: msgs } = await db
+      .from("dev_task_messages")
+      .select("id, task_id, role, body, created_at")
+      .in("task_id", tasks.map((t) => t.id))
+      .order("created_at");
+    for (const t of tasks) t.messages = (msgs || []).filter((m) => m.task_id === t.id) as DevTaskMessage[];
+  }
+
   const paths = tasks.flatMap((t) => t.attachments || []);
   if (paths.length > 0) {
     const { data: signed } = await db.storage.from(BUCKET).createSignedUrls(paths, 60 * 60);
@@ -116,23 +126,31 @@ export async function approveDevTask(id: number): Promise<{ success: boolean; er
   return { success: true };
 }
 
+/** 대화를 보내면 에이전트가 다시 맡는 상태 (승인대기·실패·반영완료) */
+const REOPEN_STATUSES = ["review", "failed", "merged"];
+
 /**
- * [반려] 피드백을 남기면 PC 에이전트가 같은 브랜치에서 피드백을 반영해 다시 작업한다.
- * 승인대기뿐 아니라 실패한 작업도 피드백을 붙여 다시 맡길 수 있다.
+ * 작업 대화창에 사장님 메시지를 남긴다.
+ * 승인대기·실패·반영완료 작업이면 메시지를 반영해 에이전트가 다시 작업하도록 넘긴다(반려).
+ * 접수·작업중·승인됨이면 저장만 하고, 에이전트가 다음 작업 때 읽는다.
  */
-export async function rejectDevTask(id: number, reason: string): Promise<{ success: boolean; error?: string }> {
-  if (!(await requireAdmin())) return { success: false, error: "권한이 없습니다." };
-  const text = reason.trim();
-  if (!text) return { success: false, error: "피드백 내용을 입력해 주세요." };
-  const { data, error } = await devroomDb()
+export async function sendDevTaskMessage(id: number, body: string): Promise<{ success: boolean; error?: string; reopened?: boolean }> {
+  const userId = await requireAdmin();
+  if (!userId) return { success: false, error: "권한이 없습니다." };
+  const text = body.trim();
+  if (!text) return { success: false, error: "메시지를 입력해 주세요." };
+
+  const db = devroomDb();
+  const { error } = await db.from("dev_task_messages").insert({ task_id: id, role: "admin", body: text });
+  if (error) return { success: false, error: error.message };
+
+  const { data } = await db
     .from("dev_tasks")
     .update({ status: "rejected", reject_reason: text })
     .eq("id", id)
-    .in("status", ["review", "failed"])
+    .in("status", REOPEN_STATUSES)
     .select("id");
-  if (error) return { success: false, error: error.message };
-  if (!data || data.length === 0) return { success: false, error: "승인대기·실패 상태인 작업만 반려할 수 있습니다." };
-  return { success: true };
+  return { success: true, reopened: !!data && data.length > 0 };
 }
 
 /** 아직 에이전트가 가져가지 않은(접수) 작업만 삭제할 수 있다. */

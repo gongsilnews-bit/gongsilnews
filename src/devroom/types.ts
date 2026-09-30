@@ -35,6 +35,16 @@ export interface DevTask {
   finished_at: string | null;
   /** 화면 표시용 스크린샷 임시 주소 (서버가 붙여 준다) */
   attachment_urls?: string[];
+  /** 사장님 ↔ 에이전트 대화 */
+  messages?: DevTaskMessage[];
+}
+
+export interface DevTaskMessage {
+  id: number;
+  task_id: number;
+  role: "admin" | "agent";
+  body: string;
+  created_at: string;
 }
 
 export const TASK_TYPES: { key: DevTaskType; label: string; icon: string }[] = [
