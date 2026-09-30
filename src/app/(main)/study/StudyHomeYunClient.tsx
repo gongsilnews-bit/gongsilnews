@@ -57,20 +57,26 @@ const TARGET_AUDIENCE = [
   {
     tag: "RECOMMEND 01",
     title: "아파트/오피스텔 입점 부동산",
+    image: "/images/study/recommend-char-apartment.jpg",
+    imageAlt: "아파트와 오피스텔 매물 브리핑을 진행하는 3D 공인중개사 캐릭터",
     description: "단지 내 급매물과 전월세 정보를 빠르게 블로그와 숏폼으로 제작하여 입주민과 외부 매수·임차 고객 문의를 선점합니다.",
-    solution: "👉 아파트·오피스텔: 단지별 급매물 브리핑 보고서와 블로그 포스팅, 단지 투어 숏폼 영상이 즉시 자동 완성됩니다.",
+    solution: "단지별 급매물 브리핑 보고서와 블로그 포스팅, 단지 투어 숏폼 영상이 즉시 자동 완성됩니다.",
   },
   {
     tag: "RECOMMEND 02",
     title: "사무실/상가 전문 부동산",
+    image: "/images/study/recommend-char-office.jpg",
+    imageAlt: "상가 및 오피스 빌딩 브리핑 보고서를 든 3D 공인중개사 캐릭터",
     description: "면적, 렌트프리, 권리금, 관리비 등 복잡한 상권·오피스 조건을 한눈에 보이는 브리핑 리포트와 상위 노출 콘텐츠로 완성합니다.",
-    solution: "👉 사무실·상가: 렌트프리·수익률이 정리된 프리미엄 제안서와 상위 노출 마케팅 기사가 1초 만에 자동 완성됩니다.",
+    solution: "렌트프리·수익률이 정리된 프리미엄 제안서와 상위 노출 마케팅 기사가 1초 만에 자동 완성됩니다.",
   },
   {
     tag: "RECOMMEND 03",
     title: "빌라/주택 건물 부동산",
+    image: "/images/study/recommend-char-villa.jpg",
+    imageAlt: "신축 빌라와 주택 현장 영상 촬영 짐벌을 든 3D 공인중개사 캐릭터",
     description: "원룸·투룸 다가구부터 꼬마빌딩까지, 현장 영상 촬영 대본과 기사 발행으로 공실 해소와 공동중개 기회를 극대화합니다.",
-    solution: "👉 빌라·주택: 씬별 현장 촬영 대본과 전국 11만 부동산 실시간 공유로 빠른 공실 계약을 이끕니다.",
+    solution: "씬별 현장 촬영 대본과 전국 11만 부동산 실시간 공유로 빠른 공실 계약을 이끕니다.",
   },
 ];
 
@@ -97,7 +103,6 @@ function Arrow() {
 
 export default function StudyHomeYunClient() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
-  const [activeAudienceIndex, setActiveAudienceIndex] = useState<number>(0);
   const [activeProcessStep, setActiveProcessStep] = useState<number>(2);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -141,7 +146,7 @@ export default function StudyHomeYunClient() {
               이제, 공실뉴스에 공실을 등록하시고, 공실스터디 멤버가 되시면 유튜브/블로그를 쉽게 운영할 수 있습니다!
             </p>
             <div className={styles.heroActions}>
-              <Link href="/study/benefits/ai-youtube" className={styles.heroPrimary}>
+              <Link href="/study/benefits/vacancy-register" className={styles.heroPrimary}>
                 멤버쉽 혜택 &gt;&gt;
               </Link>
               <Link href="/study/apply" className={styles.heroSecondary}>
@@ -700,94 +705,41 @@ export default function StudyHomeYunClient() {
           </div>
         </section>
 
-        {/* ━━━ [6섹션] 11만 부동산 네트워크 시너지 & 공동중개 ━━━ */}
-        <section className={styles.synergySection} aria-labelledby="synergy-title">
+        {/* ━━━ [6섹션] 이런 부동산에게 추천합니다! ━━━ */}
+        <section className={styles.problemSection} aria-labelledby="recommend-title">
           <div className={styles.contentWidth}>
             <header className={styles.sectionHeader}>
-              <p className={styles.kicker}>전국 11만 공실 네트워크</p>
-              <h2 id="synergy-title">
-                11만 부동산이 열람하는 공실뉴스에
-                <br />
-                <span>공실과 기사를 작성해 빠르게 공동중개하세요!</span>
+              <p className={styles.kicker}>RECOMMENDATION</p>
+              <h2 id="recommend-title">
+                이런 부동산에게 추천합니다!
               </h2>
               <p className={styles.sectionDescription}>
-                혼자만의 마케팅으로 끝나지 않습니다. 공실과 기사를 등록하는 즉시 전국 11만 부동산에 공유되어 빠른 계약이 성사되고,
-                공실스터디를 통해 그동안 포기했던 유튜브·블로그를 이제 꾸준히 할 수 있습니다.
+                주력 매물에 맞춘 자동 브리핑 리포트와 숏폼 콘텐츠로 실무 경쟁력을 높여보세요.
               </p>
             </header>
 
-            <div className={styles.synergyGrid}>
-              <div className={styles.synergyCard}>
-                <div className={styles.synergyIconBox}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="2" y1="12" x2="22" y2="12" />
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                  </svg>
-                </div>
-                <span className={styles.synergyTag}>전국 11만 무료 열람</span>
-                <h3>빠른 공동중개 성사</h3>
-                <p>
-                  한 번 등록된 공실은 전국 11만 부동산이 무료로 열람하는 플랫폼에 실시간 노출되어 주변 중개사와의 공동중개 계약이 압도적으로 빨라집니다.
-                </p>
-              </div>
-
-              <div className={styles.synergyCard}>
-                <div className={styles.synergyIconBox}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
-                    <path d="M18 14h-8" />
-                    <path d="M15 18h-5" />
-                    <path d="M10 6h8v4h-8V6Z" />
-                  </svg>
-                </div>
-                <span className={styles.synergyTag}>언론사 보도 기사 발행</span>
-                <h3>전문성 &amp; 신뢰도 극대화</h3>
-                <p>
-                  등록한 공실이 언론사 정식 보도 기사로 발행되어 포털에 송출됩니다. 소유주와 임차인에게 언론 기사 링크를 보내 품격 높은 브리핑을 진행하세요.
-                </p>
-              </div>
-
-              <div className={styles.synergyCard}>
-                <div className={styles.synergyIconBox}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="8.5" cy="7.5" r="4" />
-                    <line x1="20" y1="8" x2="20" y2="14" />
-                    <line x1="23" y1="11" x2="17" y2="11" />
-                  </svg>
-                </div>
-                <span className={styles.synergyTag}>꾸준한 스터디 커뮤니티</span>
-                <h3>포기 없는 마케팅 습관</h3>
-                <p>
-                  1~2인 중개사 대표님들과 함께 매주 실습하며, 혼자서는 포기하기 쉬운 유튜브와 블로그를 든든하게 지속할 수 있는 습관을 만듭니다.
-                </p>
-              </div>
-            </div>
-
             {/* 맞춤 매물별 추천 (RECOMMEND 01~03) */}
             <div className={styles.problemGrid}>
-              {TARGET_AUDIENCE.map((item, index) => {
-                const isActive = activeAudienceIndex === index;
-                return (
-                  <article
-                    key={item.title}
-                    className={`${styles.problemCard} ${isActive ? styles.problemCardActive : ""}`}
-                    onMouseEnter={() => setActiveAudienceIndex(index)}
-                  >
-                    <span className={styles.problemTag}>{item.tag}</span>
-                    <h3>{item.title}</h3>
-                    <p>{item.description}</p>
-                    <div className={styles.problemCardIndicator} />
-                  </article>
-                );
-              })}
-            </div>
-            <div className={styles.problemAnswerWrapper}>
-              <span className={styles.problemAnswerBadge}>맞춤 솔루션</span>
-              <p className={styles.problemAnswer}>
-                {TARGET_AUDIENCE[activeAudienceIndex].solution}
-              </p>
+              {TARGET_AUDIENCE.map((item) => (
+                <article key={item.title} className={styles.problemCard}>
+                  <div className={styles.problemCharWrap}>
+                    <Image
+                      src={item.image}
+                      alt={item.imageAlt}
+                      width={280}
+                      height={280}
+                      className={styles.problemCharImg}
+                    />
+                  </div>
+                  <span className={styles.problemTag}>{item.tag}</span>
+                  <h3>{item.title}</h3>
+                  <p>{item.description}</p>
+                  <div className={styles.problemCardSolution}>
+                    <span className={styles.problemCardSolutionBadge}>💡 맞춤 솔루션</span>
+                    <p className={styles.problemCardSolutionText}>{item.solution}</p>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
         </section>
@@ -797,17 +749,22 @@ export default function StudyHomeYunClient() {
           <div>
             <p>AI 시대, 1~2인 부동산을 위한 실무 강의</p>
             <h2 id="final-title">
-              부동산 전문 유튜브/블로그 강의!
+              꾸준한 유튜브/블로그 포스팅~
               <br />
-              공실스터디와 함께 하세요!!
+              <span>공실스터디로 바로 시작하세요!</span>
             </h2>
             <p className={styles.finalDescription}>
-              공실을 등록하고, 콘텐츠를 만들고, 더 많은 공동중개 기회로 연결해 보세요.
+              공실을 등록하고, 콘텐츠를 만들고, 더 많은 공동중개 기회로 바로 실무에 활용할 수 있습니다!
             </p>
-            <Link href="/study/lectures">
-              무료 강의 열람하고 시작하기 <Arrow />
-            </Link>
-            <small>카드 등록 없이 회원가입 즉시 무료 강의가 열립니다.</small>
+            <div className={styles.heroActions}>
+              <Link href="/study/benefits/vacancy-register" className={styles.heroPrimary}>
+                멤버쉽 혜택 &gt;&gt;
+              </Link>
+              <Link href="/study/apply" className={styles.heroSecondary}>
+                멤버쉽 신청하기 &gt;&gt;
+              </Link>
+            </div>
+            <p className={styles.heroNote}>물건 등록 한 번으로 자동 완성 · 전국 11만 부동산 네트워크 연동 · 초보자도 쉽게</p>
           </div>
         </section>
 

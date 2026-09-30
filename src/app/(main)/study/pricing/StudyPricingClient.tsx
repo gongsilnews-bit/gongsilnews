@@ -33,16 +33,16 @@ export default function StudyPricingClient() {
 
   const faqs = [
     {
-      q: "월 3만 원 외에 가입비나 교재비 등 추가 비용이 있나요?",
-      a: "전혀 없습니다. 가입비 0원, 교재비 0원이며 오직 월 30,000원(VAT 포함)으로 1년 365일 모든 VOD 특강과 실무 자료를 무제한 이용하실 수 있습니다.",
+      q: "1년 36만원 외에 가입비나 교재비 등 추가 비용이 있나요?",
+      a: "전혀 없습니다. 가입비 0원, 교재비 0원이며 1년 36만원(월 3만원꼴, VAT 포함)으로 1년 365일 모든 VOD 특강과 실무 자료, 프로그램을 무제한 이용하실 수 있습니다.",
     },
     {
       q: "언제부터 수강할 수 있고, 기간은 얼마나 되나요?",
       a: "상시 가입하여 즉시 수강을 시작할 수 있습니다. 가입한 날로부터 1년(365일) 동안 모든 VOD 강의를 무제한 시청하실 수 있으며, 매달 새로 업데이트되는 신규 특강도 추가 비용 없이 이용하실 수 있습니다.",
     },
     {
-      q: "의무 약정 기간이나 중도 해지 위약금이 있나요?",
-      a: "위약금은 0원입니다. 의무 사용 기간이 없으므로 원하실 때 언제든지 자유롭게 해지하실 수 있습니다.",
+      q: "할부 결제가 가능한가요?",
+      a: "네, 주요 카드사 무이자 할부(최대 12개월 등)를 지원하여 월 3만원대로 부담 없이 시작하실 수 있습니다.",
     },
     {
       q: "강의 자료와 계약서 양식, AI 프롬프트도 받을 수 있나요?",
@@ -68,15 +68,13 @@ export default function StudyPricingClient() {
   ];
 
   const paidFeatures = [
-    <>전 과목 VOD + <strong>HWP·엑셀·PDF 자료 원본</strong></>,
+    <><strong>공실스터디 멤버십 VOD + 교육자료</strong></>,
     <>수강 기간 : <strong style={{ color: POINT }}>1년(365일) 무제한 다시보기</strong></>,
-    <><strong style={{ color: POINT_DARK }}>유튜브·블로그 콘텐츠를 강의 안에서 제작</strong></>,
-    <>AI가 <strong>대본·썸네일·본문 초안</strong>까지 생성</>,
-    <>실무 AI 프롬프트 <strong>원본 전체 공개</strong></>,
-    <><strong>내 공실·매물</strong>로 바로 실습</>,
-    <>신규 특강 : <strong>매달 업데이트 전편 무료</strong></>,
-    <><strong>월 결제</strong> · 위약금 없이 언제든 해지</>,
-    <>공실 등록 · <strong>경공매 정보 열람 혜택</strong></>,
+    <><strong>공실등록 20건 무료</strong> (AI매매보고서 포함)</>,
+    <><strong>기사작성 4건 매월</strong></>,
+    <><strong>매물접수웹페이지 무료</strong></>,
+    <><strong>블로그 포스팅 자동화 프로그램 무료</strong></>,
+    <><strong>드론 영상 저작권 무료</strong></>,
   ];
 
   return (
@@ -118,8 +116,8 @@ export default function StudyPricingClient() {
               lineHeight: 1.3,
             }}
           >
-            AI 유튜브 + 부동산 실무<br />
-            월 <span style={{ color: POINT }}>3만 원</span>이면 OK
+            공실등록 + 유튜브/블로그 실습<br />
+            월 <span style={{ color: POINT }}>3만원</span>이면 OK!
           </h1>
 
           <p
@@ -131,7 +129,7 @@ export default function StudyPricingClient() {
               lineHeight: 1.6,
             }}
           >
-            수백만 원짜리 시중 실무교육과 공실스터디의 차이를 확인해 보세요.
+            12개월 동안 블로그 포스팅, 유튜브 채널! 확실하게 구축하실 수 있습니다.
           </p>
 
           <div
@@ -172,7 +170,7 @@ export default function StudyPricingClient() {
                     <span style={{ fontSize: "14px", fontWeight: 600, color: "#94a3b8", marginLeft: 6 }}>/ 12개월 일시불</span>
                   </div>
                   <p style={{ fontSize: "13px", color: "#94a3b8", margin: "6px 0 0" }}>
-                    수백만 원을 먼저 결제하고 이론과 교재부터 시작하는 과정
+                    수백만원 결제, 불필요한 강의로 비용만 높아지는 오프라인 강의!!
                   </p>
                 </div>
 
@@ -185,15 +183,18 @@ export default function StudyPricingClient() {
                       background: "#f8fafc",
                       border: "1px dashed #cbd5e1",
                       borderRadius: "10px",
-                      fontSize: "14px",
+                      fontSize: "13.5px",
                       fontWeight: 700,
                       color: "#94a3b8",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      padding: "0 10px",
+                      textAlign: "center",
+                      wordBreak: "keep-all",
                     }}
                   >
-                    한 번에 결제 · 환불 규정 확인 필요
+                    강의 참여 때만 이해되고, 실무 활용 거의 불가!!
                   </div>
                 </div>
 
@@ -256,12 +257,30 @@ export default function StudyPricingClient() {
                 </div>
 
                 <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: "40px", fontWeight: 900, color: "#0f2e28", letterSpacing: "-1px" }}>
-                    ₩30,000
-                    <span style={{ fontSize: "14.5px", fontWeight: 700, color: "#64748b", marginLeft: 6 }}>/ 월 (VAT 포함)</span>
+                  <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "8px" }}>
+                    <span style={{ fontSize: "40px", fontWeight: 900, color: "#0f2e28", letterSpacing: "-1.5px" }}>
+                      36만원
+                    </span>
+                    <span style={{ fontSize: "15px", fontWeight: 700, color: "#64748b" }}>
+                      / 1년 (12개월)
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 800,
+                        color: POINT_DARK,
+                        background: POINT_SOFT,
+                        padding: "3px 10px",
+                        borderRadius: "12px",
+                        letterSpacing: "-0.3px",
+                        border: `1px solid ${POINT_BORDER}`,
+                      }}
+                    >
+                      월 3만원꼴
+                    </span>
                   </div>
-                  <p style={{ fontSize: "13px", color: POINT, fontWeight: 700, margin: "6px 0 0" }}>
-                    가입비 0원 · 교재비 0원 · 위약금 없이 언제든 해지 가능
+                  <p style={{ fontSize: "13px", color: POINT, fontWeight: 700, margin: "8px 0 0" }}>
+                    가입비 0원 · 교재비 0원 · 카드 12개월 무이자 할부 가능 (네이버쇼핑몰)
                   </p>
                 </div>
 
@@ -289,15 +308,15 @@ export default function StudyPricingClient() {
                   </button>
                 </div>
 
-                <div style={{ borderTop: `1px solid ${POINT_BORDER}`, paddingTop: 24 }}>
-                  <div style={{ fontSize: "12.5px", fontWeight: 800, color: "#0f2e28", marginBottom: 16 }}>
+                <div style={{ borderTop: `1px solid ${POINT_BORDER}`, paddingTop: 26 }}>
+                  <div style={{ fontSize: "14px", fontWeight: 900, color: "#0f2e28", marginBottom: 18 }}>
                     포함된 모든 전용 혜택
                   </div>
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14, fontSize: "13.5px" }}>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, fontSize: "16px" }}>
                     {paidFeatures.map((f, i) => (
-                      <li key={i} style={{ display: "flex", alignItems: "center", gap: 10, color: "#0f2e28" }}>
-                        <span style={{ color: POINT, fontWeight: 900 }}>✓</span>
-                        <span>{f}</span>
+                      <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, color: "#0f2e28", lineHeight: 1.5 }}>
+                        <span style={{ color: POINT, fontSize: "18px", fontWeight: 900, lineHeight: 1, marginTop: "2px" }}>✓</span>
+                        <span style={{ wordBreak: "keep-all" }}>{f}</span>
                       </li>
                     ))}
                   </ul>
@@ -426,10 +445,10 @@ export default function StudyPricingClient() {
             SPECIAL OFFER · 365 DAYS UNLIMITED
           </div>
           <h2 style={{ fontSize: "30px", fontWeight: 900, margin: "0 0 16px 0", letterSpacing: "-0.5px" }}>
-            월 3만 원으로 1년 내내 반복 수강하세요
+            월 3만원꼴로 1년 내내 반복 수강하세요
           </h2>
           <p style={{ fontSize: "15px", color: "#94a3b8", lineHeight: 1.6, margin: "0 0 32px 0" }}>
-            위약금 0원, 가입비 0원! 언제든 자유롭게 해지할 수 있으니 부담 없이 시작하세요.
+            1년 36만원으로 모든 특강과 실무 프로그램까지 무료 지원! 부담 없이 시작하세요.
           </p>
           <button
             type="button"
