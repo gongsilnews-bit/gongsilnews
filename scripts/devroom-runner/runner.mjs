@@ -140,7 +140,10 @@ async function ensureDeps() {
 const INTENT_SCHEMA = {
   type: "object",
   properties: {
-    action: { type: "string", enum: ["edit_code", "explain_only"], description: "사장님이 지금 코드를 고치라고 했으면 edit_code. 고치지 말고 이해한 내용/계획만 먼저 말하라고 했으면 explain_only" },
+    action: {
+      type: "string", enum: ["edit_code", "explain_only", "just_question"],
+      description: "사장님이 지금 코드를 고치라고 했으면 edit_code. 고치지 말고 이해한 내용/계획만 먼저 말하라고 했으면 explain_only. 코드 작업과 상관없이 사용법·진행 상황·링크 위치 등을 묻는 단순 질문이면 just_question",
+    },
     discard_previous: { type: "boolean", description: "에이전트가 이전에 한 수정을 취소/되돌리라고 했으면 true" },
   },
   required: ["action", "discard_previous"],
@@ -158,6 +161,7 @@ function classifyIntent(message) {
     "- '그렇게 해 줘', '수정해 줘', '진행해' 는 코드를 고치라는 뜻(edit_code)이다.",
     "- '다른 건 수정하지 말고' 는 '그 부분만 고치라'는 뜻이라 edit_code 다.",
     "- '이해했는지 먼저 확인', '설명만', '고치기 전에 물어봐' 는 explain_only 다.",
+    "- '미리보기 링크 어디 있어?', '지금 뭐 하고 있어?', '승인은 어떻게 해?' 처럼 코드 수정 없이 답만 하면 되는 질문은 just_question 이다.",
     "",
     `[사장님 메시지]\n${message}`,
   ].join("\n");
@@ -174,7 +178,8 @@ function classifyIntent(message) {
       clearTimeout(timer);
       try {
         const r = JSON.parse(out).structured_output;
-        if (r && (r.action === "edit_code" || r.action === "explain_only")) {
+        if (r && ["edit_code", "explain_only", "just_question"].includes(r.action)) {
+          if (r.action === "just_question") return resolve({ fresh: false, confirm: false, question: true });
           return resolve({ fresh: fresh || r.discard_previous === true, confirm: r.action === "explain_only" });
         }
       } catch { /* 아래 fallback */ }
@@ -412,6 +417,56 @@ function progressReporter(taskId) {
 
 const say = (taskId, body) => api("POST", `/api/devroom/tasks/${taskId}/messages`, { body }).catch(() => {});
 
+/** 코드 작업이 필요 없는 질문에 작업 정보를 보고 바로 답한다 */
+function answerQuestion(task, prevStatus) {
+  const recent = (task.messages || []).slice(-6).map((m) => `[${m.role === "admin" ? "사장님" : "에이전트"}] ${m.body.slice(0, 600)}`).join("\n");
+  const prompt = [
+    "너는 공실뉴스 관리자 화면 'AI 개발실'의 개발 에이전트다. 사장님(비개발자)의 질문에 쉬운 한국어로 짧게(3~6줄) 답한다.",
+    "",
+    "[AI 개발실 화면 안내]",
+    "- 작업을 펼치면 '처리 결과' 칸에 🔗 미리보기 / 🔗 GitHub PR 링크가 있다. 미리보기는 고친 화면을 실제처럼 볼 수 있는 임시 사이트다(휴대폰에서도 열림).",
+    "- 미리보기는 고친 뒤 1~3분 뒤에 생긴다. 생기면 대화창에도 링크를 올린다.",
+    "- 괜찮으면 대화창 아래 [✅ 승인 (실서버 반영)] → 실서버 반영. 고칠 점은 대화창에 적어 보내면 다시 작업한다.",
+    "",
+    "[이 작업 정보]",
+    `작업: ${task.task_no} ${task.title}`,
+    `상태: ${{ review: "승인대기", failed: "확인필요", merged: "반영완료" }[prevStatus] || prevStatus}`,
+    `미리보기: ${task.preview_url || "(아직 없음 — 배포 중이거나 수정이 없음)"}`,
+    `PR: ${task.pr_url || "(없음)"}`,
+    `최근 처리 결과: ${(task.result_summary || "").slice(0, 800)}`,
+    "",
+    "[최근 대화]",
+    recent,
+    "",
+    `[사장님 질문]\n${task.reject_reason}`,
+  ].join("\n");
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [
+      CLAUDE_CLI, "-p", "--output-format", "json", "--model", "haiku",
+      "--permission-mode", "dontAsk", "--allowedTools", "",
+      "--json-schema", JSON.stringify({ type: "object", properties: { answer: { type: "string" } }, required: ["answer"] }),
+      "--no-session-persistence",
+    ], { cwd: RUNNER_DIR, env: process.env });
+    let out = "";
+    child.stdout.on("data", (d) => { out += d; });
+    const timer = setTimeout(() => child.kill(), 90 * 1000);
+    child.on("close", () => {
+      clearTimeout(timer);
+      try { resolve(JSON.parse(out).structured_output?.answer || null); } catch { resolve(null); }
+    });
+    child.stdin.end(prompt);
+  });
+}
+
+/** 질문으로 다시 열린 작업의 원래 상태: PR 이 병합됐으면 반영완료, 열려 있으면 승인대기, 아니면 확인필요 */
+function previousStatus(task) {
+  if (!task.pr_url) return "failed";
+  const state = gh(["pr", "view", task.pr_url, "--json", "state", "--jq", ".state"], { allowFail: true }).out;
+  if (state === "MERGED") return "merged";
+  if (state === "OPEN" && !(task.result_summary || "").startsWith("❓")) return "review";
+  return "failed";
+}
+
 // ───────────────────────── 작업 1건 처리 ─────────────────────────
 
 async function handle(task) {
@@ -419,6 +474,16 @@ async function handle(task) {
   const rework = task.attempt > 1;
   const lastWord = rework ? task.reject_reason || "" : "";
   const mode = await classifyIntent(lastWord);
+
+  if (mode.question) {
+    const prev = previousStatus(task);
+    log(`▶ ${task.task_no} 질문 답변 (코드 작업 없음)`);
+    const answer = await answerQuestion(task, prev);
+    await say(task.id, answer || "질문을 잘 이해하지 못했습니다. 조금만 더 자세히 적어 주시겠어요?");
+    await report(task.id, { status: "restore", restore_to: prev }).catch((e) => log(`상태 되돌리기 실패: ${e.message}`));
+    log(`✔ ${task.task_no} 답변 완료 → ${prev}`);
+    return;
+  }
   log(`▶ ${task.task_no} "${task.title}" (${task.attempt}차${mode.fresh ? ", 이전 수정 취소" : ""}${mode.confirm ? ", 확인만" : ""}) 시작 → ${branch}`);
   fs.writeFileSync(STATE_FILE, JSON.stringify({ id: task.id, task_no: task.task_no }));
 
@@ -502,7 +567,8 @@ async function handle(task) {
       `다 고쳤습니다.\n\n${report_text}${(question || "").trim() ? `\n\n참고로 확인 부탁드릴 점: ${question.trim()}` : ""}\n\n` +
       `1~2분 뒤 "미리보기" 링크가 생기면 화면을 확인해 보시고, 괜찮으면 [승인], 고칠 점이 있으면 아래에 적어 주세요.`);
     await report(task.id, {
-      status: "review", branch, commit_sha: sha, pr_url: prUrl || null,
+      // 새 커밋이라 이전 미리보기 주소는 비운다 (새 미리보기가 준비되면 다시 채움)
+      status: "review", branch, commit_sha: sha, pr_url: prUrl || null, preview_url: null,
       result_summary: report_text, changed_files: changedFiles,
       log: finalLog(),
     });
@@ -528,6 +594,7 @@ async function checkPreviews() {
     }
     if (url) {
       await report(p.id, { preview_url: url }).catch((e) => log(`미리보기 보고 실패: ${e.message}`));
+      await say(p.id, `🔗 미리보기가 준비됐습니다. 아래 주소를 눌러 고친 화면을 확인해 보세요 (휴대폰에서도 열립니다).\n${url}\n\n괜찮으면 [✅ 승인], 고칠 점이 있으면 여기에 적어 주세요.`);
       log(`  미리보기 주소 등록: ${url}`);
       pendingPreviews.splice(i, 1);
     } else if (Date.now() - p.since > PREVIEW_GIVE_UP_MS) {

@@ -30,6 +30,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ ok: true });
   }
 
+  // 질문에만 답하고 끝난 작업: 작업중(running) → 원래 상태로 되돌림 (다른 기록은 그대로)
+  if (body.status === "restore") {
+    const to = body.restore_to;
+    if (!["review", "failed", "merged"].includes(to)) return NextResponse.json({ error: "INVALID_STATUS" }, { status: 400 });
+    const { data, error } = await db
+      .from("dev_tasks")
+      .update({ status: to, finished_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("status", "running")
+      .select("id");
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!data || data.length === 0) return NextResponse.json({ error: "NOT_RUNNING" }, { status: 409 });
+    return NextResponse.json({ ok: true });
+  }
+
   // 병합 결과: 승인됨(approved) → 반영완료(merged) 또는 병합 실패 시 승인대기(review)로 되돌림
   if (body.status === "merged" || body.status === "merge_failed") {
     const merged = body.status === "merged";
@@ -49,20 +64,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (body.status !== "review" && body.status !== "failed") {
     return NextResponse.json({ error: "INVALID_STATUS" }, { status: 400 });
   }
-  const log = str(body.log);
+  // 보낸 칸만 바꾼다 (중간에 멈춘 작업을 정리할 때 PR·미리보기 주소가 지워지지 않도록)
+  const update: Record<string, unknown> = { status: body.status, finished_at: new Date().toISOString() };
+  for (const key of ["branch", "commit_sha", "pr_url", "preview_url", "result_summary"]) {
+    if (key in body) update[key] = str(body[key]);
+  }
+  if ("changed_files" in body) {
+    update.changed_files = Array.isArray(body.changed_files) ? body.changed_files.filter((f: unknown) => typeof f === "string") : [];
+  }
+  if ("log" in body) {
+    const log = str(body.log);
+    update.log = log && log.length > MAX_LOG ? "…(앞부분 생략)\n" + log.slice(-MAX_LOG) : log;
+  }
   const { data, error } = await db
     .from("dev_tasks")
-    .update({
-      status: body.status,
-      branch: str(body.branch),
-      commit_sha: str(body.commit_sha),
-      pr_url: str(body.pr_url),
-      preview_url: str(body.preview_url),
-      result_summary: str(body.result_summary),
-      changed_files: Array.isArray(body.changed_files) ? body.changed_files.filter((f: unknown) => typeof f === "string") : [],
-      log: log && log.length > MAX_LOG ? "…(앞부분 생략)\n" + log.slice(-MAX_LOG) : log,
-      finished_at: new Date().toISOString(),
-    })
+    .update(update)
     .eq("id", id)
     .eq("status", "running")
     .select("id");
