@@ -26,14 +26,6 @@ try {
   execSync('npm run build', { cwd: reportDir, stdio: 'inherit' });
   console.log('Report build completed successfully! (Vite outputs directly to public)');
 
-  console.log('=== STARTING SUBPROJECT BUILD (marketing/remodeling) ===');
-  const remodelingDir = path.join(__dirname, '../marketing/remodeling');
-  console.log('Installing remodeling dependencies...');
-  execSync('npm install', { cwd: remodelingDir, stdio: 'inherit' });
-  console.log('Building remodeling...');
-  execSync('npm run build', { cwd: remodelingDir, stdio: 'inherit' });
-  console.log('Remodeling build completed successfully! (Vite outputs directly to public)');
-
   console.log('=== STARTING SUBPROJECT BUILD (marketing/home-interior) ===');
   const homeInteriorDir = path.join(__dirname, '../marketing/home-interior');
   console.log('Installing home-interior dependencies...');

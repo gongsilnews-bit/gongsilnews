@@ -41,6 +41,45 @@ async function getArticleActor(supabase: ReturnType<typeof getAdminClient>) {
   return { user, member, isAdmin: isAdminRole(member.role) } as const;
 }
 
+/**
+ * 이번 달 기사 작성 가능 여부. 요금제 이름이 아니라 회원 한도(max_articles_per_month)가 기준이다.
+ * 한도는 [회원관리 → 등급별 기본 한도 설정]에서 내려오고 회원별로 덮어쓸 수 있다.
+ * (예전에는 공실뉴스부동산만 통과시켜서, 표에 일반회원 3건을 적어도 쓸 수 없었다)
+ * 유료 요금제가 만료된 부동산회원은 남아 있는 옛 한도 대신 무료부동산 기본 한도를 따른다.
+ */
+async function checkMonthlyArticleQuota(
+  supabase: ReturnType<typeof getAdminClient>,
+  member: { role?: string; plan_type?: string; plan_end_date?: string | null; max_articles_per_month?: number | null },
+  authorId: string,
+): Promise<{ allowed: true } | { allowed: false; error: string }> {
+  if (isAdminRole(member.role)) return { allowed: true };
+
+  let maxArticles = member.max_articles_per_month || 0;
+  const expiredPaidPlan =
+    member.role === "REALTOR" && !!member.plan_type && member.plan_type !== "free" && getEffectivePlan(member) === "free";
+  if (expiredPaidPlan) {
+    const { data } = await supabase.from("point_settings").select("value").eq("key", "LIMIT_REALTOR_FREE_ARTICLE").maybeSingle();
+    maxArticles = Number(data?.value) || 0;
+  }
+  if (maxArticles <= 0) {
+    return { allowed: false, error: "기사 작성 권한이 없는 회원 등급입니다. 요금제를 확인해 주세요." };
+  }
+
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const { count, error } = await supabase
+    .from("articles")
+    .select("id", { count: "exact", head: true })
+    .eq("author_id", authorId)
+    .gte("created_at", firstDayOfMonth)
+    .eq("is_deleted", false);
+  if (error) return { allowed: false, error: "기사 작성 한도 확인 중 오류가 발생했습니다." };
+  if ((count || 0) >= maxArticles) {
+    return { allowed: false, error: `이번 달 기사 작성 한도(${maxArticles}건)를 모두 사용했습니다.` };
+  }
+  return { allowed: true };
+}
+
 export async function checkArticleWritePermission(authorId?: string) {
   const supabase = getAdminClient();
 
@@ -62,29 +101,7 @@ export async function checkArticleWritePermission(authorId?: string) {
       return { allowed: false, error: "회원 정보를 확인할 수 없습니다." };
     }
 
-    const plan = isAdminRole(member.role) ? "admin" : getEffectivePlan(member);
-    if (plan === "admin") return { allowed: true };
-    if (plan !== "news_premium") {
-      return { allowed: false, error: "뉴스 기사 작성은 '공실뉴스부동산' 요금제 전용 기능입니다." };
-    }
-
-    const firstDayOfMonth = new Date();
-    firstDayOfMonth.setDate(1);
-    firstDayOfMonth.setHours(0, 0, 0, 0);
-    const { count, error: countError } = await supabase
-      .from("articles")
-      .select("id", { count: "exact", head: true })
-      .eq("author_id", targetAuthorId)
-      .gte("created_at", firstDayOfMonth.toISOString())
-      .eq("is_deleted", false);
-    if (countError) return { allowed: false, error: "기사 작성 한도 확인 중 오류가 발생했습니다." };
-
-    const maxArticles = member.max_articles_per_month || 0;
-    if (maxArticles <= 0 || (count || 0) >= maxArticles) {
-      return { allowed: false, error: `이번 달 기사 작성 한도(${maxArticles}건)를 초과했거나 한도가 설정되지 않았습니다.` };
-    }
-
-    return { allowed: true };
+    return await checkMonthlyArticleQuota(supabase, member, targetAuthorId);
   } catch (error: any) {
     return { allowed: false, error: error.message || "기사 작성 권한을 확인할 수 없습니다." };
   }
@@ -208,30 +225,8 @@ export async function saveArticle(data: {
 
     // --- [권한/요금제 검증 (신규 작성 시에만)] ---
     if (!articleId) {
-      const plan = isAdminRole(authorMember.role) ? "admin" : getEffectivePlan(authorMember);
-
-      if (plan !== 'news_premium' && plan !== 'admin') {
-        return { success: false, error: "뉴스 기사 작성은 '공실뉴스부동산' 요금제 전용 기능입니다." };
-      }
-
-      if (plan === 'news_premium') {
-        const now = new Date();
-        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
-        const { count, error: countErr } = await supabase
-          .from('articles')
-          .select('id', { count: 'exact', head: true })
-          .eq('author_id', effectiveAuthorId)
-          .gte('created_at', firstDayOfMonth)
-          .eq('is_deleted', false);
-
-        if (countErr) return { success: false, error: "기사 작성 한도 확인 중 오류가 발생했습니다." };
-
-        const maxArticles = authorMember.max_articles_per_month || 0;
-        if (maxArticles <= 0 || (count || 0) >= maxArticles) {
-          return { success: false, error: `이번 달 기사 작성 한도(${maxArticles}건)를 초과했거나 한도가 설정되지 않았습니다.` };
-        }
-      }
+      const quota = await checkMonthlyArticleQuota(supabase, authorMember, effectiveAuthorId);
+      if (!quota.allowed) return { success: false, error: quota.error };
     }
     // ---------------------------------------------
 

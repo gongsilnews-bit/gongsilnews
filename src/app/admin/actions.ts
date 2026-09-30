@@ -260,6 +260,19 @@ export async function adminApproveRealtorApplication(memberId: string) {
       .eq('id', memberId);
     if (memberError) return { success: false, error: memberError.message };
 
+    // 알림 발송 (회원용)
+    const { createNotification } = await import("@/app/actions/notification");
+    await createNotification({
+      recipientId: memberId,
+      type: "realtor_approved",
+      title: "🎉 부동산회원 승인 완료",
+      body: "공인중개사 서류 심사가 통과되어 부동산회원으로 승인되었습니다.",
+      link: "/realty_admin",
+      mobileLink: "/m/admin",
+      sourceId: `realtor_approved_${memberId}`,
+      revive: true
+    });
+
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -281,6 +294,19 @@ export async function adminRejectRealtorApplication(memberId: string, reason: st
       .update({ role: 'USER' })
       .eq('id', memberId);
     if (memberError) return { success: false, error: memberError.message };
+
+    // 알림 발송 (회원용 서류보완 안내)
+    const { createNotification } = await import("@/app/actions/notification");
+    await createNotification({
+      recipientId: memberId,
+      type: "realtor_rejected",
+      title: "🚨 부동산회원 신청 서류보완 요청",
+      body: `사유: ${reason}`,
+      link: "/user_admin?menu=settings",
+      mobileLink: "/m/admin/settings",
+      sourceId: `realtor_rejected_${memberId}`,
+      revive: true
+    });
 
     return { success: true };
   } catch (error: any) {
@@ -458,9 +484,22 @@ export async function adminHardDeleteMember(memberId: string) {
   const supabaseAdmin = getAdminClient();
   try {
     // 1. 연관된 데이터 우선 삭제 (외래키 제약조건 방지)
-    await supabaseAdmin.from('vacancies').delete().eq('owner_id', memberId);
-    await supabaseAdmin.from('agencies').delete().eq('owner_id', memberId);
-    await supabaseAdmin.from('business_profiles').delete().eq('user_id', memberId);
+    await Promise.allSettled([
+      supabaseAdmin.from('vacancies').delete().eq('owner_id', memberId),
+      supabaseAdmin.from('agencies').delete().eq('owner_id', memberId),
+      supabaseAdmin.from('agency_members').delete().eq('member_id', memberId),
+      supabaseAdmin.from('business_profiles').delete().eq('user_id', memberId),
+      supabaseAdmin.from('realtor_applications').delete().eq('user_id', memberId),
+      supabaseAdmin.from('business_applications').delete().eq('user_id', memberId),
+      supabaseAdmin.from('customer_consultations').delete().eq('created_by', memberId),
+      supabaseAdmin.from('customers').delete().eq('member_id', memberId),
+      supabaseAdmin.from('marketing_projects').delete().eq('user_id', memberId),
+      supabaseAdmin.from('inquiries').delete().eq('user_id', memberId),
+      supabaseAdmin.from('talk_messages').delete().eq('sender_id', memberId),
+      supabaseAdmin.from('talk_room_members').delete().eq('user_id', memberId),
+      supabaseAdmin.from('talk_rooms').delete().eq('created_by', memberId),
+      supabaseAdmin.from('articles').update({ author_id: null }).eq('author_id', memberId),
+    ]);
 
     // 2. members 테이블에서 삭제
     const { error: dbError } = await supabaseAdmin.from('members').delete().eq('id', memberId);
@@ -468,7 +507,7 @@ export async function adminHardDeleteMember(memberId: string) {
 
     // 3. Supabase Auth 사용자 삭제 (완전한 계정 삭제)
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(memberId);
-    if (authError) console.error("Auth User 삭제 실패:", authError.message); // Auth 삭제 실패해도 멤버 DB는 삭제됨
+    if (authError) console.error("Auth User 삭제 실패:", authError.message);
 
     return { success: true };
   } catch (error: any) {

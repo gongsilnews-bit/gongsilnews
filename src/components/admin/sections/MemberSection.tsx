@@ -81,16 +81,25 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
       bizStatus = bp?.status;
       bizUpdatedAt = bp?.updated_at || bp?.created_at;
     }
-    let computedStatus = m.signup_completed ? '정상' : '승인대기';
-    if (m.role === 'REALTOR' || agencyStatus) {
+    // 최고관리자(ADMIN)는 항상 '정상'
+    let computedStatus = '정상';
+    if (m.role === 'ADMIN') {
+      computedStatus = '정상';
+    } else if (agencyStatus) {
       if (agencyStatus === 'APPROVED') computedStatus = '정상';
       else if (agencyStatus === 'REJECTED') computedStatus = '서류보완';
       else if (agencyStatus === 'PENDING') computedStatus = '승인대기';
-    }
-    if (m.role === 'BIZ' || bizStatus) {
+      else computedStatus = '승인대기';
+    } else if (bizStatus) {
       if (bizStatus === 'APPROVED') computedStatus = '정상';
       else if (bizStatus === 'REJECTED') computedStatus = '서류보완';
       else if (bizStatus === 'PENDING') computedStatus = '승인대기';
+      else computedStatus = '승인대기';
+    } else if (m.role === 'REALTOR' || m.role === 'BIZ') {
+      computedStatus = '정상';
+    } else {
+      // 서류 신청 내역이 없는 순수 일반회원은 가입 즉시 항상 '정상'
+      computedStatus = '정상';
     }
 
     let isLongTermPending = false;
@@ -279,6 +288,13 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
               {displayMembers.length > 0 ? displayMembers.map((member, idx) => {
                 const roleMap: any = { 'ADMIN': '최고관리자', 'REALTOR': '무료부동산', 'BIZ': '비즈니스', 'USER': '일반회원' };
                 let displayRole = roleMap[member.role] || member.role || '일반회원';
+                const memberAgency = Array.isArray(member.agencies) ? member.agencies[0] : member.agencies;
+                const memberBiz = Array.isArray(member.business_profiles) ? member.business_profiles[0] : member.business_profiles;
+                if (member.role === 'USER' && memberAgency) {
+                  displayRole = '부동산(신청)';
+                } else if (member.role === 'USER' && memberBiz) {
+                  displayRole = '비즈니스(신청)';
+                }
                 if (member.role === 'REALTOR' && member.plan_type) {
                   if (member.plan_type === 'news_premium') displayRole = '공실뉴스';
                   else if (member.plan_type === 'study_premium') displayRole = '공실스터디';

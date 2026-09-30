@@ -112,11 +112,11 @@ export async function POST(request: NextRequest) {
 
           for (const part of response.candidates?.[0]?.content?.parts || []) {
             if (part.inlineData?.data) {
-              // AI 비서실 실시간 로깅 (리모델링 / 인테리어 이미지 생성)
+              // AI 비서실 실시간 로깅 (마케팅 이미지 생성)
               await logAiUsage({
-                channelId: channelId || "remodeling",
+                channelId: channelId || "marketingDraft",
                 userEmail: currentUserEmail,
-                summary: summary || `[리모델링·인테리어 AI 실사] ${(prompt || "").slice(0, 35)}...`,
+                summary: summary || `[마케팅 AI 실사] ${(prompt || "").slice(0, 35)}...`,
                 model: m,
                 type: "image",
                 imageCount: 1,

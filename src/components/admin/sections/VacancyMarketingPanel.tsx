@@ -135,19 +135,6 @@ export default function VacancyMarketingPanel({
 
   const marketingTools = [
     {
-      id: "remodeling",
-      title: "건물 외관 리모델링 예측 (RE 1.0)",
-      badge: "AI 외관 변환",
-      badgeColor: "#ec4899",
-      icon: "🏢",
-      desc: "노후 빌딩, 상가, 단독주택 외벽을 신축급 모던 스타일이나 럭셔리 파사드로 AI 디자인 변환합니다.",
-      cta: "외관 리모델링 시작하기",
-      url: `/marketing/remodeling/index.html?vacancy_id=${vacancyId}`,
-      gradient: "linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)",
-      lightBg: darkMode ? "rgba(236, 72, 153, 0.08)" : "#fdf2f8",
-      borderColor: darkMode ? "rgba(236, 72, 153, 0.25)" : "#fbcfe8",
-    },
-    {
       id: "home-interior",
       title: "아파트·내부 인테리어 시뮬레이터 (ARE 1.0)",
       badge: "AI 내부 3D",
@@ -172,19 +159,6 @@ export default function VacancyMarketingPanel({
       gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
       lightBg: darkMode ? "rgba(16, 185, 129, 0.08)" : "#ecfdf5",
       borderColor: darkMode ? "rgba(16, 185, 129, 0.25)" : "#a7f3d0",
-    },
-    {
-      id: "report",
-      title: "AI 프리미엄 물건보고서 (IM Report)",
-      badge: "브리핑/제원 분석",
-      badgeColor: "#3b82f6",
-      icon: "📊",
-      desc: "방문 고객 브리핑 및 임대인 미팅에 활용할 수 있는 전문 상권/물건 제원 분석 보고서를 생성하고 인쇄합니다.",
-      cta: "물건보고서 열기",
-      url: `/marketing/report?vacancy_id=${vacancyId}`,
-      gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-      lightBg: darkMode ? "rgba(59, 130, 246, 0.08)" : "#eff6ff",
-      borderColor: darkMode ? "rgba(59, 130, 246, 0.25)" : "#bfdbfe",
     },
     {
       id: "studio",
@@ -489,7 +463,6 @@ export default function VacancyMarketingPanel({
           >
             {projects.map((p) => {
               const appMap: Record<string, { name: string; url: string; icon: string }> = {
-                remodeling: { name: "외관 리모델링", url: "/marketing/remodeling/index.html", icon: "🏢" },
                 "home-interior": { name: "내부 인테리어", url: "/marketing/home-interior/index.html", icon: "🛋️" },
                 studio: { name: "AI 스튜디오", url: "/marketing/studio/index.html", icon: "🎬" },
                 report: { name: "물건보고서", url: "/marketing/report", icon: "📊" },

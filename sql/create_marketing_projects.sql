@@ -1,13 +1,13 @@
 -- ==============================================================================
 -- 마케팅 통합 프로젝트 보관 테이블 (marketing_projects)
--- 건물외관 리모델링(remodeling), 홈인테리어(home-interior), AI스튜디오(studio), 매물보고서(report)
+-- 홈인테리어(home-interior), AI스튜디오(studio), 매물보고서(report)
 -- ==============================================================================
 
 CREATE TABLE IF NOT EXISTS public.marketing_projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     user_email TEXT,
-    app_type VARCHAR(50) NOT NULL, -- 'studio' | 'remodeling' | 'home-interior' | 'report'
+    app_type VARCHAR(50) NOT NULL, -- 'studio' | 'home-interior' | 'report'
     title TEXT NOT NULL,
     thumbnail_url TEXT,
     clip_count INTEGER DEFAULT 0,

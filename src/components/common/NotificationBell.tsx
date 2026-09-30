@@ -23,6 +23,8 @@ const TYPE_LABEL: Record<string, { icon: string; color: string }> = {
   lecture_pending: { icon: "🎓", color: "#d97706" },
   lecture_approved: { icon: "🎓", color: "#059669" },
   lecture_rejected: { icon: "🎓", color: "#dc2626" },
+  realtor_rejected: { icon: "🚨", color: "#be123c" },
+  realtor_approved: { icon: "✅", color: "#059669" },
 };
 
 const timeAgo = (iso: string) => {

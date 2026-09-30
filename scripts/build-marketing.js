@@ -4,7 +4,6 @@ const path = require('path');
 const subprojects = [
   'marketing/ai-detail',
   'marketing/report',
-  'marketing/remodeling',
   'marketing/home-interior',
   'marketing/studio',
   'marketing/studyhtml'

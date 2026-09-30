@@ -7,6 +7,7 @@ import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconBuilding, IconArticle, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint } from "@/components/admin/sections/AdminIcons";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import { getVacancies } from "@/app/actions/vacancy";
+import { adminGetMemberDetail } from "@/app/admin/actions";
 import AdminLoadingFallback from "@/components/admin/sections/AdminSkeletons";
 
 /* ── Lazy-loaded 섹션 ── */
@@ -97,17 +98,26 @@ function UserAdminContent() {
       }
 
       setUserEmail(user.email || null);
-      const { data } = await supabase.from("members").select("id, name, phone").eq("id", user.id).single();
-      if (data) {
-        setMemberId(data.id);
-        setUserName(data.name || "이름없음");
-        setUserPhone(data.phone || "");
-        // 공실 데이터 프리페치
-        prefetchSection("gongsil", data.id);
+      const res = await adminGetMemberDetail(user.id);
+      if (res.success && res.member) {
+        setMemberId(res.member.id);
+        setUserName(res.member.name || "이름없음");
+        setUserPhone(res.member.phone || "");
+        prefetchSection("gongsil", res.member.id);
+        if (res.agency?.status) {
+          setAgencyStatus(res.agency.status);
+        }
+      } else {
+        const { data } = await supabase.from("members").select("id, name, phone").eq("id", user.id).single();
+        if (data) {
+          setMemberId(data.id);
+          setUserName(data.name || "이름없음");
+          setUserPhone(data.phone || "");
+          prefetchSection("gongsil", data.id);
+        }
+        const { data: agList } = await supabase.from("agencies").select("status").eq("owner_id", user.id).limit(1);
+        if (agList && agList.length > 0 && agList[0].status) setAgencyStatus(agList[0].status);
       }
-
-      const { data: agList } = await supabase.from("agencies").select("status").eq("owner_id", user.id).limit(1);
-      if (agList && agList.length > 0 && agList[0].status) setAgencyStatus(agList[0].status);
 
       setAuthChecked(true);
     }

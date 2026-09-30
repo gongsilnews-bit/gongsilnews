@@ -10,14 +10,6 @@ interface MobileVacancyMarketingPanelProps {
 
 const marketingTools = [
   {
-    id: "remodeling",
-    icon: "🏢",
-    title: "건물 외관 리모델링",
-    description: "건물 외관을 AI로 새롭게 디자인합니다.",
-    color: "#ec4899",
-    background: "#fdf2f8",
-  },
-  {
     id: "home-interior",
     icon: "🛋️",
     title: "아파트·내부 인테리어",
@@ -32,15 +24,6 @@ const marketingTools = [
     description: "SNS와 블로그용 홍보물을 제작합니다.",
     color: "#059669",
     background: "#ecfdf5",
-  },
-  {
-    id: "report",
-    icon: "📊",
-    title: "AI 물건보고서",
-    description: "방문 고객 브리핑용 전문 보고서를 편집합니다.",
-    color: "#2563eb",
-    background: "#eff6ff",
-    mobile: true,
   },
   {
     id: "studio",
@@ -70,10 +53,6 @@ export default function MobileVacancyMarketingPanel({ vacancyId, onBack }: Mobil
   const propertyName = vacancy?.building_name || vacancy?.property_type || "공실 매물";
 
   const handleToolClick = (tool: (typeof marketingTools)[number]) => {
-    if (tool.id === "report") {
-      window.location.href = `/marketing/report?vacancy_id=${vacancyId}`;
-      return;
-    }
     alert("이 기능은 PC 버전에서 지원됩니다. PC에서 공실뉴스에 접속해 이용해 주세요.");
   };
 
@@ -113,7 +92,7 @@ export default function MobileVacancyMarketingPanel({ vacancyId, onBack }: Mobil
                 <span style={{ display: "block", color: "#0f172a", fontSize: 14, fontWeight: 850 }}>{tool.title}</span>
                 <span style={{ display: "block", marginTop: 3, color: "#64748b", fontSize: 11, lineHeight: 1.45 }}>{tool.description}</span>
               </span>
-              <span style={{ flexShrink: 0, padding: "5px 8px", borderRadius: 8, background: tool.mobile ? "#eff6ff" : "#f8fafc", color: tool.mobile ? "#2563eb" : "#64748b", fontSize: 10, fontWeight: 800 }}>{tool.mobile ? "모바일 이용" : "PC 이용"}</span>
+              <span style={{ flexShrink: 0, padding: "5px 8px", borderRadius: 8, background: "#f8fafc", color: "#64748b", fontSize: 10, fontWeight: 800 }}>PC 이용</span>
             </button>
           ))}
         </section>
