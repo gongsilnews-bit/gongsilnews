@@ -650,14 +650,15 @@ function gradeDefaults(p: any, role: string, planType?: string) {
                   const isNameDiff = verifyResult.diff.expected?.companyName !== verifyResult.diff.found?.companyName;
                   const isRepDiff = verifyResult.diff.expected?.representative !== verifyResult.diff.found?.representative;
                   if (isNameDiff) diffMsg += `상호명 불일치(입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName}) `;
-                  if (isRepDiff) diffMsg += `대표자 불일치(입력: ${verifyResult.diff.expected?.representative} / 서류: ${verifyResult.diff.found?.representative})`;
-                }
-                aiReason = diffMsg ? `서류 확인 필요: ${diffMsg}` : (verifyResult.message || "제출된 파일이 공식 개설등록증/사업자등록증 원본 서류가 아니거나 판독할 수 없습니다. 실제 원본 서류를 업로드해 주세요.");
+                const safeMsg = (verifyResult.message && !verifyResult.message.includes("prepayment") && !verifyResult.message.includes("http") && !verifyResult.message.includes("402") && !verifyResult.message.includes("API")) 
+                  ? verifyResult.message 
+                  : "제출된 파일이 공식 개설등록증/사업자등록증 원본 서류가 아니거나 판독할 수 없습니다. 실제 원본 서류를 업로드해 주세요.";
+                aiReason = diffMsg ? `서류 확인 필요: ${diffMsg}` : safeMsg;
               }
             } catch (e) {
               console.error("AI Verify Error:", e);
               finalStatus = "REJECTED";
-              aiReason = "서류 확인 중 오류가 발생했습니다. 원본 서류를 선명하게 다시 업로드해 주세요.";
+              aiReason = "제출된 파일이 공식 개설등록증/사업자등록증 원본 서류가 아니거나 판독할 수 없습니다. 실제 원본 서류를 업로드해 주세요.";
             }
           }
         }
