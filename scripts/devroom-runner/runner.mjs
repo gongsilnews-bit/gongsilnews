@@ -162,6 +162,7 @@ function classifyIntent(message) {
     "- '다른 건 수정하지 말고' 는 '그 부분만 고치라'는 뜻이라 edit_code 다.",
     "- '이해했는지 먼저 확인', '설명만', '고치기 전에 물어봐' 는 explain_only 다.",
     "- '미리보기 링크 어디 있어?', '지금 뭐 하고 있어?', '승인은 어떻게 해?' 처럼 코드 수정 없이 답만 하면 되는 질문은 just_question 이다.",
+    "- '안 열려', '링크가 안 돼', '미리보기가 안 보여' 처럼 링크·미리보기를 여는 과정의 문제도 just_question 이다 (코드를 고칠 일이 아니다).",
     "",
     `[사장님 메시지]\n${message}`,
   ].join("\n");
@@ -180,7 +181,9 @@ function classifyIntent(message) {
         const r = JSON.parse(out).structured_output;
         if (r && ["edit_code", "explain_only", "just_question"].includes(r.action)) {
           if (r.action === "just_question") return resolve({ fresh: false, confirm: false, question: true });
-          return resolve({ fresh: fresh || r.discard_previous === true, confirm: r.action === "explain_only" });
+          // 이전 수정 버리기는 되돌리기 어려우니 AI 판단이 아니라 분명한 단어("취소·되돌려…")가 있을 때만 한다
+          // ("안 열리는데"를 AI 가 취소로 오해한 적이 있음, 2026-09-30)
+          return resolve({ fresh, confirm: r.action === "explain_only" });
         }
       } catch { /* 아래 fallback */ }
       resolve(fallback);
@@ -427,6 +430,7 @@ function answerQuestion(task, prevStatus) {
     "[AI 개발실 화면 안내]",
     "- 작업을 펼치면 '처리 결과' 칸에 🔗 미리보기 / 🔗 GitHub PR 링크가 있다. 미리보기는 고친 화면을 실제처럼 볼 수 있는 임시 사이트다(휴대폰에서도 열림).",
     "- 미리보기는 고친 뒤 1~3분 뒤에 생긴다. 생기면 대화창에도 링크를 올린다.",
+    "- 미리보기는 Vercel 보안 설정 때문에 Vercel(vercel.com)에 gongsilnews-bit 계정으로 로그인된 브라우저에서만 열린다. 안 열리거나 로그인 화면이 나오면, 그 브라우저(휴대폰 포함)에서 vercel.com 에 한 번 로그인하면 된다.",
     "- 괜찮으면 대화창 아래 [✅ 승인 (실서버 반영)] → 실서버 반영. 고칠 점은 대화창에 적어 보내면 다시 작업한다.",
     "",
     "[이 작업 정보]",
