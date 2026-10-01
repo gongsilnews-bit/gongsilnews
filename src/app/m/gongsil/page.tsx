@@ -131,6 +131,7 @@ function MobileGongsilContent() {
   // 권한 관련 State
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userLevel, setUserLevel] = useState<number>(0);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const isSuperAdmin =
     Boolean(
       (userLevel >= 5 || isAdminRole(currentUser?.role)) &&
@@ -514,7 +515,7 @@ function MobileGongsilContent() {
         }
       }
     }
-    initUser();
+    initUser().finally(() => setIsAuthLoading(false));
   }, []);
 
   // 공실 모드 진입 시 일반 사용자에게 등록 유도 오버레이 노출
@@ -1836,6 +1837,7 @@ function MobileGongsilContent() {
             openGalleryFullscreen={openGalleryFullscreen}
             currentUser={currentUser}
             userLevel={userLevel}
+            isAuthLoading={isAuthLoading}
             setIsAuthModalOpen={setIsAuthModalOpen}
             activeMode={activeMode}
             detailTab={detailTab}
