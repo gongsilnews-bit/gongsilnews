@@ -26,6 +26,7 @@ interface GongsilMobileDetailPanelProps {
   openGalleryFullscreen: () => void;
   currentUser: any;
   userLevel: number;
+  isAuthLoading?: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
   activeMode: "공실" | "경매";
   detailTab: "info" | "realtor";
@@ -83,6 +84,7 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
   openGalleryFullscreen,
   currentUser,
   userLevel,
+  isAuthLoading = false,
   setIsAuthModalOpen,
   activeMode,
   detailTab,
@@ -135,9 +137,9 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
     getOnbidCount().then(setOnbidCount).catch(() => setOnbidCount(null));
   }, [isAuctionProperty]);
 
-  const detailMasked = isAuctionProperty
+  const detailMasked = !isAuthLoading && (isAuctionProperty
     ? userLevel < 1
-    : selectedVacancy.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty;
+    : selectedVacancy.exposure_type === '부동산노출' && userLevel < 2 && !isMyProperty);
   const detailAddr = getCleanAddrText(selectedVacancy);
 
   const meta = selectedVacancy?.metadata || {};
