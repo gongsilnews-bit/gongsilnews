@@ -1,10 +1,9 @@
 /* ══════════════════════════════════════════════════════════════
    아파트 내부 인테리어 예측 시뮬레이터 — 인테리어 조건과 프롬프트
 
-   공실뉴스 웹 시뮬레이터(/marketing/home-interior)의 선택지와 프롬프트를
-   글자 그대로 옮겨 왔다. 문장을 고치면 웹 시뮬레이터와 결과가 달라지니
-   바꿀 때는 두 곳을 같이 본다. (원본: marketing/home-interior/constants.ts ·
-   services/geminiService.ts)
+   공실뉴스 웹 시뮬레이터(marketing/home-interior)의 선택지와 프롬프트를
+   글자 그대로 옮겨 왔다. 웹 시뮬레이터는 2026-10-01 삭제했으므로 이제 이 파일이 원본이다.
+   (옛 원본은 git 이력의 marketing/home-interior/constants.ts · services/geminiService.ts)
 
    웹 시뮬레이터와 다른 점
    1) 웹은 API 의 responseSchema 로 JSON 형식을 넘겼다. 채팅 화면에는 그 방법이 없어

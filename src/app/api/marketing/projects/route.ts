@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const appType = searchParams.get("app_type"); // 'studio', 'home-interior', 'report', or undefined
+    const appType = searchParams.get("app_type"); // 'studio', 'report', or undefined
 
     let query = supabase
       .from("ai_drafts")

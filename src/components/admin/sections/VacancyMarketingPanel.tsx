@@ -54,6 +54,7 @@ export default function VacancyMarketingPanel({
         const { data } = await supabase
           .from("marketing_projects")
           .select("*")
+          .neq("app_type", "home-interior") // 삭제한 인테리어 시뮬레이터의 옛 작업물은 열 곳이 없다
           .order("updated_at", { ascending: false })
           .limit(6);
         if (data) setProjects(data);
@@ -134,19 +135,6 @@ export default function VacancyMarketingPanel({
   const mainImage = vacancy.images && vacancy.images.length > 0 ? vacancy.images[0] : null;
 
   const marketingTools = [
-    {
-      id: "home-interior",
-      title: "아파트·내부 인테리어 시뮬레이터 (ARE 1.0)",
-      badge: "AI 내부 3D",
-      badgeColor: "#64748b",
-      icon: "🛋️",
-      desc: "텅 빈 공실이나 노후 실내를 모던, 호텔, 우드, 미니멀 등 최신 감성 인테리어로 3D 리디자인합니다.",
-      cta: "내부 인테리어 시작하기",
-      url: `/marketing/home-interior/index.html?vacancy_id=${vacancyId}`,
-      gradient: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
-      lightBg: darkMode ? "rgba(100, 116, 139, 0.08)" : "#f1f5f9",
-      borderColor: darkMode ? "rgba(100, 116, 139, 0.25)" : "#cbd5e1",
-    },
     {
       id: "ai-detail",
       title: "AI 온라인 전단지 & 상세페이지",
@@ -451,7 +439,7 @@ export default function VacancyMarketingPanel({
           >
             <div style={{ fontSize: 28, marginBottom: 8 }}>🎨</div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>저장된 프로젝트가 없습니다.</div>
-            <div style={{ fontSize: 12 }}>위 마케팅 솔루션을 실행하여 AI 리모델링 및 전단지를 제작하고 저장해보세요!</div>
+            <div style={{ fontSize: 12 }}>위 마케팅 솔루션을 실행하여 전단지와 홍보 콘텐츠를 제작하고 저장해보세요!</div>
           </div>
         ) : (
           <div
@@ -463,7 +451,6 @@ export default function VacancyMarketingPanel({
           >
             {projects.map((p) => {
               const appMap: Record<string, { name: string; url: string; icon: string }> = {
-                "home-interior": { name: "내부 인테리어", url: "/marketing/home-interior/index.html", icon: "🛋️" },
                 studio: { name: "AI 스튜디오", url: "/marketing/studio/index.html", icon: "🎬" },
                 report: { name: "물건보고서", url: "/marketing/report", icon: "📊" },
               };

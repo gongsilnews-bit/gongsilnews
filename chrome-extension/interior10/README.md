@@ -6,7 +6,7 @@
 
 바탕: 공실뉴스 리모델링 작성기(`chrome-extension/remodeling10`)를 그대로 복사했다. 흐름·디자인·기사 전송·블로그·유튜브가 같고,
 시뮬레이션 대상만 **건물 외관 → 아파트 실내**로 바꿨다.
-프롬프트 원본: 웹 시뮬레이터 `marketing/home-interior` (`constants.ts` · `services/geminiService.ts`)
+프롬프트 원본: 웹 시뮬레이터 `marketing/home-interior` 에서 옮겨 왔다. 웹 시뮬레이터는 2026-10-01 삭제했고, 이제 `shared/interior-spec.js` 가 원본이다.
 
 ## 설치
 1. Chrome 주소창에 `chrome://extensions` → 오른쪽 위 **개발자 모드** 켜기

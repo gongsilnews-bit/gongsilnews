@@ -45,14 +45,6 @@ const nextConfig: NextConfig = {
           destination: 'http://localhost:3006/marketing/report/:path*',
         },
         {
-          source: '/marketing/home-interior',
-          destination: 'http://localhost:3008/marketing/home-interior/',
-        },
-        {
-          source: '/marketing/home-interior/:path*',
-          destination: 'http://localhost:3008/marketing/home-interior/:path*',
-        },
-        {
           source: '/marketing/studio',
           destination: 'http://localhost:3009/marketing/studio/',
         },
@@ -86,14 +78,6 @@ const nextConfig: NextConfig = {
       {
         source: '/marketing/report/',
         destination: '/marketing/report/index.html',
-      },
-      {
-        source: '/marketing/home-interior',
-        destination: '/marketing/home-interior/index.html',
-      },
-      {
-        source: '/marketing/home-interior/',
-        destination: '/marketing/home-interior/index.html',
       },
       {
         source: '/marketing/studio',
