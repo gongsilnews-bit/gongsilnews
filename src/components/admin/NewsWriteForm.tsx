@@ -1480,14 +1480,15 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     const centerLatLng = articleCoords ? new kakao.maps.LatLng(articleCoords.lat, articleCoords.lng) : new kakao.maps.LatLng(37.498095, 127.027610); // 기본 강남역
     const options = { center: centerLatLng, level: 3 };
     
-    if (!kakaoMapRef.current) {
-      kakaoMapRef.current = new kakao.maps.Map(mapRef.current, options);
-      kakaoMarkerRef.current = new kakao.maps.Marker({ position: centerLatLng });
-      kakaoMarkerRef.current.setMap(kakaoMapRef.current);
-      kakaoPlacesRef.current = new kakao.maps.services.Places();
-      kakaoInfoWindowRef.current = new kakao.maps.InfoWindow({ zIndex: 1, removable: true });
-    } else {
-      kakaoMapRef.current.setCenter(centerLatLng);
+    // 모달이 닫혔다 열리면 DOM 컨테이너가 새로 마운트되므로 맵을 항상 새로 생성
+    kakaoMapRef.current = new kakao.maps.Map(mapRef.current, options);
+    kakaoMarkerRef.current = new kakao.maps.Marker({ position: centerLatLng });
+    kakaoMarkerRef.current.setMap(kakaoMapRef.current);
+    kakaoPlacesRef.current = new kakao.maps.services.Places();
+    kakaoInfoWindowRef.current = new kakao.maps.InfoWindow({ zIndex: 1, removable: true });
+
+    // 기존 좌표가 있으면 마커를 해당 위치에 표시
+    if (articleCoords) {
       kakaoMarkerRef.current.setPosition(centerLatLng);
     }
 
