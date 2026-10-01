@@ -404,8 +404,8 @@ export default function StudyVacancyRegisterClient() {
               >
                 <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3" }}>
                   <Image
-                    src="/images/study/benefit_joint_contract_stamp.jpg"
-                    alt="공동중개 계약 체결 및 계약완료 빨간 도장 날인 현장"
+                    src="/images/study/benefit_joint_contract_stamp_v2.jpg"
+                    alt="여성 공인중개사와 남성 공인중개사의 공동중개 계약 체결 및 계약완료 빨간 도장 날인 현장"
                     fill
                     sizes="(max-width: 768px) 100vw, 500px"
                     style={{ objectFit: "cover" }}
