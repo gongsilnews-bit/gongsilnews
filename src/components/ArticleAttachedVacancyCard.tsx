@@ -127,7 +127,7 @@ export default function ArticleAttachedVacancyCard({
             <span
               style={{
                 position: "absolute",
-                bottom: 6,
+                top: 6,
                 right: 6,
                 background: "rgba(0,0,0,0.08)",
                 color: "#9ca3af",
