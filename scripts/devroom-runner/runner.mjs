@@ -195,7 +195,8 @@ function classifyIntent(message) {
 }
 
 function checkoutBranch(branch, rework, fresh = false) {
-  git(["fetch", "origin"]);
+  // --prune: PR 병합 뒤 GitHub 이 지운 브랜치의 옛 기록이 남아 있으면 그 위에서 작업하다 push 가 거절된다 (2026-10-01)
+  git(["fetch", "--prune", "origin"]);
   git(["reset", "--hard"]);
   git(["clean", "-fd"]);
   const remoteExists = git(["rev-parse", "--verify", "--quiet", `origin/${branch}`], { allowFail: true }).ok;
