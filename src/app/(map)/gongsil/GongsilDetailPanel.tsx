@@ -396,41 +396,6 @@ export default function GongsilDetailPanel({
                   🖨 인쇄
                 </button>
               )}
-              <button
-                onClick={() => {
-                  const buildingText = getCleanAddrText(prop);
-                  const priceStr = prop.trade_type === "경매" ? "경매" : getPriceText(prop);
-                  const draftPayload = {
-                    title: `[공실뉴스 추천매물] ${buildingText} ${priceStr} 시장 출회`,
-                    subtitle: `${prop.sido || ""} ${prop.sigungu || ""} 핵심 입지 주거 가치\n${prop.themes && prop.themes.length > 0 ? prop.themes.join(" ") : "특올수리"} 쾌적한 공간\n주변 시세 대비 합리적 조건… 실수요자 이목 집중`,
-                    content: `<p>부동산 시장의 관심이 집중되는 가운데, ${buildingText}이(가) ${priceStr}의 조건으로 시장에 공식 출회되었습니다.</p><p>해당 매물은 뛰어난 입지 조건과 쾌적한 주거 설계를 갖추고 있으며, 자세한 정보는 공실뉴스에서 확인하실 수 있습니다.</p>`,
-                    section1: "공실뉴스",
-                    section2: prop.property_type && prop.property_type.includes("아파트") ? "아파트/오피스텔" : "상가/사무실/공장/토지",
-                    imageUrl: prop.images && prop.images.length > 0 ? prop.images[0] : "",
-                    vacancyId: prop.id,
-                  };
-                  try {
-                    localStorage.setItem("gongsil_ai_incoming_draft", JSON.stringify(draftPayload));
-                  } catch (e) {}
-                  window.open(`/admin?menu=article&action=write&vacancy_id=${prop.id}`, "_blank");
-                }}
-                style={{
-                  background: "#eff6ff",
-                  border: "1px solid #bfdbfe",
-                  borderRadius: 4,
-                  cursor: "pointer",
-                  color: "#1d4ed8",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "2px 8px",
-                  fontSize: 11,
-                  fontWeight: "bold",
-                }}
-                title="이 매물로 공실뉴스 AI 기사 작성"
-              >
-                ✨ AI 기사작성
-              </button>
             </div>
           </div>
           <h2 style={{ fontSize: 15, fontWeight: "bold", color: "#333", margin: "0 0 6px 0" }}>{getCleanAddrText(prop)}</h2>
