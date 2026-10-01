@@ -1308,3 +1308,18 @@ button.is-busy { display: flex; align-items: center; justify-content: center; }
   animation: cover-spin .9s linear infinite;
 }
 @keyframes cover-spin { to { transform: rotate(360deg) } }
+
+/* ─────────────── 1단계 카테고리 — [1차 ▾ | 2차 ▾] (우리동네뉴스 상단과 같은 모양) ─────────────── */
+.section-pick {
+  display: flex; align-items: center;
+  border: 1.5px solid var(--border); border-radius: 999px; background: #fff;
+  padding: 3px 6px; margin-bottom: 8px;
+}
+.section-select {
+  flex: 1; min-width: 0; padding: 8px 10px; border: none; background: transparent;
+  font: inherit; font-size: 12.5px; font-weight: 800; color: var(--text-main); outline: none; cursor: pointer;
+  border-radius: 999px;
+}
+.section-select:disabled { color: var(--text-sub); cursor: default }
+.section-select.need { color: #dc2626; background: #fef2f2 }
+.section-sep { width: 1px; height: 18px; background: var(--border); flex: none }

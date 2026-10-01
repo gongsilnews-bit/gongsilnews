@@ -89,36 +89,6 @@ export default function ArticleAttachedVacancyCard({
       }}
     >
       <div
-        style={{
-          fontSize: 15,
-          fontWeight: 800,
-          color: "#111827",
-          marginBottom: 12,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderBottom: "1px solid #f3f4f6",
-          paddingBottom: 10,
-        }}
-      >
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <span style={{ color: "#2563eb", fontSize: 16 }}>🏢</span> 추천 공실
-        </span>
-        <span
-          style={{
-            fontSize: 11,
-            color: "#059669",
-            background: "#ecfdf5",
-            padding: "2px 8px",
-            borderRadius: 12,
-            fontWeight: 700,
-          }}
-        >
-          실매물 확인
-        </span>
-      </div>
-
-      <div
         onClick={handleClick}
         style={{
           cursor: "pointer",

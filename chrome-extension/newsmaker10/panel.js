@@ -46,7 +46,7 @@
     topicSubject: $("topicSubject"), topicMemo: $("topicMemo"), angleInput: $("angleInput"),
     topicIntro: $("topicIntro"), topicOutro: $("topicOutro"), topicPoints: $("topicPoints"), btnAddPoint: $("btnAddPoint"),
     autoCover: $("autoCover"),
-    section2Row: $("section2Row"), sectionHint: $("sectionHint"), pvSection: $("pvSection"),
+    section1Select: $("section1Select"), section2Select: $("section2Select"), sectionHint: $("sectionHint"), pvSection: $("pvSection"),
     btnOpenAi: $("btnOpenAi"), btnSubmit: $("btnSubmit"), btnPullDraft: $("btnPullDraft"),
     draftEmpty: $("draftEmpty"), draftBody: $("draftBody"), draftActions: $("draftActions"),
     pvDate: $("pvDate"), pvTitle: $("pvTitle"), pvSubtitle: $("pvSubtitle"),
@@ -307,23 +307,25 @@
   });
 
   /* ═════════════ ② 공실뉴스 카테고리 ═════════════
-     1차를 고르면 2차 칩이 나온다. 2차는 한 번 더 누르면 풀린다(= AI 가 고름). */
-  const section1Btns = document.querySelectorAll(".chip[data-section1]");
-  section1Btns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      S.source.section1 = btn.dataset.section1;
-      S.source.section2 = "";
-      renderSections();
-      renderSectionBadge();
-      refreshButtons();
-      save();
-    });
+     우리동네뉴스 상단처럼 [1차 ▾ | 2차 ▾] 드롭다운 두 개. 1차를 바꾸면 2차 목록이 바뀐다.
+     자유를 고르면 2차는 AI 가 고른다. */
+  el.section1Select.innerHTML =
+    `<option value="">1차 카테고리 선택</option>` +
+    [...gwSectionNames(), GW_SECTION_FREE]
+      .map((name) => `<option value="${esc(name)}">${esc(name === GW_SECTION_FREE ? "자유 (AI가 고름)" : name)}</option>`)
+      .join("");
+
+  el.section1Select.addEventListener("change", () => {
+    S.source.section1 = el.section1Select.value;
+    S.source.section2 = "";
+    renderSections();
+    renderSectionBadge();
+    refreshButtons();
+    save();
   });
 
-  el.section2Row.addEventListener("click", (e) => {
-    const chip = e.target.closest(".chip[data-section2]");
-    if (!chip) return;
-    S.source.section2 = S.source.section2 === chip.dataset.section2 ? "" : chip.dataset.section2;
+  el.section2Select.addEventListener("change", () => {
+    S.source.section2 = el.section2Select.value;
     renderSections();
     renderSectionBadge();
     refreshButtons();
@@ -332,13 +334,19 @@
 
   function renderSections() {
     const first = S.source.section1;
-    section1Btns.forEach((b) => b.classList.toggle("active", b.dataset.section1 === first));
+    el.section1Select.value = first;
     const subs = gwSubSectionNames(first);
-    el.section2Row.classList.toggle("hidden", !subs.length);
-    el.section2Row.innerHTML = subs
-      .map((name) => `<button class="chip${name === S.source.section2 ? " active" : ""}" data-section2="${esc(name)}" type="button">${esc(name)}</button>`)
-      .join("");
-    el.sectionHint.classList.toggle("warn-text", Boolean(first && first !== GW_SECTION_FREE && !S.source.section2));
+    el.section2Select.innerHTML = first === GW_SECTION_FREE
+      ? `<option value="">AI가 고름</option>`
+      : `<option value="">${first ? "2차 카테고리 선택" : "2차 카테고리"}</option>` +
+        subs.map((name) => `<option value="${esc(name)}">${esc(name)}</option>`).join("");
+    el.section2Select.value = S.source.section2 || "";
+    el.section2Select.disabled = !first || first === GW_SECTION_FREE;
+    const need1 = !first;
+    const need2 = Boolean(first && first !== GW_SECTION_FREE && !S.source.section2);
+    el.section1Select.classList.toggle("need", need1);
+    el.section2Select.classList.toggle("need", need2);
+    el.sectionHint.classList.toggle("warn-text", need2);
     el.sectionHint.textContent = !first
       ? "1차 카테고리를 고르고, 이어서 2차 카테고리까지 골라 주세요."
       : first === GW_SECTION_FREE

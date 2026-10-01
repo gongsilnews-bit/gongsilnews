@@ -49,13 +49,12 @@
       <!-- ── 1단계 카테고리 — 먼저 고른다 ── -->
       <div class="card">
         <label class="card-label">1단계 · 공실뉴스 카테고리</label>
-        <div id="section1Row" class="chips-row wrap" role="group" aria-label="1차 카테고리">
-          <button class="chip" data-section1="부동산·경제" type="button">부동산·경제</button>
-          <button class="chip" data-section1="AI마케팅" type="button">AI마케팅</button>
-          <button class="chip" data-section1="라이프·오피니언" type="button">라이프·오피니언</button>
-          <button class="chip" data-section1="자유" type="button">자유<small>AI가 고름</small></button>
+        <!-- 우리동네뉴스 상단처럼 [1차 ▾ | 2차 ▾] 드롭다운 두 개를 한 줄에 -->
+        <div class="section-pick">
+          <select id="section1Select" class="section-select" aria-label="1차 카테고리"></select>
+          <span class="section-sep"></span>
+          <select id="section2Select" class="section-select" aria-label="2차 카테고리"></select>
         </div>
-        <div id="section2Row" class="chips-row wrap section2-row hidden" role="group" aria-label="2차 카테고리"></div>
         <p id="sectionHint" class="hint">1차 카테고리를 고르고, 이어서 2차 카테고리까지 골라 주세요.</p>
       </div>
 
