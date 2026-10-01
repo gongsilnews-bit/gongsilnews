@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { LectureMaterial } from "@/types/lectureMaterial";
 import { getLectureMaterialUrl } from "@/app/actions/lectureMaterials";
 
@@ -12,6 +12,18 @@ interface Props {
   lectureId: string;
 }
 
+function getFileExt(label: string) {
+  return (label || "").split(".").pop()?.toLowerCase() || "";
+}
+
+function isImageExt(ext: string) {
+  return ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
+}
+
+function isPdfExt(ext: string) {
+  return ext === "pdf";
+}
+
 export default function LecturePublicMaterialsModal({
   isOpen,
   onClose,
@@ -20,6 +32,35 @@ export default function LecturePublicMaterialsModal({
   lectureId,
 }: Props) {
   const [busyIndex, setBusyIndex] = useState<number | null>(null);
+  // globalIndex → 미리보기 URL (이미지/PDF 인라인용)
+  const [previewUrls, setPreviewUrls] = useState<Record<number, string>>({});
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  // 모달이 열릴 때 파일 자료의 미리보기 URL 자동 로드
+  useEffect(() => {
+    if (!isOpen || !materials || materials.length === 0) return;
+    setPreviewUrls({});
+
+    const fileMaterials = materials.filter(({ material }) => {
+      const ext = getFileExt(material.label);
+      return material.type === "FILE" && (isImageExt(ext) || isPdfExt(ext));
+    });
+    if (fileMaterials.length === 0) return;
+
+    setPreviewLoading(true);
+    Promise.all(
+      fileMaterials.map(async (item) => {
+        const res = await getLectureMaterialUrl(lectureId, item.globalIndex, true);
+        return { index: item.globalIndex, url: res.success ? res.url : null };
+      })
+    ).then((results) => {
+      const map: Record<number, string> = {};
+      for (const r of results) {
+        if (r.url) map[r.index] = r.url;
+      }
+      setPreviewUrls(map);
+    }).finally(() => setPreviewLoading(false));
+  }, [isOpen, lectureId, materials]);
 
   if (!isOpen || !materials || materials.length === 0) return null;
 
@@ -142,159 +183,204 @@ export default function LecturePublicMaterialsModal({
             padding: "16px 20px",
             display: "flex",
             flexDirection: "column",
-            gap: 10,
-            maxHeight: "60vh",
+            gap: 12,
+            maxHeight: "65vh",
             overflowY: "auto",
           }}
         >
           {materials.map((item, idx) => {
             const isFile = item.material.type === "FILE";
             const isBusy = busyIndex === item.globalIndex;
+            const ext = getFileExt(item.material.label);
+            const isImage = isFile && isImageExt(ext);
+            const isPdf = isFile && isPdfExt(ext);
+            const viewUrl = previewUrls[item.globalIndex];
 
             return (
-              <div
-                key={idx}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  padding: "12px 14px",
-                  background: "#ffffff",
-                  borderRadius: 10,
-                  border: "1px solid #e2e8f0",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
-                  <div
+              <div key={idx}>
+                {/* 이미지 미리보기 */}
+                {isImage && (
+                  <div style={{ marginBottom: 8, borderRadius: 10, overflow: "hidden", border: "1px solid #e2e8f0", background: "#f8fafc", minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {previewLoading && !viewUrl ? (
+                      <span style={{ fontSize: 12, color: "#94a3b8" }}>미리보기 불러오는 중…</span>
+                    ) : viewUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={viewUrl}
+                        alt={item.material.label}
+                        style={{ width: "100%", maxHeight: 280, objectFit: "contain", display: "block" }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: 12, color: "#94a3b8" }}>미리보기를 불러올 수 없습니다.</span>
+                    )}
+                  </div>
+                )}
+
+                {/* PDF 미리보기 */}
+                {isPdf && (
+                  <div style={{ marginBottom: 8, borderRadius: 10, overflow: "hidden", border: "1px solid #e2e8f0", background: "#f8fafc", minHeight: 200 }}>
+                    {previewLoading && !viewUrl ? (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 200 }}>
+                        <span style={{ fontSize: 12, color: "#94a3b8" }}>미리보기 불러오는 중…</span>
+                      </div>
+                    ) : viewUrl ? (
+                      <iframe
+                        src={viewUrl}
+                        title={item.material.label}
+                        style={{ width: "100%", height: 280, border: "none", display: "block" }}
+                      />
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 200 }}>
+                        <span style={{ fontSize: 12, color: "#94a3b8" }}>미리보기를 불러올 수 없습니다.</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 파일 행: 이름 + 다운로드 버튼 */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    padding: "12px 14px",
+                    background: "#ffffff",
+                    borderRadius: 10,
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        background: isFile ? "#ecfdf5" : "#eff6ff",
+                        color: isFile ? "#059669" : "#2563eb",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {isFile ? (
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
+                      ) : (
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7-7l-2 2" />
+                          <path d="M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7 7l2-2" />
+                        </svg>
+                      )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 13.5,
+                          fontWeight: 700,
+                          color: "#1e293b",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={item.material.label || (isFile ? "첨부파일" : "외부 자료")}
+                      >
+                        {item.material.label || (isFile ? "첨부파일" : "외부 자료")}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
+                        {isFile ? "첨부파일" : "외부 링크"} · 무료 공개
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={busyIndex !== null}
+                    onClick={() => handleDownloadOrOpen(item)}
                     style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 8,
-                      background: isFile ? "#ecfdf5" : "#eff6ff",
-                      color: isFile ? "#059669" : "#2563eb",
-                      display: "flex",
+                      display: "inline-flex",
                       alignItems: "center",
-                      justifyContent: "center",
+                      gap: 4,
+                      padding: "7px 12px",
+                      borderRadius: 6,
+                      background: isFile ? "#059669" : "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: busyIndex !== null ? "not-allowed" : "pointer",
+                      opacity: busyIndex !== null ? 0.6 : 1,
                       flexShrink: 0,
                     }}
                   >
-                    {isFile ? (
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                        <line x1="16" y1="13" x2="8" y2="13" />
-                        <line x1="16" y1="17" x2="8" y2="17" />
-                      </svg>
+                    {isBusy ? (
+                      "확인 중…"
+                    ) : isFile ? (
+                      <>
+                        <svg
+                          width="13"
+                          height="13"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        받기
+                      </>
                     ) : (
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M10 13a5 5 0 0 0 7 .1l3-3a5 5 0 0 0-7-7l-2 2" />
-                        <path d="M14 11a5 5 0 0 0-7-.1l-3 3a5 5 0 0 0 7 7l2-2" />
-                      </svg>
+                      <>
+                        <svg
+                          width="13"
+                          height="13"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                          <polyline points="15 3 21 3 21 9" />
+                          <line x1="10" y1="14" x2="21" y2="3" />
+                        </svg>
+                        열기
+                      </>
                     )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 13.5,
-                        fontWeight: 700,
-                        color: "#1e293b",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={item.material.label || (isFile ? "첨부파일" : "외부 자료")}
-                    >
-                      {item.material.label || (isFile ? "첨부파일" : "외부 자료")}
-                    </div>
-                    <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
-                      {isFile ? "첨부파일" : "외부 링크"} · 무료 공개
-                    </div>
-                  </div>
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  disabled={busyIndex !== null}
-                  onClick={() => handleDownloadOrOpen(item)}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "7px 12px",
-                    borderRadius: 6,
-                    background: isFile ? "#059669" : "#2563eb",
-                    color: "#ffffff",
-                    border: "none",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: busyIndex !== null ? "not-allowed" : "pointer",
-                    opacity: busyIndex !== null ? 0.6 : 1,
-                    flexShrink: 0,
-                  }}
-                >
-                  {isBusy ? (
-                    "확인 중…"
-                  ) : isFile ? (
-                    <>
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
-                      받기
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                        <polyline points="15 3 21 3 21 9" />
-                        <line x1="10" y1="14" x2="21" y2="3" />
-                      </svg>
-                      열기
-                    </>
-                  )}
-                </button>
               </div>
             );
           })}
