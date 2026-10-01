@@ -131,11 +131,11 @@ const DirectionsBox = ({ info, hc, qrCodeUrl, className = "bg-white", dark = fal
           </span>
         </div>
         <div className={`text-[13px] font-extrabold ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} tracking-wider`}>
-          <EditableText value={info.agentName || "미래에셋공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
+          <EditableText value={info.agentName || "공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
         </div>
       </div>
       <div className={`${dark ? 'text-white/90' : 'text-gray-700'} font-bold text-[13px] leading-relaxed whitespace-pre-wrap break-keep`}>
-        <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 및 다수의 버스 노선 접근이 용이하여 출퇴근 및 대중교통 편리성 확보"} onChange={(v) => hc('agentAddress', v)} />
+        <EditableText multiline value={info.agentAddress || ""} onChange={(v) => hc('agentAddress', v)} />
       </div>
     </div>
 
@@ -154,18 +154,18 @@ const PhoneBox = ({ info, hc, dark = false, stacked = false }: { info: PropertyI
       <div className={`flex-1 flex items-center gap-3`}>
         {/* Inquiry Label - Theme colored, slightly smaller than phone */}
         <div className={`text-[18px] ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} font-extrabold whitespace-nowrap shrink-0`}>
-          문의 : <EditableText value={info.agentRepresentative || info.agencyRepresentative || "김정민"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
+          문의 : <EditableText value={info.agentRepresentative || info.agencyRepresentative || "담당자"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
         </div>
         {/* Phone Number */}
         <div className={`text-[28px] font-black ${dark ? 'text-[var(--theme-secondary)]' : 'text-[var(--theme-primary)]'} tracking-tight whitespace-nowrap`}>
-          <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
+          <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(v) => hc('agentMobile', v)} />
         </div>
       </div>
       <div className="flex gap-2 shrink-0">
-        <a href={`tel:${String(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="전화걸기">
+        <a href={`tel:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="전화걸기">
           <PhoneIcon className="w-4 h-4" />
         </a>
-        <a href={`sms:${String(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="문자보내기">
+        <a href={`sms:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className={`w-10 h-10 rounded-full ${dark ? 'bg-[var(--theme-secondary)] text-[var(--theme-dark)]' : 'bg-[var(--theme-primary)] text-white'} flex items-center justify-center shadow-md hover:opacity-80 transition-opacity hover:-translate-y-0.5 active:translate-y-0`} title="문자보내기">
           <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" />
         </a>
       </div>
@@ -279,15 +279,15 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                     <div className="text-gray-700 font-bold text-xs leading-relaxed space-y-1.5 mt-1">
                       <p className="flex justify-between">
                         <span className="text-gray-400">상호</span> 
-                        <span><EditableText value={info.agentName || "미래에셋공인중개사사무소"} onChange={(v) => hc('agentName', v)} className="inline-block text-right" /></span>
+                        <span><EditableText value={info.agentName || "공인중개사사무소"} onChange={(v) => hc('agentName', v)} className="inline-block text-right" /></span>
                       </p>
                       <p className="flex justify-between">
                         <span className="text-gray-400">대표</span> 
-                        <span><EditableText value={info.agencyRepresentative || info.agentRepresentative || "김민혁"} onChange={(v) => hc('agencyRepresentative', v)} className="inline-block text-right" /></span>
+                        <span><EditableText value={info.agencyRepresentative || info.agentRepresentative || "대표자"} onChange={(v) => hc('agencyRepresentative', v)} className="inline-block text-right" /></span>
                       </p>
                       <p className="flex justify-between">
                         <span className="text-gray-400">등록번호</span> 
-                        <span><EditableText value={info.agentRegistrationNo || "제 11680-2024-00123 호"} onChange={(v) => hc('agentRegistrationNo', v)} className="inline-block text-right" /></span>
+                        <span><EditableText value={info.agentRegistrationNumber || info.agentRegistrationNo || ""} onChange={(v) => hc('agentRegistrationNo', v)} className="inline-block text-right" /></span>
                       </p>
                     </div>
                   </div>
@@ -344,18 +344,18 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                     <div className="w-full aspect-[9/5] border border-gray-300 rounded-2xl p-8 shadow-sm flex flex-col justify-center items-start text-left">
                       {/* Inquiry Label */}
                       <div className="text-[22px] text-[var(--theme-primary)] font-black tracking-tight mb-1 whitespace-nowrap">
-                        문의  <EditableText value={info.agentRepresentative || info.agencyRepresentative || "김정민"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
+                        문의  <EditableText value={info.agentRepresentative || info.agencyRepresentative || "담당자"} onChange={(v) => hc('agentRepresentative', v)} className="inline-block" />
                       </div>
                       {/* Phone Number */}
                       <div className="text-[32px] font-black text-[var(--theme-primary)] tracking-tight mb-5">
-                        <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
+                        <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(v) => hc('agentMobile', v)} />
                       </div>
                       {/* Phone / SMS Buttons */}
                       <div className="flex gap-3">
-                        <a href={`tel:${String(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--theme-primary)] text-white font-bold text-sm shadow-md hover:opacity-80 transition-opacity" title="전화걸기">
+                        <a href={`tel:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--theme-primary)] text-white font-bold text-sm shadow-md hover:opacity-80 transition-opacity" title="전화걸기">
                           <PhoneIcon className="w-4 h-4" /> 전화하기
                         </a>
-                        <a href={`sms:${String(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="flex items-center gap-2 px-5 py-2.5 rounded-full border-2 border-[var(--theme-primary)] text-[var(--theme-primary)] font-bold text-sm hover:bg-[var(--theme-primary)] hover:text-white transition-colors" title="문자보내기">
+                        <a href={`sms:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="flex items-center gap-2 px-5 py-2.5 rounded-full border-2 border-[var(--theme-primary)] text-[var(--theme-primary)] font-bold text-sm hover:bg-[var(--theme-primary)] hover:text-white transition-colors" title="문자보내기">
                           <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" /> 문자보내기
                         </a>
                       </div>
@@ -375,11 +375,11 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                           </span>
                         </div>
                         <span className="text-[12px] font-extrabold text-[var(--theme-primary)] tracking-wider">
-                          <EditableText value={info.agentName || "미래에셋공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
+                          <EditableText value={info.agentName || "공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
                         </span>
                       </div>
                       <div className="text-gray-700 font-bold text-[12px] leading-relaxed whitespace-pre-wrap break-keep">
-                        <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 도보 5분 거리"} onChange={(v) => hc('agentAddress', v)} />
+                        <EditableText multiline value={info.agentAddress || ""} onChange={(v) => hc('agentAddress', v)} />
                       </div>
                     </div>
                   </div>
@@ -412,18 +412,18 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                   <div>
                     <span className="text-xs text-[var(--theme-secondary)] font-bold tracking-widest block mb-3">AGENT</span>
                     <div className="flex items-center gap-3">
-                      <span className="text-4xl font-extrabold text-white tracking-tight"><EditableText value={info.agentRepresentative || "김민혁"} onChange={(v) => hc('agentRepresentative', v)} /></span>
-                      <a href={`tel:${String(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-secondary)] text-[var(--theme-dark)] flex items-center justify-center shadow-md hover:opacity-80 transition-opacity" title="전화걸기">
+                      <span className="text-4xl font-extrabold text-white tracking-tight"><EditableText value={info.agentRepresentative || info.agencyRepresentative || "담당자"} onChange={(v) => hc('agentRepresentative', v)} /></span>
+                      <a href={`tel:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-secondary)] text-[var(--theme-dark)] flex items-center justify-center shadow-md hover:opacity-80 transition-opacity" title="전화걸기">
                         <PhoneIcon className="w-4 h-4" />
                       </a>
-                      <a href={`sms:${String(info.agentMobile || "010-5554-4444").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-secondary)] text-[var(--theme-dark)] flex items-center justify-center shadow-md hover:opacity-80 transition-opacity" title="문자보내기">
+                      <a href={`sms:${String(info.agentMobile || info.agentPhone || "").replace(/[^0-9]/g, '')}`} onClick={(e) => e.preventDefault()} className="w-10 h-10 rounded-full bg-[var(--theme-secondary)] text-[var(--theme-dark)] flex items-center justify-center shadow-md hover:opacity-80 transition-opacity" title="문자보내기">
                         <ChatBubbleOvalLeftEllipsisIcon className="w-4 h-4" />
                       </a>
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="text-[30px] font-black text-[var(--theme-secondary)] tracking-tight">
-                      <EditableText value={info.agentMobile || "010-5554-4444"} onChange={(v) => hc('agentMobile', v)} />
+                      <EditableText value={info.agentMobile || info.agentPhone || ""} onChange={(v) => hc('agentMobile', v)} />
                     </div>
                   </div>
                 </div>
@@ -443,12 +443,12 @@ const Page7Ending: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme,
                           </span>
                         </div>
                         <div className="font-bold text-[10px] leading-relaxed whitespace-pre-wrap break-keep text-white/80">
-                          <EditableText multiline value={info.agentAddress || "강남구 내 주요 전철역 도보 5분 거리"} onChange={(v) => hc('agentAddress', v)} />
+                          <EditableText multiline value={info.agentAddress || ""} onChange={(v) => hc('agentAddress', v)} />
                         </div>
                       </div>
                       
                       <div className="shrink-0 text-2xl font-black text-white tracking-tight text-right ml-4 mr-2">
-                        <EditableText value={info.agentName || "미래에셋공인"} onChange={(v) => hc('agentName', v)} />
+                        <EditableText value={info.agentName || "공인중개사사무소"} onChange={(v) => hc('agentName', v)} />
                       </div>
                     </div>
                     

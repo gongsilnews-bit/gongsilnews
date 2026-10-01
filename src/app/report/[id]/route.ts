@@ -95,13 +95,13 @@ export async function GET(
       const info = reportStateObj.info || {};
       const colorTheme = reportStateObj.colorTheme || { primary: '#1e3a8a', secondary: '#ff9800', dark: '#1e293b' };
       const primaryColor = colorTheme.primary || '#1e3a8a';
-      const agentMobile = info.agentMobile || info.agentPhone || "010-8831-9450";
+      const agentMobile = info.agentMobile || info.agentPhone || "";
       const agentMobileClean = agentMobile.replace(/[^0-9]/g, '');
-      const agentPhone = info.agentPhone || info.agentMobile || "02-1234-5678";
-      const agentName = info.agentName || "미래에셋공인 중개사 사무소";
-      const agentRep = info.agencyRepresentative || info.agentRepresentative || "김상태";
-      const agentReg = info.agentRegistrationNumber || info.agentRegistrationNo || "제11680-2015-00123호";
-      const agentAddress = info.agentAddress || "서울 강남구 논현동 123-45";
+      const agentPhone = info.agentPhone || info.agentMobile || "";
+      const agentName = info.agentName || "공인중개사사무소";
+      const agentRep = info.agencyRepresentative || info.agentRepresentative || "대표자";
+      const agentReg = info.agentRegistrationNumber || info.agentRegistrationNo || "";
+      const agentAddress = info.agentAddress || "";
 
       const scriptCode = `
 <script>

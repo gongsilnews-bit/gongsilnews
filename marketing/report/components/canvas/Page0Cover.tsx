@@ -67,7 +67,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <div className="flex items-center gap-2">
                       <Building2 className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText 
-                        value={`${info.agentName || "미래에셋공인 중개사 사무소"} | 대표 ${info.agencyRepresentative || info.agentRepresentative || "김상태"}`} 
+                        value={`${info.agentName || "공인중개사사무소"} | 대표 ${info.agencyRepresentative || info.agentRepresentative || "대표자"}`} 
                         onChange={(v) => {
                           const parts = v.split('|');
                           hc('agentName', parts[0].trim());
@@ -81,7 +81,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <div className="flex items-center gap-2">
                       <FileText className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText 
-                        value={`등록번호 : ${info.agentRegistrationNumber || "제11680-2015-00123호"}`} 
+                        value={`등록번호 : ${info.agentRegistrationNumber || ""}`.trim()} 
                         onChange={(v) => {
                           const val = v.replace(/^등록번호\s*:\s*/, '');
                           hc('agentRegistrationNumber', val.trim());
@@ -91,11 +91,11 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
-                      <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
+                      <EditableText value={info.agentPhone || info.agentMobile || ""} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
-                      <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
+                      <EditableText value={info.agentAddress || ""} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
                     </div>
                   </div>
                 </div>
@@ -140,7 +140,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                       <div className="flex items-center gap-2">
                         <Building2 className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                         <EditableText 
-                          value={`${info.agentName || "미래에셋공인 중개사 사무소"} | 대표 ${info.agencyRepresentative || info.agentRepresentative || "김상태"}`} 
+                          value={`${info.agentName || "공인중개사사무소"} | 대표 ${info.agencyRepresentative || info.agentRepresentative || "대표자"}`} 
                           onChange={(v) => {
                             const parts = v.split('|');
                             hc('agentName', parts[0].trim());
@@ -154,7 +154,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                       <div className="flex items-center gap-2">
                         <FileText className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                         <EditableText 
-                          value={`등록번호 : ${info.agentRegistrationNumber || "제11680-2015-00123호"}`} 
+                          value={`등록번호 : ${info.agentRegistrationNumber || ""}`.trim()} 
                           onChange={(v) => {
                             const val = v.replace(/^등록번호\s*:\s*/, '');
                             hc('agentRegistrationNumber', val.trim());
@@ -164,11 +164,11 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
-                        <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
+                        <EditableText value={info.agentPhone || info.agentMobile || ""} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
-                        <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
+                        <EditableText value={info.agentAddress || ""} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
                       </div>
                     </div>
                   </div>
@@ -227,7 +227,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <div className="flex items-center gap-2">
                       <Building2 className="w-[18px] h-[18px] text-[var(--theme-secondary)]" strokeWidth={2.5} />
                       <EditableText 
-                        value={`${info.agentName || "미래에셋공인 중개사 사무소"} | 대표 ${info.agencyRepresentative || info.agentRepresentative || "김상태"}`} 
+                        value={`${info.agentName || "공인중개사사무소"} | 대표 ${info.agencyRepresentative || info.agentRepresentative || "대표자"}`} 
                         onChange={(v) => {
                           const parts = v.split('|');
                           hc('agentName', parts[0].trim());
@@ -241,7 +241,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <div className="flex items-center gap-2">
                       <FileText className="w-[18px] h-[18px] text-[var(--theme-secondary)]" strokeWidth={2.5} />
                       <EditableText 
-                        value={`등록번호 : ${info.agentRegistrationNumber || "제11680-2015-00123호"}`} 
+                        value={`등록번호 : ${info.agentRegistrationNumber || ""}`.trim()} 
                         onChange={(v) => {
                           const val = v.replace(/^등록번호\s*:\s*/, '');
                           hc('agentRegistrationNumber', val.trim());
@@ -251,11 +251,11 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-[18px] h-[18px] text-[var(--theme-secondary)]" strokeWidth={2.5} />
-                      <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
+                      <EditableText value={info.agentPhone || info.agentMobile || ""} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-[18px] h-[18px] text-[var(--theme-secondary)]" strokeWidth={2.5} />
-                      <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
+                      <EditableText value={info.agentAddress || ""} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
                     </div>
                   </div>
                 </div>
@@ -310,7 +310,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <div className="flex items-center gap-2">
                       <Building2 className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText 
-                        value={`${info.agentName || "미래에셋공인 중개사 사무소"} | 대표 ${info.agencyRepresentative || info.agentRepresentative || "김상태"}`} 
+                        value={`${info.agentName || "공인중개사사무소"} | 대표 ${info.agencyRepresentative || info.agentRepresentative || "대표자"}`} 
                         onChange={(v) => {
                           const parts = v.split('|');
                           hc('agentName', parts[0].trim());
@@ -324,7 +324,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <div className="flex items-center gap-2">
                       <FileText className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText 
-                        value={`등록번호 : ${info.agentRegistrationNumber || "제11680-2015-00123호"}`} 
+                        value={`등록번호 : ${info.agentRegistrationNumber || ""}`.trim()} 
                         onChange={(v) => {
                           const val = v.replace(/^등록번호\s*:\s*/, '');
                           hc('agentRegistrationNumber', val.trim());
@@ -334,11 +334,11 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
-                      <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
+                      <EditableText value={info.agentPhone || info.agentMobile || ""} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
-                      <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
+                      <EditableText value={info.agentAddress || ""} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
                     </div>
                   </div>
                 </div>
@@ -380,7 +380,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <div className="flex items-center gap-2">
                       <Building2 className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText 
-                        value={`${info.agentName || "미래에셋공인 중개사 사무소"} | 대표 ${info.agencyRepresentative || info.agentRepresentative || "김상태"}`} 
+                        value={`${info.agentName || "공인중개사사무소"} | 대표 ${info.agencyRepresentative || info.agentRepresentative || "대표자"}`} 
                         onChange={(v) => {
                           const parts = v.split('|');
                           hc('agentName', parts[0].trim());
@@ -394,7 +394,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <div className="flex items-center gap-2">
                       <FileText className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
                       <EditableText 
-                        value={`등록번호 : ${info.agentRegistrationNumber || "제11680-2015-00123호"}`} 
+                        value={`등록번호 : ${info.agentRegistrationNumber || ""}`.trim()} 
                         onChange={(v) => {
                           const val = v.replace(/^등록번호\s*:\s*/, '');
                           hc('agentRegistrationNumber', val.trim());
@@ -404,11 +404,11 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
-                      <EditableText value={info.agentPhone || "02-1234-5678"} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
+                      <EditableText value={info.agentPhone || info.agentMobile || ""} onChange={(v) => hc('agentPhone', v)} className="!w-auto" />
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-[18px] h-[18px] text-[var(--theme-primary)]" strokeWidth={2.5} />
-                      <EditableText value={info.agentAddress || "서울 강남구 논현동 123-45"} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
+                      <EditableText value={info.agentAddress || ""} onChange={(v) => hc('agentAddress', v)} className="!w-auto" />
                     </div>
                   </div>
                 </div>

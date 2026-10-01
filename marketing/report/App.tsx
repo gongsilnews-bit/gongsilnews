@@ -46,14 +46,14 @@ const INITIAL_INFO: PropertyInfo = {
     { label: "승강기", value: "1대 완비" },
     { label: "준공연도", value: "2002년 (최근 층별 리모델링 완료)" },
   ],
-  agentName: "미래에셋공인 중개사 사무소",
+  agentName: "",
   agentLabel: "REALTY AGENCY",
   qrLabel: "QR REPORT",
-  agentRegistrationNumber: "제11680-2015-00123호",
-  agentRepresentative: "김민혁",
-  agentPhone: "02-1234-5678",
-  agentMobile: "010-5554-4444",
-  agentAddress: "서울 강남구 논현동 123-45",
+  agentRegistrationNumber: "",
+  agentRepresentative: "",
+  agentPhone: "",
+  agentMobile: "",
+  agentAddress: "",
   investmentSummary: {
     box1Title: "CONNECTIVITY", box1Text: "전철역\n도보 4분",
     box2Title: "ASSET QUALITY", box2Text: "내외관\n리모델링",
@@ -808,22 +808,28 @@ function App() {
         else if (supArea) areaDisplay = `공급 ${fmtM2(supArea)}`;
         else if (excArea) areaDisplay = `전용 ${fmtM2(excArea)}`;
 
-        // 중개사/명함 데이터 매핑
+        // 중개사/명함 데이터 매핑 (로그인한 중개사회원 본인 우선 연동, 없으면 매물 등록자)
+        const currentMember = json.currentMember;
+        const currentAgency = Array.isArray(currentMember?.agencies) ? currentMember.agencies[0] : currentMember?.agencies;
         const owner = v.members || {};
-        const agency = Array.isArray(owner.agencies) ? owner.agencies[0] : owner.agencies;
-        
-        const agentName = agency?.name || owner.company_name || owner.name || "공실뉴스 중개소";
-        const agentRepresentative = owner.name || v.client_name || "담당자명";
-        const agencyRepresentative = agency?.ceo_name || owner.name || "대표자명";
-        const agentPhone = agency?.phone || owner.phone || owner.tel_num || v.client_phone || "";
-        const agentMobile = owner.cellphone || owner.phone || owner.cell_num || agency?.cell || v.client_phone || "";
-        const agentRegistrationNumber = agency?.reg_num || owner.company_reg_no || INITIAL_INFO.agentRegistrationNumber;
-        
+        const ownerAgency = Array.isArray(owner.agencies) ? owner.agencies[0] : owner.agencies;
+
+        // 로그인한 회원이 중개사이면 본인 중개소 정보를 최우선 사용
+        const agency = currentAgency?.name ? currentAgency : ownerAgency;
+        const activeMember = (currentAgency?.name ? currentMember : (owner.name ? owner : currentMember)) || {};
+
+        const agentName = agency?.name || activeMember?.company_name || activeMember?.name || "";
+        const agentRepresentative = activeMember?.name || agency?.ceo_name || v.client_name || "";
+        const agencyRepresentative = agency?.ceo_name || activeMember?.name || "";
+        const agentPhone = agency?.phone || activeMember?.phone || activeMember?.tel_num || v.client_phone || "";
+        const agentMobile = activeMember?.cellphone || activeMember?.phone || activeMember?.cell_num || agency?.cell || v.client_phone || "";
+        const agentRegistrationNumber = agency?.reg_num || activeMember?.company_reg_no || "";
+
         const additionalInfo: string[] = [];
-        if (agency?.reg_num || owner.company_reg_no) {
-          additionalInfo.push(`등록번호: ${agency?.reg_num || owner.company_reg_no}`);
+        if (agentRegistrationNumber) {
+          additionalInfo.push(`등록번호: ${agentRegistrationNumber}`);
         }
-        const fullAddress = [agency?.address || owner.address, agency?.address_detail || owner.address_detail].filter(Boolean).join(" ");
+        const fullAddress = [agency?.address || activeMember?.address, agency?.address_detail || activeMember?.address_detail].filter(Boolean).join(" ");
         if (fullAddress) {
           additionalInfo.push(`소재지: ${fullAddress}`);
         }
@@ -910,7 +916,7 @@ function App() {
           agentPhone,
           agentMobile,
           agentRegistrationNumber,
-          agentAddress: fullAddress || INITIAL_INFO.agentAddress,
+          agentAddress: fullAddress || "",
           agentMapUrl: fullAddress ? `https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}` : "",
           consultationUrl: "",
           agentAdditionalInfo: additionalInfo,
@@ -1080,6 +1086,31 @@ function App() {
 
     if (vacancyId) {
       loadVacancyDataDirectly(vacancyId);
+    } else {
+      // 매물 ID 없이 열었을 때도 로그인한 중개사 본인 정보를 자동으로 채움
+      fetch('/api/vacancy/detail')
+        .then(res => res.json())
+        .then(json => {
+          if (json.currentMember) {
+            const m = json.currentMember;
+            const ag = Array.isArray(m.agencies) ? m.agencies[0] : m.agencies;
+            const fullAddr = [ag?.address || m.address, ag?.address_detail || m.address_detail].filter(Boolean).join(" ");
+            setState(prev => ({
+              ...prev,
+              info: {
+                ...prev.info,
+                agentName: ag?.name || m.company_name || m.name || "",
+                agentRepresentative: m.name || ag?.ceo_name || "",
+                agencyRepresentative: ag?.ceo_name || m.name || "",
+                agentPhone: ag?.phone || m.phone || "",
+                agentMobile: m.cellphone || m.phone || ag?.cell || "",
+                agentRegistrationNumber: ag?.reg_num || m.company_reg_no || "",
+                agentAddress: fullAddr || "",
+              }
+            }));
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 

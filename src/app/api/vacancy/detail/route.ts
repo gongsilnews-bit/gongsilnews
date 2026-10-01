@@ -7,10 +7,6 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
 
-  if (!id) {
-    return NextResponse.json({ success: false, error: "Vacancy ID is required." }, { status: 400 });
-  }
-
   // 1. Authenticate user
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -19,10 +15,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: "unauthorized" }, { status: 401 });
   }
 
-  // 2. Fetch user's member profile to check role
+  // 2. Fetch user's member profile and agency to check role & supply agency info
   const { data: member } = await supabase
     .from("members")
-    .select("role")
+    .select("*, agencies(*)")
     .eq("id", user.id)
     .single();
 
@@ -35,6 +31,10 @@ export async function GET(request: NextRequest) {
 
   if (!isAuthorized) {
     return NextResponse.json({ success: false, error: "forbidden" }, { status: 403 });
+  }
+
+  if (!id) {
+    return NextResponse.json({ success: true, currentMember: member });
   }
 
   const res = await getVacancyDetail(id);
@@ -58,5 +58,5 @@ export async function GET(request: NextRequest) {
     if (site?.subdomain && site.is_active !== false) qrUrl = `https://${site.subdomain}.gongsilnews.com/gongsil/detail/${id}`;
   }
 
-  return NextResponse.json({ ...res, qrUrl });
+  return NextResponse.json({ ...res, qrUrl, currentMember: member });
 }
