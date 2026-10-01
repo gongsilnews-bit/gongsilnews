@@ -338,6 +338,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
   const priceText = `${formatPrice(priceMainOnly)}${isRent && info.priceSub ? ` / ${info.priceSub}` : ''}`;
   const tradeWord = info.transactionType === '단기임대' ? '단기' : info.transactionType;
   const showPhoto = info.showPhoto !== false;
+  /** 입력란 [표시] 체크를 끈 항목은 홍보지에서 뺀다 */
+  const vis = (key: string) => !(info.hiddenFields || []).includes(key);
   const phone = info.agentMobile || info.agentPhone || '';
 
   const renderStreet = () => {
@@ -350,20 +352,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
         {info.badge && (
           <span style={{ background: '#e11d2a', color: '#fff', fontSize: 28, fontWeight: 900, padding: '6px 18px', borderRadius: 6, letterSpacing: 1 }}>{info.badge}</span>
         )}
-        <span {...editable('transactionType')} className={editClass}
-          style={{ border: `3px solid ${primaryColor}`, color: primaryColor, fontSize: 28, fontWeight: 900, padding: '3px 16px', borderRadius: 6 }}>{tradeWord}</span>
+        {vis('transactionType') && <span {...editable('transactionType')} className={editClass}
+          style={{ border: `3px solid ${primaryColor}`, color: primaryColor, fontSize: 28, fontWeight: 900, padding: '3px 16px', borderRadius: 6 }}>{tradeWord}</span>}
       </div>
     );
     const name = (
       <h1 {...editable('address')} {...fitAttrs(isLand ? 80 : 90, 40)} className={editClass}
         style={{ ...oneLine, fontWeight: 900, color: '#111', lineHeight: 1.12, letterSpacing: -2 }}>{info.address}</h1>
     );
-    const sizeLine = (
-      <div style={{ ...oneLine, fontSize: isLand ? 34 : 40, fontWeight: 800, color: '#374151', marginTop: 6 }}>
-        <span {...editable('pyeong')} className={editClass}>{pyeong}</span>
-        {clean(info.floor) !== '-' && <span style={{ color: '#9ca3af', fontWeight: 600 }}>{pyeong ? '  ·  ' : ''}{info.floor}</span>}
-      </div>
-    );
+    // 크기 줄 — 물건 종류별로 처음 채운 값 (예전 저장본은 평형·층으로)
+    const sizeText = info.sizeLine ?? [pyeong, clean(info.floor) !== '-' ? info.floor : ''].filter(Boolean).join(' · ');
+    const sizeLine = vis('sizeLine') && sizeText ? (
+      <div {...editable('sizeLine')} className={editClass} style={{ ...oneLine, fontSize: isLand ? 34 : 40, fontWeight: 800, color: '#374151', marginTop: 6 }}>{sizeText}</div>
+    ) : null;
     const price = (
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, marginTop: isLand ? 14 : 18, flexShrink: 0 }}>
         <span style={{ fontSize: isLand ? 30 : 34, fontWeight: 900, color: primaryColor, flexShrink: 0 }}>{priceLabel}</span>
@@ -377,24 +378,26 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
           style={{ ...oneLine, flex: 1, fontWeight: 900, color: primaryColor, lineHeight: 1, letterSpacing: -5 }}>{priceText}</span>
       </div>
     );
-    const rows: { l: string; key: keyof PropertyInfo }[] = [
-      { l: '면적', key: 'area' }, { l: '방향', key: 'direction' },
-      { l: '방/욕실', key: 'roomCount' }, { l: '주차', key: 'parking' },
-      { l: '관리비', key: 'managementFee' }, { l: '입주', key: 'moveInDate' },
-    ];
+    // 정보 표 — 사장님이 입력란에서 지우고·고치고·추가한 그대로. 값이 빈 줄은 싣지 않는다.
+    const tableRows = (info.rows ?? [
+      { id: 'area', label: '면적', value: info.area }, { id: 'dir', label: '방향', value: info.direction },
+      { id: 'room', label: '방/욕실', value: info.roomCount }, { id: 'park', label: '주차', value: info.parking },
+      { id: 'fee', label: '관리비', value: info.managementFee }, { id: 'move', label: '입주', value: info.moveInDate },
+      { id: 'opt', label: '옵션', value: info.options },
+    ]).filter((r) => r.label.trim() && clean(r.value) !== '-');
     const big = !showPhoto;
     const infoRows = (
-      <div className="grid grid-cols-2" style={{ columnGap: 28 }}>
-        {rows.map((r) => (
-          <div key={r.key} className={r.key === 'area' ? 'col-span-2' : ''}
+      <div className="grid grid-cols-2" style={{ columnGap: 28, gridAutoFlow: 'row dense' }}>
+        {tableRows.map((r) => (
+          <div key={r.id} className={r.value.length > 13 ? 'col-span-2' : ''}
             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, borderBottom: '1px solid #e5e7eb', padding: big ? '12px 0' : '9px 0' }}>
-            <span style={{ fontSize: big ? 22 : 19, fontWeight: 700, color: '#6b7280', flexShrink: 0 }}>{r.l}</span>
-            <span {...editable(r.key)} className={editClass} style={{ fontSize: big ? 26 : 22, fontWeight: 800, color: '#111', textAlign: 'right', wordBreak: 'keep-all' }}>{clean(info[r.key])}</span>
+            <span style={{ fontSize: big ? 22 : 19, fontWeight: 700, color: '#6b7280', flexShrink: 0 }}>{r.label}</span>
+            <span style={{ fontSize: big ? 26 : 22, fontWeight: 800, color: '#111', textAlign: 'right', wordBreak: 'keep-all' }}>{r.value}</span>
           </div>
         ))}
       </div>
     );
-    const notice = info.noticeContent && info.noticeContent.trim() !== '' ? (
+    const notice = vis('noticeContent') && info.noticeContent && info.noticeContent.trim() !== '' ? (
       <div ref={noticeBoxRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', marginTop: 16, padding: '14px 18px', background: '#f4f6f8', borderLeft: `5px solid ${primaryColor}` }}>
         <p ref={noticeTextRef} {...editable('noticeContent')} className={`text-gray-900 font-bold leading-relaxed whitespace-pre-wrap ${editClass}`}>{info.noticeContent}</p>
       </div>
@@ -411,7 +414,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
             <p {...editable('agentName')} {...fitAttrs(30, 18)} className={editClass} style={{ ...oneLine, width: 'auto', maxWidth: '100%', fontWeight: 900, lineHeight: 1.2 }}>{info.agentName}</p>
           </div>
           <p style={{ ...oneLine, fontSize: 16, fontWeight: 600, opacity: .85, marginTop: 2, textOverflow: 'ellipsis' }}>
-            {[info.agentRepresentative, ...(info.agentAdditionalInfo || []).filter((l) => l.startsWith('등록번호'))].filter(Boolean).join('  ·  ')}
+            {vis('agentRepresentative') ? [info.agentRepresentative, ...(info.agentAdditionalInfo || []).filter((l) => l.startsWith('등록번호'))].filter(Boolean).join('  ·  ') : ''}
           </p>
           <div className="flex items-center" style={{ gap: 12, marginTop: 8 }}>
             <PhoneIcon style={{ width: 46, height: 46, flexShrink: 0 }} />
@@ -419,7 +422,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
               style={{ ...oneLine, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1.05 }}>{phone}</span>
           </div>
         </div>
-        {qrDataUrl && (
+        {qrDataUrl && vis('qr') && (
           <div style={{ flexShrink: 0, textAlign: 'center' }}>
             <a href={qrLink || undefined} target="_blank" rel="noopener noreferrer" title="매물 상세보기" style={{ display: 'block', cursor: qrLink ? 'pointer' : 'default' }}>
               <img src={qrDataUrl} alt="매물 QR" style={{ width: isLand ? 116 : 128, height: isLand ? 116 : 128, background: '#fff', padding: 6, borderRadius: 8 }} />

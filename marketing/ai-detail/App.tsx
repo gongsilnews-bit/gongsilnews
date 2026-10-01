@@ -7,6 +7,7 @@ import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } f
 import { ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
+import { buildFlyerRows } from './flyerRows';
 import { toCanvas } from 'html-to-image';
 
 export const COLORS: FlyerColor[] = [
@@ -46,6 +47,17 @@ const INITIAL_INFO: PropertyInfo = {
   badge: "급매",
   pyeong: "46평",
   showPhoto: true,
+  sizeLine: "46평 · 25층",
+  flyerGroup: "A",
+  rows: [
+    { id: "s1", label: "면적", value: "공급 152㎡(46평) / 전용 116㎡(35평)" },
+    { id: "s2", label: "방/욕실", value: "4개 / 2개" },
+    { id: "s3", label: "방향", value: "남향" },
+    { id: "s4", label: "관리비", value: "50만원" },
+    { id: "s5", label: "입주", value: "즉시 입주" },
+    { id: "s6", label: "세대수", value: "2,444세대" },
+    { id: "s7", label: "커뮤니티", value: "피트니스 · 수영장 · 스카이라운지" },
+  ],
 
   agentName: "단지내바른공인중개사사무소",
   agentRepresentative: "대표 공인중개사 박미양",
@@ -289,6 +301,8 @@ function App() {
           additionalInfo.push(`소재지: ${fullAddress}`);
         }
 
+        // 물건 종류(아파트·상가·토지…)에 맞춰 크기 줄·정보 표를 처음 채운다
+        const auto = buildFlyerRows(v);
         const mappedInfo: PropertyInfo = {
           promotionText: priceText,
           address: v.building_name || [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") || "공실 매물 정보",
@@ -306,7 +320,10 @@ function App() {
           options: Array.isArray(v.options) ? v.options.join(", ") : (v.options || ""),
           badge: "",
           pyeong: supArea ? `${Math.round(supArea / 3.3058)}평` : excArea ? `${Math.round(excArea / 3.3058)}평` : "",
-          showPhoto: true,
+          showPhoto: auto.showPhoto,
+          sizeLine: auto.sizeLine,
+          rows: auto.rows,
+          flyerGroup: auto.group,
           
           agentName,
           agentRepresentative,
@@ -360,6 +377,8 @@ function App() {
           loadedState.info.sections = [];
           // 가격은 늘 공실관리의 최신 값으로 — 저장본의 옛 가격·망가진 가격이 유리창에 붙지 않게 (2026-10-01)
           loadedState.info = { ...loadedState.info, transactionType: mappedInfo.transactionType, priceMain: mappedInfo.priceMain, priceSub: mappedInfo.priceSub, managementFee: mappedInfo.managementFee };
+          // 정보 표가 없던 예전 저장본은 물건 종류에 맞춰 한 번 채운다 (있으면 사장님이 고친 그대로)
+          if (!loadedState.info.rows) loadedState.info = { ...loadedState.info, rows: auto.rows, sizeLine: auto.sizeLine, flyerGroup: auto.group };
           if (!loadedState.mainImage && photos.length > 0) loadedState.mainImage = getPhotoUrl(0);
           setState(loadedState);
           setIsLoadedFromStorage(true);
@@ -380,6 +399,8 @@ function App() {
             loadedState.info.sections = [];
             // 가격은 늘 공실관리의 최신 값으로 — 저장본의 옛 가격·망가진 가격이 유리창에 붙지 않게 (2026-10-01)
             loadedState.info = { ...loadedState.info, transactionType: mappedInfo.transactionType, priceMain: mappedInfo.priceMain, priceSub: mappedInfo.priceSub, managementFee: mappedInfo.managementFee };
+            // 정보 표가 없던 예전 저장본은 물건 종류에 맞춰 한 번 채운다 (있으면 사장님이 고친 그대로)
+            if (!loadedState.info.rows) loadedState.info = { ...loadedState.info, rows: auto.rows, sizeLine: auto.sizeLine, flyerGroup: auto.group };
             if (!loadedState.mainImage && photos.length > 0) loadedState.mainImage = getPhotoUrl(0);
             setState(loadedState);
             setIsLoadedFromStorage(true);

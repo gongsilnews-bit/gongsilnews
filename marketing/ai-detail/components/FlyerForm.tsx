@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { PropertyInfo, TransactionType, FlyerColor, FlyerLayout } from '../types';
+import { PropertyInfo, TransactionType, FlyerColor, FlyerLayout, FlyerRow } from '../types';
+import { GROUP_NAME, FlyerGroup } from '../flyerRows';
 import { PhotoIcon, DocumentTextIcon, PlusIcon, TrashIcon, SwatchIcon, RectangleGroupIcon } from '@heroicons/react/24/outline';
 
 interface FlyerFormProps {
@@ -81,6 +82,24 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
   };
 
   const primaryColor = currentColor.primary;
+
+  // 홍보지에서 뺄 항목 — 체크를 끄면 hiddenFields 에 들어간다
+  const hidden = info.hiddenFields || [];
+  const shown = (key: string) => !hidden.includes(key);
+  const toggle = (key: string, show: boolean) =>
+    setInfo({ ...info, hiddenFields: show ? hidden.filter((k) => k !== key) : [...hidden.filter((k) => k !== key), key] });
+
+  // 정보 표 — 지우기·고치기·추가·순서 바꾸기
+  const rows: FlyerRow[] = info.rows ?? [];
+  const setRows = (next: FlyerRow[]) => setInfo({ ...info, rows: next });
+  const updateRow = (i: number, patch: Partial<FlyerRow>) => setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const removeRow = (i: number) => setRows(rows.filter((_, j) => j !== i));
+  const addRow = () => setRows([...rows, { id: `r${Date.now()}`, label: '', value: '' }]);
+  const moveRow = (i: number, d: -1 | 1) => {
+    const next = [...rows];
+    [next[i], next[i + d]] = [next[i + d], next[i]];
+    setRows(next);
+  };
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
@@ -169,311 +188,202 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
 
 
-      <div className="mb-6 border-b pb-4">
-        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+      <div className="mb-5 border-b pb-3">
+        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
           <DocumentTextIcon className="w-6 h-6" style={{ color: primaryColor }} />
-          매물 정보 입력
+          홍보지 내용
         </h2>
+        <p className="text-[11px] text-gray-400 mt-1">항목 오른쪽 [표시]를 끄면 홍보지에서 빠집니다. 물건명·금액·사무소명·전화번호는 항상 나옵니다.</p>
       </div>
 
-      <div className="space-y-8">
-        
-        {/* Basic Info */}
-        <div className="space-y-4">
-            <h3 className="font-bold text-gray-700 flex items-center gap-2 text-sm uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }}></span>
-                기본 정보
-            </h3>
-            {/* ... Inputs ... */}
-            <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">매물 명칭 (타이틀)</label>
-                <input
-                    type="text"
-                    name="address"
-                    value={info.address}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border rounded outline-none focus:ring-1"
-                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                    placeholder="예: 래미안 퍼스티지"
-                />
-            </div>
-            <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">매물 슬로건 (헤드카피)</label>
-                <input
-                    type="text"
-                    name="promotionText"
-                    value={info.promotionText}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border rounded outline-none focus:ring-1"
-                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                    placeholder="예: 매매 45억 또는 월세 2억/500만"
-                />
-            </div>
-             <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">서브 타이틀</label>
-                <input
-                    type="text"
-                    name="subTitle"
-                    value={info.subTitle}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border rounded outline-none focus:ring-1"
-                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                    placeholder="예: 한강 조망 | 입주협의"
-                />
-            </div>
-             {/* Main Photo */}
-            <div className="pt-2">
-                <label className="block text-xs font-semibold text-gray-500 mb-1">메인 매물 사진 (전단지 배경)</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center relative hover:bg-gray-50 transition-colors group overflow-hidden h-32 flex items-center justify-center bg-gray-50">
-                    {uploadedImages.mainImage ? (
-                        <img src={uploadedImages.mainImage} className="absolute inset-0 w-full h-full object-cover" />
-                    ) : null}
-                    {isUploadingImage && isUploadingImage.mainImage ? (
-                        <div className="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center text-white text-xs font-bold gap-2 z-30">
-                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>압축 및 저장 중...</span>
-                        </div>
-                    ) : (
-                        <div className={`flex flex-col items-center relative z-10 ${uploadedImages.mainImage ? 'bg-white/80 p-2 rounded' : ''}`}>
-                            <PhotoIcon className="w-6 h-6 text-gray-400 group-hover:text-gray-600" />
-                            <span className="text-xs text-gray-400 mt-1">클릭하여 업로드</span>
-                        </div>
-                    )}
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleFileChange('mainImage')} 
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" 
-                      disabled={isUploadingImage && !!isUploadingImage.mainImage}
-                    />
-                </div>
-            </div>
-        </div>
+      <div className="space-y-5">
 
-        <hr className="border-gray-200" />
-        
-        {/* Price & Specs Section */}
-        <div className="space-y-4 pt-2">
-             <h3 className="font-bold text-gray-700 flex items-center gap-2 text-sm uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }}></span>
-                거래 금액 및 상세 스펙
-            </h3>
-            
-            {/* Transaction Type Selection */}
-            <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-2">거래 유형</label>
-                <div className="flex gap-2">
-                    {['매매', '전세', '월세', '단기임대'].map((type) => (
-                        <button
-                            key={type}
-                            type="button"
-                            onClick={() => handleTransactionChange(type as TransactionType)}
-                            className={`flex-1 py-2 text-xs font-bold rounded border transition-colors`}
-                            style={{
-                                backgroundColor: info.transactionType === type ? primaryColor : 'white',
-                                color: info.transactionType === type ? 'white' : '#4b5563',
-                                borderColor: info.transactionType === type ? primaryColor : '#e5e7eb'
-                            }}
-                        >
-                            {type}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* 유리창 홍보지 — 딱지 · 평형 · 사진 */}
-            <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-2">딱지 (빨간 표시)</label>
+        {/* ① 물건 */}
+        <Group title="물건" color={primaryColor}>
+            <Field label="물건명">
+                <Input name="address" value={info.address} onChange={handleChange} color={primaryColor} placeholder="예: 래미안 퍼스티지" />
+            </Field>
+            <Field label="딱지 (빨간 표시)">
                 <div className="flex gap-1.5 flex-wrap">
                     {['', '급매', '초급매', '신규', '가격조정'].map((b) => (
-                        <button
-                            key={b || 'none'}
-                            type="button"
-                            onClick={() => setInfo({ ...info, badge: b })}
+                        <button key={b || 'none'} type="button" onClick={() => setInfo({ ...info, badge: b })}
                             className="px-3 py-1.5 text-xs font-bold rounded border transition-colors"
                             style={{
                                 backgroundColor: (info.badge || '') === b ? (b ? '#e11d2a' : '#374151') : 'white',
                                 color: (info.badge || '') === b ? 'white' : '#4b5563',
                                 borderColor: (info.badge || '') === b ? (b ? '#e11d2a' : '#374151') : '#e5e7eb',
-                            }}
-                        >
+                            }}>
                             {b || '없음'}
                         </button>
                     ))}
                 </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 items-end">
-                <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">평형 (크게 표시)</label>
-                    <input
-                        name="pyeong"
-                        value={info.pyeong || ''}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 text-sm border rounded outline-none focus:ring-1"
-                        style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                        placeholder="예: 46평"
-                    />
+            </Field>
+            <Field label="대표 사진" show={info.showPhoto !== false} onShow={(v) => setInfo({ ...info, showPhoto: v })}>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg relative hover:bg-gray-50 transition-colors group overflow-hidden h-28 flex items-center justify-center bg-gray-50">
+                    {uploadedImages.mainImage ? <img src={uploadedImages.mainImage} className="absolute inset-0 w-full h-full object-cover" /> : null}
+                    {isUploadingImage && isUploadingImage.mainImage ? (
+                        <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white text-xs font-bold z-30">압축 및 저장 중...</div>
+                    ) : (
+                        <div className={`flex flex-col items-center relative z-10 ${uploadedImages.mainImage ? 'bg-white/80 px-2 py-1 rounded' : ''}`}>
+                            <PhotoIcon className="w-5 h-5 text-gray-400" />
+                            <span className="text-[11px] text-gray-500 mt-0.5">클릭하여 사진 바꾸기</span>
+                        </div>
+                    )}
+                    <input type="file" accept="image/*" onChange={handleFileChange('mainImage')}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                        disabled={isUploadingImage && !!isUploadingImage.mainImage} />
                 </div>
-                <label className="flex items-center gap-2 text-xs font-bold text-gray-600 cursor-pointer select-none pb-2">
-                    <input
-                        type="checkbox"
-                        checked={info.showPhoto !== false}
-                        onChange={(e) => setInfo({ ...info, showPhoto: e.target.checked })}
-                        className="w-4 h-4"
-                    />
-                    대표 사진 넣기
-                </label>
-            </div>
+            </Field>
+        </Group>
 
-            {/* Price Inputs */}
-            <div className="grid grid-cols-2 gap-3">
-                <div>
-                     <label className="block text-xs font-semibold text-gray-500 mb-1">
-                        {info.transactionType === '매매' ? '매매가' : '보증금'}
-                     </label>
-                     <input
-                        name="priceMain"
-                        value={info.priceMain}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 text-sm border rounded outline-none focus:ring-1"
-                        style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                        placeholder={info.transactionType === '매매' ? '예: 10억 5천' : '예: 5,000만'}
-                     />
+        {/* ② 거래구분 · ③ 금액 */}
+        <Group title="거래구분 · 금액" color={primaryColor}>
+            <Field label="거래구분" show={shown('transactionType')} onShow={(v) => toggle('transactionType', v)}>
+                <div className="flex gap-1.5">
+                    {['매매', '전세', '월세', '단기임대'].map((type) => (
+                        <button key={type} type="button" onClick={() => handleTransactionChange(type as TransactionType)}
+                            className="flex-1 py-2 text-xs font-bold rounded border transition-colors"
+                            style={{
+                                backgroundColor: info.transactionType === type ? primaryColor : 'white',
+                                color: info.transactionType === type ? 'white' : '#4b5563',
+                                borderColor: info.transactionType === type ? primaryColor : '#e5e7eb',
+                            }}>
+                            {type}
+                        </button>
+                    ))}
                 </div>
+            </Field>
+            {/* 금액은 열 때마다 공실관리 값으로 채운다 — 여기서 고쳐도 되돌아가므로 잠가 둔다 */}
+            <div className="grid grid-cols-2 gap-2">
+                <Field label={info.transactionType === '매매' ? '매매가' : '보증금'}>
+                    <Input name="priceMain" value={info.priceMain} readOnly color={primaryColor} />
+                </Field>
                 {(info.transactionType === '월세' || info.transactionType === '단기임대') && (
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-500 mb-1">월세</label>
-                        <input
-                            name="priceSub"
-                            value={info.priceSub}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 text-sm border rounded outline-none focus:ring-1"
-                            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                            placeholder="예: 60만"
-                        />
-                    </div>
+                    <Field label="월세">
+                        <Input name="priceSub" value={info.priceSub} readOnly color={primaryColor} />
+                    </Field>
                 )}
             </div>
-             <div>
-                 <label className="block text-xs font-semibold text-gray-500 mb-1">관리비</label>
-                 <input
-                    name="managementFee"
-                    value={info.managementFee}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm border rounded outline-none focus:ring-1"
-                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                    placeholder="예: 20만원 (인터넷 포함)"
-                 />
-            </div>
+            <p className="text-[11px] text-gray-400 -mt-1">금액은 공실관리의 매물 정보에서 수정해 주세요. (홍보지를 열 때마다 최신 금액으로 채워집니다)</p>
+        </Group>
 
-            {/* Spec Inputs */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-                 {[
-                    { label: '면적 (전용/공급)', name: 'area', placeholder: '84㎡ / 112㎡' },
-                    { label: '층수', name: 'floor', placeholder: '15층 / 20층' },
-                    { label: '방향', name: 'direction', placeholder: '남향 (거실 기준)' },
-                    { label: '방/욕실 수', name: 'roomCount', placeholder: '3개 / 2개' },
-                    { label: '주차', name: 'parking', placeholder: '세대당 1대' },
-                    { label: '입주가능일', name: 'moveInDate', placeholder: '즉시 입주' }
-                 ].map(field => (
-                     <div key={field.name}>
-                         <label className="block text-xs font-semibold text-gray-500 mb-1">{field.label}</label>
-                         <input 
-                            name={field.name} 
-                            value={(info as any)[field.name]} 
-                            onChange={handleChange} 
-                            className="w-full px-2 py-1.5 text-xs border rounded outline-none focus:ring-1" 
-                            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                            placeholder={field.placeholder} 
-                        />
-                     </div>
-                 ))}
-            </div>
-            
+        {/* ④ 크기 · 정보 표 — 물건 종류에 맞춰 처음 채우고, 사장님이 지우고·고치고·추가한다 */}
+        <Group title={`크기 · 정보 표${info.flyerGroup ? ` (${GROUP_NAME[info.flyerGroup as FlyerGroup] || ''})` : ''}`} color={primaryColor}>
+            <Field label="크기 줄 (물건명 아래 크게)" show={shown('sizeLine')} onShow={(v) => toggle('sizeLine', v)}>
+                <Input name="sizeLine" value={info.sizeLine ?? ''} onChange={handleChange} color={primaryColor} placeholder="예: 46평 · 25층 / 전용 30평 · 3층/10층" />
+            </Field>
             <div>
-                 <label className="block text-xs font-semibold text-gray-500 mb-1">옵션 정보</label>
-                 <input
-                    name="options"
-                    value={info.options}
-                    onChange={handleChange}
+                <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-gray-500">정보 표 항목</label>
+                    <span className="text-[11px] text-gray-400">✕ 로 삭제 · 값이 빈 항목은 홍보지에 안 나옴</span>
+                </div>
+                <div className="space-y-1.5">
+                    {rows.map((r, i) => (
+                        <div key={r.id} className="flex gap-1.5 items-center">
+                            <input value={r.label} onChange={(e) => updateRow(i, { label: e.target.value })}
+                                className="w-[88px] shrink-0 px-2 py-1.5 text-xs font-bold border rounded outline-none focus:ring-1 bg-white"
+                                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties} placeholder="항목" />
+                            <input value={r.value} onChange={(e) => updateRow(i, { value: e.target.value })}
+                                className="flex-1 min-w-0 px-2 py-1.5 text-xs border rounded outline-none focus:ring-1 bg-white"
+                                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties} placeholder="내용" />
+                            <button type="button" onClick={() => moveRow(i, -1)} disabled={i === 0} className="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs px-0.5" title="위로">▲</button>
+                            <button type="button" onClick={() => moveRow(i, 1)} disabled={i === rows.length - 1} className="text-gray-400 hover:text-gray-700 disabled:opacity-30 text-xs px-0.5" title="아래로">▼</button>
+                            <button type="button" onClick={() => removeRow(i)} className="text-red-400 hover:text-red-600 font-bold text-sm px-1" title="이 항목 삭제">✕</button>
+                        </div>
+                    ))}
+                </div>
+                <button type="button" onClick={addRow}
+                    className="w-full mt-2 py-1.5 border border-dashed rounded text-xs font-bold flex items-center justify-center gap-1 hover:opacity-70"
+                    style={{ borderColor: primaryColor, color: primaryColor }}>
+                    <PlusIcon className="w-3 h-3" /> 항목 추가 (예: 세대수, 커뮤니티)
+                </button>
+            </div>
+        </Group>
+
+        {/* ⑥ 특징 */}
+        <Group title="특징" color={primaryColor}>
+            <Field label="특징 설명 (소개글)" show={shown('noticeContent')} onShow={(v) => toggle('noticeContent', v)}>
+                <textarea name="noticeContent" value={info.noticeContent} onChange={handleChange} rows={4}
                     className="w-full px-3 py-2 text-xs border rounded outline-none focus:ring-1"
                     style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                    placeholder="예: 시스템에어컨, 냉장고, 세탁기 풀옵션"
-                 />
-            </div>
+                    placeholder="역세권, 올수리, 채광 좋음 등 — 길면 홍보지 칸에 맞게 글자가 줄어듭니다" />
+            </Field>
+        </Group>
 
-            <div>
-                 <label className="block text-xs font-semibold text-gray-500 mb-1">상세 설명 제목 (중간 박스)</label>
-                 <input name="noticeTitle" value={info.noticeTitle} onChange={handleChange} className="w-full px-3 py-2 text-xs border rounded outline-none focus:ring-1" style={{ '--tw-ring-color': primaryColor } as React.CSSProperties} />
+        {/* ⑦ 연락처 */}
+        <Group title="연락처" color={primaryColor} action={
+            <button type="button" onClick={clearAgentInfo} className="text-red-400 hover:text-red-600 p-1 bg-white rounded-full shadow-sm border border-gray-100" title="연락처 비우기"><TrashIcon className="w-3.5 h-3.5" /></button>
+        }>
+            <Field label="사무소명">
+                <Input name="agentName" value={info.agentName} onChange={handleChange} color={primaryColor} placeholder="예: 래미안 공인중개사사무소" />
+            </Field>
+            <Field label="대표 · 등록번호 줄" show={shown('agentRepresentative')} onShow={(v) => toggle('agentRepresentative', v)}>
+                <Input name="agentRepresentative" value={info.agentRepresentative} onChange={handleChange} color={primaryColor} placeholder="예: 대표 공인중개사 홍길동" />
+            </Field>
+            <div className="grid grid-cols-2 gap-2">
+                <Field label="휴대전화 (크게 표시)">
+                    <Input name="agentMobile" value={info.agentMobile || ''} onChange={handleChange} color={primaryColor} placeholder="010-1234-5678" />
+                </Field>
+                <Field label="일반전화 (휴대전화 없을 때)">
+                    <Input name="agentPhone" value={info.agentPhone} onChange={handleChange} color={primaryColor} placeholder="02-123-4567" />
+                </Field>
             </div>
-            <div>
-                 <label className="block text-xs font-semibold text-gray-500 mb-1">상세 설명 내용 (중간 박스, 줄바꿈 가능)</label>
-                 <textarea name="noticeContent" value={info.noticeContent} onChange={handleChange} rows={5} className="w-full px-3 py-2 text-xs border rounded outline-none focus:ring-1" style={{ '--tw-ring-color': primaryColor } as React.CSSProperties} />
-            </div>
-        </div>
-
-        {/* Agent Info Section — 홍보지 아래쪽 연락처 */}
-        <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200 relative transition-all">
-            <div className="flex justify-between items-center mb-2">
-                 <span className="text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider" style={{ backgroundColor: primaryColor }}>
-                     중개사 연락처
-                 </span>
-                 <button type="button" onClick={clearAgentInfo} className="text-red-400 hover:text-red-600 p-1 bg-white rounded-full shadow-sm border border-gray-100"><TrashIcon className="w-4 h-4" /></button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-                 {[
-                    { label: '중개사/사무소명', name: 'agentName', placeholder: '예: 래미안 공인중개사' },
-                    { label: '대표자명', name: 'agentRepresentative', placeholder: '예: 박미양' },
-                    { label: '연락처 (일반전화)', name: 'agentPhone', placeholder: '예: 02-123-4567' },
-                    { label: '휴대전화 (스마트폰)', name: 'agentMobile', placeholder: '예: 010-1234-5678' }
-                 ].map(field => (
-                    <div key={field.name}>
-                        <label className="block text-[10px] font-bold text-gray-400 mb-1">{field.label}</label>
-                        <input 
-                            name={field.name} 
-                            value={(info as any)[field.name]} 
-                            onChange={handleChange} 
-                            className="w-full px-2 py-1.5 text-sm border rounded outline-none focus:ring-1" 
-                            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                            placeholder={field.placeholder} 
-                        />
-                    </div>
-                 ))}
-            </div>
-
-            {info.agentAdditionalInfo && info.agentAdditionalInfo.length > 0 && (
-                <div className="space-y-2 mt-2">
-                     {info.agentAdditionalInfo.map((item, idx) => (
-                        <div key={idx} className="flex gap-2 items-center">
-                            <input 
-                                value={item} 
-                                onChange={(e) => updateAgentInfoItem(idx, e.target.value)}
-                                className="flex-1 px-2 py-1.5 text-sm border rounded outline-none focus:ring-1" 
-                                style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                                placeholder="추가 정보 (예: 등록번호, 주소)" 
-                            />
-                            <button onClick={() => removeAgentInfoItem(idx)} className="text-red-300 hover:text-red-500"><TrashIcon className="w-4 h-4" /></button>
-                        </div>
-                     ))}
+            {(info.agentAdditionalInfo || []).map((item, idx) => (
+                <div key={idx} className="flex gap-2 items-center">
+                    <input value={item} onChange={(e) => updateAgentInfoItem(idx, e.target.value)}
+                        className="flex-1 px-2 py-1.5 text-xs border rounded outline-none focus:ring-1"
+                        style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                        placeholder="추가 정보 (예: 등록번호 11650-2018-00170)" />
+                    <button onClick={() => removeAgentInfoItem(idx)} className="text-red-300 hover:text-red-500"><TrashIcon className="w-4 h-4" /></button>
                 </div>
-            )}
-
-            <button 
-                onClick={addAgentInfoItem}
-                className="w-full py-2 mt-2 border border-dashed rounded text-xs font-bold flex items-center justify-center gap-1 hover:opacity-70 transition-opacity"
-                style={{ borderColor: primaryColor, color: primaryColor }}
-            >
-                <PlusIcon className="w-3 h-3" /> 항목 추가
+            ))}
+            <button onClick={addAgentInfoItem}
+                className="w-full py-1.5 border border-dashed rounded text-xs font-bold flex items-center justify-center gap-1 hover:opacity-70"
+                style={{ borderColor: primaryColor, color: primaryColor }}>
+                <PlusIcon className="w-3 h-3" /> 추가 정보 (등록번호 등)
             </button>
-        </div>
+            <Field label="QR 코드 (매물 상세보기)" show={shown('qr')} onShow={(v) => toggle('qr', v)}>
+                <p className="text-[11px] text-gray-400">휴대폰으로 찍으면 이 매물의 상세 페이지(사진·위치)가 열립니다.</p>
+            </Field>
+        </Group>
 
       </div>
     </div>
   );
 };
+
+/* ── 입력란 조각 ── */
+
+const Group: React.FC<{ title: string; color: string; action?: React.ReactNode; children: React.ReactNode }> = ({ title, color, action, children }) => (
+    <div className="space-y-3 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
+        <div className="flex items-center justify-between">
+            <span className="text-white text-[11px] px-2 py-0.5 rounded font-bold" style={{ backgroundColor: color }}>{title}</span>
+            {action}
+        </div>
+        {children}
+    </div>
+);
+
+/** 칸 하나. show/onShow 를 주면 오른쪽에 [표시] 체크가 붙는다 (끄면 홍보지에서 빠짐) */
+const Field: React.FC<{ label: string; show?: boolean; onShow?: (v: boolean) => void; children: React.ReactNode }> = ({ label, show, onShow, children }) => (
+    <div className={onShow && show === false ? 'opacity-45' : ''}>
+        <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-semibold text-gray-500">{label}</label>
+            {onShow && (
+                <label className="flex items-center gap-1 text-[11px] font-bold text-gray-500 cursor-pointer select-none" title="끄면 홍보지에서 빠집니다">
+                    <input type="checkbox" checked={show !== false} onChange={(e) => onShow(e.target.checked)} className="w-3.5 h-3.5" />
+                    표시
+                </label>
+            )}
+        </div>
+        {children}
+    </div>
+);
+
+const Input: React.FC<{ name: string; value: string; color: string; placeholder?: string; readOnly?: boolean; onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void }> = ({ name, value, color, placeholder, readOnly, onChange }) => (
+    <input name={name} value={value || ''} onChange={onChange} readOnly={readOnly} placeholder={placeholder}
+        className={`w-full px-2.5 py-1.5 text-sm border rounded outline-none focus:ring-1 ${readOnly ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : 'bg-white'}`}
+        style={{ '--tw-ring-color': color } as React.CSSProperties} />
+);
 
 export default FlyerForm;

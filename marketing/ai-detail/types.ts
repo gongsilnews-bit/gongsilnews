@@ -19,6 +19,13 @@ export interface FlyerSection {
   items: SectionItem[];
 }
 
+/** 홍보지 정보 표 한 줄 */
+export interface FlyerRow {
+  id: string;
+  label: string;
+  value: string;
+}
+
 export interface PropertyInfo {
   // Hero Section
   promotionText: string;    // e.g. "햇살 가득한 남향, 올수리 완료"
@@ -44,6 +51,10 @@ export interface PropertyInfo {
   badge?: string;           // 딱지 — '' | 급매 | 초급매 | 신규 | 가격조정
   pyeong?: string;          // 평형 e.g. "46평" (손님은 평으로 본다)
   showPhoto?: boolean;      // 대표 사진 넣기 (아파트는 끄고 숫자만 크게)
+  hiddenFields?: string[];  // 홍보지에서 뺀 항목 (입력란의 [표시] 체크를 끈 것)
+  sizeLine?: string;        // 물건명 아래 크기 줄 e.g. "46평 · 25층" (물건 종류별로 처음 채움)
+  rows?: FlyerRow[];        // 정보 표 — 사장님이 지우고·고치고·추가한다
+  flyerGroup?: string;      // 물건 묶음 A~G (flyerRows.ts)
 
   // Dynamic Sections (Photos & Highlights)
   sections: FlyerSection[];
