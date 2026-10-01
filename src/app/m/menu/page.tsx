@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { getUserActivityCounts } from '@/app/actions/userActivity';
 import { openChannelTalk } from '@/utils/channelTalk';
+import { isAdminRole } from '@/utils/permissionCheck';
 
 export default function MenuPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -138,7 +139,9 @@ export default function MenuPage() {
       { icon: '⚙️', label: '설정', href: '/m/admin/settings' },
     ];
     const user: any[] = [{ icon: '⚙️', label: '정보설정', href: '/m/admin/settings' }];
-    if (isAdmin) return [dashboard, member, vacancy, article, point, ...admin];
+    // AI 비서실은 본사 최고관리자만 (서버 함수와 같은 기준 — 부동산관리자 등은 제외)
+    const agent = isAdminRole(role) ? [{ icon: '🤖', label: 'AI 비서실', href: '/m/admin/agent' }] : [];
+    if (isAdmin) return [...agent, dashboard, member, vacancy, article, point, ...admin];
     if (isRealtor) return [dashboard, vacancy, article, point, ...realtor];
     return [dashboard, vacancy, article, point, ...user];
   };
