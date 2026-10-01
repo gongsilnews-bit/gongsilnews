@@ -1,11 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import FlyerForm from './components/FlyerForm';
-import FlyerCanvas from './components/FlyerCanvas';
+import FlyerCanvas, { FlyerOrientation, PAGE_SIZE } from './components/FlyerCanvas';
 // Removed geminiService import
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
-import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
 
 export const COLORS: FlyerColor[] = [
   { id: 'teal', name: 'Teal (Raemian)', primary: '#00788c', secondary: '#00c6d7', dark: '#003845' },
@@ -41,6 +42,9 @@ const INITIAL_INFO: PropertyInfo = {
   parking: "세대당 2.5대",
   moveInDate: "즉시 입주 가능",
   options: "독일 주방가구, 시스템 에어컨, 고급 원목마루, 빌트인 가전 풀옵션",
+  badge: "급매",
+  pyeong: "46평",
+  showPhoto: true,
 
   agentName: "단지내바른공인중개사사무소",
   agentRepresentative: "대표 공인중개사 박미양",
@@ -62,143 +66,15 @@ const INITIAL_INFO: PropertyInfo = {
 
   noticeTitle: "RAEMIAN PRIDE",
   noticeContent: "◼︎ 세계적인 설계사들이 참여한 랜드마크 디자인\n◼︎ 스카이 브릿지, 수영장, 사우나 등 호텔급 커뮤니티\n◼︎ 신세계백화점, 성모병원, 고속터미널 등 최상의 인프라\n◼︎ 한강공원과 바로 연결되는 쾌적한 주거 환경\n◼︎ 명문 학군과 우수한 교통망을 갖춘 최고의 입지",
-
-  sections: [
-    {
-      id: 'section-features',
-      type: 'grid',
-      intro: "Experience of PRIDE",
-      title: "래미안이 선사하는 가치",
-      items: [
-        { id: 'feat-1', text: '파노라마 한강 뷰', imageKey: 'featureImage1' },
-        { id: 'feat-2', text: '호텔식 조식 서비스', imageKey: 'featureImage2' },
-        { id: 'feat-3', text: '프라이빗 스카이 라운지', imageKey: 'featureImage3' },
-        { id: 'feat-4', text: '최첨단 IoT 시스템', imageKey: 'featureImage4' },
-      ]
-    },
-    {
-      id: 'section-zones',
-      type: 'list',
-      intro: "THE COLLECTION",
-      title: "품격 있는 공간 미학",
-      description: "머무는 것만으로도 자부심이 되는 공간.\n섬세한 디테일과 고급스러운 마감재로 완성된 래미안의 인테리어를 만나보세요.",
-      items: [
-        { 
-          id: 'zone-1', 
-          title: 'LIVING & DINING', 
-          text: '탁 트인 개방감과 우아한 아트월이 조화를 이루는 거실은 가족의 품격을 대변합니다. 다이닝 공간은 갤러리 같은 분위기를 연출합니다.', 
-          imageKey: 'subImage1' 
-        },
-        { 
-          id: 'zone-2', 
-          title: 'MASTER ZONE', 
-          text: '휴식 그 이상의 가치를 선사하는 마스터룸. 넓은 드레스룸과 호텔식 파우더룸은 일상을 특별하게 만들어줍니다.', 
-          imageKey: 'subImage2' 
-        }
-      ]
-    },
-    {
-      id: 'section-complex',
-      type: 'table',
-      intro: "COMPLEX INFO",
-      title: "단지 정보",
-      items: [
-        { id: 'info-1', title: '세대수', text: '2444세대(장기전세 266세대 포함, 총28개동)', imageKey: '' },
-        { id: 'info-2', title: '저/최고층', text: '23층/32층', imageKey: '' },
-        { id: 'info-3', title: '사용승인일', text: '2009년 07월 14일', imageKey: '' },
-        { id: 'info-4', title: '총주차대수', text: '4368대(세대당 1.78대)', imageKey: '' },
-        { id: 'info-5', title: '용적률', text: '269%', imageKey: '' },
-        { id: 'info-6', title: '건폐율', text: '12%', imageKey: '' },
-        { id: 'info-7', title: '건설사', text: '삼성물산(주)', imageKey: '' },
-        { id: 'info-8', title: '난방', text: '지역난방, 열병합', imageKey: '' },
-        { id: 'info-9', title: '관리사무소', text: '02-599-9960', imageKey: '' },
-        { id: 'info-10', title: '주소', text: '서울시 서초구 반포동 18-1', imageKey: '' },
-        { id: 'info-11', title: '면적', text: '86T2㎡, 87P㎡, 113L1㎡, 113T2㎡, 113T1㎡ 외', imageKey: '' },
-      ]
-    }
-  ]
+  sections: []
 };
+
 
 const INITIAL_GENERATED: GeneratedContent = {
   promotionText: INITIAL_INFO.promotionText,
   summary: "",
-  gridInfo: {
-    title: INITIAL_INFO.sections[0].title,
-    intro: INITIAL_INFO.sections[0].intro || "",
-    features: INITIAL_INFO.sections[0].items.map(i => i.text)
-  },
-  listInfo: {
-    title: INITIAL_INFO.sections[1].title,
-    intro: INITIAL_INFO.sections[1].intro || "",
-    description: INITIAL_INFO.sections[1].description || "",
-    items: INITIAL_INFO.sections[1].items.map(i => ({ title: i.title || "", description: i.text }))
-  }
 };
 
-interface ExportModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    sections: { id: string; label: string }[];
-    onExport: (selectedIds: string[]) => void;
-}
-
-const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, sections, onExport }) => {
-    const [selected, setSelected] = useState<Set<string>>(new Set(sections.map(s => s.id)));
-
-    if (!isOpen) return null;
-
-    const toggle = (id: string) => {
-        const next = new Set(selected);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        setSelected(next);
-    };
-
-    const toggleAll = () => {
-        if (selected.size === sections.length) setSelected(new Set());
-        else setSelected(new Set(sections.map(s => s.id)));
-    };
-
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-                <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                    <h3 className="font-bold text-lg text-gray-800">이미지 내보내기 옵션</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XMarkIcon className="w-5 h-5"/></button>
-                </div>
-                <div className="p-4">
-                    <p className="text-sm text-gray-500 mb-4">내보내고 싶은 섹션만 선택하세요.</p>
-                    <div className="flex justify-end mb-2">
-                        <button onClick={toggleAll} className="text-xs font-bold text-blue-600 hover:underline">
-                            {selected.size === sections.length ? '전체 해제' : '전체 선택'}
-                        </button>
-                    </div>
-                    <div className="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
-                        {sections.map(sec => (
-                            <label key={sec.id} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${selected.has(sec.id) ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'}`}>
-                                    {selected.has(sec.id) && <CheckIcon className="w-3.5 h-3.5 text-white" />}
-                                </div>
-                                <input type="checkbox" className="hidden" checked={selected.has(sec.id)} onChange={() => toggle(sec.id)} />
-                                <span className={`text-sm font-medium ${selected.has(sec.id) ? 'text-gray-900' : 'text-gray-500'}`}>{sec.label}</span>
-                            </label>
-                        ))}
-                    </div>
-                </div>
-                <div className="p-4 border-t bg-gray-50 flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-gray-300 font-bold text-gray-600 text-sm hover:bg-white transition-colors">취소</button>
-                    <button 
-                        onClick={() => onExport(Array.from(selected))} 
-                        disabled={selected.size === 0}
-                        className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        선택한 섹션 내보내기 ({selected.size})
-                    </button>
-                </div>
-            </div>
-        </div>
-    )
-}
 
 const compressToWebP = (file: File, quality = 0.85): Promise<Blob> => {
   return new Promise((resolve, reject) => {
@@ -297,50 +173,20 @@ function App() {
     agentImage: null,
     colorTheme: COLORS[0],
     layoutTheme: LAYOUTS[0],
-    subImage1: null,
-    subImage2: null,
-    featureImage1: null,
-    featureImage2: null,
-    featureImage3: null,
-    featureImage4: null,
+    orientation: 'portrait',
   });
+  const orientation: FlyerOrientation = state.orientation === 'landscape' ? 'landscape' : 'portrait';
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  /** QR 이 여는 매물 페이지 주소 (서버가 알려 준다) 와 그 QR 그림 */
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [showAutoSaveIndicator, setShowAutoSaveIndicator] = useState(false);
   const flyerRef = useRef<HTMLDivElement>(null);
   const hiddenFileInputRef = useRef<HTMLInputElement>(null);
-  const formScrollRef = useRef<HTMLDivElement>(null);
-  const previewScrollRef = useRef<HTMLDivElement>(null);
-  const isScrollingForm = useRef(false);
-  const isScrollingPreview = useRef(false);
-
-  // Synchronize scrolling between form and preview
-  const handleFormScroll = () => {
-    if (isScrollingPreview.current) return;
-    isScrollingForm.current = true;
-    if (formScrollRef.current && previewScrollRef.current) {
-        const percentage = formScrollRef.current.scrollTop / (formScrollRef.current.scrollHeight - formScrollRef.current.clientHeight);
-        if (!isNaN(percentage)) {
-            previewScrollRef.current.scrollTop = percentage * (previewScrollRef.current.scrollHeight - previewScrollRef.current.clientHeight);
-        }
-    }
-    // debounce reset
-    setTimeout(() => { isScrollingForm.current = false; }, 50);
-  };
-
-  const handlePreviewScroll = () => {
-    if (isScrollingForm.current) return;
-    isScrollingPreview.current = true;
-    if (formScrollRef.current && previewScrollRef.current) {
-        const percentage = previewScrollRef.current.scrollTop / (previewScrollRef.current.scrollHeight - previewScrollRef.current.clientHeight);
-        if (!isNaN(percentage)) {
-            formScrollRef.current.scrollTop = percentage * (formScrollRef.current.scrollHeight - formScrollRef.current.clientHeight);
-        }
-    }
-    setTimeout(() => { isScrollingPreview.current = false; }, 50);
-  };
 
   const [showSharePopover, setShowSharePopover] = useState(false);
   const sharePopoverRef = useRef<HTMLDivElement>(null);
@@ -358,22 +204,6 @@ function App() {
       setIsDirty(true);
   };
 
-  const handleSectionTextChange = (sectionId: string, itemId: string, key: 'title' | 'text', value: string) => {
-      setIsDirty(true);
-      setState(prev => {
-          const newSections = prev.info.sections.map(sec => {
-              if (sec.id !== sectionId) return sec;
-              return {
-                  ...sec,
-                  items: sec.items.map(it => {
-                      if (it.id !== itemId) return it;
-                      return { ...it, [key]: value };
-                  })
-              };
-          });
-          return { ...prev, info: { ...prev.info, sections: newSections } };
-      });
-  };
 
   const [activeImageKey, setActiveImageKey] = useState<string>('');
 
@@ -403,6 +233,7 @@ function App() {
       if (json.success && json.data) {
         const v = json.data;
         const photos = json.photos || [];
+        if (json.qrUrl) setQrUrl(json.qrUrl);
 
         // 포맷팅 헬퍼들
         const formatAmount = (amt: number) => {
@@ -472,6 +303,9 @@ function App() {
           parking: v.parking || "없음",
           moveInDate: v.move_in_date || "즉시 입주 가능",
           options: Array.isArray(v.options) ? v.options.join(", ") : (v.options || ""),
+          badge: "",
+          pyeong: supArea ? `${Math.round(supArea / 3.3058)}평` : excArea ? `${Math.round(excArea / 3.3058)}평` : "",
+          showPhoto: true,
           
           agentName,
           agentRepresentative,
@@ -489,25 +323,6 @@ function App() {
         const aiCopy = {
             promotionText: mappedInfo.promotionText,
             summary: mappedInfo.subTitle, // 서브타이틀을 요약문구로 활용
-            gridInfo: {
-                title: "주요 특징",
-                intro: "HIGHLIGHTS",
-                features: [
-                  mappedInfo.direction === "방향 없음" ? "우수한 채광과 통풍" : `채광 좋은 ${mappedInfo.direction}`,
-                  "탁 트인 개방감 및 우수한 조망",
-                  mappedInfo.parking !== "없음" ? "편리한 자주식 주차 공간" : "역세권의 편리한 인프라",
-                  "다양한 옵션 및 깔끔한 마감"
-                ]
-            },
-            listInfo: {
-                title: "공간 상세 정보",
-                intro: "DETAILS",
-                description: "섬세한 디테일과 세련된 마감이 돋보이는 공간입니다.",
-                items: [
-                    { title: "MAIN ZONE", description: "우수한 공간 활용도와 개방감이 돋보이는 메인 생활 공간입니다." },
-                    { title: "SUB ZONE", description: "아늑한 분위기 속에서 편안하게 휴식을 취할 수 있는 서브 공간입니다." }
-                ]
-            }
         };
 
         const getPhotoUrl = (index: number) => {
@@ -517,60 +332,6 @@ function App() {
           return null;
         };
 
-        const buildDefaultSections = (vacancy: any, areaDisp: string, ai: any) => {
-          const gridSec = {
-            id: 'section-features',
-            type: 'grid',
-            intro: ai.gridInfo.intro,
-            title: ai.gridInfo.title,
-            items: [
-              { id: 'feat-1', text: ai.gridInfo.features[0], imageKey: 'featureImage1' },
-              { id: 'feat-2', text: ai.gridInfo.features[1], imageKey: 'featureImage2' },
-              { id: 'feat-3', text: ai.gridInfo.features[2], imageKey: 'featureImage3' },
-              { id: 'feat-4', text: ai.gridInfo.features[3], imageKey: 'featureImage4' },
-            ]
-          };
-
-          const listSec = {
-            id: 'section-zones',
-            type: 'list',
-            intro: ai.listInfo.intro,
-            title: ai.listInfo.title,
-            description: ai.listInfo.description,
-            items: [
-              { 
-                id: 'zone-1', 
-                title: ai.listInfo.items[0].title, 
-                text: ai.listInfo.items[0].description, 
-                imageKey: 'subImage1' 
-              },
-              { 
-                id: 'zone-2', 
-                title: ai.listInfo.items[1].title, 
-                text: ai.listInfo.items[1].description, 
-                imageKey: 'subImage2' 
-              }
-            ]
-          };
-
-          const tableSec = {
-            id: 'section-complex',
-            type: 'table',
-            intro: "COMPLEX INFO",
-            title: "단지 정보",
-            items: [
-              { id: 'info-1', title: '세대수', text: vacancy.total_units ? `${vacancy.total_units}세대` : '정보 없음', imageKey: '' },
-              { id: 'info-2', title: '저/최고층', text: (vacancy.current_floor && vacancy.total_floor) ? `${vacancy.current_floor}층/${vacancy.total_floor}층` : '정보 없음', imageKey: '' },
-              { id: 'info-3', title: '사용승인일', text: vacancy.approval_year ? `${vacancy.approval_year}년` : '정보 없음', imageKey: '' },
-              { id: 'info-4', title: '총주차대수', text: vacancy.parking || '정보 없음', imageKey: '' },
-              { id: 'info-5', title: '건설사', text: vacancy.constructor_name || '정보 없음', imageKey: '' },
-              { id: 'info-6', title: '주소', text: [vacancy.sido, vacancy.sigungu, vacancy.dong].filter(Boolean).join(" ") || '정보 없음', imageKey: '' },
-              { id: 'info-7', title: '면적', text: areaDisp !== '-' ? areaDisp : '정보 없음', imageKey: '' },
-            ]
-          };
-
-          return [gridSec, listSec, tableSec];
-        };
 
         // 아파트 브랜드 자동 감지해서 컬러 테마 설정
         let autoTheme = COLORS[0]; // 기본 Teal
@@ -595,21 +356,8 @@ function App() {
           if (!loadedState.info) {
             loadedState.info = { ...INITIAL_INFO };
           }
-          if (!loadedState.info.sections || loadedState.info.sections.length === 0) {
-            loadedState.info.sections = buildDefaultSections(v, areaDisplay, aiCopy);
-          }
-          if (photos.length > 0) {
-            const imageSlots = [
-              'mainImage', 
-              'subImage1', 'subImage2', 
-              'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
-            ];
-            imageSlots.forEach((slot, idx) => {
-              if (!loadedState[slot]) {
-                loadedState[slot] = getPhotoUrl(idx);
-              }
-            });
-          }
+          loadedState.info.sections = [];
+          if (!loadedState.mainImage && photos.length > 0) loadedState.mainImage = getPhotoUrl(0);
           setState(loadedState);
           setIsLoadedFromStorage(true);
           setIsInitialized(true);
@@ -626,21 +374,8 @@ function App() {
             if (!loadedState.info) {
               loadedState.info = { ...INITIAL_INFO };
             }
-            if (!loadedState.info.sections || loadedState.info.sections.length === 0) {
-              loadedState.info.sections = buildDefaultSections(v, areaDisplay, aiCopy);
-            }
-            if (photos.length > 0) {
-              const imageSlots = [
-                'mainImage', 
-                'subImage1', 'subImage2', 
-                'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
-              ];
-              imageSlots.forEach((slot, idx) => {
-                if (!loadedState[slot]) {
-                  loadedState[slot] = getPhotoUrl(idx);
-                }
-              });
-            }
+            loadedState.info.sections = [];
+            if (!loadedState.mainImage && photos.length > 0) loadedState.mainImage = getPhotoUrl(0);
             setState(loadedState);
             setIsLoadedFromStorage(true);
             setIsInitialized(true);
@@ -651,29 +386,11 @@ function App() {
           }
         }
 
-        // 새 매물 사진들 매핑
-        const newImages: Record<string, any> = {};
-        if (photos.length > 0) {
-          const imageSlots = [
-            'mainImage', 
-            'subImage1', 'subImage2', 
-            'featureImage1', 'featureImage2', 'featureImage3', 'featureImage4'
-          ];
-          imageSlots.forEach((slot, idx) => {
-            newImages[slot] = getPhotoUrl(idx);
-          });
-        }
-
-        const finalSections = buildDefaultSections(v, areaDisplay, aiCopy);
-
         setState(prev => ({
           ...prev,
-          ...newImages,
+          mainImage: getPhotoUrl(0),
           colorTheme: autoTheme,
-          info: {
-            ...mappedInfo,
-            sections: finalSections
-          },
+          info: mappedInfo,
           generated: aiCopy
         }));
         
@@ -693,6 +410,9 @@ function App() {
 
     if (vacancyId) {
       loadVacancyDataDirectly(vacancyId);
+    } else {
+      // 매물 없이 연 견본 화면 — QR 자리를 보여 주려고 공실열람 주소를 넣는다
+      setQrUrl("https://www.gongsilnews.com/gongsil");
     }
   }, []);
 
@@ -1004,265 +724,177 @@ function App() {
     }
   };
 
-  // 1. Text-based Generation
-  const handleGenerateAI = async () => {
-    alert("보안상의 이유로 클라이언트 AI 생성 기능이 비활성화되었습니다.");
+  // QR 그림 — 매물 페이지 주소가 정해지면 만든다
+  useEffect(() => {
+    if (!qrUrl) { setQrDataUrl(null); return; }
+    QRCode.toDataURL(qrUrl, { margin: 1, width: 320, errorCorrectionLevel: 'M' })
+      .then(setQrDataUrl)
+      .catch((e) => { console.warn('QR 생성 실패:', e); setQrDataUrl(null); });
+  }, [qrUrl]);
+
+  const previewBoxRef = useRef<HTMLDivElement>(null);
+  const [previewBoxWidth, setPreviewBoxWidth] = useState(0);
+  useEffect(() => {
+    const el = previewBoxRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setPreviewBoxWidth(el.clientWidth));
+    ro.observe(el);
+    setPreviewBoxWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  const setOrientation = (o: FlyerOrientation) => {
+    setState(prev => ({ ...prev, orientation: o }));
+    setIsDirty(true);
   };
 
-  // 2. Image-based Analysis & Generation
-  const handleAnalyzeImage = async (files: File[]) => {
-    alert("보안상의 이유로 클라이언트 이미지 분석 기능이 비활성화되었습니다.");
+  /**
+   * 홍보지 한 장을 그림으로 뜬다. 미리보기는 화면에 맞춰 줄여 보여 주므로(transform)
+   * 원래 크기 복사본을 화면 밖에 붙여서 뜬다.
+   */
+  const capturePage = async (): Promise<HTMLCanvasElement | null> => {
+    if (!flyerRef.current) return null;
+    const { w, h } = PAGE_SIZE[orientation];
+    const holder = document.createElement('div');
+    holder.style.cssText = `position:fixed;left:-20000px;top:0;width:${w}px;height:${h}px;`;
+    const clone = flyerRef.current.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+    holder.appendChild(clone);
+    document.body.appendChild(holder);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return await (window as any).html2canvas(clone, {
+        scale: 2, useCORS: true, backgroundColor: '#ffffff', width: w, height: h, windowWidth: w + 40, scrollX: 0, scrollY: 0,
+      });
+    } finally {
+      document.body.removeChild(holder);
+    }
   };
 
-  // 3. Agent Image Analysis
-  const handleAnalyzeAgentImage = async (file: File) => {
-      alert("보안상의 이유로 클라이언트 명함 분석 기능이 비활성화되었습니다.");
+  const fileBaseName = () => `유리창홍보지_${(state.info.address || '매물').replace(/[\\/:*?"<>|\s]+/g, '_')}`;
+
+  // ── 이미지 내보내기: 보이는 한 장 그대로 JPG ──
+  const handleExportImage = async () => {
+    setIsExporting(true);
+    try {
+      const canvas = await capturePage();
+      if (!canvas) return;
+      const link = document.createElement('a');
+      link.download = `${fileBaseName()}.jpg`;
+      link.href = canvas.toDataURL('image/jpeg', 0.95);
+      link.click();
+    } catch (err) {
+      console.error(err);
+      alert("이미지 내보내기에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  // 4. Complex Info Analysis
-  const handleAnalyzeComplexImage = async (sectionId: string, file: File) => {
-      alert("보안상의 이유로 클라이언트 단지 정보 분석 기능이 비활성화되었습니다.");
+  // ── 인쇄: A4 한 장 (세로/가로 그대로). html2canvas → jsPDF → iframe 인쇄 ──
+  const handlePrintFlyer = async () => {
+    setIsPrinting(true);
+    try {
+      const canvas = await capturePage();
+      if (!canvas) { setIsPrinting(false); return; }
+      const land = orientation === 'landscape';
+      const pageW = land ? 841.89 : 595.28;
+      const pageH = land ? 595.28 : 841.89;
+      const pdf = new jsPDF(land ? 'l' : 'p', 'px', [pageW, pageH]);
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageW, pageH);
+
+      const pdfUrl = URL.createObjectURL(pdf.output('blob'));
+      document.getElementById('flyer-print-frame')?.remove();
+      const iframe = document.createElement('iframe');
+      iframe.id = 'flyer-print-frame';
+      iframe.style.cssText = 'position:absolute;width:0;height:0;border:none;left:-9999px;top:-9999px;';
+      iframe.src = pdfUrl;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        setTimeout(() => {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+          setIsPrinting(false);
+        }, 150);
+      };
+    } catch (err) {
+      console.error(err);
+      alert("인쇄 데이터를 준비하는 중 오류가 발생했습니다.");
+      setIsPrinting(false);
+    }
   };
 
-  // Helper to apply generated content to sections
-  const applyGeneratedContent = (result: GeneratedContent, baseInfo?: PropertyInfo, newImages?: Record<string, string>) => {
-      const currentInfo = baseInfo || state.info;
-      const newSections = [...currentInfo.sections];
-
-      // Update Grid Section (Highlights)
-      const gridSectionIndex = newSections.findIndex(s => s.type === 'grid');
-      if (gridSectionIndex !== -1 && result.gridInfo) {
-          const section = { ...newSections[gridSectionIndex] };
-          
-          // Apply title and intro if provided
-          if (result.gridInfo.title) section.title = result.gridInfo.title;
-          if (result.gridInfo.intro) section.intro = result.gridInfo.intro;
-
-          const newItems = [...section.items];
-          result.gridInfo.features.forEach((text, i) => {
-             if (newItems[i]) {
-                newItems[i] = { ...newItems[i], text };
-             }
-          });
-          section.items = newItems;
-          newSections[gridSectionIndex] = section;
-      }
-
-      // Update List Section (Zones)
-      const listSectionIndex = newSections.findIndex(s => s.type === 'list');
-      if (listSectionIndex !== -1 && result.listInfo) {
-          const section = { ...newSections[listSectionIndex] };
-
-          // Apply title, intro, description if provided
-          if (result.listInfo.title) section.title = result.listInfo.title;
-          if (result.listInfo.intro) section.intro = result.listInfo.intro;
-          if (result.listInfo.description) section.description = result.listInfo.description;
-
-          const newItems = [...section.items];
-          result.listInfo.items.forEach((itemData, i) => {
-            if (newItems[i]) {
-                newItems[i] = { 
-                    ...newItems[i], 
-                    title: itemData.title || newItems[i].title, // Update title
-                    text: itemData.description // Update description
-                };
-            }
-          });
-          section.items = newItems;
-          newSections[listSectionIndex] = section;
-      }
-
-      setState(prev => ({ 
-        ...prev, 
-        ...(newImages || {}), // Apply new images if provided
-        generated: result,
-        info: {
-            ...currentInfo,
-            promotionText: result.promotionText || currentInfo.promotionText,
-            sections: newSections
-        }
-      }));
-      setIsGenerating(false);
-  };
-
+  /**
+   * 공유 페이지(/flyer/매물번호.html)에 저장할 HTML — 홍보지 한 장을 그대로 담고,
+   * 폰에서는 화면 폭에 맞춰 그림처럼 줄여 보여 준다. 아래에 전화·문자 버튼을 붙인다.
+   */
   const generateHtmlContent = async (): Promise<string | null> => {
     if (!flyerRef.current) return null;
     try {
-        const clone = flyerRef.current.cloneNode(true) as HTMLElement;
-        const imgs = clone.querySelectorAll('img');
-        
-        // Remove editable attributes and styles for the exported HTML
-        const editableElements = clone.querySelectorAll('[contenteditable]');
-        editableElements.forEach(el => {
-            el.removeAttribute('contenteditable');
-            // Remove the focus and hover classes added for the editor
-            const editClasses = [
-                'outline-none', 'focus:outline', 'focus:outline-2', 'focus:outline-sky-400', 
-                'focus:bg-sky-400/10', 'hover:ring-1', 'hover:ring-sky-300', 'cursor-text'
-            ];
-            editClasses.forEach(cls => el.classList.remove(cls));
-        });
+      const { w, h } = PAGE_SIZE[orientation];
+      const clone = flyerRef.current.cloneNode(true) as HTMLElement;
+      const editClasses = ['outline-none', 'focus:outline', 'focus:outline-2', 'focus:outline-sky-400', 'focus:bg-sky-400/10', 'hover:ring-1', 'hover:ring-sky-300', 'cursor-text', 'cursor-pointer'];
+      clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+      clone.querySelectorAll('*').forEach(el => editClasses.forEach(c => el.classList.remove(c)));
+      clone.querySelectorAll('img[title]').forEach(el => el.removeAttribute('title'));
 
-        // Remove fixed width/height for responsive behavior in downloaded file
-        clone.style.width = '100%';
-        clone.style.maxWidth = '860px';
-        clone.style.minHeight = 'auto';
-        clone.style.margin = '0 auto';
+      const esc = (t: string) => String(t || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      const phone = (state.info.agentMobile || state.info.agentPhone || '').replace(/[^0-9+]/g, '');
+      const title = `${state.info.address || "매물 홍보지"} - ${state.info.promotionText || ''}`;
+      const callBar = phone ? `
+<div class="callbar">
+  <a href="tel:${phone}" style="background:${state.colorTheme.primary}">전화하기</a>
+  <a href="sms:${phone}" style="background:${state.colorTheme.secondary}">문자보내기</a>
+</div>` : '';
 
-        await Promise.all(Array.from(imgs).map(async (img) => {
-            if (img.src.startsWith('blob:')) {
-                try {
-                    const response = await fetch(img.src);
-                    const blob = await response.blob();
-                    await new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                            img.src = reader.result as string;
-                            resolve(null);
-                        };
-                        reader.readAsDataURL(blob);
-                    });
-                } catch (e) {
-                    console.error("Failed to inline image", e);
-                }
-            }
-        }));
-
-        const html = `<!DOCTYPE html>
+      return `<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${state.info.address || "매물 전단지"} - ${state.info.transactionType || '매매'} ${state.info.priceMain || ""}</title>
+<title>${esc(title)}</title>
 <meta property="og:type" content="article">
-<meta property="og:site_name" content="AI 매물 전단지">
-<meta property="og:title" content="${state.info.promotionText || state.info.address || '매물 상세정보'}">
-<meta property="og:description" content="${state.info.subTitle || '상세 정보를 확인해보세요.'}">
-<meta property="og:image" content="${state.mainImage || 'https://www.gongsilnews.com/logo.png'}">
+<meta property="og:site_name" content="공실뉴스 유리창 홍보지">
+<meta property="og:title" content="${esc(state.info.address || '매물 홍보지')}">
+<meta property="og:description" content="${esc(state.info.promotionText || state.info.subTitle || '')}">
+<meta property="og:image" content="${esc(state.mainImage || 'https://www.gongsilnews.com/logo.png')}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="${state.info.promotionText || state.info.address || '매물 상세정보'}">
-<meta name="twitter:description" content="${state.info.subTitle || '상세 정보를 확인해보세요.'}">
-<meta name="twitter:image" content="${state.mainImage || 'https://www.gongsilnews.com/logo.png'}">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-<link href="https://fonts.googleapis.com/css2?family=Song+Myung:wght@400&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-<script>
-    tailwind.config = {
-    theme: {
-        extend: {
-        fontFamily: {
-            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'sans-serif'],
-            serif: ['Playfair Display', 'Song Myung', 'serif'],
-        }
-        }
-    }
-    }
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Song+Myung:wght@400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'sans-serif'] } } } }</script>
 <style>
-    body { font-family: 'Pretendard', sans-serif; background-color: #e5e7eb; padding: 0; margin: 0; display: flex; justify-content: center; min-height: 100vh; }
-    .font-serif-en { font-family: 'Playfair Display', serif; }
+  body { font-family: 'Pretendard', sans-serif; background: #e5e7eb; margin: 0; padding: 12px 0 ${phone ? 88 : 12}px; }
+  .font-serif-kr { font-family: 'Song Myung', serif; }
+  .font-serif-en { font-family: 'Playfair Display', serif; }
+  #wrap { margin: 0 auto; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  #poster { width: ${w}px; height: ${h}px; transform-origin: top left; }
+  .callbar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.96); box-shadow: 0 -4px 14px rgba(0,0,0,.12); }
+  .callbar a { flex: 1; text-align: center; padding: 14px 0; border-radius: 12px; color: #fff; font-weight: 800; font-size: 17px; text-decoration: none; }
 </style>
 </head>
-<body class="bg-gray-100">
-${clone.outerHTML}
+<body>
+<div id="wrap"><div id="poster">${clone.outerHTML}</div></div>${callBar}
+<script>
+  (function () {
+    var W = ${w}, H = ${h};
+    function fit() {
+      var s = Math.min(1, (window.innerWidth - 16) / W);
+      document.getElementById('poster').style.transform = 'scale(' + s + ')';
+      var wrap = document.getElementById('wrap');
+      wrap.style.width = (W * s) + 'px';
+      wrap.style.height = (H * s) + 'px';
+    }
+    fit();
+    window.addEventListener('resize', fit);
+  })();
+</script>
 </body>
 </html>`;
-
-        return html;
     } catch (err) {
-        console.error("HTML generation error:", err);
-        return null;
+      console.error("HTML generation error:", err);
+      return null;
     }
-  };
-
-  const downloadHtml = async () => {
-    try {
-        const html = await generateHtmlContent();
-        if (!html) throw new Error("Generated HTML is empty");
-
-        const blob = new Blob([html], { type: 'text/html' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `flyer_${Date.now()}.html`;
-        link.click();
-    } catch (err) {
-        alert("HTML 저장 중 오류가 발생했습니다.");
-    }
-  };
-
-  const downloadJpg = async (selectedIds: string[]) => {
-    if (!flyerRef.current) return;
-    try {
-      const element = flyerRef.current;
-      
-      // Clone the element to filter sections without affecting the view
-      const clone = element.cloneNode(true) as HTMLElement;
-      
-      // We need to append the clone to the document to capture it, but keep it hidden/out of view
-      clone.style.position = 'absolute';
-      clone.style.left = '-9999px';
-      clone.style.top = '0';
-      clone.style.width = '860px'; // Enforce width for consistency
-      
-      // FIX: Force auto height to remove whitespace from min-h-[1400px] class
-      clone.style.minHeight = '0px'; 
-      clone.style.height = 'auto';
-
-      document.body.appendChild(clone);
-
-      // Filter sections: remove ones not in selectedIds
-      const sections = clone.querySelectorAll('[data-export-id]');
-      sections.forEach((sec) => {
-          const id = sec.getAttribute('data-export-id');
-          if (id && !selectedIds.includes(id)) {
-              sec.remove();
-          }
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const canvas = await (window as any).html2canvas(clone, {
-        scale: 2, 
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        width: 860, // Fixed width
-        windowWidth: 1080, 
-        scrollX: 0,
-        scrollY: 0,
-        x: 0,
-        y: 0
-      });
-
-      document.body.removeChild(clone); // Cleanup
-
-      const link = document.createElement('a');
-      link.download = `flyer_${Date.now()}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 1.0);
-      link.click();
-      setShowExportModal(false);
-    } catch (err) {
-      console.error(err);
-      alert("이미지 다운로드 실패. 다시 시도해주세요.");
-    }
-  };
-
-  // Generate selectable sections list
-  const getExportableSections = () => {
-      const sections = [
-          { id: 'hero', label: '메인 타이틀/이미지 (Hero)' },
-          { id: 'stats', label: '요약 스탯 (Bar)' },
-          { id: 'basic-info', label: '매물 상세 정보 (Table)' },
-      ];
-
-      state.info.sections.forEach((sec) => {
-          sections.push({ 
-              id: sec.id, 
-              label: `${sec.title} (${sec.type === 'grid' ? '사진특징' : sec.type === 'list' ? '상세설명' : sec.type === 'table' ? '단지정보' : 'SNS'})` 
-          });
-      });
-
-      sections.push({ id: 'agent-info', label: '중개사 정보 (Footer)' });
-      return sections;
   };
 
   if (authError) {
@@ -1274,11 +906,11 @@ ${clone.outerHTML}
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-black mb-3 text-slate-100 tracking-tight">AI 온라인전단지 접근 제한</h2>
+          <h2 className="text-2xl font-black mb-3 text-slate-100 tracking-tight">유리창 홍보지 접근 제한</h2>
           <p className="text-slate-400 text-sm leading-relaxed mb-8">
             {authError === "unauthorized" 
               ? "이 서비스를 이용하시려면 로그인이 필요합니다." 
-              : "AI 온라인전단지 서비스는 공실뉴스 [부동산 회원] 및 [최고 관리자]만 이용하실 수 있습니다. 일반 회원은 이용이 불가능합니다."}
+              : "유리창 홍보지 서비스는 공실뉴스 [부동산 회원] 및 [최고 관리자]만 이용하실 수 있습니다. 일반 회원은 이용이 불가능합니다."}
           </p>
           <button 
             onClick={() => window.location.href = "/"}
@@ -1291,168 +923,16 @@ ${clone.outerHTML}
     );
   }
 
-  // ── 유리창 전단지 A4 세로 인쇄 (매매보고서와 동일: html2canvas → jsPDF → iframe) ──
-  const [isPrinting, setIsPrinting] = useState(false);
-
-  const handlePrintFlyer = async () => {
-    if (!flyerRef.current) return;
-    try {
-      setIsPrinting(true);
-      const element = flyerRef.current;
-
-      // Clone the flyer DOM
-      const clone = element.cloneNode(true) as HTMLElement;
-      clone.style.position = 'absolute';
-      clone.style.left = '0px';
-      clone.style.top = '-99999px';
-      clone.style.minHeight = '0px';
-      clone.style.height = 'auto';
-      clone.style.width = '860px';
-
-      document.body.appendChild(clone);
-
-      // Remove sections not needed for print (keep hero, stats, basic-info only)
-      const allSections = clone.querySelectorAll('[data-export-id]');
-      allSections.forEach((sec) => {
-        const id = sec.getAttribute('data-export-id');
-        if (id && !['hero', 'stats', 'basic-info'].includes(id)) {
-          sec.remove();
-        }
-      });
-
-      // ── A4 세로 1장에 맞추기 위한 상세설명 자동 축소 로직 (A4 세로 비율: 860px 너비 기준 1216px 높이) ──
-      const maxTargetHeight = 1216;
-      const noticeBox = clone.querySelector('[data-print-notice-box]') as HTMLElement | null;
-      const noticeText = clone.querySelector('[data-print-notice-text]') as HTMLElement | null;
-
-      if (clone.offsetHeight > maxTargetHeight && (noticeBox || noticeText)) {
-        if (noticeBox) {
-          noticeBox.style.padding = '20px';
-          noticeBox.style.marginTop = '16px';
-        }
-
-        let fontSize = 16; // 기본 폰트 크기 (새로운 큰 폰트 크기 16px부터 축소 시작)
-        let lineHeight = 1.5;
-        let padding = 20;
-        let marginTop = 16;
-
-        while (clone.offsetHeight > maxTargetHeight && fontSize > 12) {
-          fontSize -= 0.5;
-          if (lineHeight > 1.2) lineHeight -= 0.05;
-          if (padding > 8) padding -= 1;
-          if (marginTop > 4) marginTop -= 1;
-
-          if (noticeText) {
-            noticeText.style.fontSize = `${fontSize}px`;
-            noticeText.style.lineHeight = `${lineHeight}`;
-          }
-          if (noticeBox) {
-            noticeBox.style.padding = `${padding}px`;
-            noticeBox.style.marginTop = `${marginTop}px`;
-          }
-        }
-
-        // 극단적으로 길어 최소 폰트 크기로도 초과하는 경우, 라인 수를 줄여가며 말줄임표(...) 처리
-        if (clone.offsetHeight > maxTargetHeight && noticeText) {
-          noticeText.style.display = '-webkit-box';
-          noticeText.style.webkitBoxOrient = 'vertical';
-          noticeText.style.overflow = 'hidden';
-          noticeText.style.textOverflow = 'ellipsis';
-
-          let lines = 15; // 넉넉한 초기 라인 수
-          while (clone.offsetHeight > maxTargetHeight && lines > 3) {
-            lines--;
-            noticeText.style.webkitLineClamp = `${lines}`;
-          }
-        }
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const canvas = await (window as any).html2canvas(clone, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        windowWidth: 900,
-        scrollX: 0,
-        scrollY: 0,
-      });
-
-      document.body.removeChild(clone);
-
-      // A4 portrait: 595.28 x 841.89 px at 72dpi
-      const pdf = new jsPDF('p', 'px', [595.28, 841.89]);
-      
-      const pageWidth = 595.28;
-      const pageHeight = 841.89;
-      
-      let printWidth = pageWidth;
-      let printHeight = (canvas.height * pageWidth) / canvas.width;
-      
-      // 높이가 A4 한 페이지를 초과하는 경우 세로 비율에 맞춰 가로세로 축소 (비율 깨짐 방지)
-      if (printHeight > pageHeight) {
-        printHeight = pageHeight;
-        printWidth = (canvas.width * pageHeight) / canvas.height;
-      }
-      
-      // 여백 정렬 (가로 가운데 정렬)
-      const xOffset = (pageWidth - printWidth) / 2;
-      const yOffset = 0; // 상단부터 배치되게 0으로 설정하거나, (pageHeight - printHeight) / 2 로 가운데 배치
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      pdf.addImage(imgData, 'JPEG', xOffset, yOffset, printWidth, printHeight);
-
-      // iframe print (same as IM report)
-      const pdfBlob = pdf.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-
-      const existingFrame = document.getElementById('flyer-print-frame');
-      if (existingFrame) existingFrame.remove();
-
-      const iframe = document.createElement('iframe');
-      iframe.id = 'flyer-print-frame';
-      iframe.style.position = 'absolute';
-      iframe.style.width = '0px';
-      iframe.style.height = '0px';
-      iframe.style.border = 'none';
-      iframe.style.left = '-9999px';
-      iframe.style.top = '-9999px';
-      iframe.src = pdfUrl;
-
-      document.body.appendChild(iframe);
-
-      iframe.onload = () => {
-        setTimeout(() => {
-          if (iframe.contentWindow) {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-          }
-          setIsPrinting(false);
-        }, 150);
-      };
-
-    } catch (err) {
-      console.error(err);
-      alert("인쇄 데이터를 준비하는 중 오류가 발생했습니다.");
-      setIsPrinting(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-32">
       {loadingData && (
         <div className="fixed inset-0 bg-slate-900/80 z-[200] flex flex-col items-center justify-center text-white backdrop-blur-sm">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-amber-500 mb-6"></div>
           <h2 className="text-xl font-bold mb-2">🪄 공실 데이터 가져오는 중...</h2>
-          <p className="text-sm text-slate-400">Gemini AI가 실시간으로 프리미엄 마케팅 카피를 구성하고 있습니다.</p>
+          <p className="text-sm text-slate-400">매물 정보로 유리창 홍보지를 구성하고 있습니다.</p>
         </div>
       )}
       
-      <ExportModal 
-        isOpen={showExportModal} 
-        onClose={() => setShowExportModal(false)} 
-        sections={getExportableSections()}
-        onExport={downloadJpg}
-      />
       
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
@@ -1466,7 +946,7 @@ ${clone.outerHTML}
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-3">
                     <h1 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-                      AI온라인전단지
+                      유리창 홍보지
                     </h1>
                     <span className="text-xs font-bold text-red-500 bg-red-50 px-2.5 py-1 rounded-md ml-1 border border-red-100">
                       초안작성이기 때문에 부정확할 수 있습니다. 참고하시기 바랍니다.
@@ -1508,11 +988,6 @@ ${clone.outerHTML}
             info={state.info}
             setInfo={handleInfoChange}
             onImageUpload={handleImageUpload}
-            onGenerate={handleGenerateAI}
-            onAnalyzeImage={handleAnalyzeImage}
-            onAnalyzeAgentImage={handleAnalyzeAgentImage}
-            onAnalyzeComplexImage={handleAnalyzeComplexImage}
-            isGenerating={isGenerating}
             uploadedImages={state}
             colors={COLORS}
             layouts={LAYOUTS}
@@ -1525,34 +1000,45 @@ ${clone.outerHTML}
         </div>
         <div className="col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 flex flex-col">
             <div className="bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500 rounded-t-xl">
-                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기</span>
-                <span>Width: 860px</span>
-            </div>
-            <div 
-                className="flex-1 shadow-inner overflow-x-auto"
-            >
-                <div className="flex justify-center" style={{ padding: '32px 0' }}>
-                    {/* Fixed width container for editor preview */}
-                    <div id="flyer-print-area" style={{ 
-                        width: '860px', 
-                        flexShrink: 0,
-                    }}>
-                        <FlyerCanvas 
-                            ref={flyerRef} 
-                            data={state} 
-                            onTextChange={handleTextChange}
-                            onSectionTextChange={handleSectionTextChange}
-                            onImageClick={handleImageClick}
-                        />
-                        <input 
-                            type="file" 
-                            ref={hiddenFileInputRef} 
-                            onChange={handleHiddenFileChange} 
-                            style={{ display: 'none' }} 
-                            accept="image/*" 
-                        />
-                    </div>
+                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기 · A4 한 장 (보이는 그대로 인쇄됩니다)</span>
+                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+                    {([['portrait', '세로'], ['landscape', '가로']] as const).map(([key, label]) => (
+                        <button
+                            key={key}
+                            onClick={() => setOrientation(key)}
+                            className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${orientation === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-800'}`}
+                        >
+                            {key === 'portrait' ? '▯' : '▭'} A4 {label}
+                        </button>
+                    ))}
                 </div>
+            </div>
+            <div ref={previewBoxRef} className="flex-1 shadow-inner p-6">
+                {(() => {
+                    const { w, h } = PAGE_SIZE[orientation];
+                    const scale = previewBoxWidth ? Math.min(1, (previewBoxWidth - 48) / w) : 1;
+                    return (
+                        <div className="mx-auto shadow-2xl" style={{ width: w * scale, height: h * scale }}>
+                            <div style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+                                <FlyerCanvas
+                                    ref={flyerRef}
+                                    data={state}
+                                    orientation={orientation}
+                                    qrDataUrl={qrDataUrl}
+                                    onTextChange={handleTextChange}
+                                    onImageClick={handleImageClick}
+                                />
+                            </div>
+                        </div>
+                    );
+                })()}
+                <input
+                    type="file"
+                    ref={hiddenFileInputRef}
+                    onChange={handleHiddenFileChange}
+                    style={{ display: 'none' }}
+                    accept="image/*"
+                />
             </div>
         </div>
       </main>
@@ -1600,11 +1086,12 @@ ${clone.outerHTML}
 
         {/* Image Export Button */}
         <button 
-          onClick={() => setShowExportModal(true)}
-          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
+          onClick={handleExportImage}
+          disabled={isExporting}
+          className="py-3 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ArrowDownTrayIcon className="w-4 h-4 text-gray-500" />
-          <span>이미지 내보내기</span>
+          <span>{isExporting ? '이미지 만드는 중...' : '이미지 내보내기'}</span>
         </button>
 
         {/* Print Button */}
@@ -1626,7 +1113,7 @@ ${clone.outerHTML}
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0v-2.94a2.25 2.25 0 012.25-2.25h6a2.25 2.25 0 012.25 2.25v2.94z" />
               </svg>
-              <span>전단지 인쇄하기</span>
+              <span>홍보지 인쇄하기</span>
             </>
           )}
         </button>

@@ -1,750 +1,486 @@
 
-import React, { forwardRef } from 'react';
-import { FlyerState, FlyerSection } from '../types';
-import { MapPinIcon } from '@heroicons/react/24/outline';
+import React, { forwardRef, useLayoutEffect, useRef } from 'react';
+import { FlyerState, PropertyInfo } from '../types';
 import { PhoneIcon } from '@heroicons/react/24/solid';
+
+/*
+ * 유리창 홍보지 — A4 한 장.
+ *
+ * 화면에 보이는 이 한 장이 그대로 인쇄·이미지·공유 페이지가 된다. 그래서 크기는 px 로 고정하고
+ * (세로 860×1216, 가로 1216×860 = A4 비율) 화면 폭에 따라 바뀌는 md: 같은 반응형 클래스는 쓰지 않는다.
+ * 공유 페이지를 폰에서 열어도 글자 크기가 바뀌지 않고 그림처럼 줄어들기만 한다.
+ */
+
+export type FlyerOrientation = 'portrait' | 'landscape';
+
+export const PAGE_SIZE: Record<FlyerOrientation, { w: number; h: number }> = {
+  portrait: { w: 860, h: 1216 },
+  landscape: { w: 1216, h: 860 },
+};
 
 interface FlyerCanvasProps {
   data: FlyerState;
-  onTextChange?: (key: keyof typeof FlyerState.prototype.info, value: string) => void;
-  onSectionTextChange?: (sectionId: string, itemId: string, key: 'title' | 'text', value: string) => void;
+  orientation: FlyerOrientation;
+  qrDataUrl?: string | null;
+  onTextChange?: (key: keyof PropertyInfo, value: string) => void;
   onImageClick?: (imageKey: string) => void;
 }
 
-const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, onTextChange, onSectionTextChange, onImageClick }, ref) => {
-  const { info, mainImage, colorTheme, layoutTheme } = data; 
+const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orientation, qrDataUrl, onTextChange, onImageClick }, ref) => {
+  const { info, mainImage, colorTheme, layoutTheme } = data;
   const primaryColor = colorTheme?.primary || '#00788c';
   const secondaryColor = colorTheme?.secondary || '#00c6d7';
   const darkColor = colorTheme?.dark || '#003845';
-  
-  // Font Classes
   const headingFont = layoutTheme?.headingFont || 'font-serif-kr';
   const bodyFont = layoutTheme?.bodyFont || 'font-sans';
   const layout = layoutTheme?.type || 'type1';
+  const isLand = orientation === 'landscape';
+  const { w: pageW, h: pageH } = PAGE_SIZE[orientation];
 
-  const editClass = "outline-none focus:outline focus:outline-2 focus:outline-sky-400 focus:bg-sky-400/10 hover:ring-1 hover:ring-sky-300 rounded transition-all cursor-text";
-  const placeholder = "https://placehold.co/860x600/e2e8f0/1e293b?text=Property";
-  const mainImgSrc = mainImage || placeholder;
-  
-  const getImage = (key: string) => {
-      const img = data[key];
-      return typeof img === 'string' ? img : null;
-  };
+  const editClass = "outline-none focus:outline focus:outline-2 focus:outline-sky-400 focus:bg-sky-400/10 hover:ring-1 hover:ring-sky-300 rounded transition-colors cursor-text";
+  const mainImgSrc = mainImage || "https://placehold.co/860x600/e2e8f0/1e293b?text=Property";
+
+  /** 손으로 고칠 수 있는 글자 — 고치고 나가면 입력란에도 반영된다 */
+  const editable = (key: keyof PropertyInfo) => ({
+    contentEditable: !!onTextChange,
+    spellCheck: false,
+    suppressContentEditableWarning: true,
+    onBlur: (e: React.FocusEvent<HTMLElement>) => onTextChange?.(key, e.currentTarget.innerText),
+  });
 
   const formatPrice = (value: string) => {
     const num = parseInt(value.replace(/[^0-9]/g, ''), 10);
-    if (isNaN(num)) return value;
-    if (value.includes('억')) return value;
+    if (isNaN(num) || value.includes('억')) return value;
     if (num >= 10000) {
-        const eok = Math.floor(num / 10000);
-        const man = num % 10000;
-        return `${eok}억${man > 0 ? ` ${man.toLocaleString()}` : ''}`;
+      const eok = Math.floor(num / 10000);
+      const man = num % 10000;
+      return `${eok}억${man > 0 ? ` ${man.toLocaleString()}` : ''}`;
     }
     return value;
   };
-
-  const getPriceLabel = (type: string) => {
-      if (type === '매매') return '매매가';
-      if (type === '전세') return '전세금';
-      if (type === '월세' || type === '단기임대') return '보증금 / 월세';
-      return '가격';
-  };
-
   const isRent = info.transactionType === '월세' || info.transactionType === '단기임대';
+  const priceLabel = info.transactionType === '매매' ? '매매가' : info.transactionType === '전세' ? '전세금' : isRent ? '보증금 / 월세' : '가격';
 
-  // --- Layout Renderers ---
-
-  // 1. Hero Section Renderer
+  // ── 1. 대표 사진 (5가지 디자인) ──
   const renderHero = () => {
-    // Common elements
+    const titleSize = isLand ? 'text-[52px]' : 'text-[60px]';
+    const sloganSize = isLand ? 'text-[34px]' : 'text-[40px]';
+    const img = (extra = '') => (
+      <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc}
+        className={`w-full h-full object-cover cursor-pointer ${extra}`} title="클릭하여 메인 이미지 변경" />
+    );
     const tag = (
-        <div className={`inline-block px-3 py-1 border text-xs font-medium mb-4 w-fit tracking-wider ${layout === 'type3' ? 'border-gray-800 text-gray-800' : 'border-white/30 text-white'}`}>
-             <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('transactionType', e.currentTarget.innerText)} className={editClass}>{info.transactionType || '거래 유형'}</span>
-        </div>
+      <div className={`inline-block px-3 py-1 border text-sm font-medium mb-4 w-fit tracking-wider ${layout === 'type3' ? 'border-gray-800 text-gray-800' : 'border-white/40 text-white'}`}>
+        <span {...editable('transactionType')} className={editClass}>{info.transactionType || '거래 유형'}</span>
+      </div>
     );
-    const title = <h1 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`font-bold leading-tight mb-2 tracking-tight drop-shadow-sm max-w-full break-words ${headingFont} ${editClass} ${layout === 'type5' ? 'text-5xl md:text-8xl' : 'text-4xl md:text-7xl'}`}>{info.address}</h1>;
-    const slogan = <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`font-bold mb-4 drop-shadow-md max-w-full break-words ${headingFont} ${editClass} ${layout === 'type5' ? 'text-2xl md:text-4xl' : 'text-2xl md:text-5xl'} ${layout === 'type3' ? 'text-gray-800 hover:bg-black/5' : 'text-white'}`}>{info.promotionText}</p>;
-    const subtitle = <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`text-base md:text-xl font-medium ${editClass} ${layout === 'type3' ? 'text-gray-600 hover:bg-black/5' : 'text-white opacity-90'}`} style={{ color: layout === 'type3' ? undefined : secondaryColor }}>{info.subTitle}</p>;
+    const title = <h1 {...editable('address')} className={`font-bold leading-tight mb-2 tracking-tight drop-shadow-sm max-w-full break-words ${headingFont} ${editClass} ${titleSize}`}>{info.address}</h1>;
+    const slogan = <p {...editable('promotionText')} className={`font-bold mb-3 drop-shadow-md max-w-full break-words ${headingFont} ${editClass} ${sloganSize} text-white`}>{info.promotionText}</p>;
+    const subtitle = <p {...editable('subTitle')} className={`text-lg font-medium max-w-full break-keep ${editClass}`} style={{ color: secondaryColor }}>{info.subTitle}</p>;
 
-    let content = null;
     switch (layout) {
-        case 'type1': // Modern Overlay (Bottom Left)
-            content = (
-                <div className="relative h-[500px] md:h-[650px] flex flex-col">
-                    <div className="absolute inset-0 z-0">
-                        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="클릭하여 메인 이미지 변경" />
-                        <div className="absolute inset-0" style={{ background: `linear-gradient(to right, ${darkColor}E6, transparent)` }}></div>
-                    </div>
-                    <div className="relative z-10 p-8 md:p-16 flex flex-col h-full justify-center text-white items-start text-left">
-                        <div className="w-12 h-1 mb-8" style={{ backgroundColor: secondaryColor }}></div>
-                        {tag}
-                        {title}
-                        {slogan}
-                        {subtitle}
-                    </div>
-                </div>
-            );
-            break;
-        case 'type2': // Luxury Center (Centered with Frame)
-            content = (
-                <div className="relative h-[500px] md:h-[650px] flex flex-col">
-                    <div className="absolute inset-0 z-0">
-                        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="클릭하여 메인 이미지 변경" />
-                        <div className="absolute inset-0 bg-black/40"></div>
-                    </div>
-                    <div className="relative z-10 p-6 md:p-12 h-full flex items-center justify-center">
-                        <div className="border border-white/40 p-6 md:p-12 w-full h-full flex flex-col items-center justify-center text-center text-white overflow-hidden">
-                            <span contentEditable spellCheck={false} suppressContentEditableWarning className={`mb-4 text-xl md:text-2xl font-serif-en italic max-w-full break-words ${editClass}`} style={{ color: secondaryColor }}>Prestige Collection</span>
-                            {title}
-                            <div className="w-20 h-px bg-white/50 my-6"></div>
-                            {slogan}
-                            <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`mt-4 w-full text-sm md:text-lg font-light tracking-widest uppercase max-w-full break-keep break-words ${editClass}`}>{info.subTitle}</p>
-                        </div>
-                    </div>
-                </div>
-            );
-            break;
-        case 'type3': // Natural Clean (Top Left, No Overlay)
-            content = (
-                <div className="relative h-[500px] md:h-[650px] flex flex-col bg-white">
-                     {/* Image takes bottom 80% */}
-                     <div className="h-[70%] md:h-[80%] w-full absolute bottom-0 right-0 z-0">
-                        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="클릭하여 메인 이미지 변경" />
-                     </div>
-                     {/* Text Block Top Left Floating */}
-                     <div className="relative z-10 p-8 md:p-12 bg-white/95 w-[90%] md:w-2/3 shadow-sm rounded-br-3xl">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-2 h-8 md:h-12" style={{ backgroundColor: primaryColor }}></div>
-                            <span contentEditable spellCheck={false} suppressContentEditableWarning className={`text-xl md:text-3xl font-bold text-gray-800 tracking-widest ${editClass}`}>PREMIUM</span>
-                        </div>
-                        <h1 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`text-4xl md:text-6xl font-bold text-gray-900 mb-4 ${headingFont} ${editClass}`}>{info.address}</h1>
-                        <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`text-xl md:text-3xl text-gray-600 font-medium mb-2 ${editClass}`}>{info.promotionText}</p>
-                     </div>
-                </div>
-            );
-            break;
-        case 'type4': // Bold Box (Text in White Box Bottom Right)
-             content = (
-                <div className="relative h-[500px] md:h-[650px] flex flex-col">
-                    <div className="absolute inset-0 z-0">
-                        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="클릭하여 메인 이미지 변경" />
-                    </div>
-                    <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 z-10 bg-white/95 p-6 md:p-10 max-w-[90%] md:max-w-xl shadow-2xl border-l-8" style={{ borderColor: primaryColor }}>
-                        <div contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('transactionType', e.currentTarget.innerText)} className={`text-xs md:text-sm font-bold tracking-widest mb-2 text-gray-500 uppercase ${editClass}`}>{info.transactionType}</div>
-                        <h1 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`text-3xl md:text-5xl font-extrabold text-gray-900 mb-2 leading-tight ${headingFont} ${editClass}`}>{info.address}</h1>
-                        <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`text-xl md:text-3xl font-bold mb-4 ${headingFont} ${editClass}`} style={{ color: primaryColor }}>{info.promotionText}</p>
-                        <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('subTitle', e.currentTarget.innerText)} className={`text-gray-600 text-sm leading-relaxed border-t pt-4 border-gray-200 ${editClass}`}>{info.subTitle}</p>
-                    </div>
-                </div>
-             );
-             break;
-        case 'type5': // High-end Minimal (Huge Typography)
-             content = (
-                <div className="relative h-[500px] md:h-[700px] flex flex-col">
-                    <div className="absolute inset-0 z-0">
-                        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover grayscale-[30%] contrast-125 cursor-pointer hover:opacity-90 transition-opacity" title="클릭하여 메인 이미지 변경" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80"></div>
-                    </div>
-                    <div className="relative z-10 p-8 md:p-12 flex flex-col justify-end h-full">
-                        <p contentEditable spellCheck={false} suppressContentEditableWarning className={`text-white/80 text-sm md:text-lg tracking-[0.5em] mb-4 uppercase font-light ${editClass}`}>Residence</p>
-                        <h1 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('address', e.currentTarget.innerText)} className={`text-6xl md:text-8xl font-black text-white mb-2 tracking-tighter ${headingFont} ${editClass}`}>{info.address}</h1>
-                        <div className="flex items-end gap-4">
-                            <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('promotionText', e.currentTarget.innerText)} className={`text-3xl md:text-6xl font-thin text-white tracking-tight ${editClass}`}>{info.promotionText}</p>
-                        </div>
-                    </div>
-                </div>
-             );
-             break;
-        default: return null;
-    }
-
-    return <div data-export-id="hero">{content}</div>;
-  };
-
-  // 2. Stats Section Renderer
-  const renderStats = () => {
-      const statsItems = [
-          { label: 'Price', value: `${formatPrice(info.priceMain)}${isRent && info.priceSub ? ` / ${info.priceSub}` : ''}`, sub: getPriceLabel(info.transactionType) },
-          { label: 'Area', value: info.area.split('/')[0], sub: '전용면적' },
-          { label: 'Rooms', value: info.roomCount, sub: '방 / 욕실' },
-          { label: 'Move-in', value: info.moveInDate.split(' ')[0], sub: '입주가능일' }
-      ];
-
-      let content = null;
-      switch (layout) {
-          case 'type1': // Floating Overlap
-              content = (
-                <div className="relative z-20 -mt-16 mx-4 md:mx-12 bg-white shadow-xl flex flex-wrap md:flex-nowrap rounded-sm overflow-hidden min-h-[100px]">
-                    {statsItems.map((item, i) => (
-                        <div key={i} className="w-1/2 md:flex-1 py-6 px-4 border-r border-b md:border-b-0 border-gray-100 flex flex-col items-center justify-center text-center group hover:bg-gray-50">
-                            <span contentEditable spellCheck={false} suppressContentEditableWarning className={`text-[10px] text-gray-400 font-bold tracking-widest mb-1 uppercase ${editClass}`}>{item.label}</span>
-                            <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => {
-                                if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
-                                if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
-                                if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
-                                if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
-                            }} className="text-lg md:text-xl font-bold whitespace-nowrap ${editClass}" style={{ color: primaryColor }}>{item.value}</span>
-                            <span contentEditable spellCheck={false} suppressContentEditableWarning className={`text-[10px] text-gray-400 mt-1 ${editClass}`}>{item.sub}</span>
-                        </div>
-                    ))}
-                </div>
-              );
-              break;
-          case 'type2': // Simple Divider Bar
-              content = (
-                  <div className="bg-white py-10 border-b border-gray-200">
-                      <div className="flex flex-col md:flex-row justify-center md:divide-x divide-gray-300 gap-8 md:gap-0">
-                          {statsItems.map((item, i) => (
-                              <div key={i} className="px-0 md:px-12 text-center">
-                                  <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => {
-                                      if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
-                                      if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
-                                      if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
-                                      if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
-                                  }} className={`block text-2xl font-bold text-gray-800 mb-1 ${editClass} ${headingFont}`}>{item.value}</span>
-                                  <span contentEditable spellCheck={false} suppressContentEditableWarning className={`text-xs uppercase tracking-widest text-gray-500 font-serif-en ${editClass}`}>{item.label}</span>
-                              </div>
-                          ))}
-                      </div>
-                  </div>
-              );
-              break;
-          case 'type3': // Solid Color Bar (Prugio)
-              content = (
-                  <div className="py-8 text-white flex flex-wrap md:flex-nowrap justify-around items-center gap-4" style={{ backgroundColor: primaryColor }}>
-                      {statsItems.map((item, i) => (
-                          <div key={i} className="text-center w-1/2 md:w-auto mb-4 md:mb-0">
-                              <span contentEditable spellCheck={false} suppressContentEditableWarning className={`block text-sm opacity-70 mb-1 ${editClass}`}>{item.sub}</span>
-                              <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => {
-                                  if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
-                                  if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
-                                  if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
-                                  if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
-                              }} className="block text-xl md:text-2xl font-bold ${editClass}">{item.value}</span>
-                          </div>
-                      ))}
-                  </div>
-              );
-              break;
-           case 'type4': // Grid Box (Hillstate)
-               content = (
-                   <div className="bg-gray-100 p-6 md:p-12">
-                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                           {statsItems.map((item, i) => (
-                               <div key={i} className="bg-white p-6 border-t-4 shadow-sm" style={{ borderColor: primaryColor }}>
-                                   <span contentEditable spellCheck={false} suppressContentEditableWarning className={`block text-xs font-bold text-gray-400 uppercase mb-2 ${editClass}`}>{item.label}</span>
-                                   <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => {
-                                       if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
-                                       if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
-                                       if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
-                                       if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
-                                   }} className="block text-lg md:text-xl font-extrabold text-gray-900 ${editClass}">{item.value}</span>
-                               </div>
-                           ))}
-                       </div>
-                   </div>
-               );
-               break;
-           case 'type5': // Minimal Text Row (Acro)
-               content = (
-                   <div className="bg-black text-white py-12 px-6 md:px-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 md:gap-0">
-                       {statsItems.map((item, i) => (
-                           <div key={i} className="flex flex-col">
-                               <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => {
-                                   if (i === 0) onTextChange?.('priceMain', e.currentTarget.innerText);
-                                   if (i === 1) onTextChange?.('area', e.currentTarget.innerText);
-                                   if (i === 2) onTextChange?.('roomCount', e.currentTarget.innerText);
-                                   if (i === 3) onTextChange?.('moveInDate', e.currentTarget.innerText);
-                               }} className="text-3xl md:text-4xl font-thin tracking-tighter mb-1 ${editClass}" style={{ color: i === 0 ? secondaryColor : 'white' }}>{item.value}</span>
-                               <span contentEditable spellCheck={false} suppressContentEditableWarning className={`text-xs font-bold text-gray-500 uppercase tracking-[0.2em] ${editClass}`}>{item.label}</span>
-                           </div>
-                       ))}
-                   </div>
-               );
-               break;
-          default: return null;
-      }
-      return <div data-export-id="stats">{content}</div>;
-  };
-
-  // Section Headers Renderer Helper
-  const renderSectionHeader = (title: string, intro?: string, description?: string) => {
-      if (layout === 'type2') {
-          return (
-            <div className="flex flex-col items-center mb-12 text-center">
-                <div contentEditable spellCheck={false} suppressContentEditableWarning className={`font-serif-en italic text-base md:text-lg mb-2 tracking-wide ${editClass}`} style={{ color: secondaryColor }}>{intro}</div>
-                <h2 contentEditable spellCheck={false} suppressContentEditableWarning className={`text-2xl md:text-3xl font-bold text-gray-800 mb-6 ${headingFont} ${editClass}`}>{title}</h2>
-                <div className="w-10 h-0.5" style={{ backgroundColor: primaryColor }}></div>
-                {description && <p contentEditable spellCheck={false} suppressContentEditableWarning className={`mt-4 text-gray-500 max-w-xl font-serif-kr text-sm md:text-base ${editClass}`}>{description}</p>}
-            </div>
-          );
-      }
-      if (layout === 'type3') {
-          return (
-            <div className="mb-10 border-b pb-4 border-gray-200">
-                <span contentEditable spellCheck={false} suppressContentEditableWarning className={`text-sm font-bold tracking-widest uppercase text-gray-400 mb-1 block ${editClass}`}>{intro}</span>
-                <h2 contentEditable spellCheck={false} suppressContentEditableWarning className={`text-2xl md:text-3xl font-bold text-gray-800 ${headingFont} ${editClass}`} style={{ color: primaryColor }}>{title}</h2>
-                {description && <p contentEditable spellCheck={false} suppressContentEditableWarning className={`mt-2 text-gray-600 text-sm md:text-base ${editClass}`}>{description}</p>}
-            </div>
-          );
-      }
-      if (layout === 'type4') {
+      case 'type2': // Luxury Center
         return (
-            <div className="mb-12 flex items-center gap-4">
-                <div className="w-4 h-12" style={{ backgroundColor: primaryColor }}></div>
-                <div>
-                    <h2 contentEditable spellCheck={false} suppressContentEditableWarning className={`text-2xl md:text-3xl font-extrabold text-gray-900 uppercase ${headingFont} ${editClass}`}>{title}</h2>
-                    <span contentEditable spellCheck={false} suppressContentEditableWarning className={`text-sm font-bold text-gray-400 tracking-widest ${editClass}`}>{intro}</span>
-                </div>
-            </div>
-        );
-      }
-      if (layout === 'type5') {
-        return (
-            <div className="mb-16">
-                 <h2 contentEditable spellCheck={false} suppressContentEditableWarning className={`text-4xl md:text-5xl font-thin text-gray-900 mb-2 ${headingFont} ${editClass}`}>{title}</h2>
-                 <p contentEditable spellCheck={false} suppressContentEditableWarning className={`text-xs font-bold text-gray-400 uppercase tracking-[0.3em] ${editClass}`}>{intro}</p>
-                 {description && <p contentEditable spellCheck={false} suppressContentEditableWarning className={`mt-6 text-lg md:text-xl font-light text-gray-600 ${editClass}`}>{description}</p>}
-            </div>
-        );
-      }
-      // Default Type 1
-      return (
-        <div className="flex flex-col items-center mb-12 text-center">
-            <div contentEditable spellCheck={false} suppressContentEditableWarning className={`font-serif-en italic text-base md:text-lg mb-2 tracking-wide ${editClass}`} style={{ color: primaryColor }}>{intro}</div>
-            <h2 className={`text-2xl md:text-3xl font-bold text-gray-800 mb-6 ${headingFont}`}>{title}</h2>
-            <div className="w-10 h-0.5" style={{ backgroundColor: primaryColor }}></div>
-            {description && <p contentEditable spellCheck={false} suppressContentEditableWarning className={`mt-4 text-gray-500 max-w-xl text-sm md:text-base ${editClass}`}>{description}</p>}
-        </div>
-      );
-  };
-
-  const renderGridSection = (section: FlyerSection) => {
-    const itemCount = section.items.length;
-    let gridColsClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
-    if (itemCount === 1) gridColsClass = 'grid-cols-1';
-    else if (itemCount === 2) gridColsClass = 'grid-cols-1 md:grid-cols-2';
-    else if (itemCount === 3) gridColsClass = 'grid-cols-1 md:grid-cols-3';
-
-    return (
-        <div key={section.id} data-export-id={section.id} className={`py-20 px-6 md:px-12 ${layout === 'type4' ? 'bg-white' : 'bg-gray-50'}`}>
-            {renderSectionHeader(section.title, section.intro)}
-
-            <div className={`grid ${gridColsClass} gap-6 h-auto md:h-80`}>
-                {section.items.map((item, idx) => {
-                     const imgSrc = getImage(item.imageKey) || placeholder;
-                     return (
-                        <div key={item.id} className={`relative h-64 md:h-full group overflow-hidden ${layout === 'type4' ? 'rounded-none border-2 border-gray-100' : 'rounded-sm shadow-md hover:shadow-xl'} transition-all`}>
-                            <img onClick={() => onImageClick?.(item.imageKey)} src={imgSrc} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer" title="이미지 변경" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-90 pointer-events-none"></div>
-                            <div className="absolute bottom-0 left-0 w-full p-6 text-white transform transition-transform duration-300 group-hover:-translate-y-2">
-                                <span className="text-[10px] font-bold tracking-widest mb-2 block pointer-events-none" style={{ color: secondaryColor }}>0{idx + 1}</span>
-                                <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`font-bold text-lg leading-tight block ${editClass} ${headingFont}`}>{item.text}</span>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-  };
-
-  const renderListSection = (section: FlyerSection) => {
-    return (
-        <div key={section.id} data-export-id={section.id} className="py-20 bg-white">
-             <div className="px-6 md:px-12">
-                 {renderSectionHeader(section.title, section.intro, section.description)}
-             </div>
-
-            {section.items.map((item, idx) => {
-                const imgSrc = getImage(item.imageKey) || placeholder;
-                const isReversed = idx % 2 === 1;
-                
-                // Style switch for list items
-                if (layout === 'type4') {
-                     return (
-                        <div key={item.id} className="grid grid-cols-1 md:grid-cols-2 mb-12 mx-6 md:mx-12 border-b border-gray-100 pb-12">
-                            <div className={`h-[250px] md:h-[300px] ${isReversed ? 'md:order-2' : ''}`}>
-                                <img onClick={() => onImageClick?.(item.imageKey)} src={imgSrc} className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" title="이미지 변경" />
-                            </div>
-                            <div className={`flex flex-col justify-center p-8 bg-gray-50 ${isReversed ? 'md:order-1' : ''}`}>
-                                <h4 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-xl md:text-2xl font-extrabold text-gray-900 mb-4 ${editClass} ${headingFont}`}>{item.title}</h4>
-                                <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-800 text-base md:text-sm leading-8 ${editClass} ${bodyFont}`}>{item.text}</p>
-                            </div>
-                        </div>
-                     )
-                }
-
-                if (layout === 'type5') {
-                    return (
-                        <div key={item.id} className="mb-24 px-6 md:px-12">
-                            <div className="mb-6">
-                                <span className="text-4xl md:text-6xl font-thin text-gray-200 block mb-2 pointer-events-none">0{idx+1}</span>
-                                <h4 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-2xl md:text-3xl font-bold text-gray-900 ${editClass} ${headingFont}`}>{item.title}</h4>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                                <div className="col-span-1 md:col-span-8 h-[300px] md:h-[400px]">
-                                     <img onClick={() => onImageClick?.(item.imageKey)} src={imgSrc} className="w-full h-full object-cover grayscale-[20%] cursor-pointer hover:opacity-90 transition-opacity" title="이미지 변경" />
-                                </div>
-                                <div className="col-span-1 md:col-span-4 flex items-end">
-                                    <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-700 text-base md:text-lg leading-relaxed ${editClass} ${bodyFont}`}>{item.text}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                }
-
-                // Default Style
-                return (
-                    <div key={item.id} className={`flex flex-col ${isReversed ? 'md:flex-row-reverse' : 'md:flex-row'} items-stretch mb-0 min-h-[400px]`}>
-                         <div className="w-full md:w-1/2 relative overflow-hidden group h-[300px] md:h-auto">
-                             <img onClick={() => onImageClick?.(item.imageKey)} src={imgSrc} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 cursor-pointer" title="이미지 변경" />
-                         </div>
-                         <div className="w-full md:w-1/2 flex flex-col justify-center px-8 md:px-16 py-12 bg-gray-50/50">
-                             <div className="w-8 h-0.5 mb-6" style={{ backgroundColor: primaryColor }}></div>
-                             <h4 contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`text-xl md:text-2xl font-bold text-gray-800 mb-4 ${editClass} ${headingFont}`}>{item.title}</h4>
-                             <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`text-gray-700 text-base md:text-sm leading-8 break-keep whitespace-pre-wrap ${editClass} ${bodyFont}`}>
-                                 {item.text}
-                             </p>
-                         </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
-  };
-
-  const renderTableSection = (section: FlyerSection) => {
-    return (
-        <div key={section.id} data-export-id={section.id} className="py-20 px-6 md:px-12 bg-white">
-            {renderSectionHeader(section.title, section.intro)}
-            
-            <div className={`border-t-2 ${layout === 'type4' ? 'border-black' : 'border-gray-800'}`}>
-                <div className="grid grid-cols-1 md:grid-cols-2">
-                    {section.items.map((item, idx) => (
-                        <div key={item.id} className={`flex border-b border-gray-200 ${idx % 2 === 1 ? 'md:border-l border-gray-200' : ''}`}>
-                            <div contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'title', e.currentTarget.innerText)} className={`w-28 md:w-32 py-5 px-3 text-[17px] md:text-sm flex items-center justify-center text-center shrink-0 border-r border-gray-200 ${editClass} ${layout === 'type4' ? 'bg-gray-800 text-white font-extrabold' : 'bg-gray-50 text-gray-800 font-extrabold'}`}>
-                                {item.title}
-                            </div>
-                            <div className={`flex-1 py-5 px-4 text-[18px] md:text-sm text-gray-950 font-extrabold flex items-center break-keep ${bodyFont}`}>
-                                {(item.title === '주소' || item.title === '소재지' || item.title === '위치') && item.text ? (
-                                    <a 
-                                        href={`https://map.naver.com/p/search/${encodeURIComponent(item.text)}`} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="hover:underline flex items-center gap-1.5"
-                                        style={{ color: primaryColor }}
-                                        title="네이버 지도로 보기"
-                                    >
-                                        <MapPinIcon className="w-4 h-4 flex-shrink-0" />
-                                        <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={editClass}>{item.text}</span>
-                                    </a>
-                                ) : (
-                                    <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onSectionTextChange?.(section.id, item.id, 'text', e.currentTarget.innerText)} className={`w-full ${editClass}`}>{item.text}</span>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                    {section.items.length % 2 !== 0 && (
-                        <div className="hidden md:flex border-b border-gray-200 border-l border-gray-200">
-                             <div className={`w-32 py-5 shrink-0 border-r border-gray-200 ${layout === 'type4' ? 'bg-gray-800' : 'bg-gray-50'}`}></div>
-                             <div className="flex-1 py-5 px-4"></div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-  };
-
-  const renderSnsSection = (section: FlyerSection) => {
-      // Simplified: Just render all items as links
-      return (
-          <div key={section.id} data-export-id={section.id} className={`py-16 px-6 md:px-12 ${layout === 'type4' ? 'bg-white' : 'bg-gray-50'}`}>
-              {renderSectionHeader(section.title, section.intro)}
-              
-              <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg border border-gray-200 shadow-sm">
-                  <div className="space-y-4">
-                      {section.items.map((item) => {
-                          const type = item.imageKey; // 'youtube', 'blog', 'news'
-                          const url = item.text;
-                          const title = item.title;
-                          
-                          let badgeClass = "bg-gray-100 text-gray-600";
-                          let label = "LINK";
-                          
-                          if (type === 'youtube') {
-                              badgeClass = "bg-red-50 text-red-600";
-                              label = "YOUTUBE";
-                          } else if (type === 'blog') {
-                              badgeClass = "bg-green-50 text-green-600";
-                              label = "BLOG";
-                          } else if (type === 'news') {
-                              badgeClass = "bg-blue-50 text-blue-600";
-                              label = "NEWS";
-                          }
-
-                          return (
-                              <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between group gap-2">
-                                  <a 
-                                    href={url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex items-start gap-2 hover:underline decoration-gray-400 underline-offset-4 flex-1"
-                                  >
-                                      <span className="text-gray-300 select-none">↳</span>
-                                      <span className={`text-gray-800 font-medium ${bodyFont} group-hover:text-blue-600 transition-colors`}>
-                                          {title || url}
-                                      </span>
-                                  </a>
-                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider w-fit shrink-0 ${badgeClass}`}>
-                                      {label}
-                                  </span>
-                              </div>
-                          );
-                      })}
-                  </div>
+          <div className="relative h-full">
+            <div className="absolute inset-0">{img()}<div className="absolute inset-0 bg-black/40" /></div>
+            <div className="relative z-10 p-8 h-full flex items-center justify-center">
+              <div className="border border-white/40 p-8 w-full h-full flex flex-col items-center justify-center text-center text-white overflow-hidden">
+                <span className="mb-3 text-2xl font-serif-en italic" style={{ color: secondaryColor }}>Prestige Collection</span>
+                {title}
+                <div className="w-20 h-px bg-white/50 my-5" />
+                {slogan}
+                <p {...editable('subTitle')} className={`mt-2 w-full text-base font-light tracking-widest break-keep ${editClass}`}>{info.subTitle}</p>
               </div>
+            </div>
           </div>
-      );
+        );
+      case 'type3': // Natural Clean
+        return (
+          <div className="relative h-full bg-white">
+            <div className="absolute bottom-0 right-0 w-full h-[78%]">{img()}</div>
+            <div className="relative z-10 p-9 bg-white/95 w-[82%] shadow-sm rounded-br-3xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-2 h-10" style={{ backgroundColor: primaryColor }} />
+                <span className="text-2xl font-bold text-gray-800 tracking-widest">PREMIUM</span>
+              </div>
+              <h1 {...editable('address')} className={`${isLand ? 'text-[44px]' : 'text-[52px]'} font-bold text-gray-900 mb-2 leading-tight ${headingFont} ${editClass}`}>{info.address}</h1>
+              <p {...editable('promotionText')} className={`text-[30px] font-bold mb-1 ${editClass}`} style={{ color: primaryColor }}>{info.promotionText}</p>
+            </div>
+          </div>
+        );
+      case 'type4': // Bold Box
+        return (
+          <div className="relative h-full">
+            <div className="absolute inset-0">{img()}</div>
+            <div className="absolute bottom-8 right-8 z-10 bg-white/95 p-8 max-w-[86%] shadow-2xl border-l-8" style={{ borderColor: primaryColor }}>
+              <div {...editable('transactionType')} className={`text-sm font-bold tracking-widest mb-2 text-gray-500 ${editClass}`}>{info.transactionType}</div>
+              <h1 {...editable('address')} className={`${isLand ? 'text-[40px]' : 'text-[46px]'} font-extrabold text-gray-900 mb-2 leading-tight ${headingFont} ${editClass}`}>{info.address}</h1>
+              <p {...editable('promotionText')} className={`text-[30px] font-bold mb-3 ${headingFont} ${editClass}`} style={{ color: primaryColor }}>{info.promotionText}</p>
+              <p {...editable('subTitle')} className={`text-gray-600 text-base leading-relaxed border-t pt-3 border-gray-200 ${editClass}`}>{info.subTitle}</p>
+            </div>
+          </div>
+        );
+      case 'type5': // High-end Minimal
+        return (
+          <div className="relative h-full">
+            <div className="absolute inset-0">{img('grayscale-[30%] contrast-125')}<div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" /></div>
+            <div className="relative z-10 p-10 flex flex-col justify-end h-full">
+              <p className="text-white/80 text-lg tracking-[0.5em] mb-3 font-light">RESIDENCE</p>
+              <h1 {...editable('address')} className={`${isLand ? 'text-[60px]' : 'text-[72px]'} font-black text-white mb-2 tracking-tighter leading-none ${headingFont} ${editClass}`}>{info.address}</h1>
+              <p {...editable('promotionText')} className={`text-[44px] font-thin text-white tracking-tight ${editClass}`}>{info.promotionText}</p>
+            </div>
+          </div>
+        );
+      default: // type1 Modern Overlay
+        return (
+          <div className="relative h-full">
+            <div className="absolute inset-0">{img()}<div className="absolute inset-0" style={{ background: `linear-gradient(to right, ${darkColor}E6, transparent)` }} /></div>
+            <div className="relative z-10 p-12 flex flex-col h-full justify-center text-white items-start text-left">
+              <div className="w-12 h-1 mb-6" style={{ backgroundColor: secondaryColor }} />
+              {tag}
+              {title}
+              {slogan}
+              {subtitle}
+            </div>
+          </div>
+        );
+    }
   };
 
-  const socialLinks = [
-    { key: 'socialYoutube', url: info.socialYoutube, icon: "M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z", viewBox: "0 0 24 24" },
-    { key: 'socialBlog', url: info.socialBlog, icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z", viewBox: "0 0 24 24" }, // Using generic info icon for blog or similar
-    { key: 'socialInstagram', url: info.socialInstagram, icon: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z", viewBox: "0 0 24 24" },
-    { key: 'socialFacebook', url: info.socialFacebook, icon: "M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z", viewBox: "0 0 24 24" },
-    { key: 'socialKakao', url: info.socialKakao, icon: "M12 2C6.48 2 2 5.92 2 10.75c0 2.82 1.51 5.33 3.87 6.95-.16.6-.58 2.18-.67 2.5-.1.35.13.34.27.25.11-.08 1.83-1.24 2.56-1.74.65.09 1.32.14 2 .14 5.52 0 10-3.92 10-8.75S17.52 2 12 2z", viewBox: "0 0 24 24" },
-    { key: 'socialThreads', url: info.socialThreads, icon: "M12.71 14.96c-.33.32-.78.5-1.36.5-1.07 0-1.7-.82-1.7-1.92 0-1.07.63-1.93 1.74-1.93.57 0 1.01.19 1.33.5.14-.3.26-.62.36-.93-.45-.33-1.02-.5-1.74-.5-1.85 0-3.19 1.43-3.19 3.25 0 1.71 1.25 3.08 3.19 3.08 1.25 0 2.07-.5 2.52-1.23l1.1.66c-.66 1.08-1.9 1.85-3.62 1.85-2.6 0-4.52-1.92-4.52-4.36 0-2.52 2.01-4.43 4.62-4.43 2.76 0 4.25 1.87 4.25 4.3 0 .28-.02.55-.05.81h-1.33c.02-.21.03-.43.03-.66 0-1.63-.84-2.9-2.9-2.9-1.99 0-3.19 1.34-3.19 3.16 0 1.95 1.34 3.05 3.17 3.05.9 0 1.55-.31 1.96-.7.15-.33.27-.68.35-1.06zm1.18-4.43c-.15.42-.33.82-.54 1.2.3-.3.57-.65.79-1.05-.08-.06-.16-.11-.25-.15z M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z", viewBox: "0 0 24 24" }
-  ];
+  // ── 2. 요약 띠 (가격·면적·방·입주) — 세로는 4칸 한 줄, 가로는 2×2 ──
+  const renderStats = () => {
+    const items: { label: string; key: keyof PropertyInfo; value: string; sub: string }[] = [
+      { label: 'PRICE', key: 'priceMain', value: `${formatPrice(info.priceMain)}${isRent && info.priceSub ? ` / ${info.priceSub}` : ''}`, sub: priceLabel },
+      { label: 'AREA', key: 'area', value: (info.area || '').split('/')[0].trim(), sub: '면적' },
+      { label: 'ROOMS', key: 'roomCount', value: info.roomCount, sub: '방 / 욕실' },
+      { label: 'MOVE-IN', key: 'moveInDate', value: (info.moveInDate || '').split(' ')[0], sub: '입주가능일' },
+    ];
+    const cols = isLand ? 'grid-cols-2' : 'grid-cols-4';
+    const valueCls = `block font-black leading-tight break-keep ${isLand ? 'text-[22px]' : 'text-[24px]'}`;
 
-  const hasSocialLinks = socialLinks.some(link => link.url);
+    switch (layout) {
+      case 'type2':
+        return (
+          <div className={`grid ${cols} bg-white border-b border-gray-200 py-5 shrink-0`}>
+            {items.map((it, i) => (
+              <div key={i} className="px-4 py-2 text-center border-r last:border-r-0 border-gray-200">
+                <span {...editable(it.key)} className={`${valueCls} text-gray-800 mb-1 ${headingFont} ${editClass}`}>{it.value}</span>
+                <span className="text-xs tracking-widest text-gray-500 font-serif-en">{it.label}</span>
+              </div>
+            ))}
+          </div>
+        );
+      case 'type3':
+        return (
+          <div className={`grid ${cols} text-white py-5 shrink-0`} style={{ backgroundColor: primaryColor }}>
+            {items.map((it, i) => (
+              <div key={i} className="px-4 py-2 text-center">
+                <span className="block text-sm opacity-75 mb-1 font-bold">{it.sub}</span>
+                <span {...editable(it.key)} className={`${valueCls} ${editClass}`}>{it.value}</span>
+              </div>
+            ))}
+          </div>
+        );
+      case 'type4':
+        return (
+          <div className="bg-gray-100 px-8 py-5 shrink-0">
+            <div className={`grid ${cols} gap-3`}>
+              {items.map((it, i) => (
+                <div key={i} className="bg-white px-4 py-3 border-t-4 shadow-sm" style={{ borderColor: primaryColor }}>
+                  <span className="block text-xs font-bold text-gray-400 mb-1">{it.label}</span>
+                  <span {...editable(it.key)} className={`${valueCls} text-gray-900 ${editClass}`}>{it.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'type5':
+        return (
+          <div className={`grid ${cols} gap-y-4 bg-black text-white px-10 py-6 shrink-0`}>
+            {items.map((it, i) => (
+              <div key={i} className="flex flex-col">
+                <span {...editable(it.key)} className={`${valueCls} font-light tracking-tight mb-1 ${editClass}`} style={{ color: i === 0 ? secondaryColor : 'white' }}>{it.value}</span>
+                <span className="text-xs font-bold text-gray-500 tracking-[0.2em]">{it.label}</span>
+              </div>
+            ))}
+          </div>
+        );
+      default: // type1 — 사진 위에 살짝 겹쳐 뜨는 카드 (가로는 오른쪽 칸 맨 위라 겹치지 않는다)
+        return (
+          <div className={`relative z-20 ${isLand ? 'mx-8 mt-8' : '-mt-14 mx-10'} bg-white shadow-xl grid ${cols} overflow-hidden shrink-0`}>
+            {items.map((it, i) => (
+              <div key={i} className="py-4 px-3 border-r border-b border-gray-100 flex flex-col items-center justify-center text-center">
+                <span className="text-xs text-gray-400 font-bold tracking-widest mb-1">{it.label}</span>
+                <span {...editable(it.key)} className={`${valueCls} ${editClass}`} style={{ color: primaryColor }}>{it.value}</span>
+                <span className="text-xs text-gray-400 mt-1 font-bold">{it.sub}</span>
+              </div>
+            ))}
+          </div>
+        );
+    }
+  };
 
+  // ── 3. 매물 상세 정보 + 소개글 (남는 칸을 소개글이 채우고, 넘치면 글자를 줄인다) ──
+  const noticeBoxRef = useRef<HTMLDivElement>(null);
+  const noticeTextRef = useRef<HTMLParagraphElement>(null);
 
+  useLayoutEffect(() => {
+    const fit = () => {
+      const box = noticeBoxRef.current;
+      const text = noticeTextRef.current;
+      if (!box || !text) return;
+      const cs = getComputedStyle(box);
+      const avail = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      let size = 17;
+      Object.assign(text.style, { fontSize: `${size}px`, display: '', webkitLineClamp: '', overflow: '' });
+      while (text.scrollHeight > avail && size > 12) {
+        size -= 0.5;
+        text.style.fontSize = `${size}px`;
+      }
+      if (text.scrollHeight > avail) {
+        const lh = parseFloat(getComputedStyle(text).lineHeight) || size * 1.6;
+        Object.assign(text.style, { display: '-webkit-box', webkitBoxOrient: 'vertical', overflow: 'hidden', webkitLineClamp: String(Math.max(1, Math.floor(avail / lh))) });
+      }
+    };
+    fit();
+    document.fonts?.ready.then(fit);
+  });
 
+  const renderInfo = () => {
+    const rows: { l: string; key: keyof PropertyInfo; full?: boolean }[] = [
+      { l: '공급/전용면적', key: 'area', full: true },
+      { l: '해당층/총층', key: 'floor' },
+      { l: '방향', key: 'direction' },
+      { l: '주차', key: 'parking' },
+      { l: '월 관리비', key: 'managementFee' },
+      { l: '옵션', key: 'options', full: true },
+    ];
+    return (
+      <div className={`flex-1 min-h-0 flex flex-col ${isLand ? 'px-8 pt-5 pb-4' : 'px-10 pt-6 pb-5'} bg-white`}>
+        <div className="flex items-end justify-between mb-3 shrink-0">
+          <div>
+            <span className="font-bold text-xs tracking-widest block mb-1" style={{ color: primaryColor }}>PROPERTY INFO</span>
+            <h2 className={`text-[26px] font-black text-gray-800 ${headingFont}`}>매물 상세 정보</h2>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-x-8 shrink-0">
+          {rows.map((r) => (
+            <div key={r.key} className={`flex justify-between items-baseline gap-4 border-b border-gray-200 py-2.5 ${r.full ? 'col-span-2' : ''}`}>
+              <span className="text-gray-600 font-bold text-[15px] shrink-0">{r.l}</span>
+              <span {...editable(r.key)} className={`font-extrabold text-gray-950 text-[17px] text-right break-keep ${editClass}`}>{String(info[r.key] || '-')}</span>
+            </div>
+          ))}
+        </div>
+        {info.noticeContent && info.noticeContent.trim() !== '' ? (
+          <div ref={noticeBoxRef} className={`flex-1 min-h-0 overflow-hidden mt-4 px-5 py-4 ${layout === 'type4' ? 'border-2 border-gray-100' : 'bg-[#f4f6f8] rounded-sm'}`}>
+            <p ref={noticeTextRef} {...editable('noticeContent')} className={`text-gray-900 font-bold leading-relaxed whitespace-pre-wrap ${bodyFont} ${editClass}`}>{info.noticeContent}</p>
+          </div>
+        ) : <div className="flex-1" />}
+      </div>
+    );
+  };
+
+  // ── 4. 연락처 (사무소·전화·QR) — 인쇄물이라 버튼 대신 크게 적고 QR 로 매물 페이지를 연다 ──
+  const renderContact = () => {
+    const light = layout === 'type4';
+    const bg = layout === 'type5' ? '#000000' : light ? '#ffffff' : darkColor;
+    const sub = light ? 'text-gray-500' : 'text-white/70';
+    const mainPhone = info.agentMobile || info.agentPhone;
+    const otherPhone = info.agentMobile && info.agentPhone && info.agentPhone !== info.agentMobile ? info.agentPhone : '';
+    return (
+      <div className={`shrink-0 flex items-center gap-6 ${isLand ? 'px-8 py-5' : 'px-10 py-6'} ${light ? 'text-gray-900 border-t-4' : 'text-white'}`}
+        style={{ backgroundColor: bg, borderColor: light ? primaryColor : undefined }}>
+        <div className="flex-1 min-w-0">
+          <p {...editable('agentName')} className={`font-black text-[24px] leading-tight break-keep ${headingFont} ${editClass}`}>{info.agentName}</p>
+          {info.agentRepresentative && <p {...editable('agentRepresentative')} className={`text-[14px] font-bold mt-1 ${sub} ${editClass}`}>{info.agentRepresentative}</p>}
+          {(info.agentAdditionalInfo || []).filter(Boolean).map((line, i) => (
+            <p key={i} className={`text-[12px] leading-snug mt-0.5 ${sub} break-keep`}>{line}</p>
+          ))}
+        </div>
+        <div className="shrink-0 flex flex-col items-end">
+          <div className="flex items-center gap-2">
+            <span className={`w-10 h-10 rounded-full flex items-center justify-center ${light ? 'text-white' : 'bg-white'}`} style={{ backgroundColor: light ? primaryColor : undefined, color: light ? undefined : bg }}>
+              <PhoneIcon className="w-5 h-5" />
+            </span>
+            <span {...editable(info.agentMobile ? 'agentMobile' : 'agentPhone')} className={`font-black tracking-tight ${isLand ? 'text-[32px]' : 'text-[36px]'} ${editClass}`}>{mainPhone}</span>
+          </div>
+          {otherPhone && <span className={`text-[16px] font-bold mt-1 ${sub}`}>{otherPhone}</span>}
+        </div>
+        {qrDataUrl && (
+          <div className="shrink-0 flex flex-col items-center">
+            <img src={qrDataUrl} alt="매물 QR" className="w-[104px] h-[104px] bg-white p-1.5 rounded" />
+            <span className={`text-[11px] font-bold mt-1 ${sub}`}>QR로 매물 보기</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ══ 1번 디자인 — 거리 가독성 (압구정 유리창 연구, 2026-10-01) ══
+  // 행인이 3~5m 밖에서 1~2초 본다 → 가격(종이 높이 12% 이상) > 단지명·평형 > 전화 순서로 크게.
+  // 색은 사무소 대표색 + 검정 두 가지, 빨강은 딱지에만. 모든 매물이 같은 틀이라 여러 장 붙이면 브랜드 벽이 된다.
+  const pyeong = info.pyeong || (() => {
+    const m = (info.area || '').match(/([\d.]+)\s*평/);
+    return m ? `${Math.round(parseFloat(m[1]))}평` : '';
+  })();
+  const priceText = `${formatPrice(info.priceMain || '')}${isRent && info.priceSub ? ` / ${info.priceSub}` : ''}`;
+  const tradeWord = info.transactionType === '단기임대' ? '단기' : info.transactionType;
+  const showPhoto = info.showPhoto !== false;
+  const phone = info.agentMobile || info.agentPhone || '';
+
+  const renderStreet = () => {
+    const pad = 56;
+    const fitAttrs = (max: number, min: number) => ({ 'data-fit': '', 'data-fit-max': max, 'data-fit-min': min } as Record<string, unknown>);
+    const oneLine: React.CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', flexShrink: 0 };
+
+    const head = (
+      <div className="flex items-center gap-3" style={{ marginBottom: 16, flexShrink: 0 }}>
+        {info.badge && (
+          <span style={{ background: '#e11d2a', color: '#fff', fontSize: 28, fontWeight: 900, padding: '6px 18px', borderRadius: 6, letterSpacing: 1 }}>{info.badge}</span>
+        )}
+        <span {...editable('transactionType')} className={editClass}
+          style={{ border: `3px solid ${primaryColor}`, color: primaryColor, fontSize: 28, fontWeight: 900, padding: '3px 16px', borderRadius: 6 }}>{tradeWord}</span>
+      </div>
+    );
+    const name = (
+      <h1 {...editable('address')} {...fitAttrs(isLand ? 80 : 90, 40)} className={editClass}
+        style={{ ...oneLine, fontWeight: 900, color: '#111', lineHeight: 1.12, letterSpacing: -2 }}>{info.address}</h1>
+    );
+    const sizeLine = (
+      <div style={{ ...oneLine, fontSize: isLand ? 34 : 40, fontWeight: 800, color: '#374151', marginTop: 6 }}>
+        <span {...editable('pyeong')} className={editClass}>{pyeong}</span>
+        {info.floor && <span style={{ color: '#9ca3af', fontWeight: 600 }}>{pyeong ? '  ·  ' : ''}{info.floor}</span>}
+      </div>
+    );
+    const price = (
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, marginTop: isLand ? 14 : 18, flexShrink: 0 }}>
+        <span style={{ fontSize: isLand ? 30 : 34, fontWeight: 900, color: primaryColor, flexShrink: 0 }}>{priceLabel}</span>
+        <span {...editable('priceMain')} {...fitAttrs(isLand ? 140 : 168, 70)} className={editClass}
+          style={{ ...oneLine, flex: 1, fontWeight: 900, color: primaryColor, lineHeight: 1, letterSpacing: -5 }}>{priceText}</span>
+      </div>
+    );
+    const rows: { l: string; key: keyof PropertyInfo }[] = [
+      { l: '면적', key: 'area' }, { l: '방향', key: 'direction' },
+      { l: '방/욕실', key: 'roomCount' }, { l: '주차', key: 'parking' },
+      { l: '관리비', key: 'managementFee' }, { l: '입주', key: 'moveInDate' },
+    ];
+    const big = !showPhoto;
+    const infoRows = (
+      <div className="grid grid-cols-2" style={{ columnGap: 28 }}>
+        {rows.map((r) => (
+          <div key={r.key} className={r.key === 'area' ? 'col-span-2' : ''}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, borderBottom: '1px solid #e5e7eb', padding: big ? '12px 0' : '9px 0' }}>
+            <span style={{ fontSize: big ? 22 : 19, fontWeight: 700, color: '#6b7280', flexShrink: 0 }}>{r.l}</span>
+            <span {...editable(r.key)} className={editClass} style={{ fontSize: big ? 26 : 22, fontWeight: 800, color: '#111', textAlign: 'right', wordBreak: 'keep-all' }}>{String(info[r.key] || '-')}</span>
+          </div>
+        ))}
+      </div>
+    );
+    const notice = info.noticeContent && info.noticeContent.trim() !== '' ? (
+      <div ref={noticeBoxRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', marginTop: 16, padding: '14px 18px', background: '#f4f6f8', borderLeft: `5px solid ${primaryColor}` }}>
+        <p ref={noticeTextRef} {...editable('noticeContent')} className={`text-gray-900 font-bold leading-relaxed whitespace-pre-wrap ${editClass}`}>{info.noticeContent}</p>
+      </div>
+    ) : <div style={{ flex: 1 }} />;
+    const photo = (h: number | string) => (
+      <div style={{ height: h, borderRadius: 14, overflow: 'hidden', flexShrink: 0 }}>
+        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer" title="클릭하여 메인 이미지 변경" />
+      </div>
+    );
+    const band = (
+      <div className="flex items-center" style={{ flexShrink: 0, gap: 28, background: primaryColor, color: '#fff', padding: `${isLand ? 18 : 22}px ${pad}px` }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="flex items-baseline" style={{ gap: 14 }}>
+            <p {...editable('agentName')} {...fitAttrs(30, 18)} className={editClass} style={{ ...oneLine, width: 'auto', maxWidth: '100%', fontWeight: 900, lineHeight: 1.2 }}>{info.agentName}</p>
+          </div>
+          <p style={{ ...oneLine, fontSize: 16, fontWeight: 600, opacity: .85, marginTop: 2, textOverflow: 'ellipsis' }}>
+            {[info.agentRepresentative, ...(info.agentAdditionalInfo || []).filter((l) => l.startsWith('등록번호'))].filter(Boolean).join('  ·  ')}
+          </p>
+          <div className="flex items-center" style={{ gap: 12, marginTop: 8 }}>
+            <PhoneIcon style={{ width: 46, height: 46, flexShrink: 0 }} />
+            <span {...editable(info.agentMobile ? 'agentMobile' : 'agentPhone')} {...fitAttrs(isLand ? 62 : 70, 36)} className={editClass}
+              style={{ ...oneLine, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1.05 }}>{phone}</span>
+          </div>
+        </div>
+        {qrDataUrl && (
+          <div style={{ flexShrink: 0, textAlign: 'center' }}>
+            <img src={qrDataUrl} alt="매물 QR" style={{ width: isLand ? 116 : 128, height: isLand ? 116 : 128, background: '#fff', padding: 6, borderRadius: 8 }} />
+            <div style={{ fontSize: 13, fontWeight: 800, marginTop: 4, opacity: .9 }}>QR로 사진·위치 보기</div>
+          </div>
+        )}
+      </div>
+    );
+
+    return (
+      <div ref={ref} data-flyer-page className="bg-white overflow-hidden flex flex-col font-sans" style={{ width: pageW, height: pageH }}>
+        <div style={{ height: 14, background: primaryColor, flexShrink: 0 }} />
+        {isLand ? (
+          <div className="flex" style={{ flex: 1, minHeight: 0 }}>
+            <div className="flex flex-col" style={{ flex: 1, minWidth: 0, padding: `32px ${pad}px 22px` }}>
+              {head}{name}{sizeLine}{price}
+              <div style={{ marginTop: 18, flexShrink: 0 }}>{infoRows}</div>
+              {!showPhoto && notice}
+            </div>
+            {showPhoto && <div style={{ width: 500, padding: '32px 40px 22px 0', display: 'flex', flexDirection: 'column' }}>{photo('100%')}</div>}
+          </div>
+        ) : (
+          <div className="flex flex-col" style={{ flex: 1, minHeight: 0, padding: `38px ${pad}px 24px` }}>
+            {head}{name}{sizeLine}{price}
+            {showPhoto && <div style={{ marginTop: 22, flexShrink: 0 }}>{photo(290)}</div>}
+            <div style={{ marginTop: showPhoto ? 16 : 30, flexShrink: 0 }}>{infoRows}</div>
+            {notice}
+          </div>
+        )}
+        {band}
+      </div>
+    );
+  };
+
+  // 한 줄 글자(단지명·가격·사무소명)가 칸을 넘치면 넘치지 않을 때까지 줄인다
+  useLayoutEffect(() => {
+    const host = (ref as React.RefObject<HTMLDivElement>)?.current;
+    if (!host) return;
+    const fitAll = () => {
+      host.querySelectorAll<HTMLElement>('[data-fit]').forEach((el) => {
+        const max = Number(el.dataset.fitMax) || 60;
+        const min = Number(el.dataset.fitMin) || 16;
+        let size = max;
+        el.style.fontSize = `${size}px`;
+        while (el.scrollWidth > el.clientWidth + 1 && size > min) {
+          size -= 2;
+          el.style.fontSize = `${size}px`;
+        }
+      });
+    };
+    fitAll();
+    document.fonts?.ready.then(fitAll);
+  });
+
+  if (layout === 'type1') return renderStreet();
 
   return (
-    <div className="flex justify-center p-4">
-      <div 
-        ref={ref}
-        className={`bg-white shadow-2xl flex flex-col w-full max-w-[860px] mx-auto min-h-[1400px] ${bodyFont}`}
-      >
-        <style dangerouslySetInnerHTML={{ __html: `
-            /* Global font size overrides for Flyer Canvas */
-            
-            /* Stats Bar values */
-            [data-export-id="stats"] .text-lg,
-            [data-export-id="stats"] .text-xl,
-            [data-export-id="stats"] .md\\:text-xl,
-            [data-export-id="stats"] .text-2xl,
-            [data-export-id="stats"] .md\\:text-2xl,
-            [data-export-id="stats"] .text-3xl,
-            [data-export-id="stats"] .md\\:text-3xl {
-              font-size: 26px !important;
-              font-weight: 900 !important;
-            }
-            /* Stats Bar labels */
-            [data-export-id="stats"] .text-\\[10px\\],
-            [data-export-id="stats"] .text-xs,
-            [data-export-id="stats"] .opacity-70 {
-              font-size: 13px !important;
-              font-weight: 700 !important;
-            }
-            /* Property Info Table Title */
-            [data-export-id="basic-info"] h2 {
-              font-size: 32px !important;
-              font-weight: 900 !important;
-            }
-            /* Property Info Table Management Fee Label */
-            [data-export-id="basic-info"] .text-gray-400 {
-              font-size: 14px !important;
-              font-weight: 700 !important;
-            }
-            /* Property Info Table Management Fee Value */
-            [data-export-id="basic-info"] .text-xl {
-              font-size: 26px !important;
-              font-weight: 900 !important;
-            }
-            /* Table Row Labels */
-            [data-export-id="basic-info"] .grid > div > span:first-child {
-              font-size: 18px !important;
-              font-weight: 800 !important;
-            }
-            /* Table Row Values */
-            [data-export-id="basic-info"] .grid > div > span:last-child {
-              font-size: 20px !important;
-              font-weight: 900 !important;
-            }
-            /* Notice Box default (JS loop overrides font-size, padding, margin-top) */
-            [data-print-notice-box] {
-              padding: 20px;
-              margin-top: 16px;
-            }
-            [data-print-notice-box] > span {
-              font-size: 15px !important;
-              font-weight: 800 !important;
-            }
-            [data-print-notice-text] {
-              font-size: 16px;
-              font-weight: 800 !important;
-            }
-        `}} />
-        {/* 1. HERO SECTION */}
-        {renderHero()}
-
-        {/* 2. STATS BAR */}
-        {renderStats()}
-
-        {/* 3. INFO TABLE SECTION */}
-        <div data-export-id="basic-info" className="pt-6 pb-12 px-6 md:px-12 bg-white">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4 md:gap-0">
-                <div>
-                    <span contentEditable spellCheck={false} suppressContentEditableWarning className={`font-bold text-xs tracking-widest block mb-1 ${editClass}`} style={{ color: primaryColor }}>PROPERTY INFO</span>
-                    <h2 contentEditable spellCheck={false} suppressContentEditableWarning className={`text-2xl md:text-3xl font-bold text-gray-800 ${headingFont} ${editClass}`}>매물 상세 정보</h2>
-                </div>
-                <div className="text-left md:text-right">
-                    <span contentEditable spellCheck={false} suppressContentEditableWarning className={`text-gray-400 text-xs block mb-1 ${editClass}`}>월 관리비</span>
-                    <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('managementFee', e.currentTarget.innerText)} className={`text-xl font-bold text-gray-800 ${editClass}`}>{info.managementFee}</span>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-7 text-[16px] md:text-sm">
-                {[
-                    { l: '공급/전용면적', v: info.area },
-                    { l: '해당층/총층', v: info.floor },
-                    { l: '방향', v: info.direction },
-                    { l: '주차가능대수', v: info.parking },
-                    { l: '옵션 정보', v: info.options, full: true }
-                ].map((item, i) => (
-                    <div key={i} className={`flex justify-between border-b border-gray-150 pb-4 ${item.full ? 'col-span-1 md:col-span-2' : ''}`}>
-                        <span contentEditable spellCheck={false} suppressContentEditableWarning className={`text-gray-700 font-bold text-[16px] md:text-sm ${editClass}`}>{item.l}</span>
-                        <span contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => { if (item.l === '공급/전용면적') onTextChange?.('area', e.currentTarget.innerText); else if (item.l === '해당층/총층') onTextChange?.('floor', e.currentTarget.innerText); else if (item.l === '방향') onTextChange?.('direction', e.currentTarget.innerText); else if (item.l === '주차가능대수') onTextChange?.('parking', e.currentTarget.innerText); else onTextChange?.('options', e.currentTarget.innerText); }} className={`font-extrabold text-gray-950 text-[18px] md:text-[15px] ${editClass}`}>{item.v}</span>
-                    </div>
-                ))}
-
-                {/* Notice Box */}
-                {info.noticeContent && info.noticeContent.trim() !== "" && (
-                    <div data-print-notice-box className={`col-span-1 md:col-span-2 p-6 mt-4 ${layout === 'type4' ? 'border-2 border-gray-100 bg-white' : 'bg-[#f4f6f8] rounded-sm'}`}>
-                        <p data-print-notice-text contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('noticeContent', e.currentTarget.innerText)} className={`text-gray-950 text-[17px] md:text-sm font-bold leading-relaxed whitespace-pre-wrap ${bodyFont} ${editClass}`}>
-                            {info.noticeContent}
-                        </p>
-                    </div>
-                )}
-            </div>
-        </div>
-
-        {/* 4. DYNAMIC SECTIONS */}
-        <div className="bg-white">
-            {info.sections.map(section => {
-                if (section.type === 'grid') return renderGridSection(section);
-                if (section.type === 'list') return renderListSection(section);
-                if (section.type === 'table') return renderTableSection(section);
-                if (section.type === 'sns') return renderSnsSection(section);
-                return null;
-            })}
-        </div>
-
-        {/* 5. FOOTER / AGENT INFO */}
-        <div data-export-id="agent-info" className={`text-white py-20 px-6 md:px-12 ${layout === 'type5' ? 'bg-black' : ''}`} style={{ backgroundColor: layout === 'type5' ? '#000' : '#222222' }}>
-            <div className="flex flex-col items-center">
-                <div className={`w-full max-w-3xl p-12 flex flex-col items-center text-center ${layout === 'type4' ? 'bg-white text-gray-900' : 'bg-[#2a2a2a] border border-gray-700'}`}>
-                    
-                    <span contentEditable spellCheck={false} suppressContentEditableWarning className={`text-sm font-bold tracking-widest mb-6 block ${layout === 'type4' ? 'text-gray-400' : ''} ${editClass}`} style={{ color: layout === 'type4' ? undefined : primaryColor }}>CONTACT AGENT</span>
-                    
-                    <div className="flex items-center justify-center gap-3 mb-3">
-                        <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('agentName', e.currentTarget.innerText)} className={`font-bold text-2xl md:text-3xl ${headingFont} ${editClass}`}>{info.agentName}</p>
-                        {info.agentMapUrl && (
-                            <a 
-                                href={info.agentMapUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className={`p-2 rounded-full transition-colors group ${layout === 'type4' ? 'bg-gray-200 hover:bg-gray-300' : 'bg-gray-700'}`}
-                                style={{ backgroundColor: layout === 'type4' ? undefined : 'rgb(55, 65, 81)' }}
-                                title="네이버 지도 보기"
-                            >
-                                <MapPinIcon className={`w-4 h-4 ${layout === 'type4' ? 'text-gray-600' : 'text-white'}`} />
-                            </a>
-                        )}
-                    </div>
-                    
-                    {info.agentRepresentative && (
-                         <p contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('agentRepresentative', e.currentTarget.innerText)} className={`text-base font-medium mb-6 ${layout === 'type4' ? 'text-gray-500' : 'text-gray-400'} ${editClass}`}>{info.agentRepresentative}</p>
-                    )}
-
-                    <div className="w-10 h-0.5 bg-gray-500 mb-6"></div>
-                    
-                    <div className="flex items-center justify-center gap-4 mb-8">
-                        {/* Phone Icon Button */}
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${layout === 'type4' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
-                            <PhoneIcon className="w-6 h-6" />
-                        </div>
-
-                        <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
-                            <a contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('agentPhone', e.currentTarget.innerText)} href={`tel:${info.agentPhone}`} className={`text-3xl md:text-4xl font-bold font-serif-en hover:opacity-80 transition-colors ${layout === 'type4' ? 'text-gray-900' : 'text-white'} ${editClass}`}>
-                                {info.agentPhone}
-                            </a>
-                            {info.agentMobile && (
-                                <>
-                                    <span className="hidden md:inline text-gray-500 font-thin text-3xl">|</span>
-                                    <a contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => onTextChange?.('agentMobile', e.currentTarget.innerText)} href={`tel:${info.agentMobile}`} className={`text-3xl md:text-4xl font-bold font-serif-en hover:opacity-80 transition-colors ${layout === 'type4' ? 'text-gray-900' : 'text-white'} ${editClass}`}>
-                                        {info.agentMobile}
-                                    </a>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                    
-                    {info.agentAdditionalInfo && info.agentAdditionalInfo.map((infoLine, idx) => (
-                        <p key={idx} contentEditable spellCheck={false} suppressContentEditableWarning onBlur={(e) => { const lines = [...(info.agentAdditionalInfo || [])]; lines[idx] = e.currentTarget.innerText; onTextChange?.('agentAdditionalInfo' as any, lines as any); }} className={`text-base mb-1 ${layout === 'type4' ? 'text-gray-500' : 'text-gray-400'} ${editClass}`}>{infoLine}</p>
-                    ))}
-                    
-                    {hasSocialLinks && (
-                        <div className="flex gap-4 mt-8 items-center justify-center">
-                            {socialLinks.map(link => {
-                                if (!link.url) return null;
-                                return (
-                                    <a 
-                                        key={link.key}
-                                        href={link.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors hover:opacity-80 ${layout === 'type4' ? 'bg-gray-200 text-gray-700' : 'bg-white/10 text-white'}`}
-                                        title={link.key.replace('social', '')}
-                                    >
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox={link.viewBox}>
-                                            <path d={link.icon} />
-                                        </svg>
-                                    </a>
-                                )
-                            })}
-                        </div>
-                    )}
-
-                    <div className="flex gap-4 w-full max-w-md mt-10">
-                        <a 
-                            href={`tel:${info.agentMobile || info.agentPhone || ''}`}
-                            className="flex-1 py-5 text-white text-2xl font-bold tracking-widest hover:opacity-90 transition-colors block text-center rounded-xl shadow-md"
-                            style={{ backgroundColor: primaryColor }}
-                        >
-                            전화하기
-                        </a>
-                        <a 
-                            href={`sms:${info.agentMobile || info.agentPhone || ''}`}
-                            className="flex-1 py-5 text-white text-2xl font-bold tracking-widest hover:opacity-90 transition-colors block text-center rounded-xl shadow-md"
-                            style={{ backgroundColor: secondaryColor }}
-                        >
-                            문자보내기
-                        </a>
-                    </div>
-                </div>
-                
-                <div className="mt-16 text-xs text-gray-600 text-center">
-                    Copyright © EasyRealtor AI. All rights reserved. 본 이미지는 소비자의 이해를 돕기 위한 것으로 실제와 다를 수 있습니다.
-                </div>
-            </div>
-        </div>
-
-      </div>
+    <div
+      ref={ref}
+      data-flyer-page
+      className={`bg-white overflow-hidden flex ${isLand ? 'flex-row' : 'flex-col'} ${bodyFont}`}
+      style={{ width: pageW, height: pageH }}
+    >
+      {isLand ? (
+        <>
+          <div className="relative h-full shrink-0" style={{ width: 600 }}>{renderHero()}</div>
+          <div className="flex-1 min-w-0 h-full flex flex-col">
+            {renderStats()}
+            {renderInfo()}
+            {renderContact()}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="relative shrink-0" style={{ height: 500 }}>{renderHero()}</div>
+          {renderStats()}
+          {renderInfo()}
+          {renderContact()}
+        </>
+      )}
     </div>
   );
 });

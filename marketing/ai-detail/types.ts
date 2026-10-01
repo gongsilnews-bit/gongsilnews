@@ -40,6 +40,11 @@ export interface PropertyInfo {
   moveInDate: string;       // 입주가능일 e.g. "즉시 입주 가능"
   options: string;          // 옵션 정보 e.g. "에어컨, 세탁기, 냉장고 풀옵션"
 
+  // 유리창 홍보지
+  badge?: string;           // 딱지 — '' | 급매 | 초급매 | 신규 | 가격조정
+  pyeong?: string;          // 평형 e.g. "46평" (손님은 평으로 본다)
+  showPhoto?: boolean;      // 대표 사진 넣기 (아파트는 끄고 숫자만 크게)
+
   // Dynamic Sections (Photos & Highlights)
   sections: FlyerSection[];
 

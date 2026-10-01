@@ -1,17 +1,12 @@
 
-import React, { useRef, useState } from 'react';
-import { PropertyInfo, FlyerSection, SectionItem, SectionType, TransactionType, FlyerColor, FlyerLayout } from '../types';
-import { PhotoIcon, SparklesIcon, DocumentTextIcon, PlusIcon, TrashIcon, Squares2X2Icon, ListBulletIcon, ChevronUpIcon, ChevronDownIcon, CloudArrowUpIcon, CameraIcon, XMarkIcon, TableCellsIcon, MapPinIcon, LinkIcon, SwatchIcon, RectangleGroupIcon, GlobeAltIcon, ShareIcon } from '@heroicons/react/24/outline';
+import React from 'react';
+import { PropertyInfo, TransactionType, FlyerColor, FlyerLayout } from '../types';
+import { PhotoIcon, DocumentTextIcon, PlusIcon, TrashIcon, SwatchIcon, RectangleGroupIcon } from '@heroicons/react/24/outline';
 
 interface FlyerFormProps {
   info: PropertyInfo;
   setInfo: (info: PropertyInfo) => void;
   onImageUpload: (key: string, file: File) => void;
-  onGenerate: () => void;
-  onAnalyzeImage: (files: File[]) => void;
-  onAnalyzeAgentImage?: (file: File) => void;
-  onAnalyzeComplexImage?: (sectionId: string, file: File) => void;
-  isGenerating: boolean;
   uploadedImages: Record<string, string | null | any>;
   colors: FlyerColor[];
   layouts: FlyerLayout[];
@@ -23,17 +18,9 @@ interface FlyerFormProps {
 }
 
 const FlyerForm: React.FC<FlyerFormProps> = ({ 
-    info, setInfo, onImageUpload, onGenerate, onAnalyzeImage, onAnalyzeAgentImage, onAnalyzeComplexImage, isGenerating, uploadedImages, 
+    info, setInfo, onImageUpload, uploadedImages, 
     colors, layouts, currentColor, currentLayout, onColorSelect, onLayoutSelect, isUploadingImage
 }) => {
-  const analysisInputRef = useRef<HTMLInputElement>(null);
-  const agentImageInputRef = useRef<HTMLInputElement>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [analysisFiles, setAnalysisFiles] = useState<File[]>([]);
-  const [agentImagePreview, setAgentImagePreview] = useState<string | null>(null);
-  const [agentFile, setAgentFile] = useState<File | null>(null);
-  const [complexFiles, setComplexFiles] = useState<Record<string, File>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -48,212 +35,6 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
     if (e.target.files && e.target.files[0]) {
       onImageUpload(key, e.target.files[0]);
     }
-  };
-
-  const handleAnalysisFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-        const files: File[] = Array.from(e.target.files);
-        setAnalysisFiles(prev => [...prev, ...files]);
-        
-        const newPreviews = files.map(file => URL.createObjectURL(file));
-        setPreviewUrls(prev => [...prev, ...newPreviews]);
-
-        if (analysisInputRef.current) {
-            analysisInputRef.current.value = '';
-        }
-    }
-  };
-
-  const handleRunSmartAnalysis = async () => {
-      if (analysisFiles.length === 0) {
-          alert("먼저 사진을 업로드해주세요.");
-          return;
-      }
-
-      setIsAnalyzing(true);
-      try {
-          await onAnalyzeImage(analysisFiles);
-      } finally {
-          setIsAnalyzing(false);
-      }
-  };
-
-  const handleAgentImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files[0]) {
-          const file = e.target.files[0];
-          setAgentFile(file);
-          onImageUpload('agentImage', file);
-      }
-  };
-
-  const handleAiAnalysisClick = async () => {
-    if (!onAnalyzeAgentImage) return;
-
-    if (agentFile) {
-        await onAnalyzeAgentImage(agentFile);
-    } else if (uploadedImages.agentImage) {
-        try {
-            const response = await fetch(uploadedImages.agentImage);
-            const blob = await response.blob();
-            const file = new File([blob], "agent_image.jpg", { type: blob.type });
-            setAgentFile(file);
-            await onAnalyzeAgentImage(file);
-        } catch (e) {
-            agentImageInputRef.current?.click();
-        }
-    } else {
-        agentImageInputRef.current?.click();
-    }
-  };
-
-  const handleComplexFileChange = (sectionId: string) => async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-        setComplexFiles(prev => ({...prev, [sectionId]: file}));
-        onImageUpload(`complexImage-${sectionId}`, file);
-    }
-  };
-
-  const handleComplexAnalysisClick = (sectionId: string) => {
-      if (!onAnalyzeComplexImage) return;
-      
-      const file = complexFiles[sectionId];
-      if (file) {
-          onAnalyzeComplexImage(sectionId, file);
-      } else if (uploadedImages[`complexImage-${sectionId}`]) {
-           fetch(uploadedImages[`complexImage-${sectionId}`])
-            .then(res => res.blob())
-            .then(blob => {
-                const f = new File([blob], "complex_info.jpg", { type: blob.type });
-                setComplexFiles(prev => ({...prev, [sectionId]: f}));
-                onAnalyzeComplexImage(sectionId, f);
-            })
-            .catch(() => {
-                document.getElementById(`complex-upload-${sectionId}`)?.click();
-            });
-      } else {
-          document.getElementById(`complex-upload-${sectionId}`)?.click();
-      }
-  };
-
-  const clearPreviews = () => {
-    setPreviewUrls([]);
-    setAnalysisFiles([]);
-  };
-
-  // Section Management functions...
-  const addSection = (type: SectionType) => {
-      const newSection: FlyerSection = {
-          id: `section-${Date.now()}`,
-          type,
-          title: type === 'grid' ? '주요 특징' : type === 'list' ? '공간 상세' : type === 'table' ? '단지 정보' : '관련 링크',
-          intro: type === 'grid' ? 'HIGHLIGHTS' : type === 'list' ? 'DETAILS' : type === 'table' ? 'COMPLEX INFO' : 'MEDIA & NEWS',
-          description: type === 'list' ? '상세 설명을 입력해주세요.' : undefined,
-          items: [
-              { id: `item-${Date.now()}-1`, text: '', title: type === 'table' ? '' : type === 'sns' ? '홍보 영상' : undefined, imageKey: type === 'sns' ? 'youtube' : `img-${Date.now()}-1` }
-          ]
-      };
-      setInfo({ ...info, sections: [...info.sections, newSection] });
-  };
-
-  const removeSection = (sectionIndex: number) => {
-      const newSections = info.sections.filter((_, i) => i !== sectionIndex);
-      setInfo({ ...info, sections: newSections });
-  };
-
-  const moveSection = (index: number, direction: 'up' | 'down') => {
-      const newSections = [...info.sections];
-      if (direction === 'up' && index > 0) {
-          [newSections[index], newSections[index - 1]] = [newSections[index - 1], newSections[index]];
-      } else if (direction === 'down' && index < newSections.length - 1) {
-          [newSections[index], newSections[index + 1]] = [newSections[index + 1], newSections[index]];
-      }
-      setInfo({ ...info, sections: newSections });
-  };
-
-  const updateSection = (sectionIndex: number, field: keyof FlyerSection, value: any) => {
-      const newSections = info.sections.map((sec, i) => {
-          if (i === sectionIndex) {
-              return { ...sec, [field]: value };
-          }
-          return sec;
-      });
-      setInfo({ ...info, sections: newSections });
-  };
-
-  const addItemToSection = (sectionIndex: number) => {
-      const newSections = info.sections.map((sec, i) => {
-          if (i === sectionIndex) {
-              if (sec.items.length >= 12) {
-                  alert("섹션당 최대 12개까지만 추가 가능합니다.");
-                  return sec;
-              }
-              return {
-                  ...sec,
-                  items: [
-                      ...sec.items,
-                      {
-                          id: `item-${Date.now()}`,
-                          text: '',
-                          title: sec.type === 'list' ? `공간 0${sec.items.length + 1}` : sec.type === 'sns' ? '새 링크' : undefined,
-                          imageKey: sec.type === 'sns' ? 'youtube' : `img-${sec.id}-${Date.now()}`
-                      }
-                  ]
-              };
-          }
-          return sec;
-      });
-      setInfo({ ...info, sections: newSections });
-  };
-
-  const removeItemFromSection = (sectionIndex: number, itemIndex: number) => {
-      const targetSection = info.sections[sectionIndex];
-      if (targetSection.items.length <= 1) {
-           alert("최소 1개의 항목이 필요합니다.");
-           return;
-      }
-      const newSections = info.sections.map((sec, i) => {
-          if (i === sectionIndex) {
-              return {
-                  ...sec,
-                  items: sec.items.filter((_, itemIdx) => itemIdx !== itemIndex)
-              };
-          }
-          return sec;
-      });
-      setInfo({ ...info, sections: newSections });
-  };
-
-  const moveItemInSection = (sectionIndex: number, itemIndex: number, direction: 'up' | 'down') => {
-      const newSections = info.sections.map((sec, i) => {
-          if (i === sectionIndex) {
-              const newItems = [...sec.items];
-              if (direction === 'up' && itemIndex > 0) {
-                  [newItems[itemIndex], newItems[itemIndex - 1]] = [newItems[itemIndex - 1], newItems[itemIndex]];
-              } else if (direction === 'down' && itemIndex < newItems.length - 1) {
-                  [newItems[itemIndex], newItems[itemIndex + 1]] = [newItems[itemIndex + 1], newItems[itemIndex]];
-              }
-              return { ...sec, items: newItems };
-          }
-          return sec;
-      });
-      setInfo({ ...info, sections: newSections });
-  };
-
-  const updateItemInSection = (sectionIndex: number, itemIndex: number, field: keyof SectionItem, value: string) => {
-      const newSections = info.sections.map((sec, i) => {
-          if (i === sectionIndex) {
-              const newItems = sec.items.map((item, itemIdx) => {
-                  if (itemIdx === itemIndex) {
-                      return { ...item, [field]: value };
-                  }
-                  return item;
-              });
-              return { ...sec, items: newItems };
-          }
-          return sec;
-      });
-      setInfo({ ...info, sections: newSections });
   };
 
   const addAgentInfoItem = () => {
@@ -275,7 +56,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
 
   const clearAgentInfo = () => {
     if(confirm("중개사 정보를 초기화하시겠습니까?")) {
-        setInfo({ ...info, agentName: '', agentPhone: '', agentMobile: '', agentRepresentative: '', agentMapUrl: '', consultationUrl: '', agentAdditionalInfo: [], socialYoutube: '', socialBlog: '', socialInstagram: '', socialFacebook: '', socialKakao: '', socialThreads: '' });
+        setInfo({ ...info, agentName: '', agentPhone: '', agentMobile: '', agentRepresentative: '', agentAdditionalInfo: [] });
     }
   };
 
@@ -503,6 +284,50 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                 </div>
             </div>
 
+            {/* 유리창 홍보지 — 딱지 · 평형 · 사진 */}
+            <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-2">딱지 (빨간 표시)</label>
+                <div className="flex gap-1.5 flex-wrap">
+                    {['', '급매', '초급매', '신규', '가격조정'].map((b) => (
+                        <button
+                            key={b || 'none'}
+                            type="button"
+                            onClick={() => setInfo({ ...info, badge: b })}
+                            className="px-3 py-1.5 text-xs font-bold rounded border transition-colors"
+                            style={{
+                                backgroundColor: (info.badge || '') === b ? (b ? '#e11d2a' : '#374151') : 'white',
+                                color: (info.badge || '') === b ? 'white' : '#4b5563',
+                                borderColor: (info.badge || '') === b ? (b ? '#e11d2a' : '#374151') : '#e5e7eb',
+                            }}
+                        >
+                            {b || '없음'}
+                        </button>
+                    ))}
+                </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 items-end">
+                <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">평형 (크게 표시)</label>
+                    <input
+                        name="pyeong"
+                        value={info.pyeong || ''}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 text-sm border rounded outline-none focus:ring-1"
+                        style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                        placeholder="예: 46평"
+                    />
+                </div>
+                <label className="flex items-center gap-2 text-xs font-bold text-gray-600 cursor-pointer select-none pb-2">
+                    <input
+                        type="checkbox"
+                        checked={info.showPhoto !== false}
+                        onChange={(e) => setInfo({ ...info, showPhoto: e.target.checked })}
+                        className="w-4 h-4"
+                    />
+                    대표 사진 넣기
+                </label>
+            </div>
+
             {/* Price Inputs */}
             <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -590,264 +415,13 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
             </div>
         </div>
 
-        <hr className="border-gray-200" />
-        
-        {/* Dynamic Sections Loop */}
-        {info.sections.map((section, sIndex) => (
-            <div key={section.id} className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200 relative transition-all">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-2">
-                     <div className="flex items-center gap-2">
-                        <span 
-                            className="text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider"
-                            style={{ backgroundColor: section.type === 'grid' ? primaryColor : section.type === 'list' ? currentColor.dark : section.type === 'table' ? 'gray' : '#ef4444' }}
-                        >
-                            {section.type === 'grid' ? '사진/특징 그리드' : 
-                             section.type === 'list' ? '상세 설명 리스트' : 
-                             section.type === 'table' ? '단지 정보 테이블' : 'SNS 링크'}
-                        </span>
-                     </div>
-                     <div className="flex gap-1">
-                         <button type="button" onClick={() => moveSection(sIndex, 'up')} disabled={sIndex === 0} className="p-1 rounded-full border border-gray-100 text-gray-500 hover:bg-gray-100"><ChevronUpIcon className="w-4 h-4" /></button>
-                         <button type="button" onClick={() => moveSection(sIndex, 'down')} disabled={sIndex === info.sections.length - 1} className="p-1 rounded-full border border-gray-100 text-gray-500 hover:bg-gray-100"><ChevronDownIcon className="w-4 h-4" /></button>
-                         <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                         <button type="button" onClick={() => removeSection(sIndex)} className="text-red-400 hover:text-red-600 p-1 bg-white rounded-full shadow-sm border border-gray-100"><TrashIcon className="w-4 h-4" /></button>
-                     </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="col-span-2">
-                        <label className="block text-[10px] font-bold text-gray-400 mb-1">섹션 제목</label>
-                        <input value={section.title} onChange={(e) => updateSection(sIndex, 'title', e.target.value)} className="w-full px-2 py-1.5 text-sm border rounded outline-none focus:ring-1" style={{ '--tw-ring-color': primaryColor } as React.CSSProperties} placeholder="제목" />
-                    </div>
-                    <div>
-                         <label className="block text-[10px] font-bold text-gray-400 mb-1">영문/소제목</label>
-                        <input value={section.intro || ''} onChange={(e) => updateSection(sIndex, 'intro', e.target.value)} className="w-full px-2 py-1.5 text-xs border rounded outline-none focus:ring-1" style={{ '--tw-ring-color': primaryColor } as React.CSSProperties} placeholder="INTRO" />
-                    </div>
-                    {section.type === 'list' && (
-                         <div className="col-span-2">
-                            <label className="block text-[10px] font-bold text-gray-400 mb-1">섹션 설명</label>
-                            <textarea value={section.description || ''} onChange={(e) => updateSection(sIndex, 'description', e.target.value)} rows={2} className="w-full px-2 py-1.5 text-xs border rounded outline-none focus:ring-1" style={{ '--tw-ring-color': primaryColor } as React.CSSProperties} placeholder="설명" />
-                        </div>
-                    )}
-                </div>
-
-                {/* Complex Info Analysis Upload Area */}
-                {section.type === 'table' && (
-                    <div className="mt-4 mb-2 bg-white p-3 rounded border border-gray-100">
-                        <label className="block text-[10px] font-bold text-gray-400 mb-2">단지 정보 사진 (자동 입력)</label>
-                        <div className="flex gap-3 items-center">
-                            <div className="relative w-16 h-16 bg-gray-100 rounded border border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-50 overflow-hidden">
-                                {uploadedImages[`complexImage-${section.id}`] ? (
-                                    <img src={uploadedImages[`complexImage-${section.id}`]} className="w-full h-full object-cover" />
-                                ) : (
-                                    <PhotoIcon className="w-6 h-6 text-gray-400" />
-                                )}
-                                {isUploadingImage && isUploadingImage[`complexImage-${section.id}`] ? (
-                                    <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white z-30">
-                                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                    </div>
-                                ) : null}
-                                <input 
-                                    id={`complex-upload-${section.id}`}
-                                    type="file" 
-                                    accept="image/*" 
-                                    onChange={handleComplexFileChange(section.id)} 
-                                    className="absolute inset-0 opacity-0 cursor-pointer"
-                                    disabled={isUploadingImage && !!isUploadingImage[`complexImage-${section.id}`]}
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <button 
-                                    onClick={() => document.getElementById(`complex-upload-${section.id}`)?.click()}
-                                    className="text-xs font-bold hover:underline mb-1"
-                                    style={{ color: primaryColor }}
-                                >
-                                    이미지 업로드
-                                </button>
-                                <p className="text-[10px] text-gray-400">단지 개요표 등을 올리면 자동으로 정보를 입력해줍니다.</p>
-                            </div>
-                            <button
-                                onClick={() => handleComplexAnalysisClick(section.id)}
-                                className="px-3 py-1.5 text-white text-xs font-bold rounded hover:opacity-90 flex items-center gap-1"
-                                style={{ backgroundColor: primaryColor }}
-                            >
-                                <SparklesIcon className="w-3 h-3" />
-                                AI 분석
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                <div className="space-y-3 mt-4">
-                    {section.items.map((item, iIndex) => {
-                        const previewUrl = uploadedImages[item.imageKey];
-                        return (
-                          <div key={item.id} className="flex gap-3 items-start bg-white p-3 rounded border border-gray-100">
-                              
-                              {section.type !== 'table' && section.type !== 'sns' && (
-                                <div className="w-16 h-16 bg-gray-100 rounded flex-shrink-0 overflow-hidden relative group cursor-pointer border hover:border-gray-400 flex items-center justify-center">
-                                    {previewUrl ? (
-                                        <img src={previewUrl} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                            <PhotoIcon className="w-6 h-6" />
-                                        </div>
-                                    )}
-                                    {isUploadingImage && isUploadingImage[item.imageKey] ? (
-                                        <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white z-30">
-                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                        </div>
-                                    ) : null}
-                                    <input 
-                                      type="file" 
-                                      accept="image/*" 
-                                      onChange={handleFileChange(item.imageKey)} 
-                                      className="absolute inset-0 opacity-0 cursor-pointer" 
-                                      disabled={isUploadingImage && !!isUploadingImage[item.imageKey]}
-                                    />
-                                </div>
-                              )}
-
-                              <div className="flex-1 space-y-2">
-                                  {(section.type === 'list' || section.type === 'table' || section.type === 'sns') && (
-                                      <input 
-                                        value={item.title || ''} 
-                                        onChange={(e) => updateItemInSection(sIndex, iIndex, 'title', e.target.value)}
-                                        className="w-full px-2 py-1 text-xs border rounded outline-none focus:ring-1 font-bold" 
-                                        style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                                        placeholder={section.type === 'table' ? "항목명 (예: 세대수)" : section.type === 'sns' ? "기사/영상 제목 (예: 반포 자이 시세 분석)" : "공간 소제목 (Living Room)"} 
-                                      />
-                                  )}
-
-                                  {section.type === 'sns' && (
-                                      <select
-                                          value={item.imageKey}
-                                          onChange={(e) => updateItemInSection(sIndex, iIndex, 'imageKey', e.target.value)}
-                                          className="w-full px-2 py-1 text-xs border rounded outline-none focus:ring-1"
-                                          style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                                      >
-                                          <option value="youtube">YouTube (영상)</option>
-                                          <option value="blog">Blog (블로그)</option>
-                                          <option value="news">News (뉴스)</option>
-                                      </select>
-                                  )}
-                                  
-                                  {section.type === 'table' ? (
-                                      <input 
-                                        value={item.text} 
-                                        onChange={(e) => updateItemInSection(sIndex, iIndex, 'text', e.target.value)}
-                                        className="w-full px-2 py-1 text-xs border rounded outline-none focus:ring-1" 
-                                        style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                                        placeholder="내용 (예: 2444세대)" 
-                                      />
-                                  ) : section.type === 'sns' ? (
-                                      <input 
-                                        value={item.text} 
-                                        onChange={(e) => updateItemInSection(sIndex, iIndex, 'text', e.target.value)}
-                                        className="w-full px-2 py-1 text-xs border rounded outline-none focus:ring-1" 
-                                        style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                                        placeholder="링크 URL 입력 (예: https://youtube.com/...)" 
-                                      />
-                                  ) : (
-                                    <textarea 
-                                        value={item.text} 
-                                        onChange={(e) => updateItemInSection(sIndex, iIndex, 'text', e.target.value)}
-                                        rows={2} 
-                                        className="w-full px-2 py-1 text-xs border rounded outline-none focus:ring-1 resize-none" 
-                                        style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                                        placeholder={section.type === 'grid' ? "특징 설명 (짧게)" : "공간 상세 설명"} 
-                                    />
-                                  )}
-                              </div>
-
-                              <div className="flex flex-col gap-1">
-                                  <button onClick={() => moveItemInSection(sIndex, iIndex, 'up')} disabled={iIndex === 0} className="text-gray-400 hover:text-gray-600"><ChevronUpIcon className="w-3 h-3" /></button>
-                                  <button onClick={() => moveItemInSection(sIndex, iIndex, 'down')} disabled={iIndex === section.items.length - 1} className="text-gray-400 hover:text-gray-600"><ChevronDownIcon className="w-3 h-3" /></button>
-                                  <button onClick={() => removeItemFromSection(sIndex, iIndex)} className="text-red-300 hover:text-red-500"><TrashIcon className="w-3 h-3" /></button>
-                              </div>
-                          </div>
-                        );
-                    })}
-                </div>
-                
-                <button 
-                    onClick={() => addItemToSection(sIndex)}
-                    className="w-full py-2 mt-2 border border-dashed rounded text-xs font-bold flex items-center justify-center gap-1 hover:opacity-70 transition-opacity"
-                    style={{ borderColor: primaryColor, color: primaryColor }}
-                >
-                    <PlusIcon className="w-3 h-3" /> 항목 추가
-                </button>
-            </div>
-        ))}
-
-        {/* Agent Info Section */}
-        <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200 relative transition-all mt-4">
+        {/* Agent Info Section — 홍보지 아래쪽 연락처 */}
+        <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200 relative transition-all">
             <div className="flex justify-between items-center mb-2">
-                 <div className="flex items-center gap-2">
-                    <span className="text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider" style={{ backgroundColor: primaryColor }}>
-                        중개사 정보
-                    </span>
-                 </div>
-                 <div className="flex gap-1">
-                     <button type="button" disabled title="고정 섹션" className="p-1 rounded-full border border-gray-100 text-gray-300 cursor-not-allowed"><ChevronUpIcon className="w-4 h-4" /></button>
-                     <button type="button" disabled title="고정 섹션" className="p-1 rounded-full border border-gray-100 text-gray-300 cursor-not-allowed"><ChevronDownIcon className="w-4 h-4" /></button>
-                     <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                     <button type="button" onClick={clearAgentInfo} className="text-red-400 hover:text-red-600 p-1 bg-white rounded-full shadow-sm border border-gray-100"><TrashIcon className="w-4 h-4" /></button>
-                 </div>
-            </div>
-
-            <div className="mb-4 bg-white p-3 rounded border border-gray-100">
-                <label className="block text-[10px] font-bold text-gray-400 mb-2">명함/로고 사진 (자동 입력)</label>
-                <div className="flex gap-3 items-center">
-                    <div className="relative w-16 h-16 bg-gray-100 rounded border border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-50 overflow-hidden">
-                        {uploadedImages.agentImage ? (
-                            <img src={uploadedImages.agentImage} className="w-full h-full object-cover" />
-                        ) : (
-                            <PhotoIcon className="w-6 h-6 text-gray-400" />
-                        )}
-                        {isUploadingImage && isUploadingImage.agentImage ? (
-                            <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white z-30">
-                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </div>
-                        ) : null}
-                        <input 
-                            ref={agentImageInputRef}
-                            type="file" 
-                            accept="image/*" 
-                            onChange={handleAgentImageFileChange} 
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            disabled={isUploadingImage && !!isUploadingImage.agentImage}
-                        />
-                    </div>
-                    <div className="flex-1">
-                        <button 
-                            onClick={() => agentImageInputRef.current?.click()}
-                            className="text-xs font-bold hover:underline mb-1"
-                            style={{ color: primaryColor }}
-                        >
-                            이미지 업로드
-                        </button>
-                        <p className="text-[10px] text-gray-400">명함이나 로고를 올리면 자동으로 정보를 입력해줍니다.</p>
-                    </div>
-                    <button
-                        onClick={handleAiAnalysisClick}
-                        className="px-3 py-1.5 text-white text-xs font-bold rounded hover:opacity-90 flex items-center gap-1"
-                        style={{ backgroundColor: primaryColor }}
-                    >
-                        <SparklesIcon className="w-3 h-3" />
-                        AI 분석
-                    </button>
-                </div>
+                 <span className="text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider" style={{ backgroundColor: primaryColor }}>
+                     중개사 연락처
+                 </span>
+                 <button type="button" onClick={clearAgentInfo} className="text-red-400 hover:text-red-600 p-1 bg-white rounded-full shadow-sm border border-gray-100"><TrashIcon className="w-4 h-4" /></button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -869,47 +443,6 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                         />
                     </div>
                  ))}
-                 
-                 <div className="col-span-2 bg-gray-100 p-2 rounded space-y-2">
-                    <div className="flex gap-2 items-center">
-                        <MapPinIcon className="w-4 h-4 text-gray-500"/>
-                        <input name="agentMapUrl" value={info.agentMapUrl || ''} onChange={handleChange} className="flex-1 px-2 py-1.5 text-xs border rounded outline-none focus:ring-1" style={{ '--tw-ring-color': primaryColor } as React.CSSProperties} placeholder="네이버 지도 링크 (선택)" />
-                    </div>
-                    <div className="flex gap-2 items-center">
-                        <LinkIcon className="w-4 h-4 text-gray-500"/>
-                        <input name="consultationUrl" value={info.consultationUrl || ''} onChange={handleChange} className="flex-1 px-2 py-1.5 text-xs border rounded outline-none focus:ring-1" style={{ '--tw-ring-color': primaryColor } as React.CSSProperties} placeholder="문의하기 버튼 링크 (카카오톡 등)" />
-                    </div>
-                 </div>
-
-                 {/* Social Media Inputs */}
-                 <div className="col-span-2 bg-gray-50 p-2 rounded border border-gray-100 mt-2">
-                    <h4 className="text-[10px] font-bold text-gray-400 mb-2 flex items-center gap-1">
-                        <GlobeAltIcon className="w-3 h-3" /> SNS 링크 (아이콘 자동 생성)
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                        {[
-                            { name: 'socialYoutube', placeholder: '유튜브 URL', label: 'YouTube' },
-                            { name: 'socialBlog', placeholder: '블로그 URL', label: 'Blog' },
-                            { name: 'socialInstagram', placeholder: '인스타그램 URL', label: 'Instagram' },
-                            { name: 'socialFacebook', placeholder: '페이스북 URL', label: 'Facebook' },
-                            { name: 'socialKakao', placeholder: '카카오톡 채널 URL', label: 'KakaoTalk' },
-                            { name: 'socialThreads', placeholder: '쓰레드 URL', label: 'Threads' },
-                        ].map(item => (
-                            <div key={item.name} className="relative">
-                                <span className="absolute left-2 top-1.5 text-[10px] text-gray-400 font-bold">{item.label}</span>
-                                <input 
-                                    name={item.name}
-                                    value={(info as any)[item.name]}
-                                    onChange={handleChange}
-                                    className="w-full pl-2 pr-2 pt-5 pb-1 text-xs border rounded outline-none focus:ring-1"
-                                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                                    placeholder={item.placeholder}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                 </div>
-
             </div>
 
             {info.agentAdditionalInfo && info.agentAdditionalInfo.length > 0 && (
@@ -936,25 +469,6 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
             >
                 <PlusIcon className="w-3 h-3" /> 항목 추가
             </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 pt-4 pb-8">
-             {['grid', 'list', 'table', 'sns'].map(type => (
-                 <button 
-                    key={type}
-                    onClick={() => addSection(type as SectionType)}
-                    className="py-3 px-1 bg-white border rounded-lg shadow-sm font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 hover:opacity-90 active:scale-95 transition-all cursor-pointer"
-                    style={{ borderColor: primaryColor, color: primaryColor }}
-                >
-                    {type === 'grid' && <Squares2X2Icon className="w-4 h-4 flex-shrink-0" />}
-                    {type === 'list' && <ListBulletIcon className="w-4 h-4 flex-shrink-0" />}
-                    {type === 'table' && <TableCellsIcon className="w-4 h-4 flex-shrink-0" />}
-                    {type === 'sns' && <ShareIcon className="w-4 h-4 flex-shrink-0" />}
-                    <span className="whitespace-nowrap text-[11.5px] md:text-xs">
-                        {type === 'grid' ? '사진특징' : type === 'list' ? '상세설명' : type === 'table' ? '단지정보' : 'SNS'} 섹션 추가
-                    </span>
-                </button>
-             ))}
         </div>
 
       </div>
