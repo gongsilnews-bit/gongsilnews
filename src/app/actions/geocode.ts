@@ -146,11 +146,22 @@ export async function searchNearbyInfrastructure(lat: number, lng: number, radiu
       }).catch(err => console.error(err));
 
     // 3. 버스정류장 키워드 검색
-    const busCall = fetch(`https://dapi.kakao.com/v2/local/search/keyword.json?query=버스정류장&y=${lat}&x=${lng}&radius=${radiusMs}&sort=distance`, { headers: { Authorization: `KakaoAK ${apiKey}` }, cache: "no-store" })
+    const busCall = fetch(`https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent("버스정류장")}&y=${lat}&x=${lng}&radius=${radiusMs}&sort=distance`, { headers: { Authorization: `KakaoAK ${apiKey}` }, cache: "no-store" })
       .then(res => res.json())
-      .then(data => {
+      .then(async data => {
         if (data.documents && data.documents.length > 0) {
           results["버스정류장"] = data.documents.slice(0, 4).map((d: any) => d.place_name);
+        } else {
+          try {
+            const fbRes = await fetch(`https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent("정류소")}&y=${lat}&x=${lng}&radius=${Math.max(radiusMs, 3000)}&sort=distance`, { headers: { Authorization: `KakaoAK ${apiKey}` }, cache: "no-store" });
+            if (fbRes.ok) {
+              const fbData = await fbRes.json();
+              const docs = (fbData.documents || []).filter((d: any) => d.category_name?.includes("교통") || d.place_name?.includes("정류"));
+              if (docs.length > 0) {
+                results["버스정류장"] = docs.slice(0, 4).map((d: any) => d.place_name);
+              }
+            }
+          } catch (_) {}
         }
       }).catch(err => console.error(err));
 

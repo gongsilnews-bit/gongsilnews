@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatAmount } from "./page";
 import { getAuctionInfo, getMaskedAddress, getCleanAddrText, formatAreaWithPy, getJitteredCoords, getOptionSvg } from "@/app/(map)/gongsil/gongsilHelpers";
 import { getOnbidCount } from "@/app/actions/agentChat";
+import { getInfrastructureEntries } from "@/utils/infrastructure";
 
 interface GongsilMobileDetailPanelProps {
   selectedVacancy: any;
@@ -1465,22 +1466,24 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
               <div style={{ padding: "20px 16px", background: "#fff", borderBottom: "8px solid #f3f4f6" }}>
                 <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 16 }}>주변환경</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {Object.entries(selectedVacancy.infrastructure)
-                    .filter(([catName]) => !catName.startsWith("_"))
-                    .map(([catName, places]: [string, any]) => {
+                  {getInfrastructureEntries(selectedVacancy.infrastructure)
+                    .map(([catName, places]) => {
                       const placeList = Array.isArray(places) ? places : [];
-                      if (placeList.length === 0) return null;
                       return (
                         <div key={catName} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                           <span style={{ fontSize: 13, fontWeight: "bold", color: "#666", width: 65, flexShrink: 0, marginTop: 4 }}>
                             {catName}
                           </span>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
-                            {placeList.map((place: string, idx: number) => (
-                              <div key={idx} style={{ fontSize: 12, color: "#4b5563", background: "#f3f4f6", padding: "4px 8px", borderRadius: 4, fontWeight: 500 }}>
-                                {place}
-                              </div>
-                            ))}
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1, alignItems: "center" }}>
+                            {placeList.length > 0 ? (
+                              placeList.map((place: string, idx: number) => (
+                                <div key={idx} style={{ fontSize: 12, color: "#4b5563", background: "#f3f4f6", padding: "4px 8px", borderRadius: 4, fontWeight: 500 }}>
+                                  {place}
+                                </div>
+                              ))
+                            ) : (
+                              <span style={{ fontSize: 12, color: "#9ca3af" }}>-</span>
+                            )}
                           </div>
                         </div>
                       );

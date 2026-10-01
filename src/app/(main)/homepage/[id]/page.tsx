@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { getVacancies, getVacancyDetail, getVacanciesByOwnerId } from "@/app/actions/vacancy";
 import { getMyArticles, getArticles } from "@/app/actions/article";
 import { getMaskedAddress } from "@/app/(map)/gongsil/gongsilHelpers";
+import { getInfrastructureEntries } from "@/utils/infrastructure";
 
 const BRAND = "#2845B3";
 const LABEL: React.CSSProperties = { width: 120, fontSize: 13, fontWeight: 700, color: "#555", padding: "10px 14px", background: "#f8f9fa", borderRight: "1px solid #e5e7eb", whiteSpace: "nowrap" };
@@ -759,16 +760,19 @@ export default function HomepageViewPage() {
               <div ref={envRef} style={{ marginBottom: 50, scrollMarginTop: 200 }}>
                 <h3 style={{ fontSize: 18, fontWeight: "bold", color: "#111", marginBottom: 16 }}>주변환경</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, borderTop: "2px solid #111", paddingTop: 20 }}>
-                  {Object.entries(vacancy.infrastructure).map(([label, tags]) => {
+                  {getInfrastructureEntries(vacancy.infrastructure).map(([label, tags]) => {
                     const tagList = Array.isArray(tags) ? tags : [];
-                    if (tagList.length === 0) return null;
                     return (
                       <div key={label} style={{ display: "flex", alignItems: "center" }}>
                         <div style={{ width: 120, fontSize: 15, fontWeight: "bold", color: "#666" }}>{label}</div>
-                        <div style={{ flex: 1, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                          {tagList.map((tag: any) => (
-                            <span key={tag} style={{ background: "#f1f5f9", color: "#475569", fontSize: 13, padding: "6px 16px", borderRadius: 20, fontWeight: 600 }}>{String(tag)}</span>
-                          ))}
+                        <div style={{ flex: 1, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                          {tagList.length > 0 ? (
+                            tagList.map((tag: any) => (
+                              <span key={tag} style={{ background: "#f1f5f9", color: "#475569", fontSize: 13, padding: "6px 16px", borderRadius: 20, fontWeight: 600 }}>{String(tag)}</span>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: 13, color: "#9ca3af" }}>-</span>
+                          )}
                         </div>
                       </div>
                     );

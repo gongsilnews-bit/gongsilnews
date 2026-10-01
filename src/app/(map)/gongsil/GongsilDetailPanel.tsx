@@ -13,6 +13,7 @@ import {
 } from "./gongsilHelpers";
 import GongsilAccessOverlay from "./GongsilAccessOverlay";
 import GongsilComments from "./GongsilComments";
+import { getInfrastructureEntries } from "@/utils/infrastructure";
 
 interface GongsilDetailPanelProps {
   showDetail: boolean;
@@ -1332,22 +1333,24 @@ const filteredFields = fields.filter(field => {
                   주변환경
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {Object.entries(prop.infrastructure)
-                    .filter(([catName]) => !catName.startsWith("_"))
-                    .map(([catName, places]: [string, any]) => {
+                  {getInfrastructureEntries(prop.infrastructure)
+                    .map(([catName, places]) => {
                       const placeList = Array.isArray(places) ? places : [];
-                      if (placeList.length === 0) return null;
                       return (
                         <div key={catName} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                           <span style={{ fontSize: 13, fontWeight: "bold", color: "#666", width: 65, flexShrink: 0, marginTop: 4 }}>
                             {catName}
                           </span>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1 }}>
-                            {placeList.map((place: string, idx: number) => (
-                              <div key={idx} style={{ fontSize: 13, color: "#333", background: "#f5f5f5", padding: "4px 10px", borderRadius: 4 }}>
-                                {place}
-                              </div>
-                            ))}
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flex: 1, alignItems: "center" }}>
+                            {placeList.length > 0 ? (
+                              placeList.map((place: string, idx: number) => (
+                                <div key={idx} style={{ fontSize: 13, color: "#333", background: "#f5f5f5", padding: "4px 10px", borderRadius: 4 }}>
+                                  {place}
+                                </div>
+                              ))
+                            ) : (
+                              <span style={{ fontSize: 13, color: "#9ca3af" }}>-</span>
+                            )}
                           </div>
                         </div>
                       );
