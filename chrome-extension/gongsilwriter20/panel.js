@@ -604,6 +604,8 @@
     pendingAiPreviousImage = null;
     pendingAiRequestKey = "";
     renderDraft();
+    /* 글이 왔다는 걸 놓치지 않게 — 파란 테두리 + "아래로 내려서 확인" 안내 */
+    window.GWArrival?.notify(el.draftBody.querySelector(".preview-doc"), el.viewDraft);
     save();
     return parsed.repaired === true;
   }
