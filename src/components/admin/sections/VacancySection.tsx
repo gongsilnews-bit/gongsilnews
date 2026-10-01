@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { AdminSectionProps } from "./types";
 import VacancyRegisterForm from "@/components/admin/VacancyRegisterForm";
 import VacancyDetailPanel from "./VacancyDetailPanel";
-import VacancyMarketingPanel from "./VacancyMarketingPanel";
 import { getVacancies, updateVacancyStatus, updateVacancy, deleteVacancy, getVacancyDetail, getVacancyTabCounts, getVacancyFlyerStates } from "@/app/actions/vacancy";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -203,30 +202,10 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
           const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
           router.push(`${path}?menu=gongsil&action=write&id=${editId}`);
         }}
-        onMarketing={() => {
-          const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
-          router.push(`${path}?menu=gongsil&action=marketing&id=${editId}`);
-        }}
       />
     );
   }
 
-  if (action === "marketing" && editId) {
-    return (
-      <VacancyMarketingPanel
-        vacancyId={editId}
-        darkMode={darkMode}
-        onBack={() => {
-          const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
-          router.push(`${path}?menu=gongsil`);
-        }}
-        onViewDetail={() => {
-          const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
-          router.push(`${path}?menu=gongsil&action=detail&id=${editId}`);
-        }}
-      />
-    );
-  }
   let filteredVacancies = dbVacancies;
 
   return (
@@ -535,10 +514,7 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                       </button>
                                     
                                     <button 
-                                      onClick={() => {
-                                        const path = role === "realtor" ? "/realty_admin" : role === "user" ? "/user_admin" : "/admin";
-                                        router.push(`${path}?menu=gongsil&action=marketing&id=${row.id}`);
-                                      }}
+                                      onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${row.id}`, "_blank")}
                                       style={{ 
                                         height: 30, 
                                         padding: "0 10px", 
@@ -562,9 +538,9 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                       onMouseLeave={(e) => { 
                                         e.currentTarget.style.background = darkMode ? "#2a2d35" : "#f3f4f6";
                                       }}
-                                      title="공실마케팅 센터 (외관 리모델링, 내부 인테리어, 전단지 등)"
+                                      title="유리창홍보지 (AI 온라인 전단지) — 새 탭으로 엽니다"
                                     >
-                                      공실마케팅
+                                      유리창홍보지
                                     </button>
                                   </div>
                                 );

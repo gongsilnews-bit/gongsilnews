@@ -13,10 +13,9 @@ interface VacancyDetailPanelProps {
   vacancyId: string;
   onBack: () => void;
   onEdit: () => void;
-  onMarketing?: () => void;
 }
 
-export default function VacancyDetailPanel({ vacancyId, onBack, onEdit, onMarketing }: VacancyDetailPanelProps) {
+export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: VacancyDetailPanelProps) {
   const [vacancy, setVacancy] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [deviceMode, setDeviceMode] = useState<"pc" | "tablet" | "mobile">("pc");
@@ -713,17 +712,8 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit, onMarket
               <button className="gdv-btn-toolbar" onClick={() => window.open(`/marketing/report?vacancy_id=${vacancyId}`, '_blank')} title="AI 물건보고서">
                 AI물건보고서
               </button>
-              <button 
-                className="gdv-btn-toolbar"
-                onClick={onMarketing ? onMarketing : () => {
-                  const url = new URL(window.location.href);
-                  url.searchParams.set("action", "marketing");
-                  url.searchParams.set("id", vacancyId);
-                  window.location.href = url.toString();
-                }}
-                title="공실마케팅 센터 (외관 리모델링, 내부 인테리어, 전단지 등)"
-              >
-                공실마케팅
+              <button className="gdv-btn-toolbar" onClick={() => window.open(`/marketing/ai-detail?vacancy_id=${vacancyId}`, '_blank')} title="유리창홍보지 (AI 온라인 전단지)">
+                유리창홍보지
               </button>
               <button className="gdv-btn-toolbar" onClick={copyShareLink}>🔗 주소복사</button>
               <button className="gdv-btn-toolbar" onClick={() => window.open(`/gongsil?id=${vacancyId}`)}>💻 미리보기</button>
