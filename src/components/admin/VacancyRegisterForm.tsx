@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { createVacancy, syncVacancyPhotos, updateVacancy, uploadVacancyPhoto } from "@/app/actions/vacancy";
 import { getPhotoLibrary, togglePhotoFavorite, hidePhotoFromLibrary } from "@/app/actions/article";
 import { generateLocalPropertyDescription, type ToneType } from "@/utils/generateLocalPropertyDescription";
+import { getInfrastructureEntries } from "@/utils/infrastructure";
 import { useRouter } from "next/navigation";
 
 /* ──────────────────────────────────────────────
@@ -745,7 +746,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const handleRemoveInfra = (category: string, index: number) => {
     setInfrastructure(prev => ({
       ...prev,
-      [category]: prev[category].filter((_, i) => i !== index)
+      [category]: (prev[category] || []).filter((_, i) => i !== index)
     }));
   };
 
@@ -1334,8 +1335,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                   </div>
                 ) : (
                  <div style={{ display: "flex", flexDirection: "column", gap: 12, background: darkMode ? "#1a1b1e" : "#f9fafb", padding: 16, borderRadius: 8, border: `1px solid ${border}` }}>
-                  {Object.entries(infrastructure)
-                    .filter(([catName]) => !catName.startsWith('_'))
+                  {getInfrastructureEntries(infrastructure)
                     .map(([catName, places]) => {
                       const placeList = Array.isArray(places) ? places : [];
                       return (
@@ -1366,9 +1366,6 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                         </div>
                       );
                     })}
-                  {Object.keys(infrastructure).filter(k => !k.startsWith('_')).length === 0 && (
-                    <div style={{ fontSize: 13, color: textSecondary, textAlign: "center", padding: "10px 0" }}>지정된 반경 내에 추출된 인프라 정보가 없습니다. 직접 추가 기능을 이용해 보세요.</div>
-                  )}
                  </div>
                 )}
               </div>

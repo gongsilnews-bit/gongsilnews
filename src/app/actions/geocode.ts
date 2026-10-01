@@ -88,8 +88,8 @@ export async function geocodeAddress(address: string): Promise<{
 }
 
 /**
- * 주어진 좌표(위경도)를 기준으로 주변 인프라 검색 (반경 1km 이내, 가까운 순 3개씩)
- * 카카오 카테고리 검색 API 사용 (SW8: 지하철, SC4: 학교, MT1: 대형마트, HP8: 병원)
+ * 주어진 좌표(위경도)를 기준으로 주변 인프라 검색
+ * 카카오 카테고리·키워드 검색 API를 함께 사용한다.
  */
 export async function searchNearbyInfrastructure(lat: number, lng: number, radiusMs: number = 1000): Promise<{ [category: string]: string[] }> {
   const apiKey = process.env.KAKAO_REST_API_KEY;
@@ -97,10 +97,11 @@ export async function searchNearbyInfrastructure(lat: number, lng: number, radiu
 
   const results: { [key: string]: string[] } = {
     "지하철역": [],
+    "버스정류장": [],
     "쇼핑센터": [],
     "병원": [],
     "학교": [],
-    "버스정류장": []
+    "기타": []
   };
 
   try {
@@ -153,7 +154,73 @@ export async function searchNearbyInfrastructure(lat: number, lng: number, radiu
         }
       }).catch(err => console.error(err));
 
-    await Promise.all([...categoryCalls, schoolCall, busCall]);
+    // 4. 기타: 종류별 가장 가까운 장소를 하나씩 뽑아 최대 6개로 구성한다.
+    // 교회·호텔·공원·산책로는 키워드, 맛집·랜드마크는 공식 카테고리를 사용한다.
+    type KakaoPlace = {
+      id?: string;
+      place_name?: string;
+      distance?: string;
+    };
+
+    const fetchPlaces = async (params: string): Promise<KakaoPlace[]> => {
+      try {
+        const res = await fetch(`https://dapi.kakao.com/v2/local/search/${params}`, {
+          headers: { Authorization: `KakaoAK ${apiKey}` },
+          cache: "no-store"
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data.documents) ? data.documents : [];
+      } catch (err) {
+        console.error("[searchNearbyInfrastructure] 기타 검색 오류:", err);
+        return [];
+      }
+    };
+
+    const commonQuery = `y=${lat}&x=${lng}&radius=${radiusMs}&sort=distance&size=10`;
+    const otherGroupCalls = [
+      fetchPlaces(`keyword.json?query=${encodeURIComponent("교회")}&${commonQuery}`),
+      fetchPlaces(`keyword.json?query=${encodeURIComponent("호텔")}&${commonQuery}`),
+      fetchPlaces(`category.json?category_group_code=FD6&${commonQuery}`),
+      fetchPlaces(`category.json?category_group_code=AT4&${commonQuery}`),
+      fetchPlaces(`keyword.json?query=${encodeURIComponent("공원")}&${commonQuery}`),
+      fetchPlaces(`keyword.json?query=${encodeURIComponent("산책로")}&${commonQuery}`),
+    ];
+    const culturalFallbackCall = fetchPlaces(`category.json?category_group_code=CT1&${commonQuery}`);
+
+    const [, otherGroups, culturalFallback] = await Promise.all([
+      Promise.all([...categoryCalls, schoolCall, busCall]),
+      Promise.all(otherGroupCalls),
+      culturalFallbackCall,
+    ]);
+
+    const picked: Array<{ name: string; distance: number }> = [];
+    const seenIds = new Set<string>();
+    const seenNames = new Set<string>();
+    const pickFirstUnique = (places: KakaoPlace[]) => {
+      const place = places.find((item) => {
+        const name = typeof item?.place_name === "string" ? item.place_name.trim() : "";
+        const id = typeof item?.id === "string" ? item.id : "";
+        return name && !seenNames.has(name) && (!id || !seenIds.has(id));
+      });
+      if (!place) return;
+      const name = typeof place.place_name === "string" ? place.place_name.trim() : "";
+      if (!name) return;
+      if (place.id) seenIds.add(place.id);
+      seenNames.add(name);
+      picked.push({ name, distance: Number(place.distance) || Number.MAX_SAFE_INTEGER });
+    };
+
+    otherGroups.forEach(pickFirstUnique);
+    for (const place of culturalFallback) {
+      if (picked.length >= 6) break;
+      pickFirstUnique([place]);
+    }
+
+    results["기타"] = picked
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 6)
+      .map((place) => place.name);
 
     return results;
   } catch (err) {

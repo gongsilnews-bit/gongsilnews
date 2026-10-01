@@ -7,6 +7,7 @@ import { createVacancy, updateVacancy, getVacancyDetail, syncVacancyPhotos, uplo
 import { getPhotoLibrary, togglePhotoFavorite, hidePhotoFromLibrary } from "@/app/actions/article";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { generateLocalPropertyDescription, type ToneType } from "@/utils/generateLocalPropertyDescription";
+import { getInfrastructureEntries } from "@/utils/infrastructure";
 import imageCompression from "browser-image-compression";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
@@ -233,7 +234,8 @@ function MobileVacancyWrite() {
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [customOptionInput, setCustomOptionInput] = useState("");
   const [customThemeInput, setCustomThemeInput] = useState("");
-  const [infrastructure, setInfrastructure] = useState<any>({});
+  const [infrastructure, setInfrastructure] = useState<Record<string, string[]>>({});
+  const [addInfraInput, setAddInfraInput] = useState<Record<string, string>>({});
 
   // 부동산 전용
   const [realtorCommission, setRealtorCommission] = useState("공동중개");
@@ -688,6 +690,23 @@ function MobileVacancyWrite() {
       alert("좌표 및 주변환경(인프라) 설정 완료!"); 
     }
     else alert(`주소를 찾을 수 없습니다. (이유: ${res.error || "결과 없음"})`);
+  };
+
+  const handleAddInfra = (category: string) => {
+    const value = addInfraInput[category]?.trim();
+    if (!value) return;
+    setInfrastructure((prev) => ({
+      ...prev,
+      [category]: [...(Array.isArray(prev[category]) ? prev[category] : []), value],
+    }));
+    setAddInfraInput((prev) => ({ ...prev, [category]: "" }));
+  };
+
+  const handleRemoveInfra = (category: string, index: number) => {
+    setInfrastructure((prev) => ({
+      ...prev,
+      [category]: (Array.isArray(prev[category]) ? prev[category] : []).filter((_: string, itemIndex: number) => itemIndex !== index),
+    }));
   };
 
 
@@ -1267,10 +1286,29 @@ function MobileVacancyWrite() {
           <div style={{ marginTop:12 }}>
             <label style={labelStyle}>🏙️ 주변환경 (좌표 기반 자동생성)</label>
             <div style={{ background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:8, padding:12, fontSize:13, color:"#6b7280" }}>
-              {Object.keys(infrastructure).length > 0 ? (
-                Object.entries(infrastructure).map(([category, items]: [string, any]) => (
-                  <div key={category} style={{ marginBottom:6 }}>
-                    <strong style={{ color:"#374151" }}>{category}:</strong> {Array.isArray(items) ? items.join(", ") : ""}
+              {coords || Object.keys(infrastructure).some((category) => !category.startsWith("_")) ? (
+                getInfrastructureEntries(infrastructure).map(([category, items]) => (
+                  <div key={category} style={{ display:"flex", alignItems:"flex-start", gap:8, marginBottom:10 }}>
+                    <strong style={{ color:"#374151", width:64, flexShrink:0, paddingTop:5 }}>{category}</strong>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:6, flex:1 }}>
+                      {items.map((place, index) => (
+                        <span key={`${place}-${index}`} style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"3px 7px 3px 9px", background:"#fff", border:"1px solid #e5e7eb", borderRadius:14, color:"#4b5563" }}>
+                          {place}
+                          <button type="button" onClick={() => handleRemoveInfra(category, index)} aria-label={`${place} 삭제`} style={{ border:0, background:"transparent", color:"#ef4444", padding:"0 2px", cursor:"pointer", fontSize:13 }}>✕</button>
+                        </span>
+                      ))}
+                      <div style={{ display:"flex", gap:4, flex:"1 1 170px", minWidth:0 }}>
+                        <input
+                          type="text"
+                          value={addInfraInput[category] || ""}
+                          onChange={(event) => setAddInfraInput((prev) => ({ ...prev, [category]: event.target.value }))}
+                          onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); handleAddInfra(category); } }}
+                          placeholder="직접 추가"
+                          style={{ minWidth:0, flex:1, height:28, padding:"0 8px", border:"1px dashed #d1d5db", borderRadius:14, background:"#fff", color:"#374151", fontSize:12 }}
+                        />
+                        <button type="button" onClick={() => handleAddInfra(category)} style={{ height:28, padding:"0 9px", border:"1px solid #d1d5db", borderRadius:14, background:"#fff", color:"#374151", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
+                      </div>
+                    </div>
                   </div>
                 ))
               ) : (
