@@ -173,6 +173,15 @@ export async function middleware(request: NextRequest) {
     return pausedResponse();
   }
 
+  // 폰으로 매물 상세 링크(/gongsil/detail/…)를 열면 모바일 상세(/m/gongsil/detail/…)를 보여 준다.
+  // 복사·공유되는 주소는 PC 팝업용이라, 카톡으로 받은 사람이 폰에서 620px 팝업 화면을 보게 되던 문제 (2026-10-01)
+  if (url.pathname.startsWith('/gongsil/detail/')) {
+    const userAgent = request.headers.get('user-agent') || '';
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    const viewDesktop = request.cookies.get('view-desktop')?.value === 'true';
+    if (isMobile && !viewDesktop) url.pathname = `/m${url.pathname}`;
+  }
+
   url.pathname = `/sites/${currentHost}${url.pathname}`;
   
   return NextResponse.rewrite(url);
