@@ -80,6 +80,7 @@ export default function ArticleAttachedVacancyCard({
     <div
       className="sb-widget"
       style={{
+        position: "relative",
         background: "#fff",
         borderRadius: 12,
         border: "1px solid #e5e7eb",
@@ -88,6 +89,25 @@ export default function ArticleAttachedVacancyCard({
         boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
       }}
     >
+      {/* AD 마크 */}
+      <div
+        style={{
+          position: "absolute",
+          top: -1,
+          left: 12,
+          background: "#6b7280",
+          color: "#ffffff",
+          fontSize: 10,
+          fontWeight: 800,
+          padding: "2px 7px",
+          borderRadius: "0 0 4px 4px",
+          letterSpacing: "0.5px",
+          lineHeight: "14px",
+          zIndex: 2,
+        }}
+      >
+        AD
+      </div>
       <div
         onClick={handleClick}
         style={{
