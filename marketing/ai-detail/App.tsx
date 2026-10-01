@@ -24,6 +24,7 @@ export const LAYOUTS: FlyerLayout[] = [
   { id: 'type3', name: 'Natural Clean', type: 'type3', headingFont: 'font-sans', bodyFont: 'font-sans' },
   { id: 'type4', name: 'Bold Box', type: 'type4', headingFont: 'font-sans', bodyFont: 'font-sans' },
   { id: 'type5', name: 'High-end Minimal', type: 'type5', headingFont: 'font-sans', bodyFont: 'font-sans' },
+  { id: 'type6', name: 'Simple 심플', type: 'type6', headingFont: 'font-sans', bodyFont: 'font-sans' },
 
 ];
 

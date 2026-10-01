@@ -480,6 +480,48 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     document.fonts?.ready.then(fitAll);
   });
 
+  // ══ 6번 디자인 — 심플 (글자만 크게, 흰 바탕·검정 글씨, 가운데 정렬) ══
+  // 붙여 둔 종이 한 장처럼: 물건구분+거래 → 금액 → 핵심 몇 줄 → 전화번호. 사진·표 없이 멀리서 읽히는 것만.
+  const renderSimple = () => {
+    const kind = (info.propertyKind || '').split('/')[0].trim();
+    const head = [vis('propertyKind') ? kind : '', vis('transactionType') ? tradeWord : ''].filter(Boolean).join(' ');
+    const lines = (info.rows ?? [])
+      .filter((r) => r.label.trim() && clean(r.value) !== '-' && r.value.length <= 18)
+      .slice(0, isLand ? 2 : 3);
+    const fit = (max: number, min: number) => ({ 'data-fit': '', 'data-fit-max': max, 'data-fit-min': min } as Record<string, unknown>);
+    const line: React.CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', textAlign: 'center', flexShrink: 0 };
+    return (
+      <div ref={ref} data-flyer-page className="bg-white overflow-hidden flex flex-col items-center font-sans"
+        style={{ width: pageW, height: pageH, padding: isLand ? '44px 80px 36px' : '80px 70px 56px', color: '#111', border: `14px solid ${primaryColor}` }}>
+        {info.badge && (
+          <span style={{ background: '#e11d2a', color: '#fff', fontSize: 30, fontWeight: 900, padding: '6px 22px', borderRadius: 6, marginBottom: 18, flexShrink: 0 }}>{info.badge}</span>
+        )}
+        {head && <div {...fit(isLand ? 120 : 150, 50)} style={{ ...line, fontWeight: 900, lineHeight: 1.15, letterSpacing: -3 }}>{head}</div>}
+        <div {...fit(isLand ? 150 : 180, 70)} style={{ ...line, fontWeight: 900, lineHeight: 1.1, letterSpacing: -5, marginTop: isLand ? 6 : 14 }}>{priceText}</div>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: isLand ? 8 : 14, paddingTop: isLand ? 6 : 12 }}>
+          {vis('sizeLine') && info.sizeLine && <div {...fit(isLand ? 46 : 54, 28)} style={{ ...line, fontWeight: 800, color: '#374151' }}>{info.sizeLine}</div>}
+          {lines.map((r) => (
+            <div key={r.id} {...fit(isLand ? 36 : 42, 24)} style={{ ...line, fontWeight: 700, color: '#374151' }}>{r.label} {r.value}</div>
+          ))}
+        </div>
+        <div style={{ width: 120, height: 5, background: primaryColor, margin: isLand ? '6px 0 14px' : '10px 0 22px', flexShrink: 0 }} />
+        <div {...fit(isLand ? 96 : 110, 50)} style={{ ...line, fontWeight: 900, letterSpacing: -2, lineHeight: 1.1 }}>{phone}</div>
+        <div className="flex items-center justify-center" style={{ gap: 18, marginTop: 10, width: '100%', flexShrink: 0 }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: '#4b5563', textAlign: 'center' }}>
+            {info.agentName}
+            {vis('agentRepresentative') && info.agentRepresentative && <span style={{ fontWeight: 600, fontSize: 20, marginLeft: 10 }}>{info.agentRepresentative}</span>}
+          </div>
+          {qrDataUrl && vis('qr') && (
+            <a href={qrLink || undefined} target="_blank" rel="noopener noreferrer" title="매물 상세보기" style={{ display: 'block' }}>
+              <img src={qrDataUrl} alt="매물 QR" style={{ width: 92, height: 92 }} />
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  if (layout === 'type6') return renderSimple();
   if (layout === 'type1') return renderStreet();
 
   return (

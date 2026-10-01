@@ -109,7 +109,7 @@ export interface FlyerColor {
 export interface FlyerLayout {
   id: string;
   name: string;
-  type: 'type1' | 'type2' | 'type3' | 'type4' | 'type5';
+  type: 'type1' | 'type2' | 'type3' | 'type4' | 'type5' | 'type6';
   headingFont: string; // Tailwind class for headings
   bodyFont: string;    // Tailwind class for body text
 }
