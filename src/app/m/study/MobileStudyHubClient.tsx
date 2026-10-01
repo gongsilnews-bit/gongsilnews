@@ -113,84 +113,95 @@ export default function MobileStudyHubClient({
       {activeTab === "lecture" && (
         <div>
           
-          {/* 1. 모바일 히어로 배너 (윤자동 딥 포레스트 그린 스타일) */}
-          <div style={{ backgroundColor: "#062326", color: "#ffffff", padding: "28px 20px 24px", margin: "12px 16px 20px", borderRadius: 14, boxShadow: "0 4px 16px rgba(6,35,38,0.15)" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", padding: "4px 10px", borderRadius: 16, fontSize: 11.5, fontWeight: 700, color: "#6ee7b7", marginBottom: 12 }}>
-              <span>🌿</span>
-              <span>1년(12개월) 부동산 실무 & AI 마스터마인드</span>
-            </div>
+          {/* 1. PC 공실스터디 배너의 모바일 버전 */}
+          <div
+            style={{
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              minHeight: 250,
+              margin: "12px 0 20px",
+              backgroundColor: "#112127",
+              color: "#ffffff",
+              borderRadius: 0,
+              overflow: "hidden",
+              boxShadow: "0 4px 16px rgba(6, 35, 38, 0.18)",
+            }}
+          >
+            <Image
+              src="/study_lectures_hero.png"
+              alt="공실 앞에서 막막해하는 부동산 대표"
+              fill
+              priority
+              sizes="(max-width: 448px) calc(100vw - 32px), 416px"
+              style={{ objectFit: "cover", objectPosition: "center" }}
+            />
 
-            <h1 style={{ fontSize: "19px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.5px", margin: "0 0 10px 0" }}>
-              AI 유튜브 시대! 부동산 중개에<br />
-              <span style={{ color: "#34d399" }}>꼭! 필요한 실전 마케팅 스터디</span>
-            </h1>
-
-            <p style={{ fontSize: "13px", color: "#a7f3d0", opacity: 0.9, lineHeight: 1.55, margin: "0 0 16px 0", wordBreak: "keep-all" }}>
-              매월 업데이트되는 최신 AI 마케팅 기술과 실전 노하우로 지역 1등 부동산을 완성하세요.
-            </p>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 12px", fontSize: "12px", color: "#d1fae5", fontWeight: 600, marginBottom: "16px" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ color: "#34d399" }}>✓</span> 365일 무제한 수강
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ color: "#34d399" }}>✓</span> 매월 신규 VOD 업데이트
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ color: "#34d399" }}>✓</span> 실무 서식 100% 제공
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ color: "#34d399" }}>✓</span> 11만 중개사 크루 연계
-              </span>
-            </div>
-
-            {/* 16:9 유튜브 비디오 플레이어 */}
             <div
+              aria-hidden
               style={{
-                position: "relative",
-                width: "100%",
-                aspectRatio: "16/9",
-                borderRadius: 10,
-                overflow: "hidden",
-                boxShadow: "0 6px 20px rgba(0, 0, 0, 0.35)",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                background: "#000000",
-                marginBottom: 16,
+                position: "absolute",
+                inset: 0,
+                pointerEvents: "none",
+                background: "linear-gradient(to right, rgba(17,33,39,0.98) 0%, rgba(17,33,39,0.9) 46%, rgba(17,33,39,0.45) 76%, rgba(17,33,39,0.18) 100%)",
               }}
-            >
-              <iframe
-                src="https://www.youtube-nocookie.com/embed/QyClYIjPzao?rel=0"
-                title="공실스터디 안내 영상"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
-                  border: "none",
-                }}
-              />
-            </div>
+            />
 
-            <Link
-              href="/m/study/about"
-              style={{
-                display: "block",
-                textAlign: "center",
-                padding: "12px",
-                background: "#059669",
-                color: "#ffffff",
-                borderRadius: 8,
-                fontSize: "14px",
-                fontWeight: 800,
-                textDecoration: "none",
-                boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)",
-              }}
-            >
-              공실스터디 자세히 보기 →
-            </Link>
+            <div style={{ position: "relative", zIndex: 1, width: "100%", padding: "34px 20px" }}>
+              <h1
+                style={{
+                  maxWidth: 335,
+                  fontSize: "clamp(18px, 5.2vw, 22px)",
+                  fontWeight: 900,
+                  lineHeight: 1.38,
+                  letterSpacing: "-0.6px",
+                  wordBreak: "keep-all",
+                  margin: "0 0 24px 0",
+                  textShadow: "0 2px 8px rgba(0, 0, 0, 0.45)",
+                }}
+              >
+                다들 AI 유튜브로 중개한다던데<br />
+                <span style={{ color: "#34d399" }}>나만 못 쓰고 있는 것 같으신가요?</span>
+              </h1>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <Link
+                  href="/m/study/about"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 40,
+                    padding: "9px 16px",
+                    background: "#059669",
+                    color: "#ffffff",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 800,
+                    textDecoration: "none",
+                    boxShadow: "0 3px 10px rgba(5, 150, 105, 0.3)",
+                  }}
+                >
+                  공실스터디란?
+                </Link>
+                <Link
+                  href="/study/apply"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    minHeight: 40,
+                    padding: "9px 2px",
+                    color: "#ffffff",
+                    fontSize: 13,
+                    fontWeight: 800,
+                    textDecoration: "none",
+                    textShadow: "0 1px 5px rgba(0, 0, 0, 0.55)",
+                  }}
+                >
+                  멤버십 신청하기 &gt;&gt;
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* 2. 특강 목록 */}

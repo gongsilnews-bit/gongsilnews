@@ -391,53 +391,66 @@ export default function StudyVacancyRegisterClient() {
                 </div>
               </div>
 
-              {/* 시각화 카드 */}
+              {/* 시각화 카드: 공동중개 계약 체결 및 계약완료 */}
               <div
                 style={{
+                  position: "relative",
                   background: "#ffffff",
                   border: "1px solid #e2e8f0",
                   borderRadius: 16,
-                  padding: 24,
-                  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.05)",
+                  overflow: "hidden",
+                  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.06)",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10b981" }} />
-                    <span style={{ fontSize: 14, fontWeight: 800, color: "#0f2e28" }}>공실뉴스 실시간 매물 현황</span>
+                <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3" }}>
+                  <Image
+                    src="/images/study/benefit_joint_contract_stamp.jpg"
+                    alt="공동중개 계약 체결 및 계약완료 빨간 도장 날인 현장"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 500px"
+                    style={{ objectFit: "cover" }}
+                    priority
+                  />
+                  {/* 상단 뱃지 */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 14,
+                      left: 14,
+                      background: "rgba(15, 46, 40, 0.88)",
+                      backdropFilter: "blur(6px)",
+                      color: "#ffffff",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      padding: "5px 12px",
+                      borderRadius: 20,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
+                    전국 11만 부동산 공동중개망
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#059669", background: "#ecfdf5", padding: "3px 8px", borderRadius: 4 }}>
-                    월 20건 잔여
-                  </span>
-                </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ background: "#f8fafc", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: "#1e293b" }}>강남구 테헤란로 대형 오피스</span>
-                      <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>노출중 · 11만 열람</span>
+                  {/* 하단 캡션 오버레이 */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)",
+                      padding: "26px 18px 14px",
+                      color: "#ffffff",
+                    }}
+                  >
+                    <div style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: "-0.3px", display: "flex", alignItems: "center", gap: 6 }}>
+                      🤝 공동중개 계약 성사 · <span style={{ color: "#f87171" }}>계약완료 날인</span>
                     </div>
-                    <div style={{ fontSize: 12.5, color: "#64748b", marginTop: 4 }}>
-                      보증금 1억 / 월세 650만원 · 전용 148㎡ (45평)
-                    </div>
-                  </div>
-
-                  <div style={{ background: "#f8fafc", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: "#1e293b" }}>마포구 서교동 1층 무권리 상가</span>
-                      <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>노출중 · 11만 열람</span>
-                    </div>
-                    <div style={{ fontSize: 12.5, color: "#64748b", marginTop: 4 }}>
-                      보증금 5,000만 / 월세 320만원 · 1층 테라스형
-                    </div>
-                  </div>
-
-                  <div style={{ background: "#ecfdf5", border: "1px dashed #059669", padding: "14px", borderRadius: 10, textAlign: "center" }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: "#059669" }}>
-                      + 내 공실 매물 즉시 등록하기 (월 20건 지원)
-                    </div>
-                    <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
-                      등록과 동시에 매물보고서, 전단지, 웹페이지가 자동 동기화됩니다.
+                    <div style={{ fontSize: 12, color: "#cbd5e1", marginTop: 2 }}>
+                      매물 등록 즉시 전국 11만 공인중개사와 실시간 매칭되어 빠른 계약 체결
                     </div>
                   </div>
                 </div>
