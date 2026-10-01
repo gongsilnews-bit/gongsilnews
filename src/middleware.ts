@@ -125,10 +125,12 @@ export async function middleware(request: NextRequest) {
 
 
   // 메인 도메인 접속 (서브도메인이 없는 경우)
+  // *.vercel.app 은 AI 개발실 미리보기 주소다. 중개사 홈페이지로 오인하면 "페이지를 찾을 수 없습니다"가 뜬다 (2026-10-01)
   if (
     hostname === 'localhost:3000' ||
     hostname === 'gongsilnews.com' ||
-    hostname === 'www.gongsilnews.com'
+    hostname === 'www.gongsilnews.com' ||
+    hostname.endsWith('.vercel.app')
   ) {
     // 모바일 기기 접속 여부 확인
     const userAgent = request.headers.get('user-agent') || '';

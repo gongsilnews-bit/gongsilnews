@@ -290,16 +290,6 @@ export default function MobileDevRoom() {
                     {t.page_url && <div style={{ fontSize: 12.5, color: "#6b7280" }}>발생 주소: {t.page_url}</div>}
                     {t.attachment_urls && t.attachment_urls.length > 0 && <Thumbs urls={t.attachment_urls} />}
 
-                    {/* 작업중: 실시간 진행 상황 */}
-                    {t.status === "running" && (
-                      <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px" }}>
-                        <div style={{ fontWeight: 800, color: "#1d4ed8", marginBottom: 4 }}>⏳ 실시간 진행 상황</div>
-                        <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, margin: 0, fontFamily: "inherit", lineHeight: 1.7, color: "#4b5563" }}>
-                          {t.log ? t.log.split("\n").slice(-8).join("\n") : "에이전트가 작업을 준비하고 있습니다..."}
-                        </pre>
-                      </div>
-                    )}
-
                     {/* 처리 결과 */}
                     {t.status !== "running" && (t.result_summary || t.preview_url || t.pr_url) && (
                       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -340,6 +330,16 @@ export default function MobileDevRoom() {
                           </div>
                         );
                       })}
+
+                      {/* 작업중: 실시간 진행 상황 (대화가 길어도 보이게 입력칸 바로 위에) */}
+                      {t.status === "running" && (
+                        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px" }}>
+                          <div style={{ fontWeight: 800, color: "#1d4ed8", marginBottom: 4 }}>⏳ 실시간 진행 상황</div>
+                          <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, margin: 0, fontFamily: "inherit", lineHeight: 1.7, color: "#4b5563" }}>
+                            {t.log ? t.log.split("\n").slice(-8).join("\n") : "에이전트가 작업을 준비하고 있습니다..."}
+                          </pre>
+                        </div>
+                      )}
 
                       {canChat && (
                         <>

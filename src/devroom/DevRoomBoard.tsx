@@ -391,16 +391,6 @@ export default function DevRoomBoard({ theme }: Props) {
                         </Field>
                       )}
 
-                      {/* ── 작업중: 실시간 진행 상황 ── */}
-                      {t.status === "running" && (
-                        <div style={{ background: softBg, borderRadius: 8, padding: "12px 14px" }}>
-                          <div style={{ fontWeight: 800, marginBottom: 6 }}>⏳ 실시간 진행 상황 {t.attempt > 1 && `(${t.attempt}차 작업)`}</div>
-                          <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, margin: 0, fontFamily: "inherit", lineHeight: 1.7, color: textSecondary }}>
-                            {t.log ? t.log.split("\n").slice(-12).join("\n") : "에이전트가 작업을 준비하고 있습니다..."}
-                          </pre>
-                        </div>
-                      )}
-
                       {t.status !== "running" && (t.result_summary || t.branch || t.log) && (
                         <div style={{ background: softBg, borderRadius: 8, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
                           <div style={{ fontWeight: 800 }}>🤖 처리 결과 {t.attempt > 1 && `(${t.attempt}차 작업)`}</div>
@@ -450,6 +440,16 @@ export default function DevRoomBoard({ theme }: Props) {
                             </div>
                           );
                         })}
+
+                        {/* ── 작업중: 실시간 진행 상황 (대화가 길어도 보이게 입력칸 바로 위에) ── */}
+                        {t.status === "running" && (
+                          <div style={{ background: softBg, borderRadius: 8, padding: "12px 14px", border: "1px solid #bfdbfe" }}>
+                            <div style={{ fontWeight: 800, marginBottom: 6, color: "#2563eb" }}>⏳ 실시간 진행 상황 {t.attempt > 1 && `(${t.attempt}차 작업)`}</div>
+                            <pre style={{ whiteSpace: "pre-wrap", fontSize: 12, margin: 0, fontFamily: "inherit", lineHeight: 1.7, color: textSecondary }}>
+                              {t.log ? t.log.split("\n").slice(-12).join("\n") : "에이전트가 작업을 준비하고 있습니다..."}
+                            </pre>
+                          </div>
+                        )}
 
                         {t.status !== "approved" && chatId === t.id && chatImages.length > 0 && (
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
