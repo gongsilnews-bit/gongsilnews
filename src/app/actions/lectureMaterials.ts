@@ -28,7 +28,7 @@ export async function uploadLectureMaterial(file: { name: string; size: number }
   } catch (e) { return { success: false, error: e instanceof Error ? e.message : '자료 업로드 실패' }; }
 }
 
-export async function getLectureMaterialUrl(lectureId: string, index: number) {
+export async function getLectureMaterialUrl(lectureId: string, index: number, forView = false) {
   try {
     const client = db();
     const { data: lecture, error } = await client.from('lectures').select('author_id,status,is_deleted,materials,free_for_plans').eq('id', lectureId).single();
@@ -57,7 +57,10 @@ export async function getLectureMaterialUrl(lectureId: string, index: number) {
     if (!editor && (lecture.status !== 'ACTIVE' || (!enrolled && !material.is_preview))) throw new Error('수강 등록 후 이용할 수 있는 자료입니다.');
     const url = openMaterialUrl(material.url || '');
     if (url.startsWith('private:')) {
-      const { data, error } = await client.storage.from(bucket).createSignedUrl(url.slice(8), 60, { download: material.label || true });
+      // forView=true 일 때는 download 헤더 없이 서명 URL 생성 → 브라우저가 인라인 표시
+      const signedUrlOptions = forView ? undefined : { download: material.label || true };
+      const expiresIn = forView ? 300 : 60;
+      const { data, error } = await client.storage.from(bucket).createSignedUrl(url.slice(8), expiresIn, signedUrlOptions);
       if (error) throw error;
       return { success: true, url: data.signedUrl };
     }
