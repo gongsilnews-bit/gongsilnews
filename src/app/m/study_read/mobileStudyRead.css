@@ -15,6 +15,6 @@ body.mobile-study-detail-sticky {
 }
 
 .study-read-entry {
-  animation: studyReadEntryZoom 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: studyReadEntryZoom 0.22s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
