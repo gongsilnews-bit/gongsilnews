@@ -456,6 +456,11 @@ function App() {
   const reportHistoryReadyRef = useRef(false);
   const editorScrollRef = useRef<HTMLDivElement>(null);
 
+  // 이탈 방지 및 종료 모달 상태
+  const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
+  const hasUnsavedChangesRef = useRef(false);
+  const isInitialLoadRef = useRef(true);
+
   const getEditorScrollTop = () => editorScrollRef.current?.scrollTop || 0;
 
   useEffect(() => {
@@ -668,6 +673,13 @@ function App() {
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // 1. 단축키 Ctrl+S (Cmd+S): 즉시 저장
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleSaveToStorage();
+        return;
+      }
+
       const activeEl = document.activeElement;
       const isInput = activeEl && (
         activeEl.tagName === 'INPUT' || 
@@ -1109,8 +1121,11 @@ function App() {
               }
             }));
           }
+          setIsInitialized(true);
         })
-        .catch(() => {});
+        .catch(() => {
+          setIsInitialized(true);
+        });
     }
   }, []);
 
@@ -1232,15 +1247,33 @@ function App() {
     setShowSharePopover(false);
   };
 
-  // 자동 임시저장
+  // 자동 임시저장 및 변경사항 추적
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || loadingData || isGenerating) return;
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      return;
+    }
+    hasUnsavedChangesRef.current = true;
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
-    if (vacancyId && !loadingData && !isGenerating) {
+    if (vacancyId) {
       localStorage.setItem(`easyflyer_saved_${vacancyId}`, JSON.stringify(state));
     }
   }, [state, loadingData, isGenerating, isInitialized]);
+
+  // 브라우저 탭/창 닫기(X) 또는 새로고침 시 이탈 방지 경고창
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChangesRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   const handleSaveToStorage = async () => {
     const params = new URLSearchParams(window.location.search);
@@ -1265,6 +1298,7 @@ function App() {
       });
       const json = await res.json();
       if (json.success) {
+        hasUnsavedChangesRef.current = false;
         alert("성공적으로 저장되었습니다");
       } else {
         throw new Error(json.error || "서버 응답 오류");
@@ -1301,6 +1335,7 @@ function App() {
       if (!json.success) {
         throw new Error(json.error || "서버 응답 오류");
       }
+      hasUnsavedChangesRef.current = false;
     } catch (err: any) {
       console.warn("클라우드 동기화 저장 실패:", err);
     } finally {
@@ -1339,6 +1374,8 @@ function App() {
       localStorage.removeItem(`easyflyer_saved_${vacancyId}`);
       setIsLoadedFromStorage(false);
       setIsInitialized(false);
+      isInitialLoadRef.current = true;
+      hasUnsavedChangesRef.current = false;
 
       // 2. Supabase 클라우드 백업 비우기
       setLoadingData(true);
@@ -1592,6 +1629,88 @@ ${clone.outerHTML}
     } catch (err) {
         alert("HTML 저장 중 오류가 발생했습니다.");
     }
+  };
+
+  // --- 화면 내 [닫기] 및 종료 모달 핸들러 ---
+  const handleRequestExit = useCallback(() => {
+    if (hasUnsavedChangesRef.current) {
+      setShowExitConfirmModal(true);
+    } else {
+      window.close();
+      setTimeout(() => {
+        if (!window.closed) {
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            alert("편집기가 종료되었습니다. 브라우저 탭을 닫아주세요.");
+          }
+        }
+      }, 250);
+    }
+  }, []);
+
+  // 모달 옵션 1: 저장하고 닫기
+  const handleSaveAndExit = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const vacancyId = params.get("vacancy_id");
+
+    setIsSavingCloud(true);
+    try {
+      if (vacancyId) {
+        localStorage.setItem(`easyflyer_saved_${vacancyId}`, JSON.stringify(state));
+        setIsLoadedFromStorage(true);
+
+        const htmlContent = await generateHtmlContent();
+        const res = await fetch("/api/vacancy/save-flyer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ vacancyId, flyerState: { ...state, htmlContent }, type: "report" })
+        });
+        const json = await res.json();
+        if (!json.success) {
+          throw new Error(json.error || "서버 응답 오류");
+        }
+      }
+      hasUnsavedChangesRef.current = false;
+      setShowExitConfirmModal(false);
+
+      window.close();
+      setTimeout(() => {
+        if (!window.closed) {
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            alert("성공적으로 저장되었습니다! 브라우저 탭을 닫아주세요.");
+          }
+        }
+      }, 250);
+    } catch (err: any) {
+      console.error("클라우드 저장 실패:", err);
+      alert("저장 중 오류가 발생했습니다: " + err.message);
+    } finally {
+      setIsSavingCloud(false);
+    }
+  };
+
+  // 모달 옵션 2: 저장하지 않고 그냥 닫기 (수정 취소)
+  const handleDiscardAndExit = () => {
+    hasUnsavedChangesRef.current = false;
+    setShowExitConfirmModal(false);
+    window.close();
+    setTimeout(() => {
+      if (!window.closed) {
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          alert("저장하지 않고 종료되었습니다. 브라우저 탭을 닫아주세요.");
+        }
+      }
+    }, 250);
+  };
+
+  // 모달 옵션 3: 취소 (계속 편집하기)
+  const handleCancelExit = () => {
+    setShowExitConfirmModal(false);
   };
 
   const downloadJpg = async (selectedIds: string[]) => {
@@ -1914,6 +2033,77 @@ ${clone.outerHTML}
         onExport={downloadJpg}
       />
 
+      {/* 저장 여부 확인 이탈 모달 (3개 선택지) */}
+      {showExitConfirmModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100 p-6 text-center transform animate-in zoom-in-95 duration-150">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            
+            <h3 className="text-lg font-black text-gray-900 mb-2">
+              보고서 편집을 종료하시겠습니까?
+            </h3>
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+              아직 저장되지 않은 수정사항이 있습니다.<br />
+              저장하고 닫으시겠습니까, 아니면 수정을 취소하시겠습니까?
+            </p>
+
+            <div className="flex flex-col gap-2.5">
+              {/* 1. 저장하고 닫기 */}
+              <button
+                type="button"
+                onClick={handleSaveAndExit}
+                disabled={isSavingCloud}
+                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+              >
+                {isSavingCloud ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>저장 중...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                    </svg>
+                    <span>저장하고 닫기</span>
+                  </>
+                )}
+              </button>
+
+              {/* 2. 저장하지 않고 그냥 닫기 */}
+              <button
+                type="button"
+                onClick={handleDiscardAndExit}
+                disabled={isSavingCloud}
+                className="w-full py-3 px-4 bg-rose-50 hover:bg-rose-100 active:scale-[0.99] text-rose-700 font-bold rounded-xl border border-rose-200 transition-all flex items-center justify-center gap-2 text-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+                <span>저장하지 않고 그냥 닫기</span>
+              </button>
+
+              {/* 3. 취소 (계속 편집하기) */}
+              <button
+                type="button"
+                onClick={handleCancelExit}
+                disabled={isSavingCloud}
+                className="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 active:scale-[0.99] text-gray-700 font-semibold rounded-xl transition-all text-sm mt-1"
+              >
+                계속 편집하기 (취소)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', pointerEvents: 'none', opacity: 0 }}>
         <div ref={hiddenFlyerRef}>
           <FlyerCanvas 
@@ -1933,7 +2123,7 @@ ${clone.outerHTML}
             <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  onClick={handleReportBack}
+                  onClick={handleRequestExit}
                   className="report-mobile-back hidden items-center justify-center rounded-lg border border-gray-300 bg-white p-2 text-gray-700"
                   aria-label="보고서 편집기에서 나가기"
                 >
@@ -1943,21 +2133,33 @@ ${clone.outerHTML}
                   src="/logo.png"
                   className="report-header-logo h-9 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95"
                   alt="공실뉴스 로고"
-                  onClick={() => window.location.href = "/"}
+                  onClick={handleRequestExit}
                 />
                 <div className="flex items-center gap-3">
                   <h1 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
                     AI 물건보고서
                   </h1>
-
                 </div>
             </div>
-            <button
-              onClick={toggleSidebar}
-              className="report-header-toggle px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 transition-all active:scale-95 text-xs flex items-center gap-1.5"
-            >
-              {isSidebarOpen ? "◀ 보고서 편집 접기" : "▶ 보고서 편집 열기"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleSidebar}
+                className="report-header-toggle px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded border border-gray-300 transition-all active:scale-95 text-xs flex items-center gap-1.5"
+              >
+                {isSidebarOpen ? "◀ 보고서 편집 접기" : "▶ 보고서 편집 열기"}
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestExit}
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg border border-slate-700 transition-all active:scale-95 text-xs flex items-center gap-1.5 shadow-sm"
+                title="편집기를 닫습니다"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span>닫기</span>
+              </button>
+            </div>
         </div>
       </header>
 
