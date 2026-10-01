@@ -411,48 +411,6 @@ export default function StudyVacancyRegisterClient() {
                     style={{ objectFit: "cover" }}
                     priority
                   />
-                  {/* 상단 뱃지 */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 14,
-                      left: 14,
-                      background: "rgba(15, 46, 40, 0.88)",
-                      backdropFilter: "blur(6px)",
-                      color: "#ffffff",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      padding: "5px 12px",
-                      borderRadius: 20,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                    }}
-                  >
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
-                    전국 11만 부동산 공동중개망
-                  </div>
-
-                  {/* 하단 캡션 오버레이 */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)",
-                      padding: "26px 18px 14px",
-                      color: "#ffffff",
-                    }}
-                  >
-                    <div style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: "-0.3px", display: "flex", alignItems: "center", gap: 6 }}>
-                      🤝 공동중개 계약 성사 · <span style={{ color: "#f87171" }}>계약완료 날인</span>
-                    </div>
-                    <div style={{ fontSize: 12, color: "#cbd5e1", marginTop: 2 }}>
-                      매물 등록 즉시 전국 11만 공인중개사와 실시간 매칭되어 빠른 계약 체결
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
