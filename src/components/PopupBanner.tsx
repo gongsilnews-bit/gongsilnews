@@ -44,7 +44,8 @@ export default function PopupBanner() {
     hostname === "gongsilnews.com" ||
     hostname === "www.gongsilnews.com" ||
     hostname === "localhost" ||
-    hostname === "127.0.0.1";
+    hostname === "127.0.0.1" ||
+    hostname.endsWith(".vercel.app"); // AI 개발실 미리보기도 실서버와 똑같이 보이게
   const isMainPage = isPortalHost && (pathname === "/" || pathname === "/m");
 
   const [popups, setPopups] = useState<any[]>([]);
