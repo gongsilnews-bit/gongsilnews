@@ -54,6 +54,7 @@ export interface PropertyInfo {
   hiddenFields?: string[];  // 홍보지에서 뺀 항목 (입력란의 [표시] 체크를 끈 것)
   sizeLine?: string;        // 물건명 아래 크기 줄 e.g. "46평 · 25층" (물건 종류별로 처음 채움)
   rows?: FlyerRow[];        // 정보 표 — 사장님이 지우고·고치고·추가한다
+  propertyKind?: string;    // 물건 구분 e.g. 사무실 · 상가 · 아파트 (공실 등록의 세부 분류)
   flyerGroup?: string;      // 물건 묶음 A~G (flyerRows.ts)
 
   // Dynamic Sections (Photos & Highlights)

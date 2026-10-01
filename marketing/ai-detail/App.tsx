@@ -49,6 +49,7 @@ const INITIAL_INFO: PropertyInfo = {
   showPhoto: true,
   sizeLine: "46평 · 25층",
   flyerGroup: "A",
+  propertyKind: "아파트",
   rows: [
     { id: "s1", label: "면적", value: "공급 152㎡(46평) / 전용 116㎡(35평)" },
     { id: "s2", label: "방/욕실", value: "4개 / 2개" },
@@ -324,6 +325,7 @@ function App() {
           sizeLine: auto.sizeLine,
           rows: auto.rows,
           flyerGroup: auto.group,
+          propertyKind: v.sub_category || v.property_type || "",
           
           agentName,
           agentRepresentative,
@@ -379,6 +381,7 @@ function App() {
           loadedState.info = { ...loadedState.info, transactionType: mappedInfo.transactionType, priceMain: mappedInfo.priceMain, priceSub: mappedInfo.priceSub, managementFee: mappedInfo.managementFee };
           // 정보 표가 없던 예전 저장본은 물건 종류에 맞춰 한 번 채운다 (있으면 사장님이 고친 그대로)
           if (!loadedState.info.rows) loadedState.info = { ...loadedState.info, rows: auto.rows, sizeLine: auto.sizeLine, flyerGroup: auto.group };
+          if (loadedState.info.propertyKind === undefined) loadedState.info = { ...loadedState.info, propertyKind: mappedInfo.propertyKind };
           if (!loadedState.mainImage && photos.length > 0) loadedState.mainImage = getPhotoUrl(0);
           setState(loadedState);
           setIsLoadedFromStorage(true);
@@ -401,6 +404,7 @@ function App() {
             loadedState.info = { ...loadedState.info, transactionType: mappedInfo.transactionType, priceMain: mappedInfo.priceMain, priceSub: mappedInfo.priceSub, managementFee: mappedInfo.managementFee };
             // 정보 표가 없던 예전 저장본은 물건 종류에 맞춰 한 번 채운다 (있으면 사장님이 고친 그대로)
             if (!loadedState.info.rows) loadedState.info = { ...loadedState.info, rows: auto.rows, sizeLine: auto.sizeLine, flyerGroup: auto.group };
+            if (loadedState.info.propertyKind === undefined) loadedState.info = { ...loadedState.info, propertyKind: mappedInfo.propertyKind };
             if (!loadedState.mainImage && photos.length > 0) loadedState.mainImage = getPhotoUrl(0);
             setState(loadedState);
             setIsLoadedFromStorage(true);

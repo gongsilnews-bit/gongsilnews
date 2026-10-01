@@ -203,6 +203,9 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
             <Field label="물건명">
                 <Input name="address" value={info.address} onChange={handleChange} color={primaryColor} placeholder="예: 래미안 퍼스티지" />
             </Field>
+            <Field label="물건 구분 (예: 사무실, 상가, 아파트)" show={shown('propertyKind')} onShow={(v) => toggle('propertyKind', v)}>
+                <Input name="propertyKind" value={info.propertyKind || ''} onChange={handleChange} color={primaryColor} placeholder="예: 사무실" />
+            </Field>
             <Field label="딱지 (빨간 표시)">
                 <div className="flex gap-1.5 flex-wrap">
                     {['', '급매', '초급매', '신규', '가격조정'].map((b) => (

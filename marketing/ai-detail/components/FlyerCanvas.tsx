@@ -352,6 +352,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
         {info.badge && (
           <span style={{ background: '#e11d2a', color: '#fff', fontSize: 28, fontWeight: 900, padding: '6px 18px', borderRadius: 6, letterSpacing: 1 }}>{info.badge}</span>
         )}
+        {vis('propertyKind') && info.propertyKind && <span {...editable('propertyKind')} className={editClass}
+          style={{ border: `3px solid ${primaryColor}`, color: primaryColor, fontSize: 28, fontWeight: 900, padding: '3px 16px', borderRadius: 6 }}>{info.propertyKind}</span>}
         {vis('transactionType') && <span {...editable('transactionType')} className={editClass}
           style={{ border: `3px solid ${primaryColor}`, color: primaryColor, fontSize: 28, fontWeight: 900, padding: '3px 16px', borderRadius: 6 }}>{tradeWord}</span>}
       </div>
