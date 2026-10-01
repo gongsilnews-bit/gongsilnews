@@ -7,6 +7,7 @@ import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } f
 import { ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
+import { toCanvas } from 'html-to-image';
 
 export const COLORS: FlyerColor[] = [
   { id: 'teal', name: 'Teal (Raemian)', primary: '#00788c', secondary: '#00c6d7', dark: '#003845' },
@@ -357,6 +358,8 @@ function App() {
             loadedState.info = { ...INITIAL_INFO };
           }
           loadedState.info.sections = [];
+          // 가격은 늘 공실관리의 최신 값으로 — 저장본의 옛 가격·망가진 가격이 유리창에 붙지 않게 (2026-10-01)
+          loadedState.info = { ...loadedState.info, transactionType: mappedInfo.transactionType, priceMain: mappedInfo.priceMain, priceSub: mappedInfo.priceSub, managementFee: mappedInfo.managementFee };
           if (!loadedState.mainImage && photos.length > 0) loadedState.mainImage = getPhotoUrl(0);
           setState(loadedState);
           setIsLoadedFromStorage(true);
@@ -375,6 +378,8 @@ function App() {
               loadedState.info = { ...INITIAL_INFO };
             }
             loadedState.info.sections = [];
+            // 가격은 늘 공실관리의 최신 값으로 — 저장본의 옛 가격·망가진 가격이 유리창에 붙지 않게 (2026-10-01)
+            loadedState.info = { ...loadedState.info, transactionType: mappedInfo.transactionType, priceMain: mappedInfo.priceMain, priceSub: mappedInfo.priceSub, managementFee: mappedInfo.managementFee };
             if (!loadedState.mainImage && photos.length > 0) loadedState.mainImage = getPhotoUrl(0);
             setState(loadedState);
             setIsLoadedFromStorage(true);
@@ -749,26 +754,20 @@ function App() {
   };
 
   /**
-   * 홍보지 한 장을 그림으로 뜬다. 미리보기는 화면에 맞춰 줄여 보여 주므로(transform)
-   * 원래 크기 복사본을 화면 밖에 붙여서 뜬다.
+   * 홍보지 한 장을 그림으로 뜬다 — 화면에 보이는 모양 그대로.
+   * html2canvas 는 화면을 흉내 내 다시 그리면서 글자를 아래로 밀어 그려, 칸에 꽉 찬 가격·전화번호
+   * 아랫부분이 잘렸다 (2026-10-01). html-to-image 는 브라우저가 그린 그대로(SVG foreignObject) 뜬다.
+   * 미리보기는 부모가 transform 으로 줄여 보여 주지만, 홍보지 자신은 원래 크기(860×1216 등)라 그대로 뜨면 된다.
    */
   const capturePage = async (): Promise<HTMLCanvasElement | null> => {
     if (!flyerRef.current) return null;
     const { w, h } = PAGE_SIZE[orientation];
-    const holder = document.createElement('div');
-    holder.style.cssText = `position:fixed;left:-20000px;top:0;width:${w}px;height:${h}px;`;
-    const clone = flyerRef.current.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
-    holder.appendChild(clone);
-    document.body.appendChild(holder);
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return await (window as any).html2canvas(clone, {
-        scale: 2, useCORS: true, backgroundColor: '#ffffff', width: w, height: h, windowWidth: w + 40, scrollX: 0, scrollY: 0,
-      });
-    } finally {
-      document.body.removeChild(holder);
-    }
+    (document.activeElement as HTMLElement | null)?.blur(); // 고치던 칸의 파란 테두리가 찍히지 않게
+    await document.fonts?.ready;
+    return toCanvas(flyerRef.current, {
+      width: w, height: h, canvasWidth: w * 2, canvasHeight: h * 2, pixelRatio: 1,
+      backgroundColor: '#ffffff', cacheBust: true,
+    });
   };
 
   const fileBaseName = () => `유리창홍보지_${(state.info.address || '매물').replace(/[\\/:*?"<>|\s]+/g, '_')}`;
@@ -791,7 +790,7 @@ function App() {
     }
   };
 
-  // ── 인쇄: A4 한 장 (세로/가로 그대로). html2canvas → jsPDF → iframe 인쇄 ──
+  // ── 인쇄: A4 한 장 (세로/가로 그대로). 화면 그대로 뜬 그림 → jsPDF → iframe 인쇄 ──
   const handlePrintFlyer = async () => {
     setIsPrinting(true);
     try {
@@ -1025,6 +1024,7 @@ function App() {
                                     data={state}
                                     orientation={orientation}
                                     qrDataUrl={qrDataUrl}
+                                    qrLink={qrUrl}
                                     onTextChange={handleTextChange}
                                     onImageClick={handleImageClick}
                                 />

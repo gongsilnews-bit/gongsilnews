@@ -22,11 +22,13 @@ interface FlyerCanvasProps {
   data: FlyerState;
   orientation: FlyerOrientation;
   qrDataUrl?: string | null;
+  /** QR 을 누르면 여는 매물 상세 주소 (화면·공유 페이지에서) */
+  qrLink?: string | null;
   onTextChange?: (key: keyof PropertyInfo, value: string) => void;
   onImageClick?: (imageKey: string) => void;
 }
 
-const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orientation, qrDataUrl, onTextChange, onImageClick }, ref) => {
+const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orientation, qrDataUrl, qrLink, onTextChange, onImageClick }, ref) => {
   const { info, mainImage, colorTheme, layoutTheme } = data;
   const primaryColor = colorTheme?.primary || '#00788c';
   const secondaryColor = colorTheme?.secondary || '#00c6d7';
@@ -48,9 +50,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     onBlur: (e: React.FocusEvent<HTMLElement>) => onTextChange?.(key, e.currentTarget.innerText),
   });
 
+  // 숫자만 적힌 값(예: 50000)만 '5억' 으로 바꾼다. '8천', '2억 5천' 처럼 이미 글로 적힌 값은 그대로.
+  // (예전엔 '8천 / 550만' 의 숫자를 이어 붙여 8550 으로 읽어 가격이 뒤엉켰다)
   const formatPrice = (value: string) => {
+    if (!/^[\d,]+$/.test(value.trim())) return value;
     const num = parseInt(value.replace(/[^0-9]/g, ''), 10);
-    if (isNaN(num) || value.includes('억')) return value;
+    if (isNaN(num)) return value;
     if (num >= 10000) {
       const eok = Math.floor(num / 10000);
       const man = num % 10000;
@@ -59,6 +64,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     return value;
   };
   const isRent = info.transactionType === '월세' || info.transactionType === '단기임대';
+  /** 정보가 비어 '-층 / 총 -층', '-개 / -개' 처럼 나오는 값은 '-' 하나로 */
+  const clean = (v: unknown) => {
+    const t = String(v ?? '').trim();
+    return !t || t.replace(/[-층총개/\s]/g, '') === '' ? '-' : t;
+  };
   const priceLabel = info.transactionType === '매매' ? '매매가' : info.transactionType === '전세' ? '전세금' : isRent ? '보증금 / 월세' : '가격';
 
   // ── 1. 대표 사진 (5가지 디자인) ──
@@ -267,7 +277,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
           {rows.map((r) => (
             <div key={r.key} className={`flex justify-between items-baseline gap-4 border-b border-gray-200 py-2.5 ${r.full ? 'col-span-2' : ''}`}>
               <span className="text-gray-600 font-bold text-[15px] shrink-0">{r.l}</span>
-              <span {...editable(r.key)} className={`font-extrabold text-gray-950 text-[17px] text-right break-keep ${editClass}`}>{String(info[r.key] || '-')}</span>
+              <span {...editable(r.key)} className={`font-extrabold text-gray-950 text-[17px] text-right break-keep ${editClass}`}>{clean(info[r.key])}</span>
             </div>
           ))}
         </div>
@@ -323,7 +333,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     const m = (info.area || '').match(/([\d.]+)\s*평/);
     return m ? `${Math.round(parseFloat(m[1]))}평` : '';
   })();
-  const priceText = `${formatPrice(info.priceMain || '')}${isRent && info.priceSub ? ` / ${info.priceSub}` : ''}`;
+  // 예전 버그로 '8천 / 550만 / 550만' 처럼 저장된 값도 있어 '/' 앞만 보증금으로 쓴다
+  const priceMainOnly = (info.priceMain || '').split('/')[0].trim();
+  const priceText = `${formatPrice(priceMainOnly)}${isRent && info.priceSub ? ` / ${info.priceSub}` : ''}`;
   const tradeWord = info.transactionType === '단기임대' ? '단기' : info.transactionType;
   const showPhoto = info.showPhoto !== false;
   const phone = info.agentMobile || info.agentPhone || '';
@@ -349,13 +361,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     const sizeLine = (
       <div style={{ ...oneLine, fontSize: isLand ? 34 : 40, fontWeight: 800, color: '#374151', marginTop: 6 }}>
         <span {...editable('pyeong')} className={editClass}>{pyeong}</span>
-        {info.floor && <span style={{ color: '#9ca3af', fontWeight: 600 }}>{pyeong ? '  ·  ' : ''}{info.floor}</span>}
+        {clean(info.floor) !== '-' && <span style={{ color: '#9ca3af', fontWeight: 600 }}>{pyeong ? '  ·  ' : ''}{info.floor}</span>}
       </div>
     );
     const price = (
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, marginTop: isLand ? 14 : 18, flexShrink: 0 }}>
         <span style={{ fontSize: isLand ? 30 : 34, fontWeight: 900, color: primaryColor, flexShrink: 0 }}>{priceLabel}</span>
         <span {...editable('priceMain')} {...fitAttrs(isLand ? 140 : 168, 70)} className={editClass}
+          onBlur={(e) => {
+            // '보증금 / 월세' 를 한 번에 고치므로 '/' 앞뒤를 나눠 각각 저장한다
+            const [main, sub] = e.currentTarget.innerText.split('/').map((t) => t.trim());
+            onTextChange?.('priceMain', main || '');
+            if (isRent) onTextChange?.('priceSub', sub || '');
+          }}
           style={{ ...oneLine, flex: 1, fontWeight: 900, color: primaryColor, lineHeight: 1, letterSpacing: -5 }}>{priceText}</span>
       </div>
     );
@@ -371,7 +389,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
           <div key={r.key} className={r.key === 'area' ? 'col-span-2' : ''}
             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, borderBottom: '1px solid #e5e7eb', padding: big ? '12px 0' : '9px 0' }}>
             <span style={{ fontSize: big ? 22 : 19, fontWeight: 700, color: '#6b7280', flexShrink: 0 }}>{r.l}</span>
-            <span {...editable(r.key)} className={editClass} style={{ fontSize: big ? 26 : 22, fontWeight: 800, color: '#111', textAlign: 'right', wordBreak: 'keep-all' }}>{String(info[r.key] || '-')}</span>
+            <span {...editable(r.key)} className={editClass} style={{ fontSize: big ? 26 : 22, fontWeight: 800, color: '#111', textAlign: 'right', wordBreak: 'keep-all' }}>{clean(info[r.key])}</span>
           </div>
         ))}
       </div>
@@ -403,7 +421,9 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
         </div>
         {qrDataUrl && (
           <div style={{ flexShrink: 0, textAlign: 'center' }}>
-            <img src={qrDataUrl} alt="매물 QR" style={{ width: isLand ? 116 : 128, height: isLand ? 116 : 128, background: '#fff', padding: 6, borderRadius: 8 }} />
+            <a href={qrLink || undefined} target="_blank" rel="noopener noreferrer" title="매물 상세보기" style={{ display: 'block', cursor: qrLink ? 'pointer' : 'default' }}>
+              <img src={qrDataUrl} alt="매물 QR" style={{ width: isLand ? 116 : 128, height: isLand ? 116 : 128, background: '#fff', padding: 6, borderRadius: 8 }} />
+            </a>
             <div style={{ fontSize: 13, fontWeight: 800, marginTop: 4, opacity: .9 }}>QR로 사진·위치 보기</div>
           </div>
         )}
