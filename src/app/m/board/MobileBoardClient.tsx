@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import MobileTopBarHeader from "../_components/MobileTopBarHeader";
+import StudySubMenuBar from "../_components/StudySubMenuBar";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
 import { getPermissionLevel } from "@/utils/permissionCheck";
@@ -19,6 +20,7 @@ const RESOURCE_BOARDS = [
 
 const COMMUNITY_BOARDS = [
   { id: "free", name: "자유게시판", icon: "💬" },
+  { id: "studyqa", name: "Q&A", icon: "❓" },
   { id: "notice", name: "공지사항", icon: "📢" },
 ];
 
@@ -189,25 +191,28 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
 
   const currentBoardId = board?.board_id || "";
   const isResource = RESOURCE_BOARDS.some(b => b.id === currentBoardId);
+  const isCommunity = COMMUNITY_BOARDS.some(b => b.id === currentBoardId);
+  const isStudySection = isResource || isCommunity;
   const subBoards = isResource ? RESOURCE_BOARDS : COMMUNITY_BOARDS;
 
   return (
-    <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px' }}>
-      {/* 공통 상단 헤더 (로고 + 1차 카테고리) — 자료실은 스터디, 나머지는 커뮤니티 탭이 활성 */}
-      <MobileTopBarHeader activeTab={isResource ? "study" : "community"} />
+    <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: isStudySection ? '48px' : '0px' }}>
+      {/* 공통 상단 헤더 (로고 + 1차 카테고리) */}
+      <MobileTopBarHeader activeTab="study" />
+      {isStudySection && <StudySubMenuBar />}
 
-      {/* 2차 카테고리 메뉴바 */}
+      {/* 게시판 세부 카테고리 메뉴바 */}
       <div
         className="hide-scrollbar"
         style={{
           position: 'sticky',
-          top: '56px',
-          zIndex: 35,
+          top: isStudySection ? '104px' : '56px',
+          zIndex: 34,
           backgroundColor: '#ffffff',
           borderBottom: '1px solid #e5e7eb',
           display: 'flex',
           gap: '6px',
-          padding: '10px 16px',
+          padding: '8px 12px',
           overflowX: 'auto',
           WebkitOverflowScrolling: 'touch',
           whiteSpace: 'nowrap',

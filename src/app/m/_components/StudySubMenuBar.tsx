@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import React, { useRef } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 export type StudyTab = "lecture" | "applications" | "board";
-export type StudyMenuKey = "about" | "lecture" | "apply" | "my_lectures" | "benefits" | "pricing" | "applications" | "board";
+export type StudyMenuKey = "lecture" | "resources" | "community" | "apply" | "my_lectures" | "benefits" | "pricing" | "about";
 
 interface Props {
   activeMenu?: StudyMenuKey;
@@ -12,10 +12,11 @@ interface Props {
   onTabChange?: (tab: any) => void;
 }
 
-// 대표님 요청: 상단 4개 메뉴로 정돈
+// PC와 100% 일치하는 5대 메뉴 (공실스터디란 삭제)
 const MENUS: { key: StudyMenuKey; label: string; href: string }[] = [
-  { key: "about", label: "공실스터디란?", href: "/m/study/about" },
-  { key: "lecture", label: "특강목록", href: "/m/study" },
+  { key: "lecture", label: "강의목록", href: "/m/study" },
+  { key: "resources", label: "자료실", href: "/m/board?id=drone" },
+  { key: "community", label: "커뮤니티", href: "/m/board?id=free" },
   { key: "apply", label: "멤버십신청", href: "/m/study/apply" },
   { key: "my_lectures", label: "내강의실", href: "/m/my_lectures" },
 ];
@@ -23,23 +24,27 @@ const MENUS: { key: StudyMenuKey; label: string; href: string }[] = [
 export default function StudySubMenuBar({ activeMenu, activeTab, onTabChange }: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const boardId = searchParams?.get("id");
 
   // 현재 활성화된 키 계산
   const currentKey: StudyMenuKey = React.useMemo(() => {
     if (activeMenu) return activeMenu;
     if (activeTab === "applications") return "my_lectures";
-    if (pathname.includes("/m/study/about")) return "about";
-    if (pathname.includes("/m/study/apply")) return "apply";
-    if (pathname.includes("/m/study/pricing")) return "apply"; // 금액안내는 멤버십신청과 연계
-    if (pathname.includes("/m/study/benefits")) return "about"; // 혜택은 소개란과 연계
     if (pathname.includes("/m/my_lectures")) return "my_lectures";
+    if (pathname.includes("/m/study/apply") || pathname.includes("/m/study/pricing")) return "apply";
+    if (pathname.includes("/m/study/benefits") || pathname.includes("/m/study/about")) return "apply";
+    if (pathname.includes("/m/board")) {
+      if (boardId === "free" || boardId === "studyqa" || boardId === "notice") return "community";
+      return "resources";
+    }
     if (pathname.includes("/m/study")) return "lecture";
-    return "about";
-  }, [activeMenu, activeTab, pathname]);
+    return "lecture";
+  }, [activeMenu, activeTab, pathname, boardId]);
 
   const handleMenuClick = (item: typeof MENUS[0]) => {
-    // 특강 목록 내부에서 탭 변경 콜백이 있고 현재 페이지가 /m/study 인 경우
     if (pathname === "/m/study" && onTabChange && item.key === "lecture") {
       onTabChange("lecture");
       return;
@@ -50,13 +55,13 @@ export default function StudySubMenuBar({ activeMenu, activeTab, onTabChange }: 
   return (
     <div
       ref={scrollContainerRef}
-      className="study-sub-menu-bar"
+      className="study-sub-menu-bar hide-scrollbar"
       style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: "6px",
-        padding: "8px 12px",
+        gap: "4px",
+        padding: "8px 8px",
         backgroundColor: "#ffffff",
         borderBottom: "1px solid #e5e7eb",
         position: "fixed",
@@ -68,6 +73,9 @@ export default function StudySubMenuBar({ activeMenu, activeTab, onTabChange }: 
         boxSizing: "border-box",
         width: "100%",
         maxWidth: "448px",
+        overflowX: "auto",
+        WebkitOverflowScrolling: "touch",
+        whiteSpace: "nowrap",
       }}
     >
       {MENUS.map((tab) => {
@@ -79,10 +87,10 @@ export default function StudySubMenuBar({ activeMenu, activeTab, onTabChange }: 
             onClick={() => handleMenuClick(tab)}
             style={{
               flex: 1,
-              minWidth: 0,
-              padding: "7px 4px",
+              minWidth: "fit-content",
+              padding: "7px 6px",
               borderRadius: "20px",
-              fontSize: "13px",
+              fontSize: "12.5px",
               fontWeight: isSel ? 800 : 600,
               color: isSel ? "#ffffff" : "#4b5563",
               backgroundColor: isSel ? "#059669" : "#f3f4f6",
@@ -94,7 +102,7 @@ export default function StudySubMenuBar({ activeMenu, activeTab, onTabChange }: 
               gap: "2px",
               transition: "all 0.18s ease",
               whiteSpace: "nowrap",
-              letterSpacing: "-0.4px",
+              letterSpacing: "-0.5px",
             }}
           >
             <span>{tab.label}</span>

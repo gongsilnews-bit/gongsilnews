@@ -9,8 +9,8 @@ const SearchOverlay = dynamic(() => import("./header/SearchOverlay"), { ssr: fal
 const CATEGORIES = [
   { key: "news", label: "뉴스", path: "/m/news" },
   { key: "gongsil", label: "공실열람", path: "/m/gongsil" },
-  { key: "study", label: "스터디", path: "/m/study" },
-  { key: "community", label: "커뮤니티", path: "/m/board?id=free" },
+  { key: "study", label: "공실스터디", path: "/m/study" },
+  { key: "help", label: "고객센터", path: "/m/help" },
 ];
 
 interface Props {

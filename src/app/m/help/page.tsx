@@ -13,7 +13,7 @@ export default async function MobileHelpPage({ searchParams }: { searchParams: P
   const [data, params] = await Promise.all([getHelpCenterData(), searchParams]);
   return (
     <div style={{ width: "100%", backgroundColor: "#fff", minHeight: "100vh", paddingTop: 56 }}>
-      <MobileTopBarHeader activeTab="community" />
+      <MobileTopBarHeader activeTab="help" />
       <HelpCenterClient data={data} mobile autoOpenInquiry={params.inquiry === "1"} />
     </div>
   );
