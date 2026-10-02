@@ -196,7 +196,7 @@ function StudyNavItems({
               {item.label}
             </Link>
 
-            {/* 🚀 메뉴 마우스 호버 시 가로형 2차 서브메뉴 박스 노출 (클릭 시 즉시 닫힘) */}
+            {/* 🚀 메뉴 마우스 호버 시 가로형 2차 서브메뉴 박스 노출 (커뮤니티와 동일한 깔끔한 화이트 스타일) */}
             {showSubBar && item.subItems && (
               <div
                 style={{
@@ -207,13 +207,10 @@ function StudyNavItems({
                   display: "inline-flex",
                   flexDirection: "row",
                   alignItems: "stretch",
-                  // 1차 헤더가 흰색(!dark)일 때는 원래 1차 헤더의 짙은 배경 적용
-                  background: dark ? "#ffffff" : "#04191c",
+                  background: "#ffffff",
                   borderRadius: "6px",
-                  border: dark ? "1px solid #d1d5db" : "1px solid rgba(255, 255, 255, 0.2)",
-                  boxShadow: dark
-                    ? "0 8px 24px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.06)"
-                    : "0 8px 24px rgba(0, 0, 0, 0.35)",
+                  border: "1px solid #d1d5db",
+                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.06)",
                   overflow: "hidden",
                   whiteSpace: "nowrap",
                 }}
@@ -222,24 +219,6 @@ function StudyNavItems({
                   const isSubActive = sub.match
                     ? sub.match(pathname, searchParams)
                     : pathname === sub.href;
-
-                  // 1차 카테고리가 흰 바탕(!dark)일 때:
-                  // - 선택된 버튼: 흰색 바탕에 포인트 초록 글씨
-                  // - 나머지 비선택 버튼: 짙은(원래1차) 배경에 흰 글씨
-                  // 1차 카테고리가 짙은 바탕(dark)일 때:
-                  // - 선택된 버튼: 연초록 바탕에 포인트 초록 글씨
-                  // - 나머지 비선택 버튼: 흰 바탕에 짙은 글씨
-                  const btnBg = !dark
-                    ? (isSubActive ? "#ffffff" : "#04191c")
-                    : (isSubActive ? "#f0fdf4" : "#ffffff");
-
-                  const btnColor = !dark
-                    ? (isSubActive ? POINT : "#ffffff")
-                    : (isSubActive ? POINT : "#1e293b");
-
-                  const borderColor = !dark
-                    ? "rgba(255, 255, 255, 0.18)"
-                    : "#e5e7eb";
 
                   return (
                     <Link
@@ -252,28 +231,23 @@ function StudyNavItems({
                         padding: "9px 16px",
                         fontSize: "13.5px",
                         fontWeight: isSubActive ? 800 : 600,
-                        color: btnColor,
-                        backgroundColor: btnBg,
+                        color: isSubActive ? POINT : "#1e293b",
+                        backgroundColor: isSubActive ? "#f0fdf4" : "#ffffff",
                         textDecoration: "none",
                         whiteSpace: "nowrap",
-                        borderRight: idx < item.subItems!.length - 1 ? `1px solid ${borderColor}` : "none",
+                        borderRight: idx < item.subItems!.length - 1 ? "1px solid #e5e7eb" : "none",
                         transition: "all 0.15s ease",
                       }}
                       onMouseEnter={(e) => {
                         if (!isSubActive) {
-                          if (!dark) {
-                            e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.15)";
-                            e.currentTarget.style.color = "#ffffff";
-                          } else {
-                            e.currentTarget.style.backgroundColor = "#f8fafc";
-                            e.currentTarget.style.color = POINT;
-                          }
+                          e.currentTarget.style.backgroundColor = "#f8fafc";
+                          e.currentTarget.style.color = POINT;
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!isSubActive) {
-                          e.currentTarget.style.backgroundColor = btnBg;
-                          e.currentTarget.style.color = btnColor;
+                          e.currentTarget.style.backgroundColor = "#ffffff";
+                          e.currentTarget.style.color = "#1e293b";
                         }
                       }}
                     >
