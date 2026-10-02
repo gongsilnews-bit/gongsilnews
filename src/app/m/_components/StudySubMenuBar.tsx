@@ -21,7 +21,7 @@ const MENUS: { key: StudyMenuKey; label: string; href: string }[] = [
   { key: "my_lectures", label: "내강의실", href: "/m/my_lectures" },
 ];
 
-export default function StudySubMenuBar({ activeMenu, activeTab, onTabChange }: Props) {
+function StudySubMenuBarInner({ activeMenu, activeTab, onTabChange }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -123,5 +123,30 @@ export default function StudySubMenuBar({ activeMenu, activeTab, onTabChange }: 
         );
       })}
     </div>
+  );
+}
+
+export default function StudySubMenuBar(props: Props) {
+  return (
+    <React.Suspense fallback={
+      <div
+        className="study-sub-menu-bar hide-scrollbar"
+        style={{
+          display: "flex",
+          height: "45px",
+          backgroundColor: "#ffffff",
+          borderBottom: "1px solid #e5e7eb",
+          position: "fixed",
+          top: "56px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 35,
+          width: "100%",
+          maxWidth: "448px",
+        }}
+      />
+    }>
+      <StudySubMenuBarInner {...props} />
+    </React.Suspense>
   );
 }

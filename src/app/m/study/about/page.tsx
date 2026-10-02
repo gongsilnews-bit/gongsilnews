@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import MobileStudyAboutClient from "./MobileStudyAboutClient";
 
 export const metadata = {
@@ -7,5 +7,9 @@ export const metadata = {
 };
 
 export default function MobileStudyAboutPage() {
-  return <MobileStudyAboutClient />;
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#666" }}>스터디 안내를 불러오는 중...</div>}>
+      <MobileStudyAboutClient />
+    </Suspense>
+  );
 }

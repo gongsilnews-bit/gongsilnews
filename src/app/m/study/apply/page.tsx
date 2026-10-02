@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import MobileStudyApplyClient from "./MobileStudyApplyClient";
 
 export const metadata = {
@@ -7,5 +7,9 @@ export const metadata = {
 };
 
 export default function MobileStudyApplyPage() {
-  return <MobileStudyApplyClient />;
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#666" }}>멤버십 신청을 불러오는 중...</div>}>
+      <MobileStudyApplyClient />
+    </Suspense>
+  );
 }
