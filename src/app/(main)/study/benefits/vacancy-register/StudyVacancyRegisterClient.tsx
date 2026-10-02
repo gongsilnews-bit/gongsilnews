@@ -137,7 +137,7 @@ export default function StudyVacancyRegisterClient() {
               >
                 <span>MEMBERSHIP BENEFIT</span>
                 <span style={{ opacity: 0.5 }}>|</span>
-                <span>공실 20건 · 기사 4편 실무 풀세트</span>
+                <span>11만 부동산 무료 열람 공동중개</span>
               </div>
 
               {/* 메인 헤드라인 */}
