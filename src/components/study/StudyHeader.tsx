@@ -29,7 +29,6 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "홈", href: "/study", match: (p: string) => p === "/study" || p.startsWith("/study/about") },
   { label: "강의목록", href: "/study/lectures", match: (p: string) => p.startsWith("/study/lectures") || p.startsWith("/study_read") },
   {
     label: "멤버십혜택",
