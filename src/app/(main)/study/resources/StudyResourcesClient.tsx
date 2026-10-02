@@ -775,7 +775,7 @@ export default function StudyResourcesClient({
           --board-navy-dark: #047857 !important;
           --board-navy-soft: #ecfdf5 !important;
         }
-        .study-qna .cat-badge { color: #ff8e15 !important; font-size: 14px; font-weight: 800; margin-right: 8px; }
+        .study-qna .cat-badge { color: #f4a71b !important; font-size: 14px; font-weight: 800; margin-right: 8px; }
         .study-qna .b-tab.active { background: #059669 !important; border-color: #059669 !important; color: #ffffff !important; }
         .study-qna .b-tab:hover { border-color: #059669 !important; color: #059669 !important; }
         .study-qna .b-list-table { border-top: 2px solid #059669 !important; }
