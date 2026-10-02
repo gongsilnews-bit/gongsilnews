@@ -371,7 +371,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     <NavHighlightBubble show={navBubble.key === "gongsil"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="gongsil" />
                   </div>
                   <div className="gnb-bubble-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                    <Link href="/study" className={pathname === "/study" || pathname?.startsWith("/study/") || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
+                    <Link href="/study/lectures" className={pathname === "/study" || pathname?.startsWith("/study/") || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
                       <span style={{ position: "relative", zIndex: 1 }}>공실스터디</span>
                       <NavCategoryHighlightMarker categoryKey="study" active={navBubble.key === "study" && !navBubble.leaving && !isSmallHeader} />
                     </Link>
