@@ -83,7 +83,10 @@ const NAV_ITEMS: NavItem[] = [
       {
         label: "드론영상",
         href: "/study/resources?board=drone",
-        match: (_p: string, sp: URLSearchParams | null) => sp?.get("board") === "drone",
+        match: (_p: string, sp: URLSearchParams | null) => {
+          const b = sp?.get("board");
+          return b === "drone" || (!b && _p.startsWith("/study/resources"));
+        },
       },
       {
         label: "APP(앱)",
@@ -103,10 +106,7 @@ const NAV_ITEMS: NavItem[] = [
       {
         label: "계약서/양식",
         href: "/study/resources?board=doc",
-        match: (_p: string, sp: URLSearchParams | null) => {
-          const b = sp?.get("board");
-          return b === "doc" || (!b && _p.startsWith("/study/resources"));
-        },
+        match: (_p: string, sp: URLSearchParams | null) => sp?.get("board") === "doc",
       },
     ],
   },

@@ -22,11 +22,11 @@ interface BoardMeta {
 }
 
 const TABS = [
-  { key: "doc", label: "계약서/양식", icon: "📄" },
   { key: "drone", label: "드론영상", icon: "🎬" },
+  { key: "app", label: "APP(앱)", icon: "📱" },
   { key: "prompt", label: "AI 프롬프트", icon: "💡" },
   { key: "sound", label: "음원", icon: "🎵" },
-  { key: "app", label: "App(앱)", icon: "📱" },
+  { key: "doc", label: "계약서/양식", icon: "📄" },
 ];
 
 // YouTube URL에서 썸네일 이미지 추출
@@ -97,7 +97,7 @@ export default function StudyResourcesClient({
   postsMap,
   serverUser,
   serverUserLevel,
-  initialBoardKey = "doc",
+  initialBoardKey = "drone",
 }: {
   boardsMap: Record<string, BoardMeta>;
   postsMap: Record<string, any[]>;

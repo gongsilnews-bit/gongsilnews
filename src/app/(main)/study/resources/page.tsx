@@ -9,7 +9,7 @@ export const metadata = {
   description: "부동산마케팅에 필요한 자료 공유실입니다.",
 };
 
-const RESOURCE_BOARD_IDS = ["doc", "drone", "prompt", "sound", "app"] as const;
+const RESOURCE_BOARD_IDS = ["drone", "app", "prompt", "sound", "doc"] as const;
 
 export default async function StudyResourcesPage({
   searchParams,
@@ -73,7 +73,7 @@ export default async function StudyResourcesPage({
   const selectedBoardKey =
     resolvedParams.board && RESOURCE_BOARD_IDS.includes(resolvedParams.board as any)
       ? resolvedParams.board
-      : "doc";
+      : "drone";
 
   return (
     <Suspense fallback={<div style={{ padding: 60, textAlign: "center", color: "#666" }}>자료실을 불러오는 중...</div>}>
