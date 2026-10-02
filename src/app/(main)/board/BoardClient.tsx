@@ -271,6 +271,7 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
   
   const isListType = board.skin_type === "LIST";
   const is1to1 = board.board_type === "inquiry";
+  const isNotice = board.board_id === "notice";
 
   if (isLevelChecking) {
     return <div style={{ padding: 100, textAlign: "center", color: "#666" }}>권한을 확인하는 중입니다...</div>;
@@ -533,25 +534,27 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
 
         </div>
 
-        {/* 사이드바는 스킨 타입 상관없이 공통 노출 */}
-        <div className="b-sidebar">
-          <div className="sb-banner">배너 1</div>
+        {/* 공지사항은 길게 풀사이즈로 표시(사이드바 제외) */}
+        {!isNotice && (
+          <div className="b-sidebar">
+            <div className="sb-banner">배너 1</div>
 
-          <div className="sb-widget">
-            <div className="sb-title">인기 게시물</div>
-            <ul className="pop-list">
-              {[...posts].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 5).map((p, i) => (
-                <li className="pop-item" key={p.id || i}>
-                  <span className="pop-ranking">{i + 1}</span>
-                  <Link href={getReadUrl(p.id)} className="pop-title" style={{ color: "inherit", textDecoration: "none" }}>
-                    {p.title.replace(/^\[([^\]]+)\]\s*/, "")}
-                  </Link>
-                </li>
-              ))}
-              {posts.length === 0 && <li style={{ fontSize: 14, color: "#94a3b8" }}>게시물이 없습니다.</li>}
-            </ul>
+            <div className="sb-widget">
+              <div className="sb-title">인기 게시물</div>
+              <ul className="pop-list">
+                {[...posts].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 5).map((p, i) => (
+                  <li className="pop-item" key={p.id || i}>
+                    <span className="pop-ranking">{i + 1}</span>
+                    <Link href={getReadUrl(p.id)} className="pop-title" style={{ color: "inherit", textDecoration: "none" }}>
+                      {p.title.replace(/^\[([^\]]+)\]\s*/, "")}
+                    </Link>
+                  </li>
+                ))}
+                {posts.length === 0 && <li style={{ fontSize: 14, color: "#94a3b8" }}>게시물이 없습니다.</li>}
+              </ul>
+            </div>
           </div>
-        </div>
+        )}
       </main>
 
       {/* 글쓰기 모달 */}

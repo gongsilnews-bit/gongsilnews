@@ -583,28 +583,30 @@ export default function BoardReadClient({
           </div>
         </div>
 
-        {/* 우측 사이드바 — 목록 페이지와 같은 클래스라 크기가 항상 같이 간다 */}
-        <div className="b-sidebar">
-          <div className="sb-banner">배너 1</div>
+        {/* 공지사항은 길게 풀사이즈 노출(사이드바 제외) */}
+        {boardId !== "notice" && (
+          <div className="b-sidebar">
+            <div className="sb-banner">배너 1</div>
 
-          <div className="sb-widget">
-            <div className="sb-title">
-              인기 게시물
-              <Link href={listUrl} className="sb-title-more" style={{ color: "inherit", textDecoration: "none" }}>더보기</Link>
+            <div className="sb-widget">
+              <div className="sb-title">
+                인기 게시물
+                <Link href={listUrl} className="sb-title-more" style={{ color: "inherit", textDecoration: "none" }}>더보기</Link>
+              </div>
+              <ul className="pop-list">
+                {popularPosts.map((pp, i) => (
+                  <li className="pop-item" key={pp.id}>
+                    <span className="pop-ranking">{i + 1}</span>
+                    <Link href={getReadUrl(pp.id)} className="pop-title" style={{ color: "inherit", textDecoration: "none" }}>
+                      {pp.title.replace(/^\[([^\]]+)\]\s*/, "")}
+                    </Link>
+                  </li>
+                ))}
+                {popularPosts.length === 0 && <li style={{ fontSize: 14, color: "#94a3b8" }}>게시물이 없습니다.</li>}
+              </ul>
             </div>
-            <ul className="pop-list">
-              {popularPosts.map((pp, i) => (
-                <li className="pop-item" key={pp.id}>
-                  <span className="pop-ranking">{i + 1}</span>
-                  <Link href={getReadUrl(pp.id)} className="pop-title" style={{ color: "inherit", textDecoration: "none" }}>
-                    {pp.title.replace(/^\[([^\]]+)\]\s*/, "")}
-                  </Link>
-                </li>
-              ))}
-              {popularPosts.length === 0 && <li style={{ fontSize: 14, color: "#94a3b8" }}>게시물이 없습니다.</li>}
-            </ul>
           </div>
-        </div>
+        )}
       </div>
     </div>
 
