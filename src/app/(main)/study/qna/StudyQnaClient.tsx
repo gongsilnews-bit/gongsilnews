@@ -12,7 +12,7 @@ import TypingText from "@/components/study/TypingText";
  * 공실뉴스 게시판(/board)과 같은 목록형 마크업을 쓰되, 사이드바를 빼서 폭을 다 쓰고
  * 포인트 컬러만 스터디 에메랄드로 덮어쓴다.
  */
-const POINT = "#052427";
+const POINT = "#059669";
 const ITEMS_PER_PAGE = 12;
 
 export default function StudyQnaClient({
@@ -482,13 +482,13 @@ export default function StudyQnaClient({
       )}
 
       <style>{`
-        /* 상단 짙은 녹색(#052427) 테마로 통일 */
+        /* 공실뉴스 게시판 클래스를 그대로 쓰되 네이비 포인트만 스터디 에메랄드로 바꾼다 */
         .study-qna {
-          --board-navy: #052427;
-          --board-navy-dark: #03171a;
-          --board-navy-soft: #f8fafc;
+          --board-navy: #059669;
+          --board-navy-dark: #047857;
+          --board-navy-soft: #ecfdf5;
         }
-        .study-qna .cat-badge { color: #ef4444; font-weight: 700; }
+        .study-qna .cat-badge { color: #059669; }
         .study-qna .b-list-table td.subject a { color: inherit; text-decoration: none; }
       `}</style>
     </div>
