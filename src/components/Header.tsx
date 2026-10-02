@@ -390,18 +390,6 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     </div>
                   </div>
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
-                    <Link href="/board">자료실</Link>
-                    <div className="gnb-dropdown">
-                      <ul>
-                        <li><a href="/board?id=drone">드론영상</a></li>
-                        <li><a href="/board?id=app">APP(앱)</a></li>
-                        <li><a href="/board?id=prompt">AI 프롬프트</a></li>
-                        <li><a href="/board?id=sound">음원</a></li>
-                        <li><a href="/board?id=doc">계약서/양식</a></li>
-                      </ul>
-                    </div>
-                  </div>
-                  <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
                     <Link href="/help" className={pathname === "/help" || pathname?.startsWith("/help") ? "active" : ""}>고객센터</Link>
                     <div className="gnb-dropdown">
                       <ul>
@@ -671,7 +659,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/gongsil"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실열람</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_map"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>우리동네뉴스</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study/lectures"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실스터디</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/board"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자료실</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study/resources"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자료실</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/help"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>고객센터</a></li>
                 </ul>
               </div>
