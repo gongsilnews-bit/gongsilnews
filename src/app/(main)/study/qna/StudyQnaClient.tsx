@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { canAccessBoard, getLevelName } from "@/utils/permissionCheck";
-import StudyHeader from "@/components/study/StudyHeader";
+import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
+import TypingText from "@/components/study/TypingText";
 
 /**
  * 공실스터디 Q&A게시판 (게시판관리에서 만든 studyqa 게시판을 그대로 사용)
@@ -107,7 +108,6 @@ export default function StudyQnaClient({
     );
   }
 
-  const answeredCount = posts.filter((p) => p.board_comments && p.board_comments.length > 0).length;
 
   const filteredPosts = posts.filter((p) => {
     if (myPostsOnly && currentUser && p.author_id !== currentUser.id) return false;
@@ -141,42 +141,88 @@ export default function StudyQnaClient({
 
   return (
     <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", color: "#132e27" }}>
-      <StudyHeader />
+      <StudyHeader background={STUDY_HERO_BAR} />
 
-      {/* ━━━ 상단 타이틀 배너 (강의목록 히어로와 같은 딥 포레스트 톤) ━━━ */}
-      <section style={{ backgroundColor: "#062326", color: "#ffffff", padding: "44px 0 40px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: "rgba(16, 185, 129, 0.14)",
-              border: "1px solid rgba(16, 185, 129, 0.35)",
-              padding: "6px 14px",
-              borderRadius: 24,
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#6ee7b7",
-              marginBottom: 16,
-            }}
-          >
-            <span>🌿</span>
-            <span>공실스터디 수강생 질의응답</span>
-          </div>
+      {/* ━━━ 상단 타이틀 배너 (멤버십신청과 100% 동일한 칸 높이 & 폰트 크기) ━━━ */}
+      <section
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          background: "linear-gradient(145deg, #052326 0%, #0c382f 60%, #114b3f 100%)",
+          color: "#ffffff",
+          padding: "60px 20px 64px",
+          // 세 페이지 히어로 높이를 같게 두고 글은 세로 가운데
+          minHeight: "260px",
+          display: "flex",
+          alignItems: "center",
+          boxShadow: "0 4px 20px rgba(5, 35, 38, 0.25)",
+        }}
+      >
+        <div
+          style={{
+            // 멤버십신청·나의 강의실 히어로와 같은 안쪽 라인 (글 시작 위치를 맞춘다)
+            width: "100%",
+            boxSizing: "border-box",
+            maxWidth: "1080px",
+            margin: "0 auto",
+            padding: "0 20px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 72,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
 
-          <h1 style={{ fontSize: 30, fontWeight: 900, letterSpacing: "-0.7px", margin: "0 0 10px 0" }}>{board.name}</h1>
-          <p style={{ fontSize: 15, color: "#a7f3d0", opacity: 0.92, lineHeight: 1.6, margin: 0, wordBreak: "keep-all" }}>
-            강의를 따라 하다 막힌 부분, AI·영상편집·블로그·유튜브 실무 질문을 남겨주세요. 담당 강사와 운영진이 직접 답변드립니다.
-          </p>
+            {/* 멤버십신청·나의 강의실과 같은 모션: 제목은 아래에서 위로, 이어서 설명 문장 타이핑 */}
+            <h1 className="study-hero-rise" style={{ display: "flex", alignItems: "baseline", gap: "24px", fontSize: "44px", fontWeight: 900, lineHeight: 1.2, letterSpacing: "-1px", margin: "0 0 16px", color: "#ffffff", wordBreak: "keep-all" }}>
+              Q&amp;A 게시판
+              <span style={{ fontSize: "34px", fontWeight: 800, letterSpacing: "-0.5px", color: "#34d399" }}>Study Community</span>
+            </h1>
 
-          <div style={{ display: "flex", gap: 28, marginTop: 22, fontSize: 14, color: "#d1fae5", fontWeight: 600 }}>
-            <span>
-              전체 질문 <strong style={{ color: "#34d399", fontWeight: 800 }}>{posts.length}</strong>건
-            </span>
-            <span>
-              답변완료 <strong style={{ color: "#34d399", fontWeight: 800 }}>{answeredCount}</strong>건
-            </span>
+            <p style={{ fontSize: "24px", fontWeight: 500, color: "rgba(255, 255, 255, 0.92)", lineHeight: 1.45, margin: "0 0 18px", letterSpacing: "-0.5px", wordBreak: "keep-all" }}>
+              <TypingText text="막히는 건 물어보고, 아는 건 나눠 주세요! 함께 하면, 더 쉬워집니다!" delay={750} speed={55} />
+            </p>
+            <style>{`
+              .study-hero-rise { animation: studyHeroRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+              @keyframes studyHeroRise { from { opacity: 0; transform: translateY(36px); } to { opacity: 1; transform: translateY(0); } }
+              @media (prefers-reduced-motion: reduce) { .study-hero-rise { animation: none; } }
+            `}</style>
+
+            {/* 아래 목록의 버튼과 같은 동작 */}
+            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              {currentUser && (
+                <button
+                  type="button"
+                  onClick={toggleMyPosts}
+                  style={{
+                    padding: "8px 16px", borderRadius: 7, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                    background: myPostsOnly ? "#ffffff" : "rgba(255, 255, 255, 0.08)",
+                    color: myPostsOnly ? POINT : "#ffffff",
+                    border: "1px solid rgba(255, 255, 255, 0.45)",
+                  }}
+                >
+                  {myPostsOnly ? "전체글 보기" : "내가 쓴 글 보기"}
+                </button>
+              )}
+              {canWrite ? (
+                <a
+                  href={writeUrl}
+                  style={{ padding: "8px 18px", borderRadius: 7, fontSize: 13.5, fontWeight: 800, color: "#ffffff", background: "#10b981", textDecoration: "none", boxShadow: "0 3px 12px rgba(16, 185, 129, 0.4)" }}
+                >
+                  질문하기
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => showToast(`${getLevelName(board.perm_write ?? 5)}부터 질문을 등록하실 수 있습니다.. 🤍`)}
+                  style={{ padding: "8px 18px", borderRadius: 7, fontSize: 13.5, fontWeight: 800, color: "#ffffff", background: "#10b981", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  질문하기
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>

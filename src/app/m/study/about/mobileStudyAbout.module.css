@@ -2,11 +2,13 @@
 
 .container {
   width: 100%;
+  max-width: 448px;
+  margin: 0 auto;
   min-height: 100vh;
   background-color: #f8fafc;
   color: #1e293b;
   font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-  padding-top: 56px;
+  padding-top: 108px;
   padding-bottom: 24px;
   overflow-x: hidden;
   letter-spacing: -0.3px;

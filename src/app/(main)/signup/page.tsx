@@ -706,7 +706,7 @@ export default function SignupPage() {
                 </li>
                 <li className="pc-pricing-card-feature-item">
                   <CheckIcon />
-                  <strong>공동중개 물건 등록 2건 무료</strong>
+                  <strong>공동중개 물건 등록 3건 무료</strong>
                 </li>
                 <li className="pc-pricing-card-feature-item">
                   <CheckIcon />

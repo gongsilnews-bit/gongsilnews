@@ -1,368 +1,308 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import NotificationBell from "@/components/common/NotificationBell";
 import { createClient } from "@/utils/supabase/client";
-import { getEffectiveMemberRole } from "@/utils/permissionCheck";
-import { STUDY_BENEFITS } from "@/components/study/StudyBenefitsSubNav";
-import { getAdminEntryLabel } from "@/utils/permissionCheck";
+import { getEffectiveMemberRole, getAdminEntryLabel } from "@/utils/permissionCheck";
 
 /**
- * 공실스터디 전용 상단 헤더 (공실뉴스부동산 헤더와 동일 포맷 / 포인트 컬러만 에메랄드)
- * 2차 카테고리: 홈 · 강의목록 · 멤버십혜택(드롭다운) · 금액안내 · 멤버십신청 · 나의 강의실 · Q&A게시판
- * 홈은 따로 두지 않고 /study 가 곧 '공실스터디란?' 이다.
+ * 공실스터디 2차 메뉴 줄.
+ * 공실스터디 페이지도 공실뉴스 메인 헤더를 그대로 쓰고, 그 아래에 공실뉴스 섹션 페이지
+ * (예: /news_gongsil 의 "공실뉴스  전체 · 아파트/오피스텔 …")와 같은 모양으로
+ * 왼쪽 "공실스터디" 제목 + 오른쪽 탭을 둔다. 포인트 색만 공실스터디 에메랄드.
+ * 로그인·관리자 버튼은 메인 헤더에 있으므로 여기에는 두지 않는다.
+ *
+ * 바로 아래가 진한 히어로 배너인 페이지는 background 로 배너 색을 넘긴다. 메뉴 줄은 그 색 위에
+ * 어두운 막을 한 겹 더 깔아 배너보다 한 단계 진하게 보이고, 글자는 막 위에 흰색으로 또렷하게,
+ * 선택된 메뉴는 히어로 강조색(민트)으로 둔다.
+ *
+ * 스크롤해서 이 줄이 화면 위에 닿으면 얇은 모양으로 화면 맨 위에 붙는다.
+ * (공실스터디 페이지에서는 메인 헤더가 붙지 않고 위로 지나간다 — Header.tsx)
  */
 const POINT = "#059669";
+const MINT = "#72e7c3";
 
-const NAV_BEFORE = [
+/** 진한 초록 히어로(멤버십신청·나의 강의실·Q&A, 145deg 그라데이션)의 위쪽 가장자리 색을 그대로 옮긴 것 */
+export const STUDY_HERO_BAR = "linear-gradient(90deg, #052427 0%, #072928 25%, #09302b 50%, #0b372e 75%, #0e4036 100%)";
+/** 공실스터디 홈 히어로(사진 + 가운데가 밝은 그림자)의 위쪽 가장자리 색 */
+export const STUDY_HOME_HERO_BAR = "linear-gradient(90deg, #071614 0%, #0c1f1b 25%, #102320 50%, #0b1d1a 75%, #061613 100%)";
+
+const NAV_ITEMS: {
+  label: string;
+  href: string;
+  match: (p: string) => boolean;
+  subItems?: { label: string; href: string }[];
+}[] = [
   { label: "홈", href: "/study", match: (p: string) => p === "/study" || p.startsWith("/study/about") },
   { label: "강의목록", href: "/study/lectures", match: (p: string) => p.startsWith("/study/lectures") || p.startsWith("/study_read") },
-];
-
-const NAV_AFTER = [
-  { label: "금액안내", href: "/study/pricing", match: (p: string) => p.startsWith("/study/pricing") },
+  { label: "멤버십혜택", href: "/study/benefits/vacancy-register", match: (p: string) => p.startsWith("/study/benefits") },
   { label: "멤버십신청", href: "/study/apply", match: (p: string) => p.startsWith("/study/apply") },
-  { label: "나의 강의실", href: "/study/classroom", match: (p: string) => p.startsWith("/study/classroom") },
-  { label: "Q&A게시판", href: "/study/qna", match: (p: string) => p.startsWith("/study/qna") },
+  {
+    label: "자료실",
+    href: "/study/resources",
+    match: (p: string) =>
+      p.startsWith("/study/resources") ||
+      p.includes("board_id=doc") ||
+      p.includes("board_id=drone") ||
+      p.includes("board_id=prompt") ||
+      p.includes("board_id=sound") ||
+      p.includes("board_id=app"),
+    subItems: [
+      { label: "드론영상", href: "/study/resources?board=drone" },
+      { label: "APP(앱)", href: "/study/resources?board=app" },
+      { label: "AI 프롬프트", href: "/study/resources?board=prompt" },
+      { label: "음원", href: "/study/resources?board=sound" },
+      { label: "계약서/양식", href: "/study/resources?board=doc" },
+    ],
+  },
+  {
+    label: "커뮤니티",
+    href: "/study/community",
+    match: (p: string) =>
+      p.startsWith("/study/community") ||
+      p.startsWith("/study/qna") ||
+      p.includes("board_id=studyqa") ||
+      p.includes("board_id=free"),
+    subItems: [
+      { label: "스터디 Q&A", href: "/study/community?board=studyqa" },
+      { label: "자유게시판", href: "/study/community?board=free" },
+    ],
+  },
 ];
 
-export default function StudyHeader() {
+export default function StudyHeader({ background }: { background?: string } = {}) {
   const pathname = usePathname() || "/study";
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [userRole, setUserRole] = useState<string>("");
-  const [planType, setPlanType] = useState<string>("");
-  const [agencyStatus, setAgencyStatus] = useState<string>("");
-  const [benefitsOpen, setBenefitsOpen] = useState(false);
-  const benefitsTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isBenefitsActive = pathname.startsWith("/study/benefits");
+  const dark = !!background;
+  const titleColor = dark ? "#ffffff" : "#111";
+  const idleColor = dark ? "rgba(255,255,255,0.88)" : "#6b7280";
+  const activeColor = dark ? MINT : POINT;
+  const barBackground = dark ? "linear-gradient(90deg, #021315 0%, #04191c 50%, #021315 100%)" : "#ffffff";
 
-  const openBenefits = () => {
-    if (benefitsTimer.current) { clearTimeout(benefitsTimer.current); benefitsTimer.current = null; }
-    setBenefitsOpen(true);
-  };
-  const closeBenefits = () => {
-    benefitsTimer.current = setTimeout(() => setBenefitsOpen(false), 150);
-  };
+  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
+  // 원래 자리(slot)가 화면 위에 닿으면 붙는다. 붙는 동안 slot 이 원래 높이를 지켜 내용이 튀지 않는다
+  const slotRef = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
+  const [slotHeight, setSlotHeight] = useState<number | undefined>(undefined);
   useEffect(() => {
-    const supabase = createClient();
-
-    // 메인 헤더와 같은 규칙으로 등급을 판정한다 (members.role + agencies.status)
-    const loadRole = async (u: { id: string } | null) => {
-      if (!u) {
-        setUserRole("");
-        setAgencyStatus("");
-        return;
-      }
-      const { data: member } = await supabase.from("members").select("role, plan_type").eq("id", u.id).single();
-      const { data: agency } = await supabase.from("agencies").select("status").eq("owner_id", u.id).single();
-      setAgencyStatus(agency?.status || "");
-      setUserRole(getEffectiveMemberRole(member?.role, agency?.status));
-      setPlanType((member as any)?.plan_type || "");
+    const check = () => {
+      const el = slotRef.current;
+      if (!el) return;
+      const isStuck = el.getBoundingClientRect().top <= 0 && window.scrollY > 0;
+      if (isStuck) setSlotHeight((h) => h ?? el.offsetHeight);
+      setStuck(isStuck);
     };
-
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      void loadRole(user);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-      void loadRole(session?.user || null);
-    });
-
+    const raf = window.requestAnimationFrame(check);
+    window.addEventListener("scroll", check, { passive: true });
     return () => {
-      subscription.unsubscribe();
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", check);
     };
   }, []);
 
-  const handleLogout = async () => {
+  // 붙었을 때 오른쪽에 메인 헤더와 같은 알림·검색·전체메뉴·관리자 버튼을 둔다
+  const [member, setMember] = useState<{ role: string; planType: string; agencyStatus: string } | null>(null);
+  useEffect(() => {
     const supabase = createClient();
-    await supabase.auth.signOut();
-    setUser(null);
-    router.refresh();
+    void supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const [{ data: m }, { data: agency }] = await Promise.all([
+        supabase.from("members").select("role, plan_type").eq("id", user.id).single(),
+        supabase.from("agencies").select("status").eq("owner_id", user.id).maybeSingle(),
+      ]);
+      setMember({
+        role: getEffectiveMemberRole(m?.role, agency?.status),
+        planType: (m as { plan_type?: string } | null)?.plan_type || "",
+        agencyStatus: agency?.status || "",
+      });
+    });
+  }, []);
+
+  const goAdmin = () => {
+    if (!member) return;
+    if (member.role === "REALTOR" && member.agencyStatus === "REJECTED") window.open("/realty_admin?menu=settings&tab=agency", "_blank");
+    else if (member.role === "ADMIN") router.push("/admin");
+    else if (member.role === "REALTOR") router.push("/realty_admin");
+    else router.push("/user_admin");
   };
+  const iconColor = dark ? "#ffffff" : "#333";
 
   return (
-    <header
-      style={{
-        backgroundColor: "#ffffff",
-        borderBottom: "1px solid #eaedf0",
-        height: "60px",
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
-      }}
+    <div ref={slotRef} style={{ height: stuck ? slotHeight : undefined, background: barBackground }}>
+    <div
+      style={stuck
+        ? { position: "fixed", top: 0, left: 0, width: "100%", zIndex: 9999990, background: barBackground, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", borderBottom: dark ? "none" : "1px solid #e5e7eb" }
+        : { background: barBackground }}
     >
-      <div
+      <nav
+        aria-label="공실스터디 메뉴"
+        className="container px-20"
+        // 진한 메뉴 줄은 아래 여백을 강의목록 페이지(메뉴 ~ 카드 사이 간격)만큼 넉넉히 둔다. 붙었을 때는 얇게
         style={{
-          maxWidth: "1152px",
-          margin: "0 auto",
-          height: "100%",
-          padding: "0 20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "16px",
+          display: "flex", alignItems: stuck ? "center" : "flex-end", gap: stuck ? "32px" : "40px",
+          padding: stuck ? "14px 20px" : dark ? "20px 20px 32px" : "20px 20px 14px",
         }}
       >
-        {/* ━━━ 좌측 로고 영역 ━━━ */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-          <Link
-            href="/"
-            style={{
-              fontSize: "23px",
-              fontWeight: 900,
-              color: "#111827",
-              textDecoration: "none",
-              letterSpacing: "-0.5px",
-              display: "inline-flex",
-              alignItems: "center",
-            }}
-            title="공실뉴스 메인 포털 홈으로"
-          >
-            공실뉴스
-          </Link>
-          <span style={{ fontSize: "19px", color: "#cbd5e1", fontWeight: 300, margin: "0 4px", userSelect: "none" }}>
-            |
-          </span>
-          <Link
-            href="/study"
-            style={{
-              fontSize: "23px",
-              fontWeight: 900,
-              color: POINT,
-              textDecoration: "none",
-              letterSpacing: "-0.5px",
-              display: "inline-flex",
-              alignItems: "center",
-            }}
-            title="공실스터디 홈으로"
-          >
-            공실스터디
-          </Link>
-        </div>
+        <Link
+          href="/study"
+          style={{
+            fontSize: stuck ? "22px" : "32px", fontWeight: 900, color: titleColor, letterSpacing: "-1px", lineHeight: 1,
+            textDecoration: "none", marginLeft: "20px", whiteSpace: "nowrap",
+          }}
+          title="공실스터디 홈"
+        >
+          공실스터디
+        </Link>
 
-        {/* ━━━ 우측 내비게이션 (홈 / 강의목록 / 멤버십혜택 / 금액안내 / 멤버십신청 / 나의 강의실 / Q&A게시판) ━━━ */}
-        <nav style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "nowrap" }}>
-          {NAV_BEFORE.map((item) => {
+        <div style={{ display: "flex", alignItems: "center", gap: "22px", marginBottom: stuck ? 0 : "3px", flexWrap: "wrap" }}>
+          {NAV_ITEMS.map((item) => {
             const isActive = item.match(pathname);
+            const isHovered = hoveredNav === item.label;
             return (
-              <Link
+              <div
                 key={item.href}
-                href={item.href}
-                style={{
-                  fontSize: "17px",
-                  fontWeight: isActive ? 900 : 800,
-                  color: isActive ? POINT : "#111827",
-                  letterSpacing: "-0.3px",
-                  textDecoration: "none",
-                  transition: "color 0.15s ease",
-                  position: "relative",
-                  padding: "6px 0",
-                  whiteSpace: "nowrap",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.color = POINT;
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) e.currentTarget.style.color = "#111827";
-                }}
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav(item.label)}
+                onMouseLeave={() => setHoveredNav(null)}
               >
-                {item.label}
-                {isActive && (
-                  <span
+                <Link
+                  href={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: isActive ? 800 : 500,
+                    color: isActive ? activeColor : idleColor,
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                    transition: "color 0.15s ease",
+                    display: "inline-block",
+                    padding: "4px 0",
+                  }}
+                  onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.color = activeColor; }}
+                  onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.color = idleColor; }}
+                >
+                  {item.label}
+                </Link>
+
+                {item.subItems && isHovered && (
+                  <div
                     style={{
                       position: "absolute",
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: "2px",
-                      backgroundColor: POINT,
-                      borderRadius: "2px",
+                      top: "100%",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      paddingTop: "10px",
+                      zIndex: 9999999,
+                      minWidth: "140px",
                     }}
-                  />
-                )}
-              </Link>
-            );
-          })}
-
-          {/* 멤버십혜택 (드롭다운) */}
-          <div style={{ position: "relative" }} onMouseEnter={openBenefits} onMouseLeave={closeBenefits}>
-            <Link
-              href={STUDY_BENEFITS[0].href}
-              style={{
-                fontSize: "17px",
-                fontWeight: isBenefitsActive ? 900 : 800,
-                color: isBenefitsActive || benefitsOpen ? POINT : "#111827",
-                letterSpacing: "-0.3px",
-                textDecoration: "none",
-                transition: "color 0.15s ease",
-                padding: "6px 0",
-                whiteSpace: "nowrap",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "3px",
-                position: "relative",
-              }}
-            >
-              <span>멤버십혜택</span>
-              <span style={{ fontSize: "10px", display: "inline-block", opacity: 0.7, transition: "transform 0.2s ease", transform: benefitsOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
-                ▾
-              </span>
-              {isBenefitsActive && (
-                <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "2px", backgroundColor: POINT, borderRadius: "2px" }} />
-              )}
-            </Link>
-
-            {benefitsOpen && (
-              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", zIndex: 100, paddingTop: "6px" }}>
-                <div style={{ width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderBottom: "6px solid #22242a", margin: "0 auto" }} />
-                <div style={{ backgroundColor: "#22242a", borderRadius: "4px", boxShadow: "0 10px 25px rgba(0,0,0,0.35)", padding: "8px 0", minWidth: "220px" }}>
-                  {STUDY_BENEFITS.map((b) => (
-                    <Link
-                      key={b.slug}
-                      href={b.href}
-                      onClick={() => setBenefitsOpen(false)}
+                  >
+                    <div
                       style={{
-                        display: "block",
-                        padding: "12px 22px",
-                        color: "#ffffff",
-                        fontSize: "15px",
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        whiteSpace: "nowrap",
-                        letterSpacing: "-0.2px",
-                        transition: "all 0.15s ease",
+                        background: "#ffffff",
+                        borderRadius: "6px",
+                        boxShadow: "0 10px 25px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08)",
+                        border: "1px solid #d1d5db",
+                        overflow: "hidden",
+                        textAlign: "center",
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#2e323b"; e.currentTarget.style.color = POINT; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#ffffff"; }}
                     >
-                      {b.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {NAV_AFTER.map((item) => {
-            const isActive = item.match(pathname);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                style={{
-                  fontSize: "17px",
-                  fontWeight: isActive ? 900 : 800,
-                  color: isActive ? POINT : "#111827",
-                  letterSpacing: "-0.3px",
-                  textDecoration: "none",
-                  transition: "color 0.15s ease",
-                  position: "relative",
-                  padding: "6px 0",
-                  whiteSpace: "nowrap",
-                }}
-                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.color = POINT; }}
-                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.color = "#111827"; }}
-              >
-                {item.label}
-                {isActive && (
-                  <span style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "2px", backgroundColor: POINT, borderRadius: "2px" }} />
+                      {item.subItems.map((sub, idx) => (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={() => setHoveredNav(null)}
+                          style={{
+                            display: "block",
+                            padding: "11px 16px",
+                            fontSize: "14px",
+                            fontWeight: 700,
+                            color: "#1e293b",
+                            textDecoration: "none",
+                            borderBottom: idx < item.subItems!.length - 1 ? "1px solid #e5e7eb" : "none",
+                            transition: "all 0.15s ease",
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#f0fdf4";
+                            e.currentTarget.style.color = POINT;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                            e.currentTarget.style.color = "#1e293b";
+                          }}
+                        >
+                          {sub.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </Link>
+              </div>
             );
           })}
+        </div>
 
-          {/* 회원 등급 버튼 / 로그인 */}
-          <div style={{ marginLeft: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
-            {user ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (userRole === "REALTOR" && agencyStatus === "REJECTED") window.open("/realty_admin?menu=settings&tab=agency", "_blank");
-                    else if (userRole === "ADMIN") router.push("/admin");
-                    else if (userRole === "REALTOR") router.push("/realty_admin");
-                    else router.push("/user_admin");
-                  }}
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    color: "#ffffff",
-                    background: userRole === "ADMIN" ? "#111827" : "#ef4444",
-                    border: "none",
-                    borderRadius: "4px",
-                    padding: "6px 12px",
-                    whiteSpace: "nowrap",
-                    cursor: "pointer",
-                    transition: "background 0.15s ease",
-                    display: "inline-flex",
-                    alignItems: "center",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = userRole === "ADMIN" ? "#1f2937" : "#dc2626")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = userRole === "ADMIN" ? "#111827" : "#ef4444")}
-                  title="내 관리자 페이지로 이동"
-                >
-                  {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
+        {/* 우측 끝: [내 강의실] 바로가기 버튼 (상시 노출) 및 스크롤 시 추가 기능 버튼들 */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0, marginBottom: stuck ? 0 : "3px" }}>
+          <Link
+            href="/study/classroom"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "7px 18px",
+              borderRadius: "6px",
+              fontSize: "14px",
+              fontWeight: 800,
+              color: "#ffffff",
+              background: pathname.startsWith("/study/classroom")
+                ? "linear-gradient(135deg, #059669 0%, #10b981 100%)"
+                : dark ? "rgba(5, 150, 105, 0.4)" : "#059669",
+              border: pathname.startsWith("/study/classroom")
+                ? "1.5px solid #34d399"
+                : "1px solid rgba(255, 255, 255, 0.35)",
+              boxShadow: pathname.startsWith("/study/classroom")
+                ? "0 3px 12px rgba(5, 150, 105, 0.45)"
+                : "none",
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+              transition: "all 0.2s ease",
+              cursor: "pointer",
+            }}
+            title="나의 강의실로 이동"
+          >
+            내 강의실
+          </Link>
+
+          {/* 붙었을 때는 메인 헤더가 안 보이므로 메인 헤더의 오른쪽 버튼들을 그대로 둔다 */}
+          {stuck && (
+            <>
+              {member ? <NotificationBell color={iconColor} /> : (
+                <Link href={"/login?returnTo=" + encodeURIComponent(pathname)} style={{ fontSize: "13px", fontWeight: 700, color: iconColor, textDecoration: "none" }}>로그인</Link>
+              )}
+              <button type="button" aria-label="검색" onClick={() => window.dispatchEvent(new Event("gongsil:open-search"))} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+              </button>
+              <button type="button" aria-label="전체 메뉴" onClick={() => window.dispatchEvent(new Event("gongsil:open-megamenu"))} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 26, height: 26 }}><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+              </button>
+              {member ? (
+                <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : "#ef4444", color: "#fff", border: dark && member.role === "ADMIN" ? "1px solid rgba(255,255,255,0.3)" : "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus)}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: "#64748b",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "4px 6px",
-                    whiteSpace: "nowrap",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
-                >
-                  로그아웃
+              ) : (
+                <button type="button" onClick={() => router.push("/login?returnTo=" + encodeURIComponent("/realty_admin?menu=gongsil&action=write"))} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  공실등록 &gt;&gt;
                 </button>
-              </>
-            ) : (
-              <Link
-                href={"/login?returnTo=" + encodeURIComponent(pathname)}
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  color: "#111827",
-                  border: "1px solid #111827",
-                  borderRadius: "4px",
-                  padding: "5px 12px",
-                  textDecoration: "none",
-                  whiteSpace: "nowrap",
-                  transition: "all 0.15s ease",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "transparent",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = POINT;
-                  e.currentTarget.style.borderColor = POINT;
-                  e.currentTarget.style.color = "#ffffff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.borderColor = "#111827";
-                  e.currentTarget.style.color = "#111827";
-                }}
-              >
-                로그인/회원가입
-              </Link>
-            )}
-          </div>
-        </nav>
-      </div>
-    </header>
+              )}
+            </>
+          )}
+        </div>
+      </nav>
+    </div>
+    </div>
   );
 }

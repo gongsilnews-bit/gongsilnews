@@ -233,12 +233,17 @@ export default function SearchClient({ query, articles, vacancies: initialVacanc
                         </p>
 
                         {v.themes && v.themes.length > 0 && (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                            {v.themes.map((theme: string, idx: number) => (
-                              <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "13px", padding: "4px 10px", borderRadius: "14px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", overflow: "hidden", whiteSpace: "nowrap" }}>
+                            {v.themes.slice(0, 3).map((theme: string, idx: number) => (
+                              <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "13px", padding: "3px 9px", borderRadius: "14px", fontWeight: 700, border: "1px solid #bfdbfe", flexShrink: 0 }}>
                                 #{theme}
                               </span>
                             ))}
+                            {v.themes.length > 3 && (
+                              <span style={{ color: "#94a3b8", fontSize: "13px", fontWeight: 800, letterSpacing: 1, flexShrink: 0, paddingLeft: "2px" }}>
+                                ...
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>

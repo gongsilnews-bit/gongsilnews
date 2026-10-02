@@ -252,10 +252,15 @@ function MobileVacancyWrite() {
   const [rCell, setRCell] = useState("02-541-1611");
   const [rAddr, setRAddr] = useState("서울 강남구 논현동 189-13");
 
-  // 사진
-  const [photos, setPhotos] = useState<File[]>([]);
-  const [photoPreview, setPhotoPreview] = useState<string[]>([]);
-  const [existingPhotoUrls, setExistingPhotoUrls] = useState<string[]>([]); // 수정 모드: DB 기존 사진 URL
+  // 사진 (대표사진 및 순서 관리)
+  interface MobilePhotoItem {
+    id: string;
+    type: 'existing' | 'new';
+    url?: string;
+    file?: File;
+    previewUrl: string;
+  }
+  const [photoItems, setPhotoItems] = useState<MobilePhotoItem[]>([]);
 
   /* ── 포토 DB 상태 ── */
   const [showPhotoDbModal, setShowPhotoDbModal] = useState(false);
@@ -429,9 +434,12 @@ function MobileVacancyWrite() {
           : (res.photos && res.photos.length > 0 ? res.photos : []);
         if (photoData.length > 0) {
           const sorted = [...photoData].sort((a: any, b: any) => a.sort_order - b.sort_order);
-          const urls = sorted.map((p: any) => p.url);
-          setExistingPhotoUrls(urls);
-          setPhotoPreview(urls);
+          setPhotoItems(sorted.map((p: any, idx: number) => ({
+            id: `exist_${idx}_${p.url}`,
+            type: 'existing',
+            url: p.url,
+            previewUrl: p.url
+          })));
         }
       }
       setLoadingEdit(false);
@@ -496,6 +504,10 @@ function MobileVacancyWrite() {
   const handleSelectFromPhotoDb = async (photo: any) => {
     setShowPhotoDbModal(false);
     try {
+      if (photoItems.length >= 5) {
+        alert("사진은 최대 5장까지만 등록 가능합니다.");
+        return;
+      }
       const response = await fetch(photo.url, { cache: 'no-cache' });
       if (!response.ok) throw new Error("Network response was not ok");
       const blob = await response.blob();
@@ -504,8 +516,12 @@ function MobileVacancyWrite() {
       
       const compressed = await compressToWebP(file);
       const pv = URL.createObjectURL(compressed);
-      setPhotos(prev => [...prev, compressed]);
-      setPhotoPreview(prev => [...prev, pv]);
+      setPhotoItems(prev => [...prev, {
+        id: `new_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        type: 'new',
+        file: compressed,
+        previewUrl: pv
+      }]);
     } catch (err: any) {
       alert(`사진을 불러오는 중 오류가 발생했습니다.\n(${err.message || err})`);
     }
@@ -712,32 +728,62 @@ function MobileVacancyWrite() {
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    const totalCount = existingPhotoUrls.length + photos.length;
-    const files = Array.from(e.target.files).slice(0, 5 - totalCount);
+    if (photoItems.length >= 5) {
+      alert("사진은 최대 5장까지만 등록 가능합니다.");
+      return;
+    }
+    const files = Array.from(e.target.files).slice(0, 5 - photoItems.length);
     
     // WebP 압축 적용
     const compressed = await Promise.all(files.map(f => compressToWebP(f)));
-    
-    setPhotos(prev => [...prev, ...compressed]);
-    compressed.forEach(f => { 
-      const r = new FileReader(); 
-      r.onload = () => setPhotoPreview(prev => [...prev, r.result as string]); 
-      r.readAsDataURL(f); 
+    const newItems: MobilePhotoItem[] = compressed.map((f, idx) => ({
+      id: `new_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
+      type: 'new',
+      file: f,
+      previewUrl: URL.createObjectURL(f)
+    }));
+    setPhotoItems(prev => [...prev, ...newItems]);
+  };
+
+  const setRepresentativePhoto = (index: number) => {
+    if (index === 0) return;
+    setPhotoItems(prev => {
+      const target = prev[index];
+      const rest = prev.filter((_, i) => i !== index);
+      return [target, ...rest];
+    });
+  };
+
+  const movePhotoLeft = (index: number) => {
+    if (index <= 0) return;
+    setPhotoItems(prev => {
+      const copy = [...prev];
+      const temp = copy[index - 1];
+      copy[index - 1] = copy[index];
+      copy[index] = temp;
+      return copy;
+    });
+  };
+
+  const movePhotoRight = (index: number) => {
+    setPhotoItems(prev => {
+      if (index >= prev.length - 1) return prev;
+      const copy = [...prev];
+      const temp = copy[index + 1];
+      copy[index + 1] = copy[index];
+      copy[index] = temp;
+      return copy;
     });
   };
 
   const removePhoto = (i: number) => {
-    const existingCount = existingPhotoUrls.length;
-    if (i < existingCount) {
-      // 기존 DB 사진 삭제
-      setExistingPhotoUrls(prev => prev.filter((_,idx) => idx!==i));
-      setPhotoPreview(prev => prev.filter((_,idx) => idx!==i));
-    } else {
-      // 새로 추가한 사진 삭제
-      const newIdx = i - existingCount;
-      setPhotos(prev => prev.filter((_,idx) => idx!==newIdx));
-      setPhotoPreview(prev => prev.filter((_,idx) => idx!==i));
-    }
+    setPhotoItems(prev => {
+      const item = prev[i];
+      if (item && item.type === 'new' && item.previewUrl.startsWith('blob:')) {
+        try { URL.revokeObjectURL(item.previewUrl); } catch (_) {}
+      }
+      return prev.filter((_, idx) => idx !== i);
+    });
   };
 
   const formatPhone = (v: string) => {
@@ -861,32 +907,35 @@ function MobileVacancyWrite() {
 
       if (!result.success) { alert("실패: " + result.error); return; }
 
-      // 사진 동기화 (기존 유지 + 신규 추가 - 삭제 반영)
-      let finalUrls = [...existingPhotoUrls];
-      if (result.id && photos.length > 0) {
-        const startIdx = existingPhotoUrls.length;
+      // 사진 업로드 및 순서 동기화 (사용자가 정렬한 순서 그대로 정렬 반영)
+      if (result.id) {
         let photoErrors: string[] = [];
-        for (let i = 0; i < photos.length; i++) {
-          try {
-            const path = `${result.id}/${startIdx + i}_${Date.now()}.webp`;
-            const formData = new FormData();
-            formData.append('file', photos[i]);
-            formData.append('path', path);
-            const up = await uploadVacancyPhoto(formData);
-            if (up.success && up.url) {
-              finalUrls.push(up.url);
-            } else {
-              photoErrors.push(`업로드: ${up.error}`);
-            }
-          } catch (e: any) {
-            photoErrors.push(`오류: ${e.message}`);
+        const uploadPromises = photoItems.map(async (item, i) => {
+          if (item.type === 'existing' && item.url) {
+            return item.url;
           }
-        }
+          if (item.type === 'new' && item.file) {
+            try {
+              const path = `${result.id}/${i}_${Date.now()}.webp`;
+              const formData = new FormData();
+              formData.append('file', item.file);
+              formData.append('path', path);
+              const up = await uploadVacancyPhoto(formData);
+              if (up.success && up.url) {
+                return up.url;
+              } else {
+                photoErrors.push(`업로드: ${up.error}`);
+              }
+            } catch (e: any) {
+              photoErrors.push(`오류: ${e.message}`);
+            }
+          }
+          return null;
+        });
+        const finalUrls = (await Promise.all(uploadPromises)).filter(Boolean) as string[];
         if (photoErrors.length > 0) {
           alert(`사진 저장 오류:\n${photoErrors.join('\n')}`);
         }
-      }
-      if (result.id) {
         await syncVacancyPhotos(result.id, finalUrls);
       }
 
@@ -2062,26 +2111,141 @@ function MobileVacancyWrite() {
 
         {/* 6. 사진 */}
         <div style={{ background:"#fff", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #f3f4f6" }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>사진 등록 ({photoPreview.length}/5)</div>
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:10 }}>
-            {photoPreview.map((src,i) => (
-              <div key={i} style={{ position:"relative", width:80, height:80, borderRadius:10, overflow:"hidden", border:"1px solid #e5e7eb" }}>
-                <img src={src} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
-                <button onClick={()=>removePhoto(i)} style={{ position:"absolute", top:2, right:2, width:22, height:22, borderRadius:"50%", background:"rgba(0,0,0,0.6)", color:"#fff", border:"none", fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
-              </div>
-            ))}
-            {photoPreview.length < 5 && (
-              <>
-                <label style={{ width:80, height:80, borderRadius:10, border:"2px dashed #d1d5db", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:28, color:"#9ca3af", background:"#f9fafb" }}>
-                  +<input type="file" accept="image/*" multiple hidden onChange={handlePhotoChange}/>
-                </label>
-                <button type="button" onClick={openPhotoDbModal} style={{ width:80, height:80, borderRadius:10, border:"2px dashed #d1d5db", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"#9ca3af", background:"#fff" }}>
-                  <span style={{ fontSize:20, fontWeight:800 }}>DB</span>
-                  <span style={{ fontSize:10, marginTop:4, fontWeight:700 }}>포토DB</span>
-                </button>
-              </>
-            )}
-          </div>
+          <div style={{ fontSize:16, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14 }}>사진 등록 ({photoItems.length}/5)</div>
+          
+          {/* 업로드된 사진 목록 (대표 뱃지 + 원터치 순서변경) */}
+          {photoItems.length > 0 && (
+            <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:14 }}>
+              {photoItems.map((item, i) => {
+                const isMain = i === 0;
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      width: 96,
+                      borderRadius: 10,
+                      overflow: "hidden",
+                      border: isMain ? "2px solid #1a73e8" : "1px solid #e5e7eb",
+                      boxShadow: isMain ? "0 2px 8px rgba(26,115,232,0.25)" : "0 1px 3px rgba(0,0,0,0.04)",
+                      display: "flex",
+                      flexDirection: "column",
+                      background: "#fff"
+                    }}
+                  >
+                    {/* 이미지 & 뱃지/삭제 */}
+                    <div style={{ position: "relative", width: "100%", height: 75, background: "#f3f4f6" }}>
+                      <img src={item.previewUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      {isMain && (
+                        <div style={{ position: "absolute", top: 3, left: 3, background: "#1a73e8", color: "#fff", fontSize: 9, fontWeight: 800, padding: "2px 5px", borderRadius: 4 }}>
+                          ★ 대표
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(i)}
+                        style={{
+                          position: "absolute",
+                          top: 3,
+                          right: 3,
+                          width: 20,
+                          height: 20,
+                          borderRadius: "50%",
+                          background: "rgba(0,0,0,0.6)",
+                          color: "#fff",
+                          border: "none",
+                          fontSize: 11,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* 조작 버튼 (대표지정 + ◀ ▶) */}
+                    <div style={{ padding: "4px", display: "flex", flexDirection: "column", gap: 3, background: "#f9fafb", borderTop: "1px solid #f3f4f6" }}>
+                      {!isMain ? (
+                        <button
+                          type="button"
+                          onClick={() => setRepresentativePhoto(i)}
+                          style={{
+                            width: "100%",
+                            padding: "3px 0",
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: "#1a73e8",
+                            background: "#eff6ff",
+                            border: "1px solid #bfdbfe",
+                            borderRadius: 4,
+                            cursor: "pointer"
+                          }}
+                        >
+                          ★ 대표로
+                        </button>
+                      ) : (
+                        <div style={{ width: "100%", padding: "3px 0", fontSize: 10, fontWeight: 800, color: "#1a73e8", textAlign: "center" }}>
+                          대표사진
+                        </div>
+                      )}
+                      <div style={{ display: "flex", gap: 3 }}>
+                        <button
+                          type="button"
+                          onClick={() => movePhotoLeft(i)}
+                          disabled={i === 0}
+                          style={{
+                            flex: 1,
+                            height: 20,
+                            border: "1px solid #e5e7eb",
+                            borderRadius: 3,
+                            background: "#fff",
+                            color: i === 0 ? "#cbd5e1" : "#374151",
+                            fontSize: 9,
+                            cursor: i === 0 ? "not-allowed" : "pointer"
+                          }}
+                        >
+                          ◀
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => movePhotoRight(i)}
+                          disabled={i === photoItems.length - 1}
+                          style={{
+                            flex: 1,
+                            height: 20,
+                            border: "1px solid #e5e7eb",
+                            borderRadius: 3,
+                            background: "#fff",
+                            color: i === photoItems.length - 1 ? "#cbd5e1" : "#374151",
+                            fontSize: 9,
+                            cursor: i === photoItems.length - 1 ? "not-allowed" : "pointer"
+                          }}
+                        >
+                          ▶
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 사진 추가 버튼 */}
+          {photoItems.length < 5 && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              <label style={{ width: 80, height: 75, borderRadius: 10, border: "2px dashed #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 26, color: "#9ca3af", background: "#f9fafb" }}>
+                +<input type="file" accept="image/*" multiple hidden onChange={handlePhotoChange}/>
+              </label>
+              <button type="button" onClick={openPhotoDbModal} style={{ width: 80, height: 75, borderRadius: 10, border: "2px dashed #d1d5db", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#9ca3af", background: "#fff" }}>
+                <span style={{ fontSize: 20, fontWeight: 800 }}>DB</span>
+                <span style={{ fontSize: 10, marginTop: 4, fontWeight: 700 }}>포토DB</span>
+              </button>
+            </div>
+          )}
+
+          <div style={{ fontSize:12, color:"#1a73e8", fontWeight:600 }}>* 첫 번째(대표) 사진이 공실열람 및 목록의 대표사진으로 노출됩니다.</div>
         </div>
         </>)}
 
@@ -2100,7 +2264,7 @@ function MobileVacancyWrite() {
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>면적</span><span style={{fontWeight:700}}>{exclusiveM2 ? `전용 ${exclusiveM2}m²` : "미입력"}{supplyM2 ? ` / 공급 ${supplyM2}m²` : ""}</span></div>
             {!isCommercial && <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>방/욕실/방향</span><span style={{fontWeight:700}}>{roomCount||"-"}방 {bathCount||"-"}욕실 {direction}</span></div>}
             <div style={{ borderTop:"1px dashed #e5e7eb", paddingTop:10 }} />
-            <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>사진</span><span style={{fontWeight:700}}>{photoPreview.length}장 등록됨</span></div>
+            <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>사진</span><span style={{fontWeight:700}}>{photoItems.length}장 등록됨</span></div>
             <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{color:"#6b7280"}}>좌표</span><span style={{fontWeight:700, color: coords ? "#10b981" : "#ef4444"}}>{coords ? "✓ 설정됨" : "✗ 미설정"}</span></div>
             {selectedThemes.length > 0 && <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap" }}><span style={{color:"#6b7280"}}>테마</span><span style={{fontWeight:600, color:"#1a73e8"}}>{selectedThemes.map(t=>`#${t}`).join(" ")}</span></div>}
             {!isRealtor && (

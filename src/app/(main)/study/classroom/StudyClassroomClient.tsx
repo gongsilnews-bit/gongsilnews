@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getMyEnrollments } from "@/app/actions/lecture";
-import StudyHeader from "@/components/study/StudyHeader";
+import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
+import StudyHero from "@/components/study/StudyHero";
+import TypingText from "@/components/study/TypingText";
 
-type FilterKey = "all" | "active" | "expired";
 
 const DAY = 1000 * 60 * 60 * 24;
 
@@ -19,13 +20,13 @@ function daysLeft(expiresAt?: string | null): number | null {
   return Math.ceil((end - Date.now()) / DAY);
 }
 
-export default function StudyClassroomClient() {
+export default function StudyClassroomClient({ categories = ["전체"] }: { categories?: string[] }) {
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [enrollments, setEnrollments] = useState<any[]>([]);
-  const [filter, setFilter] = useState<FilterKey>("all");
+  const [activeCategory, setActiveCategory] = useState("전체");
 
   const [oauthLoading, setOauthLoading] = useState<"google" | "kakao" | null>(null);
   const [showFindAccount, setShowFindAccount] = useState(false);
@@ -118,63 +119,35 @@ export default function StudyClassroomClient() {
     return "#fff";
   };
 
-  const activeCount = enrollments.filter((en) => (daysLeft(en.expires_at) ?? 1) > 0).length;
-  const expiredCount = enrollments.length - activeCount;
-  const soonCount = enrollments.filter((en) => {
-    const d = daysLeft(en.expires_at);
-    return d !== null && d > 0 && d <= 30;
-  }).length;
-
-  const filtered = enrollments.filter((en) => {
-    const d = daysLeft(en.expires_at);
-    const isExpired = d !== null && d <= 0;
-    if (filter === "active") return !isExpired;
-    if (filter === "expired") return isExpired;
-    return true;
-  });
-
-  const FILTERS: { key: FilterKey; label: string; count: number }[] = [
-    { key: "all", label: "전체", count: enrollments.length },
-    { key: "active", label: "수강 중", count: activeCount },
-    { key: "expired", label: "기간 만료", count: expiredCount },
-  ];
+  // 강의목록과 같은 분류로 거른다 (강의의 category)
+  const filtered = enrollments.filter(
+    (en) => activeCategory === "전체" || (en.lecture?.category || "") === activeCategory
+  );
 
   return (
     <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#132e27", minHeight: "100vh" }}>
-      <StudyHeader />
+      <StudyHeader background={STUDY_HERO_BAR} />
 
-      {/* ━━━ 페이지 헤드 ━━━ */}
-      <section style={{ backgroundColor: "#062326", color: "#ffffff", padding: "52px 0 46px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap" }}>
-          <div>
-            <span style={{ fontSize: 13, fontWeight: 800, color: "#34d399", letterSpacing: "1px", textTransform: "uppercase" }}>
-              MY CLASSROOM
-            </span>
-            <h1 style={{ fontSize: "34px", fontWeight: 900, letterSpacing: "-0.8px", margin: "8px 0 10px 0", color: "#ffffff" }}>
-              🎬 나의 강의실
-            </h1>
-            <p style={{ fontSize: 15.5, color: "#a7f3d0", opacity: 0.9, margin: 0, lineHeight: 1.6, wordBreak: "keep-all" }}>
-              수강 중인 인강을 이어보고, 1년 동안 무제한으로 복습하세요.
-            </p>
-          </div>
+      {/* ━━━ [1] 페이지 헤드 (통일된 프리미엄 스터디 히어로) ━━━ */}
+      <StudyHero
+        title="나의 강의실"
+        englishTitle="My Study"
+        description="오늘 등록한 공실! 블로그포스팅/유튜브 영상으로 따라하면서 만드세요~"
+        tabs={[
+          {
+            label: "내 강의실",
+            href: "/study/classroom",
+            isActive: true,
+          },
+          {
+            label: "강의신청내역",
+            href: "/study/lectures?tab=applications",
+            isActive: false,
+          },
+        ]}
+      />
 
-          {/* 요약 스탯 */}
-          {currentUser && !loading && enrollments.length > 0 && (
-            <div style={{ display: "flex", gap: 10 }}>
-              <div style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 12, padding: "14px 20px", minWidth: 104, textAlign: "center" }}>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{activeCount}</div>
-                <div style={{ fontSize: 12.5, color: "#a7f3d0", fontWeight: 600, marginTop: 2 }}>수강 중</div>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 12, padding: "14px 20px", minWidth: 104, textAlign: "center" }}>
-                <div style={{ fontSize: 24, fontWeight: 900, color: soonCount > 0 ? "#fbbf24" : "#ffffff" }}>{soonCount}</div>
-                <div style={{ fontSize: 12.5, color: "#a7f3d0", fontWeight: 600, marginTop: 2 }}>만료 임박</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <main style={{ maxWidth: 1160, margin: "0 auto", padding: "36px 24px 80px" }}>
+      <main style={{ maxWidth: 1080, width: "100%", margin: "0 auto", padding: "36px 24px 80px", boxSizing: "border-box" }}>
 
         {/* ━━━ 로그인 전: 나의 강의실에서 바로 로그인 ━━━ */}
         {!checkingAuth && !currentUser && (
@@ -414,16 +387,24 @@ export default function StudyClassroomClient() {
         {/* ━━━ 강의 목록 ━━━ */}
         {currentUser && !loading && enrollments.length > 0 && (
           <>
-            {/* 필터 */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
-              {FILTERS.map((f) => {
-                const isSel = filter === f.key;
+            {/* 강의목록과 같은 제목 + 분류 탭 */}
+            <div style={{ marginBottom: 24 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
+                MY STUDY
+              </span>
+              <h2 style={{ fontSize: "28px", fontWeight: 800, color: "#062828", margin: "6px 0 0 0", letterSpacing: "-0.5px" }}>
+                내가 신청한 강의 목록이에요!
+              </h2>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 32 }}>
+              {categories.map((cat) => {
+                const isSel = activeCategory === cat;
                 return (
                   <button
-                    key={f.key}
-                    onClick={() => setFilter(f.key)}
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
                     style={{
-                      padding: "8px 18px",
+                      padding: "7px 16px",
                       borderRadius: 8,
                       fontSize: 13.5,
                       fontWeight: isSel ? 700 : 500,
@@ -434,7 +415,7 @@ export default function StudyClassroomClient() {
                       transition: "all 0.15s",
                     }}
                   >
-                    {f.label} {f.count}
+                    {cat}
                   </button>
                 );
               })}
@@ -443,7 +424,7 @@ export default function StudyClassroomClient() {
             {filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: "70px 20px", background: "#f4fbf7", borderRadius: 12, border: "1px solid #d1fae5", color: "#64748b" }}>
                 <div style={{ fontSize: 40, marginBottom: 10 }}>🔍</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#1e293b" }}>해당 조건의 강의가 없습니다</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#1e293b" }}>이 분류에서 신청한 강의가 없습니다</div>
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 24 }}>

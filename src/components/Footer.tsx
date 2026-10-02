@@ -217,7 +217,7 @@ export default function Footer() {
             <Link href="/news_map" className="sitemap-link">우리동네뉴스</Link>
             <Link href="/study/lectures" className="sitemap-link">공실스터디</Link>
             <Link href="/board" className="sitemap-link">자료실</Link>
-            <Link href="/board?id=free" className="sitemap-link">커뮤니티</Link>
+            <Link href="/help" className="sitemap-link">고객센터</Link>
           </div>
         </div>
       </div>

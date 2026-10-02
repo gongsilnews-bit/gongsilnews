@@ -178,9 +178,8 @@ export default function MenuPage() {
 
   const communityMenus: { name: string; path?: string; action?: () => void }[] = [
     { name: "자유게시판", path: "/m/board?id=free" },
-    { name: "Q&A게시판", path: "/m/board?id=qna" },
+    { name: "고객센터", path: "/m/help" },
     { name: "공지사항", path: "/m/board?id=notice" },
-    { name: "1:1 문의", path: "/m/board?id=inquiry" },
     { name: "실시간 상담", action: () => openChannelTalk() }
   ];
 

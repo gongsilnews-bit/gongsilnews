@@ -138,7 +138,7 @@ export default function StudyLecturesClient({
       <StudyHeader />
       
       {/* ━━━ 1. HERO (윤자동 스타일: 배경을 화면 끝까지 깔지 않고 본문 폭에 맞춘 둥근 카드) ━━━ */}
-      <section style={{ backgroundColor: "#ffffff", padding: "28px 0 4px" }}>
+      <section style={{ backgroundColor: "#ffffff", padding: "18px 0 4px" }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
           <div
             style={{

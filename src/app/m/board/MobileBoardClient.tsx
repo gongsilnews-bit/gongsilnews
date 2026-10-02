@@ -19,9 +19,7 @@ const RESOURCE_BOARDS = [
 
 const COMMUNITY_BOARDS = [
   { id: "free", name: "자유게시판", icon: "💬" },
-  { id: "qna", name: "Q&A게시판", icon: "❓" },
   { id: "notice", name: "공지사항", icon: "📢" },
-  { id: "inquiry", name: "1:1 문의", icon: "✉️" },
 ];
 
 function getYoutubeThumbnail(url: string): string | null {

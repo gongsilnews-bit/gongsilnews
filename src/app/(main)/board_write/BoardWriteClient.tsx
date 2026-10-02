@@ -7,29 +7,9 @@ import { saveBoardPost, uploadBoardAttachment, uploadBoardThumbnail, saveBoardPo
 import { createClient } from "@/utils/supabase/client";
 import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 import { getBoardListUrl } from "@/utils/boardListUrl";
-
-const convertToWebp = (file: File): Promise<File> => {
-  return new Promise((resolve) => {
-    if (!file.type.startsWith("image/")) return resolve(file);
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      ctx?.drawImage(img, 0, 0);
-      canvas.toBlob((blob) => {
-        if (blob) {
-          resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", { type: "image/webp" }));
-        } else {
-          resolve(file);
-        }
-      }, "image/webp", 0.8);
-    };
-    img.onerror = () => resolve(file);
-    img.src = URL.createObjectURL(file);
-  });
-};
+import { convertToWebp } from "@/utils/convertToWebp";
+import { INQUIRY_PHOTO_LIMIT } from "@/constants/inquiry";
+import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
 
 const parseCSV = (text: string): string[][] => {
   const result: string[][] = [];
@@ -70,8 +50,6 @@ const parseCSV = (text: string): string[][] => {
   return result.filter(r => r.length > 0 && r.some(cell => cell.trim() !== ""));
 };
 
-/** 1:1 문의 사진 첨부 장수의 상한 (게시판 설정에서 이 범위 안에서 조절한다) */
-const INQUIRY_PHOTO_LIMIT = 5;
 
 export interface LinkItem {
   id: string;
@@ -437,18 +415,22 @@ export default function BoardWriteClient({
     );
   }
 
+  const isStudyBoard = ["doc", "drone", "prompt", "sound", "app", "studyqa", "free"].includes(boardId);
+
   return (
-    <div style={{
-      maxWidth: 900, margin: "0 auto", padding: "40px 20px 80px",
-      fontFamily: "'Pretendard', -apple-system, sans-serif",
-    }}>
-      {/* 헤더 */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid #222", paddingBottom: 16, marginBottom: 30 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#102c57", margin: 0 }}>
-          {boardName} 게시물 {isEditMode ? "수정" : "작성"}
-        </h1>
-        <span style={{ fontSize: 14, color: "#888" }}>작성자: {editPost?.author_name || "관리자"}</span>
-      </div>
+    <>
+      {isStudyBoard && <StudyHeader background={STUDY_HERO_BAR} />}
+      <div style={{
+        maxWidth: 900, margin: "0 auto", padding: "40px 20px 80px",
+        fontFamily: "'Pretendard', -apple-system, sans-serif",
+      }}>
+        {/* 헤더 */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: `2px solid ${isStudyBoard ? "#059669" : "#222"}`, paddingBottom: 16, marginBottom: 30 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: isStudyBoard ? "#059669" : "#102c57", margin: 0 }}>
+            {boardName} 게시물 {isEditMode ? "수정" : "작성"}
+          </h1>
+          <span style={{ fontSize: 14, color: "#888" }}>작성자: {editPost?.author_name || "관리자"}</span>
+        </div>
 
 
 
@@ -505,7 +487,7 @@ export default function BoardWriteClient({
               style={{
                 height: 46, padding: "0 36px 0 14px", fontSize: 15, fontWeight: 600,
                 border: "1px solid #d1d5db", borderRadius: 6, background: "#fff",
-                color: "#102c57", outline: "none", cursor: "pointer",
+                color: isStudyBoard ? "#059669" : "#102c57", outline: "none", cursor: "pointer",
                 minWidth: 130, appearance: "none",
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                 backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center",
@@ -783,7 +765,7 @@ export default function BoardWriteClient({
           onClick={handleSubmit}
           disabled={isSubmitting}
           style={{
-            padding: "12px 32px", background: isSubmitting ? "#555" : "#102c57",
+            padding: "12px 32px", background: isSubmitting ? "#555" : (isStudyBoard ? "#059669" : "#102c57"),
             color: "#fff", border: "none", borderRadius: 6, fontSize: 15,
             fontWeight: 700, cursor: isSubmitting ? "not-allowed" : "pointer",
             display: "flex", alignItems: "center", gap: 8,
@@ -793,5 +775,6 @@ export default function BoardWriteClient({
         </button>
       </div>
     </div>
+    </>
   );
 }

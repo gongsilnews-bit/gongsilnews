@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import StudyHeader from "@/components/study/StudyHeader";
-import StudyBenefitsSubNav from "@/components/study/StudyBenefitsSubNav";
+import { StudyBenefitsHeroTabs } from "@/components/study/StudyBenefitsSubNav";
 
 /**
  * 멤버십혜택 - 블로그 포스팅 자동화
@@ -70,10 +70,9 @@ export default function StudyBlogAutomationClient() {
       }}
     >
       <StudyHeader />
-      <StudyBenefitsSubNav active="blog-automation" />
 
       {/* ━━━ 1. HERO (강의목록과 동일한 라운드 카드 + 헤드라인 + 이미지 스타일) ━━━ */}
-      <section style={{ backgroundColor: "#ffffff", padding: "28px 0 16px" }}>
+      <section style={{ backgroundColor: "#ffffff", padding: "18px 0 16px" }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
           <div
             style={{
@@ -84,7 +83,8 @@ export default function StudyBlogAutomationClient() {
               color: "#ffffff",
               borderRadius: 16,
               overflow: "hidden",
-              minHeight: 390,
+              // 강의목록 히어로와 같은 높이로 고정. 세 혜택 페이지가 같은 높이라 탭 위치도 그대로 있다
+              height: 400,
             }}
           >
             {/* 배경 이미지 */}
@@ -105,7 +105,7 @@ export default function StudyBlogAutomationClient() {
                 inset: 0,
                 pointerEvents: "none",
                 background:
-                  "linear-gradient(to right, rgba(17,33,39,0.95) 0%, rgba(17,33,39,0.85) 45%, rgba(17,33,39,0.3) 72%, rgba(17,33,39,0) 100%)",
+                  "linear-gradient(to right, rgba(17,33,39,0.95) 0%, rgba(17,33,39,0.88) 55%, rgba(17,33,39,0.35) 80%, rgba(17,33,39,0) 100%)",
               }}
             />
 
@@ -115,9 +115,9 @@ export default function StudyBlogAutomationClient() {
                 position: "relative",
                 zIndex: 2,
                 flex: "1 1 500px",
-                maxWidth: 660,
+                maxWidth: 760,
                 minWidth: 300,
-                padding: "48px 48px",
+                padding: "36px 48px 104px",
               }}
             >
               {/* 상단 뱃지 */}
@@ -174,45 +174,10 @@ export default function StudyBlogAutomationClient() {
                 이제 블로그 포스팅, 쉽고 빠르게 해결하세요.
               </p>
 
-              {/* CTA 버튼 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                <Link
-                  href="/study/apply"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "11px 24px",
-                    background: "#059669",
-                    color: "#ffffff",
-                    borderRadius: 8,
-                    fontSize: 14.5,
-                    fontWeight: 800,
-                    textDecoration: "none",
-                    boxShadow: "0 3px 12px rgba(5, 150, 105, 0.4)",
-                    transition: "all 0.2s",
-                  }}
-                >
-                  멤버십 신청하기 &gt;&gt;
-                </Link>
-                <Link
-                  href="/study/benefits/vacancy-register"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "11px 18px",
-                    color: "#ffffff",
-                    fontSize: 14,
-                    fontWeight: 700,
-                    textDecoration: "none",
-                    border: "1px solid rgba(255, 255, 255, 0.25)",
-                    borderRadius: 8,
-                    backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  }}
-                >
-                  ← 공실20건 기사4건 보기
-                </Link>
-              </div>
             </div>
+
+            {/* 멤버십혜택 3개 탭 (카드 왼쪽 아래 고정 위치) */}
+            <StudyBenefitsHeroTabs active="blog-automation" />
           </div>
         </div>
       </section>

@@ -43,3 +43,43 @@ export default function StudyBenefitsSubNav({ active }: { active: string }) {
     </div>
   );
 }
+
+/**
+ * 멤버십혜택 히어로 카드 안에 들어가는 3개 탭.
+ * 히어로 카드(position: relative) 왼쪽 아래에 고정 위치로 띄워서, 페이지마다 제목·설명 길이가
+ * 달라도 탭 자리가 같다. 탭을 눌러 다른 혜택 페이지로 가도 위치가 흔들리지 않는다.
+ */
+export function StudyBenefitsHeroTabs({ active }: { active: string }) {
+  return (
+    <nav
+      aria-label="멤버십혜택"
+      style={{
+        position: "absolute", left: 48, bottom: 32, zIndex: 3,
+        display: "flex", gap: 6, padding: 5, borderRadius: 12,
+        background: "rgba(255, 255, 255, 0.08)", border: "1px solid rgba(255, 255, 255, 0.16)",
+        backdropFilter: "blur(4px)",
+      }}
+    >
+      {STUDY_BENEFITS.map((item) => {
+        const isActive = item.slug === active;
+        return (
+          <Link
+            key={item.slug}
+            href={item.href}
+            aria-current={isActive ? "page" : undefined}
+            style={{
+              padding: "10px 18px", borderRadius: 8, fontSize: 14.5, whiteSpace: "nowrap", textDecoration: "none",
+              fontWeight: isActive ? 800 : 600,
+              color: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.82)",
+              background: isActive ? POINT : "transparent",
+              boxShadow: isActive ? "0 3px 12px rgba(5, 150, 105, 0.4)" : "none",
+              transition: "all 0.15s",
+            }}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}

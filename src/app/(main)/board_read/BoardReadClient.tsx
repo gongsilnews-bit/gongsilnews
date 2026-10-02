@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getPermissionLevel, canAccessBoard } from "@/utils/permissionCheck";
 import { getBoardListUrl } from "@/utils/boardListUrl";
+import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
 
 // YouTube URL에서 embed URL 생성 (공유버튼 ?si= 등 모든 형식)
 function getYoutubeEmbedUrl(url: string): string | null {
@@ -41,6 +42,7 @@ export default function BoardReadClient({
   const searchParams = useSearchParams();
   const boardId = board?.board_id || post?.board_id || "";
   const boardName = board?.name || "게시판";
+  const isStudyBoard = ["doc", "drone", "prompt", "sound", "app", "studyqa", "free"].includes(boardId);
   const tabs = board?.categories ? ["전체", ...board.categories.split(",").map((c: string) => c.trim())] : ["전체"];
 
   const pageParam = searchParams.get('page') || '1';
@@ -192,90 +194,97 @@ export default function BoardReadClient({
 
   if (board && !canAccessBoard(userLevel, board.perm_read ?? 0)) {
     return (
-      <div style={{ padding: "80px 20px", textAlign: "center", maxWidth: 500, margin: "0 auto" }}>
-        <div style={{ fontSize: 48, marginBottom: 20 }}>🔒</div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111", marginBottom: 16 }}>공실뉴스부동산 회원만 열람할 수 있습니다</h2>
-        <p style={{ fontSize: 15, color: "#666", lineHeight: 1.6, marginBottom: 8 }}>
-          이 게시물은 <strong style={{ color: "#1a73e8" }}>공실뉴스 부동산 회원</strong> 전용 콘텐츠입니다.
-        </p>
-        <p style={{ fontSize: 14, color: "#999", marginBottom: 32 }}>
-          부동산 회원으로 가입하시면 모든 자료를 무료로 열람하실 수 있습니다.
-        </p>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-          <button onClick={() => router.push(listUrl)} style={{ padding: "12px 28px", background: "#f5f5f5", color: "#555", border: "1px solid #ddd", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>목록으로 돌아가기</button>
-          <button onClick={() => router.push("/signup")} style={{ padding: "12px 28px", background: "#1a73e8", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>회원가입하기</button>
+      <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
+        {isStudyBoard && <StudyHeader background={STUDY_HERO_BAR} />}
+        <div style={{ padding: "80px 20px", textAlign: "center", maxWidth: 500, margin: "0 auto" }}>
+          <div style={{ fontSize: 48, marginBottom: 20 }}>🔒</div>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111", marginBottom: 16 }}>공실뉴스부동산 회원만 열람할 수 있습니다</h2>
+          <p style={{ fontSize: 15, color: "#666", lineHeight: 1.6, marginBottom: 8 }}>
+            이 게시물은 <strong style={{ color: isStudyBoard ? "#059669" : "#1a73e8" }}>공실뉴스 부동산 회원</strong> 전용 콘텐츠입니다.
+          </p>
+          <p style={{ fontSize: 14, color: "#999", marginBottom: 32 }}>
+            부동산 회원으로 가입하시면 모든 자료를 무료로 열람하실 수 있습니다.
+          </p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+            <button onClick={() => router.push(listUrl)} style={{ padding: "12px 28px", background: "#f5f5f5", color: "#555", border: "1px solid #ddd", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>목록으로 돌아가기</button>
+            <button onClick={() => router.push("/signup")} style={{ padding: "12px 28px", background: "#1a73e8", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>회원가입하기</button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
-      {/* 게시판 헤더 */}
-      <div style={{ marginTop: 30, display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid #222", paddingBottom: 15, marginBottom: 0 }}>
-        <div style={{ fontSize: 24, fontWeight: 800, color: "#102c57" }}>
-          {boardName}
-          {board?.subtitle && <span style={{ fontSize: 16, fontWeight: 500, color: "#666", marginLeft: 10 }}>({board.subtitle})</span>}
-        </div>
-        <div style={{ display: "flex", border: "1px solid #ccc", borderRadius: 4, overflow: "hidden" }}>
-          <input 
-            type="text" 
-            placeholder="제목 검색" 
-            value={searchInputValue}
-            onChange={(e) => setSearchInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleSearch(searchInputValue);
-              }
-            }}
-            style={{ border: "none", padding: "8px 12px", outline: "none", width: 200, fontSize: 14 }} 
-          />
-          <button 
-            onClick={() => handleSearch(searchInputValue)}
-            style={{ background: "#f8f9fa", borderLeft: "1px solid #ccc", padding: "0 14px", fontWeight: "bold", color: "#555", cursor: "pointer" }}
-          >검색</button>
-        </div>
-      </div>
-
-      {/* 탭 */}
-      {tabs.length > 1 && (
-        <div style={{ display: "flex", gap: 10, marginTop: 20, marginBottom: 0, flexWrap: "wrap" }}>
-          {tabs.map((tab, i) => (
-            <Link
-              key={tab}
-              href={getBoardListUrl(boardId)}
-              style={{
-                border: "1px solid #ddd", background: "#fff", padding: "8px 16px",
-                borderRadius: 20, fontSize: 14, color: "#666", fontWeight: 600,
-                textDecoration: "none", whiteSpace: "nowrap",
-              }}
-            >{tab}</Link>
-          ))}
-        </div>
-      )}
-
-      {/* 본문 영역 */}
-      <div style={{ display: "flex", gap: 32, marginTop: 20, marginBottom: 60 }}>
-        {/* 좌측 */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* 브레드크럼 */}
-          <div style={{ fontSize: 14, color: "#999", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
-            <Link href="/" style={{ color: "#999", textDecoration: "none" }}>홈</Link>
-            <span style={{ color: "#ccc" }}>›</span>
-            <Link href={listUrl} style={{ color: "#999", textDecoration: "none" }}>자료실</Link>
-            <span style={{ color: "#ccc" }}>›</span>
-            <span style={{ color: "#333", fontWeight: 600 }}>{boardName}</span>
+    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
+      {isStudyBoard && <StudyHeader background={STUDY_HERO_BAR} />}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
+        {/* 게시판 헤더 */}
+        <div style={{ marginTop: 30, display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: `2px solid ${isStudyBoard ? "#059669" : "#222"}`, paddingBottom: 15, marginBottom: 0 }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: isStudyBoard ? "#059669" : "#102c57" }}>
+            {boardName}
+            {board?.subtitle && <span style={{ fontSize: 16, fontWeight: 500, color: "#666", marginLeft: 10 }}>({board.subtitle})</span>}
           </div>
+          <div style={{ display: "flex", border: "1px solid #ccc", borderRadius: 4, overflow: "hidden" }}>
+            <input 
+              type="text" 
+              placeholder="제목 검색" 
+              value={searchInputValue}
+              onChange={(e) => setSearchInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearch(searchInputValue);
+                }
+              }}
+              style={{ border: "none", padding: "8px 12px", outline: "none", width: 200, fontSize: 14 }} 
+            />
+            <button 
+              onClick={() => handleSearch(searchInputValue)}
+              style={{ background: isStudyBoard ? "#059669" : "#f8f9fa", borderLeft: isStudyBoard ? "none" : "1px solid #ccc", padding: "0 14px", fontWeight: "bold", color: isStudyBoard ? "#fff" : "#555", cursor: "pointer" }}
+            >검색</button>
+          </div>
+        </div>
 
-          {/* 게시글 카드 */}
-          <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e0e0e0", borderTop: "3px solid #102c57", overflow: "hidden", marginBottom: 12 }}>
-            {/* 제목 영역 */}
-            <div style={{ padding: "28px 32px 24px", borderBottom: "1px solid #f0f0f0" }}>
-              {catBadge && (
-                <div style={{ display: "inline-block", fontSize: 14, fontWeight: 800, color: "#ff8e15", marginBottom: 10 }}>
-                  {catBadge}
-                </div>
-              )}
+        {/* 탭 */}
+        {tabs.length > 1 && (
+          <div style={{ display: "flex", gap: 10, marginTop: 20, marginBottom: 0, flexWrap: "wrap" }}>
+            {tabs.map((tab, i) => (
+              <Link
+                key={tab}
+                href={getBoardListUrl(boardId, { tab: tab === "전체" ? undefined : tab })}
+                style={{
+                  border: "1px solid #ddd", background: "#fff", padding: "8px 16px",
+                  borderRadius: 20, fontSize: 14, color: "#666", fontWeight: 600,
+                  textDecoration: "none", whiteSpace: "nowrap",
+                }}
+              >{tab}</Link>
+            ))}
+          </div>
+        )}
+
+        {/* 본문 영역 */}
+        <div style={{ display: "flex", gap: 32, marginTop: 20, marginBottom: 60 }}>
+          {/* 좌측 */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* 브레드크럼 */}
+            <div style={{ fontSize: 14, color: "#999", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
+              <Link href="/" style={{ color: "#999", textDecoration: "none" }}>홈</Link>
+              <span style={{ color: "#ccc" }}>›</span>
+              <Link href={listUrl} style={{ color: "#999", textDecoration: "none" }}>
+                {isStudyBoard ? (["studyqa", "free"].includes(boardId) ? "커뮤니티" : "자료실") : "게시판"}
+              </Link>
+              <span style={{ color: "#ccc" }}>›</span>
+              <span style={{ color: "#333", fontWeight: 600 }}>{boardName}</span>
+            </div>
+
+            {/* 게시글 카드 */}
+            <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e0e0e0", borderTop: `3px solid ${isStudyBoard ? "#059669" : "#102c57"}`, overflow: "hidden", marginBottom: 12 }}>
+              {/* 제목 영역 */}
+              <div style={{ padding: "28px 32px 24px", borderBottom: "1px solid #f0f0f0" }}>
+                {catBadge && (
+                  <div style={{ display: "inline-block", fontSize: 14, fontWeight: 800, color: isStudyBoard ? "#059669" : "#ff8e15", marginBottom: 10 }}>
+                    {catBadge}
+                  </div>
+                )}
               <div style={{ fontSize: 24, fontWeight: 800, color: "#111", lineHeight: 1.4, marginBottom: 16 }}>
                 {cleanTitle}
               </div>
@@ -568,7 +577,7 @@ export default function BoardReadClient({
                 </>
               )}
               {canAccessBoard(userLevel, board?.perm_write ?? 5) && (
-                <Link href={`/board_write?board_id=${boardId}`} style={{ background: "#102c57", color: "#fff", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>글등록하기</Link>
+                <Link href={`/board_write?board_id=${boardId}`} style={{ background: isStudyBoard ? "#059669" : "#102c57", color: "#fff", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>글등록하기</Link>
               )}
             </div>
           </div>
@@ -597,6 +606,14 @@ export default function BoardReadClient({
           </div>
         </div>
       </div>
+    </div>
+
+      {isStudyBoard && (
+        <style>{`
+          .b-tab.active { background: #059669 !important; border-color: #059669 !important; color: #ffffff !important; }
+          .b-tab:hover { border-color: #059669 !important; color: #059669 !important; }
+        `}</style>
+      )}
     </div>
   );
 }

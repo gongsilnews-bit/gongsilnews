@@ -25,6 +25,14 @@ interface VacancyRegisterFormProps {
   editData?: any;
 }
 
+interface VacancyPhotoItem {
+  id: string;
+  type: 'existing' | 'new';
+  url?: string;
+  file?: File;
+  previewUrl: string;
+}
+
 // ── 전화번호 자동 하이픈 변환 유틸 ──
 const formatPhoneNumber = (val: string) => {
   if (!val) return "";
@@ -418,7 +426,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     if (editData.consent !== undefined) setConsent(editData.consent);
     if (editData.vacancy_photos && editData.vacancy_photos.length > 0) {
       const sorted = [...editData.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order);
-      setExistingPhotoUrls(sorted.map((p: any) => p.url));
+      setPhotoList(sorted.map((p: any, idx: number) => ({
+        id: `exist_${idx}_${p.url}`,
+        type: 'existing',
+        url: p.url,
+        previewUrl: p.url
+      })));
     }
   }, [editData]);
 
@@ -466,9 +479,8 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [calcM2, setCalcM2] = useState("");
   const [calcPy, setCalcPy] = useState("");
 
-  // 사진
-  const [photos, setPhotos] = useState<File[]>([]);
-  const [existingPhotoUrls, setExistingPhotoUrls] = useState<string[]>([]);
+  // 사진 목록 (대표사진 0번 인덱스 및 순서 관리)
+  const [photoList, setPhotoList] = useState<VacancyPhotoItem[]>([]);
 
   /* ── 이전 공실광고 모달 상태 ── */
   const [showPrevMenuModal, setShowPrevMenuModal] = useState(false);
@@ -558,7 +570,12 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
 
     if (editData.vacancy_photos && editData.vacancy_photos.length > 0) {
       const sorted = [...editData.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order);
-      setExistingPhotoUrls(sorted.map((p: any) => p.url));
+      setPhotoList(sorted.map((p: any, idx: number) => ({
+        id: `prev_${idx}_${p.url}`,
+        type: 'existing',
+        url: p.url,
+        previewUrl: p.url
+      })));
     }
     
     setShowPrevMenuModal(false);
@@ -670,11 +687,57 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   };
 
   const addPhotos = async (files: File[]) => {
-    const totalCount = existingPhotoUrls.length + photos.length;
-    if (totalCount >= 5) { alert('사진은 최대 5장까지만 등록 가능합니다.'); return; }
-    const allowedFiles = files.slice(0, 5 - totalCount);
+    if (photoList.length >= 5) { alert('사진은 최대 5장까지만 등록 가능합니다.'); return; }
+    const allowedFiles = files.slice(0, 5 - photoList.length);
     const compressed = await Promise.all(allowedFiles.map(f => compressToWebP(f)));
-    setPhotos(prev => [...prev, ...compressed]);
+    const newItems: VacancyPhotoItem[] = compressed.map((file, idx) => ({
+      id: `new_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
+      type: 'new',
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPhotoList(prev => [...prev, ...newItems]);
+  };
+
+  const setRepresentativePhoto = (index: number) => {
+    if (index === 0) return;
+    setPhotoList(prev => {
+      const target = prev[index];
+      const rest = prev.filter((_, i) => i !== index);
+      return [target, ...rest];
+    });
+  };
+
+  const movePhotoLeft = (index: number) => {
+    if (index <= 0) return;
+    setPhotoList(prev => {
+      const copy = [...prev];
+      const temp = copy[index - 1];
+      copy[index - 1] = copy[index];
+      copy[index] = temp;
+      return copy;
+    });
+  };
+
+  const movePhotoRight = (index: number) => {
+    setPhotoList(prev => {
+      if (index >= prev.length - 1) return prev;
+      const copy = [...prev];
+      const temp = copy[index + 1];
+      copy[index + 1] = copy[index];
+      copy[index] = temp;
+      return copy;
+    });
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotoList(prev => {
+      const item = prev[index];
+      if (item && item.type === 'new' && item.previewUrl.startsWith('blob:')) {
+        try { URL.revokeObjectURL(item.previewUrl); } catch (_) {}
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   // ── 면적 자동 변환 ──
@@ -1018,7 +1081,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     { label: "공실광고 분류 선택 완료", done: !!propertyType },
     { label: "소재지 상세 주소", done: !!sido && !!sigungu && !!dong },
     { label: "거래유형/금액 입력", done: !!tradeType && (!!deposit || tradeType === "매매") },
-    { label: "홍보용 사진 등록", done: photos.length > 0 },
+    { label: "홍보용 사진 등록", done: photoList.length > 0 },
     { label: "의뢰인 정보 기입", done: !!clientName && !!clientPhone },
   ];
   const doneCount = checkItems.filter(c => c.done).length;
@@ -2274,23 +2337,176 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
               </div>
             </div>
 
-            {/* 업로드된 사진 미리보기 */}
-            {(existingPhotoUrls.length > 0 || photos.length > 0) && (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                {existingPhotoUrls.map((url, i) => (
-                  <div key={`exist-${i}`} style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", position: "relative", border: `1px solid ${border}` }}>
-                    <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    <button type="button" onClick={() => setExistingPhotoUrls(prev => prev.filter((_, j) => j !== i))}
-                      style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, borderRadius: "50%", background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
-                  </div>
-                ))}
-                {photos.map((p, i) => (
-                  <div key={`new-${i}`} style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", position: "relative", border: `1px solid ${border}` }}>
-                    <img src={URL.createObjectURL(p)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    <button type="button" onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))}
-                      style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, borderRadius: "50%", background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
-                  </div>
-                ))}
+            {/* 업로드된 사진 미리보기 & 대표사진 순서 관리 */}
+            {photoList.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: textSecondary, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span>등록된 사진 ({photoList.length}/5) <span style={{ color: "#2563eb", fontWeight: 700 }}>★ 첫 번째 사진이 공실열람 및 목록의 대표사진으로 노출됩니다.</span></span>
+                </div>
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  {photoList.map((item, i) => {
+                    const isMain = i === 0;
+                    return (
+                      <div
+                        key={item.id}
+                        style={{
+                          width: 104,
+                          borderRadius: 10,
+                          overflow: "hidden",
+                          position: "relative",
+                          border: isMain ? "2px solid #2563eb" : `1px solid ${border}`,
+                          background: cardBg,
+                          boxShadow: isMain ? "0 2px 8px rgba(37,99,235,0.2)" : "0 1px 3px rgba(0,0,0,0.05)",
+                          display: "flex",
+                          flexDirection: "column",
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        {/* 이미지 영역 */}
+                        <div style={{ width: "100%", height: 80, position: "relative", background: "#f3f4f6" }}>
+                          <img
+                            src={item.previewUrl}
+                            alt=""
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                          {/* 대표사진 뱃지 */}
+                          {isMain && (
+                            <div style={{
+                              position: "absolute",
+                              top: 4,
+                              left: 4,
+                              background: "#2563eb",
+                              color: "#fff",
+                              fontSize: 10,
+                              fontWeight: 800,
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2
+                            }}>
+                              ★ 대표
+                            </div>
+                          )}
+                          {/* 삭제 버튼 */}
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(i)}
+                            title="사진 삭제"
+                            style={{
+                              position: "absolute",
+                              top: 4,
+                              right: 4,
+                              width: 20,
+                              height: 20,
+                              borderRadius: "50%",
+                              background: "rgba(0,0,0,0.6)",
+                              color: "#fff",
+                              border: "none",
+                              fontSize: 11,
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              lineHeight: 1
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {/* 조작 버튼 영역 (대표지정 + 순서이동) */}
+                        <div style={{
+                          padding: "6px 4px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 4,
+                          background: darkMode ? "#1f2937" : "#fafafa",
+                          borderTop: `1px solid ${border}`
+                        }}>
+                          {!isMain ? (
+                            <button
+                              type="button"
+                              onClick={() => setRepresentativePhoto(i)}
+                              style={{
+                                width: "100%",
+                                padding: "4px 0",
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: "#2563eb",
+                                background: darkMode ? "#1e3a5f" : "#eff6ff",
+                                border: "1px solid #bfdbfe",
+                                borderRadius: 4,
+                                cursor: "pointer",
+                                textAlign: "center"
+                              }}
+                            >
+                              ★ 대표로
+                            </button>
+                          ) : (
+                            <div style={{
+                              width: "100%",
+                              padding: "4px 0",
+                              fontSize: 11,
+                              fontWeight: 800,
+                              color: "#2563eb",
+                              textAlign: "center"
+                            }}>
+                              대표사진
+                            </div>
+                          )}
+
+                          {/* 좌우 이동 버튼 */}
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
+                            <button
+                              type="button"
+                              onClick={() => movePhotoLeft(i)}
+                              disabled={i === 0}
+                              title="앞으로 이동"
+                              style={{
+                                flex: 1,
+                                height: 22,
+                                border: `1px solid ${border}`,
+                                borderRadius: 4,
+                                background: cardBg,
+                                color: i === 0 ? "#cbd5e1" : textPrimary,
+                                fontSize: 10,
+                                cursor: i === 0 ? "not-allowed" : "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center"
+                              }}
+                            >
+                              ◀
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => movePhotoRight(i)}
+                              disabled={i === photoList.length - 1}
+                              title="뒤로 이동"
+                              style={{
+                                flex: 1,
+                                height: 22,
+                                border: `1px solid ${border}`,
+                                borderRadius: 4,
+                                background: cardBg,
+                                color: i === photoList.length - 1 ? "#cbd5e1" : textPrimary,
+                                fontSize: 10,
+                                cursor: i === photoList.length - 1 ? "not-allowed" : "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center"
+                              }}
+                            >
+                              ▶
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -2621,26 +2837,24 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     return;
                   }
 
-                  // 사진 동기화 (기존 유지 + 신규 추가 - 삭제 반영)
-                  let finalUrls = [...existingPhotoUrls];
-                  if (photos.length > 0 && result.id) {
-                    const uploadPromises = photos.map(async (photo, i) => {
-                      const formData = new FormData();
-                      formData.append('file', photo);
-                      const startIdx = existingPhotoUrls.length;
-                      formData.append('path', `${result.id}/${startIdx + i}_${Date.now()}.webp`);
-                      
-                      const uploadRes = await uploadVacancyPhoto(formData);
-                      if (uploadRes.success && uploadRes.url) {
-                        return uploadRes.url;
+                  // 사진 업로드 및 순서 동기화 (사용자가 정렬한 순서 그대로 정렬 반영)
+                  if (result.id) {
+                    const uploadPromises = photoList.map(async (item, i) => {
+                      if (item.type === 'existing' && item.url) {
+                        return item.url;
+                      }
+                      if (item.type === 'new' && item.file) {
+                        const formData = new FormData();
+                        formData.append('file', item.file);
+                        formData.append('path', `${result.id}/${i}_${Date.now()}.webp`);
+                        const uploadRes = await uploadVacancyPhoto(formData);
+                        if (uploadRes.success && uploadRes.url) {
+                          return uploadRes.url;
+                        }
                       }
                       return null;
                     });
-                    const uploadedUrls = (await Promise.all(uploadPromises)).filter(Boolean) as string[];
-                    finalUrls = [...finalUrls, ...uploadedUrls];
-                  }
-
-                  if (result.id) {
+                    const finalUrls = (await Promise.all(uploadPromises)).filter(Boolean) as string[];
                     await syncVacancyPhotos(result.id, finalUrls);
                   }
 

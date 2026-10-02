@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import MobileTopBarHeader from "../../_components/MobileTopBarHeader";
+import StudySubMenuBar from "../../_components/StudySubMenuBar";
 import styles from "./mobileStudyAbout.module.css";
 
 const FREE_LECTURES = [
@@ -105,14 +106,7 @@ export default function MobileStudyAboutClient() {
   return (
     <div className={styles.container}>
       <MobileTopBarHeader activeTab="study" />
-
-      {/* ── 상단 뒤로가기 바 ── */}
-      <div className={styles.topNavBar}>
-        <Link href="/m/study" className={styles.backBtn}>
-          <span>‹</span>
-          <span>특강 목록으로 돌아가기</span>
-        </Link>
-      </div>
+      <StudySubMenuBar activeMenu="about" />
 
       {/* ━━━ [1] 메인 히어로 ━━━ */}
       <section className={styles.hero} aria-labelledby="mobile-study-hero-title">
@@ -142,11 +136,11 @@ export default function MobileStudyAboutClient() {
           </p>
 
           <div className={styles.heroActions}>
-            <Link href="/study/benefits/vacancy-register" className={styles.heroBtnPrimary}>
-              멤버쉽 혜택 &gt;&gt;
+            <Link href="/m/study/benefits" className={styles.heroBtnPrimary}>
+              멤버십 혜택 &gt;&gt;
             </Link>
-            <Link href="/study/apply" className={styles.heroBtnSecondary}>
-              멤버쉽 신청하기 &gt;&gt;
+            <Link href="/m/study/apply" className={styles.heroBtnSecondary}>
+              멤버십 신청하기 &gt;&gt;
             </Link>
           </div>
 
@@ -677,11 +671,11 @@ export default function MobileStudyAboutClient() {
         </p>
 
         <div className={styles.heroActions} style={{ margin: "0 auto 16px" }}>
-          <Link href="/study/benefits/vacancy-register" className={styles.heroBtnPrimary}>
-            멤버쉽 혜택 &gt;&gt;
+          <Link href="/m/study/benefits" className={styles.heroBtnPrimary}>
+            멤버십 혜택 &gt;&gt;
           </Link>
-          <Link href="/study/apply" className={styles.heroBtnSecondary}>
-            멤버쉽 신청하기 &gt;&gt;
+          <Link href="/m/study/apply" className={styles.heroBtnSecondary}>
+            멤버십 신청하기 &gt;&gt;
           </Link>
         </div>
 

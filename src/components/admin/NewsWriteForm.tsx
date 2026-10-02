@@ -276,6 +276,8 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   /* ── 반려 사유 상태 ── */
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  /** 불러온 기사에 저장돼 있던 반려 사유 (상태 표시용) */
+  const [savedRejectReason, setSavedRejectReason] = useState("");
   const REJECT_REASONS = [
     "사진 화질 불량 또는 이미지 누락",
     "제목 및 본문 오타 수정 요망",
@@ -386,6 +388,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             else if (d.status === "REJECTED") setStatus("반려");
             else if (d.status === "APPROVED") setStatus("APPROVED");
             else setStatus("작성중");
+            setSavedRejectReason(d.status === "REJECTED" ? (d.reject_reason || "") : "");
             
             if (d.published_at) {
               const dt = new Date(d.published_at);
@@ -2187,16 +2190,26 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
                 기사검토
                 <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: "50%", border: `1px solid ${textMuted}`, fontSize: 10, color: textMuted, cursor: "help" }}>ⓘ</span>
               </label>
-              <div style={{ display: "flex", gap: 0, background: "#f3f4f6", borderRadius: 8, padding: 3 }}>
-                {(isMemberMode ? ["작성중", "승인신청"] as StatusType[] : ["작성중", "승인신청", "반려"] as StatusType[]).map(s => (
-                  <button key={s} onClick={() => setStatus(s)} style={{
-                    padding: "8px 18px", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer",
-                    background: status === s ? "#1f2937" : "transparent",
-                    color: status === s ? "#fff" : textSecondary,
-                    transition: "all 0.15s",
-                  }}>{s}</button>
-                ))}
-              </div>
+              {/* 상태는 아래 저장 버튼(임시저장·승인신청·승인·반려)으로만 바뀐다. 여기서는 보여 주기만 한다 */}
+              {(() => {
+                const view =
+                  status === "PENDING" || status === "승인신청" ? { label: "승인 대기중", color: "#7c3aed", bg: "#f5f3ff" }
+                  : status === "REJECTED" || status === "반려" ? { label: "반려됨", color: "#dc2626", bg: "#fef2f2" }
+                  : status === "APPROVED" ? { label: "발행됨", color: "#059669", bg: "#ecfdf5" }
+                  : { label: "작성중", color: "#4b5563", bg: "#f3f4f6" };
+                const showReason = view.label === "반려됨" && savedRejectReason;
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, fontSize: 13.5, fontWeight: 700, color: view.color, background: view.bg, border: `1px solid ${view.color}33` }}>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: view.color }} />
+                      {view.label}
+                    </span>
+                    {showReason && (
+                      <span style={{ fontSize: 13, color: "#dc2626" }}>사유: {savedRejectReason}</span>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* ── 노출시간 (관리자 전용) ── */}

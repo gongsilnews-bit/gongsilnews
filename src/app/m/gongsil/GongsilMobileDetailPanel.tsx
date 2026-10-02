@@ -500,6 +500,28 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                 ].filter(Boolean).join(" | ")}
               </div>
 
+              {/* 테마 키워드 (상세화면 전체 노출) */}
+              {selectedVacancy.themes && selectedVacancy.themes.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "10px" }}>
+                  {selectedVacancy.themes.map((theme: string, idx: number) => (
+                    <span
+                      key={idx}
+                      style={{
+                        background: "#f8fafc",
+                        color: "#3b82f6",
+                        fontSize: "12px",
+                        padding: "3px 9px",
+                        borderRadius: "12px",
+                        fontWeight: 700,
+                        border: "1px solid #bfdbfe",
+                      }}
+                    >
+                      {theme.startsWith('#') ? theme : `# ${theme}`}
+                    </span>
+                  ))}
+                </div>
+              )}
+
             </div>
           )}
         </div>

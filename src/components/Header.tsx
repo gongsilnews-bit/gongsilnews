@@ -47,6 +47,18 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
   const [articleTitle, setArticleTitle] = useState<string | null>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
 
+  // 공실스터디 메뉴 줄(StudyHeader)이 위에 붙었을 때 그 줄의 검색·전체메뉴 버튼이 이 헤더의 창을 연다
+  useEffect(() => {
+    const openSearch = () => setIsSearchActive(true);
+    const openMegaMenu = () => setIsMegaMenuOpen(true);
+    window.addEventListener("gongsil:open-search", openSearch);
+    window.addEventListener("gongsil:open-megamenu", openMegaMenu);
+    return () => {
+      window.removeEventListener("gongsil:open-search", openSearch);
+      window.removeEventListener("gongsil:open-megamenu", openMegaMenu);
+    };
+  }, []);
+
   useEffect(() => {
     const handleSetTitle = (e: any) => {
       setArticleTitle(e.detail);
@@ -108,8 +120,12 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
     const handleScroll = () => {
       const scrolled = window.scrollY > 40;
       setIsScrolled(scrolled);
+      // 공실스터디 페이지는 스크롤하면 공실스터디 메뉴 줄(StudyHeader)이 위에 붙으므로
+      // 메인 헤더는 붙이지 않고 그냥 위로 지나가게 둔다
+      const p = window.location.pathname;
+      const studyPage = p === "/study" || p.startsWith("/study/") || p.startsWith("/study_read");
       if (headerRef.current) {
-        if (scrolled) {
+        if (scrolled && !studyPage) {
           if (!headerRef.current.classList.contains("is-sticky") && placeholderRef.current) {
             placeholderRef.current.style.height = `${headerRef.current.offsetHeight}px`;
           }
@@ -190,12 +206,10 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
   const isHomePage = pathname === '/';
   const isSmallHeader = !isHomePage || isScrolled;
 
-  // 공실뉴스부동산·공실스터디는 각자 전용 헤더를 쓰므로 메인 헤더를 숨긴다
-  // (/study_read, /study_watch 등 상세 페이지는 기존대로 메인 헤더 유지)
+  // 공실뉴스부동산은 전용 헤더를 쓰므로 메인 헤더를 숨긴다.
+  // 공실스터디(/study)는 메인 헤더 아래에 공실스터디 메뉴 줄(StudyHeader)을 붙여 쓴다.
   if (
     pathname?.startsWith('/newsrealty') ||
-    pathname === '/study' ||
-    pathname?.startsWith('/study/') ||
     pathname?.startsWith('/gongsilstudy')
   ) {
     return null;
@@ -252,10 +266,6 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
 
           {currentUser ? (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
-              <Link href="/study/lectures" style={{ color: "#34d399", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
-                공실스터디
-              </Link>
-              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
               <NotificationBell color="#ffffff" />
               <div style={{
                 background: userRole === 'ADMIN' ? '#111827' : '#ef4444',
@@ -293,10 +303,6 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                 공실등록 &gt;&gt;
               </div>
 
-               <Link href="/study/lectures" style={{ color: "#34d399", fontWeight: "700", fontSize: "13px", whiteSpace: "nowrap", textDecoration: "none" }}>
-                공실스터디
-              </Link>
-              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>|</span>
               <div 
                 style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }} 
                 onClick={() => { router.push('/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search)); }}
@@ -364,12 +370,24 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "gongsil"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="gongsil" />
                   </div>
-                  <div className="gnb-bubble-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                    <Link href="/study/lectures" className={pathname === "/study" || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
+                  <div className="gnb-bubble-parent gnb-dropdown-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <Link href="/study/lectures" className={pathname === "/study" || pathname?.startsWith("/study/") || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
                       <span style={{ position: "relative", zIndex: 1 }}>공실스터디</span>
                       <NavCategoryHighlightMarker categoryKey="study" active={navBubble.key === "study" && !navBubble.leaving && !isSmallHeader} />
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "study"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="study" />
+                    {/* 공실스터디 페이지의 탭(StudyHeader)과 같은 메뉴 */}
+                    <div className="gnb-dropdown">
+                      <ul>
+                        <li><a href="/study">홈</a></li>
+                        <li><a href="/study/lectures">강의목록</a></li>
+                        <li><a href="/study/benefits/vacancy-register">멤버십혜택</a></li>
+                        <li><a href="/study/apply">멤버십신청</a></li>
+                        <li><a href="/study/classroom">나의 강의실</a></li>
+                        <li><a href="/study/resources">자료실</a></li>
+                        <li><a href="/study/community">커뮤니티</a></li>
+                      </ul>
+                    </div>
                   </div>
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
                     <Link href="/board">자료실</Link>
@@ -384,13 +402,11 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     </div>
                   </div>
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
-                    <Link href="/board?id=free">커뮤니티</Link>
+                    <Link href="/help" className={pathname === "/help" || pathname?.startsWith("/help") ? "active" : ""}>고객센터</Link>
                     <div className="gnb-dropdown">
                       <ul>
-                        <li><a href="/board?id=free">자유게시판</a></li>
-                        <li><a href="/board?id=qna">Q&A게시판</a></li>
+                        <li><a href="/help">고객센터</a></li>
                         <li><a href="/board?id=notice">공지사항</a></li>
-                        <li><a href="/board?id=inquiry">1:1 문의</a></li>
                       </ul>
                     </div>
                   </div>
@@ -413,25 +429,13 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
             {/* === [Sticky State] 스크롤 시 나타나는 우측 액션 버튼들 === */}
             {isSmallHeader && (
               <div style={{ display: "flex", alignItems: "center", gap: isSmallHeader ? "8px" : "12px", flexShrink: 0 }}>
-                {currentUser ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Link href="/study/lectures" style={{ color: "#059669", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
-                      공실스터디
-                    </Link>
+                {!currentUser && (
+                  <div 
+                    style={{ color: "#333", cursor: "pointer", fontSize: "13px", fontWeight: "700" }} 
+                    onClick={() => { router.push('/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search)); }}
+                  >
+                    로그인
                   </div>
-                ) : (
-                  <>
-                    <Link href="/study/lectures" style={{ color: "#059669", fontSize: "13px", fontWeight: "800", textDecoration: "none" }}>
-                      공실스터디
-                    </Link>
-                    <span style={{ color: "#ddd", fontSize: "13px" }}>|</span>
-                    <div 
-                      style={{ color: "#333", cursor: "pointer", fontSize: "13px", fontWeight: "700" }} 
-                      onClick={() => { router.push('/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search)); }}
-                    >
-                      로그인
-                    </div>
-                  </>
                 )}
 
                 <NotificationBell />
@@ -668,7 +672,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/news_map"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>우리동네뉴스</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/study/lectures"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>공실스터디</a></li>
                   <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/board"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>자료실</a></li>
-                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/board?id=free"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>커뮤니티</a></li>
+                  <li><a href="#" onClick={(e) => { e.preventDefault(); setIsMegaMenuOpen(false); router.push("/help"); }} style={{ fontSize: 16, color: "#555", textDecoration: "none", fontWeight: 500 }}>고객센터</a></li>
                 </ul>
               </div>
             </div>

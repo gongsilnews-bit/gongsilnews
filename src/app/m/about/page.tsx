@@ -188,7 +188,7 @@ export default function MobileAboutPage() {
             <div style={{ margin: "20px 0", padding: "20px 24px", background: "#f8fafc", borderRadius: 12, borderLeft: "4px solid #3b82f6" }}>
               <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1e40af", marginBottom: 12 }}>임대인 회원</h3>
               <ul style={{ paddingLeft: 16, margin: 0, color: "#333", lineHeight: 1.7, fontSize: 14 }}>
-                <li style={{ marginBottom: 6 }}><strong style={{ color: "#111" }}>공실 등록:</strong> 모든 부동산이 무료 열람하는 공실 무료 등록 (2건 무료)</li>
+                <li style={{ marginBottom: 6 }}><strong style={{ color: "#111" }}>공실 등록:</strong> 모든 부동산이 무료 열람하는 공실 무료 등록 (3건 무료)</li>
                 <li><strong style={{ color: "#111" }}>공실뉴스 열람:</strong> 공실뉴스 부동산기사 무료 열람</li>
               </ul>
             </div>

@@ -8,9 +8,8 @@ const QUICK_MENU = [
     category: "커뮤니티",
     items: [
       { name: "자유게시판", path: "/m/board?id=free" },
-      { name: "Q&A게시판", path: "/m/board?id=qna" },
+      { name: "고객센터", path: "/m/help" },
       { name: "공지사항", path: "/m/board?id=notice" },
-      { name: "1:1 문의", path: "/m/board?id=inquiry" },
     ]
   },
   {

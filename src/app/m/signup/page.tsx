@@ -36,7 +36,7 @@ const brokerStats = [
 const brokerFaqs = [
   {
     q: "공동중개 물건 등록은 정말 무료인가요?",
-    a: "네, 그렇습니다. 공실뉴스에서는 부동산 회원님들이 공동중개 물건을 2건까지 평생 아무런 비용 없이 무료로 등록하고 관리하실 수 있도록 지원합니다.",
+    a: "네, 그렇습니다. 공실뉴스에서는 부동산 회원님들이 공동중개 물건을 3건까지 평생 아무런 비용 없이 무료로 등록하고 관리하실 수 있도록 지원합니다.",
   },
   {
     q: "타 사이트 및 지역 공동중개망과의 가장 큰 차이점은 무엇인가요?",
@@ -661,7 +661,7 @@ export default function MobileSignupPage() {
                 </li>
                 <li className="m-pricing-card-feature-item">
                   <CheckIcon />
-                  <strong>공동중개 물건 등록 2건 무료</strong>
+                  <strong>공동중개 물건 등록 3건 무료</strong>
                 </li>
                 <li className="m-pricing-card-feature-item">
                   <CheckIcon />

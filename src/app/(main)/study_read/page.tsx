@@ -9,6 +9,7 @@ import { getPointBalance } from "@/app/actions/point";
 import { createClient } from "@/utils/supabase/client";
 import AuthModal from "@/components/AuthModal";
 import styles from "./studyRead.module.css";
+import StudyHeader from "@/components/study/StudyHeader";
 
 /* ── YouTube URL → embed URL ── */
 const toEmbedUrl = (url: string): string => {
@@ -22,9 +23,12 @@ const toEmbedUrl = (url: string): string => {
 
 export default function StudyReadPage() {
   return (
-    <Suspense fallback={<div style={{ padding: "100px", textAlign: "center", color: "#6b7280" }}>강의 상세 정보를 불러오는 중입니다...</div>}>
-      <StudyReadContent />
-    </Suspense>
+    <>
+      <StudyHeader />
+      <Suspense fallback={<div style={{ padding: "100px", textAlign: "center", color: "#6b7280" }}>강의 상세 정보를 불러오는 중입니다...</div>}>
+        <StudyReadContent />
+      </Suspense>
+    </>
   );
 }
 

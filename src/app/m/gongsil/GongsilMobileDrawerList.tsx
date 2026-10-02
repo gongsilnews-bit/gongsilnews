@@ -242,7 +242,7 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
               key={v.id}
               className="v-card"
               onClick={() => handleVacancyClick(v)}
-              style={{ display: "flex", gap: "12px", padding: "14px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
+              style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-start", gap: "6px 12px", padding: "14px 0", borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.15s" }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 {/* Badges & Date */}
@@ -275,23 +275,12 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                 </p>
                 
                 {/* Specs 2: Rooms, Options */}
-                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
                 </p>
-
-                {/* Themes */}
-                {v.themes && v.themes.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
-                    {v.themes.map((theme: string, idx: number) => (
-                      <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
-                        {theme.startsWith('#') ? theme : `# ${theme}`}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
               {v.images?.[0] && (
-                <div data-thumb-wrapper="true" style={{ width: "130px", height: "96px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "center" }}>
+                <div data-thumb-wrapper="true" style={{ width: "130px", height: "96px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "flex-start" }}>
                   <img
                     src={v.images[0]}
                     alt=""
@@ -301,6 +290,22 @@ const GongsilMobileDrawerListImpl: React.FC<GongsilMobileDrawerListProps> = ({
                       if (wrapper) wrapper.style.display = "none";
                     }}
                   />
+                </div>
+              )}
+
+              {/* Themes (사진 밑 카드 전체 폭 1줄 활용 + 말줄임) */}
+              {v.themes && v.themes.length > 0 && (
+                <div style={{ flexBasis: "100%", width: "100%", display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", overflow: "hidden", whiteSpace: "nowrap" }}>
+                  {v.themes.slice(0, 4).map((theme: string, idx: number) => (
+                    <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "11px", padding: "2px 7px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe", flexShrink: 0 }}>
+                      {theme.startsWith('#') ? theme : `# ${theme}`}
+                    </span>
+                  ))}
+                  {v.themes.length > 4 && (
+                    <span style={{ color: "#94a3b8", fontSize: "12px", fontWeight: 800, letterSpacing: 1, flexShrink: 0, paddingLeft: "2px" }}>
+                      ...
+                    </span>
+                  )}
                 </div>
               )}
             </div>

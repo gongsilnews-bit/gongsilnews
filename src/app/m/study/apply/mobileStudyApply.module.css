@@ -1,0 +1,453 @@
+.container {
+  width: 100%;
+  max-width: 448px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  color: #112127;
+  font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  padding-top: 108px;
+  padding-bottom: 80px;
+  box-sizing: border-box;
+}
+
+/* ━━━ [1] 상단 짙은 초록색 히어로 영역 ━━━ */
+.hero {
+  background: linear-gradient(145deg, #041c1a 0%, #062e26 50%, #0f4a3d 100%);
+  color: #ffffff;
+  padding: 24px 18px 22px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(4, 28, 26, 0.25);
+}
+
+.heroTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: 20px;
+  padding: 4px 12px;
+}
+
+.heroQuickApplyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  border: 1px solid #34d399;
+  border-radius: 20px;
+  padding: 6px 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.heroQuickApplyBtn:active {
+  transform: scale(0.96);
+}
+
+.heroTitle {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: -0.6px;
+  margin: 0 0 10px;
+  color: #ffffff;
+}
+
+.heroHighlight {
+  color: #34d399;
+}
+
+.heroDesc {
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.55;
+  margin: 0 0 16px;
+  letter-spacing: -0.3px;
+}
+
+.heroTagsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.heroTagItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.heroTagCheck {
+  color: #34d399;
+  font-weight: 900;
+}
+
+/* ━━━ [2] 하단 금액 & 상세 혜택 섹션 ━━━ */
+.content {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pricingCard {
+  background: #ffffff;
+  border: 2px solid #059669;
+  border-radius: 18px;
+  padding: 22px 18px;
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.08);
+  position: relative;
+}
+
+.pricingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.pricingTag {
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  background: #059669;
+  padding: 3px 9px;
+  border-radius: 6px;
+}
+
+.zeroFeeNotice {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #047857;
+}
+
+.pricingTitle {
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.pricingSub {
+  font-size: 12.5px;
+  color: #64748b;
+  margin: 0 0 14px;
+}
+
+.priceBox {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.priceMonthlyWrap {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.priceMonthly {
+  font-size: 24px;
+  font-weight: 900;
+  color: #059669;
+  letter-spacing: -0.5px;
+}
+
+.priceUnit {
+  font-size: 13px;
+  font-weight: 700;
+  color: #047857;
+}
+
+.priceYearly {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.benefitTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.benefitList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.benefitRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.benefitIcon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.benefitInfo {
+  flex: 1;
+}
+
+.benefitRowName {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.benefitRowDesc {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* ━━━ [3] 신청 폼 카드 ━━━ */
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 24px 18px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.cardHeader {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.cardTitle {
+  font-size: 19px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
+}
+
+.cardDesc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 간편 로그인 */
+.oauthGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.kakaoBtn {
+  width: 100%;
+  height: 48px;
+  background-color: #fee500;
+  color: #191919;
+  border: none;
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.googleBtn {
+  width: 100%;
+  height: 48px;
+  background-color: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* 입력 폼 */
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  background: #ffffff;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.input:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+.termsBox {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.agreeLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.submitBtn {
+  width: 100%;
+  height: 52px;
+  background: linear-gradient(135deg, #059669, #047857);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.submitBtn:active {
+  transform: scale(0.98);
+}
+
+.submitBtn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.trustFootnote {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.guideBtn {
+  width: 100%;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #059669;
+  color: #047857;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* 모달 */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 9999;
+}
+
+.modalContent {
+  background: #ffffff;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 24px 20px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.modalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #94a3b8;
+  cursor: pointer;
+}

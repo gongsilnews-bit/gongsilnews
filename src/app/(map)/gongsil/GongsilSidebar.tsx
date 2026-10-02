@@ -571,27 +571,6 @@ export default function GongsilSidebar({
                           .join(", ")}
                   </div>
 
-                  {/* 테마 키워드 */}
-                  {prop.themes && prop.themes.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: "auto" }}>
-                      {prop.themes.map((theme: string, idx: number) => (
-                        <span
-                          key={idx}
-                          style={{
-                            background: "#f8fafc",
-                            color: "#3b82f6",
-                            fontSize: 11,
-                            padding: "2px 8px",
-                            borderRadius: 12,
-                            fontWeight: 700,
-                            border: "1px solid #bfdbfe",
-                          }}
-                        >
-                          {theme.startsWith("#") ? theme : `# ${theme}`}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
                  {prop.images?.[0] && (
                   <div data-thumb-wrapper="true" style={{ flexShrink: 0, marginLeft: 5, textAlign: "center", alignSelf: isAuctionMode ? "center" : "flex-start" }}>
@@ -609,6 +588,34 @@ export default function GongsilSidebar({
                       <div style={{ fontSize: 10, color: "#999", marginTop: 4, lineHeight: 1.2 }}>
                         {meta.cltrMngNo || meta.cltr_mng_no}
                       </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 테마 키워드 (사진 밑 카드 전체 폭 1줄 활용 + 말줄임) */}
+                {prop.themes && prop.themes.length > 0 && (
+                  <div style={{ flexBasis: "100%", width: "100%", display: "flex", alignItems: "center", gap: 6, marginTop: 10, overflow: "hidden", whiteSpace: "nowrap" }}>
+                    {prop.themes.slice(0, 4).map((theme: string, idx: number) => (
+                      <span
+                        key={idx}
+                        style={{
+                          background: "#f8fafc",
+                          color: "#3b82f6",
+                          fontSize: 11,
+                          padding: "2px 8px",
+                          borderRadius: 12,
+                          fontWeight: 700,
+                          border: "1px solid #bfdbfe",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {theme.startsWith("#") ? theme : `# ${theme}`}
+                      </span>
+                    ))}
+                    {prop.themes.length > 4 && (
+                      <span style={{ color: "#94a3b8", fontSize: 13, fontWeight: 800, letterSpacing: 1, flexShrink: 0, paddingLeft: 2 }}>
+                        ...
+                      </span>
                     )}
                   </div>
                 )}

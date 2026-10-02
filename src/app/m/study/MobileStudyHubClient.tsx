@@ -105,7 +105,7 @@ export default function MobileStudyHubClient({
   };
 
   return (
-    <div style={{ width: "100%", backgroundColor: "#f8fafc", minHeight: "100vh", paddingBottom: "80px", paddingTop: "56px", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#1e293b" }}>
+    <div style={{ width: "100%", maxWidth: "448px", margin: "0 auto", backgroundColor: "#f8fafc", minHeight: "100vh", paddingBottom: "80px", paddingTop: "108px", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#1e293b" }}>
       <MobileTopBarHeader activeTab="study" />
       <StudySubMenuBar activeTab={activeTab} onTabChange={handleTabChange} />
 
@@ -185,7 +185,7 @@ export default function MobileStudyHubClient({
                   공실스터디란?
                 </Link>
                 <Link
-                  href="/study/apply"
+                  href="/m/study/apply"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",

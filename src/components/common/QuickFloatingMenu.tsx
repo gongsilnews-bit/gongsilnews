@@ -172,9 +172,9 @@ export default function QuickFloatingMenu() {
           실시간상담
         </div>
 
-        {/* 1:1 문의 */}
+        {/* 고객센터 (FAQ · 1:1 문의) */}
         <div
-          onClick={() => handleAuthClick("/board?id=inquiry")}
+          onClick={() => { window.location.href = "/help"; }}
           style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "12px 14px", cursor: "pointer",
@@ -187,7 +187,7 @@ export default function QuickFloatingMenu() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a6fad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
-          1:1문의
+          고객센터
         </div>
       </div>
 

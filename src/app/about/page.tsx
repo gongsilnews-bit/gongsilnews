@@ -189,7 +189,7 @@ export default function AboutPage() {
             <div style={{ margin: "32px 0", padding: "28px 32px", background: "#f8fafc", borderRadius: 16, borderLeft: "4px solid #3b82f6" }}>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1e40af", marginBottom: 16 }}>임대인 회원</h3>
               <ul style={{ paddingLeft: 20, margin: 0, color: "#333", lineHeight: 1.8 }}>
-                <li style={{ marginBottom: 8 }}><strong style={{ color: "#111" }}>공실 등록:</strong> 모든 부동산이 무료 열람하는 공실 무료 등록 (2건 무료)</li>
+                <li style={{ marginBottom: 8 }}><strong style={{ color: "#111" }}>공실 등록:</strong> 모든 부동산이 무료 열람하는 공실 무료 등록 (3건 무료)</li>
                 <li><strong style={{ color: "#111" }}>공실뉴스 열람:</strong> 공실뉴스 부동산기사 무료 열람</li>
               </ul>
             </div>

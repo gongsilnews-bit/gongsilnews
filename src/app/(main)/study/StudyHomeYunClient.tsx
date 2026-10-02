@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef } from "react";
-import StudyHeader from "@/components/study/StudyHeader";
+import StudyHeader, { STUDY_HOME_HERO_BAR } from "@/components/study/StudyHeader";
 import styles from "./studyHomeYun.module.css";
 
 const FREE_LECTURES = [
@@ -118,7 +118,7 @@ export default function StudyHomeYunClient() {
 
   return (
     <div className={styles.page}>
-      <StudyHeader />
+      <StudyHeader background={STUDY_HOME_HERO_BAR} />
 
       <main>
         {/* ━━━ [1섹션] 메인 히어로 ━━━ */}
