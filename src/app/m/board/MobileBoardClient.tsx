@@ -11,16 +11,87 @@ import AuthModal from "@/components/AuthModal";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 
 const RESOURCE_BOARDS = [
-  { id: "drone", name: "드론영상", icon: "🚁" },
-  { id: "app", name: "APP(앱)", icon: "📱" },
-  { id: "prompt", name: "AI 프롬프트", icon: "🤖" },
-  { id: "sound", name: "음원", icon: "🎵" },
-  { id: "doc", name: "계약서/양식", icon: "📄" },
+  {
+    id: "drone",
+    name: "드론영상",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 5l2 2M19 5l-2 2M5 19l2-2M19 19l-2-2" />
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+      </svg>
+    ),
+  },
+  {
+    id: "app",
+    name: "APP(앱)",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="5" y="2" width="14" height="20" rx="3" />
+        <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth="2.5" />
+      </svg>
+    ),
+  },
+  {
+    id: "prompt",
+    name: "AI 프롬프트",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z" />
+        <path d="M16 14H8l-2 8h12l-2-8z" />
+        <line x1="9" y1="18" x2="15" y2="18" />
+      </svg>
+    ),
+  },
+  {
+    id: "sound",
+    name: "음원",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 18V5l12-2v13" />
+        <circle cx="6" cy="18" r="3" />
+        <circle cx="18" cy="16" r="3" />
+      </svg>
+    ),
+  },
+  {
+    id: "doc",
+    name: "계약서/양식",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <line x1="10" y1="9" x2="8" y2="9" />
+      </svg>
+    ),
+  },
 ];
 
 const COMMUNITY_BOARDS = [
-  { id: "free", name: "자유게시판", icon: "💬" },
-  { id: "studyqa", name: "Q&A", icon: "❓" },
+  {
+    id: "free",
+    name: "자유게시판",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        <line x1="8" y1="9" x2="16" y2="9" />
+        <line x1="8" y1="13" x2="13" y2="13" />
+      </svg>
+    ),
+  },
+  {
+    id: "studyqa",
+    name: "Q&A",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+        <line x1="12" y1="17" x2="12.01" y2="17" strokeWidth="2.5" />
+      </svg>
+    ),
+  },
 ];
 
 const HELP_BOARDS = [
@@ -139,10 +210,10 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from('members').select('role, plan_type, agencies(status)').eq('id', user.id).single();
+        const { data } = await supabase.from('members').select('role, plan_type, name, agencies(status)').eq('id', user.id).single();
         if (data) {
           setUserLevel(getPermissionLevel(data));
-          setCurrentUser({ ...user, role: data.role });
+          setCurrentUser({ ...user, role: data.role, name: data.name });
         }
       }
       setIsLevelChecking(false);
@@ -199,32 +270,29 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
   const isNotice = currentBoardId === "notice";
   const isStudySection = isResource || isCommunity;
   const subBoards = isResource ? RESOURCE_BOARDS : COMMUNITY_BOARDS;
+  const displayName = currentUser?.name || currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || "부동산";
 
   return (
-    <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: isStudySection ? '48px' : '0px' }}>
+    <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: isStudySection ? '108px' : '56px' }}>
       {/* 공통 상단 헤더 (로고 + 1차 카테고리) — 공지사항은 고객센터, 스터디 관련은 공실스터디 활성 */}
-      <MobileTopBarHeader activeTab={isNotice ? "help" : (isStudySection ? "study" : "study")} />
+      <MobileTopBarHeader activeTab={isNotice ? "help" : "study"} />
       {isStudySection && <StudySubMenuBar />}
 
-      {/* 게시판 세부 카테고리 메뉴바 */}
-      <div
-        className="hide-scrollbar"
-        style={{
-          position: 'sticky',
-          top: isStudySection ? '104px' : '56px',
-          zIndex: 34,
-          backgroundColor: '#ffffff',
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          gap: '6px',
-          padding: '8px 12px',
-          overflowX: 'auto',
-          WebkitOverflowScrolling: 'touch',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {isNotice ? (
-          HELP_BOARDS.map((b) => {
+      {/* 고객센터(공지사항) 서브메뉴 */}
+      {isNotice && (
+        <div
+          style={{
+            position: 'sticky',
+            top: '56px',
+            zIndex: 34,
+            backgroundColor: '#ffffff',
+            borderBottom: '1px solid #e5e7eb',
+            display: 'flex',
+            gap: '8px',
+            padding: '8px 16px',
+          }}
+        >
+          {HELP_BOARDS.map((b) => {
             const isSel = b.id === "notice";
             return (
               <button
@@ -246,36 +314,119 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
                 <span>{b.name}</span>
               </button>
             );
-          })
-        ) : (
-          subBoards.map((b) => {
-            const isSel = b.id === currentBoardId;
-            return (
-              <button
-                key={b.id}
-                onClick={() => router.push(`/m/board?id=${b.id}`)}
+          })}
+        </div>
+      )}
+
+      {/* 스터디 브릿지 배너 (1차 카테고리와 2차 픽토그램 사이) */}
+      {isStudySection && (
+        <div style={{ padding: "16px 16px 12px", backgroundColor: "#ffffff" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+              <span
                 style={{
-                  flexShrink: 0,
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '14px',
-                  fontWeight: isSel ? 700 : 500,
-                  color: isSel ? '#ffffff' : '#4b5563',
-                  backgroundColor: isSel ? '#059669' : '#f3f4f6',
-                  border: isSel ? '1px solid #059669' : '1px solid #e5e7eb',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  transition: 'all 0.2s',
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  color: "#059669",
+                  background: "#ecfdf5",
+                  border: "1px solid #a7f3d0",
+                  padding: "2px 8px",
+                  borderRadius: "12px",
                 }}
               >
-                <span>{b.name}</span>
-              </button>
-            );
-          })
-        )}
-      </div>
+                {isResource ? "✨ 부동산 마케팅 & 실무 필수자료" : "💬 공인중개사 & 스터디 실시간 소통망"}
+              </span>
+              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>
+                <span style={{ fontWeight: 800, color: "#111" }}>{displayName} 대표님</span>을 위한
+              </span>
+            </div>
+            <h2 style={{ fontSize: "17.5px", fontWeight: 900, color: "#064e3b", margin: 0, letterSpacing: "-0.5px", lineHeight: 1.35 }}>
+              {isResource
+                ? "고화질 드론영상부터 AI 프롬프트·계약서식까지!"
+                : "막히는 실무 질문부터 생생한 현장 이야기까지!"}
+            </h2>
+            <p style={{ fontSize: "12px", color: "#64748b", margin: 0, lineHeight: 1.4 }}>
+              {isResource
+                ? "매물 홍보 유튜브 소스 · 필수 업무 앱 · 중개 실무 서식을 다운로드하세요."
+                : "혼자 고민하지 마세요. 세무·법률·AI 마케팅 Q&A와 자유로운 정보 공유의 장"}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 2차 카테고리 픽토그램 메뉴 바 (뉴스 스타일 52px 둥근 사각형) */}
+      {isStudySection && (
+        <div
+          style={{
+            padding: "0 16px 14px",
+            backgroundColor: "#ffffff",
+            borderBottom: "8px solid #f4f6f8",
+          }}
+        >
+          <div
+            className="hide-scrollbar"
+            style={{
+              display: "flex",
+              gap: "12px",
+              overflowX: "auto",
+              WebkitOverflowScrolling: "touch",
+              paddingBottom: "4px",
+              alignItems: "flex-start",
+            }}
+          >
+            {subBoards.map((b) => {
+              const isSel = b.id === currentBoardId;
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => router.push(`/m/board?id=${b.id}`)}
+                  style={{
+                    flexShrink: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                    width: "60px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "52px",
+                      height: "52px",
+                      borderRadius: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: isSel ? "#ecfdf5" : "#f8fafc",
+                      border: isSel ? "2px solid #059669" : "1px solid #e5e7eb",
+                      color: isSel ? "#059669" : "#64748b",
+                      boxShadow: isSel ? "0 3px 8px rgba(5, 150, 105, 0.18)" : "none",
+                      transition: "all 0.18s ease",
+                    }}
+                  >
+                    {b.icon}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: isSel ? 800 : 500,
+                      color: isSel ? "#059669" : "#374151",
+                      letterSpacing: "-0.3px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {b.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 3. 검색창 & 글쓰기 버튼 바 */}
       <div style={{ backgroundColor: '#ffffff', padding: '10px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
@@ -343,11 +494,13 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
         </button>
       </div>
 
-      <div style={{ padding: '10px 16px 8px', textAlign: 'center' }}>
-        <p style={{ color: '#9ca3af', fontSize: '15px', margin: 0 }}>
-          {board.subtitle || "공실뉴스가 제공하는 자료실입니다."}
-        </p>
-      </div>
+      {!isStudySection && (
+        <div style={{ padding: '10px 16px 8px', textAlign: 'center' }}>
+          <p style={{ color: '#9ca3af', fontSize: '15px', margin: 0 }}>
+            {board.subtitle || "공실뉴스가 제공하는 자료실입니다."}
+          </p>
+        </div>
+      )}
 
       {tabs.length > 1 && (
         <div style={{ padding: '0 16px 12px', overflowX: 'auto', whiteSpace: 'nowrap', display: 'flex', gap: '8px', WebkitOverflowScrolling: 'touch' }} className="hide-scrollbar">
