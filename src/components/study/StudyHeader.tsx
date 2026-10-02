@@ -162,14 +162,8 @@ function StudyNavItems({
         const isHovered = hoveredNav === item.label;
 
         // 2차 메뉴 노출 조건:
-        // 1) 해당 1차 메뉴 페이지에 진입해 있고(isActive) 다른 메뉴를 호버하고 있지 않을 때 => 상시 가로 노출!
-        // 2) 또는 해당 메뉴에 마우스를 올렸을 때(isHovered) => 가로 노출!
-        const showSubBar = Boolean(
-          item.subItems && (
-            (isActive && (!hoveredNav || hoveredNav === item.label)) ||
-            isHovered
-          )
-        );
+        // 마우스 올렸을 때(호버 시)만 가로로 나타나고, 클릭하거나 마우스가 벗어나면 즉시 닫힘 (상시 노출 해제)
+        const showSubBar = Boolean(item.subItems && isHovered);
 
         return (
           <div
@@ -181,6 +175,7 @@ function StudyNavItems({
             <Link
               href={item.href}
               aria-current={isActive ? "page" : undefined}
+              onClick={() => setHoveredNav(null)}
               style={{
                 fontSize: "16px",
                 fontWeight: isActive ? 800 : 500,
@@ -201,7 +196,7 @@ function StudyNavItems({
               {item.label}
             </Link>
 
-            {/* 🚀 대표님 승인안: 메뉴 바로 아래 오른쪽 옆으로 펼쳐지는 가로형 2차 서브메뉴 박스 (상시 노출) */}
+            {/* 🚀 메뉴 마우스 호버 시 가로형 2차 서브메뉴 박스 노출 (클릭 시 즉시 닫힘) */}
             {showSubBar && item.subItems && (
               <div
                 style={{
@@ -250,6 +245,7 @@ function StudyNavItems({
                     <Link
                       key={sub.href}
                       href={sub.href}
+                      onClick={() => setHoveredNav(null)}
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
