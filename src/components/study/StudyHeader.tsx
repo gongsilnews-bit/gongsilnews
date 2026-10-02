@@ -10,7 +10,7 @@ import { getEffectiveMemberRole, getAdminEntryLabel } from "@/utils/permissionCh
 const POINT = "#059669";
 const MINT = "#72e7c3";
 
-/** 진한 초록 히어로(멤버십신청·나의 강의실·Q&A, 145deg 그라데이션)의 위쪽 가장자리 색 */
+/** 진한 초록 히어로(멤버십신청·나의 강의실·Q&A, 145deg 그라데이션)의 위쪽 가장자리 색을 그대로 옮긴 것 */
 export const STUDY_HERO_BAR = "linear-gradient(90deg, #052427 0%, #072928 25%, #09302b 50%, #0b372e 75%, #0e4036 100%)";
 /** 공실스터디 홈 히어로(사진 + 가운데가 밝은 그림자)의 위쪽 가장자리 색 */
 export const STUDY_HOME_HERO_BAR = "linear-gradient(90deg, #071614 0%, #0c1f1b 25%, #102320 50%, #0b1d1a 75%, #061613 100%)";
@@ -138,110 +138,131 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-/** 2차 카테고리 가로 서브바 (상시 노출) */
-function StudySubBar({
-  activeNavItem,
+/** 1차 메뉴 리스트 및 각 메뉴 바로 아래 가로로 펼쳐지는 2차 서브 메뉴 바 */
+function StudyNavItems({
   pathname,
-  dark,
+  activeColor,
+  idleColor,
+  hoveredNav,
+  setHoveredNav,
 }: {
-  activeNavItem: NavItem;
   pathname: string;
-  dark: boolean;
+  activeColor: string;
+  idleColor: string;
+  hoveredNav: string | null;
+  setHoveredNav: React.Dispatch<React.SetStateAction<string | null>>;
 }) {
   const searchParams = useSearchParams();
 
   return (
-    <div
-      style={{
-        width: "100%",
-        borderTop: dark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid #f1f5f9",
-        background: dark ? "rgba(0, 0, 0, 0.22)" : "#f8fafc",
-      }}
-    >
-      <div
-        className="container px-20 no-scrollbar"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "9px 20px 9px 20px",
-          overflowX: "auto",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "13px",
-            fontWeight: 800,
-            color: dark ? "#34d399" : POINT,
-            marginRight: "6px",
-            whiteSpace: "nowrap",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "5px",
-            marginLeft: "20px",
-          }}
-        >
-          <span>{activeNavItem.label}</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        </span>
+    <div style={{ display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap" }}>
+      {NAV_ITEMS.map((item) => {
+        const isActive = item.match(pathname);
+        const isHovered = hoveredNav === item.label;
 
-        {activeNavItem.subItems?.map((sub) => {
-          const isSubActive = sub.match
-            ? sub.match(pathname, searchParams)
-            : pathname === sub.href;
+        // 2차 메뉴 노출 조건:
+        // 1) 해당 1차 메뉴 페이지에 진입해 있고(isActive) 다른 메뉴를 호버하고 있지 않을 때 => 상시 가로 노출!
+        // 2) 또는 해당 메뉴에 마우스를 올렸을 때(isHovered) => 가로 노출!
+        const showSubBar = Boolean(
+          item.subItems && (
+            (isActive && (!hoveredNav || hoveredNav === item.label)) ||
+            isHovered
+          )
+        );
 
-          return (
+        return (
+          <div
+            key={item.href}
+            style={{ position: "relative" }}
+            onMouseEnter={() => setHoveredNav(item.label)}
+            onMouseLeave={() => setHoveredNav(null)}
+          >
             <Link
-              key={sub.href}
-              href={sub.href}
+              href={item.href}
+              aria-current={isActive ? "page" : undefined}
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "6px 14px",
-                borderRadius: "18px",
-                fontSize: "13.5px",
-                fontWeight: isSubActive ? 800 : 500,
+                fontSize: "16px",
+                fontWeight: isActive ? 800 : 500,
+                color: isActive ? activeColor : idleColor,
                 textDecoration: "none",
                 whiteSpace: "nowrap",
-                transition: "all 0.15s ease",
-                background: isSubActive
-                  ? dark
-                    ? "rgba(114, 231, 195, 0.18)"
-                    : "#ecfdf5"
-                  : "transparent",
-                color: isSubActive
-                  ? dark
-                    ? "#72e7c3"
-                    : "#059669"
-                  : dark
-                  ? "rgba(255, 255, 255, 0.82)"
-                  : "#475569",
-                border: isSubActive
-                  ? dark
-                    ? "1px solid rgba(114, 231, 195, 0.45)"
-                    : "1px solid #a7f3d0"
-                  : "1px solid transparent",
+                transition: "color 0.15s ease",
+                display: "inline-block",
+                padding: "6px 0",
               }}
               onMouseEnter={(e) => {
-                if (!isSubActive) {
-                  e.currentTarget.style.backgroundColor = dark ? "rgba(255,255,255,0.08)" : "#f1f5f9";
-                  e.currentTarget.style.color = dark ? "#ffffff" : "#0f172a";
-                }
+                if (!isActive) e.currentTarget.style.color = activeColor;
               }}
               onMouseLeave={(e) => {
-                if (!isSubActive) {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = dark ? "rgba(255, 255, 255, 0.82)" : "#475569";
-                }
+                if (!isActive) e.currentTarget.style.color = idleColor;
               }}
             >
-              {sub.label}
+              {item.label}
             </Link>
-          );
-        })}
-      </div>
+
+            {/* 🚀 대표님 승인안: 메뉴 바로 아래 오른쪽 옆으로 펼쳐지는 가로형 2차 서브메뉴 박스 (상시 노출) */}
+            {showSubBar && item.subItems && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  zIndex: 9999999,
+                  display: "inline-flex",
+                  flexDirection: "row",
+                  alignItems: "stretch",
+                  background: "#ffffff",
+                  borderRadius: "6px",
+                  border: "1px solid #d1d5db",
+                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.06)",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {item.subItems.map((sub, idx) => {
+                  const isSubActive = sub.match
+                    ? sub.match(pathname, searchParams)
+                    : pathname === sub.href;
+
+                  return (
+                    <Link
+                      key={sub.href}
+                      href={sub.href}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "9px 16px",
+                        fontSize: "13.5px",
+                        fontWeight: isSubActive ? 800 : 600,
+                        color: isSubActive ? POINT : "#1e293b",
+                        backgroundColor: isSubActive ? "#f0fdf4" : "#ffffff",
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        borderRight: idx < item.subItems!.length - 1 ? "1px solid #e5e7eb" : "none",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSubActive) {
+                          e.currentTarget.style.backgroundColor = "#f8fafc";
+                          e.currentTarget.style.color = POINT;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSubActive) {
+                          e.currentTarget.style.backgroundColor = "#ffffff";
+                          e.currentTarget.style.color = "#1e293b";
+                        }
+                      }}
+                    >
+                      {sub.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -255,8 +276,7 @@ export default function StudyHeader({ background }: { background?: string } = {}
   const activeColor = dark ? MINT : POINT;
   const barBackground = dark ? "linear-gradient(90deg, #021315 0%, #04191c 50%, #021315 100%)" : "#ffffff";
 
-  // 현재 활성화된 1차 카테고리
-  const activeNavItem = NAV_ITEMS.find((item) => item.match(pathname));
+  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
   // 원래 자리(slot)가 화면 위에 닿으면 붙는다.
   const slotRef = useRef<HTMLDivElement>(null);
@@ -318,7 +338,7 @@ export default function StudyHeader({ background }: { background?: string } = {}
           className="container px-20"
           style={{
             display: "flex", alignItems: stuck ? "center" : "flex-end", gap: stuck ? "32px" : "40px",
-            padding: stuck ? "14px 20px" : dark ? "20px 20px 16px" : "20px 20px 14px",
+            padding: stuck ? "14px 20px" : dark ? "20px 20px 32px" : "20px 20px 14px",
           }}
         >
           <Link
@@ -332,33 +352,15 @@ export default function StudyHeader({ background }: { background?: string } = {}
             공실스터디
           </Link>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "24px", marginBottom: stuck ? 0 : "3px", flexWrap: "wrap" }}>
-            {NAV_ITEMS.map((item) => {
-              const isActive = item.match(pathname);
-              return (
-                <div key={item.href} style={{ position: "relative" }}>
-                  <Link
-                    href={item.href}
-                    aria-current={isActive ? "page" : undefined}
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: isActive ? 800 : 500,
-                      color: isActive ? activeColor : idleColor,
-                      textDecoration: "none",
-                      whiteSpace: "nowrap",
-                      transition: "color 0.15s ease",
-                      display: "inline-block",
-                      padding: "4px 0",
-                    }}
-                    onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.color = activeColor; }}
-                    onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.color = idleColor; }}
-                  >
-                    {item.label}
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
+          <Suspense fallback={null}>
+            <StudyNavItems
+              pathname={pathname}
+              activeColor={activeColor}
+              idleColor={idleColor}
+              hoveredNav={hoveredNav}
+              setHoveredNav={setHoveredNav}
+            />
+          </Suspense>
 
           {/* 우측 끝: [내 강의실] 바로가기 버튼 (상시 노출) 및 스크롤 시 추가 기능 버튼들 */}
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0, marginBottom: stuck ? 0 : "3px" }}>
@@ -417,13 +419,6 @@ export default function StudyHeader({ background }: { background?: string } = {}
             )}
           </div>
         </nav>
-
-        {/* 2차 카테고리 가로 서브 바 (멤버십혜택, 멤버십신청, 자료실, 커뮤니티 등 진입 시 상시 가로 노출) */}
-        {activeNavItem?.subItems && activeNavItem.subItems.length > 0 && (
-          <Suspense fallback={null}>
-            <StudySubBar activeNavItem={activeNavItem} pathname={pathname} dark={dark} />
-          </Suspense>
-        )}
       </div>
     </div>
   );
