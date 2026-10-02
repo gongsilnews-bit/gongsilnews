@@ -1,15 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
 import { CATEGORY_CONFIG } from "./gongsilHelpers";
+import GongsilSearchModal from "./GongsilSearchModal";
 
 interface GongsilFilterBarProps {
   activeCategory: string;
   handleCategoryChange: (category: string) => void;
-  popoverSearchKeyword: string;
-  setPopoverSearchKeyword: React.Dispatch<React.SetStateAction<string>>;
+  popoverSearchKeyword?: string;
+  setPopoverSearchKeyword?: React.Dispatch<React.SetStateAction<string>>;
   handleSearch: (keyword: string) => void;
 }
 
@@ -20,6 +21,8 @@ export default function GongsilFilterBar({
   setPopoverSearchKeyword,
   handleSearch,
 }: GongsilFilterBarProps) {
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+
   return (
     <div style={{ display: "flex", borderBottom: "1px solid #ddd", alignItems: "center", width: "100%", padding: "0 20px" }}>
       <div style={{ display: "flex", alignItems: "center", flexShrink: 0, marginRight: 24 }}>
@@ -77,65 +80,73 @@ export default function GongsilFilterBar({
         ))}
 
         <div style={{ display: "flex", gap: "16px", alignItems: "center", marginLeft: "auto", flexShrink: 0 }}>
-          <div style={{ display: "flex", gap: "6px", alignItems: "center", flexShrink: 0 }}>
-            <input
-              type="text"
-              placeholder="공실번호, 학교, 지하철"
-              value={popoverSearchKeyword}
-              onChange={(e) => setPopoverSearchKeyword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch(popoverSearchKeyword);
-                }
-              }}
-              style={{
-                width: "240px",
-                padding: "8px 12px",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                fontSize: "13px",
-                outline: "none",
-                height: "36px",
-              }}
-            />
-            <button
-              onClick={() => handleSearch(popoverSearchKeyword)}
-              style={{
-                height: "36px",
-                padding: "0 14px",
-                background: "#1a4282",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontWeight: "bold",
-                fontSize: "13px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
+          {/* 🔍 세련된 대형 검색 모달 트리거 버튼 */}
+          <button
+            type="button"
+            onClick={() => setIsSearchModalOpen(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              height: "38px",
+              padding: "0 16px",
+              background: "#fff",
+              border: "1px solid #cbd5e1",
+              borderRadius: "20px",
+              color: "#374151",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+              transition: "all 0.18s ease",
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "#1a73e8";
+              e.currentTarget.style.color = "#1a73e8";
+              e.currentTarget.style.backgroundColor = "#eff6ff";
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(26, 115, 232, 0.15)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "#cbd5e1";
+              e.currentTarget.style.color = "#374151";
+              e.currentTarget.style.backgroundColor = "#fff";
+              e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.05)";
+            }}
+            title="물건번호, 경매번호, 지역 검색"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </button>
-          </div>
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span>검색</span>
+          </button>
+
           <div style={{ flexShrink: 0 }}>
             <MapTopAuthButtons />
           </div>
         </div>
       </div>
+
+      {/* 대형 풀스크린 검색 오버레이 모달 */}
+      <GongsilSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onSearch={(kw) => {
+          if (setPopoverSearchKeyword) setPopoverSearchKeyword(kw);
+          handleSearch(kw);
+        }}
+        initialKeyword={popoverSearchKeyword || ""}
+      />
     </div>
   );
 }

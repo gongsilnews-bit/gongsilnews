@@ -329,6 +329,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
       } else {
         setShowGalleryModal(false);
         setShowDetail(false);
+        setFilterSearchKeyword("");
+        setPopoverSearchKeyword("");
         if (typeof window !== "undefined") {
           const currentUrl = new URL(window.location.href);
           if (currentUrl.searchParams.has("id")) {
@@ -1539,7 +1541,61 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         setFilterSearchKeyword(trimmed);
       }
     } else {
-      // 일반 주소/지하철/텍스트 검색어인 경우 기존처럼 텍스트 필터링 수행
+      // 1) 경매 관리번호 / 사건번호 매칭 검사
+      const auctionTarget = dbVacancies.find((v) => {
+        const meta = (v as any).metadata || {};
+        const cltrNo = String(meta.cltrMngNo || meta.cltr_mng_no || "");
+        return cltrNo && cltrNo.toLowerCase().includes(trimmed.toLowerCase());
+      });
+
+      if (auctionTarget) {
+        setActiveProperty(auctionTarget.id);
+        setShowDetail(true);
+        setActiveCategory("auction");
+        setIsAuctionMode(true);
+        setActiveMode("경매");
+        setActiveDetailTab("auction_detail");
+        localStorage.setItem("gongsil_category", "auction");
+
+        if (auctionTarget.lat && auctionTarget.lng) {
+          if (kakaoMapRef.current) {
+            const kakao = (window as any).kakao;
+            if (kakao?.maps) {
+              kakaoMapRef.current.panTo(new kakao.maps.LatLng(auctionTarget.lat, auctionTarget.lng));
+              kakaoMapRef.current.setLevel(5);
+            }
+          } else {
+            setPendingPan({ lat: auctionTarget.lat, lng: auctionTarget.lng });
+          }
+        }
+        setSelectedClusterIds([String(auctionTarget.id)]);
+        setFilterSearchKeyword(trimmed);
+        return;
+      }
+
+      // 2) 카카오 지도 키워드/장소/주소 검색 (지하철역, 동 이름, 랜드마크 검색 시 지도 중심 이동)
+      if (typeof window !== "undefined" && (window as any).kakao?.maps?.services) {
+        const kakao = (window as any).kakao;
+        const places = new kakao.maps.services.Places();
+        places.keywordSearch(trimmed, (data: any[], status: any) => {
+          if (status === kakao.maps.services.Status.OK && data.length > 0 && kakaoMapRef.current) {
+            const first = data[0];
+            kakaoMapRef.current.panTo(new kakao.maps.LatLng(Number(first.y), Number(first.x)));
+            kakaoMapRef.current.setLevel(5);
+          } else {
+            const geocoder = new kakao.maps.services.Geocoder();
+            geocoder.addressSearch(trimmed, (geoData: any[], geoStatus: any) => {
+              if (geoStatus === kakao.maps.services.Status.OK && geoData.length > 0 && kakaoMapRef.current) {
+                const firstGeo = geoData[0];
+                kakaoMapRef.current.panTo(new kakao.maps.LatLng(Number(firstGeo.y), Number(firstGeo.x)));
+                kakaoMapRef.current.setLevel(5);
+              }
+            });
+          }
+        });
+      }
+
+      // 3) 일반 주소/지하철/텍스트 검색어인 경우 텍스트 필터링 수행
       setFilterSearchKeyword(trimmed);
     }
   };
@@ -1676,6 +1732,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   };
 
   const handleDetailBack = () => {
+    setFilterSearchKeyword("");
+    setPopoverSearchKeyword("");
     if (window.history.state?.gongsilView === "detail") {
       window.history.back();
     } else {
@@ -2617,6 +2675,10 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
           handleLocationUnavailable={handleLocationUnavailable}
           activeFilterDropdown={activeFilterDropdown}
           dbVacancies={dbVacancies}
+          onResetSearch={() => {
+            setFilterSearchKeyword("");
+            setPopoverSearchKeyword("");
+          }}
         />
 
         {/* 💡 지도가 너무 줌아웃되었을 때 뜨는 "줌인/확대안내" 오버레이 바 */}

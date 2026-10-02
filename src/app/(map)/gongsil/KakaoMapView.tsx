@@ -31,6 +31,7 @@ interface KakaoMapViewProps {
   handleLocationUnavailable: () => void;
   activeFilterDropdown: string | null;
   dbVacancies: any[];
+  onResetSearch?: () => void;
 }
 
 export default function KakaoMapView({
@@ -61,6 +62,7 @@ export default function KakaoMapView({
   handleLocationUnavailable,
   activeFilterDropdown,
   dbVacancies,
+  onResetSearch,
 }: KakaoMapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +83,11 @@ export default function KakaoMapView({
   useEffect(() => {
     selectedClusterIdsRef.current = selectedClusterIds;
   }, [selectedClusterIds]);
+
+  const onResetSearchRef = useRef(onResetSearch);
+  useEffect(() => {
+    onResetSearchRef.current = onResetSearch;
+  }, [onResetSearch]);
 
   useEffect(() => {
     dbVacanciesRef.current = dbVacancies;
@@ -240,6 +247,9 @@ export default function KakaoMapView({
     kakao.maps.event.addListener(map, "dragstart", () => {
       setSelectedClusterIds(null);
       setSelectedRegion(null);
+      if (onResetSearchRef.current) {
+        onResetSearchRef.current();
+      }
     });
 
     kakao.maps.event.addListener(map, "zoom_start", () => {
@@ -772,9 +782,15 @@ export default function KakaoMapView({
           const kakao = (window as any).kakao;
           if (zoomLevel) kakaoMapRef.current.setLevel(zoomLevel);
           kakaoMapRef.current.panTo(new kakao.maps.LatLng(lat, lng));
+          if (onResetSearchRef.current) {
+            onResetSearchRef.current();
+          }
         }}
         onRegionSelect={(sido: any, gugun: any, dong: any) => {
           setSelectedRegion({ sido, gugun, dong });
+          if (onResetSearchRef.current) {
+            onResetSearchRef.current();
+          }
         }}
         themeColor="#1a73e8"
         isPushedDown={activeFilterDropdown !== null}

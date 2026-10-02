@@ -1710,18 +1710,7 @@ function MobileAuctionContent() {
         )}
       </div>
 
-      {/* 🌟 [대표님 지침] 실시간 공실 무료등록 오버레이: 스위치 탭 바로 아래부터 필터바 + 지도를 통째로 덮음 */}
-      {showRegisterPromoOverlay && !isSuperAdmin && (
-        <GongsilRegisterPromoOverlay
-          categoryName="공실"
-          onClose={() => setShowRegisterPromoOverlay(false)}
-          onGoAuction={() => switchMode("경매")}
-          currentUser={currentUser}
-          userLevel={userLevel}
-          isMobile={true}
-          inlineMap={true}
-        />
-      )}
+      {/* 🌟 모바일 무료등록 오버레이 삭제됨 (지도가 바로 열리도록 처리) */}
     </div>
     </div>
 
