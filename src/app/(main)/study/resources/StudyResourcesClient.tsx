@@ -22,11 +22,11 @@ interface BoardMeta {
 }
 
 const TABS = [
-  { key: "drone", label: "드론영상", icon: "🎬" },
-  { key: "app", label: "APP(앱)", icon: "📱" },
-  { key: "prompt", label: "AI 프롬프트", icon: "💡" },
-  { key: "sound", label: "음원", icon: "🎵" },
-  { key: "doc", label: "계약서/양식", icon: "📄" },
+  { key: "drone", label: "드론영상" },
+  { key: "app", label: "APP(앱)" },
+  { key: "prompt", label: "AI 프롬프트" },
+  { key: "sound", label: "음원" },
+  { key: "doc", label: "계약서/양식" },
 ];
 
 // YouTube URL에서 썸네일 이미지 추출
@@ -249,7 +249,6 @@ export default function StudyResourcesClient({
         tabs={TABS.map((tab) => ({
           key: tab.key,
           label: tab.label,
-          icon: tab.icon,
           isActive: activeBoard === tab.key,
           onClick: () => switchBoard(tab.key),
         }))}
