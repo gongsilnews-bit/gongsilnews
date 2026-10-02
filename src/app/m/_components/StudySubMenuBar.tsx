@@ -37,7 +37,7 @@ export default function StudySubMenuBar({ activeMenu, activeTab, onTabChange }: 
     if (pathname.includes("/m/study/apply") || pathname.includes("/m/study/pricing")) return "apply";
     if (pathname.includes("/m/study/benefits") || pathname.includes("/m/study/about")) return "apply";
     if (pathname.includes("/m/board")) {
-      if (boardId === "free" || boardId === "studyqa" || boardId === "notice") return "community";
+      if (boardId === "free" || boardId === "studyqa") return "community";
       return "resources";
     }
     if (pathname.includes("/m/study")) return "lecture";

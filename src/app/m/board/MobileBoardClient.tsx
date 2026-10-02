@@ -21,7 +21,11 @@ const RESOURCE_BOARDS = [
 const COMMUNITY_BOARDS = [
   { id: "free", name: "자유게시판", icon: "💬" },
   { id: "studyqa", name: "Q&A", icon: "❓" },
-  { id: "notice", name: "공지사항", icon: "📢" },
+];
+
+const HELP_BOARDS = [
+  { id: "faq", name: "자주 묻는 질문(FAQ)", href: "/m/help" },
+  { id: "notice", name: "공지사항", href: "/m/board?id=notice" },
 ];
 
 function getYoutubeThumbnail(url: string): string | null {
@@ -192,13 +196,14 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
   const currentBoardId = board?.board_id || "";
   const isResource = RESOURCE_BOARDS.some(b => b.id === currentBoardId);
   const isCommunity = COMMUNITY_BOARDS.some(b => b.id === currentBoardId);
+  const isNotice = currentBoardId === "notice";
   const isStudySection = isResource || isCommunity;
   const subBoards = isResource ? RESOURCE_BOARDS : COMMUNITY_BOARDS;
 
   return (
     <div style={{ width: '100%', backgroundColor: '#f8f9fa', minHeight: '100vh', paddingBottom: '40px', paddingTop: isStudySection ? '48px' : '0px' }}>
-      {/* 공통 상단 헤더 (로고 + 1차 카테고리) */}
-      <MobileTopBarHeader activeTab="study" />
+      {/* 공통 상단 헤더 (로고 + 1차 카테고리) — 공지사항은 고객센터, 스터디 관련은 공실스터디 활성 */}
+      <MobileTopBarHeader activeTab={isNotice ? "help" : (isStudySection ? "study" : "study")} />
       {isStudySection && <StudySubMenuBar />}
 
       {/* 게시판 세부 카테고리 메뉴바 */}
@@ -218,32 +223,58 @@ export default function MobileBoardClient({ board, initialPosts, serverUser, ser
           whiteSpace: 'nowrap',
         }}
       >
-        {subBoards.map((b) => {
-          const isSel = b.id === currentBoardId;
-          return (
-            <button
-              key={b.id}
-              onClick={() => router.push(`/m/board?id=${b.id}`)}
-              style={{
-                flexShrink: 0,
-                padding: '6px 14px',
-                borderRadius: '20px',
-                fontSize: '14px',
-                fontWeight: isSel ? 700 : 500,
-                color: isSel ? '#ffffff' : '#4b5563',
-                backgroundColor: isSel ? '#1a2e50' : '#f3f4f6',
-                border: isSel ? '1px solid #1a2e50' : '1px solid #e5e7eb',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                transition: 'all 0.2s',
-              }}
-            >
-              <span>{b.name}</span>
-            </button>
-          );
-        })}
+        {isNotice ? (
+          HELP_BOARDS.map((b) => {
+            const isSel = b.id === "notice";
+            return (
+              <button
+                key={b.id}
+                onClick={() => router.push(b.href)}
+                style={{
+                  flexShrink: 0,
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '13.5px',
+                  fontWeight: isSel ? 700 : 500,
+                  color: isSel ? '#ffffff' : '#4b5563',
+                  backgroundColor: isSel ? '#1a2e50' : '#f3f4f6',
+                  border: isSel ? '1px solid #1a2e50' : '1px solid #e5e7eb',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <span>{b.name}</span>
+              </button>
+            );
+          })
+        ) : (
+          subBoards.map((b) => {
+            const isSel = b.id === currentBoardId;
+            return (
+              <button
+                key={b.id}
+                onClick={() => router.push(`/m/board?id=${b.id}`)}
+                style={{
+                  flexShrink: 0,
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '14px',
+                  fontWeight: isSel ? 700 : 500,
+                  color: isSel ? '#ffffff' : '#4b5563',
+                  backgroundColor: isSel ? '#059669' : '#f3f4f6',
+                  border: isSel ? '1px solid #059669' : '1px solid #e5e7eb',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <span>{b.name}</span>
+              </button>
+            );
+          })
+        )}
       </div>
 
       {/* 3. 검색창 & 글쓰기 버튼 바 */}

@@ -132,7 +132,45 @@ export default function HelpCenterClient({ data, mobile = false, autoOpenInquiry
         </div>
       </section>
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: mobile ? "4px 0 0" : "16px 20px 0" }}>
+      {/* ── 고객센터 상단 2대 서브탭 (자주 묻는 질문 vs 공지사항) ── */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: mobile ? "12px 16px 0" : "18px 20px 0" }}>
+        <div style={{ display: "flex", gap: 8, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>
+          <button
+            type="button"
+            style={{
+              padding: mobile ? "6px 14px" : "8px 18px",
+              borderRadius: 20,
+              fontSize: mobile ? 13.5 : 14.5,
+              fontWeight: 800,
+              color: "#ffffff",
+              backgroundColor: NAVY,
+              border: `1px solid ${NAVY}`,
+              cursor: "pointer",
+            }}
+          >
+            자주 묻는 질문(FAQ)
+          </button>
+          <Link
+            href={mobile ? "/m/board?id=notice" : "/board?id=notice"}
+            style={{
+              padding: mobile ? "6px 14px" : "8px 18px",
+              borderRadius: 20,
+              fontSize: mobile ? 13.5 : 14.5,
+              fontWeight: 600,
+              color: "#475569",
+              backgroundColor: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+          >
+            공지사항
+          </Link>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: mobile ? "4px 0 0" : "12px 20px 0" }}>
       {/* ── 분류 ── */}
       <div
         className="hide-scrollbar"
