@@ -370,24 +370,12 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "gongsil"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="gongsil" />
                   </div>
-                  <div className="gnb-bubble-parent gnb-dropdown-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                    <Link href="/study/lectures" className={pathname === "/study" || pathname?.startsWith("/study/") || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
+                  <div className="gnb-bubble-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <Link href="/study" className={pathname === "/study" || pathname?.startsWith("/study/") || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
                       <span style={{ position: "relative", zIndex: 1 }}>공실스터디</span>
                       <NavCategoryHighlightMarker categoryKey="study" active={navBubble.key === "study" && !navBubble.leaving && !isSmallHeader} />
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "study"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="study" />
-                    {/* 공실스터디 페이지의 탭(StudyHeader)과 같은 메뉴 */}
-                    <div className="gnb-dropdown">
-                      <ul>
-                        <li><a href="/study">홈</a></li>
-                        <li><a href="/study/lectures">강의목록</a></li>
-                        <li><a href="/study/benefits/vacancy-register">멤버십혜택</a></li>
-                        <li><a href="/study/apply">멤버십신청</a></li>
-                        <li><a href="/study/classroom">나의 강의실</a></li>
-                        <li><a href="/study/resources">자료실</a></li>
-                        <li><a href="/study/community">커뮤니티</a></li>
-                      </ul>
-                    </div>
                   </div>
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
                     <Link href="/help" className={pathname === "/help" || pathname?.startsWith("/help") ? "active" : ""}>고객센터</Link>
