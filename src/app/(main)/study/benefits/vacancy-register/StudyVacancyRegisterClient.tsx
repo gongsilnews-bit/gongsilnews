@@ -28,33 +28,27 @@ export default function StudyVacancyRegisterClient() {
   const workflows = [
     {
       step: "01",
-      title: "콘텐츠 제작",
-      desc: "스터디에서 배운 대로 블로그 글을 쓰거나 유튜브 영상을 업로드합니다.",
-      tag: "블로그 · 유튜브",
+      title: "공실등록 20건",
+      desc: "전국 11만 부동산이 무료 열람하는 공실뉴스에 공실 20건을 등록합니다.",
+      tag: "월 20건 무료",
     },
     {
       step: "02",
-      title: "공실등록 & 기사발행",
-      desc: "11만 부동산 공실뉴스에 공실 20건을 등록하고, 내 콘텐츠로 기사 4편을 발행합니다.",
-      tag: "월 20건 · 월 4편",
+      title: "AI 매매보고서",
+      desc: "등록한 공실 데이터를 기반으로 전문적인 AI 매물보고서가 즉시 완성됩니다.",
+      tag: "1초 자동 초안",
     },
     {
       step: "03",
-      title: "보고서 & 전단지 출력",
-      desc: "등록 즉시 생성된 AI 매물보고서와 쇼윈도 유리창 전단지를 1초 만에 인쇄합니다.",
-      tag: "보고서 출력 · 전단지",
+      title: "유리창 홍보지",
+      desc: "지나가는 고객의 시선을 사로잡는 쇼윈도 유리창 홍보지를 1초 만에 인쇄합니다.",
+      tag: "쇼윈도 마케팅",
     },
     {
       step: "04",
-      title: "내 웹페이지 자동 연동",
-      desc: "등록한 공실과 기사가 나만의 단독 물건접수 웹페이지에 실시간 자동 진열됩니다.",
+      title: "웹페이지 무료 연동",
+      desc: "등록한 공실 매물이 내 단독 물건접수 웹페이지에 실시간으로 자동 진열됩니다.",
       tag: "100% 자동 동기화",
-    },
-    {
-      step: "05",
-      title: "카톡 전달 & 매물접수",
-      desc: "손님에게 카톡 문자로 홈페이지 링크를 보내고, 유튜브·블로그로 매물을 접수받습니다.",
-      tag: "계약 체결 & 고객 유입",
     },
   ];
 
@@ -262,7 +256,7 @@ export default function StudyVacancyRegisterClient() {
                 border: `1px solid ${POINT_BORDER}`,
               }}
             >
-              5 IN 1 REALTY WORKFLOW
+              4 IN 1 REALTY WORKFLOW
             </span>
             <h2
               style={{
@@ -380,118 +374,7 @@ export default function StudyVacancyRegisterClient() {
               </div>
             </div>
 
-            {/* ── BENEFIT 02: 기사 4편 작성 ── */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "0.9fr 1.1fr",
-                gap: 40,
-                alignItems: "center",
-                background: "#ffffff",
-                border: "1px solid #e2e8f0",
-                borderRadius: 20,
-                padding: "44px 40px",
-                boxShadow: "0 6px 20px rgba(0, 0, 0, 0.03)",
-              }}
-            >
-              {/* 이미지 샘플 */}
-              <div
-                style={{
-                  position: "relative",
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  border: "1px solid #cbd5e1",
-                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.08)",
-                  minHeight: 280,
-                  backgroundColor: "#f1f5f9",
-                }}
-              >
-                <Image
-                  src="/images/study/naver-blog-editor-sample.png"
-                  alt="블로그 및 유튜브 기반 기사 4편 작성"
-                  fill
-                  style={{ objectFit: "cover", objectPosition: "top center" }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    background: "rgba(15, 23, 42, 0.85)",
-                    padding: "10px 16px",
-                    color: "#ffffff",
-                    fontSize: 12.5,
-                    fontWeight: 700,
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <span>내 블로그/유튜브 ➔ 정식 보도 기사 변환</span>
-                  <span style={{ color: "#34d399" }}>매월 4편 포털 송고</span>
-                </div>
-              </div>
-
-              <div>
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    background: "#0284c7",
-                    color: "#ffffff",
-                    fontSize: 12.5,
-                    fontWeight: 800,
-                    padding: "4px 12px",
-                    borderRadius: 6,
-                    marginBottom: 16,
-                  }}
-                >
-                  혜택 02 · 언론 브랜딩 & 포털 송고
-                </div>
-                <h3
-                  style={{
-                    fontSize: "26px",
-                    fontWeight: 900,
-                    color: "#062828",
-                    lineHeight: 1.35,
-                    letterSpacing: "-0.5px",
-                    margin: "0 0 16px 0",
-                  }}
-                >
-                  내가 작성한 블로그, 유튜브 영상으로 기사 4편을 매월 작성!<br />
-                  <span style={{ color: "#0284c7" }}>연습이 바로 실전 브랜딩이 된다</span>
-                </h3>
-                <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
-                  강의를 들으며 배운 지식으로 블로그 글을 쓰거나 유튜브 영상을 올리셨나요?
-                  해당 콘텐츠를 바탕으로 공실뉴스 정식 보도 기사 4편을 매달 손쉽게 작성할 수 있습니다.
-                  포털 뉴스에 내 이름과 중개사무소가 기사로 보도되어 압도적인 신뢰도가 쌓입니다.
-                </p>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0284c7", fontSize: 18, lineHeight: 1 }}>✔</span>
-                    <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>블로그·유튜브 링크로 손쉬운 기사화</strong> — 복잡한 작성 없이 내 콘텐츠로 즉시 기사 구성
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0284c7", fontSize: 18, lineHeight: 1 }}>✔</span>
-                    <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>네이버/포털 뉴스 송고</strong> — 언론사 바이라인으로 전문가 권위 획득
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0284c7", fontSize: 18, lineHeight: 1 }}>✔</span>
-                    <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>실전 연습의 힘</strong> — 매달 4건씩 쓰다 보면 글쓰기와 마케팅 실력이 저절로 성장
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ── BENEFIT 03: 등록한 공실이 매물보고서 바로 작성 ── */}
+            {/* ── BENEFIT 02: 등록한 공실이 매물보고서 바로 작성 ── */}
             <div
               style={{
                 display: "grid",
@@ -519,7 +402,7 @@ export default function StudyVacancyRegisterClient() {
                     marginBottom: 16,
                   }}
                 >
-                  혜택 03 · AI 프리미엄 브리핑
+                  혜택 02 · AI 프리미엄 매물보고서
                 </div>
                 <h3
                   style={{
@@ -583,7 +466,7 @@ export default function StudyVacancyRegisterClient() {
               </div>
             </div>
 
-            {/* ── BENEFIT 04: 부동산 유리창 전단지 홍보물 ── */}
+            {/* ── BENEFIT 03: 부동산 유리창 홍보물 ── */}
             <div
               style={{
                 display: "grid",
@@ -597,7 +480,7 @@ export default function StudyVacancyRegisterClient() {
                 boxShadow: "0 6px 20px rgba(251, 146, 60, 0.06)",
               }}
             >
-              {/* 유리창 전단지 실사 이미지 */}
+              {/* 유리창 홍보지 실사 이미지 */}
               <div
                 style={{
                   position: "relative",
@@ -611,7 +494,7 @@ export default function StudyVacancyRegisterClient() {
               >
                 <Image
                   src="/images/study/benefit_window_flyer.jpg"
-                  alt="부동산 유리창 쇼윈도 전단지 홍보물 실사"
+                  alt="부동산 유리창 쇼윈도 홍보물 실사"
                   fill
                   style={{ objectFit: "cover", objectPosition: "center" }}
                 />
@@ -650,7 +533,7 @@ export default function StudyVacancyRegisterClient() {
                     marginBottom: 16,
                   }}
                 >
-                  혜택 04 · 쇼윈도 워크인 마케팅
+                  혜택 03 · 쇼윈도 워크인 마케팅
                 </div>
                 <h3
                   style={{
@@ -662,12 +545,12 @@ export default function StudyVacancyRegisterClient() {
                     margin: "0 0 16px 0",
                   }}
                 >
-                  부동산 유리창 전단지 홍보물로 바로 만들어짐!<br />
+                  부동산 유리창 홍보물로 바로 만들어짐!<br />
                   <span style={{ color: "#ea580c" }}>디자인 걱정 없이 원클릭 인쇄</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
                   포토샵이나 디자인 프로그램 필요 없이, 등록한 공실 매물 데이터로
-                  부동산 쇼윈도(유리창)에 딱 맞는 홍보 전단지가 원클릭으로 생성됩니다.
+                  부동산 쇼윈도(유리창)에 딱 맞는 홍보지가 원클릭으로 생성됩니다.
                   매물 사진, 가격(보증금/월세), 핵심 입지와 함께 상세 페이지로 즉시 연결되는 QR코드까지
                   완벽하게 배치되어 지나가는 손님의 발길을 멈추게 합니다.
                 </p>
@@ -695,7 +578,7 @@ export default function StudyVacancyRegisterClient() {
               </div>
             </div>
 
-            {/* ── BENEFIT 05: 등록한 공실과 기사가 실시간으로 내 물건접수 웹페이지 연동 ── */}
+            {/* ── BENEFIT 04: 등록한 공실이 실시간으로 내 물건접수 웹페이지 연동 ── */}
             <div
               style={{
                 display: "grid",
@@ -723,7 +606,7 @@ export default function StudyVacancyRegisterClient() {
                     marginBottom: 16,
                   }}
                 >
-                  혜택 05 · 나만의 공식 웹사이트
+                  혜택 04 · 나만의 공식 웹사이트
                 </div>
                 <h3
                   style={{
@@ -735,12 +618,12 @@ export default function StudyVacancyRegisterClient() {
                     margin: "0 0 16px 0",
                   }}
                 >
-                  등록한 공실과 기사가 실시간으로 내 물건접수 웹페이지에 연동!<br />
+                  등록한 공실이 실시간으로 내 물건접수 웹페이지에 연동!<br />
                   <span style={{ color: POINT }}>유튜브·블로그 링크 홍보 & 카톡 홈페이지 활용</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
                   멤버십 회원에게는 나만의 독립된 &lsquo;물건접수 웹페이지(공인중개사 홈페이지)&rsquo;가 무료로 제공됩니다.
-                  등록한 20건의 공실과 작성한 4편의 기사가 내 홈페이지에 실시간으로 자동 동기화되어 채워집니다.
+                  등록한 20건의 공실이 내 홈페이지에 실시간으로 자동 동기화되어 채워집니다.
                   유튜브 영상 더보기란이나 블로그 프로필에 링크만 걸어두면 매물 접수와 문의가 저절로 쏟아지며,
                   손님에게도 명함 대신 &ldquo;저희 공식 홈페이지입니다&rdquo; 하고 카톡/문자로 공유할 수 있습니다.
                 </p>
@@ -749,7 +632,7 @@ export default function StudyVacancyRegisterClient() {
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>수백만 원대 홈페이지 제작비 0원</strong> — 공실 등록과 기사 작성이 실시간으로 자동 연동
+                      <strong>수백만 원대 홈페이지 제작비 0원</strong> — 공실 등록이 실시간으로 자동 연동
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
@@ -820,8 +703,8 @@ export default function StudyVacancyRegisterClient() {
               어떻게 내 실무 매출로 연결되나요?
             </h2>
             <p style={{ fontSize: "15px", color: "#94a3b8", lineHeight: 1.6, margin: 0 }}>
-              학습에서 끝나는 교육이 아니라, 매월 20건의 공실과 4편의 기사가 내 전용 홈페이지와 보고서로
-              즉시 전환되는 5단계 성공 사이클입니다.
+              학습에서 끝나는 교육이 아니라, 매월 20건의 공실이 내 전용 웹페이지와 보고서, 홍보지로
+              즉시 전환되는 4단계 성공 사이클입니다.
             </p>
           </div>
 
@@ -910,7 +793,7 @@ export default function StudyVacancyRegisterClient() {
                 border: "1px solid rgba(255, 255, 255, 0.3)",
               }}
             >
-              1년 연간 특강 VOD 무제한 + 5대 실무 무기 풀패키지
+              1년 연간 특강 VOD 무제한 + 4대 실무 마케팅 풀패키지
             </div>
 
             <h3
@@ -922,8 +805,8 @@ export default function StudyVacancyRegisterClient() {
                 margin: "0 0 16px 0",
               }}
             >
-              공실등록 20건 · 기사작성 4편 · AI 매물보고서<br />
-              전단지 · 나만의 웹페이지까지 월 3만원대로 시작하세요
+              공실등록 20건 · AI 매매보고서 · 유리창 홍보지<br />
+              나만의 웹페이지까지 월 3만원대로 시작하세요
             </h3>
 
             <p
