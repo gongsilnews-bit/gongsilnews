@@ -151,9 +151,9 @@ export default function StudyVacancyRegisterClient() {
                   color: "#ffffff",
                 }}
               >
-                공실 20건, 기사 4/월!<br />
+                공실등록 20건!<br />
                 <span style={{ color: "#34d399" }}>
-                  공실뉴스에 꾸준히 공동중개 물건 등록!
+                  AI매매보고서, 유리창홍보지, 웹페이지 무료
                 </span>
               </h1>
 
