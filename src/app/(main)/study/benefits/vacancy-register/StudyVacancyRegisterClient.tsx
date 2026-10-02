@@ -700,7 +700,8 @@ export default function StudyVacancyRegisterClient() {
                 letterSpacing: "-0.8px",
               }}
             >
-              어떻게 내 실무 매출로 연결되나요?
+              공실만 등록하세요!<br />
+              매매보고서부터 홈페이지까지~ 알아서 다 해드립니다
             </h2>
             <p style={{ fontSize: "15px", color: "#94a3b8", lineHeight: 1.6, margin: 0 }}>
               학습에서 끝나는 교육이 아니라, 매월 20건의 공실이 내 전용 웹페이지와 보고서, 홍보지로
