@@ -524,7 +524,6 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
   const { cardBg, textPrimary, textSecondary, border } = theme;
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [applyToExisting, setApplyToExisting] = useState(false);
   const [formData, setFormData] = useState({
     LIMIT_USER_VACANCY: 10,
     LIMIT_USER_ARTICLE: 0,
@@ -604,7 +603,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
 
   const handleSave = async () => {
     setSaving(true);
-    const res = await adminUpdateLimitPolicies(formData, applyToExisting);
+    const res = await adminUpdateLimitPolicies(formData);
     setSaving(false);
     if (res.success) {
       const n = (res as any).applied ?? 0;
@@ -678,7 +677,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
     <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: `1px solid ${border}`, padding: 28 }}>
       <h2 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, margin: "0 0 8px 0" }}>회원 등급별 기본 한도 설정</h2>
       <p style={{ fontSize: 13, color: textSecondary, margin: "0 0 24px 0" }}>
-        신규 회원가입 및 승인 시 적용되는 각 회원 등급별 기본 등록 한도를 관리합니다.
+        신규 회원가입 및 승인 시 적용되는 각 회원 등급별 기본 등록 한도를 관리합니다. 회원 수정에서 [회원별 적용]을 선택한 공실·기사·강의 한도는 일괄 적용에서 제외됩니다.
       </p>
 
       <div style={sectionStyle}>
@@ -802,19 +801,8 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
         ))}
       </div>
 
-      {/* 옵션 및 저장 버튼 */}
-      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: textPrimary, cursor: "pointer" }}>
-          <input type="checkbox" checked={applyToExisting} onChange={e => setApplyToExisting(e.target.checked)} style={{ accentColor: "#3b82f6", width: 16, height: 16 }} />
-          <span>
-            회원 화면에서 따로 조정해 둔 사람까지 <strong>전부 이 값으로 되돌립니다</strong>
-            <br />
-            <span style={{ fontSize: 12.5, color: textSecondary, fontWeight: 600 }}>
-              체크하지 않아도 저장하면 이 값이 해당 등급 회원에게 바로 적용됩니다. 개별 조정한 회원만 그대로 둡니다.
-            </span>
-          </span>
-        </label>
-
+      {/* 저장 버튼 */}
+      <div style={{ marginTop: 24 }}>
         <button
           onClick={handleSave}
           disabled={saving}
@@ -835,7 +823,7 @@ function MemberPolicySettings({ theme, darkMode }: { theme: any, darkMode: boole
             gap: 8,
           }}
         >
-          {saving ? "저장 중..." : "설정 저장 및 일괄 적용"}
+          {saving ? "저장 중..." : "저장 및 등급별 적용"}
         </button>
       </div>
     </div>

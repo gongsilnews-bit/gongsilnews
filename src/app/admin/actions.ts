@@ -41,19 +41,35 @@ export async function adminCreateMember(formData: FormData) {
     if (authData.user) {
       let sns_links = {};
       try { sns_links = JSON.parse(formData.get("sns_links") as string || "{}"); } catch(e) {}
+
+      const dbRole = role === '최고관리자' ? 'ADMIN' : role === '부동산회원' ? 'REALTOR' : role === '비즈니스회원' ? 'BIZ' : 'USER';
+      const planType = formData.get("plan_type") as string || 'free';
+      const useCustomRegistrationLimits = formData.get("use_custom_registration_limits") === "true";
+      const { policies } = await adminGetLimitPolicies();
+      const defaults = planDefaults(policies, dbRole, planType);
+      const registrationLimits = useCustomRegistrationLimits
+        ? {
+            max_vacancies: parseInt(formData.get("max_vacancies") as string || "0", 10),
+            max_articles_per_month: parseInt(formData.get("max_articles_per_month") as string || "0", 10),
+            max_lectures: parseInt(formData.get("max_lectures") as string || "0", 10),
+          }
+        : {
+            max_vacancies: defaults.max_vacancies,
+            max_articles_per_month: defaults.max_articles_per_month,
+            max_lectures: defaults.max_lectures,
+          };
       
       const { error: memberError } = await supabaseAdmin.from('members').upsert({
         id: authData.user.id,
         email, name, phone,
-        role: role === '최고관리자' ? 'ADMIN' : role === '부동산회원' ? 'REALTOR' : role === '비즈니스회원' ? 'BIZ' : 'USER',
+        role: dbRole,
         sns_links,
         signup_completed: true,
-        plan_type: formData.get("plan_type") as string || 'free',
+        plan_type: planType,
         plan_start_date: formData.get("plan_start_date") as string || null,
         plan_end_date: formData.get("plan_end_date") as string || null,
-        max_vacancies: parseInt(formData.get("max_vacancies") as string || "5", 10),
-        max_articles_per_month: parseInt(formData.get("max_articles_per_month") as string || "0", 10),
-        max_lectures: parseInt(formData.get("max_lectures") as string || "0", 10)
+        use_custom_registration_limits: useCustomRegistrationLimits,
+        ...registrationLimits,
       }, { onConflict: 'id' });
       if (memberError) return { success: false, error: memberError.message };
     }
@@ -76,6 +92,7 @@ export async function adminUpdateMember(memberId: string, updates: {
   max_vacancies?: number;
   max_articles_per_month?: number;
   max_lectures?: number;
+  use_custom_registration_limits?: boolean;
   profile_image_url?: string | null;
   can_article_banner?: boolean;
   can_article_vacancy_banner?: boolean;
@@ -97,9 +114,6 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.plan_type !== undefined) dbUpdates.plan_type = updates.plan_type;
     if (updates.plan_start_date !== undefined) dbUpdates.plan_start_date = updates.plan_start_date;
     if (updates.plan_end_date !== undefined) dbUpdates.plan_end_date = updates.plan_end_date;
-    if (updates.max_vacancies !== undefined) dbUpdates.max_vacancies = updates.max_vacancies;
-    if (updates.max_articles_per_month !== undefined) dbUpdates.max_articles_per_month = updates.max_articles_per_month;
-    if (updates.max_lectures !== undefined) dbUpdates.max_lectures = updates.max_lectures;
     if (updates.profile_image_url !== undefined) dbUpdates.profile_image_url = updates.profile_image_url;
     // 최고관리자가 회원 화면에서 직접 체크한 값. 등급과 무관하게 이 값이 그대로 들어간다.
     if (updates.can_article_banner !== undefined) dbUpdates.can_article_banner = updates.can_article_banner;
@@ -112,31 +126,72 @@ export async function adminUpdateMember(memberId: string, updates: {
     if (updates.can_hero_video !== undefined) dbUpdates.can_hero_video = updates.can_hero_video;
     if (updates.can_sns_links !== undefined) dbUpdates.can_sns_links = updates.can_sns_links;
 
-    if (updates.role === 'USER' || updates.role === 'BIZ' || updates.role === 'REALTOR') {
+    const { data: currentMember, error: currentMemberError } = await supabaseAdmin
+      .from('members')
+      .select('role, plan_type, use_custom_registration_limits')
+      .eq('id', memberId)
+      .single();
+    if (currentMemberError) return { success: false, error: currentMemberError.message };
+
+    const nextRole = updates.role ?? currentMember.role;
+    let nextPlanType = updates.plan_type ?? currentMember.plan_type;
+    if (updates.role === 'USER') nextPlanType = 'free';
+    if (updates.role === 'BIZ') nextPlanType = 'biz_premium';
+
+    const useCustomRegistrationLimits = updates.use_custom_registration_limits
+      ?? !!currentMember.use_custom_registration_limits;
+    if (updates.use_custom_registration_limits !== undefined) {
+      dbUpdates.use_custom_registration_limits = updates.use_custom_registration_limits;
+    }
+
+    const isManagedGrade = nextRole === 'USER' || nextRole === 'BIZ' || nextRole === 'REALTOR';
+    const gradeChanged = updates.role !== undefined || updates.plan_type !== undefined;
+    const registrationLimitsSubmitted = updates.max_vacancies !== undefined
+      || updates.max_articles_per_month !== undefined
+      || updates.max_lectures !== undefined;
+
+    if (isManagedGrade && (gradeChanged || registrationLimitsSubmitted || updates.use_custom_registration_limits !== undefined)) {
       const { policies } = await adminGetLimitPolicies();
       if (updates.role === 'USER') dbUpdates.plan_type = 'free';
       if (updates.role === 'BIZ') dbUpdates.plan_type = 'biz_premium';
 
-      // 화면이 보내지 않은 항목만 등급 기본값으로 채운다. 보낸 값은 건드리지 않는다.
-      const defaults = planDefaults(policies, updates.role, dbUpdates.plan_type ?? updates.plan_type);
-      if (updates.max_vacancies === undefined) dbUpdates.max_vacancies = defaults.max_vacancies;
-      if (updates.max_articles_per_month === undefined) dbUpdates.max_articles_per_month = defaults.max_articles_per_month;
-      if (updates.max_lectures === undefined) dbUpdates.max_lectures = defaults.max_lectures;
-      if (updates.can_article_banner === undefined) dbUpdates.can_article_banner = defaults.can_article_banner;
-      if (updates.can_article_vacancy_banner === undefined) dbUpdates.can_article_vacancy_banner = defaults.can_article_vacancy_banner;
-      if (updates.can_homepage === undefined) dbUpdates.can_homepage = defaults.can_homepage;
-      if (updates.max_hero_slides === undefined) dbUpdates.max_hero_slides = defaults.max_hero_slides;
-      if (updates.can_hide_footer_badge === undefined) dbUpdates.can_hide_footer_badge = defaults.can_hide_footer_badge;
-      if (updates.can_intake_photo === undefined) dbUpdates.can_intake_photo = defaults.can_intake_photo;
-      if (updates.can_site_logo === undefined) dbUpdates.can_site_logo = defaults.can_site_logo;
-      if (updates.can_hero_video === undefined) dbUpdates.can_hero_video = defaults.can_hero_video;
-      if (updates.can_sns_links === undefined) dbUpdates.can_sns_links = defaults.can_sns_links;
+      const defaults = planDefaults(policies, nextRole, nextPlanType);
+
+      // 회원별 적용일 때만 입력값을 저장한다. 등급별 적용이면 직접 전달된 숫자가 있어도
+      // 현재 등급의 최신 기본값으로 고정해 화면 우회 요청으로 예외값이 생기지 않게 한다.
+      if (useCustomRegistrationLimits) {
+        if (updates.max_vacancies !== undefined) dbUpdates.max_vacancies = updates.max_vacancies;
+        if (updates.max_articles_per_month !== undefined) dbUpdates.max_articles_per_month = updates.max_articles_per_month;
+        if (updates.max_lectures !== undefined) dbUpdates.max_lectures = updates.max_lectures;
+      } else {
+        dbUpdates.max_vacancies = defaults.max_vacancies;
+        dbUpdates.max_articles_per_month = defaults.max_articles_per_month;
+        dbUpdates.max_lectures = defaults.max_lectures;
+      }
+
+      // 등급이나 요금제가 바뀔 때만 나머지 권한도 새 등급 기본값으로 채운다.
+      if (gradeChanged) {
+        if (updates.can_article_banner === undefined) dbUpdates.can_article_banner = defaults.can_article_banner;
+        if (updates.can_article_vacancy_banner === undefined) dbUpdates.can_article_vacancy_banner = defaults.can_article_vacancy_banner;
+        if (updates.can_homepage === undefined) dbUpdates.can_homepage = defaults.can_homepage;
+        if (updates.max_hero_slides === undefined) dbUpdates.max_hero_slides = defaults.max_hero_slides;
+        if (updates.can_hide_footer_badge === undefined) dbUpdates.can_hide_footer_badge = defaults.can_hide_footer_badge;
+        if (updates.can_intake_photo === undefined) dbUpdates.can_intake_photo = defaults.can_intake_photo;
+        if (updates.can_site_logo === undefined) dbUpdates.can_site_logo = defaults.can_site_logo;
+        if (updates.can_hero_video === undefined) dbUpdates.can_hero_video = defaults.can_hero_video;
+        if (updates.can_sns_links === undefined) dbUpdates.can_sns_links = defaults.can_sns_links;
+      }
 
       if (updates.role === 'USER') {
         // Update agencies and business_profiles status to REJECTED
         await supabaseAdmin.from('agencies').update({ status: 'REJECTED', reject_reason: '관리자에 의한 일반회원 전환' }).eq('owner_id', memberId);
         await supabaseAdmin.from('business_profiles').update({ status: 'REJECTED', rejection_reason: '관리자에 의한 일반회원 전환', updated_at: new Date().toISOString() }).eq('user_id', memberId);
       }
+    } else {
+      // 최고관리자 등 등급 정책 대상이 아닌 회원은 전달받은 숫자를 그대로 저장한다.
+      if (updates.max_vacancies !== undefined) dbUpdates.max_vacancies = updates.max_vacancies;
+      if (updates.max_articles_per_month !== undefined) dbUpdates.max_articles_per_month = updates.max_articles_per_month;
+      if (updates.max_lectures !== undefined) dbUpdates.max_lectures = updates.max_lectures;
     }
 
     const { error } = await supabaseAdmin.from('members').update(dbUpdates).eq('id', memberId);
@@ -241,12 +296,13 @@ export async function adminApproveRealtorApplication(memberId: string) {
       .eq('owner_id', memberId);
     if (agencyError) return { success: false, error: agencyError.message };
 
-    // 2. 현재 회원의 plan_type을 확인
-    const { data: member } = await supabaseAdmin
+    // 2. 현재 회원의 plan_type과 회원별 한도 적용 여부를 확인
+    const { data: member, error: memberLookupError } = await supabaseAdmin
       .from('members')
-      .select('plan_type')
+      .select('plan_type, use_custom_registration_limits')
       .eq('id', memberId)
       .single();
+    if (memberLookupError) return { success: false, error: memberLookupError.message };
 
     const planType = member?.plan_type || 'free';
     const { policies } = await adminGetLimitPolicies();
@@ -255,7 +311,7 @@ export async function adminApproveRealtorApplication(memberId: string) {
       .from('members')
       .update({
         role: 'REALTOR',
-        ...planDefaults(policies, 'REALTOR', planType),
+        ...planDefaultsForMember(policies, 'REALTOR', planType, !!member?.use_custom_registration_limits),
       })
       .eq('id', memberId);
     if (memberError) return { success: false, error: memberError.message };
@@ -716,14 +772,20 @@ export async function adminApproveBusinessApplication(memberId: string) {
       .eq('user_id', memberId);
     if (bizError) return { success: false, error: bizError.message };
 
-    // 2. members.role을 BIZ로 변경, 비즈니스 요금제 및 한도 적용
+    // 2. members.role을 BIZ로 변경. 회원별 한도를 쓰는 회원의 세 숫자는 유지한다.
+    const { data: member, error: memberLookupError } = await supabaseAdmin
+      .from('members')
+      .select('use_custom_registration_limits')
+      .eq('id', memberId)
+      .single();
+    if (memberLookupError) return { success: false, error: memberLookupError.message };
     const { policies } = await adminGetLimitPolicies();
     const { error: memberError } = await supabaseAdmin
       .from('members')
       .update({
         role: 'BIZ',
         plan_type: 'biz_premium',
-        ...planDefaults(policies, 'BIZ'),
+        ...planDefaultsForMember(policies, 'BIZ', 'biz_premium', !!member?.use_custom_registration_limits),
       })
       .eq('id', memberId);
     if (memberError) return { success: false, error: memberError.message };
@@ -814,6 +876,12 @@ const DEFAULT_LIMIT_POLICIES = {
   PERM_BIZ_HERO_VIDEO: 1,
   PERM_BIZ_SNS_LINKS: 1,
 };
+
+const REGISTRATION_LIMIT_FIELDS = new Set<string>([
+  'max_vacancies',
+  'max_articles_per_month',
+  'max_lectures',
+]);
 
 /**
  * 등급이 회원에게 내려주는 기본값 한 벌.
@@ -908,6 +976,26 @@ function planDefaults(
 }
 
 /**
+ * 등급·요금제가 바뀔 때 회원별 등록 한도를 쓰는 사람의 세 숫자는 빼고
+ * 나머지 등급 권한만 적용한다.
+ */
+function planDefaultsForMember(
+  policies: typeof DEFAULT_LIMIT_POLICIES,
+  role: string,
+  planType: string | null | undefined,
+  useCustomRegistrationLimits: boolean
+) {
+  const defaults = planDefaults(policies, role, planType);
+  if (!useCustomRegistrationLimits) return defaults;
+
+  const permissions: Partial<typeof defaults> = { ...defaults };
+  delete permissions.max_vacancies;
+  delete permissions.max_articles_per_month;
+  delete permissions.max_lectures;
+  return permissions;
+}
+
+/**
  * 지금 등급별 설정 기준으로 그 등급 회원이 받을 한도·권한 한 벌.
  * 회원가입을 마칠 때처럼 관리자 화면 밖에서 등급 기본값을 넣어야 할 때 쓴다.
  */
@@ -946,24 +1034,18 @@ export async function adminGetLimitPolicies() {
  * 화면에 적어둔 값과 실제로 돌아가는 값이 갈라진다 — 실제로 갈라져 있었다.
  * 정책은 공실 50인데 회원은 20, 같은 등급 안에서도 사람마다 달랐다.
  *
- * 표에서 바꾼 칸은 그 등급 회원 전원에게 똑같이 내려간다. 회원 화면에서 따로 손봐 둔
- * 사람도 따라간다 — "최고관리자가 등급을 바꾸면 바뀌어야 한다" (2026-09-30 사장님).
- * 예전에는 손본 사람을 건너뛰어서, 일반회원 기사 한도를 3으로 바꿔도 0인 채 남은 회원이 있었다.
- * 표에서 바꾸지 않은 칸은 회원별 값을 그대로 둔다 (다른 칸을 저장하다 개별 설정이 지워지지 않도록).
+ * 표에서 바꾼 칸은 그 등급 회원에게 바로 내려간다. 다만 회원 화면에서
+ * [회원별 적용]을 선택한 사람의 공실·기사·강의 한도 세 칸은 명시적으로 제외한다.
+ * 표에서 바꾸지 않은 칸은 회원별 값을 그대로 둔다 (다른 칸을 저장하다 값이 지워지지 않도록).
  *
- * force 가 켜지면 바꾸지 않은 칸까지 전부 새 기본값으로 되돌린다.
+ * force 가 켜지면 바꾸지 않은 칸까지 새 기본값으로 되돌린다.
+ * 이때도 [회원별 적용] 회원의 등록 한도 세 칸은 건드리지 않는다.
  */
 export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_POLICIES, force: boolean = false) {
   const supabaseAdmin = getAdminClient();
   try {
     // 바꾸기 전 값을 먼저 잡아둔다. 어느 칸을 바꿨는지 이것으로 가린다.
     const { policies: previous } = await adminGetLimitPolicies();
-
-    const rows = Object.entries(policies).map(([key, value]) => ({ key, value }));
-    const { error: upsertError } = await supabaseAdmin
-      .from('point_settings')
-      .upsert(rows, { onConflict: 'key' });
-    if (upsertError) return { success: false, error: upsertError.message };
 
     const FIELDS = [
       'max_vacancies',
@@ -980,18 +1062,28 @@ export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_PO
       'can_sns_links',
     ] as const;
 
-    const { data: members } = await supabaseAdmin
+    // 회원을 읽을 수 있는지 먼저 확인한다. 정책을 먼저 저장하면 스키마 오류가 나도
+    // 정책만 바뀌고 회원 한도는 그대로 남는 반쪽 저장이 생긴다.
+    const { data: members, error: membersError } = await supabaseAdmin
       .from('members')
-      .select(['id', 'role', 'plan_type', ...FIELDS].join(', '))
+      .select(['id', 'role', 'plan_type', 'use_custom_registration_limits', ...FIELDS].join(', '))
       .in('role', ['USER', 'BIZ', 'REALTOR']);
+    if (membersError) return { success: false, error: membersError.message };
+
+    const rows = Object.entries(policies).map(([key, value]) => ({ key, value }));
+    const { error: upsertError } = await supabaseAdmin
+      .from('point_settings')
+      .upsert(rows, { onConflict: 'key' });
+    if (upsertError) return { success: false, error: upsertError.message };
 
     let applied = 0;
-    for (const m of (members || []) as any[]) {
+    for (const m of members as any[]) {
       const before = planDefaults(previous, m.role, m.plan_type) as any;
       const after = planDefaults(policies, m.role, m.plan_type) as any;
 
       const patch: Record<string, any> = {};
       for (const f of FIELDS) {
+        if (m.use_custom_registration_limits && REGISTRATION_LIMIT_FIELDS.has(f)) continue;
         if (after[f] === undefined) continue;
         if (after[f] === m[f]) continue;                    // 이미 새 값이다
         if (!force && after[f] === before[f]) continue;     // 표에서 이 칸은 안 바꿨다 → 회원별 값 유지
@@ -999,7 +1091,8 @@ export async function adminUpdateLimitPolicies(policies: typeof DEFAULT_LIMIT_PO
       }
 
       if (Object.keys(patch).length) {
-        await supabaseAdmin.from('members').update(patch).eq('id', m.id);
+        const { error: memberUpdateError } = await supabaseAdmin.from('members').update(patch).eq('id', m.id);
+        if (memberUpdateError) return { success: false, error: memberUpdateError.message };
         applied += 1;
       }
     }

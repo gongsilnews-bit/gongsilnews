@@ -43,6 +43,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     max_vacancies: 5,
     max_articles_per_month: 0,
     max_lectures: 0,
+    use_custom_registration_limits: false,
     can_article_banner: false,
     can_article_vacancy_banner: false,
     can_homepage: false,
@@ -175,6 +176,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             max_vacancies: res.member.max_vacancies ?? 5,
             max_articles_per_month: res.member.max_articles_per_month ?? 0,
             max_lectures: res.member.max_lectures ?? 0,
+            use_custom_registration_limits: !!res.member.use_custom_registration_limits,
             can_article_banner: !!res.member.can_article_banner,
             can_article_vacancy_banner: !!res.member.can_article_vacancy_banner,
             can_homepage: !!res.member.can_homepage,
@@ -373,6 +375,27 @@ function gradeDefaults(p: any, role: string, planType?: string) {
   };
 }
 
+  useEffect(() => {
+    if (!policies || !initialFetchDone || formData.use_custom_registration_limits) return;
+
+    const defaults = gradeDefaults(policies, formData.role, formData.plan_type);
+    setFormData(prev => {
+      if (prev.use_custom_registration_limits) return prev;
+      if (
+        prev.max_vacancies === defaults.max_vacancies
+        && prev.max_articles_per_month === defaults.max_articles_per_month
+        && prev.max_lectures === defaults.max_lectures
+      ) return prev;
+
+      return {
+        ...prev,
+        max_vacancies: defaults.max_vacancies,
+        max_articles_per_month: defaults.max_articles_per_month,
+        max_lectures: defaults.max_lectures,
+      };
+    });
+  }, [policies, initialFetchDone, formData.role, formData.plan_type, formData.use_custom_registration_limits]);
+
   const handleMemberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     // 체크박스는 value 가 늘 "on" 이라 checked 를 봐야 한다
     const isCheckbox = e.target instanceof HTMLInputElement && e.target.type === "checkbox";
@@ -387,14 +410,19 @@ function gradeDefaults(p: any, role: string, planType?: string) {
       const currentPolicies = policies || {
         LIMIT_USER_VACANCY: 10,
         LIMIT_USER_ARTICLE: 0,
+        LIMIT_USER_LECTURE: 0,
         LIMIT_REALTOR_FREE_VACANCY: 10,
         LIMIT_REALTOR_FREE_ARTICLE: 0,
+        LIMIT_REALTOR_FREE_LECTURE: 0,
         LIMIT_REALTOR_NEWS_VACANCY: 50,
         LIMIT_REALTOR_NEWS_ARTICLE: 4,
+        LIMIT_REALTOR_NEWS_LECTURE: 3,
         LIMIT_REALTOR_STUDY_VACANCY: 20,
         LIMIT_REALTOR_STUDY_ARTICLE: 4,
+        LIMIT_REALTOR_STUDY_LECTURE: 3,
         LIMIT_BIZ_VACANCY: 0,
         LIMIT_BIZ_ARTICLE: 10,
+        LIMIT_BIZ_LECTURE: 3,
         PERM_USER_ARTICLE_BANNER: 0,
         PERM_USER_ARTICLE_VACANCY: 0,
         PERM_USER_HOMEPAGE: 0,
@@ -464,7 +492,13 @@ function gradeDefaults(p: any, role: string, planType?: string) {
 
         if (afterRole !== beforeRole || afterPlan !== beforePlan) {
           const after: Record<string, any> = gradeDefaults(currentPolicies, afterRole, afterPlan);
-          for (const key of Object.keys(after)) (next as any)[key] = after[key];
+          for (const key of Object.keys(after)) {
+            const isRegistrationLimit = key === "max_vacancies"
+              || key === "max_articles_per_month"
+              || key === "max_lectures";
+            if (prev.use_custom_registration_limits && isRegistrationLimit) continue;
+            (next as any)[key] = after[key];
+          }
         }
       }
       return next;
@@ -554,6 +588,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
         form.append("max_vacancies", String(formData.max_vacancies));
         form.append("max_articles_per_month", String(formData.max_articles_per_month));
         form.append("max_lectures", String(formData.max_lectures));
+        form.append("use_custom_registration_limits", String(formData.use_custom_registration_limits));
 
         const memberRes = await adminCreateMember(form);
 
@@ -586,6 +621,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           max_vacancies: Number(formData.max_vacancies) || 0,
           max_articles_per_month: Number(formData.max_articles_per_month) || 0,
           max_lectures: Number(formData.max_lectures) || 0,
+          use_custom_registration_limits: !!formData.use_custom_registration_limits,
           can_article_banner: !!formData.can_article_banner,
           can_article_vacancy_banner: !!formData.can_article_vacancy_banner,
           can_homepage: !!formData.can_homepage,
@@ -763,6 +799,103 @@ function gradeDefaults(p: any, role: string, planType?: string) {
   const labelStyle = { width: 180, fontSize: 13, fontWeight: 700, color: darkMode ? "#e1e4e8" : "#111827", flexShrink: 0, padding: "16px 20px", display: "flex", alignItems: "center", background: darkMode ? "#25262b" : "#f9fafb", borderRight: `1px solid ${darkMode ? "#333" : "#e5e7eb"}` };
   const rowStyle = { display: "flex", borderBottom: `1px solid ${darkMode ? "#333" : "#e5e7eb"}` };
   const contentStyle = { flex: 1, padding: "16px 20px", display: "flex", alignItems: "center" };
+
+  const setRegistrationLimitMode = (useCustom: boolean) => {
+    setFormData(prev => {
+      if (useCustom) {
+        return { ...prev, use_custom_registration_limits: true };
+      }
+
+      // 등급별 적용으로 돌아갈 때 화면의 세 숫자도 현재 등급 기본값으로 즉시 맞춘다.
+      // 서버에서도 같은 값을 다시 계산하므로 저장 요청을 우회해도 예외값이 남지 않는다.
+      const limitPolicies = policies || {
+        LIMIT_USER_VACANCY: 10,
+        LIMIT_USER_ARTICLE: 0,
+        LIMIT_USER_LECTURE: 0,
+        LIMIT_REALTOR_FREE_VACANCY: 10,
+        LIMIT_REALTOR_FREE_ARTICLE: 0,
+        LIMIT_REALTOR_FREE_LECTURE: 0,
+        LIMIT_REALTOR_STUDY_VACANCY: 20,
+        LIMIT_REALTOR_STUDY_ARTICLE: 4,
+        LIMIT_REALTOR_STUDY_LECTURE: 3,
+        LIMIT_REALTOR_NEWS_VACANCY: 50,
+        LIMIT_REALTOR_NEWS_ARTICLE: 4,
+        LIMIT_REALTOR_NEWS_LECTURE: 3,
+        LIMIT_BIZ_VACANCY: 0,
+        LIMIT_BIZ_ARTICLE: 10,
+        LIMIT_BIZ_LECTURE: 3,
+      };
+      const defaults = gradeDefaults(limitPolicies, prev.role, prev.plan_type);
+      return {
+        ...prev,
+        use_custom_registration_limits: false,
+        max_vacancies: defaults.max_vacancies,
+        max_articles_per_month: defaults.max_articles_per_month,
+        max_lectures: defaults.max_lectures,
+      };
+    });
+  };
+
+  const registrationLimitSettings = (
+    <div style={rowStyle}>
+      <div style={labelStyle}>등록 한도 적용 방식</div>
+      <div style={{ ...contentStyle, flexDirection: "column" as const, alignItems: "stretch", gap: 14 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {[
+            { custom: false, label: "등급별 적용 (기본)" },
+            { custom: true, label: "회원별 적용" },
+          ].map(option => {
+            const active = formData.use_custom_registration_limits === option.custom;
+            return (
+              <button
+                key={String(option.custom)}
+                type="button"
+                onClick={() => setRegistrationLimitMode(option.custom)}
+                disabled={!isAdmin}
+                aria-pressed={active}
+                style={{
+                  height: 38,
+                  padding: "0 18px",
+                  borderRadius: 7,
+                  border: active ? "1px solid #2563eb" : `1px solid ${darkMode ? "#4b5563" : "#d1d5db"}`,
+                  background: active ? "#2563eb" : (darkMode ? "#2c2d31" : "#fff"),
+                  color: active ? "#fff" : (darkMode ? "#d1d5db" : "#4b5563"),
+                  fontSize: 13,
+                  fontWeight: 800,
+                  cursor: isAdmin ? "pointer" : "default",
+                  opacity: !isAdmin && !active ? 0.55 : 1,
+                }}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>
+            <span style={{ fontWeight: 600, color: darkMode ? "#ccc" : "#444" }}>공실등록(총):</span>
+            <input type="number" name="max_vacancies" value={formData.max_vacancies} onChange={handleMemberChange} disabled={!isAdmin || !formData.use_custom_registration_limits} style={{ ...inputStyle, flex: "none", width: 80, textAlign: "right", opacity: formData.use_custom_registration_limits ? 1 : 0.65 }} min={0} />
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>
+            <span style={{ fontWeight: 600, color: darkMode ? "#ccc" : "#444" }}>기사작성(월):</span>
+            <input type="number" name="max_articles_per_month" value={formData.max_articles_per_month} onChange={handleMemberChange} disabled={!isAdmin || !formData.use_custom_registration_limits} style={{ ...inputStyle, flex: "none", width: 80, textAlign: "right", opacity: formData.use_custom_registration_limits ? 1 : 0.65 }} min={0} />
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>
+            <span style={{ fontWeight: 600, color: darkMode ? "#ccc" : "#444" }}>강의등록(총):</span>
+            <input type="number" name="max_lectures" value={formData.max_lectures} onChange={handleMemberChange} disabled={!isAdmin || !formData.use_custom_registration_limits} style={{ ...inputStyle, flex: "none", width: 80, textAlign: "right", opacity: formData.use_custom_registration_limits ? 1 : 0.65 }} min={0} />
+          </label>
+        </div>
+
+        <div style={{ fontSize: 12.5, lineHeight: 1.55, color: formData.use_custom_registration_limits ? "#2563eb" : "#6b7280", fontWeight: 600 }}>
+          {formData.use_custom_registration_limits
+            ? "이 회원은 등급별 공실·기사·강의 한도 일괄 적용에서 제외됩니다. 위 숫자가 회원에게 계속 유지됩니다."
+            : "현재 등급의 기본 한도를 사용합니다. 등급별 한도가 바뀌면 이 회원의 세 숫자도 자동으로 함께 변경됩니다."}
+          <br />0은 해당 등록 기능을 사용하지 않는다는 뜻입니다.
+        </div>
+      </div>
+    </div>
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter') {
@@ -1001,24 +1134,6 @@ function gradeDefaults(p: any, role: string, planType?: string) {
             )}
 
             <div style={rowStyle}>
-              <div style={labelStyle}>개별 등록 한도 설정</div>
-              <div style={{ ...contentStyle, gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>공실광고 등록(총 건수):</span>
-                  <input type="number" name="max_vacancies" value={formData.max_vacancies} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>뉴스 작성(월 단위):</span>
-                  <input type="number" name="max_articles_per_month" value={formData.max_articles_per_month} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>강의 등록(총 건수):</span>
-                  <input type="number" name="max_lectures" value={formData.max_lectures} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
-                </label>
-                <div style={{ width: '100%', fontSize: 12, color: "#888" }}>0으로 설정 시 해당 기능을 사용할 수 없으며, 매우 높은 숫자 입력 시 무제한과 동일합니다. (기본값: 공실광고 5, 기사 0)</div>
-              </div>
-            </div>
-            <div style={rowStyle}>
               <div style={labelStyle}>기사 권한</div>
               <div style={{ ...contentStyle, gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: isAdmin ? 'pointer' : 'default' }}>
@@ -1099,26 +1214,10 @@ function gradeDefaults(p: any, role: string, planType?: string) {
                 <span style={{ fontSize: 12, color: "#888", marginLeft: 8 }}>종료일이 지나면 미니홈피가 비활성화됩니다.</span>
               </div>
             </div>
-            <div style={rowStyle}>
-              <div style={labelStyle}>개별 등록 한도 설정</div>
-              <div style={{ ...contentStyle, gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>공실광고 등록(총 건수):</span>
-                  <input type="number" name="max_vacancies" value={formData.max_vacancies} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>뉴스 작성(월 단위):</span>
-                  <input type="number" name="max_articles_per_month" value={formData.max_articles_per_month} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
-                  <span style={{ fontWeight: 600, color: darkMode ? '#ccc' : '#444' }}>강의 등록(총 건수):</span>
-                  <input type="number" name="max_lectures" value={formData.max_lectures} onChange={handleMemberChange} disabled={!isAdmin} style={{ ...inputStyle, flex: "none", width: 80, textAlign: 'right' }} min={0} />
-                </label>
-                <div style={{ width: '100%', fontSize: 12, color: "#888" }}>0으로 설정 시 해당 기능을 사용할 수 없으며, 매우 높은 숫자 입력 시 무제한과 동일합니다. (기본값: 공실광고 0, 기사 0)</div>
-              </div>
-            </div>
           </>
         )}
+
+        {formData.role !== "최고관리자" && (isAdmin || formData.role !== "일반회원") && registrationLimitSettings}
 
         <div style={rowStyle}>
           <div style={labelStyle}>가입일</div>
