@@ -281,7 +281,7 @@ export default function BoardReadClient({
               {/* 제목 영역 */}
               <div style={{ padding: "28px 32px 24px", borderBottom: "1px solid #f0f0f0" }}>
                 {catBadge && (
-                  <div style={{ display: "inline-block", fontSize: 14, fontWeight: 800, color: isStudyBoard ? "#059669" : "#ff8e15", marginBottom: 10 }}>
+                  <div style={{ display: "inline-block", fontSize: 14, fontWeight: 800, color: isStudyBoard ? "#059669" : "#f4a71b", marginBottom: 10 }}>
                     {catBadge}
                   </div>
                 )}

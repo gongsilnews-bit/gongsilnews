@@ -479,7 +479,7 @@ export default function StudyResourcesClient({
                                   display: "inline-block",
                                   fontSize: 13,
                                   fontWeight: 800,
-                                  color: "#ff8e15",
+                                  color: "#f4a71b",
                                   marginBottom: 7,
                                   marginRight: 6,
                                 }}
