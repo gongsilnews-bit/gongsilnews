@@ -380,6 +380,39 @@ export default function StudyHeader({ background }: { background?: string } = {}
             공실스터디
           </Link>
 
+          {/* 🚀 대표님 요청: [내 강의실] 버튼을 '공실스터디'와 '홈' 메뉴 사이로 배치 */}
+          <Link
+            href="/study/classroom"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "6px 14px",
+              borderRadius: "6px",
+              fontSize: "13.5px",
+              fontWeight: 800,
+              color: "#ffffff",
+              background: pathname.startsWith("/study/classroom")
+                ? "linear-gradient(135deg, #059669 0%, #10b981 100%)"
+                : "#059669",
+              border: pathname.startsWith("/study/classroom")
+                ? "1.5px solid #34d399"
+                : "1px solid rgba(255, 255, 255, 0.25)",
+              boxShadow: pathname.startsWith("/study/classroom")
+                ? "0 3px 12px rgba(5, 150, 105, 0.45)"
+                : "0 2px 6px rgba(5, 150, 105, 0.25)",
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+              transition: "all 0.2s ease",
+              cursor: "pointer",
+              marginBottom: stuck ? 0 : "3px",
+              flexShrink: 0,
+            }}
+            title="나의 강의실로 이동"
+          >
+            내 강의실
+          </Link>
+
           <Suspense fallback={null}>
             <StudyNavItems
               pathname={pathname}
@@ -391,62 +424,29 @@ export default function StudyHeader({ background }: { background?: string } = {}
             />
           </Suspense>
 
-          {/* 우측 끝: [내 강의실] 바로가기 버튼 (상시 노출) 및 스크롤 시 추가 기능 버튼들 */}
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0, marginBottom: stuck ? 0 : "3px" }}>
-            <Link
-              href="/study/classroom"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "7px 18px",
-                borderRadius: "6px",
-                fontSize: "14px",
-                fontWeight: 800,
-                color: "#ffffff",
-                background: pathname.startsWith("/study/classroom")
-                  ? "linear-gradient(135deg, #059669 0%, #10b981 100%)"
-                  : dark ? "rgba(5, 150, 105, 0.4)" : "#059669",
-                border: pathname.startsWith("/study/classroom")
-                  ? "1.5px solid #34d399"
-                  : "1px solid rgba(255, 255, 255, 0.35)",
-                boxShadow: pathname.startsWith("/study/classroom")
-                  ? "0 3px 12px rgba(5, 150, 105, 0.45)"
-                  : "none",
-                textDecoration: "none",
-                whiteSpace: "nowrap",
-                transition: "all 0.2s ease",
-                cursor: "pointer",
-              }}
-              title="나의 강의실로 이동"
-            >
-              내 강의실
-            </Link>
-
-            {/* 붙었을 때는 메인 헤더가 안 보이므로 메인 헤더의 오른쪽 버튼들을 그대로 둔다 */}
-            {stuck && (
-              <>
-                {member ? <NotificationBell color={iconColor} /> : (
-                  <Link href={"/login?returnTo=" + encodeURIComponent(pathname)} style={{ fontSize: "13px", fontWeight: 700, color: iconColor, textDecoration: "none" }}>로그인</Link>
-                )}
-                <button type="button" aria-label="검색" onClick={() => window.dispatchEvent(new Event("gongsil:open-search"))} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+          {/* 붙었을 때(stuck)만 우측 끝에 메인 헤더 기능 버튼들 노출 */}
+          {stuck && (
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+              {member ? <NotificationBell color={iconColor} /> : (
+                <Link href={"/login?returnTo=" + encodeURIComponent(pathname)} style={{ fontSize: "13px", fontWeight: 700, color: iconColor, textDecoration: "none" }}>로그인</Link>
+              )}
+              <button type="button" aria-label="검색" onClick={() => window.dispatchEvent(new Event("gongsil:open-search"))} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 22, height: 22 }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+              </button>
+              <button type="button" aria-label="전체 메뉴" onClick={() => window.dispatchEvent(new Event("gongsil:open-megamenu"))} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 26, height: 26 }}><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+              </button>
+              {member ? (
+                <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : "#ef4444", color: "#fff", border: dark && member.role === "ADMIN" ? "1px solid rgba(255,255,255,0.3)" : "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus)}
                 </button>
-                <button type="button" aria-label="전체 메뉴" onClick={() => window.dispatchEvent(new Event("gongsil:open-megamenu"))} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 26, height: 26 }}><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+              ) : (
+                <button type="button" onClick={() => router.push("/login?returnTo=" + encodeURIComponent("/realty_admin?menu=gongsil&action=write"))} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  공실등록 &gt;&gt;
                 </button>
-                {member ? (
-                  <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : "#ef4444", color: "#fff", border: dark && member.role === "ADMIN" ? "1px solid rgba(255,255,255,0.3)" : "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                    {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus)}
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => router.push("/login?returnTo=" + encodeURIComponent("/realty_admin?menu=gongsil&action=write"))} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                    공실등록 &gt;&gt;
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </nav>
       </div>
     </div>
