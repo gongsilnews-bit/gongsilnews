@@ -380,7 +380,18 @@ export default function StudyHeader({ background }: { background?: string } = {}
             공실스터디
           </Link>
 
-          {/* 🚀 대표님 요청: [내 강의실] 버튼을 '공실스터디'와 '홈' 메뉴 사이로 배치 */}
+          <Suspense fallback={null}>
+            <StudyNavItems
+              pathname={pathname}
+              dark={dark}
+              activeColor={activeColor}
+              idleColor={idleColor}
+              hoveredNav={hoveredNav}
+              setHoveredNav={setHoveredNav}
+            />
+          </Suspense>
+
+          {/* 🚀 대표님 요청: [내 강의실] 버튼을 '커뮤니티' 뒤로 배치 */}
           <Link
             href="/study/classroom"
             style={{
@@ -406,23 +417,13 @@ export default function StudyHeader({ background }: { background?: string } = {}
               transition: "all 0.2s ease",
               cursor: "pointer",
               marginBottom: stuck ? 0 : "3px",
+              marginLeft: stuck ? "-12px" : "-16px", // 메뉴들 간격(24px)과 자연스럽게 연결
               flexShrink: 0,
             }}
             title="나의 강의실로 이동"
           >
             내 강의실
           </Link>
-
-          <Suspense fallback={null}>
-            <StudyNavItems
-              pathname={pathname}
-              dark={dark}
-              activeColor={activeColor}
-              idleColor={idleColor}
-              hoveredNav={hoveredNav}
-              setHoveredNav={setHoveredNav}
-            />
-          </Suspense>
 
           {/* 붙었을 때(stuck)만 우측 끝에 메인 헤더 기능 버튼들 노출 */}
           {stuck && (
