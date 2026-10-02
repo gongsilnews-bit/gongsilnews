@@ -274,8 +274,8 @@ export default function StudyVacancyRegisterClient() {
                 margin: "0 0 14px 0",
               }}
             >
-              공실 등록에서 계약까지,<br />
-              손 하나 까딱 않고 실무에 바로 쓰이는 5가지 무기
+              공실만 등록했는데,<br />
+              중개실무에 필요한 마케팅이 자동으로!!
             </h2>
             <p style={{ fontSize: "16px", color: "#64748b", margin: 0, lineHeight: 1.6 }}>
               교육만 듣고 끝나는 일반 강의와 다릅니다. 배우면서 바로 내 공실을 올리고,
