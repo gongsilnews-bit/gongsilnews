@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { HelpCenterData } from "@/app/actions/helpCenter";
+import { openChannelTalk } from "@/utils/channelTalk";
 import InquiryModal from "./InquiryModal";
 
 /**
@@ -70,15 +71,42 @@ export default function HelpCenterClient({ data, mobile = false, autoOpenInquiry
   const contactButtons = (
     <div style={{ display: "flex", flexDirection: "row", gap: 8, width: mobile ? "100%" : "auto", flexShrink: 0 }}>
       <button
+        type="button"
+        onClick={() => openChannelTalk()}
+        style={{
+          flex: mobile ? 1 : undefined,
+          padding: mobile ? "10px 8px" : "10px 16px",
+          borderRadius: 8,
+          border: "none",
+          background: "#059669",
+          color: "#fff",
+          fontSize: mobile ? 13 : 14,
+          fontWeight: 800,
+          textAlign: "center",
+          cursor: "pointer",
+          whiteSpace: "nowrap",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 5,
+          boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)",
+        }}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        실시간 상담
+      </button>
+      <button
         onClick={openInquiry}
-        style={{ flex: mobile ? 1 : undefined, padding: "10px 16px", borderRadius: 8, border: "none", background: ORANGE, color: "#fff", fontSize: 14, fontWeight: 800, textAlign: "center", cursor: "pointer", whiteSpace: "nowrap" }}
+        style={{ flex: mobile ? 1 : undefined, padding: mobile ? "10px 8px" : "10px 16px", borderRadius: 8, border: "none", background: ORANGE, color: "#fff", fontSize: mobile ? 13 : 14, fontWeight: 800, textAlign: "center", cursor: "pointer", whiteSpace: "nowrap" }}
       >
         1:1 문의 남기기
       </button>
       {myInquiryHref && (
         <Link
           href={myInquiryHref}
-          style={{ flex: mobile ? 1 : undefined, padding: "10px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.45)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 14, fontWeight: 800, textAlign: "center", textDecoration: "none", whiteSpace: "nowrap" }}
+          style={{ flex: mobile ? 1 : undefined, padding: mobile ? "10px 8px" : "10px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.45)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: mobile ? 13 : 14, fontWeight: 800, textAlign: "center", textDecoration: "none", whiteSpace: "nowrap" }}
         >
           내 문의내역
         </Link>
@@ -202,7 +230,19 @@ export default function HelpCenterClient({ data, mobile = false, autoOpenInquiry
       {/* ── 목록 끝까지 본 고객용 짧은 안내 ── */}
       <div style={{ margin: mobile ? "22px 16px 0" : "28px 0 0", padding: mobile ? "16px" : "18px 24px", background: "#f1f5f9", borderRadius: 12, display: "flex", flexDirection: mobile ? "column" : "row", alignItems: mobile ? "stretch" : "center", justifyContent: "space-between", gap: 12 }}>
         <span style={{ fontSize: mobile ? 14 : 15, fontWeight: 700, color: "#1e293b" }}>원하는 답을 찾지 못하셨나요?</span>
-        <button onClick={openInquiry} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: NAVY, color: "#fff", fontSize: 14, fontWeight: 700, textAlign: "center", cursor: "pointer" }}>1:1 문의 남기기</button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => openChannelTalk()}
+            style={{ padding: "10px 16px", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 14, fontWeight: 700, textAlign: "center", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            실시간 상담
+          </button>
+          <button onClick={openInquiry} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: NAVY, color: "#fff", fontSize: 14, fontWeight: 700, textAlign: "center", cursor: "pointer" }}>1:1 문의 남기기</button>
+        </div>
       </div>
       </div>
 
