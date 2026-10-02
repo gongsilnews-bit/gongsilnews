@@ -11,7 +11,7 @@ import styles from "./mobileStudyBenefits.module.css";
 type BenefitTabKey = "vacancy" | "youtube" | "blog" | "community";
 
 const TABS: { key: BenefitTabKey; label: string }[] = [
-  { key: "vacancy", label: "공실20건·기사4건" },
+  { key: "vacancy", label: "공실등록20건" },
   { key: "youtube", label: "AI 유튜브제작" },
   { key: "blog", label: "블로그자동화" },
   { key: "community", label: "커뮤니티·자료실" },

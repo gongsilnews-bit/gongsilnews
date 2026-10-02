@@ -36,7 +36,7 @@ const NAV_ITEMS: NavItem[] = [
     match: (p: string) => p.startsWith("/study/benefits"),
     subItems: [
       {
-        label: "공실20건, 기사4건",
+        label: "공실등록20건",
         href: "/study/benefits/vacancy-register",
         match: (p: string) => p.includes("vacancy-register") || p === "/study/benefits",
       },

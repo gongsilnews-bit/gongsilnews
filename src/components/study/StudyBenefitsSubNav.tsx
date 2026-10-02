@@ -5,7 +5,7 @@ import Link from "next/link";
 
 /** 멤버십혜택 3개 페이지를 오갈 수 있는 서브 내비 (공실뉴스부동산 BenefitsSubNav 와 같은 역할) */
 export const STUDY_BENEFITS = [
-  { slug: "vacancy-register", label: "공실20건, 기사4건", href: "/study/benefits/vacancy-register" },
+  { slug: "vacancy-register", label: "공실등록20건", href: "/study/benefits/vacancy-register" },
   { slug: "blog-automation", label: "블로그포스팅자동화", href: "/study/benefits/blog-automation" },
   { slug: "ai-youtube", label: "유튜브강의+드론저작권", href: "/study/benefits/ai-youtube" },
 ] as const;

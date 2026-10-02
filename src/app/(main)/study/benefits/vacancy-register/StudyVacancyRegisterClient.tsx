@@ -167,7 +167,7 @@ export default function StudyVacancyRegisterClient() {
                   wordBreak: "keep-all",
                 }}
               >
-                공실만 등록하면, AI 매물보고서, 유리창 전단지, 나만의 접수 웹페이지까지 원클릭으로 자동 완성됩니다.
+                공실만 등록하면, AI 매물보고서, 유리창 홍보지, 나만의 접수 웹페이지까지 원클릭으로 자동 완성됩니다.
               </p>
 
             </div>
