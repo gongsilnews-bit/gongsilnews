@@ -325,8 +325,8 @@ export default function StudyVacancyRegisterClient() {
                     margin: "0 0 16px 0",
                   }}
                 >
-                  11만 부동산 누구나 열람하는 공실뉴스에 공실 등록,<br />
-                  <span style={{ color: POINT }}>실무에 바로 활용된다!</span>
+                  11만 부동산 누구나 열람할 수 있는 무료 공동중개!<br />
+                  <span style={{ color: POINT }}>공실등록 20건 무료!</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
                   전국 11만 공인중개사와 부동산 관계자, 투자자가 매일 접속하는 &lsquo;공실뉴스&rsquo; 플랫폼에
