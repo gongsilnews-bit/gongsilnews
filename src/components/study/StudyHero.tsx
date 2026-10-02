@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 
-const POINT = "#059669";
+const POINT = "#052427";
 
 export interface StudyHeroTab {
   key?: string;
@@ -79,7 +79,7 @@ export default function StudyHero({
                   fontSize: 28,
                   fontWeight: 800,
                   letterSpacing: "-0.01em",
-                  color: "#34d399",
+                  color: "rgba(255, 255, 255, 0.65)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -136,10 +136,10 @@ export default function StudyHero({
                     fontSize: 14.5,
                     whiteSpace: "nowrap",
                     fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.82)",
-                    background: isSelected ? POINT : "transparent",
-                    boxShadow: isSelected ? "0 3px 12px rgba(5, 150, 105, 0.4)" : "none",
-                    border: "none",
+                    color: "#ffffff",
+                    background: isSelected ? "#052427" : "transparent",
+                    boxShadow: isSelected ? "0 4px 14px rgba(0, 0, 0, 0.4)" : "none",
+                    border: isSelected ? "1.5px solid rgba(255, 255, 255, 0.35)" : "none",
                     cursor: "pointer",
                     fontFamily: "inherit",
                     display: "inline-flex",

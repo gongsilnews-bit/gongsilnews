@@ -7,7 +7,7 @@ import { canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
 import StudyHero from "@/components/study/StudyHero";
 
-const POINT = "#059669";
+const POINT = "#052427";
 const ITEMS_PER_PAGE = 12;
 
 export default function StudyCommunityClient({
@@ -207,9 +207,9 @@ export default function StudyCommunityClient({
                   fontSize: 14,
                   fontWeight: 800,
                   color: "#ffffff",
-                  background: "#10b981",
+                  background: POINT,
                   textDecoration: "none",
-                  boxShadow: "0 3px 12px rgba(16, 185, 129, 0.4)",
+                  boxShadow: "0 3px 12px rgba(5, 36, 39, 0.4)",
                   display: "inline-block",
                 }}
               >
@@ -227,7 +227,7 @@ export default function StudyCommunityClient({
                   fontSize: 14,
                   fontWeight: 800,
                   color: "#ffffff",
-                  background: "#10b981",
+                  background: POINT,
                   border: "none",
                   cursor: "pointer",
                   fontFamily: "inherit",
@@ -489,7 +489,7 @@ export default function StudyCommunityClient({
                     color: "#ffffff",
                     background: POINT,
                     textDecoration: "none",
-                    boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)",
+                    boxShadow: "0 2px 8px rgba(5, 36, 39, 0.3)",
                   }}
                 >
                   {activeBoard === "studyqa" ? "질문하기" : "글쓰기"}
@@ -542,21 +542,21 @@ export default function StudyCommunityClient({
       )}
 
       <style>{`
-        /* 군청색(네이비)을 스터디 전용 에메랄드/그린 포인트로 완벽 전환 */
+        /* 상단 짙은 녹색(#052427) 테마로 완벽 통일 */
         .study-qna {
-          --board-navy: #059669 !important;
-          --board-navy-dark: #047857 !important;
-          --board-navy-soft: #ecfdf5 !important;
+          --board-navy: #052427 !important;
+          --board-navy-dark: #03171a !important;
+          --board-navy-soft: #f8fafc !important;
         }
-        .study-qna .cat-badge { color: #059669 !important; }
-        .study-qna .b-tab.active { background: #059669 !important; border-color: #059669 !important; color: #ffffff !important; }
-        .study-qna .b-tab:hover { border-color: #059669 !important; color: #059669 !important; }
-        .study-qna .b-list-table { border-top: 2px solid #059669 !important; }
-        .study-qna .b-list-table tbody tr:hover td.subject { color: #059669 !important; }
+        .study-qna .cat-badge { color: #ef4444 !important; font-weight: 700; }
+        .study-qna .b-tab.active { background: #052427 !important; border-color: #052427 !important; color: #ffffff !important; }
+        .study-qna .b-tab:hover { border-color: #052427 !important; color: #052427 !important; }
+        .study-qna .b-list-table { border-top: 2px solid #052427 !important; }
+        .study-qna .b-list-table tbody tr:hover td.subject { color: #052427 !important; }
         .study-qna .b-list-table td.subject a { color: inherit; text-decoration: none; }
-        .study-qna .b-search button { background: #059669 !important; border-color: #059669 !important; color: #ffffff !important; }
-        .study-qna .b-search button:hover { background: #047857 !important; }
-        .study-qna .b-search input:focus { border-color: #059669 !important; outline: none; }
+        .study-qna .b-search button { background: #052427 !important; border-color: #052427 !important; color: #ffffff !important; }
+        .study-qna .b-search button:hover { background: #03171a !important; }
+        .study-qna .b-search input:focus { border-color: #052427 !important; outline: none; }
       `}</style>
     </div>
   );
