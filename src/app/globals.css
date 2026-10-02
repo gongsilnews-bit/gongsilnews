@@ -1149,14 +1149,14 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 .b-list-table td.subject { text-align: left; color: #111827; font-size: 15px; font-weight: 600; line-height: 1.5; cursor: pointer; }
 .b-list-table tbody tr:hover td.subject { color: var(--board-navy); text-decoration: underline; }
 /* 말머리는 브랜드 오렌지 */
-.b-list-table .cat-badge { font-size: 14px; font-weight: 800; color: #f4a71b; margin-right: 10px; display: inline-block; vertical-align: baseline; }
+.b-list-table .cat-badge { font-size: 14px; font-weight: 800; color: #ef4444; margin-right: 10px; display: inline-block; vertical-align: baseline; }
 
 /* 게시판 사이드바 — 칸은 좁아도 글씨는 또렷하게 */
 .b-sidebar .sb-banner { height: 170px; margin-bottom: 30px; font-size: 14px; }
 .b-sidebar .sb-widget { margin-bottom: 30px; }
 .b-sidebar .sb-title { font-size: 17px; font-weight: 800; color: #111827; border-bottom: 2px solid var(--board-navy); padding-bottom: 11px; margin-bottom: 16px; }
 .b-sidebar .pop-item { gap: 10px; margin-bottom: 18px; }
-.b-sidebar .pop-ranking { font-size: 18px; font-weight: 900; font-style: normal; color: #f4a71b; width: 15px; flex-shrink: 0; }
+.b-sidebar .pop-ranking { font-size: 18px; font-weight: 900; font-style: normal; color: #ef4444; width: 15px; flex-shrink: 0; }
 .b-sidebar .pop-title { font-size: 15px; font-weight: 600; color: #333333; line-height: 1.5; }
 .b-sidebar .pop-item:hover .pop-title { color: var(--board-navy); }
 
