@@ -206,22 +206,22 @@ export default function StudyVacancyRegisterClient() {
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
-                부동산 뉴스 기사
+                1초 자동 초안 완성
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
-                매월 4편 발행
+                AI 매매보고서
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                꾸준히 내기사 축적
+                데이터 기반 전문 매물 분석
               </div>
             </div>
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
-                1초 자동 초안 완성
+                쇼윈도 워크인 마케팅
               </div>
-              <div style={{ fontSize: 21, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.6px", whiteSpace: "nowrap" }}>
-                매물보고서 & 유리창홍보지
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
+                유리창 홍보지
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
                 수십가지 디자인을 내맘대로 선택
@@ -233,10 +233,10 @@ export default function StudyVacancyRegisterClient() {
                 단독 접수 홈페이지
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
-                100% 무료 연동
+                웹페이지 무료
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                공실·기사 자동 동기화 & 링크 홍보
+                공실 자동 동기화 & 링크 홍보
               </div>
             </div>
           </div>
@@ -279,7 +279,7 @@ export default function StudyVacancyRegisterClient() {
             </h2>
             <p style={{ fontSize: "16px", color: "#64748b", margin: 0, lineHeight: 1.6 }}>
               교육만 듣고 끝나는 일반 강의와 다릅니다. 배우면서 바로 내 공실을 올리고,
-              기사를 발행하며, 매물보고서와 전단지, 나만의 홈페이지까지 즉시 운영합니다.
+              AI 매매보고서와 유리창 홍보지, 나만의 웹페이지까지 즉시 운영합니다.
             </p>
           </div>
 
