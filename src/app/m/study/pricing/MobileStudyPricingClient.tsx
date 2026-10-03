@@ -104,7 +104,7 @@ export default function MobileStudyPricingClient() {
               "손님 카톡 전송용 AI 매물보고서 & 쇼윈도 전단지 무제한 출력",
               "내 부동산 단독 물건접수 웹페이지 실시간 자동 연동",
               "매달 4회 신규 VOD 특강 추가 비용 없이 무료 업데이트",
-              "4K 드론 항공 영상 상업적 무료 라이선스 및 계약서 양식 제공",
+              "드론 항공 영상 상업적 무료 라이선스 및 계약서 양식 제공",
               "주요 카드사 최대 12개월 무이자 할부 지원",
             ].map((text) => (
               <li key={text} className={styles.featureItem}>

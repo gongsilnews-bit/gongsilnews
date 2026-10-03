@@ -170,8 +170,8 @@ export default function MobileStudyBenefitsClient() {
           <section className={styles.hero}>
             <div className={styles.badge}>핵심 혜택 02</div>
             <h1 className={styles.heroTitle}>
-              <span className={styles.pointText}>AI 유튜브</span> 영상 제작 &amp;<br />
-              4K 드론 저작권 제공
+              <span className={styles.pointText}>유튜브 &amp; 릴스</span> 영상 제작 &amp;<br />
+              드론 영상 저작권 제공
             </h1>
             <p className={styles.heroDesc}>
               대본 작성부터 자막, 컷편집, 썸네일까지! 스마트폰과 AI로 콜 부르는 임장 영상을 완성합니다.
@@ -206,8 +206,8 @@ export default function MobileStudyBenefitsClient() {
             {[
               { step: "01", tag: "1~3개월차", title: "기초 영상 & 숏폼 마스터", desc: "Vrew 음성인식 자막과 캡컷으로 스마트폰 하나로 3분 만에 첫 숏폼 영상을 완성합니다." },
               { step: "02", tag: "4~6개월차", title: "콜 부르는 대본 & AI 기획", desc: "챗GPT와 제미나이로 고객 심리를 사로잡는 대본을 쓰고 클릭률 높은 썸네일을 제작합니다." },
-              { step: "03", tag: "7~9개월차", title: "프리미어 & 4K 드론 영상", desc: "무료 제공되는 4K 드론 항공 영상을 활용해 대형 임장 전문 채널 수준의 영상을 만듭니다." },
-              { step: "04", tag: "10~12개월차", title: "바이브코딩 홈페이지 제작", desc: "코딩 없이 AI로 내 부동산 전용 접수 웹페이지를 내 마음대로 직접 만듭니다." },
+              { step: "03", tag: "7~9개월차", title: "프리미어 & 드론 영상", desc: "무료 제공되는 드론 항공 영상을 활용해 대형 임장 전문 채널 수준의 영상을 만듭니다." },
+              { step: "04", tag: "10~12개월차", title: "고급 쇼츠 · 릴스 실습", desc: "AI 툴을 활용해 숏폼 영상을 빠르게 제작하고, 계약으로 연결되는 채널 브랜딩을 완성합니다." },
             ].map((s) => (
               <div key={s.step} className={styles.stepCard}>
                 <div className={styles.stepNumber}>{s.step}</div>
@@ -224,14 +224,14 @@ export default function MobileStudyBenefitsClient() {
             <div className={styles.mediaThumb}>
               <Image
                 src="/images/study/benefit_drone_sample.jpg"
-                alt="4K 드론 항공 영상 샘플"
+                alt="드론 항공 영상 샘플"
                 fill
                 sizes="(max-width: 480px) 100vw, 448px"
                 style={{ objectFit: "cover" }}
               />
             </div>
             <div className={styles.mediaBody}>
-              <h3 className={styles.mediaTitle}>4K 드론 영상 상업적 무료 라이선스</h3>
+              <h3 className={styles.mediaTitle}>드론 영상 상업적 무료 라이선스</h3>
               <p className={styles.mediaDesc}>
                 드론 조종 자격증이나 장비 없이도 고화질 항공 영상을 내 유튜브 영상 배경으로 마음껏 사용하실 수 있습니다.
               </p>

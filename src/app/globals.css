@@ -604,7 +604,9 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     top: 30px;
     left: 50%;
     transform: translateX(-50%);
-    width: 140px;
+    min-width: 140px;
+    width: max-content;
+    white-space: nowrap;
     background: #fff;
     border: 1px solid #333;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -613,8 +615,21 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
     overflow: hidden;
     padding: 0;
 }
+.gnb-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    height: 10px;
+}
 .gnb-dropdown-parent:hover .gnb-dropdown {
     display: block;
+}
+.gnb-dropdown ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 .gnb-dropdown li {
     border-bottom: 1px solid #eee;
@@ -624,11 +639,13 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 }
 .gnb-dropdown a {
     display: block;
-    padding: 12px 0;
+    padding: 11px 16px;
     font-size: 14px;
     color: #222;
     text-align: center;
     transition: background 0.2s;
+    text-decoration: none;
+    white-space: nowrap;
 }
 .gnb-dropdown a:hover {
     background: #f4f6fa;

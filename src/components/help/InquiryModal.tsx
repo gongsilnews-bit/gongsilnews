@@ -41,15 +41,25 @@ const inputStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 };
 const required = <span style={{ color: "#ef4444" }}> *</span>;
 
-// 서버 렌더링에는 document 가 없으니 브라우저에서만 창을 그린다
-const noopSubscribe = () => () => {};
-
-const MEMBER_BENEFITS = [
-  "연락처 자동 입력",
-  "답변 등록 시 바로 알림",
-  "관리자페이지에서 문의내역 확인",
-  "공실 3건 무료 등록 · 경공매 정보 무료 열람",
-];
+// 전화번호 자동 하이픈 변환 유틸
+const formatPhoneNumber = (val: string) => {
+  if (!val) return "";
+  const onlyNums = val.replace(/[^0-9]/g, "");
+  if (onlyNums.startsWith("02")) {
+    if (onlyNums.length <= 2) return onlyNums;
+    if (onlyNums.length <= 5) return `${onlyNums.slice(0, 2)}-${onlyNums.slice(2)}`;
+    if (onlyNums.length <= 9) return `${onlyNums.slice(0, 2)}-${onlyNums.slice(2, 5)}-${onlyNums.slice(5)}`;
+    return `${onlyNums.slice(0, 2)}-${onlyNums.slice(2, 6)}-${onlyNums.slice(6, 10)}`;
+  } else if (onlyNums.startsWith("1") && !onlyNums.startsWith("15") && !onlyNums.startsWith("16") && !onlyNums.startsWith("18")) {
+    if (onlyNums.length <= 4) return onlyNums;
+    return `${onlyNums.slice(0, 4)}-${onlyNums.slice(4, 8)}`;
+  } else {
+    if (onlyNums.length <= 3) return onlyNums;
+    if (onlyNums.length <= 7) return `${onlyNums.slice(0, 3)}-${onlyNums.slice(3)}`;
+    if (onlyNums.length <= 10) return `${onlyNums.slice(0, 3)}-${onlyNums.slice(3, 6)}-${onlyNums.slice(6)}`;
+    return `${onlyNums.slice(0, 3)}-${onlyNums.slice(3, 7)}-${onlyNums.slice(7, 11)}`;
+  }
+};
 
 export default function InquiryModal({ member, categories, maxPhotos, myInquiryHref, loginHref, mobile = false, onClose }: Props) {
   const isGuest = !member;
@@ -152,22 +162,6 @@ export default function InquiryModal({ member, categories, maxPhotos, myInquiryH
     else void submitGuest();
   };
 
-  const memberPromo = (
-    <div style={{ border: `2px solid ${ORANGE}`, background: "#fff7ed", borderRadius: 12, padding: mobile ? "16px" : "18px 20px", marginBottom: 20 }}>
-      <div style={{ fontSize: mobile ? 15.5 : 16.5, fontWeight: 800, color: "#111827" }}>
-        회원으로 문의하면 훨씬 편합니다 <span style={{ color: ORANGE }}>· 회원가입 무료</span>
-      </div>
-      <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: "4px 16px" }}>
-        {MEMBER_BENEFITS.map((b) => (
-          <li key={b} style={{ fontSize: 13.5, color: "#334155" }}><span style={{ color: "#10b981", fontWeight: 800, marginRight: 6 }}>✓</span>{b}</li>
-        ))}
-      </ul>
-      {/* 로그인 화면에서 회원가입도 할 수 있어 버튼 하나로 보낸다. 끝나면 이 창으로 돌아온다 */}
-      <a href={loginHref} style={{ display: "block", marginTop: 14, padding: "13px", borderRadius: 10, background: ORANGE, color: "#fff", fontSize: 15.5, fontWeight: 800, textAlign: "center", textDecoration: "none" }}>
-        회원가입 / 로그인
-      </a>
-    </div>
-  );
 
   if (!isClient) return null;
 
@@ -225,31 +219,6 @@ export default function InquiryModal({ member, categories, maxPhotos, myInquiryH
         ) : (
           <>
             <div style={{ flex: 1, overflowY: "auto", padding: mobile ? "18px 20px" : "24px 28px" }}>
-              {isGuest && memberPromo}
-
-              {isGuest && (
-                <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0 16px", color: "#94a3b8", fontSize: 13, fontWeight: 700 }}>
-                  <span style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-                  또는 비회원으로 문의하기
-                  <span style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
-                </div>
-              )}
-
-              {/* 답변 받을 연락처 */}
-              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>답변 받을 연락처</div>
-                <div style={{ fontSize: 12, color: isGuest ? "#dc2626" : "#64748b", margin: "2px 0 12px" }}>
-                  {isGuest
-                    ? "비회원 문의는 휴대폰번호로 연락드립니다. 휴대폰번호를 꼭 입력해 주세요."
-                    : "회원정보로 채워 두었습니다. 다른 곳으로 받으시려면 고쳐 주세요."}
-                </div>
-                <div style={{ display: "flex", gap: 10, flexDirection: mobile ? "column" : "row" }}>
-                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder={isGuest ? "이름 *" : "이름"} aria-label="이름" style={{ ...inputStyle, flex: 1 }} />
-                  <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={isGuest ? "휴대폰번호 *" : "010-0000-0000"} aria-label="휴대폰번호" type="tel" inputMode="tel" style={{ ...inputStyle, flex: 1 }} />
-                  <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={isGuest ? "이메일 (선택)" : "이메일"} aria-label="이메일" type="email" style={{ ...inputStyle, flex: 1.4 }} />
-                </div>
-              </div>
-
               {/* 봇 함정 칸: 화면과 보조기기에서 숨김 */}
               <input
                 value={website}
@@ -279,11 +248,13 @@ export default function InquiryModal({ member, categories, maxPhotos, myInquiryH
                 </div>
               )}
 
-              {/* 제목 · 내용 */}
+              {/* 제목 */}
               <label style={{ display: "block", marginBottom: 16 }}>
                 <span style={labelStyle}>제목{required}</span>
                 <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100} placeholder="문의 제목을 입력해 주세요" style={inputStyle} />
               </label>
+
+              {/* 문의 내용 */}
               <label style={{ display: "block", marginBottom: 16 }}>
                 <span style={labelStyle}>문의 내용{required}</span>
                 <textarea
@@ -297,7 +268,7 @@ export default function InquiryModal({ member, categories, maxPhotos, myInquiryH
 
               {/* 사진 (회원만) */}
               {!isGuest && maxPhotos > 0 && (
-                <div>
+                <div style={{ marginBottom: 16 }}>
                   <span style={labelStyle}>사진 첨부 <span style={{ fontWeight: 500, color: "#94a3b8" }}>(선택 · 최대 {maxPhotos}장)</span></span>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     {photos.map((p, i) => (
@@ -319,6 +290,16 @@ export default function InquiryModal({ member, categories, maxPhotos, myInquiryH
                 </div>
               )}
 
+              {/* 문의자 정보 */}
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", marginBottom: 10 }}>문의자 정보</div>
+                <div style={{ display: "flex", gap: 10, flexDirection: mobile ? "column" : "row" }}>
+                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder={isGuest ? "이름 *" : "이름"} aria-label="이름" style={{ ...inputStyle, flex: 1 }} />
+                  <input value={phone} onChange={(e) => setPhone(formatPhoneNumber(e.target.value))} maxLength={13} placeholder={isGuest ? "휴대폰번호 *" : "010-0000-0000"} aria-label="휴대폰번호" type="tel" inputMode="tel" style={{ ...inputStyle, flex: 1 }} />
+                  <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={isGuest ? "이메일 (선택)" : "이메일"} aria-label="이메일" type="email" style={{ ...inputStyle, flex: 1.4 }} />
+                </div>
+              </div>
+
               {/* 비회원: 개인정보 수집·이용 동의 */}
               {isGuest && (
                 <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 16px" }}>
@@ -336,9 +317,32 @@ export default function InquiryModal({ member, categories, maxPhotos, myInquiryH
             </div>
 
             {/* 버튼 */}
-            <div style={{ display: "flex", gap: 10, padding: mobile ? "14px 20px 20px" : "16px 28px 22px", borderTop: "1px solid #e5e7eb" }}>
-              <button onClick={requestClose} disabled={saving} style={{ flex: mobile ? 1 : undefined, marginLeft: mobile ? 0 : "auto", padding: "12px 22px", borderRadius: 10, border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>취소</button>
-              <button onClick={submit} disabled={saving} style={{ flex: mobile ? 2 : undefined, padding: "12px 28px", borderRadius: 10, border: "none", background: saving ? "#9ca3af" : isGuest ? NAVY : ORANGE, color: "#fff", fontSize: 15, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer" }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", padding: mobile ? "14px 20px 20px" : "16px 28px 22px", borderTop: "1px solid #e5e7eb" }}>
+              <button onClick={requestClose} disabled={saving} style={{ flex: mobile ? 1 : undefined, marginLeft: mobile ? 0 : "auto", padding: "12px 20px", borderRadius: 10, border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}>취소</button>
+              {isGuest && (
+                <a
+                  href={loginHref}
+                  style={{
+                    flex: mobile ? 1.2 : undefined,
+                    padding: "12px 18px",
+                    borderRadius: 10,
+                    border: "1px solid #cbd5e1",
+                    background: "#f1f5f9",
+                    color: "#475569",
+                    fontSize: 14.5,
+                    fontWeight: 700,
+                    textAlign: "center",
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  무료회원가입
+                </a>
+              )}
+              <button onClick={submit} disabled={saving} style={{ flex: mobile ? 1.6 : undefined, padding: "12px 24px", borderRadius: 10, border: "none", background: saving ? "#9ca3af" : isGuest ? NAVY : ORANGE, color: "#fff", fontSize: 14.5, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
                 {saving ? "접수 중..." : isGuest ? "비회원으로 문의 접수" : "문의 접수하기"}
               </button>
             </div>

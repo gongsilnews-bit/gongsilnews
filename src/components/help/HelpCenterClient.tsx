@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { HelpCenterData } from "@/app/actions/helpCenter";
-import { openChannelTalk } from "@/utils/channelTalk";
 import InquiryModal from "./InquiryModal";
 
 /**
@@ -53,8 +52,8 @@ export default function HelpCenterClient({ data, mobile = false, autoOpenInquiry
   }, [autoOpenInquiry]);
 
   const searchBox = (
-    <div style={{ display: "flex", alignItems: "center", width: "100%", borderRadius: 8, background: "#fff", padding: "0 12px", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <div style={{ display: "flex", alignItems: "center", width: "100%", borderRadius: 12, background: "#fff", padding: "0 14px", boxShadow: "0 6px 20px rgba(0,0,0,0.18)" }}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
       </svg>
       <input
@@ -63,50 +62,23 @@ export default function HelpCenterClient({ data, mobile = false, autoOpenInquiry
         onChange={(e) => { setQuery(e.target.value); setOpenId(null); }}
         placeholder="궁금한 내용을 검색하세요 (예: 가입, 공실 등록)"
         aria-label="자주 묻는 질문 검색"
-        style={{ flex: 1, border: "none", outline: "none", fontSize: mobile ? 14 : 15, padding: "10px 10px", background: "transparent", minWidth: 0, color: "#111827" }}
+        style={{ flex: 1, border: "none", outline: "none", fontSize: mobile ? 15 : 16, padding: mobile ? "14px 10px" : "17px 12px", background: "transparent", minWidth: 0, color: "#111827" }}
       />
     </div>
   );
 
   const contactButtons = (
-    <div style={{ display: "flex", flexDirection: "row", gap: 8, width: mobile ? "100%" : "auto", flexShrink: 0 }}>
-      <button
-        type="button"
-        onClick={() => openChannelTalk()}
-        style={{
-          flex: mobile ? 1 : undefined,
-          padding: mobile ? "10px 8px" : "10px 16px",
-          borderRadius: 8,
-          border: "none",
-          background: "#059669",
-          color: "#fff",
-          fontSize: mobile ? 13 : 14,
-          fontWeight: 800,
-          textAlign: "center",
-          cursor: "pointer",
-          whiteSpace: "nowrap",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 5,
-          boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)",
-        }}
-      >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-        실시간 상담
-      </button>
+    <div style={{ display: "flex", flexDirection: "row", gap: 10, width: mobile ? "100%" : (myInquiryHref ? 356 : 176), flexShrink: 0 }}>
       <button
         onClick={openInquiry}
-        style={{ flex: mobile ? 1 : undefined, padding: mobile ? "10px 8px" : "10px 16px", borderRadius: 8, border: "none", background: ORANGE, color: "#fff", fontSize: mobile ? 13 : 14, fontWeight: 800, textAlign: "center", cursor: "pointer", whiteSpace: "nowrap" }}
+        style={{ flex: 1, padding: mobile ? "12px 10px" : "14px 18px", borderRadius: 10, border: "none", background: ORANGE, color: "#fff", fontSize: mobile ? 14 : 15, fontWeight: 800, textAlign: "center", cursor: "pointer", whiteSpace: "nowrap" }}
       >
         1:1 문의 남기기
       </button>
       {myInquiryHref && (
         <Link
           href={myInquiryHref}
-          style={{ flex: mobile ? 1 : undefined, padding: mobile ? "10px 8px" : "10px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.45)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: mobile ? 13 : 14, fontWeight: 800, textAlign: "center", textDecoration: "none", whiteSpace: "nowrap" }}
+          style={{ flex: 1, padding: mobile ? "12px 10px" : "14px 18px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.45)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: mobile ? 14 : 15, fontWeight: 800, textAlign: "center", textDecoration: "none", whiteSpace: "nowrap" }}
         >
           내 문의내역
         </Link>
@@ -116,61 +88,27 @@ export default function HelpCenterClient({ data, mobile = false, autoOpenInquiry
 
   return (
     <div style={{ paddingBottom: mobile ? 48 : 80 }}>
-      {/* ── 상단 슬림 배너 (높이 대폭 축소 및 군더더기 텍스트 삭제) ── */}
+      {/* ── 고객센터 히어로: 제목 아래 검색과 문의 동선을 한눈에 보여준다. ── */}
       <section style={{ background: `linear-gradient(135deg, ${NAVY} 0%, #0f1d36 100%)`, color: "#fff" }}>
         <div style={{
-          maxWidth: 1200, margin: "0 auto", padding: mobile ? "14px 16px" : "18px 20px",
-          display: "flex", flexDirection: mobile ? "column" : "row", alignItems: "center", justifyContent: "space-between", gap: mobile ? 10 : 20,
+          maxWidth: 1100, margin: "0 auto", padding: mobile ? "28px 16px 30px" : "48px 20px 60px",
         }}>
-          <h1 style={{ fontSize: mobile ? 18 : 22, fontWeight: 800, margin: 0, letterSpacing: "-0.5px", whiteSpace: "nowrap", flexShrink: 0 }}>
-            고객센터
+          <h1 style={{ fontSize: mobile ? 27 : 38, fontWeight: 800, margin: 0, letterSpacing: "-1px", lineHeight: 1.25 }}>
+            무엇을 도와드릴까요?
           </h1>
-          <div style={{ flex: 1, maxWidth: mobile ? "100%" : 560, width: mobile ? "100%" : "auto" }}>
-            {searchBox}
+          <p style={{ fontSize: mobile ? 14 : 16, color: "rgba(255,255,255,0.78)", margin: "12px 0 0", wordBreak: "keep-all", lineHeight: 1.6 }}>
+            자주 묻는 질문에서 먼저 찾아보시고, 해결되지 않으면 상담을 남겨 주세요.
+          </p>
+          <div style={{ display: "flex", flexDirection: mobile ? "column" : "row", alignItems: "stretch", gap: mobile ? 14 : 32, marginTop: mobile ? 22 : 28 }}>
+            <div style={{ flex: 1, maxWidth: mobile ? "100%" : 620, minWidth: 0 }}>
+              {searchBox}
+            </div>
+            {contactButtons}
           </div>
-          {contactButtons}
         </div>
       </section>
 
-      {/* ── 고객센터 상단 2대 서브탭 (자주 묻는 질문 vs 공지사항) ── */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: mobile ? "12px 16px 0" : "18px 20px 0" }}>
-        <div style={{ display: "flex", gap: 8, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>
-          <button
-            type="button"
-            style={{
-              padding: mobile ? "6px 14px" : "8px 18px",
-              borderRadius: 20,
-              fontSize: mobile ? 13.5 : 14.5,
-              fontWeight: 800,
-              color: "#ffffff",
-              backgroundColor: NAVY,
-              border: `1px solid ${NAVY}`,
-              cursor: "pointer",
-            }}
-          >
-            자주 묻는 질문(FAQ)
-          </button>
-          <Link
-            href={mobile ? "/m/board?id=notice" : "/board?id=notice"}
-            style={{
-              padding: mobile ? "6px 14px" : "8px 18px",
-              borderRadius: 20,
-              fontSize: mobile ? 13.5 : 14.5,
-              fontWeight: 600,
-              color: "#475569",
-              backgroundColor: "#f8fafc",
-              border: "1px solid #e2e8f0",
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-            }}
-          >
-            공지사항
-          </Link>
-        </div>
-      </div>
-
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: mobile ? "4px 0 0" : "12px 20px 0" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: mobile ? "4px 0 0" : "16px 20px 0" }}>
       {/* ── 분류 ── */}
       <div
         className="hide-scrollbar"
@@ -269,16 +207,6 @@ export default function HelpCenterClient({ data, mobile = false, autoOpenInquiry
       <div style={{ margin: mobile ? "22px 16px 0" : "28px 0 0", padding: mobile ? "16px" : "18px 24px", background: "#f1f5f9", borderRadius: 12, display: "flex", flexDirection: mobile ? "column" : "row", alignItems: mobile ? "stretch" : "center", justifyContent: "space-between", gap: 12 }}>
         <span style={{ fontSize: mobile ? 14 : 15, fontWeight: 700, color: "#1e293b" }}>원하는 답을 찾지 못하셨나요?</span>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            onClick={() => openChannelTalk()}
-            style={{ padding: "10px 16px", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 14, fontWeight: 700, textAlign: "center", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-            실시간 상담
-          </button>
           <button onClick={openInquiry} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: NAVY, color: "#fff", fontSize: 14, fontWeight: 700, textAlign: "center", cursor: "pointer" }}>1:1 문의 남기기</button>
         </div>
       </div>

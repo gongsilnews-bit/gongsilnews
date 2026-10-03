@@ -356,10 +356,56 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "map"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="map" />
                   </div>
-                  <Link href="/news_gongsil" className={pathname === "/news_gongsil" ? "active" : ""}>공실뉴스</Link>
-                  <Link href="/news_politics" className={pathname === "/news_politics" ? "active" : ""}>부동산·경제</Link>
-                  <Link href="/news_marketing" className={pathname === "/news_marketing" ? "active" : ""}>AI마케팅</Link>
-                  <Link href="/news_etc" className={pathname === "/news_etc" ? "active" : ""}>라이프·오피니언</Link>
+                  {/* 공실뉴스 */}
+                  <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
+                    <Link href="/news_gongsil" className={pathname === "/news_gongsil" ? "active" : ""}>공실뉴스</Link>
+                    <div className="gnb-dropdown">
+                      <ul>
+                        <li><Link href="/news_gongsil?section2=아파트/오피스텔">아파트/오피스텔</Link></li>
+                        <li><Link href="/news_gongsil?section2=빌라/주택">빌라/주택</Link></li>
+                        <li><Link href="/news_gongsil?section2=원룸/투룸(풀옵션)">원룸/투룸(풀옵션)</Link></li>
+                        <li><Link href="/news_gongsil?section2=상가/사무실/공장/토지">상가/사무실/공장/토지</Link></li>
+                        <li><Link href="/news_gongsil?section2=신축/분양/경매">신축/분양/경매</Link></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* 부동산·경제 */}
+                  <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
+                    <Link href="/news_politics" className={pathname === "/news_politics" ? "active" : ""}>부동산·경제</Link>
+                    <div className="gnb-dropdown">
+                      <ul>
+                        <li><Link href="/news_politics?section2=부동산정책/정치">부동산정책/정치</Link></li>
+                        <li><Link href="/news_politics?section2=경제/재테크/주식">경제/재테크/주식</Link></li>
+                        <li><Link href="/news_politics?section2=세무/법률/기타">세무/법률/기타</Link></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* AI마케팅 */}
+                  <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
+                    <Link href="/news_marketing" className={pathname === "/news_marketing" ? "active" : ""}>AI마케팅</Link>
+                    <div className="gnb-dropdown">
+                      <ul>
+                        <li><Link href="/news_marketing?section2=AI/NEWS">AI/NEWS</Link></li>
+                        <li><Link href="/news_marketing?section2=부동산유튜브/블로그">부동산유튜브/블로그</Link></li>
+                        <li><Link href="/news_marketing?section2=공실/임대관리">공실/임대관리</Link></li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* 라이프·오피니언 */}
+                  <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
+                    <Link href="/news_etc" className={pathname === "/news_etc" ? "active" : ""}>라이프·오피니언</Link>
+                    <div className="gnb-dropdown">
+                      <ul>
+                        <li><Link href="/news_etc?section2=인물/인터뷰">인물/인터뷰</Link></li>
+                        <li><Link href="/news_etc?section2=중개실무/인테리어Tip">중개실무/인테리어Tip</Link></li>
+                        <li><Link href="/news_etc?section2=맛집/여행/건강">맛집/여행/건강</Link></li>
+                        <li><Link href="/news_etc?section2=스포츠/연예/기타">스포츠/연예/기타</Link></li>
+                      </ul>
+                    </div>
+                  </div>
 
                   {isSmallHeader && <span className="divider" style={{ width: 1, height: 16, backgroundColor: "#ddd", margin: "0 4px" }}></span>}
                   
@@ -370,19 +416,28 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "gongsil"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="gongsil" />
                   </div>
-                  <div className="gnb-bubble-parent" style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <div className="gnb-dropdown-parent gnb-bubble-parent" style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
                     <Link href="/study/lectures" className={pathname === "/study" || pathname?.startsWith("/study/") || pathname?.startsWith("/study_read") ? "active" : ""} style={{ position: "relative", display: "inline-block" }}>
                       <span style={{ position: "relative", zIndex: 1 }}>공실스터디</span>
                       <NavCategoryHighlightMarker categoryKey="study" active={navBubble.key === "study" && !navBubble.leaving && !isSmallHeader} />
                     </Link>
                     <NavHighlightBubble show={navBubble.key === "study"} text={navBubble.text} leaving={navBubble.leaving} disabled={isSmallHeader} icon="study" />
+                    <div className="gnb-dropdown">
+                      <ul>
+                        <li><Link href="/study/lectures">강의목록</Link></li>
+                        <li><Link href="/study/benefits/vacancy-register">멤버십혜택</Link></li>
+                        <li><Link href="/study/apply">멤버십신청</Link></li>
+                        <li><Link href="/study/resources">자료실</Link></li>
+                        <li><Link href="/study/community">커뮤니티</Link></li>
+                      </ul>
+                    </div>
                   </div>
                   <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
                     <Link href="/help" className={pathname === "/help" || pathname?.startsWith("/help") ? "active" : ""}>고객센터</Link>
                     <div className="gnb-dropdown">
                       <ul>
-                        <li><a href="/help">고객센터</a></li>
-                        <li><a href="/board?id=notice">공지사항</a></li>
+                        <li><Link href="/help">고객센터</Link></li>
+                        <li><Link href="/board?id=notice">공지사항</Link></li>
                       </ul>
                     </div>
                   </div>

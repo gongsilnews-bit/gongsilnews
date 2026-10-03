@@ -18,8 +18,8 @@ import { StudyBenefitsHeroTabs } from "@/components/study/StudyBenefitsSubNav";
  * 6. 새로운 강의는 매월 4회 꾸준히 무료로 업데이트
  * 7. 브루(Vrew), 캡컷(CapCut), 포토샵(Photoshop), 프리미어프로(Premiere Pro) 강의부터
  *    챗GPT, 제미나이, 클로드 실무 활용법까지
- * 8. 부동산 홈페이지를 내 맘대로 만드는 '바이브코딩' 실습까지
- * 9. 4K 드론 항공 영상 상업적 저작권 무료 제공
+ * 8. 인스타 릴스 · 유튜브 쇼츠 숏폼 제작 실전 노하우 전수
+ * 9. 드론 항공 영상 상업적 저작권 무료 제공
  * 10. 12개월 동안 마케팅 능력이 확! 늘어난다
  */
 
@@ -49,16 +49,16 @@ export default function StudyAiYoutubeClient() {
     {
       step: "03",
       period: "7~9개월차",
-      title: "프리미어 & 4K 드론 영상",
-      desc: "무료 제공되는 4K 드론 항공 영상을 프리미어 프로로 편집해 대형 임장 전문 채널 수준의 영상을 만듭니다.",
-      tag: "4K 드론 · 프리미어",
+      title: "프리미어 & 드론 영상",
+      desc: "무료 제공되는 드론 항공 영상을 프리미어 프로로 편집해 대형 임장 전문 채널 수준의 영상을 만듭니다.",
+      tag: "드론 영상 · 프리미어",
     },
     {
       step: "04",
       period: "10~12개월차",
-      title: "바이브코딩 홈페이지 제작",
-      desc: "코딩 없이 AI 바이브코딩으로 내 부동산 전용 접수 홈페이지를 내 마음대로 직접 구축합니다.",
-      tag: "바이브코딩 실습",
+      title: "고급 쇼츠 · 릴스 실전 마케팅",
+      desc: "AI 툴을 활용해 숏폼 영상을 빠르게 제작하고, 계약으로 연결되는 채널 브랜딩을 완성합니다.",
+      tag: "쇼츠·릴스 실습",
     },
     {
       step: "05",
@@ -148,7 +148,7 @@ export default function StudyAiYoutubeClient() {
               >
                 <span>MEMBERSHIP BENEFIT 03</span>
                 <span style={{ opacity: 0.5 }}>|</span>
-                <span>유튜브 실전 강의 + 4K 드론 저작권</span>
+                <span>유튜브 · 릴스 영상 제작 온라인 강의</span>
               </div>
 
               {/* 메인 헤드라인 */}
@@ -162,9 +162,9 @@ export default function StudyAiYoutubeClient() {
                   color: "#ffffff",
                 }}
               >
-                손님의 콜(Call)로 연결되는 유튜브 영상!<br />
+                유튜브 &amp; 릴스 영상 제작 실전 강의!<br />
                 <span style={{ color: "#34d399" }}>
-                  방송국 PD 출신 직강 & 4K 드론 저작권 무료
+                  온라인 강의로 내 사무실에서 반복 수강
                 </span>
               </h1>
 
@@ -178,9 +178,9 @@ export default function StudyAiYoutubeClient() {
                   wordBreak: "keep-all",
                 }}
               >
-                강남·서초 상위 1% 부동산이 오프라인에서 수백만 원에 배운 특급 커리큘럼을 온라인으로!
-                브루·캡컷·포토샵·프리미어부터 챗GPT·제미나이·클로드, 내 맘대로 만드는 바이브코딩까지
-                12개월간 내 마케팅 능력이 확! 늘어납니다.
+                바쁜 시간 쪼개어 오프라인 학원에 갈 필요 없이, 내 사무실에서 언제든 편하게 반복해서 들을 수 있습니다!
+                유튜브 롱폼 영상부터 인스타그램 릴스·쇼츠 숏폼 제작까지, 방송국 PD 출신 직강으로
+                손님의 문의 콜(Call)로 연결되는 실전 영상 제작법을 100% 온라인으로 마스터하세요.
               </p>
 
             </div>
@@ -207,37 +207,37 @@ export default function StudyAiYoutubeClient() {
           >
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
-                강사진 신뢰도
+                손님의 Call 연결
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
-                방송국 PD 직강
+                유튜브 제작강의
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                공실뉴스 편집장이 직접 전수하는 실전 대본
+                방송국 PD출신 부동산마케팅 직강
               </div>
             </div>
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
-                수강 방식
+                VOD 강의
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
-                12개월 무제한
+                무제한 반복 가능
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                강남/서초 오프라인 특강을 온라인으로 수강
+                내 사무실에서 시간 날 때마다 반복 수강 가능
               </div>
             </div>
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
-                특강 업데이트
+                강의 범위
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
-                매월 4회 무료 추가
+                유튜브 &amp; 릴스 제작
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                최신 AI 툴 & 바이브코딩 특강 지속 업로드
+                매물 롱폼부터 숏폼 릴스까지 완벽 실습
               </div>
             </div>
 
@@ -246,10 +246,10 @@ export default function StudyAiYoutubeClient() {
                 영상 리소스 제공
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
-                4K 드론 저작권 무료
+                드론 영상 저작권 무료
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                서울 주요 랜드마크 영상 상업적 무제한 활용
+                서울 주요 랜드마크 드론 영상 상업적 무제한 활용
               </div>
             </div>
           </div>
@@ -291,7 +291,7 @@ export default function StudyAiYoutubeClient() {
               12개월 동안 마케팅 능력이 완전히 달라집니다!
             </h2>
             <p style={{ fontSize: "16px", color: "#64748b", margin: 0, lineHeight: 1.6 }}>
-              기초 영상 툴부터 생성형 AI, 코딩 없이 내 홈페이지를 만드는 바이브코딩까지!
+              기초 영상 툴부터 인스타 릴스, 유튜브 롱폼, 최신 생성형 AI 활용법까지!
               강남·서초 상위 1% 중개사들이 검증한 실전 온라인 커리큘럼을 소개합니다.
             </p>
           </div>
@@ -641,119 +641,7 @@ export default function StudyAiYoutubeClient() {
               </div>
             </div>
 
-            {/* ── BENEFIT 04: 내 맘대로 만드는 부동산 홈페이지 '바이브코딩' 실습 ── */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "0.9fr 1.1fr",
-                gap: 40,
-                alignItems: "center",
-                background: "#ffffff",
-                border: "1px solid #d8b4fe",
-                borderRadius: 20,
-                padding: "44px 40px",
-                boxShadow: "0 6px 20px rgba(168, 85, 247, 0.06)",
-              }}
-            >
-              {/* 바이브코딩 특강 썸네일/화면 */}
-              <div
-                style={{
-                  position: "relative",
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  border: "1px solid #c084fc",
-                  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.08)",
-                  minHeight: 310,
-                  backgroundColor: "#faf5ff",
-                }}
-              >
-                <Image
-                  src="/images/study/partner-webpage-sample.png"
-                  alt="바이브코딩으로 부동산 홈페이지 직접 제작"
-                  fill
-                  style={{ objectFit: "contain", objectPosition: "center", padding: 8 }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    background: "rgba(88, 28, 135, 0.9)",
-                    padding: "10px 16px",
-                    color: "#ffffff",
-                    fontSize: 12.5,
-                    fontWeight: 700,
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <span>비개발자 바이브코딩 실습</span>
-                  <span style={{ color: "#f0abfc" }}>내 입맛대로 웹페이지 제작</span>
-                </div>
-              </div>
-
-              <div>
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    background: "#9333ea",
-                    color: "#ffffff",
-                    fontSize: 12.5,
-                    fontWeight: 800,
-                    padding: "4px 12px",
-                    borderRadius: 6,
-                    marginBottom: 16,
-                  }}
-                >
-                  핵심 04 · 최신 AI 바이브코딩 실습
-                </div>
-                <h3
-                  style={{
-                    fontSize: "26px",
-                    fontWeight: 900,
-                    color: "#062828",
-                    lineHeight: 1.35,
-                    letterSpacing: "-0.5px",
-                    margin: "0 0 16px 0",
-                  }}
-                >
-                  부동산 홈페이지를 내 맘대로 만드는<br />
-                  <span style={{ color: "#9333ea" }}>&lsquo;바이브코딩(Vibe Coding)&rsquo; 실습까지!</span>
-                </h3>
-                <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
-                  코딩을 전혀 몰라도 괜찮습니다. 최신 AI에게 말로 지시해
-                  내 부동산 전용 랜딩페이지, 매물 접수 페이지를 내 마음대로 직접 뚝딱 만드는
-                  &lsquo;바이브 코딩&rsquo; 실무 과정을 함께합니다. 외주 개발비 수백만 원을 아끼고,
-                  원하는 디자인과 기능을 대표님 손으로 실시간 수정할 수 있습니다.
-                </p>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#9333ea", fontSize: 18, lineHeight: 1 }}>✔</span>
-                    <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>코딩 0줄, 비개발자 완벽 적응</strong> — AI와 대화하며 원하는 페이지 즉시 생성
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#9333ea", fontSize: 18, lineHeight: 1 }}>✔</span>
-                    <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>홈페이지 제작 외주비 0원</strong> — 200~300만 원 상당의 개발비 완벽 세이브
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#9333ea", fontSize: 18, lineHeight: 1 }}>✔</span>
-                    <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>AI 시대 최고의 생존 무기</strong> — 콘텐츠 제작을 넘어 디지털 자산을 직접 통제
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ── BENEFIT 05: 4K 드론 항공 영상 저작권 무료 제공 ── */}
+            {/* ── BENEFIT 04: 드론 항공 영상 저작권 무료 제공 ── */}
             <div
               style={{
                 display: "grid",
@@ -781,7 +669,7 @@ export default function StudyAiYoutubeClient() {
                     marginBottom: 16,
                   }}
                 >
-                  핵심 05 · 4K 드론 영상 저작권 무료
+                  핵심 04 · 드론 영상 저작권 무료
                 </div>
                 <h3
                   style={{
@@ -794,12 +682,12 @@ export default function StudyAiYoutubeClient() {
                   }}
                 >
                   비싼 드론 살 필요 없습니다!<br />
-                  <span style={{ color: "#ea580c" }}>서울·수도권 4K 드론 영상 상업적 저작권 무상 제공</span>
+                  <span style={{ color: "#ea580c" }}>서울·수도권 드론 영상 상업적 저작권 무상 제공</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
                   드론 기기 구입비 수백만 원, 위험한 비행 허가와 촬영 승인 절차 때문에 포기하셨나요?
                   공실스터디 멤버십 회원에게는 서울 강남, 여의도, 테헤란로, 한강변 등 주요 상권과 랜드마크의
-                  고화질 4K 항공 드론 촬영 원본 소스를 상업적 저작권 걱정 없이 무료로 제공합니다.
+                  고화질 항공 드론 촬영 원본 소스를 상업적 저작권 걱정 없이 무료로 제공합니다.
                   내 유튜브 영상 도입부에 넣기만 해도 대형 방송국 수준의 시네마틱 퀄리티가 완성됩니다.
                 </p>
 
@@ -813,7 +701,7 @@ export default function StudyAiYoutubeClient() {
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <span style={{ color: "#ea580c", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>서울·수도권 핵심 랜드마크 4K 원본</strong> — 테헤란로, 여의도 금융가, 한강 조망 등
+                      <strong>서울·수도권 핵심 랜드마크 드론 원본</strong> — 테헤란로, 여의도 금융가, 한강 조망 등
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
@@ -839,7 +727,7 @@ export default function StudyAiYoutubeClient() {
               >
                 <Image
                   src="/images/study/benefit_drone_sample.jpg"
-                  alt="4K 드론 상업적 항공 영상 저작권 무료 제공"
+                  alt="드론 상업적 항공 영상 저작권 무료 제공"
                   fill
                   style={{ objectFit: "cover", objectPosition: "center" }}
                 />
@@ -980,7 +868,7 @@ export default function StudyAiYoutubeClient() {
                 margin: "0 0 16px 0",
               }}
             >
-              유튜브 대본부터 편집, AI 바이브코딩, 드론 저작권까지!<br />
+              유튜브 대본부터 편집, 릴스·쇼츠 제작, 드론 저작권까지!<br />
               월 3만원대로 내 중개업의 마케팅 체급을 바꾸세요
             </h3>
 
@@ -993,7 +881,7 @@ export default function StudyAiYoutubeClient() {
                 lineHeight: 1.6,
               }}
             >
-              방송국 PD 직강과 매월 4회 업데이트되는 신규 특강, 4K 드론 영상까지
+              방송국 PD 직강과 매월 4회 업데이트되는 신규 특강, 드론 영상까지
               공실스터디 멤버십에서 모두 제공합니다.
             </p>
 

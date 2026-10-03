@@ -10,13 +10,12 @@ import { StudyBenefitsHeroTabs } from "@/components/study/StudyBenefitsSubNav";
  * 멤버십혜택 - 블로그 포스팅 자동화
  *
  * 핵심 가치:
- * 1. 블로그 포스팅! 원클릭으로 OK~
- * 2. 공실뉴스에 공실을 등록하고 크롬웹스토어에서 기사 작성기 다운
- * 3. 원클릭으로 내 부동산 매물이 뉴스 기사 초안이 작성됨
- * 4. 뉴스 기사가 블로그 포스팅으로 다양하게 작성됨
- * 5. 초안이기 때문에 꼭!! 작성자의 검토 및 확인이 필요함
- * 6. 내 AI 계정을 사용해서 별도의 요금이 발생하지 않음 (단, 사용량에 따라 유료 요구 가능 / 무료 사용자는 제미나이 추천)
- * 7. 이제 블로그 포스팅 원클릭으로 쉽고 빠르게!
+ * 1. 블로그 & SNS 포스팅 1분 자동 완성
+ * 2. 공실 등록 후 크롬 확장 프로그램 무료 연동
+ * 3. 인스타, 쓰레드, 페이스북 SNS 자동 포스팅
+ * 4. 건물 외관 & 실내 AI 인테리어 Before/After 예측기
+ * 5. 별도의 API 요금 없이 내가 가입한 챗GPT·제미나이 사용 & 프로그램 지속 업데이트
+ * 6. 이제 블로그 포스팅 원클릭으로 쉽고 빠르게!
  */
 
 const POINT = "#059669";
@@ -153,9 +152,9 @@ export default function StudyBlogAutomationClient() {
                   color: "#ffffff",
                 }}
               >
-                블로그 포스팅! 원클릭으로 OK~<br />
+                내가 등록한 공실로<br />
                 <span style={{ color: "#34d399" }}>
-                  내 매물이 기사 초안과 블로그 글로 3초 만에 완성
+                  블로그 & SNS 포스팅, 1분 자동 완성!~
                 </span>
               </h1>
 
@@ -169,9 +168,7 @@ export default function StudyBlogAutomationClient() {
                   wordBreak: "keep-all",
                 }}
               >
-                공실뉴스에 공실을 등록하고 크롬 웹스토어 확장 프로그램 클릭 한 번이면 끝!
-                내 부동산 매물이 전문 언론 기사 초안과 다채로운 블로그 포스팅으로 자동 작성됩니다.
-                이제 블로그 포스팅, 쉽고 빠르게 해결하세요.
+                공실뉴스에 공실을 등록하고, 제공하는 툴을 사용하면, 블로그 포스팅, SNS 를 쉽고 빠르게 포스팅 할 수 있습니다.
               </p>
 
             </div>
@@ -198,49 +195,49 @@ export default function StudyBlogAutomationClient() {
           >
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
-                작성 방식
+                블로그포스팅
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
-                원클릭 OK
+                자동화 프로그램
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                공실 매물 데이터로 3초 자동 완성
+                등록된 공실이 자동으로 포스팅!
               </div>
             </div>
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
-                확장 프로그램
+                SNS 포스팅
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
-                크롬웹스토어 무료
+                인스타, 페북, 쓰레드
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                클릭 한 번으로 간편 설치 & 연동
+                등록된 공실이 자동으로 포스팅!
               </div>
             </div>
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
-                콘텐츠 다변화
+                Before, After 비교
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
-                기사 + 블로그 글
+                AI 인테리어 프로그램
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                뉴스 포맷부터 감성 블로그 포스팅까지
+                건물외관, 아파트 내부 인테리어 예측!
               </div>
             </div>
 
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
-                프로그램 추가 요금
+                프로그램 추가 요금 없음
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
                 0원 (내 AI 연동)
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                무료 사용자는 Google 제미나이 추천
+                무료로 활용하는 다양한 프로그램
               </div>
             </div>
           </div>
@@ -282,8 +279,7 @@ export default function StudyBlogAutomationClient() {
               이제 클릭 한 번으로 끝내세요!
             </h2>
             <p style={{ fontSize: "16px", color: "#64748b", margin: 0, lineHeight: 1.6 }}>
-              공실 등록 한 번이면 크롬 익스텐션이 언론사 기사 초안과 다채로운 블로그 글을
-              알아서 작성합니다. 작성자의 1분 팩트체크만 거치면 네이버 상위 노출 준비 끝!
+              공실 등록을 활용해, 제공하는 프로그램으로 블로그 글 및 SNS 포스팅! 1분만에 빠르게 작성합니다. 작성자의 팩트체크만 거치면 네이버 상위 노출 준비 끝!
             </p>
           </div>
 
@@ -317,7 +313,7 @@ export default function StudyBlogAutomationClient() {
                     marginBottom: 16,
                   }}
                 >
-                  기능 01 · 원클릭 설치 환경
+                  기능 01 · 블로그 자동 포스팅
                 </div>
                 <h3
                   style={{
@@ -333,8 +329,7 @@ export default function StudyBlogAutomationClient() {
                   <span style={{ color: POINT }}>크롬웹스토어에서 기사 작성기 다운로드!</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
-                  공실뉴스에 내 공실 매물을 등록한 뒤, 크롬 웹스토어(Chrome Web Store)에서
-                  &lsquo;공실뉴스 AI 기사 작성기&rsquo; 확장 프로그램을 무료로 다운받으세요.
+                  공실뉴스에 내 공실 매물을 등록한 뒤, &lsquo;공실뉴스 AI 기사 작성기&rsquo; 확장 프로그램을 무료로 다운받으세요.
                   별도의 복잡한 프로그램 설치 없이 크롬 브라우저 상단에서 언제든 원클릭으로 바로 작동합니다.
                 </p>
 
@@ -381,7 +376,7 @@ export default function StudyBlogAutomationClient() {
               </div>
             </div>
 
-            {/* ── POINT 02: 원클릭 뉴스 기사 초안 작성 ── */}
+            {/* ── POINT 02: SNS 자동 포스팅 (인스타, 쓰레드, 페북) ── */}
             <div
               style={{
                 display: "grid",
@@ -389,39 +384,44 @@ export default function StudyBlogAutomationClient() {
                 gap: 40,
                 alignItems: "center",
                 background: "#ffffff",
-                border: "1px solid #e2e8f0",
+                border: "1px solid #fce7f3",
                 borderRadius: 20,
                 padding: "44px 40px",
                 boxShadow: "0 6px 20px rgba(0, 0, 0, 0.03)",
               }}
             >
-              {/* 기사 초안 프리뷰 박스 */}
+              {/* SNS 포스팅 프리뷰 박스 */}
               <div
                 style={{
-                  background: "#f8fafc",
-                  border: "1px solid #cbd5e1",
+                  background: "#fff1f2",
+                  border: "1px solid #fecdd3",
                   borderRadius: 14,
                   padding: "24px 20px",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, borderBottom: "1px solid #e2e8f0", paddingBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, borderBottom: "1px solid #ffe4e6", paddingBottom: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ background: "#0284c7", color: "#ffffff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>
-                      뉴스 기사 초안
+                    <span style={{ background: "linear-gradient(135deg, #e1306c 0%, #c13584 100%)", color: "#ffffff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>
+                      SNS 자동 포스팅
                     </span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>공실뉴스 보도국</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>인스타 · 쓰레드 · 페북</span>
                   </div>
-                  <span style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>3초 만에 생성 완료</span>
+                  <span style={{ fontSize: 12, color: "#e1306c", fontWeight: 700 }}>1분 자동 생성 완료</span>
                 </div>
 
-                <h5 style={{ fontSize: 16, fontWeight: 900, color: "#0f172a", margin: "0 0 10px 0", lineHeight: 1.4 }}>
-                  [단독] 강남역 도보 3분 초역세권 대형 오피스, 인테리어 무상 승계 파격 조건 등장
+                <h5 style={{ fontSize: 15, fontWeight: 900, color: "#0f172a", margin: "0 0 10px 0", lineHeight: 1.4 }}>
+                  🏢 [강남역 도보 3분] 통유리 채광 맛집! 인테리어 무상 승계 프리미엄 오피스 ✨
                 </h5>
 
-                <p style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, margin: 0, background: "#ffffff", padding: "12px 14px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                  【공실뉴스=김대표 기자】 서울 강남구 테헤란로 핵심 업무권역에 위치한 전용 148㎡ 규모의 고급 사무실이 신규 임차인을 맞이한다.
-                  해당 매물은 채광이 우수한 통유리 외관과 회의실 3실이 기시공되어 있어 초기 시설 투자비용을 획기적으로 절감할 수 있다...
-                </p>
+                <div style={{ fontSize: 13, color: "#334155", lineHeight: 1.65, margin: 0, background: "#ffffff", padding: "14px 16px", borderRadius: 8, border: "1px solid #fecdd3", whiteSpace: "pre-line" }}>
+                  📍 강남구 테헤란로 핵심 업무권역 전용 148㎡(45평){"\n"}
+                  💡 통유리 외관 + 회의실 3실 완비로 초기 인테리어 비용 0원!{"\n"}
+                  🚀 빠른 입주 협의 가능 & 즉시 업무 스타트!{"\n\n"}
+                  👉 프로필 링크에서 상세 사진 확인 & DM/전화 문의 환영!{"\n\n"}
+                  <span style={{ color: "#2563eb", fontWeight: 600 }}>
+                    #강남사무실 #강남역오피스 #인테리어완비 #사무실임대 #공실뉴스 #부동산마케팅
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -430,7 +430,7 @@ export default function StudyBlogAutomationClient() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "#0284c7",
+                    background: "linear-gradient(135deg, #e1306c 0%, #c13584 100%)",
                     color: "#ffffff",
                     fontSize: 12.5,
                     fontWeight: 800,
@@ -439,7 +439,7 @@ export default function StudyBlogAutomationClient() {
                     marginBottom: 16,
                   }}
                 >
-                  기능 02 · 전문 언론 기사화
+                  기능 02 · SNS 자동 포스팅
                 </div>
                 <h3
                   style={{
@@ -451,47 +451,47 @@ export default function StudyBlogAutomationClient() {
                     margin: "0 0 16px 0",
                   }}
                 >
-                  원클릭으로 내 부동산 매물이<br />
-                  <span style={{ color: "#0284c7" }}>뉴스 기사 초안으로 바로 작성됨!</span>
+                  클릭 한 번으로 내 매물이<br />
+                  <span style={{ color: "#e1306c" }}>인스타 · 쓰레드 · 페북 포스팅으로 완성!</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
-                  매물 정보만 있으면 전문 부동산 기자가 쓴 것처럼 객관적이고 신뢰도 높은 언론사 기사 초안이 완성됩니다.
-                  위치, 면적, 층수, 임대조건, 입지 분석까지 일목요연하게 정리되어
-                  포털 뉴스 송고는 물론 임대인 및 고객 브리핑 자료로도 완벽합니다.
+                  인스타그램 캡션, 쓰레드 피드, 페이스북 카드뉴스용 소개글까지 클릭 한 번으로 최적화 작성됩니다.
+                  매물의 핵심 장점 요약부터 감성적인 톤앤매너, 타깃 맞춤 해시태그까지 전자동으로 완성되어
+                  복사해서 바로 SNS에 업로드할 수 있습니다.
                 </p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0284c7", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#e1306c", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>3초 원클릭 초안 완성</strong> — 긴 글 작성을 고민할 필요 없이 헤드라인과 본문 자동 구성
+                      <strong>인스타 · 쓰레드 · 페북 최적화 톤</strong> — 각 SNS 감성에 맞는 감각적인 문구와 이모지 자동 구성
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0284c7", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#e1306c", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>언론사 보도체 구조화</strong> — 6하 원칙에 입각한 전문성 높은 문장력
+                      <strong>인기 해시태그 자동 추출</strong> — 지역명, 역세권, 매물 용도 등 검색 유입이 높은 태그 자동 생성
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0284c7", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#e1306c", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>임대인 감동 브리핑</strong> — &ldquo;대표님 매물을 언론 기사로 다뤄 드립니다&rdquo;
+                      <strong>1분 초고속 멀티 채널 업로드</strong> — 카피라이팅 고민 없이 바로 복사해서 피드에 등록 완료
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* ── POINT 03: 다양한 블로그 포스팅으로 변환 ── */}
+            {/* ── POINT 03: 건물외관 & 실내 AI 인테리어 예측기 ── */}
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: "1.1fr 0.9fr",
                 gap: 40,
                 alignItems: "center",
-                background: "linear-gradient(135deg, #f8fafc 0%, #edfafd 100%)",
-                border: "1px solid #cbd5e1",
+                background: "linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)",
+                border: "1px solid #c7d2fe",
                 borderRadius: 20,
                 padding: "44px 40px",
               }}
@@ -502,7 +502,7 @@ export default function StudyBlogAutomationClient() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "#0f766e",
+                    background: "#4f46e5",
                     color: "#ffffff",
                     fontSize: 12.5,
                     fontWeight: 800,
@@ -511,7 +511,7 @@ export default function StudyBlogAutomationClient() {
                     marginBottom: 16,
                   }}
                 >
-                  기능 03 · 다채로운 블로그 글감
+                  기능 03 · AI 인테리어 예측기
                 </div>
                 <h3
                   style={{
@@ -523,167 +523,89 @@ export default function StudyBlogAutomationClient() {
                     margin: "0 0 16px 0",
                   }}
                 >
-                  뉴스 기사가 블로그 포스팅으로<br />
-                  <span style={{ color: "#0f766e" }}>다양하게 변환되어 작성됨!</span>
+                  건물 외관 & 아파트 실내<br />
+                  <span style={{ color: "#4f46e5" }}>AI 인테리어 예측기 제공!</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
-                  딱딱한 기사 문체 그대로 블로그에 올리면 방문자들이 지루해합니다.
-                  공실뉴스 기사 작성기는 작성된 기사를 네이버 블로그에 딱 맞는 다양한 톤앤매너로 변환해 줍니다.
-                  친근한 현장 브리핑형, 투자 가치 집중 분석형, 감성 스토리텔링형 등 골라 쓰는 재미가 있습니다.
+                  건물 외관 인테리어와 아파트 실내 인테리어 예측기를 제공합니다.
+                  Before & After 인테리어 예측도를 통해 중개에 적극 활용하여 고객과 신뢰도 높은 상담을 진행할 수 있으며,
+                  유튜브 쇼츠나 인스타그램 숏폼 영상을 만들기에도 최적입니다.
                 </p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0f766e", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#4f46e5", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>네이버 스마트에디터 최적화</strong> — 소제목, 본문 글머리, 강조 서식까지 완벽 대응
+                      <strong>Before & After 인테리어 예측도</strong> — 건물 외관 및 실내의 리모델링 후 모습을 실사급으로 시각화
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0f766e", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#4f46e5", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>상위 노출 태그 자동 추천</strong> — 네이버 검색 알고리즘 맞춤형 해시태그 10종 자동 생성
+                      <strong>중개 상담 & 브리핑 파워 UP</strong> — &ldquo;리모델링 후 이렇게 바뀝니다&rdquo; 고객의 계약 의사결정 촉진
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0f766e", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#4f46e5", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>다양한 관점 포스팅</strong> — 1개 공실 매물로 3~4개의 서로 다른 블로그 콘텐츠 양산 가능
+                      <strong>쇼츠 · 릴스 숏폼 제작에 최적</strong> — 전후 극적 대비로 SNS에서 높은 조회수와 매물 문의 확보
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* 네이버 블로그 에디터 샘플 */}
+              {/* Before & After 시각화 카드 */}
               <div
                 style={{
-                  position: "relative",
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  border: "1px solid #cbd5e1",
-                  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.08)",
-                  minHeight: 310,
-                  backgroundColor: "#ffffff",
+                  background: "#ffffff",
+                  borderRadius: 16,
+                  border: "1px solid #c7d2fe",
+                  boxShadow: "0 10px 25px rgba(79, 70, 229, 0.08)",
+                  padding: "24px 20px",
                 }}
               >
-                <Image
-                  src="/images/study/naver-blog-editor-sample.png"
-                  alt="네이버 블로그 포스팅 에디터 샘플"
-                  fill
-                  style={{ objectFit: "cover", objectPosition: "top center" }}
-                />
-              </div>
-            </div>
-
-            {/* ── POINT 04: ★ 중요! 작성자의 검토 및 확인 필수 ── */}
-            <div
-              style={{
-                background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
-                border: "2px solid #f59e0b",
-                borderRadius: 20,
-                padding: "40px 36px",
-                boxShadow: "0 8px 24px rgba(245, 158, 11, 0.12)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
-                <div
-                  style={{
-                    background: "#d97706",
-                    color: "#ffffff",
-                    borderRadius: "50%",
-                    width: 52,
-                    height: 52,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 28,
-                    fontWeight: 900,
-                    flexShrink: 0,
-                  }}
-                >
-                  !
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, borderBottom: "1px solid #e0e7ff", paddingBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ background: "#4f46e5", color: "#ffffff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>
+                      AI 리모델링 시뮬레이션
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>외관 · 실내 예측기</span>
+                  </div>
+                  <span style={{ fontSize: 12, color: "#4f46e5", fontWeight: 700 }}>Before & After</span>
                 </div>
 
-                <div style={{ flex: "1 1 500px" }}>
-                  <div
-                    style={{
-                      display: "inline-block",
-                      background: "#b45309",
-                      color: "#ffffff",
-                      fontSize: 12.5,
-                      fontWeight: 800,
-                      padding: "4px 12px",
-                      borderRadius: 6,
-                      marginBottom: 10,
-                    }}
-                  >
-                    필수 주의사항 · FACT CHECK
-                  </div>
-
-                  <h3
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: 900,
-                      color: "#78350f",
-                      lineHeight: 1.35,
-                      letterSpacing: "-0.5px",
-                      margin: "0 0 12px 0",
-                    }}
-                  >
-                    초안이기 때문에 꼭!! 작성자의 검토 및 확인이 필요합니다
-                  </h3>
-
-                  <p
-                    style={{
-                      fontSize: "15px",
-                      color: "#92400e",
-                      lineHeight: 1.7,
-                      margin: "0 0 20px 0",
-                      wordBreak: "keep-all",
-                    }}
-                  >
-                    AI는 대표님의 소중한 시간을 아껴주는 가장 든든한 조수입니다.
-                    하지만 부동산 거래는 보증금, 권리금, 관리비, 면적, 중개대상물 확인사항 등
-                    <strong> 100% 정확한 팩트가 가장 중요합니다.</strong>
-                    AI가 90% 이상 훌륭하게 초안을 작성해주면, 발행 전 반드시 대표님께서
-                    세부 숫자와 연락처를 1분간 검토·확인하신 후 최종 발행해 주세요!
-                  </p>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                      gap: 12,
-                      background: "#ffffff",
-                      padding: "16px 20px",
-                      borderRadius: 12,
-                      border: "1px solid #fde68a",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: "#d97706", fontWeight: 900 }}>1.</span>
-                      <span style={{ fontSize: 13.5, color: "#451a03", fontWeight: 700 }}>
-                        임대료 및 관리비 변동사항 확인
-                      </span>
+                {/* Before / After 비교 박스 2단 */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div style={{ background: "#f1f5f9", borderRadius: 10, padding: "14px 12px", border: "1px solid #e2e8f0", textAlign: "center" }}>
+                    <div style={{ display: "inline-block", background: "#64748b", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4, marginBottom: 8 }}>
+                      BEFORE
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: "#d97706", fontWeight: 900 }}>2.</span>
-                      <span style={{ fontSize: 13.5, color: "#451a03", fontWeight: 700 }}>
-                        전용 면적 및 층수 표기 재확인
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: "#d97706", fontWeight: 900 }}>3.</span>
-                      <span style={{ fontSize: 13.5, color: "#451a03", fontWeight: 700 }}>
-                        중개사무소 상호 및 등록번호 체크
-                      </span>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 4 }}>노후 외관 / 기존 실내</div>
+                    <div style={{ fontSize: 11.5, color: "#64748b", lineHeight: 1.4 }}>
+                      오래된 타일 외벽 및 답답한 기본 인테리어
                     </div>
                   </div>
+
+                  <div style={{ background: "#eef2ff", borderRadius: 10, padding: "14px 12px", border: "1px solid #a5b4fc", textAlign: "center" }}>
+                    <div style={{ display: "inline-block", background: "#4f46e5", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4, marginBottom: 8 }}>
+                      AFTER ✨
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#1e1b4b", marginBottom: 4 }}>AI 모던 리모델링 예측</div>
+                    <div style={{ fontSize: 11.5, color: "#4338ca", lineHeight: 1.4 }}>
+                      트렌디한 통유리 파사드 & 호텔식 인테리어
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ background: "#faf5ff", border: "1px dashed #d8b4fe", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: "#7e22ce" }}>
+                    🎬 쇼츠 · 릴스 숏폼 영상 제작 및 고객 계약 브리핑에 즉시 활용!
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* ── POINT 05: 내 AI 계정 사용으로 별도 요금 없음 & 제미나이 추천 ── */}
+            {/* ── POINT 04: 내 챗GPT · 제미나이 계정 사용 & 지속적인 프로그램 업데이트 ── */}
             <div
               style={{
                 display: "grid",
@@ -697,54 +619,54 @@ export default function StudyBlogAutomationClient() {
                 boxShadow: "0 6px 20px rgba(59, 130, 246, 0.06)",
               }}
             >
-              {/* 제미나이 추천 카드 UI */}
+              {/* 내 AI 계정 연동 & 업데이트 안내 카드 UI */}
               <div
                 style={{
-                  background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+                  background: "linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%)",
                   border: "1px solid #93c5fd",
                   borderRadius: 16,
-                  padding: "28px 24px",
+                  padding: "26px 22px",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 8,
-                      background: "#2563eb",
-                      color: "#ffffff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 900,
-                      fontSize: 18,
-                    }}
-                  >
-                    G
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "1px solid #dbeafe", paddingBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ background: "#2563eb", color: "#ffffff", fontSize: 11, fontWeight: 800, padding: "3px 8px", borderRadius: 4 }}>
+                      AI 계정 연동
+                    </span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: "#1e3a8a" }}>
+                      내 챗GPT · 제미나이 활용
+                    </span>
                   </div>
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: "#1e3a8a" }}>
-                      Google Gemini (제미나이)
+                  <span style={{ fontSize: 12, color: "#059669", fontWeight: 800 }}>추가 API 요금 0원</span>
+                </div>
+
+                {/* 챗GPT & 제미나이 2단 뱃지 박스 */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #bbf7d0", textAlign: "center" }}>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: "#15803d", marginBottom: 2 }}>
+                      ChatGPT
                     </div>
-                    <div style={{ fontSize: 12, color: "#2563eb", fontWeight: 700 }}>
-                      무료 사용자 강력 추천 AI
+                    <div style={{ fontSize: 11.5, color: "#4b5563" }}>
+                      내가 가입한 챗GPT 사용
+                    </div>
+                  </div>
+                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #bfdbfe", textAlign: "center" }}>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: "#1d4ed8", marginBottom: 2 }}>
+                      Gemini
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "#4b5563" }}>
+                      내가 가입한 제미나이 사용
                     </div>
                   </div>
                 </div>
 
-                <p style={{ fontSize: 13.5, color: "#1e40af", lineHeight: 1.6, margin: "0 0 16px 0" }}>
-                  구글 제미나이 API는 개인 사용자에게 매일 넉넉한 <strong>무료 사용량(Free Tier)</strong>을
-                  제공합니다. 별도 결제 등록 없이도 매일 수십 편의 포스팅을 무료로 생성하실 수 있습니다.
-                </p>
-
-                <div style={{ background: "#ffffff", padding: "12px 16px", borderRadius: 10, border: "1px solid #bfdbfe" }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: "#1e3a8a", marginBottom: 4 }}>
-                    💡 API 키 발급이 어렵지 않나요?
+                <div style={{ background: "#ffffff", padding: "14px 16px", borderRadius: 10, border: "1px solid #bfdbfe" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 800, color: "#1e3a8a", marginBottom: 4 }}>
+                    <span>🔄</span>
+                    <span>프로그램 지속 업데이트</span>
                   </div>
-                  <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>
-                    스터디 강의에서 구글 계정으로 1분 만에 API 키를 복사해 프로그램에 붙여넣는 방법을
-                    친절하게 화면 영상으로 알려드립니다.
+                  <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.55 }}>
+                    공실뉴스 자동화 프로그램은 대표님들의 현장 피드백을 반영하여 더 편리하고 강력한 기능으로 지속적으로 업데이트될 예정입니다.
                   </div>
                 </div>
               </div>
@@ -776,32 +698,32 @@ export default function StudyBlogAutomationClient() {
                     margin: "0 0 16px 0",
                   }}
                 >
-                  내 AI 계정을 사용해서<br />
-                  <span style={{ color: "#2563eb" }}>별도의 프로그램 요금이 발생하지 않음!</span>
+                  별도의 API 요금 부담 없이<br />
+                  <span style={{ color: "#2563eb" }}>내가 가입한 챗GPT · 제미나이 바로 사용!</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
-                  프로그램 월 사용료나 글 작성 건당 수수료를 요구하지 않습니다.
-                  회원님 개인의 AI API 키(Google Gemini 또는 OpenAI 등)를 직접 입력하여 사용하므로
-                  프로그램 이용에 따른 별도의 추가 요금이 없습니다.
+                  별도의 프로그램 이용료나 추가 API 요금이 들지 않습니다.
+                  대표님께서 이미 가입하여 사용 중이신 챗GPT나 제미나이를 그대로 활용하여
+                  비용 부담 없이 마음껏 콘텐츠를 생성하실 수 있습니다.
                 </p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <span style={{ color: "#2563eb", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>소프트웨어 추가 과금 0원</strong> — 멤버십 회원이라면 평생 무료 이용
+                      <strong>별도의 추가 API 요금 없음</strong> — 매월 나가는 프로그램 결제나 건당 요금 부담 제로
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <span style={{ color: "#2563eb", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>무료 사용자는 제미나이 추천</strong> — 넉넉한 일일 무료 할당량으로 비용 부담 제로
+                      <strong>내가 가입한 챗GPT · 제미나이 활용</strong> — 기존에 쓰시던 AI 계정을 그대로 연결해 즉시 생성
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <span style={{ color: "#2563eb", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>투명한 공식 API 연동</strong> — 대량 사용 시에도 중간 마진 없는 공식 원가 적용
+                      <strong>프로그램 지속 업데이트 예정</strong> — 대표님들의 업무 편의를 위한 새로운 기능 지속 업그레이드
                     </span>
                   </div>
                 </div>
