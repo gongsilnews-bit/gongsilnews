@@ -326,6 +326,26 @@
     }
     addImages(slots[0].map((item) => item.index));
 
+    /* 영상 — 도입 문단 바로 다음. 유튜브 주소는 따로 글자로만 붙여 넣어 편집기가 영상 카드로 바꾸게 하고,
+       영상 파일은 자동으로 올릴 수 없으므로 그 자리에 안내 문구만 넣는다 (content-naver.js 의 "video" 블록) */
+    const video = options.video || {};
+    let videoDone = !(video.youtubeUrl || video.fileName);
+    const addVideo = () => {
+      if (videoDone) return;
+      videoDone = true;
+      html(paragraphHtml("▶ 영상으로 보기", { size: 17, bold: true }), { tight: true });
+      if (video.youtubeUrl) {
+        flush();
+        blocks.push({ type: "video", url: video.youtubeUrl });
+      } else {
+        html(paragraphHtml(
+          `📹 여기에 영상을 올려 주세요${video.fileName ? ` (${video.fileName})` : ""} — 위쪽 [동영상] 버튼으로 올린 뒤 이 줄은 지워 주세요.`,
+          { color: ACCENT, bold: true }
+        ));
+      }
+    };
+    if (leadIndex < 0) addVideo();
+
     // 도입부가 끝나고 첫 소제목이 오기 전에 넣는 장식
     const afterIntro = () => {
       if (design === "basic") {
@@ -345,6 +365,7 @@
         else if (design === "magazine") html(paragraphHtml(paragraph, { align: "center", color: MUTED }));
         else html(paragraphHtml(paragraph, { size: 17, bold: true }));
         if (design === "qna") html(tableHtml(rows));
+        addVideo();
       } else if (isHeading(paragraph)) {
         const text = stripHeading(paragraph);
         headingNumber += 1;
@@ -381,6 +402,7 @@
       }
     });
     addImages(carried);
+    addVideo();
 
     if (firstHeadingIndex < 0) afterIntro();
 
@@ -410,6 +432,12 @@
     return blocks;
   }
 
+  /* 유튜브 주소만 받는다 (watch · shorts · youtu.be · live). 아니면 "" */
+  function youtubeUrl(raw) {
+    const text = String(raw || "").trim();
+    return /^https?:\/\/((www|m)\.)?(youtube\.com\/(watch\?v=|shorts\/|live\/)|youtu\.be\/)[\w-]{6,}/i.test(text) ? text : "";
+  }
+
   /* 발행 창 태그 칸용: # 제거, 중복 제거, 네이버 최대 30개 */
   function normalizeTags(keywords) {
     const seen = new Set();
@@ -424,6 +452,7 @@
     splitParagraphs, layoutMediaSlots, buildNaverBlocks, normalizeTags,
     DESIGNS, designHint, factRows, listingProblems, SITE_URL,
     sourceBlockLines, listingUrl, // SNS 글 끝 출처·링크도 블로그와 같은 문구를 쓴다 (sns.js)
+    youtubeUrl,
   };
   global.GWNaverBlog = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

@@ -29,6 +29,8 @@
     imageStyle: "news",
     imageRequest: "",
     pendingImage: null, // { channel, requestKey, beforeUrl, beforeCount }
+    video: gwEmptyVideo(), // 영상 넣기 — 세로 쇼츠 1편을 세 플랫폼에 함께 (shared/video-ui.js)
+    reviseScope: "",    // 마지막 수정 요청 범위 — 플랫폼 이름 또는 "all"(영상용으로 고치기)
   };
 
   const $ = (id) => document.getElementById(id);
@@ -46,6 +48,7 @@
     snsDraftEmpty: $("snsDraftEmpty"), snsDraftBody: $("snsDraftBody"),
     snsBadge: $("snsBadge"), snsCount: $("snsCount"), snsEditor: $("snsEditor"), snsTail: $("snsTail"),
     snsMedia: $("snsMedia"), snsMediaHint: $("snsMediaHint"), snsAiNotice: $("snsAiNotice"),
+    btnSnsVideoRewrite: $("btnSnsVideoRewrite"),
     snsReviseInput: $("snsReviseInput"), btnReviseSns: $("btnReviseSns"), btnPullSnsRevised: $("btnPullSnsRevised"),
     btnInsertSnsImage: $("btnInsertSnsImage"), snsFileImage: $("snsFileImage"),
     snsImageRequest: $("snsImageRequest"), btnMakeSnsImage: $("btnMakeSnsImage"), snsRatioNote: $("snsRatioNote"),
@@ -378,7 +381,7 @@
 
       await waitTabReady(tab.id);
       await sleep(1200);
-      const filled = await askTab(tab.id, { type: "GW_FILL", text: gwBuildSnsPrompt(source) });
+      const filled = await askTab(tab.id, { type: "GW_FILL", text: gwBuildSnsPrompt(source, { video: N.video }) });
       if (!filled.ok) throw new Error(filled.reason || "SNS 작성 지시를 넣지 못했습니다.");
       const submitted = await askTab(tab.id, { type: "GW_SUBMIT" });
       if (!submitted.ok) throw new Error(submitted.reason || "AI 전송 버튼을 누르지 못했습니다.");
@@ -447,39 +450,34 @@
     }, { cover: el.snsDraftBody, fail: el.snsFail, failTitle: "SNS 글을 가져오지 못했습니다", retry: el.btnPullSns })
   );
 
-  /* ── 수정 요청: 지금 보는 플랫폼만 ── */
-  function reviseSns() {
-    const request = el.snsReviseInput.value.trim();
-    if (!request) {
-      toast(`${info().label} 글에서 고칠 점을 적어 주세요.`, "bad");
-      return;
-    }
-    const channel = N.channel;
-    guard(el.btnReviseSns, "수정 요청 중", async () => {
+  /* ── 수정 요청 — 지금 보는 플랫폼 하나(only) 또는 세 플랫폼 모두(only: null, 영상용으로 고치기) ── */
+  function sendRevision({ prompt, only, label, button, afterSend }) {
+    return guard(button, "수정 요청 중", async () => {
       if (!N.aiTabId || !(await chrome.tabs.get(N.aiTabId).catch(() => null))) {
         N.aiTabId = null;
         throw new Error("SNS 글을 쓴 AI 탭이 닫혔습니다. [AI SNS 3종 작성]으로 새로 만들어 주세요.");
       }
       harvest();
+      N.reviseScope = only || "all"; // [수정글 가져오기]가 같은 범위로 가져오게
       await save();
       await chrome.tabs.update(N.aiTabId, { active: true });
       const api = await GWChatGptDirect.waitIdle(N.aiTabId, () => status("AI 답변이 끝나길 기다리는 중", "busy"));
       const before = await askTab(N.aiTabId, { type: "GW_COUNT" }).catch(() => null);
 
-      const filled = await askTab(N.aiTabId, { type: "GW_FILL", text: gwBuildSnsRevisePrompt(channel, request) });
+      const filled = await askTab(N.aiTabId, { type: "GW_FILL", text: prompt });
       if (!filled.ok) throw new Error(filled.reason || "수정 요청을 넣지 못했습니다.");
       const submitted = await askTab(N.aiTabId, { type: "GW_SUBMIT" });
       if (!submitted.ok) throw new Error(submitted.reason || "수정 요청을 전송하지 못했습니다.");
 
-      el.snsReviseInput.value = "";
-      GWBusy.label(el.btnReviseSns, `AI가 ${CHANNELS[channel].label} 글을 수정하는 중`);
+      afterSend?.();
+      GWBusy.label(button, `AI가 ${label} 글을 수정하는 중`);
       status("AI가 SNS 글을 수정하는 중", "busy");
 
       if (api.ok) {
         const answer = await GWChatGptDirect.waitNewAnswer(N.aiTabId, api.messageCount, 240000);
         if (answer) {
-          await applySnsText(answer, channel);
-          toast(`수정된 ${CHANNELS[channel].label} 글을 가져왔습니다.`, "ok");
+          await applySnsText(answer, only);
+          toast(`수정된 ${label} 글을 가져왔습니다.`, "ok");
           status("SNS 글 갱신됨", "ok");
           return;
         }
@@ -491,20 +489,65 @@
         return;
       }
       toast("수정을 요청했습니다. 새 답변이 끝나면 자동으로 가져옵니다.", "info");
-      await applySnsText(await readAnswer({ minCount: before.count + 1, maxMs: 180000 }), channel);
-      toast(`수정된 ${CHANNELS[channel].label} 글을 가져왔습니다.`, "ok");
+      await applySnsText(await readAnswer({ minCount: before.count + 1, maxMs: 180000 }), only);
+      toast(`수정된 ${label} 글을 가져왔습니다.`, "ok");
       status("SNS 글 갱신됨", "ok");
     }, { cover: el.snsDraftBody, failTitle: "수정 글을 받지 못했습니다", retry: el.btnPullSnsRevised });
   }
+
+  function reviseSns() {
+    const request = el.snsReviseInput.value.trim();
+    if (!request) {
+      toast(`${info().label} 글에서 고칠 점을 적어 주세요.`, "bad");
+      return;
+    }
+    const channel = N.channel;
+    sendRevision({
+      prompt: gwBuildSnsRevisePrompt(channel, request),
+      only: channel,
+      label: CHANNELS[channel].label,
+      button: el.btnReviseSns,
+      afterSend: () => { el.snsReviseInput.value = ""; },
+    });
+  }
+
+  /* 영상을 나중에 넣었으면 — 이미 쓴 세 글을 영상용(짧은 릴스 캡션 등)으로 한 번에 고친다 */
+  el.btnSnsVideoRewrite.addEventListener("click", () => {
+    if (!gwHasVideo(N.video)) {
+      toast("먼저 유튜브 주소나 영상 파일을 넣어 주세요.", "bad");
+      return;
+    }
+    sendRevision({
+      prompt: gwBuildSnsVideoRevisePrompt(N.video),
+      only: null,
+      label: "SNS 3종",
+      button: el.btnSnsVideoRewrite,
+    });
+  });
 
   el.btnReviseSns.addEventListener("click", reviseSns);
   el.snsReviseInput.addEventListener("keydown", (event) => { if (event.key === "Enter") reviseSns(); });
   el.btnPullSnsRevised.addEventListener("click", () =>
     guard(el.btnPullSnsRevised, "수정글 가져오는 중", async () => {
-      await applySnsText(await readAnswer(), N.channel);
-      toast(`수정된 ${info().label} 글을 가져왔습니다.`, "ok");
+      const all = N.reviseScope === "all";
+      await applySnsText(await readAnswer(), all ? null : N.channel);
+      toast(`수정된 ${all ? "SNS 3종" : info().label} 글을 가져왔습니다.`, "ok");
       status("SNS 글 갱신됨", "ok");
     }, { cover: el.snsDraftBody, failTitle: "수정 글을 가져오지 못했습니다", retry: el.btnPullSnsRevised })
+  );
+
+  /* ── 영상 넣기 (shared/video-ui.js) — 세로 쇼츠 1편을 세 플랫폼에 함께 ── */
+  const videoCard = gwBindVideoCard(
+    { url: "snsVideoUrl", fileBtn: "btnSnsVideoFile", file: "snsVideoFile", info: "snsVideoInfo", ai: "snsVideoAi" },
+    () => N.video,
+    (next) => {
+      N.video = next;
+      save();
+      renderTail();
+      if (isSnsChannel(N.channel) && N.posts) renderMedia();
+      refreshButtons();
+    },
+    { fileNote: "영상 파일은 각 사이트에 직접 올려 주세요 (인스타그램은 릴스로 올라갑니다).", toast }
   );
 
   /* ═════════════ 화면 그리기 ═════════════ */
@@ -513,6 +556,7 @@
       noun: gwSnsNoun(N.vacancy),
       url: GWNaverBlog.listingUrl(N.vacancy, N.listing),
       listing: N.listing,
+      video: N.video,
     };
   }
 
@@ -668,7 +712,7 @@
     const ratioClass = c.ratio === 1 ? "r-1" : c.ratio ? "r-45" : "r-0";
     el.snsMediaHint.textContent = `${c.ratioText} · 최대 ${c.maxMedia}장 · 1번이 대표` +
       (channel === "instagram" ? " · 사진 필수" : " · 없어도 됩니다");
-    const aiNote = gwSnsAiLabelNote(channel, list);
+    const aiNote = gwSnsAiLabelNote(channel, list, N.video);
     el.snsAiNotice.classList.toggle("hidden", !aiNote);
     el.snsAiNotice.textContent = aiNote ? `🤖 ${aiNote}` : "";
     if (!list.length) {
@@ -981,7 +1025,7 @@
 
   /* 내려받은 사진에 AI 이미지가 섞여 있으면 "AI 레이블을 켜세요" (shared/sns-prompt.js) */
   function aiLabelNote(channel) {
-    const note = gwSnsAiLabelNote(channel, N.media[channel]);
+    const note = gwSnsAiLabelNote(channel, N.media[channel], N.video);
     return note ? ` 🤖 ${note}` : "";
   }
 
@@ -1049,6 +1093,8 @@
     el.btnCopySns.disabled = !has;
     el.btnSnsCopyOnly.disabled = !has;
     el.btnSnsZip.disabled = !has;
+    el.btnSnsVideoRewrite.classList.toggle("hidden", !N.posts || !gwHasVideo(N.video));
+    el.btnSnsVideoRewrite.disabled = !N.posts || !N.aiTabId;
   }
 
   let lastSaveError = "";
@@ -1081,6 +1127,8 @@
     showWriting();
     imageStyleButtons.forEach((button) => button.classList.toggle("active", button.dataset.snsImageStyle === N.imageStyle));
     el.snsImageRequest.value = N.imageRequest;
+    if (!N.video || typeof N.video !== "object") N.video = gwEmptyVideo();
+    videoCard.render();
     paintChannelButtons();
     await updateSourceCard();
     renderSns();

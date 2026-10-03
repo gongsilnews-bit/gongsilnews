@@ -26,6 +26,7 @@
     // 초안을 만든 순간의 매물 정보. 이후 1번 탭에서 다른 매물을 가져와도 이 초안에는 섞이지 않는다.
     vacancy: null,
     listing: null,
+    video: gwEmptyVideo(), // 영상 넣기 — 유튜브 주소는 영상 카드로, 파일은 자리 안내만 (shared/video-ui.js)
   };
 
   const $ = (id) => document.getElementById(id);
@@ -841,6 +842,13 @@
     reader.readAsDataURL(file);
   });
 
+  const videoCard = gwBindVideoCard(
+    { url: "blogVideoUrl", fileBtn: "btnBlogVideoFile", file: "blogVideoFile", info: "blogVideoInfo" },
+    () => B.video,
+    (next) => { B.video = next; save(); },
+    { fileNote: "전송하면 그 자리에 안내 문구가 들어갑니다. 네이버 [동영상] 버튼으로 직접 올려 주세요.", toast }
+  );
+
   function naverTags() {
     return GWNaverBlog.normalizeTags(B.article?.keywords);
   }
@@ -877,6 +885,7 @@
       title: B.article.title,
       vacancy,
       listing: B.listing,
+      video: B.video,
     });
     return Promise.all(blocks.map(async (block) => (
       block.type === "image"
@@ -974,6 +983,11 @@
         const imageNote = result.imagesInserted ? ` 사진 ${result.imagesInserted}장도 함께 넣었습니다.` : "";
         toast(`네이버 글쓰기 화면에 제목과 본문을 채웠습니다.${imageNote}${tagNote} 확인 후 네이버에서 직접 발행해 주세요.`, "ok", 10000);
       }
+      if (B.video.fileName) {
+        toast(`"▶ 영상으로 보기" 아래 안내 문구 자리에 위쪽 [동영상] 버튼으로 ${B.video.fileName} 을 올린 뒤 안내 문구를 지워 주세요.`, "info", 14000);
+      } else if (B.video.youtubeUrl) {
+        toast("유튜브 주소를 \"▶ 영상으로 보기\" 아래에 넣었습니다. 영상 카드로 바뀌었는지 확인해 주세요.", "info", 10000);
+      }
       status("블로그 전송 완료", "ok");
     })
   );
@@ -1011,6 +1025,8 @@
     if (!Array.isArray(B.media)) B.media = [];
     B.media = GWMediaCover.normalize(B.media);
     if (typeof B.imageRequest !== "string") B.imageRequest = "";
+    if (!B.video || typeof B.video !== "object") B.video = gwEmptyVideo();
+    videoCard.render();
 
     if (B.aiTabId) {
       const live = await chrome.tabs.get(B.aiTabId).catch(() => null);

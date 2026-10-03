@@ -301,6 +301,17 @@
         <p class="hint">참조 기사의 사실관계는 그대로 유지하고, 선택한 스타일과 분량으로 블로그 문장만 새로 구성합니다.</p>
       </div>
 
+      <div class="card video-card">
+        <label class="card-label">영상 넣기 <small>(선택 · 가로 16:9 본편이 어울립니다)</small></label>
+        <div class="video-row">
+          <input id="blogVideoUrl" type="url" class="video-url" placeholder="유튜브 주소 (예: https://youtu.be/…)" spellcheck="false">
+          <button id="btnBlogVideoFile" class="btn-sub video-file-btn" type="button">📁 내 PC 영상</button>
+          <input id="blogVideoFile" type="file" accept="video/*" class="hidden">
+        </div>
+        <div id="blogVideoInfo" class="video-info hidden"></div>
+        <p class="hint">[블로그글 전송하기] 때 도입 문단 다음 "▶ 영상으로 보기" 아래에 들어갑니다. 유튜브 주소는 영상 카드로, 영상 파일은 자리 안내만 넣습니다 — 파일은 네이버 위쪽 [동영상] 버튼으로 직접 올려 주세요.</p>
+      </div>
+
       <div class="card">
         <label class="card-label">3단계 · 블로그 초안 작성</label>
         <button id="btnMakeBlogDraft" class="btn-fill" type="button" disabled>
@@ -360,6 +371,19 @@
         </div>
         <p class="hint">페이스북·인스타그램·스레드 글을 AI에 한 번에 요청합니다. 기사와 블로그 글은 바꾸지 않습니다.</p>
         <div id="snsTrial" class="gw-trial hidden"></div>
+      </div>
+
+      <div class="card video-card">
+        <label class="card-label">영상 넣기 <small>(선택 · 세로 9:16 쇼츠 1편을 세 곳에 함께)</small></label>
+        <div class="video-row">
+          <input id="snsVideoUrl" type="url" class="video-url" placeholder="유튜브 주소 (예: https://youtube.com/shorts/…)" spellcheck="false">
+          <button id="btnSnsVideoFile" class="btn-sub video-file-btn" type="button">📁 내 PC 영상</button>
+          <input id="snsVideoFile" type="file" accept="video/*" class="hidden">
+        </div>
+        <label class="video-ai-check"><input id="snsVideoAi" type="checkbox"> AI로 만든 영상입니다 <small>(게시할 때 AI 레이블 안내)</small></label>
+        <div id="snsVideoInfo" class="video-info hidden"></div>
+        <button id="btnSnsVideoRewrite" class="btn-sub btn-in-box hidden" type="button">🎬 이미 쓴 SNS 글 3종을 영상용으로 고치기</button>
+        <p class="hint">영상을 먼저 넣고 [AI SNS 3종 작성]을 누르면 처음부터 영상용 글(짧은 릴스 캡션 등)로 씁니다. 유튜브 주소는 페이스북·스레드 글 끝에 붙고, 영상 파일은 각 사이트에 직접 올립니다.</p>
       </div>
 
       <div class="card">
@@ -673,6 +697,7 @@
 <script src="shared/youtube-json.js"></script>
 <script src="shared/sns-prompt.js"></script>
 <script src="shared/zip.js"></script>
+<script src="shared/video-ui.js"></script>
 <script src="shared/dock-ui.js"></script>
 <script src="shared/tips.js"></script>
 <script src="panel.js"></script>
