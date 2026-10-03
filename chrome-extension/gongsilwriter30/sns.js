@@ -49,7 +49,8 @@
     snsReviseInput: $("snsReviseInput"), btnReviseSns: $("btnReviseSns"), btnPullSnsRevised: $("btnPullSnsRevised"),
     btnInsertSnsImage: $("btnInsertSnsImage"), snsFileImage: $("snsFileImage"),
     snsImageRequest: $("snsImageRequest"), btnMakeSnsImage: $("btnMakeSnsImage"), snsRatioNote: $("snsRatioNote"),
-    snsHomeLink: $("snsHomeLink"), btnCopySns: $("btnCopySns"), btnCopySnsText: $("btnCopySnsText"),
+    snsHomeLink: $("snsHomeLink"), btnCopySns: $("btnCopySns"),
+    btnSnsCopyOnly: $("btnSnsCopyOnly"), btnSnsZip: $("btnSnsZip"),
     status: $("statusPill"), toastHost: $("toastHost"),
   };
 
@@ -524,8 +525,6 @@
     el.snsBadge.textContent = c.badge;
     el.snsHomeLink.href = c.homeUrl;
     el.snsHomeLink.textContent = `${c.label} 바로가기`;
-    el.btnCopySnsText.textContent = channel === "instagram" ? "캡션 복사·사진 받기"
-      : channel === "threads" ? "첫 글 복사·사진 받기" : "글 복사·사진 받기";
     el.snsRatioNote.textContent = `— ${c.label}: ${channel === "threads" ? "가로 16:9" : c.ratioText}`;
 
     const post = N.posts?.[channel];
@@ -891,13 +890,15 @@
     return canvas.toDataURL("image/jpeg", 0.92);
   }
 
-  function downloadDataUrl(dataUrl, filename) {
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = dataUrl;
+    link.href = url;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
   async function ensureListing() {
@@ -907,50 +908,120 @@
     const problems = GWNaverBlog.listingProblems(N.listing, auction);
     if (problems.length) {
       throw new Error(
-        `${auction ? "물건" : "부동산 표시·광고 필수"} 정보가 없어 복사를 멈췄습니다: ${problems.join(", ")}. ` +
+        `${auction ? "물건" : "부동산 표시·광고 필수"} 정보가 없어 멈췄습니다: ${problems.join(", ")}. ` +
         "공실뉴스 매물의 등록자정보를 확인한 뒤 1번 탭에서 물건을 다시 가져오고 SNS 글을 새로 만들어 주세요."
       );
     }
     await save();
   }
 
-  el.btnCopySns.addEventListener("click", () =>
-    guard(el.btnCopySns, "복사 준비 중", async () => {
-      const channel = N.channel;
-      const c = CHANNELS[channel];
-      harvest();
-      const post = N.posts?.[channel];
-      if (!post) throw new Error(`복사할 ${c.label} 글이 없습니다.`);
-      await ensureListing();
-      renderTail();
-      const composed = gwSnsCompose(channel, post, ctx());
-      if (!composed.text) throw new Error(`${c.label} 글이 비어 있습니다.`);
-      const over = channel === "threads"
-        ? composed.posts.some((text) => text.length > c.maxChars)
-        : c.maxChars && composed.text.length > c.maxChars;
+  /* 지금 플랫폼의 완성 글 — 링크·출처·해시태그까지 붙인 것 */
+  async function prepare() {
+    const channel = N.channel;
+    const c = CHANNELS[channel];
+    harvest();
+    const post = N.posts?.[channel];
+    if (!post) throw new Error(`${c.label} 글이 없습니다.`);
+    await ensureListing();
+    renderTail();
+    const composed = gwSnsCompose(channel, post, ctx());
+    if (!composed.text) throw new Error(`${c.label} 글이 비어 있습니다.`);
+    const over = channel === "threads"
+      ? composed.posts.some((text) => text.length > c.maxChars)
+      : Boolean(c.maxChars && composed.text.length > c.maxChars);
+    return { channel, c, composed, over };
+  }
+
+  /* 버튼에 잠깐 "✓ 복사됨" — 눌렀는데 된 건지 모르겠다는 말이 있었다 */
+  function flash(button, text) {
+    const original = button.dataset.label || button.innerHTML;
+    button.dataset.label = original;
+    button.innerHTML = text;
+    button.classList.add("done");
+    clearTimeout(button._flashTimer);
+    button._flashTimer = setTimeout(() => {
+      button.innerHTML = button.dataset.label;
+      button.classList.remove("done");
+      delete button.dataset.label;
+    }, 2500);
+  }
+
+  const stamp = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+  };
+
+  /* 사진(비율대로 자른 JPG) + 글.txt 를 ZIP 하나로 — 압축을 풀면 폴더 하나가 나온다 */
+  async function downloadPackage({ channel, c, composed }, button) {
+    const folder = `공실뉴스_${c.label}_${stamp()}`;
+    const files = [];
+    const textForFile = channel === "threads"
+      ? composed.posts.map((text, i) => `[${i === 0 ? "첫 글" : `이어 쓰기 ${i}`}]\n${text}`).join("\n\n―――――――――――\n\n")
+      : composed.text;
+    files.push({ name: `${folder}/${c.label}_글.txt`, data: GWZip.textBytes(textForFile) });
+
+    const list = (N.media[channel] || []).slice(0, c.maxMedia);
+    let saved = 0;
+    for (let i = 0; i < list.length; i += 1) {
+      GWBusy.label(button, `사진 준비 중 (${i + 1}/${list.length})`);
+      const dataUrl = await cropForChannel(list[i].url, channel);
+      if (!dataUrl) continue;
+      const no = String(i + 1).padStart(2, "0");
+      files.push({ name: `${folder}/${no}${i === 0 ? "_대표" : ""}${list[i].ai ? "_AI" : ""}.jpg`, data: GWZip.dataUrlBytes(dataUrl) });
+      saved += 1;
+    }
+    GWBusy.label(button, "압축 파일 만드는 중");
+    downloadBlob(new Blob([GWZip.build(files)], { type: "application/zip" }), `${folder}.zip`);
+    return { saved, total: list.length, zipName: `${folder}.zip` };
+  }
+
+  function overNote({ c, over }) {
+    return over ? ` ⚠ ${c.label} 글자 수를 넘었습니다. 줄여서 올려 주세요.` : "";
+  }
+
+  /* [📋 복사] — 글만 */
+  el.btnSnsCopyOnly.addEventListener("click", () =>
+    guard(el.btnSnsCopyOnly, "복사 중", async () => {
+      const ready = await prepare();
+      const { channel, c, composed } = ready;
       await copyText(channel === "threads" ? composed.posts[0] : composed.text);
-
-      const list = (N.media[channel] || []).slice(0, c.maxMedia);
-      let saved = 0;
-      for (let i = 0; i < list.length; i += 1) {
-        GWBusy.label(el.btnCopySns, `사진 준비 중 (${i + 1}/${list.length})`);
-        const dataUrl = await cropForChannel(list[i].url, channel);
-        if (!dataUrl) continue;
-        const no = String(i + 1).padStart(2, "0");
-        downloadDataUrl(dataUrl, `공실뉴스_${c.label}_${no}${i === 0 ? "_대표" : ""}${list[i].ai ? "_AI" : ""}.jpg`);
-        saved += 1;
-        await sleep(350); // 한꺼번에 받으면 크롬이 일부를 막는다
-      }
-
-      const what = channel === "instagram" ? "캡션" : channel === "threads" ? "첫 글" : "글";
-      const photoNote = list.length ? ` 사진 ${saved}장을 순서 번호대로 내려받았습니다.` : "";
-      const missNote = saved < list.length ? ` (${list.length - saved}장은 받지 못했습니다)` : "";
-      const threadNote = channel === "threads" && composed.posts.length > 1 ? " 이어 쓰기 글은 미리보기의 [복사]로 하나씩 붙여 주세요." : "";
-      const overNote = over ? ` ⚠ ${c.label} 글자 수를 넘었습니다. 줄여서 올려 주세요.` : "";
-      toast(`${c.label} ${what}을 복사했습니다.${photoNote}${missNote}${threadNote} [${c.label} 바로가기]에서 새 게시물에 붙여 넣어 주세요.${overNote}`,
-        over || saved < list.length ? "info" : "ok", 12000);
+      const threadNote = channel === "threads" && composed.posts.length > 1 ? " 이어 쓰기 글은 각 칸의 [복사]로 붙여 주세요." : "";
+      toast(`${c.label} ${channel === "threads" ? "첫 글" : "글"}을 복사했습니다. 게시물 칸에 Ctrl+V로 붙여 넣으세요.${threadNote}${overNote(ready)}`, ready.over ? "info" : "ok", 8000);
       status(`${c.label} 복사 완료`, "ok");
-    }, { failTitle: "복사하지 못했습니다" })
+    }, { failTitle: "복사하지 못했습니다" }).then(() => {
+      if (el.status.textContent.endsWith("복사 완료")) flash(el.btnSnsCopyOnly, "✓ 복사됨");
+    })
+  );
+
+  /* [⬇ 받기] — 사진 + 글.txt 압축 파일만 */
+  el.btnSnsZip.addEventListener("click", () =>
+    guard(el.btnSnsZip, "받는 중", async () => {
+      const ready = await prepare();
+      const result = await downloadPackage(ready, el.btnSnsZip);
+      const missNote = result.saved < result.total ? ` (사진 ${result.total - result.saved}장은 받지 못했습니다)` : "";
+      toast(`${result.zipName} 을 다운로드 폴더에 받았습니다. 압축을 풀면 사진 ${result.saved}장과 글(TXT)이 한 폴더에 있습니다.${missNote}`, missNote ? "info" : "ok", 10000);
+      status(`${ready.c.label} 받기 완료`, "ok");
+    }, { failTitle: "내려받지 못했습니다" }).then(() => {
+      if (el.status.textContent.endsWith("받기 완료")) flash(el.btnSnsZip, "✓ 받음");
+    })
+  );
+
+  /* [글·사진 받기] — 글 복사 + 압축 파일 */
+  el.btnCopySns.addEventListener("click", () =>
+    guard(el.btnCopySns, "준비 중", async () => {
+      const ready = await prepare();
+      const { channel, c, composed } = ready;
+      await copyText(channel === "threads" ? composed.posts[0] : composed.text);
+      const result = await downloadPackage(ready, el.btnCopySns);
+      const missNote = result.saved < result.total ? ` (사진 ${result.total - result.saved}장은 받지 못했습니다)` : "";
+      toast(`${c.label} 글을 복사했고, 사진 ${result.saved}장과 글(TXT)을 ${result.zipName} 으로 받았습니다.${missNote} ` +
+        `[${c.label} 바로가기]에서 새 게시물에 Ctrl+V로 붙여 넣고, 압축을 푼 폴더의 사진을 01부터 올리세요.${overNote(ready)}`,
+        ready.over || missNote ? "info" : "ok", 12000);
+      status(`${c.label} 복사 완료`, "ok");
+    }, { failTitle: "글·사진을 받지 못했습니다" }).then(() => {
+      if (el.status.textContent.endsWith("복사 완료")) flash(el.btnCopySns, '<span class="send-icon">✓</span><strong>복사·받기 완료</strong>');
+    })
   );
 
   /* ═════════════ 버튼 잠금 · 저장 ═════════════ */
@@ -964,6 +1035,8 @@
     el.btnMakeSnsImage.disabled = !N.posts || !N.aiTabId;
     el.btnInsertSnsImage.disabled = !N.posts;
     el.btnCopySns.disabled = !has;
+    el.btnSnsCopyOnly.disabled = !has;
+    el.btnSnsZip.disabled = !has;
   }
 
   let lastSaveError = "";

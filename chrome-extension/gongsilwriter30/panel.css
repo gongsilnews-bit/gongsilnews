@@ -1384,3 +1384,19 @@ button.is-busy { display: flex; align-items: center; justify-content: center; }
 #snsActions[data-channel="threads"] .btn-blog-link { border-color: #9ca3af; background: #f3f4f6; color: #111827 }
 #snsActions[data-channel="threads"] .btn-send { background: linear-gradient(135deg, #374151, #111827); box-shadow: 0 4px 10px rgba(17, 24, 39, .28) }
 .image-options-title small { font-weight: 600; color: var(--text-muted) }
+.sns-top-right { display: inline-flex; align-items: center; gap: 5px }
+.sns-icon-btn {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text-main);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sns-icon-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary) }
+.sns-icon-btn:disabled { opacity: .45; cursor: default }
+.sns-icon-btn.done, .btn-send.done { border-color: #10b981; background: #ecfdf5; color: #047857 }
+.btn-send.done { background: linear-gradient(135deg, #10b981, #059669) !important; color: #fff }

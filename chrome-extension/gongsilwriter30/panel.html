@@ -384,7 +384,11 @@
         <div class="preview-doc sns-doc">
           <div class="preview-top">
             <span id="snsBadge" class="cat-badge sns-badge">Facebook</span>
-            <span id="snsCount" class="sns-count"></span>
+            <span class="sns-top-right">
+              <span id="snsCount" class="sns-count"></span>
+              <button id="btnSnsCopyOnly" class="sns-icon-btn" type="button" title="글(링크·출처·해시태그 포함)만 복사합니다">📋 복사</button>
+              <button id="btnSnsZip" class="sns-icon-btn" type="button" title="사진과 글(TXT)을 압축 파일 하나로 내려받습니다">⬇ 받기</button>
+            </span>
           </div>
           <div id="snsEditor" class="sns-editor"></div>
           <div class="sns-tail">
@@ -631,7 +635,7 @@
         페이스북 바로가기
       </a>
       <button id="btnCopySns" class="btn-send compact naver" type="button">
-        <span class="send-icon">📋</span><strong id="btnCopySnsText">글 복사·사진 받기</strong>
+        <span class="send-icon">📋</span><strong>글·사진 받기</strong>
       </button>
     </div>
   </div>
@@ -667,6 +671,7 @@
 <script src="shared/youtube-prompt.js"></script>
 <script src="shared/youtube-json.js"></script>
 <script src="shared/sns-prompt.js"></script>
+<script src="shared/zip.js"></script>
 <script src="shared/dock-ui.js"></script>
 <script src="shared/tips.js"></script>
 <script src="panel.js"></script>
