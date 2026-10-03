@@ -227,7 +227,8 @@
   /* 불러온 숫자를 표로 보여 준다 — 대표님이 눈으로 확인한 뒤 AI 로 넘어간다 */
   function renderMarket(mode) {
     const box = marketBox(mode);
-    const d = box.state.data;
+    /* 저장된 자료가 예전 모양이거나 덜 들어 있으면(표 없음) 없는 것으로 본다 — 화면이 깨지지 않게 */
+    const d = box.state.data && box.state.data.summary ? box.state.data : null;
     if (mode === "complex") marketViewBtns.forEach((b) => b.classList.toggle("active", b.dataset.marketView === (S.source.complex.view || "brief")));
     if (mode === "local") {
       localViewBtns.forEach((b) => b.classList.toggle("active", b.dataset.localView === (S.source.local.view || "brief")));
