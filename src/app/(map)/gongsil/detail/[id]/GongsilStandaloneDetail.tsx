@@ -5,6 +5,7 @@ import GongsilDetailPanel from "../../GongsilDetailPanel";
 import { getCleanAddrText, getPriceText } from "../../gongsilHelpers";
 import { createClient } from "@/utils/supabase/client";
 import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
+import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 
 interface GongsilStandaloneDetailProps {
   initialVacancy: any;
@@ -179,11 +180,14 @@ export default function GongsilStandaloneDetail({
   useEffect(() => {
     if (!mapLoaded || !(window as any).kakao?.maps) return;
     const kakao = (window as any).kakao;
+    let cancelled = false;
+    let cleanupRoadview: (() => void) | undefined;
 
     const lat = vacancy.lat || vacancy.latitude;
     const lng = vacancy.lng || vacancy.longitude;
 
-    const renderMapAndRoadview = (pos: any) => {
+    const renderMapAndRoadview = (pos: any, roadviewLat: number, roadviewLng: number) => {
+      if (cancelled) return;
       const exp = vacancy.address_exposure;
       const propType = vacancy.property_type || "";
       const subCategory = vacancy.sub_category || "";
@@ -220,33 +224,37 @@ export default function GongsilStandaloneDetail({
       }
 
       if (roadviewRef.current) {
-        roadviewRef.current.innerHTML = "";
-        const rv = new kakao.maps.Roadview(roadviewRef.current);
-        const rvClient = new kakao.maps.RoadviewClient();
-
-        rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
-          if (panoId) {
-            rv.setPanoId(panoId, pos);
-          } else if (roadviewRef.current) {
-            roadviewRef.current.innerHTML =
-              '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치 근처의 로드뷰가 제공되지 않습니다.</div>';
-          }
+        cleanupRoadview?.();
+        cleanupRoadview = mountKakaoRoadview({
+          kakao,
+          container: roadviewRef.current,
+          lat: roadviewLat,
+          lng: roadviewLng,
         });
       }
     };
 
     if (lat && lng) {
-      const pos = new kakao.maps.LatLng(lat, lng);
-      renderMapAndRoadview(pos);
+      const roadviewLat = Number(lat);
+      const roadviewLng = Number(lng);
+      const pos = new kakao.maps.LatLng(roadviewLat, roadviewLng);
+      renderMapAndRoadview(pos, roadviewLat, roadviewLng);
     } else if (vacancy.address) {
       const geocoder = new kakao.maps.services.Geocoder();
       geocoder.addressSearch(vacancy.address, (result: any, status: any) => {
-        if (status === kakao.maps.services.Status.OK && result[0]) {
-          const pos = new kakao.maps.LatLng(result[0].y, result[0].x);
-          renderMapAndRoadview(pos);
+        if (!cancelled && status === kakao.maps.services.Status.OK && result[0]) {
+          const roadviewLat = Number(result[0].y);
+          const roadviewLng = Number(result[0].x);
+          const pos = new kakao.maps.LatLng(roadviewLat, roadviewLng);
+          renderMapAndRoadview(pos, roadviewLat, roadviewLng);
         }
       });
     }
+
+    return () => {
+      cancelled = true;
+      cleanupRoadview?.();
+    };
   }, [mapLoaded, vacancy, activeDetailTab]);
 
   // Toast Timer

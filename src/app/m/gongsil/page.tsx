@@ -15,6 +15,7 @@ import { getJitteredCoords, getCleanAddrText, getMarkerDimensions } from "@/app/
 import { GongsilMobileDetailPanel } from "./GongsilMobileDetailPanel";
 import { GongsilMobileDrawerList } from "./GongsilMobileDrawerList";
 import GongsilRegisterPromoOverlay from "@/app/(map)/gongsil/GongsilRegisterPromoOverlay";
+import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_APP_KEY || "435d3602201a49ea712e5f5a36fe6efc";
 const MAX_MOBILE_MAP_LEVEL = 6;
@@ -528,6 +529,9 @@ function MobileGongsilContent() {
   }, [effectiveMode, isSuperAdmin]);
 
   useEffect(() => {
+    let cleanupRoadview: (() => void) | undefined;
+    let renderTimer: ReturnType<typeof setTimeout> | undefined;
+
     if (selectedVacancy && detailTab === "info") {
       const kakao = (window as any).kakao;
       if (!kakao || !kakao.maps) return;
@@ -542,7 +546,7 @@ function MobileGongsilContent() {
       const isPrivateAddr = exp && exp !== "번지공개" && exp !== "지번공개" && exp !== "동/호수공개";
       const useCircle = isPrivateAddr && !isApt;
       
-      setTimeout(() => {
+      renderTimer = setTimeout(() => {
         if (itemMapRef.current) {
           itemMapRef.current.innerHTML = "";
           const map = new kakao.maps.Map(itemMapRef.current, { center: pos, level: useCircle ? 5 : 3 });
@@ -559,17 +563,20 @@ function MobileGongsilContent() {
         }
 
         if (roadviewRef.current) {
-          roadviewRef.current.innerHTML = "";
-          const rv = new kakao.maps.Roadview(roadviewRef.current);
-          const rvClient = new kakao.maps.RoadviewClient();
-
-          rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
-            if (panoId) { rv.setPanoId(panoId, pos); }
-            else if (roadviewRef.current) { roadviewRef.current.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치 근처의 로드뷰를 제공할 수 없습니다.</div>'; }
+          cleanupRoadview = mountKakaoRoadview({
+            kakao,
+            container: roadviewRef.current,
+            lat: coords.lat,
+            lng: coords.lng,
           });
         }
       }, 100);
     }
+
+    return () => {
+      if (renderTimer) clearTimeout(renderTimer);
+      cleanupRoadview?.();
+    };
   }, [selectedVacancy, detailTab]);
 
   useEffect(() => {

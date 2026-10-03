@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCleanAddrText, formatAreaWithPy, getMaskedAddress, getJitteredCoords, getOptionSvg } from "@/app/(map)/gongsil/gongsilHelpers";
 import { getInfrastructureEntries } from "@/utils/infrastructure";
+import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 
 interface MobileGongsilStandaloneDetailProps {
   vacancy: any;
@@ -152,18 +153,14 @@ export default function MobileGongsilStandaloneDetail({
     const coords = getJitteredCoords(selectedVacancy, true);
     if (!coords.lat || !coords.lng) return;
 
-    const pos = new kakao.maps.LatLng(coords.lat, coords.lng);
-    mobileRoadviewCanvasRef.current.innerHTML = "";
-    const rv = new kakao.maps.Roadview(mobileRoadviewCanvasRef.current);
-    const rvClient = new kakao.maps.RoadviewClient();
-
-    rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
-      if (panoId) {
-        rv.setPanoId(panoId, pos);
-      } else if (mobileRoadviewCanvasRef.current) {
-        mobileRoadviewCanvasRef.current.innerHTML =
-          '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:14px; background:#111;">해당 위치 근처의 로드뷰가 제공되지 않습니다.</div>';
-      }
+    return mountKakaoRoadview({
+      kakao,
+      container: mobileRoadviewCanvasRef.current,
+      lat: coords.lat,
+      lng: coords.lng,
+      background: "#111827",
+      messageColor: "#d1d5db",
+      failureMessage: "이 위치의 로드뷰를 불러올 수 없습니다.",
     });
   }, [mobileRoadviewOpen, selectedVacancy]);
 
@@ -200,11 +197,14 @@ export default function MobileGongsilStandaloneDetail({
     if (!mapLoaded || !(window as any).kakao?.maps) return;
     if (detailTab !== "info") return;
     const kakao = (window as any).kakao;
+    let cancelled = false;
+    let cleanupRoadview: (() => void) | undefined;
 
     const lat = selectedVacancy.lat || selectedVacancy.latitude;
     const lng = selectedVacancy.lng || selectedVacancy.longitude;
 
-    const renderMapAndRoadview = (pos: any) => {
+    const renderMapAndRoadview = (pos: any, roadviewLat: number, roadviewLng: number) => {
+      if (cancelled) return;
       const exp = selectedVacancy.address_exposure;
       const propType = selectedVacancy.property_type || "";
       const subCategory = selectedVacancy.sub_category || "";
@@ -241,33 +241,37 @@ export default function MobileGongsilStandaloneDetail({
       }
 
       if (roadviewRef.current) {
-        roadviewRef.current.innerHTML = "";
-        const rv = new kakao.maps.Roadview(roadviewRef.current);
-        const rvClient = new kakao.maps.RoadviewClient();
-
-        rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
-          if (panoId) {
-            rv.setPanoId(panoId, pos);
-          } else if (roadviewRef.current) {
-            roadviewRef.current.innerHTML =
-              '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치 근처의 로드뷰가 제공되지 않습니다.</div>';
-          }
+        cleanupRoadview?.();
+        cleanupRoadview = mountKakaoRoadview({
+          kakao,
+          container: roadviewRef.current,
+          lat: roadviewLat,
+          lng: roadviewLng,
         });
       }
     };
 
     if (lat && lng) {
-      const pos = new kakao.maps.LatLng(lat, lng);
-      renderMapAndRoadview(pos);
+      const roadviewLat = Number(lat);
+      const roadviewLng = Number(lng);
+      const pos = new kakao.maps.LatLng(roadviewLat, roadviewLng);
+      renderMapAndRoadview(pos, roadviewLat, roadviewLng);
     } else if (selectedVacancy.address) {
       const geocoder = new kakao.maps.services.Geocoder();
       geocoder.addressSearch(selectedVacancy.address, (result: any, status: any) => {
-        if (status === kakao.maps.services.Status.OK && result[0]) {
-          const pos = new kakao.maps.LatLng(result[0].y, result[0].x);
-          renderMapAndRoadview(pos);
+        if (!cancelled && status === kakao.maps.services.Status.OK && result[0]) {
+          const roadviewLat = Number(result[0].y);
+          const roadviewLng = Number(result[0].x);
+          const pos = new kakao.maps.LatLng(roadviewLat, roadviewLng);
+          renderMapAndRoadview(pos, roadviewLat, roadviewLng);
         }
       });
     }
+
+    return () => {
+      cancelled = true;
+      cleanupRoadview?.();
+    };
   }, [mapLoaded, selectedVacancy, detailTab]);
 
   return (

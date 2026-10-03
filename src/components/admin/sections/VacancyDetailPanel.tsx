@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { getVacancyDetail, getAgencyInfo, getOwnerVacancySummary, updateVacancyStatus, deleteVacancy } from "@/app/actions/vacancy";
 import { createClient } from "@/utils/supabase/client";
+import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 import "./vacancy-detail.css";
 
 declare global {
@@ -40,7 +41,10 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
 
   const mapRef = useRef<HTMLDivElement>(null);
   const roadviewRef = useRef<HTMLDivElement>(null);
+  const roadviewCleanupRef = useRef<(() => void) | null>(null);
   const supabase = createClient();
+
+  useEffect(() => () => roadviewCleanupRef.current?.(), []);
 
   useEffect(() => {
     fetchData();
@@ -114,6 +118,8 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
     const searchAddr = [p.sido, p.sigungu, p.dong, detailAddress].filter(Boolean).join(' ');
     
     if (!searchAddr.trim()) {
+      roadviewCleanupRef.current?.();
+      roadviewCleanupRef.current = null;
       if (mapRef.current) mapRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;">주소 정보가 없습니다.</div>';
       if (roadviewRef.current) roadviewRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;">주소 정보가 없습니다.</div>';
       return;
@@ -145,18 +151,17 @@ export default function VacancyDetailPanel({ vacancyId, onBack, onEdit }: Vacanc
           }
 
           if (roadviewRef.current) {
-            roadviewRef.current.innerHTML = '';
+            roadviewCleanupRef.current?.();
+            roadviewCleanupRef.current = null;
             if (useCircle) {
               roadviewRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;background:#f4f5f7;">비공개 매물은 로드뷰가 제공되지 않습니다.</div>';
             } else {
-              const rv = new window.kakao.maps.Roadview(roadviewRef.current);
-              const client = new window.kakao.maps.RoadviewClient();
-              client.getNearestPanoId(latLng, 50, (panoId: any) => {
-                if (panoId) {
-                  rv.setPanoId(panoId, latLng);
-                } else if (roadviewRef.current) {
-                  roadviewRef.current.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px;background:#f4f5f7;">해당 위치의 로드뷰 정보가 없습니다.</div>';
-                }
+              roadviewCleanupRef.current = mountKakaoRoadview({
+                kakao: window.kakao,
+                container: roadviewRef.current,
+                lat: latLng.getLat(),
+                lng: latLng.getLng(),
+                failureMessage: "이 위치의 로드뷰를 불러올 수 없습니다.",
               });
             }
           }

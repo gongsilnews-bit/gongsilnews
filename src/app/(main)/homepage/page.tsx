@@ -8,6 +8,7 @@ import MapSearchBar from "@/components/MapSearchBar";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import AuthModal from "@/components/AuthModal";
 import { getAuctionInfo, formatAreaWithPy } from "@/app/(map)/gongsil/gongsilHelpers";
+import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 
 export const HOMEPAGE_CATEGORIES = [
   {
@@ -122,12 +123,16 @@ const ThumbnailRoadview = ({ lat, lng }: { lat: number, lng: number }) => {
     if (!rvRef.current) return;
     const kakao = (window as any).kakao;
     if (!kakao?.maps?.Roadview) return;
-    const rv = new kakao.maps.Roadview(rvRef.current);
-    const rvClient = new kakao.maps.RoadviewClient();
-    const pos = new kakao.maps.LatLng(lat, lng);
-    rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
-      if (panoId) rv.setPanoId(panoId, pos);
-      else if (rvRef.current) rvRef.current.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:12px;background:#f3f4f6;">No Photo</div>';
+    return mountKakaoRoadview({
+      kakao,
+      container: rvRef.current,
+      lat,
+      lng,
+      loadTimeoutMs: 3_500,
+      maxAttempts: 2,
+      loadingMessage: "",
+      failureMessage: "No Photo",
+      messageColor: "#9ca3af",
     });
   }, [lat, lng]);
   return (

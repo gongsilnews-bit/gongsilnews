@@ -6,6 +6,7 @@ import { formatAmount } from "./page";
 import { getAuctionInfo, getMaskedAddress, getCleanAddrText, formatAreaWithPy, getJitteredCoords, getOptionSvg } from "@/app/(map)/gongsil/gongsilHelpers";
 import { getOnbidCount } from "@/app/actions/agentChat";
 import { getInfrastructureEntries } from "@/utils/infrastructure";
+import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 
 interface GongsilMobileDetailPanelProps {
   selectedVacancy: any;
@@ -97,18 +98,14 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
     const coords = getJitteredCoords(selectedVacancy, true);
     if (!coords.lat || !coords.lng) return;
 
-    const pos = new kakao.maps.LatLng(coords.lat, coords.lng);
-    mobileRoadviewCanvasRef.current.innerHTML = "";
-    const rv = new kakao.maps.Roadview(mobileRoadviewCanvasRef.current);
-    const rvClient = new kakao.maps.RoadviewClient();
-
-    rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
-      if (panoId) {
-        rv.setPanoId(panoId, pos);
-      } else if (mobileRoadviewCanvasRef.current) {
-        mobileRoadviewCanvasRef.current.innerHTML =
-          '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:14px; background:#111;">해당 위치 근처의 로드뷰가 제공되지 않습니다.</div>';
-      }
+    return mountKakaoRoadview({
+      kakao,
+      container: mobileRoadviewCanvasRef.current,
+      lat: coords.lat,
+      lng: coords.lng,
+      background: "#111827",
+      messageColor: "#d1d5db",
+      failureMessage: "이 위치의 로드뷰를 불러올 수 없습니다.",
     });
   }, [mobileRoadviewOpen, selectedVacancy]);
 

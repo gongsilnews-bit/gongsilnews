@@ -8,6 +8,7 @@ import { getVacancyComments, createVacancyComment } from "@/app/actions/vacancyC
 import { getVacancyUserData, toggleWishlistToDB, addRecentViewToDB } from "@/app/actions/vacancyUserData";
 import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
+import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 import AuthModal from "@/components/AuthModal";
 import BookmarkCategoryModal from "@/components/BookmarkCategoryModal";
 import { getBookmarkCategories } from "@/app/actions/bookmark";
@@ -905,6 +906,8 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
   };
 
   useEffect(() => {
+    let cleanupRoadview: (() => void) | undefined;
+
     if (showDetail && activeProperty) {
       const prop = dbVacancies.find((v) => v.id === activeProperty);
       if (prop?.id) fetchComments(prop.id.toString());
@@ -948,21 +951,17 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
         }
 
         if (roadviewRef.current) {
-          const rv = new kakao.maps.Roadview(roadviewRef.current);
-          const rvClient = new kakao.maps.RoadviewClient();
-
-          rvClient.getNearestPanoId(pos, 50, (panoId: any) => {
-            if (panoId) {
-              rv.setPanoId(panoId, pos);
-            } else {
-              if (roadviewRef.current)
-                roadviewRef.current.innerHTML =
-                  '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999; font-size:13px;">해당 위치 근처의 로드뷰가 제공되지 않습니다.</div>';
-            }
+          cleanupRoadview = mountKakaoRoadview({
+            kakao,
+            container: roadviewRef.current,
+            lat: coords.lat,
+            lng: coords.lng,
           });
         }
       }
     }
+
+    return () => cleanupRoadview?.();
   }, [showDetail, activeProperty, activeDetailTab, dbVacancies, agencyInfo, mapLoaded]);
 
   const handlePanToProperty = (lat: number, lng: number) => {

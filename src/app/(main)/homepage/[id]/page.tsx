@@ -6,6 +6,7 @@ import { getVacancies, getVacancyDetail, getVacanciesByOwnerId } from "@/app/act
 import { getMyArticles, getArticles } from "@/app/actions/article";
 import { getMaskedAddress } from "@/app/(map)/gongsil/gongsilHelpers";
 import { getInfrastructureEntries } from "@/utils/infrastructure";
+import { mountKakaoRoadview } from "@/utils/kakaoRoadview";
 
 const BRAND = "#2845B3";
 const LABEL: React.CSSProperties = { width: 120, fontSize: 13, fontWeight: 700, color: "#555", padding: "10px 14px", background: "#f8f9fa", borderRight: "1px solid #e5e7eb", whiteSpace: "nowrap" };
@@ -525,15 +526,12 @@ export default function HomepageViewPage() {
     new kakao.maps.Marker({ position: pos, map });
 
     if (roadviewRef.current) {
-      const roadview = new kakao.maps.Roadview(roadviewRef.current);
-      const roadviewClient = new kakao.maps.RoadviewClient();
-      roadviewClient.getNearestPanoId(pos, 50, (panoId: number | null) => {
-        if (panoId) {
-          roadview.setPanoId(panoId, pos);
-        } else {
-          // If no roadview available, hide it
-          roadviewRef.current!.style.display = "none";
-        }
+      return mountKakaoRoadview({
+        kakao,
+        container: roadviewRef.current,
+        lat: Number(vacancy.lat),
+        lng: Number(vacancy.lng),
+        failureMessage: "이 위치의 로드뷰를 불러올 수 없습니다.",
       });
     }
   }, [mapLoaded, vacancy]);
