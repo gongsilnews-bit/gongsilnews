@@ -331,7 +331,32 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
                         onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
                         onClick={(e) => { e.preventDefault(); router.push(`?menu=members&editId=${member.id}`); }}>{member.email}</a>
                     </td>
-                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>{member.name || '-'}</td>
+                    <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textPrimary }}>
+                      <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, whiteSpace: "nowrap" }}>
+                        {member.use_custom_registration_limits && (
+                          <span
+                            title="등급별 일괄 적용에서 제외하고 공실·기사·강의 한도를 회원별로 적용 중입니다."
+                            aria-label="회원별 개별 한도 적용"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                              background: darkMode ? "#312e81" : "#eef2ff",
+                              color: darkMode ? "#c7d2fe" : "#4f46e5",
+                              border: `1px solid ${darkMode ? "#4338ca" : "#c7d2fe"}`,
+                              fontSize: 10,
+                              fontWeight: 800,
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            개별
+                          </span>
+                        )}
+                        <span>{member.name || '-'}</span>
+                      </div>
+                    </td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{member.phone || '-'}</td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{displayRole}</td>
                     <td style={{ padding: "16px 10px", textAlign: "center", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{createdDate}</td>
