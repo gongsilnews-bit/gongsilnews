@@ -13,7 +13,7 @@
 const GW_SNS_CHANNELS = {
   facebook: {
     label: "페이스북", badge: "Facebook", homeUrl: "https://www.facebook.com/",
-    ratio: 1, ratioText: "정사각 1:1", size: [1080, 1080], maxMedia: 4, maxChars: 0, maxTags: 5,
+    ratio: 1, ratioText: "정사각 1:1", size: [1080, 1080], maxMedia: 10, maxChars: 0, maxTags: 5,
   },
   instagram: {
     label: "인스타그램", badge: "Instagram", homeUrl: "https://www.instagram.com/",
@@ -21,7 +21,7 @@ const GW_SNS_CHANNELS = {
   },
   threads: {
     label: "스레드", badge: "Threads", homeUrl: "https://www.threads.com/",
-    ratio: 0, ratioText: "원본 비율", size: [1600, 1600], maxMedia: 4, maxChars: 500, maxTags: 1,
+    ratio: 0, ratioText: "원본 비율", size: [1600, 1600], maxMedia: 10, maxChars: 500, maxTags: 1,
   },
 };
 

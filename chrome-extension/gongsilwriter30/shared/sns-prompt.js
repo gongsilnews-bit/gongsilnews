@@ -16,7 +16,7 @@ const GW_SNS_CHANNELS = {
     ratio: 1, // 정사각 1:1
     ratioText: "정사각 1:1",
     size: [1080, 1080],
-    maxMedia: 4,
+    maxMedia: 10,
     maxChars: 0, // 사실상 제한 없음
     maxTags: 5,
   },
@@ -38,7 +38,7 @@ const GW_SNS_CHANNELS = {
     ratio: 0, // 원본 비율
     ratioText: "원본 비율",
     size: [1600, 1600],
-    maxMedia: 4,
+    maxMedia: 10,
     maxChars: 500, // 글 하나마다
     maxTags: 1,
   },

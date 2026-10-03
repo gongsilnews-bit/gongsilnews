@@ -108,6 +108,20 @@ test("사진은 실제 사진(대표 먼저) → 캡처(proof) → 지도·로�
   ]);
   assert.equal(fb.length, 4);
   assert.deepEqual(fb.map((item) => item.url), ["p1.jpg", "proof.png", "map.png", "rv.png"]);
+  const th = gwSnsPickMedia("threads", [
+    { kind: "photo", url: "p1.jpg", isCover: true },
+    { kind: "photo", url: "p2.jpg" },
+    { kind: "photo", url: "p3.jpg" },
+    { kind: "photo", url: "p4.jpg" },
+    { kind: "photo", url: "p5.jpg" },
+    { kind: "proof", url: "proof.png" },
+    { kind: "map", url: "map.png" },
+    { kind: "roadview", url: "rv.png" },
+  ]);
+  assert.equal(th.length, 8);
+  assert.deepEqual(th.map((item) => item.url), [
+    "p1.jpg", "p2.jpg", "p3.jpg", "p4.jpg", "p5.jpg", "proof.png", "map.png", "rv.png"
+  ]);
   const few = gwSnsPickMedia("instagram", [{ kind: "ai", url: "ai.png" }, { kind: "map", url: "m.png" }, { kind: "photo", url: "p.jpg" }]);
   assert.deepEqual(few.map((item) => item.url), ["p.jpg", "m.png", "ai.png"]);
 });
@@ -124,6 +138,6 @@ test("AI 이미지가 올라갈 사진에 있으면 플랫폼별 AI 레이블 �
   assert.ok(gwSnsAiLabelNote("facebook", [{ ai: false }, { ai: true }]).includes("[AI 레이블]"));
   assert.ok(gwSnsAiLabelNote("instagram", [{ ai: true }]).includes("[고급 설정]"));
   /* 장수 제한 밖(올라가지 않는) AI 이미지는 세지 않는다 */
-  const five = [{ ai: false }, { ai: false }, { ai: false }, { ai: false }, { ai: true }];
-  assert.equal(gwSnsAiLabelNote("facebook", five), "");
+  const eleven = [...Array.from({ length: 10 }, () => ({ ai: false })), { ai: true }];
+  assert.equal(gwSnsAiLabelNote("facebook", eleven), "");
 });
