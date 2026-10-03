@@ -26,6 +26,7 @@
     posts: null,       // { facebook: {body, hashtags}, instagram: {body, hashtags}, threads: {posts, topic} }
     media: emptyMedia(),
     imageStyle: "auto",
+    customStyle: "",   // 직접 입력한 화풍 — 있으면 스타일 버튼보다 먼저
     imageRequest: "",
     pendingImage: null, // { channel, requestKey, beforeUrl, beforeCount }
   };
@@ -47,6 +48,7 @@
     snsMedia: $("snsMedia"), snsMediaHint: $("snsMediaHint"), snsAiNotice: $("snsAiNotice"),
     snsReviseInput: $("snsReviseInput"), btnReviseSns: $("btnReviseSns"), btnPullSnsRevised: $("btnPullSnsRevised"),
     btnInsertSnsImage: $("btnInsertSnsImage"), snsFileImage: $("snsFileImage"),
+    snsImageCustomStyle: $("snsImageCustomStyle"),
     snsImageRequest: $("snsImageRequest"), btnMakeSnsImage: $("btnMakeSnsImage"), snsRatioNote: $("snsRatioNote"),
     snsHomeLink: $("snsHomeLink"), btnCopySns: $("btnCopySns"), snsArticleUrl: $("snsArticleUrl"),
     btnSnsCopyOnly: $("btnSnsCopyOnly"), btnSnsZip: $("btnSnsZip"),
@@ -732,9 +734,27 @@
       imageStyleButtons.forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
       N.imageStyle = button.dataset.snsImageStyle;
+      N.customStyle = "";
+      if (el.snsImageCustomStyle) {
+        el.snsImageCustomStyle.value = "";
+        el.snsImageCustomStyle.classList.remove("active");
+      }
       save();
     });
   });
+  /* 화풍 직접 입력 — 쓰면 스타일 버튼 선택이 풀리고, 지우면 버튼 선택으로 돌아간다 (V30 과 같다) */
+  if (el.snsImageCustomStyle) {
+    ["input", "change"].forEach((evt) => {
+      el.snsImageCustomStyle.addEventListener(evt, () => {
+        N.customStyle = el.snsImageCustomStyle.value.trim();
+        const hasCustom = Boolean(N.customStyle);
+        el.snsImageCustomStyle.classList.toggle("active", hasCustom);
+        imageStyleButtons.forEach((item) => item.classList.toggle("active", !hasCustom && item.dataset.snsImageStyle === N.imageStyle));
+        save();
+      });
+    });
+  }
+
   el.snsImageRequest.addEventListener("change", () => {
     N.imageRequest = el.snsImageRequest.value.trim();
     save();
@@ -747,7 +767,8 @@
       harvest();
       const channel = N.channel;
       N.imageRequest = el.snsImageRequest.value.trim();
-      const requestKey = JSON.stringify([channel, N.imageStyle, N.imageRequest]);
+      N.customStyle = el.snsImageCustomStyle ? el.snsImageCustomStyle.value.trim() : "";
+      const requestKey = JSON.stringify([channel, N.imageStyle, N.customStyle, N.imageRequest]);
 
       if (N.pendingImage && N.pendingImage.requestKey === requestKey) {
         const found = await askTab(N.aiTabId, { type: "GW_GET_IMAGE" });
@@ -781,6 +802,7 @@
         type: "GW_FILL",
         text: gwBuildImagePrompt(source?.source || N.source, { title: source?.article?.title || "", body }, {
           style: N.imageStyle,
+          customStyle: N.customStyle,
           request: N.imageRequest,
           ratio: channel === "threads" ? "가로 16:9" : CHANNELS[channel].ratioText,
         }),
@@ -1067,7 +1089,12 @@
     }
     if (!N.aiTabId) N.writing = false;
     showWriting();
-    imageStyleButtons.forEach((button) => button.classList.toggle("active", button.dataset.snsImageStyle === N.imageStyle));
+    if (typeof N.customStyle !== "string") N.customStyle = "";
+    imageStyleButtons.forEach((button) => button.classList.toggle("active", button.dataset.snsImageStyle === N.imageStyle && !N.customStyle));
+    if (el.snsImageCustomStyle) {
+      el.snsImageCustomStyle.value = N.customStyle;
+      el.snsImageCustomStyle.classList.toggle("active", Boolean(N.customStyle));
+    }
     el.snsImageRequest.value = N.imageRequest;
     el.snsArticleUrl.value = N.articleUrl;
     paintChannelButtons();

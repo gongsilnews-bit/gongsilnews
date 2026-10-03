@@ -142,6 +142,7 @@ function gwBuildImagePrompt(vacancy, article, opts) {
     : gwField(vacancy, "매물종류", "용도구분", "주용도");
   const style = GW_IMAGE_STYLE[o.style] || GW_IMAGE_STYLE.news;
   const request = String(o.request || "").trim();
+  const customStyle = String(o.customStyle || "").trim().slice(0, 50); // 직접 입력한 화풍
   const articleText = [article && article.title, article && article.body]
     .filter(Boolean)
     .join("\n")
@@ -152,14 +153,18 @@ function gwBuildImagePrompt(vacancy, article, opts) {
   const focusRule = request
     ? "아래 입력이 기사 문장이면 그중 시각적으로 표현할 핵심 장면을 고르고, 연출 지시이면 그대로 반영하십시오."
     : "아래 기사 내용에서 가장 시각적으로 전달력이 높은 한 가지 핵심을 스스로 골라 장면으로 만드십시오.";
-  const textRule = o.style === "infographic"
+  /* 화풍을 직접 쓰면 글자 없는 그림으로 — 예전에 고른 통계 도표가 남아 글자가 들어가지 않게 */
+  const textRule = o.style === "infographic" && !customStyle
     ? "- 한글 문구는 꼭 필요한 짧은 항목명만 쓰고, 숫자와 단위는 아래 확인된 사실과 정확히 일치시킬 것"
     : "- 이미지 안에 글자, 숫자, 로고, 워터마크를 넣지 말 것";
 
   return `위 기사에 넣을 이미지 1장을 만들어 주십시오.
 
-[선택한 스타일] ${style.label}
-${style.prompt}
+${customStyle
+    ? `[화풍·스타일] 사용자 직접 지정: "${customStyle}"
+- 이 화풍·그림체를 가장 먼저 지켜 표현하십시오.`
+    : `[선택한 스타일] ${style.label}
+${style.prompt}`}
 
 [이미지로 표현할 내용]
 ${focusRule}

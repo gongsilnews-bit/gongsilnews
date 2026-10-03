@@ -658,9 +658,11 @@
         <button class="image-style" data-image-style="city" type="button">도시·건물</button>
         <button class="image-style" data-image-style="animation" type="button">애니메이션</button>
         <button class="image-style" data-image-style="infographic" type="button">통계 도표</button>
+        <input id="imageCustomStyle" type="text" class="image-style-custom" maxlength="50"
+               placeholder="✍️ 직접 화풍 입력 (예: 픽사풍, 수채화)">
       </div>
       <textarea id="imageRequest" class="image-request" rows="2" maxlength="1600"
-                placeholder="표현할 내용을 입력하세요. 기사 일부를 붙여 넣어도 됩니다. 비워 두면 AI가 본문에서 장면을 고릅니다."></textarea>
+                placeholder="그릴 장면·내용 (비워 두면 기사에서 자동으로 고릅니다)"></textarea>
       <button id="btnMakeImage" class="btn-sub btn-in-box" type="button">AI 이미지 만들기</button>
     </div>
 
@@ -704,9 +706,11 @@
         <button class="image-style blog-image-style" data-blog-image-style="city" type="button">도시·건물</button>
         <button class="image-style blog-image-style" data-blog-image-style="animation" type="button">애니메이션</button>
         <button class="image-style blog-image-style" data-blog-image-style="infographic" type="button">통계 도표</button>
+        <input id="blogImageCustomStyle" type="text" class="image-style-custom" maxlength="50"
+               placeholder="✍️ 직접 화풍 입력 (예: 픽사풍, 수채화)">
       </div>
       <textarea id="blogImageRequest" class="image-request" rows="2" maxlength="1600"
-                placeholder="표현할 장면을 입력하세요. 비워 두면 블로그 본문에서 핵심 장면을 고릅니다."></textarea>
+                placeholder="그릴 장면·내용 (비워 두면 블로그 본문에서 자동으로 고릅니다)"></textarea>
       <button id="btnMakeBlogImage" class="btn-sub btn-in-box" type="button">AI 이미지 만들기</button>
     </div>
 
@@ -759,9 +763,11 @@
         <button class="image-style sns-image-style" data-sns-image-style="city" type="button">도시·건물</button>
         <button class="image-style sns-image-style" data-sns-image-style="animation" type="button">애니메이션</button>
         <button class="image-style sns-image-style" data-sns-image-style="infographic" type="button">통계 도표</button>
+        <input id="snsImageCustomStyle" type="text" class="image-style-custom" maxlength="50"
+               placeholder="✍️ 직접 화풍 입력 (예: 픽사풍, 수채화)">
       </div>
       <textarea id="snsImageRequest" class="image-request" rows="2" maxlength="1600"
-                placeholder="표현할 장면을 입력하세요. 비워 두면 이 플랫폼 글에서 핵심 장면을 고릅니다."></textarea>
+                placeholder="그릴 장면·내용 (비워 두면 이 플랫폼 글에서 자동으로 고릅니다)"></textarea>
       <button id="btnMakeSnsImage" class="btn-sub btn-in-box" type="button">AI 이미지 만들기</button>
       <p class="hint">AI 이미지가 섞이면 게시할 때 AI 레이블을 켜 주세요. 시세표·직접 올린 사진이 있으면 AI 이미지는 대표(1번)가 될 수 없습니다.</p>
     </div>

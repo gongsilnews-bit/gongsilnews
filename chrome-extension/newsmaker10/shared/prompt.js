@@ -349,6 +349,7 @@ function gwBuildImagePrompt(source, article, opts) {
   const auto = !GW_IMAGE_STYLE[o.style] || o.style === "auto";
   const style = auto ? GW_IMAGE_STYLE.auto : GW_IMAGE_STYLE[o.style];
   const request = String(o.request || "").trim();
+  const customStyle = String(o.customStyle || "").trim().slice(0, 50); // 직접 입력한 화풍
   const articleText = [article && article.title, article && article.body]
     .filter(Boolean)
     .join("\n")
@@ -359,13 +360,18 @@ function gwBuildImagePrompt(source, article, opts) {
     : o.cover
       ? "이 이미지는 기사 맨 위에 들어가는 대표 이미지입니다. 아래 기사 본문을 읽고, 기사 전체 내용을 한눈에 보여 주는 장면 하나를 스스로 골라 만드십시오."
       : "아래 기사 내용에서 가장 시각적으로 전달력이 높은 한 가지 핵심을 스스로 골라 장면으로 만드십시오.";
-  const styleText = auto
+  const styleText = customStyle
+    ? `[화풍·스타일] 사용자 직접 지정: "${customStyle}"
+- 이 화풍·그림체를 가장 먼저 지켜 표현하십시오.`
+    : auto
     ? `[스타일] 아래 가운데 기사 본문 내용에 가장 잘 맞는 것 하나를 스스로 고르십시오.
 ${gwImageStyleMenu()}
 - 기사에 비교할 숫자가 여럿 있을 때만 통계 도표·인포그래픽을 고르십시오.`
     : `[선택한 스타일] ${style.label}
 ${style.prompt}`;
-  const textRule = o.style === "infographic"
+  const textRule = customStyle
+    ? "- 이미지 안에 글자, 숫자, 로고, 워터마크를 넣지 말 것"
+    : o.style === "infographic"
     ? "- 한글 문구는 꼭 필요한 짧은 항목명만 쓰고, 숫자와 단위는 기사에 나온 것과 정확히 일치시킬 것"
     : auto
       ? "- 통계 도표를 고른 경우가 아니면 이미지 안에 글자, 숫자, 로고, 워터마크를 넣지 말 것. 통계 도표라면 기사 숫자와 정확히 일치시킬 것"

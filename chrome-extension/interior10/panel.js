@@ -16,6 +16,7 @@
     kind: "news",      // 기사 스타일 — GW_KIND
     length: "normal",  // 분량 — GW_LENGTH
     imageStyle: "news",
+    customStyle: "",   // 직접 입력한 화풍 — 있으면 스타일 버튼보다 먼저
     imageRequest: "",
     gongsilTabId: null,
     aiTabId: null,
@@ -40,6 +41,7 @@
     pvDate: $("pvDate"), pvTitle: $("pvTitle"), pvSubtitle: $("pvSubtitle"),
     pvCover: $("pvCover"), pvContent: $("pvContent"), pvKeywords: $("pvKeywords"),
     reviseInput: $("reviseInput"), btnRevise: $("btnRevise"), btnPullRevised: $("btnPullRevised"),
+    imageCustomStyle: $("imageCustomStyle"),
     imageRequest: $("imageRequest"),
     btnMakeImage: $("btnMakeImage"), btnChangeImage: $("btnChangeImage"), fileImage: $("fileImage"),
     btnSendGongsil: $("btnSendGongsil"),
@@ -948,9 +950,27 @@
       imageStyleBtns.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       S.imageStyle = btn.dataset.imageStyle;
+      S.customStyle = "";
+      if (el.imageCustomStyle) {
+        el.imageCustomStyle.value = "";
+        el.imageCustomStyle.classList.remove("active");
+      }
       save();
     });
   });
+
+  /* 화풍 직접 입력 — 쓰면 스타일 버튼 선택이 풀리고, 지우면 버튼 선택으로 돌아간다 (V30 과 같다) */
+  if (el.imageCustomStyle) {
+    ["input", "change"].forEach((evt) => {
+      el.imageCustomStyle.addEventListener(evt, () => {
+        S.customStyle = el.imageCustomStyle.value.trim();
+        const hasCustom = Boolean(S.customStyle);
+        el.imageCustomStyle.classList.toggle("active", hasCustom);
+        imageStyleBtns.forEach((b) => b.classList.toggle("active", !hasCustom && b.dataset.imageStyle === S.imageStyle));
+        save();
+      });
+    });
+  }
 
   el.imageRequest.addEventListener("change", () => {
     S.imageRequest = el.imageRequest.value.trim();
@@ -963,7 +983,8 @@
       if (!S.article) throw new Error("먼저 초안을 가져와 주세요.");
 
       S.imageRequest = el.imageRequest.value.trim();
-      const currentRequestKey = JSON.stringify([S.imageStyle, S.imageRequest]);
+      S.customStyle = el.imageCustomStyle ? el.imageCustomStyle.value.trim() : "";
+      const currentRequestKey = JSON.stringify([S.imageStyle, S.customStyle, S.imageRequest]);
 
       /* 이전 요청과 다른 스타일·내용이면 기다리지 않고 새 이미지 요청으로 전환한다. */
       if (Number.isInteger(pendingAiInsertSlot) && pendingAiRequestKey !== currentRequestKey) {
@@ -1008,7 +1029,8 @@
         : { url: "", count: 0 };
       const text = gwBuildImagePrompt(S.vacancy, S.article, {
         style: S.imageStyle,
-        request: S.imageRequest,
+        customStyle: S.customStyle,
+          request: S.imageRequest,
       });
       const copied = await copyForPaste(text);
       await chrome.tabs.update(S.aiTabId, { active: true });
@@ -1218,7 +1240,12 @@
     saleModeBtns.forEach((b) => b.classList.toggle("active", b.dataset.saleMode === S.saleMode));
     kindBtns.forEach((b) => b.classList.toggle("active", b.dataset.kind === S.kind));
     lenBtns.forEach((b) => b.classList.toggle("active", b.dataset.length === S.length));
-    imageStyleBtns.forEach((b) => b.classList.toggle("active", b.dataset.imageStyle === S.imageStyle));
+    if (typeof S.customStyle !== "string") S.customStyle = "";
+    imageStyleBtns.forEach((b) => b.classList.toggle("active", b.dataset.imageStyle === S.imageStyle && !S.customStyle));
+    if (el.imageCustomStyle) {
+      el.imageCustomStyle.value = S.customStyle;
+      el.imageCustomStyle.classList.toggle("active", Boolean(S.customStyle));
+    }
     el.imageRequest.value = S.imageRequest;
 
     /* 기억해 둔 탭이 아직 살아 있는지 확인한다 */

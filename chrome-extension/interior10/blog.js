@@ -18,6 +18,7 @@
     article: null,
     media: [],
     imageStyle: "news",
+    customStyle: "",   // 직접 입력한 화풍 — 있으면 스타일 버튼보다 먼저
     design: "basic",
     imageRequest: "",
     sourceSignature: "",
@@ -57,6 +58,7 @@
     btnMakeBlogImage: $("btnMakeBlogImage"),
     btnInsertBlogImage: $("btnInsertBlogImage"),
     blogFileImage: $("blogFileImage"),
+    blogImageCustomStyle: $("blogImageCustomStyle"),
     blogImageRequest: $("blogImageRequest"),
     blogDesignHint: $("blogDesignHint"),
     blogLock: $("blogLock"),
@@ -739,9 +741,27 @@
       imageStyleButtons.forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
       B.imageStyle = button.dataset.blogImageStyle;
+      B.customStyle = "";
+      if (el.blogImageCustomStyle) {
+        el.blogImageCustomStyle.value = "";
+        el.blogImageCustomStyle.classList.remove("active");
+      }
       save();
     });
   });
+
+  /* 화풍 직접 입력 — 쓰면 스타일 버튼 선택이 풀리고, 지우면 버튼 선택으로 돌아간다 (V30 과 같다) */
+  if (el.blogImageCustomStyle) {
+    ["input", "change"].forEach((evt) => {
+      el.blogImageCustomStyle.addEventListener(evt, () => {
+        B.customStyle = el.blogImageCustomStyle.value.trim();
+        const hasCustom = Boolean(B.customStyle);
+        el.blogImageCustomStyle.classList.toggle("active", hasCustom);
+        imageStyleButtons.forEach((item) => item.classList.toggle("active", !hasCustom && item.dataset.blogImageStyle === B.imageStyle));
+        save();
+      });
+    });
+  }
 
   el.blogImageRequest.addEventListener("change", () => {
     B.imageRequest = el.blogImageRequest.value.trim();
@@ -769,7 +789,8 @@
 
       harvestBlog();
       B.imageRequest = el.blogImageRequest.value.trim();
-      const requestKey = JSON.stringify([B.imageStyle, B.imageRequest]);
+      B.customStyle = el.blogImageCustomStyle ? el.blogImageCustomStyle.value.trim() : "";
+      const requestKey = JSON.stringify([B.imageStyle, B.customStyle, B.imageRequest]);
 
       if (B.pendingImage && B.pendingImage.requestKey === requestKey) {
         const found = await askTab(B.aiTabId, { type: "GW_GET_IMAGE" });
@@ -793,6 +814,7 @@
         type: "GW_FILL",
         text: gwBuildImagePrompt(source?.vacancy || null, B.article, {
           style: B.imageStyle,
+          customStyle: B.customStyle,
           request: B.imageRequest,
         }),
       });
@@ -1064,6 +1086,11 @@
     if (!Array.isArray(B.media)) B.media = [];
     B.media = GWMediaCover.normalize(B.media);
     if (typeof B.imageRequest !== "string") B.imageRequest = "";
+    if (typeof B.customStyle !== "string") B.customStyle = "";
+    if (el.blogImageCustomStyle) {
+      el.blogImageCustomStyle.value = B.customStyle;
+      el.blogImageCustomStyle.classList.toggle("active", Boolean(B.customStyle));
+    }
 
     if (B.aiTabId) {
       const live = await chrome.tabs.get(B.aiTabId).catch(() => null);
@@ -1079,7 +1106,7 @@
       button.classList.toggle("active", button.dataset.blogLength === B.length);
     });
     imageStyleButtons.forEach((button) => {
-      button.classList.toggle("active", button.dataset.blogImageStyle === B.imageStyle);
+      button.classList.toggle("active", button.dataset.blogImageStyle === B.imageStyle && !B.customStyle);
     });
     if (!GWNaverBlog.DESIGNS[B.design]) B.design = "basic";
     showDesign();
