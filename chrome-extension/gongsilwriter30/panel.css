@@ -554,18 +554,54 @@ body {
   color: var(--primary);
 }
 
+.image-style-custom {
+  flex: 1 1 120px;
+  min-width: 100px;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text-main);
+  font: inherit;
+  font-size: 10px;
+  line-height: 22px;
+  outline: none;
+  box-sizing: border-box;
+  transition: all .15s;
+}
+
+.image-style-custom:hover {
+  border-color: var(--primary);
+}
+
+.image-style-custom:focus,
+.image-style-custom.active {
+  border: 1.5px solid var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.image-style-custom::placeholder {
+  color: #9ca3af;
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
 .image-request {
   display: block;
   width: 100%;
-  height: 32px;
-  padding: 0 10px;
+  min-height: 44px;
+  padding: 6px 9px;
   border: 1.5px solid var(--border);
   border-radius: 6px;
   background: #fff;
   color: var(--text-main);
   font: inherit;
-  font-size: 11.5px;
-  line-height: 29px;
+  font-size: 11px;
+  line-height: 1.4;
+  resize: vertical;
   outline: none;
   box-sizing: border-box;
 }

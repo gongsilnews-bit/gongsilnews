@@ -27,6 +27,7 @@
     posts: null,       // { facebook: {body, hashtags}, instagram: {body, hashtags}, threads: {posts, topic} }
     media: emptyMedia(),
     imageStyle: "news",
+    customStyle: "",
     imageRequest: "",
     pendingImage: null, // { channel, requestKey, beforeUrl, beforeCount }
   };
@@ -48,6 +49,7 @@
     snsMedia: $("snsMedia"), snsMediaHint: $("snsMediaHint"), snsAiNotice: $("snsAiNotice"),
     snsReviseInput: $("snsReviseInput"), btnReviseSns: $("btnReviseSns"), btnPullSnsRevised: $("btnPullSnsRevised"),
     btnInsertSnsImage: $("btnInsertSnsImage"), snsFileImage: $("snsFileImage"),
+    snsImageCustomStyle: $("snsImageCustomStyle"),
     snsImageRequest: $("snsImageRequest"), btnMakeSnsImage: $("btnMakeSnsImage"), snsRatioNote: $("snsRatioNote"),
     snsHomeLink: $("snsHomeLink"), btnCopySns: $("btnCopySns"),
     btnSnsCopyOnly: $("btnSnsCopyOnly"), btnSnsZip: $("btnSnsZip"),
@@ -762,9 +764,31 @@
       imageStyleButtons.forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
       N.imageStyle = button.dataset.snsImageStyle;
+      N.customStyle = "";
+      if (el.snsImageCustomStyle) {
+        el.snsImageCustomStyle.value = "";
+        el.snsImageCustomStyle.classList.remove("active");
+      }
       save();
     });
   });
+
+  if (el.snsImageCustomStyle) {
+    ["input", "change"].forEach((evt) => {
+      el.snsImageCustomStyle.addEventListener(evt, () => {
+        N.customStyle = el.snsImageCustomStyle.value.trim();
+        const hasCustom = Boolean(N.customStyle);
+        el.snsImageCustomStyle.classList.toggle("active", hasCustom);
+        if (hasCustom) {
+          imageStyleButtons.forEach((item) => item.classList.remove("active"));
+        } else {
+          imageStyleButtons.forEach((item) => item.classList.toggle("active", item.dataset.snsImageStyle === N.imageStyle));
+        }
+        save();
+      });
+    });
+  }
+
   ["input", "change"].forEach((evt) => {
     el.snsImageRequest.addEventListener(evt, () => {
       N.imageRequest = el.snsImageRequest.value.trim();
@@ -779,7 +803,8 @@
       harvest();
       const channel = N.channel;
       N.imageRequest = el.snsImageRequest.value.trim();
-      const requestKey = JSON.stringify([channel, N.imageStyle, N.imageRequest]);
+      N.customStyle = el.snsImageCustomStyle ? el.snsImageCustomStyle.value.trim() : "";
+      const requestKey = JSON.stringify([channel, N.imageStyle, N.customStyle, N.imageRequest]);
 
       if (N.pendingImage && N.pendingImage.requestKey === requestKey) {
         const found = await askTab(N.aiTabId, { type: "GW_GET_IMAGE" });
@@ -813,6 +838,7 @@
         type: "GW_FILL",
         text: gwBuildImagePrompt(source?.vacancy || N.vacancy, { title: source?.article?.title || "", body }, {
           style: N.imageStyle,
+          customStyle: N.customStyle,
           request: N.imageRequest,
           ratio: channel === "threads" ? "가로 16:9" : CHANNELS[channel].ratioText,
         }),
@@ -1074,6 +1100,7 @@
     if (!N.media || typeof N.media !== "object") N.media = emptyMedia();
     GW_SNS_ORDER.forEach((channel) => { if (!Array.isArray(N.media[channel])) N.media[channel] = []; });
     if (!GW_IMAGE_STYLE[N.imageStyle]) N.imageStyle = "news";
+    if (typeof N.customStyle !== "string") N.customStyle = "";
     if (typeof N.imageRequest !== "string") N.imageRequest = "";
     if (N.posts && typeof N.posts !== "object") N.posts = null;
 
@@ -1083,7 +1110,11 @@
     }
     if (!N.aiTabId) N.writing = false;
     showWriting();
-    imageStyleButtons.forEach((button) => button.classList.toggle("active", button.dataset.snsImageStyle === N.imageStyle));
+    imageStyleButtons.forEach((button) => button.classList.toggle("active", !N.customStyle && button.dataset.snsImageStyle === N.imageStyle));
+    if (el.snsImageCustomStyle) {
+      el.snsImageCustomStyle.value = N.customStyle;
+      el.snsImageCustomStyle.classList.toggle("active", Boolean(N.customStyle));
+    }
     el.snsImageRequest.value = N.imageRequest;
     paintChannelButtons();
     await updateSourceCard();

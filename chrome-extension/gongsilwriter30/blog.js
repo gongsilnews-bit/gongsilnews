@@ -18,6 +18,7 @@
     article: null,
     media: [],
     imageStyle: "news",
+    customStyle: "",
     design: "basic",
     imageRequest: "",
     sourceSignature: "",
@@ -57,6 +58,7 @@
     btnMakeBlogImage: $("btnMakeBlogImage"),
     btnInsertBlogImage: $("btnInsertBlogImage"),
     blogFileImage: $("blogFileImage"),
+    blogImageCustomStyle: $("blogImageCustomStyle"),
     blogImageRequest: $("blogImageRequest"),
     blogDesignHint: $("blogDesignHint"),
     blogLock: $("blogLock"),
@@ -732,9 +734,30 @@
       imageStyleButtons.forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
       B.imageStyle = button.dataset.blogImageStyle;
+      B.customStyle = "";
+      if (el.blogImageCustomStyle) {
+        el.blogImageCustomStyle.value = "";
+        el.blogImageCustomStyle.classList.remove("active");
+      }
       save();
     });
   });
+
+  if (el.blogImageCustomStyle) {
+    ["input", "change"].forEach((evt) => {
+      el.blogImageCustomStyle.addEventListener(evt, () => {
+        B.customStyle = el.blogImageCustomStyle.value.trim();
+        const hasCustom = Boolean(B.customStyle);
+        el.blogImageCustomStyle.classList.toggle("active", hasCustom);
+        if (hasCustom) {
+          imageStyleButtons.forEach((item) => item.classList.remove("active"));
+        } else {
+          imageStyleButtons.forEach((item) => item.classList.toggle("active", item.dataset.blogImageStyle === B.imageStyle));
+        }
+        save();
+      });
+    });
+  }
 
   ["input", "change"].forEach((evt) => {
     el.blogImageRequest.addEventListener(evt, () => {
@@ -764,7 +787,8 @@
 
       harvestBlog();
       B.imageRequest = el.blogImageRequest.value.trim();
-      const requestKey = JSON.stringify([B.imageStyle, B.imageRequest]);
+      B.customStyle = el.blogImageCustomStyle ? el.blogImageCustomStyle.value.trim() : "";
+      const requestKey = JSON.stringify([B.imageStyle, B.customStyle, B.imageRequest]);
 
       if (B.pendingImage && B.pendingImage.requestKey === requestKey) {
         const found = await askTab(B.aiTabId, { type: "GW_GET_IMAGE" });
@@ -788,6 +812,7 @@
         type: "GW_FILL",
         text: gwBuildImagePrompt(source?.vacancy || null, B.article, {
           style: B.imageStyle,
+          customStyle: B.customStyle,
           request: B.imageRequest,
         }),
       });
@@ -1013,6 +1038,7 @@
     if (!GW_IMAGE_STYLE[B.imageStyle]) B.imageStyle = "news";
     if (!Array.isArray(B.media)) B.media = [];
     B.media = GWMediaCover.normalize(B.media);
+    if (typeof B.customStyle !== "string") B.customStyle = "";
     if (typeof B.imageRequest !== "string") B.imageRequest = "";
 
     if (B.aiTabId) {
@@ -1029,8 +1055,12 @@
       button.classList.toggle("active", button.dataset.blogLength === B.length);
     });
     imageStyleButtons.forEach((button) => {
-      button.classList.toggle("active", button.dataset.blogImageStyle === B.imageStyle);
+      button.classList.toggle("active", !B.customStyle && button.dataset.blogImageStyle === B.imageStyle);
     });
+    if (el.blogImageCustomStyle) {
+      el.blogImageCustomStyle.value = B.customStyle;
+      el.blogImageCustomStyle.classList.toggle("active", Boolean(B.customStyle));
+    }
     if (!GWNaverBlog.DESIGNS[B.design]) B.design = "basic";
     showDesign();
     el.blogImageRequest.value = B.imageRequest;

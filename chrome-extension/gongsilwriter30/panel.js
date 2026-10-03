@@ -13,6 +13,7 @@
     kind: "news",      // 기사 스타일 — GW_KIND
     length: "normal",  // 분량 — GW_LENGTH
     imageStyle: "news",
+    customStyle: "",
     imageRequest: "",
     gongsilTabId: null,
     aiTabId: null,
@@ -36,6 +37,7 @@
     pvDate: $("pvDate"), pvTitle: $("pvTitle"), pvSubtitle: $("pvSubtitle"),
     pvCover: $("pvCover"), pvContent: $("pvContent"), pvKeywords: $("pvKeywords"),
     reviseInput: $("reviseInput"), btnRevise: $("btnRevise"), btnPullRevised: $("btnPullRevised"),
+    imageCustomStyle: $("imageCustomStyle"),
     imageRequest: $("imageRequest"),
     btnMakeImage: $("btnMakeImage"), btnChangeImage: $("btnChangeImage"), fileImage: $("fileImage"),
     btnSendGongsil: $("btnSendGongsil"),
@@ -976,9 +978,30 @@
       imageStyleBtns.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       S.imageStyle = btn.dataset.imageStyle;
+      S.customStyle = "";
+      if (el.imageCustomStyle) {
+        el.imageCustomStyle.value = "";
+        el.imageCustomStyle.classList.remove("active");
+      }
       save();
     });
   });
+
+  if (el.imageCustomStyle) {
+    ["input", "change"].forEach((evt) => {
+      el.imageCustomStyle.addEventListener(evt, () => {
+        S.customStyle = el.imageCustomStyle.value.trim();
+        const hasCustom = Boolean(S.customStyle);
+        el.imageCustomStyle.classList.toggle("active", hasCustom);
+        if (hasCustom) {
+          imageStyleBtns.forEach((b) => b.classList.remove("active"));
+        } else {
+          imageStyleBtns.forEach((b) => b.classList.toggle("active", b.dataset.imageStyle === S.imageStyle));
+        }
+        save();
+      });
+    });
+  }
 
   ["input", "change"].forEach((evt) => {
     el.imageRequest.addEventListener(evt, () => {
@@ -993,7 +1016,8 @@
       if (!S.article) throw new Error("먼저 초안을 가져와 주세요.");
 
       S.imageRequest = el.imageRequest.value.trim();
-      const currentRequestKey = JSON.stringify([S.imageStyle, S.imageRequest]);
+      S.customStyle = el.imageCustomStyle ? el.imageCustomStyle.value.trim() : "";
+      const currentRequestKey = JSON.stringify([S.imageStyle, S.customStyle, S.imageRequest]);
 
       /* 이전 요청과 다른 스타일·내용이면 기다리지 않고 새 이미지 요청으로 전환한다. */
       if (Number.isInteger(pendingAiInsertSlot) && pendingAiRequestKey !== currentRequestKey) {
@@ -1038,6 +1062,7 @@
         : { url: "", count: 0 };
       const text = gwBuildImagePrompt(S.vacancy, S.article, {
         style: S.imageStyle,
+        customStyle: S.customStyle,
         request: S.imageRequest,
       });
       const copied = await copyForPaste(text);
@@ -1239,13 +1264,18 @@
     if (!GW_LENGTH[S.length]) S.length = "normal";
     if (!GW_IMAGE_STYLE[S.imageStyle]) S.imageStyle = "news";
     if (!["auto", "listing", "auction"].includes(S.saleMode)) S.saleMode = "auto";
+    if (typeof S.customStyle !== "string") S.customStyle = "";
     if (typeof S.imageRequest !== "string") S.imageRequest = "";
 
     platformBtns.forEach((b) => b.classList.toggle("active", b.dataset.platform === S.platform));
     saleModeBtns.forEach((b) => b.classList.toggle("active", b.dataset.saleMode === S.saleMode));
     kindBtns.forEach((b) => b.classList.toggle("active", b.dataset.kind === S.kind));
     lenBtns.forEach((b) => b.classList.toggle("active", b.dataset.length === S.length));
-    imageStyleBtns.forEach((b) => b.classList.toggle("active", b.dataset.imageStyle === S.imageStyle));
+    imageStyleBtns.forEach((b) => b.classList.toggle("active", !S.customStyle && b.dataset.imageStyle === S.imageStyle));
+    if (el.imageCustomStyle) {
+      el.imageCustomStyle.value = S.customStyle;
+      el.imageCustomStyle.classList.toggle("active", Boolean(S.customStyle));
+    }
     el.imageRequest.value = S.imageRequest;
 
     /* 기억해 둔 탭이 아직 살아 있는지 확인한다 */

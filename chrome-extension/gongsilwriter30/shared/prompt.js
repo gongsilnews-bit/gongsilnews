@@ -141,20 +141,24 @@ function gwBuildImagePrompt(vacancy, article, opts) {
     : auction ? gwField(vacancy, "물건종류", "용도분류")
     : gwField(vacancy, "매물종류", "용도구분", "주용도");
   const style = GW_IMAGE_STYLE[o.style] || GW_IMAGE_STYLE.news;
+  const customStyle = String(o.customStyle || "").trim();
   const request = String(o.request || "").trim();
   const articleText = [article && article.title, article && article.body]
     .filter(Boolean)
     .join("\n")
     .trim();
-  const focus = (articleText || subject).slice(0, 1600);
+  const focus = (request || articleText || subject).slice(0, 1600);
   const noun = auction ? "물건" : "매물";
   const facts = vacancy ? gwFactLines(vacancy) : `- 확인된 ${noun} 정보 없음`;
+  const focusRule = request
+    ? "아래 사용자의 장면 묘사 지시와 기사 문장을 충실히 반영하여 장면을 연출하십시오."
+    : "아래 기사 내용에서 가장 시각적으로 전달력이 높은 한 가지 핵심을 스스로 골라 장면으로 만드십시오.";
   const textRule = o.style === "infographic"
     ? "- 한글 문구는 꼭 필요한 짧은 항목명만 쓰고, 숫자와 단위는 아래 확인된 사실과 정확히 일치시킬 것"
     : "- 이미지 안에 글자, 숫자, 로고, 워터마크를 넣지 말 것";
 
-  const styleSection = request
-    ? `[선택한 화풍·스타일]\n사용자 직접 지정 화풍: "${request}"\n- 사용자가 원하는 위 화풍·스타일과 시각적 분위기를 1순위로 엄격히 적용하여 표현하십시오.`
+  const styleSection = customStyle
+    ? `[선택한 화풍·스타일]\n사용자 직접 지정 화풍: "${customStyle}"\n- 사용자가 원하는 위 화풍·스타일과 시각적 분위기를 1순위로 엄격히 적용하여 표현하십시오.`
     : `[선택한 화풍·스타일]\n${style.label}\n${style.prompt}`;
 
   return `위 기사에 넣을 이미지 1장을 만들어 주십시오.
@@ -162,7 +166,7 @@ function gwBuildImagePrompt(vacancy, article, opts) {
 ${styleSection}
 
 [이미지로 표현할 장면]
-아래 기사 내용에서 가장 시각적으로 전달력이 높은 한 가지 핵심을 스스로 골라 장면으로 만드십시오.
+${focusRule}
 ${focus}
 
 [확인된 ${noun} 사실]
