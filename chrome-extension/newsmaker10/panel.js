@@ -832,13 +832,16 @@
     }
   }
 
+  /* 이미지를 넣을 자리 — 본문을 먼저 클릭했으면 그 자리, 아니면 첫 문단 다음 (블로그와 같다).
+     예전에는 자리를 안 고르면 막았는데, 위쪽 안내를 못 보고 "버튼이 안 눌린다"고 느꼈다. */
   function requireDraftInsertSlot() {
     rememberDraftCursor();
+    const length = directDraftParagraphs().length;
     if (!Number.isInteger(draftInsertSlot)) {
-      toast("초안 본문에서 이미지를 넣을 위치를 먼저 클릭해 주세요.", "bad", 6000);
-      return null;
+      toast("본문 첫 문단 다음에 넣습니다. 다른 자리에 넣으려면 본문에서 그 위치를 먼저 클릭하세요.", "info", 6000);
+      return Math.min(1, length);
     }
-    return Math.max(0, Math.min(draftInsertSlot, directDraftParagraphs().length));
+    return Math.max(0, Math.min(draftInsertSlot, length));
   }
 
   function focusInsertedFigure(index) {
