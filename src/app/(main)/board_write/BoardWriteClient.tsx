@@ -425,8 +425,8 @@ export default function BoardWriteClient({
         fontFamily: "'Pretendard', -apple-system, sans-serif",
       }}>
         {/* 헤더 */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: `2px solid ${isStudyBoard ? "#059669" : "#222"}`, paddingBottom: 16, marginBottom: 30 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: isStudyBoard ? "#059669" : "#102c57", margin: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid var(--board-navy, #1a2e50)", paddingBottom: 16, marginBottom: 30 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--board-navy, #1a2e50)", margin: 0 }}>
             {boardName} 게시물 {isEditMode ? "수정" : "작성"}
           </h1>
           <span style={{ fontSize: 14, color: "#888" }}>작성자: {editPost?.author_name || "관리자"}</span>
@@ -487,7 +487,7 @@ export default function BoardWriteClient({
               style={{
                 height: 46, padding: "0 36px 0 14px", fontSize: 15, fontWeight: 600,
                 border: "1px solid #d1d5db", borderRadius: 6, background: "#fff",
-                color: isStudyBoard ? "#059669" : "#102c57", outline: "none", cursor: "pointer",
+                color: "var(--board-navy, #1a2e50)", outline: "none", cursor: "pointer",
                 minWidth: 130, appearance: "none",
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                 backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center",
@@ -765,7 +765,7 @@ export default function BoardWriteClient({
           onClick={handleSubmit}
           disabled={isSubmitting}
           style={{
-            padding: "12px 32px", background: isSubmitting ? "#555" : (isStudyBoard ? "#059669" : "#102c57"),
+            padding: "12px 32px", background: isSubmitting ? "#555" : "var(--board-navy, #1a2e50)",
             color: "#fff", border: "none", borderRadius: 6, fontSize: 15,
             fontWeight: 700, cursor: isSubmitting ? "not-allowed" : "pointer",
             display: "flex", alignItems: "center", gap: 8,

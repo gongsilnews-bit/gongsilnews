@@ -147,7 +147,7 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
         ]}
       />
 
-      <main style={{ maxWidth: 1080, width: "100%", margin: "0 auto", padding: "36px 24px 80px", boxSizing: "border-box" }}>
+      <main className="container px-20" style={{ maxWidth: 1200, width: "100%", margin: "0 auto", padding: "36px 20px 80px", boxSizing: "border-box" }}>
 
         {/* ━━━ 로그인 전: 나의 강의실에서 바로 로그인 ━━━ */}
         {!checkingAuth && !currentUser && (

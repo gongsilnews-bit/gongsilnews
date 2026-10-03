@@ -12,7 +12,7 @@ export default function StudyCommunityClient() {
       <StudyHeader />
       <StudyBenefitsSubNav active="community" />
 
-      <section style={{ maxWidth: 1080, margin: "0 auto", padding: "80px 24px 160px" }}>
+      <section className="container px-20" style={{ maxWidth: 1200, margin: "0 auto", padding: "80px 20px 160px" }}>
         <h1 style={{ fontSize: 34, fontWeight: 900, letterSpacing: "-1px", margin: "0 0 12px 0", color: "#062828" }}>
           커뮤니티/자료실
         </h1>

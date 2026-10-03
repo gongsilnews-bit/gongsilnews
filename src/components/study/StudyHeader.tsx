@@ -342,7 +342,7 @@ export default function StudyHeader({ background }: { background?: string } = {}
             href="/study"
             style={{
               fontSize: stuck ? "22px" : "32px", fontWeight: 900, color: titleColor, letterSpacing: "-1px", lineHeight: 1,
-              textDecoration: "none", marginLeft: "20px", whiteSpace: "nowrap",
+              textDecoration: "none", marginLeft: 0, whiteSpace: "nowrap",
             }}
             title="공실스터디 홈"
           >

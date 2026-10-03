@@ -771,7 +771,7 @@ export default function StudyVacancyRegisterClient() {
 
       {/* ━━━ 5. BOTTOM CTA BANNER ━━━ */}
       <section style={{ backgroundColor: "#ffffff", padding: "80px 0 100px" }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 24px" }}>
+        <div className="container px-20" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
           <div
             style={{
               background: "linear-gradient(135deg, #059669 0%, #064e3b 100%)",

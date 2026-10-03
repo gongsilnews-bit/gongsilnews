@@ -7,7 +7,7 @@ import { canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
 import StudyHero from "@/components/study/StudyHero";
 
-const POINT = "#059669";
+const POINT = "#1a2e50";
 const ITEMS_PER_PAGE = 12;
 
 export default function StudyCommunityClient({
@@ -177,67 +177,6 @@ export default function StudyCommunityClient({
             onClick: () => switchBoard("free"),
           },
         ]}
-        rightAction={
-          <>
-            {currentUser && (
-              <button
-                type="button"
-                onClick={toggleMyPosts}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 7,
-                  fontSize: 13.5,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  background: myPostsOnly ? "#ffffff" : "rgba(255, 255, 255, 0.08)",
-                  color: myPostsOnly ? POINT : "#ffffff",
-                  border: "1px solid rgba(255, 255, 255, 0.45)",
-                }}
-              >
-                {myPostsOnly ? "전체글 보기" : "내가 쓴 글 보기"}
-              </button>
-            )}
-            {canWrite ? (
-              <a
-                href={writeUrl}
-                style={{
-                  padding: "9px 20px",
-                  borderRadius: 7,
-                  fontSize: 14,
-                  fontWeight: 800,
-                  color: "#ffffff",
-                  background: "#10b981",
-                  textDecoration: "none",
-                  boxShadow: "0 3px 12px rgba(16, 185, 129, 0.4)",
-                  display: "inline-block",
-                }}
-              >
-                {activeBoard === "studyqa" ? "질문하기" : "글쓰기"}
-              </a>
-            ) : (
-              <button
-                type="button"
-                onClick={() =>
-                  showToast(`${getLevelName(activeBoardData?.perm_write ?? 5)}부터 글을 등록하실 수 있습니다. 🤍`)
-                }
-                style={{
-                  padding: "9px 20px",
-                  borderRadius: 7,
-                  fontSize: 14,
-                  fontWeight: 800,
-                  color: "#ffffff",
-                  background: "#10b981",
-                  border: "none",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                {activeBoard === "studyqa" ? "질문하기" : "글쓰기"}
-              </button>
-            )}
-          </>
-        }
       />
 
       {/* ━━━ [2] 게시판 본문 (시원한 풀 와이드 스터디 레이아웃) ━━━ */}
@@ -267,12 +206,11 @@ export default function StudyCommunityClient({
         </div>
       ) : (
         <main
-          className="study-qna"
+          className="study-qna container px-20"
           style={{
-            maxWidth: 1080,
+            maxWidth: 1200,
             width: "100%",
             margin: "0 auto",
-            padding: "0 24px",
             boxSizing: "border-box",
             minHeight: "60vh",
             marginTop: 28,
@@ -542,21 +480,21 @@ export default function StudyCommunityClient({
       )}
 
       <style>{`
-        /* 군청색(네이비)을 스터디 전용 에메랄드/그린 포인트로 완벽 전환 */
+        /* 스터디 커뮤니티 전용: 공지사항 게시판(board?id=notice)과 동일한 네이비 테마 및 반응형 보정 */
         .study-qna {
-          --board-navy: #059669 !important;
-          --board-navy-dark: #047857 !important;
-          --board-navy-soft: #ecfdf5 !important;
+          --board-navy: #1a2e50 !important;
+          --board-navy-dark: #0f1d36 !important;
+          --board-navy-soft: #f8fafc !important;
         }
-        .study-qna .cat-badge { color: #059669 !important; }
-        .study-qna .b-tab.active { background: #059669 !important; border-color: #059669 !important; color: #ffffff !important; }
-        .study-qna .b-tab:hover { border-color: #059669 !important; color: #059669 !important; }
-        .study-qna .b-list-table { border-top: 2px solid #059669 !important; }
-        .study-qna .b-list-table tbody tr:hover td.subject { color: #059669 !important; }
+        .study-qna .cat-badge { color: #ef4444 !important; font-size: 14px; font-weight: 800; margin-right: 8px; }
+        .study-qna .b-tab.active { background: #1a2e50 !important; border-color: #1a2e50 !important; color: #ffffff !important; }
+        .study-qna .b-tab:hover { border-color: #1a2e50 !important; color: #1a2e50 !important; }
+        .study-qna .b-list-table { border-top: 2px solid #1a2e50 !important; }
+        .study-qna .b-list-table tbody tr:hover td.subject { color: #1a2e50 !important; }
         .study-qna .b-list-table td.subject a { color: inherit; text-decoration: none; }
-        .study-qna .b-search button { background: #059669 !important; border-color: #059669 !important; color: #ffffff !important; }
-        .study-qna .b-search button:hover { background: #047857 !important; }
-        .study-qna .b-search input:focus { border-color: #059669 !important; outline: none; }
+        .study-qna .b-search button { background: #f8f9fa !important; border-color: #ccc !important; color: #555 !important; }
+        .study-qna .b-search button:hover { background: #e2e8f0 !important; color: #111 !important; }
+        .study-qna .b-search input:focus { border-color: #1a2e50 !important; outline: none; }
       `}</style>
     </div>
   );

@@ -12,7 +12,7 @@ import TypingText from "@/components/study/TypingText";
  * 공실뉴스 게시판(/board)과 같은 목록형 마크업을 쓰되, 사이드바를 빼서 폭을 다 쓰고
  * 포인트 컬러만 스터디 에메랄드로 덮어쓴다.
  */
-const POINT = "#059669";
+const POINT = "#1a2e50";
 const ITEMS_PER_PAGE = 12;
 
 export default function StudyQnaClient({
@@ -163,7 +163,7 @@ export default function StudyQnaClient({
             // 멤버십신청·나의 강의실 히어로와 같은 안쪽 라인 (글 시작 위치를 맞춘다)
             width: "100%",
             boxSizing: "border-box",
-            maxWidth: "1080px",
+            maxWidth: "1200px",
             margin: "0 auto",
             padding: "0 20px",
             display: "flex",
@@ -482,14 +482,21 @@ export default function StudyQnaClient({
       )}
 
       <style>{`
-        /* 공실뉴스 게시판 클래스를 그대로 쓰되 네이비 포인트만 스터디 에메랄드로 바꾼다 */
+        /* 공실뉴스 공지사항 게시판과 동일한 네이비 테마 */
         .study-qna {
-          --board-navy: #059669;
-          --board-navy-dark: #047857;
-          --board-navy-soft: #ecfdf5;
+          --board-navy: #1a2e50;
+          --board-navy-dark: #0f1d36;
+          --board-navy-soft: #f8fafc;
         }
-        .study-qna .cat-badge { color: #059669; }
+        .study-qna .cat-badge { color: #ef4444; }
+        .study-qna .b-tab.active { background: #1a2e50; border-color: #1a2e50; color: #ffffff; }
+        .study-qna .b-tab:hover { border-color: #1a2e50; color: #1a2e50; }
+        .study-qna .b-list-table { border-top: 2px solid #1a2e50; }
+        .study-qna .b-list-table tbody tr:hover td.subject { color: #1a2e50; }
         .study-qna .b-list-table td.subject a { color: inherit; text-decoration: none; }
+        .study-qna .b-search button { background: #f8f9fa; border-color: #ccc; color: #555; }
+        .study-qna .b-search button:hover { background: #e2e8f0; color: #111; }
+        .study-qna .b-search input:focus { border-color: #1a2e50; outline: none; }
       `}</style>
     </div>
   );

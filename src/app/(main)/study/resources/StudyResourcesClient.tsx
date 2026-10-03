@@ -7,7 +7,7 @@ import { canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
 import StudyHero from "@/components/study/StudyHero";
 
-const POINT = "#059669";
+const POINT = "#1a2e50";
 const ITEMS_PER_PAGE = 12;
 
 interface BoardMeta {
@@ -281,12 +281,11 @@ export default function StudyResourcesClient({
         </div>
       ) : (
         <main
-          className="study-qna"
+          className="study-qna container px-20"
           style={{
-            maxWidth: 1080,
+            maxWidth: 1200,
             width: "100%",
             margin: "0 auto",
-            padding: "0 24px",
             boxSizing: "border-box",
             minHeight: "60vh",
             marginTop: 28,
@@ -324,7 +323,7 @@ export default function StudyResourcesClient({
                       style={{
                         padding: "7px 11px",
                         border: "none",
-                        background: viewMode === "card" ? "#059669" : "transparent",
+                        background: viewMode === "card" ? "#1a2e50" : "transparent",
                         color: viewMode === "card" ? "#fff" : "#6b7280",
                         cursor: "pointer",
                         display: "flex",
@@ -347,7 +346,7 @@ export default function StudyResourcesClient({
                       style={{
                         padding: "7px 11px",
                         border: "none",
-                        background: viewMode === "list" ? "#059669" : "transparent",
+                        background: viewMode === "list" ? "#1a2e50" : "transparent",
                         color: viewMode === "list" ? "#fff" : "#6b7280",
                         cursor: "pointer",
                         display: "flex",
@@ -769,22 +768,22 @@ export default function StudyResourcesClient({
       )}
 
       <style>{`
-        /* 스터디 자료실 전용 에메랄드/그린 포인트 및 반응형 보정 */
+        /* 스터디 자료실 전용: 공지사항 게시판(board?id=notice)과 동일한 네이비 테마 및 반응형 보정 */
         .study-qna {
-          --board-navy: #059669 !important;
-          --board-navy-dark: #047857 !important;
-          --board-navy-soft: #ecfdf5 !important;
+          --board-navy: #1a2e50 !important;
+          --board-navy-dark: #0f1d36 !important;
+          --board-navy-soft: #f8fafc !important;
         }
         .study-qna .cat-badge { color: #ef4444 !important; font-size: 14px; font-weight: 800; margin-right: 8px; }
         .study-qna .b-sidebar .pop-ranking { color: #ef4444 !important; font-weight: 900; }
-        .study-qna .b-tab.active { background: #059669 !important; border-color: #059669 !important; color: #ffffff !important; }
-        .study-qna .b-tab:hover { border-color: #059669 !important; color: #059669 !important; }
-        .study-qna .b-list-table { border-top: 2px solid #059669 !important; }
-        .study-qna .b-list-table tbody tr:hover td.subject { color: #059669 !important; }
+        .study-qna .b-tab.active { background: #1a2e50 !important; border-color: #1a2e50 !important; color: #ffffff !important; }
+        .study-qna .b-tab:hover { border-color: #1a2e50 !important; color: #1a2e50 !important; }
+        .study-qna .b-list-table { border-top: 2px solid #1a2e50 !important; }
+        .study-qna .b-list-table tbody tr:hover td.subject { color: #1a2e50 !important; }
         .study-qna .b-list-table td.subject a { color: inherit; text-decoration: none; }
-        .study-qna .b-search button { background: #059669 !important; border-color: #059669 !important; color: #ffffff !important; }
-        .study-qna .b-search button:hover { background: #047857 !important; }
-        .study-qna .b-search input:focus { border-color: #059669 !important; outline: none; }
+        .study-qna .b-search button { background: #f8f9fa !important; border-color: #ccc !important; color: #555 !important; }
+        .study-qna .b-search button:hover { background: #e2e8f0 !important; color: #111 !important; }
+        .study-qna .b-search input:focus { border-color: #1a2e50 !important; outline: none; }
         .study-qna .b-card-item:hover {
           transform: translateY(-4px);
           box-shadow: 0 10px 24px rgba(0, 0, 0, 0.09);
@@ -794,7 +793,7 @@ export default function StudyResourcesClient({
           transform: scale(1.05);
         }
         .study-qna .b-sidebar .sb-title {
-          border-bottom: 2px solid #059669 !important;
+          border-bottom: 2px solid #1a2e50 !important;
         }
       `}</style>
     </div>

@@ -89,7 +89,7 @@ export default function StudyPricingClient() {
           textAlign: "center",
         }}
       >
-        <div style={{ maxWidth: "1080px", margin: "0 auto" }}>
+        <div className="container px-20" style={{ maxWidth: "1200px", margin: "0 auto" }}>
           <div
             style={{
               display: "inline-block",

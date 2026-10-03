@@ -47,9 +47,9 @@ export default function StudyHero({
       <div
         style={{
           width: "100%",
-          maxWidth: "1080px",
+          maxWidth: "1200px",
           margin: "0 auto",
-          padding: "0 24px",
+          padding: "0 20px",
           boxSizing: "border-box",
           display: "flex",
           justifyContent: "space-between",

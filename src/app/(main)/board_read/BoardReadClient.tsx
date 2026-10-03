@@ -205,7 +205,7 @@ export default function BoardReadClient({
           <div style={{ fontSize: 48, marginBottom: 20 }}>🔒</div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111", marginBottom: 16 }}>공실뉴스부동산 회원만 열람할 수 있습니다</h2>
           <p style={{ fontSize: 15, color: "#666", lineHeight: 1.6, marginBottom: 8 }}>
-            이 게시물은 <strong style={{ color: isStudyBoard ? "#059669" : "#1a73e8" }}>공실뉴스 부동산 회원</strong> 전용 콘텐츠입니다.
+            이 게시물은 <strong style={{ color: "#1a2e50" }}>공실뉴스 부동산 회원</strong> 전용 콘텐츠입니다.
           </p>
           <p style={{ fontSize: 14, color: "#999", marginBottom: 32 }}>
             부동산 회원으로 가입하시면 모든 자료를 무료로 열람하실 수 있습니다.
@@ -222,10 +222,10 @@ export default function BoardReadClient({
   return (
     <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
       {isStudyBoard && <StudyHeader background={STUDY_HERO_BAR} />}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
+      <div className="container px-20" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
         {/* 게시판 헤더 */}
-        <div style={{ marginTop: 30, display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: `2px solid ${isStudyBoard ? "#059669" : "#222"}`, paddingBottom: 15, marginBottom: 0 }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: isStudyBoard ? "#059669" : "#102c57" }}>
+        <div style={{ marginTop: 30, display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "2px solid var(--board-navy, #1a2e50)", paddingBottom: 15, marginBottom: 0 }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: "var(--board-navy, #1a2e50)" }}>
             {boardName}
             {board?.subtitle && <span style={{ fontSize: 16, fontWeight: 500, color: "#666", marginLeft: 10 }}>({board.subtitle})</span>}
           </div>
@@ -244,7 +244,7 @@ export default function BoardReadClient({
             />
             <button 
               onClick={() => handleSearch(searchInputValue)}
-              style={{ background: isStudyBoard ? "#059669" : "#f8f9fa", borderLeft: isStudyBoard ? "none" : "1px solid #ccc", padding: "0 14px", fontWeight: "bold", color: isStudyBoard ? "#fff" : "#555", cursor: "pointer" }}
+              style={{ background: "#f8f9fa", borderLeft: "1px solid #ccc", padding: "0 14px", fontWeight: "bold", color: "#555", cursor: "pointer" }}
             >검색</button>
           </div>
         </div>
@@ -282,7 +282,7 @@ export default function BoardReadClient({
             </div>
 
             {/* 게시글 카드 */}
-            <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e0e0e0", borderTop: `3px solid ${isStudyBoard ? "#059669" : "#102c57"}`, overflow: "hidden", marginBottom: 12 }}>
+            <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e0e0e0", borderTop: "2px solid var(--board-navy, #1a2e50)", overflow: "hidden", marginBottom: 12 }}>
               {/* 제목 영역 */}
               <div style={{ padding: "28px 32px 24px", borderBottom: "1px solid #f0f0f0" }}>
                 {catBadge && (
@@ -584,7 +584,7 @@ export default function BoardReadClient({
                 </>
               )}
               {canAccessBoard(userLevel, board?.perm_write ?? 5) && (
-                <Link href={`/board_write?board_id=${boardId}`} style={{ background: isStudyBoard ? "#059669" : "#102c57", color: "#fff", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>글등록하기</Link>
+                <Link href={`/board_write?board_id=${boardId}`} style={{ background: "var(--board-navy, #1a2e50)", color: "#fff", padding: "9px 17px", borderRadius: 3, fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>글등록하기</Link>
               )}
             </div>
           </div>
@@ -619,8 +619,9 @@ export default function BoardReadClient({
 
       {isStudyBoard && (
         <style>{`
-          .b-tab.active { background: #059669 !important; border-color: #059669 !important; color: #ffffff !important; }
-          .b-tab:hover { border-color: #059669 !important; color: #059669 !important; }
+          .b-tab.active { background: var(--board-navy, #1a2e50) !important; border-color: var(--board-navy, #1a2e50) !important; color: #ffffff !important; }
+          .b-tab:hover { border-color: var(--board-navy, #1a2e50) !important; color: var(--board-navy, #1a2e50) !important; }
+          .b-sidebar .sb-title { border-bottom: 2px solid var(--board-navy, #1a2e50) !important; }
         `}</style>
       )}
     </div>

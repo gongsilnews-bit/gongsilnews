@@ -238,7 +238,7 @@ export default function StudyApplyClient() {
       />
 
       {/* ━━━ [2] 하단: 이전 디자인 2개 비교창 (시중 실무교육 vs 공실스터디) ━━━ */}
-      <main style={{ maxWidth: "1080px", width: "100%", margin: "0 auto", padding: "60px 24px 40px", boxSizing: "border-box" }}>
+      <main className="container px-20" style={{ maxWidth: "1200px", width: "100%", margin: "0 auto", padding: "60px 20px 40px", boxSizing: "border-box" }}>
         <div style={{ textAlign: "center", marginBottom: "44px" }}>
           <div
             style={{
