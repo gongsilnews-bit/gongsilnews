@@ -73,10 +73,10 @@ test("페이스북 글 끝에 링크·출처·해시태그를 코드가 붙인�
   assert.ok(out.text.endsWith("#양재역"));
 });
 
-test("인스타그램은 링크 대신 프로필 링크 안내를 붙인다", () => {
+test("인스타그램은 프로필 링크 안내 + 매물 주소(눌리지 않아도 복사해 갈 수 있게)를 붙인다", () => {
   const out = gwSnsCompose("instagram", { body: "훅\n📍 양재동", hashtags: [] }, { listing: agencyListing, url: "https://x", noun: "매물" });
-  assert.ok(out.text.includes("자세한 매물 정보는 프로필 링크 → 공실뉴스"));
-  assert.ok(!out.text.includes("https://x"));
+  assert.ok(out.text.includes("자세한 매물 정보는 프로필 링크 → 공실뉴스\nhttps://x"));
+  assert.ok(out.text.indexOf("https://x") < out.text.indexOf("[매물 정보 출처]"));
 });
 
 test("스레드는 500자를 넘기면 링크·출처를 새 글로 나눈다", () => {

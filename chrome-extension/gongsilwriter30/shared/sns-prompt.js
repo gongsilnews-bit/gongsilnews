@@ -246,8 +246,12 @@ function gwSnsCompose(channel, post, ctx) {
   const body = String(post?.body || "").trim();
   if (!body) return { posts: [], text: "" };
   const parts = [body];
-  if (channel === "instagram") parts.push(`자세한 ${noun} 정보는 프로필 링크 → 공실뉴스`);
-  else {
+  if (channel === "instagram") {
+    /* 인스타 캡션의 링크는 눌리지 않는다 — 프로필 링크 안내를 먼저, 주소는 복사해 갈 수 있게 글자로 함께 */
+    parts.push(url
+      ? `자세한 ${noun} 정보는 프로필 링크 → 공실뉴스\n${url}`
+      : `자세한 ${noun} 정보는 프로필 링크 → 공실뉴스`);
+  } else {
     if (youtube) parts.push(youtube);
     if (url) parts.push(`▶ 공실뉴스에서 ${noun} 자세히 보기\n${url}`);
   }
