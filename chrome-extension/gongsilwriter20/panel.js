@@ -1258,39 +1258,105 @@
   }
 
   /* ═════════════ 초기화 ═════════════
-     물건·초안·사진·블로그 글·유튜브 대본은 지우고, 고른 AI와 스타일 설정만 남긴다.
-     저장소를 비운 뒤 작업창을 새로 불러와 네 탭을 한 번에 깨끗하게 만든다. */
+     [↺ 초기화 ▾] → [이 탭만 초기화] / [전체 초기화].
+     어느 쪽이든 글만 지우고, 고른 AI와 스타일 설정은 남긴다.
+     저장소를 고친 뒤 작업창을 새로 불러오고, 보던 탭으로 돌아온다.
+     앞 탭을 지워도 뒤 탭(블로그·대본)은 이미 만든 결과물이라 남긴다. */
   const BLOG_STATE_KEY = "gw_blog_state";
   const YOUTUBE_STATE_KEY = "gw_youtube_state";
+  const RETURN_TAB_KEY = "gw_return_tab"; // 새로 불러온 뒤 돌아갈 탭 (sessionStorage)
 
-  $("btnReset").addEventListener("click", async () => {
-    if (!confirm("가져온 물건, 초안, 사진, 블로그 글, 유튜브 대본이 모두 지워집니다.\n초기화할까요?")) return;
+  const RESET_TABS = {
+    tabWork: {
+      label: "1 물건·AI",
+      what: "가져온 물건과 기사 초안·사진이 지워집니다.\n블로그 글과 유튜브 대본은 남습니다.",
+    },
+    tabDraft: {
+      label: "2 초안 다듬기",
+      what: "기사 초안과 AI·삽입 사진이 지워집니다.\n가져온 물건은 남아서 같은 물건으로 다시 쓸 수 있습니다.",
+    },
+    tabBlog: { label: "3 블로그 작성", what: "블로그 글만 지워집니다.\n물건·기사·유튜브 대본은 남습니다." },
+    tabScript: { label: "4 유튜브 대본", what: "유튜브 대본만 지워집니다.\n물건·기사·블로그 글은 남습니다." },
+  };
+
+  const activeTabId = () => Object.keys(RESET_TABS).find((id) => $(id)?.classList.contains("active")) || "tabWork";
+
+  /* 물건·초안을 비운 1·2번 탭 상태 — 설정은 그대로 */
+  const panelSettings = () => ({
+    platform: S.platform,
+    saleMode: S.saleMode,
+    kind: S.kind,
+    length: S.length,
+    imageStyle: S.imageStyle,
+  });
+
+  async function blankBlog() {
+    const blog = (await chrome.storage.local.get(BLOG_STATE_KEY))[BLOG_STATE_KEY] || {};
+    return { style: blog.style, length: blog.length, imageStyle: blog.imageStyle, design: blog.design };
+  }
+
+  async function blankYoutube() {
+    const youtube = (await chrome.storage.local.get(YOUTUBE_STATE_KEY))[YOUTUBE_STATE_KEY] || {};
+    return { settings: youtube.settings };
+  }
+
+  async function runReset(scope) {
+    const tabId = activeTabId();
+    const message = scope === "all"
+      ? "가져온 물건, 초안, 사진, 블로그 글, 유튜브 대본이 모두 지워집니다.\n전체 초기화할까요?"
+      : `[${RESET_TABS[tabId].label}] 탭만 초기화합니다.\n\n${RESET_TABS[tabId].what}\n\n초기화할까요?`;
+    if (!confirm(message)) return;
     try {
-      const got = await chrome.storage.local.get([BLOG_STATE_KEY, YOUTUBE_STATE_KEY]);
-      const blog = got[BLOG_STATE_KEY] || {};
-      const youtube = got[YOUTUBE_STATE_KEY] || {};
-      await chrome.storage.local.set({
-        [STATE_KEY]: {
-          platform: S.platform,
-          saleMode: S.saleMode,
-          kind: S.kind,
-          length: S.length,
-          imageStyle: S.imageStyle,
-        },
-        [BLOG_STATE_KEY]: {
-          style: blog.style,
-          length: blog.length,
-          imageStyle: blog.imageStyle,
-          design: blog.design,
-        },
-        [YOUTUBE_STATE_KEY]: { settings: youtube.settings },
-      });
-      await chrome.storage.local.remove([GW.KEY.JOB, GW.KEY.DRAFT]).catch(() => {});
+      if (scope === "all") {
+        await chrome.storage.local.set({
+          [STATE_KEY]: panelSettings(),
+          [BLOG_STATE_KEY]: await blankBlog(),
+          [YOUTUBE_STATE_KEY]: await blankYoutube(),
+        });
+        await chrome.storage.local.remove([GW.KEY.JOB, GW.KEY.DRAFT]).catch(() => {});
+      } else if (tabId === "tabWork") {
+        await chrome.storage.local.set({ [STATE_KEY]: panelSettings() });
+        await chrome.storage.local.remove([GW.KEY.JOB, GW.KEY.DRAFT]).catch(() => {});
+      } else if (tabId === "tabDraft") {
+        /* 물건에서 가져온 사진은 남기고, 초안 단계에서 더한 AI·삽입 사진만 뺀다 */
+        const media = (S.media || []).filter((m) => m.kind !== "ai" && !Number.isInteger(m.insertAfterParagraph));
+        await chrome.storage.local.set({
+          [STATE_KEY]: Object.assign({}, S, { article: null, writing: false, imageRequest: "", media }),
+        });
+        await chrome.storage.local.remove(GW.KEY.DRAFT).catch(() => {});
+      } else if (tabId === "tabBlog") {
+        await chrome.storage.local.set({ [BLOG_STATE_KEY]: await blankBlog() });
+      } else if (tabId === "tabScript") {
+        await chrome.storage.local.set({ [YOUTUBE_STATE_KEY]: await blankYoutube() });
+      }
+      try { sessionStorage.setItem(RETURN_TAB_KEY, scope === "all" ? "tabWork" : tabId); } catch {}
       location.reload();
     } catch (e) {
       toast("초기화하지 못했습니다 — " + (e.message || String(e)), "bad", 7000);
     }
+  }
+
+  const resetMenu = $("resetMenu");
+  const btnReset = $("btnReset");
+
+  function closeResetMenu() {
+    resetMenu.classList.add("hidden");
+    btnReset.setAttribute("aria-expanded", "false");
+  }
+
+  btnReset.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!resetMenu.classList.contains("hidden")) { closeResetMenu(); return; }
+    $("resetTabLabel").textContent = RESET_TABS[activeTabId()].label;
+    resetMenu.classList.remove("hidden");
+    btnReset.setAttribute("aria-expanded", "true");
   });
+  $("btnResetTab").addEventListener("click", () => { closeResetMenu(); runReset("tab"); });
+  $("btnResetAll").addEventListener("click", () => { closeResetMenu(); runReset("all"); });
+  document.addEventListener("click", (e) => {
+    if (!resetMenu.contains(e.target)) closeResetMenu();
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeResetMenu(); });
 
   /* ═════════════ 잡동사니 ═════════════ */
   function esc(str) {
@@ -1305,5 +1371,9 @@
     await restore();
     refreshButtons();
     status(S.article ? "초안 있음" : S.vacancy ? `${nounOf(S.vacancy)} 준비됨` : "준비됨", S.article ? "ok" : "");
+    /* 탭만 초기화한 뒤라면 보던 탭으로 돌아간다 */
+    let back = null;
+    try { back = sessionStorage.getItem(RETURN_TAB_KEY); sessionStorage.removeItem(RETURN_TAB_KEY); } catch {}
+    if (back && back !== "tabWork" && RESET_TABS[back]) setTimeout(() => $(back)?.click(), 0);
   })();
 })();

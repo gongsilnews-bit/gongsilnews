@@ -20,7 +20,19 @@
       </div>
       <span id="statusPill" class="status-pill">준비됨</span>
     </div>
-    <button id="btnReset" class="btn-reset" type="button" title="사진·시뮬레이션 결과·기사·블로그 글·유튜브 대본을 모두 지웁니다">↺ 초기화</button>
+    <div class="reset-wrap">
+      <button id="btnReset" class="btn-reset" type="button" aria-haspopup="menu" aria-expanded="false">↺ 초기화 ▾</button>
+      <div id="resetMenu" class="reset-menu hidden" role="menu">
+        <button id="btnResetTab" class="reset-item" type="button" role="menuitem">
+          <strong>이 탭만 초기화</strong>
+          <small>지금 보는 탭 — <span id="resetTabLabel"></span></small>
+        </button>
+        <button id="btnResetAll" class="reset-item danger" type="button" role="menuitem">
+          <strong>전체 초기화</strong>
+          <small>결과표·기사·블로그·유튜브 대본 모두</small>
+        </button>
+      </div>
+    </div>
   </header>
 
   <!-- ─────────── 탭 ─────────── -->
