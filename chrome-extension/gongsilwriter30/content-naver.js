@@ -329,10 +329,6 @@
           return { ok: false, error: "네이버 편집기가 본문 입력을 받지 않았습니다. 글쓰기 화면을 새로고침(F5)해 주세요." };
         }
         await sleep(300);
-      } else if (block.type === "video" && block.url) {
-        /* 유튜브 주소는 글자로만 붙인다 — 편집기가 주소를 알아보면 영상 카드로 바꾼다 */
-        pasteInto(doc, { text: block.url });
-        await sleep(2500); // 영상 카드를 만드는 시간
       } else if (block.type === "image" && block.dataUrl) {
         const file = dataUrlToFile(block.dataUrl, index);
         if (!file) continue;

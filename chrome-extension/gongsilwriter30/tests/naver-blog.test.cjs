@@ -200,17 +200,11 @@ test("표시·광고 필수 정보가 빠지면 무엇이 빠졌는지 알려 �
   assert.deepEqual(listingProblems({ owner: { type: "general", name: "홍길동" } }), [], "일반회원 매물은 이름만");
 });
 
-test("블로그 영상 — 유튜브는 도입 문단 다음 video 블록, 파일은 안내 문구", () => {
+test("유튜브 주소만 받는다 (SNS 영상 칸), 블로그 글에는 영상 칸을 넣지 않는다", () => {
   const N = require("../shared/naver-blog.js");
   assert.equal(N.youtubeUrl("https://youtu.be/abcdefgh"), "https://youtu.be/abcdefgh");
+  assert.equal(N.youtubeUrl("https://www.youtube.com/shorts/abc123XYZ"), "https://www.youtube.com/shorts/abc123XYZ");
   assert.equal(N.youtubeUrl("https://naver.com/abc"), "");
-  const blocks = N.buildNaverBlocks("첫 문단\n\n■ 소제목\n\n본문", [], { design: "basic", video: { youtubeUrl: "https://youtu.be/abcdefgh" } });
-  const at = blocks.findIndex((b) => b.type === "video");
-  assert.ok(at > 0);
-  assert.ok(blocks[at - 1].html.includes("첫 문단") && blocks[at - 1].html.includes("영상으로 보기"));
-  assert.equal(blocks.filter((b) => b.type === "video").length, 1);
-  const file = N.buildNaverBlocks("첫 문단\n\n본문", [], { design: "news", video: { fileName: "쇼츠.mp4" } });
-  assert.ok(file.some((b) => b.html && b.html.includes("여기에 영상을 올려 주세요 (쇼츠.mp4)")));
-  const none = N.buildNaverBlocks("첫 문단\n\n본문", [], { design: "basic" });
-  assert.ok(!none.some((b) => b.type === "video" || (b.html && b.html.includes("영상으로 보기"))));
+  const blocks = N.buildNaverBlocks("첫 문단\n\n본문", [], { design: "basic", video: { youtubeUrl: "https://youtu.be/abcdefgh" } });
+  assert.ok(!blocks.some((b) => b.type === "video" || (b.html && b.html.includes("영상으로 보기"))));
 });
