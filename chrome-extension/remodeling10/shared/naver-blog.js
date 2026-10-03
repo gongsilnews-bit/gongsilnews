@@ -438,6 +438,7 @@
     HOME_URL, WRITE_URL, isNaverBlogUrl, isLikelyWriteUrl, selectLikelyWriteTab,
     splitParagraphs, layoutMediaSlots, buildNaverBlocks, normalizeTags,
     DESIGNS, designHint, factRows, listingProblems, SITE_URL,
+    sourceBlockLines, listingUrl, // SNS 글 끝 출처·링크도 블로그와 같은 문구를 쓴다 (sns.js)
   };
   global.GWNaverBlog = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

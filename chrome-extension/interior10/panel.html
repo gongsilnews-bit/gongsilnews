@@ -29,7 +29,7 @@
         </button>
         <button id="btnResetAll" class="reset-item danger" type="button" role="menuitem">
           <strong>전체 초기화</strong>
-          <small>결과표·기사·블로그·유튜브 대본 모두</small>
+          <small>결과표·기사·블로그·SNS·유튜브 대본 모두</small>
         </button>
       </div>
     </div>
@@ -48,7 +48,7 @@
     <!-- 기사 초안은 2번 탭 안에서 오간다 (panel.js 가 쓰는 자리라 남겨 둔다) -->
     <button id="tabDraft" class="nav-tab hidden" type="button" aria-hidden="true">초안</button>
     <button id="tabBlog" class="nav-tab" type="button">
-      <span class="step-number">3</span> 블로그
+      <span class="step-number">3</span> 블로그·SNS
       <span id="blogBadge" class="tab-badge hidden">NEW</span>
     </button>
     <button id="tabScript" class="nav-tab" type="button">
@@ -56,6 +56,14 @@
       <span id="scriptBadge" class="tab-badge hidden">NEW</span>
     </button>
   </nav>
+
+  <!-- 3번 탭 안의 선택 줄 — 블로그 / 페이스북 / 인스타그램 / 스레드 (sns.js) -->
+  <div id="channelBar" class="channel-bar hidden" role="tablist" aria-label="블로그·SNS 선택">
+    <button class="channel-btn active" data-channel="blog" type="button" role="tab">블로그</button>
+    <button class="channel-btn" data-channel="facebook" type="button" role="tab">페이스북</button>
+    <button class="channel-btn" data-channel="instagram" type="button" role="tab">인스타</button>
+    <button class="channel-btn" data-channel="threads" type="button" role="tab">스레드</button>
+  </div>
 
   <div class="scroll-area">
 
@@ -414,6 +422,75 @@
       </div>
     </section>
 
+    <!-- ═══════════ 뷰 3-SNS — 페이스북 · 인스타그램 · 스레드 (sns.js) ═══════════ -->
+    <section id="viewSns" class="view">
+
+      <div id="snsLock" class="card blog-lock hidden">
+        <div class="blog-lock-icon">🔒</div>
+        <strong id="snsLockTitle">SNS 작성은 회원 전용입니다</strong>
+        <p id="snsLockText">공실뉴스부동산·공실스터디부동산 회원만 사용할 수 있습니다.</p>
+        <div class="blog-lock-actions">
+          <a id="snsLockLink" class="btn-fill" href="https://www.gongsilnews.com/study/apply" target="_blank" rel="noopener noreferrer">공실스터디 신청하기</a>
+          <button id="btnSnsLockRetry" class="btn-line" type="button">다시 확인</button>
+        </div>
+      </div>
+
+      <div class="card blog-source-card">
+        <label class="card-label">참조 기사</label>
+        <div id="snsSourceEmpty" class="blog-source-state warn">
+          <b>2 · 초안 다듬기</b>에 기사가 준비되면 SNS 글을 만들 수 있습니다.
+        </div>
+        <div id="snsSourceReady" class="blog-source-state hidden">
+          <span>현재 기사 참조</span>
+          <strong id="snsSourceTitle">-</strong>
+        </div>
+        <p class="hint">페이스북·인스타그램·스레드 글을 AI에 한 번에 요청합니다. 기사와 블로그 글은 바꾸지 않습니다.</p>
+        <div id="snsTrial" class="gw-trial hidden"></div>
+      </div>
+
+      <div class="card">
+        <label class="card-label">SNS 3종 작성</label>
+        <button id="btnMakeSns" class="btn-fill" type="button" disabled>
+          AI SNS 3종 작성
+          <small>페이스북·인스타그램·스레드 글을 한 번에 요청합니다</small>
+        </button>
+        <div id="snsFail" class="gw-fail-slot hidden"></div>
+        <div id="snsWriting" class="gw-writing hidden" role="status" aria-live="polite"></div>
+        <button id="btnPullSns" class="btn-fill green" type="button" disabled>
+          완성 글 가져오기
+          <small>AI가 다 쓴 세 플랫폼 글을 이 탭으로 가져옵니다</small>
+        </button>
+      </div>
+
+      <div id="snsDraftEmpty" class="empty-note">
+        <b>AI SNS 3종 작성</b>을 누르면<br>페이스북·인스타그램·스레드 글이 함께 만들어집니다.
+      </div>
+
+      <div id="snsDraftBody" class="hidden">
+        <div class="preview-doc sns-doc">
+          <div class="preview-top">
+            <span id="snsBadge" class="cat-badge sns-badge">Facebook</span>
+            <span class="sns-top-right">
+              <span id="snsCount" class="sns-count"></span>
+              <button id="btnSnsCopyOnly" class="sns-icon-btn" type="button" title="글(링크·출처·해시태그 포함)만 복사합니다">📋 복사</button>
+              <button id="btnSnsZip" class="sns-icon-btn" type="button" title="사진과 글(TXT)을 압축 파일 하나로 내려받습니다">⬇ 받기</button>
+            </span>
+          </div>
+          <div id="snsEditor" class="sns-editor"></div>
+          <div class="sns-tail">
+            <div class="sns-tail-title">글 끝에 자동으로 붙는 내용</div>
+            <pre id="snsTail" class="sns-tail-text"></pre>
+          </div>
+          <div class="sns-media-head">
+            <strong>사진</strong>
+            <span id="snsMediaHint"></span>
+          </div>
+          <div id="snsAiNotice" class="sns-ai-notice hidden" role="note"></div>
+          <div id="snsMedia" class="sns-media"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- ═══════════ 뷰 4 — 유튜브 대본 (완성 원고만 쓴다 · 장면·이미지는 넣지 않음) ═══════════ -->
     <section id="viewScript" class="view">
       <div id="scriptLock" class="card blog-lock hidden">
@@ -610,6 +687,52 @@
     </div>
   </div>
 
+  <!-- ─────────── 뷰 3-SNS 하단 고정 바 (sns.js — 블로그와 상태·요소를 공유하지 않음) ─────────── -->
+  <div id="snsActions" class="bottom-bar blog-actions hidden">
+    <div class="revise-row">
+      <input id="snsReviseInput" type="text" class="revise-input"
+             placeholder="이 플랫폼 글 수정 요청 (예: 더 짧게)">
+      <button id="btnReviseSns" class="btn-revise" type="button">
+        수정 요청
+      </button>
+      <button id="btnPullSnsRevised" class="btn-sub btn-pull-revised" type="button" title="AI 탭에 나온 마지막 답변을 지금 보는 플랫폼 글로 가져옵니다">
+        수정글 가져오기
+      </button>
+    </div>
+
+    <div class="dock-row">
+      <button class="btn-sub dock-btn image-opts-toggle" data-target="snsImageOpts" type="button" aria-expanded="false">🎨 AI 이미지 만들기 ▾</button>
+      <button id="btnInsertSnsImage" class="btn-sub dock-btn" type="button">🖼️ 이미지 삽입</button>
+      <input id="snsFileImage" type="file" accept="image/*" class="hidden">
+    </div>
+
+    <div id="snsImageOpts" class="image-options hidden">
+      <div class="image-options-title">AI 이미지 스타일 <small id="snsRatioNote"></small></div>
+      <div class="image-style-row" role="group" aria-label="SNS AI 이미지 스타일 선택">
+        <button class="image-style sns-image-style active" data-sns-image-style="news" type="button">보도 실사</button>
+        <button class="image-style sns-image-style" data-sns-image-style="building" type="button">건물 전경</button>
+        <button class="image-style sns-image-style" data-sns-image-style="area" type="button">거리·상권</button>
+        <button class="image-style sns-image-style" data-sns-image-style="animation" type="button">애니메이션</button>
+        <button class="image-style sns-image-style" data-sns-image-style="infographic" type="button">통계 도표</button>
+        <input id="snsImageCustomStyle" type="text" class="image-style-custom"
+               placeholder="✍️ 직접 화풍 입력 (예: 픽사풍, 빈티지 흑백)" maxlength="50">
+      </div>
+      <textarea id="snsImageRequest" class="image-request" rows="2" maxlength="1600"
+                placeholder="표현할 장면이나 묘사할 내용을 입력하세요 (비워 두면 이 플랫폼 글에서 자동 분석)"></textarea>
+      <button id="btnMakeSnsImage" class="btn-sub btn-in-box" type="button">AI 이미지 만들기</button>
+      <p class="hint">공사 후 예측 이미지·AI 이미지는 게시할 때 AI 레이블을 켜 주세요. 현재 모습(실제 사진)이 있으면 AI 이미지는 대표(1번)가 될 수 없습니다.</p>
+    </div>
+
+    <div class="dock-row">
+      <a id="snsHomeLink" class="btn-blog-link" href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer">
+        페이스북 바로가기
+      </a>
+      <button id="btnCopySns" class="btn-send compact naver" type="button">
+        <span class="send-icon">📋</span><strong>글·사진 받기</strong>
+      </button>
+    </div>
+  </div>
+
   <!-- ─────────── 뷰 4 하단 고정 바 (대본 수정) ─────────── -->
   <div id="scriptActions" class="bottom-bar hidden">
     <div class="revise-row">
@@ -640,14 +763,18 @@
 <script src="shared/article-json.js"></script>
 <script src="shared/blog-prompt.js"></script>
 <script src="shared/naver-blog.js"></script>
+<script src="shared/listing-source.js"></script>
 <script src="shared/chatgpt-direct.js"></script>
 <script src="shared/youtube-prompt.js"></script>
 <script src="shared/youtube-json.js"></script>
+<script src="shared/sns-prompt.js"></script>
+<script src="shared/zip.js"></script>
 <script src="sim.js"></script>
 <script src="shared/dock-ui.js"></script>
 <script src="shared/tips.js"></script>
 <script src="panel.js"></script>
 <script src="blog.js"></script>
+<script src="sns.js"></script>
 <script src="youtube.js"></script>
 </body>
 </html>
