@@ -2,6 +2,9 @@
 
 import { createClient } from "@supabase/supabase-js"
 import { unstable_cache } from "next/cache"
+import { createClient as createCookieSupabase } from "@/utils/supabase/server"
+import { getEffectivePlan } from "@/utils/planCheck"
+import { isAdminRole } from "@/utils/permissionCheck"
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -244,6 +247,7 @@ function maskEmail(email: string | null | undefined) {
   return `${id.slice(0, 3)}${'*'.repeat(Math.max(2, id.length - 3))}@${domain}`;
 }
 
+type AgencyMember = { email?: string | null; name?: string | null; role?: string | null; plan_type?: string | null; plan_end_date?: string | null };
 type AgencyRow = {
   owner_id: string;
   name: string | null;
@@ -253,26 +257,54 @@ type AgencyRow = {
   cell: string | null;
   address: string | null;
   address_detail: string | null;
-  members?: { email?: string | null; name?: string | null } | { email?: string | null; name?: string | null }[] | null;
+  members?: AgencyMember | AgencyMember[] | null;
 };
 
-/* 같은 개설등록번호로 신청 중이거나 승인된 다른 계정 — DB 에 숫자만 남긴 칸(reg_num_norm)이 있으면 그것으로,
-   아직 없으면(마이그레이션 전) 적힌 그대로·숫자만 두 모양으로 찾는다 */
-async function findOtherAgencyByRegNum(supabaseAdmin: ReturnType<typeof getAdminClient>, regNum: string, ownerId: string) {
+const memberOf = (row: AgencyRow) => (Array.isArray(row.members) ? row.members[0] : row.members) || null;
+
+/* 유료로 쓰고 있는 사무소 계정인가 — 기존 등급 판정(getEffectivePlan)과 같은 기준 (부동산회원 + 유료 등급 + 기간 안) */
+const PAID_OFFICE_PLANS = ['news_premium', 'study_premium', 'biz_premium', 'admin'];
+function isPaidOwner(member: AgencyMember | null) {
+  if (!member) return false;
+  return PAID_OFFICE_PLANS.includes(getEffectivePlan({
+    role: member.role || undefined,
+    plan_type: member.plan_type || undefined,
+    plan_end_date: member.plan_end_date || null,
+  }));
+}
+
+/* 지금 이 요청을 보낸 사람이 최고관리자인가 — 화면이 아니라 로그인 정보로 확인한다 */
+async function requesterIsAdmin() {
+  try {
+    const cookieClient = await createCookieSupabase();
+    const { data } = await cookieClient.auth.getUser();
+    const userId = data?.user?.id;
+    if (!userId) return false;
+    const { data: me } = await getAdminClient().from('members').select('role, plan_type, plan_end_date').eq('id', userId).maybeSingle();
+    if (!me) return false;
+    return isAdminRole(me.role) || getEffectivePlan(me) === 'admin';
+  } catch {
+    return false;
+  }
+}
+
+/* 같은 개설등록번호로 신청 중이거나 승인된 다른 계정들 — DB 에 숫자만 남긴 칸(reg_num_norm)이 있으면 그것으로,
+   없으면(마이그레이션 전) 적힌 그대로·숫자만 두 모양으로 찾는다. 검사를 못 하면 null (가입을 막지 않는다) */
+async function findOtherAgenciesByRegNum(supabaseAdmin: ReturnType<typeof getAdminClient>, regNum: string, ownerId: string) {
   const norm = digitsOnly(regNum);
-  if (norm.length < 5) return null;
-  const select = 'owner_id, name, status, reg_num, members:owner_id(email, name)';
+  if (norm.length < 5) return [];
+  const select = 'owner_id, name, status, reg_num, members:owner_id(email, name, role, plan_type, plan_end_date)';
   let { data, error } = await supabaseAdmin
     .from('agencies').select(select).eq('reg_num_norm', norm)
-    .in('status', ACTIVE_AGENCY_STATUSES).neq('owner_id', ownerId).limit(1);
+    .in('status', ACTIVE_AGENCY_STATUSES).neq('owner_id', ownerId).limit(50);
   if (error) {
     const raw = String(regNum).trim();
     ({ data, error } = await supabaseAdmin
       .from('agencies').select(select).in('reg_num', Array.from(new Set([raw, norm])))
-      .in('status', ACTIVE_AGENCY_STATUSES).neq('owner_id', ownerId).limit(1));
-    if (error) return null; // 검사를 못 하면 가입을 막지 않는다 (관리자 심사에서 걸러진다)
+      .in('status', ACTIVE_AGENCY_STATUSES).neq('owner_id', ownerId).limit(50));
+    if (error) return null;
   }
-  return (data?.[0] as AgencyRow | undefined) || null;
+  return (data || []) as AgencyRow[];
 }
 
 /** 관리자 심사용 — 이 신청과 등록번호·사업자번호·휴대폰·주소가 같은 다른 계정 */
@@ -288,7 +320,7 @@ export async function adminFindAgencyDuplicates(memberId: string) {
     const addr = `${String(mine.address || '').trim()} ${String(mine.address_detail || '').trim()}`.trim();
     const { data, error } = await supabaseAdmin
       .from('agencies')
-      .select('owner_id, name, status, reg_num, biz_num, cell, address, address_detail, members:owner_id(email, name)')
+      .select('owner_id, name, status, reg_num, biz_num, cell, address, address_detail, members:owner_id(email, name, role, plan_type, plan_end_date)')
       .neq('owner_id', memberId)
       .in('status', ACTIVE_AGENCY_STATUSES)
       .limit(2000);
@@ -300,8 +332,8 @@ export async function adminFindAgencyDuplicates(memberId: string) {
       if (cell.length >= 10 && digitsOnly(row.cell) === cell) why.push('휴대폰');
       const rowAddr = `${String(row.address || '').trim()} ${String(row.address_detail || '').trim()}`.trim();
       if (addr.length >= 8 && rowAddr === addr) why.push('주소');
-      const member = Array.isArray(row.members) ? row.members[0] : row.members;
-      return { ownerId: row.owner_id, name: row.name, status: row.status, email: member?.email || '', memberName: member?.name || '', why };
+      const member = memberOf(row);
+      return { ownerId: row.owner_id, name: row.name, status: row.status, email: member?.email || '', memberName: member?.name || '', paid: isPaidOwner(member), why };
     }).filter((row) => row.why.length);
     return { success: true, duplicates };
   } catch (error: any) {
@@ -310,36 +342,64 @@ export async function adminFindAgencyDuplicates(memberId: string) {
 }
 
 // ── 중개업소 정보 수정/생성 ──
-export async function adminUpdateAgency(memberId: string, agencyData: any) {
+// options.allowDuplicate: 최고관리자의 [중복 허용] — 서버가 요청자를 다시 확인하고 최고관리자일 때만 받아들인다
+export async function adminUpdateAgency(memberId: string, agencyData: any, options: { allowDuplicate?: boolean } = {}) {
   const supabaseAdmin = getAdminClient();
   try {
     const { data: existing } = await supabaseAdmin
       .from('agencies').select('id, reg_num').eq('owner_id', memberId).single();
 
-    /* 새로 신청하거나 등록번호를 바꿀 때만 — 같은 사무소의 다른 계정이 있으면 막는다 */
-    const regNumChanged = agencyData?.reg_num !== undefined && digitsOnly(agencyData.reg_num) !== digitsOnly(existing?.reg_num);
-    if (agencyData?.reg_num && (!existing || regNumChanged)) {
-      const other = await findOtherAgencyByRegNum(supabaseAdmin, agencyData.reg_num, memberId);
-      if (other) {
-        const member = Array.isArray(other.members) ? other.members[0] : other.members;
-        const masked = maskEmail(member?.email);
-        return {
-          success: false,
-          duplicate: true,
-          error: `이미 가입된 중개사무소입니다${masked ? ` (${masked})` : ''}. 중개사무소 한 곳당 부동산회원 계정은 하나만 만들 수 있습니다. ` +
-            '기존 계정으로 로그인하시거나, 계정을 찾을 수 없으면 고객센터로 문의해 주세요.',
-        };
+    /* "중복 허용" 표시는 화면이 보낸 값을 믿지 않는다 — 아래에서 서버가 정한다 */
+    agencyData = { ...(agencyData || {}) };
+    delete agencyData.allow_duplicate;
+    let forcedPending = false;
+    let paidOffice = false;
+
+    /* 새로 신청하거나 등록번호를 바꿀 때만 — 같은 사무소의 다른 계정이 있으면:
+       기존 계정이 유료로 쓰는 사무소 → 추가 계정 허용 (개수 제한 없음, 관리자 승인 대기로)
+       최고관리자가 [중복 허용] → 허용
+       그 밖(무료 사무소) → 막는다 */
+    const regNumChanged = agencyData.reg_num !== undefined && digitsOnly(agencyData.reg_num) !== digitsOnly(existing?.reg_num);
+    if (agencyData.reg_num && (!existing || regNumChanged)) {
+      const others = await findOtherAgenciesByRegNum(supabaseAdmin, agencyData.reg_num, memberId);
+      if (others && others.length) {
+        paidOffice = others.some((row) => isPaidOwner(memberOf(row)));
+        const adminAllowed = !paidOffice && options.allowDuplicate === true && await requesterIsAdmin();
+        if (paidOffice || adminAllowed) {
+          agencyData.allow_duplicate = true;
+          /* 유료 사무소 추가 계정은 자동 승인하지 않는다 — 관리자 화면에서 한 번 눌러 승인 */
+          if (paidOffice && !(await requesterIsAdmin()) && agencyData.status === 'APPROVED') {
+            agencyData.status = 'PENDING';
+            forcedPending = true;
+          }
+        } else {
+          const masked = maskEmail(memberOf(others[0])?.email);
+          return {
+            success: false,
+            duplicate: true,
+            error: `이미 가입된 중개사무소입니다${masked ? ` (${masked})` : ''}. 무료 회원은 중개사무소 한 곳당 부동산회원 계정을 하나만 만들 수 있습니다. ` +
+              '같은 사무소 직원 계정은 사무소 대표 계정이 공실스터디부동산(유료)일 때 만들 수 있습니다. ' +
+              '기존 계정으로 로그인하시거나, 계정을 찾을 수 없으면 고객센터로 문의해 주세요.',
+          };
+        }
       }
     }
 
-    if (existing) {
-      const { error } = await supabaseAdmin.from('agencies').update(agencyData).eq('owner_id', memberId);
-      if (error) return { success: false, error: error.message };
-    } else {
-      const { error } = await supabaseAdmin.from('agencies').insert({ owner_id: memberId, ...agencyData });
-      if (error) return { success: false, error: error.message };
-    }
-
+    /* DB 에 allow_duplicate 칸이 아직 없으면(마이그레이션 전) 빼고 저장한다 */
+    const saveAgency = async (payload: any) => {
+      let res = existing
+        ? await supabaseAdmin.from('agencies').update(payload).eq('owner_id', memberId)
+        : await supabaseAdmin.from('agencies').insert({ owner_id: memberId, ...payload });
+      if (res.error && 'allow_duplicate' in payload && /allow_duplicate/.test(res.error.message)) {
+        const { allow_duplicate: _ignored, ...rest } = payload;
+        res = existing
+          ? await supabaseAdmin.from('agencies').update(rest).eq('owner_id', memberId)
+          : await supabaseAdmin.from('agencies').insert({ owner_id: memberId, ...rest });
+      }
+      return res;
+    };
+    const saved = await saveAgency(agencyData);
+    if (saved.error) return { success: false, error: saved.error.message };
     if (agencyData.status === 'PENDING' || agencyData.status === 'REJECTED') {
       const { error: memberError } = await supabaseAdmin
         .from('members')
@@ -354,7 +414,8 @@ export async function adminUpdateAgency(memberId: string, agencyData: any) {
       if (memberError) return { success: false, error: memberError.message };
     }
 
-    return { success: true };
+    /* forcedPending: 유료 사무소 추가 계정이라 자동 승인을 막고 관리자 승인 대기로 저장했다 (화면이 바로 승인하지 않게) */
+    return { success: true, forcedPending, paidOffice };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

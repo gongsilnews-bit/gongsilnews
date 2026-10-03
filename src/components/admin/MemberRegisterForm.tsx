@@ -20,7 +20,7 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   // 관리자 전용: role은 일반회원이지만 부동산 가입신청(agency)이 있는 경우 true
   const [hasAgencyApplication, setHasAgencyApplication] = useState(false);
   // 관리자 심사: 같은 개설등록번호·사업자번호·휴대폰·주소로 신청한 다른 계정 (1 사무소 1 계정)
-  const [agencyDuplicates, setAgencyDuplicates] = useState<{ ownerId: string; name: string | null; status: string | null; email: string; memberName: string; why: string[] }[]>([]);
+  const [agencyDuplicates, setAgencyDuplicates] = useState<{ ownerId: string; name: string | null; status: string | null; email: string; memberName: string; paid?: boolean; why: string[] }[]>([]);
   useEffect(() => {
     if (!isAdmin || !editMemberId || !hasAgencyApplication) return;
     adminFindAgencyDuplicates(editMemberId).then((res) => setAgencyDuplicates(res.duplicates || [])).catch(() => {});
@@ -720,12 +720,23 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           reject_reason: aiReason,
         };
 
-        const agencyRes = await adminUpdateAgency(memberId, finalAgencyData);
+        let agencyRes: { success: boolean; error?: string; duplicate?: boolean; forcedPending?: boolean; paidOffice?: boolean } =
+          await adminUpdateAgency(memberId, finalAgencyData);
+        /* 최고관리자: 같은 중개사무소 계정이 있어도 [중복 허용]으로 저장할 수 있다 (서버가 최고관리자인지 다시 확인한다) */
+        if (!agencyRes.success && agencyRes.duplicate && isAdmin &&
+            confirm(`${agencyRes.error}\n\n최고관리자 권한으로 중복을 허용하고 저장할까요?`)) {
+          agencyRes = await adminUpdateAgency(memberId, finalAgencyData, { allowDuplicate: true });
+        }
         if (!agencyRes.success) {
           /* 같은 중개사무소로 이미 가입한 계정이 있으면 그 안내를 그대로 보여 준다 */
-          throw new Error((agencyRes as { duplicate?: boolean }).duplicate
+          throw new Error(agencyRes.duplicate
             ? String(agencyRes.error)
             : "중개업소 정보 저장에 실패했습니다: " + agencyRes.error);
+        }
+        /* 유료 사무소의 추가 계정 — 자동 승인하지 않고 관리자 승인 대기로 저장됐다 */
+        if (agencyRes.forcedPending) {
+          finalStatus = "PENDING";
+          alert("같은 중개사무소(유료 이용 중)의 추가 계정으로 신청되었습니다. 관리자 승인 후 부동산회원으로 사용할 수 있습니다.");
         }
 
         agencySaved = true;
@@ -981,16 +992,24 @@ function gradeDefaults(p: any, role: string, planType?: string) {
               </button>
             </div>
           </div>
-          {agencyDuplicates.length > 0 && (
-            <div style={{ marginTop: 10, padding: "10px 12px", background: darkMode ? "rgba(0,0,0,0.25)" : "#fff", border: "1.5px solid #ef4444", borderRadius: 6 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626", marginBottom: 4 }}>⚠ 중복 의심 — 같은 중개사무소로 이미 신청·가입한 계정이 있습니다 (1 사무소 1 계정)</div>
+          {agencyDuplicates.length > 0 && (() => {
+            const paidOffice = agencyDuplicates.some((d) => d.paid);
+            const tone = paidOffice ? "#2563eb" : "#dc2626";
+            return (
+            <div style={{ marginTop: 10, padding: "10px 12px", background: darkMode ? "rgba(0,0,0,0.25)" : "#fff", border: `1.5px solid ${tone}`, borderRadius: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: tone, marginBottom: 4 }}>
+                {paidOffice
+                  ? "ℹ 유료 이용 중인 사무소의 추가 계정 신청입니다 — 같은 사무소 직원이면 승인하면 됩니다"
+                  : "⚠ 중복 의심 — 같은 중개사무소로 이미 신청·가입한 계정이 있습니다 (무료는 1 사무소 1 계정)"}
+              </div>
               {agencyDuplicates.map((d) => (
                 <div key={d.ownerId} style={{ fontSize: 12.5, color: darkMode ? "#fca5a5" : "#7f1d1d", lineHeight: 1.7 }}>
-                  · {d.name || "(상호 없음)"} — {d.memberName || ""} {d.email && `<${d.email}>`} · {d.status === "APPROVED" ? "승인됨" : "심사 대기"} · 같은 항목: <b>{d.why.join(", ")}</b>
+                  · {d.name || "(상호 없음)"} — {d.memberName || ""} {d.email && `<${d.email}>`} · {d.status === "APPROVED" ? "승인됨" : "심사 대기"}{d.paid ? " · 유료 이용 중" : ""} · 같은 항목: <b>{d.why.join(", ")}</b>
                 </div>
               ))}
             </div>
-          )}
+            );
+          })()}
           {agencyData.status === "REJECTED" && rejectReason && (
             <div style={{ marginTop: 10, padding: "8px 12px", background: darkMode ? "rgba(0,0,0,0.2)" : "#fff", border: `1px solid ${darkMode ? "#7f1d1d" : "#fecaca"}`, borderRadius: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: darkMode ? "#fca5a5" : "#b91c1c" }}>📌 이전 반려 사유: </span>
