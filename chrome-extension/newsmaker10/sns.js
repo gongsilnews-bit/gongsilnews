@@ -648,7 +648,7 @@
       return;
     }
     el.snsMedia.innerHTML = list.map((item, index) => (
-      `<figure class="sns-fig ${ratioClass}">` +
+      `<figure class="sns-fig ${ratioClass}${["proof", "map", "roadview", "chart"].includes(item.kind) ? " fit" : ""}">` +
       `<img src="${esc(item.url)}" alt="">` +
       `<span class="sns-fig-no${index === 0 ? " lead" : ""}">${index === 0 ? "1 대표" : index + 1}</span>` +
       (item.ai ? '<span class="sns-fig-ai">AI</span>' : "") +

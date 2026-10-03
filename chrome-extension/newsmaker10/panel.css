@@ -1647,3 +1647,6 @@ button.is-busy { display: flex; align-items: center; justify-content: center; }
   font-weight: 700;
 }
 .image-style-custom::placeholder { color: #9ca3af; font-size: 9.5px; font-weight: 500 }
+
+/* 캡처·지도·로드뷰·시세표는 자르지 않고 여백으로 맞춘다 — 미리보기도 내려받는 그림과 같게 */
+.sns-fig.fit img { object-fit: contain; background: #fff }

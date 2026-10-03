@@ -153,7 +153,8 @@ function gwBuildImagePrompt(vacancy, article, opts) {
   const focusRule = request
     ? "아래 사용자의 장면 묘사 지시와 기사 문장을 충실히 반영하여 장면을 연출하십시오."
     : "아래 기사 내용에서 가장 시각적으로 전달력이 높은 한 가지 핵심을 스스로 골라 장면으로 만드십시오.";
-  const textRule = o.style === "infographic"
+  /* 화풍을 직접 쓰면 글자 없는 그림으로 — 예전에 고른 통계 도표가 남아 글자가 들어가지 않게 */
+  const textRule = o.style === "infographic" && !customStyle
     ? "- 한글 문구는 꼭 필요한 짧은 항목명만 쓰고, 숫자와 단위는 아래 확인된 사실과 정확히 일치시킬 것"
     : "- 이미지 안에 글자, 숫자, 로고, 워터마크를 넣지 말 것";
 

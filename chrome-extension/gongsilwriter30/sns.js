@@ -678,7 +678,7 @@
       return;
     }
     el.snsMedia.innerHTML = list.map((item, index) => (
-      `<figure class="sns-fig ${ratioClass}">` +
+      `<figure class="sns-fig ${ratioClass}${["proof", "map", "roadview", "chart"].includes(item.kind) ? " fit" : ""}">` +
       `<img src="${esc(item.url)}" alt="">` +
       `<span class="sns-fig-no${index === 0 ? " lead" : ""}">${index === 0 ? "1 대표" : index + 1}</span>` +
       (item.ai ? '<span class="sns-fig-ai">AI</span>' : "") +
@@ -878,7 +878,11 @@
   }
 
   /* 비율대로 가운데를 잘라 JPG 로 — ratio 0 이면 원본 비율 그대로 크기만 줄인다 */
-  async function cropForChannel(url, channel) {
+  /* 캡처·지도·로드뷰는 글자가 든 가로 카드라 가운데를 자르면 글자가 잘린다 — 흰 여백을 넣어 통째로 맞춘다 */
+  const FIT_KINDS = new Set(["proof", "map", "roadview"]);
+
+  async function cropForChannel(item, channel) {
+    const url = item.url;
     const c = CHANNELS[channel];
     const dataUrl = await gwImageToDataUrl(url, 2400);
     if (!dataUrl) return null;
@@ -895,6 +899,20 @@
     let sh = image.naturalHeight;
     let width;
     let height;
+    if (c.ratio && FIT_KINDS.has(item.kind)) {
+      [width, height] = c.size;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const g = canvas.getContext("2d");
+      g.fillStyle = "#ffffff";
+      g.fillRect(0, 0, width, height);
+      const scale = Math.min(width / sw, height / sh);
+      const dw = Math.round(sw * scale);
+      const dh = Math.round(sh * scale);
+      g.drawImage(image, 0, 0, sw, sh, Math.round((width - dw) / 2), Math.round((height - dh) / 2), dw, dh);
+      return canvas.toDataURL("image/jpeg", 0.92);
+    }
     if (c.ratio) {
       if (sw / sh > c.ratio) {
         const w = Math.round(sh * c.ratio);
@@ -996,7 +1014,7 @@
     let saved = 0;
     for (let i = 0; i < list.length; i += 1) {
       GWBusy.label(button, `사진 준비 중 (${i + 1}/${list.length})`);
-      const dataUrl = await cropForChannel(list[i].url, channel);
+      const dataUrl = await cropForChannel(list[i], channel);
       if (!dataUrl) continue;
       const no = String(i + 1).padStart(2, "0");
       files.push({ name: `${folder}/${no}${i === 0 ? "_대표" : ""}${list[i].ai ? "_AI" : ""}.jpg`, data: GWZip.dataUrlBytes(dataUrl) });

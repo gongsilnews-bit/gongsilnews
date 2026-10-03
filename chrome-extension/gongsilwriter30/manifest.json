@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "공실뉴스 AI 기사 & 블로그·SNS·유튜브 작성기",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "오른쪽 작업창에서 공실 매물과 경매·공매 물건을 기사, 블로그·SNS, 유튜브 대본으로 만들고 각 화면으로 전송합니다.",
   "icons": {
     "16": "icons/icon16.png",
