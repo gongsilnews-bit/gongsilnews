@@ -199,12 +199,3 @@ test("표시·광고 필수 정보가 빠지면 무엇이 빠졌는지 알려 �
   assert.deepEqual(listingProblems({ owner: { type: "agency", name: "A", ceo: "", regNo: "1", address: "x", phone: "" } }), ["대표자", "연락처"]);
   assert.deepEqual(listingProblems({ owner: { type: "general", name: "홍길동" } }), [], "일반회원 매물은 이름만");
 });
-
-test("유튜브 주소만 받는다 (SNS 영상 칸), 블로그 글에는 영상 칸을 넣지 않는다", () => {
-  const N = require("../shared/naver-blog.js");
-  assert.equal(N.youtubeUrl("https://youtu.be/abcdefgh"), "https://youtu.be/abcdefgh");
-  assert.equal(N.youtubeUrl("https://www.youtube.com/shorts/abc123XYZ"), "https://www.youtube.com/shorts/abc123XYZ");
-  assert.equal(N.youtubeUrl("https://naver.com/abc"), "");
-  const blocks = N.buildNaverBlocks("첫 문단\n\n본문", [], { design: "basic", video: { youtubeUrl: "https://youtu.be/abcdefgh" } });
-  assert.ok(!blocks.some((b) => b.type === "video" || (b.html && b.html.includes("영상으로 보기"))));
-});

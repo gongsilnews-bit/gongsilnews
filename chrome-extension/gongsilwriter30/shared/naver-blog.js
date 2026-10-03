@@ -410,12 +410,6 @@
     return blocks;
   }
 
-  /* 유튜브 주소만 받는다 (watch · shorts · youtu.be · live). 아니면 "" — SNS 영상 칸(shared/video-ui.js)이 쓴다 */
-  function youtubeUrl(raw) {
-    const text = String(raw || "").trim();
-    return /^https?:\/\/((www|m)\.)?(youtube\.com\/(watch\?v=|shorts\/|live\/)|youtu\.be\/)[\w-]{6,}/i.test(text) ? text : "";
-  }
-
   /* 발행 창 태그 칸용: # 제거, 중복 제거, 네이버 최대 30개 */
   function normalizeTags(keywords) {
     const seen = new Set();
@@ -430,7 +424,6 @@
     splitParagraphs, layoutMediaSlots, buildNaverBlocks, normalizeTags,
     DESIGNS, designHint, factRows, listingProblems, SITE_URL,
     sourceBlockLines, listingUrl, // SNS 글 끝 출처·링크도 블로그와 같은 문구를 쓴다 (sns.js)
-    youtubeUrl,
   };
   global.GWNaverBlog = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

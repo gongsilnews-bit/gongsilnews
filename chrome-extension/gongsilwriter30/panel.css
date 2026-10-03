@@ -1412,35 +1412,3 @@ button.is-busy { display: flex; align-items: center; justify-content: center; }
   line-height: 1.55;
   word-break: keep-all;
 }
-
-/* ─────────────── 영상 넣기 (블로그·SNS 공용, shared/video-ui.js) ─────────────── */
-.video-card .card-label small { font-weight: 600; color: var(--text-muted) }
-.video-row { display: flex; gap: 6px }
-.video-url {
-  flex: 1;
-  min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: 12.5px;
-}
-.video-url:focus { outline: none; border-color: var(--primary) }
-.video-file-btn { flex: none; padding: 8px 10px; white-space: nowrap }
-.video-ai-check { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--text-main); cursor: pointer }
-.video-ai-check small { font-weight: 600; color: var(--text-muted) }
-.video-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  background: #f8fafc;
-  font-size: 12px;
-  line-height: 1.55;
-  word-break: break-all;
-}
-.video-info a { color: #1d4ed8 }
-.video-card .btn-in-box { margin-top: 8px }

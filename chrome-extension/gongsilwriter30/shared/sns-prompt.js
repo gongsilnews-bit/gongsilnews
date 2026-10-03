@@ -50,24 +50,10 @@ function gwSnsNoun(vacancy) {
   return vacancy && vacancy.saleKind ? "물건" : "매물";
 }
 
-/* 영상과 함께 올릴 때의 지시 — 첫 작성과 [영상용으로 고치기]가 함께 쓴다 */
-function gwSnsVideoRules(video) {
-  if (!video || !(video.youtubeUrl || video.fileName)) return "";
-  return `
-[함께 올릴 영상 — 이번 글은 세로 쇼츠 영상과 함께 올라갑니다]
-- 인스타그램: 릴스 캡션입니다. lines 를 4~6줄로 더 짧게, 첫 줄은 영상으로 매물을 본다는 말로 (예: "영상으로 보는 양재역 36평 사무실 🎬")
-- 페이스북: 첫 문단에 영상으로 매물을 볼 수 있다는 점을 한 문장으로 넣고, 전체를 300~450자로 줄일 것
-- 스레드: 첫 글을 300자 이내로, 영상과 함께 본다는 흐름으로
-- 영상에 무엇이 나오는지 모르므로 영상 속 장면·소리·사람을 지어내지 말 것. 매물 정보만 쓸 것
-- 영상 주소·유튜브 링크는 쓰지 말 것 (글 끝에 자동으로 붙습니다)
-`;
-}
-
-function gwBuildSnsPrompt(source, opts) {
+function gwBuildSnsPrompt(source) {
   const input = source || {};
   const noun = gwSnsNoun(input.vacancy);
   const auction = noun === "물건";
-  const videoRules = gwSnsVideoRules(opts && opts.video);
 
   return `당신은 부동산 정보를 정확하게 전하는 공실뉴스의 SNS 에디터입니다.
 아래 공실뉴스 기사와 확인된 ${noun} 정보로 페이스북·인스타그램·스레드 글을 한 번에 작성하십시오.
@@ -86,7 +72,7 @@ ${gwBlogFactLines(input.vacancy)}
 - 없는 수치·시세·수익률·개발 호재·현장 방문·고객 반응을 만들지 말 것. 자료에 없는 거리·도보 시간도 만들지 말 것
 - 소재지가 동까지만 공개됐다면 더 자세한 주소를 추측하지 말 것
 - 중개사무소 이름·연락처·링크·"프로필 링크" 안내는 쓰지 말 것 (글 끝에 자동으로 붙습니다)
-${videoRules}
+
 [페이스북 — facebook]
 - 기사 소개형. 첫 문단 1~2문장이 피드에서 "더 보기" 전에 보이는 곳이므로 무엇이 어디에 어떤 조건으로 나왔는지 결론부터
 - 문단 3~5개, 문단마다 2~3문장, 전체 300~600자. 기사체 또는 부드러운 존댓말
@@ -143,25 +129,6 @@ function gwBuildSnsRevisePrompt(channel, request) {
 설명 없이 아래 모양의 JSON 하나만 \`\`\`json 코드블록으로 출력하십시오. 문자열 안에 실제 줄바꿈을 넣지 마십시오.
 \`\`\`json
 ${shape}
-\`\`\``;
-}
-
-/* 이미 쓴 세 글을 영상과 함께 올릴 글로 고친다 — 처음과 같은 JSON 전체로 받는다 */
-function gwBuildSnsVideoRevisePrompt(video) {
-  return `위에서 작성한 페이스북·인스타그램·스레드 글 3종을 영상과 함께 올릴 글로 고쳐 주십시오.
-${gwSnsVideoRules(video && (video.youtubeUrl || video.fileName) ? video : { fileName: "영상" })}
-[지킬 것]
-- 앞서 제공한 금액·면적·층·주소 등 사실은 바꾸거나 새로 만들지 마십시오.
-- 처음의 보도 원칙(권유·호객 표현 금지, 연락처·링크 쓰지 않기)과 플랫폼별 형식 규칙을 그대로 지키십시오.
-
-[출력 형식]
-설명 없이 처음과 같은 모양의 JSON 하나(세 플랫폼 모두)를 \`\`\`json 코드블록으로 출력하십시오. 문자열 안에 실제 줄바꿈을 넣지 마십시오.
-\`\`\`json
-{
-  "facebook": { "paragraphs": [], "hashtags": [] },
-  "instagram": { "lines": [], "hashtags": [] },
-  "threads": { "posts": [], "topic": "" }
-}
 \`\`\``;
 }
 
@@ -227,14 +194,12 @@ function gwSnsCompose(channel, post, ctx) {
   const url = c.url || "";
   const source = gwSnsSourceText(c.listing, noun);
   const tagLine = (tags) => (tags || []).map((tag) => `#${tag}`).join(" ");
-  /* 유튜브 영상 — 페이스북·스레드는 링크가 눌리므로 붙인다. 인스타 캡션은 링크가 안 눌려 붙이지 않는다 */
-  const youtube = c.video && c.video.youtubeUrl ? `▶ 영상으로 보기\n${c.video.youtubeUrl}` : "";
 
   if (channel === "threads") {
     const posts = (post?.posts || []).map((text) => String(text || "").trim()).filter(Boolean);
     if (!posts.length) return { posts: [], text: "" };
     if (post.topic) posts[0] = `${posts[0]}\n\n#${post.topic}`;
-    const tail = [youtube, url ? `▶ 공실뉴스에서 ${noun} 자세히 보기\n${url}` : "", source].filter(Boolean).join("\n\n");
+    const tail = [url ? `▶ 공실뉴스에서 ${noun} 자세히 보기\n${url}` : "", source].filter(Boolean).join("\n\n");
     if (tail) {
       const last = posts.length - 1;
       if (posts[last].length + tail.length + 2 <= GW_SNS_CHANNELS.threads.maxChars) posts[last] = `${posts[last]}\n\n${tail}`;
@@ -251,9 +216,8 @@ function gwSnsCompose(channel, post, ctx) {
     parts.push(url
       ? `자세한 ${noun} 정보는 프로필 링크 → 공실뉴스\n${url}`
       : `자세한 ${noun} 정보는 프로필 링크 → 공실뉴스`);
-  } else {
-    if (youtube) parts.push(youtube);
-    if (url) parts.push(`▶ 공실뉴스에서 ${noun} 자세히 보기\n${url}`);
+  } else if (url) {
+    parts.push(`▶ 공실뉴스에서 ${noun} 자세히 보기\n${url}`);
   }
   if (source) parts.push(source);
   const tags = tagLine(post.hashtags);
@@ -298,19 +262,17 @@ const GW_SNS_AI_LABEL_WHERE = {
   threads: "게시하기 전 글쓰기 화면의 [AI 레이블] 설정을 켜 주세요.",
 };
 
-function gwSnsAiLabelNote(channel, media, video) {
+function gwSnsAiLabelNote(channel, media) {
   const info = GW_SNS_CHANNELS[channel];
   if (!info) return "";
   const count = (Array.isArray(media) ? media : []).slice(0, info.maxMedia).filter((item) => item && item.ai).length;
-  const aiVideo = Boolean(video && video.ai && (video.youtubeUrl || video.fileName));
-  if (!count && !aiVideo) return "";
-  const what = [count ? `AI로 만든 이미지 ${count}장` : "", aiVideo ? "AI로 만든 영상" : ""].filter(Boolean).join("과 ");
-  return `${what}이 들어 있습니다 — ${GW_SNS_AI_LABEL_WHERE[channel]}`;
+  if (!count) return "";
+  return `AI로 만든 이미지 ${count}장이 들어 있습니다 — ${GW_SNS_AI_LABEL_WHERE[channel]}`;
 }
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    GW_SNS_CHANNELS, GW_SNS_ORDER, gwBuildSnsPrompt, gwBuildSnsRevisePrompt, gwBuildSnsVideoRevisePrompt,
+    GW_SNS_CHANNELS, GW_SNS_ORDER, gwBuildSnsPrompt, gwBuildSnsRevisePrompt,
     gwSnsNormalize, gwSnsParse, gwSnsCompose, gwSnsPickMedia, gwSnsCanLead, gwSnsCleanTags, gwSnsAiLabelNote,
   };
 }

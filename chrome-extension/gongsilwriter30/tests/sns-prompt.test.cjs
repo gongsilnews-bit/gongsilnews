@@ -123,21 +123,3 @@ test("AI 이미지가 올라갈 사진에 있으면 플랫폼별 AI 레이블 �
   const five = [{ ai: false }, { ai: false }, { ai: false }, { ai: false }, { ai: true }];
   assert.equal(gwSnsAiLabelNote("facebook", five), "");
 });
-
-test("영상이 있으면 영상용 지시를 넣고, 유튜브 주소는 페이스북·스레드 글 끝에만 붙인다", () => {
-  const { gwBuildSnsPrompt, gwBuildSnsVideoRevisePrompt, gwSnsCompose, gwSnsAiLabelNote } = require("../shared/sns-prompt.js");
-  assert.ok(!gwBuildSnsPrompt(source).includes("[함께 올릴 영상"));
-  const video = { youtubeUrl: "https://youtube.com/shorts/abcdefg", fileName: "", ai: false };
-  assert.ok(gwBuildSnsPrompt(source, { video }).includes("[함께 올릴 영상"));
-  assert.ok(gwBuildSnsVideoRevisePrompt(video).includes('"threads"'));
-
-  const fb = gwSnsCompose("facebook", { body: "본문", hashtags: [] }, { listing: agencyListing, url: "https://x", noun: "매물", video });
-  assert.ok(fb.text.indexOf("▶ 영상으로 보기\nhttps://youtube.com/shorts/abcdefg") < fb.text.indexOf("▶ 공실뉴스에서 매물"));
-  const ig = gwSnsCompose("instagram", { body: "훅", hashtags: [] }, { listing: agencyListing, url: "https://x", noun: "매물", video });
-  assert.ok(!ig.text.includes("youtube.com"));
-  const th = gwSnsCompose("threads", { posts: ["짧은 글"], topic: "" }, { listing: agencyListing, url: "https://x", noun: "매물", video });
-  assert.ok(th.text.includes("▶ 영상으로 보기"));
-
-  assert.equal(gwSnsAiLabelNote("threads", [], video), "");
-  assert.ok(gwSnsAiLabelNote("threads", [], { ...video, ai: true }).startsWith("AI로 만든 영상"));
-});
