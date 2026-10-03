@@ -22,6 +22,8 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
     perm_list: 0,
     perm_read: 0,
     perm_write: 5,
+    comments_enabled: true,
+    perm_comment: 1,
     categories: "",
     max_photos: 5,
   });
@@ -43,6 +45,8 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
             perm_list: res.data.perm_list ?? 0,
             perm_read: res.data.perm_read ?? 0,
             perm_write: res.data.perm_write ?? 5,
+            comments_enabled: res.data.comments_enabled !== false,
+            perm_comment: res.data.perm_comment ?? 1,
             categories: res.data.categories || "",
             max_photos: res.data.max_photos ?? 5,
           }));
@@ -54,7 +58,9 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     let val: any = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
-    if (e.target.type === 'number' || ['perm_list', 'perm_read', 'perm_write', 'columns_count', 'max_photos'].includes(e.target.name)) {
+    if (e.target.name === 'comments_enabled') {
+      val = e.target.value === 'true';
+    } else if (e.target.type === 'number' || ['perm_list', 'perm_read', 'perm_write', 'perm_comment', 'columns_count', 'max_photos'].includes(e.target.name)) {
       val = Number(val);
     }
     setFormData({ ...formData, [e.target.name]: val });
@@ -78,6 +84,8 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
         perm_list: formData.perm_list,
         perm_read: formData.perm_read,
         perm_write: formData.perm_write,
+        comments_enabled: formData.comments_enabled,
+        perm_comment: formData.perm_comment,
         categories: formData.categories,
         max_photos: formData.max_photos
       };
@@ -194,6 +202,28 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
             </select>
           </div>
         </div>
+
+        <div style={rowStyle}>
+          <div style={labelStyle}>댓글 기능 ⓘ</div>
+          <div style={{ ...contentStyle, gap: 10 }}>
+            <select name="comments_enabled" value={String(formData.comments_enabled)} onChange={handleChange} style={{ ...inputStyle, maxWidth: 250 }}>
+              <option value="true">사용</option>
+              <option value="false">사용 안 함</option>
+            </select>
+            <span style={{ fontSize: 12, color: "#9ca3af" }}>사용 안 함이면 댓글 목록과 입력창을 모두 숨깁니다.</span>
+          </div>
+        </div>
+
+        {formData.comments_enabled && (
+          <div style={rowStyle}>
+            <div style={labelStyle}>댓글쓰기권한 ⓘ</div>
+            <div style={contentStyle}>
+              <select name="perm_comment" value={formData.perm_comment} onChange={handleChange} style={{ ...inputStyle, maxWidth: 250 }}>
+                {permissionOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
 
 
 

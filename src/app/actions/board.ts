@@ -2,6 +2,8 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { createNotification } from "./notification";
+import { createClient as createServerClient } from "@/utils/supabase/server";
+import { getPermissionLevel, isAdminRole } from "@/utils/permissionCheck";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -45,6 +47,10 @@ export async function saveBoard(payload: {
   perm_list?: number;
   perm_read?: number;
   perm_write?: number;
+  /** 게시판 상세에서 댓글 영역을 사용할지 여부 */
+  comments_enabled?: boolean;
+  /** 댓글을 작성할 수 있는 최소 회원 레벨(0~5) */
+  perm_comment?: number;
   /** 1:1 문의 사진 첨부 허용 장수 (0~5) */
   max_photos?: number;
   sort_order?: number;
@@ -381,7 +387,82 @@ export async function saveBoardComment(payload: {
   content: string;
   parent_id?: string;
 }) {
-  const { error } = await supabase.from("board_comments").insert(payload);
+  const content = payload.content.trim();
+  if (!content) return { success: false, error: "댓글 내용을 입력해주세요." };
+  if (content.length > 400) return { success: false, error: "댓글은 400자까지 작성할 수 있습니다." };
+
+  // Server Action은 화면을 거치지 않고 직접 호출할 수 있으므로, 게시판 설정과
+  // 실제 로그인 회원 등급을 서버에서 다시 확인한다. 클라이언트가 보내는 author_id는
+  // 신뢰하지 않고 현재 세션의 사용자 ID로 덮어쓴다.
+  const { data: post, error: postError } = await supabase
+    .from("board_posts")
+    .select("id, board_id, author_id")
+    .eq("id", payload.post_id)
+    .maybeSingle();
+
+  if (postError || !post) {
+    return { success: false, error: postError?.message || "게시글을 찾을 수 없습니다." };
+  }
+
+  const { data: board, error: boardError } = await supabase
+    .from("boards")
+    .select("board_type, comments_enabled, perm_comment")
+    .eq("board_id", post.board_id)
+    .maybeSingle();
+
+  if (boardError || !board) {
+    return { success: false, error: boardError?.message || "게시판 설정을 찾을 수 없습니다." };
+  }
+  if (board.comments_enabled === false) {
+    return { success: false, error: "이 게시판은 댓글을 사용하지 않습니다." };
+  }
+
+  const authClient = await createServerClient();
+  const { data: { user } } = await authClient.auth.getUser();
+
+  let member: {
+    name?: string;
+    role?: string;
+    plan_type?: string;
+    agencies?: { status?: string } | { status?: string }[] | null;
+  } | null = null;
+
+  if (user) {
+    const { data } = await supabase
+      .from("members")
+      .select("name, role, plan_type, agencies(status)")
+      .eq("id", user.id)
+      .maybeSingle();
+    member = data;
+  }
+
+  const requiredLevel = Math.min(5, Math.max(0, Number(board.perm_comment ?? 1)));
+  const userLevel = getPermissionLevel(member);
+  if (userLevel < requiredLevel) {
+    return { success: false, error: "댓글쓰기 권한이 없습니다." };
+  }
+
+  // 1:1 문의는 글 작성자와 최고관리자만 대화를 이어갈 수 있다.
+  if (board.board_type === "inquiry") {
+    const canReplyToInquiry = !!user && (post.author_id === user.id || isAdminRole(member?.role));
+    if (!canReplyToInquiry) {
+      return { success: false, error: "이 문의에 답변할 권한이 없습니다." };
+    }
+  }
+
+  const authorName = user
+    ? (isAdminRole(member?.role) ? "최고관리자" : member?.name || payload.author_name?.trim() || user.email?.split("@")[0] || "회원")
+    : payload.author_name?.trim() || "게스트";
+
+  const comment = {
+    post_id: payload.post_id,
+    author_id: user && member ? user.id : null,
+    author_name: authorName,
+    content,
+    parent_id: payload.parent_id || null,
+  };
+
+  const { error } = await supabase.from("board_comments").insert(comment);
   if (error) return { success: false, error: error.message };
 
   // comment_count 증가
@@ -392,7 +473,7 @@ export async function saveBoardComment(payload: {
   }
 
   // 1:1 문의면 답변 상태와 알림을 맞춘다 (일반 게시판이면 조회 한 번에 끝)
-  await syncInquiryAfterComment(payload.post_id, payload.author_id, payload.author_name);
+  await syncInquiryAfterComment(payload.post_id, user?.id, authorName);
 
   return { success: true };
 }

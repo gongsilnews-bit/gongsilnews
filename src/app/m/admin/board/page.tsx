@@ -36,7 +36,8 @@ function MobileBoardAdmin() {
   const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState({
     id: "", board_id: "", name: "", subtitle: "", board_type: "standard", skin_type: "LIST",
-    columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5, categories: "", max_photos: 5,
+    columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5,
+    comments_enabled: true, perm_comment: 1, categories: "", max_photos: 5,
   });
 
   useEffect(() => {
@@ -82,7 +83,8 @@ function MobileBoardAdmin() {
   const resetForm = () => {
     setFormData({
       id: "", board_id: "", name: "", subtitle: "", board_type: "standard", skin_type: "LIST",
-      columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5, categories: "", max_photos: 5,
+      columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5,
+      comments_enabled: true, perm_comment: 1, categories: "", max_photos: 5,
     });
   };
 
@@ -96,6 +98,7 @@ function MobileBoardAdmin() {
         subtitle: d.subtitle || d.description || "", board_type: d.board_type || "standard", skin_type: d.skin_type || "LIST",
         columns_count: d.columns_count || 3, perm_list: d.perm_list ?? 0,
         perm_read: d.perm_read ?? 0, perm_write: d.perm_write ?? 5,
+        comments_enabled: d.comments_enabled !== false, perm_comment: d.perm_comment ?? 1,
         categories: d.categories || "", max_photos: d.max_photos ?? 5,
       }));
     }
@@ -111,7 +114,9 @@ function MobileBoardAdmin() {
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     let val: any = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
-    if (e.target.type === 'number' || ['perm_list', 'perm_read', 'perm_write', 'columns_count', 'max_photos'].includes(e.target.name)) {
+    if (e.target.name === 'comments_enabled') {
+      val = e.target.value === 'true';
+    } else if (e.target.type === 'number' || ['perm_list', 'perm_read', 'perm_write', 'perm_comment', 'columns_count', 'max_photos'].includes(e.target.name)) {
       val = Number(val);
     }
     setFormData({ ...formData, [e.target.name]: val });
@@ -130,6 +135,7 @@ function MobileBoardAdmin() {
         subtitle: formData.subtitle, board_type: formData.board_type, skin_type: formData.skin_type,
         columns_count: formData.columns_count, perm_list: formData.perm_list,
         perm_read: formData.perm_read, perm_write: formData.perm_write, categories: formData.categories,
+        comments_enabled: formData.comments_enabled, perm_comment: formData.perm_comment,
         max_photos: formData.max_photos
       };
       const res = await saveBoard(payload);
@@ -239,6 +245,22 @@ function MobileBoardAdmin() {
                     {PERMISSION_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                   </select>
                 </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#4b5563", marginBottom: 4 }}>댓글 기능</label>
+                  <select name="comments_enabled" value={String(formData.comments_enabled)} onChange={handleFormChange} style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, background: "#fff" }}>
+                    <option value="true">사용</option>
+                    <option value="false">사용 안 함</option>
+                  </select>
+                  <div style={{ marginTop: 6, fontSize: 12, color: "#9ca3af" }}>사용 안 함이면 댓글 목록과 입력창을 모두 숨깁니다.</div>
+                </div>
+                {formData.comments_enabled && (
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#4b5563", marginBottom: 4 }}>댓글 쓰기</label>
+                    <select name="perm_comment" value={formData.perm_comment} onChange={handleFormChange} style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, background: "#fff" }}>
+                      {PERMISSION_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
 
               {formData.board_type === "inquiry" && (
@@ -314,6 +336,10 @@ function MobileBoardAdmin() {
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontWeight: 700, color: "#4b5563" }}>쓰기권한</span>
                 <span>Lv.{b.perm_write || 0}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontWeight: 700, color: "#4b5563" }}>댓글권한</span>
+                <span>{b.comments_enabled === false ? "사용 안 함" : `Lv.${b.perm_comment ?? 1}`}</span>
               </div>
             </div>
 

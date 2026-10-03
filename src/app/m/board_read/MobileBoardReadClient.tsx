@@ -43,6 +43,9 @@ export default function MobileBoardReadClient({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchInputValue, setSearchInputValue] = useState("");
+  const commentsEnabled = board?.comments_enabled !== false;
+  const commentPermission = board?.perm_comment ?? 1;
+  const canWriteComment = commentsEnabled && canAccessBoard(userLevel, commentPermission);
 
   const handleSearch = (keyword: string) => {
     const trimmed = keyword.trim();
@@ -97,7 +100,7 @@ export default function MobileBoardReadClient({
   }
 
   const handleCommentSubmit = async () => {
-    if (!commentText.trim()) return;
+    if (!canWriteComment || !commentText.trim()) return;
     setIsSubmitting(true);
     
     let authorName = guestName || "게스트";
@@ -124,6 +127,8 @@ export default function MobileBoardReadClient({
         created_at: new Date().toISOString(),
       }]);
       setCommentText("");
+    } else {
+      alert(res.error || "댓글 등록에 실패했습니다.");
     }
     setIsSubmitting(false);
   };
@@ -410,7 +415,8 @@ export default function MobileBoardReadClient({
         )}
       </div>
 
-      {/* 댓글 영역 */}
+      {/* 댓글 영역 — 게시판 설정에서 사용 안 함이면 목록과 입력창을 모두 숨긴다. */}
+      {commentsEnabled && (
       <div style={{ marginTop: '24px', borderTop: '8px solid #f8f9fa', padding: '24px 16px' }}>
         <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '20px', color: '#111827' }}>댓글 {localComments.length}개</div>
 
@@ -444,30 +450,31 @@ export default function MobileBoardReadClient({
                   value={guestName} 
                   onChange={e => setGuestName(e.target.value)}
                   style={{ padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: '4px', width: '100px', fontSize: '13px' }}
-                  disabled={!canAccessBoard(userLevel, board?.perm_reply ?? 1)}
+                  disabled={!canWriteComment}
                 />
               </div>
             )}
           </div>
           <textarea
             style={{ width: '100%', height: '60px', border: '1px solid #d1d5db', borderRadius: '4px', padding: '8px', resize: 'none', fontSize: '14px', outline: 'none', background: '#fff', color: '#333' }}
-            placeholder={canAccessBoard(userLevel, board?.perm_reply ?? 1) ? "댓글을 남겨보세요." : "권한이 없습니다."}
+            placeholder={canWriteComment ? "댓글을 남겨보세요." : "권한이 없습니다."}
             maxLength={400}
             value={commentText}
             onChange={e => setCommentText(e.target.value)}
-            disabled={!canAccessBoard(userLevel, board?.perm_reply ?? 1)}
+            disabled={!canWriteComment}
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
             <button
               onClick={handleCommentSubmit}
-              disabled={isSubmitting || !canAccessBoard(userLevel, board?.perm_reply ?? 1)}
-              style={{ background: canAccessBoard(userLevel, board?.perm_reply ?? 1) ? '#2563eb' : '#cbd5e1', color: '#fff', border: 'none', borderRadius: '4px', padding: '8px 16px', fontWeight: 700, fontSize: '13px' }}
+              disabled={isSubmitting || !canWriteComment}
+              style={{ background: canWriteComment ? '#2563eb' : '#cbd5e1', color: '#fff', border: 'none', borderRadius: '4px', padding: '8px 16px', fontWeight: 700, fontSize: '13px' }}
             >
               등록
             </button>
           </div>
         </div>
       </div>
+      )}
       
       {/* List Button */}
       <div style={{ padding: '24px 16px', textAlign: 'center' }}>

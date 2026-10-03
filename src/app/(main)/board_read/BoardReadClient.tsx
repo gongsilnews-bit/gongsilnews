@@ -71,6 +71,9 @@ export default function BoardReadClient({
   const [currentUser, setCurrentUser] = useState<any>(serverUser ?? null);
   const [userLevel, setUserLevel] = useState<number>(serverUserLevel ?? 0);
   const [isLevelChecking, setIsLevelChecking] = useState(!serverUser && !serverUserLevel);
+  const commentsEnabled = board?.comments_enabled !== false;
+  const commentPermission = board?.perm_comment ?? 1;
+  const canWriteComment = commentsEnabled && canAccessBoard(userLevel, commentPermission);
 
   useEffect(() => {
     if (serverUser || serverUserLevel) return;
@@ -146,7 +149,7 @@ export default function BoardReadClient({
   };
 
   const handleCommentSubmit = async () => {
-    if (!commentText.trim()) return;
+    if (!canWriteComment || !commentText.trim()) return;
     setIsSubmitting(true);
     
     let authorName = guestName || "게스트";
@@ -173,6 +176,8 @@ export default function BoardReadClient({
         created_at: new Date().toISOString(),
       }]);
       setCommentText("");
+    } else {
+      alert(res.error || "댓글 등록에 실패했습니다.");
     }
     setIsSubmitting(false);
   };
@@ -478,7 +483,8 @@ export default function BoardReadClient({
             </div>
           </div>
 
-          {/* 댓글 */}
+          {/* 댓글 — 게시판 설정에서 사용 안 함이면 목록과 입력창을 모두 숨긴다. */}
+          {commentsEnabled && (
           <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, padding: "28px 32px", marginBottom: 12 }}>
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 20, color: "#111" }}>{comments.length}개의 댓글</div>
 
@@ -512,31 +518,32 @@ export default function BoardReadClient({
                       value={guestName} 
                       onChange={e => setGuestName(e.target.value)}
                       style={{ padding: "4px 8px", border: "1px solid #ccc", borderRadius: 4, width: 120, fontSize: 14 }}
-                      disabled={!canAccessBoard(userLevel, board?.perm_reply ?? 1)}
+                      disabled={!canWriteComment}
                     />
                   </div>
                 )}
               </div>
               <textarea
                 style={{ width: "100%", height: 80, border: "none", resize: "none", fontSize: 15, outline: "none", background: "transparent", color: "#333", fontFamily: "inherit", boxSizing: "border-box" }}
-                placeholder={canAccessBoard(userLevel, board?.perm_reply ?? 1) ? "게시물에 대한 의견을 남겨보세요. 바르고 고운 말을 사용해주세요." : "댓글 작성 권한이 없거나 로그인이 필요합니다."}
+                placeholder={canWriteComment ? "게시물에 대한 의견을 남겨보세요. 바르고 고운 말을 사용해주세요." : "댓글 작성 권한이 없거나 로그인이 필요합니다."}
                 maxLength={400}
                 value={commentText}
                 onChange={e => setCommentText(e.target.value)}
-                disabled={!canAccessBoard(userLevel, board?.perm_reply ?? 1)}
+                disabled={!canWriteComment}
               />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, borderTop: "1px solid #eee", paddingTop: 10 }}>
                 <span style={{ fontSize: 12, color: "#9ca3af" }}>{commentText.length} / 400</span>
                 <button
                   onClick={handleCommentSubmit}
-                  disabled={isSubmitting || !canAccessBoard(userLevel, board?.perm_reply ?? 1)}
-                  style={{ background: canAccessBoard(userLevel, board?.perm_reply ?? 1) ? "#111" : "#ccc", color: "#fff", border: "none", borderRadius: 6, padding: "9px 24px", fontWeight: 700, fontSize: 14, cursor: canAccessBoard(userLevel, board?.perm_reply ?? 1) ? "pointer" : "not-allowed" }}
+                  disabled={isSubmitting || !canWriteComment}
+                  style={{ background: canWriteComment ? "#111" : "#ccc", color: "#fff", border: "none", borderRadius: 6, padding: "9px 24px", fontWeight: 700, fontSize: 14, cursor: canWriteComment ? "pointer" : "not-allowed" }}
                 >
                   댓글 등록
                 </button>
               </div>
             </div>
           </div>
+          )}
 
           {/* 이전/다음글 */}
           <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, overflow: "hidden", marginBottom: 12 }}>

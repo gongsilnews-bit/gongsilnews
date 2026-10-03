@@ -56,7 +56,7 @@ export default function BoardSection({ theme }: AdminSectionProps) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900 }}>
             <thead>
               <tr style={{ background: darkMode ? "#2c2d31" : "#f9fafb" }}>
-                {["고유 ID","게시판명","스킨 테마 설정","권한 설정 (목록/읽기/쓰기)","관리 액션"].map((h,i) => (
+                {["고유 ID","게시판명","스킨 테마 설정","권한 설정 (목록/읽기/쓰기/댓글)","관리 액션"].map((h,i) => (
                   <th key={i} style={{ padding: "14px 20px", textAlign: i >= 3 ? "center" : "left" as any, fontWeight: 700, color: textSecondary, fontSize: 14, borderBottom: `2px solid ${darkMode ? "#555" : "#e5e7eb"}` }}>{h}</th>
                 ))}
               </tr>
@@ -73,7 +73,9 @@ export default function BoardSection({ theme }: AdminSectionProps) {
                       {row.description && <span style={{ fontSize: 13, color: textSecondary, marginLeft: 6 }}>({row.description})</span>}
                     </td>
                     <td style={{ padding: "16px 20px", verticalAlign: "middle", fontSize: 14, color: textSecondary }}>{skinLabels[row.skin_type] || row.skin_type}</td>
-                    <td style={{ padding: "16px 20px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textSecondary }}>{row.perm_list} / {row.perm_read} / {row.perm_write}</td>
+                    <td style={{ padding: "16px 20px", textAlign: "center", verticalAlign: "middle", fontSize: 15, fontWeight: 600, color: textSecondary }}>
+                      {row.perm_list} / {row.perm_read} / {row.perm_write} / {row.comments_enabled === false ? "끔" : (row.perm_comment ?? 1)}
+                    </td>
                     <td style={{ padding: "16px 20px", textAlign: "center", verticalAlign: "middle" }}>
                       <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                         <button onClick={() => openEditForm(row)} style={{ height: 30, padding: "0 12px", background: darkMode ? "#374151" : "#4b5563", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
