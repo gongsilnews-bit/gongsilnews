@@ -83,6 +83,23 @@
 
         <!-- 단지 시세 — 단지 이름 → 국토부 실거래가 (shared/market-prompt.js) -->
         <div id="complexBox" class="source-box hidden">
+          <details class="market-help">
+            <summary>❓ 처음이세요? 이렇게 쓰세요 · 표 읽는 법</summary>
+            <ol class="market-steps">
+              <li><b>단지 이름</b>을 적고 <b>[시세 불러오기]</b>를 누릅니다. (예: 대치 은마, 반포자이)</li>
+              <li>나온 표의 숫자가 맞는지 눈으로 봅니다. 다른 단지가 나왔으면 아래 목록에서 바꿉니다.</li>
+              <li><b>분석 관점</b>을 하나 고르고, 3단계에서 AI로 기사를 씁니다.</li>
+            </ol>
+            <dl class="market-terms">
+              <dt>실거래가</dt><dd>실제로 계약하고 나라(국토교통부)에 신고한 가격입니다. 계약 후 30일 안에 신고하므로 <b>최근 한 달 거래는 아직 덜 잡혀 있을 수 있습니다.</b></dd>
+              <dt>호가</dt><dd>집주인이 "이 값에 팔겠다"고 내놓은 가격입니다. 실거래가와 다릅니다. 직접 확인한 것이 있을 때만 적어 주세요.</dd>
+              <dt>전용면적·평</dt><dd>현관 안쪽 실제로 쓰는 넓이입니다. 표의 평은 전용면적 기준이라, 흔히 부르는 "34평형"(공급면적 기준)보다 작게 나옵니다. 예: 전용 84㎡ ≈ 25~26평.</dd>
+              <dt>최근 거래</dt><dd>그 면적에서 가장 마지막으로 신고된 거래입니다 (날짜·층 함께).</dd>
+              <dt>최고가</dt><dd>지난 12개월 동안 그 면적에서 가장 비싸게 거래된 가격입니다.</dd>
+              <dt>전세가율</dt><dd>매매가에 비해 전세가 몇 %인지입니다. 20%면 10억 원짜리 집의 전세가 약 2억 원이라는 뜻입니다. 너무 높으면(보통 80% 이상) 세입자 보증금이 위험할 수 있어 기사에서 자주 다룹니다.</dd>
+            </dl>
+            <p class="market-views-help"><b>분석 관점 고르는 법</b> — 객관적 브리핑: 숫자만 차분히 정리 · 신고가·회복: 최고가와 최근 거래 비교 · 거래 흐름: 면적별 거래 건수 중심 · 전세가율: 전세 시장 중심</p>
+          </details>
           <div class="url-row">
             <input id="complexQuery" class="text-input" type="text" maxlength="60" placeholder="단지 이름 (예: 대치 은마, 반포자이)">
             <button id="btnComplexLoad" class="btn-small" type="button">시세 불러오기</button>
@@ -103,6 +120,21 @@
 
         <!-- 우리동네 시세 — 동 이름 → 그 동 아파트 실거래 흐름 -->
         <div id="localBox" class="source-box hidden">
+          <details class="market-help">
+            <summary>❓ 처음이세요? 이렇게 쓰세요 · 표 읽는 법</summary>
+            <ol class="market-steps">
+              <li><b>동 이름</b>을 적고 <b>[시세 불러오기]</b>를 누릅니다. (예: 대치동 — 같은 이름의 동이 여러 곳이면 "분당구 정자동"처럼 구까지)</li>
+              <li>표를 보고, 기사에서 강조하고 싶은 <b>동네 테마</b>가 있으면 고릅니다 (안 골라도 됩니다).</li>
+              <li>3단계에서 AI로 기사를 쓰고, 보내면 <b>우리동네뉴스 지도</b>에 동 위치로 표시됩니다.</li>
+            </ol>
+            <dl class="market-terms">
+              <dt>왜 이번 달·지난달은 빼나요?</dt><dd>실거래는 계약 후 30일 안에 신고해서, 최근 두 달은 아직 숫자가 다 안 모였습니다. 넣으면 거래가 갑자기 줄어든 것처럼 잘못 보여서 <b>신고가 끝난 석 달</b>과 <b>그 전 석 달</b>을 비교합니다.</dd>
+              <dt>3.3㎡당 가격</dt><dd>1평(3.3㎡)에 얼마인지로 바꾼 가격입니다. 넓이가 다른 집끼리도 비교할 수 있습니다.</dd>
+              <dt>중앙값</dt><dd>거래를 가격 순으로 줄 세웠을 때 <b>가운데</b> 값입니다. 아주 비싼 거래 몇 건 때문에 평균이 부풀려지는 것을 막아 줍니다.</dd>
+              <dt>거래 많은 단지</dt><dd>그 석 달 동안 매매 신고가 많았던 단지 3곳입니다. 동네에서 거래가 활발한 곳을 보여 줄 뿐, 좋은 단지 순위는 아닙니다.</dd>
+              <dt>동네 테마</dt><dd>기사를 어떤 시선으로 쓸지 정하는 것입니다. 고른다고 자료에 없는 사실(학교 순위, 개발 일정 등)을 AI가 지어내지는 않습니다.</dd>
+            </dl>
+          </details>
           <div class="url-row">
             <input id="localQuery" class="text-input" type="text" maxlength="60" placeholder="동 이름 (예: 대치동, 분당구 정자동)">
             <button id="btnLocalLoad" class="btn-small" type="button">시세 불러오기</button>

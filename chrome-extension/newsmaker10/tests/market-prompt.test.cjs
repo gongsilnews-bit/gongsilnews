@@ -120,3 +120,9 @@ test("소재 이름과 수정 요청도 실거래 원칙을 지킨다", () => {
   assert.ok(revise.includes("국토교통부 실거래가"));
   assert.ok(!revise.includes("[참고 메모]"));
 });
+
+test("초보 독자도 읽게 — 어려운 용어는 처음 나올 때 풀어 쓰라고 한다", () => {
+  const prompt = p.gwBuildPrompt(complexSource, {});
+  assert.ok(prompt.includes("【쉽게 쓰기】"));
+  assert.ok(prompt.includes("전세가율, 즉 매매가 대비 전세가 비율은"));
+});

@@ -246,7 +246,10 @@
       box.card.innerHTML = `<strong class="mk-title">${escAttr(d.complexName || d.target.name)}</strong>` +
         `<span class="mk-sub">${escAttr(d.target.address)}${s.buildYear ? ` · ${s.buildYear}년 준공` : ""} · ${escAttr(d.period)}</span>` +
         (s.tradeCount
-          ? `<table><tr><th>전용면적</th><th>매매</th><th>최근 거래</th><th>최고가</th><th>전세가율</th></tr>${rows}</table>` +
+          ? `<table><tr><th title="현관 안쪽 실제로 쓰는 넓이 (평은 전용 기준)">전용면적</th><th title="지난 12개월 매매 신고 건수">매매</th>` +
+            `<th title="가장 마지막으로 신고된 매매">최근 거래</th><th title="지난 12개월 이 면적 최고 거래가">최고가</th>` +
+            `<th title="매매가 대비 전세가 비율 — 20%면 10억 집 전세가 약 2억">전세가율</th></tr>${rows}</table>` +
+            `<div class="mk-read">💡 ${escAttr(complexReading(s.areas[0]))}</div>` +
             `<div class="mk-note">최근 거래는 신고가 덜 끝나 더 늘어날 수 있습니다.</div>`
           : `<div class="mk-empty">이 기간에 신고된 매매가 없습니다.</div>`);
       return;
@@ -257,8 +260,30 @@
       `<table><tr><th>기간</th><th>매매</th><th>3.3㎡당 중앙값</th></tr>` +
       `<tr><td>${escAttr(s.periodRecent)}</td><td class="num">${s.recentCount}건</td><td class="num">${gwPrice(s.recentMedianPerPyeong)}</td></tr>` +
       `<tr><td>${escAttr(s.periodBefore)}</td><td class="num">${s.beforeCount}건</td><td class="num">${gwPrice(s.beforeMedianPerPyeong)}</td></tr></table>` +
-      (top ? `<table><tr><th>거래 많은 단지</th><th>매매</th><th>3.3㎡당</th></tr>${top}</table>` : "") +
+      (top ? `<table><tr><th>거래 많은 단지</th><th>매매</th><th title="1평(3.3㎡)에 얼마인지 — 가운데 값">3.3㎡당</th></tr>${top}</table>` : "") +
+      `<div class="mk-read">💡 ${escAttr(localReading(s))}</div>` +
       `<div class="mk-note">${escAttr(s.pendingMonths)}은 신고 진행 중이라 비교에서 뺐습니다 (지금까지 ${s.pendingCount}건).</div>`;
+  }
+
+  /* 표를 한 문장으로 — 처음 쓰는 대표님도 바로 읽을 수 있게 */
+  function complexReading(a) {
+    if (!a || !a.latest) return "";
+    const [, month, day] = a.latest.date.split("-").map(Number);
+    let text = `전용 ${a.areaKey}(약 ${a.pyeong}평)는 지난 12개월 동안 ${a.tradeCount}번 팔렸고, 가장 최근에는 ${month}월 ${day}일 ${a.latest.floor}층이 ${gwPrice(a.latest.price)}에 거래됐습니다.`;
+    if (a.high && a.high.price > a.latest.price) text += ` 이 기간 최고가(${gwPrice(a.high.price)})보다는 ${gwPrice(a.high.price - a.latest.price)} 낮습니다.`;
+    else if (a.high && a.high.price === a.latest.price) text += " 이 거래가 이 기간 최고가입니다.";
+    if (a.jeonseRatio) text += ` 전세는 매매가의 약 ${a.jeonseRatio}% 수준입니다.`;
+    return text;
+  }
+
+  function localReading(s) {
+    const diff = s.recentCount - s.beforeCount;
+    const priceDiff = s.recentMedianPerPyeong - s.beforeMedianPerPyeong;
+    const countPart = diff === 0 ? "그 전 석 달과 같았" : `그 전 석 달보다 ${Math.abs(diff)}건 ${diff > 0 ? "많았" : "적었"}`;
+    const priceText = !s.beforeMedianPerPyeong || !s.recentMedianPerPyeong ? "" : priceDiff === 0
+      ? "고, 평당 가격은 그대로입니다."
+      : `고, 평당 가격(가운데 값)은 ${gwPrice(s.recentMedianPerPyeong)}으로 ${gwPrice(Math.abs(priceDiff))} ${priceDiff > 0 ? "올랐습니다" : "내렸습니다"}.`;
+    return `최근 석 달(${s.periodRecent}) 아파트 매매는 ${s.recentCount}건으로 ${countPart}${priceText || "습니다."}`;
   }
 
   /* 뉴스로 읽을 수 없는 탭 — 브라우저·확장 화면, AI 화면, 공실뉴스 관리 화면 */
