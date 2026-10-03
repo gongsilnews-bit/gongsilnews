@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   무료 체험 — 3번 블로그 작성 · 4번 유튜브 대본
+   무료 체험 — 3번 블로그 작성 · 3번 SNS 작성 · 4번 유튜브 대본
 
    공실뉴스부동산·공실스터디부동산·최고관리자는 무제한.
    그 외 로그인 회원은 기능별로 매월 3번 (서버 /api/extension/trial 이 세고 막는다).
@@ -14,7 +14,8 @@
   /* auth/me 응답 → 이 기능을 쓸 수 있는지
      unlimited: 유료 회원 · trial: { remaining, limit } (무료 회원) · canUse: 탭을 열어도 되는지 */
   function accessFrom(data, feature, origin) {
-    const unlimited = Boolean(feature === "blog" ? data?.canBlog : data?.canYoutubeWriter);
+    /* SNS 는 블로그와 같은 회원 범위가 무제한이다 */
+    const unlimited = Boolean(feature === "youtube" ? data?.canYoutubeWriter : data?.canBlog);
     const isLoggedIn = Boolean(data?.isLoggedIn);
     const status = data?.trial?.[feature] || null;
     const trial = !unlimited && isLoggedIn && status

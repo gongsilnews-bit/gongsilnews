@@ -49,11 +49,12 @@ function getAdminClient() {
   });
 }
 
-/* ═════════════ 무료 체험 (3번 블로그 · 4번 유튜브 대본) ═════════════
+/* ═════════════ 무료 체험 (3번 블로그 · 3번 SNS · 4번 유튜브 대본) ═════════════
    유료 회원(canBlog·canYoutubeWriter)이 아닌 로그인 회원은 기능별로 매월 3번까지 쓴다.
+   SNS(페이스북·인스타그램·스레드 3종을 한 번에)는 블로그와 같은 회원 범위가 무제한이다 (gongsilwriter30).
    기록은 extension_trial_usage 한 줄 = 1번. 월은 한국 시간 기준. */
 export const TRIAL_LIMIT = 3;
-export type TrialFeature = "blog" | "youtube";
+export type TrialFeature = "blog" | "sns" | "youtube";
 export type TrialStatus = { used: number; remaining: number; limit: number };
 
 /** 한국 시간 기준 'YYYY-MM' */
@@ -78,14 +79,15 @@ const trialStatus = (used: number): TrialStatus => ({
   limit: TRIAL_LIMIT,
 });
 
-/** 이번 달 블로그·유튜브 무료 체험 사용 현황 */
+/** 이번 달 블로그·SNS·유튜브 무료 체험 사용 현황 */
 export async function getTrialUsage(memberId: string): Promise<Record<TrialFeature, TrialStatus> & { month: string }> {
   const month = trialMonth();
-  const [blog, youtube] = await Promise.all([
+  const [blog, sns, youtube] = await Promise.all([
     countTrialUse(memberId, "blog", month),
+    countTrialUse(memberId, "sns", month),
     countTrialUse(memberId, "youtube", month),
   ]);
-  return { month, blog: trialStatus(blog), youtube: trialStatus(youtube) };
+  return { month, blog: trialStatus(blog), sns: trialStatus(sns), youtube: trialStatus(youtube) };
 }
 
 /** 무료 체험 1번을 쓴다. 이번 달 3번을 다 썼으면 ok:false */
@@ -101,8 +103,8 @@ export async function consumeTrial(memberId: string, feature: TrialFeature): Pro
 }
 
 /**
- * 블로그 네이버 전송(매물·물건 출처 API)을 허용할 회원인가
- * 유료 회원이거나, 최근 31일 안에 블로그 무료 체험을 쓴 회원(체험으로 만든 글을 보내야 하므로).
+ * 블로그 네이버 전송·SNS 복사(매물·물건 출처 API)를 허용할 회원인가
+ * 유료 회원이거나, 최근 31일 안에 블로그·SNS 무료 체험을 쓴 회원(체험으로 만든 글에 출처를 붙여야 하므로).
  */
 export async function canSendBlog(member: ExtensionMember | null): Promise<boolean> {
   if (!member) return false;
@@ -112,7 +114,7 @@ export async function canSendBlog(member: ExtensionMember | null): Promise<boole
     .from("extension_trial_usage")
     .select("id", { count: "exact", head: true })
     .eq("member_id", member.id)
-    .eq("feature", "blog")
+    .in("feature", ["blog", "sns"])
     .gte("created_at", since);
   return (count || 0) > 0;
 }

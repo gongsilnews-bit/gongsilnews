@@ -4,7 +4,9 @@ import { consumeTrial, getExtensionMember, type TrialFeature } from "@/utils/ext
 /**
  * 크롬 확장 무료 체험 1번 쓰기
  *
- * [AI 블로그 초안 작성]·[AI 유튜브 대본 작성]을 누를 때 부른다. body: { feature: "blog" | "youtube", app?: "newsmaker" }
+ * [AI 블로그 초안 작성]·[AI SNS 3종 작성]·[AI 유튜브 대본 작성]을 누를 때 부른다.
+ * body: { feature: "blog" | "sns" | "youtube", app?: "newsmaker" }
+ * - SNS 는 블로그와 같은 회원 범위가 무제한이다
  * - 공실뉴스부동산·공실스터디부동산·최고관리자: 세지 않는다 (unlimited)
  * - 뉴스메이커(app: "newsmaker")는 비즈니스회원도 세지 않는다. 체험 횟수는 기사 작성기와 함께 센다
  * - 그 외 로그인 회원: 이번 달 3번까지. 다 썼으면 403 + exhausted
@@ -18,7 +20,7 @@ const corsHeaders = {
   "Cache-Control": "no-store",
 };
 
-const FEATURE_NAME: Record<TrialFeature, string> = { blog: "블로그 작성", youtube: "유튜브 대본" };
+const FEATURE_NAME: Record<TrialFeature, string> = { blog: "블로그 작성", sns: "SNS 작성", youtube: "유튜브 대본" };
 
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const feature = body?.feature as TrialFeature;
-    if (feature !== "blog" && feature !== "youtube") {
+    if (feature !== "blog" && feature !== "sns" && feature !== "youtube") {
       return NextResponse.json({ success: false, error: "알 수 없는 기능입니다." }, { status: 400, headers: corsHeaders });
     }
 
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     const unlimited = body?.app === "newsmaker"
       ? member.canNewsMaker
-      : feature === "blog" ? member.canBlog : member.canYoutubeWriter;
+      : feature === "youtube" ? member.canYoutubeWriter : member.canBlog;
     if (unlimited) {
       return NextResponse.json({ success: true, unlimited: true }, { headers: corsHeaders });
     }

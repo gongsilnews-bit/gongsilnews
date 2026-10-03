@@ -1177,8 +1177,8 @@
   /* ═════════════ 탭 전환 ═════════════ */
   function switchTab(which) {
     /* 3번 블로그·4번 유튜브 탭과 그 하단 바는 blog.js·youtube.js 가 관리한다. 1·2번으로 올 때 내려놓는다. */
-    ["tabBlog", "viewBlog", "tabScript", "viewScript"].forEach((id) => $(id)?.classList.remove("active"));
-    ["blogActions", "scriptActions"].forEach((id) => $(id)?.classList.add("hidden"));
+    ["tabBlog", "viewBlog", "viewSns", "tabScript", "viewScript"].forEach((id) => $(id)?.classList.remove("active"));
+    ["blogActions", "snsActions", "scriptActions", "channelBar"].forEach((id) => $(id)?.classList.add("hidden"));
     document.dispatchEvent(new CustomEvent("gw:leave-youtube"));
     const work = which === "work";
     el.tabWork.classList.toggle("active", work);
@@ -1263,21 +1263,29 @@
      저장소를 고친 뒤 작업창을 새로 불러오고, 보던 탭으로 돌아온다.
      앞 탭을 지워도 뒤 탭(블로그·대본)은 이미 만든 결과물이라 남긴다. */
   const BLOG_STATE_KEY = "gw_blog_state";
+  const SNS_STATE_KEY = "gw_sns_state";
   const YOUTUBE_STATE_KEY = "gw_youtube_state";
   const RETURN_TAB_KEY = "gw_return_tab"; // 새로 불러온 뒤 돌아갈 탭 (sessionStorage)
 
   const RESET_TABS = {
     tabWork: {
       label: "1 물건·AI",
-      what: "가져온 물건과 기사 초안·사진이 지워집니다.\n블로그 글과 유튜브 대본은 남습니다.",
+      what: "가져온 물건과 기사 초안·사진이 지워집니다.\n블로그·SNS 글과 유튜브 대본은 남습니다.",
     },
     tabDraft: {
       label: "2 초안 다듬기",
       what: "기사 초안과 AI·삽입 사진이 지워집니다.\n가져온 물건은 남아서 같은 물건으로 다시 쓸 수 있습니다.",
     },
-    tabBlog: { label: "3 블로그 작성", what: "블로그 글만 지워집니다.\n물건·기사·유튜브 대본은 남습니다." },
-    tabScript: { label: "4 유튜브 대본", what: "유튜브 대본만 지워집니다.\n물건·기사·블로그 글은 남습니다." },
+    tabBlog: { label: "3 블로그·SNS — 블로그", what: "블로그 글만 지워집니다.\n물건·기사·SNS 글·유튜브 대본은 남습니다." },
+    tabScript: { label: "4 유튜브 대본", what: "유튜브 대본만 지워집니다.\n물건·기사·블로그·SNS 글은 남습니다." },
   };
+  /* 3번 탭에서 SNS(페이스북·인스타·스레드)를 보고 있으면 SNS 만 지운다 (sns.js) */
+  const RESET_SNS = {
+    label: "3 블로그·SNS — SNS",
+    what: "페이스북·인스타그램·스레드 글과 사진만 지워집니다.\n물건·기사·블로그 글·유튜브 대본은 남습니다.",
+  };
+  const snsActive = () => Boolean($("viewSns")?.classList.contains("active"));
+  const resetInfo = (tabId) => (tabId === "tabBlog" && snsActive() ? RESET_SNS : RESET_TABS[tabId]);
 
   const activeTabId = () => Object.keys(RESET_TABS).find((id) => $(id)?.classList.contains("active")) || "tabWork";
 
@@ -1295,6 +1303,11 @@
     return { style: blog.style, length: blog.length, imageStyle: blog.imageStyle, design: blog.design };
   }
 
+  async function blankSns() {
+    const sns = (await chrome.storage.local.get(SNS_STATE_KEY))[SNS_STATE_KEY] || {};
+    return { channel: sns.channel, imageStyle: sns.imageStyle };
+  }
+
   async function blankYoutube() {
     const youtube = (await chrome.storage.local.get(YOUTUBE_STATE_KEY))[YOUTUBE_STATE_KEY] || {};
     return { settings: youtube.settings };
@@ -1303,14 +1316,15 @@
   async function runReset(scope) {
     const tabId = activeTabId();
     const message = scope === "all"
-      ? "가져온 물건, 초안, 사진, 블로그 글, 유튜브 대본이 모두 지워집니다.\n전체 초기화할까요?"
-      : `[${RESET_TABS[tabId].label}] 탭만 초기화합니다.\n\n${RESET_TABS[tabId].what}\n\n초기화할까요?`;
+      ? "가져온 물건, 초안, 사진, 블로그·SNS 글, 유튜브 대본이 모두 지워집니다.\n전체 초기화할까요?"
+      : `[${resetInfo(tabId).label}] 탭만 초기화합니다.\n\n${resetInfo(tabId).what}\n\n초기화할까요?`;
     if (!confirm(message)) return;
     try {
       if (scope === "all") {
         await chrome.storage.local.set({
           [STATE_KEY]: panelSettings(),
           [BLOG_STATE_KEY]: await blankBlog(),
+          [SNS_STATE_KEY]: await blankSns(),
           [YOUTUBE_STATE_KEY]: await blankYoutube(),
         });
         await chrome.storage.local.remove([GW.KEY.JOB, GW.KEY.DRAFT]).catch(() => {});
@@ -1324,6 +1338,8 @@
           [STATE_KEY]: Object.assign({}, S, { article: null, writing: false, imageRequest: "", media }),
         });
         await chrome.storage.local.remove(GW.KEY.DRAFT).catch(() => {});
+      } else if (tabId === "tabBlog" && snsActive()) {
+        await chrome.storage.local.set({ [SNS_STATE_KEY]: await blankSns() });
       } else if (tabId === "tabBlog") {
         await chrome.storage.local.set({ [BLOG_STATE_KEY]: await blankBlog() });
       } else if (tabId === "tabScript") {
@@ -1347,7 +1363,7 @@
   btnReset.addEventListener("click", (e) => {
     e.stopPropagation();
     if (!resetMenu.classList.contains("hidden")) { closeResetMenu(); return; }
-    $("resetTabLabel").textContent = RESET_TABS[activeTabId()].label;
+    $("resetTabLabel").textContent = resetInfo(activeTabId()).label;
     resetMenu.classList.remove("hidden");
     btnReset.setAttribute("aria-expanded", "true");
   });
