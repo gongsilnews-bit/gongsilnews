@@ -113,3 +113,13 @@ test("실제 사진이 있으면 AI 이미지를 대표(1번)로 둘 수 없다"
   assert.equal(gwSnsCanLead([{ ai: true }, { ai: true }], 1), true);
   assert.equal(gwSnsCanLead([{ ai: false }, { ai: false }], 1), true);
 });
+
+test("AI 이미지가 올라갈 사진에 있으면 플랫폼별 AI 레이블 안내", () => {
+  const { gwSnsAiLabelNote } = require("../shared/sns-prompt.js");
+  assert.equal(gwSnsAiLabelNote("facebook", [{ ai: false }, { ai: false }]), "");
+  assert.ok(gwSnsAiLabelNote("facebook", [{ ai: false }, { ai: true }]).includes("[AI 레이블]"));
+  assert.ok(gwSnsAiLabelNote("instagram", [{ ai: true }]).includes("[고급 설정]"));
+  /* 장수 제한 밖(올라가지 않는) AI 이미지는 세지 않는다 */
+  const five = [{ ai: false }, { ai: false }, { ai: false }, { ai: false }, { ai: true }];
+  assert.equal(gwSnsAiLabelNote("facebook", five), "");
+});

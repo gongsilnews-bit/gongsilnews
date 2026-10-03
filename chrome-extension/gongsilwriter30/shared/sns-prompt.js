@@ -248,9 +248,25 @@ function gwSnsCanLead(list, index) {
   return !list.some((other) => other && !other.ai);
 }
 
+/* AI 이미지가 올라갈 사진에 섞여 있으면 "게시할 때 AI 레이블을 켜세요" 안내.
+   메타(페이스북·인스타·스레드)의 AI 레이블은 사진·영상용이라, 실제 사진만 올리면 켤 필요가 없다. */
+const GW_SNS_AI_LABEL_WHERE = {
+  facebook: "게시물 만들기 창의 이름 아래 [AI 레이블] 단추를 눌러 켜 주세요.",
+  instagram: "공유하기 전 캡션 화면의 [고급 설정]에서 [AI 레이블 추가]를 켜 주세요.",
+  threads: "게시하기 전 글쓰기 화면의 [AI 레이블] 설정을 켜 주세요.",
+};
+
+function gwSnsAiLabelNote(channel, media) {
+  const info = GW_SNS_CHANNELS[channel];
+  if (!info) return "";
+  const count = (Array.isArray(media) ? media : []).slice(0, info.maxMedia).filter((item) => item && item.ai).length;
+  if (!count) return "";
+  return `AI로 만든 이미지 ${count}장이 들어 있습니다 — ${GW_SNS_AI_LABEL_WHERE[channel]}`;
+}
+
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     GW_SNS_CHANNELS, GW_SNS_ORDER, gwBuildSnsPrompt, gwBuildSnsRevisePrompt,
-    gwSnsNormalize, gwSnsParse, gwSnsCompose, gwSnsPickMedia, gwSnsCanLead, gwSnsCleanTags,
+    gwSnsNormalize, gwSnsParse, gwSnsCompose, gwSnsPickMedia, gwSnsCanLead, gwSnsCleanTags, gwSnsAiLabelNote,
   };
 }

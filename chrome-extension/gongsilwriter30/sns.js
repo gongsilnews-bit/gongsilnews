@@ -45,7 +45,7 @@
     btnMakeSns: $("btnMakeSns"), btnPullSns: $("btnPullSns"),
     snsDraftEmpty: $("snsDraftEmpty"), snsDraftBody: $("snsDraftBody"),
     snsBadge: $("snsBadge"), snsCount: $("snsCount"), snsEditor: $("snsEditor"), snsTail: $("snsTail"),
-    snsMedia: $("snsMedia"), snsMediaHint: $("snsMediaHint"),
+    snsMedia: $("snsMedia"), snsMediaHint: $("snsMediaHint"), snsAiNotice: $("snsAiNotice"),
     snsReviseInput: $("snsReviseInput"), btnReviseSns: $("btnReviseSns"), btnPullSnsRevised: $("btnPullSnsRevised"),
     btnInsertSnsImage: $("btnInsertSnsImage"), snsFileImage: $("snsFileImage"),
     snsImageRequest: $("snsImageRequest"), btnMakeSnsImage: $("btnMakeSnsImage"), snsRatioNote: $("snsRatioNote"),
@@ -668,6 +668,9 @@
     const ratioClass = c.ratio === 1 ? "r-1" : c.ratio ? "r-45" : "r-0";
     el.snsMediaHint.textContent = `${c.ratioText} · 최대 ${c.maxMedia}장 · 1번이 대표` +
       (channel === "instagram" ? " · 사진 필수" : " · 없어도 됩니다");
+    const aiNote = gwSnsAiLabelNote(channel, list);
+    el.snsAiNotice.classList.toggle("hidden", !aiNote);
+    el.snsAiNotice.textContent = aiNote ? `🤖 ${aiNote}` : "";
     if (!list.length) {
       el.snsMedia.innerHTML = `<div class="sns-media-empty">사진이 없습니다. 아래 [🖼️ 이미지 삽입]이나 [🎨 AI 이미지 만들기]로 넣어 주세요.</div>`;
       return;
@@ -976,6 +979,12 @@
     return { saved, total: list.length, zipName: `${folder}.zip` };
   }
 
+  /* 내려받은 사진에 AI 이미지가 섞여 있으면 "AI 레이블을 켜세요" (shared/sns-prompt.js) */
+  function aiLabelNote(channel) {
+    const note = gwSnsAiLabelNote(channel, N.media[channel]);
+    return note ? ` 🤖 ${note}` : "";
+  }
+
   function overNote({ c, over }) {
     return over ? ` ⚠ ${c.label} 글자 수를 넘었습니다. 줄여서 올려 주세요.` : "";
   }
@@ -1000,7 +1009,9 @@
       const ready = await prepare();
       const result = await downloadPackage(ready, el.btnSnsZip);
       const missNote = result.saved < result.total ? ` (사진 ${result.total - result.saved}장은 받지 못했습니다)` : "";
-      toast(`${result.zipName} 을 다운로드 폴더에 받았습니다. 압축을 풀면 사진 ${result.saved}장과 글(TXT)이 한 폴더에 있습니다.${missNote}`, missNote ? "info" : "ok", 10000);
+      const aiNote = aiLabelNote(ready.channel);
+      toast(`${result.zipName} 을 다운로드 폴더에 받았습니다. 압축을 풀면 사진 ${result.saved}장과 글(TXT)이 한 폴더에 있습니다.${missNote}${aiNote}`,
+        missNote || aiNote ? "info" : "ok", aiNote ? 15000 : 10000);
       status(`${ready.c.label} 받기 완료`, "ok");
     }, { failTitle: "내려받지 못했습니다" }).then(() => {
       if (el.status.textContent.endsWith("받기 완료")) flash(el.btnSnsZip, "✓ 받음");
@@ -1015,9 +1026,10 @@
       await copyText(channel === "threads" ? composed.posts[0] : composed.text);
       const result = await downloadPackage(ready, el.btnCopySns);
       const missNote = result.saved < result.total ? ` (사진 ${result.total - result.saved}장은 받지 못했습니다)` : "";
+      const aiNote = aiLabelNote(channel);
       toast(`${c.label} 글을 복사했고, 사진 ${result.saved}장과 글(TXT)을 ${result.zipName} 으로 받았습니다.${missNote} ` +
-        `[${c.label} 바로가기]에서 새 게시물에 Ctrl+V로 붙여 넣고, 압축을 푼 폴더의 사진을 01부터 올리세요.${overNote(ready)}`,
-        ready.over || missNote ? "info" : "ok", 12000);
+        `[${c.label} 바로가기]에서 새 게시물에 Ctrl+V로 붙여 넣고, 압축을 푼 폴더의 사진을 01부터 올리세요.${overNote(ready)}${aiNote}`,
+        ready.over || missNote || aiNote ? "info" : "ok", aiNote ? 15000 : 12000);
       status(`${c.label} 복사 완료`, "ok");
     }, { failTitle: "글·사진을 받지 못했습니다" }).then(() => {
       if (el.status.textContent.endsWith("복사 완료")) flash(el.btnCopySns, '<span class="send-icon">✓</span><strong>복사·받기 완료</strong>');
