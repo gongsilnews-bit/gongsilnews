@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember, adminUpdateBusinessProfile, adminGetLimitPolicies, adminApproveRealtorApplication, adminRejectRealtorApplication } from "@/app/admin/actions";
+import { adminCreateMember, adminUpdateAgency, adminUploadAgencyDocument, adminGetMemberDetail, adminUpdateMember, adminUpdateBusinessProfile, adminGetLimitPolicies, adminApproveRealtorApplication, adminRejectRealtorApplication, adminFindAgencyDuplicates } from "@/app/admin/actions";
 import { geocodeAddress } from "@/app/actions/geocode";
 import { getHomepageSettings } from "@/app/actions/homepage";
 
@@ -19,6 +19,12 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
   const [policies, setPolicies] = useState<any>(null);
   // 관리자 전용: role은 일반회원이지만 부동산 가입신청(agency)이 있는 경우 true
   const [hasAgencyApplication, setHasAgencyApplication] = useState(false);
+  // 관리자 심사: 같은 개설등록번호·사업자번호·휴대폰·주소로 신청한 다른 계정 (1 사무소 1 계정)
+  const [agencyDuplicates, setAgencyDuplicates] = useState<{ ownerId: string; name: string | null; status: string | null; email: string; memberName: string; why: string[] }[]>([]);
+  useEffect(() => {
+    if (!isAdmin || !editMemberId || !hasAgencyApplication) return;
+    adminFindAgencyDuplicates(editMemberId).then((res) => setAgencyDuplicates(res.duplicates || [])).catch(() => {});
+  }, [isAdmin, editMemberId, hasAgencyApplication]);
   const [adminRejectModalOpen, setAdminRejectModalOpen] = useState(false);
   const [adminRejectReason, setAdminRejectReason] = useState("사업자등록증이 불분명합니다");
 
@@ -716,7 +722,10 @@ function gradeDefaults(p: any, role: string, planType?: string) {
 
         const agencyRes = await adminUpdateAgency(memberId, finalAgencyData);
         if (!agencyRes.success) {
-          throw new Error("중개업소 정보 저장에 실패했습니다: " + agencyRes.error);
+          /* 같은 중개사무소로 이미 가입한 계정이 있으면 그 안내를 그대로 보여 준다 */
+          throw new Error((agencyRes as { duplicate?: boolean }).duplicate
+            ? String(agencyRes.error)
+            : "중개업소 정보 저장에 실패했습니다: " + agencyRes.error);
         }
 
         agencySaved = true;
@@ -972,6 +981,16 @@ function gradeDefaults(p: any, role: string, planType?: string) {
               </button>
             </div>
           </div>
+          {agencyDuplicates.length > 0 && (
+            <div style={{ marginTop: 10, padding: "10px 12px", background: darkMode ? "rgba(0,0,0,0.25)" : "#fff", border: "1.5px solid #ef4444", borderRadius: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626", marginBottom: 4 }}>⚠ 중복 의심 — 같은 중개사무소로 이미 신청·가입한 계정이 있습니다 (1 사무소 1 계정)</div>
+              {agencyDuplicates.map((d) => (
+                <div key={d.ownerId} style={{ fontSize: 12.5, color: darkMode ? "#fca5a5" : "#7f1d1d", lineHeight: 1.7 }}>
+                  · {d.name || "(상호 없음)"} — {d.memberName || ""} {d.email && `<${d.email}>`} · {d.status === "APPROVED" ? "승인됨" : "심사 대기"} · 같은 항목: <b>{d.why.join(", ")}</b>
+                </div>
+              ))}
+            </div>
+          )}
           {agencyData.status === "REJECTED" && rejectReason && (
             <div style={{ marginTop: 10, padding: "8px 12px", background: darkMode ? "rgba(0,0,0,0.2)" : "#fff", border: `1px solid ${darkMode ? "#7f1d1d" : "#fecaca"}`, borderRadius: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: darkMode ? "#fca5a5" : "#b91c1c" }}>📌 이전 반려 사유: </span>

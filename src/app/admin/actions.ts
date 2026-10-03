@@ -231,12 +231,106 @@ export async function adminBulkUpdatePlanAndLimits(
   }
 }
 
+// ── 중개사무소 1곳 = 부동산 신청 1개 (2026-10-03) ──
+// 구글 아이디를 여러 개 만들어 같은 사무소로 무료 가입하는 것을 막는다.
+// 기준은 중개사무소 개설등록번호(법으로 사무소마다 하나) — 띄어쓰기·하이픈·"제/호" 를 떼고 숫자만 비교한다.
+// 이미 가입한 계정은 건드리지 않는다: 새로 신청하거나 등록번호를 바꿀 때만 검사한다.
+const ACTIVE_AGENCY_STATUSES = ['PENDING', 'APPROVED'];
+const digitsOnly = (value: unknown) => String(value ?? '').replace(/[^0-9]/g, '');
+
+function maskEmail(email: string | null | undefined) {
+  const [id, domain] = String(email || '').split('@');
+  if (!id || !domain) return '';
+  return `${id.slice(0, 3)}${'*'.repeat(Math.max(2, id.length - 3))}@${domain}`;
+}
+
+type AgencyRow = {
+  owner_id: string;
+  name: string | null;
+  status: string | null;
+  reg_num: string | null;
+  biz_num: string | null;
+  cell: string | null;
+  address: string | null;
+  address_detail: string | null;
+  members?: { email?: string | null; name?: string | null } | { email?: string | null; name?: string | null }[] | null;
+};
+
+/* 같은 개설등록번호로 신청 중이거나 승인된 다른 계정 — DB 에 숫자만 남긴 칸(reg_num_norm)이 있으면 그것으로,
+   아직 없으면(마이그레이션 전) 적힌 그대로·숫자만 두 모양으로 찾는다 */
+async function findOtherAgencyByRegNum(supabaseAdmin: ReturnType<typeof getAdminClient>, regNum: string, ownerId: string) {
+  const norm = digitsOnly(regNum);
+  if (norm.length < 5) return null;
+  const select = 'owner_id, name, status, reg_num, members:owner_id(email, name)';
+  let { data, error } = await supabaseAdmin
+    .from('agencies').select(select).eq('reg_num_norm', norm)
+    .in('status', ACTIVE_AGENCY_STATUSES).neq('owner_id', ownerId).limit(1);
+  if (error) {
+    const raw = String(regNum).trim();
+    ({ data, error } = await supabaseAdmin
+      .from('agencies').select(select).in('reg_num', Array.from(new Set([raw, norm])))
+      .in('status', ACTIVE_AGENCY_STATUSES).neq('owner_id', ownerId).limit(1));
+    if (error) return null; // 검사를 못 하면 가입을 막지 않는다 (관리자 심사에서 걸러진다)
+  }
+  return (data?.[0] as AgencyRow | undefined) || null;
+}
+
+/** 관리자 심사용 — 이 신청과 등록번호·사업자번호·휴대폰·주소가 같은 다른 계정 */
+export async function adminFindAgencyDuplicates(memberId: string) {
+  const supabaseAdmin = getAdminClient();
+  try {
+    const { data: mine } = await supabaseAdmin
+      .from('agencies').select('reg_num, biz_num, cell, address, address_detail').eq('owner_id', memberId).maybeSingle();
+    if (!mine) return { success: true, duplicates: [] };
+    const reg = digitsOnly(mine.reg_num);
+    const biz = digitsOnly(mine.biz_num);
+    const cell = digitsOnly(mine.cell);
+    const addr = `${String(mine.address || '').trim()} ${String(mine.address_detail || '').trim()}`.trim();
+    const { data, error } = await supabaseAdmin
+      .from('agencies')
+      .select('owner_id, name, status, reg_num, biz_num, cell, address, address_detail, members:owner_id(email, name)')
+      .neq('owner_id', memberId)
+      .in('status', ACTIVE_AGENCY_STATUSES)
+      .limit(2000);
+    if (error) return { success: false, error: error.message, duplicates: [] };
+    const duplicates = ((data || []) as AgencyRow[]).map((row) => {
+      const why: string[] = [];
+      if (reg.length >= 5 && digitsOnly(row.reg_num) === reg) why.push('개설등록번호');
+      if (biz.length >= 10 && digitsOnly(row.biz_num) === biz) why.push('사업자등록번호');
+      if (cell.length >= 10 && digitsOnly(row.cell) === cell) why.push('휴대폰');
+      const rowAddr = `${String(row.address || '').trim()} ${String(row.address_detail || '').trim()}`.trim();
+      if (addr.length >= 8 && rowAddr === addr) why.push('주소');
+      const member = Array.isArray(row.members) ? row.members[0] : row.members;
+      return { ownerId: row.owner_id, name: row.name, status: row.status, email: member?.email || '', memberName: member?.name || '', why };
+    }).filter((row) => row.why.length);
+    return { success: true, duplicates };
+  } catch (error: any) {
+    return { success: false, error: error.message, duplicates: [] };
+  }
+}
+
 // ── 중개업소 정보 수정/생성 ──
 export async function adminUpdateAgency(memberId: string, agencyData: any) {
   const supabaseAdmin = getAdminClient();
   try {
     const { data: existing } = await supabaseAdmin
-      .from('agencies').select('id').eq('owner_id', memberId).single();
+      .from('agencies').select('id, reg_num').eq('owner_id', memberId).single();
+
+    /* 새로 신청하거나 등록번호를 바꿀 때만 — 같은 사무소의 다른 계정이 있으면 막는다 */
+    const regNumChanged = agencyData?.reg_num !== undefined && digitsOnly(agencyData.reg_num) !== digitsOnly(existing?.reg_num);
+    if (agencyData?.reg_num && (!existing || regNumChanged)) {
+      const other = await findOtherAgencyByRegNum(supabaseAdmin, agencyData.reg_num, memberId);
+      if (other) {
+        const member = Array.isArray(other.members) ? other.members[0] : other.members;
+        const masked = maskEmail(member?.email);
+        return {
+          success: false,
+          duplicate: true,
+          error: `이미 가입된 중개사무소입니다${masked ? ` (${masked})` : ''}. 중개사무소 한 곳당 부동산회원 계정은 하나만 만들 수 있습니다. ` +
+            '기존 계정으로 로그인하시거나, 계정을 찾을 수 없으면 고객센터로 문의해 주세요.',
+        };
+      }
+    }
 
     if (existing) {
       const { error } = await supabaseAdmin.from('agencies').update(agencyData).eq('owner_id', memberId);
