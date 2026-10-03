@@ -485,6 +485,7 @@
     blogInsertSlot = null;
     B.pendingImage = null;
     renderBlog();
+    window.GWArrival?.notify(el.blogDraftBody.querySelector(".preview-doc"), el.viewBlog);
     await save();
     return parsed.repaired === true;
   }

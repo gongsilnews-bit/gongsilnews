@@ -516,7 +516,14 @@
       </button>
     </div>
 
-    <div class="image-options">
+    <!-- 하단을 콤팩트하게: 한 줄에 2칸, AI 이미지 설정은 눌렀을 때만 펼친다 -->
+    <div class="dock-row">
+      <button class="btn-sub dock-btn image-opts-toggle" data-target="imageOpts" type="button" aria-expanded="false">🎨 AI 이미지 만들기 ▾</button>
+      <button id="btnChangeImage" class="btn-sub dock-btn" type="button" title="본문에서 위치를 클릭한 뒤 내 PC 이미지를 삽입합니다">🖼️ 이미지 삽입</button>
+      <input id="fileImage" type="file" accept="image/*" class="hidden">
+    </div>
+
+    <div id="imageOpts" class="image-options hidden">
       <div class="image-options-title">AI 이미지 스타일</div>
       <div class="image-style-row" role="group" aria-label="AI 이미지 스타일 선택">
         <button class="image-style active" data-image-style="news" type="button">보도 실사</button>
@@ -530,28 +537,16 @@
       <button id="btnMakeImage" class="btn-sub btn-in-box" type="button">AI 이미지 만들기</button>
     </div>
 
-    <div class="image-options">
-      <button id="btnChangeImage" class="btn-sub btn-in-box" type="button" title="본문에서 위치를 클릭한 뒤 내 PC 이미지를 삽입합니다">이미지 삽입</button>
-      <input id="fileImage" type="file" accept="image/*" class="hidden">
+    <div class="dock-row">
+      <a class="btn-send compact btn-article-shortcut"
+         href="https://www.gongsilnews.com/realty_admin?menu=article&amp;action=write"
+         target="_blank" rel="noopener noreferrer" title="공실뉴스 새 기사쓰기 폼을 새 탭으로 엽니다">
+        <span class="send-icon">✍️</span><strong>기사작성 바로가기</strong>
+      </a>
+      <button id="btnSendGongsil" class="btn-send compact" type="button" title="로그인 후 열어 둔 새 기사쓰기 폼에 채웁니다">
+        <span class="send-icon">📰</span><strong>기사전송하기</strong>
+      </button>
     </div>
-
-    <a class="btn-send btn-article-shortcut"
-       href="https://www.gongsilnews.com/realty_admin?menu=article&amp;action=write"
-       target="_blank" rel="noopener noreferrer">
-      <span class="send-icon">✍️</span>
-      <span class="send-text">
-        <strong>기사작성 바로가기 &gt;&gt;</strong>
-        <small>공실뉴스 새 기사쓰기 폼을 새 탭으로 엽니다</small>
-      </span>
-    </a>
-
-    <button id="btnSendGongsil" class="btn-send" type="button">
-      <span class="send-icon">📰</span>
-      <span class="send-text">
-        <strong>기사전송하기</strong>
-        <small>로그인 후 열어 둔 새 기사쓰기 폼에 채웁니다</small>
-      </span>
-    </button>
   </div>
 
   <!-- ─────────── 뷰 3 하단 고정 바 (뷰 2와 상태·요소를 공유하지 않음) ─────────── -->
@@ -567,7 +562,13 @@
       </button>
     </div>
 
-    <div class="image-options">
+    <div class="dock-row">
+      <button class="btn-sub dock-btn image-opts-toggle" data-target="blogImageOpts" type="button" aria-expanded="false">🎨 AI 이미지 만들기 ▾</button>
+      <button id="btnInsertBlogImage" class="btn-sub dock-btn" type="button">🖼️ 이미지 삽입</button>
+      <input id="blogFileImage" type="file" accept="image/*" class="hidden">
+    </div>
+
+    <div id="blogImageOpts" class="image-options hidden">
       <div class="image-options-title">AI 이미지 스타일</div>
       <div class="image-style-row" role="group" aria-label="블로그 AI 이미지 스타일 선택">
         <button class="image-style blog-image-style active" data-blog-image-style="news" type="button">보도 실사</button>
@@ -582,17 +583,6 @@
     </div>
 
     <div class="image-options">
-      <button id="btnInsertBlogImage" class="btn-sub btn-in-box" type="button">이미지 삽입</button>
-      <input id="blogFileImage" type="file" accept="image/*" class="hidden">
-    </div>
-
-    <div class="blog-link-row">
-      <a class="btn-blog-link" href="https://blog.naver.com/" target="_blank" rel="noopener noreferrer">
-        블로그 바로가기
-      </a>
-    </div>
-
-    <div class="image-options">
       <div class="image-options-title">블로그 디자인</div>
       <div class="image-style-row" role="group" aria-label="네이버 블로그 디자인 선택">
         <button class="image-style blog-design active" data-blog-design="basic" type="button">기본형</button>
@@ -603,13 +593,14 @@
       <p id="blogDesignHint" class="hint"></p>
     </div>
 
-    <button id="btnSendNaver" class="btn-send naver" type="button">
-      <span class="send-icon">📝</span>
-      <span class="send-text">
-        <strong>블로그글 전송하기</strong>
-        <small>열어 둔 네이버 글쓰기 화면에 제목과 본문을 채웁니다</small>
-      </span>
-    </button>
+    <div class="dock-row">
+      <a class="btn-blog-link" href="https://blog.naver.com/" target="_blank" rel="noopener noreferrer">
+        블로그 바로가기
+      </a>
+      <button id="btnSendNaver" class="btn-send compact naver" type="button" title="열어 둔 네이버 글쓰기 화면에 제목과 본문을 채웁니다">
+        <span class="send-icon">📝</span><strong>블로그글 전송하기</strong>
+      </button>
+    </div>
   </div>
 
   <!-- ─────────── 뷰 4 하단 고정 바 (대본 수정) ─────────── -->
@@ -646,6 +637,8 @@
 <script src="shared/youtube-prompt.js"></script>
 <script src="shared/youtube-json.js"></script>
 <script src="sim.js"></script>
+<script src="shared/dock-ui.js"></script>
+<script src="shared/tips.js"></script>
 <script src="panel.js"></script>
 <script src="blog.js"></script>
 <script src="youtube.js"></script>
