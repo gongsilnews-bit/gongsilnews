@@ -178,8 +178,9 @@
     }
   }
 
+  /* 3번 탭이 열려 있어도 SNS(페이스북·인스타·스레드)를 보고 있으면 블로그가 아니다 (sns.js) */
   function isBlogActive() {
-    return el.tabBlog.classList.contains("active");
+    return el.tabBlog.classList.contains("active") && el.viewBlog.classList.contains("active");
   }
 
   /* ── 회원 잠금 ──
