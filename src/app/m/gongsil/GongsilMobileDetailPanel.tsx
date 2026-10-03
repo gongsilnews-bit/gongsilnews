@@ -1734,16 +1734,6 @@ const GongsilMobileDetailPanelImpl: React.FC<GongsilMobileDetailPanelProps> = ({
                                   {[v.room_count !== undefined ? `룸 ${v.room_count}개` : null, v.bath_count !== undefined ? `욕실 ${v.bath_count}개` : null, ...(v.options || [])].filter(Boolean).join(", ")}
                                 </p>
 
-                                {/* Themes */}
-                                {v.themes && v.themes.length > 0 && (
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
-                                    {v.themes.map((theme: string, idx: number) => (
-                                      <span key={idx} style={{ background: "#f8fafc", color: "#3b82f6", fontSize: "12px", padding: "2px 8px", borderRadius: "12px", fontWeight: 700, border: "1px solid #bfdbfe" }}>
-                                        {theme.startsWith('#') ? theme : `# ${theme}`}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
                               </div>
                               {v.images?.[0] && (
                                 <div style={{ width: "130px", height: "96px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, backgroundColor: "#e5e7eb", alignSelf: "center" }}>
