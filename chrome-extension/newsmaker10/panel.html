@@ -74,9 +74,44 @@
       <div class="card">
         <label class="card-label">2단계 · 기사 소재</label>
 
-        <div class="chips-row source-mode-row" role="group" aria-label="소재 고르기">
-          <button class="chip active" data-source-mode="news" type="button">뉴스 가져오기<small>보고 있는 뉴스·주소</small></button>
-          <button class="chip" data-source-mode="topic" type="button">주제 입력<small>서론·본론·결론으로</small></button>
+        <div class="chips-row source-mode-row source-mode-grid" role="group" aria-label="소재 고르기">
+          <button class="chip active" data-source-mode="news" type="button">① 뉴스 가져오기<small>보고 있는 뉴스·주소</small></button>
+          <button class="chip" data-source-mode="complex" type="button">② 단지 시세<small>단지 이름만 넣으면</small></button>
+          <button class="chip" data-source-mode="local" type="button">③ 우리동네 시세<small>동 이름만 넣으면</small></button>
+          <button class="chip" data-source-mode="topic" type="button">④ 주제 직접입력<small>주제 한 줄로도</small></button>
+        </div>
+
+        <!-- 단지 시세 — 단지 이름 → 국토부 실거래가 (shared/market-prompt.js) -->
+        <div id="complexBox" class="source-box hidden">
+          <div class="url-row">
+            <input id="complexQuery" class="text-input" type="text" maxlength="60" placeholder="단지 이름 (예: 대치 은마, 반포자이)">
+            <button id="btnComplexLoad" class="btn-small" type="button">시세 불러오기</button>
+          </div>
+          <select id="complexPick" class="text-input market-pick hidden" aria-label="다른 단지 고르기"></select>
+          <div id="complexCard" class="market-card hidden"></div>
+          <label class="field-label">분석 관점</label>
+          <div class="chips-row market-chips" role="group" aria-label="분석 관점">
+            <button class="chip active" data-market-view="brief" type="button">객관적 브리핑</button>
+            <button class="chip" data-market-view="high" type="button">신고가·회복</button>
+            <button class="chip" data-market-view="flow" type="button">거래 흐름</button>
+            <button class="chip" data-market-view="jeonse" type="button">전세가율</button>
+          </div>
+          <label class="field-label" for="complexAsking">현재 호가 <span class="field-note">(선택 — 직접 확인한 매물 가격)</span></label>
+          <input id="complexAsking" class="text-input" type="text" maxlength="200" placeholder="예: 84㎡ 매매 25억~27억, 전세 11억~12억">
+          <p class="hint">숫자는 <b>국토교통부 실거래가(신고 기준)</b>에서 공실뉴스 서버가 계산합니다. AI는 이 숫자로 문장만 쓰고, 인용·전망을 지어내지 않습니다.</p>
+        </div>
+
+        <!-- 우리동네 시세 — 동 이름 → 그 동 아파트 실거래 흐름 -->
+        <div id="localBox" class="source-box hidden">
+          <div class="url-row">
+            <input id="localQuery" class="text-input" type="text" maxlength="60" placeholder="동 이름 (예: 대치동, 분당구 정자동)">
+            <button id="btnLocalLoad" class="btn-small" type="button">시세 불러오기</button>
+          </div>
+          <select id="localPick" class="text-input market-pick hidden" aria-label="다른 동 고르기"></select>
+          <div id="localCard" class="market-card hidden"></div>
+          <label class="field-label">동네 테마 <span class="field-note">(선택 — 기사 관점)</span></label>
+          <div id="localThemes" class="chips-row market-chips" role="group" aria-label="동네 테마"></div>
+          <p class="hint">이번 달·지난달은 신고가 끝나지 않아 빼고 비교합니다. 기사를 보내면 <b>동 위치가 기사 위치등록 칸에 들어가 우리동네뉴스 지도에 뜹니다.</b></p>
         </div>
 
         <!-- 뉴스 가져오기 -->
@@ -109,6 +144,7 @@
         <div id="topicBox" class="source-box hidden">
           <label class="field-label" for="topicSubject">주제</label>
           <input id="topicSubject" class="text-input" type="text" maxlength="200" placeholder="예: 전세 계약 시 주의사항">
+          <p class="hint">주제 한 줄만 써도 됩니다. 아래 뼈대·참고 자료는 비워 두면 AI가 구성합니다 (최신 수치·통계는 지어내지 않습니다).</p>
 
           <div class="outline-box">
             <p class="outline-guide">글 뼈대를 적으면 그 순서대로 씁니다. <b>비워 둔 칸은 AI가 채웁니다.</b></p>
@@ -596,6 +632,7 @@
 <script src="shared/trial.js"></script>
 <script src="shared/sections.js"></script>
 <script src="shared/news-extract.js"></script>
+<script src="shared/market-prompt.js"></script>
 <script src="shared/prompt.js"></script>
 <script src="shared/media.js"></script>
 <script src="shared/media-cover.js"></script>

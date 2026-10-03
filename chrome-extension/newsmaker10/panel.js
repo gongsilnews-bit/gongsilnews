@@ -21,8 +21,10 @@
     aiTabId: null,
     /* 기사 소재 — shared/prompt.js 머리말의 source 모양 그대로 */
     source: {
-      mode: "news",     // news(뉴스 가져오기) · topic(주제 입력)
+      mode: "news",     // news(뉴스) · complex(단지 시세) · local(우리동네 시세) · topic(주제)
       news: null,       // { title, publisher, publishedAt, url, body, truncated }
+      complex: { query: "", data: null, view: "brief", asking: "" }, // shared/market-prompt.js
+      local: { query: "", data: null, themes: [] },
       topic: { subject: "", intro: "", points: ["", "", ""], outro: "", memo: "" },
       angle: "",
       section1: "",     // 1단계에서 먼저 고른다 — 자유면 AI 가 고름
@@ -39,7 +41,11 @@
     status: $("statusPill"),
     tabWork: $("tabWork"), tabDraft: $("tabDraft"), draftBadge: $("draftBadge"),
     viewWork: $("viewWork"), viewDraft: $("viewDraft"),
-    newsBox: $("newsBox"), topicBox: $("topicBox"),
+    newsBox: $("newsBox"), topicBox: $("topicBox"), complexBox: $("complexBox"), localBox: $("localBox"),
+    complexQuery: $("complexQuery"), btnComplexLoad: $("btnComplexLoad"), complexPick: $("complexPick"),
+    complexCard: $("complexCard"), complexAsking: $("complexAsking"),
+    localQuery: $("localQuery"), btnLocalLoad: $("btnLocalLoad"), localPick: $("localPick"),
+    localCard: $("localCard"), localThemes: $("localThemes"),
     btnGrabNews: $("btnGrabNews"), newsUrl: $("newsUrl"), btnFetchUrl: $("btnFetchUrl"),
     newsCard: $("newsCard"), newsPublisher: $("newsPublisher"), newsTitle: $("newsTitle"),
     newsFields: $("newsFields"), newsBody: $("newsBody"),
@@ -142,10 +148,117 @@
   });
 
   function renderSourceMode() {
-    const news = S.source.mode === "news";
-    sourceModeBtns.forEach((b) => b.classList.toggle("active", b.dataset.sourceMode === S.source.mode));
-    el.newsBox.classList.toggle("hidden", !news);
-    el.topicBox.classList.toggle("hidden", news);
+    const mode = S.source.mode;
+    sourceModeBtns.forEach((b) => b.classList.toggle("active", b.dataset.sourceMode === mode));
+    el.newsBox.classList.toggle("hidden", mode !== "news");
+    el.complexBox.classList.toggle("hidden", mode !== "complex");
+    el.localBox.classList.toggle("hidden", mode !== "local");
+    el.topicBox.classList.toggle("hidden", mode !== "topic");
+  }
+
+  /* ═════════════ ②·③ 실거래 시세 — 단지 이름·동 이름 → 공실뉴스 서버(국토부 실거래가) ═════════════ */
+  const marketBox = (mode) => (mode === "complex"
+    ? { state: S.source.complex, query: el.complexQuery, load: el.btnComplexLoad, pick: el.complexPick, card: el.complexCard }
+    : { state: S.source.local, query: el.localQuery, load: el.btnLocalLoad, pick: el.localPick, card: el.localCard });
+
+  function loadMarket(mode, pick = 0) {
+    const box = marketBox(mode);
+    guard(box.load, "불러오는 중", async () => {
+      const query = box.query.value.trim();
+      if (query.length < 2) throw new Error(mode === "complex" ? "단지 이름을 입력해 주세요 (예: 대치 은마)." : "동 이름을 입력해 주세요 (예: 대치동).");
+      const url = `${GWNaverBlog.SITE_URL}/api/extension/apt-trades?mode=${mode}&q=${encodeURIComponent(query)}&pick=${pick}`;
+      const response = await fetch(url, { credentials: "include", cache: "no-store" }).catch(() => null);
+      const data = response ? await response.json().catch(() => null) : null;
+      if (!data) throw new Error("실거래가 자료를 받지 못했습니다. 인터넷 연결을 확인해 주세요.");
+      if (!data.success) throw new Error(data.error || "실거래가 자료를 받지 못했습니다.");
+      box.state.query = query;
+      box.state.data = data;
+      S.source.mode = mode;
+      /* 시세 기사는 부동산·경제 — 1단계를 아직 안 골랐으면 골라 둔다 (2차는 AI 가 고른다) */
+      if (!S.source.section1) {
+        S.source.section1 = "부동산·경제";
+        S.source.section2 = "";
+        renderSections();
+      }
+      renderSourceMode();
+      renderMarket(mode);
+      refreshButtons();
+      save();
+      const empty = mode === "complex" ? !data.summary.tradeCount : !(data.summary.recentCount + data.summary.beforeCount);
+      if (empty) toast("이 기간에 신고된 아파트 매매가 없습니다. 다른 단지·동을 골라 보세요.", "bad", 8000);
+      else toast(`${data.target.name} 실거래 자료를 불러왔습니다. 숫자를 확인한 뒤 AI 작성으로 넘어가세요.`, "ok", 6000);
+      status(empty ? "자료 없음" : "소재 준비됨", empty ? "bad" : "ok");
+    });
+  }
+
+  el.btnComplexLoad.addEventListener("click", () => loadMarket("complex"));
+  el.btnLocalLoad.addEventListener("click", () => loadMarket("local"));
+  el.complexQuery.addEventListener("keydown", (e) => { if (e.key === "Enter") loadMarket("complex"); });
+  el.localQuery.addEventListener("keydown", (e) => { if (e.key === "Enter") loadMarket("local"); });
+  el.complexPick.addEventListener("change", () => loadMarket("complex", Number(el.complexPick.value) || 0));
+  el.localPick.addEventListener("change", () => loadMarket("local", Number(el.localPick.value) || 0));
+
+  const marketViewBtns = document.querySelectorAll(".chip[data-market-view]");
+  marketViewBtns.forEach((btn) => btn.addEventListener("click", () => {
+    S.source.complex.view = btn.dataset.marketView;
+    marketViewBtns.forEach((b) => b.classList.toggle("active", b === btn));
+    save();
+  }));
+  el.complexAsking.addEventListener("input", () => { S.source.complex.asking = el.complexAsking.value; saveSoon(); });
+
+  function escAttr(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  el.localThemes.innerHTML = GW_LOCAL_THEMES.map((t) => `<button class="chip" data-local-theme="${escAttr(t)}" type="button">${escAttr(t)}</button>`).join("");
+  el.localThemes.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-local-theme]");
+    if (!btn) return;
+    const themes = S.source.local.themes;
+    const at = themes.indexOf(btn.dataset.localTheme);
+    if (at >= 0) themes.splice(at, 1);
+    else themes.push(btn.dataset.localTheme);
+    renderMarket("local");
+    save();
+  });
+
+  /* 불러온 숫자를 표로 보여 준다 — 대표님이 눈으로 확인한 뒤 AI 로 넘어간다 */
+  function renderMarket(mode) {
+    const box = marketBox(mode);
+    const d = box.state.data;
+    if (mode === "complex") marketViewBtns.forEach((b) => b.classList.toggle("active", b.dataset.marketView === (S.source.complex.view || "brief")));
+    if (mode === "local") {
+      el.localThemes.querySelectorAll("[data-local-theme]").forEach((b) => b.classList.toggle("active", S.source.local.themes.includes(b.dataset.localTheme)));
+    }
+    const candidates = (d && d.candidates) || [];
+    box.pick.classList.toggle("hidden", candidates.length < 2);
+    if (candidates.length > 1) {
+      box.pick.innerHTML = candidates.map((c, i) => `<option value="${i}" ${i === d.picked ? "selected" : ""}>${escAttr(c.name)} — ${escAttr(c.address)}</option>`).join("");
+    }
+    box.card.classList.toggle("hidden", !d);
+    if (!d) return;
+    const s = d.summary;
+    if (mode === "complex") {
+      const rows = s.areas.slice(0, 4).map((a) => `<tr><td>${escAttr(a.areaKey)} (${a.pyeong}평)</td><td class="num">${a.tradeCount}건</td>` +
+        `<td class="num">${a.latest ? `${gwPrice(a.latest.price)}<br><small>${a.latest.date} · ${a.latest.floor}층</small>` : "-"}</td>` +
+        `<td class="num">${a.high ? gwPrice(a.high.price) : "-"}</td><td class="num">${a.jeonseRatio ? `${a.jeonseRatio}%` : "-"}</td></tr>`).join("");
+      box.card.innerHTML = `<strong class="mk-title">${escAttr(d.complexName || d.target.name)}</strong>` +
+        `<span class="mk-sub">${escAttr(d.target.address)}${s.buildYear ? ` · ${s.buildYear}년 준공` : ""} · ${escAttr(d.period)}</span>` +
+        (s.tradeCount
+          ? `<table><tr><th>전용면적</th><th>매매</th><th>최근 거래</th><th>최고가</th><th>전세가율</th></tr>${rows}</table>` +
+            `<div class="mk-note">최근 거래는 신고가 덜 끝나 더 늘어날 수 있습니다.</div>`
+          : `<div class="mk-empty">이 기간에 신고된 매매가 없습니다.</div>`);
+      return;
+    }
+    const top = s.topComplexes.map((c) => `<tr><td>${escAttr(c.name)}</td><td class="num">${c.tradeCount}건</td><td class="num">${gwPrice(c.medianPerPyeong)}</td></tr>`).join("");
+    box.card.innerHTML = `<strong class="mk-title">${escAttr(d.target.name)}</strong>` +
+      `<span class="mk-sub">${escAttr(d.period)}</span>` +
+      `<table><tr><th>기간</th><th>매매</th><th>3.3㎡당 중앙값</th></tr>` +
+      `<tr><td>${escAttr(s.periodRecent)}</td><td class="num">${s.recentCount}건</td><td class="num">${gwPrice(s.recentMedianPerPyeong)}</td></tr>` +
+      `<tr><td>${escAttr(s.periodBefore)}</td><td class="num">${s.beforeCount}건</td><td class="num">${gwPrice(s.beforeMedianPerPyeong)}</td></tr></table>` +
+      (top ? `<table><tr><th>거래 많은 단지</th><th>매매</th><th>3.3㎡당</th></tr>${top}</table>` : "") +
+      `<div class="mk-note">${escAttr(s.pendingMonths)}은 신고 진행 중이라 비교에서 뺐습니다 (지금까지 ${s.pendingCount}건).</div>`;
   }
 
   /* 뉴스로 읽을 수 없는 탭 — 브라우저·확장 화면, AI 화면, 공실뉴스 관리 화면 */
@@ -430,7 +543,11 @@
     guard(el.btnOpenAi, "기사 작성 요청 중", async () => {
       if (!sectionReady()) throw new Error("먼저 1단계에서 카테고리를 2차까지 골라 주세요.");
       if (!gwSourceReady(S.source)) {
-        throw new Error(S.source.mode === "news" ? "먼저 2단계에서 뉴스를 가져와 주세요." : "먼저 2단계에 주제를 입력해 주세요.");
+        throw new Error({
+          news: "먼저 2단계에서 뉴스를 가져와 주세요.",
+          complex: "먼저 2단계에서 단지 이름을 넣고 [시세 불러오기]를 눌러 주세요.",
+          local: "먼저 2단계에서 동 이름을 넣고 [시세 불러오기]를 눌러 주세요.",
+        }[S.source.mode] || "먼저 2단계에 주제를 입력해 주세요.");
       }
       /* 새 기사를 쓰면 지난 초안에 넣은 사진은 뺀다 — 새 초안에 새 대표 이미지를 만든다 */
       if (S.media.length) {
@@ -1126,6 +1243,8 @@
         media: prepared.media.filter((item, index) => !prepared.failed.includes(index)),
         /* 기사쓰기 폼에서 1·2차 섹션까지 고른다 */
         section: chosenSection(),
+        /* 실거래 시세 기사는 단지·동 위치를 위치등록 칸에 — 우리동네뉴스 지도에 뜬다 */
+        coords: marketCoords(),
       });
 
       if (!res || !res.ok) throw new Error((res && res.error) || "기사쓰기 폼에 초안을 넣지 못했습니다.");
@@ -1135,6 +1254,12 @@
       status("전송 완료", "ok");
     })
   );
+
+  function marketCoords() {
+    if (S.source.mode !== "complex" && S.source.mode !== "local") return null;
+    const target = S.source[S.source.mode]?.data?.target;
+    return target && target.lat && target.lng ? { lat: Number(target.lat), lng: Number(target.lng) } : null;
+  }
 
   /* ═════════════ 대표 이미지 자동 생성 ═════════════
      초안을 가져오면 같은 AI 대화에 "본문에 맞는 대표 이미지 1장"을 요청하고,
@@ -1348,6 +1473,9 @@
     el.topicIntro.value = S.source.topic.intro;
     el.topicOutro.value = S.source.topic.outro;
     el.angleInput.value = S.source.angle;
+    el.complexQuery.value = S.source.complex.query;
+    el.complexAsking.value = S.source.complex.asking;
+    el.localQuery.value = S.source.local.query;
     el.autoCover.checked = S.autoCover;
 
     /* 기억해 둔 AI 탭이 아직 살아 있는지 확인한다 */
@@ -1355,6 +1483,8 @@
 
     renderSourceMode();
     renderNews();
+    renderMarket("complex");
+    renderMarket("local");
     renderPoints();
     renderSections();
     if (!S.aiTabId) S.writing = false; // 기사를 쓰던 AI 탭이 닫혔으면 안내도 내린다
@@ -1365,7 +1495,11 @@
   /* 저장해 둔 소재가 예전 모양이거나 일부가 비어도 화면이 깨지지 않게 채운다 */
   function normalizeSource(saved, defaults) {
     const src = Object.assign({}, defaults, saved && typeof saved === "object" ? saved : {});
-    if (!["news", "topic"].includes(src.mode)) src.mode = "news";
+    if (!["news", "complex", "local", "topic"].includes(src.mode)) src.mode = "news";
+    src.complex = Object.assign({ query: "", data: null, view: "brief", asking: "" }, src.complex || {});
+    if (!GW_MARKET_VIEWS[src.complex.view]) src.complex.view = "brief";
+    src.local = Object.assign({ query: "", data: null, themes: [] }, src.local || {});
+    if (!Array.isArray(src.local.themes)) src.local.themes = [];
     if (!src.news || !src.news.title) src.news = null;
     src.topic = Object.assign({ subject: "", intro: "", outro: "", memo: "" }, src.topic || {});
     ["subject", "intro", "outro", "memo"].forEach((key) => {

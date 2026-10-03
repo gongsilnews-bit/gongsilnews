@@ -322,6 +322,19 @@
       }
     }
 
+    /* 6. 위치등록 — 실거래 시세 기사(단지·동)는 좌표가 있어야 우리동네뉴스 지도에 뜬다.
+          칸은 "위도, 경도" 한 줄이다 (NewsWriteForm 의 위치등록). */
+    const coords = draft.coords;
+    if (coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lng)) {
+      const coordEl = findCoordInput();
+      if (coordEl) {
+        gwSetReactValue(coordEl, `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`);
+        done.push("위치(지도)");
+      } else {
+        failed.push("위치(지도)");
+      }
+    }
+
     /* 무엇이 들어갔고 무엇이 안 들어갔는지 그대로 말한다. */
     if (failed.length) {
       gwToast(`${done.join(" · ")} 입력됨. 안 된 것 — ${failed.join(" · ")}`, "error", 9000);
@@ -333,6 +346,12 @@
 
     titleEl.scrollIntoView({ behavior: "smooth", block: "center" });
     return done.length > 0;
+  }
+
+  /* 위치등록 칸 — "위도, 경도" 예시가 적힌 입력칸 */
+  function findCoordInput() {
+    return Array.from(document.querySelectorAll("input[type='text'], input:not([type])"))
+      .find((input) => /^예:\s*\d+\.\d+\s*,\s*\d+\.\d+/.test(input.getAttribute("placeholder") || "")) || null;
   }
 
   /* ── 섹션 고르기 ──

@@ -1,12 +1,15 @@
 /* ══════════════════════════════════════════════════════════════
    뉴스메이커 기사 프롬프트 — 기사 기본틀은 여기 한 곳에만 있다
 
-   소재(source)는 두 가지다.
-   - news  : 가져온 뉴스 원문. 사실만 뽑아 공실뉴스 기사로 "완전히 새로" 쓴다 (원문 문장 옮기기 금지, 출처 표기)
-   - topic : 사용자가 넣은 주제와 참고 메모. 확정된 일반 지식과 메모의 사실로 쓴다 (수치·인물·통계 지어내기 금지)
+   소재(source)는 네 가지다.
+   - news    : 가져온 뉴스 원문. 사실만 뽑아 공실뉴스 기사로 "완전히 새로" 쓴다 (원문 문장 옮기기 금지, 출처 표기)
+   - complex : 아파트 단지 이름 → 국토부 실거래가로 계산한 표 (shared/market-prompt.js)
+   - local   : 동 이름 → 그 동네 아파트 실거래 흐름 (shared/market-prompt.js)
+   - topic   : 사용자가 넣은 주제와 참고 메모. 확정된 일반 지식과 메모의 사실로 쓴다 (수치·인물·통계 지어내기 금지)
 
    source = {
-     mode: "news" | "topic",
+     mode: "news" | "complex" | "local" | "topic",
+     complex: { query, data, view, asking },  local: { query, data, themes[] },   // market-prompt.js 머리말
      news: { title, publisher, publishedAt, url, body, truncated } | null,
      topic: { subject, intro, points[], outro, memo },   // 서론·본론(여러 개)·결론은 비워도 된다
      angle: "",                    // 추가로 바라는 관점·요청 (두 소재 공통)
@@ -17,8 +20,11 @@
    ══════════════════════════════════════════════════════════════ */
 
 /* 소재가 쓸 만큼 준비됐는가 */
+const gwIsMarket = (source) => Boolean(source && (source.mode === "complex" || source.mode === "local"));
+
 function gwSourceReady(source) {
   if (!source) return false;
+  if (gwIsMarket(source)) return gwMarketReady(source); // shared/market-prompt.js
   if (source.mode === "news") return Boolean(source.news && source.news.title && source.news.body);
   return Boolean(source.topic && String(source.topic.subject || "").trim());
 }
@@ -26,6 +32,7 @@ function gwSourceReady(source) {
 /* 소재 한 줄 이름 — 화면 표시·이미지 프롬프트용 */
 function gwSourceLabel(source) {
   if (!source) return "";
+  if (gwIsMarket(source)) return gwMarketLabel(source);
   if (source.mode === "news" && source.news) {
     return `${source.news.publisher ? `[${source.news.publisher}] ` : ""}${source.news.title}`;
   }
@@ -44,6 +51,7 @@ function gwNewsDate(value) {
 /* 소재를 프롬프트에 넣을 글로 */
 function gwSourceText(source) {
   const s = source || {};
+  if (gwIsMarket(s)) return gwMarketText(s);
   const angle = String(s.angle || "").trim();
   const angleText = angle ? `\n\n[추가 요청 — 사용자가 바라는 관점]\n${angle}` : "";
 
@@ -228,9 +236,11 @@ function gwBuildPrompt(source, opts) {
   const len = GW_LENGTH[o.length] || GW_LENGTH.normal;
   const kind = GW_KIND[o.kind] || GW_KIND.news;
   const isNews = s.mode === "news";
-  const intro = isNews
-    ? "아래 원문 기사의 사실을 바탕으로, 공실뉴스 독자를 위한 기사 1건을 새로 작성하십시오."
-    : "아래 주제로 공실뉴스 독자에게 흥미롭고 실생활에 유익한 기사 1건을 작성하십시오.";
+  const isMarket = gwIsMarket(s);
+  const intro = isMarket ? gwMarketIntro(s)
+    : isNews
+      ? "아래 원문 기사의 사실을 바탕으로, 공실뉴스 독자를 위한 기사 1건을 새로 작성하십시오."
+      : "아래 주제로 공실뉴스 독자에게 흥미롭고 실생활에 유익한 기사 1건을 작성하십시오.";
 
   return `당신은 생활·경제 전문 매체 "공실뉴스"의 기자입니다.
 ${intro}
@@ -239,7 +249,7 @@ ${gwSourceText(s)}
 
 ${gwSectionText(s)}
 
-${isNews ? gwNewsRules(s.news) : gwTopicRules(s.topic, o)}
+${isMarket ? gwMarketRules(s) : isNews ? gwNewsRules(s.news) : gwTopicRules(s.topic, o)}
 
 [기사 스타일] ${kind.label}
 ${kind.brief}
@@ -267,10 +277,13 @@ ${GW_ARTICLE_OUTPUT}`;
    수정 요청 — 같은 대화에 이어 붙인다 (AI 가 앞서 쓴 기사와 소재를 기억하고 있다)
    ══════════════════════════════════════════════════════════════ */
 function gwBuildRevisePrompt(request, source) {
-  const keep = source && source.mode === "news"
-    ? `- [원문 기사]의 숫자·날짜·이름·기관명은 바꾸거나 새로 만들지 마십시오.
+  const keep = gwIsMarket(source)
+    ? `- 실거래 자료의 금액·면적·층·건수·날짜·비율은 바꾸거나 새로 만들지 마십시오. "국토교통부 실거래가" 출처 표기는 유지하십시오.
+- 인용·가격 전망·매수 권유를 새로 넣지 마십시오.`
+    : source && source.mode === "news"
+      ? `- [원문 기사]의 숫자·날짜·이름·기관명은 바꾸거나 새로 만들지 마십시오.
 - 원문 문장을 그대로 옮기지 말고, 출처 표기("${(source.news && source.news.publisher) || "원문 언론사"} 보도에 따르면", 마지막 줄 참고 표기)는 유지하십시오.`
-    : `- [참고 메모]의 사실은 바꾸지 말고, 실재하지 않는 인물·통계·수치를 새로 만들지 마십시오.`;
+      : `- [참고 메모]의 사실은 바꾸지 말고, 실재하지 않는 인물·통계·수치를 새로 만들지 마십시오.`;
   return `위에서 작성한 기사를 아래 요청대로 고쳐 주십시오.
 
 요청: ${request}

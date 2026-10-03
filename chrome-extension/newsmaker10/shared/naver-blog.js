@@ -117,6 +117,9 @@
 
   /* 글 끝 "참고 자료" — 뉴스를 소재로 썼으면 원문 언론사·제목·링크를 밝힌다. 주제로 썼으면 붙이지 않는다. */
   function sourceBlockLines(source) {
+    if (source && (source.mode === "complex" || source.mode === "local")) {
+      return { lines: ["국토교통부 실거래가 공개시스템 (신고 기준 · 공실뉴스 정리)"], url: "https://rt.molit.go.kr/" };
+    }
     const news = source && source.mode === "news" ? source.news : null;
     if (!news || !news.title) return null;
     const when = news.publishedAt ? formatDate(news.publishedAt) : "";

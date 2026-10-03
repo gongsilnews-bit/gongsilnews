@@ -1428,3 +1428,27 @@ button.is-busy { display: flex; align-items: center; justify-content: center; }
   box-shadow: 0 6px 18px rgba(15, 23, 42, .28);
   pointer-events: none;
 }
+
+/* ─────────────── 2단계 소재 4칸 · 실거래 시세 (shared/market-prompt.js) ─────────────── */
+.source-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
+.source-mode-grid .chip { width: 100% }
+.market-pick { margin-top: 6px }
+.market-chips { flex-wrap: wrap; margin-bottom: 8px }
+.market-chips .chip { flex: 0 0 auto }
+.market-card {
+  margin: 8px 0 10px;
+  padding: 10px 11px;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-sm);
+  background: #eff6ff;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.market-card .mk-title { display: block; font-size: 13.5px; font-weight: 800; color: #1e3a8a }
+.market-card .mk-sub { display: block; margin-bottom: 6px; font-size: 11px; color: var(--text-muted) }
+.market-card table { width: 100%; border-collapse: collapse; margin-top: 4px; background: #fff; border-radius: 6px; overflow: hidden }
+.market-card th, .market-card td { padding: 4px 6px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 11.5px; white-space: nowrap }
+.market-card th { background: #f1f5f9; font-weight: 800; color: #334155 }
+.market-card td.num { text-align: right; font-weight: 700 }
+.market-card .mk-note { margin-top: 6px; font-size: 11px; color: #92400e }
+.market-card .mk-empty { color: #b91c1c; font-weight: 700 }

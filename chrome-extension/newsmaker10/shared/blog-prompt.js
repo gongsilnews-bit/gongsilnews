@@ -108,6 +108,13 @@ function gwBlogSourceLines(source) {
       `- 원문 제목: ${s.news.title || ""}`,
     ].join("\n");
   }
+  if (s.mode === "complex" || s.mode === "local") {
+    return [
+      `- 소재: ${s.mode === "complex" ? "아파트 단지" : "동네"} 실거래 시세${typeof gwSourceLabel === "function" ? ` — ${gwSourceLabel(s)}` : ""}`,
+      "- 자료: 국토교통부 실거래가 공개시스템 (신고 기준, 최근 거래는 집계 중)",
+      "- 숫자는 [참조 기사]에 있는 것만 쓰고, 본문에서 \"국토교통부 실거래가에 따르면\"처럼 출처를 한 번 밝힐 것",
+    ].join("\n");
+  }
   const t = s.topic || {};
   const memo = String(t.memo || "").trim();
   return [`- 소재: 주제 — ${String(t.subject || "").trim()}`, memo ? `- 참고 메모: ${memo}` : ""]

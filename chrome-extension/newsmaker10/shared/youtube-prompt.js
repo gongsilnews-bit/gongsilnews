@@ -46,6 +46,8 @@ function gwYtSourceText(input) {
   const source = src.source || {};
   if (source.mode === "news" && source.news) {
     push("원문 출처", `${source.news.publisher || "원문 언론사"} 「${source.news.title || ""}」`);
+  } else if (source.mode === "complex" || source.mode === "local") {
+    push("자료 출처", "국토교통부 실거래가 공개시스템 (신고 기준) — 원고 안에서 출처를 한 번 밝힐 것");
   } else if (source.topic && source.topic.subject) {
     push("주제", source.topic.subject);
   }

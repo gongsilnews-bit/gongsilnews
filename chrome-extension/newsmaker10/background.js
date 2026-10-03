@@ -51,6 +51,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             article: msg.article,
             media: msg.media || [],
             section: msg.section || null,
+            coords: msg.coords || null, // 실거래 시세 기사 — 위치등록 칸 (우리동네뉴스 지도)
             createdAt: Date.now(),
           },
         });
