@@ -139,3 +139,10 @@ test("시세표 그림에 들어갈 표 — 화면 표와 같은 숫자", () => 
   assert.equal(chart.gwMarketChartTitle(localSource).title, "서울 강남구 대치동 아파트 실거래 동향");
   assert.ok(chart.GW_MARKET_CHART_CAPTION.includes("국토교통부"));
 });
+
+test("우리동네도 분석 관점 — 기본은 객관적 브리핑", () => {
+  assert.ok(p.gwBuildPrompt(localSource, {}).includes("[분석 관점] 객관적 브리핑"));
+  const story = JSON.parse(JSON.stringify(localSource));
+  story.local.view = "story";
+  assert.ok(p.gwBuildPrompt(story, {}).includes("[분석 관점] 동네 흐름 해설"));
+});

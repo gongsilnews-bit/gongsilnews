@@ -24,7 +24,7 @@
       mode: "news",     // news(뉴스) · complex(단지 시세) · local(우리동네 시세) · topic(주제)
       news: null,       // { title, publisher, publishedAt, url, body, truncated }
       complex: { query: "", data: null, view: "brief", asking: "" }, // shared/market-prompt.js
-      local: { query: "", data: null, themes: [] },
+      local: { query: "", data: null, view: "brief", themes: [] },
       topic: { subject: "", intro: "", points: ["", "", ""], outro: "", memo: "" },
       angle: "",
       section1: "자유",  // 카테고리는 고르지 않는다 — 늘 자유(AI 가 기사에 맞게 고름)
@@ -192,6 +192,13 @@
   el.complexPick.addEventListener("change", () => loadMarket("complex", Number(el.complexPick.value) || 0));
   el.localPick.addEventListener("change", () => loadMarket("local", Number(el.localPick.value) || 0));
 
+  const localViewBtns = document.querySelectorAll(".chip[data-local-view]");
+  localViewBtns.forEach((btn) => btn.addEventListener("click", () => {
+    S.source.local.view = btn.dataset.localView;
+    localViewBtns.forEach((b) => b.classList.toggle("active", b === btn));
+    save();
+  }));
+
   const marketViewBtns = document.querySelectorAll(".chip[data-market-view]");
   marketViewBtns.forEach((btn) => btn.addEventListener("click", () => {
     S.source.complex.view = btn.dataset.marketView;
@@ -223,6 +230,7 @@
     const d = box.state.data;
     if (mode === "complex") marketViewBtns.forEach((b) => b.classList.toggle("active", b.dataset.marketView === (S.source.complex.view || "brief")));
     if (mode === "local") {
+      localViewBtns.forEach((b) => b.classList.toggle("active", b.dataset.localView === (S.source.local.view || "brief")));
       el.localThemes.querySelectorAll("[data-local-theme]").forEach((b) => b.classList.toggle("active", S.source.local.themes.includes(b.dataset.localTheme)));
     }
     const candidates = (d && d.candidates) || [];
@@ -1535,7 +1543,8 @@
     if (!["news", "complex", "local", "topic"].includes(src.mode)) src.mode = "news";
     src.complex = Object.assign({ query: "", data: null, view: "brief", asking: "" }, src.complex || {});
     if (!GW_MARKET_VIEWS[src.complex.view]) src.complex.view = "brief";
-    src.local = Object.assign({ query: "", data: null, themes: [] }, src.local || {});
+    src.local = Object.assign({ query: "", data: null, view: "brief", themes: [] }, src.local || {});
+    if (!GW_LOCAL_VIEWS[src.local.view]) src.local.view = "brief";
     if (!Array.isArray(src.local.themes)) src.local.themes = [];
     if (!src.news || !src.news.title) src.news = null;
     src.topic = Object.assign({ subject: "", intro: "", outro: "", memo: "" }, src.topic || {});

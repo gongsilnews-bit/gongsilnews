@@ -132,6 +132,7 @@
               <dt>3.3㎡당 가격</dt><dd>1평(3.3㎡)에 얼마인지로 바꾼 가격입니다. 넓이가 다른 집끼리도 비교할 수 있습니다.</dd>
               <dt>중앙값</dt><dd>거래를 가격 순으로 줄 세웠을 때 <b>가운데</b> 값입니다. 아주 비싼 거래 몇 건 때문에 평균이 부풀려지는 것을 막아 줍니다.</dd>
               <dt>거래 많은 단지</dt><dd>그 석 달 동안 매매 신고가 많았던 단지 3곳입니다. 동네에서 거래가 활발한 곳을 보여 줄 뿐, 좋은 단지 순위는 아닙니다.</dd>
+              <dt>분석 관점</dt><dd>객관적 브리핑: 숫자를 차분히 정리 (처음이면 이것으로) · 동네 흐름 해설: 숫자가 동네에 어떤 의미인지 풀어 쓰기</dd>
               <dt>동네 테마</dt><dd>기사를 어떤 시선으로 쓸지 정하는 것입니다. 고른다고 자료에 없는 사실(학교 순위, 개발 일정 등)을 AI가 지어내지는 않습니다.</dd>
             </dl>
           </details>
@@ -141,6 +142,11 @@
           </div>
           <select id="localPick" class="text-input market-pick hidden" aria-label="다른 동 고르기"></select>
           <div id="localCard" class="market-card hidden"></div>
+          <label class="field-label">분석 관점</label>
+          <div class="chips-row market-chips" role="group" aria-label="우리동네 분석 관점">
+            <button class="chip active" data-local-view="brief" type="button">객관적 브리핑</button>
+            <button class="chip" data-local-view="story" type="button">동네 흐름 해설</button>
+          </div>
           <label class="field-label">동네 테마 <span class="field-note">(선택 — 기사 관점)</span></label>
           <div id="localThemes" class="chips-row market-chips" role="group" aria-label="동네 테마"></div>
           <p class="hint">이번 달·지난달은 신고가 끝나지 않아 빼고 비교합니다. 기사를 보내면 <b>동 위치가 기사 위치등록 칸에 들어가 우리동네뉴스 지도에 뜹니다.</b></p>

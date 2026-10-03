@@ -6,7 +6,7 @@
    기획: docs/2026-10-03_newsmaker_complex_and_local_plan.md (회의로 고친 방향)
 
    source.complex = { query, data, view, asking }   // data = 서버 응답, view = 분석 관점, asking = 호가(선택, 사용자 입력)
-   source.local   = { query, data, themes[] }       // themes = 동네 테마 칩
+   source.local   = { query, data, view, themes[] } // view = 분석 관점(기본 객관적 브리핑), themes = 동네 테마 칩
    ══════════════════════════════════════════════════════════════ */
 
 const GW_MARKET_VIEWS = {
@@ -14,6 +14,11 @@ const GW_MARKET_VIEWS = {
   high: { label: "신고가·회복", guide: "기간 최고가와 최근 거래를 비교해 가격 회복·신고가 여부를 짚을 것. 표에 최고가 기록이 없으면 '신고가'라고 쓰지 말 것" },
   flow: { label: "거래 흐름", guide: "면적별 거래 건수와 거래 시점의 흐름을 중심으로 쓸 것. 매수·매도자의 심리나 분위기를 지어내지 말 것" },
   jeonse: { label: "전세가율", guide: "최근 전세 거래와 전세가율(매매가 대비 전세가 비율)을 중심으로, 실거주·임대 수요 관점에서 쓸 것" },
+};
+
+const GW_LOCAL_VIEWS = {
+  brief: { label: "객관적 브리핑", guide: "동네 거래 건수·가격 변화와 거래 많은 단지를 중립적으로 정리하는 브리핑. 좋다·나쁘다 평가 없이 숫자를 차례로 전할 것" },
+  story: { label: "동네 흐름 해설", guide: "숫자가 동네 실수요자에게 어떤 의미인지 풀어 주는 해설. 고른 테마를 관점으로 삼되 자료에 없는 사실은 쓰지 말 것" },
 };
 
 const GW_LOCAL_THEMES = ["학군", "역세권·교통", "재건축·재개발", "거래량 변화", "전세 시장"];
@@ -101,7 +106,8 @@ function gwMarketText(source) {
     const view = GW_MARKET_VIEWS[source.complex.view] || GW_MARKET_VIEWS.brief;
     return `[아파트 단지 실거래 자료 — 국토교통부 실거래가 공개 자료를 공실뉴스가 정리]\n${gwComplexDataText(source.complex)}\n\n[분석 관점] ${view.label}\n- ${view.guide}${angleText}`;
   }
-  return `[동네 아파트 실거래 자료 — 국토교통부 실거래가 공개 자료를 공실뉴스가 정리]\n${gwLocalDataText(source.local)}${angleText}`;
+  const localView = GW_LOCAL_VIEWS[source.local.view] || GW_LOCAL_VIEWS.brief;
+  return `[동네 아파트 실거래 자료 — 국토교통부 실거래가 공개 자료를 공실뉴스가 정리]\n${gwLocalDataText(source.local)}\n\n[분석 관점] ${localView.label}\n- ${localView.guide}${angleText}`;
 }
 
 function gwMarketIntro(source) {
@@ -139,6 +145,6 @@ function gwMarketRules(source) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    GW_MARKET_VIEWS, GW_LOCAL_THEMES, gwPrice, gwMarketReady, gwMarketLabel, gwMarketText, gwMarketIntro, gwMarketRules,
+    GW_MARKET_VIEWS, GW_LOCAL_VIEWS, GW_LOCAL_THEMES, gwPrice, gwMarketReady, gwMarketLabel, gwMarketText, gwMarketIntro, gwMarketRules,
   };
 }
