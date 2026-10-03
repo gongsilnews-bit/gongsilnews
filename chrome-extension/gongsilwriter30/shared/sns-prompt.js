@@ -227,8 +227,8 @@ function gwSnsCompose(channel, post, ctx) {
 }
 
 /* ── 사진 고르기: 2번 기사 사진 → 플랫폼별 순서·장수 ──
-   - 확인서 카드(proof)는 글자가 잘리므로 뺀다.
-   - 실제 사진(대표 → 나머지) → 지도·로드뷰(인스타만) → AI 이미지 순.
+   - 실제 사진(대표 먼저) → 공실목록 캡처(proof) → 지도·로드뷰 카드 → AI 이미지 순.
+   - 플랫폼 허용 장수(페이스북 4, 스레드 4, 인스타 10)까지 최대한 담고, 화면에서 직접 고르거나 뺄 수 있게 한다.
    - 대표(1번)는 실제 사진이 있으면 반드시 실제 사진 — AI 이미지로 매물 사진을 대신하지 않는다. */
 function gwSnsIsAi(item) {
   return Boolean(item && item.kind === "ai" && !item.real);
@@ -236,13 +236,15 @@ function gwSnsIsAi(item) {
 
 function gwSnsPickMedia(channel, media) {
   const info = GW_SNS_CHANNELS[channel] || GW_SNS_CHANNELS.facebook;
-  const list = (Array.isArray(media) ? media : []).filter((item) => item && item.url && item.kind !== "proof");
+  const list = (Array.isArray(media) ? media : []).filter((item) => item && item.url);
   const isCard = (item) => item.kind === "map" || item.kind === "roadview";
-  const real = list.filter((item) => !gwSnsIsAi(item) && !isCard(item));
+  const isProof = (item) => item.kind === "proof";
+  const real = list.filter((item) => !gwSnsIsAi(item) && !isCard(item) && !isProof(item));
   real.sort((a, b) => Number(Boolean(b.isCover)) - Number(Boolean(a.isCover)));
-  const cards = channel === "instagram" ? list.filter(isCard) : [];
+  const proofs = list.filter(isProof);
+  const cards = list.filter(isCard);
   const ai = list.filter(gwSnsIsAi);
-  return [...real, ...cards, ...ai]
+  return [...real, ...proofs, ...cards, ...ai]
     .slice(0, info.maxMedia)
     .map((item) => ({ url: item.url, kind: item.kind || "photo", caption: item.caption || "", ai: gwSnsIsAi(item) }));
 }

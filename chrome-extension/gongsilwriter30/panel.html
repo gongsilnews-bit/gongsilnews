@@ -526,8 +526,8 @@
         <button class="image-style" data-image-style="animation" type="button">애니메이션</button>
         <button class="image-style" data-image-style="infographic" type="button">통계 도표</button>
       </div>
-      <textarea id="imageRequest" class="image-request" rows="2" maxlength="1600"
-                placeholder="표현할 내용이나 스타일을 입력하세요. 기사 일부를 붙여 넣어도 됩니다. 비워 두면 기사에서 자동 선택합니다."></textarea>
+      <input id="imageRequest" type="text" class="image-request" maxlength="300"
+             placeholder="원하는 화풍·스타일 직접 입력 (예: 픽사 애니메이션풍, 빈티지 흑백, 수채화)">
       <button id="btnMakeImage" class="btn-sub btn-in-box" type="button">AI 이미지 만들기</button>
     </div>
 
@@ -571,8 +571,8 @@
         <button class="image-style blog-image-style" data-blog-image-style="animation" type="button">애니메이션</button>
         <button class="image-style blog-image-style" data-blog-image-style="infographic" type="button">통계 도표</button>
       </div>
-      <textarea id="blogImageRequest" class="image-request" rows="2" maxlength="1600"
-                placeholder="표현할 장면을 입력하세요. 비워 두면 블로그 본문에서 핵심 장면을 고릅니다."></textarea>
+      <input id="blogImageRequest" type="text" class="image-request" maxlength="300"
+             placeholder="원하는 화풍·스타일 직접 입력 (예: 픽사 애니메이션풍, 빈티지 흑백, 수채화)">
       <button id="btnMakeBlogImage" class="btn-sub btn-in-box" type="button">AI 이미지 만들기</button>
     </div>
 
@@ -625,8 +625,8 @@
         <button class="image-style sns-image-style" data-sns-image-style="animation" type="button">애니메이션</button>
         <button class="image-style sns-image-style" data-sns-image-style="infographic" type="button">통계 도표</button>
       </div>
-      <textarea id="snsImageRequest" class="image-request" rows="2" maxlength="1600"
-                placeholder="표현할 장면을 입력하세요. 비워 두면 이 플랫폼 글에서 핵심 장면을 고릅니다."></textarea>
+      <input id="snsImageRequest" type="text" class="image-request" maxlength="300"
+             placeholder="원하는 화풍·스타일 직접 입력 (예: 픽사 애니메이션풍, 빈티지 흑백, 수채화)">
       <button id="btnMakeSnsImage" class="btn-sub btn-in-box" type="button">AI 이미지 만들기</button>
       <p class="hint">AI 이미지는 지역 분위기·교통·도표용입니다. 실제 매물 사진이 있으면 대표(1번)로 쓸 수 없습니다.</p>
     </div>

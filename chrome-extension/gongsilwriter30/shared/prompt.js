@@ -146,23 +146,23 @@ function gwBuildImagePrompt(vacancy, article, opts) {
     .filter(Boolean)
     .join("\n")
     .trim();
-  const focus = (request || articleText || subject).slice(0, 1600);
+  const focus = (articleText || subject).slice(0, 1600);
   const noun = auction ? "물건" : "매물";
   const facts = vacancy ? gwFactLines(vacancy) : `- 확인된 ${noun} 정보 없음`;
-  const focusRule = request
-    ? "아래 입력이 기사 문장이면 그중 시각적으로 표현할 핵심 장면을 고르고, 연출 지시이면 그대로 반영하십시오."
-    : "아래 기사 내용에서 가장 시각적으로 전달력이 높은 한 가지 핵심을 스스로 골라 장면으로 만드십시오.";
   const textRule = o.style === "infographic"
     ? "- 한글 문구는 꼭 필요한 짧은 항목명만 쓰고, 숫자와 단위는 아래 확인된 사실과 정확히 일치시킬 것"
     : "- 이미지 안에 글자, 숫자, 로고, 워터마크를 넣지 말 것";
 
+  const styleSection = request
+    ? `[선택한 화풍·스타일]\n사용자 직접 지정 화풍: "${request}"\n- 사용자가 원하는 위 화풍·스타일과 시각적 분위기를 1순위로 엄격히 적용하여 표현하십시오.`
+    : `[선택한 화풍·스타일]\n${style.label}\n${style.prompt}`;
+
   return `위 기사에 넣을 이미지 1장을 만들어 주십시오.
 
-[선택한 스타일] ${style.label}
-${style.prompt}
+${styleSection}
 
-[이미지로 표현할 내용]
-${focusRule}
+[이미지로 표현할 장면]
+아래 기사 내용에서 가장 시각적으로 전달력이 높은 한 가지 핵심을 스스로 골라 장면으로 만드십시오.
 ${focus}
 
 [확인된 ${noun} 사실]
@@ -179,7 +179,7 @@ ${facts}
 - 비교 수치나 증감률이 없으면 임의의 그래프, 비율, 순위를 만들지 말 것
 ${textRule}
 - 사람 얼굴과 존재하지 않는 상호·간판 이름을 넣지 말 것
-- 사용자가 입력한 요청은 반영하되, 확인된 사실과 충돌하면 사실을 우선할 것
+- 사용자가 지정한 화풍과 시각적 스타일을 최우선으로 반영하되, 사실 정보와 충돌하면 사실을 우선할 것
 
 이미지 1장만 출력하고 설명은 붙이지 마십시오.`;
 }

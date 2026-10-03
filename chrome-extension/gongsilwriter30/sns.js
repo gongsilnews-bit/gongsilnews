@@ -765,9 +765,11 @@
       save();
     });
   });
-  el.snsImageRequest.addEventListener("change", () => {
-    N.imageRequest = el.snsImageRequest.value.trim();
-    save();
+  ["input", "change"].forEach((evt) => {
+    el.snsImageRequest.addEventListener(evt, () => {
+      N.imageRequest = el.snsImageRequest.value.trim();
+      save();
+    });
   });
 
   el.btnMakeSnsImage.addEventListener("click", () =>

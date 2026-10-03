@@ -736,9 +736,11 @@
     });
   });
 
-  el.blogImageRequest.addEventListener("change", () => {
-    B.imageRequest = el.blogImageRequest.value.trim();
-    save();
+  ["input", "change"].forEach((evt) => {
+    el.blogImageRequest.addEventListener(evt, () => {
+      B.imageRequest = el.blogImageRequest.value.trim();
+      save();
+    });
   });
 
   function addBlogImage(url, slot) {

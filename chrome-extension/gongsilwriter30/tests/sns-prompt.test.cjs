@@ -88,7 +88,7 @@ test("스레드는 500자를 넘기면 링크·출처를 새 글로 나눈다", 
   assert.ok(long.posts.every((post) => post.length <= GW_SNS_CHANNELS.threads.maxChars));
 });
 
-test("사진은 실제 사진(대표 먼저) → 지도(인스타만) → AI 순으로 장수만큼 고른다", () => {
+test("사진은 실제 사진(대표 먼저) → 캡처(proof) → 지도·로드뷰 → AI 순으로 장수만큼 고른다", () => {
   const media = [
     { kind: "ai", url: "ai.png" },
     { kind: "proof", url: "proof.png" },
@@ -100,10 +100,14 @@ test("사진은 실제 사진(대표 먼저) → 지도(인스타만) → AI 순
   const ig = gwSnsPickMedia("instagram", media);
   assert.equal(ig.length, 10);
   assert.equal(ig[0].url, "p2.jpg");
-  assert.ok(!ig.some((item) => item.url === "proof.png"));
-  const fb = gwSnsPickMedia("facebook", media);
+  const fb = gwSnsPickMedia("facebook", [
+    { kind: "photo", url: "p1.jpg", isCover: true },
+    { kind: "proof", url: "proof.png" },
+    { kind: "map", url: "map.png" },
+    { kind: "roadview", url: "rv.png" },
+  ]);
   assert.equal(fb.length, 4);
-  assert.ok(!fb.some((item) => item.kind === "map"));
+  assert.deepEqual(fb.map((item) => item.url), ["p1.jpg", "proof.png", "map.png", "rv.png"]);
   const few = gwSnsPickMedia("instagram", [{ kind: "ai", url: "ai.png" }, { kind: "map", url: "m.png" }, { kind: "photo", url: "p.jpg" }]);
   assert.deepEqual(few.map((item) => item.url), ["p.jpg", "m.png", "ai.png"]);
 });

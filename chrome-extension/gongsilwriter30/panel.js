@@ -980,9 +980,11 @@
     });
   });
 
-  el.imageRequest.addEventListener("change", () => {
-    S.imageRequest = el.imageRequest.value.trim();
-    save();
+  ["input", "change"].forEach((evt) => {
+    el.imageRequest.addEventListener(evt, () => {
+      S.imageRequest = el.imageRequest.value.trim();
+      save();
+    });
   });
 
   el.btnMakeImage.addEventListener("click", () =>
