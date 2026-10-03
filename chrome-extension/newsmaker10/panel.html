@@ -58,9 +58,9 @@
     <!-- ═══════════ 뷰 1 — 소재 · AI ═══════════ -->
     <section id="viewWork" class="view active">
 
-      <!-- ── 1단계 카테고리 — 먼저 고른다 ── -->
-      <div class="card">
-        <label class="card-label">1단계 · 공실뉴스 카테고리</label>
+      <!-- ── 카테고리 — 10월 03일부터 고르지 않는다. 늘 "자유"(AI 가 기사에 맞는 카테고리를 고름). 숨겨 두고 코드는 남긴다 ── -->
+      <div class="card hidden" aria-hidden="true">
+        <label class="card-label">공실뉴스 카테고리</label>
         <!-- 우리동네뉴스 상단처럼 [1차 ▾ | 2차 ▾] 드롭다운 두 개를 한 줄에 -->
         <div class="section-pick">
           <select id="section1Select" class="section-select" aria-label="1차 카테고리"></select>
@@ -70,9 +70,9 @@
         <p id="sectionHint" class="hint">1차 카테고리를 고르고, 이어서 2차 카테고리까지 골라 주세요.</p>
       </div>
 
-      <!-- ── 2단계 소재 ── -->
+      <!-- ── 1단계 소재 ── -->
       <div class="card">
-        <label class="card-label">2단계 · 기사 소재</label>
+        <label class="card-label">1단계 · 기사 소재</label>
 
         <div class="chips-row source-mode-row source-mode-grid" role="group" aria-label="소재 고르기">
           <button class="chip active" data-source-mode="news" type="button">① 뉴스 가져오기<small>보고 있는 뉴스·주소</small></button>
@@ -88,7 +88,7 @@
             <ol class="market-steps">
               <li><b>단지 이름</b>을 적고 <b>[시세 불러오기]</b>를 누릅니다. (예: 대치 은마, 반포자이)</li>
               <li>나온 표의 숫자가 맞는지 눈으로 봅니다. 다른 단지가 나왔으면 아래 목록에서 바꿉니다.</li>
-              <li><b>분석 관점</b>을 하나 고르고, 3단계에서 AI로 기사를 씁니다.</li>
+              <li><b>분석 관점</b>을 하나 고르고, 아래 2단계에서 AI로 기사를 씁니다.</li>
             </ol>
             <dl class="market-terms">
               <dt>실거래가</dt><dd>실제로 계약하고 나라(국토교통부)에 신고한 가격입니다. 계약 후 30일 안에 신고하므로 <b>최근 한 달 거래는 아직 덜 잡혀 있을 수 있습니다.</b></dd>
@@ -125,7 +125,7 @@
             <ol class="market-steps">
               <li><b>동 이름</b>을 적고 <b>[시세 불러오기]</b>를 누릅니다. (예: 대치동 — 같은 이름의 동이 여러 곳이면 "분당구 정자동"처럼 구까지)</li>
               <li>표를 보고, 기사에서 강조하고 싶은 <b>동네 테마</b>가 있으면 고릅니다 (안 골라도 됩니다).</li>
-              <li>3단계에서 AI로 기사를 쓰고, 보내면 <b>우리동네뉴스 지도</b>에 동 위치로 표시됩니다.</li>
+              <li>아래 2단계에서 AI로 기사를 쓰고, 보내면 <b>우리동네뉴스 지도</b>에 동 위치로 표시됩니다.</li>
             </ol>
             <dl class="market-terms">
               <dt>왜 이번 달·지난달은 빼나요?</dt><dd>실거래는 계약 후 30일 안에 신고해서, 최근 두 달은 아직 숫자가 다 안 모였습니다. 넣으면 거래가 갑자기 줄어든 것처럼 잘못 보여서 <b>신고가 끝난 석 달</b>과 <b>그 전 석 달</b>을 비교합니다.</dd>
@@ -199,9 +199,9 @@
         <input id="angleInput" class="text-input" type="text" maxlength="300" placeholder="예: 20~30대 세입자 관점으로, 쉬운 말로">
       </div>
 
-      <!-- ── 3단계 AI ── -->
+      <!-- ── 2단계 AI ── -->
       <div class="card">
-        <label class="card-label">3단계 · AI 선택</label>
+        <label class="card-label">2단계 · AI 선택</label>
 
         <div class="choice-grid">
           <button class="choice active" data-platform="chatgpt" type="button">
@@ -221,9 +221,9 @@
         </div>
       </div>
 
-      <!-- ── 4단계 기사 스타일·분량 ── -->
+      <!-- ── 3단계 기사 스타일·분량 ── -->
       <div class="card">
-        <label class="card-label">4단계 · 기사 스타일</label>
+        <label class="card-label">3단계 · 기사 스타일</label>
 
         <div class="choice-grid">
           <button class="choice kind active" data-kind="news" type="button">
@@ -251,9 +251,9 @@
         <p class="hint">분량을 늘리면 사실을 반복하지 않고 배경·생활에 미치는 영향·확인할 점 같은 <b>해설 부분</b>이 길어집니다.</p>
       </div>
 
-      <!-- ── 5단계 작성 ── -->
+      <!-- ── 4단계 작성 ── -->
       <div class="card">
-        <label class="card-label">5단계 · 기사 작성</label>
+        <label class="card-label">4단계 · 기사 작성</label>
 
         <label class="auto-cover-row">
           <input id="autoCover" type="checkbox" checked>
@@ -665,6 +665,7 @@
 <script src="shared/sections.js"></script>
 <script src="shared/news-extract.js"></script>
 <script src="shared/market-prompt.js"></script>
+<script src="shared/market-chart.js"></script>
 <script src="shared/prompt.js"></script>
 <script src="shared/media.js"></script>
 <script src="shared/media-cover.js"></script>

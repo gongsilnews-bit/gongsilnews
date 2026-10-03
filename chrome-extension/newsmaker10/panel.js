@@ -27,7 +27,7 @@
       local: { query: "", data: null, themes: [] },
       topic: { subject: "", intro: "", points: ["", "", ""], outro: "", memo: "" },
       angle: "",
-      section1: "",     // 1단계에서 먼저 고른다 — 자유면 AI 가 고름
+      section1: "자유",  // 카테고리는 고르지 않는다 — 늘 자유(AI 가 기사에 맞게 고름)
       section2: "",
     },
     article: null,   // { title, subtitles[], body, keywords[], section1?, section2? }
@@ -174,12 +174,6 @@
       box.state.query = query;
       box.state.data = data;
       S.source.mode = mode;
-      /* 시세 기사는 부동산·경제 — 1단계를 아직 안 골랐으면 골라 둔다 (2차는 AI 가 고른다) */
-      if (!S.source.section1) {
-        S.source.section1 = "부동산·경제";
-        S.source.section2 = "";
-        renderSections();
-      }
       renderSourceMode();
       renderMarket(mode);
       refreshButtons();
@@ -537,7 +531,7 @@
   function pasteGuide(what) {
     const name = S.platform === "gemini" ? "Gemini" : "ChatGPT";
     const other = S.platform === "gemini" ? "ChatGPT" : "Gemini";
-    return `${name} 입력칸에 ${what}을 자동으로 넣지 못했습니다. 복사해 두었으니 입력칸을 클릭하고 Ctrl+V 로 붙여넣은 뒤 직접 전송해 주세요. 계속 안 되면 3단계에서 ${other} 를 선택해 주세요.`;
+    return `${name} 입력칸에 ${what}을 자동으로 넣지 못했습니다. 복사해 두었으니 입력칸을 클릭하고 Ctrl+V 로 붙여넣은 뒤 직접 전송해 주세요. 계속 안 되면 2단계에서 ${other} 를 선택해 주세요.`;
   }
 
   /* ═════════════ 기사 스타일 · 분량 ═════════════ */
@@ -569,10 +563,10 @@
       if (!sectionReady()) throw new Error("먼저 1단계에서 카테고리를 2차까지 골라 주세요.");
       if (!gwSourceReady(S.source)) {
         throw new Error({
-          news: "먼저 2단계에서 뉴스를 가져와 주세요.",
-          complex: "먼저 2단계에서 단지 이름을 넣고 [시세 불러오기]를 눌러 주세요.",
-          local: "먼저 2단계에서 동 이름을 넣고 [시세 불러오기]를 눌러 주세요.",
-        }[S.source.mode] || "먼저 2단계에 주제를 입력해 주세요.");
+          news: "먼저 1단계에서 뉴스를 가져와 주세요.",
+          complex: "먼저 1단계에서 단지 이름을 넣고 [시세 불러오기]를 눌러 주세요.",
+          local: "먼저 1단계에서 동 이름을 넣고 [시세 불러오기]를 눌러 주세요.",
+        }[S.source.mode] || "먼저 1단계에 주제를 입력해 주세요.");
       }
       /* 새 기사를 쓰면 지난 초안에 넣은 사진은 뺀다 — 새 초안에 새 대표 이미지를 만든다 */
       if (S.media.length) {
@@ -693,7 +687,24 @@
     toast(repaired ? "AI의 JSON 오류를 자동 복구해 초안을 가져왔습니다." : "초안을 가져왔습니다.", "ok");
     status("초안 준비됨", "ok");
     switchTab("draft");
+    addMarketChart();
     startAutoCover();
+  }
+
+  /* 실거래 시세 기사 — 불러온 시세표를 그림으로 만들어 첫 문단 다음에 넣는다 (shared/market-chart.js).
+     새 초안이 올 때마다 다시 그려 한 장만 둔다. 대표 이미지는 AI 그림이 맡는다. */
+  function addMarketChart() {
+    if (S.source.mode !== "complex" && S.source.mode !== "local") return;
+    if (!gwSourceReady(S.source)) return;
+    const s = S.source[S.source.mode].data.summary;
+    const reading = S.source.mode === "complex" ? complexReading(s.areas[0]) : localReading(s);
+    const url = gwMarketChartImage(S.source, reading);
+    if (!url) return;
+    S.media = S.media.filter((item) => item.kind !== "chart");
+    S.media.push({ kind: "chart", url, caption: GW_MARKET_CHART_CAPTION, insertAfterParagraph: 1, real: true });
+    S.media = GWMediaCover.normalize(S.media);
+    renderDraft();
+    save();
   }
 
   async function pullArticle(readOpts = {}) {
@@ -1335,7 +1346,8 @@
 
   async function startAutoCover(force = false) {
     if (!S.article || !S.aiTabId) return;
-    if (!force && (!S.autoCover || S.media.length)) return;
+    /* 시세표 그림만 있으면 대표 이미지는 아직 없는 것이다 */
+    if (!force && (!S.autoCover || S.media.some((item) => item.kind !== "chart"))) return;
     const run = ++coverRun;
     const tabId = S.aiTabId;
     S.coverJob = { status: "making", before: null };
@@ -1533,8 +1545,9 @@
     const points = Array.isArray(src.topic.points) ? src.topic.points.map((p) => String(p || "")) : [];
     src.topic.points = points.length ? points.slice(0, 5) : ["", "", ""];
     if (typeof src.angle !== "string") src.angle = "";
-    if (src.section1 !== GW_SECTION_FREE && !GW_SECTIONS[src.section1]) src.section1 = "";
-    if (!gwIsValidSection(src.section1, src.section2)) src.section2 = "";
+    /* 카테고리는 고르지 않는다 — 예전에 골라 둔 값이 있어도 자유로 (AI 가 기사에 맞게 고른다) */
+    src.section1 = GW_SECTION_FREE;
+    src.section2 = "";
     return src;
   }
 

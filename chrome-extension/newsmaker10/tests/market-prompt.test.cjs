@@ -126,3 +126,16 @@ test("초보 독자도 읽게 — 어려운 용어는 처음 나올 때 풀어 �
   assert.ok(prompt.includes("【쉽게 쓰기】"));
   assert.ok(prompt.includes("전세가율, 즉 매매가 대비 전세가 비율은"));
 });
+
+test("시세표 그림에 들어갈 표 — 화면 표와 같은 숫자", () => {
+  const chart = require("../shared/market-chart.js");
+  const [complexTable] = chart.gwMarketChartTables(complexSource);
+  assert.deepEqual(complexTable.head, ["전용면적", "매매", "최근 거래", "최고가", "전세가율"]);
+  assert.deepEqual(complexTable.rows[0][2], ["31억 3,000만 원", "2026-09-29 · 14층"]);
+  assert.equal(complexTable.rows[0][4], "20%");
+  const localTables = chart.gwMarketChartTables(localSource);
+  assert.equal(localTables.length, 2);
+  assert.deepEqual(localTables[0].rows[0], ["2026.06~2026.08 (최근 석 달)", "59건", "1억 3,197만 원"]);
+  assert.equal(chart.gwMarketChartTitle(localSource).title, "서울 강남구 대치동 아파트 실거래 동향");
+  assert.ok(chart.GW_MARKET_CHART_CAPTION.includes("국토교통부"));
+});
