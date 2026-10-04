@@ -83,6 +83,18 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
 
   const shown = filter === "전체" ? vacancies : vacancies.filter((v) => v.trade_type === filter);
 
+  /*
+   * PC 바둑판은 두 줄(8건)씩 보여 준다. 나머지는 [더보기]로.
+   * 폰은 옆으로 미는 줄이라 다 보여 줘도 화면이 길어지지 않으므로 숨기지 않는다 — CSS 가 PC 에서만 가린다.
+   */
+  const PAGE = 8;
+  const [deskLimit, setDeskLimit] = useState(PAGE);
+  const pickFilter = (t: string) => {
+    setFilter(t);
+    setDeskLimit(PAGE);
+  };
+  const remaining = shown.length - deskLimit;
+
   /**
    * 기사에 붙는 [추천 공실] 카드와 같은 방식으로 연다 — 같은 화면, 같은 창 크기.
    * 주소는 중개사 자기 도메인이라 방문자 눈에는 이 부동산의 매물 페이지다.
@@ -160,7 +172,7 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
               <button
                 key={t}
                 type="button"
-                onClick={() => setFilter(t)}
+                onClick={() => pickFilter(t)}
                 style={{
                   flexShrink: 0,
                   padding: "9px 17px",
@@ -181,8 +193,8 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
         </div>
       )}
 
-      <Carousel theme={theme} count={shown.length} centerOnDesktop>
-        {shown.map((v) => {
+      <Carousel theme={theme} count={shown.length} gridOnDesktop>
+        {shown.map((v, i) => {
           const photo = v.images?.[0] || null;
           const where = [v.sigungu, v.dong].filter(Boolean).join(" ");
           const m2 = v.exclusive_m2 || v.supply_m2;
@@ -207,7 +219,7 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
             <article
               key={v.id}
               onClick={(ev) => openDetail(v, ev.currentTarget as HTMLElement)}
-              className="gs-vacancy-card"
+              className={`gs-vacancy-card${i >= deskLimit ? " gs-desk-hide" : ""}`}
               style={{
                 flex: "0 0 auto",
                 width: 268,
@@ -382,6 +394,27 @@ export default function VacancySection({ officeName, theme, vacancies, hrefFor, 
           );
         })}
       </Carousel>
+
+      {remaining > 0 && (
+        <div className="gs-desk-only" style={{ justifyContent: "center", marginTop: 28 }}>
+          <button
+            type="button"
+            onClick={() => setDeskLimit((n) => n + PAGE)}
+            style={{
+              padding: "13px 30px",
+              borderRadius: 999,
+              border: `1px solid ${theme.primary}`,
+              background: "#fff",
+              color: theme.primary,
+              fontSize: 15,
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            매물 더보기 ({remaining}건 남음)
+          </button>
+        </div>
+      )}
 
       {/* 가려진 매물을 눌렀을 때. 포털 잠금 화면(중개업소 가입 유도)으로 보내지 않는다 */}
       {locked && (

@@ -38,6 +38,11 @@ export default function ArticleSection({ officeName, theme, articles, hrefFor }:
    */
   const [opening, setOpening] = React.useState(false);
 
+  // 처음엔 최신 5개, 나머지는 [더보기]로. 세로 목록이라 다 깔면 아래 접수 폼이 멀어진다.
+  const PAGE = 5;
+  const [limit, setLimit] = React.useState(PAGE);
+  const remaining = articles.length - limit;
+
   /*
    * 뒤로가기로 돌아오면 브라우저가 화면을 캐시에서 그대로 되살린다.
    * 그때 막이 덮인 채로 남으면 홈페이지가 영영 안 보인다. pageshow 에서 걷는다.
@@ -78,7 +83,7 @@ export default function ArticleSection({ officeName, theme, articles, hrefFor }:
       <SectionTitle theme={theme} label="COLUMN" title="기사 · 칼럼" desc={`${officeName}가 직접 쓴 글입니다`} />
 
       <div style={{ maxWidth: 940, margin: "0 auto", padding: "0 16px" }}>
-        {articles.map((a, i) => (
+        {articles.slice(0, limit).map((a, i) => (
           <article
             key={a.id}
             onClick={(ev) => open(a, ev.currentTarget as HTMLElement)}
@@ -161,6 +166,27 @@ export default function ArticleSection({ officeName, theme, articles, hrefFor }:
           </article>
         ))}
       </div>
+
+      {remaining > 0 && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+          <button
+            type="button"
+            onClick={() => setLimit((n) => n + PAGE)}
+            style={{
+              padding: "13px 30px",
+              borderRadius: 999,
+              border: `1px solid ${theme.primary}`,
+              background: "#fff",
+              color: theme.primary,
+              fontSize: 15,
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            기사 더보기 ({remaining}건 남음)
+          </button>
+        </div>
+      )}
     </section>
   );
 }

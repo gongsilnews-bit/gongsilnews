@@ -9,9 +9,13 @@ interface PageProps {
   params: Promise<{ subdomain: string }>;
 }
 
-/** 홈페이지에 싣는 매물·기사 수. 더 걸면 폰에서 옆으로 미는 손만 아프다 */
-const MAX_VACANCIES = 12;
-const MAX_ARTICLES = 4;
+/**
+ * 홈페이지에 싣는 매물·기사 수의 상한.
+ * 화면에는 [더보기]로 나눠 보여 주므로(매물은 PC 8건씩, 기사는 5건씩) 넉넉히 둔다.
+ * 4·12 로 묶어 두었더니 발행한 기사·매물이 홈페이지에서 빠졌다.
+ */
+const MAX_VACANCIES = 50;
+const MAX_ARTICLES = 50;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { subdomain } = await params;

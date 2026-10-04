@@ -7,8 +7,8 @@ interface Props {
   theme: Theme;
   count: number;
   children: React.ReactNode;
-  /** 카드 묶음이 화면 안에 들어올 때 PC에서 가운데에 놓는다 */
-  centerOnDesktop?: boolean;
+  /** PC 에서는 옆으로 밀지 않고 바둑판으로 편다. 점 표시도 숨긴다 */
+  gridOnDesktop?: boolean;
 }
 
 /**
@@ -17,7 +17,7 @@ interface Props {
  * 폰에서 카드를 세로로 쌓으면 매물 12건에 화면 열두 판이 나오고, 그 아래 있는
  * 접수 폼까지 아무도 못 내려온다. 옆으로 밀게 하면 섹션 하나가 화면 한 판으로 끝난다.
  */
-export default function Carousel({ theme, count, children, centerOnDesktop = false }: Props) {
+export default function Carousel({ theme, count, children, gridOnDesktop = false }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [idx, setIdx] = useState(0);
 
@@ -35,7 +35,7 @@ export default function Carousel({ theme, count, children, centerOnDesktop = fal
       <div
         ref={ref}
         onScroll={onScroll}
-        className={`gs-scroll-x${centerOnDesktop ? " gs-carousel-center-desktop" : ""}`}
+        className={`gs-scroll-x${gridOnDesktop ? " gs-carousel-grid-desktop" : ""}`}
         style={{
           display: "flex",
           gap: 12,
@@ -46,11 +46,11 @@ export default function Carousel({ theme, count, children, centerOnDesktop = fal
       >
         {children}
         {/* 마지막 카드가 화면 끝에 딱 붙지 않도록 여백을 하나 더 둔다 */}
-        <span aria-hidden style={{ flex: "0 0 4px" }} />
+        <span aria-hidden className="gs-carousel-spacer" style={{ flex: "0 0 4px" }} />
       </div>
 
       {count > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 16 }}>
+        <div className={gridOnDesktop ? "gs-carousel-dots" : undefined} style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 16 }}>
           {Array.from({ length: Math.min(count, 8) }).map((_, i) => (
             <span
               key={i}

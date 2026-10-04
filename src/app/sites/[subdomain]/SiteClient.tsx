@@ -250,10 +250,23 @@ export default function SiteClient({
         .gs-hero-nav { display: none; }
         /* 폰·PC 같은 크기로 둔다. PC 에서 19px 까지 키워 보았으나 컸다. */
         .gs-nav-link { font-size: 17px; }
+        .gs-desk-only { display: none; }
+        /*
+         * 추천공실 카드 줄 — PC 에서는 바둑판으로 편다.
+         * 옆으로 미는 한 줄은 마우스로 넘기기 어렵고, 매물이 화면 폭을 넘으면
+         * 첫 카드가 잘려 보였다. 덜 찬 마지막 줄은 가운데로 모은다.
+         */
         @media (min-width: 821px) {
           .gs-quickstack { display: none; }
           .gs-hero-nav { display: flex; }
-          .gs-carousel-center-desktop { width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; }
+          .gs-desk-only { display: flex; }
+          .gs-desk-hide { display: none !important; }
+          .gs-carousel-grid-desktop { flex-wrap: wrap; justify-content: center; gap: 20px !important; max-width: 1200px; margin: 0 auto; padding: 4px 24px 8px !important; overflow: visible; scroll-snap-type: none !important; }
+          .gs-carousel-grid-desktop > .gs-vacancy-card { width: calc((100% - 40px) / 3) !important; }
+          .gs-carousel-grid-desktop > .gs-carousel-spacer, .gs-carousel-dots { display: none !important; }
+        }
+        @media (min-width: 1100px) {
+          .gs-carousel-grid-desktop > .gs-vacancy-card { width: calc((100% - 60px) / 4) !important; }
         }
       `}</style>
 
