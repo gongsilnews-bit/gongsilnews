@@ -41,6 +41,9 @@ const inputStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 };
 const required = <span style={{ color: "#ef4444" }}> *</span>;
 
+// 서버 렌더링에는 document 가 없으니 브라우저에서만 창을 그린다
+const noopSubscribe = () => () => {};
+
 // 전화번호 자동 하이픈 변환 유틸
 const formatPhoneNumber = (val: string) => {
   if (!val) return "";
