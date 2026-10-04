@@ -5,6 +5,7 @@ import { PhotoCurationAgent } from '@/lib/agents/PhotoCurationAgent';
 import { NaverNewsScraper } from '@/lib/agents/NaverNewsScraper';
 import { createClient } from '@supabase/supabase-js';
 import { kstHour, kstTodayStart } from '@/utils/kst';
+import { formatSection2 } from '@/utils/formatCategory';
 
 export const maxDuration = 300; // Vercel 최대 실행 시간 5분 (7개 카테고리 × 8초 딜레이 대비)
 
@@ -23,9 +24,9 @@ const parser = new Parser({
 const FULL_CATEGORY_MAP = [
   // 1. 공실뉴스
   { section1: "공실뉴스", section2: "아파트/오피스텔", keyword: "아파트 매매 전세 OR 오피스텔 분양 임대" },
-  { section1: "공실뉴스", section2: "빌라/주택", keyword: "빌라 다세대 전세 OR 단독주택 매매" },
+  { section1: "공실뉴스", section2: "빌라/주택/다가구/다세대", keyword: "빌라 다세대 전세 OR 단독주택 매매" },
   { section1: "공실뉴스", section2: "원룸/투룸(풀옵션)", keyword: "원룸 투룸 월세 임대차" },
-  { section1: "공실뉴스", section2: "상가/사무실/공장/토지", keyword: "지식산업센터 공실 OR 상가 매매 동향 OR 오피스 빌딩 매매 OR 토지 거래" },
+  { section1: "공실뉴스", section2: "상가/사무실/빌딩/공장/토지", keyword: "지식산업센터 공실 OR 상가 매매 동향 OR 오피스 빌딩 매매 OR 토지 거래" },
   { section1: "공실뉴스", section2: "신축/분양/경매", keyword: "신축 아파트 분양 청약 OR 법원 경매 낙찰가율 OR 오피스텔 분양" },
 
   // 2. 부동산·경제
@@ -50,7 +51,7 @@ export async function GET(req: Request) {
   const isVercelCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
   const urlObj = new URL(req.url);
   const isManualRun = urlObj.searchParams.get('manual') === 'true';
-  const manualCategory = urlObj.searchParams.get('category');
+  const manualCategory = formatSection2(urlObj.searchParams.get('category'));
   
   if (!isVercelCron && process.env.CRON_SECRET && !isManualRun) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -89,7 +90,8 @@ export async function GET(req: Request) {
   const { data: admin } = await supabase.from('members').select('id, name, email').eq('email', 'gongsilnews@gmail.com').single();
 
   // 설정된 카테고리만 필터링해서 수집
-  let activeCategories = FULL_CATEGORY_MAP.filter(c => config.categories.includes(c.section2));
+  const configuredCategories = new Set((config.categories || []).map((category: string) => formatSection2(category)));
+  let activeCategories = FULL_CATEGORY_MAP.filter(c => configuredCategories.has(c.section2));
 
   if (isManualRun && manualCategory) {
     activeCategories = FULL_CATEGORY_MAP.filter(c => c.section2 === manualCategory);

@@ -9,7 +9,7 @@ import { createClient } from "@/utils/supabase/client";
 import { getArticleBookmarks, getBookmarkCategories } from "@/app/actions/bookmark";
 import AuthModal from "./AuthModal";
 import BookmarkCategoryModal from "./BookmarkCategoryModal";
-import { formatSection1 } from "@/utils/formatCategory";
+import { formatSection1, formatSection2 } from "@/utils/formatCategory";
 import { PopularNewsSidebarWidget } from "./PopularNewsSidebarWidget";
 import CategoryImportantHero from "./CategoryImportantHero";
 
@@ -70,14 +70,18 @@ function NewsListLayoutInner({ category, title, initialArticles, initialPopular,
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null | 'ALL'>('ALL');
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(searchParams.get("section2") || searchParams.get("section") || null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(() => {
+    const section2Param = searchParams.get("section2") || searchParams.get("section");
+    return section2Param ? formatSection2(section2Param) : null;
+  });
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>(() => {
     const sortVal = searchParams.get("sort");
     return (sortVal === 'popular' || sortVal === 'newest') ? sortVal : 'newest';
   });
 
   useEffect(() => {
-    setSelectedSubCategory(searchParams.get("section2") || searchParams.get("section") || null);
+    const section2Param = searchParams.get("section2") || searchParams.get("section");
+    setSelectedSubCategory(section2Param ? formatSection2(section2Param) : null);
   }, [searchParams]);
 
   // Sync currentPage with URL searchParams and handle initial restoration
@@ -736,21 +740,21 @@ const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
   "공실현장": {
     "전체": "공동중개 열람 무료! 임대인 공실등록 무료!",
     "신축/분양/경매": "전국 신축 분양 & 경·공매 무료 권리분석",
-    "상가/사무실/공장/토지": "상가·사무실·토지 무료 공동중개 네트워크",
+    "상가/사무실/빌딩/공장/토지": "상가·사무실·빌딩·토지 무료 공동중개 네트워크",
     "공실/임대관리": "체계적인 공실 방지 & 임대관리 솔루션"
   },
   "공실뉴스": {
     "전체": "공동중개 열람 무료! 임대인 공실등록 무료!",
     "아파트/오피스텔": "100% 실매물 아파트·오피스텔 무료 공동중개",
-    "빌라/주택": "현장 확인 완료 빌라·주택 무료 공실 소식",
+    "빌라/주택/다가구/다세대": "현장 확인 완료 빌라·주택·다가구·다세대 무료 공실 소식",
     "원룸/투룸(풀옵션)": "임대인 직등록 원룸·투룸 실시간 무료 공유",
-    "상가/사무실/공장/토지": "상가·사무실·토지 무료 공동중개 네트워크",
+    "상가/사무실/빌딩/공장/토지": "상가·사무실·빌딩·토지 무료 공동중개 네트워크",
     "신축/분양/경매": "전국 신축 분양 & 경·공매 무료 권리분석"
   },
   "news_gongsil": {
     "전체": "공동중개 열람 무료! 임대인 공실등록 무료!",
     "신축/분양/경매": "전국 신축 분양 & 경·공매 무료 권리분석",
-    "상가/사무실/공장/토지": "상가·사무실·토지 무료 공동중개 네트워크",
+    "상가/사무실/빌딩/공장/토지": "상가·사무실·빌딩·토지 무료 공동중개 네트워크",
     "공실/임대관리": "체계적인 공실 방지 & 임대관리 솔루션"
   },
   "정책시장": {

@@ -7,7 +7,7 @@ import { createClient as createServerClient } from "@/utils/supabase/server";
 import { unstable_cache, revalidateTag } from "next/cache";
 import { getEffectivePlan } from "@/utils/planCheck";
 import { isAdminRole } from "@/utils/permissionCheck";
-import { formatSection1 } from "@/utils/formatCategory";
+import { formatSection1, formatSection2, getSection2Aliases } from "@/utils/formatCategory";
 import { createNotification } from "./notification";
 
 function getAdminClient() {
@@ -201,7 +201,7 @@ export async function saveArticle(data: {
         "",
       status: statusMap[data.status] || data.status,
       section1: data.section1 || null,
-      section2: data.section2 || null,
+      section2: formatSection2(data.section2) || null,
       title: data.title,
       subtitle: data.subtitle || null,
       content: data.content || null,
@@ -407,9 +407,12 @@ export async function getArticles(filters?: {
     }
     if (filters?.section2) {
       if (Array.isArray(filters.section2)) {
-        query = query.in("section2", filters.section2);
+        query = query.in("section2", [...new Set(filters.section2.flatMap(getSection2Aliases))]);
       } else {
-        query = query.eq("section2", filters.section2);
+        const section2Aliases = getSection2Aliases(filters.section2);
+        query = section2Aliases.length > 1
+          ? query.in("section2", section2Aliases)
+          : query.eq("section2", section2Aliases[0]);
       }
     }
     if (filters?.is_important !== undefined) query = filters.is_important ? query.eq("is_important", true) : query.or("is_important.is.null,is_important.eq.false");
@@ -457,7 +460,8 @@ export async function getArticles(filters?: {
     if (error) return { success: false, error: error.message };
     const normalizedData = (data || []).map((a: any) => ({
       ...a,
-      section1: formatSection1(a.section1)
+      section1: formatSection1(a.section1),
+      section2: formatSection2(a.section2),
     }));
     return { success: true, data: normalizedData, count: count || 0 };
   };
@@ -511,7 +515,8 @@ export async function searchArticles(query: string) {
     if (error) return { success: false, error: error.message };
     const normalizedData = (data || []).map((a: any) => ({
       ...a,
-      section1: formatSection1(a.section1)
+      section1: formatSection1(a.section1),
+      section2: formatSection2(a.section2),
     }));
     return { success: true, data: normalizedData };
   } catch (err: any) {
@@ -576,7 +581,8 @@ export async function getMyArticles(authorId: string) {
     if (error) return { success: false, error: error.message };
     const normalizedData = (data || []).map((a: any) => ({
       ...a,
-      section1: formatSection1(a.section1)
+      section1: formatSection1(a.section1),
+      section2: formatSection2(a.section2),
     }));
     return { success: true, data: normalizedData };
   } catch (err: any) {
@@ -604,7 +610,7 @@ const getArticleDetailCached = unstable_cache(
     const relatedArticles = data ? await fetchRelatedArticlesFor(supabase, data.id) : [];
     return {
       success: true,
-      data: data ? { ...data, section1: formatSection1(data.section1), related_articles: relatedArticles } : null
+      data: data ? { ...data, section1: formatSection1(data.section1), section2: formatSection2(data.section2), related_articles: relatedArticles } : null
     };
   },
   ["article-detail"],
@@ -629,7 +635,7 @@ export async function getArticleDetail(articleId: string, noCache: boolean = fal
     const relatedArticles = data ? await fetchRelatedArticlesFor(supabase, data.id) : [];
     return {
       success: true,
-      data: data ? { ...data, section1: formatSection1(data.section1), related_articles: relatedArticles } : null
+      data: data ? { ...data, section1: formatSection1(data.section1), section2: formatSection2(data.section2), related_articles: relatedArticles } : null
     };
   }
   return await getArticleDetailCached(articleId);
@@ -943,7 +949,7 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
     revalidatePath("/");
     revalidatePath("/m");
 
-    // 반려(REJECTED)와 동시에 반려 사유가 있으면 기사작성 + 사진 에이전트가 즉시 재작성하여 [승인대기]로 자동 이동
+    // 반려(REJECTED)와 동시에 반려 사유가 있으면 기사작성 + 사진 에이전트가 즉시 재작성하여 자동 재발행
     if (status === 'REJECTED' && reject_reason && reject_reason.trim()) {
       for (const id of articleIds) {
         adminReviseArticleWithFeedback(id, reject_reason).catch(e => console.error("Auto revise on reject error:", e));
@@ -956,7 +962,7 @@ export async function adminUpdateArticleStatus(articleIds: string[], status: 'AP
   }
 }
 
-/* ── 최고관리자 반려 사유를 반영한 AI 기사 자동 재작성 및 승인대기 이동 ── */
+/* ── 최고관리자 반려 사유를 반영한 AI 기사 자동 재작성 및 즉시 재발행 ── */
 export async function adminReviseArticleWithFeedback(articleId: string, feedback: string) {
   const supabase = getAdminClient();
 
@@ -970,6 +976,8 @@ export async function adminReviseArticleWithFeedback(articleId: string, feedback
     if (fetchErr || !article) {
       return { success: false, error: "기사를 찾을 수 없습니다." };
     }
+
+    const articleSection2 = formatSection2(article.section2);
 
     const { generateWithGemini } = await import("@/lib/agents/core");
 
@@ -995,7 +1003,7 @@ export async function adminReviseArticleWithFeedback(articleId: string, feedback
 방금 작성된 기사에 대해 최고관리자(발행인)로부터 다음과 같은 [반려 사유 및 수정 지시사항]이 접수되었다.
 
 [기존 기사 정보]
-- 카테고리: [${article.section2 || article.section1 || '부동산·경제'}]
+- 카테고리: [${articleSection2 || article.section1 || '부동산·경제'}]
 - 기존 제목: "${article.title}"
 - 기존 부제목: "${article.subtitle || ''}"
 - 기존 본문:
@@ -1044,7 +1052,7 @@ ${styleInstruction}
     try {
       const { PhotoCurationAgent } = await import("@/lib/agents/PhotoCurationAgent");
       const media = await PhotoCurationAgent.resolvePhoto({
-        category: article.section2 || article.section1 || "부동산·경제",
+        category: articleSection2 || article.section1 || "부동산·경제",
         articleTitle: newTitle,
         articleSubtitle: newSubtitle,
         articleContent: newContent,

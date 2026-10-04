@@ -17,7 +17,7 @@ import BannerSlot from "@/components/BannerSlot";
 import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import { getPermissionLevel } from "@/utils/permissionCheck";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
-import { formatSection1 } from "@/utils/formatCategory";
+import { formatSection1, formatSection2 } from "@/utils/formatCategory";
 import { MobilePopularNewsWidget } from "./MobilePopularNewsWidget";
 
 function formatPrice(v: any): string {
@@ -90,8 +90,8 @@ const SECTION1_TO_KEY: Record<string, string> = {
 
 // 4대 표준 1차/2차 카테고리 맵
 const SECTION2_MAP: Record<string, string[]> = {
-  "공실뉴스": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
-  "공실현장": ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"],
+  "공실뉴스": ["아파트/오피스텔", "빌라/주택/다가구/다세대", "원룸/투룸(풀옵션)", "상가/사무실/빌딩/공장/토지", "신축/분양/경매"],
+  "공실현장": ["아파트/오피스텔", "빌라/주택/다가구/다세대", "원룸/투룸(풀옵션)", "상가/사무실/빌딩/공장/토지", "신축/분양/경매"],
   "부동산·경제": ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타"],
   "정책시장": ["부동산정책/정치", "경제/재테크/주식", "세무/법률/기타"],
   "AI마케팅": ["AI/NEWS", "부동산유튜브/블로그", "공실/임대관리"],
@@ -105,9 +105,9 @@ const PERSONALIZED_MENTAL_MAP: Record<string, Record<string, string>> = {
   "news_gongsil": {
     "전체": "공동중개 열람 무료! 임대인 공실등록 무료!",
     "아파트/오피스텔": "100% 실매물 아파트·오피스텔 무료 공동중개",
-    "빌라/주택": "현장 확인 완료 빌라·주택 무료 공실 소식",
+    "빌라/주택/다가구/다세대": "현장 확인 완료 빌라·주택·다가구·다세대 무료 공실 소식",
     "원룸/투룸(풀옵션)": "임대인 직등록 원룸·투룸 실시간 무료 공유",
-    "상가/사무실/공장/토지": "상가·사무실·토지 무료 공동중개 네트워크",
+    "상가/사무실/빌딩/공장/토지": "상가·사무실·빌딩·토지 무료 공동중개 네트워크",
     "신축/분양/경매": "전국 신축 분양 & 경·공매 무료 권리분석"
   },
   "news_politics": {
@@ -148,8 +148,8 @@ const SUB_CATEGORY_PICTOGRAMS: Record<string, { label: string; icon: React.React
       </svg>
     )
   },
-  "빌라/주택": {
-    label: "빌라·주택",
+  "빌라/주택/다가구/다세대": {
+    label: "빌라·주택·다가구·다세대",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -168,8 +168,8 @@ const SUB_CATEGORY_PICTOGRAMS: Record<string, { label: string; icon: React.React
       </svg>
     )
   },
-  "상가/사무실/공장/토지": {
-    label: "상가·사무실",
+  "상가/사무실/빌딩/공장/토지": {
+    label: "상가·사무실·빌딩",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 21h18"/>
@@ -620,7 +620,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null);
-  const [section2Tab, setSection2Tab] = useState<string>(searchParams.get("section2") || "");
+  const [section2Tab, setSection2Tab] = useState<string>(() => formatSection2(searchParams.get("section2")));
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
 
   const replaceArticles = (nextArticles: any[]) => {
@@ -692,7 +692,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
 
   // URL 파라미터가 변경되면 상태 동기화 (뒤로가기 시 복구용)
   useEffect(() => {
-    setSection2Tab(searchParams.get("section2") || "");
+    setSection2Tab(formatSection2(searchParams.get("section2")));
   }, [searchParams]);
 
   // 2차 탭 클릭 시 상태 변경 및 URL 업데이트 (history에 저장되어 뒤로가기 시 복구 가능)
@@ -882,7 +882,7 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
   const [locResults, setLocResults] = useState<any[]>([]);
   const [locTab, setLocTab] = useState<"region"|"keyword">("region");
   const [section1Filter, setSection1Filter] = useState(initialTab === "local" ? "" : (searchParams.get("section1") || ""));
-  const [section2Filter, setSection2Filter] = useState(initialTab === "local" ? "" : (searchParams.get("section2") || ""));
+  const [section2Filter, setSection2Filter] = useState(initialTab === "local" ? "" : formatSection2(searchParams.get("section2")));
 
   // URL 파라미터가 변경되면 지도 필터도 동기화 (뒤로가기/전환용)
   // 우리동네(local) 탭에서는 1차 카테고리를 항상 전체(빈 값)로 유지
@@ -890,17 +890,21 @@ function MobileNewsClient({ initialTab, initialArticles, initialAuthorName, init
     if (activeTab === "local") {
       if (searchParams.has("section1") || searchParams.has("section2")) {
         setSection1Filter(searchParams.get("section1") || "");
-        setSection2Filter(searchParams.get("section2") || "");
+        setSection2Filter(formatSection2(searchParams.get("section2")));
       }
     } else {
       setSection1Filter(searchParams.get("section1") || "");
-      setSection2Filter(searchParams.get("section2") || "");
+      setSection2Filter(formatSection2(searchParams.get("section2")));
     }
   }, [searchParams, activeTab]);
 
 
 
-  useMapFields("mobile-news-filters", { section1Filter, section2Filter, sortBy }, { section1Filter: setSection1Filter, section2Filter: setSection2Filter, sortBy: setSortBy }, activeTab === "local");
+  useMapFields("mobile-news-filters", { section1Filter, section2Filter, sortBy }, {
+    section1Filter: setSection1Filter,
+    section2Filter: (value) => setSection2Filter(formatSection2(value)),
+    sortBy: setSortBy,
+  }, activeTab === "local");
 
   const loadSidoData = async () => {
     try {

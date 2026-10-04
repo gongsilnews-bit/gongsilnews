@@ -8,7 +8,7 @@ import { getArticles, getArticleDetail, incrementArticleView } from "@/app/actio
 import MapSearchBar from "@/components/MapSearchBar";
 import MapTopAuthButtons from "@/components/MapTopAuthButtons";
 import { handleLocationPermissionDenied, handleLocationUnavailable } from "@/utils/locationPermission";
-import { formatSection1 } from "@/utils/formatCategory";
+import { formatSection1, formatSection2 } from "@/utils/formatCategory";
 import ArticleAuthorAdSlot from "@/components/ArticleAuthorAdSlot";
 import BannerSlot from "@/components/BannerSlot";
 
@@ -26,12 +26,15 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
   const [viewedArticles, setViewedArticles] = useState<Set<string>>(new Set());
   const [section1, setSection1] = useState("");
   const [section2, setSection2] = useState("");
-  useMapFields("pc-news-filters", { section1, section2 }, { section1: setSection1, section2: setSection2 });
+  useMapFields("pc-news-filters", { section1, section2 }, {
+    section1: setSection1,
+    section2: (value) => setSection2(formatSection2(value)),
+  });
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.has("section1") || params.has("section2")) {
       setSection1(params.get("section1") || "");
-      setSection2(params.get("section2") || "");
+      setSection2(formatSection2(params.get("section2")));
     }
   }, []);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -606,9 +609,9 @@ export default function NewsMapClient({ initialArticles, initialPopularArticles 
             <option value="">2차섹션 전체</option>
             {(section1 === "공실뉴스" || section1 === "공실현장") && (<>
               <option value="아파트/오피스텔">아파트/오피스텔</option>
-              <option value="빌라/주택">빌라/주택</option>
+              <option value="빌라/주택/다가구/다세대">빌라/주택/다가구/다세대</option>
               <option value="원룸/투룸(풀옵션)">원룸/투룸(풀옵션)</option>
-              <option value="상가/사무실/공장/토지">상가/사무실/공장/토지</option>
+              <option value="상가/사무실/빌딩/공장/토지">상가/사무실/빌딩/공장/토지</option>
               <option value="신축/분양/경매">신축/분양/경매</option>
             </>)}
             {(section1 === "부동산·경제" || section1 === "정책시장") && (<>

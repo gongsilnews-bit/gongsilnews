@@ -187,9 +187,9 @@ export default function Footer() {
           <div className="sitemap-col">
             <h4 className="sitemap-title">공실뉴스</h4>
             <Link href="/news_gongsil?section2=%EC%95%84%ED%8C%8C%ED%8A%B8%2F%EC%98%A4%ED%84%B0%EC%8A%A4%ED%85%94" className="sitemap-link">아파트/오피스텔</Link>
-            <Link href="/news_gongsil?section2=%EB%B9%8C%EB%9D%BC%2F%EC%A3%BC%ED%83%9D" className="sitemap-link">빌라/주택</Link>
+            <Link href="/news_gongsil?section2=%EB%B9%8C%EB%9D%BC%2F%EC%A3%BC%ED%83%9D%2F%EB%8B%A4%EA%B0%80%EA%B5%AC%2F%EB%8B%A4%EC%84%B8%EB%8C%80" className="sitemap-link">빌라/주택/다가구/다세대</Link>
             <Link href="/news_gongsil?section2=%EC%9B%90%EB%A3%B8%2F%ED%88%AC%EB%A3%B8%28%ED%92%80%EC%98%B5%EC%85%98%29" className="sitemap-link">원룸/투룸(풀옵션)</Link>
-            <Link href="/news_gongsil?section2=%EC%83%81%EA%B0%80%2F%EC%82%AC%EB%AC%B4%EC%8B%A4%2F%EA%B3%B5%EC%9E%A5%2F%ED%86%A0%EC%A7%80" className="sitemap-link">상가/사무실/공장/토지</Link>
+            <Link href="/news_gongsil?section2=%EC%83%81%EA%B0%80%2F%EC%82%AC%EB%AC%B4%EC%8B%A4%2F%EB%B9%8C%EB%94%A9%2F%EA%B3%B5%EC%9E%A5%2F%ED%86%A0%EC%A7%80" className="sitemap-link">상가/사무실/빌딩/공장/토지</Link>
             <Link href="/news_gongsil?section2=%EC%8B%A0%EC%B6%95%2F%EB%B6%84%EC%96%91%2F%EA%B2%BD%EB%A7%A4" className="sitemap-link">신축/분양/경매</Link>
           </div>
           <div className="sitemap-col">

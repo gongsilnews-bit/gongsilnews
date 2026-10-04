@@ -508,7 +508,11 @@ export function generateLocalVacancyArticle(
     subtitle: subtitleLines.join("\n"),
     content_article: toFormal(style === "summary" ? buildSummary(d, length) : buildNews(d, length)),
     // 기사 2차 섹션 이름은 매물 분류와 표기가 조금 다르다
-    section2: d.isCommercial ? "상가/사무실/공장/토지" : (vacancy.property_type || "").replace(/·/g, "/"),
+    section2: d.isCommercial
+      ? "상가/사무실/빌딩/공장/토지"
+      : vacancy.property_type === "빌라·주택"
+        ? "빌라/주택/다가구/다세대"
+        : (vacancy.property_type || "").replace(/·/g, "/"),
     keywords,
   };
 }

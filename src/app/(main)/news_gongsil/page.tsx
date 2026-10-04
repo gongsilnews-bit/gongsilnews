@@ -16,7 +16,7 @@ export default async function NewsLocalPage() {
     : [];
   const importantArticles = importantRes.success ? (importantRes.data || []) : [];
 
-  const subCategories = ["아파트/오피스텔", "빌라/주택", "원룸/투룸(풀옵션)", "상가/사무실/공장/토지", "신축/분양/경매"];
+  const subCategories = ["아파트/오피스텔", "빌라/주택/다가구/다세대", "원룸/투룸(풀옵션)", "상가/사무실/빌딩/공장/토지", "신축/분양/경매"];
 
   return <NewsListLayout 
     category="공실뉴스" 
