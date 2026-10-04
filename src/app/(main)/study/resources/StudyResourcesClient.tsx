@@ -221,6 +221,9 @@ export default function StudyResourcesClient({
 
   const totalItems = filteredPosts.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+  // 쪽 번호는 10개씩 묶어 보여 준다 (Q&A 와 같은 방식). 다 그리면 글이 많을 때 본문 칸을 넘친다.
+  const groupStart = Math.floor((currentPage - 1) / 10) * 10 + 1;
+  const pageNumbers = Array.from({ length: Math.max(0, Math.min(10, totalPages - groupStart + 1)) }, (_, i) => groupStart + i);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const visiblePosts = filteredPosts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
@@ -376,6 +379,27 @@ export default function StudyResourcesClient({
                     />
                     <button onClick={() => handleSearch(searchInputValue)}>검색</button>
                   </div>
+
+                  {/* 자료실은 최고관리자가 연달아 올리는 곳이라 맨 아래가 아니라 위에 둔다 */}
+                  {canWrite && (
+                    <a
+                      href={writeUrl}
+                      style={{
+                        padding: "9px 18px",
+                        borderRadius: 6,
+                        fontSize: 14.5,
+                        fontWeight: 800,
+                        color: "#ffffff",
+                        background: POINT,
+                        textDecoration: "none",
+                        boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)",
+                        whiteSpace: "nowrap",
+                        display: "inline-block",
+                      }}
+                    >
+                      {activeBoard === "drone" ? "영상 등록하기" : "자료 등록하기"}
+                    </a>
+                  )}
                 </div>
               </div>
 
@@ -641,7 +665,7 @@ export default function StudyResourcesClient({
                     &lsaquo;
                   </button>
 
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  {pageNumbers.map((pageNum) => (
                     <button
                       key={pageNum}
                       type="button"
@@ -679,27 +703,8 @@ export default function StudyResourcesClient({
                   </button>
                 </div>
 
-                <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
-                  {canWrite && (
-                    <a
-                      href={writeUrl}
-                      style={{
-                        padding: "10px 22px",
-                        borderRadius: 6,
-                        fontSize: 14.5,
-                        fontWeight: 800,
-                        color: "#ffffff",
-                        background: POINT,
-                        textDecoration: "none",
-                        boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)",
-                        whiteSpace: "nowrap",
-                        display: "inline-block",
-                      }}
-                    >
-                      {activeBoard === "drone" ? "영상 등록하기" : "자료 등록하기"}
-                    </a>
-                  )}
-                </div>
+                {/* 쪽 번호를 가운데에 두기 위한 오른쪽 짝. 등록 버튼은 위 검색창 옆으로 옮겼다 */}
+                <div style={{ flex: 1 }} />
               </div>
             </div>
 

@@ -138,11 +138,53 @@ export default function StudyCommunityClient({
 
   const totalItems = filteredPosts.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+  // 쪽 번호는 10개씩 묶어 보여 준다 (Q&A 와 같은 방식). 다 그리면 글이 많을 때 본문 칸을 넘친다.
+  const groupStart = Math.floor((currentPage - 1) / 10) * 10 + 1;
+  const pageNumbers = Array.from({ length: Math.max(0, Math.min(10, totalPages - groupStart + 1)) }, (_, i) => groupStart + i);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const visiblePosts = filteredPosts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const canRead = canAccessBoard(userLevel, activeBoardData?.perm_read ?? 0);
   const canWrite = canAccessBoard(userLevel, activeBoardData?.perm_write ?? 5);
+
+  // 글쓰기 버튼은 목록 위(검색창 옆)와 아래 두 곳에 둔다.
+  // 쓰러 들어온 회원은 위에서, 읽다가 쓰고 싶어진 회원은 아래에서 누른다.
+  const writeButton = canWrite ? (
+    <a
+      href={writeUrl}
+      style={{
+        padding: "9px 20px",
+        borderRadius: 6,
+        fontSize: 14,
+        fontWeight: 800,
+        color: "#ffffff",
+        background: POINT,
+        textDecoration: "none",
+        boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {activeBoard === "studyqa" ? "질문하기" : "글쓰기"}
+    </a>
+  ) : (
+    <button
+      type="button"
+      onClick={() => showToast(`${getLevelName(activeBoardData?.perm_write ?? 5)}부터 글을 등록하실 수 있습니다. 🤍`)}
+      style={{
+        padding: "9px 20px",
+        borderRadius: 6,
+        fontSize: 14,
+        fontWeight: 800,
+        color: "#ffffff",
+        background: POINT,
+        border: "none",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {activeBoard === "studyqa" ? "질문하기" : "글쓰기"}
+    </button>
+  );
 
   const pageBtnStyle = (disabled: boolean): React.CSSProperties => ({
     padding: "9px 14px",
@@ -237,6 +279,7 @@ export default function StudyCommunityClient({
                 />
                 <button onClick={() => handleSearch(searchInputValue)}>검색</button>
               </div>
+              {writeButton}
             </div>
           </div>
 
@@ -358,7 +401,7 @@ export default function StudyCommunityClient({
                 &lsaquo;
               </button>
 
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              {pageNumbers.map((pageNum) => (
                 <button
                   key={pageNum}
                   type="button"
@@ -416,42 +459,7 @@ export default function StudyCommunityClient({
                 </button>
               )}
 
-              {canWrite ? (
-                <a
-                  href={writeUrl}
-                  style={{
-                    padding: "9px 20px",
-                    borderRadius: 6,
-                    fontSize: 14,
-                    fontWeight: 800,
-                    color: "#ffffff",
-                    background: POINT,
-                    textDecoration: "none",
-                    boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)",
-                  }}
-                >
-                  {activeBoard === "studyqa" ? "질문하기" : "글쓰기"}
-                </a>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() =>
-                    showToast(`${getLevelName(activeBoardData?.perm_write ?? 5)}부터 글을 등록하실 수 있습니다. 🤍`)
-                  }
-                  style={{
-                    padding: "9px 20px",
-                    borderRadius: 6,
-                    fontSize: 14,
-                    fontWeight: 800,
-                    color: "#ffffff",
-                    background: POINT,
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  {activeBoard === "studyqa" ? "질문하기" : "글쓰기"}
-                </button>
-              )}
+              {writeButton}
             </div>
           </div>
         </main>
