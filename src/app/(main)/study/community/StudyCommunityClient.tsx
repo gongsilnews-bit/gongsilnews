@@ -259,8 +259,9 @@ export default function StudyCommunityClient({
             marginBottom: 70,
           }}
         >
-
-
+          {/* 자료실과 같은 틀 — 왼쪽 목록, 오른쪽 배너·인기글 */}
+          <div className="b-layout" style={{ marginTop: 0 }}>
+          <div className="b-list-area">
           {/* 검색 및 상단 헤더 */}
           <div className="board-header" style={{ borderBottom: "none", paddingBottom: 0 }}>
             <div className="board-title" style={{ fontSize: 20 }}>
@@ -462,6 +463,41 @@ export default function StudyCommunityClient({
               {writeButton}
             </div>
           </div>
+          </div>
+
+          {/* ━━━ 우측 사이드바 — 자료실과 같은 배너·인기글 ━━━ */}
+          <div className="b-sidebar">
+            <div className="sb-banner">배너 1</div>
+
+            <div className="sb-widget">
+              <div className="sb-title">{activeBoard === "studyqa" ? "인기 질문" : "인기 게시물"}</div>
+              <ul className="pop-list">
+                {[...rawPosts]
+                  .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+                  .slice(0, 5)
+                  .map((p, i) => (
+                    <li className="pop-item" key={p.id || i}>
+                      <span className="pop-ranking" style={{ color: "#ef4444" }}>{i + 1}</span>
+                      <Link
+                        href={canRead ? getReadUrl(p.id) : "#"}
+                        onClick={(e) => {
+                          if (!canRead) {
+                            e.preventDefault();
+                            showToast(`${getLevelName(activeBoardData?.perm_read ?? 0)}부터 열람하실 수 있습니다. 🤍`);
+                          }
+                        }}
+                        className="pop-title"
+                        style={{ color: "inherit", textDecoration: "none" }}
+                      >
+                        {String(p.title || "").replace(/^\[([^\]]+)\]\s*/, "")}
+                      </Link>
+                    </li>
+                  ))}
+                {rawPosts.length === 0 && <li style={{ fontSize: 14, color: "#94a3b8" }}>게시물이 없습니다.</li>}
+              </ul>
+            </div>
+          </div>
+          </div>
         </main>
       )}
 
@@ -503,6 +539,8 @@ export default function StudyCommunityClient({
         .study-qna .b-search button { background: #f8f9fa !important; border-color: #ccc !important; color: #555 !important; }
         .study-qna .b-search button:hover { background: #e2e8f0 !important; color: #111 !important; }
         .study-qna .b-search input:focus { border-color: #1a2e50 !important; outline: none; }
+        .study-qna .b-sidebar .pop-ranking { color: #ef4444 !important; font-weight: 900; }
+        .study-qna .b-sidebar .sb-title { border-bottom: 2px solid #1a2e50 !important; }
       `}</style>
     </div>
   );
