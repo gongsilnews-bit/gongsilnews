@@ -77,6 +77,37 @@ function MobileGongsilContent() {
   const [selectedVacancy, setSelectedVacancy] = useState<any | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  /*
+   * 상세의 [공실등록현황] 숫자와 등록 물건 목록은 넘겨준 목록에서 같은 등록자 것을 센다.
+   * vacancies 는 지도·지역으로 불러온 범위만 들고 있어 숫자가 지도 위치에 따라 달라졌다.
+   * 그 등록자의 공실 전체를 따로 받아 상세에만 합쳐 넘긴다 — 목록·지도에는 섞지 않는다.
+   */
+  const [ownerVacancies, setOwnerVacancies] = useState<{ ownerId: string; rows: any[] } | null>(null);
+  const selectedOwnerId = selectedVacancy?.owner_id ? String(selectedVacancy.owner_id) : null;
+  useEffect(() => {
+    if (!selectedOwnerId || ownerVacancies?.ownerId === selectedOwnerId) return;
+    let cancelled = false;
+    getVacanciesForMap({ ownerId: selectedOwnerId, is_auction: false }).then((res) => {
+      if (cancelled || !res.success || !res.data) return;
+      const rows = res.data.map((v: any) => ({
+        ...v,
+        images: v.vacancy_photos
+          ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+          : [],
+      }));
+      setOwnerVacancies({ ownerId: selectedOwnerId, rows });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedOwnerId]);
+  const detailVacancies = React.useMemo(() => {
+    if (!ownerVacancies || ownerVacancies.ownerId !== selectedOwnerId) return vacancies;
+    const have = new Set(vacancies.map((v) => String(v.id)));
+    const missing = ownerVacancies.rows.filter((v) => !have.has(String(v.id)));
+    return missing.length > 0 ? [...vacancies, ...missing] : vacancies;
+  }, [vacancies, ownerVacancies, selectedOwnerId]);
   
   // 🚀 위치 역지오코딩 & 상단 라벨 실시간 갱신용 React State
   const [locLabel, setLocLabel] = useState("위치");
@@ -1844,7 +1875,7 @@ function MobileGongsilContent() {
             roadviewRef={roadviewRef}
             realtorFilter={realtorFilter}
             setRealtorFilter={setRealtorFilter}
-            vacancies={vacancies}
+            vacancies={detailVacancies}
             vacancyStackRef={vacancyStackRef}
             handleVacancyClick={handleVacancyClick}
             formatPrice={formatPrice}

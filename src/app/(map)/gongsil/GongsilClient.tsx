@@ -821,6 +821,38 @@ export default function GongsilClient({ initialVacancies, ownerId }: { initialVa
     }
   }, [showDetail, activeProperty, activeDetailTab, dbVacancies]);
 
+  /*
+   * 상세의 [공실등록현황] 숫자와 그 아래 등록 물건 목록은 dbVacancies 에서 같은 등록자 것을 센다.
+   * dbVacancies 는 지도에 불러온 범위만 들고 있어서, 지도 밖에 있는 그 등록자의 공실이 빠져
+   * 숫자가 지도 위치에 따라 달라졌다. 상세를 열면 그 등록자의 공실 전체를 받아 채워 둔다.
+   * 왼쪽 목록은 지도 범위로 다시 거르므로 여기에 섞여도 목록에는 나오지 않는다.
+   */
+  const ownerFetchedRef = useRef<Set<string>>(new Set());
+  const activeOwnerId = showDetail && activeProperty
+    ? dbVacancies.find((v) => v.id === activeProperty)?.owner_id
+    : null;
+  useEffect(() => {
+    if (!activeOwnerId || ownerFetchedRef.current.has(String(activeOwnerId))) return;
+    ownerFetchedRef.current.add(String(activeOwnerId));
+    getVacanciesForMap({ ownerId: String(activeOwnerId), is_auction: false }).then((res) => {
+      if (!res.success || !res.data) {
+        ownerFetchedRef.current.delete(String(activeOwnerId));
+        return;
+      }
+      const rows = res.data.map((v: any) => ({
+        ...v,
+        images: v.vacancy_photos
+          ? [...v.vacancy_photos].sort((a: any, b: any) => a.sort_order - b.sort_order).map((p: any) => p.url)
+          : [],
+      }));
+      setDbVacancies((prev) => {
+        const have = new Set(prev.map((item) => String(item.id)));
+        const missing = rows.filter((item: any) => !have.has(String(item.id)));
+        return missing.length > 0 ? [...prev, ...missing] : prev;
+      });
+    });
+  }, [activeOwnerId]);
+
   useEffect(() => {
     async function initUser() {
       const { createClient } = await import("@/utils/supabase/client");
