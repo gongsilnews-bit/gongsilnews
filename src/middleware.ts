@@ -139,7 +139,10 @@ export async function middleware(request: NextRequest) {
     // 쿠키를 통한 PC 버전 강제 보기 옵션 확인 (옵션)
     const viewDesktop = request.cookies.get('view-desktop')?.value === 'true';
 
-    // 이미 /m 경로이거나 관리자 페이지, 독립 상세 페이지 등은 제외하고 Rewrite
+    // 이미 /m 경로이거나 관리자 페이지 등은 제외하고 Rewrite
+    // 매물 상세(/gongsil/detail/…)도 폰이면 모바일 상세(/m/gongsil/detail/…)로 보여 준다.
+    // 모바일 상세가 없던 때(2026-09-10) 넣은 예외가 남아, 페북·카톡으로 공유된 링크를
+    // 폰에서 열면 620px PC 팝업 화면이 나왔다 (2026-10-04). 홈페이지 주소는 10-01 에 고침.
     if (
       isMobile &&
       !viewDesktop &&
@@ -149,8 +152,7 @@ export async function middleware(request: NextRequest) {
       !url.pathname.startsWith('/realty_admin') &&
       !url.pathname.startsWith('/user_admin') &&
       !url.pathname.startsWith('/com') &&
-      !url.pathname.startsWith('/flyer') &&
-      !url.pathname.startsWith('/gongsil/detail')
+      !url.pathname.startsWith('/flyer')
     ) {
       url.pathname = `/m${url.pathname === '/' ? '' : url.pathname}`;
       return NextResponse.rewrite(url);
