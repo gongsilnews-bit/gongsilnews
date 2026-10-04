@@ -15,6 +15,7 @@ const PLACEMENT_OPTIONS = [
   { value: "SIDEBAR", label: "뉴스상세사이드바" },
   { value: "LIST_INLINE", label: "뉴스 리스트형" },
   { value: "LIST_SIDEBAR", label: "뉴스 리스트 사이드바" },
+  { value: "BOARD_SIDEBAR", label: "게시판·스터디 사이드바" },
   { value: "NEWS_DETAIL", label: "뉴스 상세하단" },
   { value: "POPUP", label: "팝업" },
   { value: "MOBILE_NEWS_TOP", label: "모바일 뉴스 상단 배너" },

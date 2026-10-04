@@ -8,6 +8,7 @@ import { createClient } from "@/utils/supabase/client";
 import { getPermissionLevel, canAccessBoard } from "@/utils/permissionCheck";
 import { getBoardListUrl } from "@/utils/boardListUrl";
 import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
+import BannerSlot from "@/components/BannerSlot";
 
 // YouTube URL에서 embed URL 생성 (공유버튼 ?si= 등 모든 형식)
 function getYoutubeEmbedUrl(url: string): string | null {
@@ -593,7 +594,8 @@ export default function BoardReadClient({
         {/* 공지사항은 길게 풀사이즈 노출(사이드바 제외) */}
         {boardId !== "notice" && (
           <div className="b-sidebar">
-            <div className="sb-banner">배너 1</div>
+            {/* 광고관리 [게시판·스터디 사이드바] 배너. 걸린 배너가 없으면 자리를 비운다 */}
+            <BannerSlot placement="BOARD_SIDEBAR" className="sb-ad" style={{ marginBottom: 30 }} />
 
             <div className="sb-widget">
               <div className="sb-title">

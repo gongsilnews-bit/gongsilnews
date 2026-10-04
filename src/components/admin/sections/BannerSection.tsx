@@ -18,6 +18,7 @@ const PLACEMENT_OPTIONS = [
   { value: "NEWS_DETAIL", label: "뉴스 상세하단" },
   { value: "POPUP", label: "팝업" },
   { value: "MOBILE_NEWS_TOP", label: "모바일 뉴스 상단 배너" },
+  { value: "BOARD_SIDEBAR", label: "게시판·스터디 사이드바" },
 ];
 
 const MOBILE_NEWS_TABS = [
@@ -148,7 +149,19 @@ const PLACEMENT_CARDS = [
       </svg>
     )
   },
-  { 
+  {
+    // 공실스터디 자료실·커뮤니티, 게시판 목록·글 읽기 오른쪽 위 (폭 260px)
+    value: "BOARD_SIDEBAR", label: "게시판·스터디 사이드바", size: "260x170px (선명하게 520x340)",
+    icon: (selected: boolean) => (
+      <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">
+        <rect x="5" y="5" width="90" height="65" rx="4" fill="#fff" />
+        <rect x="70" y="12" width="20" height="14" rx="2" fill={selected ? "#3b82f6" : "#e5e7eb"} stroke="none" />
+        <path d="M72 34 L88 34 M72 41 L88 41 M72 48 L88 48" stroke="#e5e7eb" strokeWidth="1.5" />
+        <path d="M10 15 L60 15 M10 25 L60 25 M10 35 L60 35 M10 45 L60 45 M10 55 L60 55" stroke="#e5e7eb" strokeWidth="1" />
+      </svg>
+    )
+  },
+  {
     value: "CUSTOM", label: "기타 (직접입력)", size: "자유 사이즈",
     icon: (selected: boolean) => (
       <svg width="48" height="36" viewBox="0 0 100 75" fill="none" stroke="#ccc" strokeWidth="2">

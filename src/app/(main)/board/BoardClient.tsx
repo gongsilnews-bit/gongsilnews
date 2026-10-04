@@ -6,6 +6,7 @@ import { saveBoardPost } from "@/app/actions/board";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permissionCheck";
+import BannerSlot from "@/components/BannerSlot";
 
 // YouTube URL에서 썸네일 이미지 추출
 function getYoutubeThumbnail(url: string): string | null {
@@ -537,7 +538,8 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
         {/* 공지사항은 길게 풀사이즈로 표시(사이드바 제외) */}
         {!isNotice && (
           <div className="b-sidebar">
-            <div className="sb-banner">배너 1</div>
+            {/* 광고관리 [게시판·스터디 사이드바] 배너. 걸린 배너가 없으면 자리를 비운다 */}
+            <BannerSlot placement="BOARD_SIDEBAR" className="sb-ad" style={{ marginBottom: 30 }} />
 
             <div className="sb-widget">
               <div className="sb-title">인기 게시물</div>

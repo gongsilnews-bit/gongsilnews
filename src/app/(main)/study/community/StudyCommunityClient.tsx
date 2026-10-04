@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
 import StudyHero from "@/components/study/StudyHero";
+import BannerSlot from "@/components/BannerSlot";
 
 const POINT = "#1a2e50";
 const ITEMS_PER_PAGE = 12;
@@ -467,7 +468,8 @@ export default function StudyCommunityClient({
 
           {/* ━━━ 우측 사이드바 — 자료실과 같은 배너·인기글 ━━━ */}
           <div className="b-sidebar">
-            <div className="sb-banner">배너 1</div>
+            {/* 광고관리 [게시판·스터디 사이드바] 배너. 걸린 배너가 없으면 자리를 비운다 */}
+            <BannerSlot placement="BOARD_SIDEBAR" className="sb-ad" style={{ marginBottom: 30 }} />
 
             <div className="sb-widget">
               <div className="sb-title">{activeBoard === "studyqa" ? "인기 질문" : "인기 게시물"}</div>

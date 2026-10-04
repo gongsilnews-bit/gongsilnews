@@ -1202,7 +1202,7 @@ button { border: none; background: none; cursor: pointer; font-family: inherit; 
 @media (max-width: 1024px) {
     .b-layout { flex-direction: column; }
     .b-sidebar { width: 100%; display: flex; gap: 20px; }
-    .b-sidebar .sb-banner, .b-sidebar .sb-widget { flex: 1; }
+    .b-sidebar .sb-banner, .b-sidebar .sb-widget, .b-sidebar .sb-ad { flex: 1; }
 }
 @media (max-width: 768px) {
     .b-grid { grid-template-columns: repeat(2, 1fr); }
