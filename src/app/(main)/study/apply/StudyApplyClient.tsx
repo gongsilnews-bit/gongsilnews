@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
 import StudyHero from "@/components/study/StudyHero";
@@ -15,6 +16,34 @@ const POINT = "#059669";
 const POINT_DARK = "#047857";
 const POINT_SOFT = "#ecfdf5";
 const POINT_BORDER = "#a7f3d0";
+
+
+const TARGET_AUDIENCE = [
+  {
+    tag: "RECOMMEND 01",
+    title: "사무실/상가 전문 부동산",
+    image: "/images/study/recommend_real_teheran_man.jpg",
+    imageAlt: "강남 테헤란로를 걸으며 스마트폰으로 공실뉴스를 열람하는 전문 남성 공인중개사",
+    description: "면적, 렌트프리, 권리금, 관리비 등 복잡한 상권·오피스 조건을 한눈에 보이는 브리핑 리포트와 상위 노출 콘텐츠로 완성합니다.",
+    solution: "렌트프리·수익률이 정리된 프리미엄 제안서와 상위 노출 마케팅 기사가 1초 만에 자동 완성됩니다.",
+  },
+  {
+    tag: "RECOMMEND 02",
+    title: "아파트/오피스텔 입점 부동산",
+    image: "/images/study/recommend_real_apartment.jpg",
+    imageAlt: "아파트와 오피스텔 매물 브리핑을 진행하는 전문 여성 공인중개사",
+    description: "단지 내 급매물과 전월세 정보를 빠르게 블로그와 숏폼으로 제작하여 입주민과 외부 매수·임차 고객 문의를 선점합니다.",
+    solution: "단지별 급매물 브리핑 보고서와 블로그 포스팅, 단지 투어 숏폼 영상이 즉시 자동 완성됩니다.",
+  },
+  {
+    tag: "RECOMMEND 03",
+    title: "빌라/주택 건물 부동산",
+    image: "/images/study/recommend_real_villa.jpg",
+    imageAlt: "신축 빌라와 주택 현장 영상 촬영 짐벌을 든 전문 공인중개사",
+    description: "원룸·투룸 다가구부터 꼬마빌딩까지, 현장 영상 촬영 대본과 기사 발행으로 공실 해소와 공동중개 기회를 극대화합니다.",
+    solution: "씬별 현장 촬영 대본과 전국 11만 부동산 실시간 공유로 빠른 공실 계약을 이끕니다.",
+  },
+];
 
 const RETURN_TO = "/study/apply";
 
@@ -467,34 +496,123 @@ export default function StudyApplyClient() {
           </div>
         </div>
 
-        {/* ━━━ [3] 비용 대비 가치 (4대 혜택 카드) ━━━ */}
-        <section style={{ backgroundColor: "#ffffff", borderRadius: "20px", padding: "44px 30px", border: "1px solid #e2e8f0", marginBottom: "60px", boxShadow: "0 2px 12px rgba(0,0,0,0.03)" }}>
-          <div style={{ textAlign: "center", marginBottom: "32px" }}>
-            <div style={{ color: POINT, fontSize: "13px", fontWeight: 800, textTransform: "uppercase", marginBottom: "6px" }}>
-              LEARN &amp; USE
+        {/* ━━━ [3] 이런 부동산에게 추천합니다! ━━━ */}
+        <section style={{ backgroundColor: "#f0fdf9", borderRadius: "24px", padding: "64px 32px", border: "1px solid #d1fae5", marginBottom: "68px", textAlign: "center" }}>
+          <div style={{ maxWidth: 840, margin: "0 auto 44px" }}>
+            <div style={{ color: POINT, fontSize: "13px", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
+              RECOMMENDATION
             </div>
-            <h2 style={{ fontSize: "26px", fontWeight: 900, color: "#0f172a", margin: "0 0 10px 0" }}>
-              배우고 끝이 아닙니다, <span style={{ color: POINT }}>내 실무에 바로 활용</span>할 수 있습니다
+            <h2 style={{ fontSize: "30px", fontWeight: 900, color: "#0f2e28", margin: "0 0 12px 0", letterSpacing: "-0.8px" }}>
+              이런 부동산에게 추천합니다!
             </h2>
-            <p style={{ fontSize: "14.5px", color: "#64748b", margin: 0, lineHeight: 1.6 }}>
-              공실등록 20건 + AI 매물보고서 + 기사 4건 포털 송고 + 공실뉴스 광고영업권까지 원스톱 제공
+            <p style={{ fontSize: "15px", color: "#64748b", margin: 0, lineHeight: 1.6 }}>
+              주력 매물에 맞춘 자동 브리핑 리포트와 숏폼 콘텐츠로 실무 경쟁력을 높여보세요.
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-            {valueStats.map((item, idx) => (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "24px",
+              maxWidth: 1040,
+              margin: "0 auto",
+              textAlign: "left",
+            }}
+          >
+            {TARGET_AUDIENCE.map((item) => (
               <div
-                key={idx}
+                key={item.title}
                 style={{
-                  backgroundColor: "#f8fafc",
-                  borderRadius: "14px",
-                  padding: "22px 18px",
-                  border: "1px solid #edf2f7",
-                  textAlign: "center",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "20px",
+                  padding: "24px 20px",
+                  border: "1.5px solid #a7f3d0",
+                  boxShadow: "0 10px 25px rgba(5, 150, 105, 0.06)",
+                  display: "flex",
+                  flexDirection: "column",
                 }}
               >
-                <div style={{ fontSize: "14.5px", fontWeight: 800, color: "#1e293b", marginBottom: "8px" }}>{item.title}</div>
-                <div style={{ fontSize: "15px", fontWeight: 900, color: POINT }}>{item.highlight}</div>
+                {/* 실사 이미지 썸네일 */}
+                <div
+                  style={{
+                    position: "relative",
+                    width: "100%",
+                    height: "220px",
+                    borderRadius: "14px",
+                    overflow: "hidden",
+                    marginBottom: "18px",
+                    backgroundColor: "#e2e8f0",
+                  }}
+                >
+                  <Image
+                    src={item.image}
+                    alt={item.imageAlt}
+                    fill
+                    style={{ objectFit: "cover", objectPosition: "center top" }}
+                  />
+                </div>
+
+                {/* 태그 배지 */}
+                <span
+                  style={{
+                    display: "inline-block",
+                    alignSelf: "flex-start",
+                    backgroundColor: "#ecfdf5",
+                    color: POINT,
+                    border: "1px solid #a7f3d0",
+                    fontSize: "12px",
+                    fontWeight: 800,
+                    padding: "3px 10px",
+                    borderRadius: "20px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  {item.tag}
+                </span>
+
+                {/* 제목 */}
+                <h3
+                  style={{
+                    fontSize: "19px",
+                    fontWeight: 900,
+                    color: "#0f2e28",
+                    margin: "0 0 10px 0",
+                    letterSpacing: "-0.3px",
+                  }}
+                >
+                  {item.title}
+                </h3>
+
+                {/* 본문 설명 */}
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#475569",
+                    lineHeight: 1.65,
+                    margin: "0 0 18px 0",
+                    flex: 1,
+                  }}
+                >
+                  {item.description}
+                </p>
+
+                {/* 맞춤 솔루션 배지 박스 */}
+                <div
+                  style={{
+                    backgroundColor: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    borderRadius: "10px",
+                    padding: "12px 14px",
+                  }}
+                >
+                  <div style={{ fontSize: "12px", fontWeight: 800, color: POINT, marginBottom: "4px" }}>
+                    💡 맞춤 솔루션
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#166534", lineHeight: 1.55, fontWeight: 600 }}>
+                    {item.solution}
+                  </div>
+                </div>
               </div>
             ))}
           </div>

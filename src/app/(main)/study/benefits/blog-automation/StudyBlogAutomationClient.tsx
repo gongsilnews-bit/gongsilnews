@@ -285,7 +285,7 @@ export default function StudyBlogAutomationClient() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 64 }}>
 
-            {/* ── POINT 01: 공실등록 & 크롬웹스토어 다운로드 ── */}
+            {/* ── POINT 01: 매물 정보 AI 분석 & 네이버 상위 노출 블로그 글 자동 작성 ── */}
             <div
               style={{
                 display: "grid",
@@ -325,37 +325,33 @@ export default function StudyBlogAutomationClient() {
                     margin: "0 0 16px 0",
                   }}
                 >
-                  공실뉴스에 공실을 등록하고<br />
-                  <span style={{ color: POINT }}>크롬웹스토어에서 기사 작성기 다운로드!</span>
+                  매물 정보를 AI가 분석해<br />
+                  <span style={{ color: POINT }}>네이버 상위 노출 블로그 글을 1초 만에 자동 작성</span>
                 </h3>
-                <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
-                  공실뉴스에 내 공실 매물을 등록한 뒤, &lsquo;공실뉴스 AI 기사 작성기&rsquo; 확장 프로그램을 무료로 다운받으세요.
-                  별도의 복잡한 프로그램 설치 없이 크롬 브라우저 상단에서 언제든 원클릭으로 바로 작동합니다.
+                <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 12px 0" }}>
+                  매물 등록 후 1시간씩 머리를 쥐어짜며 블로그 포스팅을 고민할 필요가 없습니다. 등록된 데이터를 AI가 스스로 분석하여 네이버 검색 로직에 최적화된 포스팅을 1초 만에 작성해 줍니다.
+                </p>
+                <p style={{ fontSize: "14.5px", color: "#64748b", lineHeight: 1.65, margin: "0 0 24px 0" }}>
+                  지역명과 업종 키워드가 타겟팅된 소제목 구조, 자연스러운 본문 스토리라인, 연관 해시태그까지 한 번에 완성되어 복사 후 등록만 하면 끝납니다.
                 </p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>크롬 웹스토어 무료 제공</strong> — 크롬 브라우저에 3초 만에 확장 프로그램 추가
+                      <strong>스마트블록 알고리즘 반영</strong> — 검색 유입을 끌어오는 체계적 소제목과 키워드 밀도
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>공실뉴스 완벽 연동</strong> — 내가 등록한 공실 매물 데이터를 즉시 불러와 인식
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
-                    <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>원클릭 실행 팝업</strong> — 블로그 작성 창 옆에 띄워두고 편리하게 작업
+                      <strong>원클릭 복사 & 보도자료 기사</strong> — 블로그 붙여넣기 및 언론사 기사 초안 동시 생성
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* 시각화 카드: 크롬 익스텐션 목업 */}
+              {/* 시각화 카드: 네이버 블로그 에디터 화면 */}
               <div
                 style={{
                   position: "relative",
@@ -368,10 +364,10 @@ export default function StudyBlogAutomationClient() {
                 }}
               >
                 <Image
-                  src="/images/study/benefit_chrome_extension.jpg"
-                  alt="크롬 웹스토어 공실뉴스 기사 작성기 확장 프로그램"
+                  src="/images/study/naver-blog-editor-sample.png"
+                  alt="공실뉴스 AI 네이버 블로그 자동 포스팅 및 스마트에디터 실시간 작성 화면"
                   fill
-                  style={{ objectFit: "cover", objectPosition: "center" }}
+                  style={{ objectFit: "cover", objectPosition: "top center" }}
                 />
               </div>
             </div>

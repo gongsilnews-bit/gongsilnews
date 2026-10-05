@@ -738,6 +738,112 @@ export default function StudyAiYoutubeClient() {
         </div>
       </section>
 
+      {/* ━━━ [NEW] 방송국 PD 출신 마케팅 이사 직강 & 오프라인 검증 섹션 ━━━ */}
+      <section style={{ backgroundColor: "#ffffff", padding: "80px 0 90px", borderTop: "1px solid #e2e8f0" }}>
+        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px", textAlign: "center" }}>
+          <p
+            style={{
+              fontSize: 13,
+              fontWeight: 800,
+              color: "#059669",
+              letterSpacing: "1px",
+              textTransform: "uppercase",
+              marginBottom: 10,
+            }}
+          >
+            방송국 PD 출신 편집장 직강
+          </p>
+          <h2
+            style={{
+              fontSize: "30px",
+              fontWeight: 900,
+              color: "#0f2e28",
+              lineHeight: 1.4,
+              letterSpacing: "-0.8px",
+              margin: "0 0 16px 0",
+            }}
+          >
+            방송국 PD 출신, 공실뉴스편집장이<br />
+            <span style={{ color: "#059669" }}>강남/서초 100여명의 부동산과 함께 했던 실전 강의!</span>
+          </h2>
+          <p style={{ fontSize: "16px", color: "#64748b", lineHeight: 1.7, margin: "0 auto 48px", maxWidth: 640 }}>
+            강남·서초 100여 개 부동산 실무자와 오프라인에서 함께 했던 생생한 경험을<br />
+            이제 온라인에서 누구나 쉽고 빠르게 따라 할 수 있도록 알려드립니다.
+          </p>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              borderTop: "1px solid #e2e8f0",
+              borderBottom: "1px solid #e2e8f0",
+              marginBottom: 50,
+            }}
+          >
+            <div style={{ padding: "24px 16px", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 6 }}>
+              <strong style={{ fontSize: 26, fontWeight: 900, color: "#059669" }}>2025</strong>
+              <span style={{ fontSize: 15, fontWeight: 800, color: "#1e293b" }}>강남구청</span>
+              <small style={{ fontSize: 13, color: "#64748b" }}>ChatGPT·AI 실무특강</small>
+            </div>
+            <div style={{ padding: "24px 16px", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 6 }}>
+              <strong style={{ fontSize: 26, fontWeight: 900, color: "#059669" }}>2025</strong>
+              <span style={{ fontSize: 15, fontWeight: 800, color: "#1e293b" }}>서울벤처대학원대학교</span>
+              <small style={{ fontSize: 13, color: "#64748b" }}>유튜브 콘텐츠 제작 실습</small>
+            </div>
+            <div style={{ padding: "24px 16px", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 6 }}>
+              <strong style={{ fontSize: 26, fontWeight: 900, color: "#059669" }}>11만</strong>
+              <span style={{ fontSize: 15, fontWeight: 800, color: "#1e293b" }}>부동산 네트워크</span>
+              <small style={{ fontSize: 13, color: "#64748b" }}>공실뉴스 회원·독자 기준</small>
+            </div>
+            <div style={{ padding: "24px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+              <strong style={{ fontSize: 26, fontWeight: 900, color: "#059669" }}>1년</strong>
+              <span style={{ fontSize: 15, fontWeight: 800, color: "#1e293b" }}>온라인 실무 스터디</span>
+              <small style={{ fontSize: 13, color: "#64748b" }}>맞춤형 피드백 제공</small>
+            </div>
+          </div>
+
+          {/* 오프라인 실습 교육 현장 사진 카드 */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              maxWidth: 960,
+              margin: "0 auto",
+              borderRadius: 16,
+              overflow: "hidden",
+              border: "1px solid #cbd5e1",
+              backgroundColor: "#ffffff",
+              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.06)",
+              textAlign: "left",
+            }}
+          >
+            <div style={{ position: "relative", minHeight: 340, backgroundColor: "#e2e8f0" }}>
+              <Image
+                src="/images/study/seoul-venture-lecture-2025-blur.png"
+                alt="2025년 서울벤처대학원대학교 강의 현장 단체사진 (개인정보 보호 모자이크 적용)"
+                fill
+                style={{ objectFit: "cover", objectPosition: "center" }}
+              />
+            </div>
+            <div style={{ padding: "40px 36px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", marginBottom: 8 }}>
+                2025 서울벤처대학원대학교
+              </span>
+              <h3 style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", margin: "0 0 16px 0", letterSpacing: "-0.5px" }}>
+                유튜브 콘텐츠 제작 실습 교육
+              </h3>
+              <p style={{ fontSize: 15, color: "#475569", lineHeight: 1.7, margin: "0 0 20px 0" }}>
+                나이와 IT 경험에 상관없이 화면을 보며 하나씩 따라 하고,
+                수업이 끝날 때 직접 만든 결과물을 남기는 방식으로 진행했습니다.
+              </p>
+              <strong style={{ fontSize: 15, fontWeight: 800, color: "#047857" }}>
+                이제 같은 과정을 온라인에서 배울 수 있습니다.
+              </strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ━━━ 4. 12-MONTH ROADMAP SECTION (12개월 마케팅 능력 확! 도약 로드맵) ━━━ */}
       <section style={{ backgroundColor: "#062828", color: "#ffffff", padding: "70px 0 80px" }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>

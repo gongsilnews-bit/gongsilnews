@@ -23,26 +23,14 @@
 .hero {
   position: relative;
   overflow: hidden;
-  background: #041a17;
+  background: radial-gradient(circle at 50% 20%, #0c352e 0%, #06231f 50%, #031513 100%);
   color: #ffffff;
-}
-
-.heroBackground {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 25%;
-  opacity: 0.36;
-  filter: saturate(0.9) brightness(0.9);
-  pointer-events: none;
 }
 
 .heroShade {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 30%, rgba(6, 28, 25, 0.65) 0%, rgba(4, 22, 19, 0.88) 65%, rgba(3, 16, 14, 0.98) 100%);
+  background: radial-gradient(circle at 50% 25%, rgba(102, 223, 189, 0.07) 0%, transparent 65%);
   pointer-events: none;
 }
 
@@ -51,7 +39,7 @@
   z-index: 1;
   width: min(820px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 84px 0 20px;
+  padding: 96px 0 88px;
   text-align: center;
 }
 
@@ -64,11 +52,12 @@
 }
 
 .heroEyebrow {
-  margin: 0 0 22px;
+  margin: 0 0 20px;
   color: #8af0d0;
-  font-size: 14px;
+  font-size: clamp(20px, 2.2vw, 26px);
   font-weight: 800;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
 }
 
 .hero h1 {
@@ -217,6 +206,111 @@
 
 .processHeader h2 span {
   color: #0aa37a;
+}
+
+.trioBannerWrap {
+  width: min(1040px, 100%);
+  margin: 28px auto 32px;
+  position: relative;
+  cursor: pointer;
+}
+
+.trioBannerImgBox {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2.14 / 1;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 20px 48px rgba(10, 163, 122, 0.16), 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 3.5px solid #ffffff;
+  background-color: #0d2823;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.trioBannerWrap:hover .trioBannerImgBox {
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: 0 28px 60px rgba(10, 163, 122, 0.28), 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+
+.trioBannerImgDefault {
+  object-fit: cover;
+  z-index: 1;
+  transition: opacity 0.28s ease;
+}
+
+.trioBannerImgHover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  z-index: 2;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.trioBannerWrap:hover .trioBannerImgHover {
+  opacity: 1;
+  transform: scale(1.01);
+}
+
+.trioBannerWrap:hover .trioBannerImgDefault {
+  opacity: 0;
+}
+
+.trioBannerBadgeDefault,
+.trioBannerBadgeHover {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 24px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 850;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+}
+
+.trioBannerBadgeDefault {
+  background: rgba(13, 40, 35, 0.9);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  opacity: 1;
+}
+
+.trioBannerBadgeHover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.96), rgba(5, 150, 105, 0.96));
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+  opacity: 0;
+}
+
+.trioBannerWrap:hover .trioBannerBadgeDefault {
+  opacity: 0;
+  transform: translateX(-50%) translateY(4px);
+}
+
+.trioBannerWrap:hover .trioBannerBadgeHover {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.trioBadgePulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 10px #34d399;
 }
 
 .processFlowSummary {
@@ -389,10 +483,11 @@
 
 /* ━━━ 2섹션: 대형 부동산 현황 (Market Reality) ━━━ */
 .marketSection {
-  padding: 100px 24px;
+  padding: 85px 24px 80px;
   background: #ffffff;
   border-bottom: 1px solid #eef2f0;
   text-align: center;
+  position: relative;
 }
 
 .marketGrid {
@@ -406,29 +501,53 @@
 .marketCard {
   background: #fbfdfc;
   border: 1.5px solid #e2ece8;
-  border-radius: 16px;
-  padding: 32px 26px;
+  border-radius: 20px;
+  padding: 18px 18px 26px;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .marketCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 32px rgba(10, 163, 122, 0.08);
+  transform: translateY(-5px);
+  box-shadow: 0 18px 36px rgba(10, 163, 122, 0.1);
   border-color: #b7dbd1;
 }
 
-.marketIconBox {
-  width: 52px;
-  height: 52px;
+.marketCardImgBox {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 12;
   border-radius: 14px;
-  background: #eef8f5;
+  overflow: hidden;
+  margin-bottom: 18px;
+  background-color: #edf5f2;
+}
+
+.marketCardImg {
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.marketCard:hover .marketCardImg {
+  transform: scale(1.05);
+}
+
+.marketCardIconOverlay {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(6px);
   color: #0aa37a;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 2;
 }
 
 .marketBadge {
@@ -456,12 +575,94 @@
   color: #556964;
 }
 
+/* ━━━ 대조 브릿지 (VS Divider) - 가운데 라인 정중앙 일치 ━━━ */
+.vsDividerWrap {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: -50px 0;
+  pointer-events: none;
+}
+
+.vsDividerInner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.vsLine {
+  flex: 1;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, #cbd5cf 25%, #94a3b8 100%);
+  border-radius: 2px;
+}
+
+.vsDividerInner .vsLine:last-child {
+  background: linear-gradient(90deg, #94a3b8 0%, #cbd5cf 75%, transparent 100%);
+}
+
+.vsBadge {
+  pointer-events: auto;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  margin: 0 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff414d 0%, #d62828 100%);
+  color: #ffffff;
+  font-size: 40px;
+  font-weight: 950;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  box-shadow: 0 14px 34px rgba(214, 40, 40, 0.45), 0 0 0 10px rgba(255, 65, 77, 0.16);
+  border: 5px solid #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  user-select: none;
+}
+
+.vsBadge:hover {
+  transform: scale(1.08);
+  box-shadow: 0 20px 44px rgba(214, 40, 40, 0.58), 0 0 0 14px rgba(255, 65, 77, 0.24);
+}
+
 /* ━━━ 3섹션: 1~2인 로컬 부동산의 현실 고충 (Local Reality) ━━━ */
 .painSection {
-  padding: 100px 24px;
-  background: #f5f9f7;
+  padding: 80px 24px 100px;
+  background: #fbfcfc;
   border-bottom: 1px solid #e5ede9;
   text-align: center;
+  position: relative;
+}
+
+.painKicker {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ef4444;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+.painTitleHighlight {
+  display: inline-block;
+  background: #ef4444;
+  color: #ffffff;
+  padding: 2px 14px;
+  border-radius: 8px;
+  margin-right: 6px;
+  font-weight: 950;
+  line-height: 1.35;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.32);
+  vertical-align: middle;
 }
 
 .painStack {
@@ -475,11 +676,11 @@
 .painWideCard {
   display: flex;
   align-items: center;
-  gap: 48px;
+  gap: 44px;
   background: #ffffff;
   border: 1.5px solid #dce8e3;
   border-radius: 24px;
-  padding: 34px 46px;
+  padding: 32px 42px;
   box-shadow: 0 10px 30px rgba(13, 40, 35, 0.04);
   text-align: left;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
@@ -491,10 +692,6 @@
   border-color: #b9ded2;
 }
 
-.painWideCardReverse {
-  flex-direction: row-reverse;
-}
-
 .painCharWrap {
   flex-shrink: 0;
   width: 210px;
@@ -504,12 +701,13 @@
   justify-content: center;
   background: radial-gradient(circle, #edf7f3 0%, rgba(255, 255, 255, 0) 70%);
   border-radius: 20px;
+  overflow: hidden;
 }
 
 .painCharImg {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   border-radius: 16px;
   filter: drop-shadow(0 10px 20px rgba(13, 40, 35, 0.08));
 }
@@ -521,12 +719,12 @@
 
 .painTag {
   display: inline-block;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 850;
   color: #0aa37a;
   background: #eef8f5;
   border: 1px solid #cce8de;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 6px;
   margin-bottom: 12px;
   letter-spacing: -0.01em;
@@ -556,6 +754,428 @@
   line-height: 1.7;
   color: #556964;
   word-break: keep-all;
+}
+
+.painGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 52px;
+  text-align: left;
+}
+
+.painCard {
+  background: #ffffff;
+  border: 1.5px solid #fee2e2;
+  border-radius: 20px;
+  padding: 18px 18px 26px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+}
+
+.painCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 18px 36px rgba(220, 38, 38, 0.1);
+  border-color: #fca5a5;
+}
+
+.painCardImgBox {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 12;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 18px;
+  background-color: #fff1f2;
+}
+
+.painCardImg {
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.painCard:hover .painCardImg {
+  transform: scale(1.05);
+}
+
+.painCardIconOverlay {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(6px);
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 2;
+}
+
+.painBadge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 850;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.painCard h3 {
+  margin: 0 0 10px;
+  font-size: 19px;
+  font-weight: 850;
+  color: #1f2937;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.painCard p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #64748b;
+  word-break: keep-all;
+}
+
+/* ━━━ [중간 브릿지 신규] 내 지역/단지 물건 등록 무료 혜택 3단 섹션 ━━━ */
+.freeOfferSection {
+  padding: 90px 24px;
+  background: linear-gradient(180deg, #f8fbf9 0%, #edf7f4 50%, #f6faf8 100%);
+  border-top: 1px solid #e1efe9;
+  border-bottom: 1px solid #e1efe9;
+  position: relative;
+}
+
+.freeOfferHeader {
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto 56px;
+}
+
+.freeOfferBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 18px;
+  background: #0aa37a;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(10, 163, 122, 0.3);
+  margin-bottom: 18px;
+}
+
+.freeOfferTitle {
+  margin: 0 0 16px;
+  font-size: clamp(26px, 3.2vw, 40px);
+  font-weight: 950;
+  line-height: 1.35;
+  letter-spacing: -0.035em;
+  color: #0b221e;
+  word-break: keep-all;
+}
+
+.freeOfferHighlight {
+  color: #0aa37a;
+  background: linear-gradient(135deg, #0aa37a 0%, #057a5b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.freeOfferSub {
+  margin: 0 auto;
+  font-size: clamp(15px, 1.25vw, 18px);
+  color: #556c66;
+  line-height: 1.6;
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+  max-width: 680px;
+}
+
+.freeOfferList {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.freeOfferRow {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  align-items: stretch;
+  background: #ffffff;
+  border-radius: 26px;
+  border: 1.5px solid #d9eae4;
+  box-shadow: 0 16px 40px rgba(10, 163, 122, 0.07), 0 2px 6px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.freeOfferRow:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 24px 50px rgba(10, 163, 122, 0.14);
+  border-color: #0aa37a;
+}
+
+.freeOfferRowReverse {
+  grid-template-columns: 1fr 1.05fr;
+}
+
+.freeOfferImgBox {
+  position: relative;
+  min-height: 400px;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 30%, #ffffff 0%, #edf6f2 100%);
+  overflow: hidden;
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.freeOfferImg {
+  object-fit: cover;
+  object-position: center center;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.freeOfferImgBox:hover .freeOfferImg,
+.freeOfferRow:hover .freeOfferImg {
+  transform: scale(1.05);
+}
+
+/* 마우스 호버 시 자세히 보기 오버레이 */
+.freeOfferImgOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: rgba(6, 40, 35, 0.48);
+  backdrop-filter: blur(2.5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  pointer-events: none;
+}
+
+.freeOfferImgBox:hover .freeOfferImgOverlay {
+  opacity: 1;
+}
+
+.freeOfferDetailBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 26px;
+  border-radius: 999px;
+  background: #0aa37a;
+  color: #ffffff;
+  font-size: 15.5px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  box-shadow: 0 8px 24px rgba(10, 163, 122, 0.45), 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  transform: translateY(10px) scale(0.95);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+}
+
+.freeOfferImgBox:hover .freeOfferDetailBadge {
+  transform: translateY(0) scale(1);
+}
+
+.freeOfferDetailBadge svg {
+  transition: transform 0.25s ease;
+}
+
+.freeOfferImgBox:hover .freeOfferDetailBadge svg {
+  transform: translateX(4px);
+}
+
+.freeOfferLabelBadge {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 2;
+  padding: 8px 18px;
+  background: rgba(11, 34, 30, 0.88);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+.freeOfferContent {
+  padding: 44px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.freeOfferChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  background: #ecf8f3;
+  color: #0aa37a;
+  font-size: 13px;
+  font-weight: 850;
+  border-radius: 8px;
+  width: fit-content;
+  margin-bottom: 14px;
+  letter-spacing: -0.01em;
+}
+
+.freeOfferContentTitle {
+  margin: 0 0 22px;
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 900;
+  color: #0e2924;
+  letter-spacing: -0.03em;
+  line-height: 1.35;
+}
+
+.freeOfferCheckList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.freeOfferCheckItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f7faf9;
+  border: 1px solid #e7f0ec;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.freeOfferCheckItem:hover {
+  background: #edf7f3;
+  transform: translateX(4px);
+}
+
+.freeOfferCheckIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #0aa37a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  box-shadow: 0 2px 8px rgba(10, 163, 122, 0.35);
+}
+
+.freeOfferCheckText {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a3832;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+.freeOfferCheckStrong {
+  color: #0aa37a;
+  font-weight: 900;
+}
+
+.freeOfferCheckSub {
+  font-size: 13px;
+  color: #6a827d;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+/* ━━━ [중간 브릿지 배너] 소장님들의 감탄 반전 (기존 보존) ━━━ */
+.revelationCard {
+  width: min(1040px, 100%);
+  margin: 0 auto 42px;
+  padding: 34px 38px;
+  background: linear-gradient(135deg, #06231e 0%, #0d3830 50%, #084c3c 100%);
+  border-radius: 22px;
+  border: 2px solid rgba(52, 211, 153, 0.45);
+  box-shadow: 0 16px 44px rgba(10, 163, 122, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.revelationCard::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 50% 20%, rgba(52, 211, 153, 0.16) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.revelationKicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: clamp(16px, 1.8vw, 22px);
+  font-weight: 850;
+  color: #34d399;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px 0;
+  text-shadow: 0 0 14px rgba(52, 211, 153, 0.45);
+}
+
+.revelationEmoji {
+  font-size: 1.25em;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
+
+.revelationHeadline {
+  margin: 0;
+  font-size: clamp(19px, 2.3vw, 30px);
+  font-weight: 900;
+  line-height: 1.4;
+  letter-spacing: -0.03em;
+  word-break: keep-all;
+}
+
+.revelationHighlight {
+  color: #fef08a;
+  text-shadow: 0 2px 14px rgba(254, 240, 138, 0.35);
+}
+
+.revelationSuffix {
+  color: #a7f3d0;
+  font-weight: 850;
 }
 
 /* ━━━ 6섹션: 11만 부동산 네트워크 시너지 ━━━ */
@@ -2192,6 +2812,7 @@
   }
 
   .marketGrid,
+  .painGrid,
   .synergyGrid,
   .problemGrid {
     grid-template-columns: 1fr;
@@ -2249,6 +2870,20 @@
   .faqInner {
     grid-template-columns: 1fr;
     gap: 40px;
+  }
+
+  .freeOfferRow,
+  .freeOfferRowReverse {
+    grid-template-columns: 1fr;
+  }
+
+  .freeOfferImgBox {
+    min-height: 260px;
+    max-height: 320px;
+  }
+
+  .freeOfferContent {
+    padding: 32px 24px;
   }
 }
 

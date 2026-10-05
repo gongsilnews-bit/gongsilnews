@@ -46,29 +46,17 @@
 /* ━━━ [1] 메인 히어로 ━━━ */
 .hero {
   position: relative;
-  background-color: #041c1a;
+  background: radial-gradient(circle at 50% 20%, #0c352e 0%, #06231f 50%, #031513 100%);
   color: #ffffff;
-  padding: 36px 16px 32px;
+  padding: 44px 16px 40px;
   overflow: hidden;
   text-align: center;
-}
-
-.heroBg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center top;
-  opacity: 0.22;
-  pointer-events: none;
 }
 
 .heroOverlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(4, 28, 26, 0.75) 0%, rgba(4, 28, 26, 0.92) 50%, #041c1a 100%);
+  background: radial-gradient(circle at 50% 20%, rgba(102, 223, 189, 0.06) 0%, transparent 65%);
   pointer-events: none;
 }
 
@@ -84,14 +72,14 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.4);
   color: #6ee7b7;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 5px 12px;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 6px 16px;
   border-radius: 20px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .heroTitle {
@@ -398,21 +386,40 @@
 .marketCard {
   background-color: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 18px 16px;
+  border-radius: 16px;
+  padding: 14px 14px 18px;
   text-align: left;
 }
 
-.marketIconBox {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: #ecfdf5;
+.marketCardImgBox {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background-color: #edf2f7;
+}
+
+.marketCardImg {
+  object-fit: cover;
+}
+
+.marketCardIconOverlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(4px);
   color: #059669;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  z-index: 2;
 }
 
 .marketBadge {
@@ -441,91 +448,314 @@
   word-break: keep-all;
 }
 
+/* ━━━ [대조 브릿지] VS (가운데 라인 정중앙 일치) ━━━ */
+.vsDividerWrap {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: -36px 0;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.vsDividerInner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.vsLine {
+  flex: 1;
+  height: 2.5px;
+  background: linear-gradient(90deg, transparent 0%, #cbd5cf 25%, #94a3b8 100%);
+  border-radius: 2px;
+}
+
+.vsDividerInner .vsLine:last-child {
+  background: linear-gradient(90deg, #94a3b8 0%, #cbd5cf 75%, transparent 100%);
+}
+
+.vsBadge {
+  pointer-events: auto;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff414d 0%, #d62828 100%);
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 950;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  box-shadow: 0 10px 28px rgba(214, 40, 40, 0.44), 0 0 0 8px rgba(255, 65, 77, 0.16);
+  border: 4px solid #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  flex-shrink: 0;
+  user-select: none;
+}
+
 /* ━━━ [3] LOCAL BROKER REALITY ━━━ */
 .painSection {
-  background-color: #f1f5f9;
+  background-color: #fbfcfc;
+  border-bottom: 1px solid #e2e8f0;
+  padding-top: 56px;
+}
+
+.painKicker {
+  font-size: 11px;
+  font-weight: 900;
+  color: #ef4444;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.painTitleHighlight {
+  display: inline-block;
+  background: #ef4444;
+  color: #ffffff;
+  padding: 2px 10px;
+  border-radius: 6px;
+  margin-right: 4px;
+  font-weight: 950;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  vertical-align: middle;
+}
+
+.painCard {
+  background: #ffffff;
+  border: 1px solid #fee2e2;
+  border-radius: 16px;
+  padding: 14px 14px 18px;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.painCardIconOverlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(4px);
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  z-index: 2;
+}
+
+.painBadge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #dc2626;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.painCard h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0 0 6px 0;
+}
+
+.painCard p {
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.55;
+  margin: 0;
+  word-break: keep-all;
 }
 
 .painStack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  margin-top: 24px;
 }
 
-.painCard {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 16px;
-  border: 1px solid #e2e8f0;
+.painWideCard {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  border: 1.5px solid #dce8e3;
+  border-radius: 18px;
+  padding: 20px 16px;
+  box-shadow: 0 6px 20px rgba(13, 40, 35, 0.05);
+  gap: 16px;
+  text-align: left;
 }
 
-.painCharRow {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.painCharImgWrap {
-  width: 76px;
-  height: 76px;
-  flex-shrink: 0;
-  border-radius: 12px;
+.painCharWrap {
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  border-radius: 14px;
   overflow: hidden;
-  background: #f8fafc;
+  background: radial-gradient(circle, #edf7f3 0%, rgba(255, 255, 255, 0) 70%);
   position: relative;
-  border: 1px solid #e2e8f0;
 }
 
 .painCharImg {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+  border-radius: 14px;
 }
 
-.painCharQuotes {
-  flex: 1;
+.painTextContent {
+  width: 100%;
 }
 
 .painTag {
   display: inline-block;
-  font-size: 10.5px;
-  font-weight: 800;
-  color: #dc2626;
-  background: #fee2e2;
-  padding: 2px 7px;
-  border-radius: 4px;
-  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 850;
+  color: #0aa37a;
+  background: #eef8f5;
+  border: 1px solid #cce8de;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
 }
 
-.painQuote {
-  font-size: 13.5px;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.35;
-  margin: 0;
+.painMainQuote {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 850;
+  color: #0d2823;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
   word-break: keep-all;
 }
 
 .painSubTitle {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #475569;
-  margin: 0 0 4px 0;
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0aa37a;
+  letter-spacing: -0.01em;
 }
 
 .painDesc {
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.5;
   margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #556964;
   word-break: keep-all;
+}
+
+/* ━━━ [중간 브릿지 배너] 소장님들의 감탄 반전 ━━━ */
+.revelationCard {
+  width: 100%;
+  margin: 0 0 24px;
+  padding: 22px 18px;
+  background: linear-gradient(135deg, #06231e 0%, #0d3830 50%, #084c3c 100%);
+  border-radius: 16px;
+  border: 1.5px solid rgba(52, 211, 153, 0.45);
+  box-shadow: 0 10px 28px rgba(10, 163, 122, 0.18);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.revelationKicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 850;
+  color: #34d399;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px 0;
+  text-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+}
+
+.revelationEmoji {
+  font-size: 1.2em;
+}
+
+.revelationHeadline {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.45;
+  letter-spacing: -0.03em;
+  word-break: keep-all;
+}
+
+.revelationHighlight {
+  color: #fef08a;
+  text-shadow: 0 2px 10px rgba(254, 240, 138, 0.3);
+}
+
+.revelationSuffix {
+  color: #a7f3d0;
+  font-weight: 850;
 }
 
 /* ━━━ [4] 공실뉴스 AI 솔루션 3단계 ━━━ */
 .processSection {
   background-color: #ffffff;
+}
+
+.trioBannerWrap {
+  width: 100%;
+  margin: 16px 0 12px;
+  cursor: pointer;
+}
+
+.trioBannerImgBox {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2.14 / 1;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(10, 163, 122, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 2px solid #ffffff;
+  background-color: #0d2823;
+}
+
+.trioBannerImgDefault,
+.trioBannerImgHover {
+  object-fit: cover;
+  transition: opacity 0.4s ease-in-out;
+}
+
+.trioBannerImgHover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+.trioBannerWrap:hover .trioBannerImgHover,
+.trioBannerWrap:active .trioBannerImgHover {
+  opacity: 1;
+}
+
+.trioBannerWrap:hover .trioBannerImgDefault,
+.trioBannerWrap:active .trioBannerImgDefault {
+  opacity: 0;
 }
 
 .processFlowSummary {
@@ -1015,4 +1245,215 @@
   padding: 10px;
   background: #ecfdf5;
   border-radius: 8px;
+}
+
+.trioBannerWrap {
+  width: 100%;
+  margin: 16px auto 20px;
+  position: relative;
+}
+
+.trioBannerImgBox {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2.14 / 1;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 2px solid #ffffff;
+  background-color: #0d2823;
+}
+
+.trioBannerImg {
+  object-fit: cover;
+}
+
+/* ━━━ [모바일 중간 브릿지] 내 지역/단지 물건 등록 무료 혜택 3단 섹션 ━━━ */
+.freeOfferSection {
+  padding: 44px 16px;
+  background: linear-gradient(180deg, #f7fbf9 0%, #edf7f4 50%, #f6faf8 100%);
+  border-top: 1px solid #e1efe9;
+  border-bottom: 1px solid #e1efe9;
+}
+
+.freeOfferHeader {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.freeOfferBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 14px;
+  background: #0aa37a;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(10, 163, 122, 0.25);
+  margin-bottom: 12px;
+}
+
+.freeOfferTitle {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 950;
+  line-height: 1.35;
+  letter-spacing: -0.035em;
+  color: #0b221e;
+  word-break: keep-all;
+}
+
+.freeOfferHighlight {
+  color: #0aa37a;
+  display: inline;
+}
+
+.freeOfferSub {
+  margin: 0;
+  font-size: 13px;
+  color: #556c66;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+}
+
+.freeOfferList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.freeOfferRow {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1.5px solid #d9eae4;
+  box-shadow: 0 10px 24px rgba(10, 163, 122, 0.07);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.freeOfferImgBox {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  background: radial-gradient(circle at 50% 30%, #ffffff 0%, #edf6f2 100%);
+  overflow: hidden;
+  display: block;
+  text-decoration: none;
+}
+
+.freeOfferImg {
+  object-fit: cover;
+  object-position: center center;
+}
+
+.freeOfferImgLinkBadge {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  background: rgba(10, 163, 122, 0.95);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 850;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.freeOfferLabelBadge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  padding: 6px 14px;
+  background: rgba(11, 34, 30, 0.88);
+  backdrop-filter: blur(6px);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 850;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.freeOfferContent {
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.freeOfferChip {
+  display: inline-flex;
+  padding: 3px 10px;
+  background: #ecf8f3;
+  color: #0aa37a;
+  font-size: 11.5px;
+  font-weight: 800;
+  border-radius: 6px;
+  width: fit-content;
+  margin-bottom: 8px;
+}
+
+.freeOfferContentTitle {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #0e2924;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+}
+
+.freeOfferCheckList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.freeOfferCheckItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #f7faf9;
+  border: 1px solid #e7f0ec;
+}
+
+.freeOfferCheckIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0aa37a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.freeOfferCheckText {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1a3832;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+.freeOfferCheckStrong {
+  color: #0aa37a;
+  font-weight: 900;
 }
