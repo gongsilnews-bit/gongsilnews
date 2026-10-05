@@ -7,6 +7,7 @@ import { canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
 import StudyHero from "@/components/study/StudyHero";
 import BannerSlot from "@/components/BannerSlot";
+import BoardAccessModal, { type BoardAccessNotice } from "@/components/common/BoardAccessModal";
 
 const POINT = "#1a2e50";
 const ITEMS_PER_PAGE = 12;
@@ -124,12 +125,7 @@ export default function StudyResourcesClient({
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get("page") || "1", 10) || 1);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [searchInputValue, setSearchInputValue] = useState(searchParams.get("search") || "");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
-  };
+  const [accessNotice, setAccessNotice] = useState<BoardAccessNotice | null>(null);
 
   const userLevel = serverUserLevel ?? 0;
   const currentUser = serverUser ?? null;
@@ -430,9 +426,7 @@ export default function StudyResourcesClient({
                           key={p.id}
                           onClick={() => {
                             if (!canRead) {
-                              showToast(
-                                `${getLevelName(activeBoardData?.perm_read ?? 0)}부터 열람하실 수 있습니다.. 🤍`
-                              );
+                              setAccessNotice({ level: activeBoardData?.perm_read ?? 0 });
                             } else {
                               router.push(getReadUrl(p.id));
                             }
@@ -586,9 +580,7 @@ export default function StudyResourcesClient({
                                   onClick={(e) => {
                                     if (!canRead) {
                                       e.preventDefault();
-                                      showToast(
-                                        `${getLevelName(activeBoardData?.perm_read ?? 0)}부터 열람하실 수 있습니다.. 🤍`
-                                      );
+                                      setAccessNotice({ level: activeBoardData?.perm_read ?? 0 });
                                     }
                                   }}
                                   style={{ display: "block" }}
@@ -730,9 +722,7 @@ export default function StudyResourcesClient({
                           onClick={(e) => {
                             if (!canRead) {
                               e.preventDefault();
-                              showToast(
-                                `${getLevelName(activeBoardData?.perm_read ?? 0)}부터 열람하실 수 있습니다.. 🤍`
-                              );
+                              setAccessNotice({ level: activeBoardData?.perm_read ?? 0 });
                             }
                           }}
                           className="pop-title"
@@ -752,27 +742,7 @@ export default function StudyResourcesClient({
         </main>
       )}
 
-      {/* 토스트 메시지 */}
-      {toastMessage && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 40,
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "rgba(17, 24, 39, 0.92)",
-            color: "#ffffff",
-            padding: "12px 24px",
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
-            zIndex: 999999,
-          }}
-        >
-          {toastMessage}
-        </div>
-      )}
+      <BoardAccessModal notice={accessNotice} isLoggedIn={!!currentUser} onClose={() => setAccessNotice(null)} />
 
       <style>{`
         /* 스터디 자료실 전용: 공지사항 게시판(board?id=notice)과 동일한 네이비 테마 및 반응형 보정 */

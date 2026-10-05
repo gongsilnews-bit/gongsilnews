@@ -5,9 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import BoardDropdownHeader from "../_components/header/BoardDropdownHeader";
-import { incrementBoardView, saveBoardComment, deleteBoardPost } from "@/app/actions/board";
-import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permissionCheck";
+import { incrementBoardView, saveBoardComment, updateBoardComment, deleteBoardComment, deleteBoardPost } from "@/app/actions/board";
+import { getPermissionLevel, canAccessBoard, getLevelName, isAdminRole } from "@/utils/permissionCheck";
 import { createClient } from "@/utils/supabase/client";
+import { BoardAccessCard } from "@/components/common/BoardAccessModal";
 
 function getYoutubeId(url: string) {
   if (!url) return null;
@@ -41,6 +42,8 @@ export default function MobileBoardReadClient({
   const [commentText, setCommentText] = useState("");
   const [guestName, setGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchInputValue, setSearchInputValue] = useState("");
   const commentsEnabled = board?.comments_enabled !== false;
@@ -91,10 +94,9 @@ export default function MobileBoardReadClient({
 
   if (board && !canAccessBoard(userLevel, board.perm_read ?? 0)) {
     return (
-      <div style={{ padding: '60px 20px', textAlign: "center", backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
-        <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>{getLevelName(board.perm_read ?? 0)}부터 열람하실 수 있습니다.</h2>
-        <p style={{ color: "#666", marginBottom: 24 }}>현재 레벨: {userLevel}레벨</p>
-        <button onClick={() => router.back()} style={{ padding: "12px 24px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>뒤로 가기</button>
+      <div style={{ padding: '60px 16px', backgroundColor: '#f8f9fa', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+        <BoardAccessCard level={board.perm_read ?? 0} isLoggedIn={!!currentUser} />
+        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 14, fontWeight: 600 }}>뒤로 가기</button>
       </div>
     );
   }
@@ -120,8 +122,9 @@ export default function MobileBoardReadClient({
       content: commentText,
     });
     if (res.success) {
-      setLocalComments([...localComments, {
+      setLocalComments([...localComments, res.data || {
         id: Date.now().toString(),
+        author_id: currentUser?.id,
         author_name: authorName,
         content: commentText,
         created_at: new Date().toISOString(),
@@ -131,6 +134,34 @@ export default function MobileBoardReadClient({
       alert(res.error || "댓글 등록에 실패했습니다.");
     }
     setIsSubmitting(false);
+  };
+
+  // 본인 댓글 또는 최고관리자만 수정·삭제 버튼을 보여준다 (서버에서도 다시 확인).
+  const canManageComment = (c: any) =>
+    !!currentUser && (isAdminRole(currentUser.role) || (!!c.author_id && c.author_id === currentUser.id));
+
+  const handleCommentUpdate = async (commentId: string) => {
+    if (!editingText.trim()) return;
+    setIsSubmitting(true);
+    const res = await updateBoardComment(commentId, editingText);
+    if (res.success) {
+      setLocalComments(localComments.map((c: any) => c.id === commentId ? { ...c, content: editingText.trim() } : c));
+      setEditingCommentId(null);
+      setEditingText("");
+    } else {
+      alert(res.error || "댓글 수정에 실패했습니다.");
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleCommentDelete = async (commentId: string) => {
+    if (!confirm("이 댓글을 삭제하시겠습니까?")) return;
+    const res = await deleteBoardComment(commentId);
+    if (res.success) {
+      setLocalComments(localComments.filter((c: any) => c.id !== commentId));
+    } else {
+      alert(res.error || "댓글 삭제에 실패했습니다.");
+    }
   };
 
   const handleDelete = async () => {
@@ -147,6 +178,13 @@ export default function MobileBoardReadClient({
   const is1to1 = board?.board_type === "inquiry";
 
   // 다중 외부 링크 파싱 보완
+  // 이미지 첨부는 본문 아래에 크게 보여주고, 나머지만 첨부파일 상자에 둔다
+  const sortedAttachments: any[] = [...(post.board_attachments || [])].sort(
+    (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  );
+  const photoAttachments = sortedAttachments.filter(att => (att.file_type || "").startsWith("image/"));
+  const fileAttachments = sortedAttachments.filter(att => !(att.file_type || "").startsWith("image/"));
+
   const externalLinks = (() => {
     let links: any[] = [];
     try {
@@ -386,6 +424,30 @@ export default function MobileBoardReadClient({
               {post.content}
             </div>
           )}
+
+          {/* 첨부 사진 — 화면 폭에 맞춰 크게, 탭하면 원본 */}
+          {photoAttachments.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+              {photoAttachments.map((att: any) => (
+                <a key={`img-${att.id}`} href={att.file_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
+                  <img src={att.file_url} alt={att.file_name} style={{ display: 'block', width: '100%', height: 'auto', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                </a>
+              ))}
+            </div>
+          )}
+
+          {/* 첨부파일 (사진 외) */}
+          {fileAttachments.length > 0 && (
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 14px', marginBottom: '20px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', marginBottom: '6px' }}>첨부파일 ({fileAttachments.length}개)</div>
+              {fileAttachments.map((att: any) => (
+                <a key={att.id} href={att.file_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '8px 0', borderTop: '1px solid #e2e8f0', fontSize: '13px', color: '#508bf5', textDecoration: 'none', wordBreak: 'break-all' }}>
+                  {att.file_name}
+                  {att.file_size && <span style={{ color: '#94a3b8', fontSize: '12px' }}> ({(att.file_size / 1024).toFixed(0)}KB)</span>}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -428,7 +490,29 @@ export default function MobileBoardReadClient({
                 <span style={{ fontWeight: 700, color: '#374151' }}>{c.author_name || '게스트'}</span>
                 <span style={{ color: '#9ca3af' }}>{new Date(c.created_at).toLocaleString('ko-KR')}</span>
               </div>
-              <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{c.content}</div>
+              {editingCommentId === c.id ? (
+                <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px', backgroundColor: '#fff' }}>
+                  <textarea
+                    style={{ width: '100%', height: '70px', border: 'none', resize: 'none', fontSize: '14px', outline: 'none', background: 'transparent', color: '#333', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                    maxLength={400}
+                    value={editingText}
+                    onChange={e => setEditingText(e.target.value)}
+                    autoFocus
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', marginTop: '6px' }}>
+                    <button onClick={() => setEditingCommentId(null)} style={{ background: '#fff', color: '#374151', border: '1px solid #d1d5db', borderRadius: '4px', padding: '6px 12px', fontWeight: 600, fontSize: '12px' }}>취소</button>
+                    <button onClick={() => handleCommentUpdate(c.id)} disabled={isSubmitting} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', padding: '6px 12px', fontWeight: 700, fontSize: '12px' }}>수정 완료</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{c.content}</div>
+              )}
+              {canManageComment(c) && editingCommentId !== c.id && (
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px', fontSize: '12px' }}>
+                  <button onClick={() => { setEditingCommentId(c.id); setEditingText(c.content || ''); }} style={{ background: 'none', border: 'none', padding: 0, fontSize: '12px', color: '#6b7280' }}>수정</button>
+                  <button onClick={() => handleCommentDelete(c.id)} style={{ background: 'none', border: 'none', padding: 0, fontSize: '12px', color: '#ef4444' }}>삭제</button>
+                </div>
+              )}
             </div>
           ))}
           {localComments.length === 0 && (

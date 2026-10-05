@@ -6,6 +6,7 @@ import { saveBoardPost } from "@/app/actions/board";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permissionCheck";
+import BoardAccessModal, { type BoardAccessNotice } from "@/components/common/BoardAccessModal";
 import BannerSlot from "@/components/BannerSlot";
 
 // YouTube URL에서 썸네일 이미지 추출
@@ -92,17 +93,13 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || "");
   const [searchInputValue, setSearchInputValue] = useState(searchParams.get('search') || "");
   
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [accessNotice, setAccessNotice] = useState<BoardAccessNotice | null>(null);
 
   // 페이지 이동 시 initialPosts 변경을 감지하여 posts 상태를 강제 동기화
   React.useEffect(() => {
     setPosts(initialPosts);
   }, [initialPosts]);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
-  };
   
   // 서버에서 전달받은 유저 정보를 바로 사용 (이중 호출 제거)
   const [userLevel, setUserLevel] = useState<number>(serverUserLevel ?? 0);
@@ -355,7 +352,7 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
                           onClick={(e) => {
                             if (!canAccessBoard(userLevel, board.perm_read ?? 0)) {
                               e.preventDefault();
-                              showToast(`${getLevelName(board.perm_read ?? 0)}부터 열람하실 수 있습니다.. 🤍`);
+                              setAccessNotice({ level: board.perm_read ?? 0 });
                             }
                           }}
                           style={{ display: "block" }}
@@ -400,7 +397,7 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
                     key={p.id} 
                     onClick={() => {
                       if (!canAccessBoard(userLevel, board.perm_read ?? 0)) {
-                        showToast(`${getLevelName(board.perm_read ?? 0)}부터 열람하실 수 있습니다.. 🤍`);
+                        setAccessNotice({ level: board.perm_read ?? 0 });
                       } else {
                         router.push(getReadUrl(p.id));
                       }
@@ -623,11 +620,7 @@ export default function BoardClient({ board, initialPosts, serverUser, serverUse
         </div>
       )}
 
-      {toastMessage && (
-        <div style={{ position: "fixed", top: "25%", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.85)", color: "#fff", padding: "14px 32px", borderRadius: 10, fontSize: 16, fontWeight: "bold", zIndex: 999999, boxShadow: "0 4px 20px rgba(0,0,0,0.3)", whiteSpace: "nowrap", animation: "toastFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)" }}>
-          {toastMessage}
-        </div>
-      )}
+      <BoardAccessModal notice={accessNotice} isLoggedIn={!!currentUser} onClose={() => setAccessNotice(null)} />
 
       <style>{`
         @keyframes toastFadeIn { 

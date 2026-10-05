@@ -37,7 +37,7 @@ function MobileBoardAdmin() {
   const [formData, setFormData] = useState({
     id: "", board_id: "", name: "", subtitle: "", board_type: "standard", skin_type: "LIST",
     columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5,
-    comments_enabled: true, perm_comment: 1, categories: "", max_photos: 5,
+    comments_enabled: true, perm_comment: 1, categories: "", max_photos: 0,
   });
 
   useEffect(() => {
@@ -84,7 +84,7 @@ function MobileBoardAdmin() {
     setFormData({
       id: "", board_id: "", name: "", subtitle: "", board_type: "standard", skin_type: "LIST",
       columns_count: 3, perm_list: 0, perm_read: 0, perm_write: 5,
-      comments_enabled: true, perm_comment: 1, categories: "", max_photos: 5,
+      comments_enabled: true, perm_comment: 1, categories: "", max_photos: 0,
     });
   };
 
@@ -99,7 +99,7 @@ function MobileBoardAdmin() {
         columns_count: d.columns_count || 3, perm_list: d.perm_list ?? 0,
         perm_read: d.perm_read ?? 0, perm_write: d.perm_write ?? 5,
         comments_enabled: d.comments_enabled !== false, perm_comment: d.perm_comment ?? 1,
-        categories: d.categories || "", max_photos: d.max_photos ?? 5,
+        categories: d.categories || "", max_photos: d.max_photos ?? (d.board_type === "inquiry" ? 5 : 0),
       }));
     }
     setFormLoading(false);
@@ -263,16 +263,14 @@ function MobileBoardAdmin() {
                 )}
               </div>
 
-              {formData.board_type === "inquiry" && (
-                <div style={{ marginTop: 20 }}>
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#4b5563", marginBottom: 4 }}>사진 첨부 개수</label>
-                  <select name="max_photos" value={formData.max_photos} onChange={handleFormChange} style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, background: "#fff" }}>
-                    <option value={0}>사용 안 함</option>
-                    {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}장까지</option>)}
-                  </select>
-                  <div style={{ marginTop: 6, fontSize: 12, color: "#9ca3af" }}>최대 5장 · 등록된 사진은 webp로 변환됩니다</div>
-                </div>
-              )}
+              <div style={{ marginTop: 20 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#4b5563", marginBottom: 4 }}>사진 첨부 개수</label>
+                <select name="max_photos" value={formData.max_photos} onChange={handleFormChange} style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, background: "#fff" }}>
+                  <option value={0}>사용 안 함</option>
+                  {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}장까지</option>)}
+                </select>
+                <div style={{ marginTop: 6, fontSize: 12, color: "#9ca3af" }}>최대 5장 · 등록된 사진은 webp로 변환됩니다</div>
+              </div>
             </div>
 
             {/* 고정 바텀 버튼 */}

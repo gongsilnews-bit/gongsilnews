@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { canAccessBoard, getLevelName } from "@/utils/permissionCheck";
+import BoardAccessModal, { type BoardAccessNotice } from "@/components/common/BoardAccessModal";
 import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
 import TypingText from "@/components/study/TypingText";
 
@@ -36,16 +37,12 @@ export default function StudyQnaClient({
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [searchInputValue, setSearchInputValue] = useState(searchParams.get("search") || "");
   const [myPostsOnly, setMyPostsOnly] = useState(searchParams.get("mine") === "true");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [accessNotice, setAccessNotice] = useState<BoardAccessNotice | null>(null);
 
   React.useEffect(() => {
     setPosts(initialPosts);
   }, [initialPosts]);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
-  };
 
   // 서버 페이지가 항상 로그인 여부를 판정해서 넘겨주므로(비로그인이면 0레벨),
   // 클라이언트에서 다시 조회하지 않는다. 목록이 첫 렌더부터 그대로 나온다.
@@ -216,7 +213,7 @@ export default function StudyQnaClient({
               ) : (
                 <button
                   type="button"
-                  onClick={() => showToast(`${getLevelName(board.perm_write ?? 5)}부터 질문을 등록하실 수 있습니다.. 🤍`)}
+                  onClick={() => setAccessNotice({ level: board.perm_write ?? 5, action: "write" })}
                   style={{ padding: "8px 18px", borderRadius: 7, fontSize: 13.5, fontWeight: 800, color: "#ffffff", background: "#10b981", border: "none", cursor: "pointer", fontFamily: "inherit" }}
                 >
                   질문하기
@@ -301,7 +298,7 @@ export default function StudyQnaClient({
                             onClick={(e) => {
                               if (!canRead) {
                                 e.preventDefault();
-                                showToast(`${getLevelName(board.perm_read ?? 0)}부터 열람하실 수 있습니다.. 🤍`);
+                                setAccessNotice({ level: board.perm_read ?? 0 });
                               }
                             }}
                             style={{ display: "block" }}
@@ -438,7 +435,7 @@ export default function StudyQnaClient({
                 </a>
               ) : (
                 <button
-                  onClick={() => showToast(`${getLevelName(board.perm_write ?? 5)}부터 질문을 등록하실 수 있습니다.. 🤍`)}
+                  onClick={() => setAccessNotice({ level: board.perm_write ?? 5, action: "write" })}
                   style={{
                     background: "#fff",
                     color: "#94a3b8",
@@ -459,27 +456,7 @@ export default function StudyQnaClient({
         </main>
       )}
 
-      {toastMessage && (
-        <div
-          style={{
-            position: "fixed",
-            top: "25%",
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "rgba(0,0,0,0.85)",
-            color: "#fff",
-            padding: "14px 32px",
-            borderRadius: 10,
-            fontSize: 16,
-            fontWeight: "bold",
-            zIndex: 999999,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {toastMessage}
-        </div>
-      )}
+      <BoardAccessModal notice={accessNotice} isLoggedIn={!!currentUser} onClose={() => setAccessNotice(null)} />
 
       <style>{`
         /* 공실뉴스 공지사항 게시판과 동일한 네이비 테마 */

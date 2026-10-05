@@ -79,8 +79,9 @@ export default function BoardWriteClient({
   const isEditMode = !!editPostId && !!editPost;
   // 1:1 문의는 회신이 목적이라 연락처를 함께 받는다 (다른 게시판에는 노출하지 않는다)
   const isInquiry = board?.board_type === "inquiry";
-  // 게시판 설정(boards.max_photos)에서 장수를 정한다. 값이 없으면 상한을 쓴다.
-  const maxPhotos = Math.max(0, Math.min(INQUIRY_PHOTO_LIMIT, board?.max_photos ?? INQUIRY_PHOTO_LIMIT));
+  // 게시판 설정(boards.max_photos)에서 장수를 정한다. 0이면 사진 칸을 숨긴다.
+  // 값이 없으면 1:1 문의는 상한, 그 밖의 게시판은 사용 안 함으로 본다.
+  const maxPhotos = Math.max(0, Math.min(INQUIRY_PHOTO_LIMIT, board?.max_photos ?? (isInquiry ? INQUIRY_PHOTO_LIMIT : 0)));
 
   const categories = board?.categories
     ? board.categories.split(",").map((c: string) => c.trim()).filter(Boolean)
@@ -375,7 +376,7 @@ export default function BoardWriteClient({
         await uploadBoardThumbnail(fd);
       }
 
-      // 1:1 문의 사진 — 반드시 webp 로 변환해서 올린다
+      // 사진 첨부 — 반드시 webp 로 변환해서 올린다 (긴 변 1920px)
       for (let i = 0; i < photoFiles.length; i++) {
         const webpPhoto = await convertToWebp(photoFiles[i]);
         const fd = new FormData();
@@ -385,12 +386,12 @@ export default function BoardWriteClient({
         await uploadBoardAttachment(fd);
       }
 
-      // 첨부파일 업로드
+      // 첨부파일 업로드 (원본 그대로 — 사진 뒤 순서로)
       for (let i = 0; i < attachedFiles.length; i++) {
         const fd = new FormData();
         fd.append("file", attachedFiles[i]);
         fd.append("post_id", res.postId);
-        fd.append("sort_order", String(i));
+        fd.append("sort_order", String(photoFiles.length + i));
         await uploadBoardAttachment(fd);
       }
       alert(isEditMode ? "게시글이 수정되었습니다." : "게시글이 성공적으로 등록되었습니다.");
@@ -515,9 +516,9 @@ export default function BoardWriteClient({
         </div>
       </div>
 
-      {/* 1:1 문의 사진 첨부 (최대 5장, webp 변환 후 저장) */}
-      {isInquiry && maxPhotos > 0 && (
-        <div>
+      {/* 사진 첨부 (게시판 설정 장수만큼, webp 변환 후 저장) */}
+      {maxPhotos > 0 && (
+        <div style={{ marginBottom: 20 }}>
           <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 8 }}>
             사진 첨부 (선택) <span style={{ fontWeight: 500, color: "#888" }}>· 최대 {maxPhotos}장</span>
           </label>

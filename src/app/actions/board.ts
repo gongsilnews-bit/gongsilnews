@@ -111,6 +111,7 @@ export async function getBoardPosts(boardId: string, options?: { boardType?: str
     .select("id, board_id, title, author_id, author_name, created_at, view_count, is_notice, thumbnail_url, youtube_url, drive_url, external_url, board_comments(id)")
     .eq("board_id", boardId)
     .eq("is_deleted", false)
+    .eq("board_comments.is_deleted", false)
     .order("is_notice", { ascending: false })
     .order("created_at", { ascending: false });
 
@@ -462,7 +463,7 @@ export async function saveBoardComment(payload: {
     parent_id: payload.parent_id || null,
   };
 
-  const { error } = await supabase.from("board_comments").insert(comment);
+  const { data: inserted, error } = await supabase.from("board_comments").insert(comment).select().single();
   if (error) return { success: false, error: error.message };
 
   // comment_count 증가
@@ -475,11 +476,55 @@ export async function saveBoardComment(payload: {
   // 1:1 문의면 답변 상태와 알림을 맞춘다 (일반 게시판이면 조회 한 번에 끝)
   await syncInquiryAfterComment(payload.post_id, user?.id, authorName);
 
+  return { success: true, data: inserted };
+}
+
+/**
+ * 댓글 수정·삭제 권한: 본인 댓글(로그인 회원) 또는 최고관리자만.
+ * 게스트 댓글은 본인 확인 수단이 없어 최고관리자만 정리할 수 있다.
+ */
+async function checkBoardCommentOwner(commentId: string) {
+  const authClient = await createServerClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return { ok: false as const, error: "로그인이 필요합니다." };
+
+  const { data: comment, error } = await supabase
+    .from("board_comments")
+    .select("id, author_id, is_deleted")
+    .eq("id", commentId)
+    .maybeSingle();
+  if (error || !comment || comment.is_deleted) {
+    return { ok: false as const, error: error?.message || "댓글을 찾을 수 없습니다." };
+  }
+  if (comment.author_id === user.id) return { ok: true as const };
+
+  const { data: member } = await supabase.from("members").select("role").eq("id", user.id).maybeSingle();
+  if (isAdminRole(member?.role)) return { ok: true as const };
+  return { ok: false as const, error: "본인이 작성한 댓글만 수정·삭제할 수 있습니다." };
+}
+
+/* ── 댓글 수정 ── */
+export async function updateBoardComment(commentId: string, rawContent: string) {
+  const content = rawContent.trim();
+  if (!content) return { success: false, error: "댓글 내용을 입력해주세요." };
+  if (content.length > 400) return { success: false, error: "댓글은 400자까지 작성할 수 있습니다." };
+
+  const check = await checkBoardCommentOwner(commentId);
+  if (!check.ok) return { success: false, error: check.error };
+
+  const { error } = await supabase
+    .from("board_comments")
+    .update({ content })
+    .eq("id", commentId);
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
 /* ── 댓글 삭제 ── */
 export async function deleteBoardComment(commentId: string) {
+  const check = await checkBoardCommentOwner(commentId);
+  if (!check.ok) return { success: false, error: check.error };
+
   const { error } = await supabase
     .from("board_comments")
     .update({ is_deleted: true })

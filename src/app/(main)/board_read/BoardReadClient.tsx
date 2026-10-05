@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { saveBoardComment, deleteBoardComment, deleteBoardPost } from "@/app/actions/board";
+import { saveBoardComment, updateBoardComment, deleteBoardComment, deleteBoardPost } from "@/app/actions/board";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { getPermissionLevel, canAccessBoard } from "@/utils/permissionCheck";
+import { getPermissionLevel, canAccessBoard, isAdminRole } from "@/utils/permissionCheck";
 import { getBoardListUrl } from "@/utils/boardListUrl";
 import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
 import BannerSlot from "@/components/BannerSlot";
+import { BoardAccessCard } from "@/components/common/BoardAccessModal";
 
 // YouTube URL에서 embed URL 생성 (공유버튼 ?si= 등 모든 형식)
 function getYoutubeEmbedUrl(url: string): string | null {
@@ -58,6 +59,8 @@ export default function BoardReadClient({
   const [commentText, setCommentText] = useState("");
   const [guestName, setGuestName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
   const [searchInputValue, setSearchInputValue] = useState("");
 
   const handleSearch = (keyword: string) => {
@@ -139,6 +142,14 @@ export default function BoardReadClient({
     return links;
   })();
 
+  // 이미지 첨부는 본문 아래에 크게 보여주고, 나머지만 첨부파일 상자에 둔다
+  const sortedAttachments: BoardAttachment[] = [...(post.board_attachments || [])].sort(
+    (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  );
+  const isImageAttachment = (att: BoardAttachment) => (att.file_type || "").startsWith("image/");
+  const photoAttachments = sortedAttachments.filter(isImageAttachment);
+  const fileAttachments = sortedAttachments.filter(att => !isImageAttachment(att));
+
   const ytLinks = externalLinks.filter((l: any) => l.type === "YOUTUBE");
   const driveLinks = externalLinks.filter((l: any) => l.type === "DRIVE");
   const otherLinks = externalLinks.filter((l: any) => l.type === "LINK");
@@ -170,8 +181,9 @@ export default function BoardReadClient({
       content: commentText,
     });
     if (res.success) {
-      setComments([...comments, {
+      setComments([...comments, res.data || {
         id: Date.now().toString(),
+        author_id: currentUser?.id,
         author_name: authorName,
         content: commentText,
         created_at: new Date().toISOString(),
@@ -181,6 +193,39 @@ export default function BoardReadClient({
       alert(res.error || "댓글 등록에 실패했습니다.");
     }
     setIsSubmitting(false);
+  };
+
+  // 본인 댓글 또는 최고관리자만 수정·삭제 버튼을 보여준다 (서버에서도 다시 확인).
+  const canManageComment = (c: any) =>
+    !!currentUser && (isAdminRole(currentUser.role) || (!!c.author_id && c.author_id === currentUser.id));
+
+  const startEditComment = (c: any) => {
+    setEditingCommentId(c.id);
+    setEditingText(c.content || "");
+  };
+
+  const handleCommentUpdate = async (commentId: string) => {
+    if (!editingText.trim()) return;
+    setIsSubmitting(true);
+    const res = await updateBoardComment(commentId, editingText);
+    if (res.success) {
+      setComments(comments.map((c: any) => c.id === commentId ? { ...c, content: editingText.trim() } : c));
+      setEditingCommentId(null);
+      setEditingText("");
+    } else {
+      alert(res.error || "댓글 수정에 실패했습니다.");
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleCommentDelete = async (commentId: string) => {
+    if (!confirm("이 댓글을 삭제하시겠습니까?")) return;
+    const res = await deleteBoardComment(commentId);
+    if (res.success) {
+      setComments(comments.filter((c: any) => c.id !== commentId));
+    } else {
+      alert(res.error || "댓글 삭제에 실패했습니다.");
+    }
   };
 
   const handleDelete = async () => {
@@ -202,19 +247,11 @@ export default function BoardReadClient({
     return (
       <div style={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
         {isStudyBoard && <StudyHeader background={STUDY_HERO_BAR} />}
-        <div style={{ padding: "80px 20px", textAlign: "center", maxWidth: 500, margin: "0 auto" }}>
-          <div style={{ fontSize: 48, marginBottom: 20 }}>🔒</div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#111", marginBottom: 16 }}>공실뉴스부동산 회원만 열람할 수 있습니다</h2>
-          <p style={{ fontSize: 15, color: "#666", lineHeight: 1.6, marginBottom: 8 }}>
-            이 게시물은 <strong style={{ color: "#1a2e50" }}>공실뉴스 부동산 회원</strong> 전용 콘텐츠입니다.
-          </p>
-          <p style={{ fontSize: 14, color: "#999", marginBottom: 32 }}>
-            부동산 회원으로 가입하시면 모든 자료를 무료로 열람하실 수 있습니다.
-          </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <button onClick={() => router.push(listUrl)} style={{ padding: "12px 28px", background: "#f5f5f5", color: "#555", border: "1px solid #ddd", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>목록으로 돌아가기</button>
-            <button onClick={() => router.push("/signup")} style={{ padding: "12px 28px", background: "#1a73e8", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>회원가입하기</button>
+        <div style={{ padding: "80px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+          <div style={{ border: "1px solid #e5e7eb", borderRadius: 14, width: "100%", maxWidth: 380 }}>
+            <BoardAccessCard level={board.perm_read ?? 0} isLoggedIn={!!currentUser} />
           </div>
+          <button onClick={() => router.push(listUrl)} style={{ background: "none", border: "none", color: "#6b7280", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>목록으로 돌아가기</button>
         </div>
       </div>
     );
@@ -440,29 +477,28 @@ export default function BoardReadClient({
                 </div>
               )}
 
-              {/* 첨부파일 목록 */}
-              {post.board_attachments && post.board_attachments.length > 0 && (
+              {/* 첨부 사진 — 본문 폭에 맞춰 크게, 클릭하면 원본 */}
+              {photoAttachments.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+                  {photoAttachments.map((att: BoardAttachment) => (
+                    <a key={`img-${att.id}`} href={att.file_url} target="_blank" rel="noopener noreferrer" style={{ display: "block" }}>
+                      <img src={att.file_url} alt={att.file_name} style={{ display: "block", maxWidth: "100%", height: "auto", borderRadius: 8, border: "1px solid #e2e8f0" }} />
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {/* 첨부파일 목록 (사진 외) */}
+              {fileAttachments.length > 0 && (
                 <div style={{
                   background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8,
                   padding: "16px 20px", marginTop: 20, marginBottom: 10
                 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-                    첨부파일 ({post.board_attachments.length}개)
+                    첨부파일 ({fileAttachments.length}개)
                   </div>
-                  {/* 이미지 첨부는 바로 보이도록 미리보기 */}
-                  {post.board_attachments.some((att: BoardAttachment) => (att.file_type || "").startsWith("image/")) && (
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", paddingTop: 8, paddingBottom: 4 }}>
-                      {post.board_attachments
-                        .filter((att: BoardAttachment) => (att.file_type || "").startsWith("image/"))
-                        .map((att: BoardAttachment) => (
-                          <a key={`img-${att.id}`} href={att.file_url} target="_blank" rel="noopener noreferrer" style={{ display: "block", width: 120, height: 120, borderRadius: 8, overflow: "hidden", border: "1px solid #e2e8f0" }}>
-                            <img src={att.file_url} alt={att.file_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          </a>
-                        ))}
-                    </div>
-                  )}
-                  {post.board_attachments.map((att: any) => (
+                  {fileAttachments.map((att: any) => (
                     <a
                       key={att.id}
                       href={att.file_url}
@@ -493,11 +529,38 @@ export default function BoardReadClient({
             <div style={{ marginBottom: 24 }}>
               {comments.map((c: any) => (
                 <div key={c.id} id={`comment-${c.id}`} style={{ paddingTop: 16, paddingBottom: 16, borderBottom: "1px solid #f0f0f0" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, fontSize: 13 }}>
                     <span style={{ fontWeight: 700, color: "#374151" }}>{c.author_name || "게스트"}</span>
-                    <span style={{ color: "#9ca3af" }}>{new Date(c.created_at).toLocaleString("ko-KR")}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ color: "#9ca3af" }}>{new Date(c.created_at).toLocaleString("ko-KR")}</span>
+                      {canManageComment(c) && editingCommentId !== c.id && (
+                        <>
+                          <button onClick={() => startEditComment(c)} style={{ background: "none", border: "none", padding: 0, fontSize: 13, color: "#6b7280", cursor: "pointer" }}>수정</button>
+                          <button onClick={() => handleCommentDelete(c.id)} style={{ background: "none", border: "none", padding: 0, fontSize: 13, color: "#ef4444", cursor: "pointer" }}>삭제</button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 15, color: "#4b5563", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{c.content}</div>
+                  {editingCommentId === c.id ? (
+                    <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 12 }}>
+                      <textarea
+                        style={{ width: "100%", height: 70, border: "none", resize: "none", fontSize: 15, outline: "none", background: "transparent", color: "#333", fontFamily: "inherit", boxSizing: "border-box" }}
+                        maxLength={400}
+                        value={editingText}
+                        onChange={e => setEditingText(e.target.value)}
+                        autoFocus
+                      />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                        <span style={{ fontSize: 12, color: "#9ca3af" }}>{editingText.length} / 400</span>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => setEditingCommentId(null)} style={{ background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, padding: "6px 16px", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>취소</button>
+                          <button onClick={() => handleCommentUpdate(c.id)} disabled={isSubmitting} style={{ background: "#111", color: "#fff", border: "none", borderRadius: 6, padding: "6px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>수정 완료</button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 15, color: "#4b5563", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{c.content}</div>
+                  )}
                 </div>
               ))}
               {comments.length === 0 && (

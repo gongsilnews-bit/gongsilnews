@@ -4,6 +4,7 @@ import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { canAccessBoard, getLevelName } from "@/utils/permissionCheck";
+import BoardAccessModal, { type BoardAccessNotice } from "@/components/common/BoardAccessModal";
 import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
 import StudyHero from "@/components/study/StudyHero";
 import BannerSlot from "@/components/BannerSlot";
@@ -45,12 +46,8 @@ export default function StudyCommunityClient({
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [searchInputValue, setSearchInputValue] = useState(searchParams.get("search") || "");
   const [myPostsOnly, setMyPostsOnly] = useState(searchParams.get("mine") === "true");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [accessNotice, setAccessNotice] = useState<BoardAccessNotice | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
-  };
 
   const userLevel = serverUserLevel ?? 0;
   const currentUser = serverUser ?? null;
@@ -170,7 +167,7 @@ export default function StudyCommunityClient({
   ) : (
     <button
       type="button"
-      onClick={() => showToast(`${getLevelName(activeBoardData?.perm_write ?? 5)}부터 글을 등록하실 수 있습니다. 🤍`)}
+      onClick={() => setAccessNotice({ level: activeBoardData?.perm_write ?? 5, action: "write" })}
       style={{
         padding: "9px 20px",
         borderRadius: 6,
@@ -326,9 +323,7 @@ export default function StudyCommunityClient({
                             onClick={(e) => {
                               if (!canRead) {
                                 e.preventDefault();
-                                showToast(
-                                  `${getLevelName(activeBoardData?.perm_read ?? 0)}부터 열람하실 수 있습니다.`
-                                );
+                                setAccessNotice({ level: activeBoardData?.perm_read ?? 0 });
                               }
                             }}
                           >
@@ -485,7 +480,7 @@ export default function StudyCommunityClient({
                         onClick={(e) => {
                           if (!canRead) {
                             e.preventDefault();
-                            showToast(`${getLevelName(activeBoardData?.perm_read ?? 0)}부터 열람하실 수 있습니다. 🤍`);
+                            setAccessNotice({ level: activeBoardData?.perm_read ?? 0 });
                           }
                         }}
                         className="pop-title"
@@ -504,26 +499,7 @@ export default function StudyCommunityClient({
       )}
 
       {/* 토스트 메시지 */}
-      {toastMessage && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 40,
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "rgba(17, 24, 39, 0.92)",
-            color: "#ffffff",
-            padding: "12px 24px",
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
-            zIndex: 999999,
-          }}
-        >
-          {toastMessage}
-        </div>
-      )}
+      <BoardAccessModal notice={accessNotice} isLoggedIn={!!currentUser} onClose={() => setAccessNotice(null)} />
 
       <style>{`
         /* 스터디 커뮤니티 전용: 공지사항 게시판(board?id=notice)과 동일한 네이비 테마 및 반응형 보정 */

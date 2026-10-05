@@ -25,7 +25,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
     comments_enabled: true,
     perm_comment: 1,
     categories: "",
-    max_photos: 5,
+    max_photos: 0,
   });
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
             comments_enabled: res.data.comments_enabled !== false,
             perm_comment: res.data.perm_comment ?? 1,
             categories: res.data.categories || "",
-            max_photos: res.data.max_photos ?? 5,
+            max_photos: res.data.max_photos ?? (res.data.board_type === "inquiry" ? 5 : 0),
           }));
         }
         setLoading(false);
@@ -238,20 +238,18 @@ export default function BoardRegisterForm({ onBack, darkMode = false, editBoardI
           </div>
         </div>
 
-        {formData.board_type === "inquiry" && (
-          <div style={rowStyle}>
-            <div style={labelStyle}>사진 첨부 개수 ⓘ</div>
-            <div style={{ ...contentStyle, gap: 10 }}>
-              <select name="max_photos" value={formData.max_photos} onChange={handleChange} style={{ ...inputStyle, maxWidth: 200 }}>
-                <option value={0}>사용 안 함</option>
-                {[1, 2, 3, 4, 5].map(n => (
-                  <option key={n} value={n}>{n}장까지</option>
-                ))}
-              </select>
-              <span style={{ fontSize: 12, color: "#9ca3af" }}>최대 5장 · 등록된 사진은 webp로 변환됩니다</span>
-            </div>
+        <div style={rowStyle}>
+          <div style={labelStyle}>사진 첨부 개수 ⓘ</div>
+          <div style={{ ...contentStyle, gap: 10 }}>
+            <select name="max_photos" value={formData.max_photos} onChange={handleChange} style={{ ...inputStyle, maxWidth: 200 }}>
+              <option value={0}>사용 안 함</option>
+              {[1, 2, 3, 4, 5].map(n => (
+                <option key={n} value={n}>{n}장까지</option>
+              ))}
+            </select>
+            <span style={{ fontSize: 12, color: "#9ca3af" }}>최대 5장 · 등록된 사진은 webp로 변환됩니다</span>
           </div>
-        )}
+        </div>
 
         <div style={rowStyle}>
           <div style={labelStyle}>카테고리 ⓘ</div>
