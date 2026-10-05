@@ -285,8 +285,8 @@ export default function MobileStudyAboutClient() {
         <header className={styles.sectionHeader}>
           <p className={styles.kicker}>공실뉴스 AI 원스톱 솔루션</p>
           <h2 id="process-section-title" className={styles.sectionTitle}>
-            공실스터디멤버가 되시면<br />
-            <span>오늘부터 바로 시작하실 수 있습니다!</span>
+            <span className={styles.painTitleHighlight}>오늘부터</span> 공실스터디에 가입하시면,<br />
+            <span>바로 시작하실 수 있습니다.</span>
           </h2>
 
           {/* 3명의 소장님 대형 배너 */}
@@ -611,40 +611,6 @@ export default function MobileStudyAboutClient() {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* ━━━ [4] 공실뉴스 AI 3단계 솔루션 ━━━ */}
-      <section className={`${styles.section} ${styles.processSection}`} aria-labelledby="process-title">
-
-        <header className={styles.sectionHeader}>
-          <p className={styles.kicker}>공실뉴스 AI 원스톱 솔루션</p>
-          <h2 id="process-title" className={styles.sectionTitle}>
-            공실스터디멤버가 되시면.<br />
-            <span>오늘부터 바로 시작하실 수 있습니다!</span>
-          </h2>
-
-          {/* 3명의 소장님 대형 배너 (마우스 롤오버/터치 시 환호 표정으로 전환) */}
-          <div className={styles.trioBannerWrap}>
-            <div className={styles.trioBannerImgBox}>
-              <Image
-                src="/images/study/trio-brokers-amazed.jpg"
-                alt="공실스터디 이전 힘들어하던 3명의 공인중개사 소장님들"
-                fill
-                sizes="(max-width: 480px) 100vw, 400px"
-                className={styles.trioBannerImgDefault}
-                priority
-              />
-              <Image
-                src="/images/study/trio-brokers-cheering.jpg"
-                alt="공실스터디 멤버가 되어 환호하고 기뻐하는 3명의 공인중개사 소장님들"
-                fill
-                sizes="(max-width: 480px) 100vw, 400px"
-                className={styles.trioBannerImgHover}
-              />
-            </div>
-          </div>
-
-          </header>
       </section>
 
       {/* ━━━ [8] Final CTA ━━━ */}

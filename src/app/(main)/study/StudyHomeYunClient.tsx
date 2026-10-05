@@ -292,9 +292,9 @@ export default function StudyHomeYunClient() {
             <header className={styles.processHeader}>
               <p className={styles.kicker}>공실뉴스 AI 원스톱 솔루션</p>
               <h2 id="process-section-title">
-                공실스터디멤버가 되시면.
+                <span className={styles.painTitleHighlight}>오늘부터</span> 공실스터디에 가입하시면,
                 <br />
-                <span>오늘부터 바로 시작하실 수 있습니다!</span>
+                <span>바로 시작하실 수 있습니다.</span>
               </h2>
 
               {/* 3명의 소장님 대형 배너 (마우스 롤오버 시 환호 표정으로 전환) */}
