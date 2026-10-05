@@ -622,7 +622,7 @@ export default function MobileStudyAboutClient() {
             이런 부동산에게 추천합니다!
           </h2>
           <p className={styles.sectionDesc}>
-            주력 매물에 맞춘 자동 브리핑 리포트와 숏폼 콘텐츠로 실무 경쟁력을 높여보세요.
+            바쁜 1~2인, 지역/단지 부동산 대표님에게 추천합니다.
           </p>
         </header>
 
