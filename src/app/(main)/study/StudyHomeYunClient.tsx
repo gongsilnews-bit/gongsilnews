@@ -292,7 +292,7 @@ export default function StudyHomeYunClient() {
             <header className={styles.processHeader}>
               <p className={styles.kicker}>공실뉴스 AI 원스톱 솔루션</p>
               <h2 id="process-section-title">
-                <span className={styles.painTitleHighlight}>오늘부터</span> 공실스터디에 가입하시면,
+                <span className={styles.painTitleHighlight} style={{ color: "#ffffff" }}>오늘부터</span> 공실스터디에 가입하시면,
                 <br />
                 <span>바로 시작하실 수 있습니다.</span>
               </h2>

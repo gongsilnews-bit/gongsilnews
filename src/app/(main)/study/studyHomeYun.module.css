@@ -655,7 +655,7 @@
 .painTitleHighlight {
   display: inline-block;
   background: #ef4444;
-  color: #ffffff;
+  color: #ffffff !important;
   padding: 2px 14px;
   border-radius: 8px;
   margin-right: 6px;
