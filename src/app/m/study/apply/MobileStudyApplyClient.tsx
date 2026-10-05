@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import MobileTopBarHeader from "../../_components/MobileTopBarHeader";
 import StudySubMenuBar from "../../_components/StudySubMenuBar";
@@ -9,6 +10,33 @@ import { submitStudyApplication, checkExistingStudyApplication } from "@/app/act
 import styles from "./mobileStudyApply.module.css";
 
 const RETURN_TO = "/m/study/apply";
+
+const TARGET_AUDIENCE = [
+  {
+    tag: "RECOMMEND 01",
+    title: "사무실/상가 전문 부동산",
+    image: "/images/study/recommend_real_teheran_man.jpg",
+    imageAlt: "강남 테헤란로를 걸으며 스마트폰으로 공실뉴스를 열람하는 전문 남성 공인중개사",
+    description: "면적, 렌트프리, 권리금, 관리비 등 복잡한 상권·오피스 조건을 한눈에 보이는 브리핑 리포트와 상위 노출 콘텐츠로 완성합니다.",
+    solution: "렌트프리·수익률이 정리된 프리미엄 제안서와 상위 노출 마케팅 기사가 1초 만에 자동 완성됩니다.",
+  },
+  {
+    tag: "RECOMMEND 02",
+    title: "아파트/오피스텔 입점 부동산",
+    image: "/images/study/recommend_real_apartment.jpg",
+    imageAlt: "아파트와 오피스텔 매물 브리핑을 진행하는 전문 여성 공인중개사",
+    description: "단지 내 급매물과 전월세 정보를 빠르게 블로그와 숏폼으로 제작하여 입주민과 외부 매수·임차 고객 문의를 선점합니다.",
+    solution: "단지별 급매물 브리핑 보고서와 블로그 포스팅, 단지 투어 숏폼 영상이 즉시 자동 완성됩니다.",
+  },
+  {
+    tag: "RECOMMEND 03",
+    title: "빌라/주택 건물 부동산",
+    image: "/images/study/recommend_real_villa.jpg",
+    imageAlt: "신축 빌라와 주택 현장 영상 촬영 짐벌을 든 전문 공인중개사",
+    description: "원룸·투룸 다가구부터 꼬마빌딩까지, 현장 영상 촬영 대본과 기사 발행으로 공실 해소와 공동중개 기회를 극대화합니다.",
+    solution: "씬별 현장 촬영 대본과 전국 11만 부동산 실시간 공유로 빠른 공실 계약을 이끕니다.",
+  },
+];
 
 const PREMIUM_BENEFITS = [
   {
@@ -251,6 +279,82 @@ export default function MobileStudyApplyClient() {
             ))}
           </div>
         </div>
+
+        {/* ━━━ 이런 부동산에게 추천합니다! ━━━ */}
+        <section
+          aria-labelledby="m-apply-recommend-title"
+          style={{
+            background: "#f0fdf9",
+            border: "1px solid #d1fae5",
+            borderRadius: 18,
+            padding: "28px 16px",
+            margin: "20px 0",
+          }}
+        >
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
+            <div style={{ color: "#059669", fontSize: 11.5, fontWeight: 800, letterSpacing: "1px", marginBottom: 6 }}>
+              RECOMMENDATION
+            </div>
+            <h2 id="m-apply-recommend-title" style={{ fontSize: 21, fontWeight: 900, color: "#0f2e28", margin: "0 0 8px", letterSpacing: "-0.5px" }}>
+              이런 부동산에게 추천합니다!
+            </h2>
+            <p style={{ fontSize: 13, color: "#64748b", margin: 0, lineHeight: 1.55, wordBreak: "keep-all" }}>
+              주력 매물에 맞춘 자동 브리핑 리포트와 숏폼 콘텐츠로 실무 경쟁력을 높여보세요.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {TARGET_AUDIENCE.map((item) => (
+              <article
+                key={item.title}
+                style={{
+                  background: "#ffffff",
+                  borderRadius: 16,
+                  border: "1.5px solid #a7f3d0",
+                  boxShadow: "0 6px 18px rgba(5, 150, 105, 0.06)",
+                  overflow: "hidden",
+                }}
+              >
+                <div style={{ position: "relative", width: "100%", height: 190, background: "#e2e8f0" }}>
+                  <Image
+                    src={item.image}
+                    alt={item.imageAlt}
+                    fill
+                    sizes="(max-width: 480px) 100vw, 448px"
+                    style={{ objectFit: "cover", objectPosition: "center top" }}
+                  />
+                </div>
+                <div style={{ padding: "16px 16px 18px" }}>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      background: "#ecfdf5",
+                      color: "#059669",
+                      border: "1px solid #a7f3d0",
+                      fontSize: 11,
+                      fontWeight: 800,
+                      padding: "2px 9px",
+                      borderRadius: 20,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {item.tag}
+                  </span>
+                  <h3 style={{ fontSize: 17, fontWeight: 900, color: "#0f2e28", margin: "0 0 6px" }}>{item.title}</h3>
+                  <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: "0 0 12px", wordBreak: "keep-all" }}>
+                    {item.description}
+                  </p>
+                  <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 800, color: "#059669", marginBottom: 3 }}>💡 맞춤 솔루션</div>
+                    <div style={{ fontSize: 12.5, color: "#166534", lineHeight: 1.5, fontWeight: 600, wordBreak: "keep-all" }}>
+                      {item.solution}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
 
         {/* ━━━ [3] 원스톱 신청 폼 영역 ━━━ */}
         <div id="apply-form" className={styles.card}>

@@ -237,6 +237,76 @@ export default function MobileStudyBenefitsClient() {
               </p>
             </div>
           </div>
+
+          {/* ━━━ 방송국 PD 출신 편집장 직강 & 오프라인 검증 (PC 드론 하단 섹션과 동일) ━━━ */}
+          <section style={{ padding: "32px 16px 8px", textAlign: "center" }}>
+            <p style={{ fontSize: 11.5, fontWeight: 800, color: "#059669", letterSpacing: "0.5px", margin: "0 0 6px" }}>
+              방송국 PD 출신 편집장 직강
+            </p>
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#0f2e28", lineHeight: 1.4, letterSpacing: "-0.5px", margin: "0 0 10px", wordBreak: "keep-all" }}>
+              방송국 PD 출신, 공실뉴스편집장이<br />
+              <span style={{ color: "#059669" }}>강남/서초 100여명의 부동산과 함께 했던 실전 강의!</span>
+            </h2>
+            <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.6, margin: "0 0 20px", wordBreak: "keep-all" }}>
+              강남·서초 100여 개 부동산 실무자와 오프라인에서 함께 했던 생생한 경험을 온라인에서 누구나 쉽고 빠르게 따라 할 수 있도록 알려드립니다.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                borderTop: "1px solid #e2e8f0",
+                borderLeft: "1px solid #e2e8f0",
+                marginBottom: 20,
+                textAlign: "left",
+              }}
+            >
+              {[
+                { num: "2025", org: "강남구청", label: "ChatGPT·AI 실무특강" },
+                { num: "2025", org: "서울벤처대학원대학교", label: "유튜브 콘텐츠 제작 실습" },
+                { num: "11만", org: "부동산 네트워크", label: "공실뉴스 회원·독자 기준" },
+                { num: "1년", org: "온라인 실무 스터디", label: "맞춤형 피드백 제공" },
+              ].map((s) => (
+                <div
+                  key={s.org}
+                  style={{
+                    padding: "14px 12px",
+                    borderRight: "1px solid #e2e8f0",
+                    borderBottom: "1px solid #e2e8f0",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 3,
+                  }}
+                >
+                  <strong style={{ fontSize: 20, fontWeight: 900, color: "#059669" }}>{s.num}</strong>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", wordBreak: "keep-all" }}>{s.org}</span>
+                  <small style={{ fontSize: 11.5, color: "#64748b", wordBreak: "keep-all" }}>{s.label}</small>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <div className={styles.mediaCard}>
+            <div className={styles.mediaThumb}>
+              <Image
+                src="/images/study/seoul-venture-lecture-2025-blur.png"
+                alt="2025년 서울벤처대학원대학교 강의 현장 단체사진 (개인정보 보호 모자이크 적용)"
+                fill
+                sizes="(max-width: 480px) 100vw, 448px"
+                style={{ objectFit: "cover" }}
+              />
+            </div>
+            <div className={styles.mediaBody}>
+              <p style={{ fontSize: 12, fontWeight: 800, color: "#059669", margin: "0 0 4px" }}>2025 서울벤처대학원대학교</p>
+              <h3 className={styles.mediaTitle}>유튜브 콘텐츠 제작 실습 교육</h3>
+              <p className={styles.mediaDesc}>
+                나이와 IT 경험에 상관없이 화면을 보며 하나씩 따라 하고, 수업이 끝날 때 직접 만든 결과물을 남기는 방식으로 진행했습니다.
+              </p>
+              <p style={{ fontSize: 13, fontWeight: 800, color: "#047857", margin: "8px 0 0" }}>
+                이제 같은 과정을 온라인에서 배울 수 있습니다.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -265,10 +335,21 @@ export default function MobileStudyBenefitsClient() {
               />
             </div>
             <div className={styles.mediaBody}>
-              <h3 className={styles.mediaTitle}>매물 입력 후 원클릭 끝!</h3>
+              <h3 className={styles.mediaTitle}>
+                매물 정보를 AI가 분석해<br />
+                네이버 상위 노출 블로그 글을 1초 만에 자동 작성
+              </h3>
               <p className={styles.mediaDesc}>
-                더 이상 빈 화면 앞에서 고민하지 마세요. 클릭 한 번으로 가독성 높은 맞춤형 블로그 글이 쏟아집니다.
+                매물 등록 후 1시간씩 머리를 쥐어짜며 블로그 포스팅을 고민할 필요가 없습니다. 등록된 데이터를 AI가 스스로 분석하여 네이버 검색 로직에 최적화된 포스팅을 1초 만에 작성해 줍니다.
               </p>
+              <ul style={{ listStyle: "none", padding: 0, margin: "10px 0 0", display: "flex", flexDirection: "column", gap: 6 }}>
+                <li style={{ fontSize: 13, color: "#1e293b", lineHeight: 1.5 }}>
+                  <span style={{ color: "#059669", fontWeight: 900 }}>✔</span> <strong>스마트블록 알고리즘 반영</strong> — 검색 유입을 끌어오는 소제목과 키워드 밀도
+                </li>
+                <li style={{ fontSize: 13, color: "#1e293b", lineHeight: 1.5 }}>
+                  <span style={{ color: "#059669", fontWeight: 900 }}>✔</span> <strong>원클릭 복사 & 보도자료 기사</strong> — 블로그 붙여넣기 및 언론사 기사 초안 동시 생성
+                </li>
+              </ul>
             </div>
           </div>
 
