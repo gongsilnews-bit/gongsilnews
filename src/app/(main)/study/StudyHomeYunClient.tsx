@@ -56,7 +56,6 @@ function Arrow() {
 
 export default function StudyHomeYunClient() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
-  const [activeProcessStep, setActiveProcessStep] = useState<number>(2);
 
   return (
     <div className={styles.page}>
@@ -297,10 +296,10 @@ export default function StudyHomeYunClient() {
                 <span>바로 시작하실 수 있습니다.</span>
               </h2>
 
-              {/* 3명의 소장님 대형 배너 (마우스 롤오버 시 환호 표정으로 전환) */}
+              {/* 3명의 소장님 대형 배너 */}
               <div className={styles.trioBannerWrap}>
                 <div className={styles.trioBannerImgBox}>
-                  {/* 기본 상태: 고민/피로/당황 */}
+                  {/* 단일 실사 배너 고정 */}
                   <Image
                     src="/images/study/trio-brokers-amazed.jpg"
                     alt="공실스터디 이전 힘들어하던 3명의 공인중개사 소장님들"
@@ -309,125 +308,9 @@ export default function StudyHomeYunClient() {
                     className={styles.trioBannerImgDefault}
                     priority
                   />
-                  {/* 마우스 롤오버 상태: 환호/성공 */}
-                  <Image
-                    src="/images/study/trio-brokers-cheering.jpg"
-                    alt="공실스터디 멤버가 되어 환호하고 기뻐하는 3명의 공인중개사 소장님들"
-                    fill
-                    sizes="(max-width: 1200px) 100vw, 1100px"
-                    className={styles.trioBannerImgHover}
-                  />
-                  {/* 안내 뱃지 */}
-                  <div className={styles.trioBannerBadgeDefault}>
-                    <span className={styles.trioBadgePulse} />
-                    <span>마우스를 올리면 소장님들의 변화를 볼 수 있어요! 👆</span>
-                  </div>
-                  <div className={styles.trioBannerBadgeHover}>
-                    <span className={styles.trioBadgePulse} />
-                    <span>공실스터디와 함께라면 매일이 성공과 환호입니다! 🎉</span>
-                  </div>
                 </div>
-              </div>
-
-              <div className={styles.processFlowSummary}>
-                <span className={styles.flowItem}>공실등록</span>
-                <span className={styles.flowArrow} aria-hidden="true">&gt;</span>
-                <span className={styles.flowItem}>블로그포스팅</span>
-                <span className={styles.flowArrow} aria-hidden="true">&gt;</span>
-                <span className={styles.flowItem}>유튜브 영상 제작</span>
               </div>
             </header>
-
-            <div className={styles.processGrid}>
-              {/* 1단계: 공실등록 */}
-              <div
-                className={`${styles.processCard} ${activeProcessStep === 0 ? styles.processCardHighlight : ""}`}
-                onMouseEnter={() => setActiveProcessStep(0)}
-              >
-                <div className={styles.cardTop}>
-                  <span className={`${styles.stepNum} ${activeProcessStep === 0 ? styles.stepNumHighlight : ""}`}>STEP 01</span>
-                </div>
-                <div className={styles.stepCharBox}>
-                  <Image
-                    src="/images/study/step-char-register.jpg"
-                    alt="STEP 01 공실등록 3D 캐릭터"
-                    width={116}
-                    height={116}
-                    className={styles.stepCharImg}
-                  />
-                </div>
-                <h3 className={styles.cardTitle}>공실등록</h3>
-                <p className={styles.cardTag}>11만 부동산 무료 열람 · 빠른 계약</p>
-                <div className={styles.cardDivider} />
-                <p className={styles.cardDesc}>
-                  공실뉴스에 주소·사진·임대조건을 한 번만 등록해도 전국 11만 부동산이 무료로 열람하는 공동중개 사이트에 즉시 노출되어 계약이 훨씬 빨라집니다.
-                </p>
-              </div>
-
-              {/* 연결 화살표 1 */}
-              <div className={styles.processArrow} aria-hidden="true">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 12h14m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-
-              {/* 2단계: 블로그포스팅 */}
-              <div
-                className={`${styles.processCard} ${activeProcessStep === 1 ? styles.processCardHighlight : ""}`}
-                onMouseEnter={() => setActiveProcessStep(1)}
-              >
-                <div className={styles.cardTop}>
-                  <span className={`${styles.stepNum} ${activeProcessStep === 1 ? styles.stepNumHighlight : ""}`}>STEP 02</span>
-                </div>
-                <div className={styles.stepCharBox}>
-                  <Image
-                    src="/images/study/step-char-blog.jpg"
-                    alt="STEP 02 AI 툴 블로그 포스팅 3D 캐릭터"
-                    width={116}
-                    height={116}
-                    className={styles.stepCharImg}
-                  />
-                </div>
-                <h3 className={styles.cardTitle}>블로그포스팅</h3>
-                <p className={styles.cardTag}>AI 툴 1분 완성 · 검색 노출 최적화</p>
-                <div className={styles.cardDivider} />
-                <p className={styles.cardDesc}>
-                  등록된 공실 데이터를 AI 툴이 분석하여 네이버 블로그 검색 노출에 최적화된 포스팅 글과 기사 초안을 1분 만에 쉽고 빠르게 자동 완성합니다.
-                </p>
-              </div>
-
-              {/* 연결 화살표 2 */}
-              <div className={styles.processArrow} aria-hidden="true">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 12h14m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-
-              {/* 3단계: 유튜브 영상 제작 */}
-              <div
-                className={`${styles.processCard} ${activeProcessStep === 2 ? styles.processCardHighlight : ""}`}
-                onMouseEnter={() => setActiveProcessStep(2)}
-              >
-                <div className={styles.cardTop}>
-                  <span className={`${styles.stepNum} ${activeProcessStep === 2 ? styles.stepNumHighlight : ""}`}>STEP 03</span>
-                </div>
-                <div className={styles.stepCharBox}>
-                  <Image
-                    src="/images/study/step-char-youtube.jpg"
-                    alt="STEP 03 유튜브 영상 제작 3D 캐릭터"
-                    width={116}
-                    height={116}
-                    className={styles.stepCharImg}
-                  />
-                </div>
-                <h3 className={styles.cardTitle}>유튜브 영상 제작</h3>
-                <p className={styles.cardTag}>공실뉴스 온라인 강의</p>
-                <div className={styles.cardDivider} />
-                <p className={styles.cardDesc}>
-                  공실스터디에서 다양한 온라인 강의를 통해 내가 등록한 물건을 유튜브 영상으로 쉽고 빠르게 제작합니다.
-                </p>
-              </div>
-            </div>
           </div>
         </section>
 

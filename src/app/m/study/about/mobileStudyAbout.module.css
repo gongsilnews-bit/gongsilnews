@@ -748,15 +748,7 @@
   opacity: 0;
 }
 
-.trioBannerWrap:hover .trioBannerImgHover,
-.trioBannerWrap:active .trioBannerImgHover {
-  opacity: 1;
-}
 
-.trioBannerWrap:hover .trioBannerImgDefault,
-.trioBannerWrap:active .trioBannerImgDefault {
-  opacity: 0;
-}
 
 .processFlowSummary {
   display: flex;

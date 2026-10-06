@@ -53,7 +53,6 @@ const FAQS = [
 
 export default function MobileStudyAboutClient() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
-  const [activeProcessStep, setActiveProcessStep] = useState<number>(2);
 
   return (
     <div className={styles.container}>
@@ -300,103 +299,9 @@ export default function MobileStudyAboutClient() {
                 className={styles.trioBannerImgDefault}
                 priority
               />
-              <Image
-                src="/images/study/trio-brokers-cheering.jpg"
-                alt="공실스터디 멤버가 되어 환호하는 3명의 공인중개사 소장님들"
-                fill
-                sizes="(max-width: 480px) 100vw, 448px"
-                className={styles.trioBannerImgHover}
-              />
-              <div className={styles.trioBannerBadgeDefault}>
-                <span className={styles.trioBadgePulse} />
-                <span>터치하면 소장님들의 변화를 볼 수 있어요! 👆</span>
-              </div>
-              <div className={styles.trioBannerBadgeHover}>
-                <span className={styles.trioBadgePulse} />
-                <span>공실스터디와 함께라면 매일이 환호입니다! 🎉</span>
-              </div>
             </div>
-          </div>
-
-          <div className={styles.processFlowSummary}>
-            <span className={styles.flowItem}>공실등록</span>
-            <span className={styles.flowArrow}>&gt;</span>
-            <span className={styles.flowItem}>블로그포스팅</span>
-            <span className={styles.flowArrow}>&gt;</span>
-            <span className={styles.flowItem}>유튜브 영상 제작</span>
           </div>
         </header>
-
-        <div className={styles.processGrid}>
-          {/* STEP 01 */}
-          <div
-            className={`${styles.processCard} ${activeProcessStep === 0 ? styles.processCardHighlight : ""}`}
-            onClick={() => setActiveProcessStep(0)}
-          >
-            <span className={styles.stepNum}>STEP 01</span>
-            <div className={styles.stepCharBox}>
-              <Image
-                src="/images/study/step-char-register.jpg"
-                alt="STEP 01 공실등록"
-                fill
-                sizes="90px"
-                style={{ objectFit: "cover" }}
-              />
-            </div>
-            <h3 className={styles.processCardTitle}>공실등록</h3>
-            <p className={styles.processCardTag}>11만 부동산 무료 열람 · 빠른 계약</p>
-            <div className={styles.processDivider} />
-            <p className={styles.processCardDesc}>
-              공실뉴스에 주소·사진·임대조건을 한 번만 등록해도 전국 11만 부동산이 무료로 열람하는 공동중개 사이트에 즉시 노출되어 계약이 훨씬 빨라집니다.
-            </p>
-          </div>
-
-          {/* STEP 02 */}
-          <div
-            className={`${styles.processCard} ${activeProcessStep === 1 ? styles.processCardHighlight : ""}`}
-            onClick={() => setActiveProcessStep(1)}
-          >
-            <span className={styles.stepNum}>STEP 02</span>
-            <div className={styles.stepCharBox}>
-              <Image
-                src="/images/study/step-char-blog.jpg"
-                alt="STEP 02 블로그포스팅"
-                fill
-                sizes="90px"
-                style={{ objectFit: "cover" }}
-              />
-            </div>
-            <h3 className={styles.processCardTitle}>블로그포스팅</h3>
-            <p className={styles.processCardTag}>AI 툴 1분 완성 · 검색 노출 최적화</p>
-            <div className={styles.processDivider} />
-            <p className={styles.processCardDesc}>
-              등록된 공실 데이터를 AI 툴이 분석하여 네이버 블로그 검색 노출에 최적화된 포스팅 글과 기사 초안을 1분 만에 쉽고 빠르게 자동 완성합니다.
-            </p>
-          </div>
-
-          {/* STEP 03 */}
-          <div
-            className={`${styles.processCard} ${activeProcessStep === 2 ? styles.processCardHighlight : ""}`}
-            onClick={() => setActiveProcessStep(2)}
-          >
-            <span className={styles.stepNum}>STEP 03</span>
-            <div className={styles.stepCharBox}>
-              <Image
-                src="/images/study/step-char-youtube.jpg"
-                alt="STEP 03 유튜브 영상 제작"
-                fill
-                sizes="90px"
-                style={{ objectFit: "cover" }}
-              />
-            </div>
-            <h3 className={styles.processCardTitle}>유튜브 영상 제작</h3>
-            <p className={styles.processCardTag}>공실뉴스 온라인 강의</p>
-            <div className={styles.processDivider} />
-            <p className={styles.processCardDesc}>
-              공실스터디에서 다양한 온라인 강의를 통해 내가 등록한 물건을 유튜브 영상으로 쉽고 빠르게 제작합니다.
-            </p>
-          </div>
-        </div>
       </section>
 
 {/* ━━━ [신규 중간 브릿지] 내 지역/단지 물건만 등록하면 3대 무료 혜택 ━━━ */}
