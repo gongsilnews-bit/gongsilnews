@@ -17,6 +17,7 @@ const TARGET_AUDIENCE = [
     title: "사무실/상가 전문 부동산",
     image: "/images/study/recommend_real_teheran_man.jpg",
     imageAlt: "강남 테헤란로를 걸으며 스마트폰으로 공실뉴스를 열람하는 전문 남성 공인중개사",
+    objectPosition: "center 52%",
     description: "빠른 공실계약이 필요한 사무실/상가 전문 부동산 대표님!  고객에게 브리핑이 꼭! 필요할때~",
     solution: "AI 매매보고서 초안 10초 완성!~공실뉴스에서 공실만 등록하면, 빠르게 완성할 수 있습니다.",
   },
@@ -25,6 +26,7 @@ const TARGET_AUDIENCE = [
     title: "아파트/오피스텔 입점 부동산",
     image: "/images/study/recommend_real_apartment.jpg",
     imageAlt: "아파트와 오피스텔 매물 브리핑을 진행하는 전문 여성 공인중개사",
+    objectPosition: "center 38%",
     description: "단지 내 물건작업과 임장작업이 필수인 아파트/오피스텔 입점 부동산 대표님!~  차별화된 서비스를 고객에게 제공하고 싶을때~",
     solution: "물건접수웹페이지, 아파트/오피스텔 인테리어 예상AI서비스로 스마트하게 중개할 수 있습니다.",
   },
@@ -33,6 +35,7 @@ const TARGET_AUDIENCE = [
     title: "빌라/주택 건물 부동산",
     image: "/images/study/recommend_real_villa.jpg",
     imageAlt: "신축 빌라와 주택 현장 영상 촬영 짐벌을 든 전문 공인중개사",
+    objectPosition: "center 38%",
     description: "원룸·투룸 다가구부터 꼬마빌딩까지, 유튜브가 가장 효율적이라는데,,, 어떻게 촬영하고 편집해야 할지 막막한 대표님!",
     solution: "손님의 Call로 연결되는 유튜브 영상제작! 촬영방법부터 편집법까지! 따라만 하세요!",
   },
@@ -425,13 +428,13 @@ export default function MobileStudyApplyClient() {
                   overflow: "hidden",
                 }}
               >
-                <div style={{ position: "relative", width: "100%", height: 190, background: "#e2e8f0" }}>
+                <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3", background: "#e2e8f0" }}>
                   <Image
                     src={item.image}
                     alt={item.imageAlt}
                     fill
                     sizes="(max-width: 480px) 100vw, 448px"
-                    style={{ objectFit: "cover", objectPosition: "center top" }}
+                    style={{ objectFit: "cover", objectPosition: item.objectPosition || "center center" }}
                   />
                 </div>
                 <div style={{ padding: "16px 16px 18px" }}>
