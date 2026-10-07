@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
 import { VerifyAgent } from "@/lib/agents/VerifyAgent";
+import { createClient } from "@/utils/supabase/server";
+import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js";
+
+const ALLOWED_DOCUMENT_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    }
+
     const formData = await request.formData();
     
     // 1. 프론트엔드에서 보낸 데이터 추출
@@ -12,6 +22,15 @@ export async function POST(request: Request) {
 
     if (!file) {
       return NextResponse.json({ error: "파일이 첨부되지 않았습니다." }, { status: 400 });
+    }
+    if (!ALLOWED_DOCUMENT_MIME_TYPES.has(file.type)) {
+      return NextResponse.json({ error: "이미지 서류만 확인할 수 있습니다." }, { status: 400 });
+    }
+    if (file.size <= 0 || file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: "서류 파일은 최대 10MB까지 확인할 수 있습니다." }, { status: 400 });
+    }
+    if (!companyName?.trim() || !representative?.trim()) {
+      return NextResponse.json({ error: "상호명과 대표자명을 입력해 주세요." }, { status: 400 });
     }
 
     // 2. File 객체를 Buffer로 변환 (Gemini API가 읽을 수 있도록)
@@ -36,8 +55,7 @@ export async function POST(request: Request) {
       const totalTokens = result.usage?.totalTokens || 0;
       const costKrw = (inTokens * 0.075 / 1000000 * 1400) + (outTokens * 0.3 / 1000000 * 1400);
 
-      const { createClient } = require("@supabase/supabase-js");
-      const supabaseAdmin = createClient(
+      const supabaseAdmin = createSupabaseAdminClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
         { auth: { autoRefreshToken: false, persistSession: false } }
@@ -46,7 +64,7 @@ export async function POST(request: Request) {
       await supabaseAdmin.from("agent_chats").insert({
         channel_id: "verify",
         role: "agent",
-        content: `[서류 검증] ${companyName} (${representative}) → ${result.status}`,
+        content: `[단일 서류 검증] ${user.id.slice(0, 8)} → ${result.status}`,
         input_tokens: inTokens,
         output_tokens: outTokens,
         total_tokens: totalTokens,

@@ -646,6 +646,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
         ? "APPROVED"
         : isAdmin ? agencyData.status : "PENDING";
       let agencySaved = false;
+      let agencySaveResult: { forcedPending?: boolean; reviewReason?: string | null } | null = null;
 
       if ((formData.role === "부동산회원" || agencyData.name || files.biz_cert || files.reg_cert) && memberId) {
         let regCertUrl = filePreviews.reg_cert?.startsWith("http") ? filePreviews.reg_cert : null;
@@ -671,36 +672,6 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           ? "APPROVED"
           : isAdmin ? agencyData.status : "PENDING";
 
-        // --- 백그라운드 AI 서류 참고 검증 (관리자 심사용 참고 메모 생성) ---
-        let aiReason: string | null = null;
-        if (files.biz_cert && !isAdmin && agencyData.status !== "APPROVED") {
-          try {
-            const verifyFd = new FormData();
-            verifyFd.append("file", files.biz_cert);
-            verifyFd.append("companyName", agencyData.name);
-            verifyFd.append("representative", agencyData.ceo_name);
-
-            const verifyRes = await fetch("/api/agents/verify", {
-              method: "POST",
-              body: verifyFd,
-            });
-            const verifyResult = await verifyRes.json();
-            
-            if (verifyResult.status === "NEEDS_REVIEW" || verifyResult.status === "ERROR") {
-              let diffMsg = "";
-              if (verifyResult.diff && verifyResult.diff.found) {
-                const isNameDiff = verifyResult.diff.expected?.companyName !== verifyResult.diff.found?.companyName;
-                const isRepDiff = verifyResult.diff.expected?.representative !== verifyResult.diff.found?.representative;
-                if (isNameDiff) diffMsg += `상호명 불일치(입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName}) `;
-                if (isRepDiff) diffMsg += `대표자 불일치(입력: ${verifyResult.diff.expected?.representative} / 서류: ${verifyResult.diff.found?.representative})`;
-              }
-              aiReason = diffMsg ? `AI 자동검증 참고: ${diffMsg}` : "서류 확인 필요 (관리자 검토)";
-            }
-          } catch (e) {
-            console.error("AI Verify Error:", e);
-          }
-        }
-
         const finalAgencyData = {
           name: agencyData.name || '',
           ceo_name: agencyData.ceo_name || '',
@@ -717,15 +688,23 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           lat: coords?.lat || null,
           lng: coords?.lng || null,
           status: finalStatus,
-          reject_reason: aiReason,
+          reject_reason: null,
         };
 
-        let agencyRes: { success: boolean; error?: string; duplicate?: boolean; forcedPending?: boolean; paidOffice?: boolean } =
-          await adminUpdateAgency(memberId, finalAgencyData);
+        const requestAiApproval = requestApproval && !isAdmin;
+        let agencyRes: {
+          success: boolean;
+          error?: string;
+          duplicate?: boolean;
+          forcedPending?: boolean;
+          paidOffice?: boolean;
+          status?: string;
+          reviewReason?: string | null;
+        } = await adminUpdateAgency(memberId, finalAgencyData, { requestApproval: requestAiApproval });
         /* 최고관리자: 같은 중개사무소 계정이 있어도 [중복 허용]으로 저장할 수 있다 (서버가 최고관리자인지 다시 확인한다) */
         if (!agencyRes.success && agencyRes.duplicate && isAdmin &&
             confirm(`${agencyRes.error}\n\n최고관리자 권한으로 중복을 허용하고 저장할까요?`)) {
-          agencyRes = await adminUpdateAgency(memberId, finalAgencyData, { allowDuplicate: true });
+          agencyRes = await adminUpdateAgency(memberId, finalAgencyData, { allowDuplicate: true, requestApproval: requestAiApproval });
         }
         if (!agencyRes.success) {
           /* 같은 중개사무소로 이미 가입한 계정이 있으면 그 안내를 그대로 보여 준다 */
@@ -733,20 +712,14 @@ function gradeDefaults(p: any, role: string, planType?: string) {
             ? String(agencyRes.error)
             : "중개업소 정보 저장에 실패했습니다: " + agencyRes.error);
         }
-        /* 유료 사무소의 추가 계정 — 자동 승인하지 않고 관리자 승인 대기로 저장됐다 */
-        if (agencyRes.forcedPending) {
-          finalStatus = "PENDING";
-          alert("같은 중개사무소(유료 이용 중)의 추가 계정으로 신청되었습니다. 관리자 승인 후 부동산회원으로 사용할 수 있습니다.");
-        }
+        finalStatus = agencyRes.status || finalStatus;
+        agencySaveResult = agencyRes;
+        setAgencyData((previous) => ({ ...previous, status: finalStatus }));
+        setRejectReason(agencyRes.reviewReason || null);
 
         agencySaved = true;
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("realty_agency_status_sync", { detail: finalStatus }));
-        }
-
-        if (finalStatus === "APPROVED") {
-          const { adminApproveRealtorApplication } = await import("@/app/admin/actions");
-          await adminApproveRealtorApplication(memberId);
         }
       }
 
@@ -790,8 +763,10 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           alert(wasApproved
             ? "✅ 정보가 저장되었습니다. 부동산회원 승인 상태가 유지됩니다."
             : "🎉 정보가 저장되었으며, 서류 검증이 완료되어 즉시 [정상승인] 처리되었습니다!");
+        } else if (agencySaveResult?.forcedPending) {
+          alert("📋 같은 유료 중개사무소의 추가 계정으로 접수되었습니다.\n관리자 확인 후 승인됩니다.");
         } else {
-          alert("📋 부동산회원 정보가 안전하게 접수되었습니다!\n관리자 검토 후 신속히 승인해 드립니다. ✨");
+          alert(`📋 부동산회원 정보가 접수되었으며 관리자 검토 대기 중입니다.${agencySaveResult?.reviewReason ? `\n\n${agencySaveResult.reviewReason}` : ""}`);
         }
       } else {
         alert(editMemberId ? "회원 정보 수정이 완료되었습니다." : "회원 등록이 완료되었습니다.");

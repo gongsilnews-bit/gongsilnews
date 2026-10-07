@@ -172,7 +172,7 @@ function RealtyAdminContent() {
         if (agencyData.status === "APPROVED" && !isAdminRole(member.role) && member.role !== "REALTOR") {
           await adminApproveRealtorApplication(member.id);
         } else if (!isAdminRole(member.role) && member.role === "REALTOR" && agencyData.status !== "APPROVED") {
-          await normalizePendingRealtorRole(member.id, agencyData.status);
+          await normalizePendingRealtorRole(member.id);
         }
         setUserRole(getEffectiveMemberRole(member.role, agencyData.status));
         setAgencyStatus(agencyData.status);

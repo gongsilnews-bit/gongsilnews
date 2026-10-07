@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache"
 import { createClient as createCookieSupabase } from "@/utils/supabase/server"
 import { getEffectivePlan } from "@/utils/planCheck"
 import { isAdminRole } from "@/utils/permissionCheck"
+import { VerifyAgent, type RealtorDocumentInput } from "@/lib/agents/VerifyAgent"
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -273,19 +274,32 @@ function isPaidOwner(member: AgencyMember | null) {
   }));
 }
 
-/* 지금 이 요청을 보낸 사람이 최고관리자인가 — 화면이 아니라 로그인 정보로 확인한다 */
-async function requesterIsAdmin() {
+type RequesterContext = {
+  userId: string | null;
+  isAdmin: boolean;
+};
+
+/* 화면이 넘긴 memberId나 role을 믿지 않고 매 요청마다 로그인 사용자를 다시 확인한다. */
+async function getRequesterContext(): Promise<RequesterContext> {
   try {
     const cookieClient = await createCookieSupabase();
     const { data } = await cookieClient.auth.getUser();
     const userId = data?.user?.id;
-    if (!userId) return false;
+    if (!userId) return { userId: null, isAdmin: false };
     const { data: me } = await getAdminClient().from('members').select('role, plan_type, plan_end_date').eq('id', userId).maybeSingle();
-    if (!me) return false;
-    return isAdminRole(me.role) || getEffectivePlan(me) === 'admin';
+    if (!me) return { userId, isAdmin: false };
+    return {
+      userId,
+      isAdmin: isAdminRole(me.role) || getEffectivePlan(me) === 'admin',
+    };
   } catch {
-    return false;
+    return { userId: null, isAdmin: false };
   }
+}
+
+/* 지금 이 요청을 보낸 사람이 최고관리자인가 — 화면이 아니라 로그인 정보로 확인한다 */
+async function requesterIsAdmin() {
+  return (await getRequesterContext()).isAdmin;
 }
 
 /* 같은 개설등록번호로 신청 중이거나 승인된 다른 계정들 — DB 에 숫자만 남긴 칸(reg_num_norm)이 있으면 그것으로,
@@ -311,6 +325,9 @@ async function findOtherAgenciesByRegNum(supabaseAdmin: ReturnType<typeof getAdm
 export async function adminFindAgencyDuplicates(memberId: string) {
   const supabaseAdmin = getAdminClient();
   try {
+    if (!(await requesterIsAdmin())) {
+      return { success: false, error: '최고관리자 권한이 필요합니다.', duplicates: [] };
+    }
     const { data: mine } = await supabaseAdmin
       .from('agencies').select('reg_num, biz_num, cell, address, address_detail').eq('owner_id', memberId).maybeSingle();
     if (!mine) return { success: true, duplicates: [] };
@@ -341,19 +358,257 @@ export async function adminFindAgencyDuplicates(memberId: string) {
   }
 }
 
+const AGENCY_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
+const AGENCY_DOCUMENT_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const AGENCY_EDITABLE_FIELDS = [
+  'name',
+  'ceo_name',
+  'cell',
+  'phone',
+  'zipcode',
+  'address',
+  'address_detail',
+  'intro',
+  'biz_num',
+  'reg_num',
+  'reg_cert_url',
+  'biz_cert_url',
+  'lat',
+  'lng',
+  'status',
+  'reject_reason',
+] as const;
+
+function sanitizeAgencyData(value: unknown) {
+  const source = value && typeof value === 'object'
+    ? value as Record<string, unknown>
+    : {};
+  const payload: Record<string, unknown> = {};
+  for (const field of AGENCY_EDITABLE_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(source, field)) payload[field] = source[field];
+  }
+  return payload;
+}
+
+function getAgencyDocumentPath(documentUrl: unknown, memberId: string) {
+  if (!documentUrl || !memberId) return null;
+  try {
+    const storageUrl = new URL(String(documentUrl));
+    const configuredUrl = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!);
+    if (storageUrl.origin !== configuredUrl.origin) return null;
+
+    const markers = [
+      '/storage/v1/object/public/agency_documents/',
+      '/storage/v1/object/sign/agency_documents/',
+    ];
+    const marker = markers.find((candidate) => storageUrl.pathname.includes(candidate));
+    if (!marker) return null;
+
+    const encodedPath = storageUrl.pathname.slice(storageUrl.pathname.indexOf(marker) + marker.length);
+    const path = decodeURIComponent(encodedPath).replace(/^\/+/, '');
+    if (!path.startsWith(`${memberId}/`) || path.includes('..')) return null;
+    return path;
+  } catch {
+    return null;
+  }
+}
+
+function inferImageMimeType(path: string, reportedType: string | undefined) {
+  if (reportedType && AGENCY_DOCUMENT_MIME_TYPES.has(reportedType)) return reportedType;
+  const lower = path.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  return null;
+}
+
+async function downloadAgencyDocument(
+  supabaseAdmin: ReturnType<typeof getAdminClient>,
+  documentUrl: unknown,
+  memberId: string,
+  kind: RealtorDocumentInput['kind'],
+): Promise<RealtorDocumentInput> {
+  const path = getAgencyDocumentPath(documentUrl, memberId);
+  if (!path) throw new Error('등록된 서류 경로를 확인할 수 없습니다. 서류를 다시 업로드해 주세요.');
+
+  const { data, error } = await supabaseAdmin.storage.from('agency_documents').download(path);
+  if (error || !data) throw new Error('등록된 서류를 불러오지 못했습니다. 서류를 다시 업로드해 주세요.');
+  if (data.size <= 0 || data.size > AGENCY_DOCUMENT_MAX_BYTES) {
+    throw new Error('서류 파일 크기를 확인해 주세요. 파일당 최대 10MB까지 사용할 수 있습니다.');
+  }
+
+  const mimeType = inferImageMimeType(path, data.type);
+  if (!mimeType) throw new Error('JPG, PNG 또는 WebP 이미지 서류만 사용할 수 있습니다.');
+
+  return {
+    kind,
+    mimeType,
+    imageBuffer: Buffer.from(await data.arrayBuffer()),
+  };
+}
+
+async function verifyRealtorApplication(
+  supabaseAdmin: ReturnType<typeof getAdminClient>,
+  memberId: string,
+  agencyData: Record<string, unknown>,
+) {
+  try {
+    const documents = await Promise.all([
+      downloadAgencyDocument(supabaseAdmin, agencyData.biz_cert_url, memberId, 'BUSINESS_REGISTRATION'),
+      downloadAgencyDocument(supabaseAdmin, agencyData.reg_cert_url, memberId, 'BROKERAGE_REGISTRATION'),
+    ]);
+
+    const result = await VerifyAgent.verifyRealtorDocuments({
+      documents,
+      userInputData: {
+        companyName: String(agencyData.name ?? ''),
+        representative: String(agencyData.ceo_name ?? ''),
+        businessNumber: String(agencyData.biz_num ?? ''),
+        brokerageRegistrationNumber: String(agencyData.reg_num ?? ''),
+      },
+    });
+
+    try {
+      const inputTokens = result.usage?.inputTokens || 0;
+      const outputTokens = result.usage?.outputTokens || 0;
+      const totalTokens = result.usage?.totalTokens || 0;
+      const costKrw = (inputTokens * 0.075 / 1_000_000 * 1400)
+        + (outputTokens * 0.3 / 1_000_000 * 1400);
+      await supabaseAdmin.from('agent_chats').insert({
+        channel_id: 'verify',
+        role: 'agent',
+        content: `[부동산회원 서류 검증] ${memberId.slice(0, 8)} → ${result.status}`,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        total_tokens: totalTokens,
+        cost_krw: costKrw,
+      });
+    } catch (logError) {
+      console.warn('Failed to log realtor verification:', logError);
+    }
+
+    if (result.status === 'APPROVED') {
+      return {
+        status: 'APPROVED' as const,
+        reason: null,
+        verificationStatus: result.status,
+      };
+    }
+
+    return {
+      status: 'PENDING' as const,
+      reason: result.status === 'ERROR'
+        ? 'AI 서류 검증을 완료하지 못해 관리자 검토 대기 중입니다.'
+        : result.message,
+      verificationStatus: result.status,
+    };
+  } catch (error: unknown) {
+    console.error('Realtor application verification error:', error);
+    return {
+      status: 'PENDING' as const,
+      reason: error instanceof Error
+        ? error.message
+        : '서류 확인을 완료하지 못해 관리자 검토 대기 중입니다.',
+      verificationStatus: 'ERROR' as const,
+    };
+  }
+}
+
+async function applyRealtorApproval(
+  supabaseAdmin: ReturnType<typeof getAdminClient>,
+  memberId: string,
+  notify: boolean,
+) {
+  const { error: agencyError } = await supabaseAdmin
+    .from('agencies')
+    .update({ status: 'APPROVED', reject_reason: null })
+    .eq('owner_id', memberId);
+  if (agencyError) return { success: false, error: agencyError.message };
+
+  const { data: member, error: memberLookupError } = await supabaseAdmin
+    .from('members')
+    .select('plan_type, use_custom_registration_limits')
+    .eq('id', memberId)
+    .single();
+  if (memberLookupError) return { success: false, error: memberLookupError.message };
+
+  const planType = member?.plan_type || 'free';
+  const { policies } = await adminGetLimitPolicies();
+  const { error: memberError } = await supabaseAdmin
+    .from('members')
+    .update({
+      role: 'REALTOR',
+      ...planDefaultsForMember(policies, 'REALTOR', planType, !!member?.use_custom_registration_limits),
+    })
+    .eq('id', memberId);
+  if (memberError) return { success: false, error: memberError.message };
+
+  if (notify) {
+    try {
+      const { createNotification } = await import("@/app/actions/notification");
+      await createNotification({
+        recipientId: memberId,
+        type: "realtor_approved",
+        title: "🎉 부동산회원 승인 완료",
+        body: "공인중개사 서류 심사가 통과되어 부동산회원으로 승인되었습니다.",
+        link: "/realty_admin",
+        mobileLink: "/m/admin",
+        sourceId: `realtor_approved_${memberId}`,
+        revive: true,
+      });
+    } catch (notificationError) {
+      console.warn('Failed to send realtor approval notification:', notificationError);
+    }
+  }
+
+  return { success: true };
+}
+
 // ── 중개업소 정보 수정/생성 ──
-// options.allowDuplicate: 최고관리자의 [중복 허용] — 서버가 요청자를 다시 확인하고 최고관리자일 때만 받아들인다
-export async function adminUpdateAgency(memberId: string, agencyData: any, options: { allowDuplicate?: boolean } = {}) {
+// options.allowDuplicate: 최고관리자의 [중복 허용]
+// options.requestApproval: 본인의 승인신청 — 서버가 두 서류를 검증하고 상태를 직접 결정한다
+export async function adminUpdateAgency(
+  memberId: string,
+  agencyData: any,
+  options: { allowDuplicate?: boolean; requestApproval?: boolean } = {},
+) {
   const supabaseAdmin = getAdminClient();
   try {
+    const requester = await getRequesterContext();
+    if (!requester.userId) return { success: false, error: '로그인이 필요합니다.' };
+    if (!requester.isAdmin && requester.userId !== memberId) {
+      return { success: false, error: '본인의 중개업소 정보만 수정할 수 있습니다.' };
+    }
+
     const { data: existing } = await supabaseAdmin
-      .from('agencies').select('id, reg_num').eq('owner_id', memberId).single();
+      .from('agencies')
+      .select('id, reg_num, status, reg_cert_url, biz_cert_url')
+      .eq('owner_id', memberId)
+      .maybeSingle();
 
     /* "중복 허용" 표시는 화면이 보낸 값을 믿지 않는다 — 아래에서 서버가 정한다 */
-    agencyData = { ...(agencyData || {}) };
-    delete agencyData.allow_duplicate;
+    agencyData = sanitizeAgencyData(agencyData);
+    if (!requester.isAdmin) delete agencyData.reject_reason;
     let forcedPending = false;
     let paidOffice = false;
+    let verificationStatus: string | null = null;
+    let reviewReason: string | null = null;
+
+    if (!requester.isAdmin && options.requestApproval) {
+      const requiredFields = [
+        agencyData.name,
+        agencyData.ceo_name,
+        agencyData.cell,
+        agencyData.address,
+        agencyData.biz_num,
+        agencyData.reg_num,
+        agencyData.biz_cert_url,
+        agencyData.reg_cert_url,
+      ];
+      if (requiredFields.some((value) => !String(value ?? '').trim())) {
+        return { success: false, error: '필수 정보와 두 종류의 서류를 모두 제출해 주세요.' };
+      }
+    }
 
     /* 새로 신청하거나 등록번호를 바꿀 때만 — 같은 사무소의 다른 계정이 있으면:
        기존 계정이 유료로 쓰는 사무소 → 추가 계정 허용 (개수 제한 없음, 관리자 승인 대기로)
@@ -364,14 +619,9 @@ export async function adminUpdateAgency(memberId: string, agencyData: any, optio
       const others = await findOtherAgenciesByRegNum(supabaseAdmin, agencyData.reg_num, memberId);
       if (others && others.length) {
         paidOffice = others.some((row) => isPaidOwner(memberOf(row)));
-        const adminAllowed = !paidOffice && options.allowDuplicate === true && await requesterIsAdmin();
+        const adminAllowed = !paidOffice && options.allowDuplicate === true && requester.isAdmin;
         if (paidOffice || adminAllowed) {
           agencyData.allow_duplicate = true;
-          /* 유료 사무소 추가 계정은 자동 승인하지 않는다 — 관리자 화면에서 한 번 눌러 승인 */
-          if (paidOffice && !(await requesterIsAdmin()) && agencyData.status === 'APPROVED') {
-            agencyData.status = 'PENDING';
-            forcedPending = true;
-          }
         } else {
           const masked = maskEmail(memberOf(others[0])?.email);
           return {
@@ -383,6 +633,30 @@ export async function adminUpdateAgency(memberId: string, agencyData: any, optio
           };
         }
       }
+    }
+
+    if (!requester.isAdmin) {
+      if (options.requestApproval) {
+        const verification = await verifyRealtorApplication(supabaseAdmin, memberId, agencyData);
+        verificationStatus = verification.verificationStatus;
+        agencyData.status = verification.status;
+        agencyData.reject_reason = verification.reason;
+        reviewReason = verification.reason;
+
+        /* 유료 사무소의 추가 계정은 AI가 통과시켜도 최고관리자가 한 번 더 승인한다. */
+        if (paidOffice) {
+          agencyData.status = 'PENDING';
+          agencyData.reject_reason = '유료 중개사무소의 추가 계정으로 관리자 확인이 필요합니다.';
+          reviewReason = agencyData.reject_reason;
+          forcedPending = true;
+        }
+      } else {
+        /* 일반 저장에서는 클라이언트가 승인 상태를 바꿀 수 없다. */
+        agencyData.status = existing?.status || 'PENDING';
+        agencyData.reject_reason = agencyData.status === 'APPROVED' ? null : undefined;
+      }
+    } else {
+      agencyData.status = agencyData.status || existing?.status || 'PENDING';
     }
 
     /* DB 에 allow_duplicate 칸이 아직 없으면(마이그레이션 전) 빼고 저장한다 */
@@ -400,34 +674,51 @@ export async function adminUpdateAgency(memberId: string, agencyData: any, optio
     };
     const saved = await saveAgency(agencyData);
     if (saved.error) return { success: false, error: saved.error.message };
-    if (agencyData.status === 'PENDING' || agencyData.status === 'REJECTED') {
+
+    if (agencyData.status === 'APPROVED') {
+      const approved = await applyRealtorApproval(supabaseAdmin, memberId, existing?.status !== 'APPROVED');
+      if (!approved.success) return approved;
+    } else if (agencyData.status === 'PENDING' || agencyData.status === 'REJECTED') {
       const { error: memberError } = await supabaseAdmin
         .from('members')
         .update({ role: 'USER' })
         .eq('id', memberId);
       if (memberError) return { success: false, error: memberError.message };
-    } else if (agencyData.status === 'APPROVED') {
-      const { error: memberError } = await supabaseAdmin
-        .from('members')
-        .update({ role: 'REALTOR' })
-        .eq('id', memberId);
-      if (memberError) return { success: false, error: memberError.message };
     }
 
     /* forcedPending: 유료 사무소 추가 계정이라 자동 승인을 막고 관리자 승인 대기로 저장했다 (화면이 바로 승인하지 않게) */
-    return { success: true, forcedPending, paidOffice };
+    return {
+      success: true,
+      status: agencyData.status as string,
+      forcedPending,
+      paidOffice,
+      verificationStatus,
+      reviewReason,
+    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
 
-export async function normalizePendingRealtorRole(memberId: string, agencyStatus: string) {
-  if (agencyStatus !== 'PENDING' && agencyStatus !== 'REJECTED') {
-    return { success: false, error: '승인 전 상태가 아닙니다.' };
-  }
-
+export async function normalizePendingRealtorRole(memberId: string) {
   const supabaseAdmin = getAdminClient();
   try {
+    const requester = await getRequesterContext();
+    if (!requester.userId) return { success: false, error: '로그인이 필요합니다.' };
+    if (!requester.isAdmin && requester.userId !== memberId) {
+      return { success: false, error: '본인의 승인 상태만 정리할 수 있습니다.' };
+    }
+    const { data: agency, error: agencyError } = await supabaseAdmin
+      .from('agencies')
+      .select('status')
+      .eq('owner_id', memberId)
+      .maybeSingle();
+    if (agencyError) return { success: false, error: agencyError.message };
+    const currentStatus = agency?.status;
+    if (currentStatus !== 'PENDING' && currentStatus !== 'REJECTED') {
+      return { success: false, error: '승인 전 상태가 아닙니다.' };
+    }
+
     const { error } = await supabaseAdmin
       .from('members')
       .update({ role: 'USER' })
@@ -444,47 +735,23 @@ export async function normalizePendingRealtorRole(memberId: string, agencyStatus
 export async function adminApproveRealtorApplication(memberId: string) {
   const supabaseAdmin = getAdminClient();
   try {
-    // 1. agencies 상태를 APPROVED로 변경
-    const { error: agencyError } = await supabaseAdmin
-      .from('agencies')
-      .update({ status: 'APPROVED', reject_reason: null })
-      .eq('owner_id', memberId);
-    if (agencyError) return { success: false, error: agencyError.message };
-
-    // 2. 현재 회원의 plan_type과 회원별 한도 적용 여부를 확인
-    const { data: member, error: memberLookupError } = await supabaseAdmin
-      .from('members')
-      .select('plan_type, use_custom_registration_limits')
-      .eq('id', memberId)
-      .single();
-    if (memberLookupError) return { success: false, error: memberLookupError.message };
-
-    const planType = member?.plan_type || 'free';
-    const { policies } = await adminGetLimitPolicies();
-
-    const { error: memberError } = await supabaseAdmin
-      .from('members')
-      .update({
-        role: 'REALTOR',
-        ...planDefaultsForMember(policies, 'REALTOR', planType, !!member?.use_custom_registration_limits),
-      })
-      .eq('id', memberId);
-    if (memberError) return { success: false, error: memberError.message };
-
-    // 알림 발송 (회원용)
-    const { createNotification } = await import("@/app/actions/notification");
-    await createNotification({
-      recipientId: memberId,
-      type: "realtor_approved",
-      title: "🎉 부동산회원 승인 완료",
-      body: "공인중개사 서류 심사가 통과되어 부동산회원으로 승인되었습니다.",
-      link: "/realty_admin",
-      mobileLink: "/m/admin",
-      sourceId: `realtor_approved_${memberId}`,
-      revive: true
-    });
-
-    return { success: true };
+    const requester = await getRequesterContext();
+    if (!requester.userId) return { success: false, error: '로그인이 필요합니다.' };
+    if (!requester.isAdmin) {
+      if (requester.userId !== memberId) {
+        return { success: false, error: '본인의 승인 상태만 복구할 수 있습니다.' };
+      }
+      const { data: agency, error: agencyError } = await supabaseAdmin
+        .from('agencies')
+        .select('status')
+        .eq('owner_id', memberId)
+        .maybeSingle();
+      if (agencyError) return { success: false, error: agencyError.message };
+      if (agency?.status !== 'APPROVED') {
+        return { success: false, error: '승인된 중개업소만 회원 권한을 복구할 수 있습니다.' };
+      }
+    }
+    return await applyRealtorApproval(supabaseAdmin, memberId, true);
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -494,6 +761,7 @@ export async function adminApproveRealtorApplication(memberId: string) {
 export async function adminRejectRealtorApplication(memberId: string, reason: string) {
   const supabaseAdmin = getAdminClient();
   try {
+    if (!(await requesterIsAdmin())) return { success: false, error: '최고관리자 권한이 필요합니다.' };
     const { error } = await supabaseAdmin
       .from('agencies')
       .update({ status: 'REJECTED', reject_reason: reason })
@@ -536,11 +804,25 @@ export async function adminUploadAgencyDocument(formData: FormData) {
 
   const supabaseAdmin = getAdminClient();
   try {
-    const { data, error } = await supabaseAdmin.storage.from('agency_documents').upload(path, file, { upsert: true });
+    const requester = await getRequesterContext();
+    if (!requester.userId) return { success: false, error: '로그인이 필요합니다.' };
+    const normalizedPath = String(path).replace(/\\/g, '/').replace(/^\/+/, '');
+    if (normalizedPath.includes('..')) return { success: false, error: '올바르지 않은 저장 경로입니다.' };
+    if (!requester.isAdmin && !normalizedPath.startsWith(`${requester.userId}/`)) {
+      return { success: false, error: '본인의 서류만 업로드할 수 있습니다.' };
+    }
+    if (!AGENCY_DOCUMENT_MIME_TYPES.has(file.type)) {
+      return { success: false, error: 'JPG, PNG 또는 WebP 이미지 서류만 업로드할 수 있습니다.' };
+    }
+    if (file.size <= 0 || file.size > AGENCY_DOCUMENT_MAX_BYTES) {
+      return { success: false, error: '서류 파일은 파일당 최대 10MB까지 업로드할 수 있습니다.' };
+    }
+
+    const { data, error } = await supabaseAdmin.storage.from('agency_documents').upload(normalizedPath, file, { upsert: true });
     if (error) {
       return { success: false, error: error.message };
     }
-    const { data: urlData } = supabaseAdmin.storage.from('agency_documents').getPublicUrl(path);
+    const { data: urlData } = supabaseAdmin.storage.from('agency_documents').getPublicUrl(normalizedPath);
     return { success: true, url: urlData.publicUrl };
   } catch (error: any) {
     return { success: false, error: error.message };

@@ -249,6 +249,10 @@ function MobileSettings() {
       });
 
       let saveStatus = agencyStatus;
+      let reviewReason = "";
+      const requestAiApproval = !isTemp
+        && tab === "agency"
+        && (!isRealtor || agencyStatus === "REJECTED");
       /* 부동산 정보 */
       if (tab === "agency" || isRealtor) {
         let regUrl = regCertPreview?.startsWith("http") ? regCertPreview : null;
@@ -272,71 +276,37 @@ function MobileSettings() {
         // 반려 상태에서 재저장 시 → 자동으로 승인대기로 변경 (임시저장이 아닐 때만)
         saveStatus = (!isTemp && agencyStatus === 'REJECTED') ? 'PENDING' : agencyStatus;
 
-        // [AI 서류 자동 검증]
-        let aiReason = "";
-        if (bizCertFile && saveStatus !== 'APPROVED') {
-          try {
-            const verifyFd = new FormData();
-            verifyFd.append("file", bizCertFile);
-            verifyFd.append("companyName", agencyName);
-            verifyFd.append("representative", ceoName);
-
-            const verifyRes = await fetch("/api/agents/verify", {
-              method: "POST",
-              body: verifyFd,
-            });
-            const verifyResult = await verifyRes.json();
-            
-            if (verifyResult.status === "APPROVED") {
-              saveStatus = "APPROVED"; // AI가 검증 통과시키면 자동 승인
-              setAgencyStatus("APPROVED");
-            } else if (verifyResult.status === "NEEDS_REVIEW") {
-              saveStatus = "PENDING";
-              setAgencyStatus("PENDING");
-              let diffMsg = "";
-              if (verifyResult.diff && verifyResult.diff.found) {
-                const isNameDiff = verifyResult.diff.expected?.companyName !== verifyResult.diff.found?.companyName;
-                const isRepDiff = verifyResult.diff.expected?.representative !== verifyResult.diff.found?.representative;
-                if (isNameDiff) diffMsg += `상호명 불일치(입력: ${verifyResult.diff.expected?.companyName} / 서류: ${verifyResult.diff.found?.companyName}) `;
-                if (isRepDiff) diffMsg += `대표자 불일치(입력: ${verifyResult.diff.expected?.representative} / 서류: ${verifyResult.diff.found?.representative})`;
-              }
-              aiReason = diffMsg ? `AI 자동검증 참고: ${diffMsg}` : "서류 확인 필요 (관리자 검토)";
-            }
-          } catch (e) {
-            console.error("AI Verify Error:", e);
-          }
-        }
-
-        await adminUpdateAgency(memberId, {
+        const agencyResult = await adminUpdateAgency(memberId, {
           name: agencyName, ceo_name: ceoName, cell, phone: officePhone,
           zipcode, address, address_detail: addressDetail,
           intro, reg_num: regNum, biz_num: bizNum,
           reg_cert_url: regUrl, biz_cert_url: bizUrl,
           lat: coords?.lat || null, lng: coords?.lng || null,
           status: saveStatus,
-          reject_reason: aiReason,
-        });
+          reject_reason: null,
+        }, { requestApproval: requestAiApproval });
+        if (!agencyResult.success) throw new Error(agencyResult.error || "중개업소 정보 저장에 실패했습니다.");
 
-        if (saveStatus === "APPROVED" && agencyStatus !== "APPROVED") {
-          const { adminApproveRealtorApplication } = await import("@/app/admin/actions");
-          await adminApproveRealtorApplication(memberId);
+        saveStatus =
+          "status" in agencyResult && agencyResult.status
+            ? agencyResult.status
+            : saveStatus;
+        reviewReason =
+          "reviewReason" in agencyResult && agencyResult.reviewReason
+            ? agencyResult.reviewReason
+            : "";
+        setAgencyStatus(saveStatus);
+        setRejectReason(reviewReason || null);
+        if (saveStatus === "APPROVED") {
           setIsRealtor(true);
         }
       }
 
-      if (tab === "agency" && !isRealtor && saveStatus !== "APPROVED") {
-        if (!isTemp) {
-          setIsRealtor(true);
-          setRejectReason(null);
-          alert("✅ 부동산회원 전환 신청이 완료되었습니다!\n\n서류 확인 후 승인 처리됩니다.\n(보통 당일~1영업일 소요)");
-          router.push("/m/admin/dashboard");
-        } else {
-          alert("임시저장되었습니다.");
-        }
-      } else if (!isTemp && agencyStatus === 'REJECTED') {
-        setAgencyStatus('PENDING');
-        setRejectReason(null);
-        alert("✅ 서류가 재제출되었습니다!\n\n관리자 재심사 후 승인 처리됩니다.");
+      if (requestAiApproval && saveStatus === "APPROVED") {
+        alert("🎉 두 서류의 검증이 완료되어 부동산회원으로 즉시 승인되었습니다!");
+        router.push("/m/admin/dashboard");
+      } else if (requestAiApproval) {
+        alert(`📋 승인 신청이 접수되었으며 관리자 검토 대기 중입니다.${reviewReason ? `\n\n${reviewReason}` : ""}`);
         router.push("/m/admin/dashboard");
       } else {
         alert(isTemp ? "임시저장되었습니다." : "저장되었습니다.");
