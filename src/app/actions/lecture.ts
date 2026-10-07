@@ -9,6 +9,7 @@ import { sealMaterialUrl, openMaterialUrl } from '@/utils/lectureMaterialSecrets
 import { canTakeFree, lecturePlanOf, LECTURE_PLAN_KEYS } from '@/utils/lectureAccess';
 import { getLectureActor, getLectureAdmin, lectureQuotaFor } from '@/utils/lectureActor';
 import { createNotification } from '@/app/actions/notification';
+import { isAiHtml, aiHtmlSource, renderAiHtml } from '@/utils/aiHtml/renderAiHtml';
 
 async function lectureEditor(lectureAuthor?: string | null) {
   const session = await createSessionClient();
@@ -409,6 +410,8 @@ export async function getLectureDetail(lectureId: string) {
       success: true,
       data: {
         ...lecture,
+        // AI가 만든 HTML 통째(description)는 상세 페이지에 넣을 수 있게 변환한 결과를 같이 보낸다
+        description_html: isAiHtml(lecture.description) ? await renderAiHtml(aiHtmlSource(lecture.description)) : null,
         keywords,
         lecture_guide: lectureGuide,
         sidebar_copy: lectureGuide

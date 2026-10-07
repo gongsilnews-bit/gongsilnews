@@ -1,0 +1,1037 @@
+"use client";
+
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import Link from "next/link";
+import LecturePublicMaterialsModal from "@/components/LecturePublicMaterialsModal";
+import { useRouter, useSearchParams } from "next/navigation";
+import { getLectureDetail, getLectures, createLectureReview, updateLectureReview, deleteLectureReview, enrollLecture, checkEnrollment } from "@/app/actions/lecture";
+import { getPointBalance } from "@/app/actions/point";
+import { createClient } from "@/utils/supabase/client";
+import AuthModal from "@/components/AuthModal";
+import styles from "./studyRead.module.css";
+import StudyHeader from "@/components/study/StudyHeader";
+
+/* ── YouTube URL → embed URL ── */
+const toEmbedUrl = (url: string): string => {
+  if (!url) return "";
+  const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]+)/i);
+  if (youtubeMatch && youtubeMatch[1]) {
+    return `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&rel=0`;
+  }
+  return url;
+};
+
+export default function StudyReadClient({ initialLecture }: { initialLecture: any }) {
+  return (
+    <>
+      <StudyHeader />
+      <Suspense fallback={<div style={{ padding: "100px", textAlign: "center", color: "#6b7280" }}>강의 상세 정보를 불러오는 중입니다...</div>}>
+        <StudyReadContent initialLecture={initialLecture} />
+      </Suspense>
+    </>
+  );
+}
+
+function StudyReadContent({ initialLecture }: { initialLecture: any }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const lectureId = searchParams.get("id");
+
+  const [activeTab, setActiveTab] = useState<"introduce" | "curriculum" | "review" | "creator">("introduce");
+  // 서버에서 채워 온 강의로 바로 그린다 (검색엔진이 첫 응답에서 내용을 읽도록)
+  const [lecture, setLecture] = useState<any>(initialLecture);
+  const [loading, setLoading] = useState(!initialLecture);
+  const usedInitialRef = useRef(!!initialLecture);
+  const [headerHeight, setHeaderHeight] = useState(96);
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    document.body.classList.add("study-detail-sticky");
+    const header = document.querySelector<HTMLElement>("header.header");
+    const updateHeight = () => {
+      if (header) setHeaderHeight(Math.ceil(header.getBoundingClientRect().height));
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    if (header) observer.observe(header);
+    return () => {
+      observer.disconnect();
+      document.body.classList.remove("study-detail-sticky");
+    };
+  }, []);
+
+  /* ── 캐러셀 ── */
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  /* ── 영상 미리보기 모달 ── */
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState("");
+
+  /* ── 공개 자료 모달 ── */
+  const [selectedMaterialLesson, setSelectedMaterialLesson] = useState<{
+    title: string;
+    materials: { material: any; globalIndex: number }[];
+  } | null>(null);
+
+  /* ── 리뷰 작성 상태 ── */
+  const [newRating, setNewRating] = useState(5);
+  const [newReview, setNewReview] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userRole, setUserRole] = useState<string>("");
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editContent, setEditContent] = useState("");
+  const [isReviewActionLoading, setIsReviewActionLoading] = useState(false);
+
+  /* ── 인증 상태 ── */
+  const [user, setUser] = useState<any>(null);
+  const [userName, setUserName] = useState<string>("");
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  /* ── 수강 등록 상태 ── */
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
+  const [pointBalance, setPointBalance] = useState(0);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data?.user) {
+        setUser(data.user);
+        const { data: member } = await supabase.from("members").select("name, role").eq("id", data.user.id).single();
+        if (member?.name) {
+          setUserName(member.name);
+        } else {
+          setUserName(data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "익명");
+        }
+        if (member?.role) {
+          setUserRole(member.role);
+        }
+        // 포인트 잔액 조회
+        const balRes = await getPointBalance(data.user.id);
+        if (balRes.success) setPointBalance(balRes.balance);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (usedInitialRef.current) {
+      usedInitialRef.current = false;
+      return;
+    }
+    const fetchData = async () => {
+      setLoading(true);
+      if (lectureId) {
+        const res = await getLectureDetail(lectureId);
+        if (res.success && res.data) setLecture(res.data);
+      } else {
+        const res = await getLectures({ status: "ACTIVE" });
+        if (res.success && res.data && res.data.length > 0) {
+          const detail = await getLectureDetail(res.data[0].id);
+          if (detail.success && detail.data) setLecture(detail.data);
+        }
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, [lectureId]);
+
+  // 수강 등록 여부 확인
+  useEffect(() => {
+    if (!lecture?.id || !user?.id) return;
+    checkEnrollment(lecture.id, user.id).then((res) => {
+      if (res.success) setIsEnrolled(res.enrolled);
+    });
+  }, [lecture?.id, user?.id]);
+
+  const handleEnroll = async () => {
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    if (isEnrolled) {
+      router.push(`/study_watch?id=${lecture.id}`);
+      return;
+    }
+    // 결제 전 실시간 수강 여부 재확인
+    const enrollCheck = await checkEnrollment(lecture.id, user.id);
+    if (enrollCheck.success && enrollCheck.enrolled) {
+      setIsEnrolled(true);
+      router.push(`/study_watch?id=${lecture.id}`);
+      return;
+    }
+    const dp = lecture.discount_price || lecture.price || 0;
+    if (dp <= 0) {
+      setEnrolling(true);
+      const res = await enrollLecture(lecture.id, user.id);
+      if (res.success) {
+        setIsEnrolled(true);
+        router.push(`/study_watch?id=${lecture.id}`);
+      } else {
+        alert(res.error || "오류가 발생했습니다.");
+      }
+      setEnrolling(false);
+      return;
+    }
+    // 포인트 잔액 새로고침
+    const balRes = await getPointBalance(user.id);
+    if (balRes.success) setPointBalance(balRes.balance);
+    setShowEnrollModal(true);
+  };
+
+  const confirmEnroll = async () => {
+    if (!user || !lecture) return;
+    setEnrolling(true);
+    const res = await enrollLecture(lecture.id, user.id);
+    if (res.success) {
+      setIsEnrolled(true);
+      setShowEnrollModal(false);
+      if (res.balance !== undefined) setPointBalance(res.balance);
+      alert("수강 등록이 완료되었습니다! 강의실로 이동합니다.");
+      router.push(`/study_watch?id=${lecture.id}`);
+    } else if (res.error === "insufficient_points") {
+      alert(`포인트가 부족합니다.\n보유: ${(res as any).balance?.toLocaleString()}P\n필요: ${(res as any).required?.toLocaleString()}P`);
+    } else {
+      alert(res.error || "수강 등록에 실패했습니다.");
+    }
+    setEnrolling(false);
+  };
+
+  /* ── 이미지 배열 ── */
+  const slideImages: string[] = [];
+  if (lecture?.thumbnail_url) slideImages.push(lecture.thumbnail_url);
+  if (lecture?.images && Array.isArray(lecture.images)) {
+    lecture.images.forEach((img: string) => {
+      if (img && !slideImages.includes(img)) slideImages.push(img);
+    });
+  }
+
+  const goSlide = (dir: number) => {
+    if (slideImages.length === 0) return;
+    setCurrentSlide((prev) => (prev + dir + slideImages.length) % slideImages.length);
+  };
+
+  /* ── 미리보기 열기 ── */
+  const openPreview = (videoUrl: string, title: string) => {
+    const url = videoUrl || chapters?.[0]?.lessons?.[0]?.video_url || lecture?.video_url;
+    if (!url) {
+      alert("미리보기 영상이 준비 중입니다.");
+      return;
+    }
+    setPreviewUrl(url);
+    setPreviewTitle(title || "미리보기 영상");
+  };
+
+  /* ── 카카오톡 공유 ── */
+  const handleKakaoShare = () => {
+    const Kakao = (window as any).Kakao;
+    if (!Kakao || !Kakao.isInitialized()) {
+      alert("카카오 SDK 로드 중입니다. 잠시 후 시도해 주세요.");
+      return;
+    }
+    const shareUrl = `https://gongsilnews.com/study_read?id=${lecture.id}`;
+    Kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title: lecture.title,
+        description: lecture.category || "공실스터디 | 공실뉴스",
+        imageUrl: slideImages[0] || "",
+        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+      },
+      buttons: [
+        { title: "스터디 보기", link: { mobileWebUrl: shareUrl, webUrl: shareUrl } },
+      ],
+    });
+  };
+
+  /* ── URL 복사 ── */
+  const handleCopyUrl = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert("URL이 복사되었습니다.");
+  };
+
+  /* ── 리뷰 작성 ── */
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    if (!newReview.trim()) return;
+    setIsSubmitting(true);
+    const res = await createLectureReview({
+      lecture_id: lecture.id,
+      user_id: user.id,
+      user_name: userName,
+      rating: newRating,
+      content: newReview.trim(),
+    });
+    if (res.success) {
+      alert("리뷰가 등록되었습니다.");
+      setNewReview("");
+      const detail = await getLectureDetail(lecture.id);
+      if (detail.success && detail.data) setLecture(detail.data);
+    } else {
+      alert(res.error || "등록 실패");
+    }
+    setIsSubmitting(false);
+  };
+
+  /* ── 리뷰 수정 시작 ── */
+  const handleReviewEditStart = (rev: any) => {
+    setEditingReviewId(rev.id);
+    setEditRating(rev.rating || 5);
+    setEditContent(rev.content || "");
+  };
+
+  /* ── 리뷰 수정 취소 ── */
+  const handleReviewEditCancel = () => {
+    setEditingReviewId(null);
+    setEditRating(5);
+    setEditContent("");
+  };
+
+  /* ── 리뷰 수정 제출 ── */
+  const handleReviewUpdate = async (reviewId: string) => {
+    if (!user) return;
+    if (!editContent.trim()) {
+      alert("후기 내용을 입력해주세요.");
+      return;
+    }
+    setIsReviewActionLoading(true);
+    const res = await updateLectureReview({
+      review_id: reviewId,
+      user_id: user.id,
+      rating: editRating,
+      content: editContent.trim(),
+    });
+    if (res.success) {
+      alert("후기가 수정되었습니다.");
+      setEditingReviewId(null);
+      const detail = await getLectureDetail(lecture.id);
+      if (detail.success && detail.data) setLecture(detail.data);
+    } else {
+      alert(res.error || "후기 수정에 실패했습니다.");
+    }
+    setIsReviewActionLoading(false);
+  };
+
+  /* ── 리뷰 삭제 ── */
+  const handleReviewDelete = async (reviewId: string) => {
+    if (!user) return;
+    if (!confirm("작성하신 수강 후기를 삭제하시겠습니까?")) return;
+    setIsReviewActionLoading(true);
+    const res = await deleteLectureReview({
+      review_id: reviewId,
+      user_id: user.id,
+    });
+    if (res.success) {
+      alert("후기가 삭제되었습니다.");
+      if (editingReviewId === reviewId) setEditingReviewId(null);
+      const detail = await getLectureDetail(lecture.id);
+      if (detail.success && detail.data) setLecture(detail.data);
+    } else {
+      alert(res.error || "후기 삭제에 실패했습니다.");
+    }
+    setIsReviewActionLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
+        강의 상세 정보를 불러오는 중입니다...
+      </div>
+    );
+  }
+
+  if (!lecture) {
+    return (
+      <div style={{ minHeight: "80vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>등록된 강의가 없습니다</h2>
+        <Link href="/study" style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}>공실스터디 목록으로 돌아가기 ›</Link>
+      </div>
+    );
+  }
+
+  const displayPrice = lecture.discount_price !== null && lecture.discount_price !== undefined ? lecture.discount_price : lecture.price;
+  const originalPrice = lecture.discount_price ? lecture.price : null;
+  const rawChapters = lecture.chapters || [];
+  const allLessons = rawChapters.flatMap((chapter: any, cIdx: number) =>
+    (chapter.lessons || []).map((les: any, lIdx: number) => ({
+      ...les,
+      chapter_no: les.chapter_no ?? chapter.chapter_no ?? (cIdx + 1),
+      lesson_no: les.lesson_no ?? (lIdx + 1),
+    }))
+  );
+  const chapters = [{ lessons: allLessons }];
+  const reviews = lecture.reviews || [];
+  const totalLessons = chapters.reduce((sum: number, ch: any) => sum + (ch.lessons?.length || 0), 0);
+
+  return (
+    <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#1e293b", minHeight: "100vh", paddingBottom: 100 }}>
+      
+      {/* ── 미리보기 모달 ── */}
+      {previewUrl && (
+        <div
+          onClick={() => setPreviewUrl(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 880, background: "#062326", borderRadius: 14, overflow: "hidden", position: "relative", boxShadow: "0 25px 60px rgba(0,0,0,0.6)", border: "1px solid #134e4a" }}>
+            <div style={{ padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#062326", color: "#fff", borderBottom: "1px solid #134e4a" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ background: "#059669", color: "#fff", fontSize: 11.5, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>
+                  미리보기 VOD
+                </span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>
+                  {previewTitle || "미리보기 영상"}
+                </span>
+              </div>
+              <button onClick={() => setPreviewUrl(null)} style={{ background: "none", border: "none", color: "#a7f3d0", fontSize: 22, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>✕</button>
+            </div>
+            {toEmbedUrl(previewUrl).includes("youtube.com/embed") ? (
+              <div style={{ width: "100%", aspectRatio: "16/9" }}>
+                <iframe
+                  src={toEmbedUrl(previewUrl)}
+                  title="preview"
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <video src={previewUrl} controls autoPlay style={{ width: "100%", height: "100%", background: "#000" }} />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── 공개 자료 모달 ── */}
+      <LecturePublicMaterialsModal
+        isOpen={!!selectedMaterialLesson}
+        onClose={() => setSelectedMaterialLesson(null)}
+        lessonTitle={selectedMaterialLesson?.title || ""}
+        materials={selectedMaterialLesson?.materials || []}
+        lectureId={lecture.id}
+      />
+
+      {/* ── 상단 Breadcrumb ── */}
+      <div style={{ borderBottom: "1px solid #f1f5f9", background: "#f8fafc" }}>
+        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "14px 24px", fontSize: 13, color: "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
+          <Link href="/study" style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}>공실스터디</Link>
+          <span>›</span>
+          <span style={{ color: "#334155", fontWeight: 600 }}>{lecture.category || "중개실무"}</span>
+        </div>
+      </div>
+
+      {/* ── 메인 컨텐츠 영역 (윤자동 스타일 2열 구조) ── */}
+      <main style={{ maxWidth: 1160, margin: "0 auto", padding: "36px 24px 0", display: "grid", gridTemplateColumns: "1fr 360px", gap: 44, alignItems: "start" }}>
+        
+        {/* ━━━ 좌측: 메인 상세 소개 ━━━ */}
+        <div>
+          
+          {/* 1. 메인 프리뷰 이미지 / 썸네일 */}
+          <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: 14, overflow: "hidden", background: "#062326", marginBottom: 28, border: "1px solid #e2e8f0" }}>
+            {slideImages.length > 0 ? (
+              <>
+                <img
+                  src={slideImages[currentSlide]}
+                  alt={lecture.title}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                {slideImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => goSlide(-1)}
+                      style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}
+                    >
+                      ‹
+                    </button>
+                    <button
+                      onClick={() => goSlide(1)}
+                      style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}
+                    >
+                      ›
+                    </button>
+                  </>
+                )}
+              </>
+            ) : (
+              <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #062326 0%, #064e3b 100%)", color: "#ffffff" }}>
+                <span style={{ fontSize: 40, marginBottom: 8 }}>🎓</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "#6ee7b7" }}>{lecture.category || "공실스터디"}</span>
+              </div>
+            )}
+            
+            {/* VOD 태그 */}
+            <span style={{ position: "absolute", top: 14, left: 14, background: "#059669", color: "#fff", fontSize: 12, fontWeight: 800, padding: "3px 9px", borderRadius: 6, letterSpacing: "0.5px" }}>
+              VOD
+            </span>
+
+            {/* 미리보기 재생 버튼 (썸네일 중앙) */}
+            {chapters?.[0]?.lessons?.[0]?.video_url && (
+              <button
+                onClick={() => openPreview(chapters[0].lessons[0].video_url, chapters[0].lessons[0].title || "1강. 미리보기")}
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  padding: "10px 20px",
+                  borderRadius: 30,
+                  background: "rgba(6, 35, 38, 0.85)",
+                  color: "#ffffff",
+                  border: "1px solid rgba(52, 211, 153, 0.4)",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+                  backdropFilter: "blur(4px)",
+                }}
+              >
+                <span style={{ color: "#34d399", fontSize: 14 }}>▶</span>
+                <span>미리보기 재생</span>
+              </button>
+            )}
+          </div>
+
+          {/* 2. 강의 제목 및 요약 정보 */}
+          <div style={{ marginBottom: 36 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 900, color: "#062828", lineHeight: 1.35, margin: "0 0 12px 0", letterSpacing: "-0.5px" }}>
+              {lecture.title}
+            </h1>
+            <p style={{ fontSize: 15.5, color: "#475569", lineHeight: 1.6, margin: "0 0 18px 0" }}>
+              {lecture.short_description || "11만 부동산 실무자와 함께 1년 동안 실전 노하우를 배우고 성장하는 공실스터디 마스터 과정"}
+            </p>
+
+            {/* 메타 뱃지 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 13, fontWeight: 700 }}>
+              <span style={{ background: "#f0fdf4", color: "#065f46", border: "1px solid #d1fae5", padding: "4px 10px", borderRadius: 6 }}>
+                총 {totalLessons}강
+              </span>
+              {(Array.isArray(lecture.keywords)
+                ? lecture.keywords
+                : (Array.isArray(lecture.sidebar_copy?.keywords)
+                  ? lecture.sidebar_copy.keywords
+                  : ["1년(365일) 무제한 수강", "실무 서식 100% 제공"])
+              ).map((kw: string, idx: number) => (
+                <span
+                  key={idx}
+                  style={{ background: "#f0fdf4", color: "#065f46", border: "1px solid #d1fae5", padding: "4px 10px", borderRadius: 6 }}
+                >
+                  {kw}
+                </span>
+              ))}
+              <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#d97706", marginLeft: 4 }}>
+                ★ {(lecture.rating || 4.9).toFixed(1)} ({lecture.review_count || reviews.length})
+              </span>
+            </div>
+          </div>
+
+          {/* 3. 윤자동 스타일 탭 바 */}
+          <div ref={tabsRef} className={styles.tabs} style={{ top: headerHeight, scrollMarginTop: headerHeight, display: "flex", borderBottom: "1px solid #e2e8f0", marginBottom: 36, gap: 28 }}>
+            {[
+              { id: "introduce", label: "소개" },
+              { id: "curriculum", label: `커리큘럼 (${totalLessons}강)` },
+              { id: "creator", label: "강사진 소개" },
+              { id: "review", label: `수강 후기 (${reviews.length})` },
+            ].map((tab) => {
+              const isSel = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    const wasSticky = tabsRef.current && tabsRef.current.getBoundingClientRect().top <= headerHeight + 1;
+                    setActiveTab(tab.id as typeof activeTab);
+                    if (wasSticky) requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ block: "start" }));
+                  }}
+                  style={{
+                    padding: "12px 0",
+                    background: "none",
+                    border: "none",
+                    borderBottom: isSel ? "2.5px solid #059669" : "2.5px solid transparent",
+                    fontSize: 15,
+                    fontWeight: isSel ? 800 : 600,
+                    color: isSel ? "#062828" : "#64748b",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 4. 탭 본문 내용 */}
+          {activeTab === "introduce" && (
+            <div style={{ fontSize: 15, color: "#334155", lineHeight: 1.8 }}>
+              <h3 style={{ fontSize: 19, fontWeight: 800, color: "#062828", margin: "0 0 16px 0" }}>
+                스터디 소개
+              </h3>
+              {lecture.description ? (
+                <div dangerouslySetInnerHTML={{ __html: lecture.description_html || lecture.description }} />
+              ) : (
+                <div>
+                  <p>
+                    본 과정은 단순한 이론 강의가 아닌, <strong>내일 당장 현장에서 계약을 쓰고 매물을 홍보할 수 있는 실전 노하우</strong>를 중심으로 구성되어 있습니다.
+                  </p>
+                  <p>
+                    1년(365일) 동안 매월 업데이트되는 최신 AI 도구와 부동산 정책, 실무 서식을 활용하여 나만의 경쟁력을 완성하세요.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "curriculum" && (() => {
+            const allMaterials = lecture.materials || [];
+            const commonPublicMaterials = allMaterials
+              .map((m: any, idx: number) => ({ material: m, globalIndex: idx }))
+              .filter(({ material }) => material.is_preview && (!material.scope || material.scope === "common"));
+
+            return (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+                  <h3 style={{ fontSize: 19, fontWeight: 800, color: "#062828", margin: 0 }}>
+                    커리큘럼 <span style={{ fontSize: 14, color: "#64748b", fontWeight: 600 }}>전체 {totalLessons}강</span>
+                  </h3>
+
+                  {commonPublicMaterials.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMaterialLesson({ title: `${lecture.title} · 공통 공개 자료`, materials: commonPublicMaterials })}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                        padding: "5px 12px",
+                        borderRadius: 6,
+                        background: "#eff6ff",
+                        color: "#1d4ed8",
+                        border: "1px solid #bfdbfe",
+                        fontSize: 12.5,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                      title="전체 강의 공통 공개 자료 확인"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                      </svg>
+                      공통 자료{commonPublicMaterials.length > 1 ? ` (${commonPublicMaterials.length})` : ""}
+                    </button>
+                  )}
+                </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {chapters.map((ch: any, chIdx: number) => (
+                  <div key={chIdx} style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", background: "#ffffff" }}>
+
+                    <div>
+                      {(ch.lessons || []).map((les: any, lesIdx: number) => {
+                        const isPreview = les.is_preview || lesIdx === 0;
+                        const allMaterials = lecture.materials || [];
+                        const lessonPublicMaterials = allMaterials
+                          .map((m: any, idx: number) => ({ material: m, globalIndex: idx }))
+                          .filter(({ material }) => {
+                            if (!material.is_preview) return false;
+                            if (material.scope === "lesson") {
+                              const matchChapter = material.chapter_no === undefined || material.chapter_no === les.chapter_no;
+                              const matchLesson = material.lesson_no === les.lesson_no;
+                              return matchChapter && matchLesson;
+                            }
+                            return false;
+                          });
+
+                        return (
+                          <div
+                            key={les.id || lesIdx}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "13px 18px",
+                              borderBottom: lesIdx < ch.lessons.length - 1 ? "1px solid #f1f5f9" : "none",
+                              fontSize: 14,
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                              <span style={{ fontSize: 12, fontWeight: 800, color: "#059669", width: 22 }}>
+                                {String(lesIdx + 1).padStart(2, "0")}
+                              </span>
+                              <span style={{ fontWeight: 600, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {les.title}
+                              </span>
+                            </div>
+
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                              {lessonPublicMaterials.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedMaterialLesson({ title: les.title, materials: lessonPublicMaterials })}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 4,
+                                    padding: "3px 8px",
+                                    borderRadius: 4,
+                                    background: "#eff6ff",
+                                    color: "#1d4ed8",
+                                    border: "1px solid #bfdbfe",
+                                    fontSize: 11.5,
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                    transition: "all 0.15s",
+                                  }}
+                                  title="이 강의의 공개 자료 확인"
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                    <line x1="16" y1="13" x2="8" y2="13" />
+                                    <line x1="16" y1="17" x2="8" y2="17" />
+                                  </svg>
+                                  공개 자료{lessonPublicMaterials.length > 1 ? ` (${lessonPublicMaterials.length})` : ""}
+                                </button>
+                              )}
+
+                              {isPreview ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openPreview(les.video_url, les.title)}
+                                  style={{ padding: "3px 8px", borderRadius: 4, background: "#ecfdf5", color: "#047857", border: "1px solid #d1fae5", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}
+                                >
+                                  미리보기
+                                </button>
+                              ) : (
+                                <span style={{ fontSize: 12, color: "#94a3b8" }}>🔒 잠김</span>
+                              )}
+                              <span style={{ fontSize: 12, color: "#64748b" }}>{les.duration_minutes ? `${les.duration_minutes}분` : (les.duration || "8:04")}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ); })()}
+
+          {activeTab === "review" && (
+            <div>
+              <h3 style={{ fontSize: 19, fontWeight: 800, color: "#062828", margin: "0 0 18px 0" }}>
+                수강생 후기
+              </h3>
+
+              {/* 리뷰 작성 박스 */}
+              <form onSubmit={handleReviewSubmit} style={{ background: "#f8fafc", padding: "20px", borderRadius: 10, border: "1px solid #e2e8f0", marginBottom: 28 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: "#334155" }}>별점 평가:</span>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      type="button"
+                      key={star}
+                      onClick={() => setNewRating(star)}
+                      style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: star <= newRating ? "#d97706" : "#cbd5e1" }}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  rows={3}
+                  placeholder="스터디 수강 후기를 남겨주세요 (실명 보호)"
+                  value={newReview}
+                  onChange={(e) => setNewReview(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13.5, outline: "none", boxSizing: "border-box", resize: "vertical" }}
+                />
+                <div style={{ textAlign: "right", marginTop: 10 }}>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    style={{ padding: "8px 20px", background: "#059669", color: "#fff", border: "none", borderRadius: 6, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    {isSubmitting ? "등록 중..." : "후기 작성하기"}
+                  </button>
+                </div>
+              </form>
+
+              {/* 리뷰 리스트 */}
+              {reviews.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8" }}>
+                  아직 등록된 후기가 없습니다. 첫 후기를 남겨보세요!
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {reviews.map((rev: any, i: number) => {
+                    const isOwner = user && (rev.user_id === user.id || userRole === "ADMIN" || userRole === "admin");
+                    const isEditing = editingReviewId === rev.id;
+
+                    if (isEditing) {
+                      return (
+                        <div key={rev.id || i} style={{ padding: "18px", background: "#f1f5f9", border: "1.5px solid #059669", borderRadius: 8 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>별점 수정:</span>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                type="button"
+                                key={star}
+                                onClick={() => setEditRating(star)}
+                                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: star <= editRating ? "#d97706" : "#cbd5e1", padding: 0 }}
+                              >
+                                ★
+                              </button>
+                            ))}
+                          </div>
+                          <textarea
+                            rows={3}
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 13.5, outline: "none", boxSizing: "border-box", resize: "vertical", background: "#fff" }}
+                          />
+                          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
+                            <button
+                              type="button"
+                              onClick={handleReviewEditCancel}
+                              disabled={isReviewActionLoading}
+                              style={{ padding: "6px 14px", background: "#e2e8f0", color: "#475569", border: "none", borderRadius: 5, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                            >
+                              취소
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleReviewUpdate(rev.id)}
+                              disabled={isReviewActionLoading}
+                              style={{ padding: "6px 16px", background: "#059669", color: "#fff", border: "none", borderRadius: 5, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                            >
+                              {isReviewActionLoading ? "저장 중..." : "수정 완료"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={rev.id || i} style={{ padding: "16px", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                          <span style={{ color: "#d97706", fontWeight: 800 }}>{"★".repeat(rev.rating || 5)}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 12, color: "#94a3b8" }}>{rev.created_at?.substring(0, 10)}</span>
+                            {isOwner && (
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 4 }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReviewEditStart(rev)}
+                                  style={{ background: "none", border: "none", color: "#64748b", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: "2px 4px", borderRadius: 3 }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.color = "#059669")}
+                                  onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
+                                >
+                                  수정
+                                </button>
+                                <span style={{ fontSize: 10, color: "#cbd5e1" }}>|</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReviewDelete(rev.id)}
+                                  disabled={isReviewActionLoading}
+                                  style={{ background: "none", border: "none", color: "#ef4444", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: "2px 4px", borderRadius: 3 }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.color = "#b91c1c")}
+                                  onMouseLeave={(e) => (e.currentTarget.style.color = "#ef4444")}
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <p style={{ fontSize: 14, color: "#334155", margin: 0, lineHeight: 1.6, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{rev.content}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "creator" && (
+            <div style={{ background: "#f8fafc", padding: "28px", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+              <div style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 16 }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#062326", color: "#6ee7b7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, overflow: "hidden", flexShrink: 0 }}>
+                  {lecture.instructor_photo ? (
+                    <img src={lecture.instructor_photo} alt={lecture.instructor_name || "강사"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    "🎓"
+                  )}
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 4px 0" }}>
+                    {lecture.instructor_name || "공실뉴스 실무 강사진"}
+                  </h4>
+                  <span style={{ fontSize: 13, color: "#059669", fontWeight: 700 }}>
+                    공실뉴스 공인 파트너 강사
+                  </span>
+                </div>
+              </div>
+              {lecture.instructor_bio ? (
+                <div
+                  style={{ fontSize: 14, color: "#475569", lineHeight: 1.75 }}
+                  dangerouslySetInnerHTML={{ __html: lecture.instructor_bio }}
+                />
+              ) : (
+                <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.65, margin: 0 }}>
+                  현직 1등 공인중개사, 프롬프트 엔지니어, 경공매 권리분석 전문가로 구성된 공실뉴스 수석 강사진입니다. 검증된 현장 실무 노하우를 아낌없이 전달합니다.
+                </p>
+              )}
+            </div>
+          )}
+
+        </div>
+
+        {/* ━━━ 우측: 윤자동 스타일 Sticky 구매/수강 위젯 ━━━ */}
+        <aside className={styles.sidebar} style={{ top: headerHeight + 16, maxHeight: `calc(100dvh - ${headerHeight + 32}px)`, display: "flex", flexDirection: "column", gap: 16 }}>
+          
+          {/* 1. 메인 결제/수강 카드 */}
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "26px 22px", boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
+            
+            <div style={{ display: "inline-block", background: "#ecfdf5", color: "#047857", fontSize: 11.5, fontWeight: 800, padding: "3px 8px", borderRadius: 4, marginBottom: 12 }}>
+              VOD
+            </div>
+
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#062828", margin: "0 0 14px 0", lineHeight: 1.4 }}>
+              {lecture.title}
+            </h3>
+
+            {/* 가격 */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                {originalPrice && (
+                  <span style={{ fontSize: 14, color: "#94a3b8", textDecoration: "line-through" }}>
+                    {originalPrice.toLocaleString()}P
+                  </span>
+                )}
+                <span style={{ fontSize: 26, fontWeight: 900, color: "#062828" }}>
+                  {displayPrice ? `${displayPrice.toLocaleString()}P` : "무료 수강"}
+                </span>
+              </div>
+              <div style={{ fontSize: 12.5, color: "#059669", fontWeight: 700, marginTop: 4 }}>
+                {lecture.duration_months || 5}개월 이용 · 수강 시작일로부터
+              </div>
+            </div>
+
+            {lecture.sidebar_copy?.benefits?.trim() && (
+              <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginBottom: 20, fontSize: 13, color: "#475569", lineHeight: 1.8 }}>
+                {lecture.sidebar_copy.benefits.split(/\r?\n/).map((line: string) => line.trim()).filter(Boolean).map((line: string, index: number) => (
+                  <div key={index} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                    <span style={{ color: "#059669", fontWeight: 800 }}>✓</span>
+                    <span style={{ overflowWrap: "anywhere" }}>{line}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* CTA 버튼 */}
+            <button
+              onClick={handleEnroll}
+              disabled={enrolling}
+              style={{
+                width: "100%",
+                padding: "14px 0",
+                background: isEnrolled ? "#062326" : "#059669",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: 10,
+                fontSize: 15.5,
+                fontWeight: 800,
+                cursor: "pointer",
+                marginBottom: 10,
+                transition: "all 0.2s",
+                boxShadow: "0 4px 14px rgba(5,150,105,0.3)",
+              }}
+            >
+              {enrolling ? "처리 중..." : isEnrolled ? "강의실 입장하기 →" : displayPrice ? `${displayPrice.toLocaleString()}P 결제 후 수강하기` : "무료로 수강 시작하기 →"}
+            </button>
+
+            {/* 보조 버튼들 */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <button
+                onClick={handleKakaoShare}
+                style={{ padding: "9px 0", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#475569", cursor: "pointer" }}
+              >
+                💬 공유하기
+              </button>
+              <button
+                onClick={handleCopyUrl}
+                style={{ padding: "9px 0", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#475569", cursor: "pointer" }}
+              >
+                🔗 링크 복사
+              </button>
+            </div>
+
+          </div>
+
+          {(lecture.sidebar_copy?.assurance_title?.trim() || lecture.sidebar_copy?.assurance_body?.trim()) && (
+            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, overflowWrap: "anywhere" }}>
+              {lecture.sidebar_copy.assurance_title && <h4 style={{ fontSize: 13.5, fontWeight: 800, color: "#062828", margin: "0 0 12px" }}>{lecture.sidebar_copy.assurance_title}</h4>}
+              <div style={{ fontSize: 12.5, color: "#475569", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{lecture.sidebar_copy.assurance_body}</div>
+            </div>
+          )}
+
+        </aside>
+
+      </main>
+
+      {/* ── 결제 모달 ── */}
+      {showEnrollModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ width: "100%", maxWidth: 440, background: "#ffffff", borderRadius: 16, padding: "28px 24px", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 14px 0" }}>
+              수강 신청 확인
+            </h3>
+            <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.5, margin: "0 0 18px 0" }}>
+              <strong>{lecture.title}</strong><br />
+              1년(365일) 수강을 시작하시겠습니까?
+            </p>
+
+            <div style={{ background: "#f8fafc", padding: "14px 16px", borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13.5, marginBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ color: "#64748b" }}>차감 포인트:</span>
+                <span style={{ fontWeight: 800, color: "#dc2626" }}>-{displayPrice?.toLocaleString()} P</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#64748b" }}>보유 포인트:</span>
+                <span style={{ fontWeight: 700, color: "#062828" }}>{pointBalance.toLocaleString()} P</span>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <button
+                onClick={() => setShowEnrollModal(false)}
+                style={{ padding: "11px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmEnroll}
+                disabled={enrolling}
+                style={{ padding: "11px 0", background: "#059669", color: "#ffffff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}
+              >
+                {enrolling ? "결제 중..." : "결제 및 수강"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />}
+    </div>
+  );
+}

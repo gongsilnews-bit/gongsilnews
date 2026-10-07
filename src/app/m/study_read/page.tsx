@@ -1,28 +1,16 @@
 import React from "react";
-import { getLectureDetail, getLectures } from "@/app/actions/lecture";
+import type { Metadata } from "next";
+import { lectureMetadata, loadLecturePageData } from "@/utils/lecturePage";
 import MobileStudyReadClient from "./MobileStudyReadClient";
 
 export const dynamic = 'force-dynamic';
 
-export default async function MobileStudyReadPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
-  const resolvedParams = await searchParams;
-  const lectureId = resolvedParams.id;
-  let initialLecture = null;
+type Props = { searchParams: Promise<{ id?: string }> };
 
-  if (lectureId) {
-    const res = await getLectureDetail(lectureId);
-    if (res.success && res.data) {
-      initialLecture = res.data;
-    }
-  } else {
-    const res = await getLectures({ status: "ACTIVE" });
-    if (res.success && res.data && res.data.length > 0) {
-      const detail = await getLectureDetail(res.data[0].id);
-      if (detail.success && detail.data) {
-        initialLecture = detail.data;
-      }
-    }
-  }
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  return lectureMetadata((await searchParams).id);
+}
 
-  return <MobileStudyReadClient initialLecture={initialLecture} />;
+export default async function MobileStudyReadPage({ searchParams }: Props) {
+  return <MobileStudyReadClient initialLecture={await loadLecturePageData((await searchParams).id)} />;
 }

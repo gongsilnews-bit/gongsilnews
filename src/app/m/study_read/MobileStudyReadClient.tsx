@@ -458,7 +458,10 @@ export default function MobileStudyReadClient({
               스터디 안내
             </h3>
             {lecture.description ? (
-              <div dangerouslySetInnerHTML={{ __html: lecture.description }} />
+              lecture.description_html
+                // AI HTML 통째: 모바일은 좌우 여백 없이 꽉 차게
+                ? <div style={{ margin: "0 -16px" }} dangerouslySetInnerHTML={{ __html: lecture.description_html }} />
+                : <div dangerouslySetInnerHTML={{ __html: lecture.description }} />
             ) : (
               <p>본 과정은 내일 당장 현장에서 계약을 쓰고 매물을 홍보할 수 있는 실전 노하우를 중심으로 구성되어 있습니다.</p>
             )}
