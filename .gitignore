@@ -59,3 +59,10 @@ chrome-extension/_metadata/
 output/
 scenes/
 chrome-extension/*.zip
+
+.vercel
+.env*
+
+# 공실 릴스 로컬 시험 결과
+scripts/reels/out/
+videos/

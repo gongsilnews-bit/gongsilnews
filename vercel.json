@@ -72,6 +72,10 @@
     {
       "path": "/api/cron/publish-scheduled",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/reels-cleanup",
+      "schedule": "15 * * * *"
     }
   ]
 }

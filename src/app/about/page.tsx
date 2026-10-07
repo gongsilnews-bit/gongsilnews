@@ -197,7 +197,7 @@ export default function AboutPage() {
             <div style={{ margin: "24px 0", padding: "28px 32px", background: "#f8fafc", borderRadius: 16, borderLeft: "4px solid #10b981" }}>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: "#047857", marginBottom: 16 }}>부동산 회원</h3>
               <ul style={{ paddingLeft: 20, margin: 0, color: "#333", lineHeight: 1.8 }}>
-                <li style={{ marginBottom: 8 }}><strong style={{ color: "#111" }}>공동중개 무료:</strong> 부동산이 등록한 공동중개 물건 열람 및 등록 (5건)</li>
+                <li style={{ marginBottom: 8 }}><strong style={{ color: "#111" }}>공동중개 무료:</strong> 부동산이 등록한 공동중개 물건 열람 및 등록 (3건)</li>
                 <li style={{ marginBottom: 8 }}><strong style={{ color: "#111" }}>AI 매물보고서:</strong> 부동산 마케팅에 필요한 온/오프라인 물건 보고서 작성</li>
                 <li><strong style={{ color: "#111" }}>AI 마케팅 교육:</strong> 부동산 실무마케팅에 필요한 AI 활용 및 유튜브, 블로그 특강</li>
               </ul>

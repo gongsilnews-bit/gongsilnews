@@ -547,6 +547,29 @@ export default function VacancySection({ theme, role, ownerId, ownerName, ownerP
                                     >
                                       유리창홍보지
                                     </button>
+
+                                    {/* 공실 릴스: 1차는 관리자 시험판 (회원 공개는 REELS_REALTOR_ENABLED + 이 조건 확장) */}
+                                    {role === "admin" && (
+                                      <button
+                                        onClick={() => window.open(`/reels?vacancy_id=${row.id}`, "_blank")}
+                                        style={{
+                                          height: 30,
+                                          padding: "0 10px",
+                                          background: darkMode ? "#3b2a12" : "#fff7e6",
+                                          color: darkMode ? "#fbbf24" : "#b45309",
+                                          border: `1px solid ${darkMode ? "#78350f" : "#fcd34d"}`,
+                                          borderRadius: 4,
+                                          fontSize: 12,
+                                          fontWeight: 700,
+                                          cursor: "pointer",
+                                          whiteSpace: "nowrap",
+                                          flexShrink: 0,
+                                        }}
+                                        title="이 공실로 세로 릴스 영상 만들기 (관리자 시험판)"
+                                      >
+                                        릴스 만들기
+                                      </button>
+                                    )}
                                   </div>
                                 );
                               })()}

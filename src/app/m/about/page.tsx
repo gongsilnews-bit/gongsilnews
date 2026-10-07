@@ -196,7 +196,7 @@ export default function MobileAboutPage() {
             <div style={{ margin: "16px 0", padding: "20px 24px", background: "#f8fafc", borderRadius: 12, borderLeft: "4px solid #10b981" }}>
               <h3 style={{ fontSize: 16, fontWeight: 800, color: "#047857", marginBottom: 12 }}>부동산 회원</h3>
               <ul style={{ paddingLeft: 16, margin: 0, color: "#333", lineHeight: 1.7, fontSize: 14 }}>
-                <li style={{ marginBottom: 6 }}><strong style={{ color: "#111" }}>공동중개 무료:</strong> 부동산이 등록한 공동중개 물건 열람 및 등록 (5건)</li>
+                <li style={{ marginBottom: 6 }}><strong style={{ color: "#111" }}>공동중개 무료:</strong> 부동산이 등록한 공동중개 물건 열람 및 등록 (3건)</li>
                 <li style={{ marginBottom: 6 }}><strong style={{ color: "#111" }}>AI 매물보고서:</strong> 부동산 마케팅에 필요한 온/오프라인 물건 보고서 작성</li>
                 <li><strong style={{ color: "#111" }}>AI 마케팅 교육:</strong> 부동산 실무마케팅에 필요한 AI 활용 및 유튜브, 블로그 특강</li>
               </ul>

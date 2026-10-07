@@ -122,15 +122,21 @@
   justify-content: center;
   width: 100%;
   padding: 10px 6px;
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  color: #ffffff !important;
   font-size: 13px;
   font-weight: 800;
   border-radius: 8px;
-  text-decoration: none;
+  text-decoration: none !important;
   box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
   transition: transform 0.15s ease;
   white-space: nowrap;
+}
+
+.heroBtnPrimary:visited,
+.heroBtnPrimary:hover,
+.heroBtnPrimary:active {
+  color: #ffffff !important;
 }
 
 .heroBtnPrimary:active {
@@ -143,20 +149,27 @@
   justify-content: center;
   width: 100%;
   padding: 10px 6px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14) !important;
+  border: 1px solid rgba(255, 255, 255, 0.55) !important;
+  color: #ffffff !important;
   font-size: 13px;
   font-weight: 800;
   border-radius: 8px;
-  text-decoration: none;
+  text-decoration: none !important;
   backdrop-filter: blur(4px);
   transition: background-color 0.15s ease;
   white-space: nowrap;
 }
 
+.heroBtnSecondary:visited,
+.heroBtnSecondary:hover,
 .heroBtnSecondary:active {
-  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff !important;
+}
+
+.heroBtnSecondary:active {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
 }
 
 .heroNote {
@@ -748,8 +761,15 @@
   opacity: 0;
 }
 
+.trioBannerWrap:hover .trioBannerImgHover,
+.trioBannerWrap:active .trioBannerImgHover {
+  opacity: 1;
+}
 
-
+.trioBannerWrap:hover .trioBannerImgDefault,
+.trioBannerWrap:active .trioBannerImgDefault {
+  opacity: 0;
+}
 .processFlowSummary {
   display: flex;
   align-items: center;

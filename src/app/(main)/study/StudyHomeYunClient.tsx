@@ -12,7 +12,7 @@ const TARGET_AUDIENCE = [
     title: "사무실/상가 전문 부동산",
     image: "/images/study/recommend_real_teheran_man.jpg",
     imageAlt: "강남 테헤란로를 걸으며 스마트폰으로 공실뉴스를 열람하는 전문 남성 공인중개사",
-    description: "사무실 임장하면서, 고객에서 빠르게 물건을 브리핑할때, 매물보고서, 홈페이지를 카톡/문자등 모바일로 쉽고 빠르게 전달합니다.",
+    description: "빠른 공실계약이 필요한 사무실/상가 전문 부동산 대표님!  고객에게 브리핑이 꼭! 필요할때~",
     solution: "AI 매매보고서 초안 10초 완성!~공실뉴스에서 공실만 등록하면, 빠르게 완성할 수 있습니다.",
   },
   {
@@ -20,16 +20,16 @@ const TARGET_AUDIENCE = [
     title: "아파트/오피스텔 입점 부동산",
     image: "/images/study/recommend_real_apartment.jpg",
     imageAlt: "아파트와 오피스텔 매물 브리핑을 진행하는 전문 여성 공인중개사",
-    description: "단지 내 급매물과 전월세 정보를 빠르게 블로그와 숏폼으로 제작하여 입주민과 외부 매수·임차 고객 문의를 선점합니다.",
-    solution: "단지별 급매물 브리핑 보고서와 블로그 포스팅, 단지 투어 숏폼 영상이 즉시 자동 완성됩니다.",
+    description: "단지 내 물건작업과 임장작업이 필수인 아파트/오피스텔 입점 부동산 대표님!~  차별화된 서비스를 고객에게 제공하고 싶을때~",
+    solution: "물건접수웹페이지, 아파트/오피스텔 인테리어 예상AI서비스로 스마트하게 중개할 수 있습니다.",
   },
   {
     tag: "RECOMMEND 03",
     title: "빌라/주택 건물 부동산",
     image: "/images/study/recommend_real_villa.jpg",
     imageAlt: "신축 빌라와 주택 현장 영상 촬영 짐벌을 든 전문 공인중개사",
-    description: "원룸·투룸 다가구부터 꼬마빌딩까지, 현장 영상 촬영 대본과 기사 발행으로 공실 해소와 공동중개 기회를 극대화합니다.",
-    solution: "씬별 현장 촬영 대본과 전국 11만 부동산 실시간 공유로 빠른 공실 계약을 이끕니다.",
+    description: "원룸·투룸 다가구부터 꼬마빌딩까지, 유튜브가 가장 효율적이라는데,,, 어떻게 촬영하고 편집해야 할지 막막한 대표님!",
+    solution: "손님의 Call로 연결되는 유튜브 영상제작! 촬영방법부터 편집법까지! 따라만 하세요!",
   },
 ];
 
@@ -171,10 +171,10 @@ export default function StudyHomeYunClient() {
                     </svg>
                   </div>
                 </div>
-                <span className={styles.marketBadge}>SNS마케팅 채널 운영</span>
-                <h3>블로그, 인스타그램, 페이스북, 쓰레드</h3>
+                <span className={styles.marketBadge} style={{ visibility: "hidden" }}>&nbsp;</span>
+                <h3>SNS마케팅 채널 운영</h3>
                 <p>
-                  AI 스마트폰시대, 정보를 빠르게 젊은이에게 전달해, 무료로 마케팅하면, 온라인으로 고객과 소통하고 만납니다.
+                  AI 스마트폰시대, 부동산 정보를 빠르게 SNS로 젊은 고객에게 전달하며, 온라인으로 고객과 소통하며 오프라인에서 만납니다.
                 </p>
               </div>
             </div>
@@ -275,9 +275,9 @@ export default function StudyHomeYunClient() {
                   </div>
                 </div>
                 <span className={styles.painBadge}>제작 장벽 · 카메라 울렁증</span>
-                <h3>카메라 앞에만 서면 멘붕</h3>
+                <h3>스마트폰 앞에만 서면 멘붕</h3>
                 <p>
-                  &ldquo;카메라 앞에만 서면 무슨 말을 해야 할지 머릿속이 하얘집니다.&rdquo; 비싼 촬영 장비도 없고 편집 툴도 다룰 줄 몰라 시작부터 막막합니다.
+                  &ldquo;스마트폰 앞에만 서면 무슨 말을 해야 할지 머릿속이 하얘집니다.&rdquo; 촬영 장비도 없고 편집 툴도 다룰 줄 몰라 시작부터 막막합니다.
                 </p>
               </div>
             </div>
@@ -296,10 +296,9 @@ export default function StudyHomeYunClient() {
                 <span>바로 시작하실 수 있습니다.</span>
               </h2>
 
-              {/* 3명의 소장님 대형 배너 */}
+              {/* 3명의 소장님 대형 배너 (마우스 오버 시 환호 표정으로 전환) */}
               <div className={styles.trioBannerWrap}>
                 <div className={styles.trioBannerImgBox}>
-                  {/* 단일 실사 배너 고정 */}
                   <Image
                     src="/images/study/trio-brokers-amazed.jpg"
                     alt="공실스터디 이전 힘들어하던 3명의 공인중개사 소장님들"
@@ -308,23 +307,35 @@ export default function StudyHomeYunClient() {
                     className={styles.trioBannerImgDefault}
                     priority
                   />
+                  <Image
+                    src="/images/study/trio-brokers-cheering-v2.jpg"
+                    alt="공실스터디 멤버가 되어 환호하고 기뻐하는 3명의 공인중개사 소장님들"
+                    fill
+                    sizes="(max-width: 1200px) 100vw, 1100px"
+                    className={styles.trioBannerImgHover}
+                    priority
+                  />
+                  <div className={styles.trioBannerBadgeDefault}>
+                    <span className={styles.trioBadgePulse} />
+                    <span>마우스를 올리면 소장님들의 변화를 볼 수 있어요! 👆</span>
+                  </div>
                 </div>
               </div>
             </header>
           </div>
         </section>
 
-{/* ━━━ [신규 중간 브릿지] 내 지역/단지 물건만 등록하면 3대 무료 혜택 (부동산마케팅, SNS포스팅, 유튜브강의) ━━━ */}
+{/* ━━━ [신규 중간 브릿지] 내 지역/단지 공실만 등록하면 3대 무료 혜택 (부동산마케팅, SNS포스팅, 유튜브강의) ━━━ */}
         <section className={styles.freeOfferSection} aria-label="공실뉴스 등록 시 3대 무료 혜택">
           <div className={styles.contentWidth}>
             <header className={styles.freeOfferHeader}>
               <div className={styles.freeOfferBadge}>100% 무료 혜택</div>
               <h2 className={styles.freeOfferTitle}>
-                내 지역/단지 물건만 등록하면<br />
-                <span className={styles.freeOfferHighlight}>부동산마케팅, SNS포스팅, 유튜브 강의 무료!</span>
+                내 지역/단지 공실만 등록하면<br />
+                <span className={styles.freeOfferHighlight}>부동산마케팅, SNS포스팅, 유튜브 강의까지!</span>
               </h2>
               <p className={styles.freeOfferSub}>
-                공실뉴스에 내 지역·단지 물건만 올려두면 AI 마케팅 프로그램부터 실습 전문 강의까지 모두 무료로 제공됩니다.
+                공실뉴스에 내 지역·단지 물건을 등록하기만 하면, 매매보고서, 홍보지출력, 부동산홈페이지까지... 자동으로 완성됩니다.
               </p>
             </header>
 
@@ -334,7 +345,7 @@ export default function StudyHomeYunClient() {
                 <Link
                   href="/study/benefits/vacancy-register"
                   className={styles.freeOfferImgBox}
-                  title="부동산마케팅 올인원 지원 자세히 보기"
+                  title="부동산마케팅 원클릭 OK! 자세히 보기"
                 >
                   <Image
                     src="/images/study/benefit_market_50s_broker_v3.jpg"
@@ -355,8 +366,8 @@ export default function StudyHomeYunClient() {
                   </div>
                 </Link>
                 <div className={styles.freeOfferContent}>
-                  <span className={styles.freeOfferChip}>공실등록하면</span>
-                  <h3 className={styles.freeOfferContentTitle}>부동산마케팅 올인원 지원</h3>
+                  <span className={styles.freeOfferChip}>공실등록20건</span>
+                  <h3 className={styles.freeOfferContentTitle}>부동산마케팅 원클릭 OK!</h3>
                   <ul className={styles.freeOfferCheckList}>
                     <li className={styles.freeOfferCheckItem}>
                       <span className={styles.freeOfferCheckIcon}>
@@ -365,7 +376,7 @@ export default function StudyHomeYunClient() {
                         </svg>
                       </span>
                       <span className={styles.freeOfferCheckText}>
-                        <strong className={styles.freeOfferCheckStrong}>모든 부동산 무료 열람</strong> (가입비 없음)
+                        <strong className={styles.freeOfferCheckStrong}>공동중개 물건 홍보</strong>
                       </span>
                     </li>
                     <li className={styles.freeOfferCheckItem}>
@@ -445,7 +456,7 @@ export default function StudyHomeYunClient() {
                         </svg>
                       </span>
                       <span className={styles.freeOfferCheckText}>
-                        <strong className={styles.freeOfferCheckStrong}>인테리어 / 리모델링 AI</strong> 예상 견적
+                        <strong className={styles.freeOfferCheckStrong}>인테리어 / 리모델링 AI</strong> 예상 견적등등
                       </span>
                     </li>
                   </ul>
@@ -511,7 +522,7 @@ export default function StudyHomeYunClient() {
                         </svg>
                       </span>
                       <span className={styles.freeOfferCheckText}>
-                        <strong className={styles.freeOfferCheckStrong}>부동산 유튜브</strong> 전문 강의 무료 제공
+                        <strong className={styles.freeOfferCheckStrong}>동영상 편집 강의</strong> (브루AI, 캡컷등등)
                       </span>
                     </li>
                     <li className={styles.freeOfferCheckItem}>
@@ -521,7 +532,7 @@ export default function StudyHomeYunClient() {
                         </svg>
                       </span>
                       <span className={styles.freeOfferCheckText}>
-                        <strong className={styles.freeOfferCheckStrong}>AI 부동산 유튜브</strong> 10분 완성 제작법
+                        <strong className={styles.freeOfferCheckStrong}>AI 대본활용</strong>, 영상제작 강의
                       </span>
                     </li>
                     <li className={styles.freeOfferCheckItem}>
@@ -531,7 +542,7 @@ export default function StudyHomeYunClient() {
                         </svg>
                       </span>
                       <span className={styles.freeOfferCheckText}>
-                        <strong className={styles.freeOfferCheckStrong}>목소리 X, 얼굴노출 X</strong> 자동편집 실습
+                        <strong className={styles.freeOfferCheckStrong}>드론영상, Q&amp;A</strong>, 커뮤니티 활용
                       </span>
                     </li>
                     <li className={styles.freeOfferCheckItem}>
@@ -541,7 +552,7 @@ export default function StudyHomeYunClient() {
                         </svg>
                       </span>
                       <span className={styles.freeOfferCheckText}>
-                        <strong className={styles.freeOfferCheckStrong}>드론영상, Q&amp;A, 커뮤니티</strong> 적극 활용
+                        <strong className={styles.freeOfferCheckStrong}>공실스터디 강의</strong> 등록권한 부여
                       </span>
                     </li>
                   </ul>
@@ -592,7 +603,7 @@ export default function StudyHomeYunClient() {
 
         <section className={styles.finalCta} aria-labelledby="final-title">
           <div>
-            <p>AI 시대, 1~2인 부동산을 위한 실무 강의</p>
+            <p>AI 시대, 부동산 맞춤 스터디</p>
             <h2 id="final-title">
               꾸준한 유튜브/블로그 포스팅~
               <br />
