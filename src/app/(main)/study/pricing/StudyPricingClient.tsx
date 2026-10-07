@@ -56,15 +56,11 @@ export default function StudyPricingClient() {
 
   // 시중 부동산 실무교육과의 대비. on:true 는 타 강의도 주는 것, on:false 는 못 받는 것.
   const rivalFeatures = [
-    { on: true, text: <>이론 강의 + <strong>종이 교재 수십 권</strong></> },
-    { on: true, text: <>수료증 · <strong>자격증 응시자격</strong></> },
-    { on: false, text: "결국 \"유튜브·블로그 하세요\"로 끝" },
+    { on: true, text: "현실에 맞지 않는 이론 강의" },
+    { on: true, text: "종이 교재 수십 권" },
+    { on: false, text: '결국 "유튜브·블로그 꾸준히 하세요"로 끝' },
     { on: false, text: "콘텐츠 제작은 오롯이 내 몫" },
-    { on: false, text: "AI 실전 활용 과정 없음" },
     { on: false, text: "내 매물에 바로 적용 불가" },
-    { on: false, text: "매달 신규 특강 업데이트 없음" },
-    { on: false, text: "일시불 결제 · 중도 해지 어려움" },
-    { on: false, text: "공실 등록 · 경공매 열람 혜택 없음" },
   ];
 
   const paidFeatures = [
