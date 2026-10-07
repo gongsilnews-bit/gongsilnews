@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { saveBoardPost, uploadBoardAttachment, uploadBoardThumbnail, saveBoardPostsBatch } from "@/app/actions/board";
 import { createClient } from "@/utils/supabase/client";
 import { getPermissionLevel, canAccessBoard, getLevelName } from "@/utils/permissionCheck";
@@ -10,6 +10,8 @@ import { getBoardListUrl } from "@/utils/boardListUrl";
 import { convertToWebp } from "@/utils/convertToWebp";
 import { INQUIRY_PHOTO_LIMIT } from "@/constants/inquiry";
 import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
+import MobileTopBarHeader from "@/app/m/_components/MobileTopBarHeader";
+import StudySubMenuBar from "@/app/m/_components/StudySubMenuBar";
 
 const parseCSV = (text: string): string[][] => {
   const result: string[][] = [];
@@ -63,15 +65,19 @@ export default function BoardWriteClient({
   editPostId,
   editPost,
   serverUser,
-  serverUserLevel
+  serverUserLevel,
+  isMobile: isMobileProp,
 }: {
   board: any;
   editPostId: string | null;
   editPost?: any;
   serverUser?: any;
   serverUserLevel?: number;
+  isMobile?: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isMobile = isMobileProp ?? pathname?.startsWith("/m");
   const boardId = board?.board_id || "drone";
   const boardName = board?.name || "게시판";
   const skinType = board?.skin_type || "FILE_THUMB";
@@ -420,9 +426,25 @@ export default function BoardWriteClient({
 
   return (
     <>
-      {isStudyBoard && <StudyHeader background={STUDY_HERO_BAR} />}
+      {isStudyBoard && (
+        isMobile ? (
+          <>
+            <MobileTopBarHeader activeTab="study" />
+            <StudySubMenuBar />
+          </>
+        ) : (
+          <StudyHeader background={STUDY_HERO_BAR} />
+        )
+      )}
+      {!isStudyBoard && isMobile && (
+        <MobileTopBarHeader activeTab={boardId === "notice" ? "help" : "study"} />
+      )}
       <div style={{
-        maxWidth: 900, margin: "0 auto", padding: "40px 20px 80px",
+        maxWidth: isMobile ? "100%" : 900,
+        margin: "0 auto",
+        padding: isMobile
+          ? (isStudyBoard ? "118px 16px 80px" : "66px 16px 80px")
+          : "40px 20px 80px",
         fontFamily: "'Pretendard', -apple-system, sans-serif",
       }}>
         {/* 헤더 */}

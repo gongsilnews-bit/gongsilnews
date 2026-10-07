@@ -53,6 +53,7 @@ export default async function MobileBoardWritePage({
           editPost={editPost} 
           serverUser={serverUser}
           serverUserLevel={serverUserLevel}
+          isMobile={true}
         />
       </Suspense>
     </div>

@@ -445,8 +445,8 @@ export default function MobileStudyBenefitsClient() {
       {/* ━━━ 하단 고정 CTA 바 ━━━ */}
       <aside className={styles.floatingBar}>
         <div className={styles.floatingInner}>
-          <Link href="/m/study/apply" className={styles.floatingBtn}>
-            공실스터디 멤버십 신청하기 (월 3만원)
+          <Link href="/m/study/apply" className={styles.floatingBtn} style={{ color: "#ffffff" }}>
+            공실스터디 멤버십 신청하기
           </Link>
         </div>
       </aside>

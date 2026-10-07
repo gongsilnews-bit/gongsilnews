@@ -356,15 +356,21 @@
 }
 
 .floatingBtn {
-  background: linear-gradient(135deg, #059669, #047857);
-  color: #ffffff;
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  color: #ffffff !important;
   border: none;
   border-radius: 10px;
   padding: 13px 22px;
   font-size: 14.5px;
   font-weight: 800;
-  text-decoration: none;
+  text-decoration: none !important;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
   white-space: nowrap;
+}
+
+.floatingBtn:visited,
+.floatingBtn:hover,
+.floatingBtn:active {
+  color: #ffffff !important;
 }

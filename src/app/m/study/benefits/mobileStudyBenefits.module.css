@@ -233,15 +233,21 @@
 
 .floatingBtn {
   width: 100%;
-  background: linear-gradient(135deg, #059669, #047857);
-  color: #ffffff;
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  color: #ffffff !important;
   border: none;
   border-radius: 10px;
   padding: 13px 0;
   font-size: 15px;
   font-weight: 800;
   text-align: center;
-  text-decoration: none;
+  text-decoration: none !important;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.floatingBtn:visited,
+.floatingBtn:hover,
+.floatingBtn:active {
+  color: #ffffff !important;
 }

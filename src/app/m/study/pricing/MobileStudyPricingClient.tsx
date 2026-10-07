@@ -186,7 +186,7 @@ export default function MobileStudyPricingClient() {
             <span className={styles.floatingKicker}>1년 365일 무제한</span>
             <span className={styles.floatingPrice}>월 3만원<small style={{ fontSize: "11.5px", fontWeight: 500, color: "#64748b" }}> (연 36만)</small></span>
           </div>
-          <Link href="/m/study/apply" className={styles.floatingBtn}>
+          <Link href="/m/study/apply" className={styles.floatingBtn} style={{ color: "#ffffff" }}>
             멤버십 신청하기
           </Link>
         </div>
