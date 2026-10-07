@@ -80,6 +80,7 @@ export default function BoardWriteClient({
   const isMobile = isMobileProp ?? pathname?.startsWith("/m");
   const boardId = board?.board_id || "drone";
   const boardName = board?.name || "게시판";
+  const listUrl = isMobile ? `/m/board?id=${boardId}` : getBoardListUrl(boardId);
   const skinType = board?.skin_type || "FILE_THUMB";
   const isVideoOrThumb = skinType === "VIDEO_ALBUM" || skinType === "FILE_THUMB";
   const isEditMode = !!editPostId && !!editPost;
@@ -299,7 +300,7 @@ export default function BoardWriteClient({
 
     if (res.success) {
       alert(`성공적으로 ${res.count}개의 게시글이 일괄 등록되었습니다.`);
-      router.push(getBoardListUrl(boardId));
+      router.push(listUrl);
     } else {
       alert("일괄 등록에 실패했습니다: " + res.error);
     }
@@ -401,7 +402,7 @@ export default function BoardWriteClient({
         await uploadBoardAttachment(fd);
       }
       alert(isEditMode ? "게시글이 수정되었습니다." : "게시글이 성공적으로 등록되었습니다.");
-      router.push(`/board_read?id=${res.postId || editPostId}&board_id=${boardId}`);
+      router.push(isMobile ? `/m/board_read?id=${res.postId || editPostId}&board_id=${boardId}` : `/board_read?id=${res.postId || editPostId}&board_id=${boardId}`);
     } else {
       alert((isEditMode ? "수정" : "등록") + " 실패: " + res.error);
     }
@@ -417,7 +418,7 @@ export default function BoardWriteClient({
       <div style={{ padding: 100, textAlign: "center" }}>
         <h2 style={{ fontSize: 20, color: "#ef4444", marginBottom: 12 }}>{getLevelName(board.perm_write ?? 5)}부터 작성하실 수 있습니다.</h2>
         <p style={{ color: "#666" }}>쓰기 레벨: <strong>{board.perm_write ?? 5}레벨 이상</strong> (현재 내 레벨: {userLevel}레벨)</p>
-        <button onClick={() => router.push(getBoardListUrl(boardId))} style={{ marginTop: 24, padding: "10px 24px", background: "#333", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>목록으로 돌아가기</button>
+        <button onClick={() => router.push(listUrl)} style={{ marginTop: 24, padding: "10px 24px", background: "#333", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }}>목록으로 이동</button>
       </div>
     );
   }
@@ -775,14 +776,14 @@ export default function BoardWriteClient({
       {/* 제출 버튼 */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, paddingTop: 20, borderTop: "1px solid #e5e7eb" }}>
         <Link
-          href={getBoardListUrl(boardId)}
+          href={listUrl}
           style={{
             padding: "12px 24px", border: "1px solid #d1d5db", background: "#fff",
             color: "#555", borderRadius: 6, fontSize: 15, fontWeight: 600,
             textDecoration: "none", display: "inline-block",
           }}
         >
-          목록으로 취소
+          목록으로 이동
         </Link>
         <button
           onClick={handleSubmit}

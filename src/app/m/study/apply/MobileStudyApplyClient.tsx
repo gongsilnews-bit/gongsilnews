@@ -38,37 +38,26 @@ const TARGET_AUDIENCE = [
   },
 ];
 
-const PREMIUM_BENEFITS = [
-  {
-    icon: "🎓",
-    title: "1년 365일 전 강좌 VOD 무제한 시청",
-    desc: "AI 영상 제작, 유튜브 채널 개설, 블로그 상위노출 등 스마트폰/PC 무제한 수강",
-  },
-  {
-    icon: "🏢",
-    title: "공실뉴스 공실 등록 월 20건 무료 포함",
-    desc: "1년 총 240건 등록 가능 (직접 등록 시 건당 과금되는 정규 권한 기본 제공)",
-  },
-  {
-    icon: "📰",
-    title: "네이버·다음 포털 뉴스 기사 송고 월 4건",
-    desc: "내 부동산과 추천 매물을 공실뉴스 기자단 명의로 포털 뉴스에 송고 (연 48건)",
-  },
-  {
-    icon: "🤖",
-    title: "AI 매물보고서 & 유튜브 쇼츠 대본 무제한",
-    desc: "물건 등록 한 번으로 매물 브리핑 보고서와 유튜브 쇼츠 스크립트 원스톱 자동 생성",
-  },
-  {
-    icon: "💼",
-    title: "공실뉴스 광고영업권 (최대 50% 수수료) 부여",
-    desc: "공실뉴스 배너 및 기사형 광고 유치 시 업계 최고 수준의 광고 수수료 수익 보장",
-  },
-  {
-    icon: "📁",
-    title: "실무 서식·계약서·AI 프롬프트 원본 무료 제공",
-    desc: "현업 공인중개사가 검증한 특약 모음집, 엑셀 수식, 프롬프트 파일 횟수 무제한 다운로드",
-  },
+const RIVAL_FEATURES = [
+  { on: true, text: "이론 강의 + 종이 교재 수십 권" },
+  { on: true, text: "수료증 · 자격증 응시자격" },
+  { on: false, text: "결국 \"유튜브·블로그 하세요\"로 끝" },
+  { on: false, text: "콘텐츠 제작은 오롯이 내 몫" },
+  { on: false, text: "AI 실전 활용 과정 없음" },
+  { on: false, text: "내 매물에 바로 적용 불가" },
+  { on: false, text: "매달 신규 특강 업데이트 없음" },
+  { on: false, text: "일시불 결제 · 중도 해지 어려움" },
+  { on: false, text: "공실 등록 · 경공매 열람 혜택 없음" },
+];
+
+const PAID_FEATURES = [
+  "공실스터디 멤버십 VOD + 교육자료",
+  "수강 기간 : 1년(365일) 무제한 다시보기",
+  "공실등록 20건 무료 (AI매매보고서 포함)",
+  "기사작성 4건 매월",
+  "매물접수웹페이지 무료",
+  "블로그 포스팅 자동화 프로그램 무료",
+  "드론 영상 저작권 무료",
 ];
 
 export default function MobileStudyApplyClient() {
@@ -197,86 +186,207 @@ export default function MobileStudyApplyClient() {
       <MobileTopBarHeader activeTab="study" />
       <StudySubMenuBar activeMenu="apply" />
 
-      {/* ━━━ [1] 상단 짙은 초록색 영역 (대표님 지정 레이아웃) ━━━ */}
-      <section className={styles.hero}>
-        <div className={styles.heroTopRow}>
-          <div className={styles.badge}>
-            <span>✓ 멤버십신청</span>
-          </div>
-          <button
-            type="button"
-            onClick={scrollToApplyForm}
-            className={styles.heroQuickApplyBtn}
-          >
-            신청하기 &gt;&gt;
-          </button>
+      {/* ━━━ [1] 메인 타이틀 (PC 1:1 일치) ━━━ */}
+      <div style={{ textAlign: "center", padding: "28px 16px 20px" }}>
+        <div
+          style={{
+            display: "inline-block",
+            background: "#ecfdf5",
+            color: "#059669",
+            fontSize: "12px",
+            fontWeight: 800,
+            padding: "5px 14px",
+            borderRadius: "20px",
+            marginBottom: "12px",
+            border: "1px solid #a7f3d0",
+          }}
+        >
+          수백만 원짜리 교육비, 이제 그만
         </div>
-
-        <h1 className={styles.heroTitle}>
-          월 3만원에 12개월 동안<br />
-          <span className={styles.heroHighlight}>내 유튜브/블로그를 완성하세요!</span>
+        <h1
+          style={{
+            fontSize: "24px",
+            fontWeight: 900,
+            color: "#0f2e28",
+            letterSpacing: "-0.6px",
+            margin: "0 0 10px 0",
+            lineHeight: 1.35,
+          }}
+        >
+          공실등록 + 유튜브/블로그 실습<br />
+          월 <span style={{ color: "#059669" }}>3만원</span>이면 OK!
         </h1>
-
-        <p className={styles.heroDesc}>
-          공실등록 + 유튜브/블로그 실습 + 포털기사 송고까지 1년 무제한 실전 패키지
+        <p style={{ fontSize: "13.5px", color: "#64748b", margin: 0, lineHeight: 1.5, wordBreak: "keep-all" }}>
+          12개월 동안 블로그 포스팅, 유튜브 채널! 확실하게 구축하실 수 있습니다.
         </p>
+      </div>
 
-        {/* 핵심 4대 혜택 칩 그리드 */}
-        <div className={styles.heroTagsGrid}>
-          <div className={styles.heroTagItem}>
-            <span className={styles.heroTagCheck}>✓</span>
-            <span>공실등록 20건 무료</span>
+      <div className={styles.content} style={{ paddingTop: 0 }}>
+        {/* ━━━ [2] 2개 비교창 (시중 실무교육 vs 공실스터디) ━━━ */}
+
+        {/* 카드 1. 시중 실무교육 */}
+        <div
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e2e8f0",
+            borderRadius: "18px",
+            padding: "24px 20px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.03)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <h3 style={{ fontSize: "20px", fontWeight: 900, color: "#334155", margin: 0 }}>시중 실무교육</h3>
+            <span style={{ fontSize: "11px", fontWeight: 700, background: "#f1f5f9", color: "#64748b", padding: "3px 9px", borderRadius: 20 }}>
+              오프라인 아카데미
+            </span>
           </div>
-          <div className={styles.heroTagItem}>
-            <span className={styles.heroTagCheck}>✓</span>
-            <span>기사 4건 포털 송고</span>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: "28px", fontWeight: 900, color: "#1e293b", letterSpacing: "-0.8px" }}>
+              수백만 원
+              <span style={{ fontSize: "13px", fontWeight: 600, color: "#94a3b8", marginLeft: 6 }}>/ 12개월 일시불</span>
+            </div>
+            <p style={{ fontSize: "12px", color: "#94a3b8", margin: "6px 0 0", lineHeight: 1.45 }}>
+              수백만원 결제, 불필요한 강의로 비용만 높아지는 오프라인 강의!!
+            </p>
           </div>
-          <div className={styles.heroTagItem}>
-            <span className={styles.heroTagCheck}>✓</span>
-            <span>365일 VOD 무제한</span>
+
+          <div style={{ marginBottom: 20 }}>
+            <div
+              style={{
+                width: "100%",
+                padding: "12px 10px",
+                background: "#f8fafc",
+                border: "1px dashed #cbd5e1",
+                borderRadius: "10px",
+                fontSize: "12.5px",
+                fontWeight: 700,
+                color: "#94a3b8",
+                textAlign: "center",
+                wordBreak: "keep-all",
+                boxSizing: "border-box",
+                lineHeight: 1.4,
+              }}
+            >
+              강의 참여 때만 이해되고, 실무 활용 거의 불가!!
+            </div>
           </div>
-          <div className={styles.heroTagItem}>
-            <span className={styles.heroTagCheck}>✓</span>
-            <span>AI 자동화 툴 지원</span>
+
+          <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 18 }}>
+            <div style={{ fontSize: "12px", fontWeight: 800, color: "#64748b", marginBottom: 14 }}>
+              수백만 원을 내고 얻는 것
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 11, fontSize: "13px" }}>
+              {RIVAL_FEATURES.map((f, i) => (
+                <li key={i} style={{ display: "flex", alignItems: "center", gap: 9, color: f.on ? "#475569" : "#94a3b8" }}>
+                  <span style={{ color: f.on ? "#059669" : "#cbd5e1", fontWeight: f.on ? 900 : 400 }}>{f.on ? "✓" : "✕"}</span>
+                  <span style={f.on ? undefined : { textDecoration: "line-through" }}>{f.text}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-      </section>
 
-      {/* ━━━ [2] 하단 금액 및 상세 혜택 안내 ━━━ */}
-      <div className={styles.content}>
-        <div className={styles.pricingCard}>
-          <div className={styles.pricingHeader}>
-            <span className={styles.pricingTag}>공실스터디 1년 무제한 패스</span>
-            <span className={styles.zeroFeeNotice}>가입비 0원 · 교재비 0원</span>
+        {/* 카드 2. 공실스터디 */}
+        <div
+          style={{
+            background: "#ffffff",
+            border: "2.5px solid #059669",
+            borderRadius: "18px",
+            padding: "26px 20px",
+            boxShadow: "0 12px 36px rgba(5, 150, 105, 0.16)",
+            position: "relative",
+            marginTop: "10px",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: -13,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+              color: "#ffffff",
+              padding: "4px 16px",
+              borderRadius: "20px",
+              fontSize: "11px",
+              fontWeight: 900,
+              boxShadow: "0 4px 10px rgba(5, 150, 105, 0.35)",
+              letterSpacing: "-0.3px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            🔥 강력 추천 · 1년 마스터마인드
           </div>
 
-          <h2 className={styles.pricingTitle}>1년 정규 멤버십</h2>
-          <p className={styles.pricingSub}>1년 365일 전 강좌 VOD + 공실등록 + AI 자동화 무제한</p>
-
-          <div className={styles.priceBox}>
-            <div className={styles.priceMonthlyWrap}>
-              <span className={styles.priceMonthly}>월 30,000원</span>
-              <span className={styles.priceUnit}> / 월</span>
-            </div>
-            <div className={styles.priceYearly}>
-              1년 360,000원 <span style={{ fontSize: "11px", color: "#64748b" }}>(VAT 포함)</span>
-            </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <h3 style={{ fontSize: "20px", fontWeight: 900, color: "#0f2e28", margin: 0 }}>공실스터디</h3>
+            <span style={{ fontSize: "11px", fontWeight: 800, background: "#ecfdf5", color: "#065f46", padding: "3px 10px", borderRadius: 20 }}>
+              정회원 전용 플랜
+            </span>
           </div>
 
-          <h3 className={styles.benefitTitle}>
-            <span>🎁 1년 멤버십에 모두 포함된 핵심 혜택</span>
-          </h3>
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "6px" }}>
+              <span style={{ fontSize: "32px", fontWeight: 900, color: "#0f2e28", letterSpacing: "-1px" }}>
+                36만원
+              </span>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: "#64748b" }}>
+                / 1년 (12개월)
+              </span>
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 800,
+                  color: "#065f46",
+                  background: "#ecfdf5",
+                  padding: "2px 8px",
+                  borderRadius: "12px",
+                  border: "1px solid #a7f3d0",
+                }}
+              >
+                월 3만원꼴
+              </span>
+            </div>
+            <p style={{ fontSize: "12px", color: "#059669", fontWeight: 700, margin: "6px 0 0" }}>
+              가입비 0원 · 교재비 0원 · 카드 12개월 무이자 할부 가능
+            </p>
+          </div>
 
-          <div className={styles.benefitList}>
-            {PREMIUM_BENEFITS.map((item, idx) => (
-              <div key={idx} className={styles.benefitRow}>
-                <span className={styles.benefitIcon}>{item.icon}</span>
-                <div className={styles.benefitInfo}>
-                  <div className={styles.benefitRowName}>{item.title}</div>
-                  <div className={styles.benefitRowDesc}>{item.desc}</div>
-                </div>
-              </div>
-            ))}
+          <div style={{ marginBottom: 22 }}>
+            <button
+              type="button"
+              onClick={scrollToApplyForm}
+              style={{
+                width: "100%",
+                height: "48px",
+                backgroundColor: "#059669",
+                border: "none",
+                borderRadius: "10px",
+                fontSize: "15px",
+                fontWeight: 800,
+                color: "#ffffff",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(5, 150, 105, 0.35)",
+                fontFamily: "inherit",
+              }}
+            >
+              공실스터디 신청하기 ➔
+            </button>
+          </div>
+
+          <div style={{ borderTop: "1px solid #a7f3d0", paddingTop: 20 }}>
+            <div style={{ fontSize: "13px", fontWeight: 900, color: "#0f2e28", marginBottom: 14 }}>
+              포함된 모든 전용 혜택
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 13, fontSize: "13.5px" }}>
+              {PAID_FEATURES.map((f, i) => (
+                <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, color: "#0f2e28", lineHeight: 1.45 }}>
+                  <span style={{ color: "#059669", fontSize: "16px", fontWeight: 900, lineHeight: 1, marginTop: "2px" }}>✓</span>
+                  <span style={{ wordBreak: "keep-all" }}>{f}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
