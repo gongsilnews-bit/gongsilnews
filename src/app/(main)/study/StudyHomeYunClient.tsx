@@ -558,6 +558,16 @@ export default function StudyHomeYunClient() {
                         <strong className={styles.freeOfferCheckStrong}>드론영상, Q&amp;A</strong>, 커뮤니티 활용
                       </span>
                     </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* 4단: 온라인 강의 개설 지원 (내용 좌측, 이미지 우측) */}
+              <div className={`${styles.freeOfferRow} ${styles.freeOfferRowReverse}`}>
+                <div className={styles.freeOfferContent}>
+                  <span className={styles.freeOfferChip}>온라인 강의 개설 지원</span>
+                  <h3 className={styles.freeOfferContentTitle}>온라인 강의 개설 지원</h3>
+                  <ul className={styles.freeOfferCheckList}>
                     <li className={styles.freeOfferCheckItem}>
                       <span className={styles.freeOfferCheckIcon}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
@@ -568,8 +578,61 @@ export default function StudyHomeYunClient() {
                         <strong className={styles.freeOfferCheckStrong}>공실스터디 강의</strong> 등록권한 부여
                       </span>
                     </li>
+                    <li className={styles.freeOfferCheckItem}>
+                      <span className={styles.freeOfferCheckIcon}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>
+                      <span className={styles.freeOfferCheckText}>
+                        <strong className={styles.freeOfferCheckStrong}>스마트폰 촬영 영상</strong> 간편 업로드
+                      </span>
+                    </li>
+                    <li className={styles.freeOfferCheckItem}>
+                      <span className={styles.freeOfferCheckIcon}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>
+                      <span className={styles.freeOfferCheckText}>
+                        <strong className={styles.freeOfferCheckStrong}>지역 상권·단지 분석</strong> 지식의 자산화
+                      </span>
+                    </li>
+                    <li className={styles.freeOfferCheckItem}>
+                      <span className={styles.freeOfferCheckIcon}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>
+                      <span className={styles.freeOfferCheckText}>
+                        <strong className={styles.freeOfferCheckStrong}>전국 부동산 네트워크</strong> 홍보 및 수강 연결
+                      </span>
+                    </li>
                   </ul>
                 </div>
+                <Link
+                  href="/study/benefits/lecture-upload"
+                  className={styles.freeOfferImgBox}
+                  title="온라인 강의 개설 지원 자세히 보기"
+                >
+                  <Image
+                    src="/images/study/benefit-lecture-upload-hero.png"
+                    alt="스마트폰과 삼각대로 매물 분석 및 중개 노하우 온라인 강의를 촬영하여 공실스터디에 업로드하는 공인중개사 대표님"
+                    fill
+                    sizes="(max-width: 900px) 100vw, 540px"
+                    className={styles.freeOfferImg}
+                    priority
+                  />
+                  <div className={styles.freeOfferLabelBadge}>온라인 강의 개설</div>
+                  <div className={styles.freeOfferImgOverlay}>
+                    <span className={styles.freeOfferDetailBadge}>
+                      자세히 보기
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14m-6-6l6 6-6 6" />
+                      </svg>
+                    </span>
+                  </div>
+                </Link>
               </div>
             </div>
           </div>
