@@ -432,6 +432,24 @@ export default function MobileStudyBenefitsClient() {
               </p>
             </div>
           </div>
+
+          <div className={styles.mediaCard}>
+            <div className={styles.mediaThumb}>
+              <Image
+                src="/images/study/benefit-chatgpt-gemini-sample.jpg"
+                alt="내가 가입한 챗GPT · 제미나이 무료 연동"
+                fill
+                sizes="(max-width: 480px) 100vw, 448px"
+                style={{ objectFit: "cover" }}
+              />
+            </div>
+            <div className={styles.mediaBody}>
+              <h3 className={styles.mediaTitle}>별도 API 비용 없이 내 챗GPT · 제미나이 바로 사용</h3>
+              <p className={styles.mediaDesc}>
+                기존에 쓰시던 AI 계정을 그대로 연결하여 추가 요금 부담 없이 무제한으로 블로그 글과 마케팅 콘텐츠를 생성할 수 있습니다.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

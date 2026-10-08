@@ -592,56 +592,25 @@ export default function StudyBlogAutomationClient() {
                 boxShadow: "0 6px 20px rgba(59, 130, 246, 0.06)",
               }}
             >
-              {/* 내 AI 계정 연동 & 업데이트 안내 카드 UI */}
+              {/* 시각화 카드: 챗GPT & 제미나이 연동 실사 그래픽 배너 */}
               <div
                 style={{
-                  background: "linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%)",
-                  border: "1px solid #93c5fd",
-                  borderRadius: 16,
-                  padding: "26px 22px",
+                  position: "relative",
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  border: "1px solid #cbd5e1",
+                  boxShadow: "0 10px 25px rgba(37, 99, 235, 0.08)",
+                  minHeight: 340,
+                  backgroundColor: "#ffffff",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "1px solid #dbeafe", paddingBottom: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ background: "#2563eb", color: "#ffffff", fontSize: 11, fontWeight: 800, padding: "3px 8px", borderRadius: 4 }}>
-                      AI 계정 연동
-                    </span>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: "#1e3a8a" }}>
-                      내 챗GPT · 제미나이 활용
-                    </span>
-                  </div>
-                  <span style={{ fontSize: 12, color: "#059669", fontWeight: 800 }}>추가 API 요금 0원</span>
-                </div>
-
-                {/* 챗GPT & 제미나이 2단 뱃지 박스 */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #a7f3d0", textAlign: "center" }}>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: "#047857", marginBottom: 2 }}>
-                      ChatGPT
-                    </div>
-                    <div style={{ fontSize: 11.5, color: "#4b5563" }}>
-                      내가 가입한 챗GPT 사용
-                    </div>
-                  </div>
-                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #bfdbfe", textAlign: "center" }}>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: "#1d4ed8", marginBottom: 2 }}>
-                      Gemini
-                    </div>
-                    <div style={{ fontSize: 11.5, color: "#4b5563" }}>
-                      내가 가입한 제미나이 사용
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ background: "#ffffff", padding: "14px 16px", borderRadius: 10, border: "1px solid #bfdbfe" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 800, color: "#1e3a8a", marginBottom: 4 }}>
-                    <span>🔄</span>
-                    <span>프로그램 지속 업데이트</span>
-                  </div>
-                  <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.55 }}>
-                    공실뉴스 자동화 프로그램은 대표님들의 현장 피드백을 반영하여 더 편리하고 강력한 기능으로 지속적으로 업데이트될 예정입니다.
-                  </div>
-                </div>
+                <Image
+                  src="/images/study/benefit-chatgpt-gemini-sample.jpg"
+                  alt="공실뉴스 챗GPT 및 제미나이 무료 AI 계정 연동과 네이버 블로그 자동 포스팅 화면"
+                  fill
+                  style={{ objectFit: "cover", objectPosition: "center" }}
+                  priority
+                />
               </div>
 
               <div>
