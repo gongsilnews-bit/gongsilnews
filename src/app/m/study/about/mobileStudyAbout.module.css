@@ -1469,3 +1469,153 @@
   color: #0aa37a;
   font-weight: 900;
 }
+
+/* ━━━ 히어로 새 디자인 (2026-10-08, PC /study 히어로와 같은 규칙) ━━━ */
+.heroV2 {
+  --hv-bg: #f4f1ec;
+  --hv-grid: rgba(70, 50, 30, 0.07);
+  --hv-ink: #1c1917;
+  --hv-muted: #57534e;
+  --hv-line: #e7dfd4;
+  --hv-orange: #e2552b;
+  --hv-orange-strong: #c9441d;
+  --hv-orange-soft: #fdeee7;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--hv-bg);
+  background-image:
+    linear-gradient(var(--hv-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hv-grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--hv-ink);
+}
+
+.heroV2Photo {
+  position: relative;
+  width: 100%;
+  height: 250px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 68%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 68%, transparent 100%);
+}
+
+.heroV2Photo img {
+  object-fit: cover;
+  object-position: 72% 30%;
+}
+
+.heroV2Content {
+  position: relative;
+  padding: 4px 20px 44px;
+}
+
+.heroV2Eyebrow {
+  display: inline-flex;
+  margin: 0 0 16px;
+  padding: 7px 15px;
+  border-radius: 999px;
+  background: var(--hv-orange);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.heroV2Title {
+  margin: 0;
+  color: var(--hv-ink);
+  font-size: clamp(30px, 8.6vw, 38px);
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -0.055em;
+  word-break: keep-all;
+}
+
+.heroV2Title span {
+  display: block;
+  margin-top: 4px;
+  color: var(--hv-orange);
+}
+
+.heroV2Desc {
+  margin: 18px 0 0;
+  color: var(--hv-muted);
+  font-size: 15px;
+  line-height: 1.7;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+.heroV2Desc br {
+  display: none;
+}
+
+.heroV2Actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.heroV2Primary,
+.heroV2Secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.heroV2Primary,
+.heroV2Primary:visited,
+.heroV2Primary:hover,
+.heroV2Primary:active {
+  background: var(--hv-orange);
+  color: #ffffff !important;
+  box-shadow: 0 8px 18px rgba(226, 85, 43, 0.26);
+}
+
+.heroV2Primary:active {
+  background: var(--hv-orange-strong);
+}
+
+.heroV2Secondary,
+.heroV2Secondary:visited,
+.heroV2Secondary:hover,
+.heroV2Secondary:active {
+  border: 1.5px solid var(--hv-orange);
+  background: #ffffff;
+  color: var(--hv-orange-strong) !important;
+}
+
+.heroV2Secondary:active {
+  background: var(--hv-orange-soft);
+}
+
+.heroV2Notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.heroV2Notes li {
+  padding: 9px 13px;
+  border: 1px solid var(--hv-line);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--hv-ink);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.heroV2Notes li:first-child {
+  border-color: var(--hv-orange);
+  background: var(--hv-orange-soft);
+  color: var(--hv-orange-strong);
+}

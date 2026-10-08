@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import StudyHeader, { STUDY_HOME_HERO_BAR } from "@/components/study/StudyHeader";
+import StudyHeader from "@/components/study/StudyHeader";
 import styles from "./studyHomeYun.module.css";
 
 const TARGET_AUDIENCE = [
@@ -59,34 +59,47 @@ export default function StudyHomeYunClient() {
 
   return (
     <div className={styles.page}>
-      <StudyHeader background={STUDY_HOME_HERO_BAR} />
+      <StudyHeader />
 
       <main>
-        {/* ━━━ [1섹션] 메인 히어로 ━━━ */}
-        <section className={styles.hero} aria-labelledby="study-hero-title">
-          <div className={styles.heroShade} aria-hidden="true" />
+        {/* ━━━ [1섹션] 메인 히어로 — 새 디자인(미색 격자 바탕 + 주황 강조 + 오른쪽 실사 사진) ━━━ */}
+        <section className={styles.heroV2} aria-labelledby="study-hero-title">
+          <div className={styles.heroV2Photo}>
+            <Image
+              src="/images/study/study-real-hero.webp"
+              alt="노트북 화면을 보며 두 주먹을 쥐고 기뻐하는 여성 부동산 대표"
+              fill
+              priority
+              sizes="(max-width: 860px) 100vw, 58vw"
+            />
+          </div>
 
-          <div className={styles.heroContent}>
-            <p className={styles.heroEyebrow}>AI 스마트폰, SNS 시대!</p>
-            <h1 id="study-hero-title">
-              유튜브, 블로그, SNS
-              <br />
-              <span>부동산은 꼭! 해야 합니다.</span>
-            </h1>
-            <p className={styles.heroDescription}>
-              정보를 주고 받는 부동산에게 유튜브/블로그/SNS 마케팅은 선택이 아니라 필수입니다!
-              <br />
-              이제, 공실스터디멤버가 되시면, 블로그/유튜브/SNS 마케팅 바로 시작하실 수 있습니다!
-            </p>
-            <div className={styles.heroActions}>
-              <Link href="/study/benefits/vacancy-register" className={styles.heroPrimary}>
-                멤버쉽 혜택 &gt;&gt;
-              </Link>
-              <Link href="/study/apply" className={styles.heroSecondary}>
-                멤버쉽 신청하기 &gt;&gt;
-              </Link>
+          <div className={styles.heroV2Inner}>
+            <div className={styles.heroV2Text}>
+              <p className={styles.heroV2Eyebrow}>AI 스마트폰, SNS 시대!</p>
+              <h1 id="study-hero-title" className={styles.heroV2Title}>
+                유튜브, 블로그, SNS
+                <span>부동산은 꼭! 해야 합니다.</span>
+              </h1>
+              <p className={styles.heroV2Description}>
+                정보를 주고 받는 부동산에게 유튜브/블로그/SNS 마케팅은 선택이 아니라 필수입니다!{" "}
+                <br />
+                이제, 공실스터디멤버가 되시면, 블로그/유튜브/SNS 마케팅 바로 시작하실 수 있습니다!
+              </p>
+              <div className={styles.heroV2Actions}>
+                <Link href="/study/benefits/vacancy-register" className={styles.heroV2Primary}>
+                  멤버쉽 혜택 &gt;&gt;
+                </Link>
+                <Link href="/study/apply" className={styles.heroV2Secondary}>
+                  멤버쉽 신청하기 &gt;&gt;
+                </Link>
+              </div>
+              <ul className={styles.heroV2Notes}>
+                <li>물건 등록 한 번으로 자동 완성</li>
+                <li>전국 11만 부동산 네트워크 연동</li>
+                <li>초보자도 쉽게</li>
+              </ul>
             </div>
-            <p className={styles.heroNote}>물건 등록 한 번으로 자동 완성 · 전국 11만 부동산 네트워크 연동 · 초보자도 쉽게</p>
           </div>
         </section>
 
@@ -109,8 +122,8 @@ export default function StudyHomeYunClient() {
               <div className={styles.marketCard}>
                 <div className={styles.marketCardImgBox}>
                   <Image
-                    src="/images/study/market-corp-youtube.jpg"
-                    alt="유튜브 영상을 전문 제작하는 대형 중개법인 미디어팀"
+                    src="/images/study/study-real-corp-filming.webp"
+                    alt="대형 부동산 사무실에서 촬영팀과 함께 매물 소개 유튜브 영상을 찍는 중개사"
                     fill
                     sizes="(max-width: 768px) 100vw, 360px"
                     className={styles.marketCardImg}
@@ -132,7 +145,7 @@ export default function StudyHomeYunClient() {
               <div className={styles.marketCard}>
                 <div className={styles.marketCardImgBox}>
                   <Image
-                    src="/images/study/market-corp-ai-report.jpg"
+                    src="/images/study/study-real-corp-report.webp"
                     alt="AI를 활용해 매매보고서와 홈페이지를 전문적으로 운영하는 모습"
                     fill
                     sizes="(max-width: 768px) 100vw, 360px"
@@ -157,7 +170,7 @@ export default function StudyHomeYunClient() {
               <div className={styles.marketCard}>
                 <div className={styles.marketCardImgBox}>
                   <Image
-                    src="/images/study/market-corp-sns-blog.jpg"
+                    src="/images/study/study-real-corp-sns.webp"
                     alt="블로그 및 SNS 마케팅을 활발히 운영하는 대형 중개법인"
                     fill
                     sizes="(max-width: 768px) 100vw, 360px"
@@ -212,8 +225,8 @@ export default function StudyHomeYunClient() {
               <div className={styles.painCard}>
                 <div className={styles.painCardImgBox}>
                   <Image
-                    src="/images/study/char-local-40s-agency-won.jpg"
-                    alt="비싼 온라인 광고비와 고정비용 증가로 고민하는 동네 공인중개사와 나가는 마케팅 직원"
+                    src="/images/study/study-real-local-cost.webp"
+                    alt="광고비 청구서를 보며 이마를 짚고 고민하는 동네 공인중개사 대표"
                     fill
                     sizes="(max-width: 768px) 100vw, 360px"
                     className={styles.painCardImg}
@@ -237,8 +250,8 @@ export default function StudyHomeYunClient() {
               <div className={styles.painCard}>
                 <div className={styles.painCardImgBox}>
                   <Image
-                    src="/images/study/char-local-40s-busy.jpg"
-                    alt="시간 부족으로 피로에 지친 동네 공인중개사 3D 캐릭터"
+                    src="/images/study/study-real-local-busy.webp"
+                    alt="밤늦게 서류 더미 앞에서 지쳐 눈을 비비는 동네 공인중개사 대표"
                     fill
                     sizes="(max-width: 768px) 100vw, 360px"
                     className={styles.painCardImg}
@@ -261,8 +274,8 @@ export default function StudyHomeYunClient() {
               <div className={styles.painCard}>
                 <div className={styles.painCardImgBox}>
                   <Image
-                    src="/images/study/char-local-40s-camera.jpg"
-                    alt="스마트폰 카메라 울렁증으로 당황하는 동네 공인중개사 3D 캐릭터"
+                    src="/images/study/study-real-local-camera.webp"
+                    alt="스마트폰 카메라 앞에서 어색하게 웃으며 당황한 동네 공인중개사 대표"
                     fill
                     sizes="(max-width: 768px) 100vw, 360px"
                     className={styles.painCardImg}
@@ -300,7 +313,7 @@ export default function StudyHomeYunClient() {
               <div className={styles.trioBannerWrap}>
                 <div className={styles.trioBannerImgBox}>
                   <Image
-                    src="/images/study/trio-brokers-amazed.jpg"
+                    src="/images/study/study-real-trio-worried.webp"
                     alt="공실스터디 이전 힘들어하던 3명의 공인중개사 소장님들"
                     fill
                     sizes="(max-width: 1200px) 100vw, 1100px"
@@ -308,7 +321,7 @@ export default function StudyHomeYunClient() {
                     priority
                   />
                   <Image
-                    src="/images/study/trio-brokers-cheering-v2.jpg"
+                    src="/images/study/study-real-trio-cheer.webp"
                     alt="공실스터디 멤버가 되어 환호하고 기뻐하는 3명의 공인중개사 소장님들"
                     fill
                     sizes="(max-width: 1200px) 100vw, 1100px"
