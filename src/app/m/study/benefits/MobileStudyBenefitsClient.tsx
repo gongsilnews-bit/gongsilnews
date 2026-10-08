@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
@@ -8,12 +8,13 @@ import MobileTopBarHeader from "../../_components/MobileTopBarHeader";
 import StudySubMenuBar from "../../_components/StudySubMenuBar";
 import styles from "./mobileStudyBenefits.module.css";
 
-type BenefitTabKey = "vacancy" | "youtube" | "blog" | "community";
+type BenefitTabKey = "vacancy" | "blog" | "youtube" | "upload" | "community";
 
 const TABS: { key: BenefitTabKey; label: string }[] = [
   { key: "vacancy", label: "공실등록20건" },
-  { key: "youtube", label: "AI 유튜브제작" },
   { key: "blog", label: "블로그자동화" },
+  { key: "youtube", label: "AI 유튜브제작" },
+  { key: "upload", label: "강의영상업로딩" },
   { key: "community", label: "커뮤니티·자료실" },
 ];
 
@@ -24,7 +25,7 @@ export default function MobileStudyBenefitsClient() {
 
   useEffect(() => {
     const tabParam = searchParams.get("tab") as BenefitTabKey;
-    if (tabParam && ["vacancy", "youtube", "blog", "community"].includes(tabParam)) {
+    if (tabParam && ["vacancy", "blog", "youtube", "upload", "community"].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
@@ -398,11 +399,102 @@ export default function MobileStudyBenefitsClient() {
         </div>
       )}
 
-      {/* ━━━ [4] 커뮤니티 & 자료실 탭 ━━━ */}
-      {activeTab === "community" && (
+      {/* ━━━ [4] 강의영상업로딩 탭 ━━━ */}
+      {activeTab === "upload" && (
         <div>
           <section className={styles.hero}>
             <div className={styles.badge}>핵심 혜택 04</div>
+            <h1 className={styles.heroTitle}>
+              내 지역정보, 단지 정보<br />
+              <span className={styles.pointText}>이제 유튜브 강의로!</span>
+            </h1>
+            <p className={styles.heroDesc}>
+              부동산 대표님도 강사가 될 수 있습니다! 머릿속 노하우를 온라인 인강으로 자산화하세요.
+            </p>
+          </section>
+
+          {/* 실사 배너 미디어 카드 */}
+          <div className={styles.mediaCard}>
+            <div className={styles.mediaThumb}>
+              <Image
+                src="/images/study/benefit-lecture-upload-hero.png"
+                alt="강의 촬영 중인 전문 공인중개사 대표"
+                fill
+                sizes="(max-width: 480px) 100vw, 448px"
+                style={{ objectFit: "cover" }}
+              />
+            </div>
+            <div className={styles.mediaBody}>
+              <h3 className={styles.mediaTitle}>
+                대표님만의 단독 인강 채널 개설 &amp; 플랫폼 업로드 지원
+              </h3>
+              <p className={styles.mediaDesc}>
+                스마트폰 하나로 촬영한 지역 분석, 매물 브리핑 영상을 공실스터디 플랫폼에 정식 업로드하고, 전국 11만 부동산 네트워크와 고객에게 지역 1등 전문가로 독점 브랜딩됩니다.
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "12px" }}>
+                <span style={{ fontSize: "11.5px", fontWeight: 800, padding: "3px 8px", borderRadius: "6px", background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0" }}>
+                  공동중개 20건
+                </span>
+                <span style={{ fontSize: "11.5px", fontWeight: 800, padding: "3px 8px", borderRadius: "6px", background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0" }}>
+                  유튜브 영상 제작 무료
+                </span>
+                <span style={{ fontSize: "11.5px", fontWeight: 800, padding: "3px 8px", borderRadius: "6px", background: "#059669", color: "#ffffff" }}>
+                  강의 영상 플랫폼 업로드
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4단계 로드맵 */}
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <p className={styles.sectionKicker}>STEP BY STEP</p>
+              <h2 className={styles.sectionTitle}>강사 데뷔 &amp; 업로드 4단계</h2>
+            </div>
+
+            {[
+              { step: "01", tag: "주제 선정", title: "지역·단지 정보 기획", desc: "내가 가장 잘 아는 우리 동네 학군, 교통, 아파트 단지 분석 노하우를 주제로 정합니다." },
+              { step: "02", tag: "스마트폰 촬영", title: "스마트폰으로 쉽게 촬영", desc: "고가의 장비 없이 스마트폰과 핀마이크 하나로 현장 임장 영상을 촬영합니다." },
+              { step: "03", tag: "인강 개설", title: "플랫폼 영상 업로드", desc: "촬영한 영상을 공실스터디에 등록하면 대표님 전용 온라인 강의로 즉시 개설됩니다." },
+              { step: "04", tag: "독점 브랜딩", title: "전국 11만 네트워크 노출", desc: "전국 중개사와 포털 방문자에게 지역 1등 강사로 독점 노출되어 수익과 문의가 증가합니다." },
+            ].map((s) => (
+              <div key={s.step} className={styles.stepCard}>
+                <div className={styles.stepNumber}>{s.step}</div>
+                <div className={styles.stepInfo}>
+                  <span className={styles.stepTag}>{s.tag}</span>
+                  <h4 className={styles.stepTitle}>{s.title}</h4>
+                  <p className={styles.stepDesc}>{s.desc}</p>
+                </div>
+              </div>
+            ))}
+          </section>
+
+          {/* 상세 인포그래픽 가이드 목업 */}
+          <section style={{ padding: "16px", background: "#f8fafc" }}>
+            <div style={{ textAlign: "center", marginBottom: "14px" }}>
+              <span style={{ fontSize: "11.5px", fontWeight: 800, color: "#059669" }}>OFFICIAL GUIDE</span>
+              <h3 style={{ fontSize: "17px", fontWeight: 900, color: "#111827", margin: "4px 0 0" }}>
+                강사 개설 &amp; 영상 업로드 상세 안내
+              </h3>
+            </div>
+            <div style={{ position: "relative", width: "100%", aspectRatio: "153 / 1024", borderRadius: "16px", overflow: "hidden", border: "1px solid #dce9e5", boxShadow: "0 8px 24px rgba(0,0,0,0.06)" }}>
+              <Image
+                src="/images/study/benefit-lecture-upload-detail.png"
+                alt="강의영상업로딩 상세 안내"
+                fill
+                sizes="(max-width: 480px) 100vw, 448px"
+                style={{ objectFit: "contain", objectPosition: "top center" }}
+              />
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* ━━━ [5] 커뮤니티 & 자료실 탭 ━━━ */}
+      {activeTab === "community" && (
+        <div>
+          <section className={styles.hero}>
+            <div className={styles.badge}>핵심 혜택 05</div>
             <h1 className={styles.heroTitle}>
               전국 11만 부동산 네트워크 &amp;<br />
               <span className={styles.pointText}>실무 서식 자료실</span>

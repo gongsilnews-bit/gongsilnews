@@ -3,11 +3,12 @@
 import React from "react";
 import Link from "next/link";
 
-/** 멤버십혜택 3개 페이지를 오갈 수 있는 서브 내비 (공실뉴스부동산 BenefitsSubNav 와 같은 역할) */
+/** 멤버십혜택 4개 페이지를 오갈 수 있는 서브 내비 */
 export const STUDY_BENEFITS = [
   { slug: "vacancy-register", label: "공실등록20건", href: "/study/benefits/vacancy-register" },
   { slug: "blog-automation", label: "블로그포스팅자동화", href: "/study/benefits/blog-automation" },
   { slug: "ai-youtube", label: "유튜브강의+드론저작권", href: "/study/benefits/ai-youtube" },
+  { slug: "lecture-upload", label: "강의영상업로딩", href: "/study/benefits/lecture-upload" },
 ] as const;
 
 const POINT = "#059669";
@@ -54,11 +55,10 @@ export function StudyBenefitsHeroTabs({ active }: { active: string }) {
     <nav
       aria-label="멤버십혜택"
       style={{
-        position: "absolute", left: 48, bottom: 32, zIndex: 3,
-        display: "flex", gap: 6, padding: 5, borderRadius: 12,
-        // 밝은 히어로(미색 바탕) 위에 흰 카드로 띄운다
-        background: "#ffffff", border: "1px solid #e7dfd4",
-        boxShadow: "0 4px 14px rgba(70, 50, 30, 0.08)",
+        position: "absolute", left: 36, bottom: 24, zIndex: 3,
+        display: "flex", gap: 5, padding: 4, borderRadius: 12,
+        background: "#ffffff", border: "1px solid #dce9e5",
+        boxShadow: "0 4px 14px rgba(0, 0, 0, 0.06)",
       }}
     >
       {STUDY_BENEFITS.map((item) => {
@@ -69,7 +69,7 @@ export function StudyBenefitsHeroTabs({ active }: { active: string }) {
             href={item.href}
             aria-current={isActive ? "page" : undefined}
             style={{
-              padding: "10px 18px", borderRadius: 8, fontSize: 14.5, whiteSpace: "nowrap", textDecoration: "none",
+              padding: "9px 15px", borderRadius: 8, fontSize: 13.5, whiteSpace: "nowrap", textDecoration: "none",
               fontWeight: isActive ? 800 : 600,
               color: isActive ? "#ffffff" : "#44403c",
               background: isActive ? POINT : "transparent",

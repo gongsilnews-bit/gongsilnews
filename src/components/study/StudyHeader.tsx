@@ -50,6 +50,11 @@ const NAV_ITEMS: NavItem[] = [
         href: "/study/benefits/ai-youtube",
         match: (p: string) => p.includes("ai-youtube"),
       },
+      {
+        label: "강의영상업로딩",
+        href: "/study/benefits/lecture-upload",
+        match: (p: string) => p.includes("lecture-upload"),
+      },
     ],
   },
   {
