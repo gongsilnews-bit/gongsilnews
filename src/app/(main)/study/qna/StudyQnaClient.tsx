@@ -137,7 +137,7 @@ export default function StudyQnaClient({
   });
 
   return (
-    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", color: "#132e27" }}>
+    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", color: "#261f1b" }}>
       <StudyHeader background={STUDY_HERO_BAR} />
 
       {/* ━━━ 상단 타이틀 배너 (멤버십신청과 100% 동일한 칸 높이 & 폰트 크기) ━━━ */}
@@ -145,14 +145,14 @@ export default function StudyQnaClient({
         style={{
           width: "100%",
           boxSizing: "border-box",
-          background: "linear-gradient(145deg, #052326 0%, #0c382f 60%, #114b3f 100%)",
+          background: "linear-gradient(145deg, #191512 0%, #28211c 60%, #362c26 100%)",
           color: "#ffffff",
           padding: "60px 20px 64px",
           // 세 페이지 히어로 높이를 같게 두고 글은 세로 가운데
           minHeight: "260px",
           display: "flex",
           alignItems: "center",
-          boxShadow: "0 4px 20px rgba(5, 35, 38, 0.25)",
+          boxShadow: "0 4px 20px rgba(25, 21, 18, 0.25)",
         }}
       >
         <div
@@ -175,7 +175,7 @@ export default function StudyQnaClient({
             {/* 멤버십신청·나의 강의실과 같은 모션: 제목은 아래에서 위로, 이어서 설명 문장 타이핑 */}
             <h1 className="study-hero-rise" style={{ display: "flex", alignItems: "baseline", gap: "24px", fontSize: "44px", fontWeight: 900, lineHeight: 1.2, letterSpacing: "-1px", margin: "0 0 16px", color: "#ffffff", wordBreak: "keep-all" }}>
               Q&amp;A 게시판
-              <span style={{ fontSize: "34px", fontWeight: 800, letterSpacing: "-0.5px", color: "#34d399" }}>Study Community</span>
+              <span style={{ fontSize: "34px", fontWeight: 800, letterSpacing: "-0.5px", color: "#f59a6f" }}>Study Community</span>
             </h1>
 
             <p style={{ fontSize: "24px", fontWeight: 500, color: "rgba(255, 255, 255, 0.92)", lineHeight: 1.45, margin: "0 0 18px", letterSpacing: "-0.5px", wordBreak: "keep-all" }}>
@@ -206,7 +206,7 @@ export default function StudyQnaClient({
               {canWrite ? (
                 <a
                   href={writeUrl}
-                  style={{ padding: "8px 18px", borderRadius: 7, fontSize: 13.5, fontWeight: 800, color: "#ffffff", background: "#10b981", textDecoration: "none", boxShadow: "0 3px 12px rgba(16, 185, 129, 0.4)" }}
+                  style={{ padding: "8px 18px", borderRadius: 7, fontSize: 13.5, fontWeight: 800, color: "#ffffff", background: "#e2552b", textDecoration: "none", boxShadow: "0 3px 12px rgba(180, 63, 24, 0.4)" }}
                 >
                   질문하기
                 </a>
@@ -214,7 +214,7 @@ export default function StudyQnaClient({
                 <button
                   type="button"
                   onClick={() => setAccessNotice({ level: board.perm_write ?? 5, action: "write" })}
-                  style={{ padding: "8px 18px", borderRadius: 7, fontSize: 13.5, fontWeight: 800, color: "#ffffff", background: "#10b981", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                  style={{ padding: "8px 18px", borderRadius: 7, fontSize: 13.5, fontWeight: 800, color: "#ffffff", background: "#e2552b", border: "none", cursor: "pointer", fontFamily: "inherit" }}
                 >
                   질문하기
                 </button>

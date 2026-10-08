@@ -119,13 +119,13 @@ export default function MobileStudyPricingClient() {
             width: "100%",
             padding: "15px 0",
             textAlign: "center",
-            background: "linear-gradient(135deg, #059669, #047857)",
+            background: "linear-gradient(135deg, #e2552b, #c9441d)",
             color: "#ffffff",
             fontSize: "15.5px",
             fontWeight: 800,
             borderRadius: "12px",
             textDecoration: "none",
-            boxShadow: "0 4px 14px rgba(5, 150, 105, 0.35)",
+            boxShadow: "0 4px 14px rgba(180, 63, 24, 0.35)",
             boxSizing: "border-box"
           }}>
             1년 36만원으로 멤버십 신청하기 →

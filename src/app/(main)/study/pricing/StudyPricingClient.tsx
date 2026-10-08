@@ -9,10 +9,10 @@ import StudyHeader from "@/components/study/StudyHeader";
  * 공실뉴스부동산 금액안내(/newsrealty/pricing)와 동일한 구성이며
  * 포인트 컬러만 스터디 에메랄드로 맞춘다.
  */
-const POINT = "#059669";
-const POINT_DARK = "#047857";
-const POINT_SOFT = "#ecfdf5";
-const POINT_BORDER = "#a7f3d0";
+const POINT = "#e2552b";
+const POINT_DARK = "#c9441d";
+const POINT_SOFT = "#fdeee7";
+const POINT_BORDER = "#f8c3a8";
 
 export default function StudyPricingClient() {
   const router = useRouter();
@@ -80,7 +80,7 @@ export default function StudyPricingClient() {
       {/* ━━━ 1. 메인 타이틀 + 플랜 비교 ━━━ */}
       <section
         style={{
-          background: "linear-gradient(180deg, #f0fdf9 0%, #ffffff 100%)",
+          background: "linear-gradient(180deg, #fbf7f2 0%, #ffffff 100%)",
           padding: "70px 20px 40px 20px",
           textAlign: "center",
         }}
@@ -106,7 +106,7 @@ export default function StudyPricingClient() {
             style={{
               fontSize: "42px",
               fontWeight: 900,
-              color: "#0f2e28",
+              color: "#241d19",
               letterSpacing: "-1.5px",
               margin: "0 0 16px 0",
               lineHeight: 1.3,
@@ -220,7 +220,7 @@ export default function StudyPricingClient() {
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                boxShadow: "0 16px 44px rgba(5, 150, 105, 0.18)",
+                boxShadow: "0 16px 44px rgba(180, 63, 24, 0.18)",
                 position: "relative",
               }}
             >
@@ -236,7 +236,7 @@ export default function StudyPricingClient() {
                   borderRadius: "20px",
                   fontSize: "12px",
                   fontWeight: 900,
-                  boxShadow: "0 4px 12px rgba(5, 150, 105, 0.35)",
+                  boxShadow: "0 4px 12px rgba(180, 63, 24, 0.35)",
                   letterSpacing: "-0.3px",
                   whiteSpace: "nowrap",
                 }}
@@ -246,7 +246,7 @@ export default function StudyPricingClient() {
 
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                  <h3 style={{ fontSize: "24px", fontWeight: 900, color: "#0f2e28", margin: 0 }}>공실스터디</h3>
+                  <h3 style={{ fontSize: "24px", fontWeight: 900, color: "#241d19", margin: 0 }}>공실스터디</h3>
                   <span style={{ fontSize: "12px", fontWeight: 800, background: POINT_SOFT, color: POINT_DARK, padding: "4px 12px", borderRadius: 20 }}>
                     정회원 전용 플랜
                   </span>
@@ -254,7 +254,7 @@ export default function StudyPricingClient() {
 
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "8px" }}>
-                    <span style={{ fontSize: "40px", fontWeight: 900, color: "#0f2e28", letterSpacing: "-1.5px" }}>
+                    <span style={{ fontSize: "40px", fontWeight: 900, color: "#241d19", letterSpacing: "-1.5px" }}>
                       36만원
                     </span>
                     <span style={{ fontSize: "15px", fontWeight: 700, color: "#64748b" }}>
@@ -294,7 +294,7 @@ export default function StudyPricingClient() {
                       fontWeight: 800,
                       color: "#ffffff",
                       cursor: "pointer",
-                      boxShadow: "0 4px 14px rgba(5, 150, 105, 0.35)",
+                      boxShadow: "0 4px 14px rgba(180, 63, 24, 0.35)",
                       transition: "all 0.2s ease",
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = POINT_DARK)}
@@ -305,12 +305,12 @@ export default function StudyPricingClient() {
                 </div>
 
                 <div style={{ borderTop: `1px solid ${POINT_BORDER}`, paddingTop: 26 }}>
-                  <div style={{ fontSize: "14px", fontWeight: 900, color: "#0f2e28", marginBottom: 18 }}>
+                  <div style={{ fontSize: "14px", fontWeight: 900, color: "#241d19", marginBottom: 18 }}>
                     포함된 모든 전용 혜택
                   </div>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, fontSize: "16px" }}>
                     {paidFeatures.map((f, i) => (
-                      <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, color: "#0f2e28", lineHeight: 1.5 }}>
+                      <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, color: "#241d19", lineHeight: 1.5 }}>
                         <span style={{ color: POINT, fontSize: "18px", fontWeight: 900, lineHeight: 1, marginTop: "2px" }}>✓</span>
                         <span style={{ wordBreak: "keep-all" }}>{f}</span>
                       </li>
@@ -430,14 +430,14 @@ export default function StudyPricingClient() {
       {/* ━━━ 4. 하단 와이드 CTA ━━━ */}
       <section
         style={{
-          background: "linear-gradient(135deg, #062326 0%, #0f3d33 100%)",
+          background: "linear-gradient(135deg, #1a1613 0%, #2d251f 100%)",
           color: "#ffffff",
           padding: "60px 20px",
           textAlign: "center",
         }}
       >
         <div style={{ maxWidth: "700px", margin: "0 auto" }}>
-          <div style={{ color: "#34d399", fontSize: "14px", fontWeight: 800, marginBottom: "12px" }}>
+          <div style={{ color: "#f59a6f", fontSize: "14px", fontWeight: 800, marginBottom: "12px" }}>
             SPECIAL OFFER · 365 DAYS UNLIMITED
           </div>
           <h2 style={{ fontSize: "30px", fontWeight: 900, margin: "0 0 16px 0", letterSpacing: "-0.5px" }}>
@@ -461,7 +461,7 @@ export default function StudyPricingClient() {
               borderRadius: "10px",
               border: "none",
               cursor: "pointer",
-              boxShadow: "0 10px 25px rgba(5, 150, 105, 0.4)",
+              boxShadow: "0 10px 25px rgba(180, 63, 24, 0.4)",
             }}
           >
             <span>공실스터디 지금 신청하기</span>

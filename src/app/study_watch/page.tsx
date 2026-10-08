@@ -161,7 +161,7 @@ function StudyWatchContent() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: 16 }}>
         <div style={{ fontSize: 48 }}>📭</div>
         <div style={{ fontSize: 18, fontWeight: 700, color: "#1e293b" }}>강의 정보를 찾을 수 없습니다.</div>
-        <Link href="/study" style={{ padding: "10px 24px", background: "#059669", color: "#fff", textDecoration: "none", borderRadius: 8, fontWeight: 700 }}>
+        <Link href="/study" style={{ padding: "10px 24px", background: "#e2552b", color: "#fff", textDecoration: "none", borderRadius: 8, fontWeight: 700 }}>
           공실스터디 목록으로 돌아가기
         </Link>
       </div>
@@ -200,7 +200,7 @@ function StudyWatchContent() {
               gap: 6,
               fontSize: 13.5,
               fontWeight: 700,
-              color: "#059669",
+              color: "#e2552b",
               background: "none",
               border: "none",
               cursor: "pointer",
@@ -210,7 +210,7 @@ function StudyWatchContent() {
             ← 강의 소개
           </button>
           <span style={{ color: "#cbd5e1" }}>|</span>
-          <span style={{ fontSize: 15, fontWeight: 800, color: "#062828", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {lecture.title}
           </span>
         </div>
@@ -218,10 +218,10 @@ function StudyWatchContent() {
         {/* Right: Progress Indicator */}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>
-            진도 <strong style={{ color: "#062828" }}>{completedCount}/{totalLessons}강</strong> ({progressPercent}%)
+            진도 <strong style={{ color: "#1c1917" }}>{completedCount}/{totalLessons}강</strong> ({progressPercent}%)
           </span>
           <div style={{ width: 110, height: 6, background: "#e2e8f0", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ width: `${progressPercent}%`, height: "100%", background: "#059669", borderRadius: 10, transition: "width 0.3s" }} />
+            <div style={{ width: `${progressPercent}%`, height: "100%", background: "#e2552b", borderRadius: 10, transition: "width 0.3s" }} />
           </div>
         </div>
       </header>
@@ -233,7 +233,7 @@ function StudyWatchContent() {
         <div style={{ display: "flex", flexDirection: "column", background: "#ffffff", minWidth: 0, paddingBottom: 80 }}>
           
           {/* 비디오 컨테이너 */}
-          <div style={{ width: "100%", background: "#062326", display: "flex", justifyContent: "center" }}>
+          <div style={{ width: "100%", background: "#1a1613", display: "flex", justifyContent: "center" }}>
             <div style={{ width: "100%", maxWidth: 1100, aspectRatio: "16/9", position: "relative" }}>
               {embedUrl ? (
                 <iframe
@@ -244,7 +244,7 @@ function StudyWatchContent() {
                   allowFullScreen
                 />
               ) : (
-                <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#a7f3d0", gap: 10 }}>
+                <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#f8c3a8", gap: 10 }}>
                   <span style={{ fontSize: 44 }}>🎬</span>
                   <span style={{ fontSize: 16, fontWeight: 700 }}>등록된 강의 영상이 없습니다.</span>
                 </div>
@@ -258,11 +258,11 @@ function StudyWatchContent() {
             {/* 레슨 뱃지 & 타이틀 */}
             <div style={{ marginBottom: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <span style={{ background: "#ecfdf5", color: "#047857", fontSize: 12, fontWeight: 800, padding: "3px 8px", borderRadius: 4 }}>
+                <span style={{ background: "#fdeee7", color: "#c9441d", fontSize: 12, fontWeight: 800, padding: "3px 8px", borderRadius: 4 }}>
                   {activeLessonIndex + 1}강
                 </span>
                 {activeLesson?.is_preview && (
-                  <span style={{ background: "#f0fdf4", color: "#059669", border: "1px solid #d1fae5", fontSize: 11.5, fontWeight: 700, padding: "2px 7px", borderRadius: 4 }}>
+                  <span style={{ background: "#fdf6f1", color: "#e2552b", border: "1px solid #fbdccd", fontSize: 11.5, fontWeight: 700, padding: "2px 7px", borderRadius: 4 }}>
                     미리보기
                   </span>
                 )}
@@ -270,7 +270,7 @@ function StudyWatchContent() {
                   {activeLesson?.duration_minutes ? `${activeLesson.duration_minutes}분` : "8:04"}
                 </span>
               </div>
-              <h2 style={{ fontSize: 22, fontWeight: 900, color: "#062828", margin: 0, lineHeight: 1.4 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 900, color: "#1c1917", margin: 0, lineHeight: 1.4 }}>
                 {activeLesson ? `${activeLessonIndex + 1}강. ${activeLesson.title}` : "강의를 선택해 주세요"}
               </h2>
             </div>
@@ -283,10 +283,10 @@ function StudyWatchContent() {
                   padding: "10px 0",
                   background: "none",
                   border: "none",
-                  borderBottom: activeTab === "desc" ? "2.5px solid #059669" : "2.5px solid transparent",
+                  borderBottom: activeTab === "desc" ? "2.5px solid #e2552b" : "2.5px solid transparent",
                   fontSize: 14.5,
                   fontWeight: activeTab === "desc" ? 800 : 600,
-                  color: activeTab === "desc" ? "#062828" : "#64748b",
+                  color: activeTab === "desc" ? "#1c1917" : "#64748b",
                   cursor: "pointer",
                 }}
               >
@@ -298,10 +298,10 @@ function StudyWatchContent() {
                   padding: "10px 0",
                   background: "none",
                   border: "none",
-                  borderBottom: activeTab === "files" ? "2.5px solid #059669" : "2.5px solid transparent",
+                  borderBottom: activeTab === "files" ? "2.5px solid #e2552b" : "2.5px solid transparent",
                   fontSize: 14.5,
                   fontWeight: activeTab === "files" ? 800 : 600,
-                  color: activeTab === "files" ? "#062828" : "#64748b",
+                  color: activeTab === "files" ? "#1c1917" : "#64748b",
                   cursor: "pointer",
                 }}
               >
@@ -313,10 +313,10 @@ function StudyWatchContent() {
                   padding: "10px 0",
                   background: "none",
                   border: "none",
-                  borderBottom: activeTab === "qna" ? "2.5px solid #059669" : "2.5px solid transparent",
+                  borderBottom: activeTab === "qna" ? "2.5px solid #e2552b" : "2.5px solid transparent",
                   fontSize: 14.5,
                   fontWeight: activeTab === "qna" ? 800 : 600,
-                  color: activeTab === "qna" ? "#062828" : "#64748b",
+                  color: activeTab === "qna" ? "#1c1917" : "#64748b",
                   cursor: "pointer",
                 }}
               >
@@ -373,13 +373,13 @@ function StudyWatchContent() {
                 style={{
                   padding: "11px 24px",
                   borderRadius: 8,
-                  background: "#059669",
+                  background: "#e2552b",
                   color: "#ffffff",
                   border: "none",
                   fontSize: 14,
                   fontWeight: 800,
                   cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(5,150,105,0.25)",
+                  boxShadow: "0 2px 8px rgba(180, 63, 24,0.25)",
                 }}
               >
                 {nextLesson ? `${activeLessonIndex + 2}강. ${nextLesson.title} →` : "✓ 수강 완료"}
@@ -404,8 +404,8 @@ function StudyWatchContent() {
         >
           {/* 사이드바 헤더 */}
           <div style={{ padding: "18px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff", position: "sticky", top: 0, zIndex: 10 }}>
-            <span style={{ fontSize: 15, fontWeight: 800, color: "#062828" }}>커리큘럼</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>{completedCount}/{totalLessons}강</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "#1c1917" }}>커리큘럼</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#e2552b" }}>{completedCount}/{totalLessons}강</span>
           </div>
 
           <div style={{ padding: "12px 18px 6px", fontSize: 12, fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>
@@ -427,9 +427,9 @@ function StudyWatchContent() {
                     borderRadius: 10,
                     marginBottom: 6,
                     cursor: "pointer",
-                    backgroundColor: isActive ? "#062326" : isDone ? "#ffffff" : "#ffffff",
+                    backgroundColor: isActive ? "#1a1613" : isDone ? "#ffffff" : "#ffffff",
                     color: isActive ? "#ffffff" : "#1e293b",
-                    border: isActive ? "1px solid #062326" : "1px solid #e2e8f0",
+                    border: isActive ? "1px solid #1a1613" : "1px solid #e2e8f0",
                     transition: "all 0.15s",
                     display: "flex",
                     alignItems: "center",
@@ -444,8 +444,8 @@ function StudyWatchContent() {
                         width: 22,
                         height: 22,
                         borderRadius: "50%",
-                        background: isActive ? "#059669" : isDone ? "#ecfdf5" : "#f1f5f9",
-                        color: isActive ? "#fff" : isDone ? "#047857" : "#64748b",
+                        background: isActive ? "#e2552b" : isDone ? "#fdeee7" : "#f1f5f9",
+                        color: isActive ? "#fff" : isDone ? "#c9441d" : "#64748b",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -473,11 +473,11 @@ function StudyWatchContent() {
 
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                     {les.is_preview && !isActive && (
-                      <span style={{ fontSize: 10.5, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "#ecfdf5", color: "#047857" }}>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "#fdeee7", color: "#c9441d" }}>
                         미리보기
                       </span>
                     )}
-                    <span style={{ fontSize: 11.5, color: isActive ? "#a7f3d0" : "#94a3b8" }}>
+                    <span style={{ fontSize: 11.5, color: isActive ? "#f8c3a8" : "#94a3b8" }}>
                       {les.duration_minutes ? `${les.duration_minutes}분` : "8:04"}
                     </span>
                   </div>

@@ -47,7 +47,7 @@ export default function MobileStudyBenefitsClient() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <span style={{ fontSize: "16px", fontWeight: 800, color: "#062828" }}>멤버십 혜택</span>
+        <span style={{ fontSize: "16px", fontWeight: 800, color: "#1c1917" }}>멤버십 혜택</span>
       </div>
 
       {/* ━━━ 혜택 세부 탭 바 ━━━ */}
@@ -240,12 +240,12 @@ export default function MobileStudyBenefitsClient() {
 
           {/* ━━━ 방송국 PD 출신 편집장 직강 & 오프라인 검증 (PC 드론 하단 섹션과 동일) ━━━ */}
           <section style={{ padding: "32px 16px 8px", textAlign: "center" }}>
-            <p style={{ fontSize: 11.5, fontWeight: 800, color: "#059669", letterSpacing: "0.5px", margin: "0 0 6px" }}>
+            <p style={{ fontSize: 11.5, fontWeight: 800, color: "#e2552b", letterSpacing: "0.5px", margin: "0 0 6px" }}>
               방송국 PD 출신 편집장 직강
             </p>
-            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#0f2e28", lineHeight: 1.4, letterSpacing: "-0.5px", margin: "0 0 10px", wordBreak: "keep-all" }}>
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#241d19", lineHeight: 1.4, letterSpacing: "-0.5px", margin: "0 0 10px", wordBreak: "keep-all" }}>
               방송국 PD 출신, 공실뉴스편집장이<br />
-              <span style={{ color: "#059669" }}>강남/서초 100여명의 부동산과 함께 했던 실전 강의!</span>
+              <span style={{ color: "#e2552b" }}>강남/서초 100여명의 부동산과 함께 했던 실전 강의!</span>
             </h2>
             <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.6, margin: "0 0 20px", wordBreak: "keep-all" }}>
               강남·서초 100여 개 부동산 실무자와 오프라인에서 함께 했던 생생한 경험을 온라인에서 누구나 쉽고 빠르게 따라 할 수 있도록 알려드립니다.
@@ -278,7 +278,7 @@ export default function MobileStudyBenefitsClient() {
                     gap: 3,
                   }}
                 >
-                  <strong style={{ fontSize: 20, fontWeight: 900, color: "#059669" }}>{s.num}</strong>
+                  <strong style={{ fontSize: 20, fontWeight: 900, color: "#e2552b" }}>{s.num}</strong>
                   <span style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", wordBreak: "keep-all" }}>{s.org}</span>
                   <small style={{ fontSize: 11.5, color: "#64748b", wordBreak: "keep-all" }}>{s.label}</small>
                 </div>
@@ -297,12 +297,12 @@ export default function MobileStudyBenefitsClient() {
               />
             </div>
             <div className={styles.mediaBody}>
-              <p style={{ fontSize: 12, fontWeight: 800, color: "#059669", margin: "0 0 4px" }}>2025 서울벤처대학원대학교</p>
+              <p style={{ fontSize: 12, fontWeight: 800, color: "#e2552b", margin: "0 0 4px" }}>2025 서울벤처대학원대학교</p>
               <h3 className={styles.mediaTitle}>유튜브 콘텐츠 제작 실습 교육</h3>
               <p className={styles.mediaDesc}>
                 나이와 IT 경험에 상관없이 화면을 보며 하나씩 따라 하고, 수업이 끝날 때 직접 만든 결과물을 남기는 방식으로 진행했습니다.
               </p>
-              <p style={{ fontSize: 13, fontWeight: 800, color: "#047857", margin: "8px 0 0" }}>
+              <p style={{ fontSize: 13, fontWeight: 800, color: "#c9441d", margin: "8px 0 0" }}>
                 이제 같은 과정을 온라인에서 배울 수 있습니다.
               </p>
             </div>
@@ -344,10 +344,10 @@ export default function MobileStudyBenefitsClient() {
               </p>
               <ul style={{ listStyle: "none", padding: 0, margin: "10px 0 0", display: "flex", flexDirection: "column", gap: 6 }}>
                 <li style={{ fontSize: 13, color: "#1e293b", lineHeight: 1.5 }}>
-                  <span style={{ color: "#059669", fontWeight: 900 }}>✔</span> <strong>스마트블록 알고리즘 반영</strong> — 검색 유입을 끌어오는 소제목과 키워드 밀도
+                  <span style={{ color: "#e2552b", fontWeight: 900 }}>✔</span> <strong>스마트블록 알고리즘 반영</strong> — 검색 유입을 끌어오는 소제목과 키워드 밀도
                 </li>
                 <li style={{ fontSize: 13, color: "#1e293b", lineHeight: 1.5 }}>
-                  <span style={{ color: "#059669", fontWeight: 900 }}>✔</span> <strong>원클릭 복사 & 보도자료 기사</strong> — 블로그 붙여넣기 및 언론사 기사 초안 동시 생성
+                  <span style={{ color: "#e2552b", fontWeight: 900 }}>✔</span> <strong>원클릭 복사 & 보도자료 기사</strong> — 블로그 붙여넣기 및 언론사 기사 초안 동시 생성
                 </li>
               </ul>
             </div>
@@ -420,7 +420,7 @@ export default function MobileStudyBenefitsClient() {
                 <p className={styles.mediaDesc}>
                   특수 계약서 양식, 중개 확인설명서 체크리스트, 제미나이/챗GPT 매물 브리핑 프롬프트 원본을 무제한 제공합니다.
                 </p>
-                <Link href="/m/study?tab=board" style={{ display: "inline-block", marginTop: "12px", color: "#059669", fontWeight: 700, fontSize: "13px" }}>
+                <Link href="/m/study?tab=board" style={{ display: "inline-block", marginTop: "12px", color: "#e2552b", fontWeight: 700, fontSize: "13px" }}>
                   자료실 바로가기 →
                 </Link>
               </div>
@@ -433,7 +433,7 @@ export default function MobileStudyBenefitsClient() {
                 <p className={styles.mediaDesc}>
                   강의를 보며 막히는 부분이나 부동산 실무, 세무, 법률 이슈를 언제든 문의하고 답변받으실 수 있습니다.
                 </p>
-                <Link href="/m/board?id=free" style={{ display: "inline-block", marginTop: "12px", color: "#059669", fontWeight: 700, fontSize: "13px" }}>
+                <Link href="/m/board?id=free" style={{ display: "inline-block", marginTop: "12px", color: "#e2552b", fontWeight: 700, fontSize: "13px" }}>
                   커뮤니티 둘러보기 →
                 </Link>
               </div>

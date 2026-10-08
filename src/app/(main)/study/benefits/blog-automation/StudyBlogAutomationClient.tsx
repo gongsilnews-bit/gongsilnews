@@ -18,10 +18,10 @@ import { StudyBenefitsHeroTabs } from "@/components/study/StudyBenefitsSubNav";
  * 6. 이제 블로그 포스팅 원클릭으로 쉽고 빠르게!
  */
 
-const POINT = "#059669";
-const POINT_DARK = "#047857";
-const POINT_SOFT = "#ecfdf5";
-const POINT_BORDER = "#a7f3d0";
+const POINT = "#e2552b";
+const POINT_DARK = "#c9441d";
+const POINT_SOFT = "#fdeee7";
+const POINT_BORDER = "#f8c3a8";
 
 export default function StudyBlogAutomationClient() {
   const [activeWorkflowStep, setActiveWorkflowStep] = useState(0);
@@ -64,7 +64,7 @@ export default function StudyBlogAutomationClient() {
       style={{
         backgroundColor: "#ffffff",
         fontFamily: "'Pretendard Variable', -apple-system, sans-serif",
-        color: "#132e27",
+        color: "#261f1b",
         minHeight: "100vh",
       }}
     >
@@ -78,8 +78,9 @@ export default function StudyBlogAutomationClient() {
               position: "relative",
               display: "flex",
               alignItems: "center",
-              backgroundColor: "#112127",
-              color: "#ffffff",
+              backgroundColor: "#f4f1ec",
+              border: "1px solid #e7dfd4",
+              color: "#1c1917",
               borderRadius: 16,
               overflow: "hidden",
               // 강의목록 히어로와 같은 높이로 고정. 세 혜택 페이지가 같은 높이라 탭 위치도 그대로 있다
@@ -87,14 +88,17 @@ export default function StudyBlogAutomationClient() {
             }}
           >
             {/* 배경 이미지 */}
-            <Image
-              src="/images/study/benefit_blog_hero.jpg"
-              alt="블로그 포스팅 자동화 멤버십 혜택"
-              fill
-              priority
-              sizes="(max-width: 1160px) 100vw, 1112px"
-              style={{ objectFit: "cover", objectPosition: "center right" }}
-            />
+            {/* 4:3 실사라 카드 오른쪽 칸에만 놓고, 얼굴과 SNS 게시 화면이 보이게 자른다 */}
+            <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: "58%" }}>
+              <Image
+                src="/images/study/benefit-blog-hero-real.webp"
+                alt="모니터에 SNS 게시물을 올리고 스마트폰을 보며 기뻐하는 남성 공인중개사"
+                fill
+                priority
+                sizes="(max-width: 1160px) 58vw, 650px"
+                style={{ objectFit: "cover", objectPosition: "center 30%" }}
+              />
+            </div>
 
             {/* 좌측 가독성 그라디언트 오버레이 */}
             <div
@@ -104,7 +108,22 @@ export default function StudyBlogAutomationClient() {
                 inset: 0,
                 pointerEvents: "none",
                 background:
-                  "linear-gradient(to right, rgba(17,33,39,0.95) 0%, rgba(17,33,39,0.88) 55%, rgba(17,33,39,0.35) 80%, rgba(17,33,39,0) 100%)",
+                  "linear-gradient(to right, rgba(244, 241, 236, 1) 0%, rgba(244, 241, 236, 0.97) 44%, rgba(244, 241, 236, 0.6) 64%, rgba(244, 241, 236, 0) 84%)",
+              }}
+            />
+
+            {/* 왼쪽 글자 영역에만 옅은 격자무늬 (/study 히어로와 같은 바탕) */}
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                pointerEvents: "none",
+                backgroundImage:
+                  "linear-gradient(rgba(70, 50, 30, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(70, 50, 30, 0.07) 1px, transparent 1px)",
+                backgroundSize: "44px 44px",
+                WebkitMaskImage: "linear-gradient(to right, #000 45%, transparent 72%)",
+                maskImage: "linear-gradient(to right, #000 45%, transparent 72%)",
               }}
             />
 
@@ -125,13 +144,13 @@ export default function StudyBlogAutomationClient() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  backgroundColor: "rgba(5, 150, 105, 0.25)",
-                  border: "1px solid rgba(52, 211, 153, 0.4)",
+                  backgroundColor: "#e2552b",
+                  border: "1px solid #e2552b",
                   padding: "5px 14px",
                   borderRadius: 20,
                   fontSize: 13,
                   fontWeight: 800,
-                  color: "#34d399",
+                  color: "#ffffff",
                   marginBottom: 18,
                   letterSpacing: "0.2px",
                 }}
@@ -144,16 +163,16 @@ export default function StudyBlogAutomationClient() {
               {/* 메인 헤드라인 */}
               <h1
                 style={{
-                  fontSize: "33px",
+                  fontSize: "36px",
                   fontWeight: 900,
-                  lineHeight: 1.32,
-                  letterSpacing: "-0.8px",
+                  lineHeight: 1.28,
+                  letterSpacing: "-1.4px",
                   margin: "0 0 16px 0",
-                  color: "#ffffff",
+                  color: "#1c1917",
                 }}
               >
                 내가 등록한 공실로<br />
-                <span style={{ color: "#34d399" }}>
+                <span style={{ color: "#e2552b" }}>
                   블로그 & SNS 포스팅, 1분 자동 완성!~
                 </span>
               </h1>
@@ -162,7 +181,7 @@ export default function StudyBlogAutomationClient() {
               <p
                 style={{
                   fontSize: "15.5px",
-                  color: "#cbd5e1",
+                  color: "#57534e",
                   lineHeight: 1.65,
                   margin: "0 0 28px 0",
                   wordBreak: "keep-all",
@@ -194,10 +213,10 @@ export default function StudyBlogAutomationClient() {
             }}
           >
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
                 블로그포스팅
               </div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
                 자동화 프로그램
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
@@ -206,10 +225,10 @@ export default function StudyBlogAutomationClient() {
             </div>
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
                 SNS 포스팅
               </div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
                 인스타, 페북, 쓰레드
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
@@ -218,10 +237,10 @@ export default function StudyBlogAutomationClient() {
             </div>
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
                 Before, After 비교
               </div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
                 AI 인테리어 프로그램
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
@@ -230,10 +249,10 @@ export default function StudyBlogAutomationClient() {
             </div>
 
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
                 프로그램 추가 요금 없음
               </div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
                 0원 (내 AI 연동)
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
@@ -269,7 +288,7 @@ export default function StudyBlogAutomationClient() {
               style={{
                 fontSize: "32px",
                 fontWeight: 900,
-                color: "#062828",
+                color: "#1c1917",
                 letterSpacing: "-0.8px",
                 lineHeight: 1.35,
                 margin: "0 0 14px 0",
@@ -292,8 +311,8 @@ export default function StudyBlogAutomationClient() {
                 gridTemplateColumns: "1.1fr 0.9fr",
                 gap: 40,
                 alignItems: "center",
-                background: "linear-gradient(135deg, #f0fdf9 0%, #ffffff 100%)",
-                border: "1px solid #d1fae5",
+                background: "linear-gradient(135deg, #fbf7f2 0%, #ffffff 100%)",
+                border: "1px solid #fbdccd",
                 borderRadius: 20,
                 padding: "44px 40px",
               }}
@@ -304,7 +323,7 @@ export default function StudyBlogAutomationClient() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "#059669",
+                    background: "#e2552b",
                     color: "#ffffff",
                     fontSize: 12.5,
                     fontWeight: 800,
@@ -319,7 +338,7 @@ export default function StudyBlogAutomationClient() {
                   style={{
                     fontSize: "26px",
                     fontWeight: 900,
-                    color: "#062828",
+                    color: "#1c1917",
                     lineHeight: 1.35,
                     letterSpacing: "-0.5px",
                     margin: "0 0 16px 0",
@@ -337,13 +356,13 @@ export default function StudyBlogAutomationClient() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#e2552b", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>스마트블록 알고리즘 반영</strong> — 검색 유입을 끌어오는 체계적 소제목과 키워드 밀도
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#e2552b", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>원클릭 복사 & 보도자료 기사</strong> — 블로그 붙여넣기 및 언론사 기사 초안 동시 생성
                     </span>
@@ -441,7 +460,7 @@ export default function StudyBlogAutomationClient() {
                   style={{
                     fontSize: "26px",
                     fontWeight: 900,
-                    color: "#062828",
+                    color: "#1c1917",
                     lineHeight: 1.35,
                     letterSpacing: "-0.5px",
                     margin: "0 0 16px 0",
@@ -513,7 +532,7 @@ export default function StudyBlogAutomationClient() {
                   style={{
                     fontSize: "26px",
                     fontWeight: 900,
-                    color: "#062828",
+                    color: "#1c1917",
                     lineHeight: 1.35,
                     letterSpacing: "-0.5px",
                     margin: "0 0 16px 0",
@@ -618,7 +637,7 @@ export default function StudyBlogAutomationClient() {
               {/* 내 AI 계정 연동 & 업데이트 안내 카드 UI */}
               <div
                 style={{
-                  background: "linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%)",
+                  background: "linear-gradient(135deg, #fdf6f1 0%, #eff6ff 100%)",
                   border: "1px solid #93c5fd",
                   borderRadius: 16,
                   padding: "26px 22px",
@@ -633,13 +652,13 @@ export default function StudyBlogAutomationClient() {
                       내 챗GPT · 제미나이 활용
                     </span>
                   </div>
-                  <span style={{ fontSize: 12, color: "#059669", fontWeight: 800 }}>추가 API 요금 0원</span>
+                  <span style={{ fontSize: 12, color: "#e2552b", fontWeight: 800 }}>추가 API 요금 0원</span>
                 </div>
 
                 {/* 챗GPT & 제미나이 2단 뱃지 박스 */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #bbf7d0", textAlign: "center" }}>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: "#15803d", marginBottom: 2 }}>
+                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e87954", textAlign: "center" }}>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: "#c9441d", marginBottom: 2 }}>
                       ChatGPT
                     </div>
                     <div style={{ fontSize: 11.5, color: "#4b5563" }}>
@@ -688,7 +707,7 @@ export default function StudyBlogAutomationClient() {
                   style={{
                     fontSize: "26px",
                     fontWeight: 900,
-                    color: "#062828",
+                    color: "#1c1917",
                     lineHeight: 1.35,
                     letterSpacing: "-0.5px",
                     margin: "0 0 16px 0",
@@ -731,7 +750,7 @@ export default function StudyBlogAutomationClient() {
       </section>
 
       {/* ━━━ 4. INTERACTIVE 5-STEP WORKFLOW SUMMARY (중개사 실무 5단계 사이클) ━━━ */}
-      <section style={{ backgroundColor: "#062828", color: "#ffffff", padding: "70px 0 80px" }}>
+      <section style={{ backgroundColor: "#1c1917", color: "#ffffff", padding: "70px 0 80px" }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
           
           <div style={{ textAlign: "center", maxWidth: 700, margin: "0 auto 44px" }}>
@@ -739,7 +758,7 @@ export default function StudyBlogAutomationClient() {
               style={{
                 fontSize: 13,
                 fontWeight: 800,
-                color: "#34d399",
+                color: "#f59a6f",
                 letterSpacing: "1px",
                 textTransform: "uppercase",
               }}
@@ -776,8 +795,8 @@ export default function StudyBlogAutomationClient() {
                   key={item.step}
                   onClick={() => setActiveWorkflowStep(idx)}
                   style={{
-                    background: isSelected ? "rgba(5, 150, 105, 0.2)" : "rgba(255, 255, 255, 0.05)",
-                    border: isSelected ? "2px solid #34d399" : "1px solid rgba(255, 255, 255, 0.12)",
+                    background: isSelected ? "rgba(180, 63, 24, 0.2)" : "rgba(255, 255, 255, 0.05)",
+                    border: isSelected ? "2px solid #f59a6f" : "1px solid rgba(255, 255, 255, 0.12)",
                     borderRadius: 14,
                     padding: "24px 20px",
                     cursor: "pointer",
@@ -789,7 +808,7 @@ export default function StudyBlogAutomationClient() {
                       style={{
                         fontSize: 20,
                         fontWeight: 900,
-                        color: isSelected ? "#34d399" : "#64748b",
+                        color: isSelected ? "#f59a6f" : "#64748b",
                       }}
                     >
                       {item.step}
@@ -798,7 +817,7 @@ export default function StudyBlogAutomationClient() {
                       style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        background: isSelected ? "#059669" : "rgba(255,255,255,0.1)",
+                        background: isSelected ? "#e2552b" : "rgba(255,255,255,0.1)",
                         color: "#ffffff",
                         padding: "3px 8px",
                         borderRadius: 12,
@@ -827,12 +846,12 @@ export default function StudyBlogAutomationClient() {
         <div className="container px-20" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
           <div
             style={{
-              background: "linear-gradient(135deg, #059669 0%, #064e3b 100%)",
+              background: "linear-gradient(135deg, #e2552b 0%, #3a2c22 100%)",
               borderRadius: 20,
               padding: "56px 40px",
               textAlign: "center",
               color: "#ffffff",
-              boxShadow: "0 20px 40px rgba(5, 150, 105, 0.25)",
+              boxShadow: "0 20px 40px rgba(180, 63, 24, 0.25)",
             }}
           >
             <div
@@ -884,7 +903,7 @@ export default function StudyBlogAutomationClient() {
                   alignItems: "center",
                   padding: "14px 34px",
                   background: "#ffffff",
-                  color: "#064e3b",
+                  color: "#3a2c22",
                   borderRadius: 10,
                   fontSize: 16,
                   fontWeight: 900,

@@ -12,10 +12,10 @@ const NAVER_PAY_URL = "";
 import { createClient } from "@/utils/supabase/client";
 import { submitStudyApplication, checkExistingStudyApplication } from "@/app/actions/studyApply";
 
-const POINT = "#059669";
-const POINT_DARK = "#047857";
-const POINT_SOFT = "#ecfdf5";
-const POINT_BORDER = "#a7f3d0";
+const POINT = "#e2552b";
+const POINT_DARK = "#c9441d";
+const POINT_SOFT = "#fdeee7";
+const POINT_BORDER = "#f8c3a8";
 
 
 const TARGET_AUDIENCE = [
@@ -237,7 +237,7 @@ export default function StudyApplyClient() {
   ];
 
   return (
-    <div style={{ backgroundColor: "#f8faf9", minHeight: "100vh", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", display: "flex", flexDirection: "column" }}>
+    <div style={{ backgroundColor: "#faf9f8", minHeight: "100vh", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", display: "flex", flexDirection: "column" }}>
       <StudyHeader background={STUDY_HERO_BAR} />
 
       {/* ━━━ [1] 상단 심플 초록색 와이드 히어로 영역 (통일된 프리미엄 스터디 히어로) ━━━ */}
@@ -284,7 +284,7 @@ export default function StudyApplyClient() {
             style={{
               fontSize: "36px",
               fontWeight: 900,
-              color: "#0f2e28",
+              color: "#241d19",
               letterSpacing: "-1px",
               margin: "0 0 14px 0",
               lineHeight: 1.3,
@@ -390,7 +390,7 @@ export default function StudyApplyClient() {
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              boxShadow: "0 16px 44px rgba(5, 150, 105, 0.18)",
+              boxShadow: "0 16px 44px rgba(180, 63, 24, 0.18)",
               position: "relative",
             }}
           >
@@ -406,7 +406,7 @@ export default function StudyApplyClient() {
                 borderRadius: "20px",
                 fontSize: "12px",
                 fontWeight: 900,
-                boxShadow: "0 4px 12px rgba(5, 150, 105, 0.35)",
+                boxShadow: "0 4px 12px rgba(180, 63, 24, 0.35)",
                 letterSpacing: "-0.3px",
                 whiteSpace: "nowrap",
               }}
@@ -416,7 +416,7 @@ export default function StudyApplyClient() {
 
             <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <h3 style={{ fontSize: "24px", fontWeight: 900, color: "#0f2e28", margin: 0 }}>공실스터디</h3>
+                <h3 style={{ fontSize: "24px", fontWeight: 900, color: "#241d19", margin: 0 }}>공실스터디</h3>
                 <span style={{ fontSize: "12px", fontWeight: 800, background: POINT_SOFT, color: POINT_DARK, padding: "4px 12px", borderRadius: 20 }}>
                   정회원 전용 플랜
                 </span>
@@ -424,7 +424,7 @@ export default function StudyApplyClient() {
 
               <div style={{ marginBottom: 20 }}>
                 <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "8px" }}>
-                  <span style={{ fontSize: "40px", fontWeight: 900, color: "#0f2e28", letterSpacing: "-1.5px" }}>
+                  <span style={{ fontSize: "40px", fontWeight: 900, color: "#241d19", letterSpacing: "-1.5px" }}>
                     36만원
                   </span>
                   <span style={{ fontSize: "15px", fontWeight: 700, color: "#64748b" }}>
@@ -464,7 +464,7 @@ export default function StudyApplyClient() {
                     fontWeight: 800,
                     color: "#ffffff",
                     cursor: "pointer",
-                    boxShadow: "0 4px 14px rgba(5, 150, 105, 0.35)",
+                    boxShadow: "0 4px 14px rgba(180, 63, 24, 0.35)",
                     transition: "all 0.2s ease",
                     fontFamily: "inherit",
                   }}
@@ -476,12 +476,12 @@ export default function StudyApplyClient() {
               </div>
 
               <div style={{ borderTop: `1px solid ${POINT_BORDER}`, paddingTop: 26 }}>
-                <div style={{ fontSize: "14px", fontWeight: 900, color: "#0f2e28", marginBottom: 18 }}>
+                <div style={{ fontSize: "14px", fontWeight: 900, color: "#241d19", marginBottom: 18 }}>
                   포함된 모든 전용 혜택
                 </div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16, fontSize: "15px" }}>
                   {paidFeatures.map((f, i) => (
-                    <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, color: "#0f2e28", lineHeight: 1.5 }}>
+                    <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, color: "#241d19", lineHeight: 1.5 }}>
                       <span style={{ color: POINT, fontSize: "18px", fontWeight: 900, lineHeight: 1, marginTop: "2px" }}>✓</span>
                       <span style={{ wordBreak: "keep-all" }}>{f}</span>
                     </li>
@@ -493,12 +493,12 @@ export default function StudyApplyClient() {
         </div>
 
         {/* ━━━ [3] 이런 부동산에게 추천합니다! ━━━ */}
-        <section style={{ backgroundColor: "#f0fdf9", borderRadius: "24px", padding: "64px 32px", border: "1px solid #d1fae5", marginBottom: "68px", textAlign: "center" }}>
+        <section style={{ backgroundColor: "#fbf7f2", borderRadius: "24px", padding: "64px 32px", border: "1px solid #fbdccd", marginBottom: "68px", textAlign: "center" }}>
           <div style={{ maxWidth: 840, margin: "0 auto 44px" }}>
             <div style={{ color: POINT, fontSize: "13px", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
               RECOMMENDATION
             </div>
-            <h2 style={{ fontSize: "30px", fontWeight: 900, color: "#0f2e28", margin: "0 0 12px 0", letterSpacing: "-0.8px" }}>
+            <h2 style={{ fontSize: "30px", fontWeight: 900, color: "#241d19", margin: "0 0 12px 0", letterSpacing: "-0.8px" }}>
               이런 부동산에게 추천합니다!
             </h2>
             <p style={{ fontSize: "15px", color: "#64748b", margin: 0, lineHeight: 1.6 }}>
@@ -523,8 +523,8 @@ export default function StudyApplyClient() {
                   backgroundColor: "#ffffff",
                   borderRadius: "20px",
                   padding: "24px 20px",
-                  border: "1.5px solid #a7f3d0",
-                  boxShadow: "0 10px 25px rgba(5, 150, 105, 0.06)",
+                  border: "1.5px solid #f8c3a8",
+                  boxShadow: "0 10px 25px rgba(180, 63, 24, 0.06)",
                   display: "flex",
                   flexDirection: "column",
                 }}
@@ -554,9 +554,9 @@ export default function StudyApplyClient() {
                   style={{
                     display: "inline-block",
                     alignSelf: "flex-start",
-                    backgroundColor: "#ecfdf5",
+                    backgroundColor: "#fdeee7",
                     color: POINT,
-                    border: "1px solid #a7f3d0",
+                    border: "1px solid #f8c3a8",
                     fontSize: "12px",
                     fontWeight: 800,
                     padding: "3px 10px",
@@ -572,7 +572,7 @@ export default function StudyApplyClient() {
                   style={{
                     fontSize: "19px",
                     fontWeight: 900,
-                    color: "#0f2e28",
+                    color: "#241d19",
                     margin: "0 0 10px 0",
                     letterSpacing: "-0.3px",
                   }}
@@ -596,8 +596,8 @@ export default function StudyApplyClient() {
                 {/* 맞춤 솔루션 배지 박스 */}
                 <div
                   style={{
-                    backgroundColor: "#f0fdf4",
-                    border: "1px solid #bbf7d0",
+                    backgroundColor: "#fdf6f1",
+                    border: "1px solid #e87954",
                     borderRadius: "10px",
                     padding: "12px 14px",
                   }}
@@ -605,7 +605,7 @@ export default function StudyApplyClient() {
                   <div style={{ fontSize: "12px", fontWeight: 800, color: POINT, marginBottom: "4px" }}>
                     💡 맞춤 솔루션
                   </div>
-                  <div style={{ fontSize: "13px", color: "#166534", lineHeight: 1.55, fontWeight: 600 }}>
+                  <div style={{ fontSize: "13px", color: "#b43f18", lineHeight: 1.55, fontWeight: 600 }}>
                     {item.solution}
                   </div>
                 </div>
@@ -687,7 +687,7 @@ export default function StudyApplyClient() {
         </section>
       </main>
 
-      <footer style={{ padding: "30px 16px 50px", textAlign: "center", fontSize: "13px", color: "#888", borderTop: "1px solid #eef2f0", backgroundColor: "#ffffff" }}>
+      <footer style={{ padding: "30px 16px 50px", textAlign: "center", fontSize: "13px", color: "#888", borderTop: "1px solid #f3f0ed", backgroundColor: "#ffffff" }}>
         <p style={{ fontWeight: 700, color: "#475569", margin: "0 0 6px" }}>공실뉴스 | 공실스터디</p>
         <p style={{ margin: 0 }}>고객센터: 1555-5343 (평일 10:00 ~ 18:00) · 이메일: gongsilnews@gmail.com</p>
       </footer>
@@ -760,7 +760,7 @@ export default function StudyApplyClient() {
                 <div style={{ display: "inline-block", backgroundColor: POINT_SOFT, color: POINT_DARK, fontSize: "12.5px", fontWeight: 800, padding: "4px 14px", borderRadius: "20px", marginBottom: "10px" }}>
                   신청 접수 완료
                 </div>
-                <h3 style={{ fontSize: "22px", fontWeight: 900, color: "#0f2e28", margin: "0 0 10px" }}>
+                <h3 style={{ fontSize: "22px", fontWeight: 900, color: "#241d19", margin: "0 0 10px" }}>
                   멤버십 신청이 완료되었습니다
                 </h3>
                 <p style={{ fontSize: "14px", color: "#64748b", lineHeight: 1.6, margin: "0 0 24px" }}>
@@ -768,16 +768,16 @@ export default function StudyApplyClient() {
                   <strong style={{ color: "#222" }}>1~2일 이내</strong> 담당자가 연락드리겠습니다.
                 </p>
 
-                <div style={{ backgroundColor: "#f8faf9", borderRadius: "12px", border: "1px solid #e7efeb", padding: "16px 20px", textAlign: "left", marginBottom: "24px", fontSize: "13.5px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #eef2f0" }}>
+                <div style={{ backgroundColor: "#faf9f8", borderRadius: "12px", border: "1px solid #f0ebe6", padding: "16px 20px", textAlign: "left", marginBottom: "24px", fontSize: "13.5px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f3f0ed" }}>
                     <span style={{ color: "#888" }}>신청자</span>
                     <span style={{ fontWeight: 700 }}>{submittedData.applicantName}</span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #eef2f0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f3f0ed" }}>
                     <span style={{ color: "#888" }}>연락처</span>
                     <span style={{ fontWeight: 700 }}>{submittedData.phone}</span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #eef2f0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f3f0ed" }}>
                     <span style={{ color: "#888" }}>금액</span>
                     <span style={{ fontWeight: 700, color: POINT }}>1년 360,000원 (VAT 포함)</span>
                   </div>
@@ -804,7 +804,7 @@ export default function StudyApplyClient() {
                 <div style={{ display: "inline-block", backgroundColor: POINT_SOFT, color: POINT_DARK, fontSize: "12.5px", fontWeight: 800, padding: "4px 14px", borderRadius: "20px", marginBottom: "10px" }}>
                   이미 접수된 내역이 있습니다
                 </div>
-                <h3 style={{ fontSize: "22px", fontWeight: 900, color: "#0f2e28", margin: "0 0 10px" }}>
+                <h3 style={{ fontSize: "22px", fontWeight: 900, color: "#241d19", margin: "0 0 10px" }}>
                   멤버십 신청서가 확인 중입니다
                 </h3>
                 <p style={{ fontSize: "14px", color: "#64748b", lineHeight: 1.6, margin: "0 0 24px" }}>
@@ -812,12 +812,12 @@ export default function StudyApplyClient() {
                   담당자가 확인하고 있습니다. (중복 신청 불가)
                 </p>
 
-                <div style={{ backgroundColor: "#f8faf9", borderRadius: "12px", border: "1px solid #e7efeb", padding: "16px 20px", textAlign: "left", marginBottom: "24px", fontSize: "13.5px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #eef2f0" }}>
+                <div style={{ backgroundColor: "#faf9f8", borderRadius: "12px", border: "1px solid #f0ebe6", padding: "16px 20px", textAlign: "left", marginBottom: "24px", fontSize: "13.5px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f3f0ed" }}>
                     <span style={{ color: "#888" }}>신청자</span>
                     <span style={{ fontWeight: 700 }}>{existingApplication.applicant_name}</span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #eef2f0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f3f0ed" }}>
                     <span style={{ color: "#888" }}>연락처</span>
                     <span style={{ fontWeight: 700 }}>{existingApplication.phone}</span>
                   </div>
@@ -902,7 +902,7 @@ export default function StudyApplyClient() {
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#c2441a" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                     </svg>
@@ -1004,7 +1004,7 @@ export default function StudyApplyClient() {
                   style={{
                     width: "100%",
                     height: "52px",
-                    backgroundColor: submitting ? "#6ee7b7" : POINT,
+                    backgroundColor: submitting ? "#f59a6f" : POINT,
                     color: "#ffffff",
                     border: "none",
                     borderRadius: "10px",
@@ -1012,7 +1012,7 @@ export default function StudyApplyClient() {
                     fontWeight: 800,
                     cursor: submitting ? "not-allowed" : "pointer",
                     fontFamily: "inherit",
-                    boxShadow: "0 4px 14px rgba(5, 150, 105, 0.3)",
+                    boxShadow: "0 4px 14px rgba(180, 63, 24, 0.3)",
                     transition: "background-color 0.15s ease",
                   }}
                   onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = POINT_DARK; }}

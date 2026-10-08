@@ -7,13 +7,13 @@ import NotificationBell from "@/components/common/NotificationBell";
 import { createClient } from "@/utils/supabase/client";
 import { getEffectiveMemberRole, getAdminEntryLabel } from "@/utils/permissionCheck";
 
-const POINT = "#059669";
-const MINT = "#72e7c3";
+const POINT = "#e2552b";
+const MINT = "#f59a6f";
 
 /** 진한 초록 히어로(멤버십신청·나의 강의실·Q&A, 145deg 그라데이션)의 위쪽 가장자리 색을 그대로 옮긴 것 */
-export const STUDY_HERO_BAR = "linear-gradient(90deg, #052427 0%, #072928 25%, #09302b 50%, #0b372e 75%, #0e4036 100%)";
+export const STUDY_HERO_BAR = "linear-gradient(90deg, #1a1512 0%, #1c1714 25%, #221b17 50%, #27201b 75%, #2e2620 100%)";
 /** 공실스터디 홈 히어로(사진 + 가운데가 밝은 그림자)의 위쪽 가장자리 색 */
-export const STUDY_HOME_HERO_BAR = "linear-gradient(90deg, #071614 0%, #0c1f1b 25%, #102320 50%, #0b1d1a 75%, #061613 100%)";
+export const STUDY_HOME_HERO_BAR = "linear-gradient(90deg, #110e0c 0%, #191512 25%, #1e1915 50%, #181310 75%, #110d0b 100%)";
 
 interface SubNavItem {
   label: string;
@@ -232,7 +232,7 @@ function StudyNavItems({
                         fontSize: "13.5px",
                         fontWeight: isSubActive ? 800 : 600,
                         color: isSubActive ? POINT : "#1e293b",
-                        backgroundColor: isSubActive ? "#f0fdf4" : "#ffffff",
+                        backgroundColor: isSubActive ? "#fdf6f1" : "#ffffff",
                         textDecoration: "none",
                         whiteSpace: "nowrap",
                         borderRight: idx < item.subItems!.length - 1 ? "1px solid #e5e7eb" : "none",
@@ -271,7 +271,7 @@ export default function StudyHeader({ background }: { background?: string } = {}
   const titleColor = dark ? "#ffffff" : "#111";
   const idleColor = dark ? "rgba(255,255,255,0.88)" : "#6b7280";
   const activeColor = dark ? MINT : POINT;
-  const barBackground = dark ? "linear-gradient(90deg, #021315 0%, #04191c 50%, #021315 100%)" : "#ffffff";
+  const barBackground = dark ? "linear-gradient(90deg, #0e0b09 0%, #130f0d 50%, #0e0b09 100%)" : "#ffffff";
 
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
@@ -374,14 +374,14 @@ export default function StudyHeader({ background }: { background?: string } = {}
               fontWeight: 800,
               color: "#ffffff",
               background: pathname.startsWith("/study/classroom")
-                ? "linear-gradient(135deg, #059669 0%, #10b981 100%)"
-                : "#059669",
+                ? "linear-gradient(135deg, #e2552b 0%, #e2552b 100%)"
+                : "#e2552b",
               border: pathname.startsWith("/study/classroom")
-                ? "1.5px solid #34d399"
+                ? "1.5px solid #f59a6f"
                 : "1px solid rgba(255, 255, 255, 0.25)",
               boxShadow: pathname.startsWith("/study/classroom")
-                ? "0 3px 12px rgba(5, 150, 105, 0.45)"
-                : "0 2px 6px rgba(5, 150, 105, 0.25)",
+                ? "0 3px 12px rgba(180, 63, 24, 0.45)"
+                : "0 2px 6px rgba(180, 63, 24, 0.25)",
               textDecoration: "none",
               whiteSpace: "nowrap",
               transition: "all 0.2s ease",

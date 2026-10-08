@@ -134,7 +134,7 @@ export default function StudyLecturesClient({
   };
 
   return (
-    <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#132e27", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#261f1b", minHeight: "100vh" }}>
       <StudyHeader />
       
       {/* ━━━ 1. HERO (윤자동 스타일: 배경을 화면 끝까지 깔지 않고 본문 폭에 맞춘 둥근 카드) ━━━ */}
@@ -146,7 +146,7 @@ export default function StudyLecturesClient({
               display: "flex",
               alignItems: "center",
               // 사진 좌측 여백과 같은 색이라 커버 크롭으로 남는 자리가 생겨도 티가 안 난다
-              backgroundColor: "#112127",
+              backgroundColor: "#211b17",
               color: "#ffffff",
               borderRadius: 16,
               overflow: "hidden",
@@ -170,7 +170,7 @@ export default function StudyLecturesClient({
                 position: "absolute",
                 inset: 0,
                 pointerEvents: "none",
-                background: "linear-gradient(to right, rgba(17,33,39,0.88) 0%, rgba(17,33,39,0.5) 34%, rgba(17,33,39,0) 62%)",
+                background: "linear-gradient(to right, rgba(33, 27, 23,0.88) 0%, rgba(33, 27, 23,0.5) 34%, rgba(33, 27, 23,0) 62%)",
               }}
             />
 
@@ -178,7 +178,7 @@ export default function StudyLecturesClient({
             <div style={{ position: "relative", zIndex: 2, flex: "1 1 400px", maxWidth: 620, minWidth: 300, padding: "56px 48px" }}>
               <h1 style={{ fontSize: "32px", fontWeight: 900, lineHeight: 1.35, letterSpacing: "-0.8px", margin: "0 0 28px 0" }}>
                 다들 AI 유튜브로 중개한다던데<br />
-                <span style={{ color: "#34d399" }}>나만 못 쓰고 있는 것 같으신가요?</span>
+                <span style={{ color: "#f59a6f" }}>나만 못 쓰고 있는 것 같으신가요?</span>
               </h1>
 
               {/* 공실스터디란? + 멤버십 신청 */}
@@ -189,13 +189,13 @@ export default function StudyLecturesClient({
                     display: "inline-flex",
                     alignItems: "center",
                     padding: "10px 22px",
-                    background: "#059669",
+                    background: "#e2552b",
                     color: "#ffffff",
                     borderRadius: 8,
                     fontSize: 14,
                     fontWeight: 800,
                     textDecoration: "none",
-                    boxShadow: "0 3px 10px rgba(5, 150, 105, 0.3)",
+                    boxShadow: "0 3px 10px rgba(180, 63, 24, 0.3)",
                     transition: "all 0.2s",
                   }}
                 >
@@ -231,10 +231,10 @@ export default function StudyLecturesClient({
               
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
                 <div>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#e2552b", letterSpacing: "1px", textTransform: "uppercase" }}>
                     CURRICULUM & LECTURES
                   </span>
-                  <h2 style={{ fontSize: "28px", fontWeight: 800, color: "#062828", margin: "6px 0 0 0", letterSpacing: "-0.5px" }}>
+                  <h2 style={{ fontSize: "28px", fontWeight: 800, color: "#1c1917", margin: "6px 0 0 0", letterSpacing: "-0.5px" }}>
                     1년 연간 스터디 특강 라인업
                   </h2>
                 </div>
@@ -249,8 +249,8 @@ export default function StudyLecturesClient({
                     style={{
                       width: "100%",
                       height: 40,
-                      background: "#f4fbf7",
-                      border: "1px solid #d1fae5",
+                      background: "#fbf8f4",
+                      border: "1px solid #fbdccd",
                       borderRadius: 8,
                       padding: "0 36px 0 14px",
                       fontSize: 13.5,
@@ -259,7 +259,7 @@ export default function StudyLecturesClient({
                       boxSizing: "border-box",
                     }}
                   />
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", right: 12, top: 12 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e2552b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", right: 12, top: 12 }}>
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
@@ -279,9 +279,9 @@ export default function StudyLecturesClient({
                         borderRadius: 8,
                         fontSize: 13.5,
                         fontWeight: isSel ? 700 : 500,
-                        color: isSel ? "#ffffff" : "#065f46",
-                        backgroundColor: isSel ? "#062f32" : "#f0fdf4",
-                        border: isSel ? "1px solid #062f32" : "1px solid #d1fae5",
+                        color: isSel ? "#ffffff" : "#a8381a",
+                        backgroundColor: isSel ? "#211b17" : "#fdf6f1",
+                        border: isSel ? "1px solid #211b17" : "1px solid #fbdccd",
                         cursor: "pointer",
                         transition: "all 0.15s",
                       }}
@@ -294,7 +294,7 @@ export default function StudyLecturesClient({
 
               {/* 강의 카드 그리드 (3열 레이아웃) */}
               {filteredLectures.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "80px 20px", background: "#f4fbf7", borderRadius: 12, border: "1px solid #d1fae5", color: "#64748b" }}>
+                <div style={{ textAlign: "center", padding: "80px 20px", background: "#fbf8f4", borderRadius: 12, border: "1px solid #fbdccd", color: "#64748b" }}>
                   <div style={{ fontSize: 44, marginBottom: 12 }}>🔍</div>
                   <div style={{ fontSize: 17, fontWeight: 700, color: "#1e293b", marginBottom: 6 }}>해당 조건의 특강이 없습니다</div>
                   <p style={{ fontSize: 13.5, color: "#94a3b8", margin: 0 }}>다른 검색어나 카테고리를 선택해 보세요.</p>
@@ -330,8 +330,8 @@ export default function StudyLecturesClient({
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.transform = "translateY(-4px)";
-                            e.currentTarget.style.boxShadow = "0 12px 24px rgba(5, 150, 105, 0.1)";
-                            e.currentTarget.style.borderColor = "#059669";
+                            e.currentTarget.style.boxShadow = "0 12px 24px rgba(180, 63, 24, 0.1)";
+                            e.currentTarget.style.borderColor = "#e2552b";
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.transform = "translateY(0)";
@@ -340,7 +340,7 @@ export default function StudyLecturesClient({
                           }}
                         >
                           {/* 썸네일 */}
-                          <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", overflow: "hidden", backgroundColor: "#062326" }}>
+                          <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", overflow: "hidden", backgroundColor: "#1a1613" }}>
                             {item.thumbnail_url ? (
                               <img
                                 src={item.thumbnail_url}
@@ -352,7 +352,7 @@ export default function StudyLecturesClient({
                                 style={{
                                   width: "100%",
                                   height: "100%",
-                                  background: "linear-gradient(135deg, #062326 0%, #064e3b 100%)",
+                                  background: "linear-gradient(135deg, #1a1613 0%, #3a2c22 100%)",
                                   display: "flex",
                                   flexDirection: "column",
                                   alignItems: "center",
@@ -363,7 +363,7 @@ export default function StudyLecturesClient({
                                 }}
                               >
                                 <span style={{ fontSize: 24, marginBottom: 4 }}>🎓</span>
-                                <span style={{ fontSize: 13.5, fontWeight: 700, color: "#6ee7b7" }}>{item.category || "공실스터디"}</span>
+                                <span style={{ fontSize: 13.5, fontWeight: 700, color: "#f59a6f" }}>{item.category || "공실스터디"}</span>
                               </div>
                             )}
                           </div>
@@ -371,14 +371,14 @@ export default function StudyLecturesClient({
                           {/* 내용 */}
                           <div style={{ padding: "18px 18px 16px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                             <div>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: "#047857", background: "#ecfdf5", padding: "3px 8px", borderRadius: 4, display: "inline-block", marginBottom: 10 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "#c9441d", background: "#fdeee7", padding: "3px 8px", borderRadius: 4, display: "inline-block", marginBottom: 10 }}>
                                 {item.category || "중개실무"}
                               </span>
                               <h3
                                 style={{
                                   fontSize: 16.5,
                                   fontWeight: 800,
-                                  color: "#062828",
+                                  color: "#1c1917",
                                   lineHeight: 1.45,
                                   margin: "0 0 10px 0",
                                   display: "-webkit-box",
@@ -401,10 +401,10 @@ export default function StudyLecturesClient({
                               </div>
 
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
-                                <span style={{ fontSize: 16, fontWeight: 800, color: item.price ? "#062828" : "#059669" }}>
+                                <span style={{ fontSize: 16, fontWeight: 800, color: item.price ? "#1c1917" : "#e2552b" }}>
                                   {formatLecturePrice(item)}
                                 </span>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: "#e2552b" }}>
                                   수강신청 ›
                                 </span>
                               </div>
@@ -421,14 +421,14 @@ export default function StudyLecturesClient({
           </section>
 
           {/* ━━━ 6. FAQ (자주 묻는 질문 아코디언) ━━━ */}
-          <section style={{ padding: "65px 0 75px", backgroundColor: "#f2f9f6", borderTop: "1px solid #d1fae5" }}>
+          <section style={{ padding: "65px 0 75px", backgroundColor: "#f9f6f2", borderTop: "1px solid #fbdccd" }}>
             <div style={{ maxWidth: 860, margin: "0 auto", padding: "0 24px" }}>
               
               <div style={{ textAlign: "center", marginBottom: 36 }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "#e2552b", letterSpacing: "1px", textTransform: "uppercase" }}>
                   FAQ
                 </span>
-                <h2 style={{ fontSize: "26px", fontWeight: 800, color: "#062828", margin: "6px 0 0 0" }}>
+                <h2 style={{ fontSize: "26px", fontWeight: 800, color: "#1c1917", margin: "6px 0 0 0" }}>
                   자주 묻는 질문
                 </h2>
               </div>
@@ -441,11 +441,11 @@ export default function StudyLecturesClient({
                       key={index}
                       style={{
                         backgroundColor: "#ffffff",
-                        border: isOpen ? "1.5px solid #059669" : "1px solid #e2e8f0",
+                        border: isOpen ? "1.5px solid #e2552b" : "1px solid #e2e8f0",
                         borderRadius: 12,
                         overflow: "hidden",
                         transition: "all 0.2s ease",
-                        boxShadow: isOpen ? "0 4px 16px rgba(5, 150, 105, 0.08)" : "none",
+                        boxShadow: isOpen ? "0 4px 16px rgba(180, 63, 24, 0.08)" : "none",
                       }}
                     >
                       <button
@@ -463,14 +463,14 @@ export default function StudyLecturesClient({
                           gap: 16,
                         }}
                       >
-                        <span style={{ fontSize: 16, fontWeight: 700, color: isOpen ? "#064e3b" : "#1e293b", lineHeight: 1.4 }}>
+                        <span style={{ fontSize: 16, fontWeight: 700, color: isOpen ? "#3a2c22" : "#1e293b", lineHeight: 1.4 }}>
                           Q. {faq.q}
                         </span>
                         <span
                           style={{
                             transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
                             transition: "transform 0.2s ease",
-                            color: isOpen ? "#059669" : "#94a3b8",
+                            color: isOpen ? "#e2552b" : "#94a3b8",
                             fontSize: 14,
                             display: "flex",
                             alignItems: "center",
@@ -505,26 +505,26 @@ export default function StudyLecturesClient({
           </section>
 
           {/* ━━━ 7. FINAL CTA BANNER (하단 심플 배너) ━━━ */}
-          <section style={{ backgroundColor: "#062326", color: "#ffffff", padding: "50px 0", textAlign: "center" }}>
+          <section style={{ backgroundColor: "#1a1613", color: "#ffffff", padding: "50px 0", textAlign: "center" }}>
             <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px" }}>
               <h3 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 10px 0" }}>
                 지역 1등 부동산으로 성장하는 가장 확실한 1년
               </h3>
-              <p style={{ fontSize: 15, color: "#a7f3d0", margin: "0 0 24px 0" }}>
+              <p style={{ fontSize: 15, color: "#f8c3a8", margin: "0 0 24px 0" }}>
                 지금 가입하고 1년 동안 제공되는 모든 AI 실무 특강과 자료를 무제한으로 누리세요.
               </p>
               <button
                 onClick={() => scrollToSection("study-lectures-section")}
                 style={{
                   padding: "13px 32px",
-                  background: "#059669",
+                  background: "#e2552b",
                   color: "#ffffff",
                   border: "none",
                   borderRadius: 8,
                   fontSize: 15,
                   fontWeight: 800,
                   cursor: "pointer",
-                  boxShadow: "0 4px 16px rgba(5, 150, 105, 0.4)",
+                  boxShadow: "0 4px 16px rgba(180, 63, 24, 0.4)",
                 }}
               >
                 1년 스터디 지금 시작하기 →
@@ -537,17 +537,17 @@ export default function StudyLecturesClient({
       {/* ━━━ TAB 2: APPLICATIONS (내 수강신청 내역) ━━━ */}
       {activeTab === "applications" && (
         <main style={{ maxWidth: 1160, margin: "0 auto", padding: "40px 24px 80px" }}>
-          <div style={{ background: "#ffffff", borderRadius: 14, padding: "32px 28px", border: "1px solid #d1fae5" }}>
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#062828", margin: "0 0 20px 0" }}>📋 내 수강신청 내역</h2>
+          <div style={{ background: "#ffffff", borderRadius: 14, padding: "32px 28px", border: "1px solid #fbdccd" }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1c1917", margin: "0 0 20px 0" }}>📋 내 수강신청 내역</h2>
             {loadingEnrollments ? (
               <div style={{ textAlign: "center", padding: "60px 0", color: "#64748b" }}>수강 내역을 불러오는 중...</div>
             ) : enrollments.length === 0 ? (
               <div style={{ textAlign: "center", padding: "60px 20px", color: "#94a3b8" }}>
                 <div style={{ fontSize: 44, marginBottom: 14 }}>📭</div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: "#062828", marginBottom: 8 }}>수강 신청 내역이 없습니다</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: "#1c1917", marginBottom: 8 }}>수강 신청 내역이 없습니다</div>
                 <button
                   onClick={() => handleTabChange("lecture")}
-                  style={{ marginTop: 12, padding: "8px 20px", background: "#062326", color: "#fff", border: "none", borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
+                  style={{ marginTop: 12, padding: "8px 20px", background: "#1a1613", color: "#fff", border: "none", borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
                 >
                   특강 목록 둘러보기
                 </button>
@@ -555,12 +555,12 @@ export default function StudyLecturesClient({
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {enrollments.map((en: any) => (
-                  <div key={en.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 16, border: "1px solid #d1fae5", borderRadius: 8, background: "#f4fbf7" }}>
+                  <div key={en.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 16, border: "1px solid #fbdccd", borderRadius: 8, background: "#fbf8f4" }}>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: "#062828", marginBottom: 4 }}>{en.lecture?.title || "특강"}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", marginBottom: 4 }}>{en.lecture?.title || "특강"}</div>
                       <div style={{ fontSize: 13, color: "#64748b" }}>신청일: {en.created_at?.substring(0, 10)} | 결제: {en.points_paid?.toLocaleString() || 0} P</div>
                     </div>
-                    <Link href={`/study_read?id=${en.lecture_id}`} style={{ padding: "8px 18px", background: "#059669", color: "#fff", borderRadius: 6, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+                    <Link href={`/study_read?id=${en.lecture_id}`} style={{ padding: "8px 18px", background: "#e2552b", color: "#fff", borderRadius: 6, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
                       강의실 입장
                     </Link>
                   </div>

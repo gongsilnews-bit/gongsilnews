@@ -137,25 +137,25 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
       
       {/* ── 1. 상단 미니 네비바 (뒤로가기 + 진도율) ── */}
       <div style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: "#ffffff", height: "50px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px" }}>
-        <button onClick={() => router.push(`/m/study_read?id=${lecture.id}`)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "4px", marginLeft: "-4px", fontSize: 13, fontWeight: 700, color: "#059669" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+        <button onClick={() => router.push(`/m/study_read?id=${lecture.id}`)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "4px", marginLeft: "-4px", fontSize: 13, fontWeight: 700, color: "#e2552b" }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e2552b" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
           소개
         </button>
 
-        <div style={{ fontSize: 14, fontWeight: 800, color: "#062828", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "45%" }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "45%" }}>
           {lecture.title}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "#059669" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "#e2552b" }}>
           <span>{completedCount}/{totalLessons}강</span>
           <div style={{ width: 44, height: 5, background: "#e2e8f0", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ width: `${progressPercent}%`, height: "100%", background: "#059669" }} />
+            <div style={{ width: `${progressPercent}%`, height: "100%", background: "#e2552b" }} />
           </div>
         </div>
       </div>
 
       {/* ── 2. 비디오 플레이어 ── */}
-      <div style={{ width: "100%", aspectRatio: "16/9", background: "#062326", position: "relative" }}>
+      <div style={{ width: "100%", aspectRatio: "16/9", background: "#1a1613", position: "relative" }}>
         {embedUrl ? (
           <iframe
             key={activeLessonId}
@@ -165,7 +165,7 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
             allowFullScreen
           />
         ) : (
-          <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#a7f3d0", gap: 8 }}>
+          <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#f8c3a8", gap: 8 }}>
             <span style={{ fontSize: 32 }}>🎬</span>
             <span style={{ fontSize: 14, fontWeight: 700 }}>등록된 강의 영상이 없습니다.</span>
           </div>
@@ -175,14 +175,14 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
       {/* ── 3. 레슨 정보 & 이전/다음 이동 바 ── */}
       <div style={{ padding: "16px", borderBottom: "1px solid #f1f5f9" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-          <span style={{ background: "#ecfdf5", color: "#047857", fontSize: 11.5, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>
+          <span style={{ background: "#fdeee7", color: "#c9441d", fontSize: 11.5, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>
             {activeLessonIndex + 1}강
           </span>
           <span style={{ fontSize: 12, color: "#64748b" }}>
             {activeLesson?.duration_minutes ? `${activeLesson.duration_minutes}분` : "8:04"}
           </span>
         </div>
-        <h2 style={{ fontSize: "17px", fontWeight: 800, color: "#062828", margin: "0 0 14px 0", lineHeight: 1.35 }}>
+        <h2 style={{ fontSize: "17px", fontWeight: 800, color: "#1c1917", margin: "0 0 14px 0", lineHeight: 1.35 }}>
           {activeLesson ? `${activeLessonIndex + 1}강. ${activeLesson.title}` : "강의를 선택해 주세요"}
         </h2>
 
@@ -210,7 +210,7 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
               flex: 1,
               padding: "10px 0",
               borderRadius: 8,
-              background: "#059669",
+              background: "#e2552b",
               color: "#ffffff",
               border: "none",
               fontSize: 13.5,
@@ -240,10 +240,10 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
                 padding: "11px 0",
                 background: "none",
                 border: "none",
-                borderBottom: isSel ? "2.5px solid #059669" : "2.5px solid transparent",
+                borderBottom: isSel ? "2.5px solid #e2552b" : "2.5px solid transparent",
                 fontSize: 13.5,
                 fontWeight: isSel ? 800 : 600,
-                color: isSel ? "#062828" : "#64748b",
+                color: isSel ? "#1c1917" : "#64748b",
                 cursor: "pointer",
               }}
             >
@@ -269,9 +269,9 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
                     padding: "11px 14px",
                     borderRadius: 8,
                     cursor: "pointer",
-                    backgroundColor: isActive ? "#062326" : "#ffffff",
+                    backgroundColor: isActive ? "#1a1613" : "#ffffff",
                     color: isActive ? "#ffffff" : "#1e293b",
-                    border: isActive ? "1px solid #062326" : "1px solid #e2e8f0",
+                    border: isActive ? "1px solid #1a1613" : "1px solid #e2e8f0",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -279,14 +279,14 @@ export default function MobileStudyWatchClient({ initialLecture }: { initialLect
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
-                    <div style={{ width: 20, height: 20, borderRadius: "50%", background: isActive ? "#059669" : isDone ? "#ecfdf5" : "#f1f5f9", color: isActive ? "#fff" : isDone ? "#047857" : "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10.5, fontWeight: 800, flexShrink: 0 }}>
+                    <div style={{ width: 20, height: 20, borderRadius: "50%", background: isActive ? "#e2552b" : isDone ? "#fdeee7" : "#f1f5f9", color: isActive ? "#fff" : isDone ? "#c9441d" : "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10.5, fontWeight: 800, flexShrink: 0 }}>
                       {isDone ? "✓" : idx + 1}
                     </div>
                     <span style={{ fontSize: 13, fontWeight: isActive ? 800 : 600, color: isActive ? "#ffffff" : "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {idx + 1}강. {les.title}
                     </span>
                   </div>
-                  <span style={{ fontSize: 11, color: isActive ? "#a7f3d0" : "#94a3b8", flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: isActive ? "#f8c3a8" : "#94a3b8", flexShrink: 0 }}>
                     {les.duration_minutes ? `${les.duration_minutes}분` : "8:04"}
                   </span>
                 </div>

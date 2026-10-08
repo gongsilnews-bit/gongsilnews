@@ -115,7 +115,7 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
 
   const providerColor = (p?: string) => {
     if (p === "kakao") return "#FEE500";
-    if (p === "naver") return "#03C75A";
+    if (p === "naver") return "#b43f18";
     return "#fff";
   };
 
@@ -125,7 +125,7 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
   );
 
   return (
-    <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#132e27", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "#ffffff", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", color: "#261f1b", minHeight: "100vh" }}>
       <StudyHeader background={STUDY_HERO_BAR} />
 
       {/* ━━━ [1] 페이지 헤드 (통일된 프리미엄 스터디 히어로) ━━━ */}
@@ -202,10 +202,10 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                 </button>
 
                 {findResult && (
-                  <div style={{ padding: "14px", borderRadius: 8, background: findResult.found ? "#f0fdf4" : "#fef2f2", border: `1px solid ${findResult.found ? "#bbf7d0" : "#fecaca"}`, marginBottom: 14 }}>
+                  <div style={{ padding: "14px", borderRadius: 8, background: findResult.found ? "#fdf6f1" : "#fef2f2", border: `1px solid ${findResult.found ? "#e87954" : "#fecaca"}`, marginBottom: 14 }}>
                     {findResult.found ? (
                       <div style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: 13.5, color: "#166534", fontWeight: 700, marginBottom: 6 }}>✅ 회원 정보를 찾았습니다!</div>
+                        <div style={{ fontSize: 13.5, color: "#b43f18", fontWeight: 700, marginBottom: 6 }}>✅ 회원 정보를 찾았습니다!</div>
                         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20, background: providerColor(findResult.provider), border: "1px solid #ddd", marginBottom: 6 }}>
                           <span style={{ fontSize: 13, fontWeight: 800, color: findResult.provider === "naver" ? "#fff" : "#333" }}>
                             {providerLabel(findResult.provider)}
@@ -286,7 +286,7 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                       <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
                       <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
                       <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                      <path fill="#c2441a" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
                     </svg>
                     {oauthLoading === "google" ? "구글 로그인 연결 중..." : "Google 계정으로 시작하기"}
                   </button>
@@ -369,15 +369,15 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
 
         {/* ━━━ 수강 내역 없음 ━━━ */}
         {currentUser && !loading && enrollments.length === 0 && (
-          <div style={{ background: "#f4fbf7", border: "1px solid #d1fae5", borderRadius: 16, padding: "70px 24px", textAlign: "center" }}>
+          <div style={{ background: "#fbf8f4", border: "1px solid #fbdccd", borderRadius: 16, padding: "70px 24px", textAlign: "center" }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🎓</div>
-            <div style={{ fontSize: 19, fontWeight: 800, color: "#062828", marginBottom: 8 }}>아직 수강 중인 강의가 없습니다</div>
+            <div style={{ fontSize: 19, fontWeight: 800, color: "#1c1917", marginBottom: 8 }}>아직 수강 중인 강의가 없습니다</div>
             <p style={{ fontSize: 14.5, color: "#64748b", margin: "0 0 22px 0", lineHeight: 1.7 }}>
               공실스터디 특강을 신청하면 이곳에서 바로 이어보실 수 있습니다.
             </p>
             <Link
               href="/study/lectures"
-              style={{ display: "inline-block", padding: "12px 30px", background: "#062326", color: "#ffffff", borderRadius: 10, fontSize: 15, fontWeight: 800, textDecoration: "none" }}
+              style={{ display: "inline-block", padding: "12px 30px", background: "#1a1613", color: "#ffffff", borderRadius: 10, fontSize: 15, fontWeight: 800, textDecoration: "none" }}
             >
               특강 목록 둘러보기 →
             </Link>
@@ -389,10 +389,10 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
           <>
             {/* 강의목록과 같은 제목 + 분류 탭 */}
             <div style={{ marginBottom: 24 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#e2552b", letterSpacing: "1px", textTransform: "uppercase" }}>
                 MY STUDY
               </span>
-              <h2 style={{ fontSize: "28px", fontWeight: 800, color: "#062828", margin: "6px 0 0 0", letterSpacing: "-0.5px" }}>
+              <h2 style={{ fontSize: "28px", fontWeight: 800, color: "#1c1917", margin: "6px 0 0 0", letterSpacing: "-0.5px" }}>
                 내가 신청한 강의 목록이에요!
               </h2>
             </div>
@@ -408,9 +408,9 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                       borderRadius: 8,
                       fontSize: 13.5,
                       fontWeight: isSel ? 700 : 500,
-                      color: isSel ? "#ffffff" : "#065f46",
-                      backgroundColor: isSel ? "#062f32" : "#f0fdf4",
-                      border: isSel ? "1px solid #062f32" : "1px solid #d1fae5",
+                      color: isSel ? "#ffffff" : "#a8381a",
+                      backgroundColor: isSel ? "#211b17" : "#fdf6f1",
+                      border: isSel ? "1px solid #211b17" : "1px solid #fbdccd",
                       cursor: "pointer",
                       transition: "all 0.15s",
                     }}
@@ -422,7 +422,7 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
             </div>
 
             {filtered.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "70px 20px", background: "#f4fbf7", borderRadius: 12, border: "1px solid #d1fae5", color: "#64748b" }}>
+              <div style={{ textAlign: "center", padding: "70px 20px", background: "#fbf8f4", borderRadius: 12, border: "1px solid #fbdccd", color: "#64748b" }}>
                 <div style={{ fontSize: 40, marginBottom: 10 }}>🔍</div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: "#1e293b" }}>이 분류에서 신청한 강의가 없습니다</div>
               </div>
@@ -452,8 +452,8 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = "translateY(-4px)";
-                          e.currentTarget.style.boxShadow = "0 12px 24px rgba(5, 150, 105, 0.12)";
-                          e.currentTarget.style.borderColor = "#059669";
+                          e.currentTarget.style.boxShadow = "0 12px 24px rgba(180, 63, 24, 0.12)";
+                          e.currentTarget.style.borderColor = "#e2552b";
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.transform = "translateY(0)";
@@ -462,7 +462,7 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                         }}
                       >
                         {/* 썸네일 */}
-                        <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", overflow: "hidden", background: "#062326" }}>
+                        <div style={{ width: "100%", aspectRatio: "16/9", position: "relative", overflow: "hidden", background: "#1a1613" }}>
                           {lecture.thumbnail_url ? (
                             <img src={lecture.thumbnail_url} alt={lecture.title || "특강"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                           ) : (
@@ -470,12 +470,12 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                               style={{
                                 width: "100%",
                                 height: "100%",
-                                background: "linear-gradient(135deg, #062326 0%, #064e3b 100%)",
+                                background: "linear-gradient(135deg, #1a1613 0%, #3a2c22 100%)",
                                 display: "flex",
                                 flexDirection: "column",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                color: "#6ee7b7",
+                                color: "#f59a6f",
                                 gap: 6,
                               }}
                             >
@@ -490,7 +490,7 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                               수강 기간 만료
                             </div>
                           ) : (
-                            <div style={{ position: "absolute", top: 10, left: 10, background: isSoon ? "#f59e0b" : "rgba(5,150,105,0.92)", color: "#ffffff", fontSize: 11.5, fontWeight: 800, padding: "4px 10px", borderRadius: 6 }}>
+                            <div style={{ position: "absolute", top: 10, left: 10, background: isSoon ? "#f59e0b" : "rgba(180, 63, 24,0.92)", color: "#ffffff", fontSize: 11.5, fontWeight: 800, padding: "4px 10px", borderRadius: 6 }}>
                               {d !== null ? `D-${d}` : "수강 중"}
                             </div>
                           )}
@@ -499,14 +499,14 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                         {/* 본문 */}
                         <div style={{ padding: "18px 18px 16px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                           <div>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#047857", background: "#ecfdf5", padding: "3px 8px", borderRadius: 4, display: "inline-block", marginBottom: 10 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#c9441d", background: "#fdeee7", padding: "3px 8px", borderRadius: 4, display: "inline-block", marginBottom: 10 }}>
                               {lecture.category || "중개실무"}
                             </span>
                             <h3
                               style={{
                                 fontSize: 16.5,
                                 fontWeight: 800,
-                                color: "#062828",
+                                color: "#1c1917",
                                 lineHeight: 1.45,
                                 margin: "0 0 10px 0",
                                 display: "-webkit-box",
@@ -532,7 +532,7 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                                 fontSize: 13,
                                 fontWeight: 800,
                                 color: "#ffffff",
-                                background: isExpired ? "#94a3b8" : "#059669",
+                                background: isExpired ? "#94a3b8" : "#e2552b",
                                 padding: "7px 16px",
                                 borderRadius: 7,
                                 whiteSpace: "nowrap",
@@ -550,13 +550,13 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
             )}
 
             {/* 하단 안내 */}
-            <div style={{ marginTop: 40, background: "#f4fbf7", border: "1px solid #d1fae5", borderRadius: 14, padding: "22px 26px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 14.5, color: "#065f46", fontWeight: 600, lineHeight: 1.6 }}>
+            <div style={{ marginTop: 40, background: "#fbf8f4", border: "1px solid #fbdccd", borderRadius: 14, padding: "22px 26px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 14.5, color: "#a8381a", fontWeight: 600, lineHeight: 1.6 }}>
                 새로운 특강은 매월 업데이트됩니다. 아직 신청하지 않은 특강을 확인해 보세요.
               </div>
               <Link
                 href="/study/lectures"
-                style={{ padding: "10px 22px", background: "#062326", color: "#ffffff", borderRadius: 8, fontSize: 13.5, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap" }}
+                style={{ padding: "10px 22px", background: "#1a1613", color: "#ffffff", borderRadius: 8, fontSize: 13.5, fontWeight: 800, textDecoration: "none", whiteSpace: "nowrap" }}
               >
                 강의목록 보기 →
               </Link>

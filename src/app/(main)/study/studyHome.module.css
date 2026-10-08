@@ -1,8 +1,8 @@
 .page {
-  --ink: #111815;
+  --ink: #181411;
   --muted: #65706b;
-  --line: #dfe4e1;
-  --green: #009b68;
+  --line: #e6e2dd;
+  --green: #b43f18;
   min-height: 100vh;
   overflow-x: clip;
   background: #ffffff;
@@ -61,7 +61,7 @@
 
 .heroBottom > p {
   margin: 0;
-  color: #46524d;
+  color: #524c46;
   font-size: 19px;
   line-height: 1.75;
   letter-spacing: -0.02em;
@@ -107,7 +107,7 @@
   position: relative;
   width: min(1240px, 100%);
   margin: 0 auto;
-  background: #111815;
+  background: #181411;
 }
 
 .lecturePhoto img {
@@ -125,12 +125,12 @@
   gap: 5px;
   width: min(420px, 45%);
   padding: 22px 25px;
-  background: rgba(17, 24, 21, 0.94);
+  background: rgba(24, 20, 17, 0.94);
   color: #ffffff;
 }
 
 .lecturePhoto figcaption span {
-  color: #7be5ba;
+  color: #e87954;
   font-size: 11px;
   font-weight: 750;
   letter-spacing: 0.08em;
@@ -192,7 +192,7 @@
 
 .process {
   padding: 120px 24px;
-  background: #f3f5f4;
+  background: #f6f4f2;
 }
 
 .sectionTitleRow {
@@ -256,7 +256,7 @@
 
 .experienceLead {
   margin: 0;
-  color: #35413c;
+  color: #413b35;
   font-size: 19px;
   line-height: 1.85;
   letter-spacing: -0.025em;
@@ -310,7 +310,7 @@
 }
 
 .statementInner > p:first-child {
-  color: #72ddb2;
+  color: #e87954;
 }
 
 .statement h2 {
@@ -322,7 +322,7 @@
 
 .statementBody {
   margin: 28px auto 0;
-  color: #aeb9b4;
+  color: #b9b3ae;
   font-size: 17px;
   line-height: 1.75;
   word-break: keep-all;
@@ -335,7 +335,7 @@
 }
 
 .statementLink:hover {
-  background: #00ad75;
+  background: #b43f18;
 }
 
 .faq {
@@ -418,7 +418,7 @@
 .statementLink:focus-visible,
 .qnaLink:focus-visible,
 .faqItem button:focus-visible {
-  outline: 3px solid rgba(0, 155, 104, 0.25);
+  outline: 3px solid rgba(180, 63, 24, 0.25);
   outline-offset: 4px;
 }
 

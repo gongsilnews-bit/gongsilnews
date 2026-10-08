@@ -10,7 +10,7 @@ export const STUDY_BENEFITS = [
   { slug: "ai-youtube", label: "유튜브강의+드론저작권", href: "/study/benefits/ai-youtube" },
 ] as const;
 
-const POINT = "#059669";
+const POINT = "#e2552b";
 
 export default function StudyBenefitsSubNav({ active }: { active: string }) {
   return (
@@ -56,8 +56,9 @@ export function StudyBenefitsHeroTabs({ active }: { active: string }) {
       style={{
         position: "absolute", left: 48, bottom: 32, zIndex: 3,
         display: "flex", gap: 6, padding: 5, borderRadius: 12,
-        background: "rgba(255, 255, 255, 0.08)", border: "1px solid rgba(255, 255, 255, 0.16)",
-        backdropFilter: "blur(4px)",
+        // 밝은 히어로(미색 바탕) 위에 흰 카드로 띄운다
+        background: "#ffffff", border: "1px solid #e7dfd4",
+        boxShadow: "0 4px 14px rgba(70, 50, 30, 0.08)",
       }}
     >
       {STUDY_BENEFITS.map((item) => {
@@ -70,9 +71,9 @@ export function StudyBenefitsHeroTabs({ active }: { active: string }) {
             style={{
               padding: "10px 18px", borderRadius: 8, fontSize: 14.5, whiteSpace: "nowrap", textDecoration: "none",
               fontWeight: isActive ? 800 : 600,
-              color: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.82)",
+              color: isActive ? "#ffffff" : "#44403c",
               background: isActive ? POINT : "transparent",
-              boxShadow: isActive ? "0 3px 12px rgba(5, 150, 105, 0.4)" : "none",
+              boxShadow: isActive ? "0 3px 12px rgba(180, 63, 24, 0.4)" : "none",
               transition: "all 0.15s",
             }}
           >

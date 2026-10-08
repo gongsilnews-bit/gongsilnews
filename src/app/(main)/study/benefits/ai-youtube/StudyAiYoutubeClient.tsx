@@ -23,10 +23,10 @@ import { StudyBenefitsHeroTabs } from "@/components/study/StudyBenefitsSubNav";
  * 10. 12개월 동안 마케팅 능력이 확! 늘어난다
  */
 
-const POINT = "#059669";
-const POINT_DARK = "#047857";
-const POINT_SOFT = "#ecfdf5";
-const POINT_BORDER = "#a7f3d0";
+const POINT = "#e2552b";
+const POINT_DARK = "#c9441d";
+const POINT_SOFT = "#fdeee7";
+const POINT_BORDER = "#f8c3a8";
 
 export default function StudyAiYoutubeClient() {
   const [activeRoadmapStep, setActiveRoadmapStep] = useState(0);
@@ -74,7 +74,7 @@ export default function StudyAiYoutubeClient() {
       style={{
         backgroundColor: "#ffffff",
         fontFamily: "'Pretendard Variable', -apple-system, sans-serif",
-        color: "#132e27",
+        color: "#261f1b",
         minHeight: "100vh",
       }}
     >
@@ -88,23 +88,26 @@ export default function StudyAiYoutubeClient() {
               position: "relative",
               display: "flex",
               alignItems: "center",
-              backgroundColor: "#112127",
-              color: "#ffffff",
+              backgroundColor: "#f4f1ec",
+              border: "1px solid #e7dfd4",
+              color: "#1c1917",
               borderRadius: 16,
               overflow: "hidden",
               // 강의목록 히어로와 같은 높이로 고정. 세 혜택 페이지가 같은 높이라 탭 위치도 그대로 있다
               height: 400,
             }}
           >
-            {/* 배경 이미지 */}
-            <Image
-              src="/images/study/benefit_youtube_hero.jpg"
-              alt="유튜브 강의와 드론 저작권 멤버십 혜택"
-              fill
-              priority
-              sizes="(max-width: 1160px) 100vw, 1112px"
-              style={{ objectFit: "cover", objectPosition: "center right" }}
-            />
+            {/* 배경 이미지 — 드론으로 찍은 한강변 아파트 단지 (멤버십 드론 영상 저작권 혜택) */}
+            <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: "62%" }}>
+              <Image
+                src="/images/study/benefit-youtube-hero-drone.webp"
+                alt="드론으로 촬영한 한강변 아파트 단지와 도로 전경"
+                fill
+                priority
+                sizes="(max-width: 1160px) 62vw, 690px"
+                style={{ objectFit: "cover", objectPosition: "60% center" }}
+              />
+            </div>
 
             {/* 좌측 가독성 그라디언트 오버레이 */}
             <div
@@ -114,7 +117,22 @@ export default function StudyAiYoutubeClient() {
                 inset: 0,
                 pointerEvents: "none",
                 background:
-                  "linear-gradient(to right, rgba(17,33,39,0.95) 0%, rgba(17,33,39,0.88) 55%, rgba(17,33,39,0.35) 80%, rgba(17,33,39,0) 100%)",
+                  "linear-gradient(to right, rgba(244, 241, 236, 1) 0%, rgba(244, 241, 236, 0.97) 44%, rgba(244, 241, 236, 0.6) 64%, rgba(244, 241, 236, 0) 84%)",
+              }}
+            />
+
+            {/* 왼쪽 글자 영역에만 옅은 격자무늬 (/study 히어로와 같은 바탕) */}
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                pointerEvents: "none",
+                backgroundImage:
+                  "linear-gradient(rgba(70, 50, 30, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(70, 50, 30, 0.07) 1px, transparent 1px)",
+                backgroundSize: "44px 44px",
+                WebkitMaskImage: "linear-gradient(to right, #000 45%, transparent 72%)",
+                maskImage: "linear-gradient(to right, #000 45%, transparent 72%)",
               }}
             />
 
@@ -135,13 +153,13 @@ export default function StudyAiYoutubeClient() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  backgroundColor: "rgba(5, 150, 105, 0.25)",
-                  border: "1px solid rgba(52, 211, 153, 0.4)",
+                  backgroundColor: "#e2552b",
+                  border: "1px solid #e2552b",
                   padding: "5px 14px",
                   borderRadius: 20,
                   fontSize: 13,
                   fontWeight: 800,
-                  color: "#34d399",
+                  color: "#ffffff",
                   marginBottom: 18,
                   letterSpacing: "0.2px",
                 }}
@@ -154,16 +172,16 @@ export default function StudyAiYoutubeClient() {
               {/* 메인 헤드라인 */}
               <h1
                 style={{
-                  fontSize: "33px",
+                  fontSize: "36px",
                   fontWeight: 900,
-                  lineHeight: 1.32,
-                  letterSpacing: "-0.8px",
+                  lineHeight: 1.28,
+                  letterSpacing: "-1.4px",
                   margin: "0 0 16px 0",
-                  color: "#ffffff",
+                  color: "#1c1917",
                 }}
               >
                 유튜브 &amp; 릴스 영상 제작 실전 강의!<br />
-                <span style={{ color: "#34d399" }}>
+                <span style={{ color: "#e2552b" }}>
                   온라인 강의로 내 사무실에서 반복 수강
                 </span>
               </h1>
@@ -172,7 +190,7 @@ export default function StudyAiYoutubeClient() {
               <p
                 style={{
                   fontSize: "15.5px",
-                  color: "#cbd5e1",
+                  color: "#57534e",
                   lineHeight: 1.65,
                   margin: "0 0 28px 0",
                   wordBreak: "keep-all",
@@ -206,10 +224,10 @@ export default function StudyAiYoutubeClient() {
             }}
           >
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
                 손님의 Call 연결
               </div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
                 유튜브 제작강의
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
@@ -218,10 +236,10 @@ export default function StudyAiYoutubeClient() {
             </div>
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
                 VOD 강의
               </div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
                 무제한 반복 가능
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
@@ -230,10 +248,10 @@ export default function StudyAiYoutubeClient() {
             </div>
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
                 강의 범위
               </div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
                 유튜브 &amp; 릴스 제작
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
@@ -242,10 +260,10 @@ export default function StudyAiYoutubeClient() {
             </div>
 
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
                 영상 리소스 제공
               </div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", letterSpacing: "-0.5px" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
                 드론 영상 저작권 무료
               </div>
               <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
@@ -281,7 +299,7 @@ export default function StudyAiYoutubeClient() {
               style={{
                 fontSize: "32px",
                 fontWeight: 900,
-                color: "#062828",
+                color: "#1c1917",
                 letterSpacing: "-0.8px",
                 lineHeight: 1.35,
                 margin: "0 0 14px 0",
@@ -305,8 +323,8 @@ export default function StudyAiYoutubeClient() {
                 gridTemplateColumns: "1.1fr 0.9fr",
                 gap: 40,
                 alignItems: "center",
-                background: "linear-gradient(135deg, #f0fdf9 0%, #ffffff 100%)",
-                border: "1px solid #d1fae5",
+                background: "linear-gradient(135deg, #fbf7f2 0%, #ffffff 100%)",
+                border: "1px solid #fbdccd",
                 borderRadius: 20,
                 padding: "44px 40px",
               }}
@@ -317,7 +335,7 @@ export default function StudyAiYoutubeClient() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "#059669",
+                    background: "#e2552b",
                     color: "#ffffff",
                     fontSize: 12.5,
                     fontWeight: 800,
@@ -332,7 +350,7 @@ export default function StudyAiYoutubeClient() {
                   style={{
                     fontSize: "26px",
                     fontWeight: 900,
-                    color: "#062828",
+                    color: "#1c1917",
                     lineHeight: 1.35,
                     letterSpacing: "-0.5px",
                     margin: "0 0 16px 0",
@@ -350,19 +368,19 @@ export default function StudyAiYoutubeClient() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#e2552b", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>문의 전화 유도 대본 기획</strong> — 첫 5초 시선 고정부터 마지막 CTA 클로징 공식
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#e2552b", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>방송국 현장 연출 비법</strong> — 앵글, 조명, 목소리 전달력까지 프로의 연출법 전수
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#e2552b", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>부동산 실무 밀착형 사례</strong> — 원룸부터 대형 상가·빌딩까지 실거래 직결 강의
                     </span>
@@ -383,16 +401,16 @@ export default function StudyAiYoutubeClient() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444" }} />
-                    <span style={{ fontSize: 14, fontWeight: 800, color: "#0f2e28" }}>PD 직강: 손님 콜 부르는 3단계 공식</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: "#241d19" }}>PD 직강: 손님 콜 부르는 3단계 공식</span>
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#059669", background: "#ecfdf5", padding: "3px 8px", borderRadius: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#e2552b", background: "#fdeee7", padding: "3px 8px", borderRadius: 4 }}>
                     실전 VOD
                   </span>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ background: "#f8fafc", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: "#059669" }}>STEP 1 · 3초 시선 후킹</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#e2552b" }}>STEP 1 · 3초 시선 후킹</div>
                     <div style={{ fontSize: 13.5, fontWeight: 700, color: "#1e293b", marginTop: 2 }}>
                       &ldquo;강남 테헤란로 보증금 5,000만원에 이 평수 실화인가요?&rdquo;
                     </div>
@@ -463,7 +481,7 @@ export default function StudyAiYoutubeClient() {
                   }}
                 >
                   <span>수백만 원대 강남/서초 오프라인 실무 특강</span>
-                  <span style={{ color: "#34d399" }}>온라인 1년 무제한 수강</span>
+                  <span style={{ color: "#f59a6f" }}>온라인 1년 무제한 수강</span>
                 </div>
               </div>
 
@@ -488,7 +506,7 @@ export default function StudyAiYoutubeClient() {
                   style={{
                     fontSize: "26px",
                     fontWeight: 900,
-                    color: "#062828",
+                    color: "#1c1917",
                     lineHeight: 1.35,
                     letterSpacing: "-0.5px",
                     margin: "0 0 16px 0",
@@ -533,7 +551,7 @@ export default function StudyAiYoutubeClient() {
                 gridTemplateColumns: "1.1fr 0.9fr",
                 gap: 40,
                 alignItems: "center",
-                background: "linear-gradient(135deg, #f8fafc 0%, #edfafd 100%)",
+                background: "linear-gradient(135deg, #f8fafc 0%, #fbf5f0 100%)",
                 border: "1px solid #cbd5e1",
                 borderRadius: 20,
                 padding: "44px 40px",
@@ -545,7 +563,7 @@ export default function StudyAiYoutubeClient() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "#0f766e",
+                    background: "#c9441d",
                     color: "#ffffff",
                     fontSize: 12.5,
                     fontWeight: 800,
@@ -560,14 +578,14 @@ export default function StudyAiYoutubeClient() {
                   style={{
                     fontSize: "26px",
                     fontWeight: 900,
-                    color: "#062828",
+                    color: "#1c1917",
                     lineHeight: 1.35,
                     letterSpacing: "-0.5px",
                     margin: "0 0 16px 0",
                   }}
                 >
                   브루, 캡컷, 포토샵, 프리미어프로부터<br />
-                  <span style={{ color: "#0f766e" }}>챗GPT · 제미나이 · 클로드 실무 활용법까지!</span>
+                  <span style={{ color: "#c9441d" }}>챗GPT · 제미나이 · 클로드 실무 활용법까지!</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
                   부동산 마케팅에 꼭 필요한 프로그램만 쏙쏙 골라 가르쳐드립니다.
@@ -578,19 +596,19 @@ export default function StudyAiYoutubeClient() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0f766e", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#c9441d", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>영상 편집 사총사</strong> — Vrew(자막 자동화), 캡컷(숏폼), 포토샵(썸네일), 프리미어(고화질 영상)
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0f766e", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#c9441d", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>생성형 AI 삼총사</strong> — 챗GPT · Google 제미나이 · Anthropic 클로드 실무 프롬프트 제공
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#0f766e", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#c9441d", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>매월 4회 신규 강의 무료 추가</strong> — 빠르게 바뀌는 최신 AI 기술을 매달 무료로 업데이트
                     </span>
@@ -608,7 +626,7 @@ export default function StudyAiYoutubeClient() {
                   boxShadow: "0 10px 25px rgba(0, 0, 0, 0.05)",
                 }}
               >
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#0f2e28", marginBottom: 14, borderBottom: "1px solid #f1f5f9", paddingBottom: 10 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#241d19", marginBottom: 14, borderBottom: "1px solid #f1f5f9", paddingBottom: 10 }}>
                   스터디에서 완벽 마스터하는 실전 툴
                 </div>
 
@@ -629,9 +647,9 @@ export default function StudyAiYoutubeClient() {
                     <div style={{ fontSize: 14, fontWeight: 900, color: "#9333ea" }}>Premiere Pro</div>
                     <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>고품격 부동산 임장 영상</div>
                   </div>
-                  <div style={{ background: "#ecfdf5", padding: "12px", borderRadius: 10, border: "1px solid #a7f3d0" }}>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: "#059669" }}>ChatGPT & Gemini</div>
-                    <div style={{ fontSize: 12, color: "#047857", marginTop: 2 }}>부동산 대본 & 시황 분석</div>
+                  <div style={{ background: "#fdeee7", padding: "12px", borderRadius: 10, border: "1px solid #f8c3a8" }}>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: "#e2552b" }}>ChatGPT & Gemini</div>
+                    <div style={{ fontSize: 12, color: "#c9441d", marginTop: 2 }}>부동산 대본 & 시황 분석</div>
                   </div>
                   <div style={{ background: "#fff7ed", padding: "12px", borderRadius: 10, border: "1px solid #fed7aa" }}>
                     <div style={{ fontSize: 14, fontWeight: 900, color: "#ea580c" }}>Claude (클로드)</div>
@@ -675,7 +693,7 @@ export default function StudyAiYoutubeClient() {
                   style={{
                     fontSize: "26px",
                     fontWeight: 900,
-                    color: "#062828",
+                    color: "#1c1917",
                     lineHeight: 1.35,
                     letterSpacing: "-0.5px",
                     margin: "0 0 16px 0",
@@ -745,7 +763,7 @@ export default function StudyAiYoutubeClient() {
             style={{
               fontSize: 13,
               fontWeight: 800,
-              color: "#059669",
+              color: "#e2552b",
               letterSpacing: "1px",
               textTransform: "uppercase",
               marginBottom: 10,
@@ -757,14 +775,14 @@ export default function StudyAiYoutubeClient() {
             style={{
               fontSize: "30px",
               fontWeight: 900,
-              color: "#0f2e28",
+              color: "#241d19",
               lineHeight: 1.4,
               letterSpacing: "-0.8px",
               margin: "0 0 16px 0",
             }}
           >
             방송국 PD 출신, 공실뉴스편집장이<br />
-            <span style={{ color: "#059669" }}>강남/서초 100여명의 부동산과 함께 했던 실전 강의!</span>
+            <span style={{ color: "#e2552b" }}>강남/서초 100여명의 부동산과 함께 했던 실전 강의!</span>
           </h2>
           <p style={{ fontSize: "16px", color: "#64748b", lineHeight: 1.7, margin: "0 auto 48px", maxWidth: 640 }}>
             강남·서초 100여 개 부동산 실무자와 오프라인에서 함께 했던 생생한 경험을<br />
@@ -781,22 +799,22 @@ export default function StudyAiYoutubeClient() {
             }}
           >
             <div style={{ padding: "24px 16px", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 6 }}>
-              <strong style={{ fontSize: 26, fontWeight: 900, color: "#059669" }}>2025</strong>
+              <strong style={{ fontSize: 26, fontWeight: 900, color: "#e2552b" }}>2025</strong>
               <span style={{ fontSize: 15, fontWeight: 800, color: "#1e293b" }}>강남구청</span>
               <small style={{ fontSize: 13, color: "#64748b" }}>ChatGPT·AI 실무특강</small>
             </div>
             <div style={{ padding: "24px 16px", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 6 }}>
-              <strong style={{ fontSize: 26, fontWeight: 900, color: "#059669" }}>2025</strong>
+              <strong style={{ fontSize: 26, fontWeight: 900, color: "#e2552b" }}>2025</strong>
               <span style={{ fontSize: 15, fontWeight: 800, color: "#1e293b" }}>서울벤처대학원대학교</span>
               <small style={{ fontSize: 13, color: "#64748b" }}>유튜브 콘텐츠 제작 실습</small>
             </div>
             <div style={{ padding: "24px 16px", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: 6 }}>
-              <strong style={{ fontSize: 26, fontWeight: 900, color: "#059669" }}>11만</strong>
+              <strong style={{ fontSize: 26, fontWeight: 900, color: "#e2552b" }}>11만</strong>
               <span style={{ fontSize: 15, fontWeight: 800, color: "#1e293b" }}>부동산 네트워크</span>
               <small style={{ fontSize: 13, color: "#64748b" }}>공실뉴스 회원·독자 기준</small>
             </div>
             <div style={{ padding: "24px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-              <strong style={{ fontSize: 26, fontWeight: 900, color: "#059669" }}>1년</strong>
+              <strong style={{ fontSize: 26, fontWeight: 900, color: "#e2552b" }}>1년</strong>
               <span style={{ fontSize: 15, fontWeight: 800, color: "#1e293b" }}>온라인 실무 스터디</span>
               <small style={{ fontSize: 13, color: "#64748b" }}>맞춤형 피드백 제공</small>
             </div>
@@ -826,17 +844,17 @@ export default function StudyAiYoutubeClient() {
               />
             </div>
             <div style={{ padding: "40px 36px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#059669", marginBottom: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#e2552b", marginBottom: 8 }}>
                 2025 서울벤처대학원대학교
               </span>
-              <h3 style={{ fontSize: 24, fontWeight: 900, color: "#0f2e28", margin: "0 0 16px 0", letterSpacing: "-0.5px" }}>
+              <h3 style={{ fontSize: 24, fontWeight: 900, color: "#241d19", margin: "0 0 16px 0", letterSpacing: "-0.5px" }}>
                 유튜브 콘텐츠 제작 실습 교육
               </h3>
               <p style={{ fontSize: 15, color: "#475569", lineHeight: 1.7, margin: "0 0 20px 0" }}>
                 나이와 IT 경험에 상관없이 화면을 보며 하나씩 따라 하고,
                 수업이 끝날 때 직접 만든 결과물을 남기는 방식으로 진행했습니다.
               </p>
-              <strong style={{ fontSize: 15, fontWeight: 800, color: "#047857" }}>
+              <strong style={{ fontSize: 15, fontWeight: 800, color: "#c9441d" }}>
                 이제 같은 과정을 온라인에서 배울 수 있습니다.
               </strong>
             </div>
@@ -845,7 +863,7 @@ export default function StudyAiYoutubeClient() {
       </section>
 
       {/* ━━━ 4. 12-MONTH ROADMAP SECTION (12개월 마케팅 능력 확! 도약 로드맵) ━━━ */}
-      <section style={{ backgroundColor: "#062828", color: "#ffffff", padding: "70px 0 80px" }}>
+      <section style={{ backgroundColor: "#1c1917", color: "#ffffff", padding: "70px 0 80px" }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
           
           <div style={{ textAlign: "center", maxWidth: 740, margin: "0 auto 44px" }}>
@@ -853,7 +871,7 @@ export default function StudyAiYoutubeClient() {
               style={{
                 fontSize: 13,
                 fontWeight: 800,
-                color: "#34d399",
+                color: "#f59a6f",
                 letterSpacing: "1px",
                 textTransform: "uppercase",
               }}
@@ -891,8 +909,8 @@ export default function StudyAiYoutubeClient() {
                   key={item.step}
                   onClick={() => setActiveRoadmapStep(idx)}
                   style={{
-                    background: isSelected ? "rgba(5, 150, 105, 0.2)" : "rgba(255, 255, 255, 0.05)",
-                    border: isSelected ? "2px solid #34d399" : "1px solid rgba(255, 255, 255, 0.12)",
+                    background: isSelected ? "rgba(180, 63, 24, 0.2)" : "rgba(255, 255, 255, 0.05)",
+                    border: isSelected ? "2px solid #f59a6f" : "1px solid rgba(255, 255, 255, 0.12)",
                     borderRadius: 14,
                     padding: "24px 20px",
                     cursor: "pointer",
@@ -904,7 +922,7 @@ export default function StudyAiYoutubeClient() {
                       style={{
                         fontSize: 13,
                         fontWeight: 800,
-                        color: isSelected ? "#34d399" : "#a7f3d0",
+                        color: isSelected ? "#f59a6f" : "#f8c3a8",
                       }}
                     >
                       {item.period}
@@ -913,7 +931,7 @@ export default function StudyAiYoutubeClient() {
                       style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        background: isSelected ? "#059669" : "rgba(255,255,255,0.1)",
+                        background: isSelected ? "#e2552b" : "rgba(255,255,255,0.1)",
                         color: "#ffffff",
                         padding: "3px 8px",
                         borderRadius: 12,
@@ -942,12 +960,12 @@ export default function StudyAiYoutubeClient() {
         <div className="container px-20" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
           <div
             style={{
-              background: "linear-gradient(135deg, #059669 0%, #064e3b 100%)",
+              background: "linear-gradient(135deg, #e2552b 0%, #3a2c22 100%)",
               borderRadius: 20,
               padding: "56px 40px",
               textAlign: "center",
               color: "#ffffff",
-              boxShadow: "0 20px 40px rgba(5, 150, 105, 0.25)",
+              boxShadow: "0 20px 40px rgba(180, 63, 24, 0.25)",
             }}
           >
             <div
@@ -999,7 +1017,7 @@ export default function StudyAiYoutubeClient() {
                   alignItems: "center",
                   padding: "14px 34px",
                   background: "#ffffff",
-                  color: "#064e3b",
+                  color: "#3a2c22",
                   borderRadius: 10,
                   fontSize: 16,
                   fontWeight: 900,

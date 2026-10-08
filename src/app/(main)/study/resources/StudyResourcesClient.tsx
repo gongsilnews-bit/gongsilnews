@@ -238,7 +238,7 @@ export default function StudyResourcesClient({
   });
 
   return (
-    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", color: "#132e27" }}>
+    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", color: "#261f1b" }}>
       <StudyHeader background={STUDY_HERO_BAR} />
 
       {/* ━━━ [1] 헤더 섹션 (통일된 프리미엄 스터디 히어로) ━━━ */}
@@ -389,7 +389,7 @@ export default function StudyResourcesClient({
                         color: "#ffffff",
                         background: POINT,
                         textDecoration: "none",
-                        boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)",
+                        boxShadow: "0 2px 8px rgba(180, 63, 24, 0.3)",
                         whiteSpace: "nowrap",
                         display: "inline-block",
                       }}

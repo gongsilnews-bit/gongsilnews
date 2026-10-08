@@ -358,7 +358,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
       <div style={{ minHeight: "80vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>등록된 강의가 없습니다</h2>
-        <Link href="/study" style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}>공실스터디 목록으로 돌아가기 ›</Link>
+        <Link href="/study" style={{ color: "#e2552b", fontWeight: 700, textDecoration: "none" }}>공실스터디 목록으로 돌아가기 ›</Link>
       </div>
     );
   }
@@ -386,17 +386,17 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
           onClick={() => setPreviewUrl(null)}
           style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
         >
-          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 880, background: "#062326", borderRadius: 14, overflow: "hidden", position: "relative", boxShadow: "0 25px 60px rgba(0,0,0,0.6)", border: "1px solid #134e4a" }}>
-            <div style={{ padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#062326", color: "#fff", borderBottom: "1px solid #134e4a" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 880, background: "#1a1613", borderRadius: 14, overflow: "hidden", position: "relative", boxShadow: "0 25px 60px rgba(0,0,0,0.6)", border: "1px solid #3a2c22" }}>
+            <div style={{ padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#1a1613", color: "#fff", borderBottom: "1px solid #3a2c22" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ background: "#059669", color: "#fff", fontSize: 11.5, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>
+                <span style={{ background: "#e2552b", color: "#fff", fontSize: 11.5, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>
                   미리보기 VOD
                 </span>
                 <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>
                   {previewTitle || "미리보기 영상"}
                 </span>
               </div>
-              <button onClick={() => setPreviewUrl(null)} style={{ background: "none", border: "none", color: "#a7f3d0", fontSize: 22, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>✕</button>
+              <button onClick={() => setPreviewUrl(null)} style={{ background: "none", border: "none", color: "#f8c3a8", fontSize: 22, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>✕</button>
             </div>
             {toEmbedUrl(previewUrl).includes("youtube.com/embed") ? (
               <div style={{ width: "100%", aspectRatio: "16/9" }}>
@@ -427,7 +427,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
       {/* ── 상단 Breadcrumb ── */}
       <div style={{ borderBottom: "1px solid #f1f5f9", background: "#f8fafc" }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "14px 24px", fontSize: 13, color: "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
-          <Link href="/study" style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}>공실스터디</Link>
+          <Link href="/study" style={{ color: "#e2552b", fontWeight: 700, textDecoration: "none" }}>공실스터디</Link>
           <span>›</span>
           <span style={{ color: "#334155", fontWeight: 600 }}>{lecture.category || "중개실무"}</span>
         </div>
@@ -440,7 +440,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
         <div>
           
           {/* 1. 메인 프리뷰 이미지 / 썸네일 */}
-          <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: 14, overflow: "hidden", background: "#062326", marginBottom: 28, border: "1px solid #e2e8f0" }}>
+          <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", borderRadius: 14, overflow: "hidden", background: "#1a1613", marginBottom: 28, border: "1px solid #e2e8f0" }}>
             {slideImages.length > 0 ? (
               <>
                 <img
@@ -466,14 +466,14 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                 )}
               </>
             ) : (
-              <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #062326 0%, #064e3b 100%)", color: "#ffffff" }}>
+              <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #1a1613 0%, #3a2c22 100%)", color: "#ffffff" }}>
                 <span style={{ fontSize: 40, marginBottom: 8 }}>🎓</span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: "#6ee7b7" }}>{lecture.category || "공실스터디"}</span>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "#f59a6f" }}>{lecture.category || "공실스터디"}</span>
               </div>
             )}
             
             {/* VOD 태그 */}
-            <span style={{ position: "absolute", top: 14, left: 14, background: "#059669", color: "#fff", fontSize: 12, fontWeight: 800, padding: "3px 9px", borderRadius: 6, letterSpacing: "0.5px" }}>
+            <span style={{ position: "absolute", top: 14, left: 14, background: "#e2552b", color: "#fff", fontSize: 12, fontWeight: 800, padding: "3px 9px", borderRadius: 6, letterSpacing: "0.5px" }}>
               VOD
             </span>
 
@@ -488,9 +488,9 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                   transform: "translate(-50%, -50%)",
                   padding: "10px 20px",
                   borderRadius: 30,
-                  background: "rgba(6, 35, 38, 0.85)",
+                  background: "rgba(26, 21, 18, 0.85)",
                   color: "#ffffff",
-                  border: "1px solid rgba(52, 211, 153, 0.4)",
+                  border: "1px solid rgba(225, 85, 38, 0.4)",
                   fontSize: 14,
                   fontWeight: 800,
                   cursor: "pointer",
@@ -501,7 +501,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                   backdropFilter: "blur(4px)",
                 }}
               >
-                <span style={{ color: "#34d399", fontSize: 14 }}>▶</span>
+                <span style={{ color: "#f59a6f", fontSize: 14 }}>▶</span>
                 <span>미리보기 재생</span>
               </button>
             )}
@@ -509,7 +509,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
 
           {/* 2. 강의 제목 및 요약 정보 */}
           <div style={{ marginBottom: 36 }}>
-            <h1 style={{ fontSize: 26, fontWeight: 900, color: "#062828", lineHeight: 1.35, margin: "0 0 12px 0", letterSpacing: "-0.5px" }}>
+            <h1 style={{ fontSize: 26, fontWeight: 900, color: "#1c1917", lineHeight: 1.35, margin: "0 0 12px 0", letterSpacing: "-0.5px" }}>
               {lecture.title}
             </h1>
             <p style={{ fontSize: 15.5, color: "#475569", lineHeight: 1.6, margin: "0 0 18px 0" }}>
@@ -518,7 +518,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
 
             {/* 메타 뱃지 */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 13, fontWeight: 700 }}>
-              <span style={{ background: "#f0fdf4", color: "#065f46", border: "1px solid #d1fae5", padding: "4px 10px", borderRadius: 6 }}>
+              <span style={{ background: "#fdf6f1", color: "#a8381a", border: "1px solid #fbdccd", padding: "4px 10px", borderRadius: 6 }}>
                 총 {totalLessons}강
               </span>
               {(Array.isArray(lecture.keywords)
@@ -529,7 +529,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
               ).map((kw: string, idx: number) => (
                 <span
                   key={idx}
-                  style={{ background: "#f0fdf4", color: "#065f46", border: "1px solid #d1fae5", padding: "4px 10px", borderRadius: 6 }}
+                  style={{ background: "#fdf6f1", color: "#a8381a", border: "1px solid #fbdccd", padding: "4px 10px", borderRadius: 6 }}
                 >
                   {kw}
                 </span>
@@ -561,10 +561,10 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                     padding: "12px 0",
                     background: "none",
                     border: "none",
-                    borderBottom: isSel ? "2.5px solid #059669" : "2.5px solid transparent",
+                    borderBottom: isSel ? "2.5px solid #e2552b" : "2.5px solid transparent",
                     fontSize: 15,
                     fontWeight: isSel ? 800 : 600,
-                    color: isSel ? "#062828" : "#64748b",
+                    color: isSel ? "#1c1917" : "#64748b",
                     cursor: "pointer",
                     transition: "all 0.15s",
                   }}
@@ -578,7 +578,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
           {/* 4. 탭 본문 내용 */}
           {activeTab === "introduce" && (
             <div style={{ fontSize: 15, color: "#334155", lineHeight: 1.8 }}>
-              <h3 style={{ fontSize: 19, fontWeight: 800, color: "#062828", margin: "0 0 16px 0" }}>
+              <h3 style={{ fontSize: 19, fontWeight: 800, color: "#1c1917", margin: "0 0 16px 0" }}>
                 스터디 소개
               </h3>
               {lecture.description ? (
@@ -605,7 +605,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
             return (
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-                  <h3 style={{ fontSize: 19, fontWeight: 800, color: "#062828", margin: 0 }}>
+                  <h3 style={{ fontSize: 19, fontWeight: 800, color: "#1c1917", margin: 0 }}>
                     커리큘럼 <span style={{ fontSize: 14, color: "#64748b", fontWeight: 600 }}>전체 {totalLessons}강</span>
                   </h3>
 
@@ -673,7 +673,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                             }}
                           >
                             <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                              <span style={{ fontSize: 12, fontWeight: 800, color: "#059669", width: 22 }}>
+                              <span style={{ fontSize: 12, fontWeight: 800, color: "#e2552b", width: 22 }}>
                                 {String(lesIdx + 1).padStart(2, "0")}
                               </span>
                               <span style={{ fontWeight: 600, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -716,7 +716,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                                 <button
                                   type="button"
                                   onClick={() => openPreview(les.video_url, les.title)}
-                                  style={{ padding: "3px 8px", borderRadius: 4, background: "#ecfdf5", color: "#047857", border: "1px solid #d1fae5", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}
+                                  style={{ padding: "3px 8px", borderRadius: 4, background: "#fdeee7", color: "#c9441d", border: "1px solid #fbdccd", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}
                                 >
                                   미리보기
                                 </button>
@@ -737,7 +737,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
 
           {activeTab === "review" && (
             <div>
-              <h3 style={{ fontSize: 19, fontWeight: 800, color: "#062828", margin: "0 0 18px 0" }}>
+              <h3 style={{ fontSize: 19, fontWeight: 800, color: "#1c1917", margin: "0 0 18px 0" }}>
                 수강생 후기
               </h3>
 
@@ -767,7 +767,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    style={{ padding: "8px 20px", background: "#059669", color: "#fff", border: "none", borderRadius: 6, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
+                    style={{ padding: "8px 20px", background: "#e2552b", color: "#fff", border: "none", borderRadius: 6, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
                   >
                     {isSubmitting ? "등록 중..." : "후기 작성하기"}
                   </button>
@@ -787,7 +787,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
 
                     if (isEditing) {
                       return (
-                        <div key={rev.id || i} style={{ padding: "18px", background: "#f1f5f9", border: "1.5px solid #059669", borderRadius: 8 }}>
+                        <div key={rev.id || i} style={{ padding: "18px", background: "#f1f5f9", border: "1.5px solid #e2552b", borderRadius: 8 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                             <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>별점 수정:</span>
                             {[1, 2, 3, 4, 5].map((star) => (
@@ -820,7 +820,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                               type="button"
                               onClick={() => handleReviewUpdate(rev.id)}
                               disabled={isReviewActionLoading}
-                              style={{ padding: "6px 16px", background: "#059669", color: "#fff", border: "none", borderRadius: 5, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                              style={{ padding: "6px 16px", background: "#e2552b", color: "#fff", border: "none", borderRadius: 5, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
                             >
                               {isReviewActionLoading ? "저장 중..." : "수정 완료"}
                             </button>
@@ -841,7 +841,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                                   type="button"
                                   onClick={() => handleReviewEditStart(rev)}
                                   style={{ background: "none", border: "none", color: "#64748b", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: "2px 4px", borderRadius: 3 }}
-                                  onMouseEnter={(e) => (e.currentTarget.style.color = "#059669")}
+                                  onMouseEnter={(e) => (e.currentTarget.style.color = "#e2552b")}
                                   onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
                                 >
                                   수정
@@ -873,7 +873,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
           {activeTab === "creator" && (
             <div style={{ background: "#f8fafc", padding: "28px", borderRadius: 12, border: "1px solid #e2e8f0" }}>
               <div style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 16 }}>
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#062326", color: "#6ee7b7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, overflow: "hidden", flexShrink: 0 }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#1a1613", color: "#f59a6f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, overflow: "hidden", flexShrink: 0 }}>
                   {lecture.instructor_photo ? (
                     <img src={lecture.instructor_photo} alt={lecture.instructor_name || "강사"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
@@ -881,10 +881,10 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                   )}
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 4px 0" }}>
+                  <h4 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 4px 0" }}>
                     {lecture.instructor_name || "공실뉴스 실무 강사진"}
                   </h4>
-                  <span style={{ fontSize: 13, color: "#059669", fontWeight: 700 }}>
+                  <span style={{ fontSize: 13, color: "#e2552b", fontWeight: 700 }}>
                     공실뉴스 공인 파트너 강사
                   </span>
                 </div>
@@ -910,11 +910,11 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
           {/* 1. 메인 결제/수강 카드 */}
           <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "26px 22px", boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }}>
             
-            <div style={{ display: "inline-block", background: "#ecfdf5", color: "#047857", fontSize: 11.5, fontWeight: 800, padding: "3px 8px", borderRadius: 4, marginBottom: 12 }}>
+            <div style={{ display: "inline-block", background: "#fdeee7", color: "#c9441d", fontSize: 11.5, fontWeight: 800, padding: "3px 8px", borderRadius: 4, marginBottom: 12 }}>
               VOD
             </div>
 
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#062828", margin: "0 0 14px 0", lineHeight: 1.4 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: "0 0 14px 0", lineHeight: 1.4 }}>
               {lecture.title}
             </h3>
 
@@ -926,11 +926,11 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                     {originalPrice.toLocaleString()}P
                   </span>
                 )}
-                <span style={{ fontSize: 26, fontWeight: 900, color: "#062828" }}>
+                <span style={{ fontSize: 26, fontWeight: 900, color: "#1c1917" }}>
                   {displayPrice ? `${displayPrice.toLocaleString()}P` : "무료 수강"}
                 </span>
               </div>
-              <div style={{ fontSize: 12.5, color: "#059669", fontWeight: 700, marginTop: 4 }}>
+              <div style={{ fontSize: 12.5, color: "#e2552b", fontWeight: 700, marginTop: 4 }}>
                 {lecture.duration_months || 5}개월 이용 · 수강 시작일로부터
               </div>
             </div>
@@ -939,7 +939,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
               <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 14, marginBottom: 20, fontSize: 13, color: "#475569", lineHeight: 1.8 }}>
                 {lecture.sidebar_copy.benefits.split(/\r?\n/).map((line: string) => line.trim()).filter(Boolean).map((line: string, index: number) => (
                   <div key={index} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
-                    <span style={{ color: "#059669", fontWeight: 800 }}>✓</span>
+                    <span style={{ color: "#e2552b", fontWeight: 800 }}>✓</span>
                     <span style={{ overflowWrap: "anywhere" }}>{line}</span>
                   </div>
                 ))}
@@ -953,7 +953,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
               style={{
                 width: "100%",
                 padding: "14px 0",
-                background: isEnrolled ? "#062326" : "#059669",
+                background: isEnrolled ? "#1a1613" : "#e2552b",
                 color: "#ffffff",
                 border: "none",
                 borderRadius: 10,
@@ -962,7 +962,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
                 cursor: "pointer",
                 marginBottom: 10,
                 transition: "all 0.2s",
-                boxShadow: "0 4px 14px rgba(5,150,105,0.3)",
+                boxShadow: "0 4px 14px rgba(180, 63, 24,0.3)",
               }}
             >
               {enrolling ? "처리 중..." : isEnrolled ? "강의실 입장하기 →" : displayPrice ? `${displayPrice.toLocaleString()}P 결제 후 수강하기` : "무료로 수강 시작하기 →"}
@@ -988,7 +988,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
 
           {(lecture.sidebar_copy?.assurance_title?.trim() || lecture.sidebar_copy?.assurance_body?.trim()) && (
             <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, overflowWrap: "anywhere" }}>
-              {lecture.sidebar_copy.assurance_title && <h4 style={{ fontSize: 13.5, fontWeight: 800, color: "#062828", margin: "0 0 12px" }}>{lecture.sidebar_copy.assurance_title}</h4>}
+              {lecture.sidebar_copy.assurance_title && <h4 style={{ fontSize: 13.5, fontWeight: 800, color: "#1c1917", margin: "0 0 12px" }}>{lecture.sidebar_copy.assurance_title}</h4>}
               <div style={{ fontSize: 12.5, color: "#475569", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{lecture.sidebar_copy.assurance_body}</div>
             </div>
           )}
@@ -1001,7 +1001,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
       {showEnrollModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div style={{ width: "100%", maxWidth: 440, background: "#ffffff", borderRadius: 16, padding: "28px 24px", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#062828", margin: "0 0 14px 0" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 14px 0" }}>
               수강 신청 확인
             </h3>
             <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.5, margin: "0 0 18px 0" }}>
@@ -1016,7 +1016,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#64748b" }}>보유 포인트:</span>
-                <span style={{ fontWeight: 700, color: "#062828" }}>{pointBalance.toLocaleString()} P</span>
+                <span style={{ fontWeight: 700, color: "#1c1917" }}>{pointBalance.toLocaleString()} P</span>
               </div>
             </div>
 
@@ -1030,7 +1030,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
               <button
                 onClick={confirmEnroll}
                 disabled={enrolling}
-                style={{ padding: "11px 0", background: "#059669", color: "#ffffff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}
+                style={{ padding: "11px 0", background: "#e2552b", color: "#ffffff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}
               >
                 {enrolling ? "결제 중..." : "결제 및 수강"}
               </button>

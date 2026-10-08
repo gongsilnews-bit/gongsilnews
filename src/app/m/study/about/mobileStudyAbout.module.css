@@ -31,22 +31,22 @@
   gap: 4px;
   font-size: 13px;
   font-weight: 700;
-  color: #059669;
+  color: #e2552b;
   text-decoration: none;
-  background-color: #ecfdf5;
+  background-color: #fdeee7;
   padding: 6px 12px;
   border-radius: 8px;
   transition: background-color 0.2s ease;
 }
 
 .backBtn:hover {
-  background-color: #d1fae5;
+  background-color: #fbdccd;
 }
 
 /* ━━━ [1] 메인 히어로 ━━━ */
 .hero {
   position: relative;
-  background: radial-gradient(circle at 50% 20%, #0c352e 0%, #06231f 50%, #031513 100%);
+  background: radial-gradient(circle at 50% 20%, #261f1b 0%, #181411 50%, #0e0c0a 100%);
   color: #ffffff;
   padding: 44px 16px 40px;
   overflow: hidden;
@@ -56,7 +56,7 @@
 .heroOverlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 20%, rgba(102, 223, 189, 0.06) 0%, transparent 65%);
+  background: radial-gradient(circle at 50% 20%, rgba(232, 121, 84, 0.06) 0%, transparent 65%);
   pointer-events: none;
 }
 
@@ -72,9 +72,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(16, 185, 129, 0.18);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  color: #6ee7b7;
+  background: rgba(180, 63, 24, 0.18);
+  border: 1px solid rgba(180, 63, 24, 0.4);
+  color: #f59a6f;
   font-size: 15px;
   font-weight: 800;
   padding: 6px 16px;
@@ -93,14 +93,14 @@
 }
 
 .heroTitleHighlight {
-  color: #34d399;
+  color: #f59a6f;
   display: inline-block;
 }
 
 .heroDesc {
   font-size: 13.5px;
   line-height: 1.6;
-  color: #d1fae5;
+  color: #fbdccd;
   opacity: 0.92;
   margin: 0 0 22px 0;
   word-break: keep-all;
@@ -122,13 +122,13 @@
   justify-content: center;
   width: 100%;
   padding: 10px 6px;
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  background: linear-gradient(135deg, #e2552b 0%, #e2552b 100%) !important;
   color: #ffffff !important;
   font-size: 13px;
   font-weight: 800;
   border-radius: 8px;
   text-decoration: none !important;
-  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 3px 10px rgba(180, 63, 24, 0.3);
   transition: transform 0.15s ease;
   white-space: nowrap;
 }
@@ -205,7 +205,7 @@
 
 .lectureHeaderLink {
   font-size: 12.5px;
-  color: #34d399;
+  color: #f59a6f;
   text-decoration: none;
   font-weight: 700;
 }
@@ -301,8 +301,8 @@
 
 .lectureTag {
   font-size: 10px;
-  color: #059669;
-  background-color: #ecfdf5;
+  color: #e2552b;
+  background-color: #fdeee7;
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: 600;
@@ -340,7 +340,7 @@
 
 .lectureFreeText {
   font-size: 13px;
-  color: #059669;
+  color: #e2552b;
   font-weight: 900;
 }
 
@@ -357,7 +357,7 @@
 .kicker {
   font-size: 11px;
   font-weight: 800;
-  color: #059669;
+  color: #e2552b;
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-bottom: 6px;
@@ -373,7 +373,7 @@
 }
 
 .sectionTitle span {
-  color: #059669;
+  color: #e2552b;
 }
 
 .sectionDesc {
@@ -427,7 +427,7 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(4px);
-  color: #059669;
+  color: #e2552b;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -439,8 +439,8 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 700;
-  color: #059669;
-  background-color: #ecfdf5;
+  color: #e2552b;
+  background-color: #fdeee7;
   padding: 3px 8px;
   border-radius: 6px;
   margin-bottom: 8px;
@@ -484,12 +484,12 @@
 .vsLine {
   flex: 1;
   height: 2.5px;
-  background: linear-gradient(90deg, transparent 0%, #cbd5cf 25%, #94a3b8 100%);
+  background: linear-gradient(90deg, transparent 0%, #d5d0cb 25%, #94a3b8 100%);
   border-radius: 2px;
 }
 
 .vsDividerInner .vsLine:last-child {
-  background: linear-gradient(90deg, #94a3b8 0%, #cbd5cf 75%, transparent 100%);
+  background: linear-gradient(90deg, #94a3b8 0%, #d5d0cb 75%, transparent 100%);
 }
 
 .vsBadge {
@@ -517,7 +517,7 @@
 
 /* ━━━ [3] LOCAL BROKER REALITY ━━━ */
 .painSection {
-  background-color: #fbfcfc;
+  background-color: #fcfcfb;
   border-bottom: 1px solid #e2e8f0;
   padding-top: 56px;
 }
@@ -607,10 +607,10 @@
   display: flex;
   flex-direction: column;
   background: #ffffff;
-  border: 1.5px solid #dce8e3;
+  border: 1.5px solid #eae3da;
   border-radius: 18px;
   padding: 20px 16px;
-  box-shadow: 0 6px 20px rgba(13, 40, 35, 0.05);
+  box-shadow: 0 6px 20px rgba(31, 26, 22, 0.05);
   gap: 16px;
   text-align: left;
 }
@@ -620,7 +620,7 @@
   aspect-ratio: 16 / 11;
   border-radius: 14px;
   overflow: hidden;
-  background: radial-gradient(circle, #edf7f3 0%, rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(circle, #f7f2ed 0%, rgba(255, 255, 255, 0) 70%);
   position: relative;
 }
 
@@ -639,9 +639,9 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 850;
-  color: #0aa37a;
-  background: #eef8f5;
-  border: 1px solid #cce8de;
+  color: #e2552b;
+  background: #f8f3ee;
+  border: 1px solid #e1dad3;
   padding: 3px 8px;
   border-radius: 6px;
   margin-bottom: 8px;
@@ -652,7 +652,7 @@
   margin: 0 0 6px;
   font-size: 16px;
   font-weight: 850;
-  color: #0d2823;
+  color: #1f1a16;
   line-height: 1.4;
   letter-spacing: -0.025em;
   word-break: keep-all;
@@ -662,7 +662,7 @@
   margin: 0 0 6px;
   font-size: 13px;
   font-weight: 800;
-  color: #0aa37a;
+  color: #e2552b;
   letter-spacing: -0.01em;
 }
 
@@ -670,7 +670,7 @@
   margin: 0;
   font-size: 12.5px;
   line-height: 1.6;
-  color: #556964;
+  color: #695e55;
   word-break: keep-all;
 }
 
@@ -679,10 +679,10 @@
   width: 100%;
   margin: 0 0 24px;
   padding: 22px 18px;
-  background: linear-gradient(135deg, #06231e 0%, #0d3830 50%, #084c3c 100%);
+  background: linear-gradient(135deg, #181411 0%, #29211c 50%, #322822 100%);
   border-radius: 16px;
-  border: 1.5px solid rgba(52, 211, 153, 0.45);
-  box-shadow: 0 10px 28px rgba(10, 163, 122, 0.18);
+  border: 1.5px solid rgba(225, 85, 38, 0.45);
+  box-shadow: 0 10px 28px rgba(180, 63, 24, 0.18);
   position: relative;
   overflow: hidden;
   text-align: center;
@@ -695,10 +695,10 @@
   gap: 6px;
   font-size: 13.5px;
   font-weight: 850;
-  color: #34d399;
+  color: #f59a6f;
   letter-spacing: -0.02em;
   margin: 0 0 8px 0;
-  text-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+  text-shadow: 0 0 10px rgba(225, 85, 38, 0.4);
 }
 
 .revelationEmoji {
@@ -720,7 +720,7 @@
 }
 
 .revelationSuffix {
-  color: #a7f3d0;
+  color: #f8c3a8;
   font-weight: 850;
 }
 
@@ -741,9 +741,9 @@
   aspect-ratio: 2.14 / 1;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(10, 163, 122, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 24px rgba(180, 63, 24, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 2px solid #ffffff;
-  background-color: #0d2823;
+  background-color: #1f1a16;
 }
 
 .trioBannerImgDefault,
@@ -794,7 +794,7 @@
 .flowArrow {
   font-size: 11.5px;
   font-weight: 900;
-  color: #059669;
+  color: #e2552b;
 }
 
 .processGrid {
@@ -815,17 +815,17 @@
 }
 
 .processCardHighlight {
-  border-color: #10b981;
-  background: #fafffd;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
+  border-color: #e2552b;
+  background: #fefdfb;
+  box-shadow: 0 4px 14px rgba(180, 63, 24, 0.12);
 }
 
 .stepNum {
   display: inline-block;
   font-size: 11px;
   font-weight: 900;
-  color: #059669;
-  background: #ecfdf5;
+  color: #e2552b;
+  background: #fdeee7;
   padding: 3px 8px;
   border-radius: 6px;
   margin-bottom: 12px;
@@ -852,7 +852,7 @@
 .processCardTag {
   font-size: 11.5px;
   font-weight: 700;
-  color: #059669;
+  color: #e2552b;
   margin: 0 0 10px 0;
 }
 
@@ -910,8 +910,8 @@
   display: inline-block;
   font-size: 10.5px;
   font-weight: 900;
-  color: #059669;
-  background: #ecfdf5;
+  color: #e2552b;
+  background: #fdeee7;
   padding: 3px 8px;
   border-radius: 6px;
   margin-bottom: 8px;
@@ -927,7 +927,7 @@
 }
 
 .detailCardTitle span {
-  color: #059669;
+  color: #e2552b;
 }
 
 .detailCardDesc {
@@ -957,19 +957,19 @@
 }
 
 .pointDot {
-  color: #059669;
+  color: #e2552b;
   font-weight: 900;
 }
 
 /* ━━━ [6] 방송국 PD 직강 ━━━ */
 .proofSection {
-  background-color: #062326;
+  background-color: #1a1613;
   color: #ffffff;
   text-align: center;
 }
 
 .proofSection .kicker {
-  color: #34d399;
+  color: #f59a6f;
 }
 
 .proofSection .sectionTitle {
@@ -977,11 +977,11 @@
 }
 
 .proofSection .sectionTitle span {
-  color: #34d399;
+  color: #f59a6f;
 }
 
 .proofSection .sectionDesc {
-  color: #a7f3d0;
+  color: #f8c3a8;
   opacity: 0.9;
 }
 
@@ -1006,7 +1006,7 @@
 .proofStatNumber {
   font-size: 20px;
   font-weight: 900;
-  color: #34d399;
+  color: #f59a6f;
   line-height: 1.2;
 }
 
@@ -1045,7 +1045,7 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 800;
-  color: #34d399;
+  color: #f59a6f;
   margin-bottom: 6px;
 }
 
@@ -1067,7 +1067,7 @@
 .experienceText strong {
   display: block;
   font-size: 12.5px;
-  color: #6ee7b7;
+  color: #f59a6f;
   font-weight: 700;
 }
 
@@ -1109,8 +1109,8 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 900;
-  color: #059669;
-  background: #ecfdf5;
+  color: #e2552b;
+  background: #fdeee7;
   padding: 3px 8px;
   border-radius: 6px;
   margin-bottom: 8px;
@@ -1132,8 +1132,8 @@
 }
 
 .recommendSolution {
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
+  background: #fdeee7;
+  border: 1px solid #f8c3a8;
   border-radius: 8px;
   padding: 10px 12px;
 }
@@ -1142,13 +1142,13 @@
   display: block;
   font-size: 11px;
   font-weight: 800;
-  color: #047857;
+  color: #c9441d;
   margin-bottom: 4px;
 }
 
 .recommendSolutionText {
   font-size: 11.5px !important;
-  color: #065f46 !important;
+  color: #a8381a !important;
   line-height: 1.45 !important;
   margin: 0 !important;
   font-weight: 600;
@@ -1156,7 +1156,7 @@
 
 /* ━━━ [8] Final CTA ━━━ */
 .finalCta {
-  background: linear-gradient(180deg, #041c1a 0%, #062326 100%);
+  background: linear-gradient(180deg, #130f0d 0%, #1a1613 100%);
   color: #ffffff;
   padding: 40px 16px;
   text-align: center;
@@ -1164,7 +1164,7 @@
 
 .finalCtaKicker {
   font-size: 12px;
-  color: #6ee7b7;
+  color: #f59a6f;
   font-weight: 700;
   margin-bottom: 8px;
 }
@@ -1179,12 +1179,12 @@
 }
 
 .finalCtaTitle span {
-  color: #34d399;
+  color: #f59a6f;
 }
 
 .finalCtaDesc {
   font-size: 13px;
-  color: #d1fae5;
+  color: #fbdccd;
   opacity: 0.9;
   line-height: 1.55;
   margin: 0 auto 22px;
@@ -1229,7 +1229,7 @@
 .faqIcon {
   font-size: 18px;
   font-weight: 700;
-  color: #059669;
+  color: #e2552b;
   flex-shrink: 0;
 }
 
@@ -1252,10 +1252,10 @@
   margin-top: 14px;
   font-size: 13px;
   font-weight: 700;
-  color: #059669;
+  color: #e2552b;
   text-decoration: none;
   padding: 10px;
-  background: #ecfdf5;
+  background: #fdeee7;
   border-radius: 8px;
 }
 
@@ -1273,7 +1273,7 @@
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   border: 2px solid #ffffff;
-  background-color: #0d2823;
+  background-color: #1f1a16;
 }
 
 .trioBannerImg {
@@ -1283,9 +1283,9 @@
 /* ━━━ [모바일 중간 브릿지] 내 지역/단지 물건 등록 무료 혜택 3단 섹션 ━━━ */
 .freeOfferSection {
   padding: 44px 16px;
-  background: linear-gradient(180deg, #f7fbf9 0%, #edf7f4 50%, #f6faf8 100%);
-  border-top: 1px solid #e1efe9;
-  border-bottom: 1px solid #e1efe9;
+  background: linear-gradient(180deg, #fbf9f7 0%, #f7f2ed 50%, #faf8f6 100%);
+  border-top: 1px solid #f0e9e0;
+  border-bottom: 1px solid #f0e9e0;
 }
 
 .freeOfferHeader {
@@ -1298,13 +1298,13 @@
   align-items: center;
   gap: 4px;
   padding: 5px 14px;
-  background: #0aa37a;
+  background: #e2552b;
   color: #ffffff;
   font-size: 11.5px;
   font-weight: 850;
   letter-spacing: 0.04em;
   border-radius: 999px;
-  box-shadow: 0 4px 12px rgba(10, 163, 122, 0.25);
+  box-shadow: 0 4px 12px rgba(180, 63, 24, 0.25);
   margin-bottom: 12px;
 }
 
@@ -1314,19 +1314,19 @@
   font-weight: 950;
   line-height: 1.35;
   letter-spacing: -0.035em;
-  color: #0b221e;
+  color: #1b1612;
   word-break: keep-all;
 }
 
 .freeOfferHighlight {
-  color: #0aa37a;
+  color: #e2552b;
   display: inline;
 }
 
 .freeOfferSub {
   margin: 0;
   font-size: 13px;
-  color: #556c66;
+  color: #6c6055;
   line-height: 1.5;
   letter-spacing: -0.015em;
   word-break: keep-all;
@@ -1341,8 +1341,8 @@
 .freeOfferRow {
   background: #ffffff;
   border-radius: 18px;
-  border: 1.5px solid #d9eae4;
-  box-shadow: 0 10px 24px rgba(10, 163, 122, 0.07);
+  border: 1.5px solid #ebe2d8;
+  box-shadow: 0 10px 24px rgba(180, 63, 24, 0.07);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1352,7 +1352,7 @@
   position: relative;
   width: 100%;
   height: 220px;
-  background: radial-gradient(circle at 50% 30%, #ffffff 0%, #edf6f2 100%);
+  background: radial-gradient(circle at 50% 30%, #ffffff 0%, #f6f2ed 100%);
   overflow: hidden;
   display: block;
   text-decoration: none;
@@ -1372,7 +1372,7 @@
   align-items: center;
   gap: 5px;
   padding: 6px 14px;
-  background: rgba(10, 163, 122, 0.95);
+  background: rgba(180, 63, 24, 0.95);
   backdrop-filter: blur(4px);
   color: #ffffff;
   font-size: 12px;
@@ -1388,7 +1388,7 @@
   left: 14px;
   z-index: 2;
   padding: 6px 14px;
-  background: rgba(11, 34, 30, 0.88);
+  background: rgba(27, 22, 18, 0.88);
   backdrop-filter: blur(6px);
   color: #ffffff;
   font-size: 12.5px;
@@ -1406,8 +1406,8 @@
 .freeOfferChip {
   display: inline-flex;
   padding: 3px 10px;
-  background: #ecf8f3;
-  color: #0aa37a;
+  background: #f8f2ec;
+  color: #e2552b;
   font-size: 11.5px;
   font-weight: 800;
   border-radius: 6px;
@@ -1419,7 +1419,7 @@
   margin: 0 0 14px;
   font-size: 18px;
   font-weight: 900;
-  color: #0e2924;
+  color: #201b17;
   letter-spacing: -0.03em;
   line-height: 1.3;
 }
@@ -1439,15 +1439,15 @@
   gap: 10px;
   padding: 9px 12px;
   border-radius: 10px;
-  background: #f7faf9;
-  border: 1px solid #e7f0ec;
+  background: #faf9f7;
+  border: 1px solid #f1ece6;
 }
 
 .freeOfferCheckIcon {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #0aa37a;
+  background: #e2552b;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -1459,14 +1459,14 @@
 .freeOfferCheckText {
   font-size: 13.5px;
   font-weight: 700;
-  color: #1a3832;
+  color: #302822;
   line-height: 1.45;
   letter-spacing: -0.02em;
   word-break: keep-all;
 }
 
 .freeOfferCheckStrong {
-  color: #0aa37a;
+  color: #e2552b;
   font-weight: 900;
 }
 

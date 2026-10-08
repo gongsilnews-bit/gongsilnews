@@ -158,7 +158,7 @@ export default function StudyCommunityClient({
         color: "#ffffff",
         background: POINT,
         textDecoration: "none",
-        boxShadow: "0 2px 8px rgba(5, 150, 105, 0.3)",
+        boxShadow: "0 2px 8px rgba(180, 63, 24, 0.3)",
         whiteSpace: "nowrap",
       }}
     >
@@ -195,7 +195,7 @@ export default function StudyCommunityClient({
   });
 
   return (
-    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", color: "#132e27" }}>
+    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", color: "#261f1b" }}>
       <StudyHeader background={STUDY_HERO_BAR} />
 
       {/* ━━━ [1] 상단 히어로 배너 (통일된 프리미엄 스터디 히어로) ━━━ */}
@@ -337,9 +337,9 @@ export default function StudyCommunityClient({
                                   fontWeight: 700,
                                   borderRadius: "4px",
                                   marginRight: "8px",
-                                  backgroundColor: isAnswered ? "#ecfdf5" : "#f3f4f6",
-                                  color: isAnswered ? "#059669" : "#6b7280",
-                                  border: isAnswered ? "1px solid #a7f3d0" : "1px solid #e5e7eb",
+                                  backgroundColor: isAnswered ? "#fdeee7" : "#f3f4f6",
+                                  color: isAnswered ? "#e2552b" : "#6b7280",
+                                  border: isAnswered ? "1px solid #f8c3a8" : "1px solid #e5e7eb",
                                 }}
                               >
                                 {isAnswered ? "답변완료" : "답변대기"}
