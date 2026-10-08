@@ -610,6 +610,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   const kakaoMarkerRef = React.useRef<any>(null);
   const kakaoInfoWindowRef = React.useRef<any>(null);
   const kakaoPlacesRef = React.useRef<any>(null);
+  const kakaoGeocoderRef = React.useRef<any>(null);
 
   /* ── 유튜브 헬퍼 ── */
   const extractYoutubeId = (url: string): string | null => {
@@ -1488,6 +1489,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     kakaoMarkerRef.current = new kakao.maps.Marker({ position: centerLatLng });
     kakaoMarkerRef.current.setMap(kakaoMapRef.current);
     kakaoPlacesRef.current = new kakao.maps.services.Places();
+    kakaoGeocoderRef.current = new kakao.maps.services.Geocoder();
     kakaoInfoWindowRef.current = new kakao.maps.InfoWindow({ zIndex: 1, removable: true });
 
     // 기존 좌표가 있으면 마커를 해당 위치에 표시
@@ -1498,33 +1500,80 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     // 클릭 이벤트 (마커 이동 및 오버레이 띄우기)
     kakao.maps.event.addListener(kakaoMapRef.current, 'click', (mouseEvent: any) => {
       const latlng = mouseEvent.latLng;
+      const lat = latlng.getLat();
+      const lng = latlng.getLng();
       kakaoMarkerRef.current.setPosition(latlng);
-      displayMapOverlay(latlng.getLat(), latlng.getLng(), "직접 선택한 위치");
+
+      if (!kakaoGeocoderRef.current) {
+        displayMapOverlay(lat, lng, "직접 선택한 위치", "");
+        return;
+      }
+
+      kakaoGeocoderRef.current.coord2Address(lng, lat, (result: any[], status: any) => {
+        if (status === kakao.maps.services.Status.OK && result.length > 0) {
+          const address = result[0].road_address?.address_name || result[0].address?.address_name || "직접 선택한 위치";
+          displayMapOverlay(lat, lng, address, address === "직접 선택한 위치" ? "" : address);
+          return;
+        }
+
+        displayMapOverlay(lat, lng, "직접 선택한 위치", "");
+      });
     });
   };
 
   const handleMapSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mapSearchKw.trim() || !kakaoPlacesRef.current) return;
-    kakaoPlacesRef.current.keywordSearch(mapSearchKw, (data: any, status: any) => {
-      const kakao = (window as any).kakao;
+    const query = mapSearchKw.trim();
+    if (!query || !kakaoPlacesRef.current || !kakaoGeocoderRef.current) return;
+
+    const kakao = (window as any).kakao;
+    const moveToResult = (lat: number, lng: number, address: string) => {
+      const latlng = new kakao.maps.LatLng(lat, lng);
+      kakaoMapRef.current.setCenter(latlng);
+      kakaoMarkerRef.current.setPosition(latlng);
+      displayMapOverlay(lat, lng, address, address);
+    };
+
+    const searchByPlaceName = () => {
+      kakaoPlacesRef.current.keywordSearch(query, (data: any[], status: any) => {
+        if (status === kakao.maps.services.Status.OK && data.length > 0) {
+          const place = data[0];
+          const address = place.road_address_name || place.address_name || place.place_name || query;
+          moveToResult(parseFloat(place.y), parseFloat(place.x), address);
+        } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+          alert("검색 결과가 없습니다. 도로명 주소 전체 또는 건물명을 확인해 주세요.");
+        } else {
+          alert("지도 검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        }
+      });
+    };
+
+    // 도로명·지번 주소를 먼저 검색하고, 주소가 아니면 장소명 검색으로 보완한다.
+    kakaoGeocoderRef.current.addressSearch(query, (data: any[], status: any) => {
       if (status === kakao.maps.services.Status.OK && data.length > 0) {
-        const place = data[0];
-        const latlng = new kakao.maps.LatLng(place.y, place.x);
-        kakaoMapRef.current.setCenter(latlng);
-        kakaoMarkerRef.current.setPosition(latlng);
-        displayMapOverlay(place.y, place.x, place.place_name || place.address_name);
+        const result = data[0];
+        const address = result.road_address?.address_name || result.address?.address_name || result.address_name || query;
+        moveToResult(parseFloat(result.y), parseFloat(result.x), address);
+      } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+        searchByPlaceName();
       } else {
-        alert("검색 결과가 없습니다.");
+        alert("주소 검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
       }
     });
   };
 
-  const displayMapOverlay = (lat: number, lng: number, title: string) => {
+  const displayMapOverlay = (lat: number, lng: number, title: string, locationName = title) => {
     const kakao = (window as any).kakao;
+    const safeTitle = title.replace(/[&<>"']/g, (character) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[character] || character));
     const content = `
       <div style="padding: 12px; background: #fff; border-radius: 8px; min-width: 200px; text-align: center; font-family: sans-serif;">
-        <div style="font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 6px;">${title}</div>
+        <div style="font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 6px;">${safeTitle}</div>
         <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px;">📍 좌표: ${parseFloat(lat as any).toFixed(6)}, ${parseFloat(lng as any).toFixed(6)}</div>
         <button id="kakao-modal-confirm-btn" style="width: 100%; padding: 10px 0; background: #e8590c; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer;">
           ✔ 이 위치를 기사 좌표로 등록
@@ -1539,6 +1588,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
       if (btn) {
         btn.onclick = () => {
           setArticleCoords({ lat: parseFloat(lat as any), lng: parseFloat(lng as any) });
+          setLocation(locationName);
           setShowMapModal(false);
           kakaoInfoWindowRef.current.close();
         };
@@ -3001,7 +3051,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
             {/* 검색 폼 */}
             <div style={{ padding: '16px 24px', background: '#fff', borderBottom: `1px solid ${border}` }}>
               <form onSubmit={handleMapSearch} style={{ display: "flex", gap: 10 }}>
-                <input type="text" placeholder="지역명, 아파트명, 건물명 검색 (예: 강남역, 대치동 은마)"
+                <input type="text" placeholder="주소, 지역명, 아파트명, 건물명 검색 (예: 증가로20길 68-49)"
                   value={mapSearchKw} onChange={e => setMapSearchKw(e.target.value)}
                   style={{ flex: 1, padding: "12px 16px", border: `2px solid #e5e7eb`, borderRadius: 8, fontSize: 15, outline: "none" }} />
                 <button type="submit" style={{ padding: "0 32px", background: "#c2410c", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>지도 검색</button>

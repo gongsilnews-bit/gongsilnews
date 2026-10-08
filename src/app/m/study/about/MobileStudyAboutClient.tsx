@@ -297,23 +297,15 @@ export default function MobileStudyAboutClient() {
             <span>바로 시작하실 수 있습니다.</span>
           </h2>
 
-          {/* 3명의 소장님 대형 배너 (터치/호버 시 환호 표정으로 전환) */}
+          {/* 3명의 소장님 긍정 이미지 배너 */}
           <div className={styles.trioBannerWrap}>
             <div className={styles.trioBannerImgBox}>
-              <Image
-                src="/images/study/study-real-trio-worried.webp"
-                alt="공실스터디 이전 힘들어하던 3명의 공인중개사 소장님들"
-                fill
-                sizes="(max-width: 480px) 100vw, 448px"
-                className={styles.trioBannerImgDefault}
-                priority
-              />
               <Image
                 src="/images/study/study-real-trio-cheer.webp"
                 alt="공실스터디 멤버가 되어 환호하는 3명의 공인중개사 소장님들"
                 fill
                 sizes="(max-width: 480px) 100vw, 448px"
-                className={styles.trioBannerImgHover}
+                className={styles.trioBannerImg}
                 priority
               />
             </div>
@@ -531,7 +523,7 @@ export default function MobileStudyAboutClient() {
               title="온라인 강의 개설 지원 자세히 보기"
             >
               <Image
-                src="/images/study/benefit-lecture-upload-hero.png"
+                src="/images/study/real-estate-youtube-filming.png"
                 alt="스마트폰과 삼각대로 매물 분석 및 중개 노하우 온라인 강의를 촬영하여 공실스터디에 업로드하는 공인중개사 대표님"
                 fill
                 sizes="(max-width: 480px) 100vw, 400px"

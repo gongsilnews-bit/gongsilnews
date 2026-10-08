@@ -309,29 +309,17 @@ export default function StudyHomeYunClient() {
                 <span>바로 시작하실 수 있습니다.</span>
               </h2>
 
-              {/* 3명의 소장님 대형 배너 (마우스 오버 시 환호 표정으로 전환) */}
+              {/* 3명의 소장님 긍정 이미지 배너 */}
               <div className={styles.trioBannerWrap}>
                 <div className={styles.trioBannerImgBox}>
-                  <Image
-                    src="/images/study/study-real-trio-worried.webp"
-                    alt="공실스터디 이전 힘들어하던 3명의 공인중개사 소장님들"
-                    fill
-                    sizes="(max-width: 1200px) 100vw, 1100px"
-                    className={styles.trioBannerImgDefault}
-                    priority
-                  />
                   <Image
                     src="/images/study/study-real-trio-cheer.webp"
                     alt="공실스터디 멤버가 되어 환호하고 기뻐하는 3명의 공인중개사 소장님들"
                     fill
                     sizes="(max-width: 1200px) 100vw, 1100px"
-                    className={styles.trioBannerImgHover}
+                    className={styles.trioBannerImg}
                     priority
                   />
-                  <div className={styles.trioBannerBadgeDefault}>
-                    <span className={styles.trioBadgePulse} />
-                    <span>마우스를 올리면 소장님들의 변화를 볼 수 있어요! 👆</span>
-                  </div>
                 </div>
               </div>
             </header>
@@ -616,7 +604,7 @@ export default function StudyHomeYunClient() {
                   title="온라인 강의 개설 지원 자세히 보기"
                 >
                   <Image
-                    src="/images/study/benefit-lecture-upload-hero.png"
+                    src="/images/study/real-estate-youtube-filming.png"
                     alt="스마트폰과 삼각대로 매물 분석 및 중개 노하우 온라인 강의를 촬영하여 공실스터디에 업로드하는 공인중개사 대표님"
                     fill
                     sizes="(max-width: 900px) 100vw, 540px"

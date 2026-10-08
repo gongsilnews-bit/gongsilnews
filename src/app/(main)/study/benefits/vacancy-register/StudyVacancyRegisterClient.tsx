@@ -552,7 +552,7 @@ export default function StudyVacancyRegisterClient() {
                     marginBottom: 16,
                   }}
                 >
-                  혜택 03 · 쇼윈도 워크인 마케팅
+                  혜택 03 · 1층 유리창 홍보지
                 </div>
                 <h3
                   style={{
@@ -590,7 +590,7 @@ export default function StudyVacancyRegisterClient() {
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <span style={{ color: "#ea580c", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>사무실 프린터로 즉시 출력</strong> — 비싼 인쇄소 외주 비용 0원, A4 원클릭 인쇄
+                      <strong>다양한 디자인 선택</strong> — 다양한 색상, 디자인 선택으로 전단지 활용 가능
                     </span>
                   </div>
                 </div>
@@ -637,14 +637,14 @@ export default function StudyVacancyRegisterClient() {
                     margin: "0 0 16px 0",
                   }}
                 >
-                  등록한 공실이 실시간으로 내 물건접수 웹페이지에 연동!<br />
+                  등록한 공실이 내 물건접수 웹페이지에 연동!<br />
                   <span style={{ color: POINT }}>유튜브·블로그 링크 홍보 & 카톡 홈페이지 활용</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
                   멤버십 회원에게는 나만의 독립된 &lsquo;물건접수 웹페이지(공인중개사 홈페이지)&rsquo;가 무료로 제공됩니다.
                   등록한 20건의 공실이 내 홈페이지에 실시간으로 자동 동기화되어 채워집니다.
-                  유튜브 영상 더보기란이나 블로그 프로필에 링크만 걸어두면 매물 접수와 문의가 저절로 쏟아지며,
-                  손님에게도 명함 대신 &ldquo;저희 공식 홈페이지입니다&rdquo; 하고 카톡/문자로 공유할 수 있습니다.
+                  유튜브 영상 더보기란이나 블로그 프로필에 링크만 걸어두면 매물 접수와 문의 실시간 연동되며,
+                  카톡/문자로 임대인에게 공유할 수 있습니다.
                 </p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -657,13 +657,13 @@ export default function StudyVacancyRegisterClient() {
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>유튜브·블로그 자동 접수창구</strong> — 링크만 달아두면 임대인이 알아서 매물을 접수
+                      <strong>유튜브·블로그 자동 접수창구</strong> — 링크만 달아두면 손님이 알아서 매물을 접수
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                     <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
-                      <strong>손님에게 카톡 문자로 전송</strong> — 종이 명함을 넘어 내 전문성을 입증하는 모바일 홈페이지
+                      <strong>손님에게 카톡 문자로 전송</strong> — 아파트단지 임대인 손님에게 물건 접수 활용
                     </span>
                   </div>
                 </div>
@@ -723,8 +723,8 @@ export default function StudyVacancyRegisterClient() {
               매매보고서부터 홈페이지까지~ 알아서 다 해드립니다
             </h2>
             <p style={{ fontSize: "15px", color: "#94a3b8", lineHeight: 1.6, margin: 0 }}>
-              학습에서 끝나는 교육이 아니라, 매월 20건의 공실이 내 전용 웹페이지와 보고서, 홍보지로
-              즉시 전환되는 4단계 성공 사이클입니다.
+              내가 등록한 공실이 내 전용 웹페이지와 보고서, 홍보지로 즉시 전환되어
+              부동산마케팅이 자동으로 연동됩니다.
             </p>
           </div>
 
@@ -813,7 +813,7 @@ export default function StudyVacancyRegisterClient() {
                 border: "1px solid rgba(255, 255, 255, 0.3)",
               }}
             >
-              1년 연간 특강 VOD 무제한 + 4대 실무 마케팅 풀패키지
+              동영상제작강의 + 공실마케팅
             </div>
 
             <h3
@@ -838,8 +838,7 @@ export default function StudyVacancyRegisterClient() {
                 lineHeight: 1.6,
               }}
             >
-              공실스터디 멤버십 하나로 1년 365일 모든 VOD 특강 시청과 실무 마케팅 도구를
-              제한 없이 누리실 수 있습니다.
+              공실스터디 멤버 부동산이 되시면, 1년동안 부동산마케팅을 효율적으로 할 수 있습니다.
             </p>
 
             <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
@@ -876,7 +875,7 @@ export default function StudyVacancyRegisterClient() {
                   border: "1px solid rgba(255, 255, 255, 0.4)",
                 }}
               >
-                1년 연간 특강 라인업 둘러보기
+                공실스터디 강의보기
               </Link>
             </div>
           </div>

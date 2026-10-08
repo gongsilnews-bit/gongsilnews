@@ -340,8 +340,8 @@ export default function StudyAiYoutubeClient() {
                 }}
               >
                 <Image
-                  src="/images/study/seoul-venture-lecture-2025-blur.png"
-                  alt="2025년 서울벤처대학원대학교 강의 현장 단체사진 (개인정보 보호 모자이크 적용)"
+                  src="/images/study/real-estate-youtube-filming.png"
+                  alt="부동산 사무실에서 유튜브 영상을 촬영하는 공인중개사"
                   fill
                   sizes="(max-width: 1160px) 55vw, 608px"
                   style={{ objectFit: "cover", objectPosition: "center" }}

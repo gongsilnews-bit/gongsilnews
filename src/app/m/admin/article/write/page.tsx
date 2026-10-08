@@ -96,20 +96,42 @@ function LocationPickerModal({ initial, onClose, onConfirm }: {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const kakao = (window as any).kakao;
-    if (!searchKw.trim() || !mapRef.current || !kakao?.maps?.services) return;
+    const query = searchKw.trim();
+    if (!query || !mapRef.current || !kakao?.maps?.services) return;
     (document.activeElement as HTMLElement | null)?.blur(); // 모바일 키보드 닫기
-    new kakao.maps.services.Places().keywordSearch(searchKw, (data: any, status: any) => {
+
+    const moveToResult = (lat: number, lng: number, name: string) => {
+      const latlng = new kakao.maps.LatLng(lat, lng);
+      mapRef.current.setCenter(latlng);
+      markerRef.current.setPosition(latlng);
+      markerRef.current.setMap(mapRef.current);
+      setPicked({ lat, lng, name });
+    };
+
+    const searchByPlaceName = () => {
+      new kakao.maps.services.Places().keywordSearch(query, (data: any[], status: any) => {
+        if (status === kakao.maps.services.Status.OK && data.length > 0) {
+          const place = data[0];
+          const name = place.road_address_name || place.address_name || place.place_name || query;
+          moveToResult(parseFloat(place.y), parseFloat(place.x), name);
+        } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+          alert("검색 결과가 없습니다. 도로명 주소 전체 또는 건물명을 확인해 주세요.");
+        } else {
+          alert("지도 검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        }
+      });
+    };
+
+    // 도로명·지번 주소를 먼저 검색하고, 주소가 아니면 장소명 검색으로 보완한다.
+    new kakao.maps.services.Geocoder().addressSearch(query, (data: any[], status: any) => {
       if (status === kakao.maps.services.Status.OK && data.length > 0) {
-        const place = data[0];
-        const lat = parseFloat(place.y);
-        const lng = parseFloat(place.x);
-        const latlng = new kakao.maps.LatLng(lat, lng);
-        mapRef.current.setCenter(latlng);
-        markerRef.current.setPosition(latlng);
-        markerRef.current.setMap(mapRef.current);
-        setPicked({ lat, lng, name: place.place_name || place.address_name || "" });
+        const result = data[0];
+        const name = result.road_address?.address_name || result.address?.address_name || result.address_name || query;
+        moveToResult(parseFloat(result.y), parseFloat(result.x), name);
+      } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+        searchByPlaceName();
       } else {
-        alert("검색 결과가 없습니다.");
+        alert("주소 검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
       }
     });
   };
@@ -125,7 +147,7 @@ function LocationPickerModal({ initial, onClose, onConfirm }: {
           type="search"
           value={searchKw}
           onChange={e => setSearchKw(e.target.value)}
-          placeholder="지역명, 아파트명, 건물명 검색"
+          placeholder="주소, 지역명, 아파트명, 건물명 검색"
           style={{ flex: 1, minWidth: 0, height: 42, padding: "0 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 16, outline: "none" }}
         />
         <button type="submit" style={{ height: 42, padding: "0 16px", background: "#374151", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>검색</button>

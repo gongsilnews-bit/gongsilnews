@@ -249,7 +249,7 @@ export default function StudyLecturesClient({
                     style={{
                       width: "100%",
                       height: 42,
-                      background: "#f0fdf4",
+                      background: "#f5f6f8",
                       border: "1.5px solid #a7f3d0",
                       borderRadius: 8,
                       padding: "0 38px 0 14px",
@@ -262,12 +262,12 @@ export default function StudyLecturesClient({
                     }}
                     onFocus={(e) => {
                       e.currentTarget.style.borderColor = "#059669";
-                      e.currentTarget.style.backgroundColor = "#ecfdf5";
+                      e.currentTarget.style.backgroundColor = "#f3f4f6";
                       e.currentTarget.style.boxShadow = "0 0 0 3px rgba(16, 185, 129, 0.15)";
                     }}
                     onBlur={(e) => {
                       e.currentTarget.style.borderColor = "#a7f3d0";
-                      e.currentTarget.style.backgroundColor = "#f0fdf4";
+                      e.currentTarget.style.backgroundColor = "#f5f6f8";
                       e.currentTarget.style.boxShadow = "0 1px 2px rgba(5, 150, 105, 0.05)";
                     }}
                   />

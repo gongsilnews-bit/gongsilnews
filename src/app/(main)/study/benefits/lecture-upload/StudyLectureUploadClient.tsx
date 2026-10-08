@@ -86,7 +86,7 @@ export default function StudyLectureUploadClient() {
             {/* 배경 이미지 — 전문 남성 중개사 삼각대 촬영 실사 배너 */}
             <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: "62%" }}>
               <Image
-                src="/images/study/benefit-lecture-upload-hero.png"
+                src="/images/study/real-estate-youtube-filming.png"
                 alt="사무실에서 스마트폰과 삼각대로 강의 영상을 촬영 중인 전문 공인중개사 대표"
                 fill
                 priority
