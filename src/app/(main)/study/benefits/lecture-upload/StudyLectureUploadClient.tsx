@@ -9,11 +9,16 @@ import { StudyBenefitsHeroTabs } from "@/components/study/StudyBenefitsSubNav";
 /**
  * 멤버십혜택 04 - 강의영상업로딩
  *
- * 핵심 가치:
- * 1. 내 지역정보, 단지 정보를 '유튜브 강의'와 '공실스터디 인강'으로 자산화
- * 2. 부동산 대표님도 강사가 될 수 있는 플랫폼 시스템 제공
- * 3. 스마트폰/촬영 장비로 제작한 강의 영상을 플랫폼에 무료 업로드 및 채널 개설 지원
- * 4. 전국 11만 부동산 네트워크와 고객에게 실시간 노출되어 지역 1등 전문가 브랜딩
+ * 상세 스토리보드:
+ * 1. HERO 배너: 내 지역정보, 단지 정보 이제 유튜브 강의로!
+ * 2. STATS BAR: 핵심 4대 지표
+ * 3. REALITY: 왜 부동산에서 '임장료' 이야기가 나올까? (임장료 딜레마)
+ * 4. PROBLEM: 하지만 임장료는 현실적으로 쉽지 않습니다 (중개사 VS 고객 비교)
+ * 5. SOLUTION: 해결책은 지역정보를 콘텐츠로 만드는 것 (5대 콘텐츠 유형)
+ * 6. STEP 01: 공실뉴스에서 새로운 시작을 제안합니다 (공실 20건 & 네트워크)
+ * 7. STEP 02: 공실스터디는 부동산대표님이 배우고, 만들고, 개설하는 인강 플랫폼 (스튜디오 & 5대 프로세스)
+ * 8. STEP 03: 부동산 대표님도 강사가 될 수 있습니다! (4분할 현장 촬영 사례)
+ * 9. BLACK CTA & SUMMARY: 지역정보를 영상으로, 강의로, 기회로 바꾸세요
  */
 
 const POINT = "#059669";
@@ -62,7 +67,7 @@ export default function StudyLectureUploadClient() {
     >
       <StudyHeader />
 
-      {/* ━━━ 1. HERO 섹션 ━━━ */}
+      {/* ━━━ 1. HERO 섹션 (실사 배너 + 탭 네비게이션) ━━━ */}
       <section style={{ backgroundColor: "#ffffff", padding: "18px 0 16px" }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
           <div
@@ -78,7 +83,7 @@ export default function StudyLectureUploadClient() {
               height: 400,
             }}
           >
-            {/* 배경 이미지 — 첨부해주신 전문 남성 중개사 삼각대 촬영 실사 배너 */}
+            {/* 배경 이미지 — 전문 남성 중개사 삼각대 촬영 실사 배너 */}
             <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: "62%" }}>
               <Image
                 src="/images/study/benefit-lecture-upload-hero.png"
@@ -237,7 +242,7 @@ export default function StudyLectureUploadClient() {
       </section>
 
       {/* ━━━ 2. 핵심 지표 바 (Stats Bar) ━━━ */}
-      <section style={{ padding: "20px 0 40px", backgroundColor: "#ffffff" }}>
+      <section style={{ padding: "16px 0 36px", backgroundColor: "#ffffff" }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
           <div
             style={{
@@ -301,53 +306,149 @@ export default function StudyLectureUploadClient() {
         </div>
       </section>
 
-      {/* ━━━ 3. 문제의식: 왜 부동산에서 '임장료' 이야기가 나올까? ━━━ */}
-      <section style={{ padding: "60px 0 70px", backgroundColor: "#fbfcfb", borderTop: "1px solid #f1f5f9" }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 24px" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
+      {/* ━━━ 3. REALITY: 왜 부동산에서 '임장료' 이야기가 나올까? ━━━ */}
+      <section style={{ padding: "64px 0 72px", backgroundColor: "#fbfcfb", borderTop: "1px solid #f1f5f9" }}>
+        <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 24px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: 40,
+              alignItems: "center",
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
+              borderRadius: 20,
+              padding: "40px",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.04)",
+            }}
+          >
+            {/* 좌측 텍스트 */}
+            <div>
+              <div
+                style={{
+                  display: "inline-block",
+                  padding: "4px 12px",
+                  borderRadius: 6,
+                  background: POINT_SOFT,
+                  color: POINT_DARK,
+                  fontSize: 12,
+                  fontWeight: 800,
+                  marginBottom: 12,
+                }}
+              >
+                REAL ESTATE ISSUE
+              </div>
+              <h2
+                style={{
+                  fontSize: "30px",
+                  fontWeight: 900,
+                  color: "#111827",
+                  lineHeight: 1.35,
+                  letterSpacing: "-1px",
+                  margin: "0 0 16px 0",
+                }}
+              >
+                왜 부동산에서<br />
+                <span style={{ color: POINT }}>'임장료'</span> 이야기가 나올까?
+              </h2>
+              <p
+                style={{
+                  fontSize: "15px",
+                  color: "#4b5563",
+                  lineHeight: 1.75,
+                  margin: "0 0 20px 0",
+                  wordBreak: "keep-all",
+                }}
+              >
+                손님과 몇 시간씩 걷고, 단지별 장단점, 시세, 학군, 로얄동 정보까지 꼼꼼하게 브리핑했지만...
+                정작 계약은 다른 부동산에서? 부동산 대표님이라면 누구나 한 번쯤 겪어본 허탈한 현실입니다.
+              </p>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  color: POINT,
+                  fontSize: "14px",
+                  fontWeight: 800,
+                }}
+              >
+                <span>임장료 딜레마, 과연 해결책은 없을까요?</span>
+              </div>
+            </div>
+
+            {/* 우측 임장료 고민 실사 비주얼 */}
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                aspectRatio: "16 / 11",
+                borderRadius: 16,
+                overflow: "hidden",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
+              }}
+            >
+              <Image
+                src="/images/study/recommend_real_teheran_man.jpg"
+                alt="고객 응대와 임장 브리핑으로 고민하는 공인중개사 대표"
+                fill
+                sizes="(max-width: 768px) 100vw, 480px"
+                style={{ objectFit: "cover" }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "auto 0 0 0",
+                  padding: "16px 20px",
+                  background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
+                  color: "#ffffff",
+                }}
+              >
+                <div style={{ fontSize: 14, fontWeight: 800 }}>발품과 정성, 더 이상 무료로 날리지 마세요</div>
+                <div style={{ fontSize: 12, opacity: 0.85 }}>부동산 전문 지식의 정당한 가치를 인정받는 방법</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ━━━ 4. PROBLEM: 하지만 임장료는 현실적으로 쉽지 않습니다 ━━━ */}
+      <section style={{ padding: "64px 0", backgroundColor: "#ffffff" }}>
+        <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
             <span
               style={{
                 display: "inline-block",
-                padding: "5px 14px",
-                borderRadius: 20,
-                background: POINT_SOFT,
-                color: POINT_DARK,
-                fontSize: 13,
+                padding: "4px 12px",
+                borderRadius: 6,
+                background: "#fef2f2",
+                color: "#dc2626",
+                fontSize: 12,
                 fontWeight: 800,
-                marginBottom: 14,
+                marginBottom: 10,
               }}
             >
-              REALITY &amp; SOLUTION
+              PROBLEM
             </span>
             <h2
               style={{
-                fontSize: "34px",
+                fontSize: "30px",
                 fontWeight: 900,
                 color: "#111827",
                 lineHeight: 1.35,
-                letterSpacing: "-1.2px",
-                margin: "0 0 16px 0",
+                letterSpacing: "-1px",
+                margin: "0 0 12px 0",
               }}
             >
-              왜 부동산에서 <span style={{ color: POINT }}>'임장료'</span> 이야기가 나올까?
+              하지만 임장료는 <span style={{ color: "#dc2626" }}>현실적으로 쉽지 않습니다</span>
             </h2>
-            <p
-              style={{
-                fontSize: "16px",
-                color: "#64748b",
-                lineHeight: 1.7,
-                maxWidth: 680,
-                margin: "0 auto",
-                wordBreak: "keep-all",
-              }}
-            >
-              손님에게 수없이 발품 팔아 쌓은 단지 분석, 학군, 개발 호재 정보를 열심히 브리핑하지만,
-              계약으로 이어지지 않으면 모든 시간과 땀이 허공으로 날아갑니다.
-              하지만 현실적으로 손님에게 '임장료'를 요구하기는 쉽지 않습니다.
+            <p style={{ fontSize: 15.5, color: "#64748b", margin: 0 }}>
+              고객과의 심리적 마찰과 시장 관행 때문에 현장에서 대놓고 임장료를 청구하기는 어렵습니다.
             </p>
           </div>
 
-          {/* 중개사 VS 고객의 딜레마 카드 */}
+          {/* 중개사 VS 고객 비교 카드 */}
           <div
             style={{
               display: "grid",
@@ -377,15 +478,15 @@ export default function StudyLectureUploadClient() {
                     fontWeight: 800,
                   }}
                 >
-                  중개사의 고민
+                  중개사의 입장
                 </span>
                 <span style={{ fontSize: 18, fontWeight: 900, color: "#111827" }}>
-                  수많은 시간과 발품의 허탈함
+                  수많은 시간과 발품의 손실
                 </span>
               </div>
-              <ul style={{ margin: 0, paddingLeft: 20, color: "#475569", fontSize: 14.5, lineHeight: 1.8 }}>
-                <li>동네 단지별 장단점, 시세, 학군 분석에 수년의 시간 소요</li>
-                <li>무료로 1~2시간 브리핑만 받고 다른 부동산에서 계약하는 고객</li>
+              <ul style={{ margin: 0, paddingLeft: 18, color: "#475569", fontSize: 14, lineHeight: 1.8 }}>
+                <li>단지별 동호수 특징, 학군, 시세 분석에 수년의 시간 축적</li>
+                <li>무료로 1~2시간 브리핑만 듣고 다른 부동산에서 계약하는 고객</li>
                 <li>정당한 정보 가치를 인정받고 싶지만 마찰이 두려운 현실</li>
               </ul>
             </div>
@@ -417,82 +518,435 @@ export default function StudyLectureUploadClient() {
                   계약 전 상담료는 부담스러운 심리
                 </span>
               </div>
-              <ul style={{ margin: 0, paddingLeft: 20, color: "#475569", fontSize: 14.5, lineHeight: 1.8 }}>
-                <li>아직 어떤 매물을 살지 결정하지 못한 탐색 단계</li>
+              <ul style={{ margin: 0, paddingLeft: 18, color: "#475569", fontSize: 14, lineHeight: 1.8 }}>
+                <li>아직 매수 여부도 결정하지 못한 초기 탐색 단계</li>
                 <li>단순 문의나 현장 동행에 비용을 지불하는 문화의 부재</li>
-                <li>전문성 있는 정보를 원하지만 별도 지출에는 저항감 발생</li>
+                <li>유료 상담 요구 시 다른 부동산으로 쉽게 이탈해 버림</li>
               </ul>
             </div>
           </div>
 
-          {/* 해결책 배너 */}
+          {/* 중앙 강조 배너 */}
           <div
             style={{
               background: `linear-gradient(135deg, ${POINT} 0%, #047857 100%)`,
               borderRadius: 16,
-              padding: "32px 36px",
+              padding: "28px 32px",
               color: "#ffffff",
               textAlign: "center",
-              boxShadow: "0 12px 28px rgba(5, 150, 105, 0.25)",
+              boxShadow: "0 8px 24px rgba(5, 150, 105, 0.25)",
             }}
           >
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#a7f3d0", marginBottom: 6 }}>
-              THE ONLY SOLUTION
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#a7f3d0", marginBottom: 6 }}>
+              KEY SOLUTION
             </div>
-            <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: "-0.5px", marginBottom: 8 }}>
+            <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: "-0.5px", marginBottom: 6 }}>
               해결책은 '정보의 자산화'입니다!
             </div>
-            <div style={{ fontSize: 15.5, color: "#ecfdf5", maxWidth: 640, margin: "0 auto", lineHeight: 1.6 }}>
-              대표님의 머릿속에만 있던 지역 정보와 단지 브리핑 노하우를
-              <strong>'온라인 강의 영상'</strong>으로 만들어 공실스터디에 등록하세요.
-              지식이 자산이 되고, 전국 고객이 대표님을 찾아옵니다.
+            <div style={{ fontSize: 15, color: "#ecfdf5", maxWidth: 640, margin: "0 auto", lineHeight: 1.6 }}>
+              무료로 브리핑해주고 허탈해할 필요가 없습니다. 머릿속 지역 정보를 <strong>'온라인 강의 영상'</strong>으로 만들어 플랫폼에 등록하면 영구적인 콘텐츠 자산이 됩니다.
             </div>
           </div>
         </div>
       </section>
 
-      {/* ━━━ 4. 4단계 로드맵 프로세스 (탭 전환 인터랙션) ━━━ */}
-      <section style={{ padding: "80px 0", backgroundColor: "#ffffff" }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 24px" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
+      {/* ━━━ 5. SOLUTION: 해결책은 지역정보를 콘텐츠로 만드는 것 ━━━ */}
+      <section style={{ padding: "64px 0", backgroundColor: "#fbfcfb", borderTop: "1px solid #f1f5f9" }}>
+        <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ textAlign: "center", marginBottom: 44 }}>
             <span
               style={{
                 display: "inline-block",
-                padding: "5px 14px",
-                borderRadius: 20,
+                padding: "4px 12px",
+                borderRadius: 6,
                 background: POINT_SOFT,
                 color: POINT_DARK,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: 800,
-                marginBottom: 14,
+                marginBottom: 10,
               }}
             >
-              STEP BY STEP
+              SOLUTION
             </span>
             <h2
               style={{
-                fontSize: "34px",
+                fontSize: "30px",
                 fontWeight: 900,
                 color: "#111827",
                 lineHeight: 1.35,
-                letterSpacing: "-1.2px",
-                margin: "0 0 16px 0",
+                letterSpacing: "-1px",
+                margin: "0 0 10px 0",
               }}
             >
-              어떻게 강의를 개설하고 업로드하나요?
+              해결책은 <span style={{ color: POINT }}>지역정보를 콘텐츠로 만드는 것</span>
             </h2>
-            <p style={{ fontSize: 16, color: "#64748b", margin: 0 }}>
-              촬영 경험이 전혀 없는 초보 대표님도 순서대로 따라 하시면 쉽게 강사로 데뷔하실 수 있습니다.
+            <p style={{ fontSize: 15, color: "#64748b", margin: 0 }}>
+              내가 가장 잘 아는 우리 동네의 5대 핵심 주제를 강의 영상으로 패키징하세요.
             </p>
           </div>
 
-          {/* 4단계 카드 그리드 */}
+          {/* 5대 콘텐츠 유형 그리드 */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 14,
+            }}
+          >
+            {[
+              { num: "01", title: "동네 정보", desc: "상권, 교통, 재개발 호재 분석" },
+              { num: "02", title: "단지 분석", desc: "동별 로얄동, 조망, 평면 특징" },
+              { num: "03", title: "시세 동향", desc: "실거래가 추이, 급매물 분석" },
+              { num: "04", title: "학군·환경", desc: "초품아, 학원가, 생활 인프라" },
+              { num: "05", title: "매물 브리핑", desc: "전속 매물 영상 쇼케이스" },
+            ].map((c) => (
+              <div
+                key={c.num}
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #dce9e5",
+                  borderRadius: 14,
+                  padding: "20px 18px",
+                  textAlign: "center",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 900, color: POINT, marginBottom: 6 }}>
+                  {c.num}
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: "#111827", marginBottom: 6 }}>
+                  {c.title}
+                </div>
+                <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>
+                  {c.desc}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ━━━ 6. STEP 01: 공실뉴스에서 새로운 시작을 제안합니다 ━━━ */}
+      <section style={{ padding: "64px 0", backgroundColor: "#ffffff", borderTop: "1px solid #f1f5f9" }}>
+        <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 24px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: 40,
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <span
+                style={{
+                  display: "inline-block",
+                  padding: "4px 10px",
+                  borderRadius: 6,
+                  background: POINT_SOFT,
+                  color: POINT_DARK,
+                  fontSize: 12,
+                  fontWeight: 800,
+                  marginBottom: 12,
+                }}
+              >
+                STEP 01
+              </span>
+              <h2
+                style={{
+                  fontSize: "28px",
+                  fontWeight: 900,
+                  color: "#111827",
+                  lineHeight: 1.35,
+                  letterSpacing: "-1px",
+                  margin: "0 0 16px 0",
+                }}
+              >
+                <span style={{ color: POINT }}>공실뉴스</span>에서<br />
+                새로운 시작을 제안합니다
+              </h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: POINT_SOFT, color: POINT_DARK, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, flexShrink: 0 }}>✓</div>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#111827" }}>공실 20건 무료 광고 등록</div>
+                    <div style={{ fontSize: 13, color: "#64748b" }}>전국 11만 공인중개사가 매일 무료로 열람하는 플랫폼 노출</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: POINT_SOFT, color: POINT_DARK, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, flexShrink: 0 }}>✓</div>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#111827" }}>단독 물건접수 웹페이지 무료 제공</div>
+                    <div style={{ fontSize: 13, color: "#64748b" }}>등록한 매물과 기사가 대표님 전용 홈페이지에 100% 자동 진열</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", background: POINT_SOFT, color: POINT_DARK, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, flexShrink: 0 }}>✓</div>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#111827" }}>AI 매매보고서 &amp; 유리창 전단지 1초 출력</div>
+                    <div style={{ fontSize: 13, color: "#64748b" }}>브리핑용 보고서와 워크인 고객용 쇼윈도 홍보물 즉시 완성</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                aspectRatio: "16 / 11",
+                borderRadius: 16,
+                overflow: "hidden",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+                background: "#f8fafc",
+              }}
+            >
+              <Image
+                src="/images/study/partner-webpage-sample.png"
+                alt="공실뉴스 플랫폼 매물 연동 화면"
+                fill
+                sizes="(max-width: 768px) 100vw, 480px"
+                style={{ objectFit: "contain", padding: 12 }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ━━━ 7. STEP 02: 공실스터디는 부동산대표님이 배우고, 만들고, 개설하는 인강 플랫폼 ━━━ */}
+      <section style={{ padding: "64px 0", backgroundColor: "#fbfcfb", borderTop: "1px solid #f1f5f9" }}>
+        <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <span
+              style={{
+                display: "inline-block",
+                padding: "4px 10px",
+                borderRadius: 6,
+                background: POINT_SOFT,
+                color: POINT_DARK,
+                fontSize: 12,
+                fontWeight: 800,
+                marginBottom: 10,
+              }}
+            >
+              STEP 02
+            </span>
+            <h2
+              style={{
+                fontSize: "28px",
+                fontWeight: 900,
+                color: "#111827",
+                lineHeight: 1.35,
+                letterSpacing: "-1px",
+                margin: "0 0 10px 0",
+              }}
+            >
+              <span style={{ color: POINT }}>공실스터디</span>는 부동산대표님이<br />
+              배우고, 만들고, 개설하는 인강 플랫폼입니다
+            </h2>
+            <p style={{ fontSize: 15, color: "#64748b", margin: 0 }}>
+              단순 수강생에 머물지 않고, 직접 강사가 되어 나만의 인강 채널을 오픈할 수 있습니다.
+            </p>
+          </div>
+
+          {/* 중앙 스튜디오 촬영 실사 비주얼 */}
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              aspectRatio: "21 / 9",
+              borderRadius: 18,
+              overflow: "hidden",
+              border: "1px solid #dce9e5",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+              marginBottom: 24,
+            }}
+          >
+            <Image
+              src="/images/study/study-real-corp-filming.webp"
+              alt="사무실에서 강의 영상을 촬영하고 플랫폼에 업로드하는 중개사"
+              fill
+              sizes="(max-width: 1040px) 100vw, 1040px"
+              style={{ objectFit: "cover" }}
+            />
+          </div>
+
+          {/* 5대 플랫폼 프로세스 칩 */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 12,
+            }}
+          >
+            {[
+              { title: "강의 개설", desc: "대표님 단독 인강 채널" },
+              { title: "영상 제작", desc: "스마트폰 하나로 쉽게" },
+              { title: "플랫폼 등록", desc: "공실스터디 VOD 연동" },
+              { title: "수강생 관리", desc: "전국 공인중개사 연결" },
+              { title: "수익 창출", desc: "지역 전문가 독점 브랜딩" },
+            ].map((p, i) => (
+              <div
+                key={i}
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 12,
+                  padding: "16px 14px",
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ fontSize: 15, fontWeight: 900, color: POINT, marginBottom: 4 }}>
+                  {p.title}
+                </div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>
+                  {p.desc}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ━━━ 8. STEP 03: 부동산 대표님도 강사가 될 수 있습니다! (4분할 현장 사례) ━━━ */}
+      <section style={{ padding: "64px 0", backgroundColor: "#ffffff", borderTop: "1px solid #f1f5f9" }}>
+        <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <span
+              style={{
+                display: "inline-block",
+                padding: "4px 10px",
+                borderRadius: 6,
+                background: POINT_SOFT,
+                color: POINT_DARK,
+                fontSize: 12,
+                fontWeight: 800,
+                marginBottom: 10,
+              }}
+            >
+              STEP 03
+            </span>
+            <h2
+              style={{
+                fontSize: "28px",
+                fontWeight: 900,
+                color: "#111827",
+                lineHeight: 1.35,
+                letterSpacing: "-1px",
+                margin: "0 0 10px 0",
+              }}
+            >
+              부동산 대표님도 <span style={{ color: POINT }}>강사가 될 수 있습니다!</span>
+            </h2>
+            <p style={{ fontSize: 15, color: "#64748b", margin: 0 }}>
+              고가의 장비나 스튜디오 없이도 누구나 손쉽게 촬영할 수 있는 4가지 실전 방식
+            </p>
+          </div>
+
+          {/* 4분할 촬영 사례 그리드 */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
               gap: 16,
-              marginBottom: 36,
+            }}
+          >
+            {[
+              {
+                title: "스마트폰 임장 라이브",
+                desc: "단지 앞을 직접 걸으며 스마트폰으로 실시간 임장 영상 촬영",
+                img: "/images/study/recommend_real_villa.jpg",
+              },
+              {
+                title: "핀마이크 단지 브리핑",
+                desc: "사무실 책상에서 단지 조감도와 지도를 보며 핵심 정보 강의",
+                img: "/images/study/recommend_real_apartment.jpg",
+              },
+              {
+                title: "쇼츠·릴스 1분 꿀팁",
+                desc: "세무, 학군, 로얄동 선택법 등 핵심 정보만 1분 숏폼으로 제작",
+                img: "/images/study/study-real-corp-sns.webp",
+              },
+              {
+                title: "현장 임장 투어 영상",
+                desc: "단지 내부 커뮤니티와 주변 상권을 소개하는 가이드 영상",
+                img: "/images/study/recommend_real_teheran_man.jpg",
+              },
+            ].map((c, i) => (
+              <div
+                key={i}
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #dce9e5",
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.04)",
+                }}
+              >
+                <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3" }}>
+                  <Image
+                    src={c.img}
+                    alt={c.title}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 250px"
+                    style={{ objectFit: "cover" }}
+                  />
+                </div>
+                <div style={{ padding: "16px 14px" }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#111827", marginBottom: 4 }}>
+                    {c.title}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.5 }}>
+                    {c.desc}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ━━━ 9. 4단계 로드맵 인터랙션 카드 ━━━ */}
+      <section style={{ padding: "64px 0", backgroundColor: "#fbfcfb", borderTop: "1px solid #f1f5f9" }}>
+        <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <span
+              style={{
+                display: "inline-block",
+                padding: "4px 10px",
+                borderRadius: 6,
+                background: POINT_SOFT,
+                color: POINT_DARK,
+                fontSize: 12,
+                fontWeight: 800,
+                marginBottom: 10,
+              }}
+            >
+              PROCESS
+            </span>
+            <h2
+              style={{
+                fontSize: "28px",
+                fontWeight: 900,
+                color: "#111827",
+                lineHeight: 1.35,
+                letterSpacing: "-1px",
+                margin: "0 0 10px 0",
+              }}
+            >
+              강의 개설 &amp; 업로드 4단계 진행 과정
+            </h2>
+            <p style={{ fontSize: 15, color: "#64748b", margin: 0 }}>
+              촬영 경험이 전혀 없으셔도 공실스터디가 전 과정을 밀착 지원합니다.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+              gap: 14,
             }}
           >
             {steps.map((st, idx) => {
@@ -502,18 +956,18 @@ export default function StudyLectureUploadClient() {
                   key={st.step}
                   onClick={() => setActiveStep(idx)}
                   style={{
-                    padding: "24px 20px",
+                    padding: "22px 18px",
                     borderRadius: 14,
-                    background: isSel ? POINT_SOFT : "#f8fafc",
+                    background: isSel ? POINT_SOFT : "#ffffff",
                     border: isSel ? `2px solid ${POINT}` : "1px solid #e2e8f0",
                     cursor: "pointer",
                     transition: "all 0.2s ease",
                     transform: isSel ? "translateY(-3px)" : "none",
-                    boxShadow: isSel ? "0 8px 20px rgba(5,150,105,0.15)" : "none",
+                    boxShadow: isSel ? "0 8px 20px rgba(5,150,105,0.12)" : "0 2px 8px rgba(0,0,0,0.02)",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <span style={{ fontSize: 20, fontWeight: 900, color: isSel ? POINT : "#94a3b8" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <span style={{ fontSize: 18, fontWeight: 900, color: isSel ? POINT : "#94a3b8" }}>
                       {st.step}
                     </span>
                     <span
@@ -529,10 +983,10 @@ export default function StudyLectureUploadClient() {
                       {st.tag}
                     </span>
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 8 }}>
+                  <div style={{ fontSize: 15.5, fontWeight: 800, color: "#111827", marginBottom: 6 }}>
                     {st.title}
                   </div>
-                  <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
+                  <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.55 }}>
                     {st.desc}
                   </div>
                 </div>
@@ -542,71 +996,11 @@ export default function StudyLectureUploadClient() {
         </div>
       </section>
 
-      {/* ━━━ 5. 상세 랜딩페이지 비주얼 섹션 (첨부된 이미지 2 활용) ━━━ */}
-      <section style={{ padding: "60px 0 80px", backgroundColor: "#fbfcfb", borderTop: "1px solid #f1f5f9" }}>
-        <div style={{ maxWidth: 880, margin: "0 auto", padding: "0 20px" }}>
-          <div style={{ textAlign: "center", marginBottom: 36 }}>
-            <span
-              style={{
-                display: "inline-block",
-                padding: "5px 14px",
-                borderRadius: 20,
-                background: POINT_SOFT,
-                color: POINT_DARK,
-                fontSize: 13,
-                fontWeight: 800,
-                marginBottom: 12,
-              }}
-            >
-              OFFICIAL GUIDE
-            </span>
-            <h2
-              style={{
-                fontSize: "30px",
-                fontWeight: 900,
-                color: "#111827",
-                letterSpacing: "-1px",
-                margin: "0 0 12px 0",
-              }}
-            >
-              공실스터디 강사 개설 &amp; 영상 업로드 안내서
-            </h2>
-            <p style={{ fontSize: 15, color: "#64748b", margin: 0 }}>
-              배우고, 만들고, 직접 개설하는 대한민국 1위 부동산 중개 에듀테크 플랫폼
-            </p>
-          </div>
-
-          {/* 세로 상세 가이드 뷰어 (모바일/태블릿 최적화 목업 스타일) */}
-          <div
-            style={{
-              maxWidth: 480,
-              margin: "0 auto",
-              position: "relative",
-              borderRadius: 24,
-              overflow: "hidden",
-              border: "1px solid #dce9e5",
-              boxShadow: "0 16px 40px rgba(0, 0, 0, 0.08)",
-              background: "#ffffff",
-            }}
-          >
-            <div style={{ position: "relative", width: "100%", aspectRatio: "153 / 1024" }}>
-              <Image
-                src="/images/study/benefit-lecture-upload-detail.png"
-                alt="공실스터디 강의영상업로딩 상세 안내 페이지"
-                fill
-                sizes="(max-width: 480px) 100vw, 480px"
-                style={{ objectFit: "contain", objectPosition: "top center" }}
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ━━━ 6. 하단 최종 CTA 블랙 배너 ━━━ */}
+      {/* ━━━ 10. 하단 블랙 최종 CTA 섹션 ━━━ */}
       <section
         style={{
           padding: "70px 24px",
-          background: "linear-gradient(135deg, #0f2926 0%, #061f1c 100%)",
+          background: "linear-gradient(135deg, #0d2824 0%, #061917 100%)",
           color: "#ffffff",
           textAlign: "center",
         }}
@@ -617,8 +1011,8 @@ export default function StudyLectureUploadClient() {
               display: "inline-block",
               padding: "6px 16px",
               borderRadius: 20,
-              background: "rgba(5, 150, 105, 0.2)",
-              border: "1px solid rgba(5, 150, 105, 0.4)",
+              background: "rgba(5, 150, 105, 0.25)",
+              border: "1px solid rgba(5, 150, 105, 0.5)",
               color: "#6ee7b7",
               fontSize: 13,
               fontWeight: 800,
@@ -629,7 +1023,7 @@ export default function StudyLectureUploadClient() {
           </span>
           <h2
             style={{
-              fontSize: "36px",
+              fontSize: "34px",
               fontWeight: 900,
               letterSpacing: "-1.2px",
               lineHeight: 1.3,
@@ -641,16 +1035,15 @@ export default function StudyLectureUploadClient() {
           </h2>
           <p
             style={{
-              fontSize: "16px",
-              color: "#94a3b8",
+              fontSize: "15.5px",
+              color: "#a7f3d0",
               lineHeight: 1.7,
               margin: "0 0 36px 0",
               wordBreak: "keep-all",
             }}
           >
-            지금 공실스터디 멤버십을 신청하시고,
-            공동중개 20건부터 블로그 포스팅 전자동화, AI 유튜브 제작 강의,
-            그리고 내 강의를 직접 등록하는 <strong>'강의 영상 플랫폼 업로드'</strong> 혜택까지 모두 누려보세요.
+            지금 공실뉴스멤버십을 신청하시고,<br />
+            <strong>영상제작부터, 강의개설까지 함께 하시죠!</strong>
           </p>
 
           <div style={{ display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap" }}>
@@ -671,7 +1064,7 @@ export default function StudyLectureUploadClient() {
                 transition: "all 0.2s ease",
               }}
             >
-              공실스터디 멤버십 신청하기 &gt;&gt;
+              공실뉴스멤버십 신청하기 &gt;&gt;
             </Link>
             <Link
               href="/study/lectures"
