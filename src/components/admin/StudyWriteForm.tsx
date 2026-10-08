@@ -6,6 +6,7 @@ import { saveLecture, getLectureDetail, uploadLectureImage } from "@/app/actions
 import { previewLectureAiHtml } from "@/app/actions/lectureAiHtml";
 import { AI_HTML_MARKER } from "@/utils/aiHtml/marker";
 import { extractEmbeddedImages, hasEmbeddedImages } from "@/utils/aiHtml/extractEmbeddedImages";
+import { isDesignBundle, unpackDesignBundle } from "@/utils/aiHtml/unpackDesignBundle";
 import { getStudySettings } from "@/app/actions/studySettings";
 import { createClient } from "@/utils/supabase/client";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -129,7 +130,17 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
 
   /* ── HTML 안에 통째로 들어 있는 사진(base64) → WebP 압축·업로드 후 주소로 바꿈 ── */
   const [aiImgProgress, setAiImgProgress] = useState<{ done: number; total: number } | null>(null);
-  const moveEmbeddedImages = async (html: string): Promise<string | null> => {
+  const moveEmbeddedImages = async (input: string): Promise<string | null> => {
+    let html = input;
+    // 클로드 디자인 "묶음 페이지"는 먼저 일반 HTML로 푼다 (글꼴 제거, 사진 칸·아이콘 복원)
+    if (isDesignBundle(html)) {
+      try {
+        html = await unpackDesignBundle(html);
+      } catch (e) {
+        alert("디자인 파일을 풀지 못했습니다: " + (e instanceof Error ? e.message : String(e)));
+        return null;
+      }
+    }
     let out = html;
     if (hasEmbeddedImages(html)) {
       const result = await extractEmbeddedImages(
@@ -900,7 +911,7 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
                         onPaste={async (e) => {
                           // 사진이 통째로 들어 있는 큰 HTML을 붙여넣어도 파일 첨부와 똑같이 정리한다
                           const text = e.clipboardData.getData("text/plain");
-                          if (!hasEmbeddedImages(text)) return;
+                          if (!hasEmbeddedImages(text) && !isDesignBundle(text)) return;
                           e.preventDefault();
                           const el = e.currentTarget;
                           const start = el.selectionStart, end = el.selectionEnd;
