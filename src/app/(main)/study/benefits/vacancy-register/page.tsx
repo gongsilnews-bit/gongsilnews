@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import StudyVacancyRegisterClient from "./StudyVacancyRegisterClient";
 
 export const metadata = {
@@ -9,3 +9,4 @@ export const metadata = {
 export default function StudyVacancyRegisterPage() {
   return <StudyVacancyRegisterClient />;
 }
+

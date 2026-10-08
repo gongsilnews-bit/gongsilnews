@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import Link from "next/link";
 
-const POINT = "#e2552b";
+const POINT = "#059669";
 
 export interface StudyHeroTab {
   key?: string;
@@ -79,7 +79,7 @@ export default function StudyHero({
                   fontSize: 28,
                   fontWeight: 800,
                   letterSpacing: "-0.01em",
-                  color: "#f59a6f",
+                  color: "#34d399",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -138,7 +138,7 @@ export default function StudyHero({
                     fontWeight: isSelected ? 800 : 600,
                     color: isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.82)",
                     background: isSelected ? POINT : "transparent",
-                    boxShadow: isSelected ? "0 3px 12px rgba(180, 63, 24, 0.4)" : "none",
+                    boxShadow: isSelected ? "0 3px 12px rgba(5, 150, 105, 0.4)" : "none",
                     border: "none",
                     cursor: "pointer",
                     fontFamily: "inherit",
@@ -183,3 +183,4 @@ export default function StudyHero({
     </section>
   );
 }
+

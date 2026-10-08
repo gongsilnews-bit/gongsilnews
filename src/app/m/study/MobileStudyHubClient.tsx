@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -10,11 +10,11 @@ import { createClient } from "@/utils/supabase/client";
 import { getMyEnrollments } from "@/app/actions/lecture";
 
 // SVG Pictogram Icons
-const IconDrone = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e2552b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 5l2 2M19 5l-2 2M5 19l2-2M19 19l-2-2"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>;
-const IconApp = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e2552b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>;
-const IconAI = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e2552b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M16 14H8l-2 8h12l-2-8z"/><line x1="9" y1="18" x2="15" y2="18"/></svg>;
-const IconMusic = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e2552b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
-const IconDoc = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e2552b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>;
+const IconDrone = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 5l2 2M19 5l-2 2M5 19l2-2M19 19l-2-2"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>;
+const IconApp = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>;
+const IconAI = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M16 14H8l-2 8h12l-2-8z"/><line x1="9" y1="18" x2="15" y2="18"/></svg>;
+const IconMusic = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
+const IconDoc = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>;
 
 const BOARD_ITEMS = [
   { id: "drone", name: "드론영상", desc: "매물 홍보용 드론 항공 촬영 영상", icon: <IconDrone /> },
@@ -161,7 +161,7 @@ export default function MobileStudyHubClient({
                 }}
               >
                 다들 AI 유튜브로 중개한다던데<br />
-                <span style={{ color: "#f59a6f" }}>나만 못 쓰고 있는 것 같으신가요?</span>
+                <span style={{ color: "#34d399" }}>나만 못 쓰고 있는 것 같으신가요?</span>
               </h1>
 
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -173,13 +173,13 @@ export default function MobileStudyHubClient({
                     justifyContent: "center",
                     minHeight: 40,
                     padding: "9px 16px",
-                    background: "#e2552b",
+                    background: "#059669",
                     color: "#ffffff",
                     borderRadius: 8,
                     fontSize: 13,
                     fontWeight: 800,
                     textDecoration: "none",
-                    boxShadow: "0 3px 10px rgba(180, 63, 24, 0.3)",
+                    boxShadow: "0 3px 10px rgba(5, 150, 105, 0.3)",
                   }}
                 >
                   공실스터디란?
@@ -227,7 +227,7 @@ export default function MobileStudyHubClient({
                       whiteSpace: "nowrap",
                       color: isSel ? "#ffffff" : "#a8381a",
                       backgroundColor: isSel ? "#211b17" : "#ffffff",
-                      border: isSel ? "1px solid #211b17" : "1px solid #fbdccd",
+                      border: isSel ? "1px solid #211b17" : "1px solid #d1fae5",
                       cursor: "pointer",
                       flexShrink: 0,
                     }}
@@ -254,16 +254,16 @@ export default function MobileStudyHubClient({
                       ) : (
                         <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#1a1613,#3a2c22)", color: "#fff" }}>
                           <span style={{ fontSize: 28, marginBottom: 4 }}>🎓</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#f59a6f" }}>{lecture.category || "공실스터디"}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#34d399" }}>{lecture.category || "공실스터디"}</span>
                         </div>
                       )}
-                      <span style={{ position: "absolute", top: 10, left: 10, background: "#e2552b", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>
+                      <span style={{ position: "absolute", top: 10, left: 10, background: "#059669", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>
                         VOD
                       </span>
                     </div>
 
                     <div style={{ padding: "16px" }}>
-                      <span style={{ fontSize: 11.5, fontWeight: 700, color: "#c9441d", background: "#fdeee7", padding: "2px 7px", borderRadius: 4, display: "inline-block", marginBottom: 6 }}>
+                      <span style={{ fontSize: 11.5, fontWeight: 700, color: "#047857", background: "#ecfdf5", padding: "2px 7px", borderRadius: 4, display: "inline-block", marginBottom: 6 }}>
                         {lecture.category || "중개실무"}
                       </span>
                       <h2 style={{ color: "#1c1917", fontSize: "16.5px", fontWeight: 800, lineHeight: 1.35, margin: "0 0 10px 0", wordBreak: "keep-all", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -281,7 +281,7 @@ export default function MobileStudyHubClient({
                         <span style={{ color: "#1c1917", fontWeight: 900, fontSize: "16px" }}>
                           {lecture.discount_price ? `${lecture.discount_price.toLocaleString()} P` : lecture.price ? `${lecture.price.toLocaleString()} P` : "무료 수강"}
                         </span>
-                        <span style={{ fontSize: 12.5, fontWeight: 700, color: "#e2552b" }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 700, color: "#059669" }}>
                           수강신청 ›
                         </span>
                       </div>
@@ -305,11 +305,11 @@ export default function MobileStudyHubClient({
                     key={i}
                     style={{
                       backgroundColor: "#ffffff",
-                      border: isOpen ? "1.5px solid #e2552b" : "1px solid #e2e8f0",
+                      border: isOpen ? "1.5px solid #059669" : "1px solid #e2e8f0",
                       borderRadius: 10,
                       overflow: "hidden",
                       transition: "all 0.2s ease",
-                      boxShadow: isOpen ? "0 2px 8px rgba(180, 63, 24, 0.08)" : "none",
+                      boxShadow: isOpen ? "0 2px 8px rgba(5, 150, 105, 0.08)" : "none",
                     }}
                   >
                     <button
@@ -330,7 +330,7 @@ export default function MobileStudyHubClient({
                       <span style={{ fontSize: 13.5, fontWeight: 700, color: isOpen ? "#3a2c22" : "#1e293b", lineHeight: 1.4 }}>
                         Q. {faq.q}
                       </span>
-                      <span style={{ color: isOpen ? "#e2552b" : "#94a3b8", fontSize: 12, flexShrink: 0 }}>
+                      <span style={{ color: isOpen ? "#059669" : "#94a3b8", fontSize: 12, flexShrink: 0 }}>
                         {isOpen ? "▲" : "▼"}
                       </span>
                     </button>
@@ -369,7 +369,7 @@ export default function MobileStudyHubClient({
                   boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
                 }}
               >
-                <div style={{ width: "44px", height: "44px", borderRadius: "10px", backgroundColor: "#fdeee7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{ width: "44px", height: "44px", borderRadius: "10px", backgroundColor: "#ecfdf5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {item.icon}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -405,12 +405,12 @@ export default function MobileStudyHubClient({
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {enrollments.map((en: any) => (
-                <div key={en.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 14, background: "#fbf8f4", border: "1px solid #fbdccd", borderRadius: 10 }}>
+                <div key={en.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 14, background: "#fbf8f4", border: "1px solid #d1fae5", borderRadius: 10 }}>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ overflow: "hidden", marginBottom: 4, color: "#1c1917", fontSize: 14, fontWeight: 700, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{en.lecture?.title || "특강"}</div>
                     <div style={{ color: "#64748b", fontSize: 11.5 }}>신청일: {en.created_at?.substring(0, 10) || "-"} · 결제: {(en.points_paid || 0).toLocaleString()}P</div>
                   </div>
-                  <Link href={`/m/study_read?id=${en.lecture_id}`} style={{ flexShrink: 0, padding: "8px 10px", color: "#fff", background: "#e2552b", borderRadius: 6, fontSize: 11.5, fontWeight: 700, textDecoration: "none" }}>강의실 입장</Link>
+                  <Link href={`/m/study_read?id=${en.lecture_id}`} style={{ flexShrink: 0, padding: "8px 10px", color: "#fff", background: "#059669", borderRadius: 6, fontSize: 11.5, fontWeight: 700, textDecoration: "none" }}>강의실 입장</Link>
                 </div>
               ))}
             </div>
@@ -424,8 +424,8 @@ export default function MobileStudyHubClient({
         onClick={() => router.push("/m/my_lectures")}
         style={{
           position: "fixed", bottom: "80px", right: "16px", height: "48px",
-          borderRadius: "24px", background: "linear-gradient(135deg, #e2552b, #c9441d)",
-          color: "#fff", border: "none", boxShadow: "0 6px 20px rgba(180, 63, 24, 0.4)",
+          borderRadius: "24px", background: "linear-gradient(135deg, #059669, #047857)",
+          color: "#fff", border: "none", boxShadow: "0 6px 20px rgba(5, 150, 105, 0.4)",
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
           padding: "0 18px", gap: "6px", zIndex: 100000,
           transition: "transform 0.15s ease",
@@ -444,3 +444,4 @@ export default function MobileStudyHubClient({
     </div>
   );
 }
+

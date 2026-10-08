@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9,10 +9,10 @@ import StudyHeader from "@/components/study/StudyHeader";
  * 공실뉴스부동산 금액안내(/newsrealty/pricing)와 동일한 구성이며
  * 포인트 컬러만 스터디 에메랄드로 맞춘다.
  */
-const POINT = "#e2552b";
-const POINT_DARK = "#c9441d";
-const POINT_SOFT = "#fdeee7";
-const POINT_BORDER = "#f8c3a8";
+const POINT = "#059669";
+const POINT_DARK = "#047857";
+const POINT_SOFT = "#ecfdf5";
+const POINT_BORDER = "#a7f3d0";
 
 export default function StudyPricingClient() {
   const router = useRouter();
@@ -220,7 +220,7 @@ export default function StudyPricingClient() {
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                boxShadow: "0 16px 44px rgba(180, 63, 24, 0.18)",
+                boxShadow: "0 16px 44px rgba(5, 150, 105, 0.18)",
                 position: "relative",
               }}
             >
@@ -236,7 +236,7 @@ export default function StudyPricingClient() {
                   borderRadius: "20px",
                   fontSize: "12px",
                   fontWeight: 900,
-                  boxShadow: "0 4px 12px rgba(180, 63, 24, 0.35)",
+                  boxShadow: "0 4px 12px rgba(5, 150, 105, 0.35)",
                   letterSpacing: "-0.3px",
                   whiteSpace: "nowrap",
                 }}
@@ -294,7 +294,7 @@ export default function StudyPricingClient() {
                       fontWeight: 800,
                       color: "#ffffff",
                       cursor: "pointer",
-                      boxShadow: "0 4px 14px rgba(180, 63, 24, 0.35)",
+                      boxShadow: "0 4px 14px rgba(5, 150, 105, 0.35)",
                       transition: "all 0.2s ease",
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = POINT_DARK)}
@@ -437,7 +437,7 @@ export default function StudyPricingClient() {
         }}
       >
         <div style={{ maxWidth: "700px", margin: "0 auto" }}>
-          <div style={{ color: "#f59a6f", fontSize: "14px", fontWeight: 800, marginBottom: "12px" }}>
+          <div style={{ color: "#34d399", fontSize: "14px", fontWeight: 800, marginBottom: "12px" }}>
             SPECIAL OFFER · 365 DAYS UNLIMITED
           </div>
           <h2 style={{ fontSize: "30px", fontWeight: 900, margin: "0 0 16px 0", letterSpacing: "-0.5px" }}>
@@ -461,7 +461,7 @@ export default function StudyPricingClient() {
               borderRadius: "10px",
               border: "none",
               cursor: "pointer",
-              boxShadow: "0 10px 25px rgba(180, 63, 24, 0.4)",
+              boxShadow: "0 10px 25px rgba(5, 150, 105, 0.4)",
             }}
           >
             <span>공실스터디 지금 신청하기</span>
@@ -477,3 +477,4 @@ export default function StudyPricingClient() {
     </div>
   );
 }
+

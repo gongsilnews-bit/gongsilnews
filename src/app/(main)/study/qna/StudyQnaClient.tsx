@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -175,7 +175,7 @@ export default function StudyQnaClient({
             {/* 멤버십신청·나의 강의실과 같은 모션: 제목은 아래에서 위로, 이어서 설명 문장 타이핑 */}
             <h1 className="study-hero-rise" style={{ display: "flex", alignItems: "baseline", gap: "24px", fontSize: "44px", fontWeight: 900, lineHeight: 1.2, letterSpacing: "-1px", margin: "0 0 16px", color: "#ffffff", wordBreak: "keep-all" }}>
               Q&amp;A 게시판
-              <span style={{ fontSize: "34px", fontWeight: 800, letterSpacing: "-0.5px", color: "#f59a6f" }}>Study Community</span>
+              <span style={{ fontSize: "34px", fontWeight: 800, letterSpacing: "-0.5px", color: "#34d399" }}>Study Community</span>
             </h1>
 
             <p style={{ fontSize: "24px", fontWeight: 500, color: "rgba(255, 255, 255, 0.92)", lineHeight: 1.45, margin: "0 0 18px", letterSpacing: "-0.5px", wordBreak: "keep-all" }}>
@@ -206,7 +206,7 @@ export default function StudyQnaClient({
               {canWrite ? (
                 <a
                   href={writeUrl}
-                  style={{ padding: "8px 18px", borderRadius: 7, fontSize: 13.5, fontWeight: 800, color: "#ffffff", background: "#e2552b", textDecoration: "none", boxShadow: "0 3px 12px rgba(180, 63, 24, 0.4)" }}
+                  style={{ padding: "8px 18px", borderRadius: 7, fontSize: 13.5, fontWeight: 800, color: "#ffffff", background: "#059669", textDecoration: "none", boxShadow: "0 3px 12px rgba(5, 150, 105, 0.4)" }}
                 >
                   질문하기
                 </a>
@@ -214,7 +214,7 @@ export default function StudyQnaClient({
                 <button
                   type="button"
                   onClick={() => setAccessNotice({ level: board.perm_write ?? 5, action: "write" })}
-                  style={{ padding: "8px 18px", borderRadius: 7, fontSize: 13.5, fontWeight: 800, color: "#ffffff", background: "#e2552b", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                  style={{ padding: "8px 18px", borderRadius: 7, fontSize: 13.5, fontWeight: 800, color: "#ffffff", background: "#059669", border: "none", cursor: "pointer", fontFamily: "inherit" }}
                 >
                   질문하기
                 </button>
@@ -478,3 +478,4 @@ export default function StudyQnaClient({
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
@@ -12,10 +12,10 @@ const NAVER_PAY_URL = "";
 import { createClient } from "@/utils/supabase/client";
 import { submitStudyApplication, checkExistingStudyApplication } from "@/app/actions/studyApply";
 
-const POINT = "#e2552b";
-const POINT_DARK = "#c9441d";
-const POINT_SOFT = "#fdeee7";
-const POINT_BORDER = "#f8c3a8";
+const POINT = "#059669";
+const POINT_DARK = "#047857";
+const POINT_SOFT = "#ecfdf5";
+const POINT_BORDER = "#a7f3d0";
 
 
 const TARGET_AUDIENCE = [
@@ -390,7 +390,7 @@ export default function StudyApplyClient() {
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              boxShadow: "0 16px 44px rgba(180, 63, 24, 0.18)",
+              boxShadow: "0 16px 44px rgba(5, 150, 105, 0.18)",
               position: "relative",
             }}
           >
@@ -406,7 +406,7 @@ export default function StudyApplyClient() {
                 borderRadius: "20px",
                 fontSize: "12px",
                 fontWeight: 900,
-                boxShadow: "0 4px 12px rgba(180, 63, 24, 0.35)",
+                boxShadow: "0 4px 12px rgba(5, 150, 105, 0.35)",
                 letterSpacing: "-0.3px",
                 whiteSpace: "nowrap",
               }}
@@ -464,7 +464,7 @@ export default function StudyApplyClient() {
                     fontWeight: 800,
                     color: "#ffffff",
                     cursor: "pointer",
-                    boxShadow: "0 4px 14px rgba(180, 63, 24, 0.35)",
+                    boxShadow: "0 4px 14px rgba(5, 150, 105, 0.35)",
                     transition: "all 0.2s ease",
                     fontFamily: "inherit",
                   }}
@@ -493,7 +493,7 @@ export default function StudyApplyClient() {
         </div>
 
         {/* ━━━ [3] 이런 부동산에게 추천합니다! ━━━ */}
-        <section style={{ backgroundColor: "#fbf7f2", borderRadius: "24px", padding: "64px 32px", border: "1px solid #fbdccd", marginBottom: "68px", textAlign: "center" }}>
+        <section style={{ backgroundColor: "#fbf7f2", borderRadius: "24px", padding: "64px 32px", border: "1px solid #d1fae5", marginBottom: "68px", textAlign: "center" }}>
           <div style={{ maxWidth: 840, margin: "0 auto 44px" }}>
             <div style={{ color: POINT, fontSize: "13px", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
               RECOMMENDATION
@@ -523,8 +523,8 @@ export default function StudyApplyClient() {
                   backgroundColor: "#ffffff",
                   borderRadius: "20px",
                   padding: "24px 20px",
-                  border: "1.5px solid #f8c3a8",
-                  boxShadow: "0 10px 25px rgba(180, 63, 24, 0.06)",
+                  border: "1.5px solid #a7f3d0",
+                  boxShadow: "0 10px 25px rgba(5, 150, 105, 0.06)",
                   display: "flex",
                   flexDirection: "column",
                 }}
@@ -554,9 +554,9 @@ export default function StudyApplyClient() {
                   style={{
                     display: "inline-block",
                     alignSelf: "flex-start",
-                    backgroundColor: "#fdeee7",
+                    backgroundColor: "#ecfdf5",
                     color: POINT,
-                    border: "1px solid #f8c3a8",
+                    border: "1px solid #a7f3d0",
                     fontSize: "12px",
                     fontWeight: 800,
                     padding: "3px 10px",
@@ -596,7 +596,7 @@ export default function StudyApplyClient() {
                 {/* 맞춤 솔루션 배지 박스 */}
                 <div
                   style={{
-                    backgroundColor: "#fdf6f1",
+                    backgroundColor: "#f0fdf4",
                     border: "1px solid #e87954",
                     borderRadius: "10px",
                     padding: "12px 14px",
@@ -1004,7 +1004,7 @@ export default function StudyApplyClient() {
                   style={{
                     width: "100%",
                     height: "52px",
-                    backgroundColor: submitting ? "#f59a6f" : POINT,
+                    backgroundColor: submitting ? "#34d399" : POINT,
                     color: "#ffffff",
                     border: "none",
                     borderRadius: "10px",
@@ -1012,7 +1012,7 @@ export default function StudyApplyClient() {
                     fontWeight: 800,
                     cursor: submitting ? "not-allowed" : "pointer",
                     fontFamily: "inherit",
-                    boxShadow: "0 4px 14px rgba(180, 63, 24, 0.3)",
+                    boxShadow: "0 4px 14px rgba(5, 150, 105, 0.3)",
                     transition: "background-color 0.15s ease",
                   }}
                   onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = POINT_DARK; }}
@@ -1092,3 +1092,4 @@ export default function StudyApplyClient() {
     </div>
   );
 }
+

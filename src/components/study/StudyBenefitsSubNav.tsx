@@ -10,7 +10,7 @@ export const STUDY_BENEFITS = [
   { slug: "ai-youtube", label: "유튜브강의+드론저작권", href: "/study/benefits/ai-youtube" },
 ] as const;
 
-const POINT = "#e2552b";
+const POINT = "#059669";
 
 export default function StudyBenefitsSubNav({ active }: { active: string }) {
   return (
@@ -73,7 +73,7 @@ export function StudyBenefitsHeroTabs({ active }: { active: string }) {
               fontWeight: isActive ? 800 : 600,
               color: isActive ? "#ffffff" : "#44403c",
               background: isActive ? POINT : "transparent",
-              boxShadow: isActive ? "0 3px 12px rgba(180, 63, 24, 0.4)" : "none",
+              boxShadow: isActive ? "0 3px 12px rgba(5, 150, 105, 0.4)" : "none",
               transition: "all 0.15s",
             }}
           >

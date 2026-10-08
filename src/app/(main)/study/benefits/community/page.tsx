@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import StudyCommunityClient from "./StudyCommunityClient";
 
 export const metadata = {
@@ -9,3 +9,4 @@ export const metadata = {
 export default function StudyCommunityPage() {
   return <StudyCommunityClient />;
 }
+

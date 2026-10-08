@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
@@ -190,14 +190,14 @@ export default function MobileStudyApplyClient() {
         <div
           style={{
             display: "inline-block",
-            background: "#fdeee7",
-            color: "#e2552b",
+            background: "#ecfdf5",
+            color: "#059669",
             fontSize: "12px",
             fontWeight: 800,
             padding: "5px 14px",
             borderRadius: "20px",
             marginBottom: "12px",
-            border: "1px solid #f8c3a8",
+            border: "1px solid #a7f3d0",
           }}
         >
           수백만 원짜리 교육비, 이제 그만
@@ -213,7 +213,7 @@ export default function MobileStudyApplyClient() {
           }}
         >
           공실등록 + 유튜브/블로그 실습<br />
-          월 <span style={{ color: "#e2552b" }}>3만원</span>이면 OK!
+          월 <span style={{ color: "#059669" }}>3만원</span>이면 OK!
         </h1>
         <p style={{ fontSize: "13.5px", color: "#64748b", margin: 0, lineHeight: 1.5, wordBreak: "keep-all" }}>
           12개월 동안 블로그 포스팅, 유튜브 채널! 확실하게 구축하실 수 있습니다.
@@ -278,7 +278,7 @@ export default function MobileStudyApplyClient() {
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 11, fontSize: "13px" }}>
               {RIVAL_FEATURES.map((f, i) => (
                 <li key={i} style={{ display: "flex", alignItems: "center", gap: 9, color: f.on ? "#475569" : "#94a3b8" }}>
-                  <span style={{ color: f.on ? "#e2552b" : "#cbd5e1", fontWeight: f.on ? 900 : 400 }}>{f.on ? "✓" : "✕"}</span>
+                  <span style={{ color: f.on ? "#059669" : "#cbd5e1", fontWeight: f.on ? 900 : 400 }}>{f.on ? "✓" : "✕"}</span>
                   <span style={f.on ? undefined : { textDecoration: "line-through" }}>{f.text}</span>
                 </li>
               ))}
@@ -290,10 +290,10 @@ export default function MobileStudyApplyClient() {
         <div
           style={{
             background: "#ffffff",
-            border: "2.5px solid #e2552b",
+            border: "2.5px solid #059669",
             borderRadius: "18px",
             padding: "26px 20px",
-            boxShadow: "0 12px 36px rgba(180, 63, 24, 0.16)",
+            boxShadow: "0 12px 36px rgba(5, 150, 105, 0.16)",
             position: "relative",
             marginTop: "10px",
           }}
@@ -304,13 +304,13 @@ export default function MobileStudyApplyClient() {
               top: -13,
               left: "50%",
               transform: "translateX(-50%)",
-              background: "linear-gradient(135deg, #e2552b 0%, #c9441d 100%)",
+              background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
               color: "#ffffff",
               padding: "4px 16px",
               borderRadius: "20px",
               fontSize: "11px",
               fontWeight: 900,
-              boxShadow: "0 4px 10px rgba(180, 63, 24, 0.35)",
+              boxShadow: "0 4px 10px rgba(5, 150, 105, 0.35)",
               letterSpacing: "-0.3px",
               whiteSpace: "nowrap",
             }}
@@ -320,7 +320,7 @@ export default function MobileStudyApplyClient() {
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <h3 style={{ fontSize: "20px", fontWeight: 900, color: "#241d19", margin: 0 }}>공실스터디</h3>
-            <span style={{ fontSize: "11px", fontWeight: 800, background: "#fdeee7", color: "#a8381a", padding: "3px 10px", borderRadius: 20 }}>
+            <span style={{ fontSize: "11px", fontWeight: 800, background: "#ecfdf5", color: "#a8381a", padding: "3px 10px", borderRadius: 20 }}>
               정회원 전용 플랜
             </span>
           </div>
@@ -338,16 +338,16 @@ export default function MobileStudyApplyClient() {
                   fontSize: "12px",
                   fontWeight: 800,
                   color: "#a8381a",
-                  background: "#fdeee7",
+                  background: "#ecfdf5",
                   padding: "2px 8px",
                   borderRadius: "12px",
-                  border: "1px solid #f8c3a8",
+                  border: "1px solid #a7f3d0",
                 }}
               >
                 월 3만원꼴
               </span>
             </div>
-            <p style={{ fontSize: "12px", color: "#e2552b", fontWeight: 700, margin: "6px 0 0" }}>
+            <p style={{ fontSize: "12px", color: "#059669", fontWeight: 700, margin: "6px 0 0" }}>
               가입비 0원 · 교재비 0원 · 카드 12개월 무이자 할부 가능
             </p>
           </div>
@@ -359,14 +359,14 @@ export default function MobileStudyApplyClient() {
               style={{
                 width: "100%",
                 height: "48px",
-                backgroundColor: "#e2552b",
+                backgroundColor: "#059669",
                 border: "none",
                 borderRadius: "10px",
                 fontSize: "15px",
                 fontWeight: 800,
                 color: "#ffffff",
                 cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(180, 63, 24, 0.35)",
+                boxShadow: "0 4px 12px rgba(5, 150, 105, 0.35)",
                 fontFamily: "inherit",
               }}
             >
@@ -374,14 +374,14 @@ export default function MobileStudyApplyClient() {
             </button>
           </div>
 
-          <div style={{ borderTop: "1px solid #f8c3a8", paddingTop: 20 }}>
+          <div style={{ borderTop: "1px solid #a7f3d0", paddingTop: 20 }}>
             <div style={{ fontSize: "13px", fontWeight: 900, color: "#241d19", marginBottom: 14 }}>
               포함된 모든 전용 혜택
             </div>
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 13, fontSize: "13.5px" }}>
               {PAID_FEATURES.map((f, i) => (
                 <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, color: "#241d19", lineHeight: 1.45 }}>
-                  <span style={{ color: "#e2552b", fontSize: "16px", fontWeight: 900, lineHeight: 1, marginTop: "2px" }}>✓</span>
+                  <span style={{ color: "#059669", fontSize: "16px", fontWeight: 900, lineHeight: 1, marginTop: "2px" }}>✓</span>
                   <span style={{ wordBreak: "keep-all" }}>{f}</span>
                 </li>
               ))}
@@ -394,14 +394,14 @@ export default function MobileStudyApplyClient() {
           aria-labelledby="m-apply-recommend-title"
           style={{
             background: "#fbf7f2",
-            border: "1px solid #fbdccd",
+            border: "1px solid #d1fae5",
             borderRadius: 18,
             padding: "28px 16px",
             margin: "20px 0",
           }}
         >
           <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <div style={{ color: "#e2552b", fontSize: 11.5, fontWeight: 800, letterSpacing: "1px", marginBottom: 6 }}>
+            <div style={{ color: "#059669", fontSize: 11.5, fontWeight: 800, letterSpacing: "1px", marginBottom: 6 }}>
               RECOMMENDATION
             </div>
             <h2 id="m-apply-recommend-title" style={{ fontSize: 21, fontWeight: 900, color: "#241d19", margin: "0 0 8px", letterSpacing: "-0.5px" }}>
@@ -419,8 +419,8 @@ export default function MobileStudyApplyClient() {
                 style={{
                   background: "#ffffff",
                   borderRadius: 16,
-                  border: "1.5px solid #f8c3a8",
-                  boxShadow: "0 6px 18px rgba(180, 63, 24, 0.06)",
+                  border: "1.5px solid #a7f3d0",
+                  boxShadow: "0 6px 18px rgba(5, 150, 105, 0.06)",
                   overflow: "hidden",
                 }}
               >
@@ -437,9 +437,9 @@ export default function MobileStudyApplyClient() {
                   <span
                     style={{
                       display: "inline-block",
-                      background: "#fdeee7",
-                      color: "#e2552b",
-                      border: "1px solid #f8c3a8",
+                      background: "#ecfdf5",
+                      color: "#059669",
+                      border: "1px solid #a7f3d0",
                       fontSize: 11,
                       fontWeight: 800,
                       padding: "2px 9px",
@@ -453,8 +453,8 @@ export default function MobileStudyApplyClient() {
                   <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: "0 0 12px", wordBreak: "keep-all" }}>
                     {item.description}
                   </p>
-                  <div style={{ background: "#fdf6f1", border: "1px solid #e87954", borderRadius: 10, padding: "10px 12px" }}>
-                    <div style={{ fontSize: 11.5, fontWeight: 800, color: "#e2552b", marginBottom: 3 }}>💡 맞춤 솔루션</div>
+                  <div style={{ background: "#f0fdf4", border: "1px solid #e87954", borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 800, color: "#059669", marginBottom: 3 }}>💡 맞춤 솔루션</div>
                     <div style={{ fontSize: 12.5, color: "#b43f18", lineHeight: 1.5, fontWeight: 600, wordBreak: "keep-all" }}>
                       {item.solution}
                     </div>
@@ -530,7 +530,7 @@ export default function MobileStudyApplyClient() {
                 display: "block",
                 width: "100%",
                 padding: "13px 0",
-                background: "#e2552b",
+                background: "#059669",
                 color: "#ffffff",
                 borderRadius: "10px",
                 fontWeight: 800,
@@ -556,7 +556,7 @@ export default function MobileStudyApplyClient() {
               <Link href="/m/study" style={{
                 display: "inline-block",
                 padding: "10px 24px",
-                background: "#e2552b",
+                background: "#059669",
                 color: "#ffffff",
                 borderRadius: "8px",
                 fontWeight: 700,
@@ -653,7 +653,7 @@ export default function MobileStudyApplyClient() {
                   type="checkbox"
                   checked={agreeTerms}
                   onChange={(e) => setAgreeTerms(e.target.checked)}
-                  style={{ width: "16px", height: "16px", accentColor: "#e2552b" }}
+                  style={{ width: "16px", height: "16px", accentColor: "#059669" }}
                 />
                 <span>개인정보 수집 및 이용에 동의합니다 (필수)</span>
               </label>
@@ -717,7 +717,7 @@ export default function MobileStudyApplyClient() {
               style={{
                 width: "100%",
                 padding: "12px 0",
-                background: "#e2552b",
+                background: "#059669",
                 color: "#ffffff",
                 border: "none",
                 borderRadius: "8px",
@@ -734,3 +734,4 @@ export default function MobileStudyApplyClient() {
     </div>
   );
 }
+

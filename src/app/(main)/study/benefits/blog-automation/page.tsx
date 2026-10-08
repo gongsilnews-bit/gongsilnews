@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+﻿import { Metadata } from "next";
 import StudyBlogAutomationClient from "./StudyBlogAutomationClient";
 
 export const metadata: Metadata = {
@@ -9,3 +9,4 @@ export const metadata: Metadata = {
 export default function StudyBlogAutomationPage() {
   return <StudyBlogAutomationClient />;
 }
+

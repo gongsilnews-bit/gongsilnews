@@ -1,4 +1,4 @@
-.container {
+﻿.container {
   width: 100%;
   max-width: 448px;
   margin: 0 auto;
@@ -34,7 +34,7 @@
   gap: 5px;
   font-size: 12px;
   font-weight: 800;
-  color: #f59a6f;
+  color: #34d399;
   background: rgba(225, 85, 38, 0.12);
   border: 1px solid rgba(225, 85, 38, 0.4);
   border-radius: 20px;
@@ -48,12 +48,12 @@
   font-size: 13px;
   font-weight: 800;
   color: #ffffff;
-  background: linear-gradient(135deg, #e2552b 0%, #c9441d 100%);
-  border: 1px solid #f59a6f;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  border: 1px solid #34d399;
   border-radius: 20px;
   padding: 6px 14px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(180, 63, 24, 0.4);
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -71,7 +71,7 @@
 }
 
 .heroHighlight {
-  color: #f59a6f;
+  color: #34d399;
 }
 
 .heroDesc {
@@ -102,7 +102,7 @@
 }
 
 .heroTagCheck {
-  color: #f59a6f;
+  color: #34d399;
   font-weight: 900;
 }
 
@@ -116,10 +116,10 @@
 
 .pricingCard {
   background: #ffffff;
-  border: 2px solid #e2552b;
+  border: 2px solid #059669;
   border-radius: 18px;
   padding: 22px 18px;
-  box-shadow: 0 6px 20px rgba(180, 63, 24, 0.08);
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.08);
   position: relative;
 }
 
@@ -134,7 +134,7 @@
   font-size: 11px;
   font-weight: 800;
   color: #ffffff;
-  background: #e2552b;
+  background: #059669;
   padding: 3px 9px;
   border-radius: 6px;
 }
@@ -142,7 +142,7 @@
 .zeroFeeNotice {
   font-size: 11.5px;
   font-weight: 700;
-  color: #c9441d;
+  color: #047857;
 }
 
 .pricingTitle {
@@ -159,7 +159,7 @@
 }
 
 .priceBox {
-  background: #fdf6f1;
+  background: #f0fdf4;
   border: 1px solid #e87954;
   border-radius: 12px;
   padding: 14px 16px;
@@ -178,14 +178,14 @@
 .priceMonthly {
   font-size: 24px;
   font-weight: 900;
-  color: #e2552b;
+  color: #059669;
   letter-spacing: -0.5px;
 }
 
 .priceUnit {
   font-size: 13px;
   font-weight: 700;
-  color: #c9441d;
+  color: #047857;
 }
 
 .priceYearly {
@@ -341,8 +341,8 @@
 }
 
 .input:focus {
-  border-color: #e2552b;
-  box-shadow: 0 0 0 3px rgba(180, 63, 24, 0.12);
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
 }
 
 .termsBox {
@@ -370,14 +370,14 @@
 .submitBtn {
   width: 100%;
   height: 52px;
-  background: linear-gradient(135deg, #e2552b, #c9441d);
+  background: linear-gradient(135deg, #059669, #047857);
   color: #ffffff;
   border: none;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(180, 63, 24, 0.3);
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3);
   transition: transform 0.15s ease;
 }
 
@@ -403,8 +403,8 @@
   width: 100%;
   height: 44px;
   background: #ffffff;
-  border: 1px solid #e2552b;
-  color: #c9441d;
+  border: 1px solid #059669;
+  color: #047857;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 700;
@@ -451,3 +451,4 @@
   color: #94a3b8;
   cursor: pointer;
 }
+

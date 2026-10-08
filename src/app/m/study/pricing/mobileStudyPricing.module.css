@@ -1,4 +1,4 @@
-.container {
+﻿.container {
   width: 100%;
   max-width: 448px;
   margin: 0 auto;
@@ -12,19 +12,19 @@
 }
 
 .hero {
-  background: linear-gradient(180deg, #ffffff 0%, #fdf6f1 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
   padding: 32px 20px 28px;
   text-align: center;
-  border-bottom: 1px solid #fbdccd;
+  border-bottom: 1px solid #d1fae5;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #fdeee7;
-  border: 1px solid #f8c3a8;
-  color: #e2552b;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #059669;
   font-size: 12px;
   font-weight: 800;
   padding: 4px 12px;
@@ -42,7 +42,7 @@
 }
 
 .pointText {
-  color: #e2552b;
+  color: #059669;
 }
 
 .heroDesc {
@@ -72,8 +72,8 @@
 .statHighlight {
   font-size: 11px;
   font-weight: 800;
-  color: #e2552b;
-  background: #fdeee7;
+  color: #059669;
+  background: #ecfdf5;
   padding: 2px 6px;
   border-radius: 4px;
   display: inline-block;
@@ -101,7 +101,7 @@
 .sectionKicker {
   font-size: 12px;
   font-weight: 800;
-  color: #e2552b;
+  color: #059669;
   letter-spacing: 0.5px;
   text-transform: uppercase;
   margin: 0 0 4px;
@@ -120,10 +120,10 @@
 /* ━━━ 핵심 플랜 카드 ━━━ */
 .planCard {
   background: #ffffff;
-  border: 2px solid #e2552b;
+  border: 2px solid #059669;
   border-radius: 18px;
   padding: 24px 20px;
-  box-shadow: 0 8px 24px rgba(180, 63, 24, 0.1);
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.1);
   position: relative;
   overflow: hidden;
   margin-bottom: 24px;
@@ -133,7 +133,7 @@
   position: absolute;
   top: 0;
   right: 0;
-  background: linear-gradient(135deg, #e2552b, #c9441d);
+  background: linear-gradient(135deg, #059669, #047857);
   color: #ffffff;
   font-size: 11px;
   font-weight: 800;
@@ -169,7 +169,7 @@
 .priceMonthly {
   font-size: 26px;
   font-weight: 900;
-  color: #e2552b;
+  color: #059669;
   letter-spacing: -0.5px;
 }
 
@@ -204,7 +204,7 @@
 }
 
 .checkIcon {
-  color: #e2552b;
+  color: #059669;
   font-weight: 900;
   flex-shrink: 0;
   font-size: 15px;
@@ -238,8 +238,8 @@
 }
 
 .colStudy {
-  background: #fdeee7;
-  color: #e2552b;
+  background: #ecfdf5;
+  color: #059669;
 }
 
 .compareRow {
@@ -295,7 +295,7 @@
 
 .faqIcon {
   font-size: 18px;
-  color: #e2552b;
+  color: #059669;
   font-weight: 800;
   margin-left: 10px;
 }
@@ -352,11 +352,11 @@
 .floatingPrice {
   font-size: 18px;
   font-weight: 900;
-  color: #e2552b;
+  color: #059669;
 }
 
 .floatingBtn {
-  background: linear-gradient(135deg, #e2552b, #c9441d) !important;
+  background: linear-gradient(135deg, #059669, #047857) !important;
   color: #ffffff !important;
   border: none;
   border-radius: 10px;
@@ -365,7 +365,7 @@
   font-weight: 800;
   text-decoration: none !important;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(180, 63, 24, 0.3);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
   white-space: nowrap;
 }
 
@@ -374,3 +374,4 @@
 .floatingBtn:active {
   color: #ffffff !important;
 }
+

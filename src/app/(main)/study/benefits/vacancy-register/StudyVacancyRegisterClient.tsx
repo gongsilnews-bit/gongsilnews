@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import Image from "next/image";
@@ -17,10 +17,10 @@ import { StudyBenefitsHeroTabs } from "@/components/study/StudyBenefitsSubNav";
  * 5. 등록한 공실과 기사가 실시간으로 내 물건접수 웹페이지에 자동 연동 -> 유튜브/블로그 링크 홍보 & 카톡 홈페이지 활용
  */
 
-const POINT = "#e2552b";
-const POINT_DARK = "#c9441d";
-const POINT_SOFT = "#fdeee7";
-const POINT_BORDER = "#f8c3a8";
+const POINT = "#059669";
+const POINT_DARK = "#047857";
+const POINT_SOFT = "#ecfdf5";
+const POINT_BORDER = "#a7f3d0";
 
 export default function StudyVacancyRegisterClient() {
   const [activeWorkflowStep, setActiveWorkflowStep] = useState(0);
@@ -71,9 +71,9 @@ export default function StudyVacancyRegisterClient() {
               position: "relative",
               display: "flex",
               alignItems: "center",
-              backgroundColor: "#f4f1ec",
-              border: "1px solid #e7dfd4",
-              color: "#1c1917",
+              backgroundColor: "#f4faf7",
+              border: "1px solid #dce9e5",
+              color: "#111827",
               borderRadius: 16,
               overflow: "hidden",
               // 강의목록 히어로와 같은 높이로 고정. 세 혜택 페이지가 같은 높이라 탭 위치도 그대로 있다
@@ -101,7 +101,7 @@ export default function StudyVacancyRegisterClient() {
                 inset: 0,
                 pointerEvents: "none",
                 background:
-                  "linear-gradient(to right, rgba(244, 241, 236, 1) 0%, rgba(244, 241, 236, 0.97) 44%, rgba(244, 241, 236, 0.6) 64%, rgba(244, 241, 236, 0) 84%)",
+                  "linear-gradient(to right, rgba(244, 250, 247, 1) 0%, rgba(244, 250, 247, 0.97) 44%, rgba(244, 250, 247, 0.6) 64%, rgba(244, 250, 247, 0) 84%)",
               }}
             />
 
@@ -113,7 +113,7 @@ export default function StudyVacancyRegisterClient() {
                 inset: 0,
                 pointerEvents: "none",
                 backgroundImage:
-                  "linear-gradient(rgba(70, 50, 30, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(70, 50, 30, 0.07) 1px, transparent 1px)",
+                  "linear-gradient(rgba(5, 150, 105, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(5, 150, 105, 0.05) 1px, transparent 1px)",
                 backgroundSize: "44px 44px",
                 WebkitMaskImage: "linear-gradient(to right, #000 45%, transparent 72%)",
                 maskImage: "linear-gradient(to right, #000 45%, transparent 72%)",
@@ -137,8 +137,8 @@ export default function StudyVacancyRegisterClient() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  backgroundColor: "#e2552b",
-                  border: "1px solid #e2552b",
+                  backgroundColor: POINT,
+                  border: `1px solid ${POINT}`,
                   padding: "5px 14px",
                   borderRadius: 20,
                   fontSize: 13,
@@ -165,7 +165,7 @@ export default function StudyVacancyRegisterClient() {
                 }}
               >
                 공실등록 20건!<br />
-                <span style={{ color: "#e2552b" }}>
+                <span style={{ color: "#059669" }}>
                   AI매매보고서, 유리창홍보지, 웹페이지 무료
                 </span>
               </h1>
@@ -206,7 +206,7 @@ export default function StudyVacancyRegisterClient() {
             }}
           >
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
                 부동산 네트워크 마케팅
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
@@ -218,7 +218,7 @@ export default function StudyVacancyRegisterClient() {
             </div>
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
                 1초 자동 초안 완성
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
@@ -230,7 +230,7 @@ export default function StudyVacancyRegisterClient() {
             </div>
 
             <div style={{ borderRight: "1px solid #e2e8f0", paddingRight: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
                 쇼윈도 워크인 마케팅
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
@@ -242,7 +242,7 @@ export default function StudyVacancyRegisterClient() {
             </div>
 
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2552b", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 4 }}>
                 단독 접수 홈페이지
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: "#241d19", letterSpacing: "-0.5px" }}>
@@ -306,7 +306,7 @@ export default function StudyVacancyRegisterClient() {
                 gap: 40,
                 alignItems: "center",
                 background: "linear-gradient(135deg, #fbf7f2 0%, #ffffff 100%)",
-                border: "1px solid #fbdccd",
+                border: "1px solid #d1fae5",
                 borderRadius: 20,
                 padding: "44px 40px",
               }}
@@ -317,7 +317,7 @@ export default function StudyVacancyRegisterClient() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "#e2552b",
+                    background: "#059669",
                     color: "#ffffff",
                     fontSize: 12.5,
                     fontWeight: 800,
@@ -349,19 +349,19 @@ export default function StudyVacancyRegisterClient() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#e2552b", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>전국 11만 부동산 포털 실시간 노출</strong> — 지도 검색 및 카테고리별 다이렉트 매칭
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#e2552b", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>임대인(건물주) 안심 브리핑</strong> — &ldquo;국내 최대 공실뉴스에 정식 등록해드립니다&rdquo;
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#e2552b", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>전속 매물 유치 경쟁력</strong> — 타 부동산보다 월등한 미디어 파워로 전속 계약 성사
                     </span>
@@ -412,7 +412,7 @@ export default function StudyVacancyRegisterClient() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "#c9441d",
+                    background: "#047857",
                     color: "#ffffff",
                     fontSize: 12.5,
                     fontWeight: 800,
@@ -434,7 +434,7 @@ export default function StudyVacancyRegisterClient() {
                   }}
                 >
                   등록한 공실이 매물보고서 바로 작성!<br />
-                  <span style={{ color: "#c9441d" }}>보고서 출력 및 카톡·문자로 손님에게 바로 전달</span>
+                  <span style={{ color: "#047857" }}>보고서 출력 및 카톡·문자로 손님에게 바로 전달</span>
                 </h3>
                 <p style={{ fontSize: "15.5px", color: "#475569", lineHeight: 1.7, margin: "0 0 24px 0" }}>
                   공실 정보를 등록하면 대기업 부동산 컨설팅 수준의 &lsquo;AI 매물보고서&rsquo;가 단 1초 만에 자동 완성됩니다.
@@ -444,19 +444,19 @@ export default function StudyVacancyRegisterClient() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#c9441d", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#047857", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>원클릭 고화질 보고서 출력</strong> — 대면 상담 시 고객 신뢰를 사로잡는 프리미엄 브리핑
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#c9441d", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#047857", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>카카오톡 / 문자 메시지 즉시 전송</strong> — 스마트폰 터치 한 번으로 깔끔한 모바일 보고서 열람
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#c9441d", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#047857", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>스펙·임대료·도면 완벽 정리</strong> — 귀찮은 편집 작업 0초, 공실 데이터로 전자동 생성
                     </span>
@@ -604,7 +604,7 @@ export default function StudyVacancyRegisterClient() {
                 gridTemplateColumns: "1.1fr 0.9fr",
                 gap: 40,
                 alignItems: "center",
-                background: "linear-gradient(135deg, #fdf6f1 0%, #fbf6f0 100%)",
+                background: "linear-gradient(135deg, #f0fdf4 0%, #fbf6f0 100%)",
                 border: "1px solid #e87954",
                 borderRadius: 20,
                 padding: "44px 40px",
@@ -616,7 +616,7 @@ export default function StudyVacancyRegisterClient() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "#e2552b",
+                    background: "#059669",
                     color: "#ffffff",
                     fontSize: 12.5,
                     fontWeight: 800,
@@ -649,19 +649,19 @@ export default function StudyVacancyRegisterClient() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#e2552b", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>수백만 원대 홈페이지 제작비 0원</strong> — 공실 등록이 실시간으로 자동 연동
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#e2552b", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>유튜브·블로그 자동 접수창구</strong> — 링크만 달아두면 임대인이 알아서 매물을 접수
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: "#e2552b", fontSize: 18, lineHeight: 1 }}>✔</span>
+                    <span style={{ color: "#059669", fontSize: 18, lineHeight: 1 }}>✔</span>
                     <span style={{ fontSize: 14.5, color: "#1e293b", fontWeight: 600 }}>
                       <strong>손님에게 카톡 문자로 전송</strong> — 종이 명함을 넘어 내 전문성을 입증하는 모바일 홈페이지
                     </span>
@@ -703,7 +703,7 @@ export default function StudyVacancyRegisterClient() {
               style={{
                 fontSize: 13,
                 fontWeight: 800,
-                color: "#f59a6f",
+                color: "#34d399",
                 letterSpacing: "1px",
                 textTransform: "uppercase",
               }}
@@ -742,8 +742,8 @@ export default function StudyVacancyRegisterClient() {
                   key={item.step}
                   onClick={() => setActiveWorkflowStep(idx)}
                   style={{
-                    background: isSelected ? "rgba(180, 63, 24, 0.2)" : "rgba(255, 255, 255, 0.05)",
-                    border: isSelected ? "2px solid #f59a6f" : "1px solid rgba(255, 255, 255, 0.12)",
+                    background: isSelected ? "rgba(5, 150, 105, 0.2)" : "rgba(255, 255, 255, 0.05)",
+                    border: isSelected ? "2px solid #34d399" : "1px solid rgba(255, 255, 255, 0.12)",
                     borderRadius: 14,
                     padding: "24px 20px",
                     cursor: "pointer",
@@ -755,7 +755,7 @@ export default function StudyVacancyRegisterClient() {
                       style={{
                         fontSize: 20,
                         fontWeight: 900,
-                        color: isSelected ? "#f59a6f" : "#64748b",
+                        color: isSelected ? "#34d399" : "#64748b",
                       }}
                     >
                       {item.step}
@@ -764,7 +764,7 @@ export default function StudyVacancyRegisterClient() {
                       style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        background: isSelected ? "#e2552b" : "rgba(255,255,255,0.1)",
+                        background: isSelected ? "#059669" : "rgba(255,255,255,0.1)",
                         color: "#ffffff",
                         padding: "3px 8px",
                         borderRadius: 12,
@@ -793,12 +793,12 @@ export default function StudyVacancyRegisterClient() {
         <div className="container px-20" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 20px" }}>
           <div
             style={{
-              background: "linear-gradient(135deg, #e2552b 0%, #3a2c22 100%)",
+              background: "linear-gradient(135deg, #059669 0%, #3a2c22 100%)",
               borderRadius: 20,
               padding: "56px 40px",
               textAlign: "center",
               color: "#ffffff",
-              boxShadow: "0 20px 40px rgba(180, 63, 24, 0.25)",
+              boxShadow: "0 20px 40px rgba(5, 150, 105, 0.25)",
             }}
           >
             <div
@@ -885,3 +885,4 @@ export default function StudyVacancyRegisterClient() {
     </div>
   );
 }
+

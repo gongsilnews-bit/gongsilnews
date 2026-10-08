@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import StudyAiYoutubeClient from "./StudyAiYoutubeClient";
 
 export const metadata = {
@@ -9,3 +9,4 @@ export const metadata = {
 export default function StudyAiYoutubePage() {
   return <StudyAiYoutubeClient />;
 }
+

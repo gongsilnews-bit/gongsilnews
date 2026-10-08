@@ -1,4 +1,4 @@
-/* 모바일 전용 공실스터디 소개 (PC 홈 1:1 모바일 최적화 버전) */
+﻿/* 모바일 전용 공실스터디 소개 (PC 홈 1:1 모바일 최적화 버전) */
 
 .container {
   width: 100%;
@@ -31,16 +31,16 @@
   gap: 4px;
   font-size: 13px;
   font-weight: 700;
-  color: #e2552b;
+  color: #059669;
   text-decoration: none;
-  background-color: #fdeee7;
+  background-color: #ecfdf5;
   padding: 6px 12px;
   border-radius: 8px;
   transition: background-color 0.2s ease;
 }
 
 .backBtn:hover {
-  background-color: #fbdccd;
+  background-color: #d1fae5;
 }
 
 /* ━━━ [1] 메인 히어로 ━━━ */
@@ -72,9 +72,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(180, 63, 24, 0.18);
-  border: 1px solid rgba(180, 63, 24, 0.4);
-  color: #f59a6f;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
   font-size: 15px;
   font-weight: 800;
   padding: 6px 16px;
@@ -93,14 +93,14 @@
 }
 
 .heroTitleHighlight {
-  color: #f59a6f;
+  color: #34d399;
   display: inline-block;
 }
 
 .heroDesc {
   font-size: 13.5px;
   line-height: 1.6;
-  color: #fbdccd;
+  color: #d1fae5;
   opacity: 0.92;
   margin: 0 0 22px 0;
   word-break: keep-all;
@@ -122,13 +122,13 @@
   justify-content: center;
   width: 100%;
   padding: 10px 6px;
-  background: linear-gradient(135deg, #e2552b 0%, #e2552b 100%) !important;
+  background: linear-gradient(135deg, #059669 0%, #059669 100%) !important;
   color: #ffffff !important;
   font-size: 13px;
   font-weight: 800;
   border-radius: 8px;
   text-decoration: none !important;
-  box-shadow: 0 3px 10px rgba(180, 63, 24, 0.3);
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
   transition: transform 0.15s ease;
   white-space: nowrap;
 }
@@ -205,7 +205,7 @@
 
 .lectureHeaderLink {
   font-size: 12.5px;
-  color: #f59a6f;
+  color: #34d399;
   text-decoration: none;
   font-weight: 700;
 }
@@ -301,8 +301,8 @@
 
 .lectureTag {
   font-size: 10px;
-  color: #e2552b;
-  background-color: #fdeee7;
+  color: #059669;
+  background-color: #ecfdf5;
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: 600;
@@ -340,7 +340,7 @@
 
 .lectureFreeText {
   font-size: 13px;
-  color: #e2552b;
+  color: #059669;
   font-weight: 900;
 }
 
@@ -357,7 +357,7 @@
 .kicker {
   font-size: 11px;
   font-weight: 800;
-  color: #e2552b;
+  color: #059669;
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-bottom: 6px;
@@ -373,7 +373,7 @@
 }
 
 .sectionTitle span {
-  color: #e2552b;
+  color: #059669;
 }
 
 .sectionDesc {
@@ -427,7 +427,7 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(4px);
-  color: #e2552b;
+  color: #059669;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -439,8 +439,8 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 700;
-  color: #e2552b;
-  background-color: #fdeee7;
+  color: #059669;
+  background-color: #ecfdf5;
   padding: 3px 8px;
   border-radius: 6px;
   margin-bottom: 8px;
@@ -639,7 +639,7 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 850;
-  color: #e2552b;
+  color: #059669;
   background: #f8f3ee;
   border: 1px solid #e1dad3;
   padding: 3px 8px;
@@ -662,7 +662,7 @@
   margin: 0 0 6px;
   font-size: 13px;
   font-weight: 800;
-  color: #e2552b;
+  color: #059669;
   letter-spacing: -0.01em;
 }
 
@@ -682,7 +682,7 @@
   background: linear-gradient(135deg, #181411 0%, #29211c 50%, #322822 100%);
   border-radius: 16px;
   border: 1.5px solid rgba(225, 85, 38, 0.45);
-  box-shadow: 0 10px 28px rgba(180, 63, 24, 0.18);
+  box-shadow: 0 10px 28px rgba(16, 185, 129, 0.18);
   position: relative;
   overflow: hidden;
   text-align: center;
@@ -695,7 +695,7 @@
   gap: 6px;
   font-size: 13.5px;
   font-weight: 850;
-  color: #f59a6f;
+  color: #34d399;
   letter-spacing: -0.02em;
   margin: 0 0 8px 0;
   text-shadow: 0 0 10px rgba(225, 85, 38, 0.4);
@@ -741,7 +741,7 @@
   aspect-ratio: 2.14 / 1;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(180, 63, 24, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 2px solid #ffffff;
   background-color: #1f1a16;
 }
@@ -794,7 +794,7 @@
 .flowArrow {
   font-size: 11.5px;
   font-weight: 900;
-  color: #e2552b;
+  color: #059669;
 }
 
 .processGrid {
@@ -815,17 +815,17 @@
 }
 
 .processCardHighlight {
-  border-color: #e2552b;
+  border-color: #059669;
   background: #fefdfb;
-  box-shadow: 0 4px 14px rgba(180, 63, 24, 0.12);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
 }
 
 .stepNum {
   display: inline-block;
   font-size: 11px;
   font-weight: 900;
-  color: #e2552b;
-  background: #fdeee7;
+  color: #059669;
+  background: #ecfdf5;
   padding: 3px 8px;
   border-radius: 6px;
   margin-bottom: 12px;
@@ -852,7 +852,7 @@
 .processCardTag {
   font-size: 11.5px;
   font-weight: 700;
-  color: #e2552b;
+  color: #059669;
   margin: 0 0 10px 0;
 }
 
@@ -910,8 +910,8 @@
   display: inline-block;
   font-size: 10.5px;
   font-weight: 900;
-  color: #e2552b;
-  background: #fdeee7;
+  color: #059669;
+  background: #ecfdf5;
   padding: 3px 8px;
   border-radius: 6px;
   margin-bottom: 8px;
@@ -927,7 +927,7 @@
 }
 
 .detailCardTitle span {
-  color: #e2552b;
+  color: #059669;
 }
 
 .detailCardDesc {
@@ -957,7 +957,7 @@
 }
 
 .pointDot {
-  color: #e2552b;
+  color: #059669;
   font-weight: 900;
 }
 
@@ -969,7 +969,7 @@
 }
 
 .proofSection .kicker {
-  color: #f59a6f;
+  color: #34d399;
 }
 
 .proofSection .sectionTitle {
@@ -977,7 +977,7 @@
 }
 
 .proofSection .sectionTitle span {
-  color: #f59a6f;
+  color: #34d399;
 }
 
 .proofSection .sectionDesc {
@@ -1006,7 +1006,7 @@
 .proofStatNumber {
   font-size: 20px;
   font-weight: 900;
-  color: #f59a6f;
+  color: #34d399;
   line-height: 1.2;
 }
 
@@ -1045,7 +1045,7 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 800;
-  color: #f59a6f;
+  color: #34d399;
   margin-bottom: 6px;
 }
 
@@ -1067,7 +1067,7 @@
 .experienceText strong {
   display: block;
   font-size: 12.5px;
-  color: #f59a6f;
+  color: #34d399;
   font-weight: 700;
 }
 
@@ -1109,8 +1109,8 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 900;
-  color: #e2552b;
-  background: #fdeee7;
+  color: #059669;
+  background: #ecfdf5;
   padding: 3px 8px;
   border-radius: 6px;
   margin-bottom: 8px;
@@ -1132,7 +1132,7 @@
 }
 
 .recommendSolution {
-  background: #fdeee7;
+  background: #ecfdf5;
   border: 1px solid #f8c3a8;
   border-radius: 8px;
   padding: 10px 12px;
@@ -1142,7 +1142,7 @@
   display: block;
   font-size: 11px;
   font-weight: 800;
-  color: #c9441d;
+  color: #047857;
   margin-bottom: 4px;
 }
 
@@ -1164,7 +1164,7 @@
 
 .finalCtaKicker {
   font-size: 12px;
-  color: #f59a6f;
+  color: #34d399;
   font-weight: 700;
   margin-bottom: 8px;
 }
@@ -1179,12 +1179,12 @@
 }
 
 .finalCtaTitle span {
-  color: #f59a6f;
+  color: #34d399;
 }
 
 .finalCtaDesc {
   font-size: 13px;
-  color: #fbdccd;
+  color: #d1fae5;
   opacity: 0.9;
   line-height: 1.55;
   margin: 0 auto 22px;
@@ -1229,7 +1229,7 @@
 .faqIcon {
   font-size: 18px;
   font-weight: 700;
-  color: #e2552b;
+  color: #059669;
   flex-shrink: 0;
 }
 
@@ -1252,10 +1252,10 @@
   margin-top: 14px;
   font-size: 13px;
   font-weight: 700;
-  color: #e2552b;
+  color: #059669;
   text-decoration: none;
   padding: 10px;
-  background: #fdeee7;
+  background: #ecfdf5;
   border-radius: 8px;
 }
 
@@ -1298,13 +1298,13 @@
   align-items: center;
   gap: 4px;
   padding: 5px 14px;
-  background: #e2552b;
+  background: #059669;
   color: #ffffff;
   font-size: 11.5px;
   font-weight: 850;
   letter-spacing: 0.04em;
   border-radius: 999px;
-  box-shadow: 0 4px 12px rgba(180, 63, 24, 0.25);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
   margin-bottom: 12px;
 }
 
@@ -1319,7 +1319,7 @@
 }
 
 .freeOfferHighlight {
-  color: #e2552b;
+  color: #059669;
   display: inline;
 }
 
@@ -1342,7 +1342,7 @@
   background: #ffffff;
   border-radius: 18px;
   border: 1.5px solid #ebe2d8;
-  box-shadow: 0 10px 24px rgba(180, 63, 24, 0.07);
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.07);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1372,7 +1372,7 @@
   align-items: center;
   gap: 5px;
   padding: 6px 14px;
-  background: rgba(180, 63, 24, 0.95);
+  background: rgba(16, 185, 129, 0.95);
   backdrop-filter: blur(4px);
   color: #ffffff;
   font-size: 12px;
@@ -1407,7 +1407,7 @@
   display: inline-flex;
   padding: 3px 10px;
   background: #f8f2ec;
-  color: #e2552b;
+  color: #059669;
   font-size: 11.5px;
   font-weight: 800;
   border-radius: 6px;
@@ -1447,7 +1447,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #e2552b;
+  background: #059669;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -1466,20 +1466,20 @@
 }
 
 .freeOfferCheckStrong {
-  color: #e2552b;
+  color: #059669;
   font-weight: 900;
 }
 
 /* ━━━ 히어로 새 디자인 (2026-10-08, PC /study 히어로와 같은 규칙) ━━━ */
 .heroV2 {
-  --hv-bg: #f4f1ec;
-  --hv-grid: rgba(70, 50, 30, 0.07);
-  --hv-ink: #1c1917;
-  --hv-muted: #57534e;
-  --hv-line: #e7dfd4;
-  --hv-orange: #e2552b;
-  --hv-orange-strong: #c9441d;
-  --hv-orange-soft: #fdeee7;
+  --hv-bg: #f4faf7;
+  --hv-grid: rgba(5, 150, 105, 0.05);
+  --hv-ink: #111827;
+  --hv-muted: #4b5563;
+  --hv-line: #dce9e5;
+  --hv-green: #059669;
+  --hv-green-strong: #047857;
+  --hv-green-soft: #ecfdf5;
   position: relative;
   overflow: hidden;
   background-color: var(--hv-bg);
@@ -1513,7 +1513,7 @@
   margin: 0 0 16px;
   padding: 7px 15px;
   border-radius: 999px;
-  background: var(--hv-orange);
+  background: var(--hv-green);
   color: #ffffff;
   font-size: 13.5px;
   font-weight: 800;
@@ -1533,7 +1533,7 @@
 .heroV2Title span {
   display: block;
   margin-top: 4px;
-  color: var(--hv-orange);
+  color: var(--hv-green);
 }
 
 .heroV2Desc {
@@ -1572,26 +1572,26 @@
 .heroV2Primary:visited,
 .heroV2Primary:hover,
 .heroV2Primary:active {
-  background: var(--hv-orange);
+  background: var(--hv-green);
   color: #ffffff !important;
-  box-shadow: 0 8px 18px rgba(226, 85, 43, 0.26);
+  box-shadow: 0 8px 18px rgba(5, 150, 105, 0.26);
 }
 
 .heroV2Primary:active {
-  background: var(--hv-orange-strong);
+  background: var(--hv-green-strong);
 }
 
 .heroV2Secondary,
 .heroV2Secondary:visited,
 .heroV2Secondary:hover,
 .heroV2Secondary:active {
-  border: 1.5px solid var(--hv-orange);
+  border: 1.5px solid var(--hv-green);
   background: #ffffff;
-  color: var(--hv-orange-strong) !important;
+  color: var(--hv-green-strong) !important;
 }
 
 .heroV2Secondary:active {
-  background: var(--hv-orange-soft);
+  background: var(--hv-green-soft);
 }
 
 .heroV2Notes {
@@ -1615,7 +1615,8 @@
 }
 
 .heroV2Notes li:first-child {
-  border-color: var(--hv-orange);
-  background: var(--hv-orange-soft);
-  color: var(--hv-orange-strong);
+  border-color: var(--hv-green);
+  background: var(--hv-green-soft);
+  color: var(--hv-green-strong);
 }
+

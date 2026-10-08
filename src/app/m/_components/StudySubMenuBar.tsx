@@ -93,8 +93,8 @@ function StudySubMenuBarInner({ activeMenu, activeTab, onTabChange }: Props) {
               fontSize: "12.5px",
               fontWeight: isSel ? 800 : 600,
               color: isSel ? "#ffffff" : "#4b5563",
-              backgroundColor: isSel ? "#e2552b" : "#f3f4f6",
-              border: isSel ? "1px solid #e2552b" : "1px solid #e5e7eb",
+              backgroundColor: isSel ? "#059669" : "#f3f4f6",
+              border: isSel ? "1px solid #059669" : "1px solid #e5e7eb",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -110,8 +110,8 @@ function StudySubMenuBarInner({ activeMenu, activeTab, onTabChange }: Props) {
               <span style={{ 
                 fontSize: "9px", 
                 fontWeight: 900, 
-                backgroundColor: isSel ? "#ffffff" : "#e2552b", 
-                color: isSel ? "#e2552b" : "#ffffff", 
+                backgroundColor: isSel ? "#ffffff" : "#10b981", 
+                color: isSel ? "#059669" : "#ffffff", 
                 borderRadius: "8px", 
                 padding: "1px 4px", 
                 marginLeft: "1px" 

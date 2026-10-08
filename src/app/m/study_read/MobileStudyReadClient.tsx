@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -299,10 +299,10 @@ export default function MobileStudyReadClient({
           <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 500, background: "#1a1613", borderRadius: 12, overflow: "hidden", border: "1px solid #3a2c22", boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
             <div style={{ padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#1a1613", color: "#fff", borderBottom: "1px solid #3a2c22" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ background: "#e2552b", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 6px", borderRadius: 4 }}>미리보기 VOD</span>
+                <span style={{ background: "#059669", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 6px", borderRadius: 4 }}>미리보기 VOD</span>
                 <span style={{ fontSize: 13.5, fontWeight: 700 }}>{previewTitle || "미리보기 영상"}</span>
               </div>
-              <button onClick={() => setPreviewUrl(null)} style={{ background: "none", border: "none", color: "#f8c3a8", fontSize: 20, cursor: "pointer" }}>✕</button>
+              <button onClick={() => setPreviewUrl(null)} style={{ background: "none", border: "none", color: "#a7f3d0", fontSize: 20, cursor: "pointer" }}>✕</button>
             </div>
             {toEmbedUrl(previewUrl).includes("youtube.com/embed") ? (
               <div style={{ width: "100%", aspectRatio: "16/9" }}>
@@ -344,10 +344,10 @@ export default function MobileStudyReadClient({
         ) : (
           <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #1a1613 0%, #3a2c22 100%)", color: "#fff" }}>
             <span style={{ fontSize: 32, marginBottom: 4 }}>🎓</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#f59a6f" }}>{lecture.category || "공실스터디"}</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#34d399" }}>{lecture.category || "공실스터디"}</span>
           </div>
         )}
-        <span style={{ position: "absolute", top: 12, left: 12, background: "#e2552b", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>
+        <span style={{ position: "absolute", top: 12, left: 12, background: "#059669", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 7px", borderRadius: 4 }}>
           VOD
         </span>
 
@@ -373,7 +373,7 @@ export default function MobileStudyReadClient({
               gap: 6,
             }}
           >
-            <span style={{ color: "#f59a6f", fontSize: 12 }}>▶</span>
+            <span style={{ color: "#34d399", fontSize: 12 }}>▶</span>
             <span>미리보기 재생</span>
           </button>
         )}
@@ -381,7 +381,7 @@ export default function MobileStudyReadClient({
 
       {/* ── 2. 강의 제목 및 메타 정보 ── */}
       <div style={{ padding: "20px 16px 16px" }}>
-        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#c9441d", background: "#fdeee7", padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 8 }}>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#047857", background: "#ecfdf5", padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 8 }}>
           {lecture.category || "중개실무"}
         </span>
         <h1 style={{ fontSize: "19px", fontWeight: 800, color: "#1c1917", lineHeight: 1.35, margin: "0 0 8px 0", letterSpacing: "-0.3px" }}>
@@ -393,7 +393,7 @@ export default function MobileStudyReadClient({
 
         {/* 뱃지들 */}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", fontSize: 12, fontWeight: 700 }}>
-          <span style={{ background: "#fdf6f1", color: "#a8381a", border: "1px solid #fbdccd", padding: "3px 8px", borderRadius: 4 }}>
+          <span style={{ background: "#f0fdf4", color: "#a8381a", border: "1px solid #d1fae5", padding: "3px 8px", borderRadius: 4 }}>
             총 {totalLessons}강
           </span>
           {(Array.isArray(lecture.keywords)
@@ -404,7 +404,7 @@ export default function MobileStudyReadClient({
           ).map((kw: string, idx: number) => (
             <span
               key={idx}
-              style={{ background: "#fdf6f1", color: "#a8381a", border: "1px solid #fbdccd", padding: "3px 8px", borderRadius: 4 }}
+              style={{ background: "#f0fdf4", color: "#a8381a", border: "1px solid #d1fae5", padding: "3px 8px", borderRadius: 4 }}
             >
               {kw}
             </span>
@@ -437,7 +437,7 @@ export default function MobileStudyReadClient({
                 padding: "12px 0",
                 background: "none",
                 border: "none",
-                borderBottom: isSel ? "2.5px solid #e2552b" : "2.5px solid transparent",
+                borderBottom: isSel ? "2.5px solid #059669" : "2.5px solid transparent",
                 fontSize: 14,
                 fontWeight: isSel ? 800 : 600,
                 color: isSel ? "#1c1917" : "#64748b",
@@ -541,7 +541,7 @@ export default function MobileStudyReadClient({
                       return (
                         <div key={les.id || lesIdx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 14px", borderBottom: "1px solid #f8fafc", fontSize: 13 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: "#e2552b" }}>{String(lesIdx + 1).padStart(2, "0")}</span>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: "#059669" }}>{String(lesIdx + 1).padStart(2, "0")}</span>
                             <span style={{ fontWeight: 600, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{les.title}</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
@@ -575,7 +575,7 @@ export default function MobileStudyReadClient({
                               <button
                                 type="button"
                                 onClick={() => { setPreviewUrl(les.video_url); setPreviewTitle(les.title); }}
-                                style={{ padding: "2px 6px", borderRadius: 4, background: "#fdeee7", color: "#c9441d", border: "1px solid #fbdccd", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                                style={{ padding: "2px 6px", borderRadius: 4, background: "#ecfdf5", color: "#047857", border: "1px solid #d1fae5", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
                               >
                                 미리보기
                               </button>
@@ -606,7 +606,7 @@ export default function MobileStudyReadClient({
                 ))}
               </div>
               <textarea rows={2} placeholder="수강 후기를 작성해 주세요" value={newReview} onChange={(e) => setNewReview(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 13, boxSizing: "border-box" }} />
-              <button type="submit" disabled={isSubmitting} style={{ marginTop: 8, width: "100%", padding: "8px 0", background: "#e2552b", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700 }}>
+              <button type="submit" disabled={isSubmitting} style={{ marginTop: 8, width: "100%", padding: "8px 0", background: "#059669", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700 }}>
                 {isSubmitting ? "등록 중..." : "후기 등록"}
               </button>
             </form>
@@ -618,7 +618,7 @@ export default function MobileStudyReadClient({
 
                 if (isEditing) {
                   return (
-                    <div key={rev.id || i} style={{ padding: "12px", background: "#f8fafc", border: "1.5px solid #e2552b", borderRadius: 8 }}>
+                    <div key={rev.id || i} style={{ padding: "12px", background: "#f8fafc", border: "1.5px solid #059669", borderRadius: 8 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>별점 수정:</span>
                         {[1, 2, 3, 4, 5].map((star) => (
@@ -651,7 +651,7 @@ export default function MobileStudyReadClient({
                           type="button"
                           onClick={() => handleReviewUpdate(rev.id)}
                           disabled={isReviewActionLoading}
-                          style={{ padding: "5px 14px", background: "#e2552b", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 700 }}
+                          style={{ padding: "5px 14px", background: "#059669", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 700 }}
                         >
                           {isReviewActionLoading ? "저장 중..." : "수정 완료"}
                         </button>
@@ -699,7 +699,7 @@ export default function MobileStudyReadClient({
         {activeTab === "creator" && (
           <div style={{ background: "#f8fafc", padding: "18px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-              <div style={{ width: 50, height: 50, borderRadius: "50%", background: "#1a1613", color: "#f59a6f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, overflow: "hidden", flexShrink: 0 }}>
+              <div style={{ width: 50, height: 50, borderRadius: "50%", background: "#1a1613", color: "#34d399", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, overflow: "hidden", flexShrink: 0 }}>
                 {lecture.instructor_photo ? (
                   <img src={lecture.instructor_photo} alt={lecture.instructor_name || "강사"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
@@ -708,7 +708,7 @@ export default function MobileStudyReadClient({
               </div>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", marginBottom: 2 }}>{lecture.instructor_name || "공실뉴스 강사진"}</div>
-                <div style={{ fontSize: 12, color: "#e2552b", fontWeight: 700 }}>공실뉴스 공식 파트너 강사</div>
+                <div style={{ fontSize: 12, color: "#059669", fontWeight: 700 }}>공실뉴스 공식 파트너 강사</div>
               </div>
             </div>
             {lecture.instructor_bio ? (
@@ -728,7 +728,7 @@ export default function MobileStudyReadClient({
       {/* ── 5. 하단 고정 결제/수강 바 (Sticky Bottom Action Bar) ── */}
       <div style={{ position: "fixed", bottom: 0, left: 0, width: "100%", background: "#ffffff", borderTop: "1px solid #e2e8f0", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, zIndex: 50, boxSizing: "border-box" }}>
         <div>
-          <div style={{ fontSize: 11, color: "#e2552b", fontWeight: 700 }}>1년(365일) 이용</div>
+          <div style={{ fontSize: 11, color: "#059669", fontWeight: 700 }}>1년(365일) 이용</div>
           <div style={{ fontSize: 18, fontWeight: 900, color: "#1c1917" }}>
             {displayPrice ? `${displayPrice.toLocaleString()}P` : "무료 수강"}
           </div>
@@ -741,14 +741,14 @@ export default function MobileStudyReadClient({
             flex: 1,
             maxWidth: "240px",
             padding: "13px 0",
-            background: isEnrolled ? "#1a1613" : "#e2552b",
+            background: isEnrolled ? "#1a1613" : "#059669",
             color: "#ffffff",
             border: "none",
             borderRadius: 8,
             fontSize: 15,
             fontWeight: 800,
             cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(180, 63, 24,0.3)",
+            boxShadow: "0 2px 8px rgba(5, 150, 105,0.3)",
           }}
         >
           {enrolling ? "처리 중..." : isEnrolled ? "강의실 입장하기 →" : displayPrice ? `${displayPrice.toLocaleString()}P 수강신청` : "무료 수강 시작하기 →"}
@@ -775,7 +775,7 @@ export default function MobileStudyReadClient({
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <button onClick={() => setShowEnrollModal(false)} style={{ padding: "10px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700 }}>취소</button>
-              <button onClick={confirmEnroll} disabled={enrolling} style={{ padding: "10px 0", background: "#e2552b", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 800 }}>{enrolling ? "결제 중..." : "결제 및 수강"}</button>
+              <button onClick={confirmEnroll} disabled={enrolling} style={{ padding: "10px 0", background: "#059669", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 800 }}>{enrolling ? "결제 중..." : "결제 및 수강"}</button>
             </div>
           </div>
         </div>
@@ -783,3 +783,4 @@ export default function MobileStudyReadClient({
     </div>
   );
 }
+

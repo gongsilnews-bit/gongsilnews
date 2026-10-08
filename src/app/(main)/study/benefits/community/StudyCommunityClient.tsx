@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import StudyHeader from "@/components/study/StudyHeader";
@@ -23,3 +23,4 @@ export default function StudyCommunityClient() {
     </div>
   );
 }
+
