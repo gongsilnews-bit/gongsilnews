@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Image from "next/image";
@@ -604,8 +604,8 @@ export default function StudyVacancyRegisterClient() {
                 gridTemplateColumns: "1.1fr 0.9fr",
                 gap: 40,
                 alignItems: "center",
-                background: "linear-gradient(135deg, #f0fdf4 0%, #fbf6f0 100%)",
-                border: "1px solid #e87954",
+                background: "#f0fdf4",
+                border: "1.5px solid #059669",
                 borderRadius: 20,
                 padding: "44px 40px",
               }}
@@ -675,7 +675,7 @@ export default function StudyVacancyRegisterClient() {
                   position: "relative",
                   borderRadius: 14,
                   overflow: "hidden",
-                  border: "1px solid #e87954",
+                  border: "1.5px solid #059669",
                   boxShadow: "0 10px 25px rgba(0, 0, 0, 0.08)",
                   minHeight: 320,
                   backgroundColor: "#ffffff",

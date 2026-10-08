@@ -639,7 +639,7 @@ export default function StudyHomeYunClient() {
         </section>
 
         {/* ━━━ [5섹션] 이런 부동산에게 추천합니다! ━━━ */}
-        <section className={styles.problemSection} aria-labelledby="recommend-title">
+        <section className={styles.problemSection} style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0", borderBottom: "1px solid #e2e8f0" }} aria-labelledby="recommend-title">
           <div className={styles.contentWidth}>
             <header className={styles.sectionHeader}>
               <p className={styles.kicker}>RECOMMENDATION</p>

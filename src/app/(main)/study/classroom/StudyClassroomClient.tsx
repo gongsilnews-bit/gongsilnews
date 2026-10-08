@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -202,10 +202,10 @@ export default function StudyClassroomClient({ categories = ["전체"] }: { cate
                 </button>
 
                 {findResult && (
-                  <div style={{ padding: "14px", borderRadius: 8, background: findResult.found ? "#f0fdf4" : "#fef2f2", border: `1px solid ${findResult.found ? "#e87954" : "#fecaca"}`, marginBottom: 14 }}>
+                  <div style={{ padding: "14px", borderRadius: 8, background: findResult.found ? "#f0fdf4" : "#fef2f2", border: `1px solid ${findResult.found ? "#059669" : "#fecaca"}`, marginBottom: 14 }}>
                     {findResult.found ? (
                       <div style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: 13.5, color: "#b43f18", fontWeight: 700, marginBottom: 6 }}>✅ 회원 정보를 찾았습니다!</div>
+                        <div style={{ fontSize: 13.5, color: "#065f46", fontWeight: 700, marginBottom: 6 }}>✅ 회원 정보를 찾았습니다!</div>
                         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20, background: providerColor(findResult.provider), border: "1px solid #ddd", marginBottom: 6 }}>
                           <span style={{ fontSize: 13, fontWeight: 800, color: findResult.provider === "naver" ? "#fff" : "#333" }}>
                             {providerLabel(findResult.provider)}

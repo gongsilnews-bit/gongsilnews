@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
@@ -393,8 +393,8 @@ export default function MobileStudyApplyClient() {
         <section
           aria-labelledby="m-apply-recommend-title"
           style={{
-            background: "#fbf7f2",
-            border: "1px solid #d1fae5",
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
             borderRadius: 18,
             padding: "28px 16px",
             margin: "20px 0",
@@ -404,7 +404,7 @@ export default function MobileStudyApplyClient() {
             <div style={{ color: "#059669", fontSize: 11.5, fontWeight: 800, letterSpacing: "1px", marginBottom: 6 }}>
               RECOMMENDATION
             </div>
-            <h2 id="m-apply-recommend-title" style={{ fontSize: 21, fontWeight: 900, color: "#241d19", margin: "0 0 8px", letterSpacing: "-0.5px" }}>
+            <h2 id="m-apply-recommend-title" style={{ fontSize: 21, fontWeight: 900, color: "#1e293b", margin: "0 0 8px", letterSpacing: "-0.5px" }}>
               이런 부동산에게 추천합니다!
             </h2>
             <p style={{ fontSize: 13, color: "#64748b", margin: 0, lineHeight: 1.55, wordBreak: "keep-all" }}>
@@ -453,9 +453,9 @@ export default function MobileStudyApplyClient() {
                   <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.6, margin: "0 0 12px", wordBreak: "keep-all" }}>
                     {item.description}
                   </p>
-                  <div style={{ background: "#f0fdf4", border: "1px solid #e87954", borderRadius: 10, padding: "10px 12px" }}>
+                  <div style={{ background: "#ecfdf5", border: "1.5px solid #059669", borderRadius: 10, padding: "10px 12px" }}>
                     <div style={{ fontSize: 11.5, fontWeight: 800, color: "#059669", marginBottom: 3 }}>💡 맞춤 솔루션</div>
-                    <div style={{ fontSize: 12.5, color: "#b43f18", lineHeight: 1.5, fontWeight: 600, wordBreak: "keep-all" }}>
+                    <div style={{ fontSize: 12.5, color: "#065f46", lineHeight: 1.5, fontWeight: 700, wordBreak: "keep-all" }}>
                       {item.solution}
                     </div>
                   </div>

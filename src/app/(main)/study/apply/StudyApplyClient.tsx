@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
@@ -493,12 +493,12 @@ export default function StudyApplyClient() {
         </div>
 
         {/* ━━━ [3] 이런 부동산에게 추천합니다! ━━━ */}
-        <section style={{ backgroundColor: "#fbf7f2", borderRadius: "24px", padding: "64px 32px", border: "1px solid #d1fae5", marginBottom: "68px", textAlign: "center" }}>
+        <section style={{ backgroundColor: "#f8fafc", borderRadius: "24px", padding: "64px 32px", border: "1px solid #e2e8f0", marginBottom: "68px", textAlign: "center" }}>
           <div style={{ maxWidth: 840, margin: "0 auto 44px" }}>
             <div style={{ color: POINT, fontSize: "13px", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>
               RECOMMENDATION
             </div>
-            <h2 style={{ fontSize: "30px", fontWeight: 900, color: "#241d19", margin: "0 0 12px 0", letterSpacing: "-0.8px" }}>
+            <h2 style={{ fontSize: "30px", fontWeight: 900, color: "#1e293b", margin: "0 0 12px 0", letterSpacing: "-0.8px" }}>
               이런 부동산에게 추천합니다!
             </h2>
             <p style={{ fontSize: "15px", color: "#64748b", margin: 0, lineHeight: 1.6 }}>
@@ -596,16 +596,16 @@ export default function StudyApplyClient() {
                 {/* 맞춤 솔루션 배지 박스 */}
                 <div
                   style={{
-                    backgroundColor: "#f0fdf4",
-                    border: "1px solid #e87954",
+                    backgroundColor: "#ecfdf5",
+                    border: "1.5px solid #059669",
                     borderRadius: "10px",
                     padding: "12px 14px",
                   }}
                 >
-                  <div style={{ fontSize: "12px", fontWeight: 800, color: POINT, marginBottom: "4px" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 800, color: "#047857", marginBottom: "4px" }}>
                     💡 맞춤 솔루션
                   </div>
-                  <div style={{ fontSize: "13px", color: "#b43f18", lineHeight: 1.55, fontWeight: 600 }}>
+                  <div style={{ fontSize: "13px", color: "#065f46", lineHeight: 1.55, fontWeight: 700 }}>
                     {item.solution}
                   </div>
                 </div>

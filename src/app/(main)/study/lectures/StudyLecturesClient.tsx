@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -248,53 +248,80 @@ export default function StudyLecturesClient({
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{
                       width: "100%",
-                      height: 40,
-                      background: "#fbf8f4",
-                      border: "1px solid #d1fae5",
+                      height: 42,
+                      background: "#f0fdf4",
+                      border: "1.5px solid #a7f3d0",
                       borderRadius: 8,
-                      padding: "0 36px 0 14px",
+                      padding: "0 38px 0 14px",
                       fontSize: 13.5,
-                      color: "#111",
+                      color: "#1e293b",
                       outline: "none",
                       boxSizing: "border-box",
+                      boxShadow: "0 1px 2px rgba(5, 150, 105, 0.05)",
+                      transition: "all 0.15s ease",
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = "#059669";
+                      e.currentTarget.style.backgroundColor = "#ecfdf5";
+                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(16, 185, 129, 0.15)";
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = "#a7f3d0";
+                      e.currentTarget.style.backgroundColor = "#f0fdf4";
+                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(5, 150, 105, 0.05)";
                     }}
                   />
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", right: 12, top: 12 }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", right: 13, top: 13, pointerEvents: "none" }}>
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
                 </div>
               </div>
 
-              {/* 카테고리 필터 버튼 바 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 32 }}>
-                {categories.map((cat) => {
-                  const isSel = activeCategory === cat;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => setActiveCategory(cat)}
-                      style={{
-                        padding: "7px 16px",
-                        borderRadius: 8,
-                        fontSize: 13.5,
-                        fontWeight: isSel ? 700 : 500,
-                        color: isSel ? "#ffffff" : "#a8381a",
-                        backgroundColor: isSel ? "#211b17" : "#f0fdf4",
-                        border: isSel ? "1px solid #211b17" : "1px solid #d1fae5",
-                        cursor: "pointer",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {cat}
-                    </button>
-                  );
-                })}
-              </div>
+                {/* 카테고리 필터 버튼 바 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 32 }}>
+                  {categories.map((cat) => {
+                    const isSel = activeCategory === cat;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setActiveCategory(cat)}
+                        style={{
+                          padding: "8px 18px",
+                          borderRadius: 8,
+                          fontSize: 13.5,
+                          fontWeight: isSel ? 700 : 600,
+                          color: isSel ? "#ffffff" : "#475569",
+                          backgroundColor: isSel ? "#065f46" : "#ffffff",
+                          border: isSel ? "1px solid #065f46" : "1px solid #cbd5e1",
+                          boxShadow: isSel ? "0 2px 8px rgba(6, 95, 70, 0.25)" : "0 1px 2px rgba(0,0,0,0.03)",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSel) {
+                            e.currentTarget.style.backgroundColor = "#f0fdf4";
+                            e.currentTarget.style.color = "#065f46";
+                            e.currentTarget.style.borderColor = "#a7f3d0";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSel) {
+                            e.currentTarget.style.backgroundColor = "#ffffff";
+                            e.currentTarget.style.color = "#475569";
+                            e.currentTarget.style.borderColor = "#cbd5e1";
+                          }
+                        }}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
 
               {/* 강의 카드 그리드 (3열 레이아웃) */}
               {filteredLectures.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "80px 20px", background: "#fbf8f4", borderRadius: 12, border: "1px solid #d1fae5", color: "#64748b" }}>
+                <div style={{ textAlign: "center", padding: "80px 20px", background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0", color: "#64748b" }}>
                   <div style={{ fontSize: 44, marginBottom: 12 }}>🔍</div>
                   <div style={{ fontSize: 17, fontWeight: 700, color: "#1e293b", marginBottom: 6 }}>해당 조건의 특강이 없습니다</div>
                   <p style={{ fontSize: 13.5, color: "#94a3b8", margin: 0 }}>다른 검색어나 카테고리를 선택해 보세요.</p>
@@ -421,7 +448,7 @@ export default function StudyLecturesClient({
           </section>
 
           {/* ━━━ 6. FAQ (자주 묻는 질문 아코디언) ━━━ */}
-          <section style={{ padding: "65px 0 75px", backgroundColor: "#f9f6f2", borderTop: "1px solid #d1fae5" }}>
+          <section style={{ padding: "65px 0 75px", backgroundColor: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
             <div style={{ maxWidth: 860, margin: "0 auto", padding: "0 24px" }}>
               
               <div style={{ textAlign: "center", marginBottom: 36 }}>
@@ -463,7 +490,7 @@ export default function StudyLecturesClient({
                           gap: 16,
                         }}
                       >
-                        <span style={{ fontSize: 16, fontWeight: 700, color: isOpen ? "#3a2c22" : "#1e293b", lineHeight: 1.4 }}>
+                        <span style={{ fontSize: 16, fontWeight: 700, color: isOpen ? "#065f46" : "#1e293b", lineHeight: 1.4 }}>
                           Q. {faq.q}
                         </span>
                         <span

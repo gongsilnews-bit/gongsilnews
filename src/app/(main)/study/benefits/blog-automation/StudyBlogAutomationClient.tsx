@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Image from "next/image";
@@ -657,7 +657,7 @@ export default function StudyBlogAutomationClient() {
 
                 {/* 챗GPT & 제미나이 2단 뱃지 박스 */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e87954", textAlign: "center" }}>
+                  <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #a7f3d0", textAlign: "center" }}>
                     <div style={{ fontSize: 14, fontWeight: 900, color: "#047857", marginBottom: 2 }}>
                       ChatGPT
                     </div>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -225,8 +225,8 @@ export default function MobileStudyHubClient({
                       fontSize: "13px",
                       fontWeight: isSel ? 700 : 500,
                       whiteSpace: "nowrap",
-                      color: isSel ? "#ffffff" : "#a8381a",
-                      backgroundColor: isSel ? "#211b17" : "#ffffff",
+                      color: isSel ? "#ffffff" : "#475569",
+                      backgroundColor: isSel ? "#065f46" : "#ffffff",
                       border: isSel ? "1px solid #211b17" : "1px solid #d1fae5",
                       cursor: "pointer",
                       flexShrink: 0,
