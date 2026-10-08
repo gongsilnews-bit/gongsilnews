@@ -116,12 +116,19 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
     return { ...m, computedStatus, isLongTermPending };
   });
 
+  const activeMembers = processedMembers.filter(m => !m.is_deleted);
   const counts = {
-    all: processedMembers.filter(m => !m.is_deleted).length,
-    approved: processedMembers.filter(m => !m.is_deleted && m.computedStatus === '정상').length,
-    pending: processedMembers.filter(m => !m.is_deleted && m.computedStatus === '승인대기').length,
-    rejected: processedMembers.filter(m => !m.is_deleted && m.computedStatus === '서류보완').length,
+    all: activeMembers.length,
+    approved: activeMembers.filter(m => m.computedStatus === '정상').length,
+    pending: activeMembers.filter(m => m.computedStatus === '승인대기').length,
+    rejected: activeMembers.filter(m => m.computedStatus === '서류보완').length,
     dormant: processedMembers.filter(m => m.is_deleted).length,
+  };
+  const roleCounts = {
+    admin: activeMembers.filter(m => m.role === 'ADMIN' || m.role === '최고관리자').length,
+    realtor: activeMembers.filter(m => m.role === 'REALTOR' || m.role === '부동산회원').length,
+    business: activeMembers.filter(m => m.role === 'BIZ' || m.role === '비즈니스회원').length,
+    user: activeMembers.filter(m => m.role === 'USER' || m.role === '일반회원' || !m.role).length,
   };
 
   const currentTab = activeSubmenu === "members_list" ? "all" : activeSubmenu;
@@ -161,7 +168,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0 }}>회원관리</h1>
         <span style={{ fontSize: 13, fontWeight: 600, color: textSecondary }}>
-          ( <span>관리자 1명</span> / <span>부동산회원 1명</span> / <span>일반 1명</span> / 전체 3명 )
+          ( <span>관리자 {roleCounts.admin}명</span> / <span>부동산회원 {roleCounts.realtor}명</span> / <span>비즈니스회원 {roleCounts.business}명</span> / <span>일반 {roleCounts.user}명</span> / 전체 {counts.all}명 )
         </span>
       </div>
 
