@@ -100,6 +100,30 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
   const [aiPreview, setAiPreview] = useState("");
   const [aiPreviewLoading, setAiPreviewLoading] = useState(false);
   const [aiPreviewWidth, setAiPreviewWidth] = useState<"pc" | "mobile">("pc");
+  const aiHtmlFileRef = useRef<HTMLInputElement>(null);
+  const [aiHtmlDragOver, setAiHtmlDragOver] = useState(false);
+
+  /* ── HTML 파일 첨부 → 내용을 그대로 채움 (UTF-8, 안 되면 EUC-KR) ── */
+  const loadAiHtmlFile = async (file?: File | null) => {
+    if (!file) return;
+    if (!/\.html?$/i.test(file.name) && file.type !== "text/html") {
+      alert("HTML 파일(.html)만 첨부할 수 있습니다.");
+      return;
+    }
+    if (file.size > 2_000_000) {
+      alert("HTML 파일이 너무 큽니다. (최대 2MB)");
+      return;
+    }
+    if (aiHtml.trim() && !confirm("지금 입력된 HTML을 첨부한 파일 내용으로 바꿀까요?")) return;
+    const buf = await file.arrayBuffer();
+    let text: string;
+    try {
+      text = new TextDecoder("utf-8", { fatal: true }).decode(buf);
+    } catch {
+      text = new TextDecoder("euc-kr").decode(buf);
+    }
+    setAiHtml(text.replace(/^﻿/, ""));
+  };
 
   /* ── 강사 정보 ── */
   const [instructorName, setInstructorName] = useState("");
@@ -812,19 +836,43 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
                 {descMode === "aihtml" && (
                   <div>
                     <div style={{ fontSize: 13, color: "#4b5563", background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 8, padding: "10px 14px", marginBottom: 10, lineHeight: 1.6 }}>
-                      ChatGPT·제미나이·클로드가 만들어 준 HTML을 <b>통째로</b> 붙여넣으세요. 디자인(CSS·Tailwind)은 그대로 보이고, 검색(네이버·구글)에도 노출됩니다.
+                      ChatGPT·제미나이·클로드가 만들어 준 HTML을 <b>통째로</b> 붙여넣거나, <b>HTML 파일을 첨부</b>(또는 아래 칸에 끌어다 놓기)하세요. 디자인(CSS·Tailwind)은 그대로 보이고, 검색(네이버·구글)에도 노출됩니다.
                       <br />
                       <span style={{ color: "#6b7280" }}>보안을 위해 스크립트는 빠지므로 클릭해서 움직이는 기능(탭 전환·슬라이드 등)은 멈춘 화면으로 보입니다. 저장하면 이 HTML이 상세 설명이 됩니다.</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => aiHtmlFileRef.current?.click()}
+                        style={{ padding: "8px 16px", fontSize: 13, fontWeight: 700, borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer" }}
+                      >
+                        📎 HTML 파일 첨부
+                      </button>
+                      <input
+                        ref={aiHtmlFileRef}
+                        type="file"
+                        accept=".html,.htm,text/html"
+                        onChange={(e) => { loadAiHtmlFile(e.target.files?.[0]); e.target.value = ""; }}
+                        style={{ display: "none" }}
+                      />
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 12 }}>
                       <textarea
                         value={aiHtml}
                         onChange={(e) => setAiHtml(e.target.value)}
+                        onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setAiHtmlDragOver(true); } }}
+                        onDragLeave={() => setAiHtmlDragOver(false)}
+                        onDrop={(e) => {
+                          if (!e.dataTransfer.files.length) return;
+                          e.preventDefault();
+                          setAiHtmlDragOver(false);
+                          loadAiHtmlFile(e.dataTransfer.files[0]);
+                        }}
                         spellCheck={false}
-                        placeholder={"<!DOCTYPE html>\n<html>\n  ... AI가 만들어 준 HTML 전체를 여기에 붙여넣으세요 ..."}
+                        placeholder={"<!DOCTYPE html>\n<html>\n  ... AI가 만들어 준 HTML 전체를 여기에 붙여넣거나, HTML 파일을 끌어다 놓으세요 ..."}
                         style={{
                           width: "100%", boxSizing: "border-box", height: 280, padding: 12, resize: "vertical",
-                          border: "1px solid #d1d5db", borderRadius: 8, background: "#0f172a", color: "#e2e8f0",
+                          border: aiHtmlDragOver ? "2px dashed #2563eb" : "1px solid #d1d5db", borderRadius: 8, background: aiHtmlDragOver ? "#1e293b" : "#0f172a", color: "#e2e8f0",
                           fontFamily: "Consolas, Menlo, monospace", fontSize: 12.5, lineHeight: 1.55, whiteSpace: "pre", overflow: "auto",
                         }}
                       />
