@@ -605,7 +605,7 @@ export default function StudyBlogAutomationClient() {
                 }}
               >
                 <Image
-                  src="/images/study/benefit-chatgpt-gemini-sample.jpg"
+                  src="/images/study/benefit-chatgpt-gemini-sample.png"
                   alt="공실뉴스 챗GPT 및 제미나이 무료 AI 계정 연동과 네이버 블로그 자동 포스팅 화면"
                   fill
                   style={{ objectFit: "cover", objectPosition: "center" }}

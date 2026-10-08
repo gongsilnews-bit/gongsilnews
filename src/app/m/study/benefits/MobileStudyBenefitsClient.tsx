@@ -436,7 +436,7 @@ export default function MobileStudyBenefitsClient() {
           <div className={styles.mediaCard}>
             <div className={styles.mediaThumb}>
               <Image
-                src="/images/study/benefit-chatgpt-gemini-sample.jpg"
+                src="/images/study/benefit-chatgpt-gemini-sample.png"
                 alt="내가 가입한 챗GPT · 제미나이 무료 연동"
                 fill
                 sizes="(max-width: 480px) 100vw, 448px"
