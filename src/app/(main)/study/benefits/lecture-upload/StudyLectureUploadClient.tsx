@@ -750,25 +750,25 @@ export default function StudyLectureUploadClient() {
             </p>
           </div>
 
-          {/* 중앙 스튜디오 촬영 실사 비주얼 */}
+          {/* 공실스터디 인강 플랫폼 프로세스 비주얼 */}
           <div
             style={{
               position: "relative",
               width: "100%",
-              aspectRatio: "21 / 9",
+              aspectRatio: "1024 / 409",
               borderRadius: 18,
               overflow: "hidden",
               border: "1px solid #dce9e5",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.06)",
               marginBottom: 24,
             }}
           >
             <Image
-              src="/images/study/study-real-corp-filming.webp"
-              alt="사무실에서 강의 영상을 촬영하고 플랫폼에 업로드하는 중개사"
+              src="/images/study/benefit-lecture-upload-process.png"
+              alt="공실스터디 인강 플랫폼 - AI마케팅, 영상제작, 실무강의, 강의개설, 수익화 프로세스"
               fill
               sizes="(max-width: 1040px) 100vw, 1040px"
-              style={{ objectFit: "cover" }}
+              style={{ objectFit: "cover", objectPosition: "center" }}
             />
           </div>
 

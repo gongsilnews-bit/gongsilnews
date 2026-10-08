@@ -415,10 +415,10 @@ export default function MobileStudyBenefitsClient() {
 
           {/* 실사 배너 미디어 카드 */}
           <div className={styles.mediaCard}>
-            <div className={styles.mediaThumb}>
+            <div className={styles.mediaThumb} style={{ aspectRatio: "1024 / 409", height: "auto" }}>
               <Image
-                src="/images/study/benefit-lecture-upload-hero.png"
-                alt="강의 촬영 중인 전문 공인중개사 대표"
+                src="/images/study/benefit-lecture-upload-process.png"
+                alt="강의 개설 및 영상 업로드 프로세스"
                 fill
                 sizes="(max-width: 480px) 100vw, 448px"
                 style={{ objectFit: "cover" }}
