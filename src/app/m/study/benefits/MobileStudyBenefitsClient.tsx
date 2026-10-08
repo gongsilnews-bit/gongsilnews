@@ -414,6 +414,24 @@ export default function MobileStudyBenefitsClient() {
               </p>
             </div>
           </div>
+
+          <div className={styles.mediaCard}>
+            <div className={styles.mediaThumb}>
+              <Image
+                src="/images/study/benefit-interior-before-after.jpg"
+                alt="AI 인테리어 예측기 시공 전후 비교 실사"
+                fill
+                sizes="(max-width: 480px) 100vw, 448px"
+                style={{ objectFit: "cover" }}
+              />
+            </div>
+            <div className={styles.mediaBody}>
+              <h3 className={styles.mediaTitle}>건물 외관 &amp; 아파트 실내 AI 인테리어 예측기</h3>
+              <p className={styles.mediaDesc}>
+                시공 전과 후의 리모델링 모습을 실사 수준으로 시각화하여 고객 상담 및 쇼츠/릴스 영상에 적극 활용할 수 있습니다.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

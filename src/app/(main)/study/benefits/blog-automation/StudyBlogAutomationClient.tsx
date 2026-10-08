@@ -556,54 +556,25 @@ export default function StudyBlogAutomationClient() {
                 </div>
               </div>
 
-              {/* Before & After 시각화 카드 */}
+              {/* Before & After 시각화 실사 카드 */}
               <div
                 style={{
-                  background: "#ffffff",
-                  borderRadius: 16,
-                  border: "1px solid #c7d2fe",
-                  boxShadow: "0 10px 25px rgba(79, 70, 229, 0.08)",
-                  padding: "24px 20px",
+                  position: "relative",
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  border: "1px solid #cbd5e1",
+                  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.08)",
+                  minHeight: 340,
+                  backgroundColor: "#ffffff",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, borderBottom: "1px solid #e0e7ff", paddingBottom: 10 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ background: "#4f46e5", color: "#ffffff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>
-                      AI 리모델링 시뮬레이션
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>외관 · 실내 예측기</span>
-                  </div>
-                  <span style={{ fontSize: 12, color: "#4f46e5", fontWeight: 700 }}>Before & After</span>
-                </div>
-
-                {/* Before / After 비교 박스 2단 */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                  <div style={{ background: "#f1f5f9", borderRadius: 10, padding: "14px 12px", border: "1px solid #e2e8f0", textAlign: "center" }}>
-                    <div style={{ display: "inline-block", background: "#64748b", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4, marginBottom: 8 }}>
-                      BEFORE
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 4 }}>노후 외관 / 기존 실내</div>
-                    <div style={{ fontSize: 11.5, color: "#64748b", lineHeight: 1.4 }}>
-                      오래된 타일 외벽 및 답답한 기본 인테리어
-                    </div>
-                  </div>
-
-                  <div style={{ background: "#eef2ff", borderRadius: 10, padding: "14px 12px", border: "1px solid #a5b4fc", textAlign: "center" }}>
-                    <div style={{ display: "inline-block", background: "#4f46e5", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4, marginBottom: 8 }}>
-                      AFTER ✨
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: "#1e1b4b", marginBottom: 4 }}>AI 모던 리모델링 예측</div>
-                    <div style={{ fontSize: 11.5, color: "#4338ca", lineHeight: 1.4 }}>
-                      트렌디한 통유리 파사드 & 호텔식 인테리어
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ background: "#faf5ff", border: "1px dashed #d8b4fe", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: "#7e22ce" }}>
-                    🎬 쇼츠 · 릴스 숏폼 영상 제작 및 고객 계약 브리핑에 즉시 활용!
-                  </span>
-                </div>
+                <Image
+                  src="/images/study/benefit-interior-before-after.jpg"
+                  alt="공실뉴스 AI 인테리어 예측기 - 시공 전과 시공 후 Before & After 비교 실사"
+                  fill
+                  style={{ objectFit: "cover", objectPosition: "center" }}
+                  priority
+                />
               </div>
             </div>
 
