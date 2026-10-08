@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { saveLecture, getLectureDetail, uploadLectureImage } from "@/app/actions/lecture";
 import { previewLectureAiHtml } from "@/app/actions/lectureAiHtml";
 import { AI_HTML_MARKER } from "@/utils/aiHtml/marker";
+import { extractEmbeddedImages, hasEmbeddedImages } from "@/utils/aiHtml/extractEmbeddedImages";
 import { getStudySettings } from "@/app/actions/studySettings";
 import { createClient } from "@/utils/supabase/client";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -105,13 +106,13 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
 
   /* ── HTML 파일 첨부 → 내용을 그대로 채움 (UTF-8, 안 되면 EUC-KR) ── */
   const loadAiHtmlFile = async (file?: File | null) => {
-    if (!file) return;
+    if (!file || aiImgProgress) return;
     if (!/\.html?$/i.test(file.name) && file.type !== "text/html") {
       alert("HTML 파일(.html)만 첨부할 수 있습니다.");
       return;
     }
-    if (file.size > 2_000_000) {
-      alert("HTML 파일이 너무 큽니다. (최대 2MB)");
+    if (file.size > 100_000_000) {
+      alert("HTML 파일이 너무 큽니다. (최대 100MB)");
       return;
     }
     if (aiHtml.trim() && !confirm("지금 입력된 HTML을 첨부한 파일 내용으로 바꿀까요?")) return;
@@ -122,7 +123,36 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
     } catch {
       text = new TextDecoder("euc-kr").decode(buf);
     }
-    setAiHtml(text.replace(/^﻿/, ""));
+    const html = await moveEmbeddedImages(text.replace(/^﻿/, ""));
+    if (html !== null) setAiHtml(html);
+  };
+
+  /* ── HTML 안에 통째로 들어 있는 사진(base64) → WebP 압축·업로드 후 주소로 바꿈 ── */
+  const [aiImgProgress, setAiImgProgress] = useState<{ done: number; total: number } | null>(null);
+  const moveEmbeddedImages = async (html: string): Promise<string | null> => {
+    let out = html;
+    if (hasEmbeddedImages(html)) {
+      const result = await extractEmbeddedImages(
+        html,
+        async (file) => {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("lecture_id", loadId || "temp");
+          formData.append("type", "content");
+          const res = await uploadLectureImage(formData).catch(() => null);
+          return res?.success && res.url ? res.url : null;
+        },
+        (done, total) => setAiImgProgress({ done, total }),
+      );
+      setAiImgProgress(null);
+      out = result.html;
+      if (result.failed > 0) alert(`사진 ${result.uploaded + result.failed}장 중 ${result.failed}장을 올리지 못했습니다. 잠시 후 다시 첨부해 주세요.`);
+    }
+    if (out.length > 2_000_000) {
+      alert(`사진을 정리해도 HTML이 너무 큽니다. (${(out.length / 1_000_000).toFixed(1)}MB, 최대 2MB)\nAI에게 "사진은 빼고 HTML만 만들어줘"라고 요청해 보세요.`);
+      return null;
+    }
+    return out;
   };
 
   /* ── 강사 정보 ── */
@@ -585,6 +615,7 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
     }
     const savedChapters = chapters.map(ch => ({ ...ch, lessons: ch.lessons.filter(ls => ls.title.trim()).map((ls, i) => ({ ...ls, lesson_no: i + 1, sort_order: i })) }));
     if (materialUploads > 0) { alert("자료 업로드가 끝난 후 저장해 주세요."); return; }
+    if (aiImgProgress) { alert("HTML 사진 업로드가 끝난 후 저장해 주세요."); return; }
     setSaving(true);
     try {
       const res = await saveLecture({
@@ -840,11 +871,17 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
                       <br />
                       <span style={{ color: "#6b7280" }}>보안을 위해 스크립트는 빠지므로 클릭해서 움직이는 기능(탭 전환·슬라이드 등)은 멈춘 화면으로 보입니다. 저장하면 이 HTML이 상세 설명이 됩니다.</span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                      {aiImgProgress && (
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b" }}>
+                          ⏳ 사진 압축·업로드 중... {aiImgProgress.done} / {aiImgProgress.total}장
+                        </span>
+                      )}
                       <button
                         type="button"
+                        disabled={!!aiImgProgress}
                         onClick={() => aiHtmlFileRef.current?.click()}
-                        style={{ padding: "8px 16px", fontSize: 13, fontWeight: 700, borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer" }}
+                        style={{ padding: "8px 16px", fontSize: 13, fontWeight: 700, borderRadius: 8, border: "none", background: aiImgProgress ? "#93c5fd" : "#2563eb", color: "#fff", cursor: aiImgProgress ? "wait" : "pointer" }}
                       >
                         📎 HTML 파일 첨부
                       </button>
@@ -860,6 +897,17 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
                       <textarea
                         value={aiHtml}
                         onChange={(e) => setAiHtml(e.target.value)}
+                        onPaste={async (e) => {
+                          // 사진이 통째로 들어 있는 큰 HTML을 붙여넣어도 파일 첨부와 똑같이 정리한다
+                          const text = e.clipboardData.getData("text/plain");
+                          if (!hasEmbeddedImages(text)) return;
+                          e.preventDefault();
+                          const el = e.currentTarget;
+                          const start = el.selectionStart, end = el.selectionEnd;
+                          const html = await moveEmbeddedImages(text);
+                          if (html !== null) setAiHtml(prev => prev.slice(0, start) + html + prev.slice(end));
+                        }}
+                        readOnly={!!aiImgProgress}
                         onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setAiHtmlDragOver(true); } }}
                         onDragLeave={() => setAiHtmlDragOver(false)}
                         onDrop={(e) => {
@@ -934,9 +982,20 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
                   <ToolBtn onClick={() => execCmd("justifyLeft")} title="왼쪽 정렬">⫷</ToolBtn>
                   <ToolBtn onClick={() => execCmd("justifyCenter")} title="가운데 정렬">☰</ToolBtn>
                   <div style={{ width: 1, background: "#d1d5db", margin: "0 4px" }} />
-                  <ToolBtn onClick={() => { saveSelection(); editorFileRef.current?.click(); }} title="사진 삽입 (WebP 자동 압축)">
-                    📷
-                  </ToolBtn>
+                  <button
+                    type="button"
+                    onClick={() => { saveSelection(); editorFileRef.current?.click(); }}
+                    title="PNG·JPG 이미지를 넣으세요"
+                    style={{
+                      height: 34, padding: "0 14px", border: "none", borderRadius: 6, background: "#2563eb",
+                      display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, fontWeight: 700, color: "#fff",
+                      boxShadow: "0 1px 3px rgba(37,99,235,0.35)",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#1d4ed8"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#2563eb"; }}
+                  >
+                    🖼️ 이미지
+                  </button>
                   {editorUploading && (
                     <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, marginLeft: 8 }}>
                       ⏳ 업로드 중...
@@ -992,7 +1051,7 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
                     outline: "none",
                     background: "#fff",
                   }}
-                  data-placeholder="강의에 대한 상세 소개를 입력하세요. 사진을 삽입하면 WebP로 자동 압축됩니다."
+                  data-placeholder="강의에 대한 상세 소개를 입력하세요. PNG·JPG 이미지를 넣으세요."
                 />
                 <style>{`
                   [contenteditable]:empty:before {
@@ -1030,11 +1089,16 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
                 </label>
               </div>
 
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 12, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, fontSize: 13, color: "#1e40af" }}>
+                📐 <b>권장 크기: 가로 1024 × 세로 565px</b>
+                <span style={{ color: "#3b82f6" }}>· 이 비율로 만들면 목록·상세 화면에서 잘리지 않고 보입니다.</span>
+              </div>
+
               {images.length === 0 ? (
                 <div style={{ padding: "50px 0", textAlign: "center", border: "2px dashed #d1d5db", borderRadius: 12, background: "#fafbfc" }}>
                   <div style={{ fontSize: 36, marginBottom: 12 }}>📷</div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "#6b7280" }}>사진을 업로드하세요</div>
-                  <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6 }}>여러 장 업로드 후 대표 이미지를 선택할 수 있습니다 · WebP 자동 압축</div>
+                  <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6 }}>PNG·JPG 이미지를 넣으세요 · 여러 장 업로드 후 대표 이미지를 선택할 수 있습니다</div>
                 </div>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
@@ -1152,7 +1216,7 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
                   <ToolBtn onClick={() => execBioCmd("justifyLeft")} title="왼쪽 정렬">⫷</ToolBtn>
                   <ToolBtn onClick={() => execBioCmd("justifyCenter")} title="가운데 정렬">☰</ToolBtn>
                   <div style={{ width: 1, background: "#d1d5db", margin: "0 4px" }} />
-                  <ToolBtn onClick={() => { saveBioSelection(); instructorBioFileRef.current?.click(); }} title="사진 삽입 (WebP 자동 압축)">
+                  <ToolBtn onClick={() => { saveBioSelection(); instructorBioFileRef.current?.click(); }} title="PNG·JPG 이미지를 넣으세요">
                     📷
                   </ToolBtn>
                   {bioUploading && (

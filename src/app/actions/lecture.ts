@@ -645,7 +645,8 @@ export async function uploadLectureImage(formData: FormData) {
   try {
     const ext = file.name.split(".").pop() || "webp";
     const folder = imageType === "thumbnail" ? "thumbnails" : "content";
-    const path = `${folder}/${lectureId || "temp"}/${Date.now()}.${ext}`;
+    // 여러 장을 동시에 올려도 같은 이름으로 덮어쓰지 않게 임의 꼬리를 붙인다
+    const path = `${folder}/${lectureId || "temp"}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from("lecture-media")
