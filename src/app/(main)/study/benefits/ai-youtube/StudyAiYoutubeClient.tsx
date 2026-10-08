@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Image from "next/image";
@@ -936,7 +936,7 @@ export default function StudyAiYoutubeClient() {
                   border: "1px solid rgba(255, 255, 255, 0.4)",
                 }}
               >
-                1년 연간 특강 라인업 둘러보기
+                강의 열람하기 &gt;&gt;
               </Link>
             </div>
           </div>

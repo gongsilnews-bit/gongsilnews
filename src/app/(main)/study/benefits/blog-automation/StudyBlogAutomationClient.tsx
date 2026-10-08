@@ -805,7 +805,7 @@ export default function StudyBlogAutomationClient() {
                 margin: "0 0 16px 0",
               }}
             >
-              블로그 작성 고민 끝!<br />
+              블로그/SNS 작성 고민 끝!<br />
               공실 등록하고 원클릭으로 기사와 블로그를 완성하세요
             </h3>
 
@@ -818,8 +818,7 @@ export default function StudyBlogAutomationClient() {
                 lineHeight: 1.6,
               }}
             >
-              공실스터디 멤버십 하나로 블로그 포스팅 자동화 프로그램과 크롬 확장 프로그램,
-              공실 20건, 기사 4편 및 1년 연간 특강 VOD를 모두 누리실 수 있습니다.
+              공실스터디 멤버십이 되시면, 제공해드리는 블로그/SNS 자동 확장 프로그램으로 꾸준한 포스팅이 가능해집니다.
             </p>
 
             <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
@@ -856,7 +855,7 @@ export default function StudyBlogAutomationClient() {
                   border: "1px solid rgba(255, 255, 255, 0.4)",
                 }}
               >
-                1년 연간 특강 라인업 둘러보기
+                강의 열람하기 &gt;&gt;
               </Link>
             </div>
           </div>
