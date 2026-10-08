@@ -711,6 +711,9 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
             <h2 style={{ fontSize: 24, fontWeight: 800, color: "#111", margin: 0 }}>{loadId ? "강의 수정" : "새 강의 등록"}</h2>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
+            {loadId && (
+              <button type="button" onClick={() => window.open(`/study_read?id=${loadId}`, "_blank")} title="저장된 내용으로 강의 상세 페이지를 새 창에서 엽니다" style={{ height: 40, padding: "0 20px", background: "#fff", color: "#059669", border: "1px solid #6ee7b7", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>👁 미리보기</button>
+            )}
             <button onClick={() => router.push("?menu=study")} style={{ height: 40, padding: "0 20px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>취소</button>
             <button onClick={() => handleSave("DRAFT")} disabled={saving || materialUploads > 0} style={{ height: 40, padding: "0 20px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
             <button onClick={() => handleSave(publishStatus)} disabled={saving || materialUploads > 0} style={{ height: 40, padding: "0 24px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>{publishLabel}</button>
@@ -1410,6 +1413,9 @@ export default function StudyWriteForm({ mode = "admin" }: { mode?: "admin" | "m
 
             {/* ========== 하단 버튼 ========== */}
             <div style={{ display: "flex", justifyContent: "center", gap: 16, padding: "20px 0 60px" }}>
+              {loadId && (
+                <button type="button" onClick={() => window.open(`/study_read?id=${loadId}`, "_blank")} title="저장된 내용으로 강의 상세 페이지를 새 창에서 엽니다" style={{ height: 48, padding: "0 32px", background: "#fff", color: "#059669", border: "1px solid #6ee7b7", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>👁 미리보기</button>
+              )}
               <button onClick={() => router.push("?menu=study")} style={{ height: 48, padding: "0 32px", background: "#fff", color: "#6b7280", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>취소</button>
               <button onClick={() => handleSave("DRAFT")} disabled={saving || materialUploads > 0} style={{ height: 48, padding: "0 32px", background: "#fff", color: "#374151", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>💾 임시저장</button>
               <button onClick={() => handleSave(publishStatus)} disabled={saving || materialUploads > 0} style={{ height: 48, padding: "0 40px", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, boxShadow: "0 4px 14px rgba(245,158,11,0.3)" }}>{publishLabel}</button>

@@ -163,7 +163,7 @@ export default function StudyListSection({ theme, mode = "admin" }: AdminSection
     ...(isAdmin ? [{ w: 150, t: "수강안내" }, { w: 230, t: "무료 등급" }] : []),
     { w: 110, t: "수강료" },
     { w: 160, t: "최초등록일" },
-    { w: isAdmin ? 200 : 160, t: "관리" },
+    { w: isAdmin ? 260 : 220, t: "관리" },
   ];
 
   return (
@@ -330,6 +330,7 @@ export default function StudyListSection({ theme, mode = "admin" }: AdminSection
                               <button type="button" onClick={() => setRejectTargets([row.id])} style={{ ...btn("#ef4444"), height: 30, padding: "0 10px", fontSize: 12 }}>반려</button>
                             </>
                           )}
+                          <button type="button" onClick={() => window.open(`/study_read?id=${row.id}`, "_blank")} title="강의 상세 페이지를 새 창으로 엽니다" style={{ ...btn(darkMode ? "#2c2d31" : "#fff", "#059669"), height: 30, padding: "0 10px", fontSize: 12, border: "1px solid #6ee7b7" }}>미리보기</button>
                           <button type="button" onClick={() => router.push(`?menu=study&action=write&id=${row.id}`)} style={{ ...btn(darkMode ? "#374151" : "#4b5563"), height: 30, padding: "0 10px", fontSize: 12 }}>수정</button>
                           <button type="button" onClick={() => handleDelete(row.id)} style={{ ...btn(darkMode ? "#2c2d31" : "#fff", "#ef4444"), height: 30, padding: "0 10px", fontSize: 12, border: "1px solid #fca5a5" }}>삭제</button>
                         </div>
