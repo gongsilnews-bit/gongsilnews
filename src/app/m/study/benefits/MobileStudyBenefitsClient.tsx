@@ -396,6 +396,24 @@ export default function MobileStudyBenefitsClient() {
               </p>
             </div>
           </div>
+
+          <div className={styles.mediaCard}>
+            <div className={styles.mediaThumb}>
+              <Image
+                src="/images/study/benefit-sns-posting-real.jpg"
+                alt="인스타, 쓰레드, 페이스북 SNS 자동 포스팅"
+                fill
+                sizes="(max-width: 480px) 100vw, 448px"
+                style={{ objectFit: "cover" }}
+              />
+            </div>
+            <div className={styles.mediaBody}>
+              <h3 className={styles.mediaTitle}>인스타 · 쓰레드 · 페북 원클릭 포스팅</h3>
+              <p className={styles.mediaDesc}>
+                각 SNS 감성에 맞는 감각적인 문구와 이모지, 핵심 해시태그까지 자동으로 작성되어 피드에 바로 등록할 수 있습니다.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

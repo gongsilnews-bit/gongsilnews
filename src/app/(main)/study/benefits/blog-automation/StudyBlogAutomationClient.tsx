@@ -405,38 +405,25 @@ export default function StudyBlogAutomationClient() {
                 boxShadow: "0 6px 20px rgba(0, 0, 0, 0.03)",
               }}
             >
-              {/* SNS 포스팅 프리뷰 박스 */}
+              {/* 시각화 카드: SNS 자동 포스팅 실사 이미지 */}
               <div
                 style={{
-                  background: "#fff1f2",
-                  border: "1px solid #fecdd3",
+                  position: "relative",
                   borderRadius: 14,
-                  padding: "24px 20px",
+                  overflow: "hidden",
+                  border: "1px solid #e2e8f0",
+                  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.08)",
+                  minHeight: 340,
+                  backgroundColor: "#ffffff",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, borderBottom: "1px solid #ffe4e6", paddingBottom: 10 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ background: "linear-gradient(135deg, #e1306c 0%, #c13584 100%)", color: "#ffffff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4 }}>
-                      SNS 자동 포스팅
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>인스타 · 쓰레드 · 페북</span>
-                  </div>
-                  <span style={{ fontSize: 12, color: "#e1306c", fontWeight: 700 }}>1분 자동 생성 완료</span>
-                </div>
-
-                <h5 style={{ fontSize: 15, fontWeight: 900, color: "#0f172a", margin: "0 0 10px 0", lineHeight: 1.4 }}>
-                  🏢 [강남역 도보 3분] 통유리 채광 맛집! 인테리어 무상 승계 프리미엄 오피스 ✨
-                </h5>
-
-                <div style={{ fontSize: 13, color: "#334155", lineHeight: 1.65, margin: 0, background: "#ffffff", padding: "14px 16px", borderRadius: 8, border: "1px solid #fecdd3", whiteSpace: "pre-line" }}>
-                  📍 강남구 테헤란로 핵심 업무권역 전용 148㎡(45평){"\n"}
-                  💡 통유리 외관 + 회의실 3실 완비로 초기 인테리어 비용 0원!{"\n"}
-                  🚀 빠른 입주 협의 가능 & 즉시 업무 스타트!{"\n\n"}
-                  👉 프로필 링크에서 상세 사진 확인 & DM/전화 문의 환영!{"\n\n"}
-                  <span style={{ color: "#2563eb", fontWeight: 600 }}>
-                    #강남사무실 #강남역오피스 #인테리어완비 #사무실임대 #공실뉴스 #부동산마케팅
-                  </span>
-                </div>
+                <Image
+                  src="/images/study/benefit-sns-posting-real.jpg"
+                  alt="공실뉴스 AI SNS 원클릭 자동 포스팅으로 인스타그램, 스레드, 페이스북, 블로그에 매물을 동시 발행하는 공인중개사 대표님"
+                  fill
+                  style={{ objectFit: "cover", objectPosition: "center" }}
+                  priority
+                />
               </div>
 
               <div>
