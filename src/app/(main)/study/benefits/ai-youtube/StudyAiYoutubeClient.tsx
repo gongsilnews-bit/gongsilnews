@@ -97,15 +97,15 @@ export default function StudyAiYoutubeClient() {
               height: 400,
             }}
           >
-            {/* 배경 이미지 — 드론으로 찍은 한강변 아파트 단지 (멤버십 드론 영상 저작권 혜택) */}
+            {/* 배경 이미지 — 유튜브 편집 화면 앞의 여성 중개사 (/study 무료 혜택 사진 원본, 오른쪽 아래 워터마크만 잘라냄) */}
             <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: "62%" }}>
               <Image
-                src="/images/study/benefit-youtube-hero-drone.webp"
-                alt="드론으로 촬영한 한강변 아파트 단지와 도로 전경"
+                src="/images/study/benefit-youtube-hero-woman.webp"
+                alt="유튜브 영상 편집 화면 앞에서 웃고 있는 여성 공인중개사"
                 fill
                 priority
                 sizes="(max-width: 1160px) 62vw, 690px"
-                style={{ objectFit: "cover", objectPosition: "60% center" }}
+                style={{ objectFit: "cover", objectPosition: "70% center" }}
               />
             </div>
 
@@ -744,8 +744,8 @@ export default function StudyAiYoutubeClient() {
                 }}
               >
                 <Image
-                  src="/images/study/benefit_drone_sample.jpg"
-                  alt="드론 상업적 항공 영상 저작권 무료 제공"
+                  src="/images/study/benefit-youtube-hero-drone.webp"
+                  alt="드론으로 촬영한 한강변 아파트 단지와 도로 전경 (상업적 저작권 무료 제공 샘플)"
                   fill
                   style={{ objectFit: "cover", objectPosition: "center" }}
                 />
