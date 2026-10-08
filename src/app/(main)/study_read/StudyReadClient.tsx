@@ -42,20 +42,28 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
   const [lecture, setLecture] = useState<any>(initialLecture);
   const [loading, setLoading] = useState(!initialLecture);
   const usedInitialRef = useRef(!!initialLecture);
-  const [headerHeight, setHeaderHeight] = useState(96);
+  // 탭·사이드바가 붙을 높이 = 스크롤 중 화면 위에 고정되는 공실스터디 메뉴 막대의 아래끝.
+  // 사라지는 공실뉴스 머리글(header.header) 높이로 잡으면 막대와 탭 사이에 틈이 생겨 본문이 비쳤다 (2026-10-08)
+  const [headerHeight, setHeaderHeight] = useState(66);
   const tabsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.body.classList.add("study-detail-sticky");
-    const header = document.querySelector<HTMLElement>("header.header");
-    const updateHeight = () => {
-      if (header) setHeaderHeight(Math.ceil(header.getBoundingClientRect().height));
+    let raf = 0;
+    const update = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const bar = document.querySelector<HTMLElement>('[data-study-bar="stuck"]');
+        if (bar) setHeaderHeight(Math.ceil(bar.getBoundingClientRect().bottom));
+      });
     };
-    updateHeight();
-    const observer = new ResizeObserver(updateHeight);
-    if (header) observer.observe(header);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
     return () => {
-      observer.disconnect();
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
       document.body.classList.remove("study-detail-sticky");
     };
   }, []);

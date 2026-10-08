@@ -326,6 +326,7 @@ export default function StudyHeader({ background }: { background?: string } = {}
   return (
     <div ref={slotRef} style={{ height: stuck ? slotHeight : undefined, background: barBackground }}>
       <div
+        data-study-bar={stuck ? "stuck" : undefined}
         style={stuck
           ? { position: "fixed", top: 0, left: 0, width: "100%", zIndex: 9999990, background: barBackground, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", borderBottom: dark ? "none" : "1px solid #e5e7eb" }
           : { background: barBackground }}
