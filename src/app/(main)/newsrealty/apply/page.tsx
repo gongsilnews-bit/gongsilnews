@@ -211,7 +211,7 @@ export default function NewsRealtyApplyPage() {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   if (authLoading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f7f8f9" }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#eef0f3" }}>
         <div style={{ textAlign: "center", color: "#999", fontSize: "14px" }}>로딩 중...</div>
       </div>
     );
@@ -219,7 +219,7 @@ export default function NewsRealtyApplyPage() {
 
   if (!user) {
     return (
-      <div style={{ backgroundColor: "#f7f8f9", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif" }}>
+      <div style={{ backgroundColor: "#eef0f3", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif" }}>
 
         <NewsrealtyHeader onOpenGuide={() => setShowGuideModal(true)} />
 
@@ -505,7 +505,7 @@ export default function NewsRealtyApplyPage() {
       : "";
 
     return (
-      <div style={{ backgroundColor: "#f7f8f9", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif", display: "flex", flexDirection: "column" }}>
+      <div style={{ backgroundColor: "#eef0f3", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif", display: "flex", flexDirection: "column" }}>
         <NewsrealtyHeader onOpenGuide={() => setShowGuideModal(true)} />
 
         {/* 상태 안내 카드 */}
@@ -669,7 +669,7 @@ export default function NewsRealtyApplyPage() {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   if (isSubmitted) {
     return (
-      <div style={{ backgroundColor: "#f7f8f9", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif", display: "flex", flexDirection: "column" }}>
+      <div style={{ backgroundColor: "#eef0f3", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif", display: "flex", flexDirection: "column" }}>
         <NewsrealtyHeader onOpenGuide={() => setShowGuideModal(true)} />
 
         {/* 완료 카드 */}
@@ -794,7 +794,7 @@ export default function NewsRealtyApplyPage() {
   // 2. 직방 CEO 신청폼 1:1 완벽 구현 화면 (첨부 이미지 100% 동일)
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   return (
-    <div style={{ backgroundColor: "#f7f8f9", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif" }}>
+    <div style={{ backgroundColor: "#eef0f3", minHeight: "100vh", fontFamily: "'Pretendard', sans-serif" }}>
       
       <NewsrealtyHeader onOpenGuide={() => setShowGuideModal(true)} />
 

@@ -25,6 +25,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { label: "공실뉴스부동산이란?", href: "/newsrealty", match: (p) => p === "/newsrealty" },
   {
     label: "혜택",
     href: "/newsrealty/benefits/brokerage-article",

@@ -472,6 +472,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     <Link href="/newsrealty" className={pathname === "/newsrealty" || pathname?.startsWith("/newsrealty/") ? "active" : ""}>공실뉴스부동산</Link>
                     <div className="gnb-dropdown">
                       <ul>
+                        <li><Link href="/newsrealty">공실뉴스부동산이란?</Link></li>
                         <li><Link href="/newsrealty/benefits/brokerage-article">혜택</Link></li>
                         <li><Link href="/newsrealty/pricing">금액안내</Link></li>
                         <li><Link href="/newsrealty/apply">신청하기</Link></li>

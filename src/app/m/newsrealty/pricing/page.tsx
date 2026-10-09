@@ -1,12 +1,33 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 import { NewsrealtyPricing } from "@/components/newsrealty/NewsrealtyLanding";
 
 export default function MobileNewsrealtyPricingPage() {
   const router = useRouter();
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data: { user } }) => setLoggedIn(!!user));
+  }, []);
+
+  const handleGeneralClick = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("signup_member_type", "broker");
+    }
+    if (loggedIn) router.push("/m/admin/dashboard");
+    else router.push("/m/login?returnTo=" + encodeURIComponent("/m/admin/dashboard"));
+  };
+
+  const handleApplyClick = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("signup_member_type", "broker");
+    }
+    router.push("/m/newsrealty/apply");
+  };
 
   return (
     <div style={{ backgroundColor: "#fdfdfd", minHeight: "100vh", paddingBottom: "80px" }}>
@@ -53,7 +74,7 @@ export default function MobileNewsrealtyPricingPage() {
         </Link>
       </header>
 
-      <NewsrealtyPricing />
+      <NewsrealtyPricing onApply={handleApplyClick} onGeneral={handleGeneralClick} />
     </div>
   );
 }

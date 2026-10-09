@@ -142,16 +142,31 @@ const CSS = `
 .nrl .nrl-btn-solid:hover{color:#fff;background:var(--accent-800);border-color:var(--accent-800)}
 .nrl .nrl-btn-ghost{color:var(--text);border-color:var(--divider)}
 .nrl .nrl-btn-ghost:hover{color:var(--text);background:color-mix(in srgb, var(--text) 7%, transparent)}
+.nrl .nrl-btn-cta{color:#fff;font-weight:700;background:var(--accent);border-color:var(--accent)}
+.nrl .nrl-btn-cta:hover{color:#fff;background:var(--accent-700);border-color:var(--accent-700)}
+.nrl .nrl-btn-cta-ghost{color:#fff;border-color:rgba(255,255,255,0.35)}
+.nrl .nrl-btn-cta-ghost:hover{color:#fff;background:rgba(255,255,255,0.1)}
 .nrl-photo{width:100%;object-fit:cover;border-radius:var(--r-lg);background:var(--surface)}
 .nrl-table{width:100%;border-collapse:collapse;font-size:15px}
-@media (max-width:600px){.nrl-table{font-size:14px}.nrl-table td,.nrl-table th{padding-left:4px;padding-right:4px}.nrl-th-price{font-size:16px}}
+.nrl-table .nrl-col-hl{background:var(--cream)}
+.nrl-table tbody tr:last-child td.nrl-col-hl{border-radius:0 0 10px 10px}
 .nrl-table th{text-align:left;font-size:11px;font-weight:500;letter-spacing:0.08em;color:color-mix(in srgb, var(--text) 60%, transparent);padding:12px 8px;vertical-align:bottom}
 .nrl-table td{padding:14px 8px}
-.nrl-table thead tr{background:linear-gradient(to right,transparent,var(--divider) 48px,var(--divider) calc(100% - 48px),transparent) no-repeat bottom / 100% 1px}
-.nrl-table tbody tr{background:linear-gradient(to right,transparent,color-mix(in srgb, var(--text) 8%, transparent) 48px,color-mix(in srgb, var(--text) 8%, transparent) calc(100% - 48px),transparent) no-repeat bottom / 100% 1px}
-.nrl-table tbody tr:hover{background:linear-gradient(color-mix(in srgb, var(--text) 4%, transparent),color-mix(in srgb, var(--text) 4%, transparent)),linear-gradient(to right,transparent,color-mix(in srgb, var(--text) 8%, transparent) 48px,color-mix(in srgb, var(--text) 8%, transparent) calc(100% - 48px),transparent) no-repeat bottom / 100% 1px}
 .nrl-th-price{display:inline-block;font-size:18px;letter-spacing:0;color:var(--text);font-weight:700}
+@media (max-width:600px){.nrl-table{font-size:14px}.nrl-table td,.nrl-table th{padding-left:4px;padding-right:4px}.nrl-th-price{font-size:16px}}
 `;
+
+// 금액 제목 + 네이버결제 12개월 무이자 작은 태그
+function PriceHeading() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 12px", margin: "0 0 12px" }}>
+      <h2 className="nrl-h2" style={{ margin: 0 }}>월 3만 원, 12개월 36만 원</h2>
+      <span style={{ padding: "4px 10px", borderRadius: 6, background: "var(--accent-200)", color: "var(--accent-700)", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>
+        네이버결제 12개월 무이자
+      </span>
+    </div>
+  );
+}
 
 // 일반 부동산 vs 공실뉴스부동산 금액·혜택 비교표. 금액안내 페이지(/newsrealty/pricing)도 이것을 쓴다.
 function PriceTable() {
@@ -164,7 +179,7 @@ function PriceTable() {
             <th style={{ width: "28%" }}>
               일반 부동산<br /><span className="nrl-th-price">무료</span>
             </th>
-            <th style={{ width: "42%", color: "var(--accent)" }}>
+            <th className="nrl-col-hl" style={{ width: "42%", color: "var(--accent)", textAlign: "center", borderRadius: "10px 10px 0 0" }}>
               공실뉴스부동산<br /><span className="nrl-th-price">₩30,000 / 월</span><br />
               <span style={{ fontSize: 13, letterSpacing: 0, color: "var(--accent-700)", fontWeight: 700 }}>12개월 36만 원</span>
             </th>
@@ -175,11 +190,58 @@ function PriceTable() {
             <tr key={r.a}>
               <td style={{ color: "var(--n300)" }}>{r.a}</td>
               <td style={{ color: "var(--n500)" }}>{r.b}</td>
-              <td>{r.c}</td>
+              <td className="nrl-col-hl" style={{ textAlign: "center" }}>{r.c}</td>
             </tr>
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// "12개월 뒤" 채널 박스 + 금액 제목 + 비교표. 소개 페이지 금액 부분과 금액안내 페이지가 같이 쓴다.
+function PricingBody() {
+  return (
+    <>
+      <div style={{ margin: "0 0 56px", padding: "36px 32px", borderRadius: "var(--r-lg)", background: "var(--surface)", display: "flex", flexDirection: "column", gap: 24 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <span style={{ fontSize: "clamp(18px,2vw,22px)", fontWeight: 700, color: "var(--accent-700)" }}>공실뉴스부동산 12개월 뒤</span>
+          <h3 style={{ fontSize: "clamp(22px,2.8vw,30px)", lineHeight: 1.35, margin: 0, letterSpacing: "-0.02em" }}>
+            블로그/유튜브 채널이 완성되고, SNS로 꾸준히 홍보할 수 있습니다.
+          </h3>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
+          {channels.map((c) => (
+            <div key={c.t} style={{ padding: 18, background: "var(--bg)", borderRadius: "var(--r-md)", fontSize: 16, fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>
+              <Icon name={c.ic} size={24} />
+              <span>{c.t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <PriceHeading />
+      <p className="nrl-lead" style={{ marginBottom: 40 }}>12개월 단위 멤버십 · VAT 포함</p>
+      <PriceTable />
+    </>
+  );
+}
+
+// 맨 아래 진한 배경 신청 띠. 소개 페이지와 금액안내 페이지 하단에 같이 쓴다.
+function CtaBand({ onApplyClick }: { onApplyClick: (e: React.MouseEvent) => void }) {
+  return (
+    <div style={{ background: "#2a211c", marginTop: 128 }}>
+      <section className="nrl-sec" style={{ padding: "96px 24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 640 }}>
+          <span style={{ fontSize: 14, color: "oklch(0.78 0.12 60)" }}>공실등록 + 블로그/유튜브/SNS</span>
+          <h2 style={{ fontSize: "clamp(28px,4vw,40px)", lineHeight: 1.3, margin: 0, letterSpacing: "-0.02em", textWrap: "balance", color: "#ffffff" }}>
+            12개월안에<br />내 마케팅채널 완성할 수 있습니다.
+          </h2>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <a href="/newsrealty/apply" onClick={onApplyClick} className="nrl-btn nrl-btn-cta">공실뉴스부동산 신청하기</a>
+            <Link href="/help" className="nrl-btn nrl-btn-cta-ghost">고객센터 바로가기 &gt;&gt;</Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
@@ -348,33 +410,15 @@ export default function NewsrealtyLanding({
 
         {/* Pricing */}
         <section id="pricing" className="nrl-sec wide">
-          <h2 className="nrl-h2">월 3만 원, 12개월 36만 원</h2>
-          <p className="nrl-lead" style={{ marginBottom: 40 }}>12개월 단위 멤버십 · VAT 포함</p>
-          <div style={{ margin: "0 0 56px", padding: "36px 32px", borderRadius: "var(--r-lg)", background: "var(--surface)", display: "flex", flexDirection: "column", gap: 24 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <span style={{ fontSize: "clamp(18px,2vw,22px)", fontWeight: 700, color: "var(--accent-700)" }}>공실뉴스부동산 12개월 뒤</span>
-              <h3 style={{ fontSize: "clamp(22px,2.8vw,30px)", lineHeight: 1.35, margin: 0, letterSpacing: "-0.02em" }}>
-                블로그/유튜브 채널이 완성되고, SNS로 꾸준히 홍보할 수 있습니다.
-              </h3>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
-              {channels.map((c) => (
-                <div key={c.t} style={{ padding: 18, background: "var(--bg)", borderRadius: "var(--r-md)", fontSize: 16, fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>
-                  <Icon name={c.ic} size={24} />
-                  <span>{c.t}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <PriceTable />
+          <PricingBody />
         </section>
 
         {/* FAQ */}
         <section id="faq" className="nrl-sec">
           <h2 className="nrl-h2" style={{ margin: "0 0 32px" }}>자주 묻는 질문</h2>
-          <div style={{ display: "flex", flexDirection: "column", maxWidth: 760 }}>
+          <div style={{ display: "flex", flexDirection: "column", maxWidth: 760, background: "#f4f4f5", borderRadius: "var(--r-lg)", padding: "4px 28px" }}>
             {faqs.map((f, i) => (
-              <details key={f.q} style={{ padding: "20px 0", borderTop: "1px solid var(--divider)", borderBottom: i === faqs.length - 1 ? "1px solid var(--divider)" : undefined }}>
+              <details key={f.q} style={{ padding: "20px 0", borderTop: i > 0 ? "1px solid var(--divider)" : undefined }}>
                 <summary style={{ cursor: "pointer", fontSize: 16, fontWeight: 700 }}>
                   {f.q}
                   {f.badge && <span style={{ marginLeft: 6, fontSize: 13, color: "var(--accent-700)" }}>{f.badge}</span>}
@@ -385,19 +429,7 @@ export default function NewsrealtyLanding({
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="nrl-sec wide" style={{ paddingBottom: 128 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 640 }}>
-            <span style={{ fontSize: 14, color: "var(--accent-700)" }}>공실등록 + 블로그/유튜브/SNS</span>
-            <h2 style={{ fontSize: "clamp(28px,4vw,40px)", lineHeight: 1.3, margin: 0, letterSpacing: "-0.02em", textWrap: "balance" }}>
-              12개월안에<br />내 마케팅채널 완성할 수 있습니다.
-            </h2>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <a href="/newsrealty/apply" onClick={applyClick} className="nrl-btn nrl-btn-outline">공실뉴스부동산 신청하기</a>
-              <Link href="/help" className="nrl-btn nrl-btn-ghost">고객센터 바로가기 &gt;&gt;</Link>
-            </div>
-          </div>
-        </section>
+        <CtaBand onApplyClick={applyClick} />
       </main>
 
       {showFooter && (
@@ -411,16 +443,103 @@ export default function NewsrealtyLanding({
   );
 }
 
-// 금액안내 페이지(/newsrealty/pricing) 본문: 소개 페이지의 금액 제목 + 비교표만 보여 준다
-export function NewsrealtyPricing() {
+// 금액안내 페이지(/newsrealty/pricing) 본문: 리뉴얼 전 주황 2열 카드 형태(일반부동산 vs 공실뉴스부동산).
+// 금액·혜택 항목은 비교표(rows)를 기준으로 한다.
+export function NewsrealtyPricing({ onApply, onGeneral }: { onApply: () => void; onGeneral: () => void }) {
+  const applyClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onApply();
+  };
+  const check = (on: boolean, color: string) => (
+    <span style={{ color: on ? color : "#cbd5e1", fontWeight: 900, flex: "none" }}>{on ? "✓" : "✕"}</span>
+  );
   return (
     <div className="nrl">
       <style>{CSS}</style>
-      <section className="nrl-sec" style={{ paddingTop: 72, paddingBottom: 112 }}>
-        <h2 className="nrl-h2">월 3만 원, 12개월 36만 원</h2>
-        <p className="nrl-lead" style={{ marginBottom: 40 }}>12개월 단위 멤버십 · VAT 포함</p>
-        <PriceTable />
+      <section style={{ background: "linear-gradient(180deg, #fff7ed 0%, #ffffff 100%)", padding: "70px 20px 0", textAlign: "center" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+          <div style={{ display: "inline-block", background: "#fff2e8", color: "#ea580c", fontSize: 13, fontWeight: 800, padding: "6px 18px", borderRadius: 20, marginBottom: 20, border: "1px solid #ffd8b2" }}>
+            네이버결제 12개월 무이자
+          </div>
+          <h1 style={{ fontSize: "clamp(30px,4vw,42px)", fontWeight: 900, color: "#1c1917", letterSpacing: "-1.5px", margin: "0 0 16px", lineHeight: 1.3 }}>
+            공실등록 + 블로그/유튜브/SNS<br />
+            월 <span style={{ color: "#ff8e15" }}>3만원</span>이면 OK!
+          </h1>
+          <p style={{ fontSize: 17, color: "#64748b", margin: "0 auto 50px", maxWidth: 620, lineHeight: 1.6 }}>
+            12개월 동안 블로그 · 유튜브 · SNS 마케팅 채널을 완성하실 수 있습니다.
+          </p>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,340px),1fr))", gap: 32, alignItems: "stretch", textAlign: "left", maxWidth: 1000, margin: "0 auto" }}>
+            {/* 일반부동산 (무료) */}
+            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 20, padding: "42px 34px", boxShadow: "0 4px 16px rgba(0,0,0,0.03)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <h3 style={{ fontSize: 24, fontWeight: 900, color: "#334155", margin: 0 }}>일반부동산</h3>
+                <span style={{ fontSize: 12, fontWeight: 700, background: "#f1f5f9", color: "#64748b", padding: "4px 10px", borderRadius: 20 }}>기본 플랜</span>
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 38, fontWeight: 900, color: "#1e293b", letterSpacing: "-1px" }}>
+                  ₩0<span style={{ fontSize: 14, fontWeight: 600, color: "#94a3b8", marginLeft: 6 }}>/ 평생 무료</span>
+                </div>
+                <p style={{ fontSize: 13, color: "#94a3b8", margin: "6px 0 0" }}>기본적인 공실 등록과 시스템 체험이 가능한 입문용 플랜</p>
+              </div>
+              <button type="button" onClick={onGeneral} style={{ width: "100%", height: 50, marginBottom: 28, backgroundColor: "#1e293b", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 800, color: "#ffffff", cursor: "pointer", fontFamily: "inherit" }}>
+                일반부동산 바로가기 ➔
+              </button>
+              <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 24 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 800, color: "#64748b", marginBottom: 16 }}>제공되는 기본 기능</div>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14, fontSize: 13.5 }}>
+                  {rows.map((r) => {
+                    const on = r.b !== "—";
+                    return (
+                      <li key={r.a} style={{ display: "flex", alignItems: "center", gap: 10, color: on ? "#475569" : "#94a3b8" }}>
+                        {check(on, "#059669")}
+                        {on
+                          ? <span>{r.a} : <strong>{r.b}</strong></span>
+                          : <span style={{ textDecoration: "line-through" }}>{r.a} : 불가</span>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+
+            {/* 공실뉴스부동산 (강조) */}
+            <div style={{ background: "#ffffff", border: "2.5px solid #ff8e15", borderRadius: 20, padding: "42px 34px", boxShadow: "0 16px 44px rgba(255, 142, 21, 0.18)", position: "relative" }}>
+              <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg, #ff8e15 0%, #e67e10 100%)", color: "#ffffff", padding: "5px 20px", borderRadius: 20, fontSize: 12, fontWeight: 900, boxShadow: "0 4px 12px rgba(255, 142, 21, 0.35)", whiteSpace: "nowrap" }}>
+                🔥 강력 추천 · 대표 파트너십
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <h3 style={{ fontSize: 24, fontWeight: 900, color: "#1c1917", margin: 0 }}>공실뉴스부동산</h3>
+                <span style={{ fontSize: 12, fontWeight: 800, background: "#fff2e8", color: "#ea580c", padding: "4px 12px", borderRadius: 20 }}>12개월 멤버십</span>
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 40, fontWeight: 900, color: "#1c1917", letterSpacing: "-1px" }}>
+                    36만원<span style={{ fontSize: 14.5, fontWeight: 700, color: "#64748b", marginLeft: 6 }}>/ 1년 (12개월)</span>
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#ea580c", background: "#fff2e8", border: "1px solid #ffd8b2", padding: "3px 10px", borderRadius: 20 }}>월 3만원꼴</span>
+                </div>
+                <p style={{ fontSize: 13, color: "#ff8e15", fontWeight: 700, margin: "8px 0 0" }}>VAT 포함 · 네이버결제 12개월 무이자 할부 가능</p>
+              </div>
+              <a href="/newsrealty/apply" onClick={applyClick} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: 50, marginBottom: 28, backgroundColor: "#ff8e15", borderRadius: 10, fontSize: 15, fontWeight: 800, color: "#ffffff", textDecoration: "none", boxShadow: "0 4px 14px rgba(255, 142, 21, 0.35)" }}>
+                공실뉴스부동산 신청하기 ➔
+              </a>
+              <div style={{ borderTop: "1px solid #fed7aa", paddingTop: 24 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 800, color: "#1c1917", marginBottom: 16 }}>포함된 모든 전용 혜택</div>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14, fontSize: 13.5 }}>
+                  {rows.map((r) => (
+                    <li key={r.a} style={{ display: "flex", alignItems: "center", gap: 10, color: "#1c1917" }}>
+                      {check(true, "#ff8e15")}
+                      <span>{r.a} : <strong>{r.c}</strong></span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
+      <CtaBand onApplyClick={applyClick} />
     </div>
   );
 }
