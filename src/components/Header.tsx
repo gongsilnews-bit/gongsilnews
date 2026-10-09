@@ -120,10 +120,10 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
     const handleScroll = () => {
       const scrolled = window.scrollY > 40;
       setIsScrolled(scrolled);
-      // 공실스터디 페이지는 스크롤하면 공실스터디 메뉴 줄(StudyHeader)이 위에 붙으므로
+      // 공실스터디·공실뉴스부동산 페이지는 스크롤하면 각자의 메뉴 줄(StudyHeader·NewsrealtyHeader)이 위에 붙으므로
       // 메인 헤더는 붙이지 않고 그냥 위로 지나가게 둔다
       const p = window.location.pathname;
-      const studyPage = p === "/study" || p.startsWith("/study/") || p.startsWith("/study_read");
+      const studyPage = p === "/study" || p.startsWith("/study/") || p.startsWith("/study_read") || p === "/newsrealty" || p.startsWith("/newsrealty/");
       if (headerRef.current) {
         if (scrolled && !studyPage) {
           if (!headerRef.current.classList.contains("is-sticky") && placeholderRef.current) {
@@ -206,12 +206,8 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
   const isHomePage = pathname === '/';
   const isSmallHeader = !isHomePage || isScrolled;
 
-  // 공실뉴스부동산은 전용 헤더를 쓰므로 메인 헤더를 숨긴다.
-  // 공실스터디(/study)는 메인 헤더 아래에 공실스터디 메뉴 줄(StudyHeader)을 붙여 쓴다.
-  if (
-    pathname?.startsWith('/newsrealty') ||
-    pathname?.startsWith('/gongsilstudy')
-  ) {
+  // 공실스터디(/study)·공실뉴스부동산(/newsrealty)은 메인 헤더 아래에 각자의 메뉴 줄(StudyHeader·NewsrealtyHeader)을 붙여 쓴다.
+  if (pathname?.startsWith('/gongsilstudy')) {
     return null;
   }
 
@@ -469,6 +465,16 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                       <ul>
                         <li><Link href="/help">고객센터</Link></li>
                         <li><Link href="/board?id=notice">공지사항</Link></li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
+                    <Link href="/newsrealty" className={pathname === "/newsrealty" || pathname?.startsWith("/newsrealty/") ? "active" : ""}>공실뉴스부동산</Link>
+                    <div className="gnb-dropdown">
+                      <ul>
+                        <li><Link href="/newsrealty/benefits/brokerage-article">혜택</Link></li>
+                        <li><Link href="/newsrealty/pricing">금액안내</Link></li>
+                        <li><Link href="/newsrealty/apply">신청하기</Link></li>
                       </ul>
                     </div>
                   </div>
