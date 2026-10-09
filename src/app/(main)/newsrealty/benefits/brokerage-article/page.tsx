@@ -1,9 +1,12 @@
-"use client";
+import React from "react";
+import NewsrealtyBrokerageArticleClient from "./NewsrealtyBrokerageArticleClient";
 
-import NewsrealtyHeader from "@/components/newsrealty/NewsrealtyHeader";
-import BenefitsSubNav from "@/components/newsrealty/BenefitsSubNav";
-import BrokerageArticleContent from "@/components/newsrealty/BrokerageArticleContent";
+export const metadata = {
+  title: "공실등록20건 | 공실뉴스부동산",
+  description: "공실뉴스 회원에게 제공되는 공실등록20건 혜택 안내",
+};
 
 export default function BrokerageArticleBenefitPage() {
-  return <div><NewsrealtyHeader /><BenefitsSubNav activeTab="brokerage-article" /><BrokerageArticleContent applyHref="/newsrealty/apply" /></div>;
+  return <NewsrealtyBrokerageArticleClient />;
 }
+

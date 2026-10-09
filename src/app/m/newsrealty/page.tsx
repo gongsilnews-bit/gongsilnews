@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
@@ -40,45 +41,45 @@ const benefits: {
   },
   {
     num: "02",
+    tag: "AI 마케팅",
+    title: (
+      <>
+        매매보고서부터<br />
+        유리창홍보지, 홈페이지 무료 제공
+      </>
+    ),
+    modalTitle: "AI 매매보고서 · 유리창홍보지 · 홈페이지 무료 제공",
+    videoUrl: "https://www.youtube.com/embed/4a3_M6-Crew?autoplay=1&rel=0",
+    videoBullets: [
+      "등록한 매물 데이터로 고품질 AI 매매보고서 즉시 자동 완성",
+      "사무실 내방 고객의 시선을 사로잡는 유리창 홍보물 원클릭 출력",
+      "내 부동산 전용 모바일·PC 반응형 홈페이지 무료 구축 및 자동 연동"
+    ],
+    desc: "등록한 공실 매물 데이터를 기반으로, AI가 매매보고서, 유리창홍보지, 부동산홈페이지까지 자동으로 활용하실 수 있습니다.",
+    badgeBg: "#f0fdf4",
+    badgeColor: "#16a34a",
+    numColor: "#22c55e",
+  },
+  {
+    num: "03",
     tag: "AI 원클릭",
     title: (
       <>
         유튜브 대본부터<br />
-        블로그 포스팅까지 AI 원클릭 생성
+        블로그, SNS까지 AI 원클릭 생성
       </>
     ),
-    modalTitle: "유튜브 대본부터 블로그 포스팅까지 AI 원클릭 생성",
+    modalTitle: "유튜브 대본부터 블로그, SNS까지 AI 원클릭 생성",
     videoUrl: "https://www.youtube.com/embed/4a3_M6-Crew?autoplay=1&rel=0",
     videoBullets: [
       "공실 매물 정보 입력 즉시 AI가 자동으로 정밀 분석 및 보도기사 초안 완성",
-      "네이버 블로그 검색 상위 노출에 최적화된 포스팅 글 원클릭 자동 생성",
+      "네이버 블로그 검색 상위 노출에 최적화된 블로그·SNS 글 원클릭 자동 생성",
       "1분 쇼츠 및 릴스 제작용 유튜브 영상 대본까지 한 번에 자동 추출하여 제작 부담 0%"
     ],
-    desc: "등록한 공실 매물 데이터를 기반으로, AI가 뉴스 기사 초안부터 네이버 블로그 글, 유튜브 쇼츠 대본까지 단 한 번의 클릭으로 자동 완성합니다.",
+    desc: "등록한 공실 매물 데이터를 기반으로, AI가 뉴스 기사 초안부터 네이버 블로그 글, SNS, 유튜브대본까지 단 한 번의 클릭으로 자동 완성합니다.",
     badgeBg: "#eff6ff",
     badgeColor: "#1d4ed8",
     numColor: "#3b82f6",
-  },
-  {
-    num: "03",
-    tag: "수익 다각화",
-    title: (
-      <>
-        지역 독점 로컬기자로<br />
-        새로운 언론 광고수익 창출
-      </>
-    ),
-    modalTitle: "지역 독점 로컬기자로 새로운 언론 광고수익 창출",
-    videoUrl: "https://www.youtube.com/embed/4a3_M6-Crew?autoplay=1&rel=0",
-    videoBullets: [
-      "내 관할 지역의 공실뉴스 공식 '로컬기자부동산' 단독 취재 및 영업 권한 부여",
-      "지역 건물주, 상가 점주, 기업을 대상으로 배너 광고 및 기사형 홍보 영업 진행",
-      "단순 중개보수 수입에 그치지 않고, 매월 안정적인 언론 미디어 광고 수익을 추가 창출"
-    ],
-    desc: "단순 중개보수에 머물지 않고, 지역 건물주 및 상가 사업자를 대상으로 배너 광고, 기사형 홍보 등 언론사 광고 영업을 통해 추가 수익을 만듭니다.",
-    badgeBg: "#fef3c7",
-    badgeColor: "#b45309",
-    numColor: "#f59e0b",
   },
 ];
 
@@ -170,7 +171,7 @@ export default function MobileNewsRealtyPage() {
           width: 100%;
           padding: 16px 20px;
           background: #ff8e15;
-          color: #ffffff;
+          color: #ffffff !important;
           font-size: 17px;
           font-weight: 900;
           letter-spacing: -0.3px;
@@ -196,6 +197,127 @@ export default function MobileNewsRealtyPage() {
           padding: 14px 18px;
           box-shadow: 0 2px 8px rgba(255, 142, 21, 0.04);
         }
+
+        .mHeroV2 {
+          --hv-orange: #ea580c;
+          --hv-orange-strong: #c2410c;
+          --hv-orange-soft: #fff7ed;
+          --hv-bg: #fffaf5;
+          --hv-grid: rgba(255, 142, 21, 0.12);
+          position: relative;
+          background-color: var(--hv-bg);
+          background-image:
+            linear-gradient(to right, var(--hv-grid) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--hv-grid) 1px, transparent 1px);
+          background-size: 32px 32px;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          border-bottom: 1px solid #fed7aa;
+        }
+        .mHeroV2Photo {
+          position: relative;
+          width: 100%;
+          height: 280px;
+          -webkit-mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
+        }
+        .mHeroV2Inner {
+          padding: 24px 20px 44px;
+        }
+        .mHeroV2Eyebrow {
+          display: inline-flex;
+          align-items: center;
+          padding: 7px 16px;
+          border-radius: 9999px;
+          background: #ea580c;
+          color: #ffffff;
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: -0.01em;
+          margin-bottom: 16px;
+          box-shadow: 0 3px 10px rgba(234, 88, 12, 0.25);
+        }
+        .mHeroV2Title {
+          font-size: 32px;
+          line-height: 1.25;
+          letter-spacing: -0.03em;
+          font-weight: 900;
+          color: #0f172a;
+          margin: 0 0 16px;
+          word-break: keep-all;
+        }
+        .mHeroV2Title span {
+          display: block;
+          color: var(--hv-orange);
+          margin-top: 4px;
+        }
+        .mHeroV2Description {
+          font-size: 14.5px;
+          line-height: 1.6;
+          color: #475569;
+          margin: 0 0 24px;
+          word-break: keep-all;
+        }
+        .mHeroV2Actions {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-bottom: 22px;
+        }
+        .mHeroV2Primary {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          padding: 15px 20px;
+          border-radius: 12px;
+          background: #ea580c;
+          color: #ffffff;
+          font-size: 16px;
+          font-weight: 800;
+          text-decoration: none;
+          box-shadow: 0 8px 20px rgba(234, 88, 12, 0.3);
+          box-sizing: border-box;
+        }
+        .mHeroV2Secondary {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          padding: 14px 20px;
+          border-radius: 12px;
+          background: #ffffff;
+          color: var(--hv-orange-strong);
+          border: 1.5px solid #fed7aa;
+          font-size: 15px;
+          font-weight: 800;
+          text-decoration: none;
+          box-sizing: border-box;
+        }
+        .mHeroV2HighlightTags {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-top: 4px;
+        }
+        .mHeroHighlightRow {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .mHeroHighlightItem {
+          display: inline-block;
+          background: #fef08a;
+          color: #0f172a;
+          font-size: 12.5px;
+          font-weight: 900;
+          padding: 3px 8px;
+          border-radius: 4px;
+          letter-spacing: -0.3px;
+        }
+      
       `}</style>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -345,10 +467,10 @@ export default function MobileNewsRealtyPage() {
             CONTENT PIPELINE
           </div>
           <h2 style={{ fontSize: 25, fontWeight: 900, color: "#1c1917", margin: "0 0 10px 0", letterSpacing: "-0.5px" }}>
-            내가 기사를 쓸 수 있을까??
+            내가 이번에 꾸준히 할 수 있을까?
           </h2>
           <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0, wordBreak: "keep-all" }}>
-            공실뉴스에 공실을 등록하고, AI가 알아서 기사 초안을 작성합니다.
+            공실뉴스에 공실만 등록하시면, AI가 알아서 기사 초안 및 SNS 글을 작성합니다.
           </p>
         </div>
 
@@ -357,7 +479,13 @@ export default function MobileNewsRealtyPage() {
           {[
             {
               step: "01",
-              icon: "🏢",
+              icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="4" y="2" width="16" height="20" rx="2" />
+                  <path d="M9 22v-4h6v4" />
+                  <path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01" />
+                </svg>
+              ),
               title: "공동중개 등록",
               badge: "#11만 무료열람",
               sub: "전국 중개망 실시간 무료 노출",
@@ -366,7 +494,15 @@ export default function MobileNewsRealtyPage() {
             },
             {
               step: "02",
-              icon: "📊",
+              icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+              ),
               title: "AI 매물보고서",
               badge: "#10초 완성",
               sub: "임대인·고객 맞춤 브리핑 리포트",
@@ -375,17 +511,29 @@ export default function MobileNewsRealtyPage() {
             },
             {
               step: "03",
-              icon: "📰",
-              title: "AI 기사초안 작성",
+              icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
+                  <path d="M18 14h-8" />
+                  <path d="M15 18h-5" />
+                  <rect x="10" y="6" width="8" height="4" rx="1" />
+                </svg>
+              ),
+              title: "AI 기사초안",
               badge: "#10초 완성",
-              sub: "포털 송출용 정식 뉴스 기사 생성",
+              sub: "공실뉴스 기사 등록",
               badgeBg: "#fef3c7",
               badgeColor: "#b45309",
             },
             {
               step: "04",
-              icon: "🎬",
-              title: "기사·유튜브·블로그",
+              icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="3" />
+                  <polygon points="10 9 16 12 10 15 10 9" fill="#7c3aed" />
+                </svg>
+              ),
+              title: "SNS·블로그·유튜브대본",
               badge: "#AI 초안작성",
               sub: "SNS 멀티채널 원클릭 동시 확산",
               badgeBg: "#f5f3ff",
@@ -393,16 +541,35 @@ export default function MobileNewsRealtyPage() {
             },
             {
               step: "05",
-              icon: "💼",
-              title: "뉴스 광고영업",
-              badge: "#신축·분양·로컬",
-              sub: "지역 언론 미디어 추가 광고수익",
+              icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="3" width="20" height="18" rx="3" />
+                  <line x1="2" y1="9" x2="22" y2="9" />
+                  <circle cx="5.5" cy="6" r="1" fill="#059669" />
+                  <circle cx="8.5" cy="6" r="1" fill="#059669" />
+                  <circle cx="11.5" cy="6" r="1" fill="#059669" />
+                  <path d="M8 15l4-4 4 4" />
+                </svg>
+              ),
+              title: "부동산홈페이지",
+              badge: "#물건,기사,접수",
+              sub: "물건, 기사, 손님접수",
               badgeBg: "#ecfdf5",
               badgeColor: "#059669",
             },
           ].map((item) => (
             <div key={item.step} className="m-flow-item">
-              <div style={{ fontSize: 26, flexShrink: 0 }}>
+              <div style={{
+                width: 38,
+                height: 38,
+                borderRadius: "10px",
+                background: item.badgeBg,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                border: `1px solid ${item.badgeColor}25`
+              }}>
                 {item.icon}
               </div>
               <div style={{ flex: 1 }}>
@@ -443,10 +610,10 @@ export default function MobileNewsRealtyPage() {
           boxShadow: "0 4px 12px rgba(255, 142, 21, 0.06)"
         }}>
           <div style={{ fontSize: 15.5, fontWeight: 900, color: "#1c1917", marginBottom: 8, wordBreak: "keep-all", lineHeight: 1.45 }}>
-            "공실뉴스기자가 되시면, AI 물건보고서부터 기사 / 유튜브 대본 / 블로그 글까지<br />쉽게 완성하실 수 있습니다."
+            "공실뉴스부동산이 되시면, AI 물건보고서부터 기사 / 유튜브 대본 / 블로그 글 / 인스타그램, 페이스북, 쓰레드, 내 홈페이지까지<br />자동으로 쉽게 완성하실 수 있습니다."
           </div>
           <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6, wordBreak: "keep-all" }}>
-            부동산 중개와 뉴스 광고영업까지, 공실뉴스부동산이 되시면 AI로 콘텐츠 제작이 쉬워집니다.
+            11만 부동산이 무료 열람할 수 있는 공실뉴스에 공실만 등록하세요. 부동산마케팅이 쉬워집니다!
           </div>
         </div>
       </section>
@@ -471,7 +638,7 @@ export default function MobileNewsRealtyPage() {
           fontWeight: 800,
           marginBottom: 16
         }}>
-          영업의 패러다임 전환
+          아파트/로컬 부동산 강력추천
         </div>
 
         <h2 style={{
@@ -482,8 +649,8 @@ export default function MobileNewsRealtyPage() {
           margin: "0 0 28px 0",
           wordBreak: "keep-all"
         }}>
-          매물을 받으러 가지 말고,<br />
-          <span style={{ color: "#ff8e15" }}>뉴스를 취재하러 가세요.</span>
+          지역/단지, 바쁜 1~2인 부동산을 위한<br />
+            <span style={{ color: "#ff8e15" }}>스마트한 AI 마케팅!</span>
         </h2>
 
         {/* 2단 비교 */}
