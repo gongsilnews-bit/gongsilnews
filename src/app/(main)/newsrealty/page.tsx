@@ -224,10 +224,7 @@ export default function NewsRealtyPage() {
           --hv-grid: rgba(255, 142, 21, 0.12);
           position: relative;
           background-color: var(--hv-bg);
-          background-image:
-            linear-gradient(to right, var(--hv-grid) 1px, transparent 1px),
-            linear-gradient(to bottom, var(--hv-grid) 1px, transparent 1px);
-          background-size: 48px 48px;
+          background-image: none;
           min-height: 640px;
           display: flex;
           align-items: center;

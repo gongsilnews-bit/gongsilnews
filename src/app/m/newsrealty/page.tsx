@@ -206,10 +206,7 @@ export default function MobileNewsRealtyPage() {
           --hv-grid: rgba(255, 142, 21, 0.12);
           position: relative;
           background-color: var(--hv-bg);
-          background-image:
-            linear-gradient(to right, var(--hv-grid) 1px, transparent 1px),
-            linear-gradient(to bottom, var(--hv-grid) 1px, transparent 1px);
-          background-size: 32px 32px;
+          background-image: none;
           display: flex;
           flex-direction: column;
           overflow: hidden;
