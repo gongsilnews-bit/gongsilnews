@@ -240,8 +240,8 @@ export default function NewsrealtyStudyMarketingSection() {
             <div className={studyStyles.trioBannerWrap}>
               <div className={studyStyles.trioBannerImgBox}>
                 <Image
-                  src="/images/study/study-real-trio-cheer.webp"
-                  alt="공실뉴스부동산 파트너가 되어 환호하고 기뻐하는 3명의 공인중개사 소장님들"
+                  src="/images/newsrealty/newsrealty_partner_trio_success.jpg"
+                  alt="공실뉴스부동산 파트너가 되어 환호하고 기뻐하는 3명의 전문 공인중개사 대표님들"
                   fill
                   sizes="(max-width: 1200px) 100vw, 1100px"
                   className={studyStyles.trioBannerImg}
