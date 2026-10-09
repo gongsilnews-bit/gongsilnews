@@ -308,36 +308,6 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
             </div>
           )}
 
-          <Link
-            href="/newsrealty"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              padding: "5px 12px",
-              border: "1px solid rgba(255, 255, 255, 0.45)",
-              borderRadius: "4px",
-              color: "#ffffff",
-              fontSize: "12px",
-              fontWeight: "600",
-              textDecoration: "none",
-              whiteSpace: "nowrap",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              lineHeight: 1.4,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#ffffff";
-              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.14)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.45)";
-              e.currentTarget.style.backgroundColor = "transparent";
-            }}
-          >
-            <span>공실뉴스부동산가입</span>
-            <span style={{ fontSize: "11px", marginLeft: "1px", opacity: 0.9 }}>&gt;</span>
-          </Link>
         </div>
       </div>
       )}      {/* 2. Main Header Placeholder & Header */}

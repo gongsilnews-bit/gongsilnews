@@ -26,16 +26,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "공실뉴스부동산이란?", href: "/newsrealty", match: (p) => p === "/newsrealty" },
-  {
-    label: "혜택",
-    href: "/newsrealty/benefits/brokerage-article",
-    match: (p) => p.startsWith("/newsrealty/benefits"),
-    subItems: [
-      { label: "공동중개 20건 & 언론기사 4건", href: "/newsrealty/benefits/brokerage-article" },
-      { label: "부동산유튜브 무료 강의", href: "/newsrealty/benefits/youtube-lecture" },
-      { label: "뉴스 광고 영업 수익", href: "/newsrealty/benefits/ad-revenue" },
-    ],
-  },
+  { label: "혜택", href: "/newsrealty/benefits/brokerage-article", match: (p) => p.startsWith("/newsrealty/benefits") },
   { label: "금액안내", href: "/newsrealty/pricing", match: (p) => p.startsWith("/newsrealty/pricing") },
   { label: "신청하기", href: "/newsrealty/apply", match: (p) => p.startsWith("/newsrealty/apply") },
 ];
