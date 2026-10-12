@@ -3,7 +3,7 @@ import { syncSmartstoreOrders } from "@/lib/smartstoreSync";
 
 /**
  * 스마트스토어 결제 자동 연동 Cron Job (5분마다)
- * 결제된 공실스터디 수강권 주문을 가져와 공실뉴스부동산 멤버십을 켜고, 취소되면 되돌린다.
+ * 결제된 공실스터디 수강권 주문을 가져와 공실스터디부동산 멤버십을 켜고, 취소되면 되돌린다.
  */
 export const maxDuration = 60;
 

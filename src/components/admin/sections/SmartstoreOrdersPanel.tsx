@@ -1,6 +1,6 @@
 "use client";
 
-// 멤버십관리 위쪽의 "스마트스토어 결제" 목록. 결제되면 자동으로 공실뉴스부동산 1년이 켜지고,
+// 멤버십관리 위쪽의 "스마트스토어 결제" 목록. 결제되면 자동으로 공실스터디부동산 1년이 켜지고,
 // 주문자 연락처로 회원을 못 찾은 주문(확인 필요)만 여기서 회원을 골라 연결한다.
 import React, { useEffect, useState } from "react";
 import { AdminTheme } from "./types";
@@ -58,7 +58,7 @@ export default function SmartstoreOrdersPanel({ theme }: { theme: AdminTheme }) 
   const search = async () => setCandidates(await searchMembersForSmartstore(keyword));
 
   const link = async (productOrderId: string, memberId: string) => {
-    if (!confirm("이 회원에게 공실뉴스부동산 1년을 켜시겠습니까?")) return;
+    if (!confirm("이 회원에게 공실스터디부동산 1년을 켜시겠습니까?")) return;
     setBusy(true);
     const r = await linkSmartstoreOrder(productOrderId, memberId);
     setMsg(r.success ? "연결하고 멤버십을 켰습니다" : `실패: ${r.error}`);
@@ -98,7 +98,7 @@ export default function SmartstoreOrdersPanel({ theme }: { theme: AdminTheme }) 
       {open && (
         <div style={{ marginTop: 12, overflowX: "auto" }}>
           <p style={{ fontSize: 12.5, color: textSecondary, margin: "0 0 8px" }}>
-            결제되면 주문자 연락처와 같은 번호의 회원에게 공실뉴스부동산 1년이 자동으로 켜집니다(5분마다 확인). 번호가 맞는 회원이 없으면 &quot;확인 필요&quot;로 남습니다.
+            결제되면 주문자 연락처와 같은 번호의 회원에게 공실스터디부동산 1년이 자동으로 켜집니다(5분마다 확인). 번호가 맞는 회원이 없으면 &quot;확인 필요&quot;로 남습니다.
           </p>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: textPrimary }}>
             <thead>

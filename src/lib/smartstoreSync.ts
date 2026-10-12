@@ -1,5 +1,6 @@
-// 스마트스토어 결제 → 공실뉴스부동산 멤버십 자동 연동. /api/cron/smartstore-sync 가 5분마다 부른다.
-// 결제 1건 = 공실뉴스부동산(news_premium) 1년. 공실스터디는 이 등급에 포함된다.
+// 스마트스토어 결제 → 공실스터디 멤버십 자동 연동. /api/cron/smartstore-sync 가 5분마다 부른다.
+// 결제 1건 = 공실스터디부동산(study_premium) 1년 (2026-10-12 결정, 처음엔 news_premium 이었다).
+// 이미 공실뉴스부동산(news_premium) 기간이 남은 회원은 등급을 낮추지 않고 그 등급으로 기간만 1년 늘린다.
 // 회원은 주문자 연락처로 찾는다 (스토어 정책상 옵션으로 휴대폰·이메일을 받지 못한다).
 // 정확히 한 명일 때만 자동 부여하고, 아니면 관리자 확인(needs_review)으로 넘긴다.
 import { createClient } from "@supabase/supabase-js";
@@ -16,7 +17,8 @@ import {
 /** 멤버십을 켜는 상품 (스마트스토어 판매자상품코드) */
 export const MEMBERSHIP_PRODUCT_CODE = "GS-STUDY-1Y";
 const MEMBERSHIP_PRODUCT_ID = "13805832960";
-const PLAN_TYPE = "news_premium";
+const PLAN_TYPE = "study_premium";
+const HIGHER_PLAN = "news_premium";
 
 const PAID = ["PAYED", "DELIVERING", "DELIVERED", "PURCHASE_DECIDED"];
 const CANCELLED = ["CANCELED", "RETURNED", "CANCELED_BY_NOPAYMENT"];
@@ -187,7 +189,7 @@ async function handleOrder(supabase: ReturnType<typeof db>, d: ProductOrderDetai
   if (granted.status === "granted") result.granted++;
   else result.needsReview++;
   await notifyAdmin(
-    granted.status === "granted" ? "스마트스토어 결제 → 공실뉴스부동산 자동 부여" : "스마트스토어 결제 — 확인 필요",
+    granted.status === "granted" ? "스마트스토어 결제 → 공실스터디부동산 자동 부여" : "스마트스토어 결제 — 확인 필요",
     `${base.orderer_name || ""} · ${granted.review_reason || "1년 부여 완료"}`,
     po.productOrderId,
   );
@@ -203,7 +205,7 @@ async function findMember(supabase: ReturnType<typeof db>, tel: string | null) {
   return { memberId: null, reason: `같은 번호의 회원이 ${hits.length}명입니다` };
 }
 
-/** news_premium 을 quantity 년 부여. 남은 기간이 있으면 그 뒤로 이어 붙인다. */
+/** 공실스터디부동산(study_premium)을 quantity 년 부여. 남은 기간이 있으면 그 뒤로 이어 붙인다. */
 export async function grant(supabase: ReturnType<typeof db>, memberId: string, quantity = 1) {
   const { data: member } = await supabase
     .from("members")
@@ -215,17 +217,20 @@ export async function grant(supabase: ReturnType<typeof db>, memberId: string, q
 
   const now = new Date();
   const currentEnd = member.plan_end_date ? new Date(member.plan_end_date) : null;
-  const isPaid = member.plan_type === PLAN_TYPE || member.plan_type === "study_premium";
-  const startFrom = isPaid && currentEnd && currentEnd > now ? currentEnd : now;
+  const active = !!currentEnd && currentEnd > now;
+  const isPaid = member.plan_type === PLAN_TYPE || member.plan_type === HIGHER_PLAN;
+  // 공실뉴스부동산 기간이 남아 있으면 등급은 그대로 두고 기간만 늘린다 (등급을 낮추지 않는다)
+  const targetPlan = member.plan_type === HIGHER_PLAN && active ? HIGHER_PLAN : PLAN_TYPE;
+  const startFrom = isPaid && active ? currentEnd! : now;
   const end = new Date(startFrom);
   end.setFullYear(end.getFullYear() + Math.max(1, quantity));
-  const start = member.plan_type === PLAN_TYPE && member.plan_start_date && currentEnd && currentEnd > now
+  const start = member.plan_type === targetPlan && member.plan_start_date && active
     ? member.plan_start_date
     : now.toISOString();
 
   const res = await adminUpdateMember(memberId, {
     role: "REALTOR",
-    plan_type: PLAN_TYPE,
+    plan_type: targetPlan,
     plan_start_date: start,
     plan_end_date: end.toISOString(),
   });
@@ -253,7 +258,7 @@ async function revoke(supabase: ReturnType<typeof db>, row: Row) {
     .maybeSingle<Row>();
   const unchanged =
     member &&
-    member.plan_type === PLAN_TYPE &&
+    (member.plan_type === PLAN_TYPE || member.plan_type === HIGHER_PLAN) &&
     member.plan_end_date &&
     new Date(member.plan_end_date).getTime() === new Date(row.granted_plan_end).getTime();
   if (!unchanged) {
