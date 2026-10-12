@@ -90,7 +90,7 @@ export default function MobileStudyAboutClient() {
               멤버십 혜택 &gt;&gt;
             </Link>
             <Link href="/m/study/apply" className={styles.heroV2Secondary}>
-              멤버십 신청하기 &gt;&gt;
+              공실스터디 멤버십 신청하기 &gt;&gt;
             </Link>
           </div>
 
@@ -637,7 +637,7 @@ export default function MobileStudyAboutClient() {
             멤버십 혜택 &gt;&gt;
           </Link>
           <Link href="/m/study/apply" className={styles.heroBtnSecondary} style={{ color: "#ffffff" }}>
-            멤버십 신청하기 &gt;&gt;
+            공실스터디 멤버십 신청하기 &gt;&gt;
           </Link>
         </div>
 

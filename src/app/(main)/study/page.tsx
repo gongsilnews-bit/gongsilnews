@@ -1,12 +1,12 @@
 import React from "react";
-import StudyHomeYunClient from "./StudyHomeYunClient";
+import StudyNewsrealtyClient from "./StudyNewsrealtyClient";
 
 export const metadata = {
   title: "공실스터디란? | 공실스터디",
   description:
-    "매주 보고 따라 하면 AI와 유튜브가 익숙해집니다. 11만 부동산 실무자를 위한 1년 365일 실전 동행 공실스터디",
+    "공실스터디 멤버십으로 공실 등록부터 블로그·유튜브·SNS 마케팅까지. 내 지역 정보와 매물을 알리고 더 많은 부동산과 연결됩니다.",
 };
 
 export default function StudyHomePage() {
-  return <StudyHomeYunClient />;
+  return <StudyNewsrealtyClient />;
 }

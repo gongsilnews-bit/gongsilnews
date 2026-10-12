@@ -2917,6 +2917,18 @@
   transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
 }
 
+.heroV2Newsrealty,
+.heroV2Newsrealty:visited {
+  display: inline-block;
+  margin-top: 14px;
+  padding-bottom: 2px;
+  border-bottom: 1.5px solid currentColor;
+  color: var(--hv-green-strong) !important;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .heroV2Primary:hover,
 .heroV2Secondary:hover {
   transform: translateY(-2px);

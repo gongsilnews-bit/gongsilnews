@@ -4,8 +4,7 @@ import React, { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { canAccessBoard, getLevelName } from "@/utils/permissionCheck";
-import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
-import StudyHero from "@/components/study/StudyHero";
+import StudyHeader from "@/components/study/StudyHeader";
 import BannerSlot from "@/components/BannerSlot";
 import BoardAccessModal, { type BoardAccessNotice } from "@/components/common/BoardAccessModal";
 
@@ -22,14 +21,6 @@ interface BoardMeta {
   perm_write?: number;
   skin_type?: string;
 }
-
-const TABS = [
-  { key: "drone", label: "드론영상" },
-  { key: "app", label: "APP(앱)" },
-  { key: "prompt", label: "AI 프롬프트" },
-  { key: "sound", label: "음원" },
-  { key: "doc", label: "계약서/양식" },
-];
 
 // YouTube URL에서 썸네일 이미지 추출
 function getYoutubeThumbnail(url: string): string | null {
@@ -160,17 +151,6 @@ export default function StudyResourcesClient({
     });
   };
 
-  const switchBoard = (key: string) => {
-    setActiveBoard(key);
-    const isCard = key === "drone" || boardsMap[key]?.skin_type === "VIDEO_ALBUM";
-    setViewMode(isCard ? "card" : "list");
-    setActiveCategory("전체");
-    setCurrentPage(1);
-    setSearchQuery("");
-    setSearchInputValue("");
-    syncUrl({ board: key, tab: "전체", page: 1, search: "" });
-  };
-
   const handleCategoryChange = (tab: string) => {
     setActiveCategory(tab);
     setCurrentPage(1);
@@ -239,20 +219,7 @@ export default function StudyResourcesClient({
 
   return (
     <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", color: "#261f1b" }}>
-      <StudyHeader background={STUDY_HERO_BAR} />
-
-      {/* ━━━ [1] 헤더 섹션 (통일된 프리미엄 스터디 히어로) ━━━ */}
-      <StudyHero
-        title="자료실"
-        englishTitle="Study Resources"
-        description="부동산마케팅에 필요한 자료 공유실입니다."
-        tabs={TABS.map((tab) => ({
-          key: tab.key,
-          label: tab.label,
-          isActive: activeBoard === tab.key,
-          onClick: () => switchBoard(tab.key),
-        }))}
-      />
+      <StudyHeader />
 
       {/* ━━━ [2] 게시판 본문 (좌측 리스트/카드 + 우측 배너&인기게시물 사이드바) ━━━ */}
       {!canAccessBoard(userLevel, activeBoardData?.perm_list ?? 0) ? (

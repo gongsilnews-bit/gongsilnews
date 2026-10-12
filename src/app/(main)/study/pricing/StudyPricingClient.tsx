@@ -300,7 +300,7 @@ export default function StudyPricingClient() {
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = POINT_DARK)}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = POINT)}
                   >
-                    공실스터디 신청하기 ➔
+                    공실스터디 멤버십 신청하기 ➔
                   </button>
                 </div>
 
@@ -464,7 +464,7 @@ export default function StudyPricingClient() {
               boxShadow: "0 10px 25px rgba(5, 150, 105, 0.4)",
             }}
           >
-            <span>공실스터디 지금 신청하기</span>
+            <span>공실스터디 멤버십 신청하기</span>
             <span>→</span>
           </button>
         </div>

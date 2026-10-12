@@ -370,7 +370,7 @@ export default function MobileStudyApplyClient() {
                 fontFamily: "inherit",
               }}
             >
-              공실스터디 신청하기 ➔
+              공실스터디 멤버십 신청하기 ➔
             </button>
           </div>
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import AuthModal from "./AuthModal";
 import SignupCompleteModal from "./SignupCompleteModal";
 import { createClient } from "@/utils/supabase/client";
-import { getAdminEntryLabel } from "@/utils/permissionCheck";
+import { getAdminEntryLabel, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN } from "@/utils/permissionCheck";
 
 export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeColor?: string }) {
   const router = useRouter();
@@ -98,7 +98,7 @@ export default function MapTopAuthButtons({ themeColor = "#1a73e8" }: { themeCol
         {currentUser ? (
           <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
             <div style={{
-              background: userRole === 'ADMIN' ? '#111827' : (userRole === 'REALTOR' && agencyStatus === 'REJECTED') ? '#ef4444' : userRole === 'REALTOR' ? '#2563eb' : '#6b7280',
+              background: userRole === 'ADMIN' ? '#111827' : (userRole === 'REALTOR' && agencyStatus === 'REJECTED') ? '#ef4444' : isStudyAdminButton({ role: userRole, plan_type: planType }, agencyStatus) ? STUDY_ADMIN_BUTTON_GREEN : userRole === 'REALTOR' ? '#2563eb' : '#6b7280',
               color: '#fff',
               padding: '5px 12px',
               borderRadius: '20px',

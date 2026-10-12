@@ -3,12 +3,11 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
-import StudyHero from "@/components/study/StudyHero";
+import StudyHeader, { STUDY_NAVER_PAY_URL } from "@/components/study/StudyHeader";
 import TypingText from "@/components/study/TypingText";
 
-/** 히어로 [네이버결제] 버튼이 여는 결제 페이지 주소. 비어 있으면 '준비 중' 안내를 띄운다 */
-const NAVER_PAY_URL = "";
+/** 요금 카드 [네이버결제] 버튼이 여는 스마트스토어 상품 페이지 */
+const NAVER_PAY_URL = STUDY_NAVER_PAY_URL;
 import { createClient } from "@/utils/supabase/client";
 import { submitStudyApplication, checkExistingStudyApplication } from "@/app/actions/studyApply";
 
@@ -238,29 +237,7 @@ export default function StudyApplyClient() {
 
   return (
     <div style={{ backgroundColor: "#faf9f8", minHeight: "100vh", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", display: "flex", flexDirection: "column" }}>
-      <StudyHeader background={STUDY_HERO_BAR} />
-
-      {/* ━━━ [1] 상단 심플 초록색 와이드 히어로 영역 (통일된 프리미엄 스터디 히어로) ━━━ */}
-      <StudyHero
-        title="멤버십신청"
-        englishTitle="Membership"
-        description="12개월 동안 공실을 등록하면서 내 블로그/유튜브 마케팅을 완성하실 수 있습니다!"
-        tabs={[
-          {
-            label: "네이버결제",
-            href: NAVER_PAY_URL || "#",
-            onClick: () => {
-              if (NAVER_PAY_URL) return;
-              alert("네이버결제는 준비 중입니다. 신청하기로 접수해 주세요.");
-            },
-          },
-          {
-            label: "신청하기",
-            isActive: true,
-            onClick: () => setShowApplyModal(true),
-          },
-        ]}
-      />
+      <StudyHeader />
 
       {/* ━━━ [2] 하단: 이전 디자인 2개 비교창 (시중 실무교육 vs 공실스터디) ━━━ */}
       <main className="container px-20" style={{ maxWidth: "1200px", width: "100%", margin: "0 auto", padding: "60px 20px 40px", boxSizing: "border-box" }}>
@@ -471,8 +448,20 @@ export default function StudyApplyClient() {
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = POINT_DARK)}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = POINT)}
                 >
-                  공실스터디 신청하기 ➔
+                  공실스터디 멤버십 신청하기 ➔
                 </button>
+                <a
+                  href={NAVER_PAY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "50px", marginTop: 10,
+                    backgroundColor: "#ffffff", border: "1.5px solid #03c75a", borderRadius: "10px",
+                    fontSize: "15.5px", fontWeight: 800, color: "#03c75a", textDecoration: "none",
+                  }}
+                >
+                  네이버결제로 바로 결제하기 ➔
+                </a>
               </div>
 
               <div style={{ borderTop: `1px solid ${POINT_BORDER}`, paddingTop: 26 }}>

@@ -128,7 +128,7 @@ export default function MobileStudyPricingClient() {
             boxShadow: "0 4px 14px rgba(5, 150, 105, 0.35)",
             boxSizing: "border-box"
           }}>
-            1년 36만원으로 멤버십 신청하기 →
+            1년 36만원으로 공실스터디 멤버십 신청하기 →
           </Link>
         </div>
 
@@ -187,7 +187,7 @@ export default function MobileStudyPricingClient() {
             <span className={styles.floatingPrice}>월 3만원<small style={{ fontSize: "11.5px", fontWeight: 500, color: "#64748b" }}> (연 36만)</small></span>
           </div>
           <Link href="/m/study/apply" className={styles.floatingBtn} style={{ color: "#ffffff" }}>
-            멤버십 신청하기
+            공실스터디 멤버십 신청하기
           </Link>
         </div>
       </aside>

@@ -92,7 +92,8 @@ const videoLines = [
 ];
 
 const CSS = `
-.nrb{--bg:oklch(0.995 0 0);--surface:oklch(0.965 0.012 70);--text:oklch(0.27 0.02 55);--accent:oklch(0.6 0.17 48);--accent-700:oklch(0.48 0.14 45);--divider:color-mix(in srgb, oklch(0.27 0.02 55) 14%, transparent);--n300:oklch(0.38 0.02 55);--n400:oklch(0.48 0.02 55);--n500:oklch(0.52 0.02 55);--dark:#2a211c;--on-dark-accent:oklch(0.78 0.12 60);
+.nrb{--pict:#d9661f;--cream:#fbf6ee;--bg:oklch(0.995 0 0);--surface:oklch(0.965 0.012 70);--text:oklch(0.27 0.02 55);--accent:oklch(0.6 0.17 48);--accent-700:oklch(0.48 0.14 45);--divider:color-mix(in srgb, oklch(0.27 0.02 55) 14%, transparent);--n300:oklch(0.38 0.02 55);--n400:oklch(0.48 0.02 55);--n500:oklch(0.52 0.02 55);--dark:#2a211c;--on-dark-accent:oklch(0.78 0.12 60);
+.nrb.nrb-green{--surface:oklch(0.965 0.012 165);--accent:#059669;--accent-700:#047857;--dark:#0c2a22;--on-dark-accent:#6ee7b7;--pict:#059669;--cream:#f0f9f4}
   background:var(--bg);color:var(--text);font-family:"Pretendard","Pretendard Variable",system-ui,sans-serif;font-size:15px;line-height:1.55;word-break:keep-all;-webkit-font-smoothing:antialiased;text-align:left}
 .nrb *,.nrb *::before,.nrb *::after{box-sizing:border-box}
 .nrb h1,.nrb h2{font-family:inherit;font-weight:700;color:var(--text)}
@@ -113,14 +114,21 @@ export default function NewsrealtyBenefits({
   inquiryHref = "/newsrealty/guide/inquiry",
   tabsTop = 0,
   showFooter = false,
+  tone = "orange",
 }: {
   onApply: () => void;
   inquiryHref?: string;
   // 탭 줄이 붙을 위치. 위에 고정되는 헤더 높이만큼 내린다.
   tabsTop?: number;
   showFooter?: boolean;
+  // 공실스터디(/study/benefits)는 녹색
+  tone?: "orange" | "green";
 }) {
   const [active, setActive] = useState(sections[0].id);
+  // 2026-10-12: 멤버십은 "공실스터디 멤버십" 하나로 통일. 녹색(공실스터디)에서는 이름·신청 주소를 공실스터디로.
+  const brand = tone === "green"
+    ? { name: "공실스터디 멤버십", applyHref: "/study/apply" }
+    : { name: "공실뉴스부동산", applyHref: "/newsrealty/apply" };
 
   // 탭 줄 고정. 사이트 body 에 overflow-x:hidden 이 걸려 있어 CSS sticky 가 안 먹으므로
   // 공실스터디 메뉴 줄(StudyHeader)처럼 원래 자리(slot)가 tabsTop 에 닿으면 fixed 로 바꾼다.
@@ -171,7 +179,7 @@ export default function NewsrealtyBenefits({
   };
 
   return (
-    <div className="nrb">
+    <div className={tone === "green" ? "nrb nrb-green" : "nrb"}>
       <style>{CSS}</style>
 
       {/* 혜택 탭 줄 */}
@@ -187,7 +195,7 @@ export default function NewsrealtyBenefits({
           <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 24px", display: "flex", gap: 4, overflowX: "auto" }}>
             {sections.map((s) => (
               <a key={s.id} href={"#" + s.id} onClick={(e) => goTo(e, s.id)} className={"nrb-tab" + (active === s.id ? " on" : "")}>
-                <Pictogram id={s.id} size={16} color={active === s.id ? "#d9661f" : "currentColor"} />
+                <Pictogram id={s.id} size={16} color={active === s.id ? "var(--pict)" : "currentColor"} />
                 {s.tab}
               </a>
             ))}
@@ -197,9 +205,9 @@ export default function NewsrealtyBenefits({
 
       <main>
         {/* 맨 위 제목: 화면 끝까지 미색 배경 (소개 페이지 히어로와 같은 색) */}
-        <div style={{ background: "#fbf6ee" }}>
+        <div style={{ background: "var(--cream)" }}>
           <section style={{ maxWidth: 1120, margin: "0 auto", padding: "88px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-            <span style={{ fontSize: 13, color: "var(--accent-700)" }}>공실뉴스 부동산 주요 혜택</span>
+            <span style={{ fontSize: 13, color: "var(--accent-700)" }}>{tone === "green" ? "공실스터디 멤버십 주요 혜택" : "공실뉴스 부동산 주요 혜택"}</span>
             <h1 style={{ fontSize: "clamp(32px,4.6vw,48px)", lineHeight: 1.2, letterSpacing: "-0.025em", margin: 0, textWrap: "balance" }}>
               공동중개 + 매매보고서 + 블로그/SNS포스팅 + 유튜브강의까지!<br />AI 시대! 부동산 마케팅 쉬워집니다.
             </h1>
@@ -210,7 +218,7 @@ export default function NewsrealtyBenefits({
           <section key={s.id} id={s.id} className="nrb-sec" style={i === 0 ? { paddingTop: 96 } : undefined}>
             <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 480 }}>
               <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: 14, background: "var(--surface)" }}>
-                <Pictogram id={s.id} size={28} color="#d9661f" />
+                <Pictogram id={s.id} size={28} color="var(--pict)" />
               </span>
               <span style={{ fontSize: 13, color: "var(--accent)" }}>{s.label}</span>
               <h2 className="nrb-h2">{s.title}</h2>
@@ -243,7 +251,7 @@ export default function NewsrealtyBenefits({
                 AI 시대, 공실뉴스가 대표님의 마케팅을 함께 합니다.
               </h2>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <a href="/newsrealty/apply" onClick={applyClick} className="nrb-btn nrb-btn-cta">공실뉴스부동산 신청하기</a>
+                <a href={brand.applyHref} onClick={applyClick} className="nrb-btn nrb-btn-cta">{brand.name} 신청하기</a>
                 <Link href={inquiryHref} className="nrb-btn nrb-btn-cta-ghost">1:1문의 접수</Link>
               </div>
             </div>

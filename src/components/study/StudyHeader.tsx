@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import NotificationBell from "@/components/common/NotificationBell";
 import { createClient } from "@/utils/supabase/client";
-import { getEffectiveMemberRole, getAdminEntryLabel } from "@/utils/permissionCheck";
+import { getEffectiveMemberRole, getAdminEntryLabel, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN } from "@/utils/permissionCheck";
 
+// 공실스터디는 녹색 (2026-10-12 회의: 주황 통일을 시험해 보고 녹색으로 확정)
 const POINT = "#059669";
 const MINT = "#72e7c3";
 
@@ -15,10 +16,15 @@ export const STUDY_HERO_BAR = "linear-gradient(90deg, #052427 0%, #072928 25%, #
 /** 공실스터디 홈 히어로(사진 + 가운데가 밝은 그림자)의 위쪽 가장자리 색 */
 export const STUDY_HOME_HERO_BAR = "linear-gradient(90deg, #071614 0%, #0c1f1b 25%, #102320 50%, #0b1d1a 75%, #061613 100%)";
 
+/** 멤버십 결제 스마트스토어 상품 (공실스터디 1년 수강권, 판매자상품코드 GS-STUDY-1Y) */
+export const STUDY_NAVER_PAY_URL = "https://smartstore.naver.com/mygongsil/products/13805832960";
+
 interface SubNavItem {
   label: string;
   href: string;
   match?: (pathname: string, searchParams: URLSearchParams | null) => boolean;
+  /** 사이트 밖 주소. 새 창으로 연다 */
+  external?: boolean;
 }
 
 interface NavItem {
@@ -32,30 +38,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "강의목록", href: "/study/lectures", match: (p: string) => p.startsWith("/study/lectures") || p.startsWith("/study_read") },
   {
     label: "멤버십혜택",
-    href: "/study/benefits/vacancy-register",
+    href: "/study/benefits",
     match: (p: string) => p.startsWith("/study/benefits"),
-    subItems: [
-      {
-        label: "공실등록20건",
-        href: "/study/benefits/vacancy-register",
-        match: (p: string) => p.includes("vacancy-register") || p === "/study/benefits",
-      },
-      {
-        label: "블로그포스팅자동화",
-        href: "/study/benefits/blog-automation",
-        match: (p: string) => p.includes("blog-automation"),
-      },
-      {
-        label: "유튜브강의+드론저작권",
-        href: "/study/benefits/ai-youtube",
-        match: (p: string) => p.includes("ai-youtube"),
-      },
-      {
-        label: "강의영상업로딩",
-        href: "/study/benefits/lecture-upload",
-        match: (p: string) => p.includes("lecture-upload"),
-      },
-    ],
   },
   {
     label: "멤버십신청",
@@ -68,9 +52,10 @@ const NAV_ITEMS: NavItem[] = [
         match: (p: string) => p.startsWith("/study/apply"),
       },
       {
-        label: "금액안내",
-        href: "/study/pricing",
-        match: (p: string) => p.startsWith("/study/pricing"),
+        label: "네이버결제 바로가기",
+        href: STUDY_NAVER_PAY_URL,
+        match: () => false,
+        external: true,
       },
     ],
   },
@@ -142,6 +127,61 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+const SUB_TAB_ACCENT = POINT;
+
+/** 2차 탭 아이콘 (멤버십혜택 페이지 탭 줄과 같은 16px 선 아이콘) */
+const SUB_TAB_ICONS: Record<string, React.ReactNode> = {
+  "멤버십신청": <><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13 7l4 4" /></>,
+  "네이버결제 바로가기": <><rect x="3.5" y="3.5" width="17" height="17" rx="4" /><path d="M9 16V8l6 8V8" /></>,
+  "드론영상": <><rect x="3" y="6" width="13" height="12" rx="2" /><path d="M16 10l5-3v10l-5-3" /></>,
+  "APP(앱)": <><rect x="6.5" y="3" width="11" height="18" rx="2.5" /><path d="M11 18h2" /></>,
+  "AI 프롬프트": <><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" /><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" /></>,
+  "음원": <><path d="M9 18V5l11-2v13" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="17.5" cy="16" r="2.5" /></>,
+  "계약서/양식": <><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><path d="M14 3v6h6M8 13h8M8 17h5" /></>,
+  "스터디 Q&A": <><path d="M4 5h16v11H9l-5 4z" /><path d="M10 9.5a2 2 0 1 1 2.5 1.9c-.4.1-.5.4-.5.8M12 14h.01" /></>,
+  "자유게시판": <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 9h8M8 13h8M8 17h5" /></>,
+};
+
+/** 지금 보고 있는 1차 메뉴(멤버십신청·자료실·커뮤니티)의 2차 메뉴를 메뉴 줄 아래 탭 줄로 늘 보여 준다.
+ *  멤버십혜택 페이지의 혜택 탭 줄과 같은 모양. 메뉴 줄이 위에 붙으면 함께 붙는다. */
+function StudySubTabs({ pathname, dark }: { pathname: string; dark: boolean }) {
+  const searchParams = useSearchParams();
+  const active = NAV_ITEMS.find((item) => item.match(pathname));
+  if (!active?.subItems) return null;
+
+  return (
+    <div style={{ borderTop: dark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #eef2f1", borderBottom: dark ? "none" : "1px solid #e5e7eb" }}>
+      <div className="container px-20" style={{ display: "flex", gap: 4, overflowX: "auto", padding: "0 20px" }}>
+        {active.subItems.map((sub) => {
+          const on = sub.match ? sub.match(pathname, searchParams) : pathname === sub.href;
+          return (
+            <Link
+              key={sub.href}
+              href={sub.href}
+              {...(sub.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              aria-current={on ? "page" : undefined}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6, padding: "12px 14px",
+                fontSize: 14, whiteSpace: "nowrap", textDecoration: "none",
+                borderBottom: `2px solid ${on ? SUB_TAB_ACCENT : "transparent"}`,
+                color: dark ? (on ? "#ffffff" : "rgba(255,255,255,0.72)") : on ? "#1e293b" : "#64748b",
+                fontWeight: on ? 600 : 400,
+              }}
+            >
+              {SUB_TAB_ICONS[sub.label] && (
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={on ? SUB_TAB_ACCENT : "currentColor"} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  {SUB_TAB_ICONS[sub.label]}
+                </svg>
+              )}
+              {sub.label}
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /** 1차 메뉴 리스트 및 각 메뉴 바로 아래 가로로 펼쳐지는 2차 서브 메뉴 바 */
 function StudyNavItems({
   pathname,
@@ -168,7 +208,8 @@ function StudyNavItems({
 
         // 2차 메뉴 노출 조건:
         // 마우스 올렸을 때(호버 시)만 가로로 나타나고, 클릭하거나 마우스가 벗어나면 즉시 닫힘 (상시 노출 해제)
-        const showSubBar = Boolean(item.subItems && isHovered);
+        // 지금 보고 있는 메뉴의 2차 메뉴는 아래 탭 줄(StudySubTabs)에 늘 보이므로 호버로 또 띄우지 않는다.
+        const showSubBar = Boolean(item.subItems && isHovered && !isActive);
 
         return (
           <div
@@ -229,6 +270,7 @@ function StudyNavItems({
                     <Link
                       key={sub.href}
                       href={sub.href}
+                      {...(sub.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                       onClick={() => setHoveredNav(null)}
                       style={{
                         display: "inline-flex",
@@ -237,7 +279,7 @@ function StudyNavItems({
                         fontSize: "13.5px",
                         fontWeight: isSubActive ? 800 : 600,
                         color: isSubActive ? POINT : "#1e293b",
-                        backgroundColor: isSubActive ? "#f0fdf4" : "#ffffff",
+                        backgroundColor: isSubActive ? "#fff8f1" : "#ffffff",
                         textDecoration: "none",
                         whiteSpace: "nowrap",
                         borderRight: idx < item.subItems!.length - 1 ? "1px solid #e5e7eb" : "none",
@@ -380,7 +422,7 @@ export default function StudyHeader({ background }: { background?: string } = {}
               color: "#ffffff",
               background: pathname.startsWith("/study/classroom")
                 ? "linear-gradient(135deg, #059669 0%, #10b981 100%)"
-                : "#059669",
+                : POINT,
               border: pathname.startsWith("/study/classroom")
                 ? "1.5px solid #34d399"
                 : "1px solid rgba(255, 255, 255, 0.25)",
@@ -413,7 +455,7 @@ export default function StudyHeader({ background }: { background?: string } = {}
                 <svg viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 26, height: 26 }}><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
               </button>
               {member ? (
-                <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : "#ef4444", color: "#fff", border: dark && member.role === "ADMIN" ? "1px solid rgba(255,255,255,0.3)" : "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                <button type="button" onClick={goAdmin} style={{ background: member.role === "ADMIN" ? "#111827" : isStudyAdminButton({ role: member.role, plan_type: member.planType }, member.agencyStatus) ? STUDY_ADMIN_BUTTON_GREEN : "#ef4444", color: "#fff", border: dark && member.role === "ADMIN" ? "1px solid rgba(255,255,255,0.3)" : "none", borderRadius: "4px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                   {getAdminEntryLabel({ role: member.role, plan_type: member.planType }, member.agencyStatus)}
                 </button>
               ) : (
@@ -424,6 +466,9 @@ export default function StudyHeader({ background }: { background?: string } = {}
             </div>
           )}
         </nav>
+        <Suspense fallback={null}>
+          <StudySubTabs pathname={pathname} dark={dark} />
+        </Suspense>
       </div>
     </div>
   );

@@ -1,12 +1,11 @@
 ﻿"use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { canAccessBoard, getLevelName } from "@/utils/permissionCheck";
 import BoardAccessModal, { type BoardAccessNotice } from "@/components/common/BoardAccessModal";
-import StudyHeader, { STUDY_HERO_BAR } from "@/components/study/StudyHeader";
-import StudyHero from "@/components/study/StudyHero";
+import StudyHeader from "@/components/study/StudyHeader";
 import BannerSlot from "@/components/BannerSlot";
 
 const POINT = "#1a2e50";
@@ -71,14 +70,17 @@ export default function StudyCommunityClient({
     });
   };
 
-  const switchBoard = (key: "studyqa" | "free") => {
+  // 공실스터디 메뉴 아래 2차 탭(스터디 Q&A · 자유게시판)은 주소(?board=)만 바꾸므로, 주소가 바뀌면 게시판을 바꾼다.
+  useEffect(() => {
+    const key = searchParams.get("board") === "free" ? "free" : "studyqa";
+    if (key === activeBoard) return;
     setActiveBoard(key);
     setActiveCategory("전체");
     setCurrentPage(1);
     setSearchQuery("");
     setSearchInputValue("");
-    syncUrl({ board: key, tab: "전체", page: 1, search: "" });
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleCategoryChange = (tab: string) => {
     setActiveCategory(tab);
@@ -196,28 +198,7 @@ export default function StudyCommunityClient({
 
   return (
     <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", color: "#261f1b" }}>
-      <StudyHeader background={STUDY_HERO_BAR} />
-
-      {/* ━━━ [1] 상단 히어로 배너 (통일된 프리미엄 스터디 히어로) ━━━ */}
-      <StudyHero
-        title="커뮤니티"
-        englishTitle="Study Community"
-        description="막히는 건 물어보고, 아는 건 나눠 주세요!"
-        tabs={[
-          {
-            key: "studyqa",
-            label: "스터디 Q&A",
-            isActive: activeBoard === "studyqa",
-            onClick: () => switchBoard("studyqa"),
-          },
-          {
-            key: "free",
-            label: "자유게시판",
-            isActive: activeBoard === "free",
-            onClick: () => switchBoard("free"),
-          },
-        ]}
-      />
+      <StudyHeader />
 
       {/* ━━━ [2] 게시판 본문 (시원한 풀 와이드 스터디 레이아웃) ━━━ */}
       {!canAccessBoard(userLevel, activeBoardData?.perm_list ?? 0) ? (

@@ -14,7 +14,7 @@ import NavHighlightBubble, { useNavHighlightBubbles, NavCategoryHighlightMarker,
 import { createPortal } from "react-dom";
 import { adminApproveRealtorApplication } from "@/app/admin/actions";
 import { getEffectiveMemberRole, isAdminRole } from "@/utils/permissionCheck";
-import { getAdminEntryLabel } from "@/utils/permissionCheck";
+import { getAdminEntryLabel, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN } from "@/utils/permissionCheck";
 
 
 export default function Header({ topFullBanners, headerTextBanners, navCounts }: { topFullBanners?: any[], headerTextBanners?: any[], navCounts?: NavCounts }) {
@@ -39,6 +39,8 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
   const [userRole, setUserRole] = useState<string>('');
   const [planType, setPlanType] = useState<string>('');
   const [agencyStatus, setAgencyStatus] = useState<string>('');
+  // 공실스터디부동산 회원은 관리자 버튼을 공실스터디 녹색으로
+  const studyGreen = isStudyAdminButton({ role: userRole, plan_type: planType }, agencyStatus);
 
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -264,7 +266,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "12px" }}>
               <NotificationBell color="#ffffff" />
               <div style={{
-                background: userRole === 'ADMIN' ? '#111827' : '#ef4444',
+                background: userRole === 'ADMIN' ? '#111827' : isStudyAdminButton({ role: userRole, plan_type: planType }, agencyStatus) ? STUDY_ADMIN_BUTTON_GREEN : '#ef4444',
                 color: '#fff',
                 padding: '4px 10px',
                 borderRadius: '4px',
@@ -422,7 +424,7 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     <div className="gnb-dropdown">
                       <ul>
                         <li><Link href="/study/lectures">강의목록</Link></li>
-                        <li><Link href="/study/benefits/vacancy-register">멤버십혜택</Link></li>
+                        <li><Link href="/study/benefits">멤버십혜택</Link></li>
                         <li><Link href="/study/apply">멤버십신청</Link></li>
                         <li><Link href="/study/resources">자료실</Link></li>
                         <li><Link href="/study/community">커뮤니티</Link></li>
@@ -435,17 +437,6 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                       <ul>
                         <li><Link href="/help">고객센터</Link></li>
                         <li><Link href="/board?id=notice">공지사항</Link></li>
-                      </ul>
-                    </div>
-                  </div>
-                  <div className="gnb-dropdown-parent" style={{ position: "relative", display: "inline-block" }}>
-                    <Link href="/newsrealty" className={pathname === "/newsrealty" || pathname?.startsWith("/newsrealty/") ? "active" : ""}>공실뉴스부동산</Link>
-                    <div className="gnb-dropdown">
-                      <ul>
-                        <li><Link href="/newsrealty">공실뉴스부동산이란?</Link></li>
-                        <li><Link href="/newsrealty/benefits/brokerage-article">혜택</Link></li>
-                        <li><Link href="/newsrealty/pricing">금액안내</Link></li>
-                        <li><Link href="/newsrealty/apply">신청하기</Link></li>
                       </ul>
                     </div>
                   </div>
@@ -497,13 +488,13 @@ export default function Header({ topFullBanners, headerTextBanners, navCounts }:
                     else router.push('/user_admin');
                   }}
                     style={{
-                      background: userRole === 'ADMIN' ? "#111827" : "#ef4444", color: "#fff", border: "none", borderRadius: "4px",
+                      background: userRole === 'ADMIN' ? "#111827" : studyGreen ? STUDY_ADMIN_BUTTON_GREEN : "#ef4444", color: "#fff", border: "none", borderRadius: "4px",
                       padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer",
-                      boxShadow: userRole === 'ADMIN' ? "0 2px 4px rgba(17, 24, 39, 0.2)" : "0 2px 4px rgba(239, 68, 68, 0.2)",
+                      boxShadow: userRole === 'ADMIN' ? "0 2px 4px rgba(17, 24, 39, 0.2)" : studyGreen ? "0 2px 4px rgba(5, 150, 105, 0.2)" : "0 2px 4px rgba(239, 68, 68, 0.2)",
                       transition: "background 0.2s", whiteSpace: "nowrap", flexShrink: 0
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#1f2937" : "#dc2626"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#111827" : "#ef4444"}>
+                    onMouseEnter={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#1f2937" : studyGreen ? "#047857" : "#dc2626"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = userRole === 'ADMIN' ? "#111827" : studyGreen ? STUDY_ADMIN_BUTTON_GREEN : "#ef4444"}>
                     {getAdminEntryLabel({ role: userRole, plan_type: planType }, agencyStatus)}
                   </button>
                 ) : (

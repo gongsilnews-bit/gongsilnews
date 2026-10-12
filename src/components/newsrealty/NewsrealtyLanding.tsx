@@ -39,7 +39,7 @@ function Icon({ name, size }: { name: IconKey; size: number }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      style={{ color: "#d9661f", display: "block", flex: "none" }}
+      style={{ color: "var(--icon, #d9661f)", display: "block", flex: "none" }}
     >
       {ICON_PATHS[name]}
     </svg>
@@ -108,8 +108,16 @@ const rows = [
   { a: "공실스터디 강좌", b: "—", c: "일부 무료 수강" },
 ];
 
-const faqs: { q: string; badge?: string; a: string }[] = [
-  { q: "공실뉴스부동산은 어떤 서비스인가요?", a: "공실뉴스에 공실 매물과 기사를 등록하면, AI가 매매보고서와 블로그 · SNS · 유튜브 대본 초안을 만들어 주는 12개월 공실등록 멤버십입니다." },
+// 같은 본문을 공실뉴스부동산(/newsrealty, 주황)과 공실스터디(/study, 녹색)가 함께 쓴다.
+// 2026-10-12: 멤버십은 "공실스터디 멤버십" 하나로 통일. 녹색(공실스터디)에서는 이름·신청 주소를 공실스터디로 보여 준다.
+type Brand = { name: string; applyHref: string; applyShort: string; applyLong: string; benefitsLabel: string };
+const BRANDS: Record<"orange" | "green", Brand> = {
+  orange: { name: "공실뉴스부동산", applyHref: "/newsrealty/apply", applyShort: "공실뉴스부동산 신청", applyLong: "공실뉴스부동산 신청하기", benefitsLabel: "부동산 혜택" },
+  green: { name: "공실스터디 멤버십", applyHref: "/study/apply", applyShort: "공실스터디 멤버십 신청", applyLong: "공실스터디 멤버십 신청하기", benefitsLabel: "멤버십 혜택" },
+};
+
+const faqs = (brand: Brand): { q: string; badge?: string; a: string }[] => [
+  { q: `${brand.name}은 어떤 서비스인가요?`, a: "공실뉴스에 공실 매물과 기사를 등록하면, AI가 매매보고서와 블로그 · SNS · 유튜브 대본 초안을 만들어 주는 12개월 공실등록 멤버십입니다." },
   { q: "블로그나 유튜브를 잘 모르는 초보도 할 수 있나요?", a: "네. 글은 AI가 초안을 작성하고, 영상은 촬영부터 편집까지 실습 강의로 안내합니다." },
   { q: "블로그 포스팅 초안은 어떻게 작성하나요? 별도 비용이 드나요?", a: "크롬 확장프로그램을 설치하면 바로 작성할 수 있습니다. 본인이 구독 중인 챗GPT 또는 제미나이 계정이 필요합니다." },
   { q: "결제는 어떻게 하나요?", badge: "12개월 무이자 특별 이벤트", a: "지금 12개월 무이자 특별 이벤트를 진행 중입니다. 신청 후 네이버 쇼핑몰에서 결제하시면 바로 사용하실 수 있습니다." },
@@ -118,8 +126,9 @@ const faqs: { q: string; badge?: string; a: string }[] = [
 ];
 
 const CSS = `
-.nrl{--bg:oklch(0.995 0 0);--surface:oklch(0.965 0.012 70);--text:oklch(0.27 0.02 55);--accent:oklch(0.6 0.17 48);--cream:#fbf6ee;--accent-200:oklch(0.93 0.05 60);--accent-700:oklch(0.48 0.14 45);--accent-800:oklch(0.42 0.13 44);--divider:color-mix(in srgb, oklch(0.27 0.02 55) 14%, transparent);--n100:oklch(0.995 0 0);--n200:oklch(0.93 0.02 72);--n300:oklch(0.38 0.02 55);--n400:oklch(0.48 0.02 55);--n500:oklch(0.52 0.02 55);--r-md:8px;--r-lg:14px;
+.nrl{--bg:oklch(0.995 0 0);--surface:oklch(0.965 0.012 70);--text:oklch(0.27 0.02 55);--accent:oklch(0.6 0.17 48);--cream:#fbf6ee;--accent-200:oklch(0.93 0.05 60);--accent-700:oklch(0.48 0.14 45);--accent-800:oklch(0.42 0.13 44);--divider:color-mix(in srgb, oklch(0.27 0.02 55) 14%, transparent);--n100:oklch(0.995 0 0);--n200:oklch(0.93 0.02 72);--n300:oklch(0.38 0.02 55);--n400:oklch(0.48 0.02 55);--n500:oklch(0.52 0.02 55);--r-md:8px;--r-lg:14px;--icon:#d9661f;--band:#2a211c;--band-kicker:oklch(0.78 0.12 60);--grad-a:oklch(0.5 0.14 42);--grad-b:oklch(0.6 0.16 52);
   background:var(--bg);color:var(--text);font-family:"Pretendard","Pretendard Variable",system-ui,sans-serif;font-size:15px;line-height:1.55;font-weight:400;word-break:keep-all;-webkit-font-smoothing:antialiased;text-align:left}
+.nrl.nrl-green{--surface:oklch(0.965 0.012 165);--accent:#059669;--cream:#f0f9f4;--accent-200:#d1fae5;--accent-700:#047857;--accent-800:#065f46;--n200:oklch(0.93 0.02 165);--icon:#059669;--band:#0c2a22;--band-kicker:#6ee7b7;--grad-a:oklch(0.45 0.1 165);--grad-b:oklch(0.58 0.12 160)}
 .nrl *,.nrl *::before,.nrl *::after{box-sizing:border-box}
 .nrl h1,.nrl h2,.nrl h3{font-family:inherit;font-weight:700;line-height:1.12;letter-spacing:-0.015em;color:var(--text)}
 .nrl b,.nrl strong{font-weight:700}
@@ -169,7 +178,7 @@ function PriceHeading() {
 }
 
 // 일반 부동산 vs 공실뉴스부동산 금액·혜택 비교표. 금액안내 페이지(/newsrealty/pricing)도 이것을 쓴다.
-function PriceTable() {
+function PriceTable({ brand }: { brand: Brand }) {
   return (
     <div style={{ overflowX: "auto" }}>
       <table className="nrl-table">
@@ -180,7 +189,7 @@ function PriceTable() {
               일반 부동산<br /><span className="nrl-th-price">무료</span>
             </th>
             <th className="nrl-col-hl" style={{ width: "42%", color: "var(--accent)", textAlign: "center", borderRadius: "10px 10px 0 0" }}>
-              공실뉴스부동산<br /><span className="nrl-th-price">₩30,000 / 월</span><br />
+              {brand.name}<br /><span className="nrl-th-price">₩30,000 / 월</span><br />
               <span style={{ fontSize: 13, letterSpacing: 0, color: "var(--accent-700)", fontWeight: 700 }}>12개월 36만 원</span>
             </th>
           </tr>
@@ -200,12 +209,12 @@ function PriceTable() {
 }
 
 // "12개월 뒤" 채널 박스 + 금액 제목 + 비교표. 소개 페이지 금액 부분과 금액안내 페이지가 같이 쓴다.
-function PricingBody() {
+function PricingBody({ brand }: { brand: Brand }) {
   return (
     <>
       <div style={{ margin: "0 0 56px", padding: "36px 32px", borderRadius: "var(--r-lg)", background: "var(--surface)", display: "flex", flexDirection: "column", gap: 24 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: "clamp(18px,2vw,22px)", fontWeight: 700, color: "var(--accent-700)" }}>공실뉴스부동산 12개월 뒤</span>
+          <span style={{ fontSize: "clamp(18px,2vw,22px)", fontWeight: 700, color: "var(--accent-700)" }}>{brand.name} 12개월 뒤</span>
           <h3 style={{ fontSize: "clamp(22px,2.8vw,30px)", lineHeight: 1.35, margin: 0, letterSpacing: "-0.02em" }}>
             블로그/유튜브 채널이 완성되고, SNS로 꾸준히 홍보할 수 있습니다.
           </h3>
@@ -221,23 +230,23 @@ function PricingBody() {
       </div>
       <PriceHeading />
       <p className="nrl-lead" style={{ marginBottom: 40 }}>12개월 단위 멤버십 · VAT 포함</p>
-      <PriceTable />
+      <PriceTable brand={brand} />
     </>
   );
 }
 
 // 맨 아래 진한 배경 신청 띠. 소개 페이지와 금액안내 페이지 하단에 같이 쓴다.
-function CtaBand({ onApplyClick }: { onApplyClick: (e: React.MouseEvent) => void }) {
+function CtaBand({ onApplyClick, brand = BRANDS.orange }: { onApplyClick: (e: React.MouseEvent) => void; brand?: Brand }) {
   return (
-    <div style={{ background: "#2a211c", marginTop: 128 }}>
+    <div style={{ background: "var(--band)", marginTop: 128 }}>
       <section className="nrl-sec" style={{ padding: "96px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 640 }}>
-          <span style={{ fontSize: 14, color: "oklch(0.78 0.12 60)" }}>공실등록 + 블로그/유튜브/SNS</span>
+          <span style={{ fontSize: 14, color: "var(--band-kicker)" }}>공실등록 + 블로그/유튜브/SNS</span>
           <h2 style={{ fontSize: "clamp(28px,4vw,40px)", lineHeight: 1.3, margin: 0, letterSpacing: "-0.02em", textWrap: "balance", color: "#ffffff" }}>
             12개월안에<br />내 마케팅채널 완성할 수 있습니다.
           </h2>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <a href="/newsrealty/apply" onClick={onApplyClick} className="nrl-btn nrl-btn-cta">공실뉴스부동산 신청하기</a>
+            <a href={brand.applyHref} onClick={onApplyClick} className="nrl-btn nrl-btn-cta">{brand.applyLong}</a>
             <Link href="/help" className="nrl-btn nrl-btn-cta-ghost">고객센터 바로가기 &gt;&gt;</Link>
           </div>
         </div>
@@ -265,19 +274,23 @@ export default function NewsrealtyLanding({
   onApply,
   benefitsHref = "/newsrealty/benefits/brokerage-article",
   showFooter = false,
+  tone = "orange",
 }: {
   onApply: () => void;
   benefitsHref?: string;
   // PC 는 사이트 공통 푸터가 있어 끄고, 모바일에서만 켠다
   showFooter?: boolean;
+  // 녹색은 공실스터디(/study)에서 시험 중
+  tone?: "orange" | "green";
 }) {
   const applyClick = (e: React.MouseEvent) => {
     e.preventDefault();
     onApply();
   };
+  const brand = BRANDS[tone];
 
   return (
-    <div className="nrl">
+    <div className={tone === "green" ? "nrl nrl-green" : "nrl"}>
       <style>{CSS}</style>
 
       <main id="top">
@@ -292,11 +305,11 @@ export default function NewsrealtyLanding({
               유튜브, 블로그, SNS<br />이제, 공실만 등록하면 자동으로
             </h1>
             <p style={{ margin: 0, fontSize: 17, lineHeight: 1.7, color: "var(--n300)", textWrap: "pretty" }}>
-              공실뉴스부동산이 되시면 블로그 · 유튜브 · SNS 마케팅을 바로 시작하실 수 있습니다.
+              {brand.name} 회원이 되시면 블로그 · 유튜브 · SNS 마케팅을 바로 시작하실 수 있습니다.
             </p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <a href="/newsrealty/apply" onClick={applyClick} className="nrl-btn nrl-btn-solid">공실뉴스부동산 신청 &gt;</a>
-              <Link href={benefitsHref} className="nrl-btn nrl-btn-ghost">부동산 혜택 &gt;</Link>
+              <a href={brand.applyHref} onClick={applyClick} className="nrl-btn nrl-btn-solid">{brand.applyShort} &gt;</a>
+              <Link href={benefitsHref} className="nrl-btn nrl-btn-ghost">{brand.benefitsLabel} &gt;</Link>
             </div>
           </div>
           <img src="/images/newsrealty/hero_gangnam_multichannel_agent.jpg" alt="공실뉴스 AI 마케팅을 활용하는 공인중개사" className="nrl-photo" style={{ aspectRatio: "4 / 3" }} />
@@ -316,7 +329,7 @@ export default function NewsrealtyLanding({
         {/* 무엇이 좋아질까요? — 상단 메뉴의 '상품' 앵커(#products)가 여기로 온다 */}
         <section id="products" className="nrl-sec">
           <h2 className="nrl-h2">무엇이 좋아질까요?</h2>
-          <p className="nrl-lead">공실뉴스부동산이 되시면, 부동산 마케팅이 쉬워집니다.</p>
+          <p className="nrl-lead">{brand.name} 회원이 되시면, 부동산 마케팅이 쉬워집니다.</p>
           <div className="nrl-grid3">
             {advantages.map((a) => (
               <div key={a.n} style={{ display: "flex", flexDirection: "column", gap: 12, padding: "28px 24px", background: "var(--surface)", borderRadius: "var(--r-lg)" }}>
@@ -368,7 +381,7 @@ export default function NewsrealtyLanding({
 
         {/* Solution */}
         <section className="nrl-sec wide">
-          <div style={{ borderRadius: "var(--r-lg)", overflow: "hidden", background: "linear-gradient(120deg, oklch(0.5 0.14 42), oklch(0.6 0.16 52))", color: "var(--n100)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,400px),1fr))", alignItems: "center" }}>
+          <div style={{ borderRadius: "var(--r-lg)", overflow: "hidden", background: "linear-gradient(120deg, var(--grad-a), var(--grad-b))", color: "var(--n100)", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,400px),1fr))", alignItems: "center" }}>
             <div style={{ padding: "48px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
               <span style={{ fontSize: 14, color: "var(--n200)" }}>공실뉴스 AI 원스톱 솔루션</span>
               <h2 className="nrl-h2" style={{ lineHeight: 1.35, margin: 0, color: "var(--n100)", textWrap: "balance" }}>
@@ -378,7 +391,7 @@ export default function NewsrealtyLanding({
                 매매보고서 작성부터 블로그, SNS포스팅, 홈페이지까지!<br />무엇보다, 유튜브도 배우고, 내 강의 개설로 수익화 가능!
               </p>
             </div>
-            <img src="/images/newsrealty/newsrealty_partner_trio_success.jpg" alt="공실뉴스부동산 파트너 중개사들" style={{ width: "100%", height: "100%", minHeight: 300, objectFit: "cover" }} />
+            <img src="/images/newsrealty/newsrealty_partner_trio_success.jpg" alt="공실뉴스 파트너 중개사들" style={{ width: "100%", height: "100%", minHeight: 300, objectFit: "cover" }} />
           </div>
           <div className="nrl-grid4" style={{ marginTop: 24 }}>
             {benefits.map((b) => (
@@ -410,14 +423,14 @@ export default function NewsrealtyLanding({
 
         {/* Pricing */}
         <section id="pricing" className="nrl-sec wide">
-          <PricingBody />
+          <PricingBody brand={brand} />
         </section>
 
         {/* FAQ */}
         <section id="faq" className="nrl-sec">
           <h2 className="nrl-h2" style={{ margin: "0 0 32px" }}>자주 묻는 질문</h2>
           <div style={{ display: "flex", flexDirection: "column", maxWidth: 760, background: "#f4f4f5", borderRadius: "var(--r-lg)", padding: "4px 28px" }}>
-            {faqs.map((f, i) => (
+            {faqs(brand).map((f, i) => (
               <details key={f.q} style={{ padding: "20px 0", borderTop: i > 0 ? "1px solid var(--divider)" : undefined }}>
                 <summary style={{ cursor: "pointer", fontSize: 16, fontWeight: 700 }}>
                   {f.q}
@@ -429,7 +442,7 @@ export default function NewsrealtyLanding({
           </div>
         </section>
 
-        <CtaBand onApplyClick={applyClick} />
+        <CtaBand onApplyClick={applyClick} brand={brand} />
       </main>
 
       {showFooter && (

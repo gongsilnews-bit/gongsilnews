@@ -198,7 +198,7 @@ export default function MobileStudyHubClient({
                     textShadow: "0 1px 5px rgba(0, 0, 0, 0.55)",
                   }}
                 >
-                  멤버십 신청하기 &gt;&gt;
+                  공실스터디 멤버십 신청하기 &gt;&gt;
                 </Link>
               </div>
             </div>

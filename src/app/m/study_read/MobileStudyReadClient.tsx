@@ -393,7 +393,7 @@ export default function MobileStudyReadClient({
 
         {/* 뱃지들 */}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", fontSize: 12, fontWeight: 700 }}>
-          <span style={{ background: "#f0fdf4", color: "#a8381a", border: "1px solid #d1fae5", padding: "3px 8px", borderRadius: 4 }}>
+          <span style={{ background: "#059669", color: "#ffffff", border: "1px solid #059669", padding: "3px 8px", borderRadius: 4 }}>
             총 {totalLessons}강
           </span>
           {(Array.isArray(lecture.keywords)
@@ -404,7 +404,7 @@ export default function MobileStudyReadClient({
           ).map((kw: string, idx: number) => (
             <span
               key={idx}
-              style={{ background: "#f0fdf4", color: "#a8381a", border: "1px solid #d1fae5", padding: "3px 8px", borderRadius: 4 }}
+              style={{ background: "#059669", color: "#ffffff", border: "1px solid #059669", padding: "3px 8px", borderRadius: 4 }}
             >
               {kw}
             </span>

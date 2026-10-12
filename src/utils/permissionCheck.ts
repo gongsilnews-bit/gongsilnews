@@ -90,12 +90,23 @@ export function getPlanLabel(member: {
 
   if (role === 'REALTOR' || role === '부동산회원') {
     const plan = member?.plan_type;
-    if (plan === 'news_premium' || plan === 'news_basic') return '공실뉴스부동산';
+    // 2026-10-12: 고객에게 보이는 멤버십은 "공실스터디" 하나로 통일. 스마트스토어 결제(news_premium)도 공실스터디부동산으로 보인다.
+    if (plan === 'news_premium' || plan === 'news_basic') return '공실스터디부동산';
     if (plan === 'study_premium' || plan === 'vacancy_premium' || plan === 'vacancy_basic') return '공실스터디부동산';
     return '무료부동산';
   }
 
   return '일반회원';
+}
+
+/** 공실스터디부동산 회원의 관리자 버튼은 공실스터디 색(녹색)으로 칠한다. 서류보완 안내는 빨강 그대로 */
+export const STUDY_ADMIN_BUTTON_GREEN = '#059669';
+export function isStudyAdminButton(
+  member: { role?: string | null; plan_type?: string | null } | null | undefined,
+  agencyStatus?: string | null
+): boolean {
+  if (agencyStatus === 'REJECTED') return false;
+  return getPlanLabel(member) === '공실스터디부동산';
 }
 
 /** 사이트 헤더에서 관리자 화면으로 들어가는 버튼에 쓸 글자 */

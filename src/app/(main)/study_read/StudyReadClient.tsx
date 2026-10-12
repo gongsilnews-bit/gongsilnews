@@ -518,7 +518,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
 
             {/* 메타 뱃지 */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 13, fontWeight: 700 }}>
-              <span style={{ background: "#f0fdf4", color: "#a8381a", border: "1px solid #d1fae5", padding: "4px 10px", borderRadius: 6 }}>
+              <span style={{ background: "#059669", color: "#ffffff", border: "1px solid #059669", padding: "4px 10px", borderRadius: 6 }}>
                 총 {totalLessons}강
               </span>
               {(Array.isArray(lecture.keywords)
@@ -529,7 +529,7 @@ function StudyReadContent({ initialLecture }: { initialLecture: any }) {
               ).map((kw: string, idx: number) => (
                 <span
                   key={idx}
-                  style={{ background: "#f0fdf4", color: "#a8381a", border: "1px solid #d1fae5", padding: "4px 10px", borderRadius: 6 }}
+                  style={{ background: "#059669", color: "#ffffff", border: "1px solid #059669", padding: "4px 10px", borderRadius: 6 }}
                 >
                   {kw}
                 </span>

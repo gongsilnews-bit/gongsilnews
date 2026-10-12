@@ -213,7 +213,7 @@ export default function StudyLecturesClient({
                     textDecoration: "none",
                   }}
                 >
-                  멤버십 신청하기 &gt;&gt;
+                  공실스터디 멤버십 신청하기 &gt;&gt;
                 </Link>
               </div>
             </div>
