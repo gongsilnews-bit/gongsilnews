@@ -17,6 +17,10 @@ export default function StudyBenefitsSubNav({ active }: { active: string }) {
   return (
     <div style={{ borderBottom: "1px solid #eaedf0", background: "#ffffff" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 20px", display: "flex", gap: 28 }}>
+        {/* 멤버십혜택 전체(/study/benefits)로 돌아가는 길 */}
+        <Link href="/study/benefits" style={{ padding: "16px 0", fontSize: 14.5, fontWeight: 700, color: POINT, textDecoration: "none", whiteSpace: "nowrap" }}>
+          ← 멤버십혜택 전체
+        </Link>
         {STUDY_BENEFITS.map((item) => {
           const isActive = item.slug === active;
           return (
@@ -61,6 +65,13 @@ export function StudyBenefitsHeroTabs({ active }: { active: string }) {
         boxShadow: "0 4px 14px rgba(0, 0, 0, 0.06)",
       }}
     >
+      {/* 멤버십혜택 전체(/study/benefits)로 돌아가는 길 */}
+      <Link
+        href="/study/benefits"
+        style={{ padding: "9px 15px", borderRadius: 8, fontSize: 13.5, whiteSpace: "nowrap", textDecoration: "none", fontWeight: 700, color: "#047857", background: "#ecfdf5" }}
+      >
+        ← 멤버십혜택 전체
+      </Link>
       {STUDY_BENEFITS.map((item) => {
         const isActive = item.slug === active;
         return (

@@ -115,6 +115,7 @@ export default function NewsrealtyBenefits({
   tabsTop = 0,
   showFooter = false,
   tone = "orange",
+  detailHrefs = {},
 }: {
   onApply: () => void;
   inquiryHref?: string;
@@ -123,6 +124,8 @@ export default function NewsrealtyBenefits({
   showFooter?: boolean;
   // 공실스터디(/study/benefits)는 녹색
   tone?: "orange" | "green";
+  // 혜택별 [자세히 보기] 상세 페이지 주소 (혜택 id → 주소). 없으면 버튼을 안 보여 준다
+  detailHrefs?: Partial<Record<string, string>>;
 }) {
   const [active, setActive] = useState(sections[0].id);
   // 2026-10-12: 멤버십은 "공실스터디 멤버십" 하나로 통일. 녹색(공실스터디)에서는 이름·신청 주소를 공실스터디로.
@@ -237,6 +240,11 @@ export default function NewsrealtyBenefits({
                 <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10, fontSize: 15, color: "var(--n300)" }}>
                   {s.bullets!.map((b) => <li key={b}>{b}</li>)}
                 </ul>
+              )}
+              {detailHrefs[s.id] && (
+                <Link href={detailHrefs[s.id]!} style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 6, marginTop: 4, padding: "10px 18px", borderRadius: "var(--r-md, 8px)", border: "1px solid var(--accent)", color: "var(--accent-700)", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+                  자세히 보기 &gt;
+                </Link>
               )}
             </div>
             <img src={s.img} alt={s.alt} className="nrb-img" />

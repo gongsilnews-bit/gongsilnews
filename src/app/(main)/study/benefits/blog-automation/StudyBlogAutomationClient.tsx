@@ -838,7 +838,7 @@ export default function StudyBlogAutomationClient() {
                   transition: "transform 0.15s ease",
                 }}
               >
-                멤버십 신청하기 &gt;&gt;
+                공실스터디 멤버십 신청하기 &gt;&gt;
               </Link>
               <Link
                 href="/study/lectures"
