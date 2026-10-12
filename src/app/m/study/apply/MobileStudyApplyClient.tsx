@@ -8,6 +8,7 @@ import StudySubMenuBar from "../../_components/StudySubMenuBar";
 import { createClient } from "@/utils/supabase/client";
 import { submitStudyApplication, checkExistingStudyApplication } from "@/app/actions/studyApply";
 import styles from "./mobileStudyApply.module.css";
+import { STUDY_NAVER_PAY_URL } from "@/components/study/StudyHeader";
 
 const RETURN_TO = "/m/study/apply";
 
@@ -372,6 +373,18 @@ export default function MobileStudyApplyClient() {
             >
               공실스터디 멤버십 신청하기 ➔
             </button>
+            <a
+              href={STUDY_NAVER_PAY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "48px", marginTop: 10,
+                backgroundColor: "#ffffff", border: "1.5px solid #03c75a", borderRadius: "10px", boxSizing: "border-box",
+                fontSize: "15px", fontWeight: 800, color: "#03c75a", textDecoration: "none",
+              }}
+            >
+              네이버결제로 바로 결제하기 ➔
+            </a>
           </div>
 
           <div style={{ borderTop: "1px solid #a7f3d0", paddingTop: 20 }}>
