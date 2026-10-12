@@ -93,8 +93,8 @@ const videoLines = [
 
 const CSS = `
 .nrb{--pict:#d9661f;--cream:#fbf6ee;--bg:oklch(0.995 0 0);--surface:oklch(0.965 0.012 70);--text:oklch(0.27 0.02 55);--accent:oklch(0.6 0.17 48);--accent-700:oklch(0.48 0.14 45);--divider:color-mix(in srgb, oklch(0.27 0.02 55) 14%, transparent);--n300:oklch(0.38 0.02 55);--n400:oklch(0.48 0.02 55);--n500:oklch(0.52 0.02 55);--dark:#2a211c;--on-dark-accent:oklch(0.78 0.12 60);
-.nrb.nrb-green{--surface:oklch(0.965 0.012 165);--accent:#059669;--accent-700:#047857;--dark:#0c2a22;--on-dark-accent:#6ee7b7;--pict:#059669;--cream:#f0f9f4}
   background:var(--bg);color:var(--text);font-family:"Pretendard","Pretendard Variable",system-ui,sans-serif;font-size:15px;line-height:1.55;word-break:keep-all;-webkit-font-smoothing:antialiased;text-align:left}
+.nrb.nrb-green{--surface:oklch(0.965 0.012 165);--accent:#059669;--accent-700:#047857;--dark:#0c2a22;--on-dark-accent:#6ee7b7;--pict:#059669;--cream:#f0f9f4}
 .nrb *,.nrb *::before,.nrb *::after{box-sizing:border-box}
 .nrb h1,.nrb h2{font-family:inherit;font-weight:700;color:var(--text)}
 .nrb-tab{display:inline-flex;align-items:center;gap:6px;padding:12px 14px;font-size:14px;text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;color:var(--n400);font-weight:400}
