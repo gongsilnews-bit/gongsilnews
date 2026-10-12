@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { getUserActivityCounts } from '@/app/actions/userActivity';
 import { openChannelTalk } from '@/utils/channelTalk';
-import { isAdminRole, getPlanLabel, STUDY_ADMIN_BUTTON_GREEN } from '@/utils/permissionCheck';
+import { isAdminRole, getPlanLabel } from '@/utils/permissionCheck';
 
 export default function MenuPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -115,7 +115,7 @@ export default function MenuPage() {
   const getRoleBadgeStyle = (role?: string, agencyStatus?: string, planType?: string): React.CSSProperties => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return { background: '#111827', color: '#fff' };
-    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return { background: isStudyMember(role, planType) ? STUDY_ADMIN_BUTTON_GREEN : '#2563eb', color: '#fff' };
+    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? { background: '#ffffff', color: '#047857' } : { background: '#2563eb', color: '#fff' };
     return { background: '#e5e7eb', color: '#374151' };
   };
 
@@ -230,7 +230,8 @@ export default function MenuPage() {
             </div>
           ) : (
             <div style={{ padding: '20px 20px 10px', backgroundColor: '#fff' }}>
-              <div style={{ background: 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', color: '#fff' }}>
+              {/* 공실스터디 멤버십(유료) 회원은 녹색 카드, 그 외는 공실뉴스 남색 */}
+              <div style={{ background: getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus, memberData?.plan_type) === '공실스터디회원' ? 'linear-gradient(135deg, #065f46 0%, #059669 100%)' : 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', color: '#fff' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>
                     {memberData?.profile_image_url || currentUser?.user_metadata?.avatar_url ? (
