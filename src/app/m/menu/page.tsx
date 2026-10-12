@@ -101,14 +101,14 @@ export default function MenuPage() {
     window.location.href = '/m';
   };
 
-  // 공실스터디 멤버십(유료) 부동산은 "공실스터디회원" 녹색 배지로 (2026-10-12)
+  // 공실스터디 멤버십(유료) 부동산은 "공실스터디부동산" 녹색 배지로 (2026-10-12)
   const isStudyMember = (role?: string, planType?: string) =>
     getPlanLabel({ role: role?.trim().toUpperCase() === 'REALTOR' ? 'REALTOR' : role, plan_type: planType }) === '공실스터디부동산';
 
   const getRoleLabel = (role?: string, agencyStatus?: string, planType?: string) => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return '최고관리자';
-    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? '공실스터디회원' : '부동산회원';
+    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? '공실스터디부동산' : '부동산회원';
     return '일반회원';
   };
 
@@ -231,7 +231,7 @@ export default function MenuPage() {
           ) : (
             <div style={{ padding: '20px 20px 10px', backgroundColor: '#fff' }}>
               {/* 공실스터디 멤버십(유료) 회원은 녹색 카드, 그 외는 공실뉴스 남색 */}
-              <div style={{ background: getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus, memberData?.plan_type) === '공실스터디회원' ? 'linear-gradient(135deg, #065f46 0%, #059669 100%)' : 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', color: '#fff' }}>
+              <div style={{ background: getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus, memberData?.plan_type) === '공실스터디부동산' ? 'linear-gradient(135deg, #065f46 0%, #059669 100%)' : 'linear-gradient(135deg, #1a3a6b 0%, #1e56a0 100%)', padding: '20px', borderRadius: '12px', color: '#fff' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}>
                     {memberData?.profile_image_url || currentUser?.user_metadata?.avatar_url ? (
