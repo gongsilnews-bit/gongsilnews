@@ -74,6 +74,10 @@
       "schedule": "*/10 * * * *"
     },
     {
+      "path": "/api/cron/smartstore-sync",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/reels-cleanup",
       "schedule": "15 * * * *"
     }

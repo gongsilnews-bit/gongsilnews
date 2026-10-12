@@ -61,7 +61,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 /** 사이드바 메뉴에 붙일 알림 종류 (안 읽은 건수를 뱃지로 보여준다) */
 const MENU_NOTIFICATION_TYPES: Record<string, string[]> = {
   members: ["member_signup"],
-  newsrealty: ["newsrealty_apply", "study_apply"],
+  newsrealty: ["newsrealty_apply", "study_apply", "smartstore_order"],
   gongsil: ["vacancy_new"],
   article: ["article_pending"],
   study: ["lecture_pending"],

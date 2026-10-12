@@ -33,7 +33,8 @@ export type NotificationType =
   | "lecture_approved"  // 내 강의가 승인됨 (회원용)
   | "lecture_rejected"  // 내 강의가 반려됨 (회원용)
   | "realtor_rejected"  // 부동산회원 신청 서류보완 요청 (회원용)
-  | "realtor_approved"; // 부동산회원 승인 완료 (회원용)
+  | "realtor_approved"  // 부동산회원 승인 완료 (회원용)
+  | "smartstore_order"; // 스마트스토어 결제 자동 연동 결과 (최고관리자용)
 
 export type NotificationRow = {
   id: string;

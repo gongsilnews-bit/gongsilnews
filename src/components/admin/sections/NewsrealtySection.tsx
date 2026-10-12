@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdminTheme } from "./types";
+import SmartstoreOrdersPanel from "./SmartstoreOrdersPanel";
 import {
   getNewsrealtyApplications,
   updateNewsrealtyStatus,
@@ -324,6 +325,9 @@ ${res.planMessage}`);
           <span>🔄</span> 새로고침
         </button>
       </div>
+
+      {/* 스마트스토어 결제 자동 연동 결과 (회원을 못 찾은 결제는 여기서 연결) */}
+      <SmartstoreOrdersPanel theme={theme} />
 
       {/* ── 2. 검색 필터 카드: 회원관리 필터 바와 1:1 통일 ── */}
       <div

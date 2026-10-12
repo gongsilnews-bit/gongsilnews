@@ -16,6 +16,7 @@ const TYPE_ICON: Record<string, string> = {
   article_pending: "📝",
   newsrealty_apply: "🏢",
   study_apply: "🎓",
+  smartstore_order: "🛒",
   vacancy_new: "🏬",
   inquiry_new: "💬",
   inquiry_reply: "💬",
