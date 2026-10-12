@@ -207,9 +207,9 @@ function StudyNavItems({
         const isHovered = hoveredNav === item.label;
 
         // 2차 메뉴 노출 조건:
-        // 마우스 올렸을 때(호버 시)만 가로로 나타나고, 클릭하거나 마우스가 벗어나면 즉시 닫힘 (상시 노출 해제)
-        // 지금 보고 있는 메뉴의 2차 메뉴는 아래 탭 줄(StudySubTabs)에 늘 보이므로 호버로 또 띄우지 않는다.
-        const showSubBar = Boolean(item.subItems && isHovered && !isActive);
+        // 2차 메뉴는 그 메뉴 페이지에 들어가면 메뉴 줄 아래 탭 줄(StudySubTabs)로 늘 보인다.
+        // 마우스를 올렸을 때 뜨던 2차 메뉴는 아래 내용을 가려서 끈다 (2026-10-12).
+        const showSubBar = false && Boolean(item.subItems && isHovered && !isActive);
 
         return (
           <div
