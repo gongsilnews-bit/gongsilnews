@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { getUserActivityCounts } from '@/app/actions/userActivity';
 import { openChannelTalk } from '@/utils/channelTalk';
-import { isAdminRole } from '@/utils/permissionCheck';
+import { isAdminRole, getPlanLabel, STUDY_ADMIN_BUTTON_GREEN } from '@/utils/permissionCheck';
 
 export default function MenuPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -101,17 +101,21 @@ export default function MenuPage() {
     window.location.href = '/m';
   };
 
-  const getRoleLabel = (role?: string, agencyStatus?: string) => {
+  // 공실스터디 멤버십(유료) 부동산은 "공실스터디회원" 녹색 배지로 (2026-10-12)
+  const isStudyMember = (role?: string, planType?: string) =>
+    getPlanLabel({ role: role?.trim().toUpperCase() === 'REALTOR' ? 'REALTOR' : role, plan_type: planType }) === '공실스터디부동산';
+
+  const getRoleLabel = (role?: string, agencyStatus?: string, planType?: string) => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return '최고관리자';
-    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return '부동산회원';
+    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return isStudyMember(role, planType) ? '공실스터디회원' : '부동산회원';
     return '일반회원';
   };
 
-  const getRoleBadgeStyle = (role?: string, agencyStatus?: string): React.CSSProperties => {
+  const getRoleBadgeStyle = (role?: string, agencyStatus?: string, planType?: string): React.CSSProperties => {
     const r = role?.trim().toUpperCase() || '';
     if (r === 'ADMIN' || r === '최고관리자' || r.includes('관리자')) return { background: '#111827', color: '#fff' };
-    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return { background: '#2563eb', color: '#fff' };
+    if ((r === 'REALTOR' || r === '부동산회원' || r === '부동산' || r.includes('REALTOR')) && agencyStatus === 'APPROVED') return { background: isStudyMember(role, planType) ? STUDY_ADMIN_BUTTON_GREEN : '#2563eb', color: '#fff' };
     return { background: '#e5e7eb', color: '#374151' };
   };
 
@@ -240,8 +244,8 @@ export default function MenuPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                       <span style={{ fontSize: '18px', fontWeight: 800 }}>{memberData?.name || currentUser?.user_metadata?.full_name || '회원'}님</span>
-                      <span style={{ ...getRoleBadgeStyle(memberData?.role || 'USER', memberData?.agencyStatus), fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px' }}>
-                        {getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus)}
+                      <span style={{ ...getRoleBadgeStyle(memberData?.role || 'USER', memberData?.agencyStatus, memberData?.plan_type), fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px' }}>
+                        {getRoleLabel(memberData?.role || 'USER', memberData?.agencyStatus, memberData?.plan_type)}
                       </span>
                       {memberData?.agencyStatus === 'PENDING' && (
                         <span style={{ background: '#fbbf24', color: '#78350f', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px' }}>서류 검토중</span>
