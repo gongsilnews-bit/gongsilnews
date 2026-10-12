@@ -165,6 +165,19 @@ const CSS = `
 @media (max-width:600px){.nrl-table{font-size:14px}.nrl-table td,.nrl-table th{padding-left:4px;padding-right:4px}.nrl-th-price{font-size:16px}}
 `;
 
+// 공실스터디(/study)는 무료 회원이 아니라 시중 오프라인 실무교육과 비교한다 (2026-10-12, 멤버십신청 페이지와 같은 이야기)
+const studyRows = [
+  { a: "수강 방식", b: "정해진 날 현장 참석", c: "1년 365일 VOD 무제한 다시보기" },
+  { a: "강의 내용", b: "현실에 안 맞는 이론 위주", c: "내 매물로 바로 따라 하는 실습" },
+  { a: "교재 · 자료", b: "종이 교재", c: "서식 · 특약 · 계약서 · 프롬프트 다운로드" },
+  { a: "블로그 · SNS", b: "“꾸준히 하세요”로 끝", c: "블로그 포스팅 자동화 프로그램" },
+  { a: "공실 등록", b: "—", c: "20건 · 11만 중개망 노출" },
+  { a: "기사 작성", b: "—", c: "월 4편" },
+  { a: "AI 매매보고서", b: "—", c: "무제한 생성" },
+  { a: "드론 영상", b: "—", c: "저작권 무료 상업 이용" },
+  { a: "수강 후", b: "수료하면 끝", c: "스터디 Q&A · 정회원 커뮤니티" },
+];
+
 // 금액 제목 + 네이버결제 12개월 무이자 작은 태그
 function PriceHeading() {
   return (
@@ -179,6 +192,8 @@ function PriceHeading() {
 
 // 일반 부동산 vs 공실뉴스부동산 금액·혜택 비교표. 금액안내 페이지(/newsrealty/pricing)도 이것을 쓴다.
 function PriceTable({ brand }: { brand: Brand }) {
+  const study = brand === BRANDS.green;
+  const list = study ? studyRows : rows;
   return (
     <div style={{ overflowX: "auto" }}>
       <table className="nrl-table">
@@ -186,7 +201,8 @@ function PriceTable({ brand }: { brand: Brand }) {
           <tr>
             <th style={{ width: "30%" }}>항목</th>
             <th style={{ width: "28%" }}>
-              일반 부동산<br /><span className="nrl-th-price">무료</span>
+              {study ? "시중 오프라인 실무교육" : "일반 부동산"}<br /><span className="nrl-th-price">{study ? "수백만 원" : "무료"}</span>
+              {study && <><br /><span style={{ fontSize: 13, letterSpacing: 0, color: "var(--n500)", fontWeight: 700 }}>12개월 일시불</span></>}
             </th>
             <th className="nrl-col-hl" style={{ width: "42%", color: "var(--accent)", textAlign: "center", borderRadius: "10px 10px 0 0" }}>
               {brand.name}<br /><span className="nrl-th-price">₩30,000 / 월</span><br />
@@ -195,7 +211,7 @@ function PriceTable({ brand }: { brand: Brand }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {list.map((r) => (
             <tr key={r.a}>
               <td style={{ color: "var(--n300)" }}>{r.a}</td>
               <td style={{ color: "var(--n500)" }}>{r.b}</td>
