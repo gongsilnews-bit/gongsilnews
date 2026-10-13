@@ -11,6 +11,8 @@ import { getInfrastructureEntries } from "@/utils/infrastructure";
 import imageCompression from "browser-image-compression";
 import { useFormDraft, formatDraftAge } from "@/hooks/useFormDraft";
 import AgencyQuickEditModal, { type AgencyQuickInfo } from "@/components/admin/AgencyQuickEditModal";
+import WatermarkPicker, { useWatermarkChoice } from "@/components/admin/WatermarkPicker";
+import { applyCenterWatermark } from "@/utils/centerWatermark";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
   "아파트·오피스텔": ["아파트", "아파트분양권", "오피스텔", "오피스텔분양권"],
@@ -266,6 +268,12 @@ function MobileVacancyWrite() {
     previewUrl: string;
   }
   const [photoItems, setPhotoItems] = useState<MobilePhotoItem[]>([]);
+  // 사진 가운데 복사방지 로고 (기본: 켜짐, 우리 사무소 상호명)
+  const [wmChoice, setWmChoice] = useWatermarkChoice();
+  const finishPhoto = async (f: File) => {
+    const small = await compressToWebP(f);
+    return wmChoice.on ? applyCenterWatermark(small, wmChoice.kind, isRealtor ? rCompany : "") : small;
+  };
 
   /* ── 포토 DB 상태 ── */
   const [showPhotoDbModal, setShowPhotoDbModal] = useState(false);
@@ -551,7 +559,7 @@ function MobileVacancyWrite() {
       const ext = photo.filename ? photo.filename.split(".").pop() : "webp";
       const file = new File([blob], photo.filename || `db_photo_${Date.now()}.${ext}`, { type: blob.type });
       
-      const compressed = await compressToWebP(file);
+      const compressed = await finishPhoto(file);
       const pv = URL.createObjectURL(compressed);
       setPhotoItems(prev => [...prev, {
         id: `new_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -772,7 +780,7 @@ function MobileVacancyWrite() {
     const files = Array.from(e.target.files).slice(0, 5 - photoItems.length);
     
     // WebP 압축 적용
-    const compressed = await Promise.all(files.map(f => compressToWebP(f)));
+    const compressed = await Promise.all(files.map(f => finishPhoto(f)));
     const newItems: MobilePhotoItem[] = compressed.map((f, idx) => ({
       id: `new_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
       type: 'new',
@@ -2385,6 +2393,9 @@ function MobileVacancyWrite() {
           )}
 
           {/* 사진 추가 버튼 */}
+          {photoItems.length < 5 && (
+            <WatermarkPicker choice={wmChoice} onChange={setWmChoice} companyName={isRealtor ? rCompany : ""} mobile />
+          )}
           {photoItems.length < 5 && (
             <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
               <label style={{ width: 80, height: 75, borderRadius: 10, border: "2px dashed #d1d5db", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 26, color: "#9ca3af", background: "#f9fafb" }}>
