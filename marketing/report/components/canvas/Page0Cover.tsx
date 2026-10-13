@@ -26,9 +26,11 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
   const bodyFont = layoutTheme?.bodyFont || 'font-sans';
   const layoutType = layoutTheme?.type || 'type1';
 
-  const qrCodeUrl = info.coverQRLink
+  // [표지] QR코드 넣기를 끄면 표지·개요의 QR을 모두 뺀다
+  const qrCodeUrl = info.coverQRLink && !info.hideCoverQR
     ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.coverQRLink)}`
     : null;
+  const qrImage = info.hideCoverQR ? null : customQrImage;
 
   return (
     <div 
@@ -438,10 +440,10 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
 
 
               <div className="z-20 flex justify-end items-end h-full relative pointer-events-none">
-                {(customQrImage || qrCodeUrl) && (
+                {(qrImage || qrCodeUrl) && (
                   <div className="pointer-events-auto relative group/qr bg-white p-3 rounded-xl shadow-lg border border-white/10 flex items-center gap-4 text-gray-800">
                     <label className="cursor-pointer block relative">
-                      <img src={customQrImage || qrCodeUrl || ''} alt="QR Code" className="w-32 h-32 rounded-md object-cover" />
+                      <img src={qrImage || qrCodeUrl || ''} alt="QR Code" className="w-32 h-32 rounded-md object-cover" />
                       {onImageUpload && (
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity rounded flex flex-col items-center justify-center print:hidden">
                           <span className="text-[14px] text-white font-bold leading-tight text-center">QR<br/>변경</span>

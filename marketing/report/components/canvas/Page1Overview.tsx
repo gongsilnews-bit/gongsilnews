@@ -18,9 +18,11 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
   const targetTitle = info.address || '서초동 역세권 매매 안내서';
   const price = info.priceMain || '75억 원';
 
-  const qrCodeUrl = info.coverQRLink
+  // [표지] QR코드 넣기를 끄면 표지·개요의 QR을 모두 뺀다
+  const qrCodeUrl = info.coverQRLink && !info.hideCoverQR
     ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.coverQRLink)}`
     : null;
+  const qrImage = info.hideCoverQR ? null : customQrImage;
 
   return (
     <ReportPage layoutTheme={layoutTheme} colorTheme={colorTheme}
@@ -128,9 +130,9 @@ const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutThem
             <div className="w-7/12 flex flex-col justify-between h-full">
                 <div className="h-[340px] relative">
                     <EditableImage src={mainImage || ""} alt="Main Image" imageKey="mainImage" onImageUpload={onImageUpload} isUploading={isUploadingImage?.mainImage} aspectRatioClass="object-cover" />
-                    {(customQrImage || qrCodeUrl) && (
+                    {(qrImage || qrCodeUrl) && (
                         <div className="absolute bottom-3 right-3 p-1 bg-white rounded shadow-md border border-gray-100 z-30">
-                            <img src={customQrImage || qrCodeUrl || ''} alt="QR Code" className="w-32 h-32 rounded object-cover" />
+                            <img src={qrImage || qrCodeUrl || ''} alt="QR Code" className="w-32 h-32 rounded object-cover" />
                         </div>
                     )}
                 </div>

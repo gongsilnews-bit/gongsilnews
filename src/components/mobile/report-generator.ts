@@ -56,6 +56,8 @@ export function generateReportHtml(state: any): string {
     ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(info.coverQRLink)}`
     : null;
 
+  // PC 보고서 [표지] QR코드 넣기를 끄면 표지·개요 QR 상자를 뺀다
+  const qrHide = info.hideCoverQR ? " hidden" : "";
   const qrSrc = customQrImage || qrCodeUrl || 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://gongsilnews.com';
 
   const visiblePages = info.visiblePages || [1, 2, 3, 4, 5, 6];
@@ -177,7 +179,7 @@ export function generateReportHtml(state: any): string {
               <div>📍 ${info.agentAddress || ""}</div>
             </div>
           </div>
-          <div class="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm text-gray-800">
+          <div class="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm text-gray-800${qrHide}">
             <img src="${qrSrc}" class="w-32 h-32 rounded-md" />
             <div class="text-left">
               <p class="text-xs font-black text-gray-800">QR 온라인 보고서</p>
@@ -209,7 +211,7 @@ export function generateReportHtml(state: any): string {
                 <div>📍 ${info.agentAddress || ""}</div>
               </div>
             </div>
-            <div class="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm${qrHide}">
               <img src="${qrSrc}" class="w-32 h-32 rounded-md" />
               <div class="text-left">
                 <p class="text-xs font-black text-gray-800">QR 온라인 보고서</p>
@@ -242,7 +244,7 @@ export function generateReportHtml(state: any): string {
               <div>📍 ${info.agentAddress || ""}</div>
             </div>
           </div>
-          <div class="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/10 shadow-sm">
+          <div class="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/10 shadow-sm${qrHide}">
             <img src="${qrSrc}" class="w-32 h-32 rounded-md bg-white p-1" />
             <div class="text-left text-white">
               <p class="text-xs font-black text-white/95">QR 온라인 보고서</p>
@@ -270,7 +272,7 @@ export function generateReportHtml(state: any): string {
               <div>📍 ${info.agentAddress || ""}</div>
             </div>
           </div>
-          <div class="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/10">
+          <div class="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/10${qrHide}">
             <img src="${qrSrc}" class="w-32 h-32 rounded-md bg-white p-1" />
             <div class="text-left">
               <p class="text-xs font-bold text-white">QR 온라인 보고서</p>
@@ -299,7 +301,7 @@ export function generateReportHtml(state: any): string {
               <div>📍 ${info.agentAddress || ""}</div>
             </div>
           </div>
-          <div class="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm text-gray-800">
+          <div class="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm text-gray-800${qrHide}">
             <img src="${qrSrc}" class="w-32 h-32 rounded-md" />
             <div class="text-left">
               <p class="text-xs font-black text-gray-800">QR 온라인 보고서</p>
@@ -363,7 +365,7 @@ export function generateReportHtml(state: any): string {
         <div class="w-7/12 flex flex-col justify-between h-full">
             <div class="h-[340px] relative">
                 <img src="${mainImage}" class="w-full h-full object-cover rounded-lg" />
-                <div class="absolute bottom-3 right-3 p-1 bg-white rounded shadow-md border border-gray-100 z-30">
+                <div class="absolute bottom-3 right-3 p-1 bg-white rounded shadow-md border border-gray-100 z-30${qrHide}">
                     <img src="${qrSrc}" class="w-32 h-32 rounded object-cover" />
                 </div>
             </div>

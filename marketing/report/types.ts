@@ -151,6 +151,7 @@ export interface PropertyInfo {
   coverTitle?: string;
   coverSubtitle?: string;
   coverQRLink?: string;
+  hideCoverQR?: boolean; // 표지·개요 QR 빼기 (체크 해제 시 true)
   contactYoutube?: string;
   contactBlog?: string;
   contactWebsite?: string;

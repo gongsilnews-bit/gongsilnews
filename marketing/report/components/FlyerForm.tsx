@@ -393,6 +393,10 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                               <div>
                                   <label className="text-xs text-gray-500">QR 온라인 보고서 링크 (QR Code Link)</label>
                                   <input type="text" name="coverQRLink" value={info.coverQRLink || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm placeholder-gray-400 font-mono" placeholder="https://..." />
+                                  <label className="mt-2 flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                                      <input type="checkbox" checked={!info.hideCoverQR} onChange={(e) => setInfo({ ...info, hideCoverQR: !e.target.checked })} className="w-4 h-4" />
+                                      QR코드 넣기 <span className="text-xs text-gray-400">(표지·개요)</span>
+                                  </label>
                               </div>
                           </div>
                       </div>
