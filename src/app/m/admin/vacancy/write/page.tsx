@@ -12,7 +12,7 @@ import imageCompression from "browser-image-compression";
 import { useFormDraft, formatDraftAge } from "@/hooks/useFormDraft";
 import AgencyQuickEditModal, { type AgencyQuickInfo } from "@/components/admin/AgencyQuickEditModal";
 import WatermarkPicker, { useWatermarkChoice } from "@/components/admin/WatermarkPicker";
-import { applyCenterWatermark } from "@/utils/centerWatermark";
+import { applyCenterWatermark, type WatermarkChoice } from "@/utils/centerWatermark";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
   "아파트·오피스텔": ["아파트", "아파트분양권", "오피스텔", "오피스텔분양권"],
@@ -269,7 +269,10 @@ function MobileVacancyWrite() {
   }
   const [photoItems, setPhotoItems] = useState<MobilePhotoItem[]>([]);
   // 사진 가운데 복사방지 로고 (기본: 켜짐, 우리 사무소 상호명)
-  const [wmChoice, setWmChoice] = useWatermarkChoice();
+  const [savedWmChoice, setWmChoice] = useWatermarkChoice();
+  // 일반회원은 고르지 않고 공실뉴스 로고가 항상 들어간다
+  const wmLocked = userRole !== "REALTOR" && userRole !== "ADMIN";
+  const wmChoice: WatermarkChoice = wmLocked ? { on: true, kind: "logo" } : savedWmChoice;
   const finishPhoto = async (f: File) => {
     const small = await compressToWebP(f);
     return wmChoice.on ? applyCenterWatermark(small, wmChoice.kind, isRealtor ? rCompany : "") : small;
@@ -2394,7 +2397,7 @@ function MobileVacancyWrite() {
 
           {/* 사진 추가 버튼 */}
           {photoItems.length < 5 && (
-            <WatermarkPicker choice={wmChoice} onChange={setWmChoice} companyName={isRealtor ? rCompany : ""} mobile />
+            <WatermarkPicker choice={wmChoice} onChange={setWmChoice} companyName={isRealtor ? rCompany : ""} mobile locked={wmLocked} />
           )}
           {photoItems.length < 5 && (
             <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>

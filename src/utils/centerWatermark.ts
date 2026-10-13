@@ -38,7 +38,7 @@ export function saveWatermarkChoice(choice: WatermarkChoice) {
   } catch {}
 }
 
-const WATERMARK_ALPHA = 0.38;
+const WATERMARK_ALPHA = 0.3;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -73,26 +73,25 @@ export async function applyCenterWatermark(file: File, kind: WatermarkKind, comp
     ctx.save();
     ctx.globalAlpha = WATERMARK_ALPHA;
     if (kind === "company" && name) {
-      // 사진 폭의 45% 안에 들어가게 글자 크기를 맞춘다
-      let fontSize = Math.round(Math.min(w, h) * 0.12);
-      const setFont = () => { ctx.font = `800 ${fontSize}px 'Pretendard Variable', 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif`; };
+      // 작은 흰 글씨 — 사진 폭의 30% 안에 들어가게 맞춘다
+      let fontSize = Math.round(Math.min(w, h) * 0.06);
+      const setFont = () => { ctx.font = `600 ${fontSize}px 'Pretendard Variable', 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif`; };
       setFont();
-      const maxWidth = w * 0.45;
+      const maxWidth = w * 0.3;
       while (ctx.measureText(name).width > maxWidth && fontSize > 12) {
         fontSize -= 2;
         setFont();
       }
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.lineJoin = "round";
-      ctx.lineWidth = Math.max(2, fontSize * 0.14);
-      ctx.strokeStyle = "#000";
-      ctx.strokeText(name, w / 2, h / 2);
+      // 아주 옅은 그림자만 깔아 밝은 벽 위에서도 글씨가 사라지지 않게 한다
+      ctx.shadowColor = "rgba(0,0,0,0.35)";
+      ctx.shadowBlur = Math.max(2, fontSize * 0.12);
       ctx.fillStyle = "#fff";
       ctx.fillText(name, w / 2, h / 2);
     } else {
       const logo = await loadImage("/logo.png");
-      const logoWidth = w * 0.28;
+      const logoWidth = w * 0.2;
       const logoHeight = (logo.naturalHeight / logo.naturalWidth) * logoWidth;
       ctx.drawImage(logo, (w - logoWidth) / 2, (h - logoHeight) / 2, logoWidth, logoHeight);
     }

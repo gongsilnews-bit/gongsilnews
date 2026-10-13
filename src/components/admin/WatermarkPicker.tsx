@@ -31,13 +31,23 @@ interface Props {
   companyName: string;
   darkMode?: boolean;
   mobile?: boolean;
+  /** 일반회원: 고르지 않고 공실뉴스 로고가 항상 들어간다 (안내만 보여 준다) */
+  locked?: boolean;
 }
 
-export default function WatermarkPicker({ choice, onChange, companyName, darkMode = false, mobile = false }: Props) {
+export default function WatermarkPicker({ choice, onChange, companyName, darkMode = false, mobile = false, locked = false }: Props) {
   const hasCompany = !!companyName.trim();
   const kind: WatermarkKind = hasCompany ? choice.kind : "logo";
   const text = darkMode ? "#e1e4e8" : "#111827";
   const sub = darkMode ? "#9ca3af" : "#6b7280";
+
+  if (locked) {
+    return (
+      <div style={{ fontSize: 13, color: sub, marginBottom: 12 }}>
+        🛡️ 올리는 사진 가운데에 <strong style={{ color: text }}>공실뉴스 로고</strong>가 자동으로 들어갑니다 (복사 방지).
+      </div>
+    );
+  }
 
   const chip = (value: WatermarkKind, label: string) => {
     const active = choice.on && kind === value;

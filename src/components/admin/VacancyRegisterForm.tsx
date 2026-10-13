@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { useFormDraft, formatDraftAge } from "@/hooks/useFormDraft";
 import AgencyQuickEditModal, { type AgencyQuickInfo } from "./AgencyQuickEditModal";
 import WatermarkPicker, { useWatermarkChoice } from "./WatermarkPicker";
-import { applyCenterWatermark } from "@/utils/centerWatermark";
+import { applyCenterWatermark, type WatermarkChoice } from "@/utils/centerWatermark";
 
 /* ──────────────────────────────────────────────
    공실등록 폼 컴포넌트 (register.html 1:1 복제)
@@ -499,7 +499,10 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   // 사진 목록 (대표사진 0번 인덱스 및 순서 관리)
   const [photoList, setPhotoList] = useState<VacancyPhotoItem[]>([]);
   // 사진 가운데 복사방지 로고 (기본: 켜짐, 우리 사무소 상호명)
-  const [wmChoice, setWmChoice] = useWatermarkChoice();
+  const [savedWmChoice, setWmChoice] = useWatermarkChoice();
+  // 일반회원은 고르지 않고 공실뉴스 로고가 항상 들어간다
+  const wmLocked = userRole === "user";
+  const wmChoice: WatermarkChoice = wmLocked ? { on: true, kind: "logo" } : savedWmChoice;
 
   /* ── 이전 공실광고 모달 상태 ── */
   const [showPrevMenuModal, setShowPrevMenuModal] = useState(false);
@@ -2436,7 +2439,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
             <h2 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: "32px 0 24px", borderBottom: `2px solid ${textPrimary}`, paddingBottom: 16 }}>
               사진 (최대 5장)
             </h2>
-            <WatermarkPicker choice={wmChoice} onChange={setWmChoice} companyName={userRole === "realtor" ? rCompany : ""} darkMode={darkMode} />
+            <WatermarkPicker choice={wmChoice} onChange={setWmChoice} companyName={userRole === "realtor" ? rCompany : ""} darkMode={darkMode} locked={wmLocked} />
             {/* ── 사진 등록 컨트롤 (포토DB + 드래그앤드롭) ── */}
             <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
               {/* 왼쪽: 사진 마우스 끌어오기 */}
