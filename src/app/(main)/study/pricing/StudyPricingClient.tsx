@@ -68,9 +68,9 @@ export default function StudyPricingClient() {
     <>수강 기간 : <strong style={{ color: POINT }}>1년(365일) 무제한 다시보기</strong></>,
     <><strong>공실등록 20건 무료</strong> (AI매매보고서 포함)</>,
     <><strong>기사작성 4건 매월</strong></>,
-    <><strong>매물접수웹페이지 무료</strong></>,
+    <><strong>매물접수홈페이지 무료</strong></>,
     <><strong>블로그 포스팅 자동화 프로그램 무료</strong></>,
-    <><strong>드론 영상 저작권 무료</strong></>,
+    <><strong>드론영상 무료 사용</strong> (상업 이용 가능)</>,
   ];
 
   return (
