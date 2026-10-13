@@ -64,13 +64,14 @@ export default function StudyPricingClient() {
   ];
 
   const paidFeatures = [
-    <><strong>공실스터디 멤버십 VOD + 교육자료</strong></>,
-    <>수강 기간 : <strong style={{ color: POINT }}>1년(365일) 무제한 다시보기</strong></>,
+    <><strong>부동산 마케팅 특강 <span style={{ color: POINT }}>365일 무료</span></strong></>,
+    <><strong>공실뉴스 편집장 마케팅 강의</strong> (매월 업데이트)</>,
     <><strong>공실등록 20건 무료</strong> (AI매매보고서 포함)</>,
     <><strong>기사작성 4건 매월</strong></>,
     <><strong>매물접수홈페이지 무료</strong></>,
     <><strong>블로그 포스팅 자동화 프로그램 무료</strong></>,
     <><strong>드론영상 무료 사용</strong> (상업 이용 가능)</>,
+    <><strong>내 온라인 강의 개설</strong></>,
   ];
 
   return (
