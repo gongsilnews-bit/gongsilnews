@@ -9,6 +9,8 @@ import { geocodeAddress } from "@/app/actions/geocode";
 import { generateLocalPropertyDescription, type ToneType } from "@/utils/generateLocalPropertyDescription";
 import { getInfrastructureEntries } from "@/utils/infrastructure";
 import imageCompression from "browser-image-compression";
+import { useFormDraft, formatDraftAge } from "@/hooks/useFormDraft";
+import AgencyQuickEditModal, { type AgencyQuickInfo } from "@/components/admin/AgencyQuickEditModal";
 
 const SUB_CATEGORIES: Record<string, string[]> = {
   "아파트·오피스텔": ["아파트", "아파트분양권", "오피스텔", "오피스텔분양권"],
@@ -78,7 +80,10 @@ function MobileVacancyWrite() {
     }
   };
 
+  // 작성 중 보관본을 불러올 때는 보관된 주소노출범위를 그대로 둔다
+  const skipExposureDefaultRef = React.useRef(false);
   useEffect(() => {
+    if (skipExposureDefaultRef.current) { skipExposureDefaultRef.current = false; return; }
     if (subCategory === "지식산업센터") {
       setAddressExposure("비공개");
     } else if (propertyType === "상가·사무실·건물·공장·토지") {
@@ -244,13 +249,13 @@ function MobileVacancyWrite() {
   const [landlordPhone, setLandlordPhone] = useState("");
   const [landlordMemo, setLandlordMemo] = useState("");
 
-  const [rCompany, setRCompany] = useState("착한임대부동산");
-  const [rRegNum, setRRegNum] = useState("1666-4414411");
-  const [rBoss, setRBoss] = useState("김동현");
-  const [rBizNum, setRBizNum] = useState("211-33-21777");
-  const [rTel, setRTel] = useState("02-541-1611");
-  const [rCell, setRCell] = useState("02-541-1611");
-  const [rAddr, setRAddr] = useState("서울 강남구 논현동 189-13");
+  const [rCompany, setRCompany] = useState("");
+  const [rRegNum, setRRegNum] = useState("");
+  const [rBoss, setRBoss] = useState("");
+  const [rBizNum, setRBizNum] = useState("");
+  const [rTel, setRTel] = useState("");
+  const [rCell, setRCell] = useState("");
+  const [rAddr, setRAddr] = useState("");
 
   // 사진 (대표사진 및 순서 관리)
   interface MobilePhotoItem {
@@ -341,6 +346,38 @@ function MobileVacancyWrite() {
       setAuthChecked(true);
     })();
   }, []);
+
+  // 부동산/기업 정보: 실제 등록된 정보를 불러온다
+  const loadAgency = useCallback(async () => {
+    if (!memberId) return;
+    const supabase = createClient();
+    const { data } = await supabase.from("agencies").select("*").eq("owner_id", memberId).maybeSingle();
+    if (!data) return;
+    setRCompany(data.name || "");
+    setRRegNum(data.reg_num || "");
+    setRBoss(data.ceo_name || "");
+    setRBizNum(data.biz_num || "");
+    setRTel(data.phone || "");
+    setRCell(data.cell || "");
+    setRAddr((data.address || "") + (data.address_detail ? ` ${data.address_detail}` : ""));
+  }, [memberId]);
+
+  useEffect(() => {
+    loadAgency();
+    // 정보설정을 새 창에서 고치고 돌아오면 바뀐 정보로 다시 보여 준다
+    window.addEventListener("focus", loadAgency);
+    return () => window.removeEventListener("focus", loadAgency);
+  }, [loadAgency]);
+
+  // [수정] → 페이지 이동 대신 팝업 (작성 중인 공실 내용이 사라지지 않게)
+  const [showAgencyEdit, setShowAgencyEdit] = useState(false);
+  const handleAgencySaved = (info: AgencyQuickInfo) => {
+    setRCompany(info.name);
+    setRBoss(info.ceo_name);
+    setRTel(info.phone);
+    setRCell(info.cell);
+    setRAddr(info.address + (info.address_detail ? ` ${info.address_detail}` : ""));
+  };
 
   // 수정 모드: 데이터 로드
   useEffect(() => {
@@ -939,6 +976,7 @@ function MobileVacancyWrite() {
         await syncVacancyPhotos(result.id, finalUrls);
       }
 
+      draft.clear();
       alert(status === "DRAFT" ? "임시저장 완료!" : editId ? "수정 완료!" : "등록 완료! 광고가 바로 시작됩니다.");
       // 목록으로 이동하는 동안에도 로딩 화면을 유지해 재클릭을 막는다
       navigating = true;
@@ -997,6 +1035,107 @@ function MobileVacancyWrite() {
       {label}
     </button>
   );
+
+  // ── 작성 중 자동 보관 (다른 화면으로 가거나 새로고침해도 되살릴 수 있게) ──
+  const draftFields: Record<string, [any, (v: any) => void]> = {
+    currentStep: [currentStep, setCurrentStep],
+    mainUsage: [mainUsage, setMainUsage],
+    elevatorCnt: [elevatorCnt, setElevatorCnt],
+    isIllegal: [isIllegal, setIsIllegal],
+    buildingStructure: [buildingStructure, setBuildingStructure],
+    propertyType: [propertyType, setPropertyTypeRaw],
+    subCategory: [subCategory, setSubCategory],
+    tradeType: [tradeType, setTradeType],
+    deposit: [deposit, setDeposit],
+    monthly: [monthly, setMonthly],
+    maintenance: [maintenance, setMaintenance],
+    exclusiveM2: [exclusiveM2, setExclusiveM2],
+    exclusivePy: [exclusivePy, setExclusivePy],
+    supplyM2: [supplyM2, setSupplyM2],
+    supplyPy: [supplyPy, setSupplyPy],
+    landShareM2: [landShareM2, setLandShareM2],
+    landSharePy: [landSharePy, setLandSharePy],
+    zoning: [zoning, setZoning],
+    landPurpose: [landPurpose, setLandPurpose],
+    terrain: [terrain, setTerrain],
+    developmentPotential: [developmentPotential, setDevelopmentPotential],
+    areaUnit: [areaUnit, setAreaUnit],
+    currentFloor: [currentFloor, setCurrentFloor],
+    totalFloor: [totalFloor, setTotalFloor],
+    roomCount: [roomCount, setRoomCount],
+    bathCount: [bathCount, setBathCount],
+    direction: [direction, setDirection],
+    approvalYear: [approvalYear, setApprovalYear],
+    sido: [sido, setSido],
+    sigungu: [sigungu, setSigungu],
+    dong: [dong, setDong],
+    addressSearchCompleted: [addressSearchCompleted, setAddressSearchCompleted],
+    buildingName: [buildingName, setBuildingName],
+    detailAddr: [detailAddr, setDetailAddr],
+    aptDong: [aptDong, setAptDong],
+    hosu: [hosu, setHosu],
+    addressExposure: [addressExposure, setAddressExposure],
+    sigunguCd: [sigunguCd, setSigunguCd],
+    bjdongCd: [bjdongCd, setBjdongCd],
+    platGbCd: [platGbCd, setPlatGbCd],
+    bun: [bun, setBun],
+    ji: [ji, setJi],
+    parking: [parking, setParking],
+    moveInDate: [moveInDate, setMoveInDate],
+    buildingCoverage: [buildingCoverage, setBuildingCoverage],
+    floorAreaRatio: [floorAreaRatio, setFloorAreaRatio],
+    currentUsage: [currentUsage, setCurrentUsage],
+    currentRentalDeposit: [currentRentalDeposit, setCurrentRentalDeposit],
+    currentRentalMonthly: [currentRentalMonthly, setCurrentRentalMonthly],
+    loanAmount: [loanAmount, setLoanAmount],
+    loanRate: [loanRate, setLoanRate],
+    premiumFee: [premiumFee, setPremiumFee],
+    roadWidth: [roadWidth, setRoadWidth],
+    roadDirection: [roadDirection, setRoadDirection],
+    groundFloors: [groundFloors, setGroundFloors],
+    undergroundFloors: [undergroundFloors, setUndergroundFloors],
+    jisanUsage: [jisanUsage, setJisanUsage],
+    ceilingHeight: [ceilingHeight, setCeilingHeight],
+    powerCapacity: [powerCapacity, setPowerCapacity],
+    hasDriveIn: [hasDriveIn, setHasDriveIn],
+    hasDoorToDoor: [hasDoorToDoor, setHasDoorToDoor],
+    hasFreightElevator: [hasFreightElevator, setHasFreightElevator],
+    freeParkingCnt: [freeParkingCnt, setFreeParkingCnt],
+    description: [description, setDescription],
+    aiTone: [aiTone, setAiTone],
+    clientName: [clientName, setClientName],
+    clientPhone: [clientPhone, setClientPhone],
+    commissionType: [commissionType, setCommissionType],
+    commissionEtc: [commissionEtc, setCommissionEtc],
+    ownerRelation: [ownerRelation, setOwnerRelation],
+    coords: [coords, setCoords],
+    selectedOptions: [selectedOptions, setSelectedOptions],
+    selectedThemes: [selectedThemes, setSelectedThemes],
+    infrastructure: [infrastructure, setInfrastructure],
+    realtorCommission: [realtorCommission, setRealtorCommission],
+    exposureType: [exposureType, setExposureType],
+    landlordName: [landlordName, setLandlordName],
+    landlordPhone: [landlordPhone, setLandlordPhone],
+    landlordMemo: [landlordMemo, setLandlordMemo],
+  };
+  const draftSnapshot: Record<string, any> = {};
+  for (const k of Object.keys(draftFields)) draftSnapshot[k] = draftFields[k][0];
+  // 새 사진은 브라우저에 보관할 수 없어, 이미 올라가 있는 사진 주소만 보관한다
+  draftSnapshot.savedPhotoUrls = photoItems.filter(p => p.type === 'existing' && p.url).map(p => p.url);
+  const draftKey = authChecked && memberId ? `gongsil-vacancy-draft:m:${memberId}:${editId || "new"}` : null;
+  const draft = useFormDraft(draftKey, draftSnapshot);
+  const restoreDraft = () => {
+    const data = draft.takePending();
+    if (!data) return;
+    skipExposureDefaultRef.current = true;
+    window.setTimeout(() => { skipExposureDefaultRef.current = false; }, 0);
+    for (const k of Object.keys(draftFields)) {
+      if (k in data) draftFields[k][1](data[k]);
+    }
+    if (Array.isArray(data.savedPhotoUrls) && data.savedPhotoUrls.length > 0) {
+      setPhotoItems(data.savedPhotoUrls.map((url: string, idx: number) => ({ id: `draft_${idx}_${url}`, type: 'existing' as const, url, previewUrl: url })));
+    }
+  };
 
   if (!authChecked || loadingEdit) return (
     <div style={{ display:"flex", height:"100dvh", alignItems:"center", justifyContent:"center", background:"#f4f5f7" }}>
@@ -1226,7 +1365,7 @@ function MobileVacancyWrite() {
   };
 
   return (
-    <div style={{ minHeight:"100dvh", background:"#f4f5f7", fontFamily:"'Pretendard Variable', -apple-system, sans-serif" }}>
+    <div style={{ minHeight:"100dvh", background:"#f4f5f7", fontFamily:"'Pretendard Variable', -apple-system, sans-serif" }} onChangeCapture={draft.markDirty} onClickCapture={draft.markDirty}>
       {/* 헤더 */}
       <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:50, background:"#fff", borderBottom:"1px solid #e5e7eb", padding:"0 16px", height:56, display:"flex", alignItems:"center", gap:12 }}>
         <button onClick={() => { if (currentStep > 1) { setCurrentStep(s=>s-1); } else { router.replace("/m/admin/vacancy"); }}} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex" }}>
@@ -1237,6 +1376,19 @@ function MobileVacancyWrite() {
       <div style={{ height:56 }} />
 
       <StepIndicator />
+      {/* ── 작성 중이던 내용 되살리기 ── */}
+      {draft.pendingSavedAt && (
+        <div style={{ margin:"8px 16px 0", padding:"12px 14px", borderRadius:12, background:"#eff6ff", border:"1px solid #bfdbfe" }}>
+          <div style={{ fontSize:14, color:"#1e3a8a", lineHeight:1.5, marginBottom:10 }}>
+            📝 <strong>작성 중이던 내용이 있습니다.</strong> ({formatDraftAge(draft.pendingSavedAt)} 자동 보관)
+            <div style={{ fontSize:12, opacity:0.85 }}>새로 고른 사진은 보관되지 않아 다시 올려 주셔야 해요.</div>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button type="button" onClick={restoreDraft} style={{ flex:2, height:40, borderRadius:8, border:"none", background:"#2563eb", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>불러오기</button>
+            <button type="button" onClick={() => { if (confirm("보관된 내용을 지울까요?")) draft.discardPending(); }} style={{ flex:1, height:40, borderRadius:8, border:"1px solid #cbd5e1", background:"#fff", color:"#6b7280", fontSize:13, fontWeight:600, cursor:"pointer" }}>지우기</button>
+          </div>
+        </div>
+      )}
       <div style={{ padding:"8px 16px 100px" }}>
         {/* ═══ STEP 1: 분류/주소 ═══ */}
         {currentStep === 1 && (<>
@@ -2288,22 +2440,22 @@ function MobileVacancyWrite() {
           <div style={{ background:"#f9fafb", borderRadius:14, padding:16, marginBottom:12, boxShadow:"0 1px 3px rgba(0,0,0,0.03)", border:"1px solid #e5e7eb" }}>
             <div style={{ fontSize:15, fontWeight:800, color:"#111", borderLeft:"4px solid #1a73e8", paddingLeft:10, marginBottom:14, display:"flex", alignItems:"center" }}>
               부동산 / 기업 정보
-              <button type="button" onClick={() => router.push("/m/admin/settings?tab=agency")} style={{ marginLeft:"auto", padding:"4px 12px", fontSize:12, fontWeight:700, color:"#e11d48", background:"#ffe4e6", border:"1px solid #fda4af", borderRadius:6, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
+              <button type="button" onClick={() => setShowAgencyEdit(true)} style={{ marginLeft:"auto", padding:"4px 12px", fontSize:12, fontWeight:700, color:"#e11d48", background:"#ffe4e6", border:"1px solid #fda4af", borderRadius:6, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 수정
               </button>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 10px", marginBottom:12 }}>
-              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>상호명</label><input type="text" value={rCompany} onChange={e=>setRCompany(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
-              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>중개등록번호</label><input type="text" value={rRegNum} onChange={e=>setRRegNum(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
-              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>대표자명</label><input type="text" value={rBoss} onChange={e=>setRBoss(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
-              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>사업자등록번호</label><input type="text" value={rBizNum} onChange={e=>setRBizNum(e.target.value)} style={{...inputStyle, background:"#fff"}}/></div>
-              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>일반번호</label><input type="tel" value={rTel} onChange={e=>setRTel(formatPhone(e.target.value))} style={{...inputStyle, background:"#fff"}}/></div>
-              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>휴대번호</label><input type="tel" value={rCell} onChange={e=>setRCell(formatPhone(e.target.value))} style={{...inputStyle, background:"#fff"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>상호명</label><input type="text" value={rCompany} readOnly style={{...inputStyle, background:"#f3f4f6", color:"#6b7280"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>중개등록번호</label><input type="text" value={rRegNum} readOnly style={{...inputStyle, background:"#f3f4f6", color:"#6b7280"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>대표자명</label><input type="text" value={rBoss} readOnly style={{...inputStyle, background:"#f3f4f6", color:"#6b7280"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>사업자등록번호</label><input type="text" value={rBizNum} readOnly style={{...inputStyle, background:"#f3f4f6", color:"#6b7280"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>일반번호</label><input type="tel" value={rTel} readOnly style={{...inputStyle, background:"#f3f4f6", color:"#6b7280"}}/></div>
+              <div><label style={{...labelStyle,fontSize:12,marginBottom:4}}>휴대번호</label><input type="tel" value={rCell} readOnly style={{...inputStyle, background:"#f3f4f6", color:"#6b7280"}}/></div>
             </div>
             <div>
               <label style={{...labelStyle,fontSize:12,marginBottom:4}}>부동산 주소</label>
-              <input type="text" value={rAddr} onChange={e=>setRAddr(e.target.value)} style={{...inputStyle, background:"#fff"}}/>
+              <input type="text" value={rAddr} readOnly style={{...inputStyle, background:"#f3f4f6", color:"#6b7280"}}/>
             </div>
           </div>
         ) : (
@@ -2473,6 +2625,16 @@ function MobileVacancyWrite() {
         </div>
       )}
 
+      {isRealtor && memberId && (
+        <AgencyQuickEditModal
+          open={showAgencyEdit}
+          ownerId={memberId}
+          mobile
+          settingsHref="/m/admin/settings?tab=agency"
+          onClose={() => setShowAgencyEdit(false)}
+          onSaved={handleAgencySaved}
+        />
+      )}
     </div>
   );
 }

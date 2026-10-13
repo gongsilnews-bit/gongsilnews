@@ -8,6 +8,8 @@ import { getPhotoLibrary, togglePhotoFavorite, hidePhotoFromLibrary } from "@/ap
 import { generateLocalPropertyDescription, type ToneType } from "@/utils/generateLocalPropertyDescription";
 import { getInfrastructureEntries } from "@/utils/infrastructure";
 import { useRouter } from "next/navigation";
+import { useFormDraft, formatDraftAge } from "@/hooks/useFormDraft";
+import AgencyQuickEditModal, { type AgencyQuickInfo } from "./AgencyQuickEditModal";
 
 /* ──────────────────────────────────────────────
    공실등록 폼 컴포넌트 (register.html 1:1 복제)
@@ -448,24 +450,37 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const [rCell, setRCell] = useState("");
   const [rAddr, setRAddr] = useState("");
 
-  useEffect(() => {
-    if (userRole === "realtor" && ownerId) {
-      const fetchAgency = async () => {
-        const supabase = createClient();
-        const { data } = await supabase.from('agencies').select('*').eq('owner_id', ownerId).single();
-        if (data) {
-          if (data.name) setRCompany(data.name);
-          if (data.reg_num) setRRegNum(data.reg_num);
-          if (data.ceo_name) setRBoss(data.ceo_name);
-          if (data.biz_num) setRBizNum(data.biz_num);
-          if (data.phone) setRTel(data.phone);
-          if (data.cell) setRCell(data.cell);
-          if (data.address) setRAddr(data.address + (data.address_detail ? ` ${data.address_detail}` : ''));
-        }
-      };
-      fetchAgency();
+  const loadAgency = useCallback(async () => {
+    if (userRole !== "realtor" || !ownerId) return;
+    const supabase = createClient();
+    const { data } = await supabase.from('agencies').select('*').eq('owner_id', ownerId).single();
+    if (data) {
+      if (data.name) setRCompany(data.name);
+      if (data.reg_num) setRRegNum(data.reg_num);
+      if (data.ceo_name) setRBoss(data.ceo_name);
+      if (data.biz_num) setRBizNum(data.biz_num);
+      setRTel(data.phone || "");
+      if (data.cell) setRCell(data.cell);
+      if (data.address) setRAddr(data.address + (data.address_detail ? ` ${data.address_detail}` : ''));
     }
   }, [userRole, ownerId]);
+
+  useEffect(() => {
+    loadAgency();
+    // 정보설정을 새 창에서 고치고 돌아오면 바뀐 정보로 다시 보여 준다
+    window.addEventListener("focus", loadAgency);
+    return () => window.removeEventListener("focus", loadAgency);
+  }, [loadAgency]);
+
+  // [수정] → 페이지 이동 대신 팝업 (작성 중인 공실 내용이 사라지지 않게)
+  const [showAgencyEdit, setShowAgencyEdit] = useState(false);
+  const handleAgencySaved = (info: AgencyQuickInfo) => {
+    setRCompany(info.name);
+    setRBoss(info.ceo_name);
+    setRTel(info.phone);
+    setRCell(info.cell);
+    setRAddr(info.address + (info.address_detail ? ` ${info.address_detail}` : ''));
+  };
 
   const [landlordName, setLandlordName] = useState("");
   const [landlordPhone, setLandlordPhone] = useState("");
@@ -1076,6 +1091,106 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
     );
   };
 
+  // ── 작성 중 자동 보관 (다른 메뉴로 가거나 새로고침해도 되살릴 수 있게) ──
+  const draftFields: Record<string, [any, (v: any) => void]> = {
+    mainUsage: [mainUsage, setMainUsage],
+    elevatorCnt: [elevatorCnt, setElevatorCnt],
+    isIllegal: [isIllegal, setIsIllegal],
+    buildingStructure: [buildingStructure, setBuildingStructure],
+    propertyType: [propertyType, setPropertyType],
+    subCategory: [subCategory, setSubCategory],
+    tradeType: [tradeType, setTradeType],
+    commissionType: [commissionType, setCommissionType],
+    commissionAmount: [commissionAmount, setCommissionAmount],
+    commissionEtc: [commissionEtc, setCommissionEtc],
+    parking: [parking, setParking],
+    moveInDate: [moveInDate, setMoveInDate],
+    ownerRelation: [ownerRelation, setOwnerRelation],
+    consent: [consent, setConsent],
+    roomCount: [roomCount, setRoomCount],
+    bathCount: [bathCount, setBathCount],
+    direction: [direction, setDirection],
+    currentFloor: [currentFloor, setCurrentFloor],
+    totalFloor: [totalFloor, setTotalFloor],
+    deposit: [deposit, setDeposit],
+    monthly: [monthly, setMonthly],
+    maintenance: [maintenance, setMaintenance],
+    supplyM2: [supplyM2, setSupplyM2],
+    supplyPy: [supplyPy, setSupplyPy],
+    exclusiveM2: [exclusiveM2, setExclusiveM2],
+    exclusivePy: [exclusivePy, setExclusivePy],
+    landShareM2: [landShareM2, setLandShareM2],
+    landSharePy: [landSharePy, setLandSharePy],
+    sido: [sido, setSido],
+    sigungu: [sigungu, setSigungu],
+    dong: [dong, setDong],
+    detailAddr: [detailAddr, setDetailAddr],
+    addressSearchCompleted: [addressSearchCompleted, setAddressSearchCompleted],
+    buildingName: [buildingName, setBuildingName],
+    aptDong: [aptDong, setAptDong],
+    hosu: [hosu, setHosu],
+    addressExposure: [addressExposure, setAddressExposure],
+    bjdongCd: [bjdongCd, setBjdongCd],
+    sigunguCd: [sigunguCd, setSigunguCd],
+    bun: [bun, setBun],
+    ji: [ji, setJi],
+    platGbCd: [platGbCd, setPlatGbCd],
+    infraRadius: [infraRadius, setInfraRadius],
+    infrastructure: [infrastructure, setInfrastructure],
+    selectedOptions: [selectedOptions, setSelectedOptions],
+    zoning: [zoning, setZoning],
+    landPurpose: [landPurpose, setLandPurpose],
+    terrain: [terrain, setTerrain],
+    developmentPotential: [developmentPotential, setDevelopmentPotential],
+    roadWidth: [roadWidth, setRoadWidth],
+    roadDirection: [roadDirection, setRoadDirection],
+    groundFloors: [groundFloors, setGroundFloors],
+    undergroundFloors: [undergroundFloors, setUndergroundFloors],
+    buildingCoverage: [buildingCoverage, setBuildingCoverage],
+    floorAreaRatio: [floorAreaRatio, setFloorAreaRatio],
+    currentUsage: [currentUsage, setCurrentUsage],
+    currentRentalDeposit: [currentRentalDeposit, setCurrentRentalDeposit],
+    currentRentalMonthly: [currentRentalMonthly, setCurrentRentalMonthly],
+    loanAmount: [loanAmount, setLoanAmount],
+    loanRate: [loanRate, setLoanRate],
+    premiumFee: [premiumFee, setPremiumFee],
+    jisanUsage: [jisanUsage, setJisanUsage],
+    ceilingHeight: [ceilingHeight, setCeilingHeight],
+    powerCapacity: [powerCapacity, setPowerCapacity],
+    hasDriveIn: [hasDriveIn, setHasDriveIn],
+    hasDoorToDoor: [hasDoorToDoor, setHasDoorToDoor],
+    hasFreightElevator: [hasFreightElevator, setHasFreightElevator],
+    freeParkingCnt: [freeParkingCnt, setFreeParkingCnt],
+    approvalYear: [approvalYear, setApprovalYear],
+    description: [description, setDescription],
+    aiTone: [aiTone, setAiTone],
+    clientName: [clientName, setClientName],
+    clientPhone: [clientPhone, setClientPhone],
+    selectedThemes: [selectedThemes, setSelectedThemes],
+    realtorCommission: [realtorCommission, setRealtorCommission],
+    exposureType: [exposureType, setExposureType],
+    landlordName: [landlordName, setLandlordName],
+    landlordPhone: [landlordPhone, setLandlordPhone],
+    landlordMemo: [landlordMemo, setLandlordMemo],
+    coords: [coords, setCoords],
+  };
+  const draftSnapshot: Record<string, any> = {};
+  for (const k of Object.keys(draftFields)) draftSnapshot[k] = draftFields[k][0];
+  // 새 사진은 브라우저에 보관할 수 없어, 이미 올라가 있는 사진 주소만 보관한다
+  draftSnapshot.savedPhotoUrls = photoList.filter(p => p.type === 'existing' && p.url).map(p => p.url);
+  const draftKey = (userRole === "realtor" && !ownerId) ? null : `gongsil-vacancy-draft:${userRole}:${ownerId || "me"}:${editData?.id || "new"}`;
+  const draft = useFormDraft(draftKey, draftSnapshot);
+  const restoreDraft = () => {
+    const data = draft.takePending();
+    if (!data) return;
+    for (const k of Object.keys(draftFields)) {
+      if (k in data) draftFields[k][1](data[k]);
+    }
+    if (Array.isArray(data.savedPhotoUrls) && data.savedPhotoUrls.length > 0) {
+      setPhotoList(data.savedPhotoUrls.map((url: string, idx: number) => ({ id: `draft_${idx}_${url}`, type: 'existing', url, previewUrl: url })));
+    }
+  };
+
   // ── 체크리스트 계산 ──
   const checkItems = [
     { label: "공실광고 분류 선택 완료", done: !!propertyType },
@@ -1088,7 +1203,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
   const progress = Math.round((doneCount / checkItems.length) * 100);
 
   return (
-    <div style={{ flex: 1, background: bg, position: "relative", overflowY: "auto", height: "100%" }}>
+    <div style={{ flex: 1, background: bg, position: "relative", overflowY: "auto", height: "100%" }} onChangeCapture={draft.markDirty} onClickCapture={draft.markDirty}>
       {/* AI 멘트 로딩 오버레이 제거됨 - 로컬 템플릿 기반 즉시 생성 */}
       {/* ── 타이틀 및 백버튼 ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "28px 24px 20px", borderBottom: `1px solid ${border}`, background: cardBg }}>
@@ -1097,6 +1212,19 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         </button>
         <h1 style={{ fontSize: 20, fontWeight: 800, color: textPrimary, margin: 0 }}>{editData ? "공실수정" : "공실등록"}</h1>
       </div>
+
+      {/* ── 작성 중이던 내용 되살리기 ── */}
+      {draft.pendingSavedAt && (
+        <div style={{ maxWidth: 1360, width: "calc(100% - 40px)", boxSizing: "border-box", margin: "16px auto 0", padding: "14px 20px", borderRadius: 10, background: darkMode ? "#1e3a5f" : "#eff6ff", border: `1px solid ${darkMode ? "#1d4ed8" : "#bfdbfe"}`, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 18 }}>📝</span>
+          <div style={{ flex: 1, minWidth: 240, fontSize: 14, color: darkMode ? "#bfdbfe" : "#1e3a8a", lineHeight: 1.5 }}>
+            <strong>작성 중이던 내용이 있습니다.</strong> ({formatDraftAge(draft.pendingSavedAt)} 자동 보관)
+            <div style={{ fontSize: 12, opacity: 0.85 }}>새로 고른 사진은 보관되지 않아 다시 올려 주셔야 해요.</div>
+          </div>
+          <button type="button" onClick={(e) => { e.stopPropagation(); restoreDraft(); }} style={{ height: 36, padding: "0 18px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); if (confirm("보관된 내용을 지울까요?")) draft.discardPending(); }} style={{ height: 36, padding: "0 14px", borderRadius: 8, border: `1px solid ${darkMode ? "#444" : "#cbd5e1"}`, background: darkMode ? "#2c2d31" : "#fff", color: textSecondary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>지우기</button>
+        </div>
+      )}
 
       {/* ── 3단 레이아웃 ── */}
       <div style={{ display: "flex", gap: 0, maxWidth: 1400, margin: "0 auto", padding: "24px 20px 120px", alignItems: "flex-start" }}>
@@ -2617,7 +2745,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                 <div style={{ background: darkMode ? "#1a1b1e" : "#f0f2f5", padding: "20px 24px", borderRadius: 10, border: `1px solid ${border}`, marginBottom: 24 }}>
                   <h3 style={{ fontSize: 15, fontWeight: 800, margin: "0 0 16px", display: "flex", gap: 8, alignItems: "center" }}>
                     <span>🏘️</span> 부동산 / 기업 정보
-                    <button type="button" onClick={() => router.push("/realty_admin?menu=settings&tab=agency")} style={{ marginLeft: "auto", padding: "4px 12px", fontSize: 12, fontWeight: 700, color: "#e11d48", background: "#ffe4e6", border: "1px solid #fda4af", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                    <button type="button" onClick={() => setShowAgencyEdit(true)} style={{ marginLeft: "auto", padding: "4px 12px", fontSize: 12, fontWeight: 700, color: "#e11d48", background: "#ffe4e6", border: "1px solid #fda4af", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       수정
                     </button>
@@ -2858,6 +2986,7 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
                     await syncVacancyPhotos(result.id, finalUrls);
                   }
 
+                  draft.clear();
                   if (customStatus) {
                      if (customStatus === "DRAFT") {
                        alert("💾 임시저장 되었습니다.\n\n공실관리 목록에서 이어서 작성하실 수 있습니다.");
@@ -3194,6 +3323,16 @@ export default function VacancyRegisterForm({ onBack, darkMode = false, userRole
         </div>
       )}
 
+      {userRole === "realtor" && ownerId && (
+        <AgencyQuickEditModal
+          open={showAgencyEdit}
+          ownerId={ownerId}
+          darkMode={darkMode}
+          settingsHref="/realty_admin?menu=settings&tab=agency"
+          onClose={() => setShowAgencyEdit(false)}
+          onSaved={handleAgencySaved}
+        />
+      )}
     </div>
   );
 }
