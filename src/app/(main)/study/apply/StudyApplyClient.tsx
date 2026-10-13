@@ -199,7 +199,6 @@ export default function StudyApplyClient() {
   ];
 
   const paidFeatures = [
-    <><strong>부동산 마케팅 특강 <span style={{ color: POINT }}>365일 무료</span></strong></>,
     <><strong>공실뉴스 편집장 마케팅 강의</strong> (매월 업데이트)</>,
     <><strong>공실등록 20건 무료</strong> (AI매매보고서 포함)</>,
     <><strong>기사작성 4건 매월</strong></>,
