@@ -43,11 +43,14 @@ const TARGET_AUDIENCE = [
 ];
 
 const RIVAL_FEATURES = [
-  { on: true, text: "현실에 맞지 않는 이론 강의" },
-  { on: true, text: "종이 교재 수십 권" },
-  { on: false, text: '결국 "유튜브·블로그 꾸준히 하세요"로 끝' },
-  { on: false, text: "콘텐츠 제작은 오롯이 내 몫" },
-  { on: false, text: "내 매물에 바로 적용 불가" },
+  { on: true, text: "주말·하루 몰아 듣고 끝나는 오프라인 강의" },
+  { on: true, text: "현장과 동떨어진 이론 위주 강의" },
+  { on: true, text: "종이 교재·자료집 수십 권" },
+  { on: true, text: '"유튜브·블로그 꾸준히 하세요" 원론적인 조언' },
+  { on: false, text: "강의 끝난 뒤 다시보기" },
+  { on: false, text: "내 매물에 바로 쓰는 실무 도구 (블로그 자동화·매매보고서)" },
+  { on: false, text: "내 매물 기사·홍보 지원" },
+  { on: false, text: "매월 새로 나오는 최신 강의" },
 ];
 
 const PAID_FEATURES = [
