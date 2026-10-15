@@ -14,6 +14,7 @@ if (allowed) {
       list: () => ipcRenderer.invoke("studio:ai-list"),
       connect: (id) => ipcRenderer.invoke("studio:ai-connect", id),
       check: (id) => ipcRenderer.invoke("studio:ai-check", id),
+      finishLogin: () => ipcRenderer.invoke("studio:ai-finish-login"),
       onProgress: (fn) => ipcRenderer.on("studio:ai-progress", (_e, text) => fn(text)),
     },
   });

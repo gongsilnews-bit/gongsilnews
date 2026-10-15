@@ -80,10 +80,10 @@ async function connect(id, onProgress = () => {}) {
   if (!p) throw new Error("알 수 없는 AI입니다.");
   if (!p.ready) throw new Error(`${p.name} 연결은 준비 중입니다.`);
 
-  onProgress(`스튜디오 전용 크롬에서 ${p.name}를 열었습니다. 로그인을 마친 뒤 그 크롬 창을 닫아 주세요.`);
+  onProgress(`새로 뜬 "공실뉴스 스튜디오" 크롬 창에서 ${p.name}에 로그인한 뒤 [로그인 다 했어요]를 눌러 주세요. (평소 쓰시는 크롬 창이 아닙니다)`);
   await chrome.openPlain(p.url);
   onProgress(`${p.name} 로그인을 확인하는 중…`);
   return check(id);
 }
 
-module.exports = { PROVIDERS, list, check, connect };
+module.exports = { PROVIDERS, list, check, connect, finishLogin: () => chrome.closePlain() };

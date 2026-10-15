@@ -9,7 +9,7 @@
 const { app } = require("electron");
 const path = require("path");
 const fs = require("fs");
-const { spawn } = require("child_process");
+const { spawn, execFile } = require("child_process");
 const { chromium } = require("playwright-core");
 const log = require("electron-log/main");
 
@@ -18,6 +18,7 @@ const portFile = () => path.join(profileDir(), "DevToolsActivePort");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let browser = null;
+let plainProc = null; // 로그인용으로 띄운 평범한 전용 크롬
 
 function findBrowser() {
   const env = process.env;
@@ -111,6 +112,7 @@ async function closeControlled() {
 async function openPlain(url, timeoutMs = 15 * 60 * 1000) {
   await closeControlled();
   const proc = spawnChrome([url]);
+  plainProc = proc;
   await new Promise((resolve) => {
     const timer = setTimeout(resolve, timeoutMs);
     proc.on("exit", () => {
@@ -122,6 +124,16 @@ async function openPlain(url, timeoutMs = 15 * 60 * 1000) {
       resolve();
     });
   });
+}
+
+/**
+ * 로그인용 전용 크롬을 닫는다 ([로그인 다 했어요]).
+ * 강제 종료하면 방금 생긴 로그인 쿠키가 저장되지 않을 수 있어, 창 닫기(/F 없이)로 정상 종료시킨다.
+ */
+function closePlain() {
+  const proc = plainProc;
+  if (!proc || proc.exitCode !== null) return;
+  execFile("taskkill", ["/PID", String(proc.pid), "/T"], () => {});
 }
 
 /** 전용 크롬을 켜거나, 이미 켜져 있으면 붙는다. hidden 이면 화면 밖에 띄운다 (확인용) */
@@ -191,4 +203,4 @@ async function withHiddenPage(url, fn) {
   }
 }
 
-module.exports = { findBrowser, ensureBrowser, isRunning, openPage, findPage, openPlain, withHiddenPage, closeControlled, hostOf, sleep };
+module.exports = { findBrowser, ensureBrowser, isRunning, openPage, findPage, openPlain, closePlain, withHiddenPage, closeControlled, hostOf, sleep };

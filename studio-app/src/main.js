@@ -280,6 +280,7 @@ ipcMain.on("studio:base-origin", (e) => {
 ipcMain.handle("studio:open-ai-window", () => openAiWindow());
 ipcMain.handle("studio:ai-list", () => aiConnect.list());
 ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
+ipcMain.handle("studio:ai-finish-login", () => aiConnect.finishLogin());
 ipcMain.handle("studio:ai-connect", (e, id) => aiConnect.connect(id, (text) => e.sender.send("studio:ai-progress", text)));
 ipcMain.handle("studio:info", () => ({ version: app.getVersion(), baseUrl: BASE_URL, ffmpeg: Boolean(ffmpegPath()) }));
 
