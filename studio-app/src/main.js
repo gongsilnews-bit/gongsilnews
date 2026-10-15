@@ -10,6 +10,7 @@ const aiConnect = require("./ai-connect");
 const { ffmpegPath } = require("./paths");
 const { analyzeVacancy } = require("./vacancy-capture");
 const blogWriter = require("./blog-writer");
+const naverWrite = require("./naver-write");
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE_URL).origin;
@@ -200,7 +201,7 @@ function openAiWindow() {
   }
   aiWindow = new BrowserWindow({
     width: 520,
-    height: 600,
+    height: 700,
     parent: mainWindow || undefined,
     title: "내 AI 연결",
     autoHideMenuBar: true,
@@ -233,7 +234,7 @@ function buildMenu() {
     },
     {
       label: "AI",
-      submenu: [{ label: "내 AI 연결 (ChatGPT·Claude·Gemini)", click: () => openAiWindow() }],
+      submenu: [{ label: "내 AI·계정 연결 (ChatGPT·네이버 블로그 등)", click: () => openAiWindow() }],
     },
     {
       label: "계정",
@@ -312,6 +313,10 @@ ipcMain.handle("studio:ai-list", () => aiConnect.list());
 ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
 ipcMain.handle("studio:ai-finish-login", () => aiConnect.finishLogin());
 ipcMain.handle("studio:blog-styles", () => blogWriter.styles());
+ipcMain.handle("studio:naver-designs", () => naverWrite.designs());
+ipcMain.handle("studio:naver-fill", (e, opts) =>
+  naverWrite.fillNaver({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:naver-progress", text))
+);
 ipcMain.handle("studio:blog-write", (e, opts) => blogWriter.write(opts, (text) => e.sender.send("studio:blog-progress", text)));
 ipcMain.handle("studio:vacancy-analyze", async (e, vacancyId) => {
   const r = await analyzeVacancy(BASE_URL, vacancyId, (text) => e.sender.send("studio:vacancy-progress", text));

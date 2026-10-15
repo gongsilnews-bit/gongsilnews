@@ -18,6 +18,15 @@ if (allowed) {
         return () => ipcRenderer.removeListener("studio:vacancy-progress", h);
       },
     },
+    naver: {
+      designs: () => ipcRenderer.invoke("studio:naver-designs"),
+      fill: (opts) => ipcRenderer.invoke("studio:naver-fill", opts),
+      onProgress: (fn) => {
+        const h = (_e, text) => fn(text);
+        ipcRenderer.on("studio:naver-progress", h);
+        return () => ipcRenderer.removeListener("studio:naver-progress", h);
+      },
+    },
     blog: {
       styles: () => ipcRenderer.invoke("studio:blog-styles"),
       write: (opts) => ipcRenderer.invoke("studio:blog-write", opts),

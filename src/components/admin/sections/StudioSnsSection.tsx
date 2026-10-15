@@ -10,7 +10,8 @@ import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/stud
  * 매물 정보를 읽고, 등록 사진 전부 + 화면 3장(공실열람 검증·지도·로드뷰)을 모은다.
  * 결과는 앱(PC)에 저장되고 기사·블로그·SNS·영상이 함께 쓴다.
  * 3단계 블로그 쓰기: 크롬 확장과 같은 블로그 프롬프트(6문체·글자 수)로 소장님 AI(ChatGPT)가 쓴다.
- * 네이버 붙여넣기는 이어서 붙인다.
+ * 4단계 네이버 블로그 채우기: 확장과 같은 디자인 4종·사진 배치·출처 블록으로 네이버 글쓰기에 채운다.
+ *   발행은 회원이 누른다. 태그는 발행 창이 열릴 때 채워진다.
  */
 
 type MediaThumb = { kind: string; caption: string; thumb: string | null };
@@ -27,6 +28,11 @@ type StudioBridge = {
   openAiConnect: () => Promise<void>;
   ai: { list: () => Promise<AiItem[]> };
   vacancy: { analyze: (id: string) => Promise<Analysis>; onProgress: (fn: (t: string) => void) => () => void };
+  naver: {
+    designs: () => Promise<{ id: string; label: string; hint: string }[]>;
+    fill: (opts: { vacancyId: string; design: string }) => Promise<{ ok: boolean; imagesInserted: number; imagesTotal: number; design: string; tags: string[] }>;
+    onProgress: (fn: (t: string) => void) => () => void;
+  };
   blog: {
     styles: () => Promise<BlogStyles>;
     write: (opts: { vacancyId: string; style: string; length: string }) => Promise<Blog>;
@@ -75,10 +81,20 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [blogProgress, setBlogProgress] = useState("");
   const [blogError, setBlogError] = useState("");
   const [blog, setBlog] = useState<Blog | null>(null);
+  const [designs, setDesigns] = useState<{ id: string; label: string; hint: string }[]>([]);
+  const [design, setDesign] = useState("");
+  const [filling, setFilling] = useState(false);
+  const [naverProgress, setNaverProgress] = useState("");
+  const [naverError, setNaverError] = useState("");
+  const [naverDone, setNaverDone] = useState<{ imagesInserted: number; imagesTotal: number; tags: string[] } | null>(null);
 
   useEffect(() => {
     bridge()?.blog.styles().then(setBlogOpts);
+    bridge()?.naver.designs().then(setDesigns);
   }, []);
+
+  // 문체마다 어울리는 디자인 (확장과 같은 짝)
+  const STYLE_DESIGN: Record<string, string> = { listing: "basic", visit: "magazine", story: "magazine", report: "news", consult: "qna", shortform: "basic" };
 
   const loadAi = useCallback(async () => {
     const b = bridge();
@@ -139,14 +155,35 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     setBlogError("");
     setBlog(null);
     const off = b.blog.onProgress(setBlogProgress);
+    setNaverDone(null);
     try {
       setBlog(await b.blog.write({ vacancyId: result.vacancyId, style, length }));
+      setDesign(STYLE_DESIGN[style] || "basic");
     } catch (e) {
       setBlogError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
     } finally {
       off();
       setBlogProgress("");
       setWriting(false);
+    }
+  };
+
+  const fillNaver = async () => {
+    const b = bridge();
+    if (!b || !result || !blog) return;
+    setFilling(true);
+    setNaverError("");
+    setNaverDone(null);
+    const off = b.naver.onProgress(setNaverProgress);
+    try {
+      const r = await b.naver.fill({ vacancyId: result.vacancyId, design: design || "basic" });
+      setNaverDone(r);
+    } catch (e) {
+      setNaverError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
+    } finally {
+      off();
+      setNaverProgress("");
+      setFilling(false);
     }
   };
 
@@ -325,6 +362,46 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                   <span key={k} style={{ fontSize: 12, fontWeight: 700, padding: "4px 9px", borderRadius: 999, background: "#e0e7ff", color: "#3730a3" }}>#{k}</span>
                 ))}
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* 4. 네이버 블로그 채우기 */}
+        <div style={{ ...card, opacity: blog ? 1 : 0.6 }}>
+          {stepTitle(4, "네이버 블로그 채우기")}
+          {!blog ? (
+            <div style={{ fontSize: 14, color: theme.textSecondary }}>먼저 블로그 글을 써 주세요.</div>
+          ) : (
+            <>
+              <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>블로그 디자인</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8, marginBottom: 14 }}>
+                {designs.map((d) => (
+                  <button key={d.id} onClick={() => setDesign(d.id)}
+                    style={{ textAlign: "left", padding: "10px 12px", borderRadius: 8, cursor: "pointer", background: design === d.id ? "rgba(26,58,107,0.08)" : "transparent",
+                      border: `1px solid ${design === d.id ? "#1a3a6b" : theme.border}`, color: theme.textPrimary }}>
+                    <div style={{ fontSize: 14, fontWeight: 800 }}>{d.label}</div>
+                    <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2, lineHeight: 1.5 }}>{d.hint}</div>
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 13, color: theme.textSecondary, flex: 1, minWidth: 260, lineHeight: 1.6 }}>
+                  스튜디오 전용 크롬에 네이버 글쓰기가 열리고 제목·본문·사진 {result?.media.length || 0}장·매물 정보 출처가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
+                </div>
+                <button onClick={fillNaver} disabled={filling}
+                  style={{ padding: "11px 20px", background: filling ? "#94a3b8" : "#03c75a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: filling ? "default" : "pointer" }}>
+                  {filling ? "네이버에 채우는 중…" : "네이버 블로그에 채우기"}
+                </button>
+              </div>
+            </>
+          )}
+          {naverProgress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{naverProgress}</div>}
+          {naverError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{naverError}</div>}
+          {naverDone && (
+            <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 10, background: "#ecfdf5", border: "1px solid #a7f3d0", fontSize: 14, color: "#065f46", lineHeight: 1.7 }}>
+              네이버 글쓰기에 채웠습니다. 사진 {naverDone.imagesInserted}/{naverDone.imagesTotal}장.
+              {naverDone.imagesInserted < naverDone.imagesTotal ? " 빠진 사진은 네이버 화면에서 직접 올려 주세요." : ""}
+              <br />오른쪽 크롬 창에서 내용을 확인하고 <b>[발행]</b>을 눌러 주세요. 태그 {naverDone.tags.length}개는 발행 창에 자동으로 들어갑니다.
             </div>
           )}
         </div>

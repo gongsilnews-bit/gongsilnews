@@ -9,7 +9,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const from = join(root, "..", "chrome-extension", "gongsilwriter30", "shared");
 const to = join(root, "src", "ext");
 mkdirSync(to, { recursive: true });
-for (const f of ["blog-prompt.js", "article-json.js"]) {
+for (const f of ["blog-prompt.js", "article-json.js", "naver-blog.js"]) {
   copyFileSync(join(from, f), join(to, f));
   console.log("복사:", f);
 }
+// 네이버 글쓰기 화면에 넣어 실행하는 코드 (확장의 content script 그대로)
+copyFileSync(join(from, "..", "content-naver.js"), join(to, "content-naver.js"));
+console.log("복사: content-naver.js");

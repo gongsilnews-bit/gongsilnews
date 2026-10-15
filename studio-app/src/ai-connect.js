@@ -26,6 +26,19 @@ const PROVIDERS = {
       }),
   },
   claude: { name: "Claude", host: "claude.ai", url: "https://claude.ai/", ready: false },
+  // 네이버 블로그 (글 채우기용). 로그인 쿠키(NID_AUT)가 있으면 연결된 것으로 본다
+  naver: {
+    name: "네이버 블로그",
+    host: "blog.naver.com",
+    url: "https://nid.naver.com/nidlogin.login?mode=form&url=https%3A%2F%2Fblog.naver.com%2F",
+    checkUrl: "https://blog.naver.com/",
+    anyHost: true,
+    ready: true,
+    check: async (page) => {
+      const cookies = await page.context().cookies("https://www.naver.com");
+      return { ok: cookies.some((c) => c.name === "NID_AUT" && c.value) };
+    },
+  },
   gemini: { name: "Gemini", host: "gemini.google.com", url: "https://gemini.google.com/", ready: false },
 };
 
@@ -55,10 +68,10 @@ function list() {
 async function check(id) {
   const p = PROVIDERS[id];
   if (!p || !p.ready) throw new Error("준비 중인 AI입니다.");
-  const r = await chrome.withHiddenPage(p.url, async (page) => {
+  const r = await chrome.withHiddenPage(p.checkUrl || p.url, async (page) => {
     // 첫 화면이 뜨고 세션 정보를 읽을 수 있을 때까지 잠깐 기다린다
     for (let i = 0; i < 10; i++) {
-      if (chrome.hostOf(page) === p.host) {
+      if (p.anyHost || chrome.hostOf(page) === p.host) {
         const res = await p.check(page).catch(() => null);
         if (res && res.ok) return res;
       }
