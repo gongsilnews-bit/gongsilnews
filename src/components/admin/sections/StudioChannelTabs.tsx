@@ -6,9 +6,10 @@ import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
 import StudioSnsPanel, { type SnsData, type ChannelInfo } from "./StudioSnsPanel";
 import ChannelButton from "./ChannelButton";
 import StudioArticlePanel from "./StudioArticlePanel";
+import StudioYoutubePanel from "./StudioYoutubePanel";
 
 /**
- * 뉴스·SNS발행의 채널 탭 — 공실뉴스 기사 · 네이버 블로그 · 인스타그램 · 스레드 · 페이스북
+ * 뉴스·SNS발행의 채널 탭 — 공실뉴스 기사 · 네이버 블로그 · 인스타그램 · 스레드 · 페이스북 · 유튜브 대본
  *
  * 공실뉴스(공실 하나)와 뉴스칼럼(소재 하나)이 함께 쓴다. workId 는 공실 ID 또는 칼럼 번호("col-…")이고,
  * 앱이 번호를 보고 알맞은 프롬프트(매물용·뉴스메이커)로 쓴다. 화면은 같다.
@@ -26,6 +27,7 @@ type Bridge = {
     onProgress: (fn: (t: string) => void) => () => void;
   };
   sns: { channels: () => Promise<ChannelInfo[]>; get: (vacancyId: string) => Promise<SnsData | null> };
+  youtube: { get: (vacancyId: string) => Promise<unknown> };
   blog: {
     styles: (vacancyId?: string) => Promise<BlogStyles>;
     write: (opts: { vacancyId: string; style: string; length: string }) => Promise<BlogDraft>;
@@ -51,6 +53,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   const [article, setArticle] = useState<BlogDraft | null>(null);
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
   const [snsData, setSnsData] = useState<SnsData | null>(null);
+  const [hasYoutube, setHasYoutube] = useState(false);
   const [blogOpts, setBlogOpts] = useState<BlogStyles | null>(null);
   const [style, setStyle] = useState("");
   const [length, setLength] = useState("normal");
@@ -82,6 +85,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
       setBlogOpts(opts);
       setStyle(opts.styles[0]?.id || "");
       setSnsData(await b.sns.get(workId).catch(() => null));
+      setHasYoutube(Boolean(await b.youtube.get(workId).catch(() => null)));
       const prevArticle = await b.blog.get(workId, "article").catch(() => null);
       setArticle(prevArticle ? { ...prevArticle, doc: "article" } : null);
       const prev = await b.blog.get(workId).catch(() => null);
@@ -190,7 +194,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   return (
     <>
       <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${theme.border}`, marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
-        {[{ id: "article", label: "공실뉴스 기사", done: Boolean(article) }, { id: "blog", label: "네이버 블로그", done: Boolean(blog) }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post) }))].map((t) => (
+        {[{ id: "article", label: "공실뉴스 기사", done: Boolean(article) }, { id: "blog", label: "네이버 블로그", done: Boolean(blog) }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post) })), { id: "youtube", label: "유튜브 대본", done: hasYoutube }].map((t) => (
           <button key={t.id} onClick={() => onTab(t.id)}
             style={{ padding: "11px 18px", border: 0, background: "transparent", cursor: "pointer", fontSize: 14.5, whiteSpace: "nowrap",
               fontWeight: tab === t.id ? 800 : 600, color: tab === t.id ? "#1a3a6b" : theme.textSecondary,
@@ -206,7 +210,11 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
           onSend={() => router.push(`/realty_admin?menu=article&action=write&studioDraft=${encodeURIComponent(workId)}`)} />
       )}
 
-      {tab !== "article" && tab !== "blog" && needArticle && (
+      {tab === "youtube" && (needArticle
+        ? <div style={{ ...card, fontSize: 14, color: theme.textSecondary }}>먼저 <b>[공실뉴스 기사]</b> 탭에서 기사를 써 주세요. 대본은 그 기사를 바탕으로 씁니다.</div>
+        : <StudioYoutubePanel theme={theme} vacancyId={workId} onUsed={onUsed} onScript={setHasYoutube} />)}
+
+      {channels.some((c) => c.id === tab) && needArticle && (
         <div style={{ ...card, fontSize: 14, color: theme.textSecondary }}>먼저 <b>[공실뉴스 기사]</b> 탭에서 기사를 써 주세요. SNS 글은 그 기사를 바탕으로 씁니다.</div>
       )}
       {tab !== "blog" && !needArticle && channels.find((c) => c.id === tab) && (

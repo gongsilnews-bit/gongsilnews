@@ -69,6 +69,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [ai, setAi] = useState<AiItem[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null);
   const [snsUsage, setSnsUsage] = useState<Usage | null>(null);
+  const [youtubeUsage, setYoutubeUsage] = useState<Usage | null>(null);
   // 채널 탭 (회의 결정: 공통 ①②를 한 번 하고, 채널마다 탭)
   const [tab, setTab] = useState("article"); // 공실뉴스 기사가 맨 앞
   const [category, setCategoryState] = useState("gongsil"); // 왼쪽 뉴스 카테고리
@@ -93,6 +94,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         if (!d.success) return;
         setUsage(d.usage);
         setSnsUsage(d.snsUsage || null);
+        setYoutubeUsage(d.youtubeUsage || null);
       })
       .catch(() => {});
   }, []);
@@ -248,8 +250,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           {(() => {
             const t = category === "column" ? columnTab : tab;
             if ((category !== "gongsil" && category !== "column") || t === "article") return null; // 기사 한도는 기사 등록할 때 센다
-            const u = t === "blog" ? usage : snsUsage;
-            const name = t === "blog" ? "블로그" : "SNS";
+            const u = t === "blog" ? usage : t === "youtube" ? youtubeUsage : snsUsage;
+            const name = t === "blog" ? "블로그" : t === "youtube" ? "유튜브" : "SNS";
             if (!u) return null;
             return u.monthRemaining === null ? (
               <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#ecfdf5", color: "#047857" }}>

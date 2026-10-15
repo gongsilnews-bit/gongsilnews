@@ -20,11 +20,11 @@ function copy(fromDir, toDir, files) {
 
 const from = join(extRoot, "gongsilwriter30", "shared");
 const to = join(root, "src", "ext");
-copy(from, to, ["blog-prompt.js", "article-json.js", "naver-blog.js", "prompt.js", "sns-prompt.js", "youtube-json.js"]);
+copy(from, to, ["blog-prompt.js", "article-json.js", "naver-blog.js", "prompt.js", "sns-prompt.js", "youtube-json.js", "youtube-prompt.js"]);
 // 네이버 글쓰기 화면에 넣어 실행하는 코드 (확장의 content script 그대로)
 copy(join(from, ".."), to, ["content-naver.js"]);
 
 copy(join(extRoot, "newsmaker10", "shared"), join(to, "newsmaker"), [
   "sections.js", "market-prompt.js", "prompt.js", "blog-prompt.js", "sns-prompt.js",
-  "naver-blog.js", "article-json.js", "youtube-json.js", "news-extract.js",
+  "naver-blog.js", "article-json.js", "youtube-json.js", "youtube-prompt.js", "news-extract.js",
 ]);

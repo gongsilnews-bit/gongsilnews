@@ -13,6 +13,7 @@ import { isAdminRole } from "@/utils/permissionCheck";
  * - 크롬 확장 블로그 체험과 같은 기록(extension_trial_usage, feature 'blog')을 함께 센다.
  * - SNS(인스타그램·페이스북·스레드 한 번에)는 'sns' 로 따로 세고 규칙은 블로그와 같다 (확장 SNS 체험과 함께 셈).
  *   확장 기록(vacancy_id 없음)은 한 줄 = 1회, 스튜디오 기록은 공실 하나 = 1회.
+ * - 유튜브 대본은 'youtube' 로 따로 세고 규칙은 같다 (확장 유튜브 체험과 함께 셈). 뉴스칼럼은 칼럼 하나 = 1회.
  * - 무제한이어도 하루 안전 상한이 있다 (회원 ChatGPT·네이버 계정 보호): 새 공실 20건, AI 이미지 10장. 최고관리자는 없음.
  */
 
@@ -63,7 +64,7 @@ export type StudioUsage = {
   vacancyIds: string[];
 };
 
-export type StudioFeature = "blog" | "sns";
+export type StudioFeature = "blog" | "sns" | "youtube";
 
 export async function getStudioUsage(member: ExtensionMember, feature: StudioFeature = "blog"): Promise<StudioUsage> {
   const db = admin();
@@ -106,8 +107,8 @@ export type ConsumeResult = { ok: true; charged: boolean; usage: StudioUsage } |
 
 /** 블로그를 쓰기 전(kind 'blog', 공실 하나 1회) 또는 AI 이미지를 만들기 전(kind 'ai_image')에 부른다 */
 export async function consumeStudio(member: ExtensionMember, kind: StudioFeature | "ai_image", vacancyId?: string): Promise<ConsumeResult> {
-  const feature: StudioFeature = kind === "sns" ? "sns" : "blog";
-  const name = feature === "sns" ? "SNS" : "블로그";
+  const feature: StudioFeature = kind === "sns" || kind === "youtube" ? kind : "blog";
+  const name = feature === "sns" ? "SNS" : feature === "youtube" ? "유튜브 대본" : "블로그";
   const usage = await getStudioUsage(member, feature);
   const db = admin();
   const month = trialMonth();

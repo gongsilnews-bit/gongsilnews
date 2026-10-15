@@ -63,6 +63,19 @@ if (allowed) {
         return () => ipcRenderer.removeListener("studio:blog-progress", h);
       },
     },
+    youtube: {
+      options: (vacancyId) => ipcRenderer.invoke("studio:youtube-options", vacancyId),
+      get: (vacancyId) => ipcRenderer.invoke("studio:youtube-get", vacancyId),
+      write: (opts) => ipcRenderer.invoke("studio:youtube-write", opts),
+      revise: (opts) => ipcRenderer.invoke("studio:youtube-revise", opts),
+      save: (opts) => ipcRenderer.invoke("studio:youtube-save", opts),
+      exportText: (vacancyId) => ipcRenderer.invoke("studio:youtube-export", vacancyId),
+      onProgress: (fn) => {
+        const h = (_e, text) => fn(text);
+        ipcRenderer.on("studio:youtube-progress", h);
+        return () => ipcRenderer.removeListener("studio:youtube-progress", h);
+      },
+    },
     column: {
       fetchNews: (url) => ipcRenderer.invoke("studio:column-fetch-news", url),
       openNews: () => ipcRenderer.invoke("studio:column-open-news"),

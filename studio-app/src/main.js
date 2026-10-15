@@ -14,6 +14,7 @@ const blogWriter = require("./blog-writer");
 const naverWrite = require("./naver-write");
 const snsWriter = require("./sns-writer");
 const columnWriter = require("./column-writer");
+const youtubeWriter = require("./youtube-writer");
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE_URL).origin;
@@ -350,6 +351,13 @@ ipcMain.handle("studio:column-grab-news", () => columnWriter.grabNews());
 ipcMain.handle("studio:column-create", (_e, source) => columnWriter.create(source));
 ipcMain.handle("studio:column-get", (_e, id) => columnWriter.get(id));
 ipcMain.handle("studio:column-list", () => columnWriter.list());
+// 유튜브 대본
+ipcMain.handle("studio:youtube-options", (_e, id) => youtubeWriter.options(id));
+ipcMain.handle("studio:youtube-get", (_e, id) => youtubeWriter.get(id));
+ipcMain.handle("studio:youtube-write", (e, opts) => youtubeWriter.write({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:youtube-progress", text)));
+ipcMain.handle("studio:youtube-revise", (e, opts) => youtubeWriter.revise(opts, (text) => e.sender.send("studio:youtube-progress", text)));
+ipcMain.handle("studio:youtube-save", (_e, opts) => youtubeWriter.save(opts));
+ipcMain.handle("studio:youtube-export", (_e, id) => youtubeWriter.exportText(id));
 ipcMain.handle("studio:blog-make-image", (e, opts) => blogWriter.makeImage({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:blog-progress", text)));
 ipcMain.handle("studio:naver-fill", (e, opts) =>
   naverWrite.fillNaver({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:naver-progress", text))
