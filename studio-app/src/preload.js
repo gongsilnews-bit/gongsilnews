@@ -63,6 +63,14 @@ if (allowed) {
         return () => ipcRenderer.removeListener("studio:blog-progress", h);
       },
     },
+    marketing: {
+      fill: (opts) => ipcRenderer.invoke("studio:marketing-fill", opts),
+      onProgress: (fn) => {
+        const h = (_e, text) => fn(text);
+        ipcRenderer.on("studio:marketing-progress", h);
+        return () => ipcRenderer.removeListener("studio:marketing-progress", h);
+      },
+    },
     sim: {
       options: (kind) => ipcRenderer.invoke("studio:sim-options", kind),
       estimate: (kind, costBase, design) => ipcRenderer.invoke("studio:sim-estimate", kind, costBase, design),

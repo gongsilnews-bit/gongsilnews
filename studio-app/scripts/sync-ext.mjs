@@ -28,6 +28,11 @@ const GROUPS = {
     dir: join(extRoot, "remodeling10", "shared"),
     files: ["remodel-spec.js", "remodel-cost.js", "prompt.js", "remodel-prompt.js", "article-json.js", "blog-prompt.js", "naver-blog.js", "youtube-prompt.js", "youtube-json.js", "sns-prompt.js"],
   },
+  // 공실마케팅 AI 채우기 (AI 매물보고서 · AI 유리창홍보지) — 확장이 아니라 저장소 marketing/shared
+  marketing: {
+    dir: join(root, "..", "marketing", "shared"),
+    files: ["marketing-prompt.js"],
+  },
   newsmaker: {
     dir: join(extRoot, "newsmaker10", "shared"),
     files: ["sections.js", "market-prompt.js", "prompt.js", "blog-prompt.js", "sns-prompt.js", "naver-blog.js", "article-json.js", "youtube-json.js", "youtube-prompt.js", "news-extract.js"],

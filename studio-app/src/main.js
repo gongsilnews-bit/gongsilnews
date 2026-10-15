@@ -16,6 +16,7 @@ const snsWriter = require("./sns-writer");
 const columnWriter = require("./column-writer");
 const youtubeWriter = require("./youtube-writer");
 const simWriter = require("./sim-writer");
+const marketingWriter = require("./marketing-writer");
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE_URL).origin;
@@ -380,6 +381,8 @@ ipcMain.handle("studio:sim-use-vacancy", (e, opts) => simWriter.useVacancy({ ...
 ipcMain.handle("studio:sim-add-photos", (_e, opts) => simWriter.addPhotos(opts));
 ipcMain.handle("studio:sim-update", (_e, opts) => simWriter.update(opts));
 ipcMain.handle("studio:sim-run", (e, id) => simWriter.run({ id, baseUrl: BASE_URL }, (text) => e.sender.send("studio:sim-progress", text)));
+// 공실마케팅 AI 채우기 (매물보고서·유리창홍보지 — 도구가 앱 화면 안에서 부른다)
+ipcMain.handle("studio:marketing-fill", (e, opts) => marketingWriter.fill({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:marketing-progress", text)));
 // 유튜브 대본
 ipcMain.handle("studio:youtube-options", (_e, id) => youtubeWriter.options(id));
 ipcMain.handle("studio:youtube-get", (_e, id) => youtubeWriter.get(id));

@@ -693,6 +693,57 @@ function App() {
     }
   };
 
+
+  /* ── 공실뉴스 스튜디오 앱 안(공실마케팅 메뉴)에서 열렸으면 앱이 회원 ChatGPT 로 칸을 채운다 (2026-10-15) ──
+     앱 화면 안의 틀(iframe)로 열리므로 바깥 창의 window.gongsilStudio.marketing 을 쓴다. 웹에서는 없다. */
+  type StudioMarketing = {
+    fill: (opts: { kind: string; vacancyId: string; fields: Record<string, unknown> }) => Promise<Record<string, any>>;
+    onProgress?: (fn: (t: string) => void) => () => void;
+  };
+  const studioMarketing: StudioMarketing | null = (() => {
+    try {
+      return ((window.parent as any)?.gongsilStudio?.marketing || (window as any).gongsilStudio?.marketing || null) as StudioMarketing | null;
+    } catch {
+      return null;
+    }
+  })();
+  const [aiProgress, setAiProgress] = useState("");
+  const runAiFill = async (kind: "flyer" | "report", fields: Record<string, unknown>, apply: (out: Record<string, any>) => void) => {
+    const vacancyId = new URLSearchParams(window.location.search).get("vacancy_id");
+    if (!vacancyId || !studioMarketing) return;
+    setAiProgress("ChatGPT에 요청하는 중…");
+    const off = studioMarketing.onProgress?.((t) => setAiProgress(t));
+    try {
+      const out = await studioMarketing.fill({ kind, vacancyId, fields });
+      apply(out);
+      setAiProgress("✓ AI가 채웠습니다. 확인하고 [저장하기]를 눌러 주세요.");
+      setTimeout(() => setAiProgress(""), 2500);
+    } catch (e: any) {
+      setAiProgress("");
+      alert("AI로 채우지 못했습니다: " + String(e?.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
+    } finally {
+      off?.();
+    }
+  };
+
+  /* [AI로 채우기] — 홍보 문구 · 특징 한 줄 · 코멘트 */
+  const handleAiFill = () => {
+    const info = state.info;
+    runAiFill("flyer", {
+      promotionText: info.promotionText || "",
+      subTitle: info.subTitle || "",
+      noticeTitle: info.noticeTitle || "",
+      noticeContent: info.noticeContent || "",
+    }, (out) => {
+      setState((prev) => ({
+        ...prev,
+        info: { ...prev.info, ...out },
+        generated: { ...prev.generated, promotionText: out.promotionText ?? prev.generated.promotionText, summary: out.subTitle ?? prev.generated.summary },
+      }));
+      setIsDirty(true);
+    });
+  };
+
   const handleResetAndRegenerate = async () => {
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
@@ -1270,8 +1321,21 @@ function App() {
           )}
         </button>
 
-        {/* AI Reset/Regenerate Button */}
-        {isLoadedFromStorage && (
+        {/* 스튜디오 앱: 회원 ChatGPT 로 칸 채우기 */}
+        {studioMarketing && (
+          <button
+            onClick={handleAiFill}
+            disabled={Boolean(aiProgress)}
+            className="py-3 px-5 bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm disabled:opacity-60"
+            title="이 공실 정보로 홍보 문구·특징·코멘트를 ChatGPT가 새로 씁니다."
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" /></svg>
+            <span>AI로 채우기</span>
+          </button>
+        )}
+
+        {/* AI Reset/Regenerate Button (웹: 기본 문구로 다시) */}
+        {!studioMarketing && isLoadedFromStorage && (
           <button 
             onClick={handleResetAndRegenerate} 
             className="py-3 px-5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm"
@@ -1367,6 +1431,17 @@ function App() {
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #999; }
       `}</style>
+      {/* AI 채우는 중 (스튜디오 앱) */}
+      {aiProgress && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl px-8 py-6 max-w-md text-center">
+            <div className="text-3xl mb-2">{aiProgress.startsWith("✓") ? "✅" : "🤖"}</div>
+            <div className="font-bold text-gray-900 leading-relaxed">{aiProgress}</div>
+            {!aiProgress.startsWith("✓") && <div className="mt-2 text-sm text-gray-500">스튜디오 전용 크롬에서 ChatGPT가 씁니다. 1~2분 걸립니다.</div>}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

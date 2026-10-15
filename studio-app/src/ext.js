@@ -33,6 +33,7 @@ const LOCAL = {
   newsmaker: path.join("newsmaker10", "shared"),
   interior: path.join("interior10", "shared"),
   remodel: path.join("remodeling10", "shared"),
+  marketing: path.join("..", "marketing", "shared"),
 };
 function localFile(name) {
   const [group, file] = name.split("/");
