@@ -69,6 +69,13 @@ function priceText(v: MyVacancy) {
 
 const bridge = (): StudioBridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: StudioBridge }).gongsilStudio ?? null) : null);
 
+/* 뉴스 카테고리 (2026-10-15 회의: 구성만 먼저, 공실뉴스부터) */
+const NEWS_CATEGORIES = [
+  { id: "gongsil", label: "공실뉴스", lead: "공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다." },
+  { id: "column", label: "뉴스칼럼", lead: "부동산 뉴스를 바탕으로 소장님 이름의 칼럼을 씁니다." },
+  { id: "interior", label: "인테리어뉴스", lead: "인테리어 사례·시뮬레이션으로 기사와 SNS 글을 씁니다." },
+  { id: "remodel", label: "리모델링뉴스", lead: "리모델링 전후·시뮬레이션으로 기사와 SNS 글을 씁니다." },
+];
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰" };
 
@@ -80,6 +87,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [snsUsage, setSnsUsage] = useState<Usage | null>(null);
   // 채널 탭 (회의 결정: 공통 ①②를 한 번 하고, 채널마다 탭)
   const [tab, setTab] = useState("article"); // 공실뉴스 기사가 맨 앞
+  const [category, setCategory] = useState("gongsil"); // 왼쪽 뉴스 카테고리
   const [article, setArticle] = useState<Blog | null>(null);
   const router = useRouter();
   const [pickOpen, setPickOpen] = useState(true); // ①② 펼침 — 분석이 끝나면 한 줄로 접는다
@@ -316,16 +324,43 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const connectedAi = ai.filter((a) => a.ok);
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
+    <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      {/* 왼쪽: 작업 메뉴 — 제목·내 AI 연결·카테고리 (메인 메뉴처럼 글자 위주로 얌전하게) */}
+      <aside style={{ width: 210, flexShrink: 0, background: theme.cardBg, borderRight: `1px solid ${theme.border}`, padding: "22px 14px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
+        <h2 style={{ margin: "0 4px", fontSize: 19, fontWeight: 800, color: theme.textPrimary }}>뉴스·SNS발행</h2>
+          {/* 연결되면 초록, 아니면 회색 — 누르면 [내 AI 연결] 창 */}
+          <button onClick={() => bridge()?.openAiConnect()} title="내 AI 연결"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
+              background: connectedAi.length ? "#ecfdf5" : theme.cardBg, border: `1px solid ${connectedAi.length ? "#6ee7b7" : theme.border}`, color: connectedAi.length ? "#047857" : theme.textPrimary }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: connectedAi.length ? "#22c55e" : "#cbd5e1", boxShadow: connectedAi.length ? "0 0 0 3px rgba(34,197,94,0.2)" : "none" }} />
+            {connectedAi.length ? `${connectedAi.map((a) => a.name).join(", ")} 연결됨` : "내 AI 연결하기"}
+          </button>
+        <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 6 }}>
+          {NEWS_CATEGORIES.map((c) => {
+            const on = category === c.id;
+            return (
+              <button key={c.id} onClick={() => setCategory(c.id)}
+                style={{ textAlign: "left", padding: "9px 12px", border: 0, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14,
+                  fontWeight: on ? 700 : 500, color: on ? "#1a3a6b" : theme.textSecondary, background: on ? "rgba(26,58,107,0.08)" : "transparent",
+                  boxShadow: on ? "inset 3px 0 0 #1a3a6b" : "none" }}>
+                {c.label}
+              </button>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* 오른쪽: 작업 공간 */}
+      <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
       <div style={{ maxWidth: 980, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: theme.textPrimary }}>뉴스·SNS발행</h2>
-            <p style={{ margin: "6px 0 0", fontSize: 14, color: theme.textSecondary }}>공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다.</p>
+            <h3 style={{ margin: 0, fontSize: 21, fontWeight: 800, color: theme.textPrimary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.label}</h3>
+            <p style={{ margin: "6px 0 0", fontSize: 14, color: theme.textSecondary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.lead}</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
           {(() => {
-            if (tab === "article") return null; // 기사 한도는 기사 등록할 때 센다
+            if (category !== "gongsil" || tab === "article") return null; // 기사 한도는 기사 등록할 때 센다
             const u = tab === "blog" ? usage : snsUsage;
             const name = tab === "blog" ? "블로그" : "SNS";
             if (!u) return null;
@@ -343,16 +378,17 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               </a>
             );
           })()}
-          {/* 연결되면 초록, 아니면 회색 — 누르면 [내 AI 연결] 창 */}
-          <button onClick={() => bridge()?.openAiConnect()} title="내 AI 연결"
-            style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
-              background: connectedAi.length ? "#ecfdf5" : theme.cardBg, border: `1px solid ${connectedAi.length ? "#6ee7b7" : theme.border}`, color: connectedAi.length ? "#047857" : theme.textPrimary }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: connectedAi.length ? "#22c55e" : "#cbd5e1", boxShadow: connectedAi.length ? "0 0 0 3px rgba(34,197,94,0.2)" : "none" }} />
-            {connectedAi.length ? `${connectedAi.map((a) => a.name).join(", ")} 연결됨` : "내 AI 연결하기"}
-          </button>
           </div>
         </div>
 
+        {category !== "gongsil" && (
+          <div style={{ ...card, textAlign: "center", padding: "48px 24px" }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.label} · 준비 중</div>
+            <div style={{ marginTop: 8, fontSize: 13.5, color: theme.textSecondary }}>곧 이 자리에서 쓸 수 있게 됩니다.</div>
+          </div>
+        )}
+
+        {category === "gongsil" && (<>
         {/* ①② 접힌 요약 (분석이 끝나면) */}
         {result && !pickOpen && (
           <div style={{ ...card, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
@@ -599,6 +635,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           )}
         </div>
         </>)}
+        </>)}
+      </div>
       </div>
     </div>
   );
