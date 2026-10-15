@@ -1,0 +1,201 @@
+// 영상 편집기 — 편집 화면(웹)과 PC(앱)를 잇는 통로. preload 의 gongsilStudio.video.* 가 부른다.
+const { ipcMain, dialog, shell, BrowserWindow, desktopCapturer, session } = require("electron");
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const log = require("electron-log/main");
+const library = require("./library");
+const project = require("./project");
+const render = require("./render");
+const server = require("./server");
+const media = require("./media");
+const ff = require("./ff");
+const vai = require("./ai");
+
+let baseUrl = "";
+const jobs = new Map(); // 굽기 멈추기
+const recs = new Map(); // 녹화 중 파일
+let chosenSource = null; // 화면 녹화로 고른 화면
+
+const winOf = (e) => BrowserWindow.fromWebContents(e.sender);
+const send = (e, ch, ...a) => {
+  if (!e.sender.isDestroyed()) e.sender.send(ch, ...a);
+};
+
+function register(base) {
+  baseUrl = base;
+  server.configure(base);
+
+  /* ── 라이브러리 ── */
+  ipcMain.handle("video:lib-list", (_e, opts) => library.list(opts || {}));
+  ipcMain.handle("video:lib-pick", async (e, { kinds = "media" } = {}) => {
+    const filters = kinds === "audio"
+      ? [{ name: "소리", extensions: ["mp3", "wav", "m4a", "aac", "ogg", "flac"] }]
+      : [{ name: "사진·영상", extensions: ["mp4", "mov", "m4v", "webm", "mkv", "avi", "wmv", "jpg", "jpeg", "png", "webp", "gif", "heic"] }];
+    const r = await dialog.showOpenDialog(winOf(e), { title: "PC에서 불러오기", properties: ["openFile", "multiSelections"], filters });
+    if (r.canceled || !r.filePaths.length) return [];
+    if (kinds === "audio") {
+      r.filePaths.forEach((f) => media.allow(f));
+      return Promise.all(r.filePaths.map(async (f) => ({ path: f, name: path.basename(f), url: media.urlOf(f), duration: (await ff.probe(f).catch(() => ({ duration: 0 }))).duration })));
+    }
+    return library.add(r.filePaths, { source: "local" });
+  });
+  ipcMain.handle("video:lib-fav", (_e, id, fav) => library.setFav(id, fav));
+  ipcMain.handle("video:lib-remove", (_e, id) => library.remove(id));
+  ipcMain.handle("video:lib-folders", () => library.folders());
+  ipcMain.handle("video:lib-add-folder", async (e) => {
+    const r = await dialog.showOpenDialog(winOf(e), { title: "자동으로 가져올 폴더", properties: ["openDirectory"] });
+    if (r.canceled || !r.filePaths[0]) return library.folders();
+    return library.addFolder(r.filePaths[0]);
+  });
+  ipcMain.handle("video:lib-remove-folder", (_e, dir) => library.removeFolder(dir));
+
+  /* ── 프로젝트 ── */
+  ipcMain.handle("video:project-create", (_e, opts) => project.withUrls(project.create(opts || {})));
+  ipcMain.handle("video:project-open", (_e, dir) => project.open(dir));
+  ipcMain.handle("video:project-open-pick", async (e) => {
+    const r = await dialog.showOpenDialog(winOf(e), { title: "프로젝트 열기", defaultPath: path.join(library.studioRoot(), "영상"), properties: ["openFile"], filters: [{ name: "공실뉴스 영상 프로젝트", extensions: ["json"] }] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    return project.open(path.dirname(r.filePaths[0]));
+  });
+  ipcMain.handle("video:project-save", (_e, p) => project.save(p));
+  ipcMain.handle("video:project-recent", () => project.recent());
+  ipcMain.handle("video:project-add-asset", (e, libId) => project.addAsset({}, libId, (f) => send(e, "video:progress", "편집용 사본 만드는 중…", f)));
+  ipcMain.handle("video:project-export-text", (_e, p, kind) => {
+    const f = project.exportText(p, kind);
+    shell.showItemInFolder(f);
+    return f;
+  });
+
+  /* ── AI 목소리 ── */
+  ipcMain.handle("video:voice", (_e, dir, text, voiceId) => project.voiceFor({ dir }, text, voiceId));
+
+  /* ── 받아쓰기 ── */
+  ipcMain.handle("video:transcribe", (e, p, assetId) => project.transcribe(p, assetId, (t, f) => send(e, "video:progress", t, f)));
+
+  /* ── 회원 AI ── */
+  ipcMain.handle("video:ai-script", (e, opts) => vai.script(opts || {}, (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:ai-scenes", (e, lines) => vai.scenesFor(lines || [], (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:ai-shorts", (e, clips, opts) => vai.shorts(clips || [], opts || {}, (t) => send(e, "video:progress", t)));
+  ipcMain.handle("video:ai-image", async (e, dir, prompt) => {
+    const dataUrl = await vai.image(prompt, (t) => send(e, "video:progress", t));
+    const m = /^data:image\/(\w+);base64,(.+)$/s.exec(dataUrl || "");
+    if (!m) throw new Error("그림을 받지 못했습니다.");
+    const file = path.join(dir || path.join(library.studioRoot(), "영상", "AI 그림"), "assets", `AI그림_${Date.now()}.${m[1] === "jpeg" ? "jpg" : m[1]}`);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, Buffer.from(m[2], "base64"));
+    return (await library.add([file], { source: "ai" }))[0];
+  });
+
+  /* ── 공실 (사진·정보) ── 이미 분석해 둔 것이 있으면 그대로, 없으면 공실 분석(사진 내려받기) */
+  ipcMain.handle("video:vacancy", async (e, vacancyId) => {
+    const blogWriter = require("../blog-writer");
+    let a = blogWriter.readJson(path.join(blogWriter.mediaDir(vacancyId), "analysis.json"));
+    if (!a) {
+      const { analyzeVacancy } = require("../vacancy-capture");
+      a = await analyzeVacancy(baseUrl, vacancyId, (t) => send(e, "video:progress", t));
+    }
+    const photos = (a.media || []).filter((m) => m.kind === "photo" && m.file && fs.existsSync(m.file)).map((m) => m.file);
+    const items = await library.add(photos, { source: "vacancy" });
+    return { vacancy: a.vacancy, photos: items };
+  });
+
+  /* ── 무료 이미지·비디오 ── 서버 검색 → 고르면 PC 프로젝트로 내려받기 (사장님: 로컬에 복사) */
+  ipcMain.handle("video:stock-search", (_e, q, type, orientation, page) =>
+    server.call(`/api/studio/video/stock?q=${encodeURIComponent(q || "")}&type=${type || "photo"}&orientation=${orientation || ""}&page=${page || 1}`)
+  );
+  ipcMain.handle("video:stock-get", async (e, dir, item) => {
+    const ext = item.kind === "video" ? "mp4" : (/\.(png|webp)(\?|$)/i.exec(item.url) || [0, "jpg"])[1];
+    const file = path.join(dir || path.join(library.studioRoot(), "영상", "받은 자료"), "assets", `${String(item.id).replace(/[^\w-]/g, "")}.${ext}`);
+    if (!fs.existsSync(file)) {
+      send(e, "video:progress", "무료 자료를 PC로 받는 중…");
+      await server.download(item.url, file);
+    }
+    return (await library.add([file], { source: "free", credit: `${item.source} · ${item.credit}` }))[0];
+  });
+
+  /* ── 굽기 ── */
+  ipcMain.handle("video:render", async (e, p, opts) => {
+    const id = crypto.randomBytes(4).toString("hex");
+    jobs.set(id, false);
+    send(e, "video:render-job", id);
+    try {
+      const r = await render.render(p, opts || {}, (t, f) => send(e, "video:render-progress", t, f), () => jobs.get(id));
+      return r;
+    } finally {
+      jobs.delete(id);
+    }
+  });
+  ipcMain.handle("video:render-cancel", (_e, id) => jobs.set(id, true));
+  ipcMain.handle("video:export-audio", (e, p, kind) => render.exportAudio(p, kind, (t, f) => send(e, "video:render-progress", t, f)));
+  ipcMain.handle("video:snapshot", async (_e, p, file, at) => {
+    const out = path.join(p.dir, "output", `${p.name}_화면_${Date.now()}.png`);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    await render.snapshot(p, media.fileOf(file) || file, at, out);
+    shell.showItemInFolder(out);
+    return out;
+  });
+
+  /* ── 녹화 ── 화면/카메라는 편집 화면이 녹화하고, 조각을 앱이 PC 파일로 쓴다 */
+  ipcMain.handle("video:record-sources", async () => {
+    const list = await desktopCapturer.getSources({ types: ["screen", "window"], thumbnailSize: { width: 320, height: 180 } });
+    return list.map((s) => ({ id: s.id, name: s.name, thumb: s.thumbnail.toDataURL() }));
+  });
+  ipcMain.handle("video:record-choose", (_e, id) => {
+    chosenSource = id;
+    return true;
+  });
+  ipcMain.handle("video:record-start", (_e, name) => {
+    const dir = path.join(library.studioRoot(), "영상", "녹화");
+    fs.mkdirSync(dir, { recursive: true });
+    const d = new Date();
+    const file = path.join(dir, `${String(name || "녹화").replace(/[\\/:*?"<>|]/g, " ")}_${d.getMonth() + 1}월${d.getDate()}일 ${d.getHours()}시${String(d.getMinutes()).padStart(2, "0")}분${String(d.getSeconds()).padStart(2, "0")}초.webm`);
+    const token = crypto.randomBytes(4).toString("hex");
+    recs.set(token, { file, fd: fs.openSync(file, "w") });
+    return token;
+  });
+  ipcMain.handle("video:record-chunk", (_e, token, buf) => {
+    const r = recs.get(token);
+    if (r) fs.writeSync(r.fd, Buffer.from(buf));
+    return true;
+  });
+  ipcMain.handle("video:record-stop", async (e, token) => {
+    const r = recs.get(token);
+    if (!r) throw new Error("녹화 파일을 찾지 못했습니다.");
+    fs.closeSync(r.fd);
+    recs.delete(token);
+    // webm → mp4 (어디서나 열리게). 길이 정보가 없는 webm 도 고쳐진다
+    send(e, "video:progress", "녹화 파일을 정리하는 중…");
+    const mp4 = r.file.replace(/\.webm$/, ".mp4");
+    const enc = await ff.encoder();
+    try {
+      await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-i", r.file, "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p", "-r", "30", ...enc.args("fast"), "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", mp4]);
+      fs.rmSync(r.file, { force: true });
+    } catch (err) {
+      log.warn(`[녹화] mp4 변환 실패, webm 그대로: ${err.message}`);
+      return (await library.add([r.file], { source: "record" }))[0];
+    }
+    return (await library.add([mp4], { source: "record" }))[0];
+  });
+
+  /* ── 폴더·파일 열기 ── */
+  ipcMain.handle("video:show-file", (_e, file) => shell.showItemInFolder(media.fileOf(file) || file));
+  ipcMain.handle("video:open-path", (_e, p) => shell.openPath(p));
+}
+
+/** 화면 녹화 허용 — 편집 화면이 고른 화면(없으면 첫 화면)을 준다. 카메라·마이크 권한도 허용 */
+function setupCapture() {
+  session.defaultSession.setDisplayMediaRequestHandler(async (_req, callback) => {
+    const list = await desktopCapturer.getSources({ types: ["screen", "window"] });
+    const src = list.find((s) => s.id === chosenSource) || list[0];
+    callback({ video: src, audio: "loopback" });
+  });
+  const prev = session.defaultSession.permissionRequestHandler;
+  session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) => {
+    if (permission === "media" || permission === "display-capture") return cb(true);
+    if (typeof prev === "function") return prev(wc, permission, cb, details);
+    cb(true);
+  });
+}
+
+module.exports = { register, setupCapture };

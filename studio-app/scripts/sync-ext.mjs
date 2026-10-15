@@ -33,6 +33,11 @@ const GROUPS = {
     dir: join(root, "..", "marketing", "shared"),
     files: ["marketing-prompt.js"],
   },
+  // 영상 편집기 — 대본·숏폼 구간 지시문 (studio-app/prompts, 설치 파일에는 넣지 않음)
+  video: {
+    dir: join(root, "prompts"),
+    files: ["video-script.js"],
+  },
   newsmaker: {
     dir: join(extRoot, "newsmaker10", "shared"),
     files: ["sections.js", "market-prompt.js", "prompt.js", "blog-prompt.js", "sns-prompt.js", "naver-blog.js", "article-json.js", "youtube-json.js", "youtube-prompt.js", "news-extract.js"],

@@ -17,6 +17,10 @@ const columnWriter = require("./column-writer");
 const youtubeWriter = require("./youtube-writer");
 const simWriter = require("./sim-writer");
 const marketingWriter = require("./marketing-writer");
+// 영상 편집기 (동영상제작) — PC 파일 재생 주소는 앱 준비 전에 등록해야 한다
+const videoMedia = require("./video/media");
+const videoIpc = require("./video/ipc");
+videoMedia.registerScheme();
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE_URL).origin;
@@ -33,7 +37,8 @@ const NO_EXT = new Set([
 ]);
 const ipcHandle = ipcMain.handle.bind(ipcMain);
 ipcMain.handle = (channel, fn) =>
-  ipcHandle(channel, NO_EXT.has(channel) ? fn : async (...args) => {
+  // 영상 편집기는 PC에서만 일하므로(인터넷 없어도) 회원 AI 쓰는 것만 글쓰기 설정을 기다린다
+  ipcHandle(channel, NO_EXT.has(channel) || (channel.startsWith("video:") && !channel.startsWith("video:ai-")) ? fn : async (...args) => {
     await ext.ensure();
     return fn(...args);
   });
@@ -448,6 +453,9 @@ ipcMain.handle("studio:info", () => ({ version: app.getVersion(), baseUrl: BASE_
 app.userAgentFallback = `${app.userAgentFallback} GongsilStudio/${app.getVersion()}`;
 
 app.whenReady().then(async () => {
+  videoMedia.handle();
+  videoIpc.register(BASE_URL);
+  videoIpc.setupCapture();
   const url = findDeepLink(process.argv);
   if (url) pendingDeepLink = url;
   buildMenu();

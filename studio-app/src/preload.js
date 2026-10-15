@@ -112,6 +112,68 @@ if (allowed) {
       get: (id) => ipcRenderer.invoke("studio:column-get", id),
       list: () => ipcRenderer.invoke("studio:column-list"),
     },
+    /* 영상 편집기 (동영상제작) — PC 파일은 studio-media:// 주소로 바로 재생 */
+    video: {
+      lib: {
+        list: (opts) => ipcRenderer.invoke("video:lib-list", opts),
+        pick: (opts) => ipcRenderer.invoke("video:lib-pick", opts),
+        fav: (id, fav) => ipcRenderer.invoke("video:lib-fav", id, fav),
+        remove: (id) => ipcRenderer.invoke("video:lib-remove", id),
+        folders: () => ipcRenderer.invoke("video:lib-folders"),
+        addFolder: () => ipcRenderer.invoke("video:lib-add-folder"),
+        removeFolder: (dir) => ipcRenderer.invoke("video:lib-remove-folder", dir),
+      },
+      project: {
+        create: (opts) => ipcRenderer.invoke("video:project-create", opts),
+        open: (dir) => ipcRenderer.invoke("video:project-open", dir),
+        openPick: () => ipcRenderer.invoke("video:project-open-pick"),
+        save: (p) => ipcRenderer.invoke("video:project-save", p),
+        recent: () => ipcRenderer.invoke("video:project-recent"),
+        addAsset: (libId) => ipcRenderer.invoke("video:project-add-asset", libId),
+        exportText: (p, kind) => ipcRenderer.invoke("video:project-export-text", p, kind),
+      },
+      voice: (dir, text, voiceId) => ipcRenderer.invoke("video:voice", dir, text, voiceId),
+      transcribe: (p, assetId) => ipcRenderer.invoke("video:transcribe", p, assetId),
+      ai: {
+        script: (opts) => ipcRenderer.invoke("video:ai-script", opts),
+        scenes: (lines) => ipcRenderer.invoke("video:ai-scenes", lines),
+        shorts: (clips, opts) => ipcRenderer.invoke("video:ai-shorts", clips, opts),
+        image: (dir, prompt) => ipcRenderer.invoke("video:ai-image", dir, prompt),
+      },
+      vacancy: (vacancyId) => ipcRenderer.invoke("video:vacancy", vacancyId),
+      stock: {
+        search: (q, type, orientation, page) => ipcRenderer.invoke("video:stock-search", q, type, orientation, page),
+        get: (dir, item) => ipcRenderer.invoke("video:stock-get", dir, item),
+      },
+      render: (p, opts) => ipcRenderer.invoke("video:render", p, opts),
+      renderCancel: (id) => ipcRenderer.invoke("video:render-cancel", id),
+      exportAudio: (p, kind) => ipcRenderer.invoke("video:export-audio", p, kind),
+      snapshot: (p, file, at) => ipcRenderer.invoke("video:snapshot", p, file, at),
+      record: {
+        sources: () => ipcRenderer.invoke("video:record-sources"),
+        choose: (id) => ipcRenderer.invoke("video:record-choose", id),
+        start: (name) => ipcRenderer.invoke("video:record-start", name),
+        chunk: (token, buf) => ipcRenderer.invoke("video:record-chunk", token, buf),
+        stop: (token) => ipcRenderer.invoke("video:record-stop", token),
+      },
+      showFile: (file) => ipcRenderer.invoke("video:show-file", file),
+      openPath: (p) => ipcRenderer.invoke("video:open-path", p),
+      onProgress: (fn) => {
+        const h = (_e, text, frac) => fn(text, frac);
+        ipcRenderer.on("video:progress", h);
+        return () => ipcRenderer.removeListener("video:progress", h);
+      },
+      onRender: (fn) => {
+        const h = (_e, text, frac) => fn(text, frac);
+        const j = (_e, id) => fn("", 0, id);
+        ipcRenderer.on("video:render-progress", h);
+        ipcRenderer.on("video:render-job", j);
+        return () => {
+          ipcRenderer.removeListener("video:render-progress", h);
+          ipcRenderer.removeListener("video:render-job", j);
+        };
+      },
+    },
     ai: {
       list: () => ipcRenderer.invoke("studio:ai-list"),
       connect: (id) => ipcRenderer.invoke("studio:ai-connect", id),
