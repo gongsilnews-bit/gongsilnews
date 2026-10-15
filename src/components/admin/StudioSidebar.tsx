@@ -16,8 +16,11 @@ const noSubscribe = () => () => {};
 export function useStudioApp(): { isApp: boolean; version: string | null } {
   // 서버에서 그릴 때는 빈 값 → 브라우저에서만 판정 (화면 어긋남 방지)
   const ua = useSyncExternalStore(noSubscribe, () => navigator.userAgent, () => "");
-  const m = ua.match(/(?:gongsil-studio|GongsilStudio)\/([\d.]+)/i);
-  return { isApp: !!m, version: m ? m[1] : null };
+  // 설치판은 앱 이름이 한글(공실뉴스 스튜디오)로 들어가므로 Electron 표시로도 판정한다
+  const m = ua.match(/(?:gongsil-studio|GongsilStudio|공실뉴스 스튜디오)\/([\d.]+)/i);
+  const isApp = !!m || /Electron\//.test(ua);
+  const version = m ? m[1] : ua.match(/\/([\d.]+) Chrome\//)?.[1] ?? null;
+  return { isApp, version };
 }
 
 type Props = {

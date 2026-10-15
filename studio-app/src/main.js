@@ -245,6 +245,9 @@ async function checkForUpdates(manual = false) {
 ipcMain.handle("studio:open-connect", () => openConnectInBrowser());
 ipcMain.handle("studio:info", () => ({ version: app.getVersion(), baseUrl: BASE_URL, ffmpeg: Boolean(ffmpegPath()) }));
 
+// 웹 화면이 "스튜디오 앱"임을 알아보도록 브라우저 정보 끝에 영어 이름을 붙인다
+app.userAgentFallback = `${app.userAgentFallback} GongsilStudio/${app.getVersion()}`;
+
 app.whenReady().then(async () => {
   const url = findDeepLink(process.argv);
   if (url) pendingDeepLink = url;
