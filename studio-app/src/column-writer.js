@@ -197,12 +197,13 @@ async function writeArticle({ baseUrl, vacancyId: id, kind = "news", length = "n
   const blogWriter = require("./blog-writer");
   const source = readSource(id);
   const prompt = nm.gwBuildPrompt(source, { kind, length });
-  const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => nm.GWArticleJson.hasCompleteObject(t) });
+  let chatUrl = "";
+  const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => nm.GWArticleJson.hasCompleteObject(t), onChat: (u) => (chatUrl = u) });
   onProgress("받은 기사를 정리하는 중…");
   const parsed = nm.GWArticleJson.parse(text);
   if (!parsed.ok) throw new Error(parsed.reason || "AI 답변을 읽지 못했습니다.");
   const section = nm.gwNormalizeSection(parsed.article.section1, parsed.article.section2);
-  let draft = blogWriter.saveWritten(id, "article", parsed, { style: kind, length, ...section });
+  let draft = blogWriter.saveWritten(id, "article", parsed, { style: kind, length, chatUrl, ...section });
 
   const hasCover = (draft.media || []).some((m) => m.isCover);
   if (autoCover && !hasCover) {

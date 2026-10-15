@@ -6,7 +6,7 @@ const vm = require("vm");
 
 const src = fs.readFileSync(path.join(__dirname, "ext", "prompt.js"), "utf8");
 module.exports = vm.runInNewContext(
-  `${src}\n;({ gwBuildPrompt, GW_KIND, GW_AUCTION_KIND, GW_LENGTH, gwBuildImagePrompt, GW_IMAGE_STYLE })`,
+  `${src}\n;({ gwBuildPrompt, gwBuildRevisePrompt, GW_KIND, GW_AUCTION_KIND, GW_LENGTH, gwBuildImagePrompt, GW_IMAGE_STYLE })`,
   {},
   { filename: "prompt.js" }
 );

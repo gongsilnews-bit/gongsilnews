@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import ChannelButton from "./ChannelButton";
+import StudioReviseBar from "./StudioReviseBar";
 
 /**
  * SNS뉴스발행 — 인스타그램·스레드·페이스북 탭 (공실뉴스 스튜디오)
@@ -10,6 +11,7 @@ import ChannelButton from "./ChannelButton";
  * - 채널마다 그 채널에 올라갈 모양으로 보여 주고 고친다: 사진 순서·빼기·다시 넣기, 글(스레드는 글마다), 해시태그.
  * - 글 끝 링크·매물 정보 출처·해시태그는 앱이 붙인다 (미리보기 아래 "올라갈 전체 글").
  * - 1차: [글 복사] · [사진·글 폴더로 저장](채널 비율로 자른 사진) · [채널 열기]. 자동 채우기는 다음 단계.
+ * - [수정 요청]: 이 채널 글만 처음 쓴 ChatGPT 대화에 이어 보내 고친다 (확장과 같다).
  */
 
 export type SnsMedia = { id: string; kind: string; caption: string; ai: boolean; thumb: string | null };
@@ -23,6 +25,7 @@ type Bridge = {
   sns: {
     write: (opts: { vacancyId: string }) => Promise<SnsData>;
     save: (opts: { vacancyId: string; channel: string; post?: Post; mediaIds?: string[] }) => Promise<SnsChannelData>;
+    revise: (opts: { vacancyId: string; channel: string; request: string }) => Promise<SnsChannelData>;
     exportChannel: (opts: { vacancyId: string; channel: string }) => Promise<{ folder: string; saved: number; total: number }>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
@@ -101,6 +104,21 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
       setProgress("");
       setWriting(false);
       onUsed();
+    }
+  };
+
+  /* [수정 요청] — 고친 글을 먼저 저장하고, 이 채널 글만 같은 대화에서 고쳐 받는다 */
+  const revise = async (request: string, onProgress: (t: string) => void) => {
+    const b = bridge();
+    if (!b || !data) return;
+    await b.sns.save({ vacancyId, channel, post: currentPost() });
+    const off = b.sns.onProgress(onProgress);
+    try {
+      const updated = await b.sns.revise({ vacancyId, channel, request });
+      loadedFrom.current = ""; // 편집칸을 고친 글로 다시 채운다
+      onData({ ...data, channels: { ...data.channels, [channel]: updated } });
+    } finally {
+      off();
     }
   };
 
@@ -269,12 +287,15 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
           {/* 올라갈 전체 글 */}
           <details style={{ marginTop: 16 }}>
             <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, color: theme.textSecondary }}>
-              올라갈 전체 글 보기 (링크·매물 정보 출처·해시태그 포함){channel !== "threads" && info.maxChars ? ` · ${bodyLen}/${info.maxChars}자` : ""}
+              올라갈 전체 글 보기 (링크·{vacancyId.startsWith("col-") ? "출처" : "매물 정보 출처"}·해시태그 포함){channel !== "threads" && info.maxChars ? ` · ${bodyLen}/${info.maxChars}자` : ""}
             </summary>
             <pre style={{ whiteSpace: "pre-wrap", wordBreak: "keep-all", margin: "10px 0 0", padding: "14px 16px", borderRadius: 10, background: theme.bg || "#f6f8fa", fontSize: 13.5, lineHeight: 1.7, color: theme.textPrimary, fontFamily: "inherit" }}>
               {ch.composed.text}
             </pre>
           </details>
+
+          <StudioReviseBar theme={theme} label={`${info.label} 글`} onRevise={revise}
+            examples={channel === "threads" ? "첫 글을 더 짧게, 질문을 바꿔 줘" : channel === "instagram" ? "이모지를 줄이고 훅을 더 강하게" : "첫 문단을 더 짧게, 해시태그를 3개로"} />
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18 }}>
             <button onClick={copy} style={btn(true)}>글 복사</button>

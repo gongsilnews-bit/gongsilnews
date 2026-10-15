@@ -332,6 +332,8 @@ ipcMain.handle("studio:sns-channels", () => snsWriter.channelInfo());
 ipcMain.handle("studio:sns-get", (_e, vacancyId) => snsWriter.get(vacancyId));
 ipcMain.handle("studio:sns-write", (e, opts) => snsWriter.write({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:sns-progress", text)));
 ipcMain.handle("studio:sns-save", (_e, opts) => snsWriter.save(opts));
+ipcMain.handle("studio:sns-revise", (e, opts) => snsWriter.revise(opts, (text) => e.sender.send("studio:sns-progress", text)));
+ipcMain.handle("studio:blog-revise", (e, opts) => blogWriter.revise(opts, (text) => e.sender.send("studio:blog-progress", text)));
 ipcMain.handle("studio:sns-export", (_e, opts) => snsWriter.exportChannel(opts));
 ipcMain.handle("studio:naver-open-blog", () => naverWrite.openMyBlog());
 ipcMain.handle("studio:blog-get", (_e, vacancyId, doc) => blogWriter.get(vacancyId, doc));

@@ -99,6 +99,19 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workId]);
 
+  // 탭을 옮겨 오면 PC에 저장된 최신 글로 다시 그린다 (미리보기에서 고친 것·수정 요청 반영)
+  const firstTab = React.useRef(true);
+  useEffect(() => {
+    if (firstTab.current) {
+      firstTab.current = false;
+      return;
+    }
+    const b = bridge();
+    if (!b || (tab !== "article" && tab !== "blog")) return;
+    if (tab === "article") b.blog.get(workId, "article").then((a) => a && setArticle({ ...a, doc: "article" })).catch(() => {});
+    else b.blog.get(workId).then((d) => d && setBlog(d)).catch(() => {});
+  }, [tab, workId]);
+
   const writeBlog = async () => {
     const b = bridge();
     if (!b) return;
@@ -240,7 +253,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
           {blogProgress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{blogProgress}</div>}
           {blogError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{blogError}</div>}
 
-          {blog && <StudioBlogEditor key={`${blog.vacancyId}-${blog.title}`} theme={theme} initial={blog} />}
+          {blog && <StudioBlogEditor key={`${blog.vacancyId}-${blog.version || blog.title}`} theme={theme} initial={blog} />}
         </div>
 
         {/* 네이버 블로그 채우기 */}

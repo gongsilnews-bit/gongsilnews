@@ -25,6 +25,7 @@ if (allowed) {
       get: (vacancyId) => ipcRenderer.invoke("studio:sns-get", vacancyId),
       write: (opts) => ipcRenderer.invoke("studio:sns-write", opts),
       save: (opts) => ipcRenderer.invoke("studio:sns-save", opts),
+      revise: (opts) => ipcRenderer.invoke("studio:sns-revise", opts),
       exportChannel: (opts) => ipcRenderer.invoke("studio:sns-export", opts),
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
@@ -52,6 +53,7 @@ if (allowed) {
       write: (opts) => ipcRenderer.invoke("studio:blog-write", opts),
       get: (vacancyId, doc) => ipcRenderer.invoke("studio:blog-get", vacancyId, doc),
       save: (patch) => ipcRenderer.invoke("studio:blog-save", patch),
+      revise: (opts) => ipcRenderer.invoke("studio:blog-revise", opts),
       addPhoto: (opts) => ipcRenderer.invoke("studio:blog-add-photo", opts),
       imageStyles: (vacancyId) => ipcRenderer.invoke("studio:blog-image-styles", vacancyId),
       makeImage: (opts) => ipcRenderer.invoke("studio:blog-make-image", opts),

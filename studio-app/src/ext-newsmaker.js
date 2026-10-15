@@ -15,10 +15,10 @@ for (const f of ["sections.js", "market-prompt.js", "prompt.js", "blog-prompt.js
 module.exports = {
   ...vm.runInContext(
     `({
-      GW_LENGTH, GW_KIND, GW_IMAGE_STYLE, gwSourceReady, gwSourceLabel, gwBuildPrompt, gwBuildImagePrompt, gwAiImageCaption,
+      GW_LENGTH, GW_KIND, GW_IMAGE_STYLE, gwSourceReady, gwSourceLabel, gwBuildPrompt, gwBuildRevisePrompt, gwBuildImagePrompt, gwAiImageCaption,
       gwNormalizeSection,
-      GW_BLOG_LENGTH, GW_BLOG_STYLE, gwBuildBlogPrompt,
-      GW_SNS_CHANNELS, gwBuildSnsPrompt, gwSnsParse, gwSnsCompose, gwSnsCredit, gwSnsAiLabelNote,
+      GW_BLOG_LENGTH, GW_BLOG_STYLE, gwBuildBlogPrompt, gwBuildBlogRevisePrompt,
+      GW_SNS_CHANNELS, gwBuildSnsPrompt, gwBuildSnsRevisePrompt, gwSnsParse, gwSnsCompose, gwSnsCredit, gwSnsAiLabelNote,
       GWNaverBlog, GWArticleJson,
     })`,
     ctx

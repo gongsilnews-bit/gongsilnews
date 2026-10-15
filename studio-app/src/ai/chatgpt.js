@@ -4,6 +4,7 @@
 //  - 답변은 ChatGPT 대화 원문(/backend-api/conversation)에서 읽는다. 화면 모양과 상관없어 가장 튼튼하다
 //    (확장 shared/chatgpt-direct.js 와 같은 방법). 원문을 못 읽으면 화면에서 읽는다.
 //  - 2026-10 ChatGPT 화면 개편으로 data-message-author-role 이 사라졌다. 화면 읽기는 새 표시를 먼저 본다.
+//  - 수정 요청은 처음 쓴 대화(chatUrl)에 이어 보낸다 (확장과 같다). 그 대화가 없어졌으면 fallbackPrompt 로 새 대화에서 한다.
 // 사람이 쓰는 것처럼: 크롬 창을 보이게 띄우고, 한 번에 한 건만, 동작 사이에 잠깐씩 쉰다.
 const chrome = require("../studio-chrome");
 
@@ -64,7 +65,7 @@ function readByConversationApi(page) {
         if (msg && msg.author && msg.author.role === "assistant" && msg.content) {
           const parts = (msg.content.parts || []).filter((part) => typeof part === "string");
           const text = (parts.join("\n") || msg.content.text || "").trim();
-          if (text) return { text, status: msg.status || "", endTurn: msg.end_turn };
+          if (text) return { id: msg.id, text, status: msg.status || "", endTurn: msg.end_turn };
         }
         node = node.parent ? data.mapping[node.parent] : null;
       }
@@ -77,11 +78,30 @@ function readByConversationApi(page) {
  * 프롬프트를 보내고 답변 글을 돌려준다.
  * isComplete(text) 가 true 가 되고 답변이 멈추면 끝난다 (최대 4분).
  */
-/* 새 대화를 열고 프롬프트를 넣어 보낸다. 보낸 ChatGPT 페이지를 돌려준다 */
-async function openAndSend(prompt, onProgress) {
+const chatIdOf = (url) => (String(url || "").match(/\/c\/([0-9a-f-]{36})/) || [])[1] || "";
+
+/* 대화를 열고 프롬프트를 넣어 보낸다. 보낸 ChatGPT 페이지와, 보내기 전 마지막 답변(prev)을 돌려준다.
+   chatUrl 이 있으면 그 대화에 이어 보낸다 (수정 요청). 그 대화를 못 열면 새 대화에 fallbackPrompt 를 보낸다. */
+async function openAndSend(prompt, onProgress, { chatUrl = "", fallbackPrompt = "" } = {}) {
   onProgress("스튜디오 전용 크롬에서 ChatGPT를 여는 중…");
   const page = await chrome.openPage("chatgpt.com", SEL.URL);
-  await page.goto(SEL.URL, { waitUntil: "domcontentloaded" }); // 늘 새 대화에서 쓴다
+  let prev = null;
+  const wantId = chatIdOf(chatUrl);
+  if (wantId) {
+    await page.goto(`${SEL.URL}c/${wantId}`, { waitUntil: "domcontentloaded" });
+    await chrome.sleep(1500);
+    prev = chatIdOf(page.url()) === wantId ? await readByConversationApi(page) : null;
+    if (!prev || !prev.id) {
+      // 대화가 지워졌거나 열리지 않으면 새 대화에서 처음 자료와 지금 글을 함께 보낸다
+      prev = null;
+      if (!fallbackPrompt) throw new Error("처음 쓴 ChatGPT 대화를 찾지 못했습니다. [다시 쓰기]를 해 주세요.");
+      prompt = fallbackPrompt;
+      await page.goto(SEL.URL, { waitUntil: "domcontentloaded" });
+    }
+  } else {
+    if (fallbackPrompt) prompt = fallbackPrompt; // 이어 쓸 대화가 없는 예전 글
+    await page.goto(SEL.URL, { waitUntil: "domcontentloaded" }); // 새 대화에서 쓴다
+  }
   if (/auth|login/.test(new URL(page.url()).pathname + new URL(page.url()).hostname)) {
     throw new Error("ChatGPT 로그인이 풀렸습니다. 위쪽 메뉴 [AI → 내 AI·계정 연결]에서 다시 연결해 주세요.");
   }
@@ -113,7 +133,7 @@ async function openAndSend(prompt, onProgress) {
   const send = await firstVisible(page, SEL.SEND, 8000);
   if (send && (await send.isEnabled().catch(() => false))) await send.click();
   else await page.keyboard.press("Enter");
-  return page;
+  return { page, prev };
 }
 
 async function exclusive(fn) {
@@ -138,10 +158,22 @@ function connected(result) {
   return result;
 }
 
-function ask(prompt, { onProgress = () => {}, isComplete = () => true } = {}) {
+/**
+ * onChat(url): 답을 받은 대화 주소 — 글에 남겨 두었다가 수정 요청을 그 대화에 이어 보낸다.
+ * chatUrl·fallbackPrompt: 수정 요청 (openAndSend 참고)
+ */
+function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "" } = {}) {
   return exclusive(async () => {
-    const page = await openAndSend(prompt, onProgress);
-    onProgress("ChatGPT가 글을 쓰는 중… (1~2분)");
+    const { page, prev } = await openAndSend(prompt, onProgress, { chatUrl, fallbackPrompt });
+    const done = (text) => {
+      try {
+        onChat(page.url());
+      } catch {}
+      return connected(text);
+    };
+    // 이어 보낸 경우: 보내기 전 답변(prev)을 새 답으로 잘못 읽지 않는다
+    const isOld = (api, text) => Boolean(prev && ((api.id && api.id === prev.id) || (!api.id && text === prev.text)));
+    onProgress(prev ? "ChatGPT가 고치는 중… (1~2분)" : "ChatGPT가 글을 쓰는 중… (1~2분)");
     const deadline = Date.now() + 4 * 60 * 1000;
     let last = "";
     let stable = 0;
@@ -152,16 +184,17 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true } = {}) {
 
       // 1순위: 대화 원문 — 답변이 끝났다고(finished_successfully) 표시되면 바로 끝
       const api = await readByConversationApi(page);
-      if (api.text && api.status === "finished_successfully" && isComplete(api.text)) return connected(api.text);
+      if (api.text && api.status === "finished_successfully" && !isOld(api, api.text) && isComplete(api.text)) return done(api.text);
 
       // 2순위: 화면 — 중지 버튼이 없고 글자가 두 번 연달아 같으면 끝
       const busy = await anyVisible(page, SEL.STOP);
       const text = api.text || (await readLastAnswer(page));
+      if (isOld(api, text)) continue;
       stable = !busy && text && text === last ? stable + 1 : 0;
       last = text;
-      if (stable >= 2 && isComplete(text)) return connected(text);
+      if (stable >= 2 && isComplete(text)) return done(text);
     }
-    if (last && isComplete(last)) return connected(last);
+    if (last && !(prev && last === prev.text) && isComplete(last)) return done(last);
     throw new Error("ChatGPT 답변을 4분 안에 받지 못했습니다. ChatGPT 창을 확인해 주세요.");
   });
 }
@@ -229,7 +262,7 @@ function downloadImage(page, conversationId, fileId) {
  */
 function askImage(prompt, { onProgress = () => {} } = {}) {
   return exclusive(async () => {
-    const page = await openAndSend(prompt, onProgress);
+    const { page } = await openAndSend(prompt, onProgress);
     onProgress("ChatGPT가 그림을 그리는 중… (1~3분)");
     const deadline = Date.now() + 5 * 60 * 1000;
     let lastText = "";

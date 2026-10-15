@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import StudioReviseBar from "./StudioReviseBar";
 
 /**
  * 블로그 미리보기 편집기 (공실뉴스 스튜디오 SNS뉴스발행 3단계)
@@ -11,15 +12,18 @@ import React, { useEffect, useRef, useState } from "react";
  *  - 사진: 대표로, 위로·아래로(앞·뒤 문단 사이로), 설명 고치기, 삭제, 자리마다 내 PC 사진 넣기.
  *  - AI 이미지: 자리마다 화풍(확장과 같은 5종)·장면 요청으로 ChatGPT 가 그린 그림을 넣는다.
  *  - [수정]: 그 사진을 내 사진이나 AI 이미지로 바꾼다 (자리·대표·순서는 그대로).
- *  - 고친 내용은 잠시 뒤 앱(PC)에 저장된다.
+ *  - 고친 내용은 잠시 뒤 앱(PC)에 저장된다 (화면을 떠나면 바로 저장).
+ *  - [수정 요청]: 확장과 같이 처음 쓴 ChatGPT 대화에 이어 보내 고친 글 전체를 받는다 (사진·자리는 그대로).
  */
 
 export type BlogMedia = { id: string; kind: string; caption: string; isCover: boolean; insertAfterParagraph: number | null; thumb: string | null };
-export type BlogDraft = { doc?: "blog" | "article"; vacancyId: string; style: string; length: string; title: string; subtitles?: string[]; paragraphs: string[]; keywords: string[]; media: BlogMedia[]; section1?: string; section2?: string };
+export type BlogDraft = { doc?: "blog" | "article"; vacancyId: string; style: string; length: string; title: string; subtitles?: string[]; paragraphs: string[]; keywords: string[]; media: BlogMedia[]; section1?: string; section2?: string; version?: string };
+type SavePatch = { vacancyId: string; doc: string; title: string; subtitles?: string[]; paragraphs: string[]; keywords: string[]; media: Omit<BlogMedia, "thumb" | "kind">[] };
 
 type Bridge = {
   blog: {
-    save: (patch: { vacancyId: string; doc: string; title: string; subtitles?: string[]; paragraphs: string[]; keywords: string[]; media: Omit<BlogMedia, "thumb" | "kind">[] }) => Promise<unknown>;
+    save: (patch: SavePatch) => Promise<unknown>;
+    revise: (opts: { vacancyId: string; doc: string; request: string }) => Promise<BlogDraft>;
     addPhoto: (opts: { vacancyId: string; doc: string; dataUrl: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
     imageStyles: (vacancyId?: string) => Promise<{ id: string; label: string }[]>;
     makeImage: (opts: { vacancyId: string; doc: string; style: string; request: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
@@ -95,6 +99,23 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
   };
   const addSlot = useRef(0);
   const first = useRef(true);
+  const pending = useRef<SavePatch | null>(null); // 아직 저장하지 않은 고친 내용
+  const [rev, setRev] = useState(0); // [수정 요청]으로 글이 바뀌면 문단 칸을 새로 그린다
+
+  const payload = (): SavePatch => ({
+    vacancyId: initial.vacancyId,
+    doc,
+    title,
+    subtitles,
+    paragraphs,
+    keywords: keywords.split(/[,\n]/).map((k) => k.trim()).filter(Boolean),
+    media: media.map(({ id, caption, isCover, insertAfterParagraph }) => ({ id, caption, isCover, insertAfterParagraph })),
+  });
+  const flush = () => {
+    const patch = pending.current;
+    pending.current = null;
+    return patch ? bridge()?.blog.save(patch) : undefined;
+  };
 
   // 고친 내용 저장 (0.6초 동안 더 고치지 않으면)
   useEffect(() => {
@@ -103,22 +124,39 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
       return;
     }
     setSaved("saving");
+    pending.current = payload();
     const t = setTimeout(() => {
-      bridge()
-        ?.blog.save({
-          vacancyId: initial.vacancyId,
-          doc,
-          title,
-          subtitles,
-          paragraphs,
-          keywords: keywords.split(/[,\n]/).map((k) => k.trim()).filter(Boolean),
-          media: media.map(({ id, caption, isCover, insertAfterParagraph }) => ({ id, caption, isCover, insertAfterParagraph })),
-        })
+      Promise.resolve(flush())
         .then(() => setSaved("saved"))
         .catch(() => setSaved("error"));
     }, 600);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, subtitles, paragraphs, keywords, media, initial.vacancyId, doc]);
+  // 다른 탭으로 가면 기다리지 않고 바로 저장한다
+  useEffect(() => () => void flush(), []);
+
+  /* [수정 요청] — 고친 내용을 먼저 저장하고 같은 대화에 이어 보낸다 */
+  const revise = async (request: string, onProgress: (t: string) => void) => {
+    const b = bridge();
+    if (!b) return;
+    pending.current = payload();
+    await flush();
+    const off = b.blog.onProgress(onProgress);
+    try {
+      const d = await b.blog.revise({ vacancyId: initial.vacancyId, doc, request });
+      first.current = true; // 받은 글은 이미 저장돼 있다
+      setTitle(d.title);
+      setSubtitles([0, 1, 2].map((i) => (d.subtitles || [])[i] || ""));
+      setParagraphs(d.paragraphs);
+      setKeywords(d.keywords.join(", "));
+      setMedia(d.media);
+      setRev((r) => r + 1);
+      setSaved("saved");
+    } finally {
+      off();
+    }
+  };
 
   const n = paragraphs.length;
   const cover = media.find((m) => m.isCover);
@@ -350,7 +388,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
         {slotBar(0)}
 
         {paragraphs.map((p, i) => (
-          <React.Fragment key={i}>
+          <React.Fragment key={`${rev}-${i}`}>
             <div contentEditable suppressContentEditableWarning
               onBlur={(e) => {
                 const text = (e.currentTarget.innerText || "").replace(/\n+/g, " ").trim();
@@ -374,8 +412,14 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
             style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 13, color: theme.textPrimary, background: theme.cardBg, fontFamily: "inherit" }} />
         </div>
         <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary }}>
-          {doc === "article" ? "키워드는 기사쓰기 화면의 키워드 칸에 들어갑니다." : "글 끝에는 매물 정보 출처(중개사무소 정보)와 공실뉴스 매물 상세 링크가 자동으로 붙습니다."}
+          {doc === "article"
+            ? "키워드는 기사쓰기 화면의 키워드 칸에 들어갑니다."
+            : initial.vacancyId.startsWith("col-")
+              ? "글 끝에는 [참고 자료](원문 언론사·제목·링크)와 공실뉴스 서명이 자동으로 붙습니다."
+              : "글 끝에는 매물 정보 출처(중개사무소 정보)와 공실뉴스 매물 상세 링크가 자동으로 붙습니다."}
         </div>
+        <StudioReviseBar theme={theme} label={doc === "article" ? "기사" : "블로그 글"} onRevise={revise}
+          examples={doc === "article" ? "제목을 더 짧게, 둘째 문단에 배경 설명을 더해 줘" : "도입부를 더 짧게, 소제목을 질문형으로 바꿔 줘"} />
       </div>
     </div>
   );

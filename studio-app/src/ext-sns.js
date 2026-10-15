@@ -9,6 +9,6 @@ for (const f of ["blog-prompt.js", "naver-blog.js", "youtube-json.js", "sns-prom
   vm.runInContext(fs.readFileSync(path.join(__dirname, "ext", f), "utf8"), ctx, { filename: f });
 }
 module.exports = vm.runInContext(
-  "({ GW_SNS_CHANNELS, GW_SNS_ORDER, gwBuildSnsPrompt, gwSnsParse, gwSnsCompose, gwSnsPickMedia, gwSnsAiLabelNote, GWYoutubeJson })",
+  "({ GW_SNS_CHANNELS, GW_SNS_ORDER, gwBuildSnsPrompt, gwBuildSnsRevisePrompt, gwSnsParse, gwSnsCompose, gwSnsPickMedia, gwSnsAiLabelNote, GWYoutubeJson })",
   ctx
 );

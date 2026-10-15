@@ -5,6 +5,9 @@
 //  - 블로그(doc 'blog'): 확장 shared/blog-prompt.js (6문체). 기사를 먼저 썼으면 그 기사를 [참조 기사]로 쓴다.
 //  - 뉴스칼럼(번호가 "col-…"): 확장 뉴스메이커의 프롬프트로 갈라진다 (column-writer.js, ext-newsmaker.js).
 //
+// 수정 요청(확장과 같은 방식): 처음 쓴 ChatGPT 대화(chatUrl)에 "위에서 쓴 글을 이렇게 고쳐 주세요"를 이어 보낸다.
+//  그 대화가 없어졌으면 처음 프롬프트 + 지금 글 + 수정 요청을 새 대화에 보낸다. 사진·자리는 그대로 둔다.
+//
 // 미리보기 다듬기(확장 블로그 탭과 같은 방식):
 //  - media 의 사진마다 insertAfterParagraph(0 = 첫 문단 앞, n = n번째 문단 뒤) 자리를 둔다.
 //    네이버 채우기·기사쓰기 보내기는 이 자리를 그대로 따른다 → 미리보기 순서 = 실제 순서.
@@ -101,6 +104,7 @@ function forWeb(d, doc = "blog") {
     keywords: d.keywords,
     section1: d.section1 || "",
     section2: d.section2 || "",
+    version: [d.writtenAt, d.revisedAt, d.editedAt].map((v) => v || "").join("|"), // 바뀌면 화면 편집기를 새로 그린다
     media: (d.media || []).map((m) => ({
       id: m.id,
       kind: m.kind,
@@ -175,11 +179,12 @@ async function write({ baseUrl, vacancyId, style = "listing", length = "normal" 
 
   const article = referenceArticle(vacancyId) || NO_ARTICLE;
   const prompt = blogPrompt.gwBuildBlogPrompt({ vacancy: analysis.vacancy, article }, { style, length });
-  const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t) });
+  let chatUrl = "";
+  const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t), onChat: (u) => (chatUrl = u) });
   onProgress("받은 글을 정리하는 중…");
   const parsed = articleJson.parse(text);
   if (!parsed.ok) throw new Error(parsed.reason || "AI 답변을 읽지 못했습니다.");
-  return saveWritten(vacancyId, "blog", parsed, { style, length });
+  return saveWritten(vacancyId, "blog", parsed, { style, length, chatUrl });
 }
 
 /* 뉴스칼럼 블로그: 뉴스메이커 블로그 프롬프트 — 칼럼 기사를 [참조 기사]로 쓴다 (기사가 먼저 있어야 한다) */
@@ -191,11 +196,12 @@ async function writeColumnBlog({ baseUrl, vacancyId, style, length }, onProgress
   onProgress("이용 횟수를 확인하는 중…");
   await useQuota(baseUrl, "blog", vacancyId);
   const prompt = nm.gwBuildBlogPrompt({ article, source }, { style: st, length });
-  const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => nm.GWArticleJson.hasCompleteObject(t) });
+  let chatUrl = "";
+  const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => nm.GWArticleJson.hasCompleteObject(t), onChat: (u) => (chatUrl = u) });
   onProgress("받은 글을 정리하는 중…");
   const parsed = nm.GWArticleJson.parse(text);
   if (!parsed.ok) throw new Error(parsed.reason || "AI 답변을 읽지 못했습니다.");
-  return saveWritten(vacancyId, "blog", parsed, { style: st, length });
+  return saveWritten(vacancyId, "blog", parsed, { style: st, length, chatUrl });
 }
 
 /* 공실뉴스 기사 쓰기 — 기사 한도는 기사쓰기 화면에서 [기사 등록] 할 때 센다 (여기서는 세지 않음) */
@@ -204,11 +210,76 @@ async function writeArticle({ baseUrl, vacancyId, kind = "news", length = "norma
   const analysis = readAnalysis(vacancyId);
   if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
   const prompt = extPrompt.gwBuildPrompt(analysis.vacancy, { kind, length });
-  const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t) });
+  let chatUrl = "";
+  const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t), onChat: (u) => (chatUrl = u) });
   onProgress("받은 기사를 정리하는 중…");
   const parsed = articleJson.parse(text);
   if (!parsed.ok) throw new Error(parsed.reason || "AI 답변을 읽지 못했습니다.");
-  return saveWritten(vacancyId, "article", parsed, { style: kind, length });
+  return saveWritten(vacancyId, "article", parsed, { style: kind, length, chatUrl });
+}
+
+/* 처음 쓸 때 보낸 프롬프트 (이어 쓸 대화가 없을 때 다시 보낸다) */
+function originalPrompt(vacancyId, doc, d) {
+  if (isColumn(vacancyId)) {
+    const source = column().readSource(vacancyId);
+    return doc === "article"
+      ? nm.gwBuildPrompt(source, { kind: d.style, length: d.length })
+      : nm.gwBuildBlogPrompt({ article: referenceArticle(vacancyId), source }, { style: d.style, length: d.length });
+  }
+  const analysis = readAnalysis(vacancyId);
+  if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
+  return doc === "article"
+    ? extPrompt.gwBuildPrompt(analysis.vacancy, { kind: d.style, length: d.length })
+    : blogPrompt.gwBuildBlogPrompt({ vacancy: analysis.vacancy, article: referenceArticle(vacancyId) || NO_ARTICLE }, { style: d.style, length: d.length });
+}
+
+function revisePrompt(vacancyId, doc, request) {
+  if (isColumn(vacancyId)) {
+    return doc === "article" ? nm.gwBuildRevisePrompt(request, column().readSource(vacancyId)) : nm.gwBuildBlogRevisePrompt(request);
+  }
+  const vacancy = (readAnalysis(vacancyId) || {}).vacancy || {};
+  return doc === "article" ? extPrompt.gwBuildRevisePrompt(request, vacancy) : blogPrompt.gwBuildBlogRevisePrompt(request, vacancy);
+}
+
+/* 지금 글을 처음 출력과 같은 JSON 모양으로 (미리보기에서 고친 내용 포함) */
+function draftJson(d, doc) {
+  const o = {};
+  if (d.section1) Object.assign(o, { section1: d.section1, section2: d.section2 || "" });
+  o.title = d.title;
+  if (doc === "article") (d.subtitles || []).slice(0, 3).forEach((s, i) => (o[`subtitle${i + 1}`] = s));
+  o.body = d.paragraphs;
+  o.keywords = d.keywords || [];
+  return "```json\n" + JSON.stringify(o, null, 2) + "\n```";
+}
+
+/* [수정 요청]: 같은 대화에 이어 보내 고친 글 전체를 받는다. 사진·대표·자리는 그대로 (문단이 줄면 끝으로) */
+async function revise({ vacancyId, doc = "blog", request }, onProgress = () => {}) {
+  const req = String(request || "").trim();
+  if (!req) throw new Error("어떻게 고칠지 적어 주세요.");
+  const d = readJson(docFile(vacancyId, doc));
+  if (!d) throw new Error(`먼저 ${DOC_NAME[doc] || "글"}을 써 주세요.`);
+  const ask = revisePrompt(vacancyId, doc, req);
+  const fallbackPrompt = `${originalPrompt(vacancyId, doc, d)}\n\n[앞서 작성한 ${DOC_NAME[doc]} — 미리보기에서 고친 내용 포함]\n${draftJson(d, doc)}\n\n${ask}`;
+  const parser = isColumn(vacancyId) ? nm.GWArticleJson : articleJson;
+  let chatUrl = d.chatUrl || "";
+  const text = await chatgpt.ask(ask, { onProgress, isComplete: (t) => parser.hasCompleteObject(t), chatUrl, fallbackPrompt, onChat: (u) => (chatUrl = u) });
+  onProgress("고친 글을 정리하는 중…");
+  const parsed = parser.parse(text);
+  if (!parsed.ok) throw new Error(parsed.reason || "AI 답변을 읽지 못했습니다.");
+  const a = parsed.article;
+  d.title = a.title || d.title;
+  if (doc === "article" && Array.isArray(a.subtitles) && a.subtitles.length) d.subtitles = a.subtitles;
+  d.paragraphs = naverBlog.splitParagraphs(a.body);
+  if (Array.isArray(a.keywords) && a.keywords.length) d.keywords = a.keywords;
+  (d.media || []).forEach((m) => {
+    if (Number.isInteger(m.insertAfterParagraph)) m.insertAfterParagraph = Math.min(m.insertAfterParagraph, d.paragraphs.length);
+  });
+  d.chatUrl = chatUrl;
+  d.revisedAt = new Date().toISOString();
+  d.revisions = [...(d.revisions || []), { request: req, at: d.revisedAt }].slice(-20);
+  fs.writeFileSync(docFile(vacancyId, doc), JSON.stringify(d, null, 2));
+  log.info(`[${DOC_NAME[doc]} 수정] ${vacancyId} 문단 ${d.paragraphs.length}개`);
+  return forWeb(d, doc);
 }
 
 /* 미리보기에서 고친 내용 저장: 제목·부제·문단·키워드·사진(순서·대표·자리·설명, 지운 사진은 빠짐) */
@@ -315,4 +386,4 @@ function exportArticleDraft(vacancyId) {
   };
 }
 
-module.exports = { styles, articleOptions, write, writeArticle, get, save, addPhoto, imageStyles, makeImage, exportArticleDraft, referenceArticle, saveWritten, useQuota, isColumn, mediaDir, readJson, blogFile, docFile };
+module.exports = { styles, articleOptions, write, writeArticle, revise, get, save, addPhoto, imageStyles, makeImage, exportArticleDraft, referenceArticle, saveWritten, useQuota, isColumn, mediaDir, readJson, blogFile, docFile };

@@ -86,6 +86,44 @@ async function useQuota(baseUrl, vacancyId) {
   if (!data || !data.success) throw new Error((data && data.error) || "이용 횟수를 확인하지 못했습니다.");
 }
 
+/* SNS 프롬프트 — [참조 기사]: 공실뉴스 기사를 썼으면 그 기사, 없으면 블로그, 둘 다 없으면 "없음" */
+function snsPrompt(vacancyId) {
+  const blog = readJson(blogWriter.blogFile(vacancyId));
+  const article =
+    blogWriter.referenceArticle(vacancyId) ||
+    (blog
+      ? { title: blog.title, subtitles: [], body: blog.paragraphs.join("\n\n") }
+      : { title: "(참조 기사 없음)", subtitles: [], body: "이번에는 참조 기사가 없습니다. 아래 확인된 매물 정보만 사용해 작성하십시오." });
+  if (blogWriter.isColumn(vacancyId)) return nm.gwBuildSnsPrompt({ article, source: require("./column-writer").readSource(vacancyId) });
+  const analysis = readJson(path.join(mediaDir(vacancyId), "analysis.json"));
+  if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
+  return sns.gwBuildSnsPrompt({ vacancy: analysis.vacancy, article });
+}
+
+/* [수정 요청]: 한 채널 글만 같은 대화에 이어 보내 고친다 (확장과 같다). 사진은 그대로 */
+async function revise({ vacancyId, channel, request }, onProgress = () => {}) {
+  const req = String(request || "").trim();
+  if (!req) throw new Error("어떻게 고칠지 적어 주세요.");
+  const data = readJson(snsFile(vacancyId));
+  if (!data) throw new Error("먼저 SNS 글을 써 주세요.");
+  if (!CHANNELS.includes(channel)) throw new Error("알 수 없는 채널입니다.");
+  const lib = data.kind === "column" ? nm : sns;
+  const ask = lib.gwBuildSnsRevisePrompt(channel, req);
+  const now = "```json\n" + JSON.stringify(data.posts, null, 2) + "\n```";
+  const fallbackPrompt = `${snsPrompt(vacancyId)}\n\n[앞서 작성한 SNS 글 — 고친 내용 포함]\n${now}\n\n${ask}`;
+  let chatUrl = data.chatUrl || "";
+  const text = await chatgpt.ask(ask, { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t), chatUrl, fallbackPrompt, onChat: (u) => (chatUrl = u) });
+  onProgress("고친 글을 정리하는 중…");
+  const parsed = lib.gwSnsParse(text);
+  if (!parsed.ok || !parsed.posts[channel]) throw new Error((parsed && parsed.reason) || "고친 글을 읽지 못했습니다.");
+  data.posts[channel] = parsed.posts[channel];
+  data.chatUrl = chatUrl;
+  data.revisedAt = new Date().toISOString();
+  fs.writeFileSync(snsFile(vacancyId), JSON.stringify(data, null, 2));
+  log.info(`[SNS 수정] ${vacancyId} ${channel}`);
+  return forWeb(data).channels[channel];
+}
+
 async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
   const column = blogWriter.isColumn(vacancyId);
   const analysis = column ? null : readJson(path.join(mediaDir(vacancyId), "analysis.json"));
@@ -102,15 +140,9 @@ async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
     listing = await fetchListing(baseUrl, vacancyId, saleKind);
   }
 
-  // [참조 기사]: 공실뉴스 기사를 썼으면 그 기사, 없으면 블로그, 둘 다 없으면 "없음"
-  const blog = readJson(blogWriter.blogFile(vacancyId));
-  const article =
-    blogWriter.referenceArticle(vacancyId) ||
-    (blog
-      ? { title: blog.title, subtitles: [], body: blog.paragraphs.join("\n\n") }
-      : { title: "(참조 기사 없음)", subtitles: [], body: "이번에는 참조 기사가 없습니다. 아래 확인된 매물 정보만 사용해 작성하십시오." });
-  const prompt = column ? nm.gwBuildSnsPrompt({ article, source }) : sns.gwBuildSnsPrompt({ vacancy: analysis.vacancy, article });
-  const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t) });
+  const prompt = snsPrompt(vacancyId);
+  let chatUrl = "";
+  const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t), onChat: (u) => (chatUrl = u) });
 
   onProgress("받은 글을 정리하는 중…");
   const parsed = (column ? nm.gwSnsParse : sns.gwSnsParse)(text);
@@ -129,8 +161,8 @@ async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
     }
   }
   const data = column
-    ? { vacancyId, kind: "column", credit: nm.gwSnsCredit(source), posts: parsed.posts, pool, media, writtenAt: new Date().toISOString() }
-    : { vacancyId, noun: saleKind ? "물건" : "매물", listing, posts: parsed.posts, pool, media, writtenAt: new Date().toISOString() };
+    ? { vacancyId, kind: "column", credit: nm.gwSnsCredit(source), posts: parsed.posts, pool, media, chatUrl, writtenAt: new Date().toISOString() }
+    : { vacancyId, noun: saleKind ? "물건" : "매물", listing, posts: parsed.posts, pool, media, chatUrl, writtenAt: new Date().toISOString() };
   fs.writeFileSync(snsFile(vacancyId), JSON.stringify(data, null, 2));
   log.info(`[SNS] ${vacancyId} ${Object.keys(parsed.posts).join(",")}`);
   return forWeb(data);
@@ -201,4 +233,4 @@ async function exportChannel({ vacancyId, channel }) {
   return { folder, saved, total: list.length };
 }
 
-module.exports = { channelInfo, get, write, save, exportChannel };
+module.exports = { channelInfo, get, write, revise, save, exportChannel };

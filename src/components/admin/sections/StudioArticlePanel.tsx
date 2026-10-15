@@ -107,7 +107,7 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}
 
-        {article && <StudioBlogEditor key={`a-${article.vacancyId}-${article.title}`} theme={theme} initial={{ ...article, doc: "article" }} />}
+        {article && <StudioBlogEditor key={`a-${article.vacancyId}-${article.version || article.title}`} theme={theme} initial={{ ...article, doc: "article" }} />}
       </div>
 
       {article && (
