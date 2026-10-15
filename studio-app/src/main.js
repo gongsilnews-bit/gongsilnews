@@ -107,7 +107,7 @@ async function createWindow() {
     minHeight: 640,
     title: `공실뉴스 스튜디오 v${app.getVersion()}`,
     icon: path.join(__dirname, "..", "build", "icon.png"),
-    autoHideMenuBar: true,
+    autoHideMenuBar: false, // 메뉴(보기·AI·계정·도움말)를 늘 보이게
     backgroundColor: "#f6f8fa",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
