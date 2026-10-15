@@ -59,6 +59,7 @@ const NEWS_CATEGORIES = [
   { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 출처를 밝힙니다." },
   { id: "interior", label: "인테리어뉴스", lead: "실내 사진 한 장으로 인테리어 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
   { id: "remodel", label: "리모델링뉴스", lead: "건물 외관 사진 한 장으로 리모델링 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
+  { id: "marketing", label: "공실마케팅", lead: "공실을 알리는 마케팅 자료를 만듭니다. (구성 준비 중)" },
 ];
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
@@ -276,6 +277,13 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
 
         {category === "column" && (
           <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} />
+        )}
+
+        {category === "marketing" && (
+          <div style={{ ...card, textAlign: "center", padding: "48px 24px" }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>공실마케팅 · 준비 중</div>
+            <div style={{ marginTop: 8, fontSize: 13.5, color: theme.textSecondary }}>곧 이 자리에서 쓸 수 있게 됩니다.</div>
+          </div>
         )}
 
         {(category === "interior" || category === "remodel") && (
