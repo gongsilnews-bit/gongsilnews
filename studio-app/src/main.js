@@ -1,7 +1,7 @@
 // 공실뉴스 스튜디오 - Electron 메인 프로세스
 // 앱 창은 공실뉴스 중개사 관리자 화면(/realty_admin)을 그대로 불러온다.
 // 로그인은 "클릭 한 번 연결": 크롬의 /studio/connect → gongsilstudio://connect?code=… → 앱 창의 /studio/callback
-const { app, BrowserWindow, Menu, dialog, ipcMain, nativeImage, session, shell } = require("electron");
+const { app, BrowserWindow, Menu, dialog, ipcMain, nativeImage, screen, session, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const log = require("electron-log/main");
@@ -103,9 +103,14 @@ function isPathOf(url, pathname) {
 }
 
 async function createWindow() {
+  // 화면(작업 표시줄 제외) 안에 들어오게 만들고, 처음엔 최대화해서 연다
+  const work = screen.getPrimaryDisplay().workArea;
   mainWindow = new BrowserWindow({
-    width: 1440,
-    height: 920,
+    x: work.x,
+    y: work.y,
+    width: Math.min(1440, work.width),
+    height: Math.min(920, work.height),
+    show: false,
     minWidth: 1024,
     minHeight: 640,
     title: `공실뉴스 스튜디오 v${app.getVersion()}`,
@@ -119,6 +124,18 @@ async function createWindow() {
       sandbox: true,
     },
   });
+
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.maximize();
+    mainWindow.show();
+  });
+  // 페이지가 늦게 떠도 창은 바로 보이게
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.maximize();
+      mainWindow.show();
+    }
+  }, 1500);
 
   // 웹 화면 제목 대신 앱 이름과 버전을 항상 보여 준다
   mainWindow.on("page-title-updated", (e) => e.preventDefault());
