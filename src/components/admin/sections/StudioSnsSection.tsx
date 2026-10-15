@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { getVacancies } from "@/app/actions/vacancy";
-import { findStudioVacancyByNo } from "@/app/actions/studio";
+import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
 
 /**
  * SNS뉴스발행 (공실뉴스 스튜디오 앱 전용)
@@ -34,7 +33,23 @@ type StudioBridge = {
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
-type VacancyRow = { id: string; vacancy_no: number; building_name?: string | null; trade_type?: string; property_type?: string; sido?: string; sigungu?: string; dong?: string };
+type VacancyRow = { id: string; vacancy_no: number; building_name?: string | null; trade_type?: string | null; property_type?: string | null; sido?: string; sigungu?: string; dong?: string };
+type MyVacancy = { id: string; vacancy_no: number; building_name: string | null; trade_type: string | null; property_type: string | null; deposit: number | null; monthly_rent: number | null; address: string; created_at: string; photo: string | null; photoCount: number };
+
+/* 원 단위 → "3억 5,000만" (공실열람과 같은 표기) */
+function won(v: number | null) {
+  if (!v) return "";
+  const man = Math.floor(v / 10000);
+  const eok = Math.floor(man / 10000);
+  const rest = man % 10000;
+  if (eok && rest) return `${eok}억 ${rest.toLocaleString()}만`;
+  if (eok) return `${eok}억`;
+  return `${man.toLocaleString()}만`;
+}
+function priceText(v: MyVacancy) {
+  if (v.trade_type === "월세") return `월세 ${won(v.deposit) || "0"} / ${won(v.monthly_rent) || "0"}`;
+  return `${v.trade_type || ""} ${won(v.deposit)}`.trim();
+}
 
 const bridge = (): StudioBridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: StudioBridge }).gongsilStudio ?? null) : null);
 
@@ -44,7 +59,9 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 
 export default function StudioSnsSection({ theme, memberId }: { theme: Theme; memberId: string }) {
   const [ai, setAi] = useState<AiItem[]>([]);
-  const [mine, setMine] = useState<VacancyRow[] | null>(null);
+  const [mine, setMine] = useState<MyVacancy[] | null>(null);
+  const [mineError, setMineError] = useState("");
+  const [search, setSearch] = useState("");
   const [noInput, setNoInput] = useState("");
   const [picked, setPicked] = useState<VacancyRow | null>(null);
   const [busy, setBusy] = useState(false);
@@ -76,10 +93,17 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   }, [loadAi]);
 
   useEffect(() => {
-    getVacancies({ ownerId: memberId, page: 1, limit: 30, slim: true, status: "ACTIVE" }).then((res) => {
-      setMine(res.success ? ((res.data as unknown as VacancyRow[]) || []) : []);
+    listMyStudioVacancies().then((res) => {
+      if (res.success) setMine(res.data);
+      else {
+        setMine([]);
+        setMineError(res.error);
+      }
     });
   }, [memberId]);
+
+  const q = search.trim();
+  const filtered = (mine || []).filter((v) => !q || `${v.vacancy_no} ${v.building_name || ""} ${v.address} ${v.trade_type || ""} ${v.property_type || ""}`.includes(q));
 
   const pickByNo = async () => {
     setError("");
@@ -158,20 +182,46 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               style={{ flex: 1, maxWidth: 320, padding: "10px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, background: theme.cardBg, color: theme.textPrimary }} />
             <button onClick={pickByNo} style={{ padding: "10px 16px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>내 공실</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, margin: "4px 0 10px" }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: theme.textPrimary }}>
+              내가 등록한 공실 {mine ? <span style={{ color: "#2563eb" }}>{mine.length}</span> : null}
+            </div>
+            {mine && mine.length > 6 && (
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="번호·건물명·동네로 찾기"
+                style={{ width: 220, padding: "8px 10px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13, background: theme.cardBg, color: theme.textPrimary }} />
+            )}
+          </div>
           {mine === null ? (
             <div style={{ fontSize: 13, color: theme.textSecondary }}>불러오는 중…</div>
           ) : mine.length === 0 ? (
-            <div style={{ fontSize: 13, color: theme.textSecondary }}>등록한 공실이 없습니다. 위에서 공실번호로 불러올 수 있습니다.</div>
+            <div style={{ padding: "18px 16px", borderRadius: 10, background: theme.bg || "#f6f8fa", fontSize: 14, color: theme.textSecondary, lineHeight: 1.7 }}>
+              {mineError || "아직 등록한 공실이 없습니다."} 공실등록 메뉴에서 공실을 등록하면 여기에 나옵니다. 다른 공실은 위에서 공실번호로 불러올 수 있습니다.
+            </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflowY: "auto" }}>
-              {mine.map((v) => (
-                <button key={v.id} onClick={() => { setPicked(v); setResult(null); setBlog(null); }}
-                  style={{ textAlign: "left", padding: "10px 12px", borderRadius: 8, cursor: "pointer", fontSize: 14, color: theme.textPrimary,
-                    border: `1px solid ${picked?.id === v.id ? "#1a3a6b" : theme.border}`, background: picked?.id === v.id ? "rgba(26,58,107,0.08)" : "transparent", fontWeight: picked?.id === v.id ? 700 : 500 }}>
-                  {vacancyLabel(v)}
-                </button>
-              ))}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 10, maxHeight: 520, overflowY: "auto", padding: 2 }}>
+              {filtered.map((v) => {
+                const on = picked?.id === v.id;
+                return (
+                  <button key={v.id} onClick={() => { setPicked(v); setResult(null); setBlog(null); }}
+                    style={{ textAlign: "left", padding: 0, borderRadius: 10, cursor: "pointer", overflow: "hidden", background: theme.cardBg, color: theme.textPrimary,
+                      border: `2px solid ${on ? "#1a3a6b" : theme.border}`, boxShadow: on ? "0 0 0 3px rgba(26,58,107,0.15)" : "none" }}>
+                    <div style={{ position: "relative", aspectRatio: "16 / 10", background: "#e5e7eb" }}>
+                      {v.photo ? <img src={v.photo} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#9ca3af" }}>사진 없음</div>}
+                      <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 800, padding: "3px 7px", borderRadius: 6, background: "rgba(0,0,0,0.6)", color: "#fff" }}>{v.vacancy_no}</span>
+                      {v.photoCount > 0 && <span style={{ position: "absolute", top: 8, right: 8, fontSize: 11, fontWeight: 700, padding: "3px 7px", borderRadius: 6, background: "rgba(0,0,0,0.6)", color: "#fff" }}>사진 {v.photoCount}</span>}
+                      {on && <span style={{ position: "absolute", bottom: 8, right: 8, fontSize: 12, fontWeight: 800, padding: "4px 9px", borderRadius: 999, background: "#1a3a6b", color: "#fff" }}>✓ 선택됨</span>}
+                    </div>
+                    <div style={{ padding: "10px 12px" }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.building_name || v.address || "이름 없음"}</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "#2563eb", marginTop: 3 }}>{priceText(v)}</div>
+                      <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {[v.property_type, v.address].filter(Boolean).join(" · ")}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+              {filtered.length === 0 && <div style={{ fontSize: 13, color: theme.textSecondary }}>찾는 공실이 없습니다.</div>}
             </div>
           )}
         </div>
