@@ -301,6 +301,10 @@ ipcMain.on("studio:base-origin", (e) => {
   e.returnValue = BASE_ORIGIN;
 });
 ipcMain.handle("studio:open-ai-window", () => openAiWindow());
+// 웹 화면이 "평소 브라우저로 열기"를 부탁할 때 (예: 로고 → 공실뉴스 홈). http(s) 주소만 연다
+ipcMain.handle("studio:open-external", (_e, url) => {
+  if (typeof url === "string" && /^https?:\/\//i.test(url)) shell.openExternal(url);
+});
 ipcMain.handle("studio:ai-list", () => aiConnect.list());
 ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
 ipcMain.handle("studio:ai-finish-login", () => aiConnect.finishLogin());

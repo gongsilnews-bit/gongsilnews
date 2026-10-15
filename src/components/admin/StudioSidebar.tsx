@@ -101,6 +101,14 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
     );
   };
 
+  /* 로고 → 공실뉴스 홈을 새 창으로. 앱에서는 앱 창이 아니라 평소 쓰는 크롬으로 연다 */
+  const openHome = () => {
+    const url = `${window.location.origin}/`;
+    const studio = (window as unknown as { gongsilStudio?: { openInBrowser?: (u: string) => Promise<void> } }).gongsilStudio;
+    if (isApp && studio?.openInBrowser) studio.openInBrowser(url);
+    else window.open(url, "_blank", "noopener");
+  };
+
   const plainBtn: React.CSSProperties = { border: "none", background: "transparent", color: "rgba(255,255,255,0.75)", cursor: "pointer", fontFamily: "inherit" };
 
   return (
@@ -109,7 +117,7 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
 
       <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "space-between", padding: collapsed ? 0 : "0 10px 0 18px", borderBottom: "1px solid rgba(255,255,255,0.15)", flexShrink: 0 }}>
         {!collapsed && (
-          <div onClick={() => onSelect("dashboard")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+          <div onClick={openHome} title="공실뉴스 홈 (새 창)" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <img src="/new_logo.png" alt="공실뉴스" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
             <div style={{ lineHeight: 1.2 }}>
               <div style={{ color: "#fff", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px" }}>공실뉴스</div>

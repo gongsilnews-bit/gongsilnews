@@ -10,6 +10,7 @@ if (allowed) {
     openConnect: () => ipcRenderer.invoke("studio:open-connect"),
     info: () => ipcRenderer.invoke("studio:info"),
     openAiConnect: () => ipcRenderer.invoke("studio:open-ai-window"),
+    openInBrowser: (url) => ipcRenderer.invoke("studio:open-external", url),
     vacancy: {
       analyze: (vacancyId) => ipcRenderer.invoke("studio:vacancy-analyze", vacancyId),
       onProgress: (fn) => {
