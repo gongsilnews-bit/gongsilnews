@@ -46,8 +46,8 @@ const REALTY_MENU: MenuItem[] = [
 
 /* ── 공실뉴스 스튜디오 텍스트 메뉴 ──
    업무 메뉴 6개만 위에 두고 나머지는 [더보기]에 접는다.
-   지금은 스튜디오 앱에서만 보인다. 웹에도 켤 때는 STUDIO_MENU_ON_WEB 을 true 로. */
-const STUDIO_MENU_ON_WEB = false;
+   2026-10-15 앱에서 먼저 써 보고 웹에도 켰다. 예전 아이콘 메뉴로 돌리려면 STUDIO_MENU_ON_WEB 을 false 로. */
+const STUDIO_MENU_ON_WEB = true;
 const STUDIO_MAIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실등록", icon: <IconBuilding /> },

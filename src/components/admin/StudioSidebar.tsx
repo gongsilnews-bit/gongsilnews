@@ -8,7 +8,7 @@ import { MenuItem } from "@/components/admin/sections/types";
  *
  * 좁은 아이콘 막대 대신, 작은 아이콘 옆에 글씨를 둔 넓은 메뉴.
  * 자주 쓰는 업무 메뉴만 위에 두고 나머지는 [더보기]에 접는다.
- * 지금은 스튜디오 앱에서만 쓰고, 괜찮으면 웹에도 켠다 (realty_admin 의 STUDIO_MENU_ON_WEB).
+ * 웹과 앱이 같은 메뉴를 쓴다 (realty_admin 의 STUDIO_MENU_ON_WEB).
  */
 
 /** 공실뉴스 스튜디오 앱 안에서 열렸는지. 앱 창의 브라우저 정보에 gongsil-studio/버전 이 들어 있다. */
