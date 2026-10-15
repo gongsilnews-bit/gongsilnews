@@ -128,4 +128,4 @@ async function openMyBlog() {
   return { ok: true };
 }
 
-module.exports = { designs, fillNaver, openMyBlog };
+module.exports = { designs, fillNaver, openMyBlog, fetchListing };

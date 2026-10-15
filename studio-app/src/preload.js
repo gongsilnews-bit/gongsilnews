@@ -19,6 +19,18 @@ if (allowed) {
         return () => ipcRenderer.removeListener("studio:vacancy-progress", h);
       },
     },
+    sns: {
+      channels: () => ipcRenderer.invoke("studio:sns-channels"),
+      get: (vacancyId) => ipcRenderer.invoke("studio:sns-get", vacancyId),
+      write: (opts) => ipcRenderer.invoke("studio:sns-write", opts),
+      save: (opts) => ipcRenderer.invoke("studio:sns-save", opts),
+      exportChannel: (opts) => ipcRenderer.invoke("studio:sns-export", opts),
+      onProgress: (fn) => {
+        const h = (_e, text) => fn(text);
+        ipcRenderer.on("studio:sns-progress", h);
+        return () => ipcRenderer.removeListener("studio:sns-progress", h);
+      },
+    },
     naver: {
       designs: () => ipcRenderer.invoke("studio:naver-designs"),
       fill: (opts) => ipcRenderer.invoke("studio:naver-fill", opts),

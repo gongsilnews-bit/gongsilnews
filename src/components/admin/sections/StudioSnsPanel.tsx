@@ -1,0 +1,271 @@
+"use client";
+
+import React, { useEffect, useRef, useState } from "react";
+
+/**
+ * SNS뉴스발행 — 인스타그램·스레드·페이스북 탭 (공실뉴스 스튜디오)
+ *
+ * - [ChatGPT로 SNS 글 쓰기] 한 번에 세 채널 글을 함께 쓴다 (크롬 확장 sns.js 와 같은 프롬프트, 이용 횟수 SNS 1회).
+ * - 채널마다 그 채널에 올라갈 모양으로 보여 주고 고친다: 사진 순서·빼기·다시 넣기, 글(스레드는 글마다), 해시태그.
+ * - 글 끝 링크·매물 정보 출처·해시태그는 앱이 붙인다 (미리보기 아래 "올라갈 전체 글").
+ * - 1차: [글 복사] · [사진·글 폴더로 저장](채널 비율로 자른 사진) · [채널 열기]. 자동 채우기는 다음 단계.
+ */
+
+export type SnsMedia = { id: string; kind: string; caption: string; ai: boolean; thumb: string | null };
+type Post = { body?: string; hashtags?: string[]; posts?: string[]; topic?: string };
+export type SnsChannelData = { post: Post | null; composed: { posts: string[]; text: string }; media: SnsMedia[]; aiNote: string };
+export type SnsData = { vacancyId: string; channels: Record<string, SnsChannelData>; pool: SnsMedia[]; writtenAt: string };
+export type ChannelInfo = { id: string; label: string; homeUrl: string; ratioText: string; maxChars: number; maxMedia: number; maxTags: number };
+
+type Bridge = {
+  openInBrowser?: (url: string) => Promise<void>;
+  sns: {
+    write: (opts: { vacancyId: string }) => Promise<SnsData>;
+    save: (opts: { vacancyId: string; channel: string; post?: Post; mediaIds?: string[] }) => Promise<SnsChannelData>;
+    exportChannel: (opts: { vacancyId: string; channel: string }) => Promise<{ folder: string; saved: number; total: number }>;
+    onProgress: (fn: (t: string) => void) => () => void;
+  };
+};
+const bridge = () => (window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null;
+const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
+
+const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰", upload: "내 사진", ai: "AI 이미지" };
+const RATIO: Record<string, string> = { instagram: "4 / 5", facebook: "1 / 1", threads: "auto" };
+
+type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
+
+export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, onData, onUsed }: {
+  theme: Theme; channel: string; info: ChannelInfo; vacancyId: string; data: SnsData | null; onData: (d: SnsData) => void; onUsed: () => void;
+}) {
+  const [writing, setWriting] = useState(false);
+  const [progress, setProgress] = useState("");
+  const [error, setError] = useState("");
+  const [note, setNote] = useState("");
+  const ch = data?.channels[channel] || null;
+
+  const [body, setBody] = useState("");
+  const [tags, setTags] = useState("");
+  const [threadPosts, setThreadPosts] = useState<string[]>([]);
+  const [mediaIds, setMediaIds] = useState<string[]>([]);
+  const loadedFrom = useRef("");
+
+  // 채널을 바꾸거나 새로 쓰면 편집칸을 그 글로 채운다
+  useEffect(() => {
+    const key = `${channel}:${data?.writtenAt || ""}`;
+    if (!ch || loadedFrom.current === key) return;
+    loadedFrom.current = key;
+    setBody(ch.post?.body || "");
+    setTags((ch.post?.hashtags || []).join(" "));
+    setThreadPosts(ch.post?.posts || []);
+    setMediaIds(ch.media.map((m) => m.id));
+  }, [channel, ch, data?.writtenAt]);
+
+  const persist = async (patch: { post?: Post; mediaIds?: string[] }) => {
+    const b = bridge();
+    if (!b || !data) return;
+    try {
+      const updated = await b.sns.save({ vacancyId, channel, ...patch });
+      onData({ ...data, channels: { ...data.channels, [channel]: updated } });
+    } catch (e) {
+      setError(cleanErr(e));
+    }
+  };
+  const currentPost = (): Post =>
+    channel === "threads"
+      ? { posts: threadPosts.map((p) => p.trim()).filter(Boolean), topic: ch?.post?.topic || "" }
+      : { body: body.trim(), hashtags: tags.split(/[\s,]+/).map((t) => t.replace(/^#+/, "").trim()).filter(Boolean) };
+
+  const write = async () => {
+    const b = bridge();
+    if (!b) return;
+    setWriting(true);
+    setError("");
+    setNote("");
+    const off = b.sns.onProgress(setProgress);
+    try {
+      onData(await b.sns.write({ vacancyId }));
+    } catch (e) {
+      setError(cleanErr(e));
+    } finally {
+      off();
+      setProgress("");
+      setWriting(false);
+      onUsed();
+    }
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(ch?.composed.text || "");
+      setNote("글을 복사했습니다. 채널 글쓰기 칸에 붙여 넣으세요.");
+    } catch {
+      setError("복사하지 못했습니다.");
+    }
+  };
+  const exportFolder = async () => {
+    const b = bridge();
+    if (!b) return;
+    setError("");
+    setNote("사진을 채널 비율로 맞추는 중…");
+    try {
+      const r = await b.sns.exportChannel({ vacancyId, channel });
+      setNote(`사진 ${r.saved}장과 글을 저장하고 폴더를 열었습니다: ${r.folder}`);
+    } catch (e) {
+      setNote("");
+      setError(cleanErr(e));
+    }
+  };
+  const openChannel = () => {
+    const b = bridge();
+    if (b?.openInBrowser) b.openInBrowser(info.homeUrl);
+    else window.open(info.homeUrl, "_blank", "noopener");
+  };
+
+  const moveMedia = (id: string, dir: -1 | 1) => {
+    const i = mediaIds.indexOf(id);
+    const j = i + dir;
+    if (j < 0 || j >= mediaIds.length) return;
+    const next = mediaIds.slice();
+    [next[i], next[j]] = [next[j], next[i]];
+    setMediaIds(next);
+    persist({ mediaIds: next });
+  };
+  const removeMedia = (id: string) => {
+    const next = mediaIds.filter((x) => x !== id);
+    setMediaIds(next);
+    persist({ mediaIds: next });
+  };
+  const addMedia = (id: string) => {
+    if (mediaIds.length >= info.maxMedia) return setError(`${info.label}은(는) 사진을 ${info.maxMedia}장까지 올릴 수 있습니다.`);
+    const next = [...mediaIds, id];
+    setMediaIds(next);
+    persist({ mediaIds: next });
+  };
+
+  const card: React.CSSProperties = { background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 14, padding: "22px 24px", marginBottom: 16 };
+  const btn = (primary = false): React.CSSProperties => ({
+    padding: "10px 16px", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer",
+    border: primary ? 0 : `1px solid ${theme.border}`, background: primary ? "#1a3a6b" : theme.cardBg, color: primary ? "#fff" : theme.textPrimary,
+  });
+  const area: React.CSSProperties = { width: "100%", boxSizing: "border-box", border: `1px solid ${theme.border}`, borderRadius: 10, padding: "12px 14px", fontSize: 14.5, lineHeight: 1.75, color: theme.textPrimary, background: theme.cardBg, fontFamily: "inherit", resize: "vertical" };
+
+  const byId = new Map((data?.pool || []).map((m) => [m.id, m]));
+  const chosen = mediaIds.map((id) => byId.get(id)).filter((m): m is SnsMedia => Boolean(m));
+  const rest = (data?.pool || []).filter((m) => !mediaIds.includes(m.id));
+  const bodyLen = channel === "threads" ? 0 : (ch?.composed.text || "").length;
+
+  return (
+    <div>
+      <div style={card}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{info.label} 글 쓰기</div>
+            <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4, lineHeight: 1.6 }}>
+              인스타그램·스레드·페이스북 글을 ChatGPT가 한 번에 씁니다 (SNS 1회). 블로그를 먼저 썼다면 그 글을 바탕으로 씁니다.
+            </div>
+          </div>
+          <button onClick={write} disabled={writing} style={{ ...btn(true), background: writing ? "#94a3b8" : "#16a34a", cursor: writing ? "default" : "pointer" }}>
+            {writing ? "ChatGPT가 쓰는 중…" : data ? "세 채널 다시 쓰기" : "ChatGPT로 SNS 글 쓰기"}
+          </button>
+        </div>
+        {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
+        {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}
+      </div>
+
+      {ch && ch.post && (
+        <div style={card}>
+          {/* 사진 */}
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>
+              사진 <span style={{ color: "#2563eb" }}>{chosen.length}</span>/{info.maxMedia}
+              <span style={{ fontSize: 12, fontWeight: 600, color: theme.textSecondary, marginLeft: 8 }}>{info.ratioText} · 첫 장이 대표</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6 }}>
+            {chosen.map((m, i) => (
+              <div key={m.id} className="sns-ph" style={{ position: "relative", flex: "0 0 150px", borderRadius: 10, overflow: "hidden", boxShadow: i === 0 ? "0 0 0 2px #1a3a6b" : `0 0 0 1px ${theme.border}`, background: "#111" }}>
+                <div style={{ aspectRatio: RATIO[channel] === "auto" ? "1 / 1" : RATIO[channel], background: "#e5e7eb" }}>
+                  {m.thumb && <img src={m.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: ["proof", "map", "roadview"].includes(m.kind) || RATIO[channel] === "auto" ? "contain" : "cover", display: "block", background: "#fff" }} />}
+                </div>
+                <span style={{ position: "absolute", top: 6, left: 6, fontSize: 10.5, fontWeight: 700, padding: "2px 7px", borderRadius: 999, background: i === 0 ? "#1a3a6b" : "rgba(17,24,39,0.6)", color: "#fff" }}>
+                  {i === 0 ? "대표" : KIND_LABEL[m.kind] || m.kind}
+                </span>
+                <div className="sns-ph-tools">
+                  <button onClick={() => moveMedia(m.id, -1)} title="앞으로">←</button>
+                  <button onClick={() => moveMedia(m.id, 1)} title="뒤로">→</button>
+                  <button onClick={() => removeMedia(m.id)} title="빼기" className="danger">✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+          {rest.length > 0 && (
+            <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12, color: theme.textSecondary }}>뺀 사진 다시 넣기</span>
+              {rest.map((m) => (
+                <button key={m.id} onClick={() => addMedia(m.id)} title={KIND_LABEL[m.kind] || m.kind}
+                  style={{ width: 44, height: 44, padding: 0, borderRadius: 8, overflow: "hidden", border: `1px solid ${theme.border}`, cursor: "pointer", background: "#e5e7eb", position: "relative" }}>
+                  {m.thumb && <img src={m.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: 0.75 }} />}
+                  <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}>+</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {ch.aiNote && <div style={{ marginTop: 10, fontSize: 12.5, color: "#b45309" }}>{ch.aiNote}</div>}
+
+          {/* 글 */}
+          <div style={{ marginTop: 20, fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 8 }}>글</div>
+          {channel === "threads" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {threadPosts.map((p, i) => (
+                <div key={i}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, marginBottom: 4, display: "flex", justifyContent: "space-between" }}>
+                    <span>{i === 0 ? "첫 글" : `이어 쓰기 ${i}`}</span>
+                    <span style={{ color: p.length > info.maxChars ? "#c53030" : theme.textSecondary }}>{p.length}/{info.maxChars}</span>
+                  </div>
+                  <textarea value={p} rows={4} style={area}
+                    onChange={(e) => setThreadPosts((list) => list.map((x, j) => (j === i ? e.target.value : x)))}
+                    onBlur={() => persist({ post: currentPost() })} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              <textarea value={body} rows={channel === "instagram" ? 9 : 8} style={area} onChange={(e) => setBody(e.target.value)} onBlur={() => persist({ post: currentPost() })} />
+              <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: theme.textSecondary }}>해시태그 (띄어 쓰기로 구분, 최대 {info.maxTags}개)</div>
+              <input value={tags} onChange={(e) => setTags(e.target.value)} onBlur={() => persist({ post: currentPost() })}
+                style={{ ...area, padding: "9px 12px", fontSize: 13.5, resize: undefined }} />
+            </>
+          )}
+
+          {/* 올라갈 전체 글 */}
+          <details style={{ marginTop: 16 }}>
+            <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, color: theme.textSecondary }}>
+              올라갈 전체 글 보기 (링크·매물 정보 출처·해시태그 포함){channel !== "threads" && info.maxChars ? ` · ${bodyLen}/${info.maxChars}자` : ""}
+            </summary>
+            <pre style={{ whiteSpace: "pre-wrap", wordBreak: "keep-all", margin: "10px 0 0", padding: "14px 16px", borderRadius: 10, background: theme.bg || "#f6f8fa", fontSize: 13.5, lineHeight: 1.7, color: theme.textPrimary, fontFamily: "inherit" }}>
+              {ch.composed.text}
+            </pre>
+          </details>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18 }}>
+            <button onClick={copy} style={btn(true)}>글 복사</button>
+            <button onClick={exportFolder} style={btn()}>사진·글 폴더로 저장</button>
+            <button onClick={openChannel} style={btn()}>{info.label} 열기</button>
+          </div>
+          {note && <div style={{ marginTop: 10, fontSize: 13, color: "#16a34a", lineHeight: 1.6, wordBreak: "break-all" }}>{note}</div>}
+          <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary, lineHeight: 1.6 }}>
+            {info.label}에서 새 게시물을 만들고, 저장한 폴더의 사진을 순서대로 올린 뒤 복사한 글을 붙여 넣으세요. 자동 채우기는 다음 업데이트에서 붙습니다.
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .sns-ph .sns-ph-tools{position:absolute;right:6px;bottom:6px;display:flex;gap:2px;padding:2px;border-radius:999px;background:rgba(255,255,255,0.92);box-shadow:0 2px 8px rgba(0,0,0,0.18);opacity:0;transition:opacity .15s}
+        .sns-ph:hover .sns-ph-tools{opacity:1}
+        .sns-ph-tools button{width:26px;height:26px;border:0;border-radius:999px;background:transparent;cursor:pointer;font-size:12px;color:#1f2937}
+        .sns-ph-tools button:hover{background:#eef2f7}
+        .sns-ph-tools button.danger:hover{background:#fee2e2;color:#dc2626}
+      `}</style>
+    </div>
+  );
+}

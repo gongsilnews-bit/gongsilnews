@@ -12,6 +12,7 @@ const { ffmpegPath } = require("./paths");
 const { analyzeVacancy } = require("./vacancy-capture");
 const blogWriter = require("./blog-writer");
 const naverWrite = require("./naver-write");
+const snsWriter = require("./sns-writer");
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE_URL).origin;
@@ -127,13 +128,20 @@ async function createWindow() {
     },
   });
 
+  // 자동 시험(STUDIO_TEST_OFFSCREEN=1)은 화면 밖에 띄워 사장님 화면을 가리지 않는다
+  const offscreen = !app.isPackaged && process.env.STUDIO_TEST_OFFSCREEN === "1";
+  if (offscreen) {
+    mainWindow.setBounds({ x: -4000, y: 0, width: 1440, height: 920 });
+    mainWindow.showInactive();
+  }
   mainWindow.once("ready-to-show", () => {
+    if (offscreen) return;
     mainWindow.maximize();
     mainWindow.show();
   });
   // 페이지가 늦게 떠도 창은 바로 보이게
   setTimeout(() => {
-    if (mainWindow && !mainWindow.isVisible()) {
+    if (mainWindow && !mainWindow.isVisible() && !offscreen) {
       mainWindow.maximize();
       mainWindow.show();
     }
@@ -319,6 +327,11 @@ ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
 ipcMain.handle("studio:ai-finish-login", () => aiConnect.finishLogin());
 ipcMain.handle("studio:blog-styles", () => blogWriter.styles());
 ipcMain.handle("studio:naver-designs", () => naverWrite.designs());
+ipcMain.handle("studio:sns-channels", () => snsWriter.channelInfo());
+ipcMain.handle("studio:sns-get", (_e, vacancyId) => snsWriter.get(vacancyId));
+ipcMain.handle("studio:sns-write", (e, opts) => snsWriter.write({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:sns-progress", text)));
+ipcMain.handle("studio:sns-save", (_e, opts) => snsWriter.save(opts));
+ipcMain.handle("studio:sns-export", (_e, opts) => snsWriter.exportChannel(opts));
 ipcMain.handle("studio:naver-open-blog", () => naverWrite.openMyBlog());
 ipcMain.handle("studio:blog-get", (_e, vacancyId) => blogWriter.get(vacancyId));
 ipcMain.handle("studio:blog-save", (_e, patch) => blogWriter.save(patch));

@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
 import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
+import StudioSnsPanel, { type SnsData, type ChannelInfo } from "./StudioSnsPanel";
 
 /**
  * SNS뉴스발행 (공실뉴스 스튜디오 앱 전용)
@@ -11,6 +12,7 @@ import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
  * 매물 정보를 읽고, 등록 사진 전부 + 화면 3장(공실열람 검증·지도·로드뷰)을 모은다.
  * 결과는 앱(PC)에 저장되고 기사·블로그·SNS·영상이 함께 쓴다.
  * 3단계 블로그 쓰기: 크롬 확장과 같은 블로그 프롬프트(6문체·글자 수)로 소장님 AI(ChatGPT)가 쓴다.
+ * 채널 탭: 네이버 블로그(③④) · 인스타그램 · 스레드 · 페이스북(StudioSnsPanel). ①②는 분석이 끝나면 한 줄로 접힌다.
  * 4단계 네이버 블로그 채우기: 확장과 같은 디자인 4종·사진 배치·출처 블록으로 네이버 글쓰기에 채운다.
  *   발행은 회원이 누른다. 태그는 발행 창이 열릴 때 채워진다.
  */
@@ -36,6 +38,7 @@ type StudioBridge = {
     openMyBlog: () => Promise<unknown>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
+  sns: { channels: () => Promise<ChannelInfo[]>; get: (vacancyId: string) => Promise<SnsData | null> };
   blog: {
     styles: () => Promise<BlogStyles>;
     write: (opts: { vacancyId: string; style: string; length: string }) => Promise<Blog>;
@@ -70,10 +73,20 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 export default function StudioSnsSection({ theme, memberId }: { theme: Theme; memberId: string }) {
   const [ai, setAi] = useState<AiItem[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null);
+  const [snsUsage, setSnsUsage] = useState<Usage | null>(null);
+  // 채널 탭 (회의 결정: 공통 ①②를 한 번 하고, 채널마다 탭)
+  const [tab, setTab] = useState("blog");
+  const [pickOpen, setPickOpen] = useState(true); // ①② 펼침 — 분석이 끝나면 한 줄로 접는다
+  const [channels, setChannels] = useState<ChannelInfo[]>([]);
+  const [snsData, setSnsData] = useState<SnsData | null>(null);
   const loadUsage = useCallback(() => {
     fetch("/api/studio/usage", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => d.success && setUsage(d.usage))
+      .then((d) => {
+        if (!d.success) return;
+        setUsage(d.usage);
+        setSnsUsage(d.snsUsage || null);
+      })
       .catch(() => {});
   }, []);
   useEffect(() => loadUsage(), [loadUsage]);
@@ -104,6 +117,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   useEffect(() => {
     bridge()?.blog.styles().then(setBlogOpts);
     bridge()?.naver.designs().then(setDesigns);
+    bridge()?.sns.channels().then(setChannels).catch(() => {});
   }, []);
 
   // 문체마다 어울리는 디자인 (확장과 같은 짝)
@@ -141,6 +155,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     setPicked(res.data as VacancyRow);
     setResult(null);
     setBlog(null);
+    setSnsData(null);
   };
 
   const analyze = async () => {
@@ -153,6 +168,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     try {
       const r = await b.vacancy.analyze(picked.id);
       setResult(r);
+      setPickOpen(false);
+      setSnsData(await b.sns.get(r.vacancyId).catch(() => null));
       const prev = await b.blog.get(r.vacancyId);
       if (prev) {
         setBlog(prev);
@@ -253,21 +270,24 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             <p style={{ margin: "6px 0 0", fontSize: 14, color: theme.textSecondary }}>공실을 고르면 사진을 모으고, 소장님 AI로 블로그 글을 써서 네이버에 채워 드립니다. 발행은 소장님이 누릅니다.</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          {usage && (
-            usage.monthRemaining === null ? (
+          {(() => {
+            const u = tab === "blog" ? usage : snsUsage;
+            const name = tab === "blog" ? "블로그" : "SNS";
+            if (!u) return null;
+            return u.monthRemaining === null ? (
               <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#ecfdf5", color: "#047857" }}>
-                블로그 무제한{usage.dailyLimit !== null ? ` · 오늘 ${usage.todayUsed}/${usage.dailyLimit}건` : ""}
+                {name} 무제한{u.dailyLimit !== null ? ` · 오늘 ${u.todayUsed}/${u.dailyLimit}건` : ""}
               </span>
-            ) : usage.monthRemaining > 0 ? (
+            ) : u.monthRemaining > 0 ? (
               <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#eff6ff", color: "#1d4ed8" }}>
-                이번 달 블로그 {usage.monthRemaining}/{usage.monthLimit}회 남음
+                이번 달 {name} {u.monthRemaining}/{u.monthLimit}회 남음
               </span>
             ) : (
               <a href="/study" target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
-                {usage.monthLimit === 0 ? "블로그는 부동산회원 기능입니다" : `이번 달 ${usage.monthLimit}회를 모두 썼어요 · 공실스터디 멤버십 무제한 →`}
+                {u.monthLimit === 0 ? `${name}는 부동산회원 기능입니다` : `이번 달 ${u.monthLimit}회를 모두 썼어요 · 공실스터디 멤버십 무제한 →`}
               </a>
-            )
-          )}
+            );
+          })()}
           <button onClick={() => bridge()?.openAiConnect()} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: connectedAi.length ? "#22c55e" : "#cbd5e1" }} />
             {connectedAi.length ? `내 AI: ${connectedAi.map((a) => a.name).join(", ")}` : "내 AI 연결하기"}
@@ -275,6 +295,32 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           </div>
         </div>
 
+        {/* ①② 접힌 요약 (분석이 끝나면) */}
+        {result && !pickOpen && (
+          <div style={{ ...card, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 4 }}>
+              {result.media.slice(0, 4).map((m, i) => (
+                <div key={i} style={{ width: 40, height: 40, borderRadius: 8, overflow: "hidden", background: "#e5e7eb" }}>
+                  {m.thumb && <img src={m.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+                </div>
+              ))}
+            </div>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>
+                {picked ? vacancyLabel(picked) : result.vacancy.title}
+              </div>
+              <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>
+                {result.vacancy.title} · {result.vacancy.priceText} · 사진 {result.media.length}장 분석·캡처 완료
+              </div>
+            </div>
+            <button onClick={() => setPickOpen(true)}
+              style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              공실 바꾸기
+            </button>
+          </div>
+        )}
+
+        {(!result || pickOpen) && (<>
         {/* 1. 공실 고르기 */}
         <div style={card}>
           {stepTitle(1, "공실 고르기")}
@@ -303,7 +349,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               {filtered.map((v) => {
                 const on = picked?.id === v.id;
                 return (
-                  <button key={v.id} onClick={() => { setPicked(v); setResult(null); setBlog(null); }}
+                  <button key={v.id} onClick={() => { setPicked(v); setResult(null); setBlog(null); setSnsData(null); }}
                     style={{ textAlign: "left", padding: 0, borderRadius: 10, cursor: "pointer", overflow: "hidden", background: theme.cardBg, color: theme.textPrimary,
                       border: `2px solid ${on ? "#1a3a6b" : theme.border}`, boxShadow: on ? "0 0 0 3px rgba(26,58,107,0.15)" : "none" }}>
                     <div style={{ position: "relative", aspectRatio: "16 / 10", background: "#e5e7eb" }}>
@@ -373,6 +419,29 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           )}
         </div>
 
+        </>)}
+
+        {/* 채널 탭 */}
+        {result && (
+          <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${theme.border}`, marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
+            {[{ id: "blog", label: "네이버 블로그", done: Boolean(blog) }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post) }))].map((t) => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{ padding: "11px 18px", border: 0, background: "transparent", cursor: "pointer", fontSize: 14.5, whiteSpace: "nowrap",
+                  fontWeight: tab === t.id ? 800 : 600, color: tab === t.id ? "#1a3a6b" : theme.textSecondary,
+                  borderBottom: `3px solid ${tab === t.id ? "#1a3a6b" : "transparent"}`, marginBottom: -1 }}>
+                {t.label}
+                {t.done && <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 800, color: "#16a34a" }}>✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {result && tab !== "blog" && channels.find((c) => c.id === tab) && (
+          <StudioSnsPanel theme={theme} channel={tab} info={channels.find((c) => c.id === tab)!} vacancyId={result.vacancyId}
+            data={snsData} onData={setSnsData} onUsed={loadUsage} />
+        )}
+
+        {(!result || tab === "blog") && (<>
         {/* 3. 블로그 쓰기 */}
         <div style={{ ...card, opacity: result ? 1 : 0.6 }}>
           {stepTitle(3, "블로그 쓰기")}
@@ -474,6 +543,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             </div>
           )}
         </div>
+        </>)}
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const from = join(root, "..", "chrome-extension", "gongsilwriter30", "shared");
 const to = join(root, "src", "ext");
 mkdirSync(to, { recursive: true });
-for (const f of ["blog-prompt.js", "article-json.js", "naver-blog.js", "prompt.js"]) {
+for (const f of ["blog-prompt.js", "article-json.js", "naver-blog.js", "prompt.js", "sns-prompt.js", "youtube-json.js"]) {
   copyFileSync(join(from, f), join(to, f));
   console.log("복사:", f);
 }

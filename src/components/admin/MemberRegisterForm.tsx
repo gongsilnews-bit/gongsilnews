@@ -898,7 +898,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
 
         {/* 공실뉴스 스튜디오 블로그(SNS뉴스발행) 한 달 횟수 — 회원별 조정 (src/utils/studioUsage.ts) */}
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, flexWrap: "wrap" }}>
-          <span style={{ fontWeight: 600, color: darkMode ? "#ccc" : "#444" }}>스튜디오 블로그(월):</span>
+          <span style={{ fontWeight: 600, color: darkMode ? "#ccc" : "#444" }}>스튜디오 블로그·SNS(월):</span>
           <select value={formData.studio_blog_limit} disabled={!isAdmin}
             onChange={(e) => setFormData((prev) => ({ ...prev, studio_blog_limit: e.target.value }))}
             style={{ ...inputStyle, flex: "none", width: 170 }}>

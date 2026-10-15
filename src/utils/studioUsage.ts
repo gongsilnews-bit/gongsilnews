@@ -11,6 +11,7 @@ import { isAdminRole } from "@/utils/permissionCheck";
  *
  * - 1회 = 이번 달 공실 하나. 같은 공실의 다시 쓰기·수정·네이버 채우기는 더 깎지 않는다.
  * - 크롬 확장 블로그 체험과 같은 기록(extension_trial_usage, feature 'blog')을 함께 센다.
+ * - SNS(인스타그램·페이스북·스레드 한 번에)는 'sns' 로 따로 세고 규칙은 블로그와 같다 (확장 SNS 체험과 함께 셈).
  *   확장 기록(vacancy_id 없음)은 한 줄 = 1회, 스튜디오 기록은 공실 하나 = 1회.
  * - 무제한이어도 하루 안전 상한이 있다 (회원 ChatGPT·네이버 계정 보호): 새 공실 20건, AI 이미지 10장. 최고관리자는 없음.
  */
@@ -62,7 +63,9 @@ export type StudioUsage = {
   vacancyIds: string[];
 };
 
-export async function getStudioUsage(member: ExtensionMember): Promise<StudioUsage> {
+export type StudioFeature = "blog" | "sns";
+
+export async function getStudioUsage(member: ExtensionMember, feature: StudioFeature = "blog"): Promise<StudioUsage> {
   const db = admin();
   const override = await memberOverride(member.id);
   const monthLimit = override ?? gradeBlogLimit(member);
@@ -70,15 +73,15 @@ export async function getStudioUsage(member: ExtensionMember): Promise<StudioUsa
 
   const month = trialMonth();
   let rows: { vacancy_id?: string | null; created_at: string; feature: string }[] = [];
-  const withVacancy = await db.from("extension_trial_usage").select("vacancy_id, created_at, feature").eq("member_id", member.id).eq("used_month", month).in("feature", ["blog", "ai_image"]);
+  const withVacancy = await db.from("extension_trial_usage").select("vacancy_id, created_at, feature").eq("member_id", member.id).eq("used_month", month).in("feature", [feature, "ai_image"]);
   if (withVacancy.error) {
-    const plain = await db.from("extension_trial_usage").select("created_at, feature").eq("member_id", member.id).eq("used_month", month).eq("feature", "blog");
+    const plain = await db.from("extension_trial_usage").select("created_at, feature").eq("member_id", member.id).eq("used_month", month).eq("feature", feature);
     rows = plain.data || [];
   } else {
     rows = withVacancy.data || [];
   }
 
-  const blogRows = rows.filter((r) => r.feature === "blog");
+  const blogRows = rows.filter((r) => r.feature === feature);
   const vacancyIds = Array.from(new Set(blogRows.map((r) => r.vacancy_id).filter((v): v is string => Boolean(v))));
   const monthUsed = blogRows.filter((r) => !r.vacancy_id).length + vacancyIds.length;
   const today = kstTodayStart();
@@ -102,8 +105,10 @@ export async function getStudioUsage(member: ExtensionMember): Promise<StudioUsa
 export type ConsumeResult = { ok: true; charged: boolean; usage: StudioUsage } | { ok: false; reason: string; usage: StudioUsage };
 
 /** 블로그를 쓰기 전(kind 'blog', 공실 하나 1회) 또는 AI 이미지를 만들기 전(kind 'ai_image')에 부른다 */
-export async function consumeStudio(member: ExtensionMember, kind: "blog" | "ai_image", vacancyId?: string): Promise<ConsumeResult> {
-  const usage = await getStudioUsage(member);
+export async function consumeStudio(member: ExtensionMember, kind: StudioFeature | "ai_image", vacancyId?: string): Promise<ConsumeResult> {
+  const feature: StudioFeature = kind === "sns" ? "sns" : "blog";
+  const name = feature === "sns" ? "SNS" : "블로그";
+  const usage = await getStudioUsage(member, feature);
   const db = admin();
   const month = trialMonth();
 
@@ -121,19 +126,19 @@ export async function consumeStudio(member: ExtensionMember, kind: "blog" | "ai_
   if (usage.vacancyIds.includes(vacancyId)) return { ok: true, charged: false, usage };
 
   if (usage.monthLimit === 0) {
-    return { ok: false, reason: "블로그 쓰기는 부동산회원(중개사) 기능입니다. 부동산회원으로 전환하면 매월 무료로 써 볼 수 있습니다.", usage };
+    return { ok: false, reason: `${name} 쓰기는 부동산회원(중개사) 기능입니다. 부동산회원으로 전환하면 매월 무료로 써 볼 수 있습니다.`, usage };
   }
   if (usage.monthRemaining !== null && usage.monthRemaining <= 0) {
-    return { ok: false, reason: `이번 달 블로그 ${usage.monthLimit}회를 모두 썼습니다. 공실스터디 멤버십이면 무제한으로 쓸 수 있습니다.`, usage };
+    return { ok: false, reason: `이번 달 ${name} ${usage.monthLimit}회를 모두 썼습니다. 공실스터디 멤버십이면 무제한으로 쓸 수 있습니다.`, usage };
   }
   if (usage.dailyLimit !== null && usage.todayUsed >= usage.dailyLimit) {
-    return { ok: false, reason: `계정 보호를 위해 블로그는 하루 ${usage.dailyLimit}건(새 공실)까지 쓸 수 있습니다. 내일 다시 써 주세요.`, usage };
+    return { ok: false, reason: `계정 보호를 위해 ${name}는 하루 ${usage.dailyLimit}건(새 공실)까지 쓸 수 있습니다. 내일 다시 써 주세요.`, usage };
   }
 
-  const ins = await db.from("extension_trial_usage").insert({ member_id: member.id, feature: "blog", used_month: month, vacancy_id: vacancyId, source: "studio" });
+  const ins = await db.from("extension_trial_usage").insert({ member_id: member.id, feature, used_month: month, vacancy_id: vacancyId, source: "studio" });
   if (ins.error) {
     // DB 변경 전: 공실 칸 없이 한 줄만 남긴다
-    const plain = await db.from("extension_trial_usage").insert({ member_id: member.id, feature: "blog", used_month: month });
+    const plain = await db.from("extension_trial_usage").insert({ member_id: member.id, feature, used_month: month });
     if (plain.error) return { ok: false, reason: `이용 기록을 남기지 못했습니다: ${plain.error.message}`, usage };
   }
   return {
