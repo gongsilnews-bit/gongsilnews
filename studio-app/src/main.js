@@ -1,18 +1,26 @@
 // 공실뉴스 스튜디오 - Electron 메인 프로세스
 // 앱 창은 공실뉴스 중개사 관리자 화면(/realty_admin)을 그대로 불러온다.
 // 로그인은 "클릭 한 번 연결": 크롬의 /studio/connect → gongsilstudio://connect?code=… → 앱 창의 /studio/callback
-const { app, BrowserWindow, Menu, dialog, ipcMain, session, shell } = require("electron");
+const { app, BrowserWindow, Menu, dialog, ipcMain, nativeImage, session, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const log = require("electron-log/main");
 const { autoUpdater } = require("electron-updater");
 const aiConnect = require("./ai-connect");
+const { ffmpegPath } = require("./paths");
+const { analyzeVacancy } = require("./vacancy-capture");
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE_URL).origin;
 const PROTOCOL = "gongsilstudio";
 // 앱 창 안에서 띄워도 되는 팝업 (주소 검색 등). 그 외 다른 사이트는 평소 브라우저로 연다.
 const IN_APP_POPUP_HOSTS = [/(^|\.)daum\.net$/, /(^|\.)daumcdn\.net$/, /(^|\.)kakao\.com$/];
+
+// 개발 실행은 설치판과 저장 공간(로그인·전용 크롬)과 "한 번만 실행"이 겹치지 않게 이름을 달리 한다
+if (!app.isPackaged) {
+  app.setName("공실뉴스 스튜디오 (개발)");
+  app.setPath("userData", path.join(app.getPath("appData"), "공실뉴스 스튜디오 (개발)"));
+}
 
 log.initialize();
 log.transports.file.level = "info";
@@ -38,10 +46,9 @@ if (!app.requestSingleInstanceLock()) {
 
 if (app.isPackaged) {
   app.setAsDefaultProtocolClient(PROTOCOL);
-} else {
-  // 개발 중(npm start)에는 electron.exe + 앱 폴더로 등록해야 주소를 받을 수 있다
-  app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1] || ".")]);
 }
+// 개발 실행(npm start)은 gongsilstudio:// 를 등록하지 않는다. 등록하면 설치판 앱의 연결이 개발판으로 넘어간다.
+// 개발판 로그인은 scripts/dev-connect.mjs 가 연결 신호를 실행 인자로 넘긴다.
 
 function findDeepLink(argv) {
   return argv.find((a) => typeof a === "string" && a.startsWith(`${PROTOCOL}://`)) || null;
@@ -80,13 +87,6 @@ function openConnectInBrowser() {
   shell.openExternal(`${BASE_URL}/studio/connect`);
 }
 
-/* ───────── FFmpeg ───────── */
-
-function ffmpegPath() {
-  const dir = app.isPackaged ? path.join(process.resourcesPath, "ffmpeg") : path.join(__dirname, "..", "vendor", "ffmpeg");
-  const exe = path.join(dir, "ffmpeg.exe");
-  return fs.existsSync(exe) ? exe : null;
-}
 
 /* ───────── 창 ───────── */
 
@@ -158,6 +158,16 @@ async function createWindow() {
     mainWindow.loadURL(`${BASE_URL}/realty_admin`);
   } else {
     showConnectScreen();
+  }
+}
+
+function thumbOf(file) {
+  try {
+    const img = nativeImage.createFromPath(file);
+    if (img.isEmpty()) return null;
+    return img.resize({ width: 360, quality: "good" }).toDataURL();
+  } catch {
+    return null;
   }
 }
 
@@ -281,6 +291,16 @@ ipcMain.handle("studio:open-ai-window", () => openAiWindow());
 ipcMain.handle("studio:ai-list", () => aiConnect.list());
 ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
 ipcMain.handle("studio:ai-finish-login", () => aiConnect.finishLogin());
+ipcMain.handle("studio:vacancy-analyze", async (e, vacancyId) => {
+  const r = await analyzeVacancy(BASE_URL, vacancyId, (text) => e.sender.send("studio:vacancy-progress", text));
+  // 웹 화면은 PC 파일을 직접 못 읽으므로 작은 미리보기만 보낸다
+  return {
+    vacancyId: r.vacancyId,
+    vacancy: r.vacancy,
+    failures: r.failures,
+    media: r.media.map((m) => ({ kind: m.kind, caption: m.caption, thumb: thumbOf(m.file) })),
+  };
+});
 ipcMain.handle("studio:ai-connect", (e, id) => aiConnect.connect(id, (text) => e.sender.send("studio:ai-progress", text)));
 ipcMain.handle("studio:info", () => ({ version: app.getVersion(), baseUrl: BASE_URL, ffmpeg: Boolean(ffmpegPath()) }));
 

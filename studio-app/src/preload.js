@@ -10,6 +10,14 @@ if (allowed) {
     openConnect: () => ipcRenderer.invoke("studio:open-connect"),
     info: () => ipcRenderer.invoke("studio:info"),
     openAiConnect: () => ipcRenderer.invoke("studio:open-ai-window"),
+    vacancy: {
+      analyze: (vacancyId) => ipcRenderer.invoke("studio:vacancy-analyze", vacancyId),
+      onProgress: (fn) => {
+        const h = (_e, text) => fn(text);
+        ipcRenderer.on("studio:vacancy-progress", h);
+        return () => ipcRenderer.removeListener("studio:vacancy-progress", h);
+      },
+    },
     ai: {
       list: () => ipcRenderer.invoke("studio:ai-list"),
       connect: (id) => ipcRenderer.invoke("studio:ai-connect", id),
