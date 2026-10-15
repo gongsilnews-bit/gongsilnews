@@ -7,6 +7,7 @@ const fs = require("fs");
 const log = require("electron-log/main");
 const { autoUpdater } = require("electron-updater");
 const aiConnect = require("./ai-connect");
+const { findBrowser } = require("./studio-chrome");
 const { ffmpegPath } = require("./paths");
 const { analyzeVacancy } = require("./vacancy-capture");
 const blogWriter = require("./blog-writer");
@@ -303,7 +304,15 @@ ipcMain.on("studio:base-origin", (e) => {
 ipcMain.handle("studio:open-ai-window", () => openAiWindow());
 // 웹 화면이 "평소 브라우저로 열기"를 부탁할 때 (예: 로고 → 공실뉴스 홈). http(s) 주소만 연다
 ipcMain.handle("studio:open-external", (_e, url) => {
-  if (typeof url === "string" && /^https?:\/\//i.test(url)) shell.openExternal(url);
+  if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return;
+  // 평소 쓰는 크롬(기본 프로필)에 탭이 아니라 새 창으로 연다. 크롬이 없으면 기본 브라우저로
+  const found = findBrowser();
+  if (found) {
+    const { spawn } = require("child_process");
+    spawn(found.exe, ["--new-window", url], { detached: true, stdio: "ignore" }).unref();
+  } else {
+    shell.openExternal(url);
+  }
 });
 ipcMain.handle("studio:ai-list", () => aiConnect.list());
 ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
