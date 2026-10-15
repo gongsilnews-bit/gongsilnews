@@ -253,6 +253,14 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     }
   };
 
+  /* 공실열람 새 창 — 앱에서는 평소 크롬 새 창, 웹에서는 새 탭 */
+  const openGongsil = () => {
+    const url = `${window.location.origin}/gongsil`;
+    const studio = (window as unknown as { gongsilStudio?: { openInBrowser?: (u: string) => Promise<void> } }).gongsilStudio;
+    if (studio?.openInBrowser) studio.openInBrowser(url);
+    else window.open(url, "_blank", "noopener");
+  };
+
   const card: React.CSSProperties = { background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 14, padding: "22px 24px", marginBottom: 16 };
   const stepTitle = (n: number, t: string) => (
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
@@ -360,6 +368,12 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             <input value={noInput} onChange={(e) => setNoInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && pickByNo()} placeholder="공실·경매 물건번호 (예: 87889)"
               style={{ width: 240, padding: "9px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, background: theme.cardBg, color: theme.textPrimary }} />
             <button onClick={pickByNo} style={{ padding: "9px 14px", background: theme.cardBg, color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
+            {/* 공실열람을 새 창으로 열어 물건(경매·공매 포함)을 둘러보고 번호를 확인한다 */}
+            <button onClick={openGongsil} title="공실열람을 새 창으로 열기"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 4l-6 3v13l6-3 6 3 6-3V4l-6 3z" /><path d="M9 4v13M15 7v13" /></svg>
+              공실열람
+            </button>
           </div>
         </div>
 
