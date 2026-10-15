@@ -303,6 +303,7 @@ function RealtyAdminContent() {
           isApp={studioApp.isApp}
           appVersion={studioApp.version}
           badges={STUDIO_BADGES}
+          autoCollapse={activeMenu === "marketing"} // 매물보고서 미리보기(860px)가 잘리지 않게
         />
       ) : (
       /* ===== 좌측 사이드바 (80px, 블루 테마) ===== */

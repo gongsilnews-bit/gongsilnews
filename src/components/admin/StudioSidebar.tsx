@@ -37,12 +37,21 @@ type Props = {
   isApp: boolean;
   appVersion: string | null;
   badges?: Record<string, string>;
+  /** 넓은 작업 화면(공실마케팅의 매물보고서 등)일 때 잠시 아이콘만 남게 접는다 — 기억된 설정은 바꾸지 않는다 */
+  autoCollapse?: boolean;
 };
 
 const COLLAPSE_KEY = "realty_menu_collapsed";
 
-export default function StudioSidebar({ main, more, settings, activeMenu, onSelect, onHover, onEditMenu, background, isApp, appVersion, badges = {} }: Props) {
-  const [collapsed, setCollapsed] = useState(false);
+export default function StudioSidebar({ main, more, settings, activeMenu, onSelect, onHover, onEditMenu, background, isApp, appVersion, badges = {}, autoCollapse = false }: Props) {
+  const [savedCollapsed, setCollapsed] = useState(false);
+  // 자동으로 접힌 동안 [»]를 누르면 그때만 펼친다 (다른 메뉴로 가면 원래 설정으로)
+  const [peek, setPeek] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPeek(false);
+  }, [autoCollapse]);
+  const collapsed = autoCollapse ? !peek : savedCollapsed;
   useEffect(() => {
     let saved = false;
     try {
@@ -53,7 +62,11 @@ export default function StudioSidebar({ main, more, settings, activeMenu, onSele
     if (saved) setCollapsed(true);
   }, []);
   const toggle = () => {
-    const next = !collapsed;
+    if (autoCollapse) {
+      setPeek(!peek);
+      return;
+    }
+    const next = !savedCollapsed;
     setCollapsed(next);
     try {
       localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");

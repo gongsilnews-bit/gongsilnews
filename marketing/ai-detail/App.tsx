@@ -29,6 +29,10 @@ export const LAYOUTS: FlyerLayout[] = [
 ];
 
 // ⚠ 예시(가짜) 값을 두지 않는다 — 불러오기 전·실패했을 때도 남의 매물·가짜 중개사가 보이지 않게 (2026-10-15)
+
+/* QR·공유 링크는 늘 실제 사이트 주소로 — 개발 PC(localhost)나 앱에서 만들어도 손님 휴대폰에서 열려야 한다 (2026-10-15) */
+const SITE_ORIGIN = "https://www.gongsilnews.com";
+
 const INITIAL_INFO: PropertyInfo = {
   promotionText: "",
   address: "",
@@ -495,7 +499,7 @@ function App() {
     const vacancyId = params.get("vacancy_id");
     if (!vacancyId) return;
 
-    const shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
+    const shareUrl = `${SITE_ORIGIN}/flyer/${vacancyId}.html`;
     
     // First, save the current flyer state before sharing
     await handleSaveToStorageQuietly();
@@ -526,7 +530,7 @@ function App() {
     // Save first
     await handleSaveToStorageQuietly();
 
-    const shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
+    const shareUrl = `${SITE_ORIGIN}/flyer/${vacancyId}.html`;
     try {
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(shareUrl);
@@ -658,7 +662,7 @@ function App() {
     }
 
     // 2. 공유 고유 URL 주소 빌드
-    const shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
+    const shareUrl = `${SITE_ORIGIN}/flyer/${vacancyId}.html`;
     
     // 3. 브라우저 클립보드 복사
     try {
@@ -1421,8 +1425,19 @@ function App() {
       {aiProgress && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-2xl px-8 py-6 max-w-md text-center">
-            <div className="text-3xl mb-2">{aiProgress.startsWith("✓") ? "✅" : "🤖"}</div>
-            <div className="font-bold text-gray-900 leading-relaxed">{aiProgress}</div>
+            {aiProgress.startsWith("✓") ? (
+            <div className="mx-auto mb-3 w-9 h-9 rounded-full bg-green-600 text-white flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+            </div>
+          ) : (
+            <div className="flex items-end justify-center gap-1 h-5 mb-3">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="w-2 h-2 rounded-full bg-blue-600" style={{ animation: `gwLoadingDot 1s ease-in-out ${i * 0.15}s infinite` }} />
+              ))}
+              <style>{`@keyframes gwLoadingDot { 0%, 60%, 100% { transform: translateY(0); opacity: .45 } 30% { transform: translateY(-7px); opacity: 1 } }`}</style>
+            </div>
+          )}
+            <div className="font-bold text-gray-900 leading-relaxed">{aiProgress.replace(/^✓\s*/, "")}</div>
             {!aiProgress.startsWith("✓") && <div className="mt-2 text-sm text-gray-500">스튜디오 전용 크롬에서 ChatGPT가 씁니다. 1~2분 걸립니다.</div>}
           </div>
         </div>

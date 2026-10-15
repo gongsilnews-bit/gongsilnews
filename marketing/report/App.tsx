@@ -26,6 +26,10 @@ export const LAYOUTS: FlyerLayout[] = [
   { id: 'type5', name: 'High-end Minimal', type: 'type5', headingFont: 'font-sans', bodyFont: 'font-sans' },
 ];
 
+
+/* QR·공유 링크는 늘 실제 사이트 주소로 — 개발 PC(localhost)나 앱에서 만들어도 손님 휴대폰에서 열려야 한다 (2026-10-15) */
+const SITE_ORIGIN = "https://www.gongsilnews.com";
+
 const INITIAL_INFO: PropertyInfo = {
   // Page 0: Cover
   coverTitle: "INVESTMENT MEMORANDUM",
@@ -312,13 +316,13 @@ const mergeStateWithDefaults = (loaded: any): FlyerState => {
     const params = new URLSearchParams(window.location.search);
     const vacancyId = params.get("vacancy_id");
     if (vacancyId) {
-      shareUrl = `${window.location.origin}/flyer/${vacancyId}.html`;
+      shareUrl = `${SITE_ORIGIN}/flyer/${vacancyId}.html`;
     }
   }
 
   const loadedInfo = loaded?.info || {};
   let coverQRLink = loadedInfo.coverQRLink;
-  if (!coverQRLink || coverQRLink === "https://gongsilnews.com") {
+  if (!coverQRLink || coverQRLink === "https://gongsilnews.com" || /localhost|127\.0\.0\.1/.test(coverQRLink)) {
     coverQRLink = shareUrl;
   }
 
@@ -682,7 +686,7 @@ function App() {
   }, [handleUndo, handleRedo]);
 
   const loadVacancyDataDirectly = async (vacancyId: string) => {
-    const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/report/${vacancyId}.html` : "https://gongsilnews.com";
+    const shareUrl = typeof window !== 'undefined' ? `${SITE_ORIGIN}/report/${vacancyId}.html` : "https://gongsilnews.com";
     setLoadingData(true);
     try {
       const res = await fetch(`/api/vacancy/detail?id=${vacancyId}`);
@@ -1178,7 +1182,7 @@ function App() {
     const vacancyId = params.get("vacancy_id");
     if (!vacancyId) return;
 
-    const shareUrl = `${window.location.origin}/report/${vacancyId}.html`;
+    const shareUrl = `${SITE_ORIGIN}/report/${vacancyId}.html`;
     
     // First, save the current flyer state before sharing
     await handleSaveToStorageQuietly();
@@ -1214,7 +1218,7 @@ function App() {
     // Save first
     await handleSaveToStorageQuietly();
 
-    const shareUrl = `${window.location.origin}/report/${vacancyId}.html`;
+    const shareUrl = `${SITE_ORIGIN}/report/${vacancyId}.html`;
     try {
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(shareUrl);
@@ -1330,7 +1334,7 @@ function App() {
     }
 
     // 2. 공유 고유 URL 주소 빌드 (html 확장자 유지)
-    const shareUrl = `${window.location.origin}/report/${vacancyId}.html`;
+    const shareUrl = `${SITE_ORIGIN}/report/${vacancyId}.html`;
     
     // 3. 브라우저 클립보드 복사
     try {
@@ -2258,10 +2262,11 @@ ${clone.outerHTML}
                 </div>
                 <span>Width: 860px (A4 가로 배율)</span>
             </div>
-            <div ref={previewContainerRef} className="print:overflow-visible print:p-0 print:block flex-1 overflow-auto p-8 flex justify-center custom-scrollbar">
+            <div ref={previewContainerRef} className="print:overflow-visible print:p-0 print:block flex-1 overflow-auto p-8 flex justify-start custom-scrollbar">
                 {/* Fixed width container for editor preview */}
                 <div
-                  className="report-canvas-shell w-[860px] shrink-0 print:w-[1122px] print:mx-auto print:shrink"
+                  // 가운데 정렬은 mx-auto 로 — 화면이 좁으면 왼쪽이 잘리지 않고 옆으로 스크롤된다 (justify-center 는 왼쪽을 잘랐다)
+                  className="report-canvas-shell w-[860px] shrink-0 mx-auto print:w-[1122px] print:mx-auto print:shrink"
                   style={{
                     '--mobile-report-page-count': mobilePreviewPageCount,
                     '--mobile-report-scale': mobileReportScale,
@@ -2542,8 +2547,19 @@ ${clone.outerHTML}
       {aiProgress && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-2xl px-8 py-6 max-w-md text-center">
-            <div className="text-3xl mb-2">{aiProgress.startsWith("✓") ? "✅" : "🤖"}</div>
-            <div className="font-bold text-gray-900 leading-relaxed">{aiProgress}</div>
+            {aiProgress.startsWith("✓") ? (
+            <div className="mx-auto mb-3 w-9 h-9 rounded-full bg-green-600 text-white flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+            </div>
+          ) : (
+            <div className="flex items-end justify-center gap-1 h-5 mb-3">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="w-2 h-2 rounded-full bg-blue-600" style={{ animation: `gwLoadingDot 1s ease-in-out ${i * 0.15}s infinite` }} />
+              ))}
+              <style>{`@keyframes gwLoadingDot { 0%, 60%, 100% { transform: translateY(0); opacity: .45 } 30% { transform: translateY(-7px); opacity: 1 } }`}</style>
+            </div>
+          )}
+            <div className="font-bold text-gray-900 leading-relaxed">{aiProgress.replace(/^✓\s*/, "")}</div>
             {!aiProgress.startsWith("✓") && <div className="mt-2 text-sm text-gray-500">스튜디오 전용 크롬에서 ChatGPT가 씁니다. 1~2분 걸립니다.</div>}
           </div>
         </div>

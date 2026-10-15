@@ -391,7 +391,22 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                                   <input type="text" name="coverSubtitle" value={info.coverSubtitle || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm" />
                               </div>
                               <div>
-                                  <label className="text-xs text-gray-500">QR 온라인 보고서 링크 (QR Code Link)</label>
+                                  <div className="flex items-center justify-between">
+                                      <label className="text-xs text-gray-500">QR 온라인 보고서 링크 (QR Code Link)</label>
+                                      <button type="button" title="링크 복사"
+                                          onClick={(e) => {
+                                              const btn = e.currentTarget;
+                                              navigator.clipboard.writeText(info.coverQRLink || "").then(() => {
+                                                  btn.dataset.copied = "1";
+                                                  setTimeout(() => { delete btn.dataset.copied; }, 1500);
+                                              }).catch(() => alert("복사하지 못했습니다."));
+                                          }}
+                                          className="group flex items-center gap-1 px-2 py-0.5 rounded-md border border-gray-200 text-xs font-bold text-gray-500 hover:bg-gray-50 data-[copied]:text-green-600 data-[copied]:border-green-300">
+                                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></svg>
+                                          <span className="group-data-[copied]:hidden">링크 복사</span>
+                                          <span className="hidden group-data-[copied]:inline">복사됨</span>
+                                      </button>
+                                  </div>
                                   <input type="text" name="coverQRLink" value={info.coverQRLink || ""} onChange={handleChange} className="w-full border rounded p-2 text-sm placeholder-gray-400 font-mono" placeholder="https://..." />
                                   <label className="mt-2 flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
                                       <input type="checkbox" checked={!info.hideCoverQR} onChange={(e) => setInfo({ ...info, hideCoverQR: !e.target.checked })} className="w-4 h-4" />
