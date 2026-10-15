@@ -154,11 +154,21 @@ function save({ vacancyId, title, paragraphs, keywords, media }) {
 }
 
 /* 내 PC 사진 추가 → slot(문단 뒤 자리)에 넣는다 */
-async function addPhoto({ vacancyId, dataUrl, slot, caption = "", kind = "upload" }) {
+async function addPhoto({ vacancyId, dataUrl, slot, caption = "", kind = "upload", replaceId = null }) {
   const blog = readJson(blogFile(vacancyId));
   if (!blog) throw new Error("먼저 블로그 글을 써 주세요.");
   const id = newId();
   const file = await saveDataUrl(dataUrl, path.join(mediaDir(vacancyId), "added"), `${kind}-${id}`);
+  // [수정] 사진 바꾸기: 자리·대표·순서는 그대로 두고 그림만 바꾼다 (내 사진이면 설명도 그대로)
+  if (replaceId) {
+    const item = blog.media.find((m) => m.id === replaceId);
+    if (!item) throw new Error("바꿀 사진을 찾지 못했습니다.");
+    item.file = file;
+    item.kind = kind;
+    if (kind === "ai" && caption) item.caption = caption;
+    fs.writeFileSync(blogFile(vacancyId), JSON.stringify(blog, null, 2));
+    return { id: item.id, kind, caption: item.caption, isCover: Boolean(item.isCover), insertAfterParagraph: Number.isInteger(item.insertAfterParagraph) ? item.insertAfterParagraph : null, thumb: thumbOf(file) };
+  }
   const item = { id, kind, file, caption, isCover: false, insertAfterParagraph: Number.isInteger(slot) ? Math.min(slot, blog.paragraphs.length) : blog.paragraphs.length };
   blog.media.push(item);
   fs.writeFileSync(blogFile(vacancyId), JSON.stringify(blog, null, 2));
@@ -171,7 +181,7 @@ function imageStyles() {
 }
 
 /* AI 이미지 만들기: 확장과 같은 이미지 프롬프트(매물 사실 + 블로그 글 + 화풍·장면 요청)로 ChatGPT 가 그린 그림을 slot 에 넣는다 */
-async function makeImage({ baseUrl, vacancyId, style = "news", request = "", slot }, onProgress = () => {}) {
+async function makeImage({ baseUrl, vacancyId, style = "news", request = "", slot, replaceId = null }, onProgress = () => {}) {
   const blog = readJson(blogFile(vacancyId));
   const analysis = readJson(path.join(mediaDir(vacancyId), "analysis.json"));
   if (!blog || !analysis) throw new Error("먼저 블로그 글을 써 주세요.");
@@ -181,7 +191,7 @@ async function makeImage({ baseUrl, vacancyId, style = "news", request = "", slo
   onProgress("그림을 블로그에 넣는 중…");
   const label = (extPrompt.GW_IMAGE_STYLE[style] || {}).label || "AI 이미지";
   const name = analysis.vacancy.title || "해당 매물";
-  return addPhoto({ vacancyId, dataUrl, slot, kind: "ai", caption: `${name} ${label} (AI 생성 이미지)` });
+  return addPhoto({ vacancyId, dataUrl, slot, replaceId, kind: "ai", caption: `${name} ${label} (AI 생성 이미지)` });
 }
 
 module.exports = { styles, write, get, save, addPhoto, imageStyles, makeImage, mediaDir, readJson, blogFile };

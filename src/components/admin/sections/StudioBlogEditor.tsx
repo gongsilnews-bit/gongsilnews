@@ -10,6 +10,7 @@ import React, { useEffect, useRef, useState } from "react";
  *  - 제목·문단은 눌러서 바로 고친다. "■"로 시작하는 문단은 소제목.
  *  - 사진: 대표로, 위로·아래로(앞·뒤 문단 사이로), 설명 고치기, 삭제, 자리마다 내 PC 사진 넣기.
  *  - AI 이미지: 자리마다 화풍(확장과 같은 5종)·장면 요청으로 ChatGPT 가 그린 그림을 넣는다.
+ *  - [수정]: 그 사진을 내 사진이나 AI 이미지로 바꾼다 (자리·대표·순서는 그대로).
  *  - 고친 내용은 잠시 뒤 앱(PC)에 저장된다.
  */
 
@@ -19,9 +20,9 @@ export type BlogDraft = { vacancyId: string; style: string; length: string; titl
 type Bridge = {
   blog: {
     save: (patch: { vacancyId: string; title: string; paragraphs: string[]; keywords: string[]; media: Omit<BlogMedia, "thumb" | "kind">[] }) => Promise<unknown>;
-    addPhoto: (opts: { vacancyId: string; dataUrl: string; slot: number }) => Promise<BlogMedia>;
+    addPhoto: (opts: { vacancyId: string; dataUrl: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
     imageStyles: () => Promise<{ id: string; label: string }[]>;
-    makeImage: (opts: { vacancyId: string; style: string; request: string; slot: number }) => Promise<BlogMedia>;
+    makeImage: (opts: { vacancyId: string; style: string; request: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
@@ -53,6 +54,9 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
   const [imageStyles, setImageStyles] = useState<{ id: string; label: string }[]>([]);
   const [aiSlot, setAiSlot] = useState<number | null>(null); // AI 이미지 창을 연 자리
   const [openSlot, setOpenSlot] = useState<number | null>(null); // ⊕ 메뉴를 연 자리
+  const [editId, setEditId] = useState<string | null>(null); // [수정] 메뉴를 연 사진
+  const [aiReplace, setAiReplace] = useState<string | null>(null); // AI 이미지로 바꿀 사진
+  const replaceRef = useRef<string | null>(null); // 내 사진으로 바꿀 사진
   const [aiStyle, setAiStyle] = useState("news");
   const [aiRequest, setAiRequest] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
@@ -63,16 +67,17 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
     bridge()?.blog.imageStyles().then(setImageStyles).catch(() => {});
   }, []);
 
-  const makeImage = async (slot: number) => {
+  const makeImage = async (target: { slot?: number; replaceId?: string }) => {
     const b = bridge();
     if (!b) return;
     setAiBusy(true);
     setAiErr("");
     const off = b.blog.onProgress(setAiMsg);
     try {
-      const item = await b.blog.makeImage({ vacancyId: initial.vacancyId, style: aiStyle, request: aiRequest, slot });
-      setMedia((list) => [...list, item]);
+      const item = await b.blog.makeImage({ vacancyId: initial.vacancyId, style: aiStyle, request: aiRequest, ...target });
+      setMedia((list) => (target.replaceId ? list.map((m) => (m.id === item.id ? { ...m, ...item } : m)) : [...list, item]));
       setAiSlot(null);
+      setAiReplace(null);
       setAiRequest("");
     } catch (e) {
       setAiErr((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
@@ -158,6 +163,12 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
 
   const pickPhotos = (slot: number) => {
     addSlot.current = slot;
+    replaceRef.current = null;
+    fileInput.current?.click();
+  };
+  const pickReplace = (id: string) => {
+    replaceRef.current = id;
+    if (fileInput.current) fileInput.current.multiple = false;
     fileInput.current?.click();
   };
   const onFiles = async (files: FileList | null) => {
@@ -165,13 +176,23 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
     if (!b || !files || !files.length) return;
     setAdding(addSlot.current);
     try {
-      for (const f of Array.from(files)) {
-        const item = await b.blog.addPhoto({ vacancyId: initial.vacancyId, dataUrl: await readAsDataUrl(f), slot: addSlot.current });
-        setMedia((list) => [...list, item]);
+      const replaceId = replaceRef.current;
+      if (replaceId) {
+        const item = await b.blog.addPhoto({ vacancyId: initial.vacancyId, dataUrl: await readAsDataUrl(files[0]), replaceId });
+        setMedia((list) => list.map((m) => (m.id === item.id ? { ...m, ...item } : m)));
+      } else {
+        for (const f of Array.from(files)) {
+          const item = await b.blog.addPhoto({ vacancyId: initial.vacancyId, dataUrl: await readAsDataUrl(f), slot: addSlot.current });
+          setMedia((list) => [...list, item]);
+        }
       }
     } finally {
       setAdding(null);
-      if (fileInput.current) fileInput.current.value = "";
+      replaceRef.current = null;
+      if (fileInput.current) {
+        fileInput.current.value = "";
+        fileInput.current.multiple = true;
+      }
     }
   };
 
@@ -183,6 +204,35 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
   const UP = "M12 19V5M5 12l7-7 7 7";
   const DOWN = "M12 5v14M19 12l-7 7-7-7";
   const TRASH = "M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14";
+  const PENCIL = "M4 20h4L19 9l-4-4L4 16zM14 6l4 4";
+  const SPARK = "M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z";
+
+  const aiPanel = (target: { slot?: number; replaceId?: string }, heading: string, onClose: () => void) => (
+    <div style={{ padding: "16px 18px", borderRadius: 12, background: theme.cardBg, boxShadow: `0 0 0 1px ${theme.border}, 0 6px 18px rgba(15,23,42,0.06)` }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: theme.textPrimary }}>{heading}</span>
+        <button onClick={onClose} disabled={aiBusy} style={{ border: 0, background: "transparent", color: theme.textSecondary, cursor: "pointer", fontSize: 14 }}>✕</button>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+        {imageStyles.map((st) => (
+          <button key={st.id} onClick={() => setAiStyle(st.id)}
+            style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer",
+              border: `1px solid ${aiStyle === st.id ? "#1a3a6b" : theme.border}`, background: aiStyle === st.id ? "#1a3a6b" : "transparent", color: aiStyle === st.id ? "#fff" : theme.textPrimary }}>
+            {st.label}
+          </button>
+        ))}
+      </div>
+      <input value={aiRequest} onChange={(e) => setAiRequest(e.target.value)} placeholder="그리고 싶은 장면 (비워 두면 글에서 알아서 고릅니다) 예: 해 질 녘 건물 정면"
+        style={{ width: "100%", boxSizing: "border-box", padding: "9px 11px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13, background: theme.cardBg, color: theme.textPrimary }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+        <button onClick={() => makeImage(target)} disabled={aiBusy}
+          style={{ padding: "9px 16px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 700, cursor: aiBusy ? "default" : "pointer", opacity: aiBusy ? 0.6 : 1 }}>
+          {aiBusy ? "그리는 중…" : "ChatGPT로 그리기"}
+        </button>
+        <span style={{ fontSize: 12, color: aiErr ? "#c53030" : theme.textSecondary }}>{aiErr || aiMsg || "1~3분 걸립니다. 글자·사람 얼굴은 넣지 않습니다."}</span>
+      </div>
+    </div>
+  );
 
   const photo = (m: BlogMedia) => (
     <figure key={m.id} className="sbe-photo" style={{ margin: "16px 0", borderRadius: 12, overflow: "hidden", background: theme.cardBg, boxShadow: m.isCover ? "0 0 0 2px #1a3a6b" : `0 0 0 1px ${theme.border}` }}>
@@ -195,12 +245,25 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
           {!m.isCover && <button className="sbe-tool" onClick={() => makeCover(m.id)} title="대표 사진으로"><Ico d={STAR} /></button>}
           <button className="sbe-tool" onClick={() => move(m.id, -1)} title="위로"><Ico d={UP} /></button>
           <button className="sbe-tool" onClick={() => move(m.id, 1)} title="아래로"><Ico d={DOWN} /></button>
+          <button className="sbe-tool" onClick={() => setEditId(editId === m.id ? null : m.id)} title="수정"><Ico d={PENCIL} /></button>
           <span className="sbe-sep" />
           <button className="sbe-tool sbe-danger" onClick={() => remove(m.id)} title="삭제"><Ico d={TRASH} /></button>
         </div>
+        {editId === m.id && (
+          <div className="sbe-menu sbe-edit-menu">
+            <button onClick={() => { setEditId(null); pickReplace(m.id); }}>
+              <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진으로 바꾸기
+            </button>
+            <button onClick={() => { setEditId(null); setAiReplace(m.id); setAiSlot(null); setAiErr(""); }} disabled={aiBusy}>
+              <Ico d={SPARK} /> AI 이미지로 바꾸기
+            </button>
+            <button className="sbe-menu-x" onClick={() => setEditId(null)} title="닫기">✕</button>
+          </div>
+        )}
       </div>
       <input value={m.caption} onChange={(e) => update(m.id, { caption: e.target.value })} placeholder="사진 설명"
         style={{ width: "100%", boxSizing: "border-box", border: 0, padding: "9px 12px", fontSize: 12.5, color: theme.textSecondary, background: theme.cardBg, textAlign: "center", outline: "none" }} />
+      {aiReplace === m.id && <div style={{ padding: "0 12px 12px" }}>{aiPanel({ replaceId: m.id }, "이 사진을 바꿀 AI 이미지", () => setAiReplace(null))}</div>}
     </figure>
   );
 
@@ -213,7 +276,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
             <button onClick={() => { setOpenSlot(null); pickPhotos(slot); }}>
               <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진
             </button>
-            <button onClick={() => { setOpenSlot(null); setAiSlot(slot); setAiErr(""); }} disabled={aiBusy}>
+            <button onClick={() => { setOpenSlot(null); setAiSlot(slot); setAiReplace(null); setAiErr(""); }} disabled={aiBusy}>
               <Ico d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z" /> AI 이미지
             </button>
             <button className="sbe-menu-x" onClick={() => setOpenSlot(null)} title="닫기">✕</button>
@@ -224,32 +287,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
           </button>
         )}
       </div>
-      {aiSlot === slot && (
-        <div style={{ margin: "6px 0 14px", padding: "16px 18px", borderRadius: 12, background: theme.cardBg, boxShadow: `0 0 0 1px ${theme.border}, 0 6px 18px rgba(15,23,42,0.06)` }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: theme.textPrimary }}>이 자리에 넣을 AI 이미지</span>
-            <button onClick={() => setAiSlot(null)} disabled={aiBusy} style={{ border: 0, background: "transparent", color: theme.textSecondary, cursor: "pointer", fontSize: 14 }}>✕</button>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-            {imageStyles.map((st) => (
-              <button key={st.id} onClick={() => setAiStyle(st.id)}
-                style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer",
-                  border: `1px solid ${aiStyle === st.id ? "#1a3a6b" : theme.border}`, background: aiStyle === st.id ? "#1a3a6b" : "transparent", color: aiStyle === st.id ? "#fff" : theme.textPrimary }}>
-                {st.label}
-              </button>
-            ))}
-          </div>
-          <input value={aiRequest} onChange={(e) => setAiRequest(e.target.value)} placeholder="그리고 싶은 장면 (비워 두면 글에서 알아서 고릅니다) 예: 해 질 녘 건물 정면"
-            style={{ width: "100%", boxSizing: "border-box", padding: "9px 11px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13, background: theme.cardBg, color: theme.textPrimary }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-            <button onClick={() => makeImage(slot)} disabled={aiBusy}
-              style={{ padding: "9px 16px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 700, cursor: aiBusy ? "default" : "pointer", opacity: aiBusy ? 0.6 : 1 }}>
-              {aiBusy ? "그리는 중…" : "ChatGPT로 그리기"}
-            </button>
-            <span style={{ fontSize: 12, color: aiErr ? "#c53030" : theme.textSecondary }}>{aiErr || aiMsg || "1~3분 걸립니다. 글자·사람 얼굴은 넣지 않습니다."}</span>
-          </div>
-        </div>
-      )}
+      {aiSlot === slot && <div style={{ margin: "6px 0 14px" }}>{aiPanel({ slot }, "이 자리에 넣을 AI 이미지", () => setAiSlot(null))}</div>}
     </div>
   );
 
@@ -273,6 +311,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
     .sbe-menu button{display:flex;align-items:center;gap:6px;border:0;background:transparent;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;color:#1f2937;cursor:pointer}
     .sbe-menu button:hover{background:#f1f5f9}
     .sbe-menu .sbe-menu-x{padding:6px 9px;color:#94a3b8}
+    .sbe-edit-menu{position:absolute;top:50px;right:10px;z-index:2}
   `;
 
   return (
