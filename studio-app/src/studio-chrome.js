@@ -230,7 +230,12 @@ async function placeOnScreen(page) {
     const width = Math.max(900, Math.round(w.width / 2));
     const cdp = await page.context().newCDPSession(page);
     const { windowId } = await cdp.send("Browser.getWindowForTarget");
+    // 윈도우는 다른 프로그램이 창을 앞으로 끌어오는 것을 막을 때가 있다.
+    // 잠깐 최소화했다가 펴면 확실히 맨 앞으로 나온다 (앱 뒤에 가려진 채로 일하지 않게)
+    await cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "minimized" } });
+    await sleep(150);
     await cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "normal" } });
+    await sleep(250); // 다 펴진 뒤에 위치를 잡아야 오른쪽 절반에 정확히 놓인다
     await cdp.send("Browser.setWindowBounds", { windowId, bounds: { left: w.x + w.width - width, top: w.y, width, height: w.height } });
     await cdp.detach();
   } catch (e) {
