@@ -867,13 +867,15 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
         </div>
 
         {/* 오른쪽 칸 */}
-        {panel === "library" && <LibraryPanel key={`${libTab}${libOverlay}`} project={project} canReplace={selected.length > 0} onPick={onPick} onClose={() => setPanel("")} initialTab={libTab} overlay={libOverlay} />}
+        {panel === "library" && <LibraryPanel key={`${libTab}${libOverlay}`} project={project} canReplace={selected.length > 0} onPick={onPick} initialTab={libTab} overlay={libOverlay}
+          onClose={() => (libOverlay && overlayTarget && (project.layers || []).some((l) => l.id === overlayTarget) ? openLayer(overlayTarget) : setPanel(""))} />}
         {panel === "voice" && <VoicePanel project={project} targetCount={selected.filter((id) => findClip(project, id)?.clip.type === "voice").length} onApply={applyVoice} onClose={() => setPanel("")} />}
         {panel === "subtitle" && <SubtitlePanel settings={project.settings} onChange={(patch) => change((p) => { p.settings.subtitle = { ...p.settings.subtitle, ...patch }; })} onClose={() => setPanel("")} />}
         {panel === "ratio" && <RatioPanel ratio={project.ratio} fill={project.settings.fill} onRatio={(r: Ratio) => change((p) => { p.ratio = r; })} onFill={(f) => change((p) => { p.settings.fill = f; })} onClose={() => setPanel("")} />}
         {panel === "music" && (
           <MusicPanel project={project} current={(project.layers || []).find((l) => l.id === musicTarget) || null}
-            rangeText={selected.length ? `고른 클립 ${selected.length}개` : "영상 처음부터 끝까지"} onPick={onMusic} onClose={() => setPanel("")} />
+            rangeText={selected.length ? `고른 클립 ${selected.length}개` : "영상 처음부터 끝까지"} onPick={onMusic}
+            onClose={() => (musicTarget && (project.layers || []).some((l) => l.id === musicTarget) ? openLayer(musicTarget) : setPanel(""))} />
         )}
         {panel === "layer" && (() => {
           const l = (project.layers || []).find((x) => x.id === selLayer);

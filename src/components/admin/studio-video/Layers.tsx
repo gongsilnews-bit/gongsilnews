@@ -164,8 +164,11 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
       {layer.type === "music" && (
         <>
           <div style={{ ...row, display: "flex", alignItems: "center", gap: 10 }}>
-            <Icon name="music" size={18} />
-            <span style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>{layer.name || "음악"}</span>
+            <button type="button" onClick={onReplace} title="눌러서 음악 바꾸기"
+              style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", border: `1px solid ${C.line2}`, borderRadius: 6, background: C.card, color: C.text, fontSize: 15, fontWeight: 700, fontFamily: FONT, cursor: "pointer", textAlign: "left" }}>
+              <Icon name="music" size={18} />
+              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{layer.name || "음악"}</span>
+            </button>
             <Btn small onClick={onReplace}>음악 바꾸기</Btn>
           </div>
           <Slider title="음악 크기" value={layer.volume ?? 0.15} min={0.03} max={0.6} step={0.01} show={`${Math.round((layer.volume ?? 0.15) * 100)}%`} onChange={(v) => onChange({ volume: v })} />
@@ -194,7 +197,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
             <div style={{ width: 64, height: 40, borderRadius: 4, overflow: "hidden", background: "#000", flexShrink: 0 }}>
               {asset && <img src={asset.thumb || asset.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
             </div>
-            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{asset?.name || "사진"}</span>
+            <button type="button" onClick={onReplace} title="눌러서 사진 바꾸기" style={{ flex: 1, minWidth: 0, padding: 0, border: 0, background: "transparent", color: C.text, fontSize: 14.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{asset?.name || "사진"}</button>
             <Btn small onClick={onReplace}>사진 바꾸기</Btn>
           </div>
           <div style={row}>
