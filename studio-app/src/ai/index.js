@@ -13,7 +13,7 @@ const providerOfUrl = (url) => (/gemini\.google\.com/.test(String(url || "")) ? 
 function current() {
   const conn = require("../ai-connect");
   const want = conn.getWriter();
-  const ok = (id) => conn.list().some((x) => x.id === id && x.ok);
+  const ok = (id) => conn.list().some((x) => x.id === id && x.ok && x.ready); // "준비 중" AI 는 쓰지 않는다
   if (ok(want)) return want;
   const other = Object.keys(AIS).find((id) => id !== want && ok(id));
   return other || want;

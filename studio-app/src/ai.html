@@ -63,8 +63,8 @@
       const b = document.createElement("button");
       b.className = "pill" + (it.isWriter ? " on" : "");
       b.textContent = it.name + (it.isWriter ? " ✓" : "");
-      b.disabled = busy || !it.ok;
-      b.title = it.ok ? "" : "먼저 아래에서 연결해 주세요";
+      b.disabled = busy || !it.ok || !it.ready;
+      b.title = !it.ready ? "준비 중입니다" : it.ok ? "" : "먼저 아래에서 연결해 주세요";
       b.onclick = async () => { if (it.isWriter) return; render(await studio.ai.setWriter(it.id)); say(`이제 ${it.name}로 글을 씁니다. (그림은 ChatGPT)`); };
       pills.appendChild(b);
     }
