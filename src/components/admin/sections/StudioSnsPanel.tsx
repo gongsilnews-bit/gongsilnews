@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import ChannelButton from "./ChannelButton";
 
 /**
  * SNS뉴스발행 — 인스타그램·스레드·페이스북 탭 (공실뉴스 스튜디오)
@@ -278,7 +279,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18 }}>
             <button onClick={copy} style={btn(true)}>글 복사</button>
             <button onClick={exportFolder} style={btn()}>사진·글 폴더로 저장</button>
-            <button onClick={openChannel} style={btn()}>{info.label} 열기</button>
+            <ChannelButton channel={channel} label={`${info.label} 열기`} onClick={openChannel} />
           </div>
           {note && <div style={{ marginTop: 10, fontSize: 13, color: "#16a34a", lineHeight: 1.6, wordBreak: "break-all" }}>{note}</div>}
           <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary, lineHeight: 1.6 }}>

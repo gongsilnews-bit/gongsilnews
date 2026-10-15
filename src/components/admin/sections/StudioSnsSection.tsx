@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
 import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
 import StudioSnsPanel, { type SnsData, type ChannelInfo } from "./StudioSnsPanel";
+import ChannelButton from "./ChannelButton";
 
 /**
  * SNS뉴스발행 (공실뉴스 스튜디오 앱 전용)
@@ -505,12 +506,9 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 <div style={{ fontSize: 13, color: theme.textSecondary, flex: 1, minWidth: 260, lineHeight: 1.6 }}>
                   스튜디오 전용 크롬에 네이버 글쓰기가 열리고 제목·본문·사진 {result?.media.length || 0}장·매물 정보 출처가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
                 </div>
-                <button onClick={() => bridge()?.naver.openMyBlog()}
-                  style={{ padding: "11px 16px", background: "#fff", color: "#03a94f", border: "1px solid #03c75a", borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
-                  네이버 블로그 바로가기
-                </button>
+                <ChannelButton channel="blog" label="네이버 블로그 바로가기" onClick={() => bridge()?.naver.openMyBlog()} />
                 <button onClick={fillNaver} disabled={filling}
-                  style={{ padding: "11px 20px", background: filling ? "#94a3b8" : "#03c75a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: filling ? "default" : "pointer" }}>
+                  style={{ padding: "11px 20px", background: filling ? "#94a3b8" : "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: filling ? "default" : "pointer" }}>
                   {filling ? "네이버에 채우는 중…" : "네이버 블로그에 채우기"}
                 </button>
               </div>
