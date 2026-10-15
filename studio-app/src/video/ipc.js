@@ -34,10 +34,7 @@ function register(base) {
       : [{ name: "사진·영상", extensions: ["mp4", "mov", "m4v", "webm", "mkv", "avi", "wmv", "jpg", "jpeg", "png", "webp", "gif", "heic"] }];
     const r = await dialog.showOpenDialog(winOf(e), { title: "PC에서 불러오기", properties: ["openFile", "multiSelections"], filters });
     if (r.canceled || !r.filePaths.length) return [];
-    if (kinds === "audio") {
-      r.filePaths.forEach((f) => media.allow(f));
-      return Promise.all(r.filePaths.map(async (f) => ({ path: f, name: path.basename(f), url: media.urlOf(f), duration: (await ff.probe(f).catch(() => ({ duration: 0 }))).duration })));
-    }
+    if (kinds === "audio") return library.add(r.filePaths, { source: "local", allowAudio: true }); // 내 음악 목록에 남긴다
     return library.add(r.filePaths, { source: "local" });
   });
   ipcMain.handle("video:lib-fav", (_e, id, fav) => library.setFav(id, fav));
@@ -49,6 +46,22 @@ function register(base) {
     return library.addFolder(r.filePaths[0]);
   });
   ipcMain.handle("video:lib-remove-folder", (_e, dir) => library.removeFolder(dir));
+  ipcMain.handle("video:lib-music-folder", () => {
+    fs.mkdirSync(library.musicDir(), { recursive: true });
+    return library.musicDir();
+  });
+  /** 내 음악 → 프로젝트 폴더로 복사해서 쓴다 (원본을 옮기거나 지워도 영상은 그대로) */
+  ipcMain.handle("video:music-use", async (_e, dir, libId) => {
+    const it = library.get(libId);
+    if (!it || it.kind !== "audio" || !fs.existsSync(it.path)) throw new Error("음악 파일을 찾지 못했습니다.");
+    const destDir = path.join(dir, "assets", "music");
+    fs.mkdirSync(destDir, { recursive: true });
+    const ext = path.extname(it.path);
+    let file = path.join(destDir, `${it.id}${ext}`);
+    if (!fs.existsSync(file)) fs.copyFileSync(it.path, file);
+    media.allow(file);
+    return { file, url: media.urlOf(file), name: it.name.replace(/\.[^.]+$/, "") };
+  });
 
   /* ── 프로젝트 ── */
   ipcMain.handle("video:project-create", (_e, opts) => project.withUrls(project.create(opts || {})));

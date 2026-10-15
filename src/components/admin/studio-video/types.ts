@@ -105,7 +105,7 @@ export type Project = {
   thumb?: string;
 };
 
-export type LibItem = { id: string; name: string; kind: "video" | "image"; source: string; fav: boolean; credit?: string; duration: number; width: number; height: number; url: string; thumb: string; ready: boolean };
+export type LibItem = { id: string; name: string; kind: "video" | "image" | "audio"; source: string; fav: boolean; credit?: string; duration: number; width: number; height: number; url: string; thumb: string; ready: boolean };
 export type Recent = { dir: string; name: string; ratio: Ratio; method: Method; updatedAt: string; thumb: string; duration: number };
 export type StockItem = { id: string; kind: "image" | "video"; thumb: string; url: string; width: number; height: number; duration?: number; credit: string; source: string };
 
@@ -122,6 +122,7 @@ export type VideoBridge = {
     folders: () => Promise<string[]>;
     addFolder: () => Promise<string[]>;
     removeFolder: (dir: string) => Promise<string[]>;
+    musicFolder: () => Promise<string>;
   };
   project: {
     create: (o: { method: Method; ratio: Ratio; name?: string; vacancyId?: string }) => Promise<Project>;
@@ -146,6 +147,7 @@ export type VideoBridge = {
     get: (dir: string, item: StockItem) => Promise<LibItem>;
   };
   musicGet: (dir: string, rel: string) => Promise<{ file: string; url: string }>;
+  musicUse: (dir: string, libId: string) => Promise<{ file: string; url: string; name: string }>;
   render: (p: Project, o?: { scope?: string; sceneId?: string; clipIds?: string[]; height?: number }) => Promise<{ file: string; seconds: number; took: number; encoder: string }>;
   renderCancel: (id: string) => Promise<void>;
   exportAudio: (p: Project, kind: "mp3" | "wav") => Promise<string>;

@@ -122,6 +122,7 @@ if (allowed) {
         folders: () => ipcRenderer.invoke("video:lib-folders"),
         addFolder: () => ipcRenderer.invoke("video:lib-add-folder"),
         removeFolder: (dir) => ipcRenderer.invoke("video:lib-remove-folder", dir),
+        musicFolder: () => ipcRenderer.invoke("video:lib-music-folder"),
       },
       project: {
         create: (opts) => ipcRenderer.invoke("video:project-create", opts),
@@ -146,6 +147,7 @@ if (allowed) {
         get: (dir, item) => ipcRenderer.invoke("video:stock-get", dir, item),
       },
       musicGet: (dir, rel) => ipcRenderer.invoke("video:music-get", dir, rel),
+      musicUse: (dir, libId) => ipcRenderer.invoke("video:music-use", dir, libId),
       render: (p, opts) => ipcRenderer.invoke("video:render", p, opts),
       renderCancel: (id) => ipcRenderer.invoke("video:render-cancel", id),
       exportAudio: (p, kind) => ipcRenderer.invoke("video:export-audio", p, kind),

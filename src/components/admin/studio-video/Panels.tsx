@@ -407,22 +407,52 @@ export function RatioPanel({ ratio, fill, onRatio, onFill, onClose }: { ratio: R
 /* ── 배경 음악 ── */
 export function MusicPanel({ project, current, rangeText, onPick, onClose }: { project: Project; current: Layer | null; rangeText: string; onPick: (m: { file: string; url: string; name: string }) => void; onClose: () => void }) {
   const b = videoBridge();
+  const [tab, setTab] = useState<"lib" | "mine">(() => {
+    try {
+      return localStorage.getItem("gsv:musicTab") === "mine" ? "mine" : "lib";
+    } catch {
+      return "lib";
+    }
+  });
   const [mood, setMood] = useState<string>(MUSIC_MOODS[1]);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
   const [listen, setListen] = useState("");
+  const [mine, setMine] = useState<LibItem[] | null>(null);
+  const [q, setQ] = useState("");
   const audio = useRef<HTMLAudioElement | null>(null);
   useEffect(() => () => audio.current?.pause(), []);
-  const play = (id: string) => {
+  const switchTab = (t: "lib" | "mine") => {
+    setTab(t);
+    try {
+      localStorage.setItem("gsv:musicTab", t);
+    } catch {}
+  };
+  const loadMine = async () => {
+    if (!b) return;
+    try {
+      setMine(await b.lib.list({ kind: "audio", q }));
+    } catch (e) {
+      setMsg(errText(e));
+      setMine([]);
+    }
+  };
+  useEffect(() => {
+    if (tab === "mine") loadMine();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
+  const play = (id: string, url: string) => {
     audio.current?.pause();
     if (listen === id) return setListen("");
-    const a = new Audio(`/reels-assets/bgm/lib/${id.slice(4)}.mp3`);
+    const a = new Audio(url);
     a.volume = 0.6;
     a.play().catch(() => {});
+    a.onended = () => setListen("");
     audio.current = a;
     setListen(id);
   };
-  const pick = async (id: string, name: string) => {
+  const pickLib = async (id: string, name: string) => {
     if (!b) return;
     setBusy(id);
     setMsg("");
@@ -434,36 +464,120 @@ export function MusicPanel({ project, current, rangeText, onPick, onClose }: { p
     }
     setBusy("");
   };
-  const mine = async () => {
+  const pickMine = async (it: LibItem) => {
     if (!b) return;
-    const r = (await b.lib.pick({ kinds: "audio" })) as unknown as { path: string; url: string; name: string }[];
-    if (r[0]) onPick({ file: r[0].path, url: r[0].url, name: r[0].name });
+    setBusy(it.id);
+    setMsg("");
+    try {
+      onPick(await b.musicUse(project.dir, it.id));
+    } catch (e) {
+      setMsg(errText(e));
+    }
+    setBusy("");
   };
+  const fromPc = async () => {
+    if (!b) return;
+    const added = await b.lib.pick({ kinds: "audio" });
+    if (added.length) {
+      setQ("");
+      await loadMine();
+      setMsg(`${added.length}곡을 내 음악에 넣었어요`);
+    }
+  };
+  const openFolder = async () => {
+    if (!b) return;
+    await b.openPath(await b.lib.musicFolder());
+  };
+  const row = (key: string, on: boolean, playBtn: React.ReactNode, body: React.ReactNode, right: React.ReactNode) => (
+    <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: `1px solid ${on ? C.accent : C.line}`, background: C.card }}>
+      {playBtn}
+      {body}
+      {right}
+    </div>
+  );
+  const playBtn = (id: string, url: string) => (
+    <button type="button" onClick={() => play(id, url)} title="미리듣기" style={{ width: 34, height: 34, flexShrink: 0, border: `1px solid ${C.line2}`, borderRadius: 5, background: "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Icon name={listen === id ? "pause" : "play"} size={15} />
+    </button>
+  );
+
   return (
     <Side title={current ? "음악 바꾸기" : "배경 음악 넣기"} onClose={onClose}>
       <div style={{ padding: "12px 14px", borderBottom: `1px solid ${C.line}`, fontSize: 14.5, lineHeight: 1.6 }}>
         {current ? <>지금 음악: <b>{current.name || "음악"}</b><br />아래에서 고르면 이 음악이 바뀌어요.</> : <>아래에서 고르면 <b>{rangeText}</b>에 음악이 깔려요.</>}
       </div>
-      <div style={{ padding: "12px 14px 0" }}>
-        <Btn small onClick={mine}><Icon name="music" size={16} />내 음악 불러오기</Btn>
+      <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
+        <button type="button" onClick={() => switchTab("lib")} style={tabBtn(tab === "lib")}>공실뉴스 음악</button>
+        <button type="button" onClick={() => switchTab("mine")} style={tabBtn(tab === "mine")}>내 음악</button>
       </div>
-      {msg && <div style={{ padding: "10px 14px 0", color: C.danger, fontSize: 14 }}>{msg}</div>}
-      <div style={{ padding: "12px 14px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {MUSIC_MOODS.map((md) => <button key={md} type="button" onClick={() => setMood(md)} style={chip(mood === md)}>{md}</button>)}
-      </div>
-      <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
-        {MUSIC_LIBRARY.filter((t) => t.mood === mood).map((t) => (
-          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: `1px solid ${current?.name === t.label ? C.accent : C.line}`, background: C.card }}>
-            <button type="button" onClick={() => play(t.id)} title="미리듣기" style={{ width: 34, height: 34, border: `1px solid ${C.line2}`, borderRadius: 5, background: "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon name={listen === t.id ? "pause" : "play"} size={15} />
-            </button>
-            <span style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>{t.label}</span>
-            <span style={{ fontSize: 13, color: C.dim }}>{fmtTime(t.duration, false)}</span>
-            <Btn small primary={current?.name === t.label} onClick={() => pick(t.id, t.label)} disabled={busy === t.id}>{busy === t.id ? "받는 중…" : current?.name === t.label ? "고름" : "고르기"}</Btn>
+      {msg && <div style={{ padding: "10px 14px 0", color: msg.includes("넣었어요") ? C.sub : C.danger, fontSize: 14 }}>{msg}</div>}
+
+      {tab === "lib" ? (
+        <>
+          <div style={{ padding: "12px 14px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {MUSIC_MOODS.map((md) => <button key={md} type="button" onClick={() => setMood(md)} style={chip(mood === md)}>{md}</button>)}
           </div>
-        ))}
-      </div>
-      <div style={{ padding: "0 14px 16px", fontSize: 12.5, color: C.dim }}>공실뉴스 무료 음악 (상업 이용 가능 · CC0)</div>
+          <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
+            {MUSIC_LIBRARY.filter((t) => t.mood === mood).map((t) =>
+              row(
+                t.id,
+                current?.name === t.label,
+                playBtn(t.id, `/reels-assets/bgm/lib/${t.id.slice(4)}.mp3`),
+                <span style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>{t.label}</span>,
+                <>
+                  <span style={{ fontSize: 13, color: C.dim }}>{fmtTime(t.duration, false)}</span>
+                  <Btn small primary={current?.name === t.label} onClick={() => pickLib(t.id, t.label)} disabled={busy === t.id}>{busy === t.id ? "받는 중…" : current?.name === t.label ? "고름" : "고르기"}</Btn>
+                </>
+              )
+            )}
+          </div>
+          <div style={{ padding: "0 14px 16px", fontSize: 12.5, color: C.dim }}>공실뉴스 무료 음악 (상업 이용 가능 · CC0)</div>
+        </>
+      ) : (
+        <>
+          <div style={{ padding: "12px 14px 0", display: "flex", flexDirection: "column", gap: 8 }}>
+            <Btn primary onClick={fromPc} style={{ width: "100%" }}><Icon name="plus" size={18} />PC에서 음악 불러오기</Btn>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && loadMine()} placeholder="음악 이름으로 찾기" style={{ ...input, height: 36, fontSize: 14 }} />
+              <Btn small onClick={loadMine}><Icon name="search" size={16} /></Btn>
+            </div>
+          </div>
+          <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
+            {mine === null ? (
+              <div style={{ color: C.sub, fontSize: 14, padding: 6 }}>불러오는 중…</div>
+            ) : !mine.length ? (
+              <div style={{ color: C.sub, fontSize: 14, padding: 6, lineHeight: 1.6 }}>{q ? "찾는 음악이 없어요." : "아직 내 음악이 없어요. 위 [PC에서 음악 불러오기]를 눌러 주세요."}</div>
+            ) : (
+              mine.map((it) => {
+                const name = it.name.replace(/\.[^.]+$/, "");
+                const on = current?.name === name;
+                return row(
+                  it.id,
+                  on,
+                  playBtn(it.id, it.url),
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={it.name}>{name}</span>,
+                  <>
+                    <span style={{ fontSize: 13, color: C.dim, flexShrink: 0 }}>{it.duration ? fmtTime(it.duration, false) : ""}</span>
+                    <button type="button" title={it.fav ? "즐겨찾기 빼기" : "즐겨찾기"} onClick={async () => { await b?.lib.fav(it.id, !it.fav); loadMine(); }}
+                      style={{ width: 30, height: 30, flexShrink: 0, border: 0, background: "transparent", color: it.fav ? C.text : C.dim, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Icon name="star" size={16} stroke={it.fav ? 2.4 : 1.6} />
+                    </button>
+                    <Btn small primary={on} onClick={() => pickMine(it)} disabled={busy === it.id}>{busy === it.id ? "넣는 중…" : on ? "고름" : "고르기"}</Btn>
+                    <button type="button" title="목록에서 빼기 (PC 파일은 그대로)" onClick={async () => { await b?.lib.remove(it.id); loadMine(); }}
+                      style={{ width: 28, height: 28, flexShrink: 0, border: 0, background: "transparent", color: C.dim, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Icon name="close" size={15} />
+                    </button>
+                  </>
+                );
+              })
+            )}
+          </div>
+          <div style={{ padding: "0 14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+            <Hint>문서\공실뉴스 스튜디오\음악 폴더에 넣은 음악도 저절로 여기에 나와요. 음악은 PC에만 있고 올리지 않아요.</Hint>
+            <Btn small onClick={openFolder}><Icon name="folder" size={16} />음악 폴더 열기</Btn>
+          </div>
+        </>
+      )}
     </Side>
   );
 }
