@@ -27,7 +27,7 @@ const ext = require("./ext");
 ext.configure(BASE_URL);
 const NO_EXT = new Set([
   "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info",
-  "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-set-writer", "studio:ai-writer",
+  "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-set-writer", "studio:ai-writer", "studio:ai-set-imager", "studio:ai-imager",
   "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news",
   "studio:save-file", "studio:open-out-folder",
 ]);
@@ -352,6 +352,16 @@ ipcMain.handle("studio:ai-set-writer", (_e, id) => {
   aiConnect.setWriter(id);
   for (const w of BrowserWindow.getAllWindows()) w.webContents.send("studio:ai-writer-changed");
   return aiConnect.list();
+});
+ipcMain.handle("studio:ai-set-imager", (_e, id) => {
+  aiConnect.setImager(id);
+  for (const w of BrowserWindow.getAllWindows()) w.webContents.send("studio:ai-writer-changed");
+  return aiConnect.list();
+});
+ipcMain.handle("studio:ai-imager", () => {
+  const ai = require("./ai");
+  const id = ai.currentImager();
+  return { id, name: ai.nameOf(id) };
 });
 ipcMain.handle("studio:ai-writer", () => {
   const ai = require("./ai");

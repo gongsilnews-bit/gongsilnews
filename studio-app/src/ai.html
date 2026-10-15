@@ -56,9 +56,19 @@
   /* 기본 글쓰기 AI — 연결된 것 중에서 고른다. 수정 요청은 처음 쓴 AI 로 이어서 간다 */
   function renderWriter(items) {
     const box = document.getElementById("writer");
+    box.innerHTML = '<div class="t">기본 글쓰기 AI <span>· 기사·블로그·SNS·유튜브를 이 AI로 씁니다</span></div><div class="pills" id="pw"></div>'
+      + '<div class="t" style="margin-top:14px">기본 이미지 생성 AI <span>· AI 표지·본문 그림을 이 AI로 그립니다 (Claude는 그림을 못 그림)</span></div><div class="pills" id="pi"></div>';
+    for (const it of items.filter((x) => x.canImage)) {
+      const b = document.createElement("button");
+      b.className = "pill" + (it.isImager ? " on" : "");
+      b.textContent = it.name + (it.isImager ? " ✓" : !it.ready ? " (준비 중)" : "");
+      b.disabled = busy || !it.ok || !it.ready;
+      b.title = !it.ready ? "준비 중입니다" : it.ok ? "" : "먼저 아래에서 연결해 주세요";
+      b.onclick = async () => { if (it.isImager) return; render(await studio.ai.setImager(it.id)); say(`이제 ${it.name}로 그림을 그립니다. (인테리어·리모델링 시뮬레이션은 ChatGPT)`); };
+      box.querySelector("#pi").appendChild(b);
+    }
+    const pills = box.querySelector("#pw");
     const writers = items.filter((x) => x.canWrite);
-    box.innerHTML = '<div class="t">기본 글쓰기 AI <span>· 기사·블로그·SNS·유튜브를 이 AI로 씁니다</span></div><div class="pills"></div>';
-    const pills = box.querySelector(".pills");
     for (const it of writers) {
       const b = document.createElement("button");
       b.className = "pill" + (it.isWriter ? " on" : "");

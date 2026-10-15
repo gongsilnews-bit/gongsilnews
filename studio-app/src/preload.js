@@ -121,6 +121,9 @@ if (allowed) {
       setWriter: (id) => ipcRenderer.invoke("studio:ai-set-writer", id),
       /** 지금 새 글을 쓸 AI { id, name } */
       writer: () => ipcRenderer.invoke("studio:ai-writer"),
+      /** 기본 이미지 생성 AI 고르기 (chatgpt | gemini) · 지금 그림을 그릴 AI { id, name } */
+      setImager: (id) => ipcRenderer.invoke("studio:ai-set-imager", id),
+      imager: () => ipcRenderer.invoke("studio:ai-imager"),
       onWriterChanged: (fn) => {
         const h = () => fn();
         ipcRenderer.on("studio:ai-writer-changed", h);

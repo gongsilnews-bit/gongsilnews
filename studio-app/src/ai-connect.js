@@ -13,6 +13,7 @@ const PROVIDERS = {
     url: "https://chatgpt.com/",
     ready: true,
     writer: true, // 글쓰기 AI (기본 AI 로 고를 수 있다)
+    image: true, // 그림 AI (기본 이미지 생성 AI 로 고를 수 있다)
     // 로그인되어 있으면 세션 정보에 user 가 있다
     check: (page) =>
       page.evaluate(async () => {
@@ -71,6 +72,7 @@ const PROVIDERS = {
     // 글쓰기 코드(ai/gemini.js)는 준비돼 있다 — Gemini 가 안정되면 시험하고 true 로 연다
     ready: false,
     writer: true,
+    image: true, // 그림 (나노바나나) — 시험 뒤 연다
     check: (page) =>
       page.evaluate(() => {
         if (/accounts\.google\.com/.test(location.href)) return { ok: false };
@@ -104,23 +106,39 @@ function list() {
   const w = getWriter();
   return Object.entries(PROVIDERS)
     .filter(([, p]) => !p.hidden)
-    .map(([id, p]) => ({ id, name: p.name, ready: p.ready, canWrite: Boolean(p.writer), noImage: Boolean(p.noImage), isWriter: id === w, ...(saved[id] || { ok: false }) }));
+    .map(([id, p]) => ({ id, name: p.name, ready: p.ready, canWrite: Boolean(p.writer), canImage: Boolean(p.image), noImage: Boolean(p.noImage), isWriter: id === w, isImager: id === getImager(), ...(saved[id] || { ok: false }) }));
 }
 
-/* 기본 글쓰기 AI (ChatGPT · Gemini) — [내 AI 연결]에서 고른다. 처음엔 ChatGPT */
+/* 기본 글쓰기 AI (ChatGPT · Claude · Gemini) · 기본 이미지 생성 AI (ChatGPT · Gemini) — [내 AI 연결]에서 고른다. 처음엔 둘 다 ChatGPT */
 const settingsFile = () => path.join(app.getPath("userData"), "ai-settings.json");
-function getWriter() {
+function readSettings() {
   try {
-    const w = JSON.parse(fs.readFileSync(settingsFile(), "utf8")).writer;
-    return PROVIDERS[w] && PROVIDERS[w].writer ? w : "chatgpt";
+    return JSON.parse(fs.readFileSync(settingsFile(), "utf8")) || {};
   } catch {
-    return "chatgpt";
+    return {};
   }
+}
+function writeSettings(patch) {
+  fs.writeFileSync(settingsFile(), JSON.stringify({ ...readSettings(), ...patch }, null, 2));
+}
+function getWriter() {
+  const w = readSettings().writer;
+  return PROVIDERS[w] && PROVIDERS[w].writer ? w : "chatgpt";
 }
 function setWriter(id) {
   if (!PROVIDERS[id] || !PROVIDERS[id].writer) throw new Error("글쓰기에 쓸 수 없는 AI입니다.");
-  fs.writeFileSync(settingsFile(), JSON.stringify({ writer: id }, null, 2));
+  writeSettings({ writer: id });
   log.info(`[AI 연결] 기본 글쓰기 AI: ${PROVIDERS[id].name}`);
+  return id;
+}
+function getImager() {
+  const w = readSettings().imager;
+  return PROVIDERS[w] && PROVIDERS[w].image ? w : "chatgpt";
+}
+function setImager(id) {
+  if (!PROVIDERS[id] || !PROVIDERS[id].image) throw new Error("그림을 그릴 수 없는 AI입니다.");
+  writeSettings({ imager: id });
+  log.info(`[AI 연결] 기본 이미지 생성 AI: ${PROVIDERS[id].name}`);
   return id;
 }
 
@@ -166,4 +184,4 @@ function markConnected(id) {
   saveStatus(id, { ...prev, ok: true });
 }
 
-module.exports = { PROVIDERS, list, check, connect, markConnected, getWriter, setWriter, finishLogin: () => chrome.closePlain() };
+module.exports = { PROVIDERS, list, check, connect, markConnected, getWriter, setWriter, getImager, setImager, finishLogin: () => chrome.closePlain() };

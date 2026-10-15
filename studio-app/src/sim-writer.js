@@ -267,6 +267,7 @@ async function run({ id, baseUrl }, onProgress = () => {}) {
   // ② 예측 이미지 — 같은 대화에 지금 모습 사진을 붙여서 (버전 1장)
   onProgress("② 지금 모습 사진을 붙여 예측 이미지를 요청하는 중…");
   const dataUrl = await chatgpt.askImage(L.rmBuildImagePrompt(d.spec, 0, d.design.aspectRatio), {
+    provider: "chatgpt", // 설계 지시서를 쓴 ChatGPT 대화에 지금 사진을 붙여 이어 그린다
     onProgress: (t) => onProgress(t.replace("그림을 그리는 중", "예측 이미지를 그리는 중")),
     chatUrl,
     files: picked.map((p) => p.file),

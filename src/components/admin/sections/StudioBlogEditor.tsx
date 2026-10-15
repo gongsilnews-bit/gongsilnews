@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import StudioReviseBar from "./StudioReviseBar";
 import StudioWorking from "./StudioWorking";
+import { useStudioImager } from "./useStudioWriter";
 
 /**
  * 블로그 미리보기 편집기 (공실뉴스 스튜디오 SNS뉴스발행 3단계)
@@ -49,6 +50,7 @@ function readAsDataUrl(file: File) {
 }
 
 export default function StudioBlogEditor({ theme, initial }: { theme: Theme; initial: BlogDraft }) {
+  const imgAi = useStudioImager(); // 고른 이미지 생성 AI (ChatGPT · Gemini)
   const doc = initial.doc || "blog"; // 'article' 이면 공실뉴스 기사 (부제 3줄)
   const [title, setTitle] = useState(initial.title);
   const [subtitles, setSubtitles] = useState<string[]>(() => [0, 1, 2].map((i) => (initial.subtitles || [])[i] || ""));
@@ -274,7 +276,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
         <button onClick={() => makeImage(target)} disabled={aiBusy}
           style={{ padding: "9px 16px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 700, cursor: aiBusy ? "default" : "pointer", opacity: aiBusy ? 0.6 : 1 }}>
-          {aiBusy ? "그리는 중…" : "ChatGPT로 그리기"}
+          {aiBusy ? "그리는 중…" : `${imgAi}로 그리기`}
         </button>
         {!aiBusy && <span style={{ fontSize: 12, color: aiErr ? "#c53030" : theme.textSecondary }}>{aiErr || "1~3분 걸립니다. 글자·사람 얼굴은 넣지 않습니다."}</span>}
       </div>

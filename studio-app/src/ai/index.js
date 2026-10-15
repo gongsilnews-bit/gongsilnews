@@ -31,8 +31,18 @@ function ask(prompt, opts = {}) {
   return AIS[id].mod().ask(prompt, opts);
 }
 
-function askImage(prompt, opts = {}) {
-  return AIS.chatgpt.mod().askImage(prompt, opts);
+/** 지금 그림을 그릴 AI — [내 AI 연결]의 기본 이미지 생성 AI ("준비 중"·미연결이면 ChatGPT) */
+function currentImager() {
+  const conn = require("../ai-connect");
+  const want = conn.getImager();
+  return conn.list().some((x) => x.id === want && x.ok && x.ready) ? want : "chatgpt";
 }
 
-module.exports = { ask, askImage, current, providerOfUrl, nameOf: (id) => (AIS[id] || AIS.chatgpt).name, AIS };
+function askImage(prompt, opts = {}) {
+  const id = opts.provider || currentImager();
+  const mod = AIS[id].mod();
+  if (!mod.askImage) throw new Error(`${AIS[id].name} 그림 그리기는 준비 중입니다. [내 AI 연결]에서 기본 이미지 생성 AI 를 ChatGPT 로 골라 주세요.`);
+  return mod.askImage(prompt, opts);
+}
+
+module.exports = { ask, askImage, current, currentImager, providerOfUrl, nameOf: (id) => (AIS[id] || AIS.chatgpt).name, AIS };
