@@ -1,5 +1,5 @@
 
-import React, { forwardRef, useLayoutEffect, useRef } from 'react';
+import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
 import { FlyerState, PropertyInfo } from '../types';
 import { PhoneIcon } from '@heroicons/react/24/solid';
 
@@ -26,9 +26,11 @@ interface FlyerCanvasProps {
   qrLink?: string | null;
   onTextChange?: (key: keyof PropertyInfo, value: string) => void;
   onImageClick?: (imageKey: string) => void;
+  /** 새 디자인 글자 위치·크기 조정 (null = 처음대로) */
+  onAdjust?: (key: string, value: { x: number; y: number; s: number } | null) => void;
 }
 
-const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orientation, qrDataUrl, qrLink, onTextChange, onImageClick }, ref) => {
+const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orientation, qrDataUrl, qrLink, onTextChange, onImageClick, onAdjust }, ref) => {
   const { info, mainImage, colorTheme, layoutTheme } = data;
   const primaryColor = colorTheme?.primary || '#00788c';
   const secondaryColor = colorTheme?.secondary || '#00c6d7';
@@ -526,7 +528,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
   // ② 사진형: 사진 1장 → 금액 → 크기 줄 → 칩 → 전화+QR
   // 흰 바탕 + 사무소 대표색 하나 (잉크 절약·햇빛에 바래도 읽힘). 장식·영어 문구 없음. 값은 등록된 실제 값만.
   const fitBy = (max: number, min: number) => ({ 'data-fit': '', 'data-fit-max': max, 'data-fit-min': min } as Record<string, unknown>);
-  const one: React.CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', flexShrink: 0 };
+  const one: React.CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', flexShrink: 0, textAlign: 'center' };
   const kindWord = (info.propertyKind || '').split('/')[0].trim();
   const headWord = [vis('propertyKind') ? kindWord : '', vis('transactionType') ? tradeWord : ''].filter(Boolean).join(' · ');
   const sizeWord = (info.sizeLine || '').replace(/저층층|중층층|고층층/g, (w) => w.slice(0, 2)) || [pyeong, clean(info.floor) !== '-' ? info.floor : '', clean(info.direction) !== '-' ? info.direction : ''].filter(Boolean).join(' · ');
@@ -544,6 +546,52 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     },
   };
 
+  /* ── 글자 옮기기·크기 (2026-10-15 사장님 요청) ──
+   * 글자를 누르면 점선 + 작은 도구가 뜬다: [✥ 옮기기(끌기)] [A− 100% A+] [↺ 처음대로].
+   * 값은 info.adjust 에 저장돼 인쇄·이미지·공유 페이지에도 그대로 나온다. 도구는 data-noexport 라 찍히지 않는다. */
+  const [sel, setSel] = useState<string | null>(null);
+  const canAdjust = !!onAdjust;
+  const akey = (name: string) => `${layout}-${orientation}-${name}`;
+  const adj = (name: string) => info.adjust?.[akey(name)] || { x: 0, y: 0, s: 1 };
+  const sz = (name: string, n: number) => Math.round(n * adj(name).s);
+  const startDrag = (name: string, e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const page = (e.currentTarget as HTMLElement).closest('[data-flyer-page]') as HTMLElement | null;
+    const ratio = page ? page.getBoundingClientRect().width / page.offsetWidth : 1; // 미리보기는 줄여 보인다
+    const base = adj(name);
+    const sx = e.clientX, sy = e.clientY;
+    const move = (ev: PointerEvent) => onAdjust?.(akey(name), { ...base, x: Math.round(base.x + (ev.clientX - sx) / ratio), y: Math.round(base.y + (ev.clientY - sy) / ratio) });
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  const toolBtn: React.CSSProperties = { height: 30, minWidth: 30, padding: '0 8px', border: 0, borderRadius: 6, background: '#fff', color: '#111', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' };
+  const mov = (name: string, node: React.ReactNode, wrap: React.CSSProperties = {}) => {
+    const a = adj(name);
+    const on = canAdjust && sel === name;
+    return (
+      <div data-mov="" onPointerDownCapture={() => canAdjust && setSel(name)}
+        style={{ position: 'relative', flexShrink: 0, transform: a.x || a.y ? `translate(${a.x}px, ${a.y}px)` : undefined, outline: on ? '2px dashed #38bdf8' : undefined, outlineOffset: 4, zIndex: on ? 40 : undefined, ...wrap }}>
+        {node}
+        {on && (
+          <div data-noexport="" className="flex items-center" onPointerDown={(e) => e.stopPropagation()}
+            style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', marginTop: 8, gap: 4, padding: 4, borderRadius: 8, background: '#0f172a', boxShadow: '0 6px 20px rgba(0,0,0,.3)', whiteSpace: 'nowrap', zIndex: 50 }}>
+            <button type="button" title="끌어서 옮기기" onPointerDown={(e) => startDrag(name, e)} style={{ ...toolBtn, cursor: 'move' }}>✥ 옮기기</button>
+            <button type="button" title="글씨 작게" onClick={() => onAdjust?.(akey(name), { ...a, s: Math.max(0.5, +(a.s - 0.1).toFixed(2)) })} style={toolBtn}>A−</button>
+            <span style={{ color: '#fff', fontSize: 12, fontWeight: 700, minWidth: 40, textAlign: 'center' }}>{Math.round(a.s * 100)}%</span>
+            <button type="button" title="글씨 크게" onClick={() => onAdjust?.(akey(name), { ...a, s: Math.min(2, +(a.s + 0.1).toFixed(2)) })} style={toolBtn}>A+</button>
+            <button type="button" title="처음대로" onClick={() => onAdjust?.(akey(name), null)} style={toolBtn}>↺</button>
+          </div>
+        )}
+      </div>
+    );
+  };
+  /* 글자 밖을 누르면 도구를 닫는다 */
+  const pageDown = (e: React.PointerEvent) => {
+    if (!(e.target as HTMLElement).closest('[data-mov]')) setSel(null);
+  };
+
   /* 아래 연락 띠 — 전화번호가 주인공. 표시·광고 필수 정보(사무소·대표·등록번호·소재지)는 작게 */
   const renderCallBand = (compact = false) => (
     <div className="flex items-center" style={{ flexShrink: 0, gap: 28, background: '#111827', color: '#fff', padding: `${compact ? 20 : 26}px ${isLand ? 44 : 52}px` }}>
@@ -553,10 +601,10 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
             <PhoneIcon style={{ width: 32, height: 32 }} />
           </span>
           <span {...editable(info.agentMobile ? 'agentMobile' : 'agentPhone')} {...fitBy(isLand ? 76 : 84, 40)} className={editClass}
-            style={{ ...one, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1.05 }}>{phone}</span>
+            style={{ ...one, textAlign: 'left', width: 'auto', flex: 1, minWidth: 0, flexShrink: 1, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1.05 }}>{phone}</span>
         </div>
-        <p {...editable('agentName')} {...fitBy(28, 18)} className={editClass} style={{ ...one, fontWeight: 900, marginTop: 10, lineHeight: 1.2 }}>{info.agentName}</p>
-        <p style={{ ...one, fontSize: 14, fontWeight: 600, opacity: .75, marginTop: 4, textOverflow: 'ellipsis' }}>
+        <p {...editable('agentName')} {...fitBy(28, 18)} className={editClass} style={{ ...one, textAlign: 'left', fontWeight: 900, marginTop: 10, lineHeight: 1.2 }}>{info.agentName}</p>
+        <p style={{ ...one, textAlign: 'left', fontSize: 14, fontWeight: 600, opacity: .75, marginTop: 4, textOverflow: 'ellipsis' }}>
           {[vis('agentRepresentative') ? info.agentRepresentative : '', ...(info.agentAdditionalInfo || [])].filter(Boolean).join('  ·  ')}
         </p>
       </div>
@@ -571,39 +619,53 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     </div>
   );
 
-  const renderChips = (size: number) => chips.length > 0 && (
-    <div className="flex flex-wrap" style={{ gap: 12, flexShrink: 0 }}>
-      {chips.map((c) => (
-        <span key={c} style={{ fontSize: size, fontWeight: 800, color: primaryColor, border: `3px solid ${primaryColor}`, borderRadius: 999, padding: `${Math.round(size * 0.22)}px ${Math.round(size * 0.7)}px`, whiteSpace: 'nowrap' }}>{c}</span>
-      ))}
-    </div>
-  );
+  /* 칩 — 정해진 줄 수만 (넘치는 줄은 통째로 빼서 반쯤 잘린 칩이 보이지 않게), 가운데 정렬 */
+  const renderChips = (base: number, rows = 2) => {
+    if (!chips.length) return null;
+    const size = sz('chips', base);
+    return mov('chips', (
+      <div className="flex flex-wrap justify-center" style={{ gap: 12, overflow: 'hidden', maxHeight: rows * (Math.round(size * 1.25) + Math.round(size * 0.22) * 2 + 6) + (rows - 1) * 12 }}>
+        {chips.map((ch) => (
+          <span key={ch} style={{ fontSize: size, fontWeight: 800, color: primaryColor, border: `3px solid ${primaryColor}`, borderRadius: 999, padding: `${Math.round(size * 0.22)}px ${Math.round(size * 0.7)}px`, whiteSpace: 'nowrap' }}>{ch}</span>
+        ))}
+      </div>
+    ));
+  };
 
   const badgeEl = info.badge ? (
     <span style={{ background: '#e11d2a', color: '#fff', fontSize: 30, fontWeight: 900, padding: '6px 20px', borderRadius: 8, flexShrink: 0 }}>{info.badge}</span>
   ) : null;
 
+  /* 금액 묶음 (두 디자인 공통): 금액 이름 → 금액 → 크기 줄 → 칩. 모두 가운데 정렬, 하나씩 옮기고 키울 수 있다 */
+  const priceBlock = (p: { label: number; price: number; size: number; chip: number; rows: number; gap: number }) => (
+    <div className="flex flex-col" style={{ flex: 1, minHeight: 0, justifyContent: 'center' }}>
+      {mov('label', <div style={{ fontSize: sz('label', p.label), fontWeight: 800, color: '#4b5563', textAlign: 'center' }}>{priceLabel}</div>)}
+      {mov('price', <div {...priceEditable} {...fitBy(sz('price', p.price), 60)} className={editClass}
+        style={{ ...one, fontWeight: 900, color: primaryColor, lineHeight: 1.05, letterSpacing: -5, marginTop: 4 }}>{priceText}</div>)}
+      {vis('sizeLine') && sizeWord && mov('size', <div {...editable('sizeLine')} {...fitBy(sz('size', p.size), 26)} className={editClass}
+        style={{ ...one, fontWeight: 900, color: '#111', letterSpacing: -1 }}>{sizeWord}</div>, { marginTop: p.gap })}
+      {chips.length > 0 && <div style={{ marginTop: p.gap + 8, flexShrink: 0 }}>{renderChips(p.chip, p.rows)}</div>}
+    </div>
+  );
+  /* 어디 매물인지 — 건물·단지명 */
+  const addressLine = (base: number) => (
+    <div style={{ borderTop: '2px solid #e5e7eb', paddingTop: isLand ? 12 : 16, flexShrink: 0 }}>
+      {mov('address', <div {...editable('address')} {...fitBy(sz('address', base), 20)} className={editClass}
+        style={{ ...one, fontWeight: 800, color: '#374151' }}>{info.address}</div>)}
+    </div>
+  );
+
   // ① 숫자 크게형
   const renderBig = () => (
-    <div ref={ref} data-flyer-page className="bg-white overflow-hidden flex flex-col font-sans" style={{ width: pageW, height: pageH, color: '#111' }}>
+    <div ref={ref} data-flyer-page onPointerDown={pageDown} className="bg-white overflow-hidden flex flex-col font-sans" style={{ width: pageW, height: pageH, color: '#111' }}>
       {/* 머리 띠: 딱지 + 물건·거래 */}
-      <div className="flex items-center" style={{ flexShrink: 0, gap: 18, background: primaryColor, color: '#fff', padding: `${isLand ? 22 : 30}px ${isLand ? 44 : 52}px` }}>
+      <div className="flex items-center justify-center" style={{ flexShrink: 0, gap: 18, background: primaryColor, color: '#fff', padding: `${isLand ? 22 : 30}px ${isLand ? 44 : 52}px` }}>
         {badgeEl}
-        <span {...fitBy(isLand ? 56 : 64, 30)} style={{ ...one, fontWeight: 900, letterSpacing: -1 }}>{headWord || tradeWord}</span>
+        {mov('head', <span {...fitBy(sz('head', isLand ? 56 : 64), 30)} style={{ ...one, display: 'block', fontWeight: 900, letterSpacing: -1 }}>{headWord || tradeWord}</span>, { flex: 1, minWidth: 0 })}
       </div>
-      <div className="flex flex-col" style={{ flex: 1, minHeight: 0, padding: `${isLand ? 26 : 44}px ${isLand ? 44 : 52}px ${isLand ? 22 : 30}px` }}>
-        <span style={{ fontSize: isLand ? 34 : 42, fontWeight: 800, color: '#4b5563', flexShrink: 0 }}>{priceLabel}</span>
-        <span {...priceEditable} {...fitBy(isLand ? 210 : 230, 80)} className={editClass}
-          style={{ ...one, fontWeight: 900, color: primaryColor, lineHeight: 1.05, letterSpacing: -6, marginTop: 4 }}>{priceText}</span>
-        {vis('sizeLine') && sizeWord && (
-          <div {...editable('sizeLine')} {...fitBy(isLand ? 60 : 66, 32)} className={editClass}
-            style={{ ...one, fontWeight: 900, color: '#111', marginTop: isLand ? 10 : 18, letterSpacing: -1 }}>{sizeWord}</div>
-        )}
-        <div style={{ marginTop: isLand ? 18 : 30 }}>{renderChips(isLand ? 28 : 32)}</div>
-        <div style={{ flex: 1 }} />
-        {/* 어디 매물인지 — 건물·단지명 */}
-        <div {...editable('address')} {...fitBy(isLand ? 36 : 40, 22)} className={editClass}
-          style={{ ...one, fontWeight: 800, color: '#374151', borderTop: '2px solid #e5e7eb', paddingTop: isLand ? 12 : 18 }}>{info.address}</div>
+      <div className="flex flex-col" style={{ flex: 1, minHeight: 0, padding: `${isLand ? 26 : 40}px ${isLand ? 44 : 52}px ${isLand ? 22 : 30}px` }}>
+        {priceBlock(isLand ? { label: 34, price: 210, size: 60, chip: 28, rows: 2, gap: 10 } : { label: 44, price: 240, size: 72, chip: 38, rows: 3, gap: 24 })}
+        {addressLine(isLand ? 36 : 40)}
       </div>
       {renderCallBand(isLand)}
     </div>
@@ -616,27 +678,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
         <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer" title="클릭하여 메인 이미지 변경" />
         <div style={{ position: 'absolute', left: 24, top: 24, display: 'flex', gap: 10 }}>
           {badgeEl}
-          {headWord && <span style={{ background: '#fff', color: primaryColor, fontSize: 30, fontWeight: 900, padding: '6px 18px', borderRadius: 8 }}>{headWord}</span>}
+          {headWord && mov('head', <span style={{ display: 'block', background: '#fff', color: primaryColor, fontSize: sz('head', 30), fontWeight: 900, padding: '6px 18px', borderRadius: 8 }}>{headWord}</span>)}
         </div>
       </div>
     );
     const text = (
-      <div className="flex flex-col" style={{ flex: 1, minHeight: 0, minWidth: 0, padding: `${isLand ? 30 : 30}px ${isLand ? 40 : 52}px ${isLand ? 20 : 26}px` }}>
-        <span style={{ fontSize: isLand ? 30 : 36, fontWeight: 800, color: '#4b5563', flexShrink: 0 }}>{priceLabel}</span>
-        <span {...priceEditable} {...fitBy(isLand ? 150 : 170, 70)} className={editClass}
-          style={{ ...one, fontWeight: 900, color: primaryColor, lineHeight: 1.05, letterSpacing: -5, marginTop: 2 }}>{priceText}</span>
-        {vis('sizeLine') && sizeWord && (
-          <div {...editable('sizeLine')} {...fitBy(isLand ? 48 : 54, 28)} className={editClass}
-            style={{ ...one, fontWeight: 900, color: '#111', marginTop: 10, letterSpacing: -1 }}>{sizeWord}</div>
-        )}
-        <div style={{ marginTop: 18 }}>{renderChips(isLand ? 24 : 28)}</div>
-        <div style={{ flex: 1 }} />
-        <div {...editable('address')} {...fitBy(34, 20)} className={editClass}
-          style={{ ...one, fontWeight: 800, color: '#374151', borderTop: '2px solid #e5e7eb', paddingTop: 12 }}>{info.address}</div>
+      <div className="flex flex-col" style={{ flex: 1, minHeight: 0, minWidth: 0, padding: `${isLand ? 30 : 26}px ${isLand ? 40 : 52}px ${isLand ? 20 : 22}px` }}>
+        {/* 세로는 칩 한 줄 — 주소·연락 띠와 겹치지 않게 */}
+        {priceBlock(isLand ? { label: 30, price: 150, size: 48, chip: 24, rows: 2, gap: 8 } : { label: 34, price: 150, size: 52, chip: 28, rows: 1, gap: 8 })}
+        {addressLine(34)}
       </div>
     );
     return (
-      <div ref={ref} data-flyer-page className="bg-white overflow-hidden flex flex-col font-sans" style={{ width: pageW, height: pageH, color: '#111' }}>
+      <div ref={ref} data-flyer-page onPointerDown={pageDown} className="bg-white overflow-hidden flex flex-col font-sans" style={{ width: pageW, height: pageH, color: '#111' }}>
         {isLand ? (
           <div className="flex" style={{ flex: 1, minHeight: 0 }}>
             {photoBox({ width: 600, height: '100%' })}
@@ -644,7 +698,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
           </div>
         ) : (
           <>
-            {photoBox({ height: 560 })}
+            {photoBox({ height: 470 })}
             {text}
           </>
         )}

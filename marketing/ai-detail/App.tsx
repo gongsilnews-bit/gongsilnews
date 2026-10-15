@@ -208,6 +208,16 @@ function App() {
   const [isUploadingImage, setIsUploadingImage] = useState<Record<string, boolean>>({});
   const [authError, setAuthError] = useState<string | null>(null);
 
+  /* 새 디자인 글자 옮기기·크기 — info.adjust 에 저장 (null 이면 처음대로) */
+  const handleAdjust = (key: string, value: { x: number; y: number; s: number } | null) => {
+      setState(prev => {
+          const next = { ...(prev.info.adjust || {}) };
+          if (value) next[key] = value; else delete next[key];
+          return { ...prev, info: { ...prev.info, adjust: next } };
+      });
+      setIsDirty(true);
+  };
+
   const handleTextChange = (key: any, value: string) => {
       setState(prev => ({ ...prev, info: { ...prev.info, [key]: value } }));
       setIsDirty(true);
@@ -847,10 +857,15 @@ function App() {
     if (!flyerRef.current) return null;
     const { w, h } = PAGE_SIZE[orientation];
     (document.activeElement as HTMLElement | null)?.blur(); // 고치던 칸의 파란 테두리가 찍히지 않게
+    // 고르던 글자의 점선·도구도 닫는다 (홍보지 빈 곳을 누른 것처럼)
+    flyerRef.current.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     await document.fonts?.ready;
     return toCanvas(flyerRef.current, {
-      width: w, height: h, canvasWidth: w * 2, canvasHeight: h * 2, pixelRatio: 1,
+      // 3배(A4 약 300dpi) — 인쇄해도 글자가 깨지지 않게. 글자 옮기기 도구(data-noexport)는 찍지 않는다
+      width: w, height: h, canvasWidth: w * 3, canvasHeight: h * 3, pixelRatio: 1,
       backgroundColor: '#ffffff', cacheBust: true,
+      filter: (node) => !(node instanceof HTMLElement && node.dataset.noexport !== undefined),
     });
   };
 
@@ -1244,7 +1259,7 @@ function App() {
         </div>
         <div className="col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 flex flex-col">
             <div className="bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500 rounded-t-xl">
-                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기 · A4 한 장 (보이는 그대로 인쇄됩니다)</span>
+                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기 · A4 한 장 (보이는 그대로 인쇄됩니다){(state.layoutTheme?.type === 'big' || state.layoutTheme?.type === 'photo') && <span className="text-sky-600 font-bold">· 글자를 누르면 옮기기·크기 도구가 나와요</span>}</span>
                 <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
                     {([['portrait', '세로'], ['landscape', '가로']] as const).map(([key, label]) => (
                         <button
@@ -1272,6 +1287,7 @@ function App() {
                                     qrLink={qrUrl}
                                     onTextChange={handleTextChange}
                                     onImageClick={handleImageClick}
+                                    onAdjust={handleAdjust}
                                 />
                             </div>
                         </div>
