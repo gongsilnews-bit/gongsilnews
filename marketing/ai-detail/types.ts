@@ -55,6 +55,8 @@ export interface PropertyInfo {
   sizeLine?: string;        // 물건명 아래 크기 줄 e.g. "46평 · 25층" (물건 종류별로 처음 채움)
   /** 새 디자인 글자 조정 — 드래그로 옮긴 위치(px)와 글씨 배율. 키는 '디자인-방향-항목' */
   adjust?: Record<string, { x: number; y: number; s: number }>;
+  /** 새 디자인에서 손으로 고친 글자 (머리 띠·금액 이름·칩·사무소 줄 등). '' 이면 그 글자를 뺀다 */
+  texts?: Record<string, string>;
   rows?: FlyerRow[];        // 정보 표 — 사장님이 지우고·고치고·추가한다
   propertyKind?: string;    // 물건 구분 e.g. 사무실 · 상가 · 아파트 (공실 등록의 세부 분류)
   flyerGroup?: string;      // 물건 묶음 A~G (flyerRows.ts)

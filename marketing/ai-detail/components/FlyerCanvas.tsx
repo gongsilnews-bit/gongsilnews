@@ -28,9 +28,11 @@ interface FlyerCanvasProps {
   onImageClick?: (imageKey: string) => void;
   /** 새 디자인 글자 위치·크기 조정 (null = 처음대로) */
   onAdjust?: (key: string, value: { x: number; y: number; s: number } | null) => void;
+  /** 계산해서 만든 글자를 손으로 고친 값 (null = 처음대로, '' = 빼기) */
+  onTextOverride?: (name: string, value: string | null) => void;
 }
 
-const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orientation, qrDataUrl, qrLink, onTextChange, onImageClick, onAdjust }, ref) => {
+const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orientation, qrDataUrl, qrLink, onTextChange, onImageClick, onAdjust, onTextOverride }, ref) => {
   const { info, mainImage, colorTheme, layoutTheme } = data;
   const primaryColor = colorTheme?.primary || '#00788c';
   const secondaryColor = colorTheme?.secondary || '#00c6d7';
@@ -546,76 +548,160 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     },
   };
 
-  /* ── 글자 옮기기·크기 (2026-10-15 사장님 요청) ──
-   * 글자를 누르면 점선 + 작은 도구가 뜬다: [✥ 옮기기(끌기)] [A− 100% A+] [↺ 처음대로].
-   * 값은 info.adjust 에 저장돼 인쇄·이미지·공유 페이지에도 그대로 나온다. 도구는 data-noexport 라 찍히지 않는다. */
+  /* ── 요소 편집 — 인디자인처럼 (2026-10-15 사장님 요청) ──
+   * 한 번 클릭: 파란 테두리 + 네 모서리 손잡이. 안쪽을 끌면 이동, 모서리를 끌면 크기.
+   * 더블클릭: 글자 고치기 (사진은 사진 바꾸기). 빈 곳 클릭: 선택 풀기.
+   * 값은 info.adjust 에 저장돼 인쇄·이미지·공유 페이지에도 그대로 나온다. 테두리·손잡이·도구는 data-noexport 라 찍히지 않는다. */
   const [sel, setSel] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  /* 계산해서 만든 글자(머리 띠·금액 이름·칩·사무소 줄)도 눌러서 고친다 — info.texts 에 저장, 비우면 그 글자는 빠진다 */
+  const tx = (name: string, fallback: string) => info.texts?.[name] ?? fallback;
+  const edt = (name: string, fallback: string) => ({
+    contentEditable: !!onTextOverride,
+    spellCheck: false,
+    suppressContentEditableWarning: true,
+    onBlur: (e: React.FocusEvent<HTMLElement>) => {
+      const v = e.currentTarget.innerText.replace(/\s+/g, ' ').trim();
+      onTextOverride?.(name, v === fallback ? null : v);
+    },
+  });
   const canAdjust = !!onAdjust;
   const akey = (name: string) => `${layout}-${orientation}-${name}`;
   const adj = (name: string) => info.adjust?.[akey(name)] || { x: 0, y: 0, s: 1 };
   const sz = (name: string, n: number) => Math.round(n * adj(name).s);
-  const startDrag = (name: string, e: React.PointerEvent) => {
+  /* 미리보기는 줄여 보이므로 화면 px → 홍보지 px */
+  const ratioOf = (el: HTMLElement) => {
+    const page = el.closest('[data-flyer-page]') as HTMLElement | null;
+    return page ? page.getBoundingClientRect().width / page.offsetWidth : 1;
+  };
+  const drag = (e: React.PointerEvent, onMove: (ev: PointerEvent) => void) => {
     e.preventDefault();
     e.stopPropagation();
-    const page = (e.currentTarget as HTMLElement).closest('[data-flyer-page]') as HTMLElement | null;
-    const ratio = page ? page.getBoundingClientRect().width / page.offsetWidth : 1; // 미리보기는 줄여 보인다
-    const base = adj(name);
     const sx = e.clientX, sy = e.clientY;
-    const move = (ev: PointerEvent) => onAdjust?.(akey(name), { ...base, x: Math.round(base.x + (ev.clientX - sx) / ratio), y: Math.round(base.y + (ev.clientY - sy) / ratio) });
+    let moved = false;
+    const move = (ev: PointerEvent) => {
+      if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 3) return; // 살짝 떨린 클릭은 이동 아님
+      moved = true;
+      onMove(ev);
+    };
     const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
   };
-  const toolBtn: React.CSSProperties = { height: 30, minWidth: 30, padding: '0 8px', border: 0, borderRadius: 6, background: '#fff', color: '#111', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' };
-  const mov = (name: string, node: React.ReactNode, wrap: React.CSSProperties = {}) => {
+  /* 안쪽 끌기 = 이동 */
+  const startMove = (name: string, e: React.PointerEvent) => {
+    setSel(name);
+    setEditing(null);
+    const ratio = ratioOf(e.currentTarget as HTMLElement);
+    const base = adj(name);
+    const sx = e.clientX, sy = e.clientY;
+    drag(e, (ev) => onAdjust?.(akey(name), { ...base, x: Math.round(base.x + (ev.clientX - sx) / ratio), y: Math.round(base.y + (ev.clientY - sy) / ratio) }));
+  };
+  /* 모서리 끌기 = 크기 (가운데에서 멀어지면 커지고 가까워지면 작아진다) */
+  const startResize = (name: string, e: React.PointerEvent) => {
+    const box = ((e.currentTarget as HTMLElement).closest('[data-mov]') as HTMLElement).getBoundingClientRect();
+    const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+    const d0 = Math.max(8, Math.hypot(e.clientX - cx, e.clientY - cy));
+    const base = adj(name);
+    drag(e, (ev) => {
+      const k = Math.hypot(ev.clientX - cx, ev.clientY - cy) / d0;
+      onAdjust?.(akey(name), { ...base, s: Math.min(3, Math.max(0.3, +(base.s * k).toFixed(3))) });
+    });
+  };
+  /* 더블클릭 = 글자 고치기 — 그 칸 끝에 커서를 넣는다 */
+  const startEdit = (name: string, e: React.MouseEvent, onDouble?: () => void) => {
+    e.stopPropagation();
+    if (onDouble) return onDouble();
+    const wrap = (e.currentTarget as HTMLElement).closest('[data-mov]') as HTMLElement;
+    // 칩처럼 한 묶음에 여러 칸이면 누른 자리의 칸
+    const hit = document.elementsFromPoint(e.clientX, e.clientY).find((x) => wrap?.contains(x) && x.getAttribute('contenteditable') === 'true') as HTMLElement | undefined;
+    const el = hit || wrap?.querySelector<HTMLElement>('[contenteditable="true"]');
+    if (!el) return;
+    setEditing(name);
+    requestAnimationFrame(() => {
+      el.focus();
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      r.collapse(false);
+      const ws = window.getSelection();
+      ws?.removeAllRanges();
+      ws?.addRange(r);
+    });
+  };
+  const toolBtn: React.CSSProperties = { height: 28, padding: '0 10px', border: 0, borderRadius: 6, background: '#fff', color: '#111', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' };
+  const HANDLE = 14;
+  const handles: [string, React.CSSProperties][] = [
+    ['nwse-resize', { left: -HANDLE / 2 - 4, top: -HANDLE / 2 - 4 }],
+    ['nesw-resize', { right: -HANDLE / 2 - 4, top: -HANDLE / 2 - 4 }],
+    ['nesw-resize', { left: -HANDLE / 2 - 4, bottom: -HANDLE / 2 - 4 }],
+    ['nwse-resize', { right: -HANDLE / 2 - 4, bottom: -HANDLE / 2 - 4 }],
+  ];
+  const mov = (name: string, node: React.ReactNode, wrap: React.CSSProperties = {}, opt: { texts?: string[]; extra?: React.ReactNode; onDouble?: () => void } = {}) => {
     const a = adj(name);
     const on = canAdjust && sel === name;
+    const typing = editing === name;
     return (
-      <div data-mov="" onPointerDownCapture={() => canAdjust && setSel(name)}
-        style={{ position: 'relative', flexShrink: 0, transform: a.x || a.y ? `translate(${a.x}px, ${a.y}px)` : undefined, outline: on ? '2px dashed #38bdf8' : undefined, outlineOffset: 4, zIndex: on ? 40 : undefined, ...wrap }}>
+      <div data-mov="" onBlurCapture={() => typing && setEditing(null)}
+        style={{ position: 'relative', flexShrink: 0, width: 'fit-content', maxWidth: '100%', marginLeft: 'auto', marginRight: 'auto', transform: a.x || a.y ? `translate(${a.x}px, ${a.y}px)` : undefined, zIndex: on ? 40 : undefined, ...wrap }}>
         {node}
+        {/* 글자를 고치는 중이 아니면 덮개가 클릭·끌기를 받는다 */}
+        {canAdjust && !typing && (
+          <div data-noexport="" title="끌어서 이동 · 모서리로 크기 · 더블클릭으로 고치기"
+            onPointerDown={(e) => startMove(name, e)} onDoubleClick={(e) => startEdit(name, e, opt.onDouble)}
+            style={{ position: 'absolute', inset: 0, cursor: on ? 'move' : 'pointer', zIndex: 1 }} />
+        )}
         {on && (
-          <div data-noexport="" className="flex items-center" onPointerDown={(e) => e.stopPropagation()}
-            style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', marginTop: 8, gap: 4, padding: 4, borderRadius: 8, background: '#0f172a', boxShadow: '0 6px 20px rgba(0,0,0,.3)', whiteSpace: 'nowrap', zIndex: 50 }}>
-            <button type="button" title="끌어서 옮기기" onPointerDown={(e) => startDrag(name, e)} style={{ ...toolBtn, cursor: 'move' }}>✥ 옮기기</button>
-            <button type="button" title="글씨 작게" onClick={() => onAdjust?.(akey(name), { ...a, s: Math.max(0.5, +(a.s - 0.1).toFixed(2)) })} style={toolBtn}>A−</button>
-            <span style={{ color: '#fff', fontSize: 12, fontWeight: 700, minWidth: 40, textAlign: 'center' }}>{Math.round(a.s * 100)}%</span>
-            <button type="button" title="글씨 크게" onClick={() => onAdjust?.(akey(name), { ...a, s: Math.min(2, +(a.s + 0.1).toFixed(2)) })} style={toolBtn}>A+</button>
-            <button type="button" title="처음대로" onClick={() => onAdjust?.(akey(name), null)} style={toolBtn}>↺</button>
-          </div>
+          <>
+            <div data-noexport="" style={{ position: 'absolute', inset: -4, border: `2px solid ${typing ? '#f59e0b' : '#1d9bf0'}`, pointerEvents: 'none', zIndex: 45 }} />
+            {!typing && handles.map(([cursor, pos], i) => (
+              <div key={i} data-noexport="" onPointerDown={(e) => startResize(name, e)}
+                style={{ position: 'absolute', width: HANDLE, height: HANDLE, background: '#fff', border: '2px solid #1d9bf0', cursor, zIndex: 46, ...pos }} />
+            ))}
+            <div data-noexport="" className="flex items-center" onPointerDown={(e) => e.stopPropagation()}
+              style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', marginTop: 14, gap: 4, padding: 4, borderRadius: 8, background: '#0f172a', boxShadow: '0 6px 20px rgba(0,0,0,.3)', whiteSpace: 'nowrap', zIndex: 50 }}>
+              <span style={{ color: '#cbd5e1', fontSize: 12, fontWeight: 700, padding: '0 6px' }}>{Math.round(a.s * 100)}%</span>
+              {opt.extra ?? <span style={{ color: '#94a3b8', fontSize: 12, padding: '0 6px' }}>{typing ? '고치는 중 — 바깥을 누르면 끝' : '더블클릭: 글자 고치기'}</span>}
+              <button type="button" title="위치·크기·글자 처음대로" onClick={() => { onAdjust?.(akey(name), null); (opt.texts || [name]).forEach((t) => onTextOverride?.(t, null)); }} style={toolBtn}>↺ 처음대로</button>
+            </div>
+          </>
         )}
       </div>
     );
   };
-  /* 글자 밖을 누르면 도구를 닫는다 */
+  /* 빈 곳을 누르면 선택을 푼다 */
   const pageDown = (e: React.PointerEvent) => {
-    if (!(e.target as HTMLElement).closest('[data-mov]')) setSel(null);
+    if (!(e.target as HTMLElement).closest('[data-mov]')) { setSel(null); setEditing(null); }
   };
 
+  const officeLine = [vis('agentRepresentative') ? info.agentRepresentative : '', ...(info.agentAdditionalInfo || [])].filter(Boolean).join('  ·  ');
   /* 아래 연락 띠 — 전화번호가 주인공. 표시·광고 필수 정보(사무소·대표·등록번호·소재지)는 작게 */
   const renderCallBand = (compact = false) => (
     <div className="flex items-center" style={{ flexShrink: 0, gap: 28, background: '#111827', color: '#fff', padding: `${compact ? 20 : 26}px ${isLand ? 44 : 52}px` }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="flex items-center" style={{ gap: 14 }}>
-          <span style={{ width: 58, height: 58, borderRadius: 999, background: primaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <PhoneIcon style={{ width: 32, height: 32 }} />
-          </span>
-          <span {...editable(info.agentMobile ? 'agentMobile' : 'agentPhone')} {...fitBy(isLand ? 76 : 84, 40)} className={editClass}
-            style={{ ...one, textAlign: 'left', width: 'auto', flex: 1, minWidth: 0, flexShrink: 1, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1.05 }}>{phone}</span>
-        </div>
-        <p {...editable('agentName')} {...fitBy(28, 18)} className={editClass} style={{ ...one, textAlign: 'left', fontWeight: 900, marginTop: 10, lineHeight: 1.2 }}>{info.agentName}</p>
-        <p style={{ ...one, textAlign: 'left', fontSize: 14, fontWeight: 600, opacity: .75, marginTop: 4, textOverflow: 'ellipsis' }}>
-          {[vis('agentRepresentative') ? info.agentRepresentative : '', ...(info.agentAdditionalInfo || [])].filter(Boolean).join('  ·  ')}
-        </p>
+        {mov('phone', (
+          <div className="flex items-center" style={{ gap: 14 }}>
+            <span style={{ width: sz('phone', 58), height: sz('phone', 58), borderRadius: 999, background: primaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <PhoneIcon style={{ width: sz('phone', 32), height: sz('phone', 32) }} />
+            </span>
+            <span {...editable(info.agentMobile ? 'agentMobile' : 'agentPhone')} {...fitBy(sz('phone', isLand ? 76 : 84), 30)} className={editClass}
+              style={{ ...one, textAlign: 'left', width: 'auto', flex: 1, minWidth: 0, flexShrink: 1, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1.05 }}>{phone}</span>
+          </div>
+        ), { marginLeft: 0 })}
+        {mov('agent', <p {...editable('agentName')} {...fitBy(sz('agent', 28), 14)} className={editClass} style={{ ...one, textAlign: 'left', fontWeight: 900, lineHeight: 1.2 }}>{info.agentName}</p>, { marginTop: 10, marginLeft: 0 })}
+        {mov('office', (
+          <p {...edt('office', officeLine)} className={editClass} style={{ ...one, textAlign: 'left', fontSize: sz('office', 14), fontWeight: 600, opacity: .75, textOverflow: 'ellipsis' }}>
+            {tx('office', officeLine)}
+          </p>
+        ), { marginTop: 4, marginLeft: 0 })}
       </div>
-      {qrDataUrl && vis('qr') && (
-        <div style={{ flexShrink: 0, textAlign: 'center' }}>
-          <a href={qrLink || undefined} target="_blank" rel="noopener noreferrer" title="매물 상세보기" style={{ display: 'block' }}>
-            <img src={qrDataUrl} alt="매물 QR" style={{ width: compact ? 120 : 140, height: compact ? 120 : 140, background: '#fff', padding: 7, borderRadius: 10 }} />
+      {qrDataUrl && vis('qr') && mov('qr', (
+        <div style={{ textAlign: 'center' }}>
+          <a href={canAdjust ? undefined : qrLink || undefined} target="_blank" rel="noopener noreferrer" title="매물 상세보기" style={{ display: 'block' }}>
+            <img src={qrDataUrl} alt="매물 QR" style={{ width: sz('qr', compact ? 120 : 140), height: sz('qr', compact ? 120 : 140), background: '#fff', padding: 7, borderRadius: 10 }} />
           </a>
-          <div style={{ fontSize: 14, fontWeight: 800, marginTop: 6 }}>사진·위치 보기</div>
+          <div {...edt('qrLabel', '사진·위치 보기')} className={editClass} style={{ fontSize: sz('qr', 14), fontWeight: 800, marginTop: 6 }}>{tx('qrLabel', '사진·위치 보기')}</div>
         </div>
-      )}
+      ), {}, { texts: ['qr', 'qrLabel'] })}
     </div>
   );
 
@@ -624,12 +710,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     if (!chips.length) return null;
     const size = sz('chips', base);
     return mov('chips', (
-      <div className="flex flex-wrap justify-center" style={{ gap: 12, overflow: 'hidden', maxHeight: rows * (Math.round(size * 1.25) + Math.round(size * 0.22) * 2 + 6) + (rows - 1) * 12 }}>
-        {chips.map((ch) => (
-          <span key={ch} style={{ fontSize: size, fontWeight: 800, color: primaryColor, border: `3px solid ${primaryColor}`, borderRadius: 999, padding: `${Math.round(size * 0.22)}px ${Math.round(size * 0.7)}px`, whiteSpace: 'nowrap' }}>{ch}</span>
+      <div className="flex flex-wrap justify-center" style={{ gap: 12, overflow: 'hidden', maxHeight: rows * (Math.round(size * 1.2) + Math.round(size * 0.22) * 2 + 8) + (rows - 1) * 12 }}>
+        {chips.map((ch, i) => tx(`chip${i}`, ch) !== '' && (
+          <span key={i} {...edt(`chip${i}`, ch)} className={editClass} style={{ fontSize: size, fontWeight: 800, color: primaryColor, border: `3px solid ${primaryColor}`, borderRadius: 999, padding: `${Math.round(size * 0.22)}px ${Math.round(size * 0.7)}px`, whiteSpace: 'nowrap', lineHeight: 1.2 }}>{tx(`chip${i}`, ch)}</span>
         ))}
       </div>
-    ));
+    ), {}, { texts: chips.map((_, i) => `chip${i}`) });
   };
 
   const badgeEl = info.badge ? (
@@ -639,7 +725,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
   /* 금액 묶음 (두 디자인 공통): 금액 이름 → 금액 → 크기 줄 → 칩. 모두 가운데 정렬, 하나씩 옮기고 키울 수 있다 */
   const priceBlock = (p: { label: number; price: number; size: number; chip: number; rows: number; gap: number }) => (
     <div className="flex flex-col" style={{ flex: 1, minHeight: 0, justifyContent: 'center' }}>
-      {mov('label', <div style={{ fontSize: sz('label', p.label), fontWeight: 800, color: '#4b5563', textAlign: 'center' }}>{priceLabel}</div>)}
+      {tx('label', priceLabel) !== '' && mov('label', <div {...edt('label', priceLabel)} className={editClass} style={{ fontSize: sz('label', p.label), fontWeight: 800, color: '#4b5563', textAlign: 'center' }}>{tx('label', priceLabel)}</div>)}
       {mov('price', <div {...priceEditable} {...fitBy(sz('price', p.price), 60)} className={editClass}
         style={{ ...one, fontWeight: 900, color: primaryColor, lineHeight: 1.05, letterSpacing: -5, marginTop: 4 }}>{priceText}</div>)}
       {vis('sizeLine') && sizeWord && mov('size', <div {...editable('sizeLine')} {...fitBy(sz('size', p.size), 26)} className={editClass}
@@ -661,7 +747,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
       {/* 머리 띠: 딱지 + 물건·거래 */}
       <div className="flex items-center justify-center" style={{ flexShrink: 0, gap: 18, background: primaryColor, color: '#fff', padding: `${isLand ? 22 : 30}px ${isLand ? 44 : 52}px` }}>
         {badgeEl}
-        {mov('head', <span {...fitBy(sz('head', isLand ? 56 : 64), 30)} style={{ ...one, display: 'block', fontWeight: 900, letterSpacing: -1 }}>{headWord || tradeWord}</span>, { flex: 1, minWidth: 0 })}
+        {mov('head', <span {...edt('head', headWord || tradeWord)} {...fitBy(sz('head', isLand ? 56 : 64), 24)} className={editClass} style={{ ...one, display: 'block', fontWeight: 900, letterSpacing: -1, lineHeight: 1.2 }}>{tx('head', headWord || tradeWord)}</span>, { minWidth: 0 })}
       </div>
       <div className="flex flex-col" style={{ flex: 1, minHeight: 0, padding: `${isLand ? 26 : 40}px ${isLand ? 44 : 52}px ${isLand ? 22 : 30}px` }}>
         {priceBlock(isLand ? { label: 34, price: 210, size: 60, chip: 28, rows: 2, gap: 10 } : { label: 44, price: 240, size: 72, chip: 38, rows: 3, gap: 24 })}
@@ -673,15 +759,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
 
   // ② 사진형
   const renderPhoto = () => {
-    const photoBox = (style: React.CSSProperties) => (
-      <div style={{ position: 'relative', overflow: 'hidden', flexShrink: 0, background: '#e5e7eb', ...style }}>
-        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer" title="클릭하여 메인 이미지 변경" />
-        <div style={{ position: 'absolute', left: 24, top: 24, display: 'flex', gap: 10 }}>
+    /* 사진 — 누르면 [옮기기][크기][사진 바꾸기] 도구. 공유 화면에서는 도구 없음 */
+    const photoBox = (style: React.CSSProperties) => mov('photo', (
+      <div style={{ position: 'relative', overflow: 'hidden', background: '#e5e7eb', ...style }}>
+        <img onClick={() => !canAdjust && onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer" />
+        <div style={{ position: 'absolute', left: 24, top: 24, display: 'flex', gap: 10, zIndex: 3 }}>
           {badgeEl}
-          {headWord && mov('head', <span style={{ display: 'block', background: '#fff', color: primaryColor, fontSize: sz('head', 30), fontWeight: 900, padding: '6px 18px', borderRadius: 8 }}>{headWord}</span>)}
+          {tx('head', headWord) !== '' && mov('head', <span {...edt('head', headWord)} className={editClass} style={{ display: 'block', background: '#fff', color: primaryColor, fontSize: sz('head', 30), fontWeight: 900, padding: '6px 18px', borderRadius: 8 }}>{tx('head', headWord)}</span>)}
         </div>
       </div>
-    );
+    ), { width: isLand ? undefined : '100%', margin: 0 }, { onDouble: () => onImageClick?.('mainImage'), extra: <button type="button" title="사진 바꾸기" onClick={() => onImageClick?.('mainImage')} style={toolBtn}>🖼 사진 바꾸기 (더블클릭)</button> });
     const text = (
       <div className="flex flex-col" style={{ flex: 1, minHeight: 0, minWidth: 0, padding: `${isLand ? 30 : 26}px ${isLand ? 40 : 52}px ${isLand ? 20 : 22}px` }}>
         {/* 세로는 칩 한 줄 — 주소·연락 띠와 겹치지 않게 */}
@@ -693,12 +780,12 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
       <div ref={ref} data-flyer-page onPointerDown={pageDown} className="bg-white overflow-hidden flex flex-col font-sans" style={{ width: pageW, height: pageH, color: '#111' }}>
         {isLand ? (
           <div className="flex" style={{ flex: 1, minHeight: 0 }}>
-            {photoBox({ width: 600, height: '100%' })}
+            {photoBox({ width: sz('photo', 600), height: '100%' })}
             {text}
           </div>
         ) : (
           <>
-            {photoBox({ height: 470 })}
+            {photoBox({ height: sz('photo', 470) })}
             {text}
           </>
         )}

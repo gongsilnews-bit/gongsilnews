@@ -218,6 +218,16 @@ function App() {
       setIsDirty(true);
   };
 
+  /* 새 디자인 글자 손질 — info.texts 에 저장 (null 이면 처음 글자로) */
+  const handleTextOverride = (name: string, value: string | null) => {
+      setState(prev => {
+          const next = { ...(prev.info.texts || {}) };
+          if (value === null) { if (!(name in next)) return prev; delete next[name]; } else next[name] = value;
+          return { ...prev, info: { ...prev.info, texts: next } };
+      });
+      setIsDirty(true);
+  };
+
   const handleTextChange = (key: any, value: string) => {
       setState(prev => ({ ...prev, info: { ...prev.info, [key]: value } }));
       setIsDirty(true);
@@ -1259,7 +1269,7 @@ function App() {
         </div>
         <div className="col-span-12 lg:col-span-8 xl:col-span-9 bg-gray-200/50 rounded-xl border border-gray-300 flex flex-col">
             <div className="bg-white px-4 py-2 border-b flex justify-between items-center text-xs text-gray-500 rounded-t-xl">
-                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기 · A4 한 장 (보이는 그대로 인쇄됩니다){(state.layoutTheme?.type === 'big' || state.layoutTheme?.type === 'photo') && <span className="text-sky-600 font-bold">· 글자를 누르면 옮기기·크기 도구가 나와요</span>}</span>
+                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full"></span>미리보기 · A4 한 장 (보이는 그대로 인쇄됩니다){(state.layoutTheme?.type === 'big' || state.layoutTheme?.type === 'photo') && <span className="text-sky-600 font-bold">· 클릭 후 끌면 이동 · 모서리로 크기 · 더블클릭으로 글자 고치기</span>}</span>
                 <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
                     {([['portrait', '세로'], ['landscape', '가로']] as const).map(([key, label]) => (
                         <button
@@ -1288,6 +1298,7 @@ function App() {
                                     onTextChange={handleTextChange}
                                     onImageClick={handleImageClick}
                                     onAdjust={handleAdjust}
+                                    onTextOverride={handleTextOverride}
                                 />
                             </div>
                         </div>
