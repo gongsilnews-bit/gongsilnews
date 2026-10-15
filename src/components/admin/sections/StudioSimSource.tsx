@@ -123,10 +123,13 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+  const [fresh, setFresh] = useState(false); // 방금 끝난 결과 — 완성 안내를 띄운다
   const name = kind === "interior" ? "인테리어" : "리모델링";
 
   const choose = (s: Sim | null) => {
     setSim(s);
+    setFresh(false);
     setOpen(!s?.result);
     try {
       if (s) localStorage.setItem(LAST_KEY, s.id);
@@ -230,6 +233,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
     }
   };
   const toArticle = () => {
+    setFresh(false);
     onTab("article");
     setOpen(false);
     setTimeout(() => window.scrollTo?.({ top: 0 }), 0);
@@ -239,7 +243,11 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
     if (!sim) return;
     const s = await bridge()!.sim.run(sim.id);
     choose(s);
+    // 끝나면 결과표부터 펼쳐 보여 준다 (기사 쓰기는 결과표의 [이 결과로 기사 쓰기]로)
+    setOpen(true);
+    setFresh(true);
     onTab("article");
+    setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     bridge()?.sim.list(kind).then(setRecent).catch(() => {});
     onUsed();
   });
@@ -440,7 +448,12 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
 
       {/* 📋 결과표 */}
       {sim && r && open && (
-        <div style={card}>
+        <div ref={resultRef} style={{ ...card, ...(fresh ? { boxShadow: "0 0 0 2px #16a34a" } : {}) }}>
+          {fresh && (
+            <div style={{ marginBottom: 14, padding: "10px 14px", borderRadius: 10, background: "#f0fdf4", color: "#166534", fontSize: 14, fontWeight: 700 }}>
+              ✓ {name} 시뮬레이션이 완성됐어요! 결과를 확인하고, 아래 버튼으로 결과표를 저장하거나 기사를 써 보세요.
+            </div>
+          )}
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: theme.textPrimary }}>📋 시뮬레이션 결과표</h3>
             <span style={{ fontSize: 13, color: theme.textSecondary }}>{[r.title, r.location, r.dateText].filter(Boolean).join(" · ")}</span>
