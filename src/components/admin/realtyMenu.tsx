@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { MenuItem } from "@/components/admin/sections/types";
-import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconManual, IconPoint, IconHomepage, IconSend, IconFilm } from "@/components/admin/sections/AdminIcons";
+import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconManual, IconPoint, IconHomepage, IconSend, IconFilm, IconMegaphone } from "@/components/admin/sections/AdminIcons";
 
 /**
  * 중개사 관리자(/realty_admin) 메뉴 구성 — 2026-10-15 회의 (다)안
@@ -17,6 +17,7 @@ export const REALTY_MENU_CATALOG: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실등록", icon: <IconBuilding /> },
   { key: "article", label: "기사등록", icon: <IconArticle /> },
+  { key: "marketing", label: "공실마케팅", icon: <IconMegaphone /> },
   { key: "sns", label: "뉴스·SNS발행", icon: <IconSend /> },
   { key: "video", label: "동영상제작", icon: <IconFilm /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
@@ -30,7 +31,7 @@ export const REALTY_MENU_CATALOG: MenuItem[] = [
 
 /** 공실뉴스가 처음 정한 기본 (최고관리자가 바꾸기 전) */
 export const FACTORY_LAYOUT: MenuLayout = {
-  main: ["dashboard", "gongsil", "article", "sns", "video", "customer"],
+  main: ["dashboard", "gongsil", "article", "marketing", "sns", "video", "customer"],
   more: ["article_ad", "study", "inquiry_board", "point", "homepage", "manual"],
 };
 
@@ -47,8 +48,17 @@ export function normalizeLayout(layout: Partial<MenuLayout> | null | undefined, 
   const pick = (list: string[]) => list.filter((k) => KEYS.has(k) && !seen.has(k) && seen.add(k));
   const main = pick(layout.main);
   const more = pick(layout.more);
-  for (const k of fallback.main) if (!seen.has(k)) { main.push(k); seen.add(k); }
-  for (const k of fallback.more) if (!seen.has(k)) { more.push(k); seen.add(k); }
+  // 빠진 메뉴는 기준에서 바로 앞에 있던 메뉴 다음에 넣는다 (예: 새로 생긴 공실마케팅은 기사등록 아래)
+  const place = (list: string[], order: string[]) =>
+    order.forEach((k, i) => {
+      if (seen.has(k) || !KEYS.has(k)) return;
+      const prev = order.slice(0, i).reverse().find((p) => list.includes(p));
+      list.splice(prev ? list.indexOf(prev) + 1 : list.length, 0, k);
+      seen.add(k);
+    });
+  place(main, fallback.main);
+  place(main, FACTORY_LAYOUT.main); // 최고관리자 기본값을 저장한 뒤에 생긴 업무 메뉴
+  place(more, fallback.more);
   for (const k of KEYS) if (!seen.has(k)) more.push(k);
   if (!main.includes("dashboard")) {
     const i = more.indexOf("dashboard");

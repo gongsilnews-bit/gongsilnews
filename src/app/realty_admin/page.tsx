@@ -55,6 +55,7 @@ const STUDIO_MAIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실등록", icon: <IconBuilding /> },
   { key: "article", label: "기사등록", icon: <IconArticle /> },
+  { key: "marketing", label: "공실마케팅", icon: <IconSend /> },
   { key: "sns", label: "뉴스·SNS발행", icon: <IconSend /> },
   { key: "video", label: "동영상제작", icon: <IconFilm /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
@@ -64,7 +65,7 @@ const STUDIO_MORE_MENU = REALTY_MENU.filter((m) => STUDIO_MORE_KEYS.includes(m.k
 const STUDIO_SETTINGS_MENU = REALTY_MENU.find((m) => m.key === "settings")!;
 const STUDIO_BADGES = { sns: "NEW", video: "NEW" };
 /** 주소 ?menu= 로 열 수 있는 메뉴 (스튜디오 메뉴 포함) */
-const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video");
+const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video" || key === "marketing");
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPlanLabel, formatPlanEnd, isPlanEndingSoon, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN } from "@/utils/permissionCheck";
@@ -427,7 +428,7 @@ function RealtyAdminContent() {
           {activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
           {activeMenu === "sns" && studioApp.isApp && memberId && <StudioSnsSection theme={theme} memberId={memberId} />}
-          {((activeMenu === "sns" && !studioApp.isApp) || activeMenu === "video") && (
+          {((activeMenu === "sns" && !studioApp.isApp) || activeMenu === "video" || activeMenu === "marketing") && (
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />
           )}
         </Suspense>
