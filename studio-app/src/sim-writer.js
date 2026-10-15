@@ -8,7 +8,7 @@
 // 결과표가 기사·블로그·SNS·유튜브 대본의 원자료다. 번호는 "int-…"(인테리어) · "rem-…"(리모델링)이고,
 // 채널 탭은 공실뉴스·뉴스칼럼과 같은 화면을 쓴다 (각 모듈이 isSim(번호)로 이 확장 프롬프트로 갈라진다).
 // 확장 파일은 서버에서 받는다 (ext.js).
-const { app, session } = require("electron");
+const { app, session, BrowserWindow, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
@@ -338,4 +338,76 @@ function resultMedia(id) {
 
 const creditOf = (id) => KINDS[kindOf(id)].credit;
 
-module.exports = { isSim, kindOf, lib, options, estimate, create, get, list, useVacancy, addPhotos, update, run, resultOf, resultMedia, creditOf };
+/* ── 결과표 이미지 · 예측 이미지 저장 (확장 [📋 결과표 이미지 저장] [🖼 예측 이미지 저장]과 같다) ──
+   문서\공실뉴스 스튜디오\<인테리어|리모델링>_<물건>_<번호>\ 에 저장하고 폴더를 연다 */
+// 결과표 그림 코드는 조건표(이름·라벨)와 공사비 표기(rmWon)를 같이 쓴다
+const SHEET = {
+  interior: ["interior/interior-spec.js", "interior/interior-cost.js", "interior/interior-sheet.js"],
+  remodel: ["remodel/remodel-spec.js", "remodel/remodel-cost.js", "remodel/remodel-sheet.js"],
+};
+const safeName = (s) => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
+const fileToDataUrl = (file) => {
+  const ext = path.extname(file).toLowerCase();
+  const type = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
+  return `data:${type};base64,${fs.readFileSync(file).toString("base64")}`;
+};
+
+function resultFolder(d) {
+  const label = KINDS[d.kind].label;
+  const folder = path.join(app.getPath("documents"), "공실뉴스 스튜디오", `${label}_${safeName(d.result.title) || "시뮬레이션"}_${d.id.replace(/^(int|rem)-/, "").slice(0, 8)}`);
+  fs.mkdirSync(folder, { recursive: true });
+  return folder;
+}
+
+/* 확장 결과표 그림 코드(rmDrawSheet, canvas)를 안 보이는 창에서 그대로 돌려 PNG 를 받는다 */
+async function drawSheet(d) {
+  const r = d.result;
+  const result = {
+    ...r,
+    beforeUrl: r.beforeFile && fs.existsSync(r.beforeFile) ? fileToDataUrl(r.beforeFile) : "",
+    versions: r.versions.map((v) => ({ index: v.index, diffKo: v.diffKo, imageUrl: fs.existsSync(v.file) ? fileToDataUrl(v.file) : "" })),
+  };
+  const win = new BrowserWindow({ show: false, width: 1300, height: 900, webPreferences: { offscreen: true, sandbox: true } });
+  try {
+    await win.loadURL("data:text/html;charset=utf-8,<!doctype html><html><body></body></html>");
+    const png = await win.webContents.executeJavaScript(`${SHEET[d.kind].map((f) => ext.text(f)).join(";\n")}
+;rmDrawSheet(${JSON.stringify(result)})`, true);
+    if (!/^data:image\/png;base64,/.test(String(png || ""))) throw new Error("결과표 그림을 만들지 못했습니다.");
+    return png;
+  } finally {
+    if (!win.isDestroyed()) win.destroy();
+  }
+}
+
+async function exportResult({ id, what }) {
+  const d = read(id);
+  if (!d.result) throw new Error("먼저 시뮬레이션을 해서 결과표를 만들어 주세요.");
+  const folder = resultFolder(d);
+  const label = KINDS[d.kind].label;
+  const day = d.result.dateText || "";
+  const files = [];
+  if (what === "sheet") {
+    const png = await drawSheet(d);
+    const file = path.join(folder, `공실뉴스_${label}_결과표_${day}.png`);
+    fs.writeFileSync(file, Buffer.from(png.split(",")[1], "base64"));
+    files.push(file);
+  } else {
+    const now = d.kind === "interior" ? `현재_${d.result.roomName || "실내"}` : "현재_외관";
+    if (d.result.beforeFile && fs.existsSync(d.result.beforeFile)) {
+      const file = path.join(folder, `${label}_${now}_${day}${path.extname(d.result.beforeFile)}`);
+      fs.copyFileSync(d.result.beforeFile, file);
+      files.push(file);
+    }
+    for (const v of d.result.versions) {
+      if (!fs.existsSync(v.file)) continue;
+      const file = path.join(folder, `${label}_예측_버전${v.index}_${day}${path.extname(v.file)}`);
+      fs.copyFileSync(v.file, file);
+      files.push(file);
+    }
+  }
+  shell.openPath(folder);
+  log.info(`[시뮬레이션] ${id} ${what} 저장 ${files.length}개`);
+  return { folder, count: files.length };
+}
+
+module.exports = { isSim, kindOf, lib, options, estimate, create, get, list, useVacancy, addPhotos, update, run, resultOf, resultMedia, creditOf, exportResult };

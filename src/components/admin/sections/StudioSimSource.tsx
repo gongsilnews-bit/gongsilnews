@@ -39,6 +39,7 @@ type Bridge = {
     addPhotos: (opts: { id: string; dataUrls: string[] }) => Promise<Sim>;
     update: (opts: { id: string; pick?: string[]; design?: Record<string, unknown>; costBase?: Record<string, number> }) => Promise<Sim>;
     run: (id: string) => Promise<Sim>;
+    exportResult: (opts: { id: string; what: "sheet" | "images" }) => Promise<{ folder: string; count: number }>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
@@ -175,6 +176,24 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
     if (!next.length) return; // 하나는 남긴다
     update({ design: { [key]: next } });
   };
+  /* 확장과 같은 결과표 버튼: 결과표 한 장 PNG · 예측 이미지 저장 (PC 문서 폴더) */
+  const [saveNote, setSaveNote] = useState("");
+  const saveResult = async (what: "sheet" | "images") => {
+    if (!sim) return;
+    setSaveNote(what === "sheet" ? "결과표를 그리는 중…" : "이미지를 저장하는 중…");
+    try {
+      const r = await bridge()!.sim.exportResult({ id: sim.id, what });
+      setSaveNote(`${what === "sheet" ? "결과표 이미지" : `이미지 ${r.count}장`}을 저장하고 폴더를 열었습니다: ${r.folder}`);
+    } catch (e) {
+      setSaveNote(cleanErr(e));
+    }
+  };
+  const toArticle = () => {
+    onTab("article");
+    setOpen(false);
+    setTimeout(() => window.scrollTo?.({ top: 0 }), 0);
+  };
+
   const start = () => run("시뮬레이션 중…", async () => {
     if (!sim) return;
     const s = await bridge()!.sim.run(sim.id);
@@ -417,6 +436,24 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
             </div>
           </div>
           {r.disclaimer && <div style={{ marginTop: 12, fontSize: 12.5, color: theme.textSecondary, lineHeight: 1.6 }}>※ {r.disclaimer}</div>}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 18 }}>
+            <button onClick={() => saveResult("sheet")}
+              style={{ textAlign: "left", padding: "12px 16px", border: 0, borderRadius: 10, background: "#1d4ed8", color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+              <div style={{ fontSize: 14.5, fontWeight: 800 }}>📋 결과표 이미지 저장</div>
+              <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>{kind === "interior" ? "집주인·손님에게" : "임대인에게"} 보낼 수 있는 한 장짜리 결과표(PNG)</div>
+            </button>
+            <button onClick={() => saveResult("images")}
+              style={{ textAlign: "left", padding: "12px 16px", borderRadius: 10, border: `1px solid ${theme.border}`, background: theme.cardBg, color: theme.textPrimary, cursor: "pointer", fontFamily: "inherit" }}>
+              <div style={{ fontSize: 14.5, fontWeight: 800 }}>🖼 예측 이미지 저장 ({r.versions.length}장)</div>
+              <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>지금 모습 사진과 함께 저장</div>
+            </button>
+            <button onClick={toArticle}
+              style={{ textAlign: "left", padding: "12px 16px", border: 0, borderRadius: 10, background: "#16a34a", color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+              <div style={{ fontSize: 14.5, fontWeight: 800 }}>이 결과로 기사 쓰기 →</div>
+              <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>공실뉴스 기사 탭으로 갑니다</div>
+            </button>
+          </div>
+          {saveNote && <div style={{ marginTop: 10, fontSize: 13, color: /못|실패|없/.test(saveNote) ? "#c53030" : "#16a34a", lineHeight: 1.6, wordBreak: "break-all" }}>{saveNote}</div>}
         </div>
       )}
 

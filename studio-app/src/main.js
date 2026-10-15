@@ -380,6 +380,7 @@ ipcMain.handle("studio:sim-list", (_e, kind) => simWriter.list(kind));
 ipcMain.handle("studio:sim-use-vacancy", (e, opts) => simWriter.useVacancy({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:sim-progress", text)));
 ipcMain.handle("studio:sim-add-photos", (_e, opts) => simWriter.addPhotos(opts));
 ipcMain.handle("studio:sim-update", (_e, opts) => simWriter.update(opts));
+ipcMain.handle("studio:sim-export", (_e, opts) => simWriter.exportResult(opts));
 ipcMain.handle("studio:sim-run", (e, id) => simWriter.run({ id, baseUrl: BASE_URL }, (text) => e.sender.send("studio:sim-progress", text)));
 // 공실마케팅 AI 채우기 (매물보고서·유리창홍보지 — 도구가 앱 화면 안에서 부른다)
 ipcMain.handle("studio:marketing-fill", (e, opts) => marketingWriter.fill({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:marketing-progress", text)));

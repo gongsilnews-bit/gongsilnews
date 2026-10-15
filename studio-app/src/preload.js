@@ -81,6 +81,7 @@ if (allowed) {
       addPhotos: (opts) => ipcRenderer.invoke("studio:sim-add-photos", opts),
       update: (opts) => ipcRenderer.invoke("studio:sim-update", opts),
       run: (id) => ipcRenderer.invoke("studio:sim-run", id),
+      exportResult: (opts) => ipcRenderer.invoke("studio:sim-export", opts),
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
         ipcRenderer.on("studio:sim-progress", h);

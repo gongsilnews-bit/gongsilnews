@@ -22,11 +22,11 @@ const GROUPS = {
   // 인테리어뉴스(interior10) · 리모델링뉴스(remodeling10) — 시뮬레이션 + 결과표로 쓰는 기사·블로그·SNS·대본 (유료 전용)
   interior: {
     dir: join(extRoot, "interior10", "shared"),
-    files: ["interior-spec.js", "interior-cost.js", "prompt.js", "interior-prompt.js", "article-json.js", "blog-prompt.js", "naver-blog.js", "youtube-prompt.js", "youtube-json.js", "sns-prompt.js"],
+    files: ["interior-spec.js", "interior-cost.js", "prompt.js", "interior-prompt.js", "article-json.js", "blog-prompt.js", "naver-blog.js", "youtube-prompt.js", "youtube-json.js", "sns-prompt.js", "interior-sheet.js"],
   },
   remodel: {
     dir: join(extRoot, "remodeling10", "shared"),
-    files: ["remodel-spec.js", "remodel-cost.js", "prompt.js", "remodel-prompt.js", "article-json.js", "blog-prompt.js", "naver-blog.js", "youtube-prompt.js", "youtube-json.js", "sns-prompt.js"],
+    files: ["remodel-spec.js", "remodel-cost.js", "prompt.js", "remodel-prompt.js", "article-json.js", "blog-prompt.js", "naver-blog.js", "youtube-prompt.js", "youtube-json.js", "sns-prompt.js", "remodel-sheet.js"],
   },
   // 공실마케팅 AI 채우기 (AI 매물보고서 · AI 유리창홍보지) — 확장이 아니라 저장소 marketing/shared
   marketing: {
