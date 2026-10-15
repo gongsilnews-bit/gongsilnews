@@ -41,6 +41,36 @@ function wrap(text, max) {
   return lines;
 }
 
+const assHead = (W, H) =>
+  `[Script Info]\nScriptType: v4.00+\nPlayResX: ${W}\nPlayResY: ${H}\nWrapStyle: 2\nScaledBorderAndShadow: yes\n\n` +
+  `[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n`;
+const assEvents = "\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n";
+
+/** 화면 글자 애셋 스타일 (미리보기 Player.tsx 와 같은 크기·자리) */
+function textLayerStyle(name, W, H, l) {
+  const size = Math.round(Math.min(W, H) * 0.08 * ((Number(l.size) || 100) / 100));
+  const pos = l.pos || "top";
+  const align = pos === "top" ? 8 : pos === "middle" ? 5 : 2;
+  const marginV = pos === "top" ? Math.round(H * 0.06) : pos === "middle" ? 0 : Math.round(H * 0.07);
+  const back = l.box ? assColor("#000000", 0x60) : assColor("#000000", 0xff);
+  return `Style: ${name},Malgun Gothic,${size},${assColor(l.color || "#FFFFFF")},${assColor(l.color || "#FFFFFF")},${assColor(String(l.color).toUpperCase() === "#111111" ? "#FFFFFF" : "#000000")},${back},-1,0,0,0,100,100,0,0,${l.box ? 3 : 1},${l.box ? Math.round(size * 0.25) : 4},0,${align},${Math.round(W * 0.05)},${Math.round(W * 0.05)},${marginV},1`;
+}
+
+/** 자막만 따로 쓴 글 — 글자 수만큼 시간을 나눠 차례로 (timeline.ts evenLines 와 같음) */
+function evenLines(text, dur, max, perChunk) {
+  const lines = wrap(text, max);
+  const chunks = [];
+  for (let i = 0; i < lines.length; i += perChunk) chunks.push(lines.slice(i, i + perChunk).join("\n"));
+  const total = chunks.reduce((a, c) => a + c.length, 0) || 1;
+  let t = 0;
+  return chunks.map((c, i) => {
+    const d = i === chunks.length - 1 ? dur - t : (c.length / total) * dur;
+    const r = { s: t, e: t + d, text: c };
+    t += d;
+    return r;
+  });
+}
+
 function subtitleStyle(W, H, st) {
   const base = Math.min(W, H) * 0.062 * ((Number(st.size) || 100) / 100);
   const size = Math.round(base);
@@ -51,20 +81,19 @@ function subtitleStyle(W, H, st) {
   const back = st.bg ? assColor("#000000", 0x60) : assColor("#000000", 0xff);
   return {
     size,
-    header:
-      `[Script Info]\nScriptType: v4.00+\nPlayResX: ${W}\nPlayResY: ${H}\nWrapStyle: 2\nScaledBorderAndShadow: yes\n\n` +
-      `[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n` +
-      `Style: S,${st.font || "Malgun Gothic"},${size},${assColor(st.color)},${assColor(st.color)},${assColor(st.outline || "#000000")},${back},${st.bold === false ? 0 : -1},0,0,0,100,100,0,0,${borderStyle},${st.bg ? Math.round(size * 0.25) : Number(st.outlineWidth ?? 3)},0,${align},${Math.round(W * 0.06)},${Math.round(W * 0.06)},${marginV},1\n\n` +
-      `[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`,
+    style:
+      `Style: S,${st.font || "Malgun Gothic"},${size},${assColor(st.color)},${assColor(st.color)},${assColor(st.outline || "#000000")},${back},${st.bold === false ? 0 : -1},0,0,0,100,100,0,0,${borderStyle},${st.bg ? Math.round(size * 0.25) : Number(st.outlineWidth ?? 3)},0,${align},${Math.round(W * 0.06)},${Math.round(W * 0.06)},${marginV},1`,
   };
 }
 
 /** 클립 하나의 자막 줄들 [{s, e, text}] (클립 시작 = 0) */
 function subtitleLines(clip, dur, settings, W) {
   const st = settings.subtitle || {};
-  const text = tl.clipText(clip).trim();
-  if (!st.on || !text || clip.type === "silence" || clip.sub === false) return [];
+  const custom = typeof clip.subText === "string";
+  const text = tl.subtitleText(clip).trim();
+  if (!st.on || !text || (clip.type === "silence" && !custom) || clip.sub === false) return [];
   const max = W >= 1400 ? 26 : W >= 1080 ? 18 : 16;
+  if (custom) return evenLines(text, dur, st.length === "short" ? Math.round(max * 0.7) : max, st.length === "short" ? 1 : 2);
   if (st.length !== "short") {
     const lines = wrap(text, max);
     // 두 줄이 넘으면 두 줄씩 나눠 차례로
@@ -119,7 +148,7 @@ function fitFilter(inLabel, W, H, fill, outLabel) {
 const assetFile = (a) => (a.edit && fs.existsSync(a.edit) ? a.edit : a.path);
 
 /** 클립 하나 → 조각 영상 (seg.mp4) */
-async function renderClip(p, clip, dur, idx, tmp, enc) {
+async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
   const [W, H] = RATIOS[p.ratio] || RATIOS["16:9"];
   const st = p.settings || {};
   const fill = clip.fill || st.fill || "cover";
@@ -170,15 +199,37 @@ async function renderClip(p, clip, dur, idx, tmp, enc) {
     }
   }
   filters.push(fitFilter("vraw", W, H, fill, "vfit"));
-
-  // 자막
-  const lines = subtitleLines(clip, dur, st, W);
   let vOut = "vfit";
-  if (lines.length) {
-    const sty = subtitleStyle(W, H, st.subtitle || {});
-    const ass = sty.header + lines.map((l) => `Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${assEsc(l.text)}`).join("\n") + "\n";
+
+  // 사진 올리기 애셋 (자막·화면 글자 아래)
+  layers.filter((l) => l.type === "image").forEach((l, j) => {
+    const a = l.asset && p.assets[l.asset];
+    if (!ok(a) || a.kind !== "image") return;
+    args.push("-loop", "1", "-framerate", String(FPS), "-t", dur.toFixed(3), "-i", assetFile(a));
+    const k = n++;
+    const pw = Math.max(8, Math.round((W * Math.max(0.03, Math.min(1, Number(l.w ?? 0.35)))) / 2) * 2);
+    const op = Math.max(0.05, Math.min(1, Number(l.opacity ?? 1)));
+    const ph = a.width && a.height ? Math.round((pw * a.height) / a.width) : pw;
+    // 화면 밖으로 나가지 않게 (미리보기 Player.tsx 와 같은 계산)
+    const x0 = Math.round(Math.max(0, Math.min(W - pw, W * Number(l.x ?? 0.5) - pw / 2)));
+    const y0 = Math.round(Math.max(0, Math.min(H - ph, H * Number(l.y ?? 0.5) - ph / 2)));
+    filters.push(`[${k}:v]scale=${pw}:-2,format=rgba,colorchannelmixer=aa=${op.toFixed(3)}[ov${j}]`);
+    filters.push(`[${vOut}][ov${j}]overlay=x=${x0}:y=${y0}:eof_action=pass[vo${j}]`);
+    vOut = `vo${j}`;
+  });
+
+  // 자막 + 화면 글자 애셋
+  const lines = subtitleLines(clip, dur, st, W);
+  const texts = layers.filter((l) => l.type === "text" && String(l.text || "").trim());
+  if (lines.length || texts.length) {
+    const styles = [subtitleStyle(W, H, st.subtitle || {}).style, ...texts.map((l, j) => textLayerStyle(`T${j}`, W, H, l))];
+    const events = [
+      ...lines.map((l) => `Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${assEsc(l.text)}`),
+      ...texts.map((l, j) => `Dialogue: 1,${assTime(0)},${assTime(dur + 0.05)},T${j},,0,0,0,,${assEsc(String(l.text).trim())}`),
+    ];
+    const ass = assHead(W, H) + styles.join("\n") + "\n" + assEvents + events.join("\n") + "\n";
     fs.writeFileSync(path.join(tmp, `s${idx}.ass`), ass, "utf8");
-    filters.push(`[vfit]subtitles=s${idx}.ass:fontsdir=fonts[vsub]`);
+    filters.push(`[${vOut}]subtitles=s${idx}.ass:fontsdir=fonts[vsub]`);
     vOut = "vsub";
   }
   filters.push(`[${vOut}]format=yuv420p,trim=duration=${dur.toFixed(3)}[vout]`);
@@ -224,6 +275,7 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
   const scale = opts.height && opts.height < Math.min(W0, H0) ? opts.height / Math.min(W0, H0) : 1;
   const proj = scale === 1 ? p : { ...p, ratio: p.ratio };
   let { items, total } = tl.flatten(p);
+  const order = tl.clipOrder(p);
   if (opts.scope === "scene" && opts.sceneId) {
     const sc = (p.scenes || []).find((s) => s.id === opts.sceneId);
     const ids = new Set((sc ? sc.clips : []).map((c) => c.id));
@@ -233,7 +285,14 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
     items = items.filter((x) => ids.has(x.clip.id));
   }
   if (!items.length) throw new Error("내보낼 클립이 없습니다.");
-  total = items.reduce((a, x) => a + x.dur, 0);
+  // 고른 클립만 굽을 때도 시각을 0부터 다시 센다 (음악 자리 계산)
+  let acc = 0;
+  items = items.map((x) => {
+    const y = { ...x, start: acc };
+    acc += x.dur;
+    return y;
+  });
+  total = acc;
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "gsv-"));
   // 자막 글꼴 — 윈도우 맑은 고딕을 작업 폴더로 (경로에 한글·공백이 없게)
@@ -250,7 +309,8 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
     for (let i = 0; i < items.length; i++) {
       if (isCancelled()) throw new Error("내보내기를 멈췄습니다.");
       onProgress(`클립 ${i + 1} / ${items.length} 만드는 중…`, (done / total) * 0.9);
-      segs.push(await renderClip(proj, items[i].clip, items[i].dur, i, tmp, enc));
+      const over = tl.layersAt(p, items[i].clip.id, order).filter((l) => l.type !== "music");
+      segs.push(await renderClip(proj, items[i].clip, items[i].dur, i, tmp, enc, over));
       done += items[i].dur;
     }
     onProgress("클립을 잇는 중…", 0.92);
@@ -263,18 +323,45 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
     let outFile = path.join(outDir, `${p.name}_${p.ratio.replace(":", "x")}.mp4`);
     for (let n = 2; fs.existsSync(outFile); n++) outFile = path.join(outDir, `${p.name}_${p.ratio.replace(":", "x")}_${n}.mp4`);
 
-    const music = p.settings && p.settings.music;
-    const musicFile = music && music.on && music.file && fs.existsSync(music.file) ? music.file : "";
+    // 음악 애셋: 덮는 클립 구간에만, 페이드·시작 지점·반복. 말할 때는 음악을 저절로 줄인다
+    const musics = tl
+      .musicLayers(p, items)
+      .map((l) => {
+        const cov = tl.layerItems(p, l, items, order);
+        if (!cov.length || !l.file || !fs.existsSync(l.file)) return null;
+        const s = cov[0].start;
+        const e = cov[cov.length - 1].start + cov[cov.length - 1].dur;
+        return { l, s, len: e - s };
+      })
+      .filter((x) => x && x.len > 0.05);
     const resize = scale !== 1 ? ["-vf", `scale=-2:${Math.round(H0 * scale / 2) * 2}`] : null;
-    if (musicFile || resize) {
-      onProgress(musicFile ? "배경 음악을 섞는 중…" : "해상도를 맞추는 중…", 0.95);
+    if (musics.length || resize) {
+      onProgress(musics.length ? "배경 음악을 섞는 중…" : "해상도를 맞추는 중…", 0.95);
       const a = ["-y", "-hide_banner", "-loglevel", "error", "-i", joined];
-      if (musicFile) {
-        const mv = Math.max(0, Math.min(1, Number(music.volume ?? 0.15)));
-        a.push("-stream_loop", "-1", "-i", musicFile, "-filter_complex",
-          `[1:a]volume=${mv},aresample=48000,aformat=channel_layouts=stereo,atrim=duration=${total.toFixed(3)},afade=t=out:st=${Math.max(0, total - 2).toFixed(3)}:d=2[m];` +
-          `[m][0:a]sidechaincompress=threshold=0.03:ratio=6:attack=30:release=400[md];[0:a][md]amix=inputs=2:duration=first:normalize=0[a]`,
-          "-map", "0:v", "-map", "[a]", "-c:a", "aac", "-b:a", "192k");
+      if (musics.length) {
+        const fl = [];
+        musics.forEach(({ l, s, len }, i) => {
+          if (l.loop !== false) a.push("-stream_loop", "-1");
+          if (Number(l.offset) > 0) a.push("-ss", Number(l.offset).toFixed(3));
+          a.push("-i", l.file);
+          const mv = Math.max(0, Math.min(1, Number(l.volume ?? 0.15)));
+          const fi = Math.min(len / 2, Math.max(0, Number(l.fadeIn) || 0));
+          const fo = Math.min(len / 2, Math.max(0, Number(l.fadeOut) || 0));
+          const ms = Math.round(s * 1000);
+          fl.push(
+            `[${i + 1}:a]volume=${mv},aresample=48000,aformat=channel_layouts=stereo,atrim=duration=${len.toFixed(3)},asetpts=PTS-STARTPTS` +
+              (fi > 0 ? `,afade=t=in:st=0:d=${fi.toFixed(2)}` : "") +
+              (fo > 0 ? `,afade=t=out:st=${(len - fo).toFixed(3)}:d=${fo.toFixed(2)}` : "") +
+              (ms > 0 ? `,adelay=${ms}|${ms}` : "") +
+              `[m${i}]`
+          );
+        });
+        fl.push(musics.length > 1 ? `${musics.map((_, i) => `[m${i}]`).join("")}amix=inputs=${musics.length}:duration=longest:normalize=0[mm]` : `[m0]anull[mm]`);
+        fl.push(`[mm]apad,atrim=duration=${total.toFixed(3)}[mt]`);
+        fl.push(`[0:a]asplit=2[v1][v2]`);
+        fl.push(`[mt][v1]sidechaincompress=threshold=0.03:ratio=6:attack=30:release=400[md]`);
+        fl.push(`[v2][md]amix=inputs=2:duration=first:normalize=0[a]`);
+        a.push("-filter_complex", fl.join(";"), "-map", "0:v", "-map", "[a]", "-c:a", "aac", "-b:a", "192k");
       } else a.push("-map", "0:v", "-map", "0:a", "-c:a", "copy");
       if (resize) a.push(...resize, ...enc.args("final"));
       else a.push("-c:v", "copy");

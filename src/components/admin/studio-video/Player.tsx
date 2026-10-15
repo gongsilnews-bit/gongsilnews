@@ -2,9 +2,9 @@
 
 // 미리보기 — 굽기(render.js)와 같은 규칙으로 화면·성우·원본 소리·음악·자막을 맞춰 보여 준다 (PC 파일을 바로 재생)
 import React, { useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from "react";
-import type { Clip, Project } from "./types";
+import type { Clip, Layer, Project } from "./types";
 import { RATIO_SIZE } from "./types";
-import { flatten, sourceTimeAt, speedOf, subtitleLines } from "./timeline";
+import { clipOrder, flatten, layerItems, layersAt, musicLayers, sourceTimeAt, speedOf, subtitleLines } from "./timeline";
 import { C } from "./ui";
 
 export type PlayerHandle = { play: () => void; pause: () => void; toggle: () => void; seek: (t: number) => void; time: () => number; playing: () => boolean };
@@ -17,10 +17,22 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const boxH = Math.round((width * H) / W);
   const k = boxW / W;
   const flat = useMemo(() => flatten(project), [project]);
+  const order = useMemo(() => clipOrder(project), [project]);
+  // 음악 애셋마다 [시작, 끝] (굽기 render.js 와 같은 계산)
+  const musics = useMemo(
+    () =>
+      musicLayers(project, flat.items)
+        .map((l) => {
+          const cov = layerItems(project, l, flat.items, order);
+          return cov.length ? { l, s: cov[0].start, e: cov[cov.length - 1].start + cov[cov.length - 1].dur } : null;
+        })
+        .filter(Boolean) as { l: Layer; s: number; e: number }[],
+    [project, flat, order]
+  );
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgRef = useRef<HTMLVideoElement>(null);
   const voiceRef = useRef<HTMLAudioElement>(null);
-  const musicRef = useRef<HTMLAudioElement>(null);
+  const musicEls = useRef<Record<string, HTMLAudioElement | null>>({});
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
   const tRef = useRef(0);
@@ -122,14 +134,42 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clip?.id, clip?.voice?.url, visual?.id]);
 
-  // 음악
-  useEffect(() => {
-    const m = musicRef.current;
-    if (!m) return;
-    const mu = project.settings.music;
-    m.volume = Math.max(0, Math.min(1, mu?.volume ?? 0.15));
-    if (!mu?.on || !mu.url) m.pause();
-  }, [project.settings.music]);
+  /** 음악 애셋 — 구간 안에서만, 시작 지점·반복·페이드 (force: 찾아가기) */
+  const syncMusic = (time: number, force: boolean) => {
+    for (const { l, s, e } of musics) {
+      const a = musicEls.current[l.id];
+      if (!a) continue;
+      const inside = time >= s && time < e;
+      if (!inside || !playRef.current) {
+        if (!a.paused) a.pause();
+        continue;
+      }
+      const loc = time - s;
+      const len = e - s;
+      const dur = a.duration && isFinite(a.duration) ? a.duration : 0;
+      let target = (Number(l.offset) || 0) + loc;
+      if (dur) {
+        if (l.loop !== false) target = target % dur;
+        else if (target >= dur) {
+          a.pause();
+          continue;
+        }
+      }
+      const fi = Math.min(len / 2, Number(l.fadeIn) || 0);
+      const fo = Math.min(len / 2, Number(l.fadeOut) || 0);
+      let g = 1;
+      if (fi > 0 && loc < fi) g = Math.min(g, loc / fi);
+      if (fo > 0 && len - loc < fo) g = Math.min(g, (len - loc) / fo);
+      a.volume = Math.max(0, Math.min(1, (l.volume ?? 0.15) * g));
+      a.playbackRate = previewRate;
+      if (force || Math.abs(a.currentTime - target) > 0.4) {
+        try {
+          a.currentTime = target;
+        } catch {}
+      }
+      if (a.paused) a.play().catch(() => {});
+    }
+  };
 
   const tick = () => {
     if (!playRef.current) return;
@@ -144,6 +184,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     const changed = it && it.clip.id !== curClip.current;
     if (it) curClip.current = it.clip.id;
     sync(time, Boolean(changed));
+    syncMusic(time, false);
     if (now - lastReport.current > 90 || changed) {
       lastReport.current = now;
       setT(time);
@@ -161,15 +202,10 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     onPlaying?.(true);
     const it = itemAt(tRef.current);
     curClip.current = it?.clip.id || "";
-    const m = musicRef.current;
-    const mu = project.settings.music;
-    if (m && mu?.on && mu.url) {
-      try {
-        m.currentTime = tRef.current % Math.max(1, m.duration || 1e9);
-      } catch {}
-      m.play().catch(() => {});
-    }
-    setTimeout(() => sync(tRef.current, true), 0);
+    setTimeout(() => {
+      sync(tRef.current, true);
+      syncMusic(tRef.current, true);
+    }, 0);
     requestAnimationFrame(tick);
   };
   const stop = () => {
@@ -179,7 +215,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     videoRef.current?.pause();
     bgRef.current?.pause();
     voiceRef.current?.pause();
-    musicRef.current?.pause();
+    Object.values(musicEls.current).forEach((a) => a?.pause());
   };
   const seek = (time: number) => {
     const v = Math.max(0, Math.min(flat.total, time));
@@ -189,13 +225,10 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     onTime?.(v);
     const it = itemAt(v);
     curClip.current = it?.clip.id || "";
-    setTimeout(() => sync(v, true), 0);
-    const m = musicRef.current;
-    if (m && playRef.current) {
-      try {
-        m.currentTime = v % Math.max(1, m.duration || 1e9);
-      } catch {}
-    }
+    setTimeout(() => {
+      sync(v, true);
+      syncMusic(v, true);
+    }, 0);
   };
 
   useImperativeHandle(ref, () => ({
@@ -224,6 +257,11 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const posStyle: React.CSSProperties =
     st.position === "top" ? { top: H * 0.08 * k } : st.position === "middle" ? { top: "50%", transform: "translateY(-50%)" } : st.position === "middle-low" ? { bottom: H * 0.24 * k } : { bottom: H * 0.07 * k };
 
+  // 지금 클립에 걸린 사진·화면 글자 애셋 (굽기와 같은 자리·크기)
+  const over = clip ? layersAt(project, clip.id, order) : [];
+  const overImages = over.filter((l) => l.type === "image" && l.asset && project.assets[l.asset]?.kind === "image");
+  const overTexts = over.filter((l) => l.type === "text" && String(l.text || "").trim());
+
   const mediaStyle: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: fill === "cover" ? "cover" : "contain" };
   const vUrl = visual?.url || "";
 
@@ -238,6 +276,29 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       <video ref={videoRef} src={visual?.kind === "video" ? vUrl : undefined} playsInline preload="auto" style={{ ...mediaStyle, display: visual?.kind === "video" ? "block" : "none" }}
         onLoadedData={() => sync(tRef.current, true)} />
       {visual?.missing && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub, fontSize: 14 }}>원본 파일을 찾지 못했어요</div>}
+      {overImages.map((l) => {
+        const a = project.assets[l.asset!];
+        const pw = Math.max(0.03, Math.min(1, l.w ?? 0.35)) * boxW;
+        const ph = a.width && a.height ? (pw * a.height) / a.width : pw;
+        // 화면 밖으로 나가지 않게 (굽기 render.js 와 같은 계산)
+        const left = Math.max(0, Math.min(boxW - pw, (l.x ?? 0.5) * boxW - pw / 2));
+        const top = Math.max(0, Math.min(boxH - ph, (l.y ?? 0.5) * boxH - ph / 2));
+        return <img key={l.id} src={a.url} alt="" style={{ position: "absolute", left, top, width: pw, height: ph, opacity: Math.max(0.05, Math.min(1, l.opacity ?? 1)), pointerEvents: "none" }} />;
+      })}
+      {overTexts.map((l) => {
+        const px = Math.min(W, H) * 0.08 * ((l.size || 100) / 100) * k;
+        const pos = l.pos || "top";
+        const ps: React.CSSProperties = pos === "top" ? { top: H * 0.06 * k } : pos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : { bottom: H * 0.07 * k };
+        return (
+          <div key={l.id} style={{ position: "absolute", left: W * 0.05 * k, right: W * 0.05 * k, textAlign: "center", ...ps, pointerEvents: "none" }}>
+            <span style={{
+              whiteSpace: "pre-wrap", fontFamily: "'Malgun Gothic', sans-serif", fontWeight: 700, fontSize: px, lineHeight: 1.25, color: l.color || "#fff",
+              WebkitTextStroke: l.box ? undefined : `${Math.max(1, 4 * k * 2)}px ${String(l.color).toUpperCase() === "#111111" ? "#fff" : "#000"}`, paintOrder: "stroke fill",
+              background: l.box ? "rgba(0,0,0,0.62)" : undefined, padding: l.box ? `${px * 0.12}px ${px * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
+            }}>{String(l.text).trim()}</span>
+          </div>
+        );
+      })}
       {line && (
         <div style={{ position: "absolute", left: W * 0.06 * k, right: W * 0.06 * k, textAlign: "center", ...posStyle, pointerEvents: "none" }}>
           <span style={{
@@ -248,7 +309,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         </div>
       )}
       <audio ref={voiceRef} preload="auto" />
-      <audio ref={musicRef} src={project.settings.music?.on ? project.settings.music.url : undefined} loop preload="auto" />
+      {musics.map(({ l }) => <audio key={l.id} ref={(el) => { musicEls.current[l.id] = el; }} src={l.url} preload="auto" />)}
       {playing ? null : null}
     </div>
   );

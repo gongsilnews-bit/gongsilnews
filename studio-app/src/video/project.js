@@ -288,8 +288,8 @@ function exportText(p, kind) {
   if (kind === "srt") {
     let n = 0;
     const body = items
-      .filter((x) => x.clip.type !== "silence" && tl.clipText(x.clip).trim())
-      .map((x) => `${++n}\n${srtTime(x.start)} --> ${srtTime(x.start + x.dur)}\n${tl.clipText(x.clip)}\n`)
+      .filter((x) => x.clip.sub !== false && (x.clip.type !== "silence" || typeof x.clip.subText === "string") && tl.subtitleText(x.clip).trim())
+      .map((x) => `${++n}\n${srtTime(x.start)} --> ${srtTime(x.start + x.dur)}\n${tl.subtitleText(x.clip)}\n`)
       .join("\n");
     file = path.join(out, `${p.name}.srt`);
     fs.writeFileSync(file, body, "utf8");

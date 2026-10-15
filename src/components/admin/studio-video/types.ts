@@ -37,11 +37,45 @@ export type Clip = {
   muted?: boolean;
   volume?: number;
   sub?: boolean;
+  subText?: string; // 자막만 따로 쓴 글 (말소리·목소리는 그대로). 무음 클립에도 자막을 넣을 수 있다
   del?: boolean;
   hint?: { desc?: string; keywords?: string; kind?: string };
 };
 
 export type Scene = { id: string; title?: string; clips: Clip[] };
+
+/**
+ * 애셋(레이어) — 브루처럼 "클립 몇 번부터 몇 번까지"에 붙는 음악·사진·화면 글자.
+ * 범위를 클립으로 잡아서 단어를 지우거나 클립 길이가 바뀌어도 저절로 따라간다.
+ */
+export type LayerType = "music" | "image" | "text";
+export type Layer = {
+  id: string;
+  type: LayerType;
+  from: string; // 시작 클립 id
+  to: string; // 끝 클립 id
+  name?: string;
+  // 음악
+  file?: string;
+  url?: string;
+  volume?: number; // 0~1
+  fadeIn?: number; // 초
+  fadeOut?: number; // 초
+  offset?: number; // 음악 시작 지점 (초)
+  loop?: boolean;
+  // 사진
+  asset?: string;
+  x?: number; // 가운데 위치 0~1
+  y?: number;
+  w?: number; // 화면 폭에 대한 비율 0~1
+  opacity?: number; // 0~1
+  // 화면 글자
+  text?: string;
+  pos?: "top" | "middle" | "bottom";
+  size?: number; // 100 = 기본
+  color?: string;
+  box?: boolean;
+};
 
 export type SubtitleSettings = { on: boolean; position: "top" | "middle" | "middle-low" | "bottom"; length: "long" | "short"; size: number; font: string; color: string; outline: string; outlineWidth: number; bg: boolean; bold: boolean };
 
@@ -65,6 +99,7 @@ export type Project = {
   settings: Settings;
   assets: Record<string, Asset>;
   scenes: Scene[];
+  layers?: Layer[];
   dir: string;
   duration?: number;
   thumb?: string;

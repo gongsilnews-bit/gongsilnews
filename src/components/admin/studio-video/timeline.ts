@@ -1,5 +1,5 @@
 // 클립 길이·남길 구간·단어 시각 — studio-app/src/video/timeline.js 와 같은 계산 (미리보기 = 완성 영상). 둘을 같이 고친다.
-import type { Clip, Project, Settings } from "./types";
+import type { Clip, Layer, Project, Settings } from "./types";
 
 export const GAP = 0.12;
 
@@ -121,9 +121,11 @@ export function wrap(text: string, max: number) {
 /** 클립 하나의 자막 줄들 (render.js subtitleLines 와 같음) */
 export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: number) {
   const st = settings.subtitle;
-  const text = clipText(clip).trim();
-  if (!st.on || !text || clip.type === "silence" || clip.sub === false) return [] as { s: number; e: number; text: string }[];
+  const custom = typeof clip.subText === "string";
+  const text = (custom ? clip.subText! : clipText(clip)).trim();
+  if (!st.on || !text || (clip.type === "silence" && !custom) || clip.sub === false) return [] as { s: number; e: number; text: string }[];
   const max = W >= 1400 ? 26 : W >= 1080 ? 18 : 16;
+  if (custom) return evenLines(text, dur, st.length === "short" ? Math.round(max * 0.7) : max, st.length === "short" ? 1 : 2);
   if (st.length !== "short") {
     const lines = wrap(text, max);
     const chunks: string[] = [];
@@ -157,6 +159,65 @@ export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: nu
     if (i === 0) l.s = 0;
   });
   return out;
+}
+
+/** 자막만 따로 쓴 글 — 말 시각을 모르니 글자 수만큼 시간을 나눠 차례로 (render.js evenLines 와 같음) */
+export function evenLines(text: string, dur: number, max: number, perChunk: number) {
+  const lines = wrap(text, max);
+  const chunks: string[] = [];
+  for (let i = 0; i < lines.length; i += perChunk) chunks.push(lines.slice(i, i + perChunk).join("\n"));
+  const total = chunks.reduce((a, c) => a + c.length, 0) || 1;
+  let t = 0;
+  return chunks.map((c, i) => {
+    const d = i === chunks.length - 1 ? dur - t : (c.length / total) * dur;
+    const r = { s: t, e: t + d, text: c };
+    t += d;
+    return r;
+  });
+}
+
+/* ── 애셋(레이어) — render.js 와 같은 계산 ── */
+
+/** 모든 클립 차례 (지운 것 포함) id → 자리 */
+export function clipOrder(p: Project) {
+  const m = new Map<string, number>();
+  let i = 0;
+  for (const sc of p.scenes || []) for (const c of sc.clips || []) m.set(c.id, i++);
+  return m;
+}
+
+/** 애셋이 덮는 클립들 (보이는 차례). 범위가 사라졌으면 빈 배열 */
+export function layerItems(p: Project, layer: Layer, items: FlatItem[], order = clipOrder(p)) {
+  let a = order.get(layer.from);
+  let b = order.get(layer.to);
+  if (a === undefined || b === undefined) return [] as FlatItem[];
+  if (a > b) [a, b] = [b, a];
+  return items.filter((x) => {
+    const k = order.get(x.clip.id)!;
+    return k >= a! && k <= b!;
+  });
+}
+
+/** 클립 하나에 걸린 애셋들 */
+export function layersAt(p: Project, clipId: string, order = clipOrder(p)) {
+  const k = order.get(clipId);
+  if (k === undefined) return [] as Layer[];
+  return (p.layers || []).filter((l) => {
+    let a = order.get(l.from);
+    let b = order.get(l.to);
+    if (a === undefined || b === undefined) return false;
+    if (a > b) [a, b] = [b, a];
+    return k >= a && k <= b;
+  });
+}
+
+/** 음악 애셋 — 예전 프로젝트의 "전체 배경 음악"도 처음~끝 음악 애셋으로 본다 */
+export function musicLayers(p: Project, items: FlatItem[]): Layer[] {
+  const ls = (p.layers || []).filter((l) => l.type === "music" && l.file);
+  if (ls.length) return ls;
+  const m = p.settings.music;
+  if (m?.on && m.file && items.length) return [{ id: "bgm", type: "music", from: items[0].clip.id, to: items[items.length - 1].clip.id, name: m.name, file: m.file, url: m.url, volume: m.volume ?? 0.15, fadeIn: 0, fadeOut: 2, offset: 0, loop: true }];
+  return [];
 }
 
 /** 글을 문장(클립)으로 나누기 — 빈 줄 = 장면, 줄바꿈·마침표 = 문장 */

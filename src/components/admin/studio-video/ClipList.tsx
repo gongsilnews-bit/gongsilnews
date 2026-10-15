@@ -8,6 +8,7 @@ import { fmtTime } from "./types";
 import { clipText, type FlatItem, speedOf, wordTimes } from "./timeline";
 import { STUDIO_VOICES } from "@/lib/studio-video/voices";
 import { C, Icon, FONT } from "./ui";
+import { Gutter, type LaneEntry } from "./Layers";
 
 export type ClipActions = {
   selectClip: (id: string, multi: boolean) => void;
@@ -22,6 +23,7 @@ export type ClipActions = {
   toggleMute: (id: string) => void;
   sceneBreak: (id: string) => void;
   play: (id: string) => void;
+  editSub: (id: string, text: string | null) => void; // 자막만 고치기 (null = 원래대로)
 };
 
 type Props = {
@@ -34,6 +36,9 @@ type Props = {
   busy: Record<string, string>;
   actions: ClipActions;
   view: "detail" | "simple";
+  lanes: { entries: LaneEntry[]; lanes: number };
+  selLayer: string;
+  onOpenLayer: (id: string) => void;
 };
 
 const voiceName = (id?: string) => STUDIO_VOICES.find((v) => v.id === id)?.name || "AI 목소리";
@@ -44,6 +49,33 @@ function ActionBtn({ icon, label, onClick, danger }: { icon: string; label: stri
       style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 32, padding: "0 10px", borderRadius: 5, border: `1px solid ${C.line2}`, background: C.panel2, color: danger ? C.danger : C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
       <Icon name={icon} size={16} />
       {label}
+    </button>
+  );
+}
+
+/** 자막 줄 — 누르면 자막 글만 고친다 (말소리·AI 목소리는 그대로) */
+function SubLine({ c, p, empty }: { c: Clip; p: Props; empty?: string }) {
+  const [edit, setEdit] = React.useState(false);
+  const custom = typeof c.subText === "string";
+  const text = custom ? c.subText! : clipText(c);
+  const [draft, setDraft] = React.useState(text);
+  if (edit) {
+    return (
+      <div style={{ flex: 1, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }} onClick={(e) => e.stopPropagation()}>
+        <input value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus placeholder="화면에 나올 자막"
+          onKeyDown={(e) => { if (e.key === "Enter") { p.actions.editSub(c.id, draft); setEdit(false); } if (e.key === "Escape") setEdit(false); }}
+          style={{ flex: 1, minWidth: 200, height: 34, padding: "0 10px", borderRadius: 5, border: `1px solid ${C.accent}`, background: C.bg, color: C.text, fontSize: 15, fontFamily: FONT }} />
+        <ActionBtn icon="check" label="자막 바꾸기" onClick={() => { p.actions.editSub(c.id, draft); setEdit(false); }} />
+        {custom && c.type !== "silence" && <ActionBtn icon="undo" label="말한 그대로" onClick={() => { p.actions.editSub(c.id, null); setEdit(false); }} />}
+        <ActionBtn icon="close" label="그만두기" onClick={() => setEdit(false)} />
+      </div>
+    );
+  }
+  return (
+    <button type="button" title="자막만 고치기 (목소리는 그대로)" onClick={(e) => { e.stopPropagation(); setDraft(text); setEdit(true); }}
+      style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, height: 32, padding: "0 6px", border: 0, borderRadius: 4, background: "transparent", cursor: "text", textAlign: "left", fontFamily: FONT }}>
+      <span style={{ flex: 1, fontSize: 15, color: c.sub === false ? C.dim : text ? "#9ecbff" : C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{text || empty || " "}</span>
+      {custom && text && <span style={{ fontSize: 12, color: C.dim, flexShrink: 0 }}>자막만 고침</span>}
     </button>
   );
 }
@@ -67,7 +99,9 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         style={{ display: "flex", alignItems: "center", gap: 12, margin: "6px 0", padding: "8px 14px", borderRadius: 6, border: `1px solid ${sel ? C.accent : C.line}`, background: C.panel2, cursor: "pointer", color: C.sub, fontSize: 14 }}>
         <span style={{ width: 28, textAlign: "center", fontWeight: 700 }}>{n}</span>
         <Icon name="silence" size={18} />
-        <span style={{ flex: 1 }}>말이 없는 구간 {it.dur.toFixed(1)}초</span>
+        <span style={{ flexShrink: 0 }}>말이 없는 구간 {it.dur.toFixed(1)}초</span>
+        <Icon name="sub" size={16} color={C.dim} />
+        <SubLine c={c} p={p} empty="자막 넣기" />
         <ActionBtn icon="trash" label="이 구간 지우기" onClick={() => p.actions.removeClip([c.id])} />
       </div>
     );
@@ -109,7 +143,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
                 return (
                   <button type="button" key={i} onClick={(e) => { e.stopPropagation(); p.actions.selectWord(c.id, i); }}
                     style={{ height: 34, padding: "0 10px", borderRadius: 4, border: `1px solid ${isSel ? C.accent : C.line2}`, background: active ? C.accent : w.del ? "transparent" : C.panel2,
-                      color: w.del ? C.dim : active ? "#fff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer" }}>
+                      color: w.del ? C.dim : active ? "#fff" : C.text, textDecoration: w.del ? "line-through" : "none", fontSize: 15.5, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
                     {w.w}
                   </button>
                 );
@@ -139,7 +173,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
               {thumb ? <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 11 }}>화면</span>}
             </button>
             <Icon name="sub" size={18} color={C.dim} />
-            <span style={{ flex: 1, fontSize: 15, color: c.sub === false ? C.dim : "#9ecbff", lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clipText(c) || " "}</span>
+            <SubLine c={c} p={p} empty="자막 넣기" />
             {busy && <span style={{ fontSize: 13, color: C.sub }}>{busy}</span>}
             {c.type === "voice" && !c.voice && !busy && clipText(c) && <span style={{ fontSize: 13, color: C.dim }}>목소리 없음</span>}
           </div>
@@ -184,14 +218,27 @@ export default function ClipList(p: Props) {
         const start = its[0]?.start || 0;
         const dur = its.reduce((a, x) => a + x.dur, 0);
         return (
-          <div key={sc.id} style={{ marginBottom: 20 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12, padding: "14px 4px 4px" }}>
+          <div key={sc.id}>
+            <div style={{ display: "flex" }}>
+            {its.length > 0 && <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={its[0].index} pass selLayer={p.selLayer} onOpen={p.onOpenLayer} />}
+            <div style={{ flex: 1, display: "flex", alignItems: "baseline", gap: 12, padding: "14px 4px 4px" }}>
               <span style={{ fontSize: 19, fontWeight: 800, color: C.sub }}>씬 {si + 1}</span>
               {sc.title && <span style={{ fontSize: 15, color: C.dim }}>{sc.title}</span>}
               <span style={{ flex: 1 }} />
               <span style={{ fontSize: 13.5, color: C.dim, fontVariantNumeric: "tabular-nums" }}>{fmtTime(start, false)} + {Math.floor(dur / 60) ? `${Math.floor(dur / 60)}분 ` : ""}{Math.round(dur % 60)}초</span>
             </div>
-            {its.map((it) => <ClipCard key={it.clip.id} project={project} it={it} n={++n} p={p} />)}
+            </div>
+            {its.map((it) => (
+              <div key={it.clip.id} style={{ display: "flex" }}>
+                <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={it.index} selLayer={p.selLayer} onOpen={p.onOpenLayer} />
+                <div style={{ flex: 1, minWidth: 0 }}><ClipCard project={project} it={it} n={++n} p={p} /></div>
+              </div>
+            ))}
+            {its.length > 0 && (
+              <div style={{ display: "flex", height: 20 }}>
+                <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={its[its.length - 1].index + 1} pass selLayer={p.selLayer} onOpen={p.onOpenLayer} />
+              </div>
+            )}
             {!its.length && <div style={{ padding: 30, textAlign: "center", color: C.dim, fontSize: 15, border: `1px dashed ${C.line2}`, borderRadius: 8 }}>아직 클립이 없어요. 위 [삽입] 탭이나 오른쪽 자료에서 넣어 주세요.</div>}
           </div>
         );

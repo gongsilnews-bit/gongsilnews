@@ -2,7 +2,7 @@
 
 // 오른쪽 칸 — 자료 고르기(내 자료·공실 사진·무료 자료·AI 그림·자료 창고) · AI 목소리 · 자막 서식 · 화면 비율 · 배경 음악
 import React, { useEffect, useRef, useState } from "react";
-import type { LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
+import type { Layer, LibItem, Project, Ratio, Fill, StockItem, Settings } from "./types";
 import { RATIO_LABEL, errText, videoBridge, fmtTime } from "./types";
 import { STUDIO_VOICES } from "@/lib/studio-video/voices";
 import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
@@ -29,8 +29,8 @@ const tabBtn = (on: boolean): React.CSSProperties => ({ flex: 1, height: 38, bor
 const chip = (on: boolean): React.CSSProperties => ({ height: 32, padding: "0 12px", borderRadius: 5, border: `1px solid ${on ? C.text : C.line2}`, background: on ? C.text : "transparent", color: on ? C.bg : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
 
 /* ── 자료 고르기 ── */
-export type LibPickAction = "replace" | "insert";
-export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine" }: { project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string }) {
+export type LibPickAction = "replace" | "insert" | "overlay";
+export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab = "mine", overlay = false }: { project: Project; canReplace: boolean; onPick: (item: LibItem, action: LibPickAction) => Promise<void> | void; onClose: () => void; initialTab?: string; overlay?: boolean }) {
   const b = videoBridge();
   const [tab, setTab] = useState(initialTab);
   const [kind, setKind] = useState<"all" | "image" | "video">("all");
@@ -131,7 +131,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
   };
   const act = async (action: LibPickAction) => {
     if (!picked) return;
-    setBusy(action === "replace" ? "화면을 바꾸는 중…" : "넣는 중…");
+    setBusy(action === "replace" ? "화면을 바꾸는 중…" : action === "overlay" ? "올리는 중…" : "넣는 중…");
     try {
       await onPick(picked, action);
       setPicked(null);
@@ -163,8 +163,14 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
       {picked ? (
         <>
           <div style={{ width: "100%", fontSize: 13.5, color: C.sub, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>고른 자료: {picked.name}</div>
-          {canReplace && <Btn primary small onClick={() => act("replace")}><Icon name="image" size={16} />고른 클립 화면 바꾸기</Btn>}
-          <Btn small onClick={() => act("insert")}><Icon name="plus" size={16} />{canReplace ? "고른 클립 뒤에 넣기" : "끝에 넣기"}</Btn>
+          {overlay ? (
+            <Btn primary small onClick={() => act("overlay")} disabled={picked.kind !== "image"}><Icon name="image" size={16} />{picked.kind === "image" ? "화면 위에 올리기" : "사진만 올릴 수 있어요"}</Btn>
+          ) : (
+            <>
+              {canReplace && <Btn primary small onClick={() => act("replace")}><Icon name="image" size={16} />고른 클립 화면 바꾸기</Btn>}
+              <Btn small onClick={() => act("insert")}><Icon name="plus" size={16} />{canReplace ? "고른 클립 뒤에 넣기" : "끝에 넣기"}</Btn>
+            </>
+          )}
           {"fav" in picked && (
             <Btn small onClick={async () => { await b?.lib.fav(picked.id, !picked.fav); setPicked({ ...picked, fav: !picked.fav }); load(); }}><Icon name="star" size={16} />{picked.fav ? "즐겨찾기 빼기" : "즐겨찾기"}</Btn>
           )}
@@ -399,9 +405,8 @@ export function RatioPanel({ ratio, fill, onRatio, onFill, onClose }: { ratio: R
 }
 
 /* ── 배경 음악 ── */
-export function MusicPanel({ project, onChange, onClose }: { project: Project; onChange: (m: Partial<Settings["music"]>) => void; onClose: () => void }) {
+export function MusicPanel({ project, current, rangeText, onPick, onClose }: { project: Project; current: Layer | null; rangeText: string; onPick: (m: { file: string; url: string; name: string }) => void; onClose: () => void }) {
   const b = videoBridge();
-  const m = project.settings.music;
   const [mood, setMood] = useState<string>(MUSIC_MOODS[1]);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
@@ -423,7 +428,7 @@ export function MusicPanel({ project, onChange, onClose }: { project: Project; o
     setMsg("");
     try {
       const r = await b.musicGet(project.dir, `bgm/lib/${id.slice(4)}.mp3`);
-      onChange({ on: true, file: r.file, url: r.url, name, mood });
+      onPick({ file: r.file, url: r.url, name });
     } catch (e) {
       setMsg(errText(e));
     }
@@ -432,18 +437,12 @@ export function MusicPanel({ project, onChange, onClose }: { project: Project; o
   const mine = async () => {
     if (!b) return;
     const r = (await b.lib.pick({ kinds: "audio" })) as unknown as { path: string; url: string; name: string }[];
-    if (r[0]) onChange({ on: true, file: r[0].path, url: r[0].url, name: r[0].name, mood: "" });
+    if (r[0]) onPick({ file: r[0].path, url: r[0].url, name: r[0].name });
   };
   return (
-    <Side title="배경 음악" onClose={onClose}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${C.line}` }}>
-        <span style={{ ...label, flex: 1 }}>배경 음악 {m.on && m.name ? <span style={{ color: C.sub, fontWeight: 600 }}>· {m.name}</span> : null}</span>
-        <Toggle on={m.on} onChange={(v) => onChange({ on: v && Boolean(m.file) })} disabled={!m.file} />
-      </div>
-      <div style={{ padding: "12px 14px", borderBottom: `1px solid ${C.line}` }}>
-        <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>음악 크기</span><span>{Math.round((m.volume ?? 0.15) * 100)}%</span></div>
-        <input type="range" min={0.03} max={0.5} step={0.01} value={m.volume ?? 0.15} onChange={(e) => onChange({ volume: Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
-        <div style={{ fontSize: 12.5, color: C.dim }}>목소리가 나올 때는 음악이 저절로 작아져요.</div>
+    <Side title={current ? "음악 바꾸기" : "배경 음악 넣기"} onClose={onClose}>
+      <div style={{ padding: "12px 14px", borderBottom: `1px solid ${C.line}`, fontSize: 14.5, lineHeight: 1.6 }}>
+        {current ? <>지금 음악: <b>{current.name || "음악"}</b><br />아래에서 고르면 이 음악이 바뀌어요.</> : <>아래에서 고르면 <b>{rangeText}</b>에 음악이 깔려요.</>}
       </div>
       <div style={{ padding: "12px 14px 0" }}>
         <Btn small onClick={mine}><Icon name="music" size={16} />내 음악 불러오기</Btn>
@@ -454,13 +453,13 @@ export function MusicPanel({ project, onChange, onClose }: { project: Project; o
       </div>
       <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
         {MUSIC_LIBRARY.filter((t) => t.mood === mood).map((t) => (
-          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: `1px solid ${m.name === t.label ? C.accent : C.line}`, background: C.card }}>
+          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: `1px solid ${current?.name === t.label ? C.accent : C.line}`, background: C.card }}>
             <button type="button" onClick={() => play(t.id)} title="미리듣기" style={{ width: 34, height: 34, border: `1px solid ${C.line2}`, borderRadius: 5, background: "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon name={listen === t.id ? "pause" : "play"} size={15} />
             </button>
             <span style={{ flex: 1, fontSize: 15, fontWeight: 700 }}>{t.label}</span>
             <span style={{ fontSize: 13, color: C.dim }}>{fmtTime(t.duration, false)}</span>
-            <Btn small primary={m.name === t.label} onClick={() => pick(t.id, t.label)} disabled={busy === t.id}>{busy === t.id ? "받는 중…" : m.name === t.label ? "고름" : "고르기"}</Btn>
+            <Btn small primary={current?.name === t.label} onClick={() => pick(t.id, t.label)} disabled={busy === t.id}>{busy === t.id ? "받는 중…" : current?.name === t.label ? "고름" : "고르기"}</Btn>
           </div>
         ))}
       </div>

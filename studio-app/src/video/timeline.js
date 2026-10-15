@@ -95,4 +95,44 @@ function flatten(project) {
   return { items: out, total: t };
 }
 
-module.exports = { keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP };
+/* ── 애셋(레이어) — 편집 화면 timeline.ts 와 같은 계산 ──
+ * layer { id, type: music|image|text, from: 시작 클립 id, to: 끝 클립 id, ... } */
+function clipOrder(p) {
+  const m = new Map();
+  let i = 0;
+  for (const sc of p.scenes || []) for (const c of sc.clips || []) m.set(c.id, i++);
+  return m;
+}
+
+function inLayer(order, layer, clipId) {
+  let a = order.get(layer.from);
+  let b = order.get(layer.to);
+  const k = order.get(clipId);
+  if (a === undefined || b === undefined || k === undefined) return false;
+  if (a > b) [a, b] = [b, a];
+  return k >= a && k <= b;
+}
+
+/** 애셋이 덮는 클립들 (보이는 차례) */
+function layerItems(p, layer, items, order = clipOrder(p)) {
+  return items.filter((x) => inLayer(order, layer, x.clip.id));
+}
+
+/** 클립 하나에 걸린 애셋들 */
+function layersAt(p, clipId, order = clipOrder(p)) {
+  return (p.layers || []).filter((l) => inLayer(order, l, clipId));
+}
+
+/** 음악 애셋 — 예전 프로젝트의 "전체 배경 음악"도 처음~끝 음악 애셋으로 본다 */
+function musicLayers(p, items) {
+  const ls = (p.layers || []).filter((l) => l.type === "music" && l.file);
+  if (ls.length) return ls;
+  const m = p.settings && p.settings.music;
+  if (m && m.on && m.file && items.length) return [{ id: "bgm", type: "music", from: items[0].clip.id, to: items[items.length - 1].clip.id, name: m.name, file: m.file, volume: m.volume ?? 0.15, fadeIn: 0, fadeOut: 2, offset: 0, loop: true }];
+  return [];
+}
+
+/** 자막에 쓸 글 — 자막만 따로 쓴 글이 있으면 그것 */
+const subtitleText = (clip) => (typeof clip.subText === "string" ? clip.subText : clipText(clip));
+
+module.exports = { keepRanges, clipDuration, wordTimes, clipText, flatten, estimateSeconds, speedOf, GAP, clipOrder, layerItems, layersAt, musicLayers, subtitleText };
