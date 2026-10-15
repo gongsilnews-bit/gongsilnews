@@ -53,13 +53,21 @@ if (allowed) {
       get: (vacancyId, doc) => ipcRenderer.invoke("studio:blog-get", vacancyId, doc),
       save: (patch) => ipcRenderer.invoke("studio:blog-save", patch),
       addPhoto: (opts) => ipcRenderer.invoke("studio:blog-add-photo", opts),
-      imageStyles: () => ipcRenderer.invoke("studio:blog-image-styles"),
+      imageStyles: (vacancyId) => ipcRenderer.invoke("studio:blog-image-styles", vacancyId),
       makeImage: (opts) => ipcRenderer.invoke("studio:blog-make-image", opts),
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
         ipcRenderer.on("studio:blog-progress", h);
         return () => ipcRenderer.removeListener("studio:blog-progress", h);
       },
+    },
+    column: {
+      fetchNews: (url) => ipcRenderer.invoke("studio:column-fetch-news", url),
+      openNews: () => ipcRenderer.invoke("studio:column-open-news"),
+      grabNews: () => ipcRenderer.invoke("studio:column-grab-news"),
+      create: (source) => ipcRenderer.invoke("studio:column-create", source),
+      get: (id) => ipcRenderer.invoke("studio:column-get", id),
+      list: () => ipcRenderer.invoke("studio:column-list"),
     },
     ai: {
       list: () => ipcRenderer.invoke("studio:ai-list"),

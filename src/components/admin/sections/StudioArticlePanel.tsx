@@ -12,13 +12,14 @@ import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
  * - [기사쓰기 화면으로 보내기] → 기사등록의 기사쓰기 화면이 초안을 받아 제목·부제·본문·사진·키워드를 채운다.
  *   [기사 등록]은 회원이 누르고, 기사 한도·검토는 지금과 같다.
  * - 기사를 먼저 쓰면 블로그·SNS 가 이 기사를 바탕으로 쓴다.
+ * - 뉴스칼럼(column): 확장 뉴스메이커 기사 프롬프트. 섹션은 AI 가 고르고, 다 쓰면 AI 대표 이미지를 자동으로 만든다(끌 수 있음).
  */
 
 type Option = { id: string; label: string; brief?: string; chars?: string };
 type Bridge = {
   article: {
     options: (vacancyId: string) => Promise<{ kinds: Option[]; lengths: Option[] }>;
-    write: (opts: { vacancyId: string; kind: string; length: string }) => Promise<BlogDraft>;
+    write: (opts: { vacancyId: string; kind: string; length: string; autoCover?: boolean }) => Promise<BlogDraft & { coverError?: string }>;
   };
   blog: { onProgress: (fn: (t: string) => void) => () => void };
 };
@@ -27,8 +28,8 @@ const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).re
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
 
-export default function StudioArticlePanel({ theme, vacancyId, article, onArticle, onSend }: {
-  theme: Theme; vacancyId: string; article: BlogDraft | null; onArticle: (a: BlogDraft) => void; onSend: () => void;
+export default function StudioArticlePanel({ theme, vacancyId, article, onArticle, onSend, column = false }: {
+  theme: Theme; vacancyId: string; article: BlogDraft | null; onArticle: (a: BlogDraft) => void; onSend: () => void; column?: boolean;
 }) {
   const [opts, setOpts] = useState<{ kinds: Option[]; lengths: Option[] } | null>(null);
   const [kind, setKind] = useState(article?.style || "news");
@@ -36,6 +37,7 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
   const [writing, setWriting] = useState(false);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
+  const [autoCover, setAutoCover] = useState(true); // 뉴스칼럼: 다 쓰면 AI 대표 이미지
 
   useEffect(() => {
     bridge()?.article.options(vacancyId).then(setOpts).catch(() => {});
@@ -48,7 +50,9 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
     setError("");
     const off = b.blog.onProgress(setProgress);
     try {
-      onArticle({ ...(await b.article.write({ vacancyId, kind, length })), doc: "article" });
+      const { coverError, ...draft } = await b.article.write({ vacancyId, kind, length, autoCover: column && autoCover });
+      onArticle({ ...draft, doc: "article" });
+      if (coverError) setError(coverError);
     } catch (e) {
       setError(cleanErr(e));
     } finally {
@@ -91,7 +95,15 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
             {writing ? "ChatGPT가 쓰는 중…" : article ? "다시 쓰기" : "ChatGPT로 기사 쓰기"}
           </button>
         </div>
-        <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>기사를 먼저 쓰면 블로그·SNS가 이 기사를 바탕으로 씁니다. 기사 한도는 기사 등록할 때 셉니다.</div>
+        {column && (
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontSize: 13.5, color: theme.textPrimary, cursor: "pointer" }}>
+            <input type="checkbox" checked={autoCover} onChange={(e) => setAutoCover(e.target.checked)} />
+            다 쓰면 기사에 맞는 <b>AI 대표 이미지</b>도 만들기 <span style={{ color: theme.textSecondary }}>(1~2분 더 · AI 이미지 하루 한도에서 1장)</span>
+          </label>
+        )}
+        <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>
+          {column ? "원문 문장은 옮기지 않고 출처를 밝혀 새로 씁니다. 섹션은 AI가 고릅니다. " : ""}기사를 먼저 쓰면 블로그·SNS가 이 기사를 바탕으로 씁니다. 기사 한도는 기사 등록할 때 셉니다.
+        </div>
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}
         {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{error}</div>}
 
@@ -101,7 +113,8 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
       {article && (
         <div style={{ ...card, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 260, fontSize: 13.5, color: theme.textSecondary, lineHeight: 1.6 }}>
-            기사쓰기 화면에 제목·부제·본문·사진 {article.media.length}장·키워드가 채워집니다. 섹션을 확인하고 <b>[기사 등록]</b>을 눌러 주세요.
+            기사쓰기 화면에 제목·부제·본문·사진 {article.media.length}장·키워드가 채워집니다.
+            {column && article.section1 ? <> 섹션은 <b>{article.section1}{article.section2 ? ` > ${article.section2}` : ""}</b>로 채워집니다.</> : ""} 섹션을 확인하고 <b>[기사 등록]</b>을 눌러 주세요.
           </div>
           <button onClick={onSend}
             style={{ padding: "11px 20px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>

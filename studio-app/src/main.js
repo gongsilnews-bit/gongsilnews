@@ -13,6 +13,7 @@ const { analyzeVacancy } = require("./vacancy-capture");
 const blogWriter = require("./blog-writer");
 const naverWrite = require("./naver-write");
 const snsWriter = require("./sns-writer");
+const columnWriter = require("./column-writer");
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE_URL).origin;
@@ -335,11 +336,18 @@ ipcMain.handle("studio:sns-export", (_e, opts) => snsWriter.exportChannel(opts))
 ipcMain.handle("studio:naver-open-blog", () => naverWrite.openMyBlog());
 ipcMain.handle("studio:blog-get", (_e, vacancyId, doc) => blogWriter.get(vacancyId, doc));
 ipcMain.handle("studio:article-options", (_e, vacancyId) => blogWriter.articleOptions(vacancyId));
-ipcMain.handle("studio:article-write", (e, opts) => blogWriter.writeArticle(opts, (text) => e.sender.send("studio:blog-progress", text)));
+ipcMain.handle("studio:article-write", (e, opts) => blogWriter.writeArticle({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:blog-progress", text)));
 ipcMain.handle("studio:article-export", (_e, vacancyId) => blogWriter.exportArticleDraft(vacancyId));
 ipcMain.handle("studio:blog-save", (_e, patch) => blogWriter.save(patch));
 ipcMain.handle("studio:blog-add-photo", (_e, opts) => blogWriter.addPhoto(opts));
-ipcMain.handle("studio:blog-image-styles", () => blogWriter.imageStyles());
+ipcMain.handle("studio:blog-image-styles", (_e, vacancyId) => blogWriter.imageStyles(vacancyId));
+// 뉴스칼럼: 소재(뉴스·주제) 정하기
+ipcMain.handle("studio:column-fetch-news", (_e, url) => columnWriter.fetchNews(url));
+ipcMain.handle("studio:column-open-news", () => columnWriter.openNews());
+ipcMain.handle("studio:column-grab-news", () => columnWriter.grabNews());
+ipcMain.handle("studio:column-create", (_e, source) => columnWriter.create(source));
+ipcMain.handle("studio:column-get", (_e, id) => columnWriter.get(id));
+ipcMain.handle("studio:column-list", () => columnWriter.list());
 ipcMain.handle("studio:blog-make-image", (e, opts) => blogWriter.makeImage({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:blog-progress", text)));
 ipcMain.handle("studio:naver-fill", (e, opts) =>
   naverWrite.fillNaver({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:naver-progress", text))

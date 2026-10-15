@@ -286,6 +286,12 @@ function findPage(host) {
   return context().pages().find((p) => hostOf(p) === host) || null;
 }
 
+/** 전용 크롬에 열린 탭 전부 (꺼져 있으면 빈 목록, 새로 켜지 않는다) */
+async function openPages() {
+  if (!(await isRunning())) return []; // 켜져 있으면 isRunning 이 붙는다
+  return context().pages();
+}
+
 /** 화면 밖 전용 크롬에서 주소를 열어 fn(page) 를 실행하고 닫는다 (로그인 확인용) */
 async function withHiddenPage(url, fn) {
   await closeControlled();
@@ -299,4 +305,4 @@ async function withHiddenPage(url, fn) {
   }
 }
 
-module.exports = { findBrowser, ensureBrowser, isRunning, openPage, findPage, openPlain, closePlain, withHiddenPage, closeControlled, hostOf, sleep };
+module.exports = { findBrowser, ensureBrowser, isRunning, openPage, findPage, openPages, openPlain, closePlain, withHiddenPage, closeControlled, hostOf, sleep };

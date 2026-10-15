@@ -169,7 +169,7 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
   useEffect(() => {
     if (studioDraftDoneRef.current || typeof window === "undefined") return;
     const vacancyId = new URLSearchParams(window.location.search).get("studioDraft");
-    type StudioDraft = { title: string; subtitles: string[]; paragraphs: string[]; keywords: string[]; saleKind: string; photos: { dataUrl: string; caption: string; isCover: boolean; slot: number }[] };
+    type StudioDraft = { title: string; subtitles: string[]; paragraphs: string[]; keywords: string[]; saleKind: string; section1?: string; section2?: string; photos: { dataUrl: string; caption: string; isCover: boolean; slot: number }[] };
     const studio = (window as unknown as { gongsilStudio?: { article?: { exportDraft: (id: string) => Promise<StudioDraft | null> } } }).gongsilStudio;
     if (!vacancyId || !studio?.article) return;
     studioDraftDoneRef.current = true;
@@ -188,8 +188,14 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
 
       setTitle(d.title || "");
       setSubtitle((d.subtitles || []).join("\n"));
-      setSection1("공실뉴스");
-      if (d.saleKind) setSection2("신축/분양/경매");
+      if (d.section1) {
+        // 뉴스칼럼: AI 가 고른 1·2차 섹션
+        setSection1(d.section1);
+        setSection2(d.section2 || "");
+      } else {
+        setSection1("공실뉴스");
+        if (d.saleKind) setSection2("신축/분양/경매");
+      }
       setKeywords(d.keywords || []);
 
       const photos = await Promise.all(

@@ -3,6 +3,7 @@
 // 답변 JSON 을 제목·(부제)·문단·키워드로 나눈다.
 //  - 기사(doc 'article'): 확장 shared/prompt.js gwBuildPrompt (뉴스기사형·단락별 요약, 경매·공매는 경매용)
 //  - 블로그(doc 'blog'): 확장 shared/blog-prompt.js (6문체). 기사를 먼저 썼으면 그 기사를 [참조 기사]로 쓴다.
+//  - 뉴스칼럼(번호가 "col-…"): 확장 뉴스메이커의 프롬프트로 갈라진다 (column-writer.js, ext-newsmaker.js).
 //
 // 미리보기 다듬기(확장 블로그 탭과 같은 방식):
 //  - media 의 사진마다 insertAfterParagraph(0 = 첫 문단 앞, n = n번째 문단 뒤) 자리를 둔다.
@@ -19,6 +20,10 @@ const naverBlog = require("./ext/naver-blog");
 const chatgpt = require("./ai/chatgpt");
 const { thumbOf, saveDataUrl } = require("./media-util");
 const extPrompt = require("./ext-prompt");
+const nm = require("./ext-newsmaker");
+
+const isColumn = (id) => /^col-[a-f0-9]+$/.test(String(id || ""));
+const column = () => require("./column-writer"); // 서로 부르므로 쓸 때 불러온다
 
 const DOCS = { blog: "blog.json", article: "article.json" };
 const DOC_NAME = { blog: "블로그", article: "기사" };
@@ -33,6 +38,13 @@ function readJson(file) {
 const readAnalysis = (vacancyId) => readJson(path.join(mediaDir(vacancyId), "analysis.json"));
 
 function styles(vacancyId) {
+  if (isColumn(vacancyId)) {
+    return {
+      saleKind: "",
+      styles: Object.entries(nm.GW_BLOG_STYLE).map(([id, s]) => ({ id, label: s.label, fit: s.fit, titleExample: s.titleExample, design: s.design })),
+      lengths: Object.entries(nm.GW_BLOG_LENGTH).map(([id, l]) => ({ id, label: l.label, chars: l.chars })),
+    };
+  }
   const analysis = vacancyId ? readAnalysis(vacancyId) : null;
   const table = blogPrompt.gwBlogStyles(analysis && analysis.vacancy); // 경매·공매면 경매용 문체
   return {
@@ -44,6 +56,7 @@ function styles(vacancyId) {
 
 /* 기사 스타일·분량 (확장과 같음, 경매·공매면 경매용 스타일) */
 function articleOptions(vacancyId) {
+  if (isColumn(vacancyId)) return column().articleOptions();
   const analysis = vacancyId ? readAnalysis(vacancyId) : null;
   const auction = Boolean(analysis && analysis.vacancy && analysis.vacancy.saleKind);
   const kinds = auction ? extPrompt.GW_AUCTION_KIND : extPrompt.GW_KIND;
@@ -65,6 +78,14 @@ function materializeSlots(media, paragraphCount) {
 }
 
 const freshMedia = (analysis) => ((analysis && analysis.media) || []).map((m, i) => ({ id: newId(), kind: m.kind, file: m.file, caption: m.caption, isCover: i === 0 }));
+/* 새 글의 처음 사진: 공실이면 분석 사진, 칼럼이면 기사에 넣은 사진(대표 AI 이미지 등) */
+function seedMedia(vacancyId, doc) {
+  const analysis = readAnalysis(vacancyId);
+  if (analysis) return freshMedia(analysis);
+  if (doc === "article") return [];
+  const a = readJson(docFile(vacancyId, "article"));
+  return ((a && a.media) || []).map((m) => ({ id: newId(), kind: m.kind, file: m.file, caption: m.caption, isCover: Boolean(m.isCover) }));
+}
 
 /* 웹 화면에 보낼 모양 (파일 경로 대신 id·썸네일) */
 function forWeb(d, doc = "blog") {
@@ -78,6 +99,8 @@ function forWeb(d, doc = "blog") {
     subtitles: d.subtitles || [],
     paragraphs: d.paragraphs,
     keywords: d.keywords,
+    section1: d.section1 || "",
+    section2: d.section2 || "",
     media: (d.media || []).map((m) => ({
       id: m.id,
       kind: m.kind,
@@ -93,7 +116,7 @@ function get(vacancyId, doc = "blog") {
   const d = readJson(docFile(vacancyId, doc));
   // 사진 목록이 없는 예전 글이면 분석 사진(등록 사진 전부 + 캡처 3장, 첫 장 대표)으로 채워 둔다
   if (d && !Array.isArray(d.media)) {
-    d.media = materializeSlots(freshMedia(readAnalysis(vacancyId)), d.paragraphs.length);
+    d.media = materializeSlots(seedMedia(vacancyId, doc), d.paragraphs.length);
     fs.writeFileSync(docFile(vacancyId, doc), JSON.stringify(d, null, 2));
   }
   return forWeb(d, doc);
@@ -126,7 +149,7 @@ function saveWritten(vacancyId, doc, parsed, extra) {
   const media =
     prev && prev.media && prev.media.length
       ? prev.media.map((m) => ({ ...m, insertAfterParagraph: m.isCover ? null : undefined }))
-      : freshMedia(readAnalysis(vacancyId));
+      : seedMedia(vacancyId, doc);
   const d = {
     vacancyId,
     ...extra,
@@ -144,6 +167,7 @@ function saveWritten(vacancyId, doc, parsed, extra) {
 }
 
 async function write({ baseUrl, vacancyId, style = "listing", length = "normal" }, onProgress = () => {}) {
+  if (isColumn(vacancyId)) return writeColumnBlog({ baseUrl, vacancyId, style, length }, onProgress);
   const analysis = readAnalysis(vacancyId);
   if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
   onProgress("이용 횟수를 확인하는 중…");
@@ -158,8 +182,25 @@ async function write({ baseUrl, vacancyId, style = "listing", length = "normal" 
   return saveWritten(vacancyId, "blog", parsed, { style, length });
 }
 
+/* 뉴스칼럼 블로그: 뉴스메이커 블로그 프롬프트 — 칼럼 기사를 [참조 기사]로 쓴다 (기사가 먼저 있어야 한다) */
+async function writeColumnBlog({ baseUrl, vacancyId, style, length }, onProgress) {
+  const source = column().readSource(vacancyId);
+  const article = referenceArticle(vacancyId);
+  if (!article) throw new Error("먼저 [공실뉴스 기사] 탭에서 기사를 써 주세요. 블로그는 그 기사를 바탕으로 씁니다.");
+  const st = nm.GW_BLOG_STYLE[style] ? style : "info";
+  onProgress("이용 횟수를 확인하는 중…");
+  await useQuota(baseUrl, "blog", vacancyId);
+  const prompt = nm.gwBuildBlogPrompt({ article, source }, { style: st, length });
+  const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => nm.GWArticleJson.hasCompleteObject(t) });
+  onProgress("받은 글을 정리하는 중…");
+  const parsed = nm.GWArticleJson.parse(text);
+  if (!parsed.ok) throw new Error(parsed.reason || "AI 답변을 읽지 못했습니다.");
+  return saveWritten(vacancyId, "blog", parsed, { style: st, length });
+}
+
 /* 공실뉴스 기사 쓰기 — 기사 한도는 기사쓰기 화면에서 [기사 등록] 할 때 센다 (여기서는 세지 않음) */
-async function writeArticle({ vacancyId, kind = "news", length = "normal" }, onProgress = () => {}) {
+async function writeArticle({ baseUrl, vacancyId, kind = "news", length = "normal", autoCover }, onProgress = () => {}) {
+  if (isColumn(vacancyId)) return column().writeArticle({ baseUrl, vacancyId, kind, length, autoCover }, onProgress);
   const analysis = readAnalysis(vacancyId);
   if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
   const prompt = extPrompt.gwBuildPrompt(analysis.vacancy, { kind, length });
@@ -195,7 +236,7 @@ function save({ vacancyId, doc = "blog", title, subtitles, paragraphs, keywords,
 }
 
 /* 내 PC 사진 추가 → slot(문단 뒤 자리)에 넣는다. replaceId 면 그 사진을 바꾼다 */
-async function addPhoto({ vacancyId, doc = "blog", dataUrl, slot, caption = "", kind = "upload", replaceId = null }) {
+async function addPhoto({ vacancyId, doc = "blog", dataUrl, slot, caption = "", kind = "upload", replaceId = null, cover = false }) {
   const d = readJson(docFile(vacancyId, doc));
   if (!d) throw new Error(`먼저 ${DOC_NAME[doc] || "글"}을 써 주세요.`);
   const id = newId();
@@ -211,19 +252,34 @@ async function addPhoto({ vacancyId, doc = "blog", dataUrl, slot, caption = "", 
     return { id: item.id, kind, caption: item.caption, isCover: Boolean(item.isCover), insertAfterParagraph: Number.isInteger(item.insertAfterParagraph) ? item.insertAfterParagraph : null, thumb: thumbOf(file) };
   }
   const item = { id, kind, file, caption, isCover: false, insertAfterParagraph: Number.isInteger(slot) ? Math.min(slot, d.paragraphs.length) : d.paragraphs.length };
-  d.media.push(item);
+  if (cover) {
+    // 대표 사진으로 맨 앞에 (뉴스칼럼 자동 대표 이미지)
+    d.media.forEach((m) => (m.isCover = false));
+    Object.assign(item, { isCover: true, insertAfterParagraph: null });
+    d.media.unshift(item);
+  } else d.media.push(item);
   fs.writeFileSync(docFile(vacancyId, doc), JSON.stringify(d, null, 2));
-  return { id, kind, caption, isCover: false, insertAfterParagraph: item.insertAfterParagraph, thumb: thumbOf(file) };
+  return { id, kind, caption, isCover: item.isCover, insertAfterParagraph: item.insertAfterParagraph, thumb: thumbOf(file) };
 }
 
 /* AI 이미지 화풍 (확장과 같은 5종) */
-function imageStyles() {
+function imageStyles(vacancyId) {
+  if (isColumn(vacancyId)) return Object.entries(nm.GW_IMAGE_STYLE).map(([id, s]) => ({ id, label: s.label }));
   return Object.entries(extPrompt.GW_IMAGE_STYLE).map(([id, s]) => ({ id, label: s.label }));
 }
 
 /* AI 이미지 만들기: 확장과 같은 이미지 프롬프트(매물 사실 + 글 + 화풍·장면 요청)로 ChatGPT 가 그린 그림을 넣는다 */
 async function makeImage({ baseUrl, vacancyId, doc = "blog", style = "news", request = "", slot, replaceId = null }, onProgress = () => {}) {
   const d = readJson(docFile(vacancyId, doc));
+  if (isColumn(vacancyId)) {
+    if (!d) throw new Error(`먼저 ${DOC_NAME[doc] || "글"}을 써 주세요.`);
+    await useQuota(baseUrl, "ai_image");
+    const st = nm.GW_IMAGE_STYLE[style] ? style : "auto";
+    const article = { title: d.title, body: d.paragraphs.join("\n\n") };
+    const dataUrl = await chatgpt.askImage(nm.gwBuildImagePrompt(column().readSource(vacancyId), article, { style: st, request }), { onProgress });
+    onProgress("그림을 넣는 중…");
+    return addPhoto({ vacancyId, doc, dataUrl, slot, replaceId, kind: "ai", caption: nm.gwAiImageCaption(article) });
+  }
   const analysis = readAnalysis(vacancyId);
   if (!d || !analysis) throw new Error(`먼저 ${DOC_NAME[doc] || "글"}을 써 주세요.`);
   await useQuota(baseUrl, "ai_image");
@@ -251,10 +307,12 @@ function exportArticleDraft(vacancyId) {
     paragraphs: d.paragraphs,
     keywords: d.keywords || [],
     saleKind: analysis.vacancy.saleKind || "",
+    section1: d.section1 || "", // 뉴스칼럼: AI 가 고른 공실뉴스 섹션
+    section2: d.section2 || "",
     photos: (d.media || [])
       .filter((m) => m.file && fs.existsSync(m.file))
       .map((m) => ({ dataUrl: toDataUrl(m.file), caption: m.caption || "", isCover: Boolean(m.isCover), slot: m.isCover ? -1 : Number.isInteger(m.insertAfterParagraph) ? m.insertAfterParagraph : d.paragraphs.length })),
   };
 }
 
-module.exports = { styles, articleOptions, write, writeArticle, get, save, addPhoto, imageStyles, makeImage, exportArticleDraft, referenceArticle, mediaDir, readJson, blogFile, docFile };
+module.exports = { styles, articleOptions, write, writeArticle, get, save, addPhoto, imageStyles, makeImage, exportArticleDraft, referenceArticle, saveWritten, useQuota, isColumn, mediaDir, readJson, blogFile, docFile };

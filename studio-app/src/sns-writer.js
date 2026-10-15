@@ -5,6 +5,8 @@
 //  - 링크·출처(표시·광고 필수 정보)·해시태그는 코드가 붙인다 (gwSnsCompose).
 //  - 사진은 채널마다 순서·장수를 다시 고르고(gwSnsPickMedia), 내보낼 때 채널 비율로 자른다.
 // 1차는 [글 복사]·[사진·글 폴더로 저장]·[채널 열기]. 자동 채우기는 다음 단계.
+// 뉴스칼럼(번호 "col-…")은 확장 뉴스메이커의 SNS 프롬프트를 쓰고, 중개사무소 출처 대신 소재 출처 줄을 붙인다
+// ("출처: ○○ 보도 내용 재구성 · 공실뉴스").
 const { app, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -18,6 +20,7 @@ const { thumbOf } = require("./media-util");
 const { ffmpegPath } = require("./paths");
 const blogWriter = require("./blog-writer");
 const { fetchListing } = require("./naver-write");
+const nm = require("./ext-newsmaker");
 
 const CHANNELS = ["instagram", "threads", "facebook"]; // 화면 탭 순서 (회의 결정: 인스타 → 스레드 → 페이스북)
 const FIT_KINDS = new Set(["proof", "map", "roadview"]); // 화면 캡처는 자르지 않고 흰 여백으로 맞춘다
@@ -32,17 +35,21 @@ function channelInfo() {
   });
 }
 
-/* 사진 모음: 블로그에서 다듬은 사진(대표·추가·AI 포함)이 있으면 그것, 없으면 분석 사진 */
+/* 사진 모음: 블로그에서 다듬은 사진(대표·추가·AI 포함)이 있으면 그것, 없으면 기사 사진, 없으면 분석 사진 */
 function photoPool(vacancyId) {
-  const blog = readJson(blogWriter.blogFile(vacancyId));
-  if (blog && Array.isArray(blog.media) && blog.media.length) return blog.media.map((m) => ({ id: m.id, kind: m.kind, file: m.file, caption: m.caption, isCover: Boolean(m.isCover) }));
+  const pick = (d) => (d && Array.isArray(d.media) && d.media.length ? d.media.map((m) => ({ id: m.id, kind: m.kind, file: m.file, caption: m.caption, isCover: Boolean(m.isCover) })) : null);
+  const fromDocs = pick(readJson(blogWriter.blogFile(vacancyId))) || (blogWriter.isColumn(vacancyId) ? pick(readJson(blogWriter.docFile(vacancyId, "article"))) : null);
+  if (fromDocs) return fromDocs;
   const analysis = readJson(path.join(mediaDir(vacancyId), "analysis.json"));
   return ((analysis && analysis.media) || []).map((m, i) => ({ id: newId(), kind: m.kind, file: m.file, caption: m.caption, isCover: i === 0 }));
 }
 
 function forWeb(data) {
   if (!data) return null;
-  const ctx = { noun: data.noun || "매물", url: (data.listing && data.listing.detailUrl) || "", listing: data.listing || null };
+  const column = data.kind === "column";
+  const ctx = column ? { credit: data.credit } : { noun: data.noun || "매물", url: (data.listing && data.listing.detailUrl) || "", listing: data.listing || null };
+  const compose = column ? nm.gwSnsCompose : sns.gwSnsCompose;
+  const aiNote = column ? nm.gwSnsAiLabelNote : sns.gwSnsAiLabelNote;
   const byId = new Map((data.pool || []).map((m) => [m.id, m]));
   const thumbs = new Map((data.pool || []).map((m) => [m.id, thumbOf(m.file, 360)]));
   const channels = {};
@@ -51,9 +58,9 @@ function forWeb(data) {
     const media = (data.media[ch] || []).map((id) => byId.get(id)).filter(Boolean);
     channels[ch] = {
       post,
-      composed: post ? sns.gwSnsCompose(ch, post, ctx) : { posts: [], text: "" },
+      composed: post ? compose(ch, post, ctx) : { posts: [], text: "" },
       media: media.map((m) => ({ id: m.id, kind: m.kind, caption: m.caption, ai: m.kind === "ai", thumb: thumbs.get(m.id) })),
-      aiNote: sns.gwSnsAiLabelNote(ch, media.map((m) => ({ ai: m.kind === "ai" }))),
+      aiNote: aiNote(ch, media.map((m) => ({ ai: m.kind === "ai" }))),
     };
   }
   return {
@@ -80,14 +87,20 @@ async function useQuota(baseUrl, vacancyId) {
 }
 
 async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
-  const analysis = readJson(path.join(mediaDir(vacancyId), "analysis.json"));
-  if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
+  const column = blogWriter.isColumn(vacancyId);
+  const analysis = column ? null : readJson(path.join(mediaDir(vacancyId), "analysis.json"));
+  if (!column && !analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
+  const source = column ? require("./column-writer").readSource(vacancyId) : null;
+  if (column && !blogWriter.referenceArticle(vacancyId)) throw new Error("먼저 [공실뉴스 기사] 탭에서 기사를 써 주세요. SNS 글은 그 기사를 바탕으로 씁니다.");
   onProgress("이용 횟수를 확인하는 중…");
   await useQuota(baseUrl, vacancyId);
 
-  onProgress("매물 정보 출처(중개사무소)를 확인하는 중…");
-  const saleKind = analysis.vacancy.saleKind || "";
-  const listing = await fetchListing(baseUrl, vacancyId, saleKind);
+  let listing = null;
+  const saleKind = column ? "" : analysis.vacancy.saleKind || "";
+  if (!column) {
+    onProgress("매물 정보 출처(중개사무소)를 확인하는 중…");
+    listing = await fetchListing(baseUrl, vacancyId, saleKind);
+  }
 
   // [참조 기사]: 공실뉴스 기사를 썼으면 그 기사, 없으면 블로그, 둘 다 없으면 "없음"
   const blog = readJson(blogWriter.blogFile(vacancyId));
@@ -96,11 +109,11 @@ async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
     (blog
       ? { title: blog.title, subtitles: [], body: blog.paragraphs.join("\n\n") }
       : { title: "(참조 기사 없음)", subtitles: [], body: "이번에는 참조 기사가 없습니다. 아래 확인된 매물 정보만 사용해 작성하십시오." });
-  const prompt = sns.gwBuildSnsPrompt({ vacancy: analysis.vacancy, article });
+  const prompt = column ? nm.gwBuildSnsPrompt({ article, source }) : sns.gwBuildSnsPrompt({ vacancy: analysis.vacancy, article });
   const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t) });
 
   onProgress("받은 글을 정리하는 중…");
-  const parsed = sns.gwSnsParse(text);
+  const parsed = (column ? nm.gwSnsParse : sns.gwSnsParse)(text);
   if (!parsed.ok) throw new Error(parsed.reason || "SNS 글을 읽지 못했습니다.");
 
   // 다시 쓸 때는 고른 사진은 그대로 두고 글만 바꾼다
@@ -115,7 +128,9 @@ async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
       media[ch] = picked.map((p) => pool.find((m) => m.file === p.url)).filter(Boolean).map((m) => m.id);
     }
   }
-  const data = { vacancyId, noun: saleKind ? "물건" : "매물", listing, posts: parsed.posts, pool, media, writtenAt: new Date().toISOString() };
+  const data = column
+    ? { vacancyId, kind: "column", credit: nm.gwSnsCredit(source), posts: parsed.posts, pool, media, writtenAt: new Date().toISOString() }
+    : { vacancyId, noun: saleKind ? "물건" : "매물", listing, posts: parsed.posts, pool, media, writtenAt: new Date().toISOString() };
   fs.writeFileSync(snsFile(vacancyId), JSON.stringify(data, null, 2));
   log.info(`[SNS] ${vacancyId} ${Object.keys(parsed.posts).join(",")}`);
   return forWeb(data);
@@ -162,7 +177,10 @@ async function exportChannel({ vacancyId, channel }) {
   const analysis = readJson(path.join(mediaDir(vacancyId), "analysis.json")) || { vacancy: {} };
   const c = sns.GW_SNS_CHANNELS[channel];
   const web = forWeb(data).channels[channel];
-  const folder = path.join(app.getPath("documents"), "공실뉴스 스튜디오", `${safeName(analysis.vacancy.title) || "공실"}_${String(vacancyId).slice(0, 8)}`, c.label);
+  // 폴더 이름: 공실이면 매물 이름, 칼럼이면 기사 제목
+  const article = blogWriter.isColumn(vacancyId) ? readJson(blogWriter.docFile(vacancyId, "article")) : null;
+  const name = article ? `칼럼_${safeName(article.title)}` : safeName(analysis.vacancy.title) || "공실";
+  const folder = path.join(app.getPath("documents"), "공실뉴스 스튜디오", `${name}_${String(vacancyId).replace(/^col-/, "").slice(0, 8)}`, c.label);
   fs.rmSync(folder, { recursive: true, force: true });
   fs.mkdirSync(folder, { recursive: true });
 

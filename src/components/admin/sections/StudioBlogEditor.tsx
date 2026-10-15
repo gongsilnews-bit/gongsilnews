@@ -15,13 +15,13 @@ import React, { useEffect, useRef, useState } from "react";
  */
 
 export type BlogMedia = { id: string; kind: string; caption: string; isCover: boolean; insertAfterParagraph: number | null; thumb: string | null };
-export type BlogDraft = { doc?: "blog" | "article"; vacancyId: string; style: string; length: string; title: string; subtitles?: string[]; paragraphs: string[]; keywords: string[]; media: BlogMedia[] };
+export type BlogDraft = { doc?: "blog" | "article"; vacancyId: string; style: string; length: string; title: string; subtitles?: string[]; paragraphs: string[]; keywords: string[]; media: BlogMedia[]; section1?: string; section2?: string };
 
 type Bridge = {
   blog: {
     save: (patch: { vacancyId: string; doc: string; title: string; subtitles?: string[]; paragraphs: string[]; keywords: string[]; media: Omit<BlogMedia, "thumb" | "kind">[] }) => Promise<unknown>;
     addPhoto: (opts: { vacancyId: string; doc: string; dataUrl: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
-    imageStyles: () => Promise<{ id: string; label: string }[]>;
+    imageStyles: (vacancyId?: string) => Promise<{ id: string; label: string }[]>;
     makeImage: (opts: { vacancyId: string; doc: string; style: string; request: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
@@ -66,8 +66,12 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
   const [aiErr, setAiErr] = useState("");
 
   useEffect(() => {
-    bridge()?.blog.imageStyles().then(setImageStyles).catch(() => {});
-  }, []);
+    // 칼럼이면 뉴스메이커 화풍(AI 추천 포함)
+    bridge()?.blog.imageStyles(initial.vacancyId).then((list) => {
+      setImageStyles(list);
+      if (list.length && !list.some((x) => x.id === "news")) setAiStyle(list[0].id);
+    }).catch(() => {});
+  }, [initial.vacancyId]);
 
   const makeImage = async (target: { slot?: number; replaceId?: string }) => {
     const b = bridge();

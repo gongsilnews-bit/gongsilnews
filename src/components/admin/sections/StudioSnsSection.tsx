@@ -2,11 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
-import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
-import StudioSnsPanel, { type SnsData, type ChannelInfo } from "./StudioSnsPanel";
-import ChannelButton from "./ChannelButton";
-import StudioArticlePanel from "./StudioArticlePanel";
-import { useRouter } from "next/navigation";
+import StudioChannelTabs from "./StudioChannelTabs";
+import StudioColumnSource from "./StudioColumnSource";
 
 /**
  * SNS뉴스발행 (공실뉴스 스튜디오 앱 전용)
@@ -15,9 +12,10 @@ import { useRouter } from "next/navigation";
  * 매물 정보를 읽고, 등록 사진 전부 + 화면 3장(공실열람 검증·지도·로드뷰)을 모은다.
  * 결과는 앱(PC)에 저장되고 기사·블로그·SNS·영상이 함께 쓴다.
  * 3단계 블로그 쓰기: 크롬 확장과 같은 블로그 프롬프트(6문체·글자 수)로 소장님 AI(ChatGPT)가 쓴다.
- * 채널 탭: 네이버 블로그(③④) · 인스타그램 · 스레드 · 페이스북(StudioSnsPanel). ①②는 분석이 끝나면 한 줄로 접힌다.
+ * 채널 탭(StudioChannelTabs): 공실뉴스 기사 · 네이버 블로그(③④) · 인스타그램 · 스레드 · 페이스북. ①②는 분석이 끝나면 한 줄로 접힌다.
  * 4단계 네이버 블로그 채우기: 확장과 같은 디자인 4종·사진 배치·출처 블록으로 네이버 글쓰기에 채운다.
  *   발행은 회원이 누른다. 태그는 발행 창이 열릴 때 채워진다.
+ * 뉴스칼럼 카테고리(StudioColumnSource): 뉴스·주제를 소재로 확장 뉴스메이커와 같은 기사·블로그·SNS 를 쓴다.
  */
 
 type MediaThumb = { kind: string; caption: string; thumb: string | null };
@@ -27,27 +25,12 @@ type Analysis = {
   media: MediaThumb[];
   failures: string[];
 };
-type BlogStyles = { saleKind?: string; styles: { id: string; label: string; fit: string; titleExample: string; design?: string }[]; lengths: { id: string; label: string; chars: string }[] };
-type Blog = BlogDraft;
 type Usage = { plan: string; monthLimit: number; monthUsed: number; monthRemaining: number | null; dailyLimit: number | null; todayUsed: number; custom: boolean };
 type AiItem = { id: string; name: string; ready: boolean; ok: boolean; account?: string; plan?: string };
 type StudioBridge = {
   openAiConnect: () => Promise<void>;
   ai: { list: () => Promise<AiItem[]>; connect: (id: string) => Promise<{ ok: boolean }>; finishLogin: () => Promise<void> };
   vacancy: { analyze: (id: string) => Promise<Analysis>; load: (id: string) => Promise<Analysis | null>; onProgress: (fn: (t: string) => void) => () => void };
-  naver: {
-    designs: () => Promise<{ id: string; label: string; hint: string }[]>;
-    fill: (opts: { vacancyId: string; design: string }) => Promise<{ ok: boolean; imagesInserted: number; imagesTotal: number; design: string; tags: string[] }>;
-    openMyBlog: () => Promise<unknown>;
-    onProgress: (fn: (t: string) => void) => () => void;
-  };
-  sns: { channels: () => Promise<ChannelInfo[]>; get: (vacancyId: string) => Promise<SnsData | null> };
-  blog: {
-    styles: (vacancyId?: string) => Promise<BlogStyles>;
-    write: (opts: { vacancyId: string; style: string; length: string }) => Promise<Blog>;
-    get: (vacancyId: string, doc?: string) => Promise<Blog | null>;
-    onProgress: (fn: (t: string) => void) => () => void;
-  };
 };
 type VacancyRow = { id: string; vacancy_no: number; building_name?: string | null; trade_type?: string | null; property_type?: string | null; sido?: string; sigungu?: string; dong?: string };
 type MyVacancy = { id: string; vacancy_no: number; building_name: string | null; trade_type: string | null; property_type: string | null; deposit: number | null; monthly_rent: number | null; address: string; created_at: string; photo: string | null; photoCount: number };
@@ -72,11 +55,12 @@ const bridge = (): StudioBridge | null => (typeof window !== "undefined" ? ((win
 /* 뉴스 카테고리 (2026-10-15 회의: 구성만 먼저, 공실뉴스부터) */
 const NEWS_CATEGORIES = [
   { id: "gongsil", label: "공실뉴스", lead: "공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다." },
-  { id: "column", label: "뉴스칼럼", lead: "부동산 뉴스를 바탕으로 소장님 이름의 칼럼을 씁니다." },
+  { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 출처를 밝힙니다." },
   { id: "interior", label: "인테리어뉴스", lead: "인테리어 사례·시뮬레이션으로 기사와 SNS 글을 씁니다." },
   { id: "remodel", label: "리모델링뉴스", lead: "리모델링 전후·시뮬레이션으로 기사와 SNS 글을 씁니다." },
 ];
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
+const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
 const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰" };
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
@@ -87,12 +71,21 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [snsUsage, setSnsUsage] = useState<Usage | null>(null);
   // 채널 탭 (회의 결정: 공통 ①②를 한 번 하고, 채널마다 탭)
   const [tab, setTab] = useState("article"); // 공실뉴스 기사가 맨 앞
-  const [category, setCategory] = useState("gongsil"); // 왼쪽 뉴스 카테고리
-  const [article, setArticle] = useState<Blog | null>(null);
-  const router = useRouter();
+  const [category, setCategoryState] = useState("gongsil"); // 왼쪽 뉴스 카테고리
+  const [columnTab, setColumnTab] = useState("article"); // 뉴스칼럼의 채널 탭
   const [pickOpen, setPickOpen] = useState(true); // ①② 펼침 — 분석이 끝나면 한 줄로 접는다
-  const [channels, setChannels] = useState<ChannelInfo[]>([]);
-  const [snsData, setSnsData] = useState<SnsData | null>(null);
+  const setCategory = (id: string) => {
+    setCategoryState(id);
+    try {
+      localStorage.setItem(CATEGORY_KEY, id);
+    } catch {}
+  };
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(CATEGORY_KEY);
+      if (saved && NEWS_CATEGORIES.some((c) => c.id === saved)) setCategoryState(saved);
+    } catch {}
+  }, []);
   const loadUsage = useCallback(() => {
     fetch("/api/studio/usage", { cache: "no-store" })
       .then((r) => r.json())
@@ -113,31 +106,6 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<Analysis | null>(null);
-  const [blogOpts, setBlogOpts] = useState<BlogStyles | null>(null);
-  const [style, setStyle] = useState("listing");
-  const [length, setLength] = useState("normal");
-  const [writing, setWriting] = useState(false);
-  const [blogProgress, setBlogProgress] = useState("");
-  const [blogError, setBlogError] = useState("");
-  const [blog, setBlog] = useState<Blog | null>(null);
-  const [designs, setDesigns] = useState<{ id: string; label: string; hint: string }[]>([]);
-  const [design, setDesign] = useState("");
-  const [filling, setFilling] = useState(false);
-  const [naverProgress, setNaverProgress] = useState("");
-  const [naverError, setNaverError] = useState("");
-  const [naverLogin, setNaverLogin] = useState<"" | "need" | "open">("");
-  const [naverDone, setNaverDone] = useState<{ imagesInserted: number; imagesTotal: number; tags: string[] } | null>(null);
-
-  useEffect(() => {
-    bridge()?.blog.styles().then(setBlogOpts);
-    bridge()?.naver.designs().then(setDesigns);
-    bridge()?.sns.channels().then(setChannels).catch(() => {});
-  }, []);
-
-  // 문체마다 어울리는 디자인 (확장과 같은 짝)
-  // 문체마다 어울리는 디자인 (확장과 같은 짝 — 문체 목록에 함께 온다)
-  const designFor = (id: string) => blogOpts?.styles.find((x) => x.id === id)?.design || "basic";
-
   const loadAi = useCallback(async () => {
     const b = bridge();
     if (b) setAi(await b.ai.list());
@@ -168,29 +136,12 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     if (!res.success) return setError(res.error);
     setPicked(res.data as VacancyRow);
     setResult(null);
-    setBlog(null);
-    setArticle(null);
-    setSnsData(null);
   };
 
-  /* 분석 결과와 써 둔 기사·블로그·SNS 를 화면에 올린다 (새로 분석했을 때·돌아왔을 때 공용) */
+  /* 분석 결과를 화면에 올린다 (써 둔 기사·블로그·SNS 는 채널 탭이 불러온다) */
   const applyResult = async (r: Analysis, v: VacancyRow) => {
-    const b = bridge();
-    if (!b) return;
     setResult(r);
     setPickOpen(false);
-    const opts = await b.blog.styles(r.vacancyId); // 경매·공매 물건이면 경매용 문체
-    setBlogOpts(opts);
-    setSnsData(await b.sns.get(r.vacancyId).catch(() => null));
-    const prevArticle = await b.blog.get(r.vacancyId, "article").catch(() => null);
-    setArticle(prevArticle ? { ...prevArticle, doc: "article" } : null);
-    const prev = await b.blog.get(r.vacancyId).catch(() => null);
-    setBlog(prev);
-    if (prev) {
-      setStyle(prev.style);
-      setLength(prev.length);
-      setDesign(opts.styles.find((x) => x.id === prev.style)?.design || "basic");
-    }
     // 다른 메뉴(예: 기사쓰기)에 갔다 와도 이어서 보이게 이 기기에 기억한다
     try {
       localStorage.setItem(LAST_KEY, JSON.stringify({ vacancyId: r.vacancyId, picked: v }));
@@ -237,71 +188,6 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       off();
       setProgress("");
       setBusy(false);
-    }
-  };
-
-  const writeBlog = async () => {
-    const b = bridge();
-    if (!b || !result) return;
-    setWriting(true);
-    setBlogError("");
-    setBlog(null);
-    const off = b.blog.onProgress(setBlogProgress);
-    setNaverDone(null);
-    try {
-      setBlog(await b.blog.write({ vacancyId: result.vacancyId, style, length }));
-      setDesign(designFor(style));
-    } catch (e) {
-      setBlogError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
-    } finally {
-      off();
-      setBlogProgress("");
-      setWriting(false);
-      loadUsage();
-    }
-  };
-
-  const fillNaver = async () => {
-    const b = bridge();
-    if (!b || !result || !blog) return;
-    setFilling(true);
-    setNaverError("");
-    setNaverDone(null);
-    const off = b.naver.onProgress(setNaverProgress);
-    try {
-      const r = await b.naver.fill({ vacancyId: result.vacancyId, design: design || "basic" });
-      setNaverDone(r);
-    } catch (e) {
-      const msg = (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
-      if (msg.startsWith("NAVER_LOGIN:")) setNaverLogin("need");
-      setNaverError(msg.replace(/^NAVER_LOGIN:\s*/, ""));
-    } finally {
-      off();
-      setNaverProgress("");
-      setFilling(false);
-    }
-  };
-
-  /* 네이버 로그인: 전용 크롬(조종 없는 평범한 창)에서 회원이 직접 로그인 → [로그인 다 했어요] */
-  const loginNaver = async () => {
-    const b = bridge();
-    if (!b) return;
-    setNaverLogin("open");
-    setNaverError("");
-    try {
-      const r = await b.ai.connect("naver");
-      if (r && r.ok) {
-        setNaverLogin("");
-        setNaverProgress("");
-        setNaverError("");
-        setNaverDone(null);
-      } else {
-        setNaverLogin("need");
-        setNaverError("네이버 로그인이 확인되지 않았습니다. 다시 [네이버 로그인]을 눌러 주세요.");
-      }
-    } catch (e) {
-      setNaverLogin("need");
-      setNaverError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
     }
   };
 
@@ -360,9 +246,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
           {(() => {
-            if (category !== "gongsil" || tab === "article") return null; // 기사 한도는 기사 등록할 때 센다
-            const u = tab === "blog" ? usage : snsUsage;
-            const name = tab === "blog" ? "블로그" : "SNS";
+            const t = category === "column" ? columnTab : tab;
+            if ((category !== "gongsil" && category !== "column") || t === "article") return null; // 기사 한도는 기사 등록할 때 센다
+            const u = t === "blog" ? usage : snsUsage;
+            const name = t === "blog" ? "블로그" : "SNS";
             if (!u) return null;
             return u.monthRemaining === null ? (
               <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#ecfdf5", color: "#047857" }}>
@@ -381,7 +268,11 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           </div>
         </div>
 
-        {category !== "gongsil" && (
+        {category === "column" && (
+          <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} />
+        )}
+
+        {category !== "gongsil" && category !== "column" && (
           <div style={{ ...card, textAlign: "center", padding: "48px 24px" }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.label} · 준비 중</div>
             <div style={{ marginTop: 8, fontSize: 13.5, color: theme.textSecondary }}>곧 이 자리에서 쓸 수 있게 됩니다.</div>
@@ -434,9 +325,6 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 if (!v) return;
                 setPicked(v);
                 setResult(null);
-                setBlog(null);
-                setArticle(null);
-                setSnsData(null);
               }}
               style={{ width: "100%", maxWidth: 560, padding: "10px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, fontWeight: 600, background: theme.cardBg, color: theme.textPrimary }}>
               <option value="">공실을 골라 주세요 ({mine.length}개)</option>
@@ -510,131 +398,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
 
         </>)}
 
-        {/* 채널 탭 */}
-        {result && (
-          <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${theme.border}`, marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
-            {[{ id: "article", label: "공실뉴스 기사", done: Boolean(article) }, { id: "blog", label: "네이버 블로그", done: Boolean(blog) }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post) }))].map((t) => (
-              <button key={t.id} onClick={() => chooseTab(t.id)}
-                style={{ padding: "11px 18px", border: 0, background: "transparent", cursor: "pointer", fontSize: 14.5, whiteSpace: "nowrap",
-                  fontWeight: tab === t.id ? 800 : 600, color: tab === t.id ? "#1a3a6b" : theme.textSecondary,
-                  borderBottom: `3px solid ${tab === t.id ? "#1a3a6b" : "transparent"}`, marginBottom: -1 }}>
-                {t.label}
-                {t.done && <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 800, color: "#16a34a" }}>✓</span>}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {result && tab === "article" && (
-          <StudioArticlePanel theme={theme} vacancyId={result.vacancyId} article={article} onArticle={setArticle}
-            onSend={() => router.push(`/realty_admin?menu=article&action=write&studioDraft=${encodeURIComponent(result.vacancyId)}`)} />
-        )}
-
-        {result && tab !== "blog" && channels.find((c) => c.id === tab) && (
-          <StudioSnsPanel theme={theme} channel={tab} info={channels.find((c) => c.id === tab)!} vacancyId={result.vacancyId}
-            data={snsData} onData={setSnsData} onUsed={loadUsage} />
-        )}
-
-        {result && tab === "blog" && (<>
-        {/* 3. 블로그 쓰기 */}
-        <div style={{ ...card, opacity: result ? 1 : 0.6 }}>
-          {stepTitle(3, "블로그 쓰기")}
-          {!result ? (
-            <div style={{ fontSize: 14, color: theme.textSecondary }}>먼저 공실 분석·캡처를 해 주세요.</div>
-          ) : (
-            <>
-              <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>문체</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8, marginBottom: 14 }}>
-                {(blogOpts?.styles || []).map((s) => (
-                  <button key={s.id} onClick={() => setStyle(s.id)} title={`예: ${s.titleExample}`}
-                    style={{ textAlign: "left", padding: "10px 12px", borderRadius: 8, cursor: "pointer", background: style === s.id ? "rgba(26,58,107,0.08)" : "transparent",
-                      border: `1px solid ${style === s.id ? "#1a3a6b" : theme.border}`, color: theme.textPrimary }}>
-                    <div style={{ fontSize: 14, fontWeight: 800 }}>{s.label}</div>
-                    <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>{s.fit}</div>
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginRight: 4 }}>글자 수</span>
-                {(blogOpts?.lengths || []).map((l) => (
-                  <button key={l.id} onClick={() => setLength(l.id)}
-                    style={{ padding: "7px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13, fontWeight: 700,
-                      border: `1px solid ${length === l.id ? "#1a3a6b" : theme.border}`, background: length === l.id ? "#1a3a6b" : "transparent", color: length === l.id ? "#fff" : theme.textPrimary }}>
-                    {l.label} · {l.chars}
-                  </button>
-                ))}
-                <button onClick={writeBlog} disabled={writing}
-                  style={{ marginLeft: "auto", padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
-                  {writing ? "ChatGPT가 쓰는 중…" : blog ? "다시 쓰기" : "ChatGPT로 블로그 글 쓰기"}
-                </button>
-              </div>
-              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>스튜디오 전용 크롬에서 ChatGPT가 열려 직접 씁니다. 1~2분 걸립니다.</div>
-            </>
-          )}
-          {blogProgress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{blogProgress}</div>}
-          {blogError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{blogError}</div>}
-
-          {blog && <StudioBlogEditor key={`${blog.vacancyId}-${blog.title}`} theme={theme} initial={blog} />}
-        </div>
-
-        {/* 4. 네이버 블로그 채우기 */}
-        <div style={{ ...card, opacity: blog ? 1 : 0.6 }}>
-          {stepTitle(4, "네이버 블로그 채우기")}
-          {!blog ? (
-            <div style={{ fontSize: 14, color: theme.textSecondary }}>먼저 블로그 글을 써 주세요.</div>
-          ) : (
-            <>
-              <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>블로그 디자인</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8, marginBottom: 14 }}>
-                {designs.map((d) => (
-                  <button key={d.id} onClick={() => setDesign(d.id)}
-                    style={{ textAlign: "left", padding: "10px 12px", borderRadius: 8, cursor: "pointer", background: design === d.id ? "rgba(26,58,107,0.08)" : "transparent",
-                      border: `1px solid ${design === d.id ? "#1a3a6b" : theme.border}`, color: theme.textPrimary }}>
-                    <div style={{ fontSize: 14, fontWeight: 800 }}>{d.label}</div>
-                    <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2, lineHeight: 1.5 }}>{d.hint}</div>
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <div style={{ fontSize: 13, color: theme.textSecondary, flex: 1, minWidth: 260, lineHeight: 1.6 }}>
-                  스튜디오 전용 크롬에 네이버 글쓰기가 열리고 제목·본문·사진 {result?.media.length || 0}장·매물 정보 출처가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
-                </div>
-                <ChannelButton channel="blog" label="네이버 블로그 바로가기" onClick={() => bridge()?.naver.openMyBlog()} />
-                <button onClick={fillNaver} disabled={filling}
-                  style={{ padding: "11px 20px", background: filling ? "#94a3b8" : "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: filling ? "default" : "pointer" }}>
-                  {filling ? "네이버에 채우는 중…" : "네이버 블로그에 채우기"}
-                </button>
-              </div>
-            </>
-          )}
-          {naverProgress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{naverProgress}</div>}
-          {naverError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{naverError}</div>}
-          {naverLogin === "need" && (
-            <button onClick={loginNaver}
-              style={{ marginTop: 10, padding: "10px 16px", background: "#03c75a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
-              네이버 로그인
-            </button>
-          )}
-          {naverLogin === "open" && (
-            <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 10, background: "#ecfdf5", border: "1px solid #a7f3d0", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 14, color: "#065f46", flex: 1, minWidth: 240, lineHeight: 1.6 }}>
-                오른쪽에 새로 뜬 &quot;공실뉴스 스튜디오&quot; 크롬 창에서 네이버에 로그인한 뒤 눌러 주세요. (평소 쓰시는 크롬 창이 아닙니다)
-              </span>
-              <button onClick={() => bridge()?.ai.finishLogin()}
-                style={{ padding: "10px 16px", background: "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
-                로그인 다 했어요
-              </button>
-            </div>
-          )}
-          {naverDone && (
-            <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 10, background: "#ecfdf5", border: "1px solid #a7f3d0", fontSize: 14, color: "#065f46", lineHeight: 1.7 }}>
-              네이버 글쓰기에 채웠습니다. 사진 {naverDone.imagesInserted}/{naverDone.imagesTotal}장.
-              {naverDone.imagesInserted < naverDone.imagesTotal ? " 빠진 사진은 네이버 화면에서 직접 올려 주세요." : ""}
-              <br />오른쪽 크롬 창에서 내용을 확인하고 <b>[발행]</b>을 눌러 주세요. 태그 {naverDone.tags.length}개는 발행 창에 자동으로 들어갑니다.
-            </div>
-          )}
-        </div>
-        </>)}
+        {/* 채널 탭 — 공실뉴스 기사 · 네이버 블로그 · 인스타그램 · 스레드 · 페이스북 */}
+        {result && <StudioChannelTabs key={result.vacancyId} theme={theme} workId={result.vacancyId} kind="gongsil" tab={tab} onTab={chooseTab} onUsed={loadUsage} />}
         </>)}
       </div>
       </div>

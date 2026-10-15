@@ -44,8 +44,10 @@
     /^\s*[▶▷☞■◆●※]\s*.{0,60}$/,         // 짧은 관련기사·바로가기 줄
     /^[\w.+-]+@[\w-]+\.[\w.]+$/,           // 기자 이메일만 있는 줄
     /기자\s*[\w.+-]+@[\w-]+\.[\w.]+/,      // "홍길동 기자 abc@..." 서명
+    /^[가-힣]{2,4}\s?(기자|특파원|통신원)$/,  // 본문 맨 위 "홍길동기자" 한 줄
     /^\s*(사진|그래픽|영상)\s*[=:]/,
     /구독(하기)?|좋아요|댓글|공유하기|제보하기/,
+    /^(ADVERTISEMENT|광고|AD)$/i,               // 본문 사이 광고 자리 표시
   ];
 
   const BLOCK_TAGS = new Set([
@@ -133,14 +135,16 @@
     return guessed ? paragraphsOf(guessed) : [];
   }
 
-  /* 네이버·다음은 og:site_name 이 포털 이름이라 기사 작성자(언론사) 칸을 먼저 본다 */
+  /* 언론사 이름: 포털 언론사 로고 → 사이트 이름 → 기사 작성자 칸 순서.
+     네이버·다음은 사이트 이름이 포털이라 건너뛰고 작성자(언론사) 칸을 쓴다.
+     언론사 누리집은 작성자 칸에 기자 이름이 들어 있는 곳이 많아(연합뉴스 등) 사이트 이름을 먼저 본다. */
   function findPublisher(doc, url) {
     const author = meta(doc, "og:article:author", "article:author").split("|")[0].trim();
     const logo = doc.querySelector(".media_end_head_top_logo img[alt], .press_logo img[alt], .media_end_head_top_logo_img[alt]");
     const candidates = [
-      author && !/^https?:/i.test(author) ? author : "",
       clean(logo && logo.getAttribute("alt")),
       meta(doc, "og:site_name", "twitter:site", "application-name"),
+      author && !/^https?:/i.test(author) && !/기자/.test(author) ? author : "",
     ];
     const found = candidates.find((name) => name && !/^(네이버|NAVER|다음|Daum)(\s*뉴스)?$/i.test(name));
     if (found) return found.replace(/^@/, "");
