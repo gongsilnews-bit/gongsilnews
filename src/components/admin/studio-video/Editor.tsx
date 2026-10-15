@@ -95,6 +95,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
   const [musicTarget, setMusicTarget] = useState(""); // 음악을 바꿀 애셋
   const clipboard = useRef<Clip[]>([]);
   const player = useRef<PlayerHandle>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const setProject = (next: Project, history = true) => {
     if (history) {
@@ -459,6 +460,47 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
     setSelLayer(id);
     setPanel("layer");
   };
+  /** 막대 끌기 — 시작(아이콘)·끝(손잡이)을 위아래로 끌어 범위를 바꾼다. 거의 안 움직이면 설정 칸을 연다 */
+  const dragLayer = (id: string, end: "from" | "to", e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const y0 = e.clientY;
+    let moved = false;
+    let pushed = false;
+    const move = (ev: PointerEvent) => {
+      if (!moved && Math.abs(ev.clientY - y0) < 5) return;
+      moved = true;
+      // 목록 위·아래 끝에 가면 목록을 굴린다
+      const box = listRef.current?.getBoundingClientRect();
+      if (box && listRef.current) {
+        if (ev.clientY > box.bottom - 40) listRef.current.scrollBy(0, 24);
+        else if (ev.clientY < box.top + 40) listRef.current.scrollBy(0, -24);
+      }
+      const row = document.elementsFromPoint(ev.clientX, ev.clientY).map((el) => (el as HTMLElement).closest<HTMLElement>("[data-row]")).find(Boolean);
+      const cid = row?.dataset.row;
+      const l = (pref.current.layers || []).find((x) => x.id === id);
+      if (!cid || !l || l[end] === cid) return;
+      change((p) => {
+        const L = (p.layers || []).find((x) => x.id === id);
+        if (!L) return;
+        L[end] = cid;
+        const ord = clipOrder(p);
+        if ((ord.get(L.from) ?? 0) > (ord.get(L.to) ?? 0)) [L.from, L.to] = [L.to, L.from];
+      }, !pushed); // 한 번 끄는 동안은 되돌리기 한 번으로
+      pushed = true;
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      if (!moved) openLayer(id);
+      else {
+        setSelLayer(id);
+        setPanel("layer");
+        say("범위를 바꿨어요");
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up, { once: true });
+  };
   const addTextLayer = () => addLayer({ type: "text", text: "글자를 써 주세요", pos: "top", size: 100, color: "#FFFFFF", box: false }, false);
   const openMusic = (target = "") => {
     setMusicTarget(target);
@@ -819,8 +861,8 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
               <Btn small primary onClick={() => { setSelected(blank.map((x) => x.clip.id)); openLib("mine"); }}>빈 클립에 화면 넣기</Btn>
             </div>
           )}
-          <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }} onClick={(e) => { if (e.target === e.currentTarget) { setSelected([]); setSelWord(null); } }}>
-            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={panel === "layer" ? selLayer : ""} onOpenLayer={openLayer} />
+          <div ref={listRef} style={{ flex: 1, overflowY: "auto", minHeight: 0 }} onClick={(e) => { if (e.target === e.currentTarget) { setSelected([]); setSelWord(null); } }}>
+            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={panel === "layer" ? selLayer : ""} onLayerDrag={dragLayer} />
           </div>
         </div>
 
@@ -867,7 +909,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
             <div>3. 실수했으면 위 [홈] 탭의 <b>[되돌리기]</b>를 누르세요. 몇 번이든 돼요.</div>
             <div>4. 다 됐으면 오른쪽 위 <b>[내보내기]</b>를 누르면 영상 파일이 만들어져요.</div>
             <div>5. 자동으로 저장돼요. 껐다 켜도 [프로젝트 열기]에서 이어서 할 수 있어요.</div>
-            <div>6. <b>음악·사진·화면 글자</b>는 클립을 고르고 [삽입] 탭에서 넣어요. 클립 왼쪽 아이콘을 누르면 범위·크기를 고칠 수 있어요.</div>
+            <div>6. <b>음악·사진·화면 글자</b>는 클립을 고르고 [삽입] 탭에서 넣어요. 클립 왼쪽 아이콘을 누르면 설정이 열리고, 아이콘이나 막대 끝 손잡이를 위아래로 끌면 범위가 바뀌어요.</div>
             <div>7. 클립 아래 <b>파란 자막 글자</b>를 누르면 목소리는 두고 자막만 고칠 수 있어요.</div>
             <div style={{ marginTop: 14, ...label }}>단축키</div>
             <div style={{ color: C.sub }}>스페이스: 재생/멈춤 · Ctrl+Z: 되돌리기 · Ctrl+Y: 다시실행 · Delete: 고른 단어(또는 클립) 지우기 · Ctrl+S: 저장</div>

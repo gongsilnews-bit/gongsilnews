@@ -8,7 +8,7 @@ import { fmtTime } from "./types";
 import { clipText, type FlatItem, speedOf, wordTimes } from "./timeline";
 import { STUDIO_VOICES } from "@/lib/studio-video/voices";
 import { C, Icon, FONT } from "./ui";
-import { Gutter, type LaneEntry } from "./Layers";
+import { Gutter, type LaneEntry, type LayerDrag } from "./Layers";
 
 export type ClipActions = {
   selectClip: (id: string, multi: boolean) => void;
@@ -38,7 +38,7 @@ type Props = {
   view: "detail" | "simple";
   lanes: { entries: LaneEntry[]; lanes: number };
   selLayer: string;
-  onOpenLayer: (id: string) => void;
+  onLayerDrag: LayerDrag;
 };
 
 const voiceName = (id?: string) => STUDIO_VOICES.find((v) => v.id === id)?.name || "AI 목소리";
@@ -220,7 +220,7 @@ export default function ClipList(p: Props) {
         return (
           <div key={sc.id}>
             <div style={{ display: "flex" }}>
-            {its.length > 0 && <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={its[0].index} pass selLayer={p.selLayer} onOpen={p.onOpenLayer} />}
+            {its.length > 0 && <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={its[0].index} pass selLayer={p.selLayer} onDrag={p.onLayerDrag} />}
             <div style={{ flex: 1, display: "flex", alignItems: "baseline", gap: 12, padding: "14px 4px 4px" }}>
               <span style={{ fontSize: 19, fontWeight: 800, color: C.sub }}>씬 {si + 1}</span>
               {sc.title && <span style={{ fontSize: 15, color: C.dim }}>{sc.title}</span>}
@@ -229,14 +229,14 @@ export default function ClipList(p: Props) {
             </div>
             </div>
             {its.map((it) => (
-              <div key={it.clip.id} style={{ display: "flex" }}>
-                <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={it.index} selLayer={p.selLayer} onOpen={p.onOpenLayer} />
+              <div key={it.clip.id} data-row={it.clip.id} style={{ display: "flex" }}>
+                <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={it.index} selLayer={p.selLayer} onDrag={p.onLayerDrag} />
                 <div style={{ flex: 1, minWidth: 0 }}><ClipCard project={project} it={it} n={++n} p={p} /></div>
               </div>
             ))}
             {its.length > 0 && (
               <div style={{ display: "flex", height: 20 }}>
-                <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={its[its.length - 1].index + 1} pass selLayer={p.selLayer} onOpen={p.onOpenLayer} />
+                <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={its[its.length - 1].index + 1} pass selLayer={p.selLayer} onDrag={p.onLayerDrag} />
               </div>
             )}
             {!its.length && <div style={{ padding: 30, textAlign: "center", color: C.dim, fontSize: 15, border: `1px dashed ${C.line2}`, borderRadius: 8 }}>아직 클립이 없어요. 위 [삽입] 탭이나 오른쪽 자료에서 넣어 주세요.</div>}

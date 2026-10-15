@@ -41,10 +41,13 @@ export function computeLanes(p: Project, items: FlatItem[]): { entries: LaneEntr
 
 const LANE_W = 30;
 
+export type LayerDrag = (id: string, end: "from" | "to", ev: React.PointerEvent) => void;
+
 /**
  * 카드 하나 옆의 줄들. idx = 이 카드의 차례. pass = 씬 제목·빈칸처럼 카드가 아닌 줄 (막대만 이어 그린다, idx 는 다음 카드 차례)
+ * 위 아이콘을 끌면 시작 클립, 아래 손잡이를 끌면 끝 클립이 바뀐다 (아이콘을 그냥 누르면 설정 칸)
  */
-export function Gutter({ entries, lanes, idx, pass, selLayer, onOpen }: { entries: LaneEntry[]; lanes: number; idx: number; pass?: boolean; selLayer: string; onOpen: (id: string) => void }) {
+export function Gutter({ entries, lanes, idx, pass, selLayer, onDrag }: { entries: LaneEntry[]; lanes: number; idx: number; pass?: boolean; selLayer: string; onDrag: LayerDrag }) {
   if (!lanes) return null;
   return (
     <div style={{ width: lanes * LANE_W + 6, flexShrink: 0, display: "flex" }}>
@@ -58,10 +61,15 @@ export function Gutter({ entries, lanes, idx, pass, selLayer, onOpen }: { entrie
         return (
           <div key={lane} style={{ width: LANE_W, position: "relative" }}>
             <span style={{ position: "absolute", left: LANE_W / 2 - 1, width: 2, top: first ? 22 : 0, bottom: last ? 18 : 0, background: color, borderRadius: 1 }} />
-            {last && <span style={{ position: "absolute", left: LANE_W / 2 - 5, width: 10, height: 2, bottom: 18, background: color }} />}
+            {last && (
+              <span onPointerDown={(ev) => onDrag(e.layer.id, "to", ev)} onClick={(ev) => ev.stopPropagation()} title="위아래로 끌어서 끝 클립 바꾸기"
+                style={{ position: "absolute", left: LANE_W / 2 - 11, width: 22, height: 14, bottom: 11, display: "flex", alignItems: "center", justifyContent: "center", cursor: "ns-resize", touchAction: "none" }}>
+                <span style={{ width: 16, height: 5, borderRadius: 3, background: color }} />
+              </span>
+            )}
             {first && (
-              <button type="button" onClick={(ev) => { ev.stopPropagation(); onOpen(e.layer.id); }} title={`${LAYER_NAME[e.layer.type]}: ${layerTitle(e.layer)}`}
-                style={{ position: "absolute", left: LANE_W / 2 - 13, top: 10, width: 26, height: 26, borderRadius: 6, border: `1.5px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : C.panel2, color: on ? "#fff" : C.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 }}>
+              <button type="button" onPointerDown={(ev) => onDrag(e.layer.id, "from", ev)} onClick={(ev) => ev.stopPropagation()} title={`${LAYER_NAME[e.layer.type]}: ${layerTitle(e.layer)} (누르면 설정, 위아래로 끌면 시작 클립 바꾸기)`}
+                style={{ position: "absolute", left: LANE_W / 2 - 13, top: 10, width: 26, height: 26, borderRadius: 6, border: `1.5px solid ${on ? C.accent : C.line2}`, background: on ? C.accent : C.panel2, color: on ? "#fff" : C.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", padding: 0, touchAction: "none" }}>
                 <Icon name={LAYER_ICON[e.layer.type]} size={15} />
               </button>
             )}
