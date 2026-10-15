@@ -41,6 +41,7 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
+  const [copied, setCopied] = useState(false);
   const ch = data?.channels[channel] || null;
 
   const [body, setBody] = useState("");
@@ -54,7 +55,9 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
     const key = `${channel}:${data?.writtenAt || ""}`;
     if (!ch || loadedFrom.current === key) return;
     loadedFrom.current = key;
-    setBody(ch.post?.body || "");
+    const tagLine = (ch.post?.hashtags || []).map((t) => `#${t}`).join(" ");
+    // 인스타그램은 캡션처럼 본문 바로 아래에 해시태그를 함께 보여 준다
+    setBody(channel === "instagram" && tagLine ? `${ch.post?.body || ""}\n\n${tagLine}` : ch.post?.body || "");
     setTags((ch.post?.hashtags || []).join(" "));
     setThreadPosts(ch.post?.posts || []);
     setMediaIds(ch.media.map((m) => m.id));
@@ -70,10 +73,16 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
       setError(cleanErr(e));
     }
   };
-  const currentPost = (): Post =>
-    channel === "threads"
-      ? { posts: threadPosts.map((p) => p.trim()).filter(Boolean), topic: ch?.post?.topic || "" }
-      : { body: body.trim(), hashtags: tags.split(/[\s,]+/).map((t) => t.replace(/^#+/, "").trim()).filter(Boolean) };
+  const currentPost = (): Post => {
+    if (channel === "threads") return { posts: threadPosts.map((p) => p.trim()).filter(Boolean), topic: ch?.post?.topic || "" };
+    if (channel === "instagram") {
+      // 한 칸에서 # 으로 시작하는 단어는 해시태그로, 나머지는 본문으로 나눈다
+      const tagsFound = Array.from(body.matchAll(/#([^\s#]+)/g)).map((m) => m[1]);
+      const text = body.split("\n").filter((line) => !/^(\s*#[^\s#]+)+\s*$/.test(line)).join("\n").trim();
+      return { body: text, hashtags: tagsFound };
+    }
+    return { body: body.trim(), hashtags: tags.split(/[\s,]+/).map((t) => t.replace(/^#+/, "").trim()).filter(Boolean) };
+  };
 
   const write = async () => {
     const b = bridge();
@@ -98,6 +107,8 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
     try {
       await navigator.clipboard.writeText(ch?.composed.text || "");
       setNote("글을 복사했습니다. 채널 글쓰기 칸에 붙여 넣으세요.");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     } catch {
       setError("복사하지 못했습니다.");
     }
@@ -213,7 +224,18 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
           {ch.aiNote && <div style={{ marginTop: 10, fontSize: 12.5, color: "#b45309" }}>{ch.aiNote}</div>}
 
           {/* 글 */}
-          <div style={{ marginTop: 20, fontSize: 15, fontWeight: 800, color: theme.textPrimary, marginBottom: 8 }}>글</div>
+          <div style={{ marginTop: 20, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>글</span>
+            <button onClick={copy} title="올라갈 전체 글 복사"
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: copied ? "#16a34a" : theme.textSecondary, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+              {copied ? (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></svg>
+              )}
+              {copied ? "복사됨" : "복사"}
+            </button>
+          </div>
           {channel === "threads" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {threadPosts.map((p, i) => (
@@ -230,10 +252,16 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
             </div>
           ) : (
             <>
-              <textarea value={body} rows={channel === "instagram" ? 9 : 8} style={area} onChange={(e) => setBody(e.target.value)} onBlur={() => persist({ post: currentPost() })} />
-              <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: theme.textSecondary }}>해시태그 (띄어 쓰기로 구분, 최대 {info.maxTags}개)</div>
-              <input value={tags} onChange={(e) => setTags(e.target.value)} onBlur={() => persist({ post: currentPost() })}
-                style={{ ...area, padding: "9px 12px", fontSize: 13.5, resize: undefined }} />
+              <textarea value={body} rows={channel === "instagram" ? 12 : 8} style={area} onChange={(e) => setBody(e.target.value)} onBlur={() => persist({ post: currentPost() })} />
+              {channel === "instagram" ? (
+                <div style={{ marginTop: 6, fontSize: 12, color: theme.textSecondary }}>본문 아래 #으로 시작하는 단어가 해시태그입니다 (최대 {info.maxTags}개).</div>
+              ) : (
+                <>
+                  <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: theme.textSecondary }}>해시태그 (띄어 쓰기로 구분, 최대 {info.maxTags}개)</div>
+                  <input value={tags} onChange={(e) => setTags(e.target.value)} onBlur={() => persist({ post: currentPost() })}
+                    style={{ ...area, padding: "9px 12px", fontSize: 13.5, resize: undefined }} />
+                </>
+              )}
             </>
           )}
 
