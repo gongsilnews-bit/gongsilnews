@@ -333,7 +333,9 @@ function askImage(prompt, { onProgress = () => {}, chatUrl = "", files = [], onC
       // 그림 없이 글로만 답하고 끝났으면 (거절·하루 한도 등) 그 이유를 보여 준다
       // 그림은 글보다 늦게 붙기도 하니 2분은 기다린다
       if (st.answered && !st.busy && !st.images.length && st.text && Date.now() > deadline - 3 * 60 * 1000) {
-        throw new Error(`ChatGPT가 그림 대신 글로 답했습니다: ${st.text.slice(0, 120)}`);
+        // 거절·한도 같은 사람 말이면 그대로 보여 주고, JSON 같은 기계 글은 감춘다
+        const why = /^\s*(```|\{)/.test(st.text) ? "" : ` (ChatGPT: ${st.text.slice(0, 100)})`;
+        throw new Error(`ChatGPT가 그림을 그리지 않고 끝났습니다. [ChatGPT로 시뮬레이션]을 한 번 더 눌러 주세요.${why}`);
       }
     }
     throw new Error(`ChatGPT 그림을 5분 안에 받지 못했습니다.${lastText ? ` (${lastText.slice(0, 80)})` : ""}`);
