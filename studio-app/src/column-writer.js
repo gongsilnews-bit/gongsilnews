@@ -25,7 +25,7 @@ const readJson = (file) => (fs.existsSync(file) ? JSON.parse(fs.readFileSync(fil
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
-const EXTRACT = `${nm.NEWS_EXTRACT_SRC}\n;gwNewsExtract(document, location.href)`;
+const EXTRACT = () => `${nm.NEWS_EXTRACT_SRC}\n;gwNewsExtract(document, location.href)`; // 서버에서 받은 글로 그때 만든다
 const NEWS_HOME = "https://news.naver.com/section/101"; // 네이버 뉴스 경제
 
 /* ── 뉴스 가져오기 ── */
@@ -58,7 +58,7 @@ async function fetchNews(url) {
     for (let i = 0; i < 4 && !win.isDestroyed(); i++) {
       await sleep(i === 0 ? 800 : 1500);
       if (win.isDestroyed()) break;
-      r = await wc.executeJavaScript(EXTRACT, true).catch(() => null);
+      r = await wc.executeJavaScript(EXTRACT(), true).catch(() => null);
       if (r && r.ok) break;
     }
     if (!r) throw new Error("뉴스 페이지를 열지 못했습니다. 주소를 확인해 주세요.");
@@ -87,7 +87,7 @@ async function grabNews() {
   const ordered = [...pages.filter((_, i) => seen[i]), ...pages.filter((_, i) => !seen[i]).reverse()];
   let last = null;
   for (const page of ordered) {
-    const r = await page.evaluate(EXTRACT).catch(() => null);
+    const r = await page.evaluate(EXTRACT()).catch(() => null);
     if (r && r.ok) {
       log.info(`[뉴스칼럼] 보던 뉴스 가져옴 ${r.news.publisher} · ${r.news.title.slice(0, 40)}`);
       return r.news;

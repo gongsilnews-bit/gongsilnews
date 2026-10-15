@@ -17,9 +17,10 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const log = require("electron-log/main");
-const blogPrompt = require("./ext/blog-prompt");
-const articleJson = require("./ext/article-json");
-const naverBlog = require("./ext/naver-blog");
+const ext = require("./ext"); // 확장 파일은 서버에서 받는다
+const blogPrompt = ext.lazyModule(() => ext.run(["gongsil/blog-prompt.js"]));
+const articleJson = ext.lazyModule(() => ext.run(["gongsil/article-json.js"]));
+const naverBlog = ext.lazyModule(() => ext.run(["gongsil/naver-blog.js"]));
 const chatgpt = require("./ai/chatgpt");
 const { thumbOf, saveDataUrl } = require("./media-util");
 const extPrompt = require("./ext-prompt");

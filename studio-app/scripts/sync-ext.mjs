@@ -1,30 +1,45 @@
-// 크롬 확장의 프롬프트·답변 해석 파일을 앱으로 복사한다.
-// 원본은 확장 쪽 하나다. 프롬프트를 고칠 때는 확장 파일을 고치고 이 스크립트로 다시 복사한다.
-//   node scripts/sync-ext.mjs   (npm run dist 가 빌드 전에 자동으로 부른다)
-//  - 공실뉴스(매물) : gongsilwriter30/shared → src/ext
-//  - 뉴스칼럼       : newsmaker10/shared     → src/ext/newsmaker  (같은 이름이라도 내용이 달라 폴더를 나눈다)
-import { copyFileSync, mkdirSync } from "node:fs";
+// 크롬 확장의 프롬프트·답변 해석·채우기 파일을 "서버" 코드로 묶는다 (2026-10-15 보안 결정).
+// 설치 파일(EXE)에는 넣지 않는다. 앱은 로그인한 뒤 /api/studio/prompts 에서 받아 메모리에만 둔다 (studio-app/src/ext.js).
+// 원본은 확장 쪽 하나다. 프롬프트를 고칠 때는 확장 파일을 고치고 이 스크립트를 돌린 뒤 웹을 배포한다.
+//   node scripts/sync-ext.mjs   (npm run dist 도 빌드 전에 부른다)
+//  - gongsil/…   : 기사작성기 gongsilwriter30/shared (+ content-naver.js)
+//  - newsmaker/… : 뉴스메이커 newsmaker10/shared
+import { readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const extRoot = join(root, "..", "chrome-extension");
+const out = join(root, "..", "src", "app", "api", "studio", "prompts", "bundle.generated.ts");
 
-function copy(fromDir, toDir, files) {
-  mkdirSync(toDir, { recursive: true });
-  for (const f of files) {
-    copyFileSync(join(fromDir, f), join(toDir, f));
-    console.log("복사:", join(toDir, f).slice(root.length + 1));
+const GROUPS = {
+  gongsil: {
+    dir: join(extRoot, "gongsilwriter30", "shared"),
+    files: ["prompt.js", "blog-prompt.js", "article-json.js", "naver-blog.js", "sns-prompt.js", "youtube-json.js", "youtube-prompt.js", "../content-naver.js"],
+  },
+  newsmaker: {
+    dir: join(extRoot, "newsmaker10", "shared"),
+    files: ["sections.js", "market-prompt.js", "prompt.js", "blog-prompt.js", "sns-prompt.js", "naver-blog.js", "article-json.js", "youtube-json.js", "youtube-prompt.js", "news-extract.js"],
+  },
+};
+
+const files = {};
+for (const [group, { dir, files: list }] of Object.entries(GROUPS)) {
+  for (const f of list) {
+    const name = `${group}/${f.replace("../", "")}`;
+    files[name] = readFileSync(join(dir, f), "utf8").replace(/\r\n/g, "\n");
+    console.log("묶음:", name);
   }
 }
+const version = createHash("sha256").update(JSON.stringify(files)).digest("hex").slice(0, 12);
 
-const from = join(extRoot, "gongsilwriter30", "shared");
-const to = join(root, "src", "ext");
-copy(from, to, ["blog-prompt.js", "article-json.js", "naver-blog.js", "prompt.js", "sns-prompt.js", "youtube-json.js", "youtube-prompt.js"]);
-// 네이버 글쓰기 화면에 넣어 실행하는 코드 (확장의 content script 그대로)
-copy(join(from, ".."), to, ["content-naver.js"]);
-
-copy(join(extRoot, "newsmaker10", "shared"), join(to, "newsmaker"), [
-  "sections.js", "market-prompt.js", "prompt.js", "blog-prompt.js", "sns-prompt.js",
-  "naver-blog.js", "article-json.js", "youtube-json.js", "youtube-prompt.js", "news-extract.js",
-]);
+writeFileSync(
+  out,
+  `// 자동 생성 파일 — 고치지 마세요. 원본: chrome-extension/*/shared, 만들기: node studio-app/scripts/sync-ext.mjs
+// 공실뉴스 스튜디오 앱이 로그인 뒤 /api/studio/prompts 로 받아 메모리에만 두는 확장 파일 묶음 (서버 전용)
+export const STUDIO_EXT_VERSION = ${JSON.stringify(version)};
+export const STUDIO_EXT_FILES: Record<string, string> = ${JSON.stringify(files, null, 1)};
+`
+);
+console.log(`→ ${out.slice(root.length - "studio-app".length)} (${Object.keys(files).length}개, 버전 ${version})`);

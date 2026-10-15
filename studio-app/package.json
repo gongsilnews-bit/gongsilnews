@@ -32,6 +32,7 @@
     },
     "files": [
       "src/**/*",
+      "!src/ext/**/*",
       "build/icon.png",
       "package.json"
     ],

@@ -10,22 +10,22 @@ const { app, session } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const log = require("electron-log/main");
-const naverBlog = require("./ext/naver-blog");
-const blogPrompt = require("./ext/blog-prompt");
+const ext = require("./ext"); // 확장 파일은 서버에서 받는다
+const naverBlog = ext.lazyModule(() => ext.run(["gongsil/naver-blog.js"]));
+const blogPrompt = ext.lazyModule(() => ext.run(["gongsil/blog-prompt.js"]));
 const chrome = require("./studio-chrome");
 const nm = require("./ext-newsmaker");
 const isColumn = (id) => /^col-[a-f0-9]+$/.test(String(id || ""));
 
-const CONTENT_NAVER = fs.readFileSync(path.join(__dirname, "ext", "content-naver.js"), "utf8");
 const mediaDir = (vacancyId) => path.join(app.getPath("userData"), "media", String(vacancyId).replace(/[^\w-]/g, ""));
 
-/* 확장 content-naver.js 를 감싸서 window.__gwNaver(msg) 로 부를 수 있게 한다 */
-const INJECT = `(() => {
+/* 확장 content-naver.js 를 감싸서 window.__gwNaver(msg) 로 부를 수 있게 한다 (서버에서 받은 글로 그때 만든다) */
+const INJECT = () => `(() => {
   if (window.__gwNaver) return true;
   const listeners = [];
   const chrome = { runtime: { onMessage: { addListener: (fn) => listeners.push(fn) } } };
   (function (chrome) {
-${CONTENT_NAVER}
+${ext.text("gongsil/content-naver.js")}
   })(chrome);
   window.__gwNaver = (msg) => new Promise((resolve) => {
     let answered = false;
@@ -88,7 +88,7 @@ async function findEditorFrame(page, timeoutMs = 30000) {
     for (const frame of page.frames()) {
       if (!/naver\.com/.test(frame.url())) continue;
       try {
-        await frame.evaluate(INJECT);
+        await frame.evaluate(INJECT());
         const ping = await frame.evaluate(() => window.__gwNaver({ type: "GW_PING_NAVER_WRITE" }));
         if (ping && ping.ok) return frame;
       } catch {}

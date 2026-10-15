@@ -18,6 +18,22 @@ const youtubeWriter = require("./youtube-writer");
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE_URL).origin;
+
+// 확장 프롬프트·채우기 파일은 EXE 에 넣지 않고 서버에서 받아 메모리에만 둔다 (ext.js, 2026-10-15 보안 결정).
+// 그 파일을 쓰는 기능(IPC)은 먼저 받아 둔 것을 기다린다. 아래 목록은 파일이 필요 없는 기능이다.
+const ext = require("./ext");
+ext.configure(BASE_URL);
+const NO_EXT = new Set([
+  "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info",
+  "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect",
+  "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news",
+]);
+const ipcHandle = ipcMain.handle.bind(ipcMain);
+ipcMain.handle = (channel, fn) =>
+  ipcHandle(channel, NO_EXT.has(channel) ? fn : async (...args) => {
+    await ext.ensure();
+    return fn(...args);
+  });
 const PROTOCOL = "gongsilstudio";
 // 앱 창 안에서 띄워도 되는 팝업 (주소 검색 등). 그 외 다른 사이트는 평소 브라우저로 연다.
 const IN_APP_POPUP_HOSTS = [/(^|\.)daum\.net$/, /(^|\.)daumcdn\.net$/, /(^|\.)kakao\.com$/];
@@ -156,6 +172,8 @@ async function createWindow() {
   // (구글은 앱 창 안의 구글 로그인을 막는다)
   mainWindow.webContents.on("did-navigate", (_e, url) => {
     if (isPathOf(url, "/login") || isPathOf(url, "/m/login")) showConnectScreen();
+    // 관리자 화면이 열리면(로그인 확인됨) 글쓰기 설정을 미리 받아 둔다 — 버튼을 누를 때 기다리지 않게
+    else if (isPathOf(url, "/realty_admin")) ext.ensure().catch((e) => log.warn(`[글쓰기 설정] 미리 받기 실패: ${e.message}`));
   });
 
   // 다른 사이트로 넘어가는 링크는 평소 브라우저로
