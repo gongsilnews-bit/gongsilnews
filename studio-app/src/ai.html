@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>내 AI 연결</title>
+<style>
+  body { margin:0; background:#f6f8fa; color:#16202b; font-family:'Pretendard Variable','Malgun Gothic',sans-serif; }
+  .wrap { padding:26px 24px; }
+  h1 { margin:0 0 6px; font-size:20px; font-weight:800; }
+  .lead { margin:0 0 18px; font-size:13px; line-height:1.7; color:#6b7684; word-break:keep-all; }
+  .row { display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #e8ecf0; border-radius:12px; padding:14px 16px; margin-bottom:10px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#cbd5e1; flex-shrink:0; }
+  .dot.on { background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.2); }
+  .name { font-size:15px; font-weight:800; }
+  .sub { font-size:12px; color:#6b7684; margin-top:2px; }
+  .grow { flex:1; min-width:0; }
+  button { padding:9px 14px; border:0; border-radius:8px; background:#1a3a6b; color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
+  button:disabled { background:#cbd5e1; cursor:default; }
+  button.ghost { background:#fff; color:#1a3a6b; border:1px solid #c7d2e3; }
+  .msg { min-height:20px; margin:14px 2px 0; font-size:13px; color:#1a3a6b; line-height:1.6; word-break:keep-all; }
+  .msg.err { color:#c53030; }
+  .note { margin-top:16px; padding:12px 14px; border-radius:10px; background:#fff8eb; border:1px solid #fde4b0; font-size:12px; line-height:1.7; color:#7a4b00; word-break:keep-all; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>내 AI 연결</h1>
+    <p class="lead">소장님이 구독 중인 AI로 기사·블로그를 씁니다. [연결하기]를 누르면 <b>스튜디오 전용 크롬</b>이 열립니다. 그 창에서 평소처럼 로그인한 뒤 <b>크롬 창을 닫으면</b> 연결이 끝납니다. 비밀번호는 공실뉴스에 저장되지 않습니다.</p>
+    <div id="list"></div>
+    <div class="msg" id="msg"></div>
+    <div class="note">
+      AI 회사 약관은 개인 계정의 자동 사용을 제한하고 있어, 계정이 제한될 수 있습니다. 스튜디오는 소장님이 버튼을 누를 때만 한 건씩 사람처럼 작성합니다.
+      Gemini는 지메일·유튜브에 쓰는 업무용 구글 계정 말고 별도 계정을 권합니다.
+    </div>
+  </div>
+<script>
+  const studio = window.gongsilStudio;
+  const msg = document.getElementById("msg");
+  const say = (t, err) => { msg.textContent = t || ""; msg.className = "msg" + (err ? " err" : ""); };
+  let busy = false;
+
+  function render(items) {
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+    for (const it of items) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const sub = !it.ready ? "준비 중" : it.ok ? `연결됨${it.account ? " · " + it.account : ""}${it.plan ? " (" + it.plan + ")" : ""}` : "연결 안 됨";
+      row.innerHTML = `<span class="dot ${it.ok ? "on" : ""}"></span><div class="grow"><div class="name"></div><div class="sub"></div></div>`;
+      row.querySelector(".name").textContent = it.name;
+      row.querySelector(".sub").textContent = sub;
+      const btn = document.createElement("button");
+      btn.textContent = it.ok ? "다시 확인" : "연결하기";
+      if (it.ok) btn.className = "ghost";
+      btn.disabled = !it.ready || busy;
+      btn.onclick = () => (it.ok ? run(it.id, it.name, "check") : run(it.id, it.name, "connect"));
+      row.appendChild(btn);
+      list.appendChild(row);
+    }
+  }
+
+  async function load() { render(await studio.ai.list()); }
+
+  async function run(id, name, how) {
+    busy = true; await load();
+    if (how === "check") say(`${name} 로그인을 확인하는 중…`);
+    try {
+      const r = await studio.ai[how](id);
+      say(r && r.ok ? `${name} 연결이 끝났습니다.` : `${name} 로그인이 확인되지 않았습니다. 다시 [연결하기]를 눌러 주세요.`, !(r && r.ok));
+    } catch (e) {
+      say(String(e && e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""), true);
+    }
+    busy = false; await load();
+  }
+
+  studio.ai.onProgress((t) => say(t));
+  load();
+</script>
+</body>
+</html>

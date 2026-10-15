@@ -6,6 +6,7 @@ const path = require("path");
 const fs = require("fs");
 const log = require("electron-log/main");
 const { autoUpdater } = require("electron-updater");
+const aiConnect = require("./ai-connect");
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE_URL).origin;
@@ -17,6 +18,7 @@ log.initialize();
 log.transports.file.level = "info";
 
 let mainWindow = null;
+let aiWindow = null;
 let pendingDeepLink = null;
 
 /* ───────── 한 번만 실행 + gongsilstudio:// 주소 받기 ───────── */
@@ -159,6 +161,31 @@ async function createWindow() {
   }
 }
 
+/* ───────── 내 AI 연결 창 ───────── */
+
+function openAiWindow() {
+  if (aiWindow) {
+    aiWindow.focus();
+    return;
+  }
+  aiWindow = new BrowserWindow({
+    width: 520,
+    height: 600,
+    parent: mainWindow || undefined,
+    title: "내 AI 연결",
+    autoHideMenuBar: true,
+    resizable: false,
+    minimizable: false,
+    backgroundColor: "#f6f8fa",
+    webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true },
+  });
+  aiWindow.setMenu(null);
+  aiWindow.loadFile(path.join(__dirname, "ai.html"));
+  aiWindow.on("closed", () => {
+    aiWindow = null;
+  });
+}
+
 function buildMenu() {
   const template = [
     {
@@ -173,6 +200,10 @@ function buildMenu() {
         { type: "separator" },
         { label: "개발자 도구", accelerator: "Ctrl+Shift+I", role: "toggleDevTools" },
       ],
+    },
+    {
+      label: "AI",
+      submenu: [{ label: "내 AI 연결 (ChatGPT·Claude·Gemini)", click: () => openAiWindow() }],
     },
     {
       label: "계정",
@@ -243,6 +274,13 @@ async function checkForUpdates(manual = false) {
 /* ───────── 시작 ───────── */
 
 ipcMain.handle("studio:open-connect", () => openConnectInBrowser());
+ipcMain.on("studio:base-origin", (e) => {
+  e.returnValue = BASE_ORIGIN;
+});
+ipcMain.handle("studio:open-ai-window", () => openAiWindow());
+ipcMain.handle("studio:ai-list", () => aiConnect.list());
+ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
+ipcMain.handle("studio:ai-connect", (e, id) => aiConnect.connect(id, (text) => e.sender.send("studio:ai-progress", text)));
 ipcMain.handle("studio:info", () => ({ version: app.getVersion(), baseUrl: BASE_URL, ffmpeg: Boolean(ffmpegPath()) }));
 
 // 웹 화면이 "스튜디오 앱"임을 알아보도록 브라우저 정보 끝에 영어 이름을 붙인다
