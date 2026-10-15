@@ -72,7 +72,7 @@ const PROVIDERS = {
     ready: true,
     writer: true,
     image: true,
-    imageReady: false, // 그림(나노바나나)은 아직 — 만들고 시험한 뒤 연다
+    // 그림(나노바나나) 2026-10-15 시험: 글로만 26초, 방 사진 고쳐 그리기 33초 (1024px 안팎, 오른쪽 아래 Gemini 표시가 작게 들어간다)
     check: (page) =>
       page.evaluate(() => {
         if (/accounts\.google\.com/.test(location.href)) return { ok: false };

@@ -57,69 +57,83 @@ function connected(result) {
   return result;
 }
 
+/* 이어 쓸 대화가 있으면 그 대화로, 아니면 새 대화 — { page, revise, prompt } */
+async function openChat(onProgress, { chatUrl = "", fallbackPrompt = "", prompt = "" } = {}) {
+  await ext.ensure();
+  onProgress("스튜디오 전용 크롬에서 Gemini를 여는 중…");
+  const page = await chrome.openPage("gemini.google.com", URL_NEW);
+  const wantId = chatIdOf(chatUrl);
+  let revise = false;
+  if (wantId) {
+    if (chatIdOf(page.url()) !== wantId) await page.goto(`${URL_NEW}/${wantId}`, { waitUntil: "domcontentloaded" });
+    await chrome.sleep(2500);
+    revise = chatIdOf(page.url()) === wantId;
+    if (!revise) {
+      log.warn(`[Gemini] 이어 쓸 대화를 못 엶: ${page.url()}`);
+      if (!fallbackPrompt) throw new Error("처음 쓴 Gemini 대화를 찾지 못했습니다. [다시 쓰기]를 해 주세요.");
+      prompt = fallbackPrompt;
+    }
+  } else if (fallbackPrompt) {
+    prompt = fallbackPrompt; // 이어 쓸 대화가 없는 예전 글
+  }
+  if (!revise) {
+    await page.goto(URL_NEW, { waitUntil: "domcontentloaded" });
+    await chrome.sleep(2000);
+  }
+  if (await loggedOut(page)) throw new Error("Gemini 로그인이 풀렸습니다. 위쪽 메뉴 [AI → 내 AI·계정 연결]에서 다시 연결해 주세요.");
+  return { page, revise, prompt };
+}
+
+/* 전용 공간은 Gemini 화면이 바뀌면(새 대화 주소 등) 없어진다 — 그러면 다시 만들어 이어 간다 */
+function worldOf(page) {
+  return {
+    cur: null,
+    async run(expression) {
+      for (let tryNo = 0; ; tryNo++) {
+        try {
+          if (!this.cur) this.cur = await extWorld(page);
+          return await this.cur.run(expression);
+        } catch (e) {
+          const lost = /navigated|closed|context|not defined|Target/i.test(String(e && e.message));
+          if (!lost || tryNo >= 2) throw e;
+          if (this.cur) await this.cur.close();
+          this.cur = null;
+          await chrome.sleep(700);
+        }
+      }
+    },
+    close() {
+      return this.cur ? this.cur.close() : undefined;
+    },
+  };
+}
+
+/* 넣고 보내기 (확장 코드) */
+async function fillAndSend(w, prompt) {
+  const filled = await w.run(`GwAi.fill(GW.GEMINI, ${JSON.stringify(prompt)})`);
+  if (!filled || !filled.ok) throw new Error((filled && filled.reason) || "Gemini 입력칸에 글을 넣지 못했습니다.");
+  await humanPause(700, 1500);
+  const sent = await w.run("GwAi.submit(GW.GEMINI)");
+  if (!sent || !sent.ok) throw new Error((sent && sent.reason) || "Gemini에 보내지 못했습니다.");
+  return sent;
+}
+
 /**
  * 프롬프트를 보내고 답변 글을 돌려준다 (chatgpt.ask 와 같은 모양).
  * isComplete(text): 답 형식 확인 (JSON 등). onChat(url): 답을 받은 대화 주소 — 수정 요청을 그 대화에 이어 보낸다.
  */
 function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = () => {}, chatUrl = "", fallbackPrompt = "" } = {}) {
   return exclusive(async () => {
-    await ext.ensure();
-    onProgress("스튜디오 전용 크롬에서 Gemini를 여는 중…");
-    const page = await chrome.openPage("gemini.google.com", URL_NEW);
-
-    // 이어 쓸 대화가 있으면 그 대화로, 아니면 새 대화
-    const wantId = chatIdOf(chatUrl);
-    let revise = false;
-    if (wantId) {
-      if (chatIdOf(page.url()) !== wantId) await page.goto(`${URL_NEW}/${wantId}`, { waitUntil: "domcontentloaded" });
-      await chrome.sleep(2500);
-      revise = chatIdOf(page.url()) === wantId;
-      if (!revise) {
-        log.warn(`[Gemini] 이어 쓸 대화를 못 엶: ${page.url()}`);
-        if (!fallbackPrompt) throw new Error("처음 쓴 Gemini 대화를 찾지 못했습니다. [다시 쓰기]를 해 주세요.");
-        prompt = fallbackPrompt;
-      }
-    } else if (fallbackPrompt) {
-      prompt = fallbackPrompt; // 이어 쓸 대화가 없는 예전 글
-    }
-    if (!revise) {
-      await page.goto(URL_NEW, { waitUntil: "domcontentloaded" });
-      await chrome.sleep(2000);
-    }
-    if (await loggedOut(page)) throw new Error("Gemini 로그인이 풀렸습니다. 위쪽 메뉴 [AI → 내 AI·계정 연결]에서 다시 연결해 주세요.");
-
-    // 전용 공간은 Gemini 화면이 바뀌면(새 대화 주소 등) 없어진다 — 그러면 다시 만들어 이어 간다
-    const w = {
-      cur: null,
-      async run(expression) {
-        for (let tryNo = 0; ; tryNo++) {
-          try {
-            if (!this.cur) this.cur = await extWorld(page);
-            return await this.cur.run(expression);
-          } catch (e) {
-            const lost = /navigated|closed|context|not defined|Target/i.test(String(e && e.message));
-            if (!lost || tryNo >= 2) throw e;
-            if (this.cur) await this.cur.close();
-            this.cur = null;
-            await chrome.sleep(700);
-          }
-        }
-      },
-      close() {
-        return this.cur ? this.cur.close() : undefined;
-      },
-    };
+    const opened = await openChat(onProgress, { chatUrl, fallbackPrompt, prompt });
+    const { page, revise } = opened;
+    const w = worldOf(page);
     try {
       const t0 = Date.now();
       const sec = () => `${Math.round((Date.now() - t0) / 1000)}초`;
       const before = Number(await w.run("GwAi.countAnswers(GW.GEMINI)")) || 0;
       await humanPause();
       onProgress("Gemini에 요청을 넣는 중…");
-      const filled = await w.run(`GwAi.fill(GW.GEMINI, ${JSON.stringify(prompt)})`);
-      if (!filled || !filled.ok) throw new Error((filled && filled.reason) || "Gemini 입력칸에 글을 넣지 못했습니다.");
-      await humanPause(700, 1500);
-      const sent = await w.run("GwAi.submit(GW.GEMINI)");
-      if (!sent || !sent.ok) throw new Error((sent && sent.reason) || "Gemini에 보내지 못했습니다.");
+      const sent = await fillAndSend(w, opened.prompt);
       log.info(`[Gemini] 보냄 ${sec()} (이전 답 ${before}개)${sent.note ? " " + sent.note : ""}`);
 
       onProgress(revise ? "Gemini가 고치는 중… (1~2분)" : "Gemini가 글을 쓰는 중… (1~2분)");
@@ -129,7 +143,6 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = 
       let last = "";
       let since = 0;
       let firstSeen = 0;
-      let warned = 0;
       while (Date.now() < deadline) {
         await chrome.sleep(1000);
         if (page.isClosed()) throw new Error("Gemini 창이 닫혔습니다.");
@@ -159,7 +172,7 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = 
           return connected(st.text);
         }
         // 답이 멎었는데 형식이 안 맞으면 (거절·설명 글 등) 오래 기다리지 않는다
-        if (Date.now() - since > 15000 && !warned++) {
+        if (Date.now() - since > 15000) {
           log.warn(`[Gemini] 답 형식이 맞지 않음 (${st.text.length}자): ${st.text.slice(0, 160)}`);
           throw new Error(`Gemini가 요청한 형식으로 답하지 않았습니다. [다시 쓰기]를 눌러 주세요. (Gemini: ${st.text.slice(0, 60)})`);
         }
@@ -171,4 +184,143 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = 
   });
 }
 
-module.exports = { ask, chatIdOf };
+/* ── 그림 (Gemini 이미지 생성 · 나노바나나) ──
+   [업로드 및 도구] 메뉴의 그림 칸으로 사진을 붙이고(시뮬레이션), [이미지 만들기] 도구를 켠 뒤 보낸다.
+   새 답 안의 큰 그림(확장 turnState 와 같은 기준)이 나오고 멎으면 그 그림을 내려받는다. */
+async function openToolMenu(page) {
+  const btn = page.locator('button[aria-label="업로드 및 도구"], button[aria-label="Upload and tools"], button[aria-label*="업로드"]').first();
+  if (!(await btn.isVisible().catch(() => false))) return false;
+  await btn.click();
+  await chrome.sleep(900);
+  return true;
+}
+
+async function attachPhotos(page, files, onProgress) {
+  onProgress(`사진 ${files.length}장을 Gemini에 올리는 중…`);
+  if (!(await openToolMenu(page))) throw new Error("Gemini 사진 올리기 단추를 찾지 못했습니다.");
+  const input = page.locator('input[type="file"][accept*="image"]').first();
+  if (!(await input.count())) throw new Error("Gemini 사진 올리기 칸을 찾지 못했습니다.");
+  await input.setInputFiles(files);
+  await page.keyboard.press("Escape").catch(() => {});
+  // 올라가는 동안 보내기 단추가 잠긴다 — 사진 미리보기가 생기고 잠깐 더 기다린다
+  await chrome.sleep(4000);
+}
+
+async function pickImageTool(page) {
+  if (!(await openToolMenu(page))) return false;
+  const item = page.locator('mat-list-item:has-text("이미지 만들기"), [role="menuitem"]:has-text("이미지 만들기"), mat-list-item:has-text("Create image")').first();
+  if (await item.isVisible().catch(() => false)) {
+    await item.click();
+    await chrome.sleep(800);
+    return true;
+  }
+  await page.keyboard.press("Escape").catch(() => {});
+  return false;
+}
+
+/* 그림 → data URL.
+   Gemini 는 그림을 화면 안에서만 쓰는 임시 주소(blob:)로 보여 줘 주소로는 못 받는다 — 화면의 그 그림을 원본 크기로 캔버스에 떠 온다.
+   그래도 안 되면 일반 주소는 로그인 쿠키로 내려받고, 마지막으로 화면 캡처 */
+async function download(page, src) {
+  const viaCanvas = await page
+    .evaluate(async (u) => {
+      const img = [...document.querySelectorAll("img")].find((x) => (x.currentSrc || x.src) === u);
+      if (!img) return { error: "그림 요소 없음" };
+      if (!img.complete) await new Promise((ok) => { img.onload = ok; setTimeout(ok, 5000); });
+      try {
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        c.getContext("2d").drawImage(img, 0, 0);
+        return { data: c.toDataURL("image/png"), w: img.naturalWidth, h: img.naturalHeight };
+      } catch (e) {
+        return { error: e.message };
+      }
+    }, src)
+    .catch((e) => ({ error: e.message }));
+  if (viaCanvas && viaCanvas.data && viaCanvas.data.length > 1000) {
+    log.info(`[Gemini 그림] 화면 그림 떠 옴 ${viaCanvas.w}×${viaCanvas.h}`);
+    return viaCanvas.data;
+  }
+  log.warn(`[Gemini 그림] 캔버스로 못 뜸: ${viaCanvas && viaCanvas.error}`);
+  if (/^https?:/.test(src)) {
+    const res = await page.context().request.get(src, { headers: { Referer: "https://gemini.google.com/" } }).catch(() => null);
+    if (res && res.ok()) {
+      const type = (res.headers()["content-type"] || "image/png").split(";")[0];
+      return `data:${type};base64,${(await res.body()).toString("base64")}`;
+    }
+  }
+  const el = page.locator(`img[src="${src.replace(/"/g, '\\"')}"]`).last();
+  const shot = await el.screenshot({ type: "png" }).catch(() => null);
+  if (!shot) throw new Error("Gemini 그림을 받아 오지 못했습니다.");
+  log.warn("[Gemini 그림] 화면 캡처로 받음 (해상도가 낮을 수 있음)");
+  return `data:image/png;base64,${shot.toString("base64")}`;
+}
+
+/** 그림을 그려 data URL 로 돌려준다 (chatgpt.askImage 와 같은 모양). files: 붙일 사진 (시뮬레이션) */
+function askImage(prompt, { onProgress = () => {}, chatUrl = "", files = [], onChat = () => {} } = {}) {
+  return exclusive(async () => {
+    const { page } = await openChat(onProgress, { chatUrl, prompt });
+    const w = worldOf(page);
+    try {
+      const t0 = Date.now();
+      const sec = () => `${Math.round((Date.now() - t0) / 1000)}초`;
+      const before = Number((await w.run("GwAi.turnState(GW.GEMINI, 0)") || {}).turns) || 0;
+      if (files.length) await attachPhotos(page, files, onProgress);
+      const tool = await pickImageTool(page);
+      onProgress("Gemini에 그림을 요청하는 중…");
+      await fillAndSend(w, prompt);
+      log.info(`[Gemini 그림] 보냄 ${sec()} (사진 ${files.length}장, 이미지 도구 ${tool ? "켬" : "못 찾음"})`);
+      onProgress("Gemini가 그림을 그리는 중… (1~3분)");
+
+      const deadline = Date.now() + 5 * 60 * 1000;
+      let lastSrc = "";
+      let since = 0;
+      let lastText = "";
+      let textSince = 0;
+      while (Date.now() < deadline) {
+        await chrome.sleep(1500);
+        if (page.isClosed()) throw new Error("Gemini 창이 닫혔습니다.");
+        let st;
+        try {
+          st = await w.run(`GwAi.turnState(GW.GEMINI, ${before})`);
+        } catch (e) {
+          log.warn(`[Gemini 그림] 화면 확인 실패 ${sec()}: ${e.message}`);
+          continue;
+        }
+        if (!st) continue;
+        const src = st.images.length ? st.images[st.images.length - 1] : "";
+        if (src) {
+          if (src !== lastSrc || st.busy) {
+            lastSrc = src;
+            since = Date.now();
+            continue;
+          }
+          if (Date.now() - since < 3000) continue; // 그림 주소가 고화질로 바뀌는 중일 수 있다
+          onProgress("그림을 받아 오는 중…");
+          const dataUrl = await download(page, src);
+          log.info(`[Gemini 그림] 받음 ${sec()} (${Math.round(dataUrl.length / 1024)}KB)`);
+          try {
+            onChat(page.url());
+          } catch {}
+          return connected(dataUrl);
+        }
+        // 그림 없이 글만 오고 멎었으면 (거절·한도 등) 그 이유를 보여 준다
+        if (!st.busy && st.turns > before && st.text) {
+          if (st.text !== lastText) {
+            lastText = st.text;
+            textSince = Date.now();
+          } else if (Date.now() - textSince > 20000) {
+            const why = /^\s*(```|\{)/.test(st.text) ? "" : ` (Gemini: ${st.text.slice(0, 100)})`;
+            throw new Error(`Gemini가 그림을 그리지 않고 끝났습니다. 다시 눌러 주세요.${why}`);
+          }
+        }
+      }
+      throw new Error(`Gemini 그림을 5분 안에 받지 못했습니다.${lastText ? ` (${lastText.slice(0, 80)})` : ""}`);
+    } finally {
+      await w.close();
+    }
+  });
+}
+
+module.exports = { ask, askImage, chatIdOf };

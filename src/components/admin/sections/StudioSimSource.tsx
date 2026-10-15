@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
 import StudioChannelTabs from "./StudioChannelTabs";
+import { useStudioImager } from "./useStudioWriter";
 
 /**
  * 뉴스·SNS발행 > 인테리어뉴스 · 리모델링뉴스 (크롬 확장 interior10 · remodeling10 을 앱으로 옮긴 것, 유료회원 전용)
@@ -111,6 +112,7 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUsed }: {
   theme: Theme; kind: "interior" | "remodel"; allowed: boolean | null; tab: string; onTab: (id: string) => void; onUsed: () => void;
 }) {
+  const imgAi = useStudioImager(); // 고른 이미지 생성 AI (ChatGPT · Gemini)
   const LAST_KEY = `studio_last_sim_${kind}`;
   const [opts, setOpts] = useState<Options | null>(null);
   const [sim, setSim] = useState<Sim | null>(null);
@@ -413,11 +415,11 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
 
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18, flexWrap: "wrap" }}>
                 <div style={{ flex: 1, minWidth: 260, fontSize: 13, color: theme.textSecondary, lineHeight: 1.6 }}>
-                  ChatGPT가 ① 설계 지시서를 쓰고 ② 고른 사진을 고쳐 예측 이미지를 그립니다. 2~4분 걸리고, AI 이미지 하루 한도에서 1장으로 셉니다.
+                  {imgAi}가 ① 설계 지시서를 쓰고 ② 고른 사진을 고쳐 예측 이미지를 그립니다. 1~4분 걸립니다.
                 </div>
                 <button onClick={start} disabled={!picked || Boolean(busy)}
                   style={{ padding: "11px 20px", background: !picked || busy ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: !picked || busy ? "default" : "pointer" }}>
-                  {busy === "시뮬레이션 중…" ? "시뮬레이션 중…" : r ? "다시 시뮬레이션" : "ChatGPT로 시뮬레이션"}
+                  {busy === "시뮬레이션 중…" ? "시뮬레이션 중…" : r ? "다시 시뮬레이션" : `${imgAi}로 시뮬레이션`}
                 </button>
               </div>
             </>

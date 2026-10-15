@@ -248,12 +248,12 @@ async function run({ id, baseUrl }, onProgress = () => {}) {
   onProgress("이용 권한을 확인하는 중…");
   await useQuota(baseUrl, "simulation", id); // 유료회원 확인 + AI 이미지 하루 한도
 
-  // ① 설계 지시서
+  // ① 설계 지시서 — 고른 이미지 생성 AI(ChatGPT · Gemini)에서 쓰고, 같은 대화에 사진을 붙여 이어 그린다
+  const imager = chatgpt.currentImager();
   onProgress("① 설계 지시서를 요청하는 중…");
   let chatUrl = "";
-  // 예측 이미지는 지금 ChatGPT 만 그리므로 설계 지시서도 ChatGPT 에서 (같은 대화에 이어 그린다)
   const specText = await chatgpt.ask(L.rmBuildSpecPrompt(d.design), {
-    provider: "chatgpt",
+    provider: imager,
     onProgress,
     isComplete: (t) => L.rmParseSpec(t).ok,
     onChat: (u) => (chatUrl = u),
@@ -267,7 +267,7 @@ async function run({ id, baseUrl }, onProgress = () => {}) {
   // ② 예측 이미지 — 같은 대화에 지금 모습 사진을 붙여서 (버전 1장)
   onProgress("② 지금 모습 사진을 붙여 예측 이미지를 요청하는 중…");
   const dataUrl = await chatgpt.askImage(L.rmBuildImagePrompt(d.spec, 0, d.design.aspectRatio), {
-    provider: "chatgpt", // 설계 지시서를 쓴 ChatGPT 대화에 지금 사진을 붙여 이어 그린다
+    provider: imager, // 설계 지시서를 쓴 대화에 지금 사진을 붙여 이어 그린다
     onProgress: (t) => onProgress(t.replace("그림을 그리는 중", "예측 이미지를 그리는 중")),
     chatUrl,
     files: picked.map((p) => p.file),
