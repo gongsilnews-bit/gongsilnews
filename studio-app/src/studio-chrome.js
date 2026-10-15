@@ -6,7 +6,7 @@
 // - 조종을 켜면 크롬이 스스로 "자동 조종 중"(navigator.webdriver) 표시를 단다. 그 상태에선 구글 로그인이
 //   막힐 수 있어, 로그인은 조종을 끈 평범한 크롬(openPlain)으로 하고 조종은 그 뒤에 켠다.
 //   표시를 감추는 옵션(AutomationControlled 끄기 등)은 탐지를 속이는 것이라 쓰지 않는다.
-const { app } = require("electron");
+const { app, screen } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { spawn, execFile } = require("child_process");
@@ -86,6 +86,17 @@ async function isRunning() {
   return Boolean(b);
 }
 
+/*
+ * 보이는 창은 늘 화면 오른쪽 절반에 연다 (앱 창과 나란히).
+ * 크롬은 마지막 창 위치를 기억하는데, 로그인 확인 때 화면 밖(-32000)에 띄운 위치를
+ * 기억했다가 다음 창을 화면 밖에 여는 문제가 있어 위치를 매번 정해 준다.
+ */
+function visiblePlacement() {
+  const w = screen.getPrimaryDisplay().workArea;
+  const width = Math.max(900, Math.round(w.width / 2));
+  return [`--window-position=${w.x + w.width - width},${w.y}`, `--window-size=${width},${w.height}`];
+}
+
 function spawnChrome(args) {
   const found = findBrowser();
   if (!found) throw new Error("이 PC에서 크롬이나 엣지를 찾지 못했습니다. 크롬을 설치한 뒤 다시 시도해 주세요.");
@@ -117,7 +128,7 @@ async function closeControlled() {
  */
 async function openPlain(url, timeoutMs = 15 * 60 * 1000) {
   await closeControlled();
-  const proc = spawnChrome([url]);
+  const proc = spawnChrome([...visiblePlacement(), url]);
   plainProc = proc;
   await new Promise((resolve) => {
     const timer = setTimeout(resolve, timeoutMs);
@@ -151,6 +162,7 @@ async function ensureBrowser({ hidden = false } = {}) {
   } catch {}
   const args = ["--remote-debugging-port=0"];
   if (hidden) args.push("--window-position=-32000,-32000", "--window-size=1100,800");
+  else args.push(...visiblePlacement());
   spawnChrome([...args, "about:blank"]).unref();
 
   for (let i = 0; i < 100; i++) {
@@ -177,6 +189,21 @@ function hostOf(page) {
   }
 }
 
+/** 이미 떠 있는 창이 화면 밖에 있어도 화면 오른쪽 절반으로 끌어온다 */
+async function placeOnScreen(page) {
+  try {
+    const w = screen.getPrimaryDisplay().workArea;
+    const width = Math.max(900, Math.round(w.width / 2));
+    const cdp = await page.context().newCDPSession(page);
+    const { windowId } = await cdp.send("Browser.getWindowForTarget");
+    await cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "normal" } });
+    await cdp.send("Browser.setWindowBounds", { windowId, bounds: { left: w.x + w.width - width, top: w.y, width, height: w.height } });
+    await cdp.detach();
+  } catch (e) {
+    log.warn("[전용 크롬] 창 위치 맞추기 실패", e.message);
+  }
+}
+
 /** 해당 사이트 탭을 찾고, 없으면 연다. 찾은 탭을 앞으로 가져온다 */
 async function openPage(host, url) {
   await ensureBrowser();
@@ -186,6 +213,7 @@ async function openPage(host, url) {
     page = ctx.pages().find((p) => p.url() === "about:blank") || (await ctx.newPage());
     await page.goto(url, { waitUntil: "domcontentloaded" });
   }
+  await placeOnScreen(page);
   await page.bringToFront();
   return page;
 }
