@@ -28,7 +28,7 @@ type Usage = { plan: string; monthLimit: number; monthUsed: number; monthRemaini
 type AiItem = { id: string; name: string; ready: boolean; ok: boolean; account?: string; plan?: string };
 type StudioBridge = {
   openAiConnect: () => Promise<void>;
-  ai: { list: () => Promise<AiItem[]> };
+  ai: { list: () => Promise<AiItem[]>; connect: (id: string) => Promise<{ ok: boolean }>; finishLogin: () => Promise<void> };
   vacancy: { analyze: (id: string) => Promise<Analysis>; onProgress: (fn: (t: string) => void) => () => void };
   naver: {
     designs: () => Promise<{ id: string; label: string; hint: string }[]>;
@@ -98,6 +98,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [filling, setFilling] = useState(false);
   const [naverProgress, setNaverProgress] = useState("");
   const [naverError, setNaverError] = useState("");
+  const [naverLogin, setNaverLogin] = useState<"" | "need" | "open">("");
   const [naverDone, setNaverDone] = useState<{ imagesInserted: number; imagesTotal: number; tags: string[] } | null>(null);
 
   useEffect(() => {
@@ -200,11 +201,36 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       const r = await b.naver.fill({ vacancyId: result.vacancyId, design: design || "basic" });
       setNaverDone(r);
     } catch (e) {
-      setNaverError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
+      const msg = (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
+      if (msg.startsWith("NAVER_LOGIN:")) setNaverLogin("need");
+      setNaverError(msg.replace(/^NAVER_LOGIN:\s*/, ""));
     } finally {
       off();
       setNaverProgress("");
       setFilling(false);
+    }
+  };
+
+  /* 네이버 로그인: 전용 크롬(조종 없는 평범한 창)에서 회원이 직접 로그인 → [로그인 다 했어요] */
+  const loginNaver = async () => {
+    const b = bridge();
+    if (!b) return;
+    setNaverLogin("open");
+    setNaverError("");
+    try {
+      const r = await b.ai.connect("naver");
+      if (r && r.ok) {
+        setNaverLogin("");
+        setNaverProgress("");
+        setNaverError("");
+        setNaverDone(null);
+      } else {
+        setNaverLogin("need");
+        setNaverError("네이버 로그인이 확인되지 않았습니다. 다시 [네이버 로그인]을 눌러 주세요.");
+      }
+    } catch (e) {
+      setNaverLogin("need");
+      setNaverError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
     }
   };
 
@@ -423,6 +449,23 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           )}
           {naverProgress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{naverProgress}</div>}
           {naverError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{naverError}</div>}
+          {naverLogin === "need" && (
+            <button onClick={loginNaver}
+              style={{ marginTop: 10, padding: "10px 16px", background: "#03c75a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+              네이버 로그인
+            </button>
+          )}
+          {naverLogin === "open" && (
+            <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 10, background: "#ecfdf5", border: "1px solid #a7f3d0", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 14, color: "#065f46", flex: 1, minWidth: 240, lineHeight: 1.6 }}>
+                오른쪽에 새로 뜬 &quot;공실뉴스 스튜디오&quot; 크롬 창에서 네이버에 로그인한 뒤 눌러 주세요. (평소 쓰시는 크롬 창이 아닙니다)
+              </span>
+              <button onClick={() => bridge()?.ai.finishLogin()}
+                style={{ padding: "10px 16px", background: "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+                로그인 다 했어요
+              </button>
+            </div>
+          )}
           {naverDone && (
             <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 10, background: "#ecfdf5", border: "1px solid #a7f3d0", fontSize: 14, color: "#065f46", lineHeight: 1.7 }}>
               네이버 글쓰기에 채웠습니다. 사진 {naverDone.imagesInserted}/{naverDone.imagesTotal}장.

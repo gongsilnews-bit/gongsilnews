@@ -33,6 +33,7 @@ const PROVIDERS = {
     url: "https://nid.naver.com/nidlogin.login?mode=form&url=https%3A%2F%2Fblog.naver.com%2F",
     checkUrl: "https://blog.naver.com/",
     anyHost: true,
+    hidden: true, // [내 AI 연결] 창에는 보이지 않는다. 네이버 채우기 단계에서 필요할 때 로그인한다
     ready: true,
     check: async (page) => {
       const cookies = await page.context().cookies("https://www.naver.com");
@@ -61,7 +62,9 @@ function saveStatus(id, value) {
 
 function list() {
   const saved = loadStatus();
-  return Object.entries(PROVIDERS).map(([id, p]) => ({ id, name: p.name, ready: p.ready, ...(saved[id] || { ok: false }) }));
+  return Object.entries(PROVIDERS)
+    .filter(([, p]) => !p.hidden)
+    .map(([id, p]) => ({ id, name: p.name, ready: p.ready, ...(saved[id] || { ok: false }) }));
 }
 
 /** 화면 밖 전용 크롬으로 로그인 상태를 확인하고 기록한다 */

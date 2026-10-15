@@ -226,7 +226,7 @@ function buildMenu() {
     },
     {
       label: "AI",
-      submenu: [{ label: "내 AI·계정 연결 (ChatGPT·네이버 블로그 등)", click: () => openAiWindow() }],
+      submenu: [{ label: "내 AI 연결 (ChatGPT·Claude·Gemini)", click: () => openAiWindow() }],
     },
     {
       label: "계정",

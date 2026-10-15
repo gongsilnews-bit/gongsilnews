@@ -107,7 +107,7 @@ async function fillNaver({ baseUrl, vacancyId, design }, onProgress = () => {}) 
   await page.goto(naverBlog.WRITE_URL, { waitUntil: "domcontentloaded" }); // 늘 새 글쓰기
   await chrome.sleep(1500);
   if (/nid\.naver\.com/.test(page.url())) {
-    throw new Error("네이버에 로그인되어 있지 않습니다. 위쪽 메뉴 [AI → 내 AI·계정 연결]에서 네이버 블로그를 먼저 연결해 주세요.");
+    throw new Error("NAVER_LOGIN: 네이버에 로그인되어 있지 않습니다. 아래 [네이버 로그인]을 눌러 로그인한 뒤 다시 채워 주세요.");
   }
 
   onProgress("네이버 편집기가 뜨기를 기다리는 중…");
