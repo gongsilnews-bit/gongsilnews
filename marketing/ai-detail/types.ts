@@ -54,7 +54,7 @@ export interface PropertyInfo {
   hiddenFields?: string[];  // 홍보지에서 뺀 항목 (입력란의 [표시] 체크를 끈 것)
   sizeLine?: string;        // 물건명 아래 크기 줄 e.g. "46평 · 25층" (물건 종류별로 처음 채움)
   /** 새 디자인 글자 조정 — 드래그로 옮긴 위치(px)와 글씨 배율. 키는 '디자인-방향-항목' */
-  adjust?: Record<string, { x: number; y: number; s: number; c?: string; f?: string }>;
+  adjust?: Record<string, { x: number; y: number; s: number; c?: string; f?: string; h?: boolean }>;
   /** 새 디자인에서 손으로 고친 글자 (머리 띠·금액 이름·칩·사무소 줄 등). '' 이면 그 글자를 뺀다 */
   texts?: Record<string, string>;
   /** 오른쪽 클릭으로 새로 넣은 글자·이미지. lay = '디자인-방향' (그 홍보지에만 보인다), x·y = 넣은 자리(px) */
@@ -137,4 +137,9 @@ export interface FlyerItem {
   x: number;
   y: number;
   src?: string;
+  /** 글자 — 복사해 넣은 글자, 기본 글씨 크기(px) */
+  text?: string;
+  size?: number;
+  /** 이미지 기본 폭(px) */
+  w?: number;
 }

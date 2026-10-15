@@ -247,7 +247,7 @@ function App() {
   const [authError, setAuthError] = useState<string | null>(null);
 
   /* 새 디자인 글자 옮기기·크기 — info.adjust 에 저장 (null 이면 처음대로) */
-  const handleAdjust = (key: string, value: { x: number; y: number; s: number; c?: string; f?: string } | null) => {
+  const handleAdjust = (key: string, value: { x: number; y: number; s: number; c?: string; f?: string; h?: boolean } | null) => {
       setState(prev => {
           const next = { ...(prev.info.adjust || {}) };
           if (value) next[key] = value; else delete next[key];

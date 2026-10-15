@@ -1,5 +1,5 @@
 
-import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FlyerItem, FlyerState, PropertyInfo } from '../types';
 import { PhoneIcon } from '@heroicons/react/24/solid';
 
@@ -27,7 +27,7 @@ interface FlyerCanvasProps {
   onTextChange?: (key: keyof PropertyInfo, value: string) => void;
   onImageClick?: (imageKey: string) => void;
   /** 새 디자인 글자 위치·크기 조정 (null = 처음대로) */
-  onAdjust?: (key: string, value: { x: number; y: number; s: number; c?: string; f?: string } | null) => void;
+  onAdjust?: (key: string, value: { x: number; y: number; s: number; c?: string; f?: string; h?: boolean } | null) => void;
   /** 계산해서 만든 글자를 손으로 고친 값 (null = 처음대로, '' = 빼기) */
   onTextOverride?: (name: string, value: string | null) => void;
   /** 새로 넣은 글자·이미지 목록 바꾸기 */
@@ -658,10 +658,11 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
   ];
   const mov = (name: string, node: React.ReactNode, wrap: React.CSSProperties = {}, opt: { texts?: string[]; extra?: React.ReactNode; onDouble?: () => void; noStyle?: boolean } = {}) => {
     const a = adj(name);
+    if (a.h) return null; // 삭제(숨김)한 요소
     const on = canAdjust && sel === name;
     const typing = editing === name;
     return (
-      <div data-mov="" onBlurCapture={() => typing && setEditing(null)}
+      <div data-mov="" data-name={name} onBlurCapture={() => typing && setEditing(null)}
         style={{ position: 'relative', flexShrink: 0, width: 'fit-content', maxWidth: '100%', marginLeft: 'auto', marginRight: 'auto', transform: a.x || a.y ? `translate(${a.x}px, ${a.y}px)` : undefined, zIndex: on ? 40 : undefined, ...wrap }}>
         {!opt.noStyle && (a.c || a.f) && React.isValidElement(node)
           ? React.cloneElement(node as React.ReactElement<{ style?: React.CSSProperties }>, { style: { ...((node as React.ReactElement<{ style?: React.CSSProperties }>).props.style || {}), ...look(name) } })
@@ -703,17 +704,55 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
       </div>
     );
   };
-  /* ── 오른쪽 클릭 메뉴: 새 글자 넣기 · 새 이미지 넣기 · (새로 넣은 것) 지우기 ── */
-  const [menu, setMenu] = useState<{ x: number; y: number; item?: string } | null>(null);
+  /* ── 오른쪽 클릭 메뉴 (인디자인처럼) ──
+   * 요소 위: [복사] [삭제]  ·  빈 곳: [새 글자 넣기] [새 이미지 넣기] [붙여넣기] [숨긴 것 다시 보이기]
+   * 키보드: Delete = 삭제, Ctrl+C / Ctrl+V = 복사·붙여넣기 (글자를 고치는 중이 아닐 때)
+   * 기본 요소(금액·전화 등)는 삭제하면 숨겨지고, 복사하면 같은 글자·크기·색·폰트의 "새 글자"가 생긴다. */
+  type Clip = { kind: 'text' | 'image'; x: number; y: number; text?: string; src?: string; size?: number; w?: number; c?: string; f?: string };
+  const [menu, setMenu] = useState<{ x: number; y: number; name?: string; chip?: number; clip?: Clip } | null>(null);
+  const clipRef = useRef<Clip | null>(null);
   const lay = `${layout}-${orientation}`;
   const items = (info.items || []).filter((it) => it.lay === lay);
-  const addItem = (it: Omit<FlyerItem, 'id' | 'lay'>) => {
+  const hiddenKeys = Object.entries(info.adjust || {}).filter(([k, v]) => k.startsWith(`${lay}-`) && v.h).map(([k]) => k);
+  const pageEl = () => (ref as React.RefObject<HTMLDivElement>)?.current || null;
+  const addItem = (it: Omit<FlyerItem, 'id' | 'lay'>, look?: { c?: string; f?: string }) => {
     const id = Math.random().toString(36).slice(2, 9);
     onItemsChange?.([...(info.items || []), { ...it, id, lay }]);
+    if (look && (look.c || look.f)) onAdjust?.(`${layout}-${orientation}-item-${id}`, { x: 0, y: 0, s: 1, ...(look.c ? { c: look.c } : {}), ...(look.f ? { f: look.f } : {}) });
     setSel(`item-${id}`);
   };
   const removeItem = (id: string) => {
     onItemsChange?.((info.items || []).filter((it) => it.id !== id));
+    setSel(null);
+  };
+  /* 요소 하나를 복사할 내용으로 — 화면에 보이는 글자·크기·색 그대로 */
+  const clipOf = (name: string, chip?: number): Clip | null => {
+    const page = pageEl();
+    const wrap = page?.querySelector<HTMLElement>(`[data-name="${name}"]`);
+    if (!page || !wrap) return null;
+    const pr = page.getBoundingClientRect();
+    const ratio = pr.width / page.offsetWidth;
+    const target = (chip !== undefined ? wrap.querySelector<HTMLElement>(`[data-chip="${chip}"]`) : null) || wrap;
+    const r = target.getBoundingClientRect();
+    const x = Math.round((r.left - pr.left) / ratio) + 40, y = Math.round((r.top - pr.top) / ratio) + 40;
+    const img = target.querySelector('img');
+    if (img && !target.querySelector('[contenteditable="true"]')) return { kind: 'image', x, y, src: img.src, w: Math.round(img.getBoundingClientRect().width / ratio) };
+    const textEl = (target.matches('[contenteditable="true"]') ? target : target.querySelector<HTMLElement>('[contenteditable="true"]')) || target;
+    const cs = getComputedStyle(textEl);
+    const node = (wrap.firstElementChild as HTMLElement | null) || wrap; // 요소 자신 (아래 도구 줄 글자는 빼고)
+    const text = (chip !== undefined ? target.innerText : node.innerText).replace(/\s+/g, ' ').trim();
+    if (!text) return null;
+    return { kind: 'text', x, y, text, size: Math.round(parseFloat(cs.fontSize)), c: cs.color, f: adj(name).f };
+  };
+  const paste = (clip: Clip, at?: { x: number; y: number }) => {
+    const { kind, text, src, size, w, c, f } = clip;
+    addItem({ kind, x: at ? at.x : clip.x, y: at ? at.y : clip.y, text, src, size, w }, kind === 'text' ? { c, f } : undefined);
+    if (!at) clip.x += 40, clip.y += 40; // 여러 번 붙이면 조금씩 비켜서
+  };
+  const remove = (name: string, chip?: number) => {
+    if (name.startsWith('item-')) return removeItem(name.slice(5));
+    if (chip !== undefined) { onTextOverride?.(`chip${chip}`, ''); return setSel(null); }
+    onAdjust?.(akey(name), { ...adj(name), h: true });
     setSel(null);
   };
   const onMenu = (e: React.MouseEvent) => {
@@ -722,16 +761,46 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     const page = e.currentTarget as HTMLElement;
     const r = page.getBoundingClientRect();
     const ratio = r.width / page.offsetWidth;
-    const hit = (e.target as HTMLElement).closest('[data-item]') as HTMLElement | null;
-    setMenu({ x: Math.round((e.clientX - r.left) / ratio), y: Math.round((e.clientY - r.top) / ratio), item: hit?.dataset.item });
+    const wrap = (e.target as HTMLElement).closest('[data-name]') as HTMLElement | null;
+    // 칩은 덮개 아래에 있어 누른 자리로 찾는다
+    const chipEl = document.elementsFromPoint(e.clientX, e.clientY).find((el) => el.hasAttribute('data-chip')) as HTMLElement | undefined;
+    const name = wrap?.dataset.name;
+    if (name) setSel(name);
+    setMenu({ x: Math.round((e.clientX - r.left) / ratio), y: Math.round((e.clientY - r.top) / ratio), name, chip: chipEl ? Number(chipEl.dataset.chip) : undefined });
   };
+  /* 키보드 — 고른 요소 삭제·복사·붙여넣기 */
+  useEffect(() => {
+    if (!canAdjust) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (editing || (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))) return;
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (sel && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); remove(sel); }
+      else if (sel && ctrl && e.key.toLowerCase() === 'c') { const c = clipOf(sel); if (c) clipRef.current = c; }
+      else if (ctrl && e.key.toLowerCase() === 'v' && clipRef.current) { e.preventDefault(); paste(clipRef.current); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
   const menuBtn: React.CSSProperties = { display: 'block', width: '100%', textAlign: 'left', padding: '10px 16px', border: 0, background: 'transparent', fontSize: 16, fontWeight: 700, color: '#111', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' };
   const menuEl = menu && (
-    <div data-noexport="" onPointerDown={(e) => e.stopPropagation()}
-      style={{ position: 'absolute', left: Math.min(menu.x, pageW - 240), top: Math.min(menu.y, pageH - 160), zIndex: 60, background: '#fff', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,.25)', border: '1px solid #e5e7eb', padding: 6, minWidth: 220 }}>
-      <button type="button" style={menuBtn} onClick={() => { addItem({ kind: 'text', x: menu.x, y: menu.y }); setMenu(null); }}>✎ 새 글자 넣기</button>
-      <button type="button" style={menuBtn} onClick={() => { const { x, y } = menu; setMenu(null); onPickImage?.((url) => addItem({ kind: 'image', x, y, src: url })); }}>🖼 새 이미지 넣기</button>
-      {menu.item && <button type="button" style={{ ...menuBtn, color: '#dc2626' }} onClick={() => { removeItem(menu.item!); setMenu(null); }}>🗑 이것 지우기</button>}
+    <div data-noexport="" onPointerDown={(e) => e.stopPropagation()} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      style={{ position: 'absolute', left: Math.min(menu.x, pageW - 260), top: Math.min(menu.y, pageH - 220), zIndex: 60, background: '#fff', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,.25)', border: '1px solid #e5e7eb', padding: 6, minWidth: 240 }}>
+      {menu.name ? (
+        <>
+          <button type="button" style={menuBtn} onClick={() => { const c = clipOf(menu.name!, menu.chip); setMenu(null); if (c) { clipRef.current = { ...c }; paste(c); } }}>⧉ 복사 <span style={{ color: '#9ca3af', fontWeight: 500, fontSize: 13 }}>Ctrl+C·V</span></button>
+          <button type="button" style={{ ...menuBtn, color: '#dc2626' }} onClick={() => { remove(menu.name!, menu.chip); setMenu(null); }}>🗑 삭제 <span style={{ color: '#9ca3af', fontWeight: 500, fontSize: 13 }}>Delete</span></button>
+        </>
+      ) : (
+        <>
+          <button type="button" style={menuBtn} onClick={() => { addItem({ kind: 'text', x: menu.x, y: menu.y }); setMenu(null); }}>✎ 새 글자 넣기</button>
+          <button type="button" style={menuBtn} onClick={() => { const { x, y } = menu; setMenu(null); onPickImage?.((url) => addItem({ kind: 'image', x, y, src: url })); }}>🖼 새 이미지 넣기</button>
+          {clipRef.current && <button type="button" style={menuBtn} onClick={() => { paste(clipRef.current!, { x: menu.x, y: menu.y }); setMenu(null); }}>📋 여기에 붙여넣기</button>}
+          {hiddenKeys.length > 0 && (
+            <button type="button" style={menuBtn} onClick={() => { hiddenKeys.forEach((k) => { const v = { ...info.adjust![k] }; delete v.h; onAdjust?.(k, v); }); setMenu(null); }}>👁 숨긴 것 다시 보이기 ({hiddenKeys.length})</button>
+          )}
+        </>
+      )}
     </div>
   );
   const itemLayer = (
@@ -742,8 +811,8 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
         return (
           <div key={it.id} data-item={it.id} style={{ position: 'absolute', left: it.x, top: it.y, zIndex: sel === name ? 40 : 20 }}>
             {it.kind === 'text'
-              ? mov(name, <div {...edt(name, '새 글자')} className={editClass} style={{ fontSize: sz(name, 56), fontWeight: 900, color: '#111', whiteSpace: 'nowrap', lineHeight: 1.2 }}>{tx(name, '새 글자')}</div>, { margin: 0 }, { extra: del })
-              : mov(name, <img src={it.src} alt="" style={{ width: sz(name, 260), display: 'block' }} />, { margin: 0 }, {
+              ? mov(name, <div {...edt(name, it.text || '새 글자')} className={editClass} style={{ fontSize: sz(name, it.size || 56), fontWeight: 900, color: '#111', whiteSpace: 'nowrap', lineHeight: 1.2 }}>{tx(name, it.text || '새 글자')}</div>, { margin: 0 }, { extra: del })
+              : mov(name, <img src={it.src} alt="" style={{ width: sz(name, it.w || 260), display: 'block' }} />, { margin: 0 }, {
                   noStyle: true,
                   onDouble: () => onPickImage?.((url) => onItemsChange?.((info.items || []).map((x) => (x.id === it.id ? { ...x, src: url } : x)))),
                   extra: <>{del}<button type="button" title="이미지 바꾸기" onClick={() => onPickImage?.((url) => onItemsChange?.((info.items || []).map((x) => (x.id === it.id ? { ...x, src: url } : x))))} style={toolBtn}>🖼 바꾸기</button></>,
@@ -800,7 +869,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     return mov('chips', (
       <div className="flex flex-wrap justify-center" style={{ gap: 12, overflow: 'hidden', maxHeight: rows * (Math.round(size * 1.2) + Math.round(size * 0.22) * 2 + 8) + (rows - 1) * 12 }}>
         {chips.map((ch, i) => tx(`chip${i}`, ch) !== '' && (
-          <span key={i} {...edt(`chip${i}`, ch)} className={editClass} style={{ fontSize: size, fontWeight: 800, color: primaryColor, border: `3px solid ${adj('chips').c || primaryColor}`, ...look('chips'), borderRadius: 999, padding: `${Math.round(size * 0.22)}px ${Math.round(size * 0.7)}px`, whiteSpace: 'nowrap', lineHeight: 1.2 }}>{tx(`chip${i}`, ch)}</span>
+          <span key={i} data-chip={i} {...edt(`chip${i}`, ch)} className={editClass} style={{ fontSize: size, fontWeight: 800, color: primaryColor, border: `3px solid ${adj('chips').c || primaryColor}`, ...look('chips'), borderRadius: 999, padding: `${Math.round(size * 0.22)}px ${Math.round(size * 0.7)}px`, whiteSpace: 'nowrap', lineHeight: 1.2 }}>{tx(`chip${i}`, ch)}</span>
         ))}
       </div>
     ), {}, { texts: chips.map((_, i) => `chip${i}`) });
