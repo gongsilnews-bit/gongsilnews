@@ -30,6 +30,7 @@ const InquiryBoardSection = lazy(() => import("@/components/admin/sections/Inqui
 const StudySection = lazy(() => import("@/components/admin/sections/StudySection"));
 const ManualFrame = lazy(() => import("@/components/admin/sections/ManualFrame"));
 const StudioComingSoon = lazy(() => import("@/components/admin/sections/StudioComingSoon"));
+const StudioMarketingSection = lazy(() => import("@/components/admin/sections/StudioMarketingSection"));
 const StudioSnsSection = lazy(() => import("@/components/admin/sections/StudioSnsSection"));
 
 /* ── 부동산관리자 메뉴 ── */
@@ -428,7 +429,8 @@ function RealtyAdminContent() {
           {activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
           {activeMenu === "sns" && studioApp.isApp && memberId && <StudioSnsSection theme={theme} memberId={memberId} />}
-          {((activeMenu === "sns" && !studioApp.isApp) || activeMenu === "video" || activeMenu === "marketing") && (
+          {activeMenu === "marketing" && <StudioMarketingSection theme={theme} />}
+          {((activeMenu === "sns" && !studioApp.isApp) || activeMenu === "video") && (
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />
           )}
         </Suspense>

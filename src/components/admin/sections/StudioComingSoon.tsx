@@ -9,7 +9,7 @@ import React from "react";
  */
 type Props = {
   theme: { cardBg: string; textPrimary: string; textSecondary: string; border: string };
-  kind: "sns" | "video" | "marketing";
+  kind: "sns" | "video";
   isApp: boolean;
   onGoGongsil: () => void;
 };
@@ -20,12 +20,6 @@ const COPY = {
     title: "뉴스·SNS발행",
     lead: "공실을 고르면 공실뉴스 기사·네이버 블로그·인스타그램·페이스북·스레드 글을 AI가 써서 채워 드립니다.",
     points: ["공실 하나 고르고 버튼 한 번", "블로그·SNS 글과 사진을 자동으로 채움", "마지막 [발행]만 소장님이 누름 (계정 안전)"],
-  },
-  marketing: {
-    icon: "📢",
-    title: "공실마케팅",
-    lead: "공실 하나로 공실을 알리는 마케팅 자료를 만듭니다. 지금은 공실등록 목록의 버튼에서 만들 수 있어요.",
-    points: ["AI 물건보고서", "유리창홍보지 (AI 온라인 전단지)", "인테리어 이미지"],
   },
   video: {
     icon: "🎬",
