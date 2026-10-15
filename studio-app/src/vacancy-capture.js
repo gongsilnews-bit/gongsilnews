@@ -95,8 +95,11 @@ async function waitFor(win, expr, timeoutMs) {
  */
 async function analyzeVacancy(baseUrl, vacancyId, onProgress = () => {}) {
   const dir = path.join(app.getPath("userData"), "media", String(vacancyId).replace(/[^\w-]/g, ""));
-  fs.rmSync(dir, { recursive: true, force: true });
+  // 분석이 만드는 파일(등록 사진·캡처)만 새로 만든다. 써 둔 블로그(blog.json)와 추가한 사진(added/)은 둔다
   fs.mkdirSync(dir, { recursive: true });
+  for (const f of fs.readdirSync(dir)) {
+    if (/^(photo-\d+|proof|map|roadview)\.(jpe?g|png|webp|gif)$/i.test(f)) fs.rmSync(path.join(dir, f), { force: true });
+  }
 
   const win = new BrowserWindow({
     show: false,

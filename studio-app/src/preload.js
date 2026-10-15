@@ -21,6 +21,7 @@ if (allowed) {
     naver: {
       designs: () => ipcRenderer.invoke("studio:naver-designs"),
       fill: (opts) => ipcRenderer.invoke("studio:naver-fill", opts),
+      openMyBlog: () => ipcRenderer.invoke("studio:naver-open-blog"),
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
         ipcRenderer.on("studio:naver-progress", h);
@@ -30,6 +31,11 @@ if (allowed) {
     blog: {
       styles: () => ipcRenderer.invoke("studio:blog-styles"),
       write: (opts) => ipcRenderer.invoke("studio:blog-write", opts),
+      get: (vacancyId) => ipcRenderer.invoke("studio:blog-get", vacancyId),
+      save: (patch) => ipcRenderer.invoke("studio:blog-save", patch),
+      addPhoto: (opts) => ipcRenderer.invoke("studio:blog-add-photo", opts),
+      imageStyles: () => ipcRenderer.invoke("studio:blog-image-styles"),
+      makeImage: (opts) => ipcRenderer.invoke("studio:blog-make-image", opts),
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
         ipcRenderer.on("studio:blog-progress", h);

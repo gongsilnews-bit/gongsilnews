@@ -182,15 +182,7 @@ async function createWindow() {
   }
 }
 
-function thumbOf(file) {
-  try {
-    const img = nativeImage.createFromPath(file);
-    if (img.isEmpty()) return null;
-    return img.resize({ width: 360, quality: "good" }).toDataURL();
-  } catch {
-    return null;
-  }
-}
+const { thumbOf } = require("./media-util");
 
 /* ───────── 내 AI 연결 창 ───────── */
 
@@ -314,6 +306,12 @@ ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
 ipcMain.handle("studio:ai-finish-login", () => aiConnect.finishLogin());
 ipcMain.handle("studio:blog-styles", () => blogWriter.styles());
 ipcMain.handle("studio:naver-designs", () => naverWrite.designs());
+ipcMain.handle("studio:naver-open-blog", () => naverWrite.openMyBlog());
+ipcMain.handle("studio:blog-get", (_e, vacancyId) => blogWriter.get(vacancyId));
+ipcMain.handle("studio:blog-save", (_e, patch) => blogWriter.save(patch));
+ipcMain.handle("studio:blog-add-photo", (_e, opts) => blogWriter.addPhoto(opts));
+ipcMain.handle("studio:blog-image-styles", () => blogWriter.imageStyles());
+ipcMain.handle("studio:blog-make-image", (e, opts) => blogWriter.makeImage(opts, (text) => e.sender.send("studio:blog-progress", text)));
 ipcMain.handle("studio:naver-fill", (e, opts) =>
   naverWrite.fillNaver({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:naver-progress", text))
 );

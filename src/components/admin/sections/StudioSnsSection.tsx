@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
+import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
 
 /**
  * SNS뉴스발행 (공실뉴스 스튜디오 앱 전용)
@@ -22,7 +23,7 @@ type Analysis = {
   failures: string[];
 };
 type BlogStyles = { styles: { id: string; label: string; fit: string; titleExample: string }[]; lengths: { id: string; label: string; chars: string }[] };
-type Blog = { title: string; paragraphs: string[]; keywords: string[]; style: string; length: string };
+type Blog = BlogDraft;
 type AiItem = { id: string; name: string; ready: boolean; ok: boolean; account?: string; plan?: string };
 type StudioBridge = {
   openAiConnect: () => Promise<void>;
@@ -31,11 +32,13 @@ type StudioBridge = {
   naver: {
     designs: () => Promise<{ id: string; label: string; hint: string }[]>;
     fill: (opts: { vacancyId: string; design: string }) => Promise<{ ok: boolean; imagesInserted: number; imagesTotal: number; design: string; tags: string[] }>;
+    openMyBlog: () => Promise<unknown>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
   blog: {
     styles: () => Promise<BlogStyles>;
     write: (opts: { vacancyId: string; style: string; length: string }) => Promise<Blog>;
+    get: (vacancyId: string) => Promise<Blog | null>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
@@ -138,7 +141,15 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     setResult(null);
     const off = b.vacancy.onProgress(setProgress);
     try {
-      setResult(await b.vacancy.analyze(picked.id));
+      const r = await b.vacancy.analyze(picked.id);
+      setResult(r);
+      const prev = await b.blog.get(r.vacancyId);
+      if (prev) {
+        setBlog(prev);
+        setStyle(prev.style);
+        setLength(prev.length);
+        setDesign(STYLE_DESIGN[prev.style] || "basic");
+      }
     } catch (e) {
       setError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
     } finally {
@@ -347,23 +358,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           {blogProgress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{blogProgress}</div>}
           {blogError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{blogError}</div>}
 
-          {blog && (
-            <div style={{ marginTop: 18, padding: "22px 24px", border: `1px solid ${theme.border}`, borderRadius: 12, background: theme.bg || "#f6f8fa" }}>
-              <h3 style={{ margin: "0 0 14px", fontSize: 20, fontWeight: 800, color: theme.textPrimary, lineHeight: 1.4 }}>{blog.title}</h3>
-              {blog.paragraphs.map((p, i) =>
-                p.startsWith("■") ? (
-                  <h4 key={i} style={{ margin: "18px 0 8px", fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{p.replace(/^■\s*/, "")}</h4>
-                ) : (
-                  <p key={i} style={{ margin: "0 0 10px", fontSize: 15, lineHeight: 1.8, color: theme.textPrimary, wordBreak: "keep-all" }}>{p}</p>
-                )
-              )}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 14 }}>
-                {blog.keywords.map((k) => (
-                  <span key={k} style={{ fontSize: 12, fontWeight: 700, padding: "4px 9px", borderRadius: 999, background: "#e0e7ff", color: "#3730a3" }}>#{k}</span>
-                ))}
-              </div>
-            </div>
-          )}
+          {blog && <StudioBlogEditor key={`${blog.vacancyId}-${blog.title}`} theme={theme} initial={blog} />}
         </div>
 
         {/* 4. 네이버 블로그 채우기 */}
@@ -388,6 +383,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 <div style={{ fontSize: 13, color: theme.textSecondary, flex: 1, minWidth: 260, lineHeight: 1.6 }}>
                   스튜디오 전용 크롬에 네이버 글쓰기가 열리고 제목·본문·사진 {result?.media.length || 0}장·매물 정보 출처가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
                 </div>
+                <button onClick={() => bridge()?.naver.openMyBlog()}
+                  style={{ padding: "11px 16px", background: "#fff", color: "#03a94f", border: "1px solid #03c75a", borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+                  네이버 블로그 바로가기
+                </button>
                 <button onClick={fillNaver} disabled={filling}
                   style={{ padding: "11px 20px", background: filling ? "#94a3b8" : "#03c75a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: filling ? "default" : "pointer" }}>
                   {filling ? "네이버에 채우는 중…" : "네이버 블로그에 채우기"}

@@ -77,45 +77,62 @@ function readByConversationApi(page) {
  * 프롬프트를 보내고 답변 글을 돌려준다.
  * isComplete(text) 가 true 가 되고 답변이 멈추면 끝난다 (최대 4분).
  */
-async function ask(prompt, { onProgress = () => {}, isComplete = () => true } = {}) {
-  if (running) throw new Error("이미 ChatGPT가 글을 쓰고 있습니다. 끝난 뒤 다시 눌러 주세요.");
+/* 새 대화를 열고 프롬프트를 넣어 보낸다. 보낸 ChatGPT 페이지를 돌려준다 */
+async function openAndSend(prompt, onProgress) {
+  onProgress("스튜디오 전용 크롬에서 ChatGPT를 여는 중…");
+  const page = await chrome.openPage("chatgpt.com", SEL.URL);
+  await page.goto(SEL.URL, { waitUntil: "domcontentloaded" }); // 늘 새 대화에서 쓴다
+  if (/auth|login/.test(new URL(page.url()).pathname + new URL(page.url()).hostname)) {
+    throw new Error("ChatGPT 로그인이 풀렸습니다. 위쪽 메뉴 [AI → 내 AI·계정 연결]에서 다시 연결해 주세요.");
+  }
+
+  const input = await firstVisible(page, SEL.INPUT, 30000);
+  if (!input) throw new Error("ChatGPT 입력칸을 찾지 못했습니다. 로그인 상태를 확인해 주세요.");
+  await humanPause();
+
+  onProgress("ChatGPT에 요청을 넣는 중…");
+  await input.click();
+  // contenteditable 은 줄마다 문단을 만들어야 줄바꿈이 살아남는다 (확장과 같은 방법)
+  await input.evaluate((el, text) => {
+    if (el.tagName === "TEXTAREA") {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set;
+      setter.call(el, text);
+    } else {
+      el.innerHTML = "";
+      for (const line of text.split("\n")) {
+        const p = document.createElement("p");
+        if (line.trim()) p.textContent = line;
+        else p.appendChild(document.createElement("br"));
+        el.appendChild(p);
+      }
+    }
+    el.dispatchEvent(new InputEvent("input", { bubbles: true, cancelable: true }));
+  }, prompt);
+  await humanPause(700, 1500);
+
+  const send = await firstVisible(page, SEL.SEND, 8000);
+  if (send && (await send.isEnabled().catch(() => false))) await send.click();
+  else await page.keyboard.press("Enter");
+  return page;
+}
+
+async function exclusive(fn) {
+  if (running) throw new Error("이미 ChatGPT가 작업 중입니다. 끝난 뒤 다시 눌러 주세요.");
   running = true;
   try {
-    onProgress("스튜디오 전용 크롬에서 ChatGPT를 여는 중…");
-    const page = await chrome.openPage("chatgpt.com", SEL.URL);
-    await page.goto(SEL.URL, { waitUntil: "domcontentloaded" }); // 늘 새 대화에서 쓴다
-    if (/auth|login/.test(new URL(page.url()).pathname + new URL(page.url()).hostname)) {
-      throw new Error("ChatGPT 로그인이 풀렸습니다. [내 AI 연결]에서 다시 연결해 주세요.");
-    }
+    return await fn();
+  } finally {
+    running = false;
+  }
+}
 
-    const input = await firstVisible(page, SEL.INPUT, 30000);
-    if (!input) throw new Error("ChatGPT 입력칸을 찾지 못했습니다. 로그인 상태를 확인해 주세요.");
-    await humanPause();
-
-    onProgress("ChatGPT에 요청을 넣는 중…");
-    await input.click();
-    // contenteditable 은 줄마다 문단을 만들어야 줄바꿈이 살아남는다 (확장과 같은 방법)
-    await input.evaluate((el, text) => {
-      if (el.tagName === "TEXTAREA") {
-        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set;
-        setter.call(el, text);
-      } else {
-        el.innerHTML = "";
-        for (const line of text.split("\n")) {
-          const p = document.createElement("p");
-          if (line.trim()) p.textContent = line;
-          else p.appendChild(document.createElement("br"));
-          el.appendChild(p);
-        }
-      }
-      el.dispatchEvent(new InputEvent("input", { bubbles: true, cancelable: true }));
-    }, prompt);
-    await humanPause(700, 1500);
-
-    const send = await firstVisible(page, SEL.SEND, 8000);
-    if (send && (await send.isEnabled().catch(() => false))) await send.click();
-    else await page.keyboard.press("Enter");
-
+/**
+ * 프롬프트를 보내고 답변 글을 돌려준다.
+ * isComplete(text) 가 true 가 되고 답변이 멈추면 끝난다 (최대 4분).
+ */
+function ask(prompt, { onProgress = () => {}, isComplete = () => true } = {}) {
+  return exclusive(async () => {
+    const page = await openAndSend(prompt, onProgress);
     onProgress("ChatGPT가 글을 쓰는 중… (1~2분)");
     const deadline = Date.now() + 4 * 60 * 1000;
     let last = "";
@@ -138,9 +155,97 @@ async function ask(prompt, { onProgress = () => {}, isComplete = () => true } = 
     }
     if (last && isComplete(last)) return last;
     throw new Error("ChatGPT 답변을 4분 안에 받지 못했습니다. ChatGPT 창을 확인해 주세요.");
-  } finally {
-    running = false;
-  }
+  });
 }
 
-module.exports = { ask };
+/* 대화 원문에서 AI 가 만든 그림 파일 목록 (확장 chatgpt-direct.js imageState 와 같은 방법) */
+function readImages(page) {
+  return page
+    .evaluate(async () => {
+      const id = (location.pathname.match(/\/c\/([0-9a-f-]{36})/) || [])[1];
+      if (!id) return { error: "대화 주소 없음" };
+      const session = await fetch("/api/auth/session", { credentials: "include" }).then((r) => r.json());
+      const token = session && session.accessToken;
+      if (!token) return { error: "로그인 토큰 없음" };
+      const res = await fetch("/backend-api/conversation/" + id, { credentials: "include", headers: { Authorization: "Bearer " + token } });
+      if (!res.ok) return { error: "HTTP " + res.status };
+      const data = await res.json();
+      const chain = [];
+      let node = data.mapping && data.mapping[data.current_node];
+      while (node) {
+        if (node.message) chain.push(node.message);
+        node = node.parent ? data.mapping[node.parent] : null;
+      }
+      const images = [];
+      let text = "";
+      for (const m of chain.reverse()) {
+        if (!m.author || m.author.role === "user" || m.author.role === "system") continue;
+        for (const part of (m.content && m.content.parts) || []) {
+          if (part && typeof part === "object" && part.content_type === "image_asset_pointer" && part.asset_pointer) {
+            images.push({ fileId: String(part.asset_pointer).replace(/^[a-z-]+:\/\//, ""), done: m.status === "finished_successfully" });
+          } else if (typeof part === "string" && m.author.role === "assistant") text = part;
+        }
+      }
+      const busy = chain.slice(-3).some((m) => m.status === "in_progress");
+      return { conversationId: id, images, busy, text };
+    })
+    .catch((e) => ({ error: e.message }));
+}
+
+function downloadImage(page, conversationId, fileId) {
+  return page.evaluate(
+    async ({ id, file }) => {
+      const session = await fetch("/api/auth/session", { credentials: "include" }).then((r) => r.json());
+      const token = session && session.accessToken;
+      if (!token) return null;
+      const meta = await fetch(`/backend-api/files/download/${encodeURIComponent(file)}?conversation_id=${id}&inline=false`, {
+        credentials: "include",
+        headers: { Authorization: "Bearer " + token },
+      }).then((r) => (r.ok ? r.json() : null));
+      if (!meta || !meta.download_url) return null;
+      const blob = await fetch(meta.download_url, { credentials: "include" }).then((r) => (r.ok ? r.blob() : null));
+      if (!blob) return null;
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    },
+    { id: conversationId, file: fileId }
+  );
+}
+
+/**
+ * 그림 프롬프트를 보내고, ChatGPT 가 만든 그림 1장을 data URL 로 돌려준다 (최대 5분).
+ */
+function askImage(prompt, { onProgress = () => {} } = {}) {
+  return exclusive(async () => {
+    const page = await openAndSend(prompt, onProgress);
+    onProgress("ChatGPT가 그림을 그리는 중… (1~3분)");
+    const deadline = Date.now() + 5 * 60 * 1000;
+    let lastText = "";
+    while (Date.now() < deadline) {
+      await chrome.sleep(3000);
+      if (page.isClosed()) throw new Error("ChatGPT 창이 닫혔습니다.");
+      if (!/\/c\/[0-9a-f-]{36}/.test(page.url())) continue;
+      const st = await readImages(page);
+      if (st.error) continue;
+      lastText = st.text || lastText;
+      const done = st.images.filter((i) => i.done);
+      if (done.length && !st.busy) {
+        onProgress("그림을 받아 오는 중…");
+        const dataUrl = await downloadImage(page, st.conversationId, done[done.length - 1].fileId);
+        if (!dataUrl) throw new Error("ChatGPT 그림을 내려받지 못했습니다.");
+        return dataUrl;
+      }
+      // 그림 없이 글로만 답하고 끝났으면 (거절·하루 한도 등) 그 이유를 보여 준다
+      if (!st.busy && !st.images.length && st.text && Date.now() > deadline - 4 * 60 * 1000) {
+        throw new Error(`ChatGPT가 그림 대신 글로 답했습니다: ${st.text.slice(0, 120)}`);
+      }
+    }
+    throw new Error(`ChatGPT 그림을 5분 안에 받지 못했습니다.${lastText ? ` (${lastText.slice(0, 80)})` : ""}`);
+  });
+}
+
+module.exports = { ask, askImage };

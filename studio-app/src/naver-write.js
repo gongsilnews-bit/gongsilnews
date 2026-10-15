@@ -94,8 +94,8 @@ async function fillNaver({ baseUrl, vacancyId, design }, onProgress = () => {}) 
     throw new Error(`부동산 표시·광고 필수 정보가 없어 멈췄습니다: ${problems.join(", ")}. 공실의 등록자 정보를 확인해 주세요.`);
   }
 
-  // 사진: 등록 사진 전부 + 캡처 3장, 첫 장이 대표
-  const media = (analysis.media || []).map((m, i) => ({ ...m, isCover: i === 0 }));
+  // 사진: 미리보기에서 다듬은 순서·대표·자리 그대로 (없으면 등록 사진 전부 + 캡처 3장, 첫 장 대표)
+  const media = blog.media && blog.media.length ? blog.media : (analysis.media || []).map((m, i) => ({ ...m, isCover: i === 0 }));
   const chosenDesign = naverBlog.DESIGNS[design] ? design : (blogPrompt.GW_BLOG_STYLE[blog.style] || {}).design || "basic";
   const blocks = naverBlog
     .buildNaverBlocks(blog.paragraphs.join("\n\n"), media, { design: chosenDesign, title: blog.title, vacancy: { ...analysis.vacancy, vacancyId }, listing })
@@ -121,4 +121,11 @@ async function fillNaver({ baseUrl, vacancyId, design }, onProgress = () => {}) 
   return { ok: true, imagesInserted: res.imagesInserted, imagesTotal: blocks.filter((b) => b.type === "image").length, design: chosenDesign, tags };
 }
 
-module.exports = { designs, fillNaver };
+/* [네이버 블로그 바로가기]: 전용 크롬(로그인된)에서 내 블로그를 연다 */
+async function openMyBlog() {
+  const page = await chrome.openPage("blog.naver.com", "https://blog.naver.com/MyBlog.naver");
+  if (!/MyBlog|blog\.naver\.com\/[A-Za-z0-9_-]+$/.test(page.url())) await page.goto("https://blog.naver.com/MyBlog.naver", { waitUntil: "domcontentloaded" });
+  return { ok: true };
+}
+
+module.exports = { designs, fillNaver, openMyBlog };
