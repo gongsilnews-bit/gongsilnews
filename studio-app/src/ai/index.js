@@ -5,9 +5,16 @@
 const AIS = {
   chatgpt: { name: "ChatGPT", mod: () => require("./chatgpt") },
   gemini: { name: "Gemini", mod: () => require("./gemini") },
+  claude: { name: "Claude", mod: () => require("./claude") }, // 글쓰기만 — 그림은 ChatGPT
 };
 
-const providerOfUrl = (url) => (/gemini\.google\.com/.test(String(url || "")) ? "gemini" : /chatgpt\.com|chat\.openai\.com/.test(String(url || "")) ? "chatgpt" : "");
+const providerOfUrl = (url) => {
+  const u = String(url || "");
+  if (/gemini\.google\.com/.test(u)) return "gemini";
+  if (/claude\.ai/.test(u)) return "claude";
+  if (/chatgpt\.com|chat\.openai\.com/.test(u)) return "chatgpt";
+  return "";
+};
 
 /** 지금 새 글을 쓸 AI */
 function current() {

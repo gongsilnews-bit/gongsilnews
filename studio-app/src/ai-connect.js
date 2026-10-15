@@ -26,7 +26,28 @@ const PROVIDERS = {
         }
       }),
   },
-  claude: { name: "Claude", host: "claude.ai", url: "https://claude.ai/", ready: false },
+  // Claude — 로그인돼 있으면 /api/organizations 가 조직 목록을 준다. 그림은 못 그린다 (글쓰기만)
+  claude: {
+    name: "Claude",
+    host: "claude.ai",
+    url: "https://claude.ai/new",
+    ready: true,
+    writer: true,
+    noImage: true,
+    check: (page) =>
+      page.evaluate(async () => {
+        try {
+          const r = await fetch("/api/organizations", { credentials: "include", cache: "no-store" });
+          if (!r.ok) return { ok: false };
+          const orgs = await r.json();
+          if (!Array.isArray(orgs) || !orgs.length) return { ok: false };
+          const acct = await fetch("/api/account", { credentials: "include" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+          return { ok: true, account: (acct && (acct.email_address || acct.full_name)) || "", plan: (orgs[0].capabilities || []).includes("claude_pro") ? "Pro" : "" };
+        } catch {
+          return { ok: false };
+        }
+      }),
+  },
   // 네이버 블로그 (글 채우기용). 로그인 쿠키(NID_AUT)가 있으면 연결된 것으로 본다
   naver: {
     name: "네이버 블로그",
@@ -83,7 +104,7 @@ function list() {
   const w = getWriter();
   return Object.entries(PROVIDERS)
     .filter(([, p]) => !p.hidden)
-    .map(([id, p]) => ({ id, name: p.name, ready: p.ready, canWrite: Boolean(p.writer), isWriter: id === w, ...(saved[id] || { ok: false }) }));
+    .map(([id, p]) => ({ id, name: p.name, ready: p.ready, canWrite: Boolean(p.writer), noImage: Boolean(p.noImage), isWriter: id === w, ...(saved[id] || { ok: false }) }));
 }
 
 /* 기본 글쓰기 AI (ChatGPT · Gemini) — [내 AI 연결]에서 고른다. 처음엔 ChatGPT */

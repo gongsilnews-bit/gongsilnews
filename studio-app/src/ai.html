@@ -65,7 +65,7 @@
       b.textContent = it.name + (it.isWriter ? " ✓" : "");
       b.disabled = busy || !it.ok || !it.ready;
       b.title = !it.ready ? "준비 중입니다" : it.ok ? "" : "먼저 아래에서 연결해 주세요";
-      b.onclick = async () => { if (it.isWriter) return; render(await studio.ai.setWriter(it.id)); say(`이제 ${it.name}로 글을 씁니다. (그림은 ChatGPT)`); };
+      b.onclick = async () => { if (it.isWriter) return; render(await studio.ai.setWriter(it.id)); say(`이제 ${it.name}로 글을 씁니다.${it.id !== "chatgpt" ? " 그림(AI 표지·시뮬레이션)은 ChatGPT로 그립니다." : ""}`); };
       pills.appendChild(b);
     }
   }
@@ -80,7 +80,7 @@
       const sub = !it.ready ? "준비 중"
         : connectingId === it.id ? "오른쪽 크롬 창에서 로그인해 주세요"
         : checking.has(it.id) ? "확인 중…"
-        : it.ok ? `● 연결됨${it.account ? " · " + it.account : ""}${it.plan ? " (" + it.plan + ")" : ""}`
+        : it.ok ? `● 연결됨${it.account ? " · " + it.account : ""}${it.plan ? " (" + it.plan + ")" : ""}${it.noImage ? " · 글쓰기만 (그림은 못 그림)" : ""}`
         : "연결 안 됨";
       if (it.ok && connectingId !== it.id) row.classList.add("on");
       row.innerHTML = `<span class="dot ${it.ok ? "on" : ""}"></span><div class="grow"><div class="name"></div><div class="sub ${it.ok && connectingId !== it.id ? "on" : ""}"></div></div>`;
