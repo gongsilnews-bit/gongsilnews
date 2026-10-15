@@ -16,11 +16,9 @@ import { isAdminRole } from "@/utils/permissionCheck";
  * - 인테리어뉴스·리모델링뉴스(번호 int-·rem-)는 유료회원 전용(canRemodel, 무료 체험 없음 — 확장과 같음).
  *   시뮬레이션(kind 'simulation')은 예측 이미지를 만들므로 AI 이미지 하루 한도에서 1장으로 센다.
  * - 유튜브 대본은 'youtube' 로 따로 세고 규칙은 같다 (확장 유튜브 체험과 함께 셈). 뉴스칼럼은 칼럼 하나 = 1회.
- * - 무제한이어도 하루 안전 상한이 있다 (회원 ChatGPT·네이버 계정 보호): 새 공실 20건, AI 이미지 10장. 최고관리자는 없음.
+ * - 하루 안전 상한(계정 보호: 새 공실 20건, AI 이미지 10장)은 2026-10-15 사장님 결정으로 없앴다. 월 횟수(등급별)만 센다.
  */
 
-export const STUDIO_DAILY_BLOG = 20;
-export const STUDIO_DAILY_AI_IMAGE = 10;
 const UNLIMITED = -1;
 
 function admin() {
@@ -72,7 +70,6 @@ export async function getStudioUsage(member: ExtensionMember, feature: StudioFea
   const db = admin();
   const override = await memberOverride(member.id);
   const monthLimit = override ?? gradeBlogLimit(member);
-  const isAdmin = isAdminRole(member.role);
 
   const month = trialMonth();
   let rows: { vacancy_id?: string | null; created_at: string; feature: string }[] = [];
@@ -96,10 +93,10 @@ export async function getStudioUsage(member: ExtensionMember, feature: StudioFea
     monthLimit,
     monthUsed,
     monthRemaining: monthLimit === UNLIMITED ? null : Math.max(0, monthLimit - monthUsed),
-    dailyLimit: isAdmin ? null : STUDIO_DAILY_BLOG,
+    dailyLimit: null, // 하루 상한 없음 (2026-10-15)
     todayUsed,
     aiImageToday,
-    aiImageLimit: isAdmin ? null : STUDIO_DAILY_AI_IMAGE,
+    aiImageLimit: null, // 하루 상한 없음 (2026-10-15)
     custom: override !== null,
     vacancyIds,
   };
