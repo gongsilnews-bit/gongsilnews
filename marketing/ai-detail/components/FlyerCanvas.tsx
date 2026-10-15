@@ -1,6 +1,6 @@
 
 import React, { forwardRef, useLayoutEffect, useRef, useState } from 'react';
-import { FlyerState, PropertyInfo } from '../types';
+import { FlyerItem, FlyerState, PropertyInfo } from '../types';
 import { PhoneIcon } from '@heroicons/react/24/solid';
 
 /*
@@ -27,12 +27,16 @@ interface FlyerCanvasProps {
   onTextChange?: (key: keyof PropertyInfo, value: string) => void;
   onImageClick?: (imageKey: string) => void;
   /** 새 디자인 글자 위치·크기 조정 (null = 처음대로) */
-  onAdjust?: (key: string, value: { x: number; y: number; s: number } | null) => void;
+  onAdjust?: (key: string, value: { x: number; y: number; s: number; c?: string; f?: string } | null) => void;
   /** 계산해서 만든 글자를 손으로 고친 값 (null = 처음대로, '' = 빼기) */
   onTextOverride?: (name: string, value: string | null) => void;
+  /** 새로 넣은 글자·이미지 목록 바꾸기 */
+  onItemsChange?: (items: FlyerItem[]) => void;
+  /** 이미지 고르기 창을 열어 올린 뒤 주소를 돌려준다 */
+  onPickImage?: (done: (url: string) => void) => void;
 }
 
-const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orientation, qrDataUrl, qrLink, onTextChange, onImageClick, onAdjust, onTextOverride }, ref) => {
+const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orientation, qrDataUrl, qrLink, onTextChange, onImageClick, onAdjust, onTextOverride, onItemsChange, onPickImage }, ref) => {
   const { info, mainImage, colorTheme, layoutTheme } = data;
   const primaryColor = colorTheme?.primary || '#00788c';
   const secondaryColor = colorTheme?.secondary || '#00c6d7';
@@ -622,11 +626,27 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
       el.focus();
       const r = document.createRange();
       r.selectNodeContents(el);
-      r.collapse(false);
+      if (el.innerText.trim() !== '새 글자') r.collapse(false); // 막 넣은 글자는 통째로 골라 바로 덮어 쓰게
       const ws = window.getSelection();
       ws?.removeAllRanges();
       ws?.addRange(r);
     });
+  };
+  /* 글자 폰트 — index.html 에서 불러온다 */
+  const FONTS: [string, string][] = [
+    ['', '기본 (프리텐다드)'], ["'Black Han Sans'", '검은고딕'], ["'Do Hyeon'", '도현'], ["'Jua'", '주아'],
+    ["'Nanum Myeongjo'", '나눔명조'], ["'Song Myung'", '송명'], ["'Nanum Pen Script'", '나눔손글씨'],
+  ];
+  /* 고른 글자 색·폰트 — 요소에 직접 넣는다 */
+  const look = (name: string): React.CSSProperties => {
+    const a = adj(name);
+    return { ...(a.c ? { color: a.c } : {}), ...(a.f ? { fontFamily: `${a.f}, 'Pretendard', sans-serif` } : {}) };
+  };
+  const setStyle = (name: string, patch: { c?: string; f?: string }) => {
+    const next = { ...adj(name), ...patch };
+    if (!next.c) delete next.c;
+    if (!next.f) delete next.f;
+    onAdjust?.(akey(name), next);
   };
   const toolBtn: React.CSSProperties = { height: 28, padding: '0 10px', border: 0, borderRadius: 6, background: '#fff', color: '#111', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' };
   const HANDLE = 14;
@@ -636,14 +656,16 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     ['nesw-resize', { left: -HANDLE / 2 - 4, bottom: -HANDLE / 2 - 4 }],
     ['nwse-resize', { right: -HANDLE / 2 - 4, bottom: -HANDLE / 2 - 4 }],
   ];
-  const mov = (name: string, node: React.ReactNode, wrap: React.CSSProperties = {}, opt: { texts?: string[]; extra?: React.ReactNode; onDouble?: () => void } = {}) => {
+  const mov = (name: string, node: React.ReactNode, wrap: React.CSSProperties = {}, opt: { texts?: string[]; extra?: React.ReactNode; onDouble?: () => void; noStyle?: boolean } = {}) => {
     const a = adj(name);
     const on = canAdjust && sel === name;
     const typing = editing === name;
     return (
       <div data-mov="" onBlurCapture={() => typing && setEditing(null)}
         style={{ position: 'relative', flexShrink: 0, width: 'fit-content', maxWidth: '100%', marginLeft: 'auto', marginRight: 'auto', transform: a.x || a.y ? `translate(${a.x}px, ${a.y}px)` : undefined, zIndex: on ? 40 : undefined, ...wrap }}>
-        {node}
+        {!opt.noStyle && (a.c || a.f) && React.isValidElement(node)
+          ? React.cloneElement(node as React.ReactElement<{ style?: React.CSSProperties }>, { style: { ...((node as React.ReactElement<{ style?: React.CSSProperties }>).props.style || {}), ...look(name) } })
+          : node}
         {/* 글자를 고치는 중이 아니면 덮개가 클릭·끌기를 받는다 */}
         {canAdjust && !typing && (
           <div data-noexport="" title="끌어서 이동 · 모서리로 크기 · 더블클릭으로 고치기"
@@ -660,6 +682,19 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
             <div data-noexport="" className="flex items-center" onPointerDown={(e) => e.stopPropagation()}
               style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', marginTop: 14, gap: 4, padding: 4, borderRadius: 8, background: '#0f172a', boxShadow: '0 6px 20px rgba(0,0,0,.3)', whiteSpace: 'nowrap', zIndex: 50 }}>
               <span style={{ color: '#cbd5e1', fontSize: 12, fontWeight: 700, padding: '0 6px' }}>{Math.round(a.s * 100)}%</span>
+              {!opt.noStyle && (
+                <>
+                  <label title="글자 색" style={{ ...toolBtn, display: 'flex', alignItems: 'center', gap: 4, padding: '0 6px' }}>
+                    <span style={{ width: 16, height: 16, borderRadius: 4, background: a.c || '#111', border: '1px solid #cbd5e1' }} />
+                    색
+                    <input type="color" value={a.c || '#111111'} onChange={(e) => setStyle(name, { c: e.target.value })} style={{ width: 0, height: 0, opacity: 0, position: 'absolute' }} />
+                  </label>
+                  <select title="폰트" value={a.f || ''} onChange={(e) => setStyle(name, { f: e.target.value })}
+                    style={{ ...toolBtn, padding: '0 4px', fontFamily: a.f || 'inherit' }}>
+                    {FONTS.map(([v, label]) => <option key={label} value={v} style={{ fontFamily: v || 'inherit' }}>{label}</option>)}
+                  </select>
+                </>
+              )}
               {opt.extra ?? <span style={{ color: '#94a3b8', fontSize: 12, padding: '0 6px' }}>{typing ? '고치는 중 — 바깥을 누르면 끝' : '더블클릭: 글자 고치기'}</span>}
               <button type="button" title="위치·크기·글자 처음대로" onClick={() => { onAdjust?.(akey(name), null); (opt.texts || [name]).forEach((t) => onTextOverride?.(t, null)); }} style={toolBtn}>↺ 처음대로</button>
             </div>
@@ -668,8 +703,61 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
       </div>
     );
   };
+  /* ── 오른쪽 클릭 메뉴: 새 글자 넣기 · 새 이미지 넣기 · (새로 넣은 것) 지우기 ── */
+  const [menu, setMenu] = useState<{ x: number; y: number; item?: string } | null>(null);
+  const lay = `${layout}-${orientation}`;
+  const items = (info.items || []).filter((it) => it.lay === lay);
+  const addItem = (it: Omit<FlyerItem, 'id' | 'lay'>) => {
+    const id = Math.random().toString(36).slice(2, 9);
+    onItemsChange?.([...(info.items || []), { ...it, id, lay }]);
+    setSel(`item-${id}`);
+  };
+  const removeItem = (id: string) => {
+    onItemsChange?.((info.items || []).filter((it) => it.id !== id));
+    setSel(null);
+  };
+  const onMenu = (e: React.MouseEvent) => {
+    if (!canAdjust || !onItemsChange) return;
+    e.preventDefault();
+    const page = e.currentTarget as HTMLElement;
+    const r = page.getBoundingClientRect();
+    const ratio = r.width / page.offsetWidth;
+    const hit = (e.target as HTMLElement).closest('[data-item]') as HTMLElement | null;
+    setMenu({ x: Math.round((e.clientX - r.left) / ratio), y: Math.round((e.clientY - r.top) / ratio), item: hit?.dataset.item });
+  };
+  const menuBtn: React.CSSProperties = { display: 'block', width: '100%', textAlign: 'left', padding: '10px 16px', border: 0, background: 'transparent', fontSize: 16, fontWeight: 700, color: '#111', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' };
+  const menuEl = menu && (
+    <div data-noexport="" onPointerDown={(e) => e.stopPropagation()}
+      style={{ position: 'absolute', left: Math.min(menu.x, pageW - 240), top: Math.min(menu.y, pageH - 160), zIndex: 60, background: '#fff', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,.25)', border: '1px solid #e5e7eb', padding: 6, minWidth: 220 }}>
+      <button type="button" style={menuBtn} onClick={() => { addItem({ kind: 'text', x: menu.x, y: menu.y }); setMenu(null); }}>✎ 새 글자 넣기</button>
+      <button type="button" style={menuBtn} onClick={() => { const { x, y } = menu; setMenu(null); onPickImage?.((url) => addItem({ kind: 'image', x, y, src: url })); }}>🖼 새 이미지 넣기</button>
+      {menu.item && <button type="button" style={{ ...menuBtn, color: '#dc2626' }} onClick={() => { removeItem(menu.item!); setMenu(null); }}>🗑 이것 지우기</button>}
+    </div>
+  );
+  const itemLayer = (
+    <>
+      {items.map((it) => {
+        const name = `item-${it.id}`;
+        const del = <button type="button" title="지우기" onClick={() => removeItem(it.id)} style={{ ...toolBtn, color: '#dc2626' }}>🗑 지우기</button>;
+        return (
+          <div key={it.id} data-item={it.id} style={{ position: 'absolute', left: it.x, top: it.y, zIndex: sel === name ? 40 : 20 }}>
+            {it.kind === 'text'
+              ? mov(name, <div {...edt(name, '새 글자')} className={editClass} style={{ fontSize: sz(name, 56), fontWeight: 900, color: '#111', whiteSpace: 'nowrap', lineHeight: 1.2 }}>{tx(name, '새 글자')}</div>, { margin: 0 }, { extra: del })
+              : mov(name, <img src={it.src} alt="" style={{ width: sz(name, 260), display: 'block' }} />, { margin: 0 }, {
+                  noStyle: true,
+                  onDouble: () => onPickImage?.((url) => onItemsChange?.((info.items || []).map((x) => (x.id === it.id ? { ...x, src: url } : x)))),
+                  extra: <>{del}<button type="button" title="이미지 바꾸기" onClick={() => onPickImage?.((url) => onItemsChange?.((info.items || []).map((x) => (x.id === it.id ? { ...x, src: url } : x))))} style={toolBtn}>🖼 바꾸기</button></>,
+                })}
+          </div>
+        );
+      })}
+      {menuEl}
+    </>
+  );
   /* 빈 곳을 누르면 선택을 푼다 */
   const pageDown = (e: React.PointerEvent) => {
+    if (e.button === 2) return; // 오른쪽 클릭은 메뉴
+    setMenu(null);
     if (!(e.target as HTMLElement).closest('[data-mov]')) { setSel(null); setEditing(null); }
   };
 
@@ -701,7 +789,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
           </a>
           <div {...edt('qrLabel', '사진·위치 보기')} className={editClass} style={{ fontSize: sz('qr', 14), fontWeight: 800, marginTop: 6 }}>{tx('qrLabel', '사진·위치 보기')}</div>
         </div>
-      ), {}, { texts: ['qr', 'qrLabel'] })}
+      ), {}, { texts: ['qr', 'qrLabel'], noStyle: true })}
     </div>
   );
 
@@ -712,7 +800,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     return mov('chips', (
       <div className="flex flex-wrap justify-center" style={{ gap: 12, overflow: 'hidden', maxHeight: rows * (Math.round(size * 1.2) + Math.round(size * 0.22) * 2 + 8) + (rows - 1) * 12 }}>
         {chips.map((ch, i) => tx(`chip${i}`, ch) !== '' && (
-          <span key={i} {...edt(`chip${i}`, ch)} className={editClass} style={{ fontSize: size, fontWeight: 800, color: primaryColor, border: `3px solid ${primaryColor}`, borderRadius: 999, padding: `${Math.round(size * 0.22)}px ${Math.round(size * 0.7)}px`, whiteSpace: 'nowrap', lineHeight: 1.2 }}>{tx(`chip${i}`, ch)}</span>
+          <span key={i} {...edt(`chip${i}`, ch)} className={editClass} style={{ fontSize: size, fontWeight: 800, color: primaryColor, border: `3px solid ${adj('chips').c || primaryColor}`, ...look('chips'), borderRadius: 999, padding: `${Math.round(size * 0.22)}px ${Math.round(size * 0.7)}px`, whiteSpace: 'nowrap', lineHeight: 1.2 }}>{tx(`chip${i}`, ch)}</span>
         ))}
       </div>
     ), {}, { texts: chips.map((_, i) => `chip${i}`) });
@@ -735,7 +823,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
   );
   /* 어디 매물인지 — 건물·단지명 */
   const addressLine = (base: number) => (
-    <div style={{ borderTop: '2px solid #e5e7eb', paddingTop: isLand ? 12 : 16, flexShrink: 0 }}>
+    <div style={{ paddingTop: isLand ? 12 : 16, flexShrink: 0 }}>
       {mov('address', <div {...editable('address')} {...fitBy(sz('address', base), 20)} className={editClass}
         style={{ ...one, fontWeight: 800, color: '#374151' }}>{info.address}</div>)}
     </div>
@@ -743,7 +831,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
 
   // ① 숫자 크게형
   const renderBig = () => (
-    <div ref={ref} data-flyer-page onPointerDown={pageDown} className="bg-white overflow-hidden flex flex-col font-sans" style={{ width: pageW, height: pageH, color: '#111' }}>
+    <div ref={ref} data-flyer-page onPointerDown={pageDown} onContextMenu={onMenu} className="bg-white overflow-hidden flex flex-col font-sans" style={{ position: 'relative', width: pageW, height: pageH, color: '#111' }}>
       {/* 머리 띠: 딱지 + 물건·거래 */}
       <div className="flex items-center justify-center" style={{ flexShrink: 0, gap: 18, background: primaryColor, color: '#fff', padding: `${isLand ? 22 : 30}px ${isLand ? 44 : 52}px` }}>
         {badgeEl}
@@ -754,6 +842,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
         {addressLine(isLand ? 36 : 40)}
       </div>
       {renderCallBand(isLand)}
+      {itemLayer}
     </div>
   );
 
@@ -768,7 +857,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
           {tx('head', headWord) !== '' && mov('head', <span {...edt('head', headWord)} className={editClass} style={{ display: 'block', background: '#fff', color: primaryColor, fontSize: sz('head', 30), fontWeight: 900, padding: '6px 18px', borderRadius: 8 }}>{tx('head', headWord)}</span>)}
         </div>
       </div>
-    ), { width: isLand ? undefined : '100%', margin: 0 }, { onDouble: () => onImageClick?.('mainImage'), extra: <button type="button" title="사진 바꾸기" onClick={() => onImageClick?.('mainImage')} style={toolBtn}>🖼 사진 바꾸기 (더블클릭)</button> });
+    ), { width: isLand ? undefined : '100%', margin: 0 }, { noStyle: true, onDouble: () => onImageClick?.('mainImage'), extra: <button type="button" title="사진 바꾸기" onClick={() => onImageClick?.('mainImage')} style={toolBtn}>🖼 사진 바꾸기 (더블클릭)</button> });
     const text = (
       <div className="flex flex-col" style={{ flex: 1, minHeight: 0, minWidth: 0, padding: `${isLand ? 30 : 26}px ${isLand ? 40 : 52}px ${isLand ? 20 : 22}px` }}>
         {/* 세로는 칩 한 줄 — 주소·연락 띠와 겹치지 않게 */}
@@ -777,7 +866,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
       </div>
     );
     return (
-      <div ref={ref} data-flyer-page onPointerDown={pageDown} className="bg-white overflow-hidden flex flex-col font-sans" style={{ width: pageW, height: pageH, color: '#111' }}>
+      <div ref={ref} data-flyer-page onPointerDown={pageDown} onContextMenu={onMenu} className="bg-white overflow-hidden flex flex-col font-sans" style={{ position: 'relative', width: pageW, height: pageH, color: '#111' }}>
         {isLand ? (
           <div className="flex" style={{ flex: 1, minHeight: 0 }}>
             {photoBox({ width: sz('photo', 600), height: '100%' })}
@@ -790,6 +879,7 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
           </>
         )}
         {renderCallBand(true)}
+        {itemLayer}
       </div>
     );
   };

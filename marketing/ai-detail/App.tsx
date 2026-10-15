@@ -139,6 +139,44 @@ const compressToWebP = (file: File, quality = 0.85): Promise<Blob> => {
   });
 };
 
+/**
+ * 이미지·인쇄에 폰트를 확실히 담는다 — 화면에 실제로 불러온 폰트 조각(한글 폰트는 글자 범위별로 잘게 나뉨)만 골라
+ * 파일을 data URL 로 넣은 @font-face 를 만든다. html-to-image 가 스스로 담게 두면 고른 폰트(도현 등)가 빠지기도 했다.
+ */
+const fontDataCache = new Map<string, string>();
+const normRange = (r: string) => (r || 'U+0-10FFFF').replace(/\s+/g, '').toUpperCase();
+const buildFontEmbedCSS = async (): Promise<string | undefined> => {
+  const loaded = new Set(
+    Array.from(document.fonts || []).filter((f) => f.status === 'loaded')
+      .map((f) => `${f.family.replace(/["']/g, '').trim()}|${normRange(f.unicodeRange)}|${f.weight}|${f.style}`),
+  );
+  const parts: string[] = [];
+  for (const sheet of Array.from(document.styleSheets)) {
+    let rules: CSSRuleList;
+    try { rules = sheet.cssRules; } catch { continue; }
+    for (const rule of Array.from(rules)) {
+      if (!(rule instanceof CSSFontFaceRule)) continue;
+      const st = rule.style;
+      const fam = st.getPropertyValue('font-family').replace(/["']/g, '').trim();
+      const key = `${fam}|${normRange(st.getPropertyValue('unicode-range'))}|${st.getPropertyValue('font-weight') || '400'}|${st.getPropertyValue('font-style') || 'normal'}`;
+      if (!loaded.has(key)) continue;
+      const src = st.getPropertyValue('src');
+      const m = src.match(/url\(["']?([^"')]+)["']?\)/);
+      if (!m) continue;
+      const url = new URL(m[1], sheet.href || location.href).href;
+      let data = fontDataCache.get(url);
+      if (!data) {
+        const blob = await fetch(url).then((r) => r.blob());
+        data = await new Promise<string>((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result)); fr.onerror = no; fr.readAsDataURL(blob); });
+        fontDataCache.set(url, data);
+      }
+      const ur = st.getPropertyValue('unicode-range');
+      parts.push(`@font-face { font-family: "${fam}"; src: url(${data}); font-weight: ${st.getPropertyValue('font-weight') || '400'}; font-style: ${st.getPropertyValue('font-style') || 'normal'};${ur ? ` unicode-range: ${ur};` : ''} }`);
+    }
+  }
+  return parts.length ? parts.join('\n') : undefined;
+};
+
 const uploadImageToServer = async (file: File | Blob, vacancyId: string): Promise<string> => {
   const formData = new FormData();
   const uploadFile = file instanceof File ? file : new File([file], "image.webp", { type: "image/webp" });
@@ -209,7 +247,7 @@ function App() {
   const [authError, setAuthError] = useState<string | null>(null);
 
   /* 새 디자인 글자 옮기기·크기 — info.adjust 에 저장 (null 이면 처음대로) */
-  const handleAdjust = (key: string, value: { x: number; y: number; s: number } | null) => {
+  const handleAdjust = (key: string, value: { x: number; y: number; s: number; c?: string; f?: string } | null) => {
       setState(prev => {
           const next = { ...(prev.info.adjust || {}) };
           if (value) next[key] = value; else delete next[key];
@@ -236,6 +274,18 @@ function App() {
 
   const [activeImageKey, setActiveImageKey] = useState<string>('');
 
+  /* 오른쪽 클릭 [새 이미지 넣기] — 고른 파일을 올리고 주소를 돌려준다 */
+  const pickImageDone = useRef<((url: string) => void) | null>(null);
+  const handlePickImage = (done: (url: string) => void) => {
+      pickImageDone.current = done;
+      setActiveImageKey('__item__');
+      hiddenFileInputRef.current?.click();
+  };
+  const handleItemsChange = (items: NonNullable<PropertyInfo['items']>) => {
+      setState(prev => ({ ...prev, info: { ...prev.info, items } }));
+      setIsDirty(true);
+  };
+
   const handleImageClick = (imageKey: string) => {
       setActiveImageKey(imageKey);
       hiddenFileInputRef.current?.click();
@@ -243,7 +293,16 @@ function App() {
 
   const handleHiddenFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file && activeImageKey) {
+      if (file && activeImageKey === '__item__') {
+          const params = new URLSearchParams(window.location.search);
+          try {
+              const url = await uploadImageToServer(await compressToWebP(file, 0.85), params.get("vacancy_id") || "unknown");
+              pickImageDone.current?.(url);
+          } catch (err: any) {
+              alert("이미지를 올리지 못했습니다: " + err.message);
+          }
+          pickImageDone.current = null;
+      } else if (file && activeImageKey) {
           await handleImageUpload(activeImageKey, file);
       }
       if (hiddenFileInputRef.current) hiddenFileInputRef.current.value = '';
@@ -871,10 +930,12 @@ function App() {
     flyerRef.current.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     await document.fonts?.ready;
+    const fontEmbedCSS = await buildFontEmbedCSS().catch(() => undefined);
     return toCanvas(flyerRef.current, {
       // 3배(A4 약 300dpi) — 인쇄해도 글자가 깨지지 않게. 글자 옮기기 도구(data-noexport)는 찍지 않는다
       width: w, height: h, canvasWidth: w * 3, canvasHeight: h * 3, pixelRatio: 1,
       backgroundColor: '#ffffff', cacheBust: true,
+      ...(fontEmbedCSS ? { fontEmbedCSS } : {}),
       filter: (node) => !(node instanceof HTMLElement && node.dataset.noexport !== undefined),
     });
   };
@@ -1254,6 +1315,7 @@ function App() {
       <main className="max-w-[1600px] mx-auto w-full p-4 lg:p-8 grid grid-cols-12 gap-6 items-start">
         <div className="col-span-12 lg:col-span-4 xl:col-span-3">
           <FlyerForm 
+            qrLink={qrUrl}
             info={state.info}
             setInfo={handleInfoChange}
             onImageUpload={handleImageUpload}
@@ -1299,6 +1361,8 @@ function App() {
                                     onImageClick={handleImageClick}
                                     onAdjust={handleAdjust}
                                     onTextOverride={handleTextOverride}
+                                    onItemsChange={handleItemsChange}
+                                    onPickImage={handlePickImage}
                                 />
                             </div>
                         </div>

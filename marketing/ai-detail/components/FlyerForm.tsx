@@ -5,6 +5,8 @@ import { GROUP_NAME, FlyerGroup } from '../flyerRows';
 import { PhotoIcon, DocumentTextIcon, PlusIcon, TrashIcon, SwatchIcon, RectangleGroupIcon } from '@heroicons/react/24/outline';
 
 interface FlyerFormProps {
+  /** QR 이 여는 매물 상세 주소 */
+  qrLink?: string | null;
   info: PropertyInfo;
   setInfo: (info: PropertyInfo) => void;
   onImageUpload: (key: string, file: File) => void;
@@ -18,7 +20,7 @@ interface FlyerFormProps {
   isUploadingImage?: Record<string, boolean>;
 }
 
-const FlyerForm: React.FC<FlyerFormProps> = ({ 
+const FlyerForm: React.FC<FlyerFormProps> = ({ qrLink, 
     info, setInfo, onImageUpload, uploadedImages, 
     colors, layouts, currentColor, currentLayout, onColorSelect, onLayoutSelect, isUploadingImage
 }) => {
@@ -319,7 +321,8 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
             </div>
         </Group>
 
-        {/* ⑥ 특징 */}
+        {/* ⑥ 특징 — 새 디자인(숫자 크게형·사진형)에는 소개글이 안 나와서 칸도 뺀다 (2026-10-15 사장님) */}
+        {!(currentLayout.type === 'big' || currentLayout.type === 'photo') && (
         <Group title="특징" color={primaryColor}>
             <Field label="특징 설명 (소개글)" show={shown('noticeContent')} onShow={(v) => toggle('noticeContent', v)}>
                 <textarea name="noticeContent" value={info.noticeContent} onChange={handleChange} rows={4}
@@ -328,6 +331,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                     placeholder="역세권, 올수리, 채광 좋음 등 — 길면 홍보지 칸에 맞게 글자가 줄어듭니다" />
             </Field>
         </Group>
+        )}
 
         {/* ⑦ 연락처 */}
         <Group title="연락처" color={primaryColor} action={
@@ -361,9 +365,33 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
                 style={{ borderColor: primaryColor, color: primaryColor }}>
                 <PlusIcon className="w-3 h-3" /> 추가 정보 (등록번호 등)
             </button>
-            <Field label="QR 코드 (매물 상세보기)" show={shown('qr')} onShow={(v) => toggle('qr', v)}>
-                <p className="text-[11px] text-gray-400">휴대폰으로 찍으면 이 매물의 상세 페이지(사진·위치)가 열립니다.</p>
-            </Field>
+            {/* QR — 매물보고서와 같은 모양: 링크 + 링크 복사 + QR코드 넣기 */}
+            <div>
+                <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-gray-500">QR 매물 상세보기 링크</label>
+                    {qrLink && (
+                        <button type="button" title="링크 복사"
+                            onClick={(e) => {
+                                const btn = e.currentTarget;
+                                navigator.clipboard.writeText(qrLink).then(() => {
+                                    btn.dataset.copied = "1";
+                                    setTimeout(() => { delete btn.dataset.copied; }, 1500);
+                                }).catch(() => alert("복사하지 못했습니다."));
+                            }}
+                            className="group flex items-center gap-1 px-2 py-0.5 rounded-md border border-gray-200 text-xs font-bold text-gray-500 hover:bg-gray-50 data-[copied]:text-green-600 data-[copied]:border-green-300">
+                            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></svg>
+                            <span className="group-data-[copied]:hidden">링크 복사</span>
+                            <span className="hidden group-data-[copied]:inline">복사됨</span>
+                        </button>
+                    )}
+                </div>
+                <input readOnly value={qrLink || ''} placeholder="매물을 고르면 자동으로 들어갑니다"
+                    className="w-full border rounded p-2 text-xs font-mono bg-gray-50 text-gray-600" />
+                <label className="mt-2 flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                    <input type="checkbox" checked={shown('qr')} onChange={(e) => toggle('qr', e.target.checked)} className="w-4 h-4" />
+                    QR코드 넣기 <span className="text-xs text-gray-400">(휴대폰으로 찍으면 사진·위치가 열림)</span>
+                </label>
+            </div>
         </Group>
 
       </div>
