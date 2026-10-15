@@ -134,7 +134,12 @@ export const videoBridge = (): VideoBridge | null => {
 };
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
-export const errText = (e: unknown) => String(e instanceof Error ? e.message : e).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
+export const errText = (e: unknown) => {
+  const m = String(e instanceof Error ? e.message : e);
+  // 앱 본체가 영상 기능보다 먼저 켜졌거나(옛 버전) — 화면만 새것이라 통로가 없다
+  if (/No handler registered for 'video:/.test(m)) return "공실뉴스 스튜디오를 다시 켜 주세요. (앱을 껐다 켜면 새 영상 기능이 연결돼요. 계속 이러면 앱을 최신 버전으로 업데이트해 주세요.)";
+  return m.replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
+};
 export const fmtTime = (t: number, cs = true) => {
   const m = Math.floor(t / 60);
   const s = t - m * 60;
