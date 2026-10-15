@@ -16,7 +16,7 @@ import StudioChannelTabs from "./StudioChannelTabs";
 
 type Opt = { id: string; name: string };
 type CostField = { key: string; label: string; unit?: string; step?: number; options?: { id: number; name: string }[] };
-type Options = { kind: string; label: string; rooms: Opt[] | null; groups: { key: string; label: string; options: Opt[] }[]; ratios: Opt[]; costFields: CostField[] };
+type Options = { kind: string; label: string; rooms: Opt[] | null; groups: { key: string; label: string; single?: boolean; options: Opt[] }[]; ratios: Opt[]; costFields: CostField[] };
 type Cost = { rangeText: string; basisText: string; items: { label: string; basis: string; min: number; max: number }[]; notice: string; excludes: string };
 type Result = {
   title: string; location: string; dateText: string; roomName: string; before: string | null;
@@ -47,7 +47,7 @@ type MyVacancy = { id: string; vacancy_no: number; building_name: string | null;
 
 const bridge = (): Bridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null) : null);
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
-const MAX_PICK = 3;
+const MAX_PICK = 1; // 사진 한 장 = 공간 하나
 const won = (man: number) => {
   const v = Math.round(man || 0);
   const eok = Math.floor(v / 10000);
@@ -165,12 +165,12 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
   };
   const togglePhoto = (pid: string) => {
     if (!sim) return;
-    const on = sim.photos.filter((p) => p.on).map((p) => p.id);
-    const next = on.includes(pid) ? on.filter((x) => x !== pid) : on.length >= MAX_PICK ? on : [...on, pid];
-    update({ pick: next });
+    if (sim.photos.find((p) => p.id === pid)?.on) return; // 한 장은 늘 골라 둔다
+    update({ pick: [pid] }); // 다른 사진을 누르면 그 사진으로 바뀐다
   };
-  const toggleOpt = (key: string, id: string) => {
+  const toggleOpt = (key: string, id: string, single?: boolean) => {
     if (!sim) return;
+    if (single) return update({ design: { [key]: [id] } });
     const cur = (sim.design[key] as string[]) || [];
     const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
     if (!next.length) return; // 하나는 남긴다
@@ -262,7 +262,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
         <div style={card}>
           {step(1, "사진 고르기", sim && r ? <button onClick={() => setOpen(false)} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>접기</button> : null)}
           <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 10, lineHeight: 1.6 }}>
-            {kind === "interior" ? "고칠 방의 실내 사진" : "건물 외관 사진"}을 골라 주세요 (최대 {MAX_PICK}장, 첫 장이 &quot;지금 모습&quot;). 공실 사진이면 기사에 매물 정보가 함께 들어갑니다.
+            {kind === "interior" ? "고칠 방의 실내 사진" : "건물 외관 사진"}을 1장 골라 주세요. 다른 사진을 누르면 바뀝니다. 공실 사진이면 기사에 매물 정보가 함께 들어갑니다.
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             {/* 고르면 바로 그 공실의 등록 사진을 가져온다 */}
@@ -287,7 +287,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
 
           {sim && sim.photos.length > 0 && (
             <>
-              <div style={{ ...label, marginTop: 14 }}>고른 사진 {picked}/{MAX_PICK}</div>
+              <div style={{ ...label, marginTop: 14 }}>고른 사진 {picked}/{MAX_PICK}{kind === "interior" && <span style={{ fontWeight: 500 }}> · 아래 공간 유형도 이 사진에 맞게 골라 주세요</span>}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
                 {sim.photos.map((p) => {
                   const order = sim.photos.filter((x) => x.on).findIndex((x) => x.id === p.id);
@@ -320,10 +320,10 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
               )}
               {opts.groups.map((g) => (
                 <div key={g.key}>
-                  <div style={label}>{g.label} <span style={{ fontWeight: 500 }}>· 여러 개 고를 수 있어요</span></div>
+                  <div style={label}>{g.label} <span style={{ fontWeight: 500 }}>· {g.single ? "하나만 골라요" : "여러 개 고를 수 있어요"}</span></div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {g.options.map((o) => (
-                      <button key={o.id} onClick={() => toggleOpt(g.key, o.id)} style={chip(((sim.design[g.key] as string[]) || []).includes(o.id))}>{o.name}</button>
+                      <button key={o.id} onClick={() => toggleOpt(g.key, o.id, g.single)} style={chip(((sim.design[g.key] as string[]) || []).includes(o.id))}>{o.name}</button>
                     ))}
                   </div>
                 </div>

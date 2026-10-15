@@ -33,7 +33,9 @@ const KINDS = {
     credit: "공실뉴스 리모델링 시뮬레이션 · gongsilnews.com",
   },
 };
-const MAX_PICK = 3;
+const MAX_PICK = 1; // 사진 한 장 = 공간 하나. 여러 장이면 다른 방이 섞인다
+/* 한 방에 하나뿐인 조건은 하나만 (스타일을 섞으면 결과가 흐려진다). 가구·조명·외관 조건은 조합이 자연스러워 여러 개 */
+const SINGLE = { interior: ["style", "ceiling", "floor", "wall"], remodel: [] };
 const opt = (name) => `${name}: typeof ${name} !== "undefined" ? ${name} : null`; // 한쪽 확장에만 있는 것
 const NAMES = [
   "RM_GROUPS", "RM_OPTIONS", "RM_RATIOS", "RM_SPEC_LABELS", "rmDefaultDesign", "rmDefaultCostBase", "rmEstimateCost", "rmNames", "rmWon",
@@ -86,7 +88,7 @@ function options(kind) {
     kind,
     label: KINDS[kind].label,
     rooms: L.RM_ROOMS ? ids(L.RM_ROOMS) : null,
-    groups: L.RM_GROUPS.map((g) => ({ key: g.key, label: g.label, options: ids(L.RM_OPTIONS[g.key] || []) })),
+    groups: L.RM_GROUPS.map((g) => ({ key: g.key, label: g.label, single: SINGLE[kind].includes(g.key), options: ids(L.RM_OPTIONS[g.key] || []) })),
     ratios: ids(L.RM_RATIOS),
     costFields,
     defaults: { design: L.rmDefaultDesign(), costBase: L.rmDefaultCostBase(L.rmDefaultDesign().roomType) },
@@ -212,7 +214,7 @@ async function addPhotos({ id, dataUrls }) {
   return forWeb(d);
 }
 
-/* 사진 고르기(최대 3장) · 조건 · 공사비 기준 저장 */
+/* 사진 고르기(1장) · 조건 · 공사비 기준 저장 */
 function update({ id, pick, design, costBase }) {
   const d = read(id);
   if (Array.isArray(pick)) {
@@ -220,6 +222,7 @@ function update({ id, pick, design, costBase }) {
     d.photos.forEach((p) => (p.on = on.has(p.id)));
   }
   if (design && typeof design === "object") d.design = { ...d.design, ...design };
+  for (const k of SINGLE[d.kind] || []) if (Array.isArray(d.design[k])) d.design[k] = d.design[k].slice(0, 1);
   if (costBase && typeof costBase === "object") d.costBase = { ...d.costBase, ...costBase };
   write(d);
   return forWeb(d);

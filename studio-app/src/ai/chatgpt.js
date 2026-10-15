@@ -258,7 +258,13 @@ function readImages(page) {
       }
       const images = [];
       let text = "";
-      for (const m of chain.reverse()) {
+      chain.reverse();
+      // 방금 보낸 요청(마지막 사람 말) 뒤의 답만 본다 — 이어 그리는 대화에서 앞 단계 글(설계 JSON)을 새 답으로 읽지 않게
+      let from = 0;
+      chain.forEach((m, i) => {
+        if (m.author && m.author.role === "user") from = i + 1;
+      });
+      for (const m of chain.slice(from)) {
         if (!m.author || m.author.role === "user" || m.author.role === "system") continue;
         for (const part of (m.content && m.content.parts) || []) {
           if (part && typeof part === "object" && part.content_type === "image_asset_pointer" && part.asset_pointer) {
@@ -267,7 +273,7 @@ function readImages(page) {
         }
       }
       const busy = chain.slice(-3).some((m) => m.status === "in_progress");
-      return { conversationId: id, images, busy, text };
+      return { conversationId: id, images, busy, text, answered: chain.length > from };
     })
     .catch((e) => ({ error: e.message }));
 }
@@ -325,7 +331,8 @@ function askImage(prompt, { onProgress = () => {}, chatUrl = "", files = [], onC
         return connected(dataUrl);
       }
       // 그림 없이 글로만 답하고 끝났으면 (거절·하루 한도 등) 그 이유를 보여 준다
-      if (!st.busy && !st.images.length && st.text && Date.now() > deadline - 4 * 60 * 1000) {
+      // 그림은 글보다 늦게 붙기도 하니 2분은 기다린다
+      if (st.answered && !st.busy && !st.images.length && st.text && Date.now() > deadline - 3 * 60 * 1000) {
         throw new Error(`ChatGPT가 그림 대신 글로 답했습니다: ${st.text.slice(0, 120)}`);
       }
     }
