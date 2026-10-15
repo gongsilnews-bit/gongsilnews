@@ -89,10 +89,13 @@ async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
   const saleKind = analysis.vacancy.saleKind || "";
   const listing = await fetchListing(baseUrl, vacancyId, saleKind);
 
+  // [참조 기사]: 공실뉴스 기사를 썼으면 그 기사, 없으면 블로그, 둘 다 없으면 "없음"
   const blog = readJson(blogWriter.blogFile(vacancyId));
-  const article = blog
-    ? { title: blog.title, subtitles: [], body: blog.paragraphs.join("\n\n") }
-    : { title: "(참조 기사 없음)", subtitles: [], body: "이번에는 참조 기사가 없습니다. 아래 확인된 매물 정보만 사용해 작성하십시오." };
+  const article =
+    blogWriter.referenceArticle(vacancyId) ||
+    (blog
+      ? { title: blog.title, subtitles: [], body: blog.paragraphs.join("\n\n") }
+      : { title: "(참조 기사 없음)", subtitles: [], body: "이번에는 참조 기사가 없습니다. 아래 확인된 매물 정보만 사용해 작성하십시오." });
   const prompt = sns.gwBuildSnsPrompt({ vacancy: analysis.vacancy, article });
   const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t) });
 

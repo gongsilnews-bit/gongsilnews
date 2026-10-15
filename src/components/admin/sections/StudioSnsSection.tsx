@@ -5,6 +5,8 @@ import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/stud
 import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
 import StudioSnsPanel, { type SnsData, type ChannelInfo } from "./StudioSnsPanel";
 import ChannelButton from "./ChannelButton";
+import StudioArticlePanel from "./StudioArticlePanel";
+import { useRouter } from "next/navigation";
 
 /**
  * SNS뉴스발행 (공실뉴스 스튜디오 앱 전용)
@@ -43,7 +45,7 @@ type StudioBridge = {
   blog: {
     styles: (vacancyId?: string) => Promise<BlogStyles>;
     write: (opts: { vacancyId: string; style: string; length: string }) => Promise<Blog>;
-    get: (vacancyId: string) => Promise<Blog | null>;
+    get: (vacancyId: string, doc?: string) => Promise<Blog | null>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
@@ -76,7 +78,9 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [usage, setUsage] = useState<Usage | null>(null);
   const [snsUsage, setSnsUsage] = useState<Usage | null>(null);
   // 채널 탭 (회의 결정: 공통 ①②를 한 번 하고, 채널마다 탭)
-  const [tab, setTab] = useState("blog");
+  const [tab, setTab] = useState("article"); // 공실뉴스 기사가 맨 앞
+  const [article, setArticle] = useState<Blog | null>(null);
+  const router = useRouter();
   const [pickOpen, setPickOpen] = useState(true); // ①② 펼침 — 분석이 끝나면 한 줄로 접는다
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
   const [snsData, setSnsData] = useState<SnsData | null>(null);
@@ -156,6 +160,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     setPicked(res.data as VacancyRow);
     setResult(null);
     setBlog(null);
+    setArticle(null);
     setSnsData(null);
   };
 
@@ -172,6 +177,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       setBlogOpts(await b.blog.styles(r.vacancyId)); // 경매·공매 물건이면 경매용 문체
       setPickOpen(false);
       setSnsData(await b.sns.get(r.vacancyId).catch(() => null));
+      const prevArticle = await b.blog.get(r.vacancyId, "article").catch(() => null);
+      setArticle(prevArticle ? { ...prevArticle, doc: "article" } : null);
       const prev = await b.blog.get(r.vacancyId);
       if (prev) {
         setBlog(prev);
@@ -276,11 +283,12 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       <div style={{ maxWidth: 980, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: theme.textPrimary }}>SNS뉴스발행</h2>
-            <p style={{ margin: "6px 0 0", fontSize: 14, color: theme.textSecondary }}>공실을 고르면 사진을 모으고, 소장님 AI로 블로그 글을 써서 네이버에 채워 드립니다. 발행은 소장님이 누릅니다.</p>
+            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: theme.textPrimary }}>뉴스·SNS발행</h2>
+            <p style={{ margin: "6px 0 0", fontSize: 14, color: theme.textSecondary }}>공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다.</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
           {(() => {
+            if (tab === "article") return null; // 기사 한도는 기사 등록할 때 센다
             const u = tab === "blog" ? usage : snsUsage;
             const name = tab === "blog" ? "블로그" : "SNS";
             if (!u) return null;
@@ -351,6 +359,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
                 setPicked(v);
                 setResult(null);
                 setBlog(null);
+                setArticle(null);
                 setSnsData(null);
               }}
               style={{ width: "100%", maxWidth: 560, padding: "10px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, fontWeight: 600, background: theme.cardBg, color: theme.textPrimary }}>
@@ -428,7 +437,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         {/* 채널 탭 */}
         {result && (
           <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${theme.border}`, marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
-            {[{ id: "blog", label: "네이버 블로그", done: Boolean(blog) }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post) }))].map((t) => (
+            {[{ id: "article", label: "공실뉴스 기사", done: Boolean(article) }, { id: "blog", label: "네이버 블로그", done: Boolean(blog) }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post) }))].map((t) => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{ padding: "11px 18px", border: 0, background: "transparent", cursor: "pointer", fontSize: 14.5, whiteSpace: "nowrap",
                   fontWeight: tab === t.id ? 800 : 600, color: tab === t.id ? "#1a3a6b" : theme.textSecondary,
@@ -440,12 +449,17 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           </div>
         )}
 
+        {result && tab === "article" && (
+          <StudioArticlePanel theme={theme} vacancyId={result.vacancyId} article={article} onArticle={setArticle}
+            onSend={() => router.push(`/realty_admin?menu=article&action=write&studioDraft=${encodeURIComponent(result.vacancyId)}`)} />
+        )}
+
         {result && tab !== "blog" && channels.find((c) => c.id === tab) && (
           <StudioSnsPanel theme={theme} channel={tab} info={channels.find((c) => c.id === tab)!} vacancyId={result.vacancyId}
             data={snsData} onData={setSnsData} onUsed={loadUsage} />
         )}
 
-        {(!result || tab === "blog") && (<>
+        {result && tab === "blog" && (<>
         {/* 3. 블로그 쓰기 */}
         <div style={{ ...card, opacity: result ? 1 : 0.6 }}>
           {stepTitle(3, "블로그 쓰기")}

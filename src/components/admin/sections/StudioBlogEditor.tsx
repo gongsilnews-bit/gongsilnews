@@ -15,14 +15,14 @@ import React, { useEffect, useRef, useState } from "react";
  */
 
 export type BlogMedia = { id: string; kind: string; caption: string; isCover: boolean; insertAfterParagraph: number | null; thumb: string | null };
-export type BlogDraft = { vacancyId: string; style: string; length: string; title: string; paragraphs: string[]; keywords: string[]; media: BlogMedia[] };
+export type BlogDraft = { doc?: "blog" | "article"; vacancyId: string; style: string; length: string; title: string; subtitles?: string[]; paragraphs: string[]; keywords: string[]; media: BlogMedia[] };
 
 type Bridge = {
   blog: {
-    save: (patch: { vacancyId: string; title: string; paragraphs: string[]; keywords: string[]; media: Omit<BlogMedia, "thumb" | "kind">[] }) => Promise<unknown>;
-    addPhoto: (opts: { vacancyId: string; dataUrl: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
+    save: (patch: { vacancyId: string; doc: string; title: string; subtitles?: string[]; paragraphs: string[]; keywords: string[]; media: Omit<BlogMedia, "thumb" | "kind">[] }) => Promise<unknown>;
+    addPhoto: (opts: { vacancyId: string; doc: string; dataUrl: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
     imageStyles: () => Promise<{ id: string; label: string }[]>;
-    makeImage: (opts: { vacancyId: string; style: string; request: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
+    makeImage: (opts: { vacancyId: string; doc: string; style: string; request: string; slot?: number; replaceId?: string }) => Promise<BlogMedia>;
     onProgress: (fn: (t: string) => void) => () => void;
   };
 };
@@ -44,7 +44,9 @@ function readAsDataUrl(file: File) {
 }
 
 export default function StudioBlogEditor({ theme, initial }: { theme: Theme; initial: BlogDraft }) {
+  const doc = initial.doc || "blog"; // 'article' 이면 공실뉴스 기사 (부제 3줄)
   const [title, setTitle] = useState(initial.title);
+  const [subtitles, setSubtitles] = useState<string[]>(() => [0, 1, 2].map((i) => (initial.subtitles || [])[i] || ""));
   const [paragraphs, setParagraphs] = useState(initial.paragraphs);
   const [keywords, setKeywords] = useState(initial.keywords.join(", "));
   const [media, setMedia] = useState(initial.media);
@@ -74,7 +76,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
     setAiErr("");
     const off = b.blog.onProgress(setAiMsg);
     try {
-      const item = await b.blog.makeImage({ vacancyId: initial.vacancyId, style: aiStyle, request: aiRequest, ...target });
+      const item = await b.blog.makeImage({ vacancyId: initial.vacancyId, doc, style: aiStyle, request: aiRequest, ...target });
       setMedia((list) => (target.replaceId ? list.map((m) => (m.id === item.id ? { ...m, ...item } : m)) : [...list, item]));
       setAiSlot(null);
       setAiReplace(null);
@@ -101,7 +103,9 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
       bridge()
         ?.blog.save({
           vacancyId: initial.vacancyId,
+          doc,
           title,
+          subtitles,
           paragraphs,
           keywords: keywords.split(/[,\n]/).map((k) => k.trim()).filter(Boolean),
           media: media.map(({ id, caption, isCover, insertAfterParagraph }) => ({ id, caption, isCover, insertAfterParagraph })),
@@ -110,7 +114,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
         .catch(() => setSaved("error"));
     }, 600);
     return () => clearTimeout(t);
-  }, [title, paragraphs, keywords, media, initial.vacancyId]);
+  }, [title, subtitles, paragraphs, keywords, media, initial.vacancyId, doc]);
 
   const n = paragraphs.length;
   const cover = media.find((m) => m.isCover);
@@ -178,11 +182,11 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
     try {
       const replaceId = replaceRef.current;
       if (replaceId) {
-        const item = await b.blog.addPhoto({ vacancyId: initial.vacancyId, dataUrl: await readAsDataUrl(files[0]), replaceId });
+        const item = await b.blog.addPhoto({ vacancyId: initial.vacancyId, doc, dataUrl: await readAsDataUrl(files[0]), replaceId });
         setMedia((list) => list.map((m) => (m.id === item.id ? { ...m, ...item } : m)));
       } else {
         for (const f of Array.from(files)) {
-          const item = await b.blog.addPhoto({ vacancyId: initial.vacancyId, dataUrl: await readAsDataUrl(f), slot: addSlot.current });
+          const item = await b.blog.addPhoto({ vacancyId: initial.vacancyId, doc, dataUrl: await readAsDataUrl(f), slot: addSlot.current });
           setMedia((list) => [...list, item]);
         }
       }
@@ -319,7 +323,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
       <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
       <style>{editorCss}</style>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: `1px solid ${theme.border}`, fontSize: 12, color: theme.textSecondary }}>
-        <span>네이버에 들어갈 순서 그대로입니다. 글은 눌러서 고치고, 사진은 마우스를 올려 다룹니다. 문단 사이 ⊕로 사진을 넣습니다.</span>
+        <span>{doc === "article" ? "기사에 들어갈" : "네이버에 들어갈"} 순서 그대로입니다. 글은 눌러서 고치고, 사진은 마우스를 올려 다룹니다. 문단 사이 ⊕로 사진을 넣습니다.</span>
         <span style={{ fontWeight: 700, color: saved === "error" ? "#c53030" : saved === "saving" ? "#b45309" : "#16a34a" }}>
           {saved === "error" ? "저장 실패" : saved === "saving" ? "저장 중…" : "✓ 저장됨"}
         </span>
@@ -328,6 +332,14 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
         <textarea value={title} onChange={(e) => setTitle(e.target.value)} rows={2}
           style={{ width: "100%", boxSizing: "border-box", resize: "none", border: `1px solid transparent`, borderRadius: 8, padding: "6px 8px", fontSize: 22, fontWeight: 800, lineHeight: 1.4, color: theme.textPrimary, background: "transparent", fontFamily: "inherit" }}
           onFocus={(e) => (e.currentTarget.style.borderColor = "#93c5fd")} onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")} />
+        {doc === "article" && (
+          <div style={{ margin: "4px 0 6px", padding: "10px 12px", borderLeft: "3px solid #1a3a6b", background: theme.cardBg, borderRadius: "0 8px 8px 0" }}>
+            {subtitles.map((st, i) => (
+              <input key={i} value={st} onChange={(e) => setSubtitles((list) => list.map((x, j) => (j === i ? e.target.value : x)))} placeholder={`부제 ${i + 1}`}
+                style={{ display: "block", width: "100%", boxSizing: "border-box", border: 0, outline: "none", background: "transparent", padding: "3px 0", fontSize: 14.5, fontWeight: 600, color: theme.textSecondary, fontFamily: "inherit" }} />
+            ))}
+          </div>
+        )}
 
         {cover && photo(cover)}
         {inSlot(0).map(photo)}
@@ -353,11 +365,13 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
         ))}
 
         <div style={{ marginTop: 18 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>태그 (쉼표로 구분 · 발행 창에 자동 입력)</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>{doc === "article" ? "키워드 (쉼표로 구분)" : "태그 (쉼표로 구분 · 발행 창에 자동 입력)"}</div>
           <textarea value={keywords} onChange={(e) => setKeywords(e.target.value)} rows={2}
             style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${theme.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 13, color: theme.textPrimary, background: theme.cardBg, fontFamily: "inherit" }} />
         </div>
-        <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary }}>글 끝에는 매물 정보 출처(중개사무소 정보)와 공실뉴스 매물 상세 링크가 자동으로 붙습니다.</div>
+        <div style={{ marginTop: 10, fontSize: 12, color: theme.textSecondary }}>
+          {doc === "article" ? "키워드는 기사쓰기 화면의 키워드 칸에 들어갑니다." : "글 끝에는 매물 정보 출처(중개사무소 정보)와 공실뉴스 매물 상세 링크가 자동으로 붙습니다."}
+        </div>
       </div>
     </div>
   );

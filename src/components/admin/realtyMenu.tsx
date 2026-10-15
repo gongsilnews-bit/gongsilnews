@@ -17,7 +17,7 @@ export const REALTY_MENU_CATALOG: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "gongsil", label: "공실등록", icon: <IconBuilding /> },
   { key: "article", label: "기사등록", icon: <IconArticle /> },
-  { key: "sns", label: "SNS뉴스발행", icon: <IconSend /> },
+  { key: "sns", label: "뉴스·SNS발행", icon: <IconSend /> },
   { key: "video", label: "동영상제작", icon: <IconFilm /> },
   { key: "customer", label: "고객관리", icon: <IconCustomer /> },
   { key: "article_ad", label: "광고관리", icon: <IconAd /> },

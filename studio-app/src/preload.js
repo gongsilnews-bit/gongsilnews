@@ -41,10 +41,15 @@ if (allowed) {
         return () => ipcRenderer.removeListener("studio:naver-progress", h);
       },
     },
+    article: {
+      options: (vacancyId) => ipcRenderer.invoke("studio:article-options", vacancyId),
+      write: (opts) => ipcRenderer.invoke("studio:article-write", opts),
+      exportDraft: (vacancyId) => ipcRenderer.invoke("studio:article-export", vacancyId),
+    },
     blog: {
       styles: (vacancyId) => ipcRenderer.invoke("studio:blog-styles", vacancyId),
       write: (opts) => ipcRenderer.invoke("studio:blog-write", opts),
-      get: (vacancyId) => ipcRenderer.invoke("studio:blog-get", vacancyId),
+      get: (vacancyId, doc) => ipcRenderer.invoke("studio:blog-get", vacancyId, doc),
       save: (patch) => ipcRenderer.invoke("studio:blog-save", patch),
       addPhoto: (opts) => ipcRenderer.invoke("studio:blog-add-photo", opts),
       imageStyles: () => ipcRenderer.invoke("studio:blog-image-styles"),

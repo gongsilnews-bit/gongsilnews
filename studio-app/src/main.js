@@ -333,7 +333,10 @@ ipcMain.handle("studio:sns-write", (e, opts) => snsWriter.write({ ...opts, baseU
 ipcMain.handle("studio:sns-save", (_e, opts) => snsWriter.save(opts));
 ipcMain.handle("studio:sns-export", (_e, opts) => snsWriter.exportChannel(opts));
 ipcMain.handle("studio:naver-open-blog", () => naverWrite.openMyBlog());
-ipcMain.handle("studio:blog-get", (_e, vacancyId) => blogWriter.get(vacancyId));
+ipcMain.handle("studio:blog-get", (_e, vacancyId, doc) => blogWriter.get(vacancyId, doc));
+ipcMain.handle("studio:article-options", (_e, vacancyId) => blogWriter.articleOptions(vacancyId));
+ipcMain.handle("studio:article-write", (e, opts) => blogWriter.writeArticle(opts, (text) => e.sender.send("studio:blog-progress", text)));
+ipcMain.handle("studio:article-export", (_e, vacancyId) => blogWriter.exportArticleDraft(vacancyId));
 ipcMain.handle("studio:blog-save", (_e, patch) => blogWriter.save(patch));
 ipcMain.handle("studio:blog-add-photo", (_e, opts) => blogWriter.addPhoto(opts));
 ipcMain.handle("studio:blog-image-styles", () => blogWriter.imageStyles());

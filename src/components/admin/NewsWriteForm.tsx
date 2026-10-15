@@ -161,6 +161,66 @@ export default function NewsWritePage({ initialIsMemberMode = false }: { initial
     }
   };
 
+  /* ── 공실뉴스 스튜디오에서 보낸 기사 초안 받기 (?studioDraft=<공실ID>) ──
+     뉴스·SNS발행의 [기사쓰기 화면으로 보내기]. 앱(window.gongsilStudio)이 초안과 사진(data URL)을 넘겨주면
+     평소 사진 올리기와 같은 길(WebP 압축 → blob 미리보기 → 저장할 때 업로드)로 넣고, 본문에 자리대로 끼운다.
+     본문·사진 모양은 크롬 확장 content-admin.js buildBodyHtml 과 같다. [기사 등록]은 회원이 누른다. */
+  const studioDraftDoneRef = React.useRef(false);
+  useEffect(() => {
+    if (studioDraftDoneRef.current || typeof window === "undefined") return;
+    const vacancyId = new URLSearchParams(window.location.search).get("studioDraft");
+    type StudioDraft = { title: string; subtitles: string[]; paragraphs: string[]; keywords: string[]; saleKind: string; photos: { dataUrl: string; caption: string; isCover: boolean; slot: number }[] };
+    const studio = (window as unknown as { gongsilStudio?: { article?: { exportDraft: (id: string) => Promise<StudioDraft | null> } } }).gongsilStudio;
+    if (!vacancyId || !studio?.article) return;
+    studioDraftDoneRef.current = true;
+
+    const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
+    const toFile = async (dataUrl: string, i: number) => {
+      const blob = await (await fetch(dataUrl)).blob();
+      return new File([blob], `gongsil-studio-${i + 1}.${blob.type.includes("png") ? "png" : "jpg"}`, { type: blob.type || "image/jpeg" });
+    };
+    (async () => {
+      const d = await studio.article!.exportDraft(vacancyId);
+      if (!d) return;
+      // 에디터가 그려질 때까지 기다린다
+      for (let i = 0; i < 50 && !editorRef.current; i++) await new Promise((r) => setTimeout(r, 100));
+      if (!editorRef.current) return;
+
+      setTitle(d.title || "");
+      setSubtitle((d.subtitles || []).join("\n"));
+      setSection1("공실뉴스");
+      if (d.saleKind) setSection2("신축/분양/경매");
+      setKeywords(d.keywords || []);
+
+      const photos = await Promise.all(
+        d.photos.map(async (p, i) => {
+          const compressed = await compressToWebP(await toFile(p.dataUrl, i));
+          return { ...p, file: compressed, preview: URL.createObjectURL(compressed) };
+        })
+      );
+      setPhotoFiles(photos.map((p, i) => ({ file: p.file, preview: p.preview, caption: p.caption, isCover: p.isCover || (i === 0 && !photos.some((x) => x.isCover)), size: 600, align: "center", captionAlign: "center" })));
+
+      const figure = (p: { preview: string; caption: string }) =>
+        `<div class="inserted-photo" contenteditable="false" style="display: table; margin: 16px auto; text-align: center;">` +
+        `<img src="${p.preview}" alt="${esc(p.caption || "기사 이미지")}" style="max-width: 600px; width: 100%; height: auto; border-radius: 6px; display: block;">` +
+        (p.caption ? `<p style="display: table-caption; caption-side: bottom; font-size: 13px; color: #6b7280; margin: 8px 0 0 0; text-align: center; line-height: 1.5;">${esc(p.caption)}</p>` : "") +
+        `</div><br>`;
+      const n = d.paragraphs.length;
+      const at = (slot: number) => photos.filter((p) => p.slot === slot).map(figure).join("");
+      let html = photos.filter((p) => p.isCover || p.slot === -1).map(figure).join("") + at(0);
+      d.paragraphs.forEach((text, i) => {
+        const style = text.startsWith("■") ? "margin: 24px 0 8px 0; line-height: 1.6; font-weight: 800; color: #111827;" : "margin: 0 0 16px 0; line-height: 1.8;";
+        html += `<p style="${style}">${esc(text)}</p>` + at(i + 1);
+      });
+      html += photos.filter((p) => p.slot > n).map(figure).join("");
+
+      editorRef.current.innerHTML = html;
+      editorRef.current.querySelectorAll<HTMLElement>(".inserted-photo").forEach((w) => createDeleteBtn(w, "photo"));
+      setContent(editorRef.current.innerHTML);
+    })().catch((e) => console.error("[스튜디오 기사 초안] 받기 실패", e));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* ── 공실 매물 정보로 기사 초안 생성 (API 호출 없이 로컬 템플릿) ── */
   const executeOptionWizardGenerate = async () => {
     if (!selectedVacancyId) return;
