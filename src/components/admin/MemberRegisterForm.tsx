@@ -909,7 +909,7 @@ function gradeDefaults(p: any, role: string, planType?: string) {
             <option value="30">30회</option>
             <option value="-1">무제한</option>
           </select>
-          <span style={{ fontSize: 12.5, color: "#6b7280" }}>등급 기본: 무료부동산 3회 · 공실스터디부동산·비즈니스 무제한(하루 20건) · 일반회원 0회</span>
+          <span style={{ fontSize: 12.5, color: "#6b7280" }}>등급 기본: 무료부동산 3회 · 공실스터디부동산·비즈니스 무제한 · 일반회원 0회</span>
         </label>
       </div>
     </div>
