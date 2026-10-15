@@ -47,6 +47,47 @@ type MyVacancy = { id: string; vacancy_no: number; building_name: string | null;
 
 const bridge = (): Bridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: Bridge }).gongsilStudio ?? null) : null);
 const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
+/* 시뮬레이션 진행 — 글자만 바뀌면 지루하니, 단계별 쉬운 말 + 공실뉴스 로딩 점 + 걸린 시간 */
+const SIM_STEPS = [
+  { key: 1, head: "AI가 설계 지시서를 쓰고 있어요" },
+  { key: 2, head: "AI가 열심히 예측 이미지를 만들고 있어요" },
+  { key: 3, head: "결과표를 정리하고 있어요" },
+];
+function SimProgress({ text }: { text: string }) {
+  const [stage, setStage] = useState(1);
+  const [sec, setSec] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setSec((x) => x + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  useEffect(() => {
+    if (text.startsWith("②")) setStage(2);
+    else if (text.startsWith("③")) setStage(3);
+  }, [text]);
+  const head = SIM_STEPS[stage - 1].head;
+  return (
+    <div style={{ marginTop: 12, padding: "18px 20px", borderRadius: 12, background: "#f0f5ff", border: "1px solid #d6e4ff", textAlign: "center" }}>
+      <style>{`@keyframes gwSimDot { 0%, 60%, 100% { transform: translateY(0); opacity: .45 } 30% { transform: translateY(-7px); opacity: 1 } }`}</style>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 6, height: 20, marginBottom: 10 }}>
+        {[0, 1, 2].map((i) => (
+          <span key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: "#2563eb", animation: `gwSimDot 1.1s ease-in-out ${i * 0.16}s infinite` }} />
+        ))}
+      </div>
+      <div style={{ fontSize: 15.5, fontWeight: 800, color: "#1a3a6b" }}>{head}</div>
+      <div style={{ marginTop: 4, fontSize: 13, color: "#475569" }}>잠시만 기다려 주세요 · {Math.floor(sec / 60) ? `${Math.floor(sec / 60)}분 ` : ""}{sec % 60}초</div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
+        {SIM_STEPS.map((x) => (
+          <span key={x.key} style={{ fontSize: 11.5, fontWeight: 700, padding: "3px 10px", borderRadius: 999,
+            background: x.key < stage ? "#16a34a" : x.key === stage ? "#1a3a6b" : "#e2e8f0", color: x.key <= stage ? "#fff" : "#64748b" }}>
+            {x.key < stage ? "✓ " : ""}{["설계 지시서", "예측 이미지", "결과표"][x.key - 1]}
+          </span>
+        ))}
+      </div>
+      {text && <div style={{ marginTop: 10, fontSize: 12, color: "#94a3b8" }}>{text.replace(/^[①②③]\s*/, "")}</div>}
+    </div>
+  );
+}
+
 const MAX_PICK = 1; // 사진 한 장 = 공간 하나
 const won = (man: number) => {
   const v = Math.round(man || 0);
@@ -378,7 +419,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
               <button onClick={newSim} disabled={Boolean(busy)} style={plainBtn}>새 시뮬레이션 시작</button>
             </div>
           )}
-          {busy === "시뮬레이션 중…" && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress || busy}</div>}
+          {busy === "시뮬레이션 중…" && <SimProgress text={progress} />}
           {error && errorAt === "run" && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{error}</div>}
 
           {recent.length > 0 && (
