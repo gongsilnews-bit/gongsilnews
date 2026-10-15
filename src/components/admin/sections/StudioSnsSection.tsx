@@ -455,7 +455,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             <button onClick={pickByNo} style={{ padding: "9px 14px", background: theme.cardBg, color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
             {/* 공실열람을 새 창으로 열어 물건(경매·공매 포함)을 둘러보고 번호를 확인한다 */}
             <button onClick={openGongsil} title="공실열람을 새 창으로 열기"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 14px", background: theme.cardBg, color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 4l-6 3v13l6-3 6 3 6-3V4l-6 3z" /><path d="M9 4v13M15 7v13" /></svg>
               공실열람
             </button>
