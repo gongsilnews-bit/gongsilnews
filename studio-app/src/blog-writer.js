@@ -22,9 +22,12 @@ const mediaDir = (vacancyId) => path.join(app.getPath("userData"), "media", Stri
 const blogFile = (vacancyId) => path.join(mediaDir(vacancyId), "blog.json");
 const newId = () => crypto.randomBytes(6).toString("hex");
 
-function styles() {
+function styles(vacancyId) {
+  const analysis = vacancyId ? readJson(path.join(mediaDir(vacancyId), "analysis.json")) : null;
+  const table = blogPrompt.gwBlogStyles(analysis && analysis.vacancy); // 경매·공매면 경매용 문체
   return {
-    styles: Object.entries(blogPrompt.GW_BLOG_STYLE).map(([id, s]) => ({ id, label: s.label, fit: s.fit, titleExample: s.titleExample })),
+    saleKind: (analysis && analysis.vacancy && analysis.vacancy.saleKind) || "",
+    styles: Object.entries(table).map(([id, s]) => ({ id, label: s.label, fit: s.fit, titleExample: s.titleExample, design: s.design })),
     lengths: Object.entries(blogPrompt.GW_BLOG_LENGTH).map(([id, l]) => ({ id, label: l.label, chars: l.chars })),
   };
 }

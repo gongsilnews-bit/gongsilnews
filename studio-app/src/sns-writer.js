@@ -86,7 +86,8 @@ async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
   await useQuota(baseUrl, vacancyId);
 
   onProgress("매물 정보 출처(중개사무소)를 확인하는 중…");
-  const listing = await fetchListing(baseUrl, vacancyId);
+  const saleKind = analysis.vacancy.saleKind || "";
+  const listing = await fetchListing(baseUrl, vacancyId, saleKind);
 
   const blog = readJson(blogWriter.blogFile(vacancyId));
   const article = blog
@@ -111,7 +112,7 @@ async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
       media[ch] = picked.map((p) => pool.find((m) => m.file === p.url)).filter(Boolean).map((m) => m.id);
     }
   }
-  const data = { vacancyId, noun: "매물", listing, posts: parsed.posts, pool, media, writtenAt: new Date().toISOString() };
+  const data = { vacancyId, noun: saleKind ? "물건" : "매물", listing, posts: parsed.posts, pool, media, writtenAt: new Date().toISOString() };
   fs.writeFileSync(snsFile(vacancyId), JSON.stringify(data, null, 2));
   log.info(`[SNS] ${vacancyId} ${Object.keys(parsed.posts).join(",")}`);
   return forWeb(data);

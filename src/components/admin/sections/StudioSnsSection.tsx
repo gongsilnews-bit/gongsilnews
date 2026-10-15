@@ -21,11 +21,11 @@ import ChannelButton from "./ChannelButton";
 type MediaThumb = { kind: string; caption: string; thumb: string | null };
 type Analysis = {
   vacancyId: string;
-  vacancy: { title?: string; priceText?: string; fields?: { label: string; value: string }[]; themes?: string[]; infra?: string };
+  vacancy: { title?: string; priceText?: string; saleKind?: string; fields?: { label: string; value: string }[]; themes?: string[]; infra?: string };
   media: MediaThumb[];
   failures: string[];
 };
-type BlogStyles = { styles: { id: string; label: string; fit: string; titleExample: string }[]; lengths: { id: string; label: string; chars: string }[] };
+type BlogStyles = { saleKind?: string; styles: { id: string; label: string; fit: string; titleExample: string; design?: string }[]; lengths: { id: string; label: string; chars: string }[] };
 type Blog = BlogDraft;
 type Usage = { plan: string; monthLimit: number; monthUsed: number; monthRemaining: number | null; dailyLimit: number | null; todayUsed: number; custom: boolean };
 type AiItem = { id: string; name: string; ready: boolean; ok: boolean; account?: string; plan?: string };
@@ -41,7 +41,7 @@ type StudioBridge = {
   };
   sns: { channels: () => Promise<ChannelInfo[]>; get: (vacancyId: string) => Promise<SnsData | null> };
   blog: {
-    styles: () => Promise<BlogStyles>;
+    styles: (vacancyId?: string) => Promise<BlogStyles>;
     write: (opts: { vacancyId: string; style: string; length: string }) => Promise<Blog>;
     get: (vacancyId: string) => Promise<Blog | null>;
     onProgress: (fn: (t: string) => void) => () => void;
@@ -93,7 +93,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   useEffect(() => loadUsage(), [loadUsage]);
   const [mine, setMine] = useState<MyVacancy[] | null>(null);
   const [mineError, setMineError] = useState("");
-  const [search, setSearch] = useState("");
+
   const [noInput, setNoInput] = useState("");
   const [picked, setPicked] = useState<VacancyRow | null>(null);
   const [busy, setBusy] = useState(false);
@@ -122,7 +122,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   }, []);
 
   // 문체마다 어울리는 디자인 (확장과 같은 짝)
-  const STYLE_DESIGN: Record<string, string> = { listing: "basic", visit: "magazine", story: "magazine", report: "news", consult: "qna", shortform: "basic" };
+  // 문체마다 어울리는 디자인 (확장과 같은 짝 — 문체 목록에 함께 온다)
+  const designFor = (id: string) => blogOpts?.styles.find((x) => x.id === id)?.design || "basic";
 
   const loadAi = useCallback(async () => {
     const b = bridge();
@@ -146,8 +147,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     });
   }, [memberId]);
 
-  const q = search.trim();
-  const filtered = (mine || []).filter((v) => !q || `${v.vacancy_no} ${v.building_name || ""} ${v.address} ${v.trade_type || ""} ${v.property_type || ""}`.includes(q));
+
 
   const pickByNo = async () => {
     setError("");
@@ -169,6 +169,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     try {
       const r = await b.vacancy.analyze(picked.id);
       setResult(r);
+      setBlogOpts(await b.blog.styles(r.vacancyId)); // 경매·공매 물건이면 경매용 문체
       setPickOpen(false);
       setSnsData(await b.sns.get(r.vacancyId).catch(() => null));
       const prev = await b.blog.get(r.vacancyId);
@@ -176,7 +177,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         setBlog(prev);
         setStyle(prev.style);
         setLength(prev.length);
-        setDesign(STYLE_DESIGN[prev.style] || "basic");
+        setDesign(designFor(prev.style));
       }
     } catch (e) {
       setError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
@@ -197,7 +198,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     setNaverDone(null);
     try {
       setBlog(await b.blog.write({ vacancyId: result.vacancyId, style, length }));
-      setDesign(STYLE_DESIGN[style] || "basic");
+      setDesign(designFor(style));
     } catch (e) {
       setBlogError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
     } finally {
@@ -307,7 +308,10 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               ))}
             </div>
             <div style={{ flex: 1, minWidth: 220 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
+                {result.vacancy.saleKind && (
+                  <span style={{ fontSize: 11.5, fontWeight: 800, padding: "2px 8px", borderRadius: 999, background: "#fee2e2", color: "#b91c1c" }}>{result.vacancy.saleKind}</span>
+                )}
                 {picked ? vacancyLabel(picked) : result.vacancy.title}
               </div>
               <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>
@@ -325,53 +329,38 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         {/* 1. 공실 고르기 */}
         <div style={card}>
           {stepTitle(1, "공실 고르기")}
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-            <input value={noInput} onChange={(e) => setNoInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && pickByNo()} placeholder="공실번호로 불러오기 (예: 87889)"
-              style={{ flex: 1, maxWidth: 320, padding: "10px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, background: theme.cardBg, color: theme.textPrimary }} />
-            <button onClick={pickByNo} style={{ padding: "10px 16px", background: "#1a3a6b", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, margin: "4px 0 10px" }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: theme.textPrimary }}>
-              내가 등록한 공실 {mine ? <span style={{ color: "#2563eb" }}>{mine.length}</span> : null}
-            </div>
-            {mine && mine.length > 6 && (
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="번호·건물명·동네로 찾기"
-                style={{ width: 220, padding: "8px 10px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13, background: theme.cardBg, color: theme.textPrimary }} />
-            )}
-          </div>
+          {/* 내가 등록한 공실은 셀렉트바로 (기사등록의 "보도 대상 공실 매물"과 같은 모양) */}
+          <label style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 6, display: "block" }}>보도 대상 공실 매물</label>
           {mine === null ? (
             <div style={{ fontSize: 13, color: theme.textSecondary }}>불러오는 중…</div>
           ) : mine.length === 0 ? (
-            <div style={{ padding: "18px 16px", borderRadius: 10, background: theme.bg || "#f6f8fa", fontSize: 14, color: theme.textSecondary, lineHeight: 1.7 }}>
-              {mineError || "아직 등록한 공실이 없습니다."} 공실등록 메뉴에서 공실을 등록하면 여기에 나옵니다. 다른 공실은 위에서 공실번호로 불러올 수 있습니다.
-            </div>
+            <div style={{ fontSize: 13.5, color: "#b45309", padding: "6px 0" }}>{mineError || "아직 등록한 공실이 없습니다."} 공실등록 메뉴에서 공실을 등록하면 여기에 나옵니다.</div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 10, maxHeight: 520, overflowY: "auto", padding: 2 }}>
-              {filtered.map((v) => {
-                const on = picked?.id === v.id;
-                return (
-                  <button key={v.id} onClick={() => { setPicked(v); setResult(null); setBlog(null); setSnsData(null); }}
-                    style={{ textAlign: "left", padding: 0, borderRadius: 10, cursor: "pointer", overflow: "hidden", background: theme.cardBg, color: theme.textPrimary,
-                      border: `2px solid ${on ? "#1a3a6b" : theme.border}`, boxShadow: on ? "0 0 0 3px rgba(26,58,107,0.15)" : "none" }}>
-                    <div style={{ position: "relative", aspectRatio: "16 / 10", background: "#e5e7eb" }}>
-                      {v.photo ? <img src={v.photo} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#9ca3af" }}>사진 없음</div>}
-                      <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 800, padding: "3px 7px", borderRadius: 6, background: "rgba(0,0,0,0.6)", color: "#fff" }}>{v.vacancy_no}</span>
-                      {v.photoCount > 0 && <span style={{ position: "absolute", top: 8, right: 8, fontSize: 11, fontWeight: 700, padding: "3px 7px", borderRadius: 6, background: "rgba(0,0,0,0.6)", color: "#fff" }}>사진 {v.photoCount}</span>}
-                      {on && <span style={{ position: "absolute", bottom: 8, right: 8, fontSize: 12, fontWeight: 800, padding: "4px 9px", borderRadius: 999, background: "#1a3a6b", color: "#fff" }}>✓ 선택됨</span>}
-                    </div>
-                    <div style={{ padding: "10px 12px" }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.building_name || v.address || "이름 없음"}</div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "#2563eb", marginTop: 3 }}>{priceText(v)}</div>
-                      <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {[v.property_type, v.address].filter(Boolean).join(" · ")}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-              {filtered.length === 0 && <div style={{ fontSize: 13, color: theme.textSecondary }}>찾는 공실이 없습니다.</div>}
-            </div>
+            <select value={picked && mine.some((v) => v.id === picked.id) ? picked.id : ""}
+              onChange={(e) => {
+                const v = mine.find((x) => x.id === e.target.value);
+                if (!v) return;
+                setPicked(v);
+                setResult(null);
+                setBlog(null);
+                setSnsData(null);
+              }}
+              style={{ width: "100%", maxWidth: 560, padding: "10px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 14, fontWeight: 600, background: theme.cardBg, color: theme.textPrimary }}>
+              <option value="">공실을 골라 주세요 ({mine.length}개)</option>
+              {mine.map((v) => (
+                <option key={v.id} value={v.id}>
+                  [{v.trade_type || "-"}] {v.building_name || "무제"} ({v.address || ""}) · {v.vacancy_no}
+                </option>
+              ))}
+            </select>
           )}
+          {/* 경매·공매 물건이나 남의 공실은 물건번호로 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, color: theme.textSecondary }}>또는</span>
+            <input value={noInput} onChange={(e) => setNoInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && pickByNo()} placeholder="공실·경매 물건번호 (예: 87889)"
+              style={{ width: 240, padding: "9px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, background: theme.cardBg, color: theme.textPrimary }} />
+            <button onClick={pickByNo} style={{ padding: "9px 14px", background: theme.cardBg, color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
+          </div>
         </div>
 
         {/* 2. 분석·캡처 */}

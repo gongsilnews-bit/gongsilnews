@@ -42,7 +42,7 @@ if (allowed) {
       },
     },
     blog: {
-      styles: () => ipcRenderer.invoke("studio:blog-styles"),
+      styles: (vacancyId) => ipcRenderer.invoke("studio:blog-styles", vacancyId),
       write: (opts) => ipcRenderer.invoke("studio:blog-write", opts),
       get: (vacancyId) => ipcRenderer.invoke("studio:blog-get", vacancyId),
       save: (patch) => ipcRenderer.invoke("studio:blog-save", patch),

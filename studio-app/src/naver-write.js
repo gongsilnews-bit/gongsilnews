@@ -43,8 +43,28 @@ function toDataUrl(file) {
   return `data:${type};base64,${fs.readFileSync(file).toString("base64")}`;
 }
 
-/* 글 끝 "매물 정보 출처"(표시·광고 필수 정보)를 공실뉴스에서 받는다 — 확장 listing-source.js 와 같은 API */
-async function fetchListing(baseUrl, vacancyId) {
+/* 경매·공매 물건 출처 정보 (확장 listing-source.js gwFetchAuctionListing 과 같다) */
+async function fetchAuctionListing(baseUrl, vacancyId) {
+  const res = await session.defaultSession.fetch(`${baseUrl}/api/extension/auction-source?id=${encodeURIComponent(vacancyId)}&for=blog`);
+  const data = await res.json().catch(() => ({}));
+  if (!data || !data.success) throw new Error((data && data.error) || "경매·공매 물건 정보를 가져오지 못했습니다.");
+  const fact = (...labels) => ((data.facts || []).find((f) => labels.includes(f.label)) || {}).value || "";
+  return {
+    detailUrl: `${naverBlog.SITE_URL}${data.detailPath}`,
+    location: data.location || "",
+    propertyType: data.propertyType || "",
+    saleKind: data.saleKind || "",
+    caseLabel: fact("관리번호") ? "관리번호" : "사건번호",
+    caseNo: fact("관리번호", "사건번호"),
+    agency: fact("집행기관", "관할법원"),
+    capturedAt: new Date().toISOString(),
+  };
+}
+
+/* 글 끝 "매물 정보 출처"(표시·광고 필수 정보)를 공실뉴스에서 받는다 — 확장 listing-source.js 와 같은 API.
+   경매·공매 물건(saleKind)이면 경매 출처를 받는다. */
+async function fetchListing(baseUrl, vacancyId, saleKind = "") {
+  if (saleKind) return fetchAuctionListing(baseUrl, vacancyId);
   const res = await session.defaultSession.fetch(`${baseUrl}/api/extension/vacancy-source?id=${encodeURIComponent(vacancyId)}`);
   const data = await res.json().catch(() => ({}));
   if (!data || !data.success) throw new Error((data && data.error) || "매물 출처 정보를 가져오지 못했습니다.");
@@ -88,10 +108,13 @@ async function fillNaver({ baseUrl, vacancyId, design }, onProgress = () => {}) 
   const blog = JSON.parse(fs.readFileSync(blogFile, "utf8"));
 
   onProgress("매물 출처 정보(중개사무소)를 확인하는 중…");
-  const listing = await fetchListing(baseUrl, vacancyId);
-  const problems = naverBlog.listingProblems(listing, false);
+  const saleKind = analysis.vacancy.saleKind || "";
+  const listing = await fetchListing(baseUrl, vacancyId, saleKind);
+  const problems = naverBlog.listingProblems(listing, Boolean(saleKind));
   if (problems.length) {
-    throw new Error(`부동산 표시·광고 필수 정보가 없어 멈췄습니다: ${problems.join(", ")}. 공실의 등록자 정보를 확인해 주세요.`);
+    throw new Error(saleKind
+      ? `물건 정보가 없어 멈췄습니다: ${problems.join(", ")}. 분석·캡처를 다시 해 주세요.`
+      : `부동산 표시·광고 필수 정보가 없어 멈췄습니다: ${problems.join(", ")}. 공실의 등록자 정보를 확인해 주세요.`);
   }
 
   // 사진: 미리보기에서 다듬은 순서·대표·자리 그대로 (없으면 등록 사진 전부 + 캡처 3장, 첫 장 대표)

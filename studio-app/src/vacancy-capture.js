@@ -4,7 +4,7 @@
 //  - 등록 사진을 전부 내려받고
 //  - 화면 3장(공실열람 검증 16:9 · 지도 · 로드뷰)을 찍는다.
 // 결과는 userData/media/<공실ID>/ 에 파일로 남겨 다음 단계들이 다시 찍지 않고 쓴다.
-const { app, BrowserWindow, net } = require("electron");
+const { app, BrowserWindow, net, session } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const log = require("electron-log/main");
@@ -28,8 +28,52 @@ function field(v, ...labels) {
   return "";
 }
 
+/* 기사에 쓰지 않는 공고 부속 정보 — 정보제공처(온비드 고객센터 연락처)와 입찰 전 법적 주의사항 */
+const EXCLUDED_FACT = /정보\s*제공|고객\s*센터|주의\s*사항|1588-?5321/;
+
+/* 경매·공매 물건이면 서버 정보를, 아니면 null (확장 panel.js fetchAuction 과 같다) */
+async function fetchAuction(baseUrl, domVacancy) {
+  const id = domVacancy.vacancyId;
+  if (!id) return null;
+  const res = await session.defaultSession.fetch(`${baseUrl}/api/extension/auction-source?id=${encodeURIComponent(id)}`).catch(() => null);
+  const data = res ? await res.json().catch(() => null) : null;
+  if (!data || !data.success) return null; // 일반 매물
+  return {
+    vacancyId: data.id,
+    saleKind: data.saleKind,
+    title: data.title,
+    priceText: data.priceText,
+    location: data.location,
+    propertyType: data.propertyType,
+    detailPath: data.detailPath,
+    fields: (data.facts || []).filter((f) => !EXCLUDED_FACT.test(`${f.label} ${f.value}`)),
+    images: (domVacancy.images || []).length ? domVacancy.images : data.images || [],
+    url: domVacancy.url,
+  };
+}
+
+/* 경매·공매 물건 사진 설명글 (확장 media.js gwAuctionCaptionFor 와 같은 문구) */
+function auctionCaptionFor(kind, v, index = 0) {
+  const name = (v && (v.title || field(v, "소재지(지번)", "소재지"))) || "해당 물건";
+  const price = (v && v.priceText) || "";
+  const saleKind = (v && v.saleKind) || "경매";
+  switch (kind) {
+    case "proof":
+      return `[공실열람 ${saleKind} 물건 정보] 공실뉴스 공실열람에 게재된 '${name}'${price ? ` (${price})` : ""} ${saleKind} 물건 현황`;
+    case "photo":
+      return index === 0 ? `${name} 전경 (자료: 공실뉴스)` : `${name} 사진 ${index + 1} (자료: 공실뉴스)`;
+    case "map":
+      return `[위치 지도] ${name} 위치 및 주변 환경 (자료: 위치정보 지도)`;
+    case "roadview":
+      return `[현장 로드뷰] ${name} 진입로 및 가로변 전경 (자료: 로드뷰)`;
+    default:
+      return name;
+  }
+}
+
 /* 사진마다 붙는 설명글 (확장 media.js gwCaptionFor 와 같은 문구) */
 function captionFor(kind, v, index = 0) {
+  if (v && v.saleKind) return auctionCaptionFor(kind, v, index);
   const name = (v && (v.title || field(v, "소재지"))) || "해당 매물";
   const price = (v && v.priceText) || "";
   switch (kind) {
@@ -54,9 +98,13 @@ function extOf(contentType, url) {
   return m ? m[1].toLowerCase().replace("jpeg", "jpg") : "jpg";
 }
 
+const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36";
+
 async function downloadPhoto(url, fileBase) {
-  const res = await net.fetch(url);
-  if (!res.ok) throw new Error(`사진 내려받기 실패 ${res.status}`);
+  let res = await net.fetch(url).catch(() => null);
+  // 온비드 등 일부 서버는 앱 기본 요청을 거부한다(500) — 브라우저와 같은 요청으로 한 번 더
+  if (!res || !res.ok) res = await fetch(url, { headers: { "User-Agent": BROWSER_UA, Accept: "image/*,*/*" } }).catch(() => null);
+  if (!res || !res.ok) throw new Error(`사진 내려받기 실패 ${res ? res.status : ""}`.trim());
   const buf = Buffer.from(await res.arrayBuffer());
   const ext = extOf(res.headers.get("content-type") || "", url);
   const file = `${fileBase}.${ext}`;
@@ -120,7 +168,10 @@ async function analyzeVacancy(baseUrl, vacancyId, onProgress = () => {}) {
     onProgress("매물 정보를 읽는 중…");
     const got = await win.webContents.executeJavaScript("window.__gongsilStudio.collectVacancy()");
     if (!got || !got.ok) throw new Error((got && got.reason) || "매물 정보를 읽지 못했습니다.");
-    const vacancy = got.vacancy;
+    // 경매·공매 물건이면 서버의 물건 정보(사건번호·집행기관·감정가·최저입찰가)를 쓴다
+    const vacancy = (await fetchAuction(baseUrl, got.vacancy)) || got.vacancy;
+    if (vacancy.saleKind) onProgress(`${vacancy.saleKind} 물건으로 확인했습니다.`);
+    else if (!(vacancy.fields || []).length) throw new Error("매물 상세 표를 읽지 못했습니다.");
 
     const media = [];
     const failures = [];
