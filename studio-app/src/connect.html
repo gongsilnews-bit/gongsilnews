@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>공실뉴스 스튜디오</title>
+<style>
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         background:#f6f8fa; color:#16202b; font-family:'Pretendard Variable','Malgun Gothic',sans-serif; }
+  .box { width:420px; background:#fff; border:1px solid #e8ecf0; border-radius:14px; padding:44px 30px;
+         text-align:center; box-shadow:0 1px 3px rgba(16,24,40,.08); }
+  .brand { font-size:13px; font-weight:700; color:#6b7684; margin-bottom:8px; }
+  h1 { margin:0 0 12px; font-size:22px; font-weight:800; letter-spacing:-0.5px; }
+  p { margin:0 0 26px; font-size:14px; line-height:1.75; color:#6b7684; word-break:keep-all; }
+  button { width:100%; padding:15px 0; background:#16202b; color:#fff; border:0; border-radius:10px;
+           font-size:16px; font-weight:800; cursor:pointer; font-family:inherit; }
+  button:hover { background:#000; }
+  .steps { text-align:left; margin:0 0 26px; padding:16px 18px; background:#f6f8fa; border-radius:10px;
+           font-size:13px; line-height:1.9; color:#4b5563; }
+  .ver { margin-top:18px; font-size:12px; color:#9aa4b2; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="brand">공실뉴스 스튜디오</div>
+    <h1>스튜디오를 연결해 주세요</h1>
+    <p>평소 쓰시는 크롬에서 버튼 한 번이면 연결됩니다.<br>한 번 연결하면 다음부터는 바로 시작합니다.</p>
+    <div class="steps">
+      ① 크롬이 열리면 <b>[공실뉴스 스튜디오 연결]</b>을 누르세요.<br>
+      ② 크롬이 앱 열기를 물으면 <b>[열기]</b>를 누르세요.<br>
+      ③ 이 창으로 돌아와 바로 시작합니다.
+    </div>
+    <button id="connect">크롬에서 연결하기</button>
+    <div class="ver" id="ver"></div>
+  </div>
+<script>
+  const studio = window.gongsilStudio;
+  document.getElementById("connect").addEventListener("click", () => studio.openConnect());
+  studio.info().then((i) => { document.getElementById("ver").textContent = "v" + i.version; });
+  // 처음 보여 줄 때 한 번은 자동으로 크롬을 연다
+  if (!sessionStorage.getItem("opened")) {
+    sessionStorage.setItem("opened", "1");
+    studio.openConnect();
+  }
+</script>
+</body>
+</html>

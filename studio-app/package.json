@@ -1,0 +1,44 @@
+{
+  "name": "gongsil-studio",
+  "productName": "공실뉴스 스튜디오",
+  "version": "0.1.0",
+  "description": "공실뉴스 스튜디오 - 공실등록·기사등록·SNS뉴스발행·동영상제작·고객관리",
+  "author": "공실뉴스",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:local": "set STUDIO_BASE_URL=http://localhost:3000&& electron .",
+    "ffmpeg": "node scripts/fetch-ffmpeg.mjs",
+    "dist": "node scripts/fetch-ffmpeg.mjs && electron-builder --win nsis"
+  },
+  "dependencies": {
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "electron": "^38.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.gongsilnews.studio",
+    "productName": "공실뉴스 스튜디오",
+    "executableName": "GongsilStudio",
+    "artifactName": "GongsilStudio-Setup-${version}.${ext}",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["src/**/*", "build/icon.png", "package.json"],
+    "extraResources": [{ "from": "vendor/ffmpeg", "to": "ffmpeg" }],
+    "protocols": [{ "name": "공실뉴스 스튜디오", "schemes": ["gongsilstudio"] }],
+    "win": { "target": "nsis", "icon": "build/icon.png" },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "공실뉴스 스튜디오",
+      "language": "1042"
+    },
+    "publish": [{ "provider": "generic", "url": "https://aijfktzqtnwhfotfwcka.supabase.co/storage/v1/object/public/studio-app/win" }]
+  }
+}
