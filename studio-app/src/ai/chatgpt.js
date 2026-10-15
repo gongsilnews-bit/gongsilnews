@@ -47,6 +47,14 @@ async function readLastAnswer(page) {
   }, SEL.ANSWER);
 }
 
+/* ChatGPT 새 코드 상자 <CodeBlock language="json" editable={…}> … </CodeBlock> 를 보통 ```json 상자로 바꾼다.
+   머리의 {…} 를 JSON 시작으로 잘못 읽어 "JSON 형식이 깨져 있습니다 (position 1)" 가 났다 (2026-10-15) */
+function tidyAnswer(text) {
+  return String(text || "")
+    .replace(/<CodeBlock\b[^>]*>\n?/g, (tag) => "```" + ((tag.match(/language=["']?([\w-]+)/) || [])[1] || "") + "\n")
+    .replace(/\n?<\/CodeBlock>/g, "\n```");
+}
+
 /* 대화 원문에서 현재 가지의 마지막 AI 답변과 상태를 읽는다 (로그인된 페이지 안에서 실행) */
 function readByConversationApi(page) {
   return page
@@ -74,6 +82,7 @@ function readByConversationApi(page) {
       }
       return { error: "AI 답변 없음" };
     })
+    .then((r) => (r && r.text ? { ...r, text: tidyAnswer(r.text) } : r))
     .catch((e) => ({ error: e.message }));
 }
 
