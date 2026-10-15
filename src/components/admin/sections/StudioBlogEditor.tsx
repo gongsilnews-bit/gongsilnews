@@ -52,6 +52,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
   const fileInput = useRef<HTMLInputElement>(null);
   const [imageStyles, setImageStyles] = useState<{ id: string; label: string }[]>([]);
   const [aiSlot, setAiSlot] = useState<number | null>(null); // AI 이미지 창을 연 자리
+  const [openSlot, setOpenSlot] = useState<number | null>(null); // ⊕ 메뉴를 연 자리
   const [aiStyle, setAiStyle] = useState("news");
   const [aiRequest, setAiRequest] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
@@ -174,46 +175,66 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
     }
   };
 
-  const toolBtn: React.CSSProperties = { padding: "5px 9px", fontSize: 12, fontWeight: 700, borderRadius: 6, border: "1px solid rgba(255,255,255,0.35)", background: "rgba(0,0,0,0.55)", color: "#fff", cursor: "pointer" };
+  /* 사진 위 도구: 평소엔 숨기고 사진에 마우스를 올릴 때만 작은 아이콘 묶음으로 보인다 */
+  const Ico = ({ d, fill = false }: { d: string; fill?: boolean }) => (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill={fill ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+  );
+  const STAR = "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z";
+  const UP = "M12 19V5M5 12l7-7 7 7";
+  const DOWN = "M12 5v14M19 12l-7 7-7-7";
+  const TRASH = "M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14";
 
   const photo = (m: BlogMedia) => (
-    <figure key={m.id} style={{ margin: "14px 0", border: `1px solid ${m.isCover ? "#1a3a6b" : theme.border}`, borderRadius: 10, overflow: "hidden", background: theme.cardBg }}>
-      <div style={{ position: "relative", background: "#e5e7eb" }}>
-        {m.thumb ? <img src={m.thumb} alt={m.caption} style={{ width: "100%", maxHeight: 420, objectFit: "contain", display: "block", background: "#111" }} /> : <div style={{ height: 160 }} />}
-        <span style={{ position: "absolute", top: 10, left: 10, fontSize: 12, fontWeight: 800, padding: "4px 8px", borderRadius: 6, background: m.isCover ? "#1a3a6b" : "rgba(0,0,0,0.6)", color: "#fff" }}>
-          {m.isCover ? "★ 대표 사진" : KIND_LABEL[m.kind] || m.kind}
+    <figure key={m.id} className="sbe-photo" style={{ margin: "16px 0", borderRadius: 12, overflow: "hidden", background: theme.cardBg, boxShadow: m.isCover ? "0 0 0 2px #1a3a6b" : `0 0 0 1px ${theme.border}` }}>
+      <div style={{ position: "relative", background: "#111" }}>
+        {m.thumb ? <img src={m.thumb} alt={m.caption} style={{ width: "100%", maxHeight: 420, objectFit: "contain", display: "block" }} /> : <div style={{ height: 160 }} />}
+        <span style={{ position: "absolute", top: 10, left: 10, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999, background: m.isCover ? "#1a3a6b" : "rgba(17,24,39,0.55)", color: "#fff", backdropFilter: "blur(6px)", letterSpacing: "-0.2px" }}>
+          {m.isCover ? "대표 사진" : KIND_LABEL[m.kind] || m.kind}
         </span>
-        <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 6 }}>
-          {!m.isCover && <button style={toolBtn} onClick={() => makeCover(m.id)}>★ 대표로</button>}
-          <button style={toolBtn} onClick={() => move(m.id, -1)} title="위로">▲</button>
-          <button style={toolBtn} onClick={() => move(m.id, 1)} title="아래로">▼</button>
-          <button style={{ ...toolBtn, background: "rgba(197,48,48,0.85)" }} onClick={() => remove(m.id)}>삭제</button>
+        <div className="sbe-tools">
+          {!m.isCover && <button className="sbe-tool" onClick={() => makeCover(m.id)} title="대표 사진으로"><Ico d={STAR} /></button>}
+          <button className="sbe-tool" onClick={() => move(m.id, -1)} title="위로"><Ico d={UP} /></button>
+          <button className="sbe-tool" onClick={() => move(m.id, 1)} title="아래로"><Ico d={DOWN} /></button>
+          <span className="sbe-sep" />
+          <button className="sbe-tool sbe-danger" onClick={() => remove(m.id)} title="삭제"><Ico d={TRASH} /></button>
         </div>
       </div>
       <input value={m.caption} onChange={(e) => update(m.id, { caption: e.target.value })} placeholder="사진 설명"
-        style={{ width: "100%", boxSizing: "border-box", border: 0, borderTop: `1px solid ${theme.border}`, padding: "8px 12px", fontSize: 13, color: theme.textSecondary, background: theme.cardBg, textAlign: "center" }} />
+        style={{ width: "100%", boxSizing: "border-box", border: 0, padding: "9px 12px", fontSize: 12.5, color: theme.textSecondary, background: theme.cardBg, textAlign: "center", outline: "none" }} />
     </figure>
   );
 
-  const pill: React.CSSProperties = { fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 999, border: `1px dashed ${theme.border}`, background: "transparent", color: theme.textSecondary, cursor: "pointer" };
+  /* 문단 사이: 평소엔 안 보이고, 마우스를 올리면 얇은 선과 ⊕ — 누르면 [내 사진]·[AI 이미지] */
   const slotBar = (slot: number) => (
-    <div style={{ margin: "4px 0" }}>
-      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
-        <button onClick={() => pickPhotos(slot)} disabled={adding !== null} style={pill}>
-          {adding === slot ? "사진 넣는 중…" : "+ 내 사진"}
-        </button>
-        <button onClick={() => { setAiSlot(aiSlot === slot ? null : slot); setAiErr(""); }} disabled={aiBusy} style={{ ...pill, color: "#7c3aed", borderColor: "#c4b5fd" }}>
-          🎨 AI 이미지
-        </button>
+    <div className={`sbe-slot${openSlot === slot || aiSlot === slot || adding === slot ? " sbe-slot-on" : ""}`}>
+      <div className="sbe-slot-line">
+        {openSlot === slot ? (
+          <div className="sbe-menu">
+            <button onClick={() => { setOpenSlot(null); pickPhotos(slot); }}>
+              <Ico d="M4 16l4-4 4 4 3-3 5 5M4 4h16v16H4zM15 8.5h.01" /> 내 사진
+            </button>
+            <button onClick={() => { setOpenSlot(null); setAiSlot(slot); setAiErr(""); }} disabled={aiBusy}>
+              <Ico d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z" /> AI 이미지
+            </button>
+            <button className="sbe-menu-x" onClick={() => setOpenSlot(null)} title="닫기">✕</button>
+          </div>
+        ) : (
+          <button className="sbe-plus" onClick={() => setOpenSlot(slot)} title="이 자리에 사진 넣기" disabled={adding !== null}>
+            {adding === slot ? "…" : "+"}
+          </button>
+        )}
       </div>
       {aiSlot === slot && (
-        <div style={{ margin: "10px 0 14px", padding: "14px 16px", borderRadius: 10, border: "1px solid #c4b5fd", background: "rgba(124,58,237,0.05)" }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: theme.textPrimary, marginBottom: 8 }}>이 자리에 넣을 AI 이미지</div>
+        <div style={{ margin: "6px 0 14px", padding: "16px 18px", borderRadius: 12, background: theme.cardBg, boxShadow: `0 0 0 1px ${theme.border}, 0 6px 18px rgba(15,23,42,0.06)` }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: theme.textPrimary }}>이 자리에 넣을 AI 이미지</span>
+            <button onClick={() => setAiSlot(null)} disabled={aiBusy} style={{ border: 0, background: "transparent", color: theme.textSecondary, cursor: "pointer", fontSize: 14 }}>✕</button>
+          </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
             {imageStyles.map((st) => (
               <button key={st.id} onClick={() => setAiStyle(st.id)}
-                style={{ padding: "6px 11px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                  border: `1px solid ${aiStyle === st.id ? "#7c3aed" : theme.border}`, background: aiStyle === st.id ? "#7c3aed" : "transparent", color: aiStyle === st.id ? "#fff" : theme.textPrimary }}>
+                style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  border: `1px solid ${aiStyle === st.id ? "#1a3a6b" : theme.border}`, background: aiStyle === st.id ? "#1a3a6b" : "transparent", color: aiStyle === st.id ? "#fff" : theme.textPrimary }}>
                 {st.label}
               </button>
             ))}
@@ -222,7 +243,7 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
             style={{ width: "100%", boxSizing: "border-box", padding: "9px 11px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13, background: theme.cardBg, color: theme.textPrimary }} />
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
             <button onClick={() => makeImage(slot)} disabled={aiBusy}
-              style={{ padding: "9px 16px", borderRadius: 8, border: 0, background: aiBusy ? "#a78bfa" : "#7c3aed", color: "#fff", fontSize: 13, fontWeight: 800, cursor: aiBusy ? "default" : "pointer" }}>
+              style={{ padding: "9px 16px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 700, cursor: aiBusy ? "default" : "pointer", opacity: aiBusy ? 0.6 : 1 }}>
               {aiBusy ? "그리는 중…" : "ChatGPT로 그리기"}
             </button>
             <span style={{ fontSize: 12, color: aiErr ? "#c53030" : theme.textSecondary }}>{aiErr || aiMsg || "1~3분 걸립니다. 글자·사람 얼굴은 넣지 않습니다."}</span>
@@ -232,11 +253,34 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
     </div>
   );
 
+  const editorCss = `
+    .sbe-photo .sbe-tools{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:2px;padding:3px;border-radius:999px;
+      background:rgba(255,255,255,0.92);box-shadow:0 2px 10px rgba(0,0,0,0.18);opacity:0;transform:translateY(-4px);transition:opacity .15s,transform .15s;backdrop-filter:blur(6px)}
+    .sbe-photo:hover .sbe-tools{opacity:1;transform:none}
+    .sbe-tool{width:30px;height:30px;border:0;border-radius:999px;background:transparent;color:#1f2937;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .sbe-tool:hover{background:#eef2f7}
+    .sbe-danger:hover{background:#fee2e2;color:#dc2626}
+    .sbe-sep{width:1px;height:16px;background:#e5e7eb;margin:0 2px}
+    .sbe-slot{position:relative}
+    .sbe-slot-line{height:22px;display:flex;align-items:center;justify-content:center;position:relative}
+    .sbe-slot-line::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed #cbd5e1;opacity:0;transition:opacity .15s}
+    .sbe-slot:hover .sbe-slot-line::before,.sbe-slot-on .sbe-slot-line::before{opacity:1}
+    .sbe-plus{position:relative;width:24px;height:24px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;color:#475569;font-size:16px;line-height:1;cursor:pointer;
+      opacity:0;transition:opacity .15s,transform .15s}
+    .sbe-slot:hover .sbe-plus,.sbe-slot-on .sbe-plus{opacity:1}
+    .sbe-plus:hover{transform:scale(1.1);border-color:#1a3a6b;color:#1a3a6b}
+    .sbe-menu{position:relative;display:flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:#fff;box-shadow:0 0 0 1px #e2e8f0,0 4px 14px rgba(15,23,42,0.10)}
+    .sbe-menu button{display:flex;align-items:center;gap:6px;border:0;background:transparent;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;color:#1f2937;cursor:pointer}
+    .sbe-menu button:hover{background:#f1f5f9}
+    .sbe-menu .sbe-menu-x{padding:6px 9px;color:#94a3b8}
+  `;
+
   return (
     <div style={{ marginTop: 18, border: `1px solid ${theme.border}`, borderRadius: 12, background: theme.bg || "#f6f8fa" }}>
       <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
+      <style>{editorCss}</style>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: `1px solid ${theme.border}`, fontSize: 12, color: theme.textSecondary }}>
-        <span>네이버에 들어갈 순서 그대로입니다. 글은 눌러서 고치고, 사진은 오른쪽 위 버튼으로 다룹니다.</span>
+        <span>네이버에 들어갈 순서 그대로입니다. 글은 눌러서 고치고, 사진은 마우스를 올려 다룹니다. 문단 사이 ⊕로 사진을 넣습니다.</span>
         <span style={{ fontWeight: 700, color: saved === "error" ? "#c53030" : saved === "saving" ? "#b45309" : "#16a34a" }}>
           {saved === "error" ? "저장 실패" : saved === "saving" ? "저장 중…" : "✓ 저장됨"}
         </span>
