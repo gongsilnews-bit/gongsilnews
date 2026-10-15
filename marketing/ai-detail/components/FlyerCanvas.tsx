@@ -521,6 +521,140 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
     );
   };
 
+  // ══ 새 디자인 (2026-10-15 사장님 회의) — "유리창 밖 2~3m에서 3초 안에 읽히게" ══
+  // ① 숫자 크게형: 물건·거래 → 금액(가장 크게) → 크기 줄 → 실제 장점 칩 → 전화(크게)+QR
+  // ② 사진형: 사진 1장 → 금액 → 크기 줄 → 칩 → 전화+QR
+  // 흰 바탕 + 사무소 대표색 하나 (잉크 절약·햇빛에 바래도 읽힘). 장식·영어 문구 없음. 값은 등록된 실제 값만.
+  const fitBy = (max: number, min: number) => ({ 'data-fit': '', 'data-fit-max': max, 'data-fit-min': min } as Record<string, unknown>);
+  const one: React.CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', width: '100%', flexShrink: 0 };
+  const kindWord = (info.propertyKind || '').split('/')[0].trim();
+  const headWord = [vis('propertyKind') ? kindWord : '', vis('transactionType') ? tradeWord : ''].filter(Boolean).join(' · ');
+  const sizeWord = (info.sizeLine || '').replace(/저층층|중층층|고층층/g, (w) => w.slice(0, 2)) || [pyeong, clean(info.floor) !== '-' ? info.floor : '', clean(info.direction) !== '-' ? info.direction : ''].filter(Boolean).join(' · ');
+  /* 장점 칩 — 정보 표에서 짧은 실제 값만 (없으면 칩 없음) */
+  const chips = (info.rows ?? [])
+    .filter((r) => r.label.trim() && clean(r.value) !== '-' && `${r.label} ${r.value}`.length <= 14)
+    .slice(0, 4)
+    .map((r) => `${r.label} ${r.value}`);
+  const priceEditable = {
+    ...editable('priceMain'),
+    onBlur: (e: React.FocusEvent<HTMLElement>) => {
+      const [main, sub] = e.currentTarget.innerText.split('/').map((t) => t.trim());
+      onTextChange?.('priceMain', main || '');
+      if (isRent) onTextChange?.('priceSub', sub || '');
+    },
+  };
+
+  /* 아래 연락 띠 — 전화번호가 주인공. 표시·광고 필수 정보(사무소·대표·등록번호·소재지)는 작게 */
+  const renderCallBand = (compact = false) => (
+    <div className="flex items-center" style={{ flexShrink: 0, gap: 28, background: '#111827', color: '#fff', padding: `${compact ? 20 : 26}px ${isLand ? 44 : 52}px` }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="flex items-center" style={{ gap: 14 }}>
+          <span style={{ width: 58, height: 58, borderRadius: 999, background: primaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <PhoneIcon style={{ width: 32, height: 32 }} />
+          </span>
+          <span {...editable(info.agentMobile ? 'agentMobile' : 'agentPhone')} {...fitBy(isLand ? 76 : 84, 40)} className={editClass}
+            style={{ ...one, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1.05 }}>{phone}</span>
+        </div>
+        <p {...editable('agentName')} {...fitBy(28, 18)} className={editClass} style={{ ...one, fontWeight: 900, marginTop: 10, lineHeight: 1.2 }}>{info.agentName}</p>
+        <p style={{ ...one, fontSize: 14, fontWeight: 600, opacity: .75, marginTop: 4, textOverflow: 'ellipsis' }}>
+          {[vis('agentRepresentative') ? info.agentRepresentative : '', ...(info.agentAdditionalInfo || [])].filter(Boolean).join('  ·  ')}
+        </p>
+      </div>
+      {qrDataUrl && vis('qr') && (
+        <div style={{ flexShrink: 0, textAlign: 'center' }}>
+          <a href={qrLink || undefined} target="_blank" rel="noopener noreferrer" title="매물 상세보기" style={{ display: 'block' }}>
+            <img src={qrDataUrl} alt="매물 QR" style={{ width: compact ? 120 : 140, height: compact ? 120 : 140, background: '#fff', padding: 7, borderRadius: 10 }} />
+          </a>
+          <div style={{ fontSize: 14, fontWeight: 800, marginTop: 6 }}>사진·위치 보기</div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderChips = (size: number) => chips.length > 0 && (
+    <div className="flex flex-wrap" style={{ gap: 12, flexShrink: 0 }}>
+      {chips.map((c) => (
+        <span key={c} style={{ fontSize: size, fontWeight: 800, color: primaryColor, border: `3px solid ${primaryColor}`, borderRadius: 999, padding: `${Math.round(size * 0.22)}px ${Math.round(size * 0.7)}px`, whiteSpace: 'nowrap' }}>{c}</span>
+      ))}
+    </div>
+  );
+
+  const badgeEl = info.badge ? (
+    <span style={{ background: '#e11d2a', color: '#fff', fontSize: 30, fontWeight: 900, padding: '6px 20px', borderRadius: 8, flexShrink: 0 }}>{info.badge}</span>
+  ) : null;
+
+  // ① 숫자 크게형
+  const renderBig = () => (
+    <div ref={ref} data-flyer-page className="bg-white overflow-hidden flex flex-col font-sans" style={{ width: pageW, height: pageH, color: '#111' }}>
+      {/* 머리 띠: 딱지 + 물건·거래 */}
+      <div className="flex items-center" style={{ flexShrink: 0, gap: 18, background: primaryColor, color: '#fff', padding: `${isLand ? 22 : 30}px ${isLand ? 44 : 52}px` }}>
+        {badgeEl}
+        <span {...fitBy(isLand ? 56 : 64, 30)} style={{ ...one, fontWeight: 900, letterSpacing: -1 }}>{headWord || tradeWord}</span>
+      </div>
+      <div className="flex flex-col" style={{ flex: 1, minHeight: 0, padding: `${isLand ? 26 : 44}px ${isLand ? 44 : 52}px ${isLand ? 22 : 30}px` }}>
+        <span style={{ fontSize: isLand ? 34 : 42, fontWeight: 800, color: '#4b5563', flexShrink: 0 }}>{priceLabel}</span>
+        <span {...priceEditable} {...fitBy(isLand ? 210 : 230, 80)} className={editClass}
+          style={{ ...one, fontWeight: 900, color: primaryColor, lineHeight: 1.05, letterSpacing: -6, marginTop: 4 }}>{priceText}</span>
+        {vis('sizeLine') && sizeWord && (
+          <div {...editable('sizeLine')} {...fitBy(isLand ? 60 : 66, 32)} className={editClass}
+            style={{ ...one, fontWeight: 900, color: '#111', marginTop: isLand ? 10 : 18, letterSpacing: -1 }}>{sizeWord}</div>
+        )}
+        <div style={{ marginTop: isLand ? 18 : 30 }}>{renderChips(isLand ? 28 : 32)}</div>
+        <div style={{ flex: 1 }} />
+        {/* 어디 매물인지 — 건물·단지명 */}
+        <div {...editable('address')} {...fitBy(isLand ? 36 : 40, 22)} className={editClass}
+          style={{ ...one, fontWeight: 800, color: '#374151', borderTop: '2px solid #e5e7eb', paddingTop: isLand ? 12 : 18 }}>{info.address}</div>
+      </div>
+      {renderCallBand(isLand)}
+    </div>
+  );
+
+  // ② 사진형
+  const renderPhoto = () => {
+    const photoBox = (style: React.CSSProperties) => (
+      <div style={{ position: 'relative', overflow: 'hidden', flexShrink: 0, background: '#e5e7eb', ...style }}>
+        <img onClick={() => onImageClick?.('mainImage')} src={mainImgSrc} className="w-full h-full object-cover cursor-pointer" title="클릭하여 메인 이미지 변경" />
+        <div style={{ position: 'absolute', left: 24, top: 24, display: 'flex', gap: 10 }}>
+          {badgeEl}
+          {headWord && <span style={{ background: '#fff', color: primaryColor, fontSize: 30, fontWeight: 900, padding: '6px 18px', borderRadius: 8 }}>{headWord}</span>}
+        </div>
+      </div>
+    );
+    const text = (
+      <div className="flex flex-col" style={{ flex: 1, minHeight: 0, minWidth: 0, padding: `${isLand ? 30 : 30}px ${isLand ? 40 : 52}px ${isLand ? 20 : 26}px` }}>
+        <span style={{ fontSize: isLand ? 30 : 36, fontWeight: 800, color: '#4b5563', flexShrink: 0 }}>{priceLabel}</span>
+        <span {...priceEditable} {...fitBy(isLand ? 150 : 170, 70)} className={editClass}
+          style={{ ...one, fontWeight: 900, color: primaryColor, lineHeight: 1.05, letterSpacing: -5, marginTop: 2 }}>{priceText}</span>
+        {vis('sizeLine') && sizeWord && (
+          <div {...editable('sizeLine')} {...fitBy(isLand ? 48 : 54, 28)} className={editClass}
+            style={{ ...one, fontWeight: 900, color: '#111', marginTop: 10, letterSpacing: -1 }}>{sizeWord}</div>
+        )}
+        <div style={{ marginTop: 18 }}>{renderChips(isLand ? 24 : 28)}</div>
+        <div style={{ flex: 1 }} />
+        <div {...editable('address')} {...fitBy(34, 20)} className={editClass}
+          style={{ ...one, fontWeight: 800, color: '#374151', borderTop: '2px solid #e5e7eb', paddingTop: 12 }}>{info.address}</div>
+      </div>
+    );
+    return (
+      <div ref={ref} data-flyer-page className="bg-white overflow-hidden flex flex-col font-sans" style={{ width: pageW, height: pageH, color: '#111' }}>
+        {isLand ? (
+          <div className="flex" style={{ flex: 1, minHeight: 0 }}>
+            {photoBox({ width: 600, height: '100%' })}
+            {text}
+          </div>
+        ) : (
+          <>
+            {photoBox({ height: 560 })}
+            {text}
+          </>
+        )}
+        {renderCallBand(true)}
+      </div>
+    );
+  };
+
+  if (layout === 'big') return renderBig();
+  if (layout === 'photo') return renderPhoto();
   if (layout === 'type6') return renderSimple();
   if (layout === 'type1') return renderStreet();
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 
 /**
@@ -19,6 +19,9 @@ const CATEGORIES = [
 const CATEGORY_KEY = "studio_marketing_category";
 const VACANCY_KEY = "studio_marketing_vacancy";
 
+type AiItem = { id: string; name: string; ready: boolean; ok: boolean };
+type AiBridge = { openAiConnect: () => Promise<void>; ai: { list: () => Promise<AiItem[]> } };
+const aiBridge = (): AiBridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: AiBridge }).gongsilStudio ?? null) : null);
 type MyVacancy = { id: string; vacancy_no: number; building_name: string | null; trade_type: string | null; address: string };
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
 
@@ -38,6 +41,20 @@ export default function StudioMarketingSection({ theme }: { theme: Theme }) {
   const [mine, setMine] = useState<MyVacancy[] | null>(null);
   const [vacancyId, setVacancyIdState] = useState(() => remembered(VACANCY_KEY));
   const cat = CATEGORIES.find((c) => c.id === category) || CATEGORIES[0];
+
+  // 내 AI 연결 상태 (뉴스·SNS발행과 같다 — [AI로 채우기]가 이 ChatGPT 를 쓴다). 앱에서만 보인다
+  const [ai, setAi] = useState<AiItem[] | null>(null);
+  const loadAi = useCallback(async () => {
+    const b = aiBridge();
+    if (b) setAi(await b.ai.list().catch(() => []));
+  }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadAi();
+    window.addEventListener("focus", loadAi);
+    return () => window.removeEventListener("focus", loadAi);
+  }, [loadAi]);
+  const connectedAi = (ai || []).filter((a) => a.ok);
 
   useEffect(() => {
     listMyStudioVacancies().then((r) => setMine(r.success ? r.data : [])).catch(() => setMine([]));
@@ -72,6 +89,14 @@ export default function StudioMarketingSection({ theme }: { theme: Theme }) {
       {/* 왼쪽: 2차 카테고리 (뉴스·SNS발행과 같은 모양) */}
       <aside style={{ width: 210, flexShrink: 0, background: theme.cardBg, borderRight: `1px solid ${theme.border}`, padding: "22px 14px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
         <h2 style={{ margin: "0 4px", fontSize: 19, fontWeight: 800, color: theme.textPrimary }}>공실마케팅</h2>
+        {ai && (
+          <button onClick={() => aiBridge()?.openAiConnect()} title="내 AI 연결"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+              background: connectedAi.length ? "#ecfdf5" : theme.cardBg, border: `1px solid ${connectedAi.length ? "#6ee7b7" : theme.border}`, color: connectedAi.length ? "#047857" : theme.textPrimary }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: connectedAi.length ? "#22c55e" : "#cbd5e1", boxShadow: connectedAi.length ? "0 0 0 3px rgba(34,197,94,0.2)" : "none" }} />
+            {connectedAi.length ? `${connectedAi.map((a) => a.name).join(", ")} 연결됨` : "내 AI 연결하기"}
+          </button>
+        )}
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 6 }}>
           {CATEGORIES.map((c) => {
             const on = category === c.id;

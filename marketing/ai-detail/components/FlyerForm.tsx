@@ -172,18 +172,34 @@ const FlyerForm: React.FC<FlyerFormProps> = ({
              <RectangleGroupIcon className="w-5 h-5" />
              레이아웃 테마 선택
         </h3>
-        <div className="grid grid-cols-4 gap-2">
-             {layouts.map((layout, idx) => (
+        {/* 새 디자인 2가지가 기본, 예전 6가지는 접어 둔다 (이미 만든 홍보지용) */}
+        <div className="grid grid-cols-2 gap-2">
+             {layouts.filter((l) => l.type === 'big' || l.type === 'photo').map((layout, idx) => (
                  <button
                     key={layout.id}
                     onClick={() => onLayoutSelect(layout)}
-                    className={`py-2 rounded-lg border text-xs font-bold transition-all flex flex-col items-center justify-center ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
+                    className={`py-3 rounded-lg border text-sm font-bold transition-all flex flex-col items-center justify-center ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
                  >
-                     <span className="block text-lg mb-0.5">{idx + 1}</span>
-                     <span className="text-[10px] text-center leading-tight">{layout.name.replace(' ', '\n')}</span>
+                     <span className="block text-lg mb-0.5">{idx === 0 ? '①' : '②'}</span>
+                     <span>{layout.name}</span>
                  </button>
              ))}
         </div>
+        <details className="mt-2" open={!(currentLayout.type === 'big' || currentLayout.type === 'photo')}>
+          <summary className="text-[11px] text-gray-400 cursor-pointer select-none">예전 디자인</summary>
+          <div className="grid grid-cols-6 gap-1 mt-2">
+             {layouts.filter((l) => l.type !== 'big' && l.type !== 'photo').map((layout, idx) => (
+                 <button
+                    key={layout.id}
+                    onClick={() => onLayoutSelect(layout)}
+                    title={layout.name}
+                    className={`py-1.5 rounded-md border text-xs font-bold ${currentLayout.id === layout.id ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'}`}
+                 >
+                     {idx + 1}
+                 </button>
+             ))}
+          </div>
+        </details>
       </div>
 
 

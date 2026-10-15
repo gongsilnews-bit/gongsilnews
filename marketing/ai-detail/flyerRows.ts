@@ -47,6 +47,8 @@ const num = (v: unknown) => (v === null || v === undefined || v === '' ? '' : St
 const py = (m2: unknown) => (Number(m2) ? `${Math.round(Number(m2) / 3.3058)}평` : '');
 const m2py = (m2: unknown) => (Number(m2) ? `${Number(m2)}㎡(${(Number(m2) / 3.3058).toFixed(1)}평)` : '');
 const join = (parts: string[], sep = ' · ') => parts.filter(Boolean).join(sep);
+/** 층 — 숫자면 '3층', '저층'처럼 이미 글이면 그대로 ('저층층' 방지) */
+const fl = (v: unknown) => { const t = num(v).trim(); return !t ? '' : /^-?\d+$/.test(t) ? `${t}층` : t.replace(/층층$/, '층'); };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function buildFlyerRows(v: any): { group: FlyerGroup; sizeLine: string; rows: FlyerRow[]; showPhoto: boolean } {
@@ -57,7 +59,7 @@ export function buildFlyerRows(v: any): { group: FlyerGroup; sizeLine: string; r
   const themes: string[] = Array.isArray(v.themes) ? v.themes : [];
 
   const cur = num(v.current_floor), tot = num(v.total_floor);
-  const floor = cur ? (tot ? `${cur}층/${tot}층` : `${cur}층`) : '';
+  const floor = cur ? (tot ? `${fl(cur)}/${fl(tot)}` : fl(cur)) : '';
   const supPy = py(v.supply_m2), excPy = py(v.exclusive_m2);
   const landM2 = get('land_share_m2');
   const landPy = py(landM2);
@@ -77,12 +79,12 @@ export function buildFlyerRows(v: any): { group: FlyerGroup; sizeLine: string; r
   let rows: FlyerRow[] = [];
   switch (group) {
     case 'A':
-      sizeLine = join([supPy || excPy, cur ? `${cur}층` : '']);
+      sizeLine = join([supPy || excPy, fl(cur)]);
       rows = [row('면적', area), row('방/욕실', rooms), row('방향', v.direction), row('동', v.apt_dong ? `${v.apt_dong}동` : ''),
         row('관리비', fee), row('입주', v.move_in_date), row('준공', year), row('세대수', ''), row('커뮤니티', ''), row('옵션', optionText)];
       break;
     case 'B':
-      sizeLine = join([excPy ? `전용 ${excPy}` : supPy, v.room_count ? `방 ${v.room_count}개` : '', cur ? `${cur}층` : '']);
+      sizeLine = join([excPy ? `전용 ${excPy}` : supPy, v.room_count ? `방 ${v.room_count}개` : '', fl(cur)]);
       rows = [row('면적', area), row('방/욕실', rooms), row('방향', v.direction),
         row('엘리베이터', options.includes('엘리베이터') ? '있음' : ''), row('주차', v.parking), row('관리비', fee),
         row('입주', v.move_in_date), row('준공', year), row('옵션', optionText.replace(/(^|, )엘리베이터(?=,|$)/, '').replace(/^, /, ''))];

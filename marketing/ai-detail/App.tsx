@@ -19,6 +19,10 @@ export const COLORS: FlyerColor[] = [
 ];
 
 export const LAYOUTS: FlyerLayout[] = [
+  // 새 기본 디자인 (2026-10-15) — 유리창 밖에서 3초 안에 읽히게
+  { id: 'big', name: '숫자 크게', type: 'big', headingFont: 'font-sans', bodyFont: 'font-sans' },
+  { id: 'photo', name: '사진형', type: 'photo', headingFont: 'font-sans', bodyFont: 'font-sans' },
+  // 예전 디자인 — 이미 만든 홍보지가 그대로 열리게 남겨 둔다
   { id: 'type1', name: 'Modern Overlay', type: 'type1', headingFont: 'font-serif-kr', bodyFont: 'font-sans' },
   { id: 'type2', name: 'Luxury Center', type: 'type2', headingFont: 'font-serif-kr', bodyFont: 'font-serif-kr' },
   { id: 'type3', name: 'Natural Clean', type: 'type3', headingFont: 'font-sans', bodyFont: 'font-sans' },
