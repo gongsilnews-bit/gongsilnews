@@ -105,9 +105,11 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, allowed]);
 
+  const [errorAt, setErrorAt] = useState<"photo" | "run">("photo"); // 오류를 보여 줄 자리
   const run = async (label: string, fn: () => Promise<void>) => {
     setBusy(label);
     setError("");
+    setErrorAt(label === "시뮬레이션 중…" ? "run" : "photo");
     const b = bridge();
     const off = b ? b.sim.onProgress(setProgress) : () => {};
     try {
@@ -143,9 +145,11 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
   };
   const upload = (files: FileList | null) => {
     if (!files || !files.length) return;
+    // 파일 칸을 비우면 FileList 도 비므로 지금 바로 꺼내 둔다
+    const list = Array.from(files).slice(0, 10);
     run("사진을 넣는 중…", async () => {
       const s = await ensureSim();
-      const dataUrls = await Promise.all(Array.from(files).slice(0, 10).map(readAsDataUrl));
+      const dataUrls = await Promise.all(list.map(readAsDataUrl));
       choose(await bridge()!.sim.addPhotos({ id: s.id, dataUrls }));
       setOpen(true);
     });
@@ -242,14 +246,14 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
             {kind === "interior" ? "고칠 방의 실내 사진" : "건물 외관 사진"}을 골라 주세요 (최대 {MAX_PICK}장, 첫 장이 &quot;지금 모습&quot;). 공실 사진이면 기사에 매물 정보가 함께 들어갑니다.
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <select value={pickVacancy} onChange={(e) => setPickVacancy(e.target.value)}
+            {/* 고르면 바로 그 공실의 등록 사진을 가져온다 */}
+            <select value={pickVacancy} disabled={Boolean(busy)} onChange={(e) => { setPickVacancy(e.target.value); if (e.target.value) fromVacancy(e.target.value); }}
               style={{ flex: 1, minWidth: 240, maxWidth: 480, padding: "9px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, background: theme.cardBg, color: theme.textPrimary }}>
               <option value="">{mine === null ? "내 공실 불러오는 중…" : `내 공실에서 고르기 (${mine.length}개)`}</option>
               {(mine || []).map((v) => (
                 <option key={v.id} value={v.id}>[{v.trade_type || "-"}] {v.building_name || "무제"} ({v.address || ""}) · 사진 {v.photoCount}장</option>
               ))}
             </select>
-            <button onClick={() => pickVacancy && fromVacancy(pickVacancy)} disabled={!pickVacancy || Boolean(busy)} style={plainBtn}>사진 가져오기</button>
             <input value={noInput} onChange={(e) => setNoInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !busy && byNo()} placeholder="또는 공실번호"
               style={{ width: 130, padding: "9px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, background: theme.cardBg, color: theme.textPrimary }} />
             <button onClick={byNo} disabled={!noInput.trim() || Boolean(busy)} style={plainBtn}>불러오기</button>
@@ -258,6 +262,9 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
             <button onClick={() => fileRef.current?.click()} disabled={Boolean(busy)} style={plainBtn}>내 사진 올리기</button>
           </div>
           {sim && sim.vacancyId && <div style={{ marginTop: 8, fontSize: 12.5, color: "#1a3a6b" }}>공실 사진: {sim.vacancyTitle}</div>}
+          {/* 사진을 넣는 동안·실패하면 바로 여기서 알린다 (시뮬레이션 진행은 아래 버튼 옆) */}
+          {busy && busy !== "시뮬레이션 중…" && <div style={{ marginTop: 10, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress || busy}</div>}
+          {error && busy !== "시뮬레이션 중…" && errorAt === "photo" && <div style={{ marginTop: 10, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{error}</div>}
 
           {sim && sim.photos.length > 0 && (
             <>
@@ -352,8 +359,8 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
               <button onClick={newSim} disabled={Boolean(busy)} style={plainBtn}>새 시뮬레이션 시작</button>
             </div>
           )}
-          {(busy || progress) && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress || busy}</div>}
-          {error && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{error}</div>}
+          {busy === "시뮬레이션 중…" && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress || busy}</div>}
+          {error && errorAt === "run" && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{error}</div>}
 
           {recent.length > 0 && (
             <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${theme.border}` }}>
