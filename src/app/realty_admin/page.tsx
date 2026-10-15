@@ -67,7 +67,7 @@ const STUDIO_BADGES = { sns: "NEW", video: "NEW" };
 const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video");
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { getPlanLabel, formatPlanEnd, isPlanEndingSoon } from "@/utils/permissionCheck";
+import { getPlanLabel, formatPlanEnd, isPlanEndingSoon, isStudyAdminButton, STUDY_ADMIN_BUTTON_GREEN } from "@/utils/permissionCheck";
 
 export default function RealtyAdminPage() {
   return (
@@ -354,13 +354,16 @@ function RealtyAdminContent() {
               (() => {
                 const paid = userRole === 'BIZ' || (userRole === 'REALTOR' && planType !== 'free');
                 const soon = paid && isPlanEndingSoon(planEndDate);
-                const tone = !paid
-                  ? { bg: "#f3f4f6", fg: "#4b5563" }
-                  : soon
-                    ? { bg: "#fef3c7", fg: "#b45309" }
+                // 사이트 위쪽 [○○ admin >>] 버튼과 같은 회원별 색 (공실스터디부동산 녹색, 무료부동산 파랑 등)
+                const tone = soon
+                  ? { bg: "#f59e0b", fg: "#fff" }
+                  : isStudyAdminButton({ role: userRole, plan_type: planType }, agencyStatus)
+                    ? { bg: STUDY_ADMIN_BUTTON_GREEN, fg: "#fff" }
                     : userRole === 'BIZ'
-                      ? { bg: "#f5f3ff", fg: "#7c3aed" }
-                      : { bg: "#ebf5ff", fg: "#3b82f6" };
+                      ? { bg: "#7c3aed", fg: "#fff" }
+                      : userRole === 'REALTOR'
+                        ? { bg: "#2563eb", fg: "#fff" }
+                        : { bg: "#6b7280", fg: "#fff" };
                 const until = paid ? formatPlanEnd(planEndDate) : "";
                 return (
                   <span
