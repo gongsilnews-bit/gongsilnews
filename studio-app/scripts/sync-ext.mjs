@@ -39,6 +39,9 @@ const GROUPS = {
   },
 };
 
+// ai/… : AI 사이트에서 글 넣기·보내기·답 읽기 (기사작성기와 같은 코드를 앱이 페이지 안 전용 공간에서 돌린다)
+GROUPS.ai = { dir: join(extRoot, "gongsilwriter30", "shared"), files: ["config.js", "ui.js", "article-json.js", "ai-common.js"] };
+
 const files = {};
 for (const [group, { dir, files: list }] of Object.entries(GROUPS)) {
   for (const f of list) {

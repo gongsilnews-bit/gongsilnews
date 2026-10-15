@@ -21,7 +21,7 @@ const ext = require("./ext"); // 확장 파일은 서버에서 받는다
 const blogPrompt = ext.lazyModule(() => ext.run(["gongsil/blog-prompt.js"]));
 const articleJson = ext.lazyModule(() => ext.run(["gongsil/article-json.js"]));
 const naverBlog = ext.lazyModule(() => ext.run(["gongsil/naver-blog.js"]));
-const chatgpt = require("./ai/chatgpt");
+const chatgpt = require("./ai"); // 고른 글쓰기 AI (ChatGPT · Gemini) — 그림은 ChatGPT
 const { thumbOf, saveDataUrl } = require("./media-util");
 const extPrompt = require("./ext-prompt");
 const nm = require("./ext-newsmaker");

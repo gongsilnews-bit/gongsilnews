@@ -15,7 +15,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 const log = require("electron-log/main");
 const nm = require("./ext-newsmaker");
-const chatgpt = require("./ai/chatgpt");
+const chatgpt = require("./ai"); // 고른 글쓰기 AI (ChatGPT · Gemini) — 그림은 ChatGPT
 const chrome = require("./studio-chrome");
 
 const isColumn = (id) => /^col-[a-f0-9]+$/.test(String(id || ""));

@@ -23,6 +23,13 @@
   .msg { min-height:20px; margin:14px 2px 0; font-size:13px; color:#1a3a6b; line-height:1.6; word-break:keep-all; }
   .msg.err { color:#c53030; }
   .done { display:none; width:100%; margin-top:12px; padding:13px 0; font-size:15px; background:#16a34a; }
+  .writer { background:#fff; border:1px solid #e8ecf0; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  .writer .t { font-size:13px; font-weight:800; margin-bottom:8px; }
+  .writer .t span { font-weight:500; color:#6b7684; }
+  .pills { display:flex; gap:8px; }
+  .pill { flex:1; padding:10px 0; border-radius:10px; background:#fff; color:#16202b; border:1px solid #d5dce5; font-size:14px; font-weight:800; }
+  .pill.on { background:#1a3a6b; color:#fff; border-color:#1a3a6b; }
+  .pill:disabled { background:#f1f4f7; color:#a3adba; border-color:#e8ecf0; }
   .note { margin-top:16px; padding:12px 14px; border-radius:10px; background:#fff8eb; border:1px solid #fde4b0; font-size:12px; line-height:1.7; color:#7a4b00; word-break:keep-all; }
 </style>
 </head>
@@ -30,6 +37,7 @@
   <div class="wrap">
     <h1>내 AI 연결</h1>
     <p class="lead">소장님이 구독 중인 AI로 기사·블로그를 씁니다. [연결하기]를 누르면 <b>스튜디오 전용 크롬</b>이 열립니다. 그 창에서 평소처럼 로그인한 뒤 그 줄의 <b>[로그인 다 했어요]</b>를 누르면 연결이 끝납니다. 비밀번호는 공실뉴스에 저장되지 않습니다.</p>
+    <div class="writer" id="writer"></div>
     <div id="list"></div>
     <div class="msg" id="msg"></div>
     <div class="note">
@@ -45,7 +53,25 @@
   let connectingId = null; // 로그인 창을 연 AI — 그 줄에 [로그인 다 했어요]를 띄운다
   const checking = new Set();
 
+  /* 기본 글쓰기 AI — 연결된 것 중에서 고른다. 수정 요청은 처음 쓴 AI 로 이어서 간다 */
+  function renderWriter(items) {
+    const box = document.getElementById("writer");
+    const writers = items.filter((x) => x.canWrite);
+    box.innerHTML = '<div class="t">기본 글쓰기 AI <span>· 기사·블로그·SNS·유튜브를 이 AI로 씁니다</span></div><div class="pills"></div>';
+    const pills = box.querySelector(".pills");
+    for (const it of writers) {
+      const b = document.createElement("button");
+      b.className = "pill" + (it.isWriter ? " on" : "");
+      b.textContent = it.name + (it.isWriter ? " ✓" : "");
+      b.disabled = busy || !it.ok;
+      b.title = it.ok ? "" : "먼저 아래에서 연결해 주세요";
+      b.onclick = async () => { if (it.isWriter) return; render(await studio.ai.setWriter(it.id)); say(`이제 ${it.name}로 글을 씁니다. (그림은 ChatGPT)`); };
+      pills.appendChild(b);
+    }
+  }
+
   function render(items) {
+    renderWriter(items);
     const list = document.getElementById("list");
     list.innerHTML = "";
     for (const it of items) {

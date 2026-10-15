@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import StudioBlogEditor, { type BlogDraft } from "./StudioBlogEditor";
+import { useStudioWriter } from "./useStudioWriter";
 
 /**
  * 뉴스·SNS발행 — 공실뉴스 기사 탭 (맨 앞)
@@ -31,6 +32,7 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 export default function StudioArticlePanel({ theme, vacancyId, article, onArticle, onSend, column = false }: {
   theme: Theme; vacancyId: string; article: BlogDraft | null; onArticle: (a: BlogDraft) => void; onSend: () => void; column?: boolean;
 }) {
+  const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
   const [opts, setOpts] = useState<{ kinds: Option[]; lengths: Option[] } | null>(null);
   const [kind, setKind] = useState(article?.style || "news");
   const [length, setLength] = useState(article?.length || "normal");
@@ -92,7 +94,7 @@ export default function StudioArticlePanel({ theme, vacancyId, article, onArticl
           ))}
           <button onClick={write} disabled={writing}
             style={{ marginLeft: "auto", padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
-            {writing ? "ChatGPT가 쓰는 중…" : article ? "다시 쓰기" : "ChatGPT로 기사 쓰기"}
+            {writing ? `${aiName}가 쓰는 중…` : article ? "다시 쓰기" : `${aiName}로 기사 쓰기`}
           </button>
         </div>
         {column && (

@@ -13,7 +13,7 @@ const fs = require("fs");
 const log = require("electron-log/main");
 const yt = require("./ext-youtube");
 const nm = require("./ext-newsmaker");
-const chatgpt = require("./ai/chatgpt");
+const chatgpt = require("./ai"); // 고른 글쓰기 AI (ChatGPT · Gemini) — 그림은 ChatGPT
 const blogWriter = require("./blog-writer");
 const { fetchListing } = require("./naver-write");
 

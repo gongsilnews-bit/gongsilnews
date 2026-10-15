@@ -12,6 +12,7 @@ const PROVIDERS = {
     host: "chatgpt.com",
     url: "https://chatgpt.com/",
     ready: true,
+    writer: true, // 글쓰기 AI (기본 AI 로 고를 수 있다)
     // 로그인되어 있으면 세션 정보에 user 가 있다
     check: (page) =>
       page.evaluate(async () => {
@@ -40,7 +41,24 @@ const PROVIDERS = {
       return { ok: cookies.some((c) => c.name === "NID_AUT" && c.value) };
     },
   },
-  gemini: { name: "Gemini", host: "gemini.google.com", url: "https://gemini.google.com/", ready: false },
+  // Gemini — 로그인돼 있으면 오른쪽 위 구글 계정 단추(aria-label 에 메일)가 있다. 로그아웃 상태로도 쓸 수는 있어서 입력칸만으로는 보지 않는다
+  gemini: {
+    name: "Gemini",
+    host: "gemini.google.com",
+    url: "https://gemini.google.com/app",
+    // 2026-10-15: Gemini 4 개편 날 Gemini 자체가 먹통(확장·웹 모두 답 없음)이라 회원에게는 "준비 중"으로 둔다.
+    // 글쓰기 코드(ai/gemini.js)는 준비돼 있다 — Gemini 가 안정되면 시험하고 true 로 연다
+    ready: false,
+    writer: true,
+    check: (page) =>
+      page.evaluate(() => {
+        if (/accounts\.google\.com/.test(location.href)) return { ok: false };
+        const acct = document.querySelector('a[aria-label*="Google 계정"], a[aria-label*="Google Account"], [aria-label*="Google 계정:"], [aria-label*="Google Account:"]');
+        if (!acct) return { ok: false };
+        const m = (acct.getAttribute("aria-label") || "").match(/[\w.+-]+@[\w.-]+/);
+        return { ok: true, account: m ? m[0] : "" };
+      }),
+  },
 };
 
 const statusFile = () => path.join(app.getPath("userData"), "ai-status.json");
@@ -62,9 +80,27 @@ function saveStatus(id, value) {
 
 function list() {
   const saved = loadStatus();
+  const w = getWriter();
   return Object.entries(PROVIDERS)
     .filter(([, p]) => !p.hidden)
-    .map(([id, p]) => ({ id, name: p.name, ready: p.ready, ...(saved[id] || { ok: false }) }));
+    .map(([id, p]) => ({ id, name: p.name, ready: p.ready, canWrite: Boolean(p.writer), isWriter: id === w, ...(saved[id] || { ok: false }) }));
+}
+
+/* 기본 글쓰기 AI (ChatGPT · Gemini) — [내 AI 연결]에서 고른다. 처음엔 ChatGPT */
+const settingsFile = () => path.join(app.getPath("userData"), "ai-settings.json");
+function getWriter() {
+  try {
+    const w = JSON.parse(fs.readFileSync(settingsFile(), "utf8")).writer;
+    return PROVIDERS[w] && PROVIDERS[w].writer ? w : "chatgpt";
+  } catch {
+    return "chatgpt";
+  }
+}
+function setWriter(id) {
+  if (!PROVIDERS[id] || !PROVIDERS[id].writer) throw new Error("글쓰기에 쓸 수 없는 AI입니다.");
+  fs.writeFileSync(settingsFile(), JSON.stringify({ writer: id }, null, 2));
+  log.info(`[AI 연결] 기본 글쓰기 AI: ${PROVIDERS[id].name}`);
+  return id;
 }
 
 /** 화면 밖 전용 크롬으로 로그인 상태를 확인하고 기록한다 */
@@ -109,4 +145,4 @@ function markConnected(id) {
   saveStatus(id, { ...prev, ok: true });
 }
 
-module.exports = { PROVIDERS, list, check, connect, markConnected, finishLogin: () => chrome.closePlain() };
+module.exports = { PROVIDERS, list, check, connect, markConnected, getWriter, setWriter, finishLogin: () => chrome.closePlain() };

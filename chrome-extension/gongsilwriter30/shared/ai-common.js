@@ -26,8 +26,9 @@ const GwAi = (() => {
     if (input.tagName === "TEXTAREA" || input.tagName === "INPUT") {
       gwSetReactValue(input, text);
     } else {
-      /* contenteditable — 줄마다 문단을 만들어야 줄바꿈이 살아남는다 */
-      input.innerHTML = "";
+      /* contenteditable — 줄마다 문단을 만들어야 줄바꿈이 살아남는다.
+         innerHTML 대신 replaceChildren: Gemini 화면 보안 규칙(Trusted Types)은 확장이 아닌 곳(스튜디오 앱)에서 innerHTML 을 막는다 */
+      input.replaceChildren();
       for (const line of text.split("\n")) {
         const p = document.createElement("p");
         if (line.trim()) p.textContent = line;
@@ -35,6 +36,19 @@ const GwAi = (() => {
         input.appendChild(p);
       }
       input.dispatchEvent(new InputEvent("input", { bubbles: true, cancelable: true }));
+      /* 입력칸이 바꾼 글을 받아들이지 않았으면(화면 개편 등) 사람이 붙여넣은 것처럼 한 번 더 넣는다 */
+      await gwSleep(300);
+      if ((input.innerText || "").trim().length < Math.min(20, text.trim().length)) {
+        input.replaceChildren();
+        input.focus();
+        const dt = new DataTransfer();
+        dt.setData("text/plain", text);
+        input.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+        await gwSleep(300);
+      }
+      if ((input.innerText || "").trim().length < Math.min(20, text.trim().length)) {
+        return { ok: false, reason: "입력칸에 글을 넣지 못했습니다. AI 화면을 확인해 주세요." };
+      }
     }
 
     /* 커서를 맨 끝으로 — 사람이 바로 이어 칠 수 있게 */
@@ -299,5 +313,6 @@ const GwAi = (() => {
     });
   }
 
-  return { listen, fill, submit, read, getImage };
+  /* 공실뉴스 스튜디오 앱도 이 코드를 그대로 쓴다 (페이지 안 전용 공간에서) — 답 수 세기도 내보낸다 */
+  return { listen, fill, submit, read, getImage, countAnswers, readLast, isBusy };
 })();

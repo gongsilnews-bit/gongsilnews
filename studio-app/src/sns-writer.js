@@ -16,7 +16,7 @@ const log = require("electron-log/main");
 const sns = require("./ext-sns");
 const ext = require("./ext");
 const articleJson = ext.lazyModule(() => ext.run(["gongsil/article-json.js"]));
-const chatgpt = require("./ai/chatgpt");
+const chatgpt = require("./ai"); // 고른 글쓰기 AI (ChatGPT · Gemini) — 그림은 ChatGPT
 const { thumbOf } = require("./media-util");
 const { ffmpegPath } = require("./paths");
 const blogWriter = require("./blog-writer");

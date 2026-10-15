@@ -7,6 +7,7 @@ import StudioSnsPanel, { type SnsData, type ChannelInfo } from "./StudioSnsPanel
 import ChannelButton from "./ChannelButton";
 import StudioArticlePanel from "./StudioArticlePanel";
 import StudioYoutubePanel from "./StudioYoutubePanel";
+import { useStudioWriter } from "./useStudioWriter";
 
 /**
  * 뉴스·SNS발행의 채널 탭 — 공실뉴스 기사 · 네이버 블로그 · 인스타그램 · 스레드 · 페이스북 · 유튜브 대본
@@ -48,6 +49,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
   onTab: (id: string) => void;
   onUsed: () => void;
 }) {
+  const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
   const router = useRouter();
   const column = kind === "column";
   const [article, setArticle] = useState<BlogDraft | null>(null);
@@ -252,10 +254,10 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
                 ))}
                 <button onClick={writeBlog} disabled={writing}
                   style={{ marginLeft: "auto", padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
-                  {writing ? "ChatGPT가 쓰는 중…" : blog ? "다시 쓰기" : "ChatGPT로 블로그 글 쓰기"}
+                  {writing ? `${aiName}가 쓰는 중…` : blog ? "다시 쓰기" : `${aiName}로 블로그 글 쓰기`}
                 </button>
               </div>
-              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>스튜디오 전용 크롬에서 ChatGPT가 열려 직접 씁니다. 1~2분 걸립니다.</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>스튜디오 전용 크롬에서 {aiName}가 열려 직접 씁니다. 1~2분 걸립니다.</div>
             </>
           )}
           {blogProgress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{blogProgress}</div>}

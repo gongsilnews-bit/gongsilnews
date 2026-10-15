@@ -42,7 +42,7 @@ export default function StudioReviseBar({ theme, label, examples, onRevise }: {
   return (
     <div style={{ marginTop: 14, padding: "14px 16px", borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.cardBg }}>
       <div style={{ fontSize: 13, fontWeight: 800, color: theme.textPrimary, marginBottom: 8 }}>
-        {label} 수정 요청 <span style={{ fontWeight: 500, color: theme.textSecondary }}>· ChatGPT가 같은 대화에서 고쳐 다시 씁니다. 사진은 그대로예요.</span>
+        {label} 수정 요청 <span style={{ fontWeight: 500, color: theme.textSecondary }}>· 처음 쓴 AI가 같은 대화에서 고쳐 다시 씁니다. 사진은 그대로예요.</span>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
         <input value={request} onChange={(e) => setRequest(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && submit()}

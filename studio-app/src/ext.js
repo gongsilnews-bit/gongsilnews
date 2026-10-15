@@ -34,6 +34,7 @@ const LOCAL = {
   interior: path.join("interior10", "shared"),
   remodel: path.join("remodeling10", "shared"),
   marketing: path.join("..", "marketing", "shared"),
+  ai: path.join("gongsilwriter30", "shared"), // AI 사이트 넣기·보내기·읽기 (기사작성기와 같은 코드)
 };
 function localFile(name) {
   const [group, file] = name.split("/");

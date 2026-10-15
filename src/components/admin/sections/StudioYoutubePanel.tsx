@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import StudioReviseBar from "./StudioReviseBar";
+import { useStudioWriter } from "./useStudioWriter";
 
 /**
  * 뉴스·SNS발행 — 유튜브 대본 탭 (2026-10-15 회의)
@@ -47,6 +48,7 @@ const secondsOf = (text: string) => Math.round(text.replace(/\s/g, "").length / 
 const clock = (sec: number) => (sec >= 60 ? `${Math.floor(sec / 60)}분 ${sec % 60}초` : `${sec}초`);
 
 export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript }: { theme: Theme; vacancyId: string; onUsed: () => void; onScript?: (has: boolean) => void }) {
+  const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
   const [opts, setOpts] = useState<Options | null>(null);
   const [pick, setPick] = useState<Record<string, string>>({});
   const [script, setScript] = useState<Script | null>(null);
@@ -197,7 +199,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript 
           </div>
           <button onClick={write} disabled={writing}
             style={{ padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
-            {writing ? "ChatGPT가 쓰는 중…" : script ? "다시 쓰기" : "ChatGPT로 대본 쓰기"}
+            {writing ? `${aiName}가 쓰는 중…` : script ? "다시 쓰기" : `${aiName}로 대본 쓰기`}
           </button>
         </div>
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}

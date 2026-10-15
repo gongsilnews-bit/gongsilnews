@@ -27,7 +27,7 @@ const ext = require("./ext");
 ext.configure(BASE_URL);
 const NO_EXT = new Set([
   "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info",
-  "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect",
+  "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-set-writer", "studio:ai-writer",
   "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news",
   "studio:save-file", "studio:open-out-folder",
 ]);
@@ -347,6 +347,17 @@ ipcMain.handle("studio:open-external", (_e, url) => {
   }
 });
 ipcMain.handle("studio:ai-list", () => aiConnect.list());
+// 기본 글쓰기 AI — 고르기 · 지금 쓸 AI 이름 (쓰기 단추에 "Gemini로 …" 처럼 보인다)
+ipcMain.handle("studio:ai-set-writer", (_e, id) => {
+  aiConnect.setWriter(id);
+  for (const w of BrowserWindow.getAllWindows()) w.webContents.send("studio:ai-writer-changed");
+  return aiConnect.list();
+});
+ipcMain.handle("studio:ai-writer", () => {
+  const ai = require("./ai");
+  const id = ai.current();
+  return { id, name: ai.nameOf(id) };
+});
 ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
 ipcMain.handle("studio:ai-finish-login", () => aiConnect.finishLogin());
 ipcMain.handle("studio:blog-styles", (_e, vacancyId) => blogWriter.styles(vacancyId));

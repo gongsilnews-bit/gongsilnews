@@ -6,7 +6,7 @@
 const { session } = require("electron");
 const log = require("electron-log/main");
 const ext = require("./ext");
-const chatgpt = require("./ai/chatgpt");
+const chatgpt = require("./ai"); // 고른 글쓰기 AI (ChatGPT · Gemini) — 그림은 ChatGPT
 
 const lib = () => ext.run(["marketing/marketing-prompt.js"]);
 const KINDS = new Set(["flyer", "report"]);

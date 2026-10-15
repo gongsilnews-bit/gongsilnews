@@ -117,6 +117,15 @@ if (allowed) {
       connect: (id) => ipcRenderer.invoke("studio:ai-connect", id),
       check: (id) => ipcRenderer.invoke("studio:ai-check", id),
       finishLogin: () => ipcRenderer.invoke("studio:ai-finish-login"),
+      /** 기본 글쓰기 AI 고르기 (chatgpt | gemini) */
+      setWriter: (id) => ipcRenderer.invoke("studio:ai-set-writer", id),
+      /** 지금 새 글을 쓸 AI { id, name } */
+      writer: () => ipcRenderer.invoke("studio:ai-writer"),
+      onWriterChanged: (fn) => {
+        const h = () => fn();
+        ipcRenderer.on("studio:ai-writer-changed", h);
+        return () => ipcRenderer.removeListener("studio:ai-writer-changed", h);
+      },
       onProgress: (fn) => ipcRenderer.on("studio:ai-progress", (_e, text) => fn(text)),
     },
   });

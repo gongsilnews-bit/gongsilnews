@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import ChannelButton from "./ChannelButton";
 import StudioReviseBar from "./StudioReviseBar";
+import { useStudioWriter } from "./useStudioWriter";
 
 /**
  * SNS뉴스발행 — 인스타그램·스레드·페이스북 탭 (공실뉴스 스튜디오)
@@ -41,6 +42,7 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, onData, onUsed }: {
   theme: Theme; channel: string; info: ChannelInfo; vacancyId: string; data: SnsData | null; onData: (d: SnsData) => void; onUsed: () => void;
 }) {
+  const aiName = useStudioWriter(); // 고른 글쓰기 AI (ChatGPT · Gemini)
   const [writing, setWriting] = useState(false);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
@@ -191,11 +193,11 @@ export default function StudioSnsPanel({ theme, channel, info, vacancyId, data, 
           <div style={{ flex: 1, minWidth: 260 }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{info.label} 글 쓰기</div>
             <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4, lineHeight: 1.6 }}>
-              인스타그램·스레드·페이스북 글을 ChatGPT가 한 번에 씁니다 (SNS 1회). 블로그를 먼저 썼다면 그 글을 바탕으로 씁니다.
+              인스타그램·스레드·페이스북 글을 {aiName}가 한 번에 씁니다 (SNS 1회). 블로그를 먼저 썼다면 그 글을 바탕으로 씁니다.
             </div>
           </div>
           <button onClick={write} disabled={writing} style={{ ...btn(true), background: writing ? "#94a3b8" : "#16a34a", cursor: writing ? "default" : "pointer" }}>
-            {writing ? "ChatGPT가 쓰는 중…" : data ? "세 채널 다시 쓰기" : "ChatGPT로 SNS 글 쓰기"}
+            {writing ? `${aiName}가 쓰는 중…` : data ? "세 채널 다시 쓰기" : `${aiName}로 SNS 글 쓰기`}
           </button>
         </div>
         {progress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{progress}</div>}

@@ -878,7 +878,7 @@ function App() {
   const runAiFill = async (kind: "flyer" | "report", fields: Record<string, unknown>, apply: (out: Record<string, any>) => void) => {
     const vacancyId = new URLSearchParams(window.location.search).get("vacancy_id");
     if (!vacancyId || !studioMarketing) return;
-    setAiProgress("ChatGPT에 요청하는 중…");
+    setAiProgress("AI에 요청하는 중…");
     const off = studioMarketing.onProgress?.((t) => setAiProgress(t));
     try {
       const out = await studioMarketing.fill({ kind, vacancyId, fields });
@@ -1510,7 +1510,7 @@ function App() {
             onClick={handleAiFill}
             disabled={Boolean(aiProgress)}
             className="py-3 px-5 bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 shadow-sm disabled:opacity-60"
-            title="이 공실 정보로 홍보 문구·특징·코멘트를 ChatGPT가 새로 씁니다."
+            title="이 공실 정보로 홍보 문구·특징·코멘트를 연결한 AI가 새로 씁니다."
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" /></svg>
             <span>AI로 채우기</span>
@@ -1631,7 +1631,7 @@ function App() {
             </div>
           )}
             <div className="font-bold text-gray-900 leading-relaxed">{aiProgress.replace(/^✓\s*/, "")}</div>
-            {!aiProgress.startsWith("✓") && <div className="mt-2 text-sm text-gray-500">스튜디오 전용 크롬에서 ChatGPT가 씁니다. 1~2분 걸립니다.</div>}
+            {!aiProgress.startsWith("✓") && <div className="mt-2 text-sm text-gray-500">스튜디오 전용 크롬에서 연결한 AI(ChatGPT·Gemini)가 씁니다. 1~2분 걸립니다.</div>}
           </div>
         </div>
       )}

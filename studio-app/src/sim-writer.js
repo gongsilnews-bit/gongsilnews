@@ -14,7 +14,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 const log = require("electron-log/main");
 const ext = require("./ext");
-const chatgpt = require("./ai/chatgpt");
+const chatgpt = require("./ai"); // 고른 글쓰기 AI (ChatGPT · Gemini) — 그림은 ChatGPT
 const { thumbOf, saveDataUrl } = require("./media-util");
 
 const KINDS = {
@@ -251,7 +251,9 @@ async function run({ id, baseUrl }, onProgress = () => {}) {
   // ① 설계 지시서
   onProgress("① 설계 지시서를 요청하는 중…");
   let chatUrl = "";
+  // 예측 이미지는 지금 ChatGPT 만 그리므로 설계 지시서도 ChatGPT 에서 (같은 대화에 이어 그린다)
   const specText = await chatgpt.ask(L.rmBuildSpecPrompt(d.design), {
+    provider: "chatgpt",
     onProgress,
     isComplete: (t) => L.rmParseSpec(t).ok,
     onChat: (u) => (chatUrl = u),

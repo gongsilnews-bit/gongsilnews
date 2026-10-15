@@ -75,7 +75,8 @@ const GW = {
   GEMINI: {
     URL: "https://gemini.google.com/app",
     INPUT: ["div.ql-editor[contenteditable='true']", "rich-textarea div[contenteditable='true']", "div[contenteditable='true']"],
-    SEND: ['button[aria-label*="보내기"]', 'button[aria-label*="Send"]', "button.send-button"],
+    /* "보내기" 가 들어간 이름으로 찾으면 대화 화면 위쪽 [공유 및 내보내기]가 먼저 걸린다 (2026-10-15) — 정확한 이름으로 */
+    SEND: ['button[aria-label="메시지 보내기"]', 'button[aria-label="Send message"]', "button.send-button"],
     ANSWER: ["message-content .markdown", "model-response message-content", ".model-response-text"],
     IMAGE: ["model-response img", "message-content img"],
     /* 답변 한 턴 · 내 요청 한 턴 — 새 답변 안의 그림만 고르고, 전송됐는지 확인하는 데 쓴다 */
