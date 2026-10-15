@@ -114,6 +114,15 @@ function register(base) {
     return (await library.add([file], { source: "free", credit: `${item.source} · ${item.credit}` }))[0];
   });
 
+  /* ── 배경 음악 ── 공실뉴스 무료 음악(CC0)을 PC 프로젝트로 받아 둔다 */
+  ipcMain.handle("video:music-get", async (_e, dir, rel) => {
+    if (!/^bgm\/[\w\/-]+\.mp3$/.test(String(rel))) throw new Error("음악을 찾지 못했습니다.");
+    const file = path.join(dir || path.join(library.studioRoot(), "영상", "음악"), "assets", "music", path.basename(rel));
+    if (!fs.existsSync(file)) await server.download(`${baseUrl}/reels-assets/${rel}`, file);
+    media.allow(file);
+    return { file, url: media.urlOf(file) };
+  });
+
   /* ── 굽기 ── */
   ipcMain.handle("video:render", async (e, p, opts) => {
     const id = crypto.randomBytes(4).toString("hex");

@@ -1,0 +1,879 @@
+"use client";
+
+// 편집 화면 — 브루와 같은 짜임: 맨 위 탭 + 리본, 왼쪽 미리보기, 가운데 클립 목록, 오른쪽 자료·설정 칸
+// 진짜 편집이 되면서 어르신도 쉽게: 모든 기능을 눈에 보이는 단추로, 되돌리기, 자동 저장
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Asset, Clip, LibItem, Project, Ratio, Scene } from "./types";
+import { errText, fmtTime, uid, videoBridge } from "./types";
+import { clipText, flatten, splitScript, wordTimes } from "./timeline";
+import Player, { type PlayerHandle } from "./Player";
+import ClipList, { type ClipActions } from "./ClipList";
+import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
+import { Btn, C, FONT, Hint, Icon, Modal, Working, input, label } from "./ui";
+
+type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music";
+type RibbonBtn = { icon: string; label: string; onClick?: () => void; disabled?: boolean; title?: string } | "|";
+
+const TABS = ["파일", "홈", "편집", "자막", "서식", "삽입", "AI 목소리", "효과", "도움말"] as const;
+
+function findClip(p: Project, id: string): { scene: Scene; idx: number; clip: Clip } | null {
+  for (const scene of p.scenes) {
+    const idx = scene.clips.findIndex((c) => c.id === id);
+    if (idx >= 0) return { scene, idx, clip: scene.clips[idx] };
+  }
+  return null;
+}
+
+/** 글을 단어로 나누고 [s, e] 안에 글자 수만큼 시각을 나눈다 (글을 고친 촬영 클립) */
+function spreadIn(text: string, s: number, e: number) {
+  const tokens = text.split(/\s+/).filter(Boolean);
+  const total = tokens.reduce((a, w) => a + w.length + 0.5, 0) || 1;
+  let t = s;
+  return tokens.map((w) => {
+    const d = ((w.length + 0.5) / total) * (e - s);
+    const r = { w, s: +t.toFixed(3), e: +(t + d).toFixed(3) };
+    t += d;
+    return r;
+  });
+}
+
+export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Project; onHome: () => void; onNew: () => void; onOpen: () => void }) {
+  const b = videoBridge()!;
+  const [project, setProjectState] = useState<Project>(initial);
+  const pref = useRef(project);
+  const hist = useRef<{ past: string[]; future: string[] }>({ past: [], future: [] });
+  const [, force] = useState(0);
+  const [tab, setTab] = useState<(typeof TABS)[number]>("홈");
+  const [panel, setPanel] = useState<PanelKind>("");
+  const [libTab, setLibTab] = useState("mine");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [selWord, setSelWord] = useState<{ clip: string; i: number } | null>(null);
+  const [time, setTime] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [rate, setRate] = useState(1);
+  const [busy, setBusy] = useState<Record<string, string>>({});
+  const [toast, setToast] = useState("");
+  const [saved, setSaved] = useState("");
+  const [view, setView] = useState<"detail" | "simple">("detail");
+  const [dialog, setDialog] = useState<"" | "export" | "formats" | "addText" | "help" | "find">("");
+  const [work, setWork] = useState<{ title: string; detail?: string; frac?: number | null } | null>(null);
+  const clipboard = useRef<Clip[]>([]);
+  const player = useRef<PlayerHandle>(null);
+
+  const setProject = (next: Project, history = true) => {
+    if (history) {
+      hist.current.past.push(JSON.stringify(pref.current));
+      if (hist.current.past.length > 100) hist.current.past.shift();
+      hist.current.future = [];
+    }
+    pref.current = next;
+    setProjectState(next);
+  };
+  const change = useCallback((fn: (p: Project) => void, history = true) => {
+    const next = structuredClone(pref.current) as Project;
+    fn(next);
+    setProject(next, history);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const undo = () => {
+    const prev = hist.current.past.pop();
+    if (!prev) return;
+    hist.current.future.push(JSON.stringify(pref.current));
+    const p = JSON.parse(prev);
+    pref.current = p;
+    setProjectState(p);
+    force((x) => x + 1);
+  };
+  const redo = () => {
+    const nx = hist.current.future.pop();
+    if (!nx) return;
+    hist.current.past.push(JSON.stringify(pref.current));
+    const p = JSON.parse(nx);
+    pref.current = p;
+    setProjectState(p);
+    force((x) => x + 1);
+  };
+  const say = (t: string) => {
+    setToast(t);
+    setTimeout(() => setToast((x) => (x === t ? "" : x)), 3500);
+  };
+
+  // 자동 저장
+  useEffect(() => {
+    const t = setTimeout(() => {
+      b.project.save(project).then(() => setSaved(new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }))).catch((e) => setSaved(`저장 실패: ${errText(e)}`));
+    }, 800);
+    return () => clearTimeout(t);
+  }, [project, b]);
+
+  const flat = useMemo(() => flatten(project), [project]);
+  const blank = flat.items.filter((x) => x.clip.type === "voice" && !x.clip.visual);
+  const cur = flat.items.find((x) => time >= x.start && time < x.start + x.dur) || null;
+  const curWord = cur ? (wordTimes(cur.clip, project.settings).find((w) => time - cur.start >= w.s && time - cur.start < w.e)?.i ?? -1) : -1;
+
+  // 재생 중에는 지금 클립이 보이게 목록을 따라 내린다
+  useEffect(() => {
+    if (!playing || !cur) return;
+    document.querySelector(`[data-clip="${cur.clip.id}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [playing, cur?.clip.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── AI 목소리 만들기 (한 번에 3개씩) ── */
+  const revoice = useCallback(async (ids: string[]) => {
+    const list = ids.filter((id) => findClip(pref.current, id)?.clip.type === "voice");
+    let k = 0;
+    const one = async () => {
+      while (k < list.length) {
+        const id = list[k++];
+        const f = findClip(pref.current, id);
+        if (!f) continue;
+        const text = clipText(f.clip).trim();
+        if (!text) {
+          change((p) => {
+            const c = findClip(p, id)?.clip;
+            if (c) c.voice = null;
+          }, false);
+          continue;
+        }
+        setBusy((x) => ({ ...x, [id]: "목소리 만드는 중…" }));
+        try {
+          const r = await b.voice(pref.current.dir, text, f.clip.voiceId || pref.current.settings.voice.id);
+          change((p) => {
+            const c = findClip(p, id)?.clip;
+            if (!c) return;
+            c.voice = { file: r.file, url: r.url, duration: r.duration, id: r.id, text: r.text };
+            c.words = r.words;
+            c.text = text;
+          }, false);
+        } catch (e) {
+          say(`목소리를 만들지 못했어요: ${errText(e)}`);
+        }
+        setBusy((x) => {
+          const y = { ...x };
+          delete y[id];
+          return y;
+        });
+      }
+    };
+    await Promise.all([one(), one(), one()]);
+  }, [b, change]);
+
+  // 처음 열었을 때 목소리 없는 글 클립이 있으면 만든다
+  useEffect(() => {
+    const need: string[] = [];
+    for (const sc of pref.current.scenes) for (const c of sc.clips) if (c.type === "voice" && !c.voice && clipText(c).trim() && !c.del) need.push(c.id);
+    if (need.length) revoice(need);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ── 클립 편집 ── */
+  const seekClip = (id: string, local = 0) => {
+    const it = flatten(pref.current).items.find((x) => x.clip.id === id);
+    if (it) player.current?.seek(it.start + local + 0.001);
+  };
+  const insertAfter = (clips: Clip[], afterId?: string) => {
+    change((p) => {
+      const f = afterId ? findClip(p, afterId) : null;
+      if (f) f.scene.clips.splice(f.idx + 1, 0, ...clips);
+      else {
+        if (!p.scenes.length) p.scenes.push({ id: uid(), clips: [] });
+        p.scenes[p.scenes.length - 1].clips.push(...clips);
+      }
+    });
+  };
+  const lastSelected = () => selected[selected.length - 1];
+
+  const actions: ClipActions = {
+    selectClip: (id, multi) => {
+      setSelWord(null);
+      if (multi) setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+      else {
+        setSelected([id]);
+        if (!player.current?.playing()) seekClip(id);
+      }
+    },
+    selectWord: (clipId, i) => {
+      setSelected([clipId]);
+      setSelWord({ clip: clipId, i });
+      const f = findClip(pref.current, clipId);
+      if (!f) return;
+      const w = wordTimes(f.clip, pref.current.settings).find((x) => x.i === i);
+      seekClip(clipId, w ? w.s : 0);
+    },
+    toggleWord: (clipId, i) => {
+      const f = findClip(pref.current, clipId);
+      if (!f || !f.clip.words?.[i]) return;
+      change((p) => {
+        const c = findClip(p, clipId)!.clip;
+        c.words![i].del = !c.words![i].del;
+        if (c.type === "voice") {
+          c.text = clipText(c);
+          c.words = c.words!.filter((w) => !w.del);
+          c.voice = null;
+        }
+      });
+      if (f.clip.type === "voice") {
+        setSelWord(null);
+        revoice([clipId]);
+      }
+    },
+    splitAt: (clipId, i) => {
+      const f = findClip(pref.current, clipId);
+      if (!f || !f.clip.words || i <= 0) return;
+      const newId = uid();
+      change((p) => {
+        const g = findClip(p, clipId)!;
+        const c = g.clip;
+        const a = c.words!.slice(0, i);
+        const bw = c.words!.slice(i);
+        const second: Clip = structuredClone(c);
+        second.id = newId;
+        if (c.type === "voice") {
+          c.words = a;
+          c.text = a.filter((w) => !w.del).map((w) => w.w).join(" ");
+          c.voice = null;
+          second.words = bw;
+          second.text = bw.filter((w) => !w.del).map((w) => w.w).join(" ");
+          second.voice = null;
+        } else if (c.src) {
+          const t = bw[0].s;
+          c.words = a;
+          c.text = a.map((w) => w.w).join(" ");
+          second.words = bw;
+          second.text = bw.map((w) => w.w).join(" ");
+          second.src = { ...c.src, s: t };
+          c.src = { ...c.src, e: t };
+        }
+        g.scene.clips.splice(g.idx + 1, 0, second);
+      });
+      setSelWord(null);
+      setSelected([clipId, newId]);
+      if (f.clip.type === "voice") revoice([clipId, newId]);
+      say("클립을 둘로 나눴어요");
+    },
+    editText: (clipId, text) => {
+      const f = findClip(pref.current, clipId);
+      if (!f) return;
+      const t = text.replace(/\s+/g, " ").trim();
+      change((p) => {
+        const c = findClip(p, clipId)!.clip;
+        if (c.type === "voice") {
+          c.text = t;
+          c.words = t.split(/\s+/).filter(Boolean).map((w) => ({ w, s: 0, e: 0 }));
+          c.voice = null;
+        } else if (c.src) {
+          c.text = t;
+          c.words = spreadIn(t, c.src.s, c.src.e);
+        }
+      });
+      if (f.clip.type === "voice") revoice([clipId]);
+    },
+    removeClip: (ids) => {
+      change((p) => {
+        for (const sc of p.scenes) sc.clips = sc.clips.filter((c) => !ids.includes(c.id));
+        p.scenes = p.scenes.filter((sc, i) => sc.clips.length || i === 0);
+      });
+      setSelected([]);
+      setSelWord(null);
+      say(ids.length > 1 ? `클립 ${ids.length}개를 지웠어요 (되돌리기로 살릴 수 있어요)` : "클립을 지웠어요 (되돌리기로 살릴 수 있어요)");
+    },
+    mergeUp: (id) => {
+      const f = findClip(pref.current, id);
+      if (!f) return;
+      let prevId = "";
+      if (f.idx > 0) prevId = f.scene.clips[f.idx - 1].id;
+      else {
+        const si = pref.current.scenes.indexOf(f.scene);
+        const ps = pref.current.scenes[si - 1];
+        if (ps && ps.clips.length) prevId = ps.clips[ps.clips.length - 1].id;
+      }
+      if (!prevId) return;
+      mergeClips([prevId, id]);
+    },
+    openVoice: (id) => {
+      setSelected([id]);
+      setPanel("voice");
+    },
+    openVisual: (id) => {
+      setSelected([id]);
+      setLibTab("mine");
+      setPanel("library");
+    },
+    toggleMute: (id) => change((p) => {
+      const c = findClip(p, id)?.clip;
+      if (c) c.muted = !c.muted;
+    }),
+    sceneBreak: (id) => {
+      change((p) => {
+        const f = findClip(p, id);
+        if (!f || f.idx === 0) return;
+        const moved = f.scene.clips.splice(f.idx);
+        const si = p.scenes.indexOf(f.scene);
+        p.scenes.splice(si + 1, 0, { id: uid(), clips: moved });
+      });
+      say("새 씬을 만들었어요");
+    },
+    play: (id) => {
+      seekClip(id);
+      setTimeout(() => player.current?.play(), 50);
+    },
+  };
+
+  /** 클립 합치기 — 같은 영상의 이어진 구간이거나 글 클립끼리 */
+  const mergeClips = (ids: string[]) => {
+    const p0 = pref.current;
+    const order = flatten(p0).items.map((x) => x.clip.id).filter((x) => ids.includes(x));
+    if (order.length < 2) return say("합칠 클립을 두 개 이상 골라 주세요 (카드 왼쪽 네모 칸)");
+    const clips = order.map((id) => findClip(p0, id)!.clip);
+    const allVoice = clips.every((c) => c.type === "voice");
+    const allSrc = clips.every((c) => c.type !== "voice" && c.src && c.src.asset === clips[0].src!.asset);
+    if (!allVoice && !allSrc) return say("글 클립끼리, 또는 같은 영상의 클립끼리만 합칠 수 있어요");
+    if (allSrc) {
+      for (let i = 1; i < clips.length; i++) if (Math.abs(clips[i].src!.s - clips[i - 1].src!.e) > 0.3) return say("이어진 구간끼리만 합칠 수 있어요");
+    }
+    change((p) => {
+      const first = findClip(p, order[0])!;
+      const c = first.clip;
+      const rest = order.slice(1).map((id) => findClip(p, id)!.clip);
+      if (allVoice) {
+        c.text = [clipText(c), ...rest.map(clipText)].filter(Boolean).join(" ");
+        c.words = c.text.split(/\s+/).filter(Boolean).map((w) => ({ w, s: 0, e: 0 }));
+        c.voice = null;
+      } else {
+        c.type = "source";
+        c.words = [...(c.words || []), ...rest.flatMap((r) => r.words || [])];
+        c.text = (c.words || []).map((w) => w.w).join(" ");
+        c.src = { ...c.src!, e: rest[rest.length - 1].src!.e };
+      }
+      for (const sc of p.scenes) sc.clips = sc.clips.filter((x) => !order.slice(1).includes(x.id));
+    });
+    setSelected([order[0]]);
+    if (allVoice) revoice([order[0]]);
+    say("클립을 합쳤어요");
+  };
+
+  const removeSilence = () => {
+    let n = 0;
+    change((p) => {
+      for (const sc of p.scenes) {
+        const before = sc.clips.length;
+        sc.clips = sc.clips.filter((c) => c.type !== "silence");
+        n += before - sc.clips.length;
+      }
+    });
+    say(n ? `말이 없는 구간 ${n}개를 지웠어요` : "지울 무음 구간이 없어요");
+  };
+
+  /* ── 자료 넣기 ── */
+  const ensureAsset = async (item: LibItem): Promise<Asset> => {
+    if (pref.current.assets[item.id] && !pref.current.assets[item.id].missing) return pref.current.assets[item.id];
+    setWork({ title: "자료를 준비하는 중…", detail: item.name });
+    const off = b.onProgress((t, f) => setWork({ title: t, detail: item.name, frac: typeof f === "number" ? f : null }));
+    try {
+      const a = await b.project.addAsset(item.id);
+      change((p) => {
+        p.assets[a.id] = a;
+      }, false);
+      return a;
+    } finally {
+      off();
+      setWork(null);
+    }
+  };
+  const onPick = async (item: LibItem, action: LibPickAction) => {
+    const a = await ensureAsset(item);
+    if (action === "replace" && selected.length) {
+      change((p) => {
+        for (const id of selected) {
+          const c = findClip(p, id)?.clip;
+          if (!c) continue;
+          c.visual = c.src && c.src.asset === a.id ? null : { asset: a.id, s: 0 };
+        }
+      });
+      say(`화면을 바꿨어요 (클립 ${selected.length}개)`);
+      return;
+    }
+    // 넣기 — 말소리 있는 영상은 받아써서 클립으로, 사진·소리 없는 영상은 화면 클립으로
+    if (a.kind === "video" && a.hasAudio) {
+      setWork({ title: "영상 속 말소리를 글로 바꾸는 중…" });
+      const off = b.onProgress((t, f) => setWork({ title: t, frac: typeof f === "number" ? f : null }));
+      try {
+        const r = await b.transcribe(pref.current, a.id);
+        insertAfter(r.clips, lastSelected());
+        say(`영상을 넣었어요 (클립 ${r.clips.length}개)`);
+      } catch (e) {
+        say(errText(e));
+      } finally {
+        off();
+        setWork(null);
+      }
+      return;
+    }
+    const clip: Clip = { id: uid(), type: "voice", text: "", words: [], voice: null, visual: { asset: a.id, s: 0 }, hold: a.kind === "video" ? Math.min(10, a.duration || 5) : 3 };
+    insertAfter([clip], lastSelected());
+    setSelected([clip.id]);
+    say("화면 클립을 넣었어요. 글을 쓰면 AI 목소리로 읽어요");
+  };
+
+  /* ── 글 클립 넣기 ── */
+  const [addText, setAddText] = useState("");
+  const doAddText = () => {
+    const sentences = splitScript(addText).flat();
+    if (!sentences.length) return;
+    const prev = lastSelected() ? findClip(pref.current, lastSelected()) : null;
+    const visual = prev?.clip.visual || null;
+    const clips: Clip[] = sentences.map((t) => ({ id: uid(), type: "voice", text: t, words: t.split(/\s+/).map((w) => ({ w, s: 0, e: 0 })), voice: null, visual }));
+    insertAfter(clips, lastSelected());
+    setDialog("");
+    setAddText("");
+    revoice(clips.map((c) => c.id));
+  };
+
+  /* ── 목소리 바꾸기 ── */
+  const applyVoice = async (o: { id: string; speed: number; volume: number; scope: "all" | "selected" }) => {
+    const ids: string[] = [];
+    change((p) => {
+      if (o.scope === "all") {
+        const changed = p.settings.voice.id !== o.id;
+        p.settings.voice = { id: o.id, speed: o.speed, volume: o.volume };
+        for (const sc of p.scenes) for (const c of sc.clips) {
+          if (c.type !== "voice") continue;
+          delete c.speed;
+          if (changed || c.voiceId) {
+            delete c.voiceId;
+            c.voice = null;
+            ids.push(c.id);
+          }
+        }
+      } else {
+        for (const id of selected) {
+          const c = findClip(p, id)?.clip;
+          if (!c || c.type !== "voice") continue;
+          const was = c.voiceId || p.settings.voice.id;
+          c.voiceId = o.id;
+          c.speed = o.speed;
+          if (was !== o.id) {
+            c.voice = null;
+            ids.push(c.id);
+          }
+        }
+      }
+    });
+    setPanel("");
+    if (ids.length) {
+      say(`목소리를 새로 만들어요 (클립 ${ids.length}개)`);
+      await revoice(ids);
+    } else say("목소리 설정을 바꿨어요");
+  };
+
+  /* ── 키보드 ── */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tg = e.target as HTMLElement;
+      if (tg && (tg.tagName === "INPUT" || tg.tagName === "TEXTAREA" || tg.tagName === "SELECT" || tg.isContentEditable)) return;
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (e.code === "Space") {
+        e.preventDefault();
+        player.current?.toggle();
+      } else if (ctrl && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (ctrl && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        if (selWord) actions.toggleWord(selWord.clip, selWord.i);
+        else if (selected.length) actions.removeClip(selected);
+      } else if (ctrl && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        b.project.save(pref.current).then(() => say("저장했어요"));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  /* ── 리본 ── */
+  const sel1 = selected.length === 1 ? findClip(project, selected[0]) : null;
+  const ribbon: Record<string, RibbonBtn[]> = {
+    파일: [
+      { icon: "plus", label: "새로 만들기", onClick: onNew },
+      { icon: "open", label: "프로젝트 열기", onClick: onOpen },
+      "|",
+      { icon: "video", label: "영상 추가하기", onClick: () => { setLibTab("mine"); setPanel("library"); } },
+      { icon: "ratio", label: "화면 비율", onClick: () => setPanel("ratio") },
+      "|",
+      { icon: "save", label: "프로젝트 저장하기", onClick: () => b.project.save(pref.current).then(() => say("저장했어요")) },
+      { icon: "folder", label: "프로젝트 폴더 열기", onClick: () => b.openPath(project.dir) },
+      "|",
+      { icon: "export", label: "영상으로 내보내기", onClick: () => setDialog("export") },
+      { icon: "file", label: "다른 형식으로 내보내기", onClick: () => setDialog("formats") },
+    ],
+    홈: [
+      { icon: "plus", label: "새로 만들기", onClick: onNew },
+      { icon: "open", label: "프로젝트 열기", onClick: onOpen },
+      "|",
+      { icon: playing ? "pause" : "play", label: playing ? "멈춤" : "재생", onClick: () => player.current?.toggle() },
+      "|",
+      { icon: "undo", label: "되돌리기", onClick: undo, disabled: !hist.current.past.length },
+      { icon: "redo", label: "다시실행", onClick: redo, disabled: !hist.current.future.length },
+      "|",
+      { icon: "cut", label: "잘라내기", disabled: !selected.length, onClick: () => { clipboard.current = selected.map((id) => structuredClone(findClip(pref.current, id)!.clip)); actions.removeClip(selected); } },
+      { icon: "copy", label: "복사하기", disabled: !selected.length, onClick: () => { clipboard.current = selected.map((id) => structuredClone(findClip(pref.current, id)!.clip)); say(`클립 ${selected.length}개를 복사했어요`); } },
+      { icon: "paste", label: "붙여넣기", disabled: !clipboard.current.length, onClick: () => { insertAfter(clipboard.current.map((c) => ({ ...structuredClone(c), id: uid() })), lastSelected()); say("붙여넣었어요"); } },
+      "|",
+      { icon: "merge", label: "클립 합치기", onClick: () => mergeClips(selected), disabled: selected.length < 2, title: "왼쪽 네모 칸으로 두 개 이상 고르세요" },
+      { icon: "split", label: "클립 나누기", onClick: () => (selWord ? actions.splitAt(selWord.clip, selWord.i) : say("나눌 자리의 단어를 먼저 누르세요")) },
+      "|",
+      { icon: "silence", label: "무음 구간 줄이기", onClick: removeSilence },
+    ],
+    편집: [
+      { icon: "undo", label: "되돌리기", onClick: undo, disabled: !hist.current.past.length },
+      { icon: "redo", label: "다시실행", onClick: redo, disabled: !hist.current.future.length },
+      "|",
+      { icon: "check", label: "모든 클립 고르기", onClick: () => setSelected(flat.items.map((x) => x.clip.id)) },
+      { icon: "close", label: "고르기 풀기", onClick: () => { setSelected([]); setSelWord(null); } },
+      "|",
+      { icon: "trash", label: selWord ? "단어 지우기/되살리기" : "단어 지우기", onClick: () => (selWord ? actions.toggleWord(selWord.clip, selWord.i) : say("지울 단어를 먼저 누르세요")) },
+      { icon: "trash", label: "클립 지우기", onClick: () => actions.removeClip(selected), disabled: !selected.length },
+      "|",
+      { icon: "merge", label: "클립 합치기", onClick: () => mergeClips(selected), disabled: selected.length < 2 },
+      { icon: "split", label: "클립 나누기", onClick: () => (selWord ? actions.splitAt(selWord.clip, selWord.i) : say("나눌 자리의 단어를 먼저 누르세요")) },
+      { icon: "scene", label: "씬 나누기", onClick: () => sel1 && actions.sceneBreak(sel1.clip.id), disabled: !sel1 },
+      "|",
+      { icon: "silence", label: "무음 구간 줄이기", onClick: removeSilence },
+      { icon: "search", label: "찾아서 편집하기", onClick: () => setDialog("find") },
+    ],
+    자막: [
+      { icon: "sub", label: project.settings.subtitle.on ? "자막 숨기기" : "자막 보이기", onClick: () => change((p) => { p.settings.subtitle.on = !p.settings.subtitle.on; }) },
+      { icon: "font", label: "자막 서식", onClick: () => setPanel("subtitle") },
+      "|",
+      { icon: "copy", label: "전체 자막 복사하기", onClick: () => { navigator.clipboard.writeText(flat.items.map((x) => clipText(x.clip)).filter(Boolean).join("\n")); say("전체 자막을 복사했어요"); } },
+      { icon: "file", label: "자막 파일 내보내기", onClick: () => b.project.exportText(pref.current, "srt").then(() => say("자막 파일(.srt)을 저장했어요")) },
+      "|",
+      { icon: "sub", label: "고른 클립 자막 끄기/켜기", disabled: !selected.length, onClick: () => change((p) => { for (const id of selected) { const c = findClip(p, id)?.clip; if (c) c.sub = c.sub === false; } }) },
+    ],
+    서식: [
+      { icon: "font", label: "자막 서식 열기", onClick: () => setPanel("subtitle") },
+      "|",
+      { icon: "zoom", label: "글자 크게", onClick: () => change((p) => { p.settings.subtitle.size = Math.min(170, p.settings.subtitle.size + 10); }) },
+      { icon: "zoom", label: "글자 작게", onClick: () => change((p) => { p.settings.subtitle.size = Math.max(60, p.settings.subtitle.size - 10); }) },
+      "|",
+      { icon: "sub", label: "위치: 하단", onClick: () => change((p) => { p.settings.subtitle.position = "bottom"; }) },
+      { icon: "sub", label: "위치: 중단", onClick: () => change((p) => { p.settings.subtitle.position = "middle"; }) },
+      { icon: "sub", label: "위치: 상단", onClick: () => change((p) => { p.settings.subtitle.position = "top"; }) },
+      "|",
+      { icon: "bg", label: project.settings.subtitle.bg ? "검은 상자 빼기" : "검은 상자 넣기", onClick: () => change((p) => { p.settings.subtitle.bg = !p.settings.subtitle.bg; }) },
+    ],
+    삽입: [
+      { icon: "text", label: "글 클립 넣기", onClick: () => setDialog("addText") },
+      "|",
+      { icon: "image", label: "내 이미지·비디오", onClick: () => { setLibTab("mine"); setPanel("library"); } },
+      { icon: "image", label: "공실 사진", onClick: () => { setLibTab("vacancy"); setPanel("library"); } },
+      { icon: "search", label: "무료 이미지·비디오", onClick: () => { setLibTab("free"); setPanel("library"); } },
+      { icon: "ai", label: "AI 이미지", onClick: () => { setLibTab("ai"); setPanel("library"); } },
+      "|",
+      { icon: "music", label: "배경 음악", onClick: () => setPanel("music") },
+    ],
+    "AI 목소리": [
+      { icon: "voice", label: "목소리 바꾸기", onClick: () => setPanel("voice") },
+      { icon: "redo", label: "목소리 다시 만들기", disabled: !selected.length, onClick: () => revoice(selected) },
+      "|",
+      { icon: "text", label: "AI 목소리 클립 넣기", onClick: () => setDialog("addText") },
+    ],
+    효과: [
+      { icon: "fill", label: "꽉 채우기", onClick: () => change((p) => { if (selected.length) for (const id of selected) { const c = findClip(p, id)?.clip; if (c) c.fill = "cover"; } else p.settings.fill = "cover"; }) },
+      { icon: "fill", label: "맞추기", onClick: () => change((p) => { if (selected.length) for (const id of selected) { const c = findClip(p, id)?.clip; if (c) c.fill = "contain"; } else p.settings.fill = "contain"; }) },
+      { icon: "fill", label: "흐린 배경", onClick: () => change((p) => { if (selected.length) for (const id of selected) { const c = findClip(p, id)?.clip; if (c) c.fill = "blur"; } else p.settings.fill = "blur"; }) },
+      "|",
+      { icon: "mute", label: "소리 끄기/켜기", disabled: !selected.length, onClick: () => change((p) => { for (const id of selected) { const c = findClip(p, id)?.clip; if (c) c.muted = !c.muted; } }) },
+      { icon: "volume", label: "원본 소리 크게", onClick: () => change((p) => { p.settings.sourceVolume = Math.min(3, (p.settings.sourceVolume || 1) + 0.25); }) },
+      { icon: "volume", label: "원본 소리 작게", onClick: () => change((p) => { p.settings.sourceVolume = Math.max(0, (p.settings.sourceVolume || 1) - 0.25); }) },
+      "|",
+      { icon: "speed", label: "글 클립 빠르기", onClick: () => setPanel("voice") },
+    ],
+    도움말: [
+      { icon: "help", label: "쉬운 사용법", onClick: () => setDialog("help") },
+      { icon: "key", label: "단축키", onClick: () => setDialog("help") },
+      { icon: "folder", label: "저장 폴더 열기", onClick: () => b.openPath(project.dir) },
+    ],
+  };
+
+  /* ── 레이아웃 ── */
+  const [W, H] = project.ratio === "9:16" ? [9, 16] : project.ratio === "4:5" ? [4, 5] : project.ratio === "1:1" ? [1, 1] : project.ratio === "4:3" ? [4, 3] : [16, 9];
+  const previewW = Math.round(Math.min(380, (380 * W) / H > 380 ? 380 : 420 * (W / H)));
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: C.bg, color: C.text, fontFamily: FONT }}>
+      {/* 맨 위 탭 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4, height: 44, padding: "0 12px", background: C.panel, borderBottom: `1px solid ${C.line}` }}>
+        <button type="button" onClick={onHome} title="처음 화면" style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 10px", border: 0, borderRadius: 4, background: "transparent", color: C.sub, fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+          <span style={{ transform: "rotate(180deg)", display: "inline-flex" }}><Icon name="chevron" size={16} /></span>처음 화면
+        </button>
+        <span style={{ width: 1, height: 20, background: C.line, margin: "0 6px" }} />
+        {TABS.map((t) => (
+          <button key={t} type="button" onClick={() => setTab(t)}
+            style={{ height: 44, padding: "0 12px", border: 0, borderBottom: `2px solid ${tab === t ? C.text : "transparent"}`, background: "transparent", color: tab === t ? C.text : C.sub, fontSize: 15, fontWeight: tab === t ? 800 : 600, fontFamily: FONT, cursor: "pointer" }}>
+            {t}
+          </button>
+        ))}
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: 13.5, color: C.dim, marginRight: 10, maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{project.name}{saved ? ` · 저장됨 ${saved}` : ""}</span>
+        <Btn primary small onClick={() => setDialog("export")}><Icon name="export" size={16} />내보내기</Btn>
+      </div>
+      {/* 리본 */}
+      <div style={{ display: "flex", alignItems: "stretch", gap: 2, minHeight: 74, padding: "6px 10px", background: C.panel, borderBottom: `1px solid ${C.line}`, overflowX: "auto" }}>
+        {ribbon[tab].map((btn, i) =>
+          btn === "|" ? (
+            <span key={i} style={{ width: 1, margin: "6px 6px", background: C.line, flexShrink: 0 }} />
+          ) : (
+            <button key={i} type="button" onClick={btn.onClick} disabled={btn.disabled || !btn.onClick} title={btn.title || btn.label}
+              style={{ minWidth: 70, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "4px 6px", border: 0, borderRadius: 5, background: "transparent", color: C.text, opacity: btn.disabled || !btn.onClick ? 0.35 : 1, fontSize: 12.5, fontWeight: 600, fontFamily: FONT, cursor: btn.disabled ? "default" : "pointer", lineHeight: 1.25, textAlign: "center", flexShrink: 0 }}
+              onMouseEnter={(e) => !btn.disabled && (e.currentTarget.style.background = C.card)} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+              <Icon name={btn.icon} size={22} />
+              <span style={{ whiteSpace: "nowrap" }}>{btn.label}</span>
+            </button>
+          )
+        )}
+      </div>
+
+      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+        {/* 왼쪽: 미리보기 */}
+        <div style={{ width: 412, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, padding: 16, background: C.panel, borderRight: `1px solid ${C.line}`, overflowY: "auto" }}>
+          <div style={{ display: "flex", justifyContent: "center", background: "#000", borderRadius: 4 }}>
+            <Player ref={player} project={project} width={previewW} onTime={setTime} onPlaying={setPlaying} previewRate={rate} />
+          </div>
+          <input type="range" min={0} max={Math.max(0.1, flat.total)} step={0.01} value={Math.min(time, flat.total)} onChange={(e) => player.current?.seek(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button type="button" onClick={() => player.current?.toggle()} title="재생 (스페이스)" style={{ width: 48, height: 48, borderRadius: 24, border: 0, background: C.text, color: C.bg, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon name={playing ? "pause" : "play"} size={22} stroke={2.2} />
+            </button>
+            <span style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtTime(time)} <span style={{ color: C.dim }}>/ {fmtTime(flat.total)}</span></span>
+            <span style={{ flex: 1 }} />
+            <select value={rate} onChange={(e) => setRate(Number(e.target.value))} title="미리보기 빠르기" style={{ height: 34, borderRadius: 5, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14, fontFamily: FONT }}>
+              {[0.75, 1, 1.25, 1.5, 2].map((r) => <option key={r} value={r}>{r}배</option>)}
+            </select>
+          </div>
+          {/* 지금 클립 정보 */}
+          {cur && (
+            <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 6, padding: 12 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 8 }}>클립 {cur.index + 1}</div>
+              {(() => {
+                const c = cur.clip;
+                const vis = c.visual ? project.assets[c.visual.asset] : c.src ? project.assets[c.src.asset] : null;
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, color: C.sub }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}><Icon name={vis?.kind === "image" ? "image" : "video"} size={16} /><span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{vis ? vis.name : "화면 없음 (검은 화면)"}</span></div>
+                    {c.type === "voice" ? <div style={{ display: "flex", gap: 8, alignItems: "center" }}><Icon name="voice" size={16} />{c.voice ? `AI 목소리 ${(c.voice.duration || 0).toFixed(1)}초` : "목소리 없음"}</div> : <div style={{ display: "flex", gap: 8, alignItems: "center" }}><Icon name="mic" size={16} />{c.muted ? "원본 소리 끔" : "원본 소리"}</div>}
+                    {project.settings.music.on && <div style={{ display: "flex", gap: 8, alignItems: "center" }}><Icon name="music" size={16} />{project.settings.music.name}</div>}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+          <Hint>단어를 누르면 그 자리로 가요. 지울 단어를 누르고 [이 단어 지우기]를 누르면 그 부분이 영상에서 잘려요.</Hint>
+        </div>
+
+        {/* 가운데: 클립 목록 */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 24px", borderBottom: `1px solid ${C.line}` }}>
+            <span style={{ fontSize: 14, color: C.sub }}>클립 {flat.items.length}개 · {fmtTime(flat.total, false)}{selected.length ? ` · ${selected.length}개 고름` : ""}</span>
+            <span style={{ flex: 1 }} />
+            {toast && <span style={{ fontSize: 14, color: C.text, background: C.card, border: `1px solid ${C.line2}`, padding: "5px 12px", borderRadius: 5 }}>{toast}</span>}
+            <div style={{ display: "flex", border: `1px solid ${C.line2}`, borderRadius: 5, overflow: "hidden" }}>
+              {(["simple", "detail"] as const).map((v) => <button key={v} type="button" onClick={() => setView(v)} style={{ height: 32, padding: "0 12px", border: 0, background: view === v ? C.card : "transparent", color: view === v ? C.text : C.sub, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>{v === "simple" ? "개요" : "상세"}</button>)}
+            </div>
+          </div>
+          {blank.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", borderBottom: `1px solid ${C.line}`, background: C.panel, fontSize: 14.5 }}>
+              <Icon name="image" size={18} />
+              <span style={{ flex: 1 }}>화면이 비어 있는 클립이 {blank.length}개 있어요 (검은 화면으로 나와요). 사진이나 영상을 넣어 주세요.</span>
+              <Btn small primary onClick={() => { setSelected(blank.map((x) => x.clip.id)); setLibTab("mine"); setPanel("library"); }}>빈 클립에 화면 넣기</Btn>
+            </div>
+          )}
+          <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }} onClick={(e) => { if (e.target === e.currentTarget) { setSelected([]); setSelWord(null); } }}>
+            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} busy={busy} actions={actions} view={view} />
+          </div>
+        </div>
+
+        {/* 오른쪽 칸 */}
+        {panel === "library" && <LibraryPanel key={libTab} project={project} canReplace={selected.length > 0} onPick={onPick} onClose={() => setPanel("")} initialTab={libTab} />}
+        {panel === "voice" && <VoicePanel project={project} targetCount={selected.filter((id) => findClip(project, id)?.clip.type === "voice").length} onApply={applyVoice} onClose={() => setPanel("")} />}
+        {panel === "subtitle" && <SubtitlePanel settings={project.settings} onChange={(patch) => change((p) => { p.settings.subtitle = { ...p.settings.subtitle, ...patch }; })} onClose={() => setPanel("")} />}
+        {panel === "ratio" && <RatioPanel ratio={project.ratio} fill={project.settings.fill} onRatio={(r: Ratio) => change((p) => { p.ratio = r; })} onFill={(f) => change((p) => { p.settings.fill = f; })} onClose={() => setPanel("")} />}
+        {panel === "music" && <MusicPanel project={project} onChange={(m) => change((p) => { p.settings.music = { ...p.settings.music, ...m }; })} onClose={() => setPanel("")} />}
+      </div>
+
+      {work && <Modal title=""><Working title={work.title} detail={work.detail} frac={work.frac} /></Modal>}
+      {dialog === "export" && <ExportDialog project={project} selected={selected} sceneOf={sel1?.scene.id} onClose={() => setDialog("")} />}
+      {dialog === "formats" && <FormatsDialog project={project} onClose={() => setDialog("")} />}
+      {dialog === "addText" && (
+        <Modal title="글 클립 넣기 (AI 목소리)" onClose={() => setDialog("")} width={620} footer={<><Btn onClick={() => setDialog("")}>취소</Btn><Btn primary onClick={doAddText} disabled={!addText.trim()}>넣기</Btn></>}>
+          <div style={{ padding: 20 }}>
+            <div style={{ ...label, marginBottom: 8 }}>AI 목소리가 읽을 글</div>
+            <textarea value={addText} onChange={(e) => setAddText(e.target.value)} rows={7} autoFocus placeholder={"문장마다 클립 하나가 돼요.\n예) 이번에 소개할 곳은 논현동 빌라입니다. 지하철역까지 걸어서 5분이에요."}
+              style={{ ...input, height: "auto", padding: 12, lineHeight: 1.6, resize: "vertical" }} />
+            <div style={{ fontSize: 13.5, color: C.sub, marginTop: 8 }}>{selected.length ? "고른 클립 뒤에" : "맨 끝에"} 넣어요. 화면은 앞 클립과 같게 시작해요.</div>
+          </div>
+        </Modal>
+      )}
+      {dialog === "find" && <FindDialog project={project} onJump={(id) => { setDialog(""); actions.selectClip(id, false); document.querySelector(`[data-clip="${id}"]`)?.scrollIntoView({ block: "center" }); }} onClose={() => setDialog("")} />}
+      {dialog === "help" && (
+        <Modal title="쉬운 사용법" onClose={() => setDialog("")} width={640}>
+          <div style={{ padding: 22, fontSize: 15.5, lineHeight: 1.9, color: C.text }}>
+            <div>1. <b>단어를 누르면</b> 그 자리로 가요. [이 단어 지우기]를 누르면 그 부분이 영상에서 잘려요.</div>
+            <div>2. <b>클립을 누르면</b> 아래에 [글 고치기] [화면 바꾸기] [목소리] [클립 지우기] 단추가 나와요.</div>
+            <div>3. 실수했으면 위 [홈] 탭의 <b>[되돌리기]</b>를 누르세요. 몇 번이든 돼요.</div>
+            <div>4. 다 됐으면 오른쪽 위 <b>[내보내기]</b>를 누르면 영상 파일이 만들어져요.</div>
+            <div>5. 자동으로 저장돼요. 껐다 켜도 [프로젝트 열기]에서 이어서 할 수 있어요.</div>
+            <div style={{ marginTop: 14, ...label }}>단축키</div>
+            <div style={{ color: C.sub }}>스페이스: 재생/멈춤 · Ctrl+Z: 되돌리기 · Ctrl+Y: 다시실행 · Delete: 고른 단어(또는 클립) 지우기 · Ctrl+S: 저장</div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ── 내보내기 ── */
+function ExportDialog({ project, selected, sceneOf, onClose }: { project: Project; selected: string[]; sceneOf?: string; onClose: () => void }) {
+  const b = videoBridge()!;
+  const [scope, setScope] = useState<"all" | "scene" | "selected">("all");
+  const [height, setHeight] = useState(0);
+  const [state, setState] = useState<{ text: string; frac: number } | null>(null);
+  const [job, setJob] = useState("");
+  const [done, setDone] = useState<{ file: string; seconds: number; took: number } | null>(null);
+  const [err, setErr] = useState("");
+  const [W0, H0] = project.ratio === "16:9" ? [1920, 1080] : project.ratio === "9:16" ? [1080, 1920] : project.ratio === "4:5" ? [1080, 1350] : project.ratio === "4:3" ? [1440, 1080] : [1080, 1080];
+  const go = async () => {
+    setErr("");
+    setState({ text: "준비하는 중…", frac: 0 });
+    const off = b.onRender((text, frac, id) => {
+      if (id) setJob(id);
+      else setState({ text, frac });
+    });
+    try {
+      const r = await b.render(project, { scope, sceneId: sceneOf, clipIds: selected, height: height || undefined });
+      setDone(r);
+    } catch (e) {
+      setErr(errText(e));
+    } finally {
+      off();
+      setState(null);
+    }
+  };
+  if (done) {
+    return (
+      <Modal title="영상이 완성됐어요" onClose={onClose} width={560} footer={<><Btn onClick={() => b.showFile(done.file)}><Icon name="folder" size={16} />폴더에서 보기</Btn><Btn primary onClick={() => b.openPath(done.file)}><Icon name="play" size={16} />영상 열어 보기</Btn></>}>
+        <div style={{ padding: 22, fontSize: 15.5, lineHeight: 1.8 }}>
+          <div>길이 {fmtTime(done.seconds, false)} · 만드는 데 {Math.round(done.took)}초 걸렸어요.</div>
+          <div style={{ color: C.sub, fontSize: 14, wordBreak: "break-all" }}>{done.file}</div>
+        </div>
+      </Modal>
+    );
+  }
+  if (state) {
+    return (
+      <Modal title="영상 내보내기" width={560} footer={<Btn onClick={() => job && b.renderCancel(job)}>멈추기</Btn>}>
+        <Working title={state.text} frac={state.frac} detail="PC에서 만들고 있어요. 이 창을 닫지 마세요." />
+      </Modal>
+    );
+  }
+  const radio = (on: boolean, text: string, pick: () => void, disabled = false) => (
+    <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 15.5, color: disabled ? C.dim : C.text, cursor: disabled ? "default" : "pointer" }}>
+      <input type="radio" checked={on} onChange={pick} disabled={disabled} style={{ width: 18, height: 18, accentColor: C.accent }} />
+      {text}
+    </label>
+  );
+  return (
+    <Modal title="영상 내보내기" onClose={onClose} width={560} footer={<><Btn onClick={onClose}>취소</Btn><Btn primary onClick={go}><Icon name="export" size={16} />내보내기</Btn></>}>
+      <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 18 }}>
+        <div>
+          <div style={{ ...label, marginBottom: 10 }}>내보낼 클립</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {radio(scope === "all", "모든 씬, 모든 클립", () => setScope("all"))}
+            {radio(scope === "scene", "지금 씬만", () => setScope("scene"), !sceneOf)}
+            {radio(scope === "selected", `고른 클립만 (${selected.length}개)`, () => setScope("selected"), !selected.length)}
+          </div>
+        </div>
+        <div>
+          <div style={{ ...label, marginBottom: 10 }}>해상도</div>
+          <select value={height} onChange={(e) => setHeight(Number(e.target.value))} style={{ ...input }}>
+            <option value={0}>원본 ({W0} × {H0})</option>
+            <option value={720}>720p (파일이 작아요)</option>
+            <option value={480}>480p (카톡으로 보내기 좋아요)</option>
+          </select>
+        </div>
+        <div style={{ fontSize: 14, color: C.sub }}>저장 위치: 프로젝트 폴더의 output</div>
+        {err && <div style={{ fontSize: 14.5, color: C.danger, lineHeight: 1.6 }}>{err}</div>}
+      </div>
+    </Modal>
+  );
+}
+
+function FormatsDialog({ project, onClose }: { project: Project; onClose: () => void }) {
+  const b = videoBridge()!;
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const run = async (fn: () => Promise<unknown>, okMsg: string) => {
+    setBusy(true);
+    setMsg("");
+    try {
+      await fn();
+      setMsg(okMsg);
+    } catch (e) {
+      setMsg(errText(e));
+    }
+    setBusy(false);
+  };
+  const row = (icon: string, title: string, desc: string, fn: () => void) => (
+    <button type="button" onClick={fn} disabled={busy} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 14px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, cursor: "pointer", fontFamily: FONT, textAlign: "left" }}>
+      <Icon name={icon} size={22} />
+      <span style={{ flex: 1 }}>
+        <span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>{title}</span>
+        <span style={{ display: "block", fontSize: 13, color: C.sub, marginTop: 2 }}>{desc}</span>
+      </span>
+    </button>
+  );
+  return (
+    <Modal title="다른 형식으로 내보내기" onClose={onClose} width={560}>
+      <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+        {row("sub", "자막 (.srt)", "유튜브에 자막으로 올릴 수 있어요", () => run(() => b.project.exportText(project, "srt"), "자막 파일을 저장했어요"))}
+        {row("file", "텍스트 (.txt)", "대본 글만", () => run(() => b.project.exportText(project, "txt"), "텍스트 파일을 저장했어요"))}
+        {row("music", "소리 (.mp3)", "목소리·음악 소리만", () => run(() => b.exportAudio(project, "mp3").then((f) => b.showFile(f)), "소리 파일을 저장했어요"))}
+        {row("music", "소리 (.wav)", "편집용 고음질 소리", () => run(() => b.exportAudio(project, "wav").then((f) => b.showFile(f)), "소리 파일을 저장했어요"))}
+        {busy && <Working title="만드는 중…" />}
+        {msg && <div style={{ fontSize: 14.5, color: C.sub, marginTop: 6 }}>{msg}</div>}
+      </div>
+    </Modal>
+  );
+}
+
+function FindDialog({ project, onJump, onClose }: { project: Project; onJump: (id: string) => void; onClose: () => void }) {
+  const [q, setQ] = useState("");
+  const hits = useMemo(() => {
+    if (!q.trim()) return [];
+    const out: { id: string; n: number; text: string }[] = [];
+    let n = 0;
+    for (const sc of project.scenes) for (const c of sc.clips) {
+      n++;
+      const t = clipText(c);
+      if (t.includes(q.trim())) out.push({ id: c.id, n, text: t });
+    }
+    return out;
+  }, [q, project]);
+  return (
+    <Modal title="찾아서 편집하기" onClose={onClose} width={620}>
+      <div style={{ padding: 20 }}>
+        <input value={q} onChange={(e) => setQ(e.target.value)} autoFocus placeholder="찾을 말 (예: 전세)" style={input} />
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6, maxHeight: 380, overflowY: "auto" }}>
+          {hits.map((h) => (
+            <button key={h.id} type="button" onClick={() => onJump(h.id)} style={{ textAlign: "left", padding: "10px 12px", borderRadius: 6, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 15, fontFamily: FONT, cursor: "pointer" }}>
+              <b style={{ marginRight: 8 }}>클립 {h.n}</b>{h.text}
+            </button>
+          ))}
+          {q.trim() && !hits.length && <div style={{ color: C.sub, fontSize: 14 }}>찾은 클립이 없어요.</div>}
+        </div>
+      </div>
+    </Modal>
+  );
+}

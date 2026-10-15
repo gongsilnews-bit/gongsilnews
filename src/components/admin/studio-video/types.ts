@@ -110,6 +110,7 @@ export type VideoBridge = {
     search: (q: string, type: "photo" | "video", orientation: string, page?: number) => Promise<{ success: boolean; items?: StockItem[]; error?: string; needKey?: boolean }>;
     get: (dir: string, item: StockItem) => Promise<LibItem>;
   };
+  musicGet: (dir: string, rel: string) => Promise<{ file: string; url: string }>;
   render: (p: Project, o?: { scope?: string; sceneId?: string; clipIds?: string[]; height?: number }) => Promise<{ file: string; seconds: number; took: number; encoder: string }>;
   renderCancel: (id: string) => Promise<void>;
   exportAudio: (p: Project, kind: "mp3" | "wav") => Promise<string>;

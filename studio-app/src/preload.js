@@ -145,6 +145,7 @@ if (allowed) {
         search: (q, type, orientation, page) => ipcRenderer.invoke("video:stock-search", q, type, orientation, page),
         get: (dir, item) => ipcRenderer.invoke("video:stock-get", dir, item),
       },
+      musicGet: (dir, rel) => ipcRenderer.invoke("video:music-get", dir, rel),
       render: (p, opts) => ipcRenderer.invoke("video:render", p, opts),
       renderCancel: (id) => ipcRenderer.invoke("video:render-cancel", id),
       exportAudio: (p, kind) => ipcRenderer.invoke("video:export-audio", p, kind),

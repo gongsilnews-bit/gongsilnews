@@ -32,6 +32,7 @@ const ManualFrame = lazy(() => import("@/components/admin/sections/ManualFrame")
 const StudioComingSoon = lazy(() => import("@/components/admin/sections/StudioComingSoon"));
 const StudioMarketingSection = lazy(() => import("@/components/admin/sections/StudioMarketingSection"));
 const StudioSnsSection = lazy(() => import("@/components/admin/sections/StudioSnsSection"));
+const VideoStudio = lazy(() => import("@/components/admin/studio-video/VideoStudio"));
 
 /* ── 부동산관리자 메뉴 ── */
 const REALTY_MENU: MenuItem[] = [
@@ -303,7 +304,7 @@ function RealtyAdminContent() {
           isApp={studioApp.isApp}
           appVersion={studioApp.version}
           badges={STUDIO_BADGES}
-          autoCollapse={activeMenu === "marketing"} // 매물보고서 미리보기(860px)가 잘리지 않게
+          autoCollapse={activeMenu === "marketing" || activeMenu === "video"} // 매물보고서 미리보기(860px)·영상 편집기가 잘리지 않게
         />
       ) : (
       /* ===== 좌측 사이드바 (80px, 블루 테마) ===== */
@@ -431,7 +432,8 @@ function RealtyAdminContent() {
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
           {activeMenu === "sns" && studioApp.isApp && memberId && <StudioSnsSection theme={theme} memberId={memberId} />}
           {activeMenu === "marketing" && <StudioMarketingSection theme={theme} />}
-          {((activeMenu === "sns" && !studioApp.isApp) || activeMenu === "video") && (
+          {activeMenu === "video" && studioApp.isApp && <VideoStudio />}
+          {((activeMenu === "sns" && !studioApp.isApp) || (activeMenu === "video" && !studioApp.isApp)) && (
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />
           )}
         </Suspense>
