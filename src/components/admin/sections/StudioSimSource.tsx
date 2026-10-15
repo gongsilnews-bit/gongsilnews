@@ -50,10 +50,10 @@ const cleanErr = (e: unknown) => (e instanceof Error ? e.message : String(e)).re
 /* 시뮬레이션 진행 — 글자만 바뀌면 지루하니, 단계별 쉬운 말 + 공실뉴스 로딩 점 + 걸린 시간 */
 const SIM_STEPS = [
   { key: 1, head: "AI가 설계 지시서를 쓰고 있어요" },
-  { key: 2, head: "AI가 열심히 예측 이미지를 만들고 있어요" },
+  { key: 2, head: "AI가 열심히 {what} 예측 이미지를 만들고 있어요" },
   { key: 3, head: "결과표를 정리하고 있어요" },
 ];
-function SimProgress({ text }: { text: string }) {
+function SimProgress({ text, what }: { text: string; what: string }) {
   const [stage, setStage] = useState(1);
   const [sec, setSec] = useState(0);
   useEffect(() => {
@@ -64,7 +64,7 @@ function SimProgress({ text }: { text: string }) {
     if (text.startsWith("②")) setStage(2);
     else if (text.startsWith("③")) setStage(3);
   }, [text]);
-  const head = SIM_STEPS[stage - 1].head;
+  const head = SIM_STEPS[stage - 1].head.replace("{what}", what);
   return (
     <div style={{ marginTop: 12, padding: "18px 20px", borderRadius: 12, background: "#f0f5ff", border: "1px solid #d6e4ff", textAlign: "center" }}>
       <style>{`@keyframes gwSimDot { 0%, 60%, 100% { transform: translateY(0); opacity: .45 } 30% { transform: translateY(-7px); opacity: 1 } }`}</style>
@@ -126,6 +126,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
   const resultRef = useRef<HTMLDivElement>(null);
   const [fresh, setFresh] = useState(false); // 방금 끝난 결과 — 완성 안내를 띄운다
   const name = kind === "interior" ? "인테리어" : "리모델링";
+  const full = kind === "interior" ? "인테리어" : "건물 외관 리모델링"; // 리모델링은 꼭 건물 외관이라고 밝힌다
 
   const choose = (s: Sim | null) => {
     setSim(s);
@@ -300,7 +301,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
           </div>
           <div style={{ flex: 1, minWidth: 220 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>{r.title}{r.roomName ? ` · ${r.roomName}` : ""}</div>
-            <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>{name} 시뮬레이션 · 예상 공사비 {r.cost.rangeText} · {r.dateText}</div>
+            <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>{full} 시뮬레이션 · 예상 공사비 {r.cost.rangeText} · {r.dateText}</div>
           </div>
           <button onClick={() => setOpen(true)} style={plainBtn}>결과표·조건 보기</button>
           <button onClick={newSim} style={plainBtn}>새 시뮬레이션</button>
@@ -311,7 +312,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
         <div style={card}>
           {step(1, "사진 고르기", sim && r ? <button onClick={() => setOpen(false)} style={{ ...plainBtn, padding: "6px 12px", fontSize: 12.5 }}>접기</button> : null)}
           <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 10, lineHeight: 1.6 }}>
-            {kind === "interior" ? "고칠 방의 실내 사진" : "건물 외관 사진"}을 1장 골라 주세요. 다른 사진을 누르면 바뀝니다. 공실 사진이면 기사에 매물 정보가 함께 들어갑니다.
+            {kind === "interior" ? "고칠 방의 실내 사진" : <b>바깥에서 찍은 건물 외관 사진</b>}을 1장 골라 주세요.{kind === "remodel" && " (실내 사진은 안 돼요)"} 다른 사진을 누르면 바뀝니다. 공실 사진이면 기사에 매물 정보가 함께 들어갑니다.
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             {/* 고르면 바로 그 공실의 등록 사진을 가져온다 */}
@@ -336,7 +337,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
 
           {sim && sim.photos.length > 0 && (
             <>
-              <div style={{ ...label, marginTop: 14 }}>고른 사진 {picked}/{MAX_PICK}{kind === "interior" && <span style={{ fontWeight: 500 }}> · 아래 공간 유형도 이 사진에 맞게 골라 주세요</span>}</div>
+              <div style={{ ...label, marginTop: 14 }}>고른 사진 {picked}/{MAX_PICK}<span style={{ fontWeight: 500 }}> · {kind === "interior" ? "아래 공간 유형도 이 사진에 맞게 골라 주세요" : "건물 외관이 잘 보이는 사진인지 확인해 주세요"}</span></div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
                 {sim.photos.map((p) => {
                   const order = sim.photos.filter((x) => x.on).findIndex((x) => x.id === p.id);
@@ -356,7 +357,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
           {sim && opts && (
             <>
               <div style={{ borderTop: `1px solid ${theme.border}`, margin: "20px 0 14px" }} />
-              {step(2, kind === "interior" ? "인테리어 조건" : "리모델링 설계 조건")}
+              {step(2, kind === "interior" ? "인테리어 조건" : "건물 외관 리모델링 설계 조건")}
               {opts.rooms && (
                 <>
                   <div style={label}>공간 유형</div>
@@ -427,12 +428,12 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
               <button onClick={newSim} disabled={Boolean(busy)} style={plainBtn}>새 시뮬레이션 시작</button>
             </div>
           )}
-          {busy === "시뮬레이션 중…" && <SimProgress text={progress} />}
+          {busy === "시뮬레이션 중…" && <SimProgress text={progress} what={kind === "interior" ? "인테리어" : "건물 외관"} />}
           {error && errorAt === "run" && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030", lineHeight: 1.6 }}>{error}</div>}
 
           {recent.length > 0 && (
             <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${theme.border}` }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>최근 {name} 시뮬레이션 (이 PC)</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>최근 {full} 시뮬레이션 (이 PC)</div>
               {recent.map((c) => (
                 <button key={c.id} onClick={() => bridge()?.sim.get(c.id).then((s) => s && choose(s))}
                   style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, padding: "8px 10px", border: 0, borderRadius: 8, background: sim?.id === c.id ? "rgba(26,58,107,0.08)" : "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
@@ -451,7 +452,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
         <div ref={resultRef} style={{ ...card, ...(fresh ? { boxShadow: "0 0 0 2px #16a34a" } : {}) }}>
           {fresh && (
             <div style={{ marginBottom: 14, padding: "10px 14px", borderRadius: 10, background: "#f0fdf4", color: "#166534", fontSize: 14, fontWeight: 700 }}>
-              ✓ {name} 시뮬레이션이 완성됐어요! 결과를 확인하고, 아래 버튼으로 결과표를 저장하거나 기사를 써 보세요.
+              ✓ {full} 시뮬레이션이 완성됐어요! 결과를 확인하고, 아래 버튼으로 결과표를 저장하거나 기사를 써 보세요.
             </div>
           )}
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
@@ -459,7 +460,7 @@ export default function StudioSimSource({ theme, kind, allowed, tab, onTab, onUs
             <span style={{ fontSize: 13, color: theme.textSecondary }}>{[r.title, r.location, r.dateText].filter(Boolean).join(" · ")}</span>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {[{ src: r.before, cap: "지금 모습" }, { src: r.versions[0]?.image || null, cap: `${name} 예측 (AI)` }].map((x, i) => (
+            {[{ src: r.before, cap: "지금 모습" }, { src: r.versions[0]?.image || null, cap: `${full} 예측 (AI)` }].map((x, i) => (
               <figure key={i} style={{ margin: 0, borderRadius: 10, overflow: "hidden", border: `1px solid ${theme.border}`, background: "#111" }}>
                 {x.src && <img src={x.src} alt={x.cap} style={{ width: "100%", display: "block", maxHeight: 360, objectFit: "contain" }} />}
                 <figcaption style={{ padding: "7px 10px", fontSize: 12.5, fontWeight: 700, background: theme.cardBg, color: i ? "#1a3a6b" : theme.textSecondary }}>{x.cap}</figcaption>
