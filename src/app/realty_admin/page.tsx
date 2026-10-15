@@ -5,7 +5,8 @@ import { createClient } from "@/utils/supabase/client";
 import NotificationBell from "@/components/common/NotificationBell";
 import HomepageHeaderBar from "@/components/admin/HomepageHeaderBar";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
-import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage } from "@/components/admin/sections/AdminIcons";
+import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage, IconSend, IconFilm } from "@/components/admin/sections/AdminIcons";
+import StudioSidebar, { useStudioApp } from "@/components/admin/StudioSidebar";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import ArticleAdUpgradeModal from "@/components/admin/ArticleAdUpgradeModal";
 import { getVacancies } from "@/app/actions/vacancy";
@@ -26,6 +27,7 @@ const CustomerSection = lazy(() => import("@/components/admin/sections/CustomerS
 const InquiryBoardSection = lazy(() => import("@/components/admin/sections/InquiryBoardSection"));
 const StudySection = lazy(() => import("@/components/admin/sections/StudySection"));
 const ManualFrame = lazy(() => import("@/components/admin/sections/ManualFrame"));
+const StudioComingSoon = lazy(() => import("@/components/admin/sections/StudioComingSoon"));
 
 /* ── 부동산관리자 메뉴 ── */
 const REALTY_MENU: MenuItem[] = [
@@ -41,6 +43,25 @@ const REALTY_MENU: MenuItem[] = [
   { key: "manual", label: "매뉴얼", icon: <IconManual /> },
   { key: "settings", label: "정보설정", icon: <IconSettings />, separated: true },
 ];
+
+/* ── 공실뉴스 스튜디오 텍스트 메뉴 ──
+   업무 메뉴 6개만 위에 두고 나머지는 [더보기]에 접는다.
+   지금은 스튜디오 앱에서만 보인다. 웹에도 켤 때는 STUDIO_MENU_ON_WEB 을 true 로. */
+const STUDIO_MENU_ON_WEB = false;
+const STUDIO_MAIN_MENU: MenuItem[] = [
+  { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
+  { key: "gongsil", label: "공실등록", icon: <IconBuilding /> },
+  { key: "article", label: "기사등록", icon: <IconArticle /> },
+  { key: "sns", label: "SNS뉴스발행", icon: <IconSend /> },
+  { key: "video", label: "동영상제작", icon: <IconFilm /> },
+  { key: "customer", label: "고객관리", icon: <IconCustomer /> },
+];
+const STUDIO_MORE_KEYS = ["article_ad", "study", "inquiry_board", "point", "homepage", "manual"];
+const STUDIO_MORE_MENU = REALTY_MENU.filter((m) => STUDIO_MORE_KEYS.includes(m.key));
+const STUDIO_SETTINGS_MENU = REALTY_MENU.find((m) => m.key === "settings")!;
+const STUDIO_BADGES = { sns: "NEW", video: "NEW" };
+/** 주소 ?menu= 로 열 수 있는 메뉴 (스튜디오 메뉴 포함) */
+const isMenuKey = (key: string | null) => !!key && (REALTY_MENU.some((m) => m.key === key) || key === "sns" || key === "video");
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPlanLabel, formatPlanEnd, isPlanEndingSoon } from "@/utils/permissionCheck";
@@ -59,15 +80,15 @@ function RealtyAdminContent() {
   const menuParam = searchParams.get("menu");
 
   let initialMenu = "dashboard";
-  if (menuParam && REALTY_MENU.some(m => m.key === menuParam)) {
-    initialMenu = menuParam;
+  if (isMenuKey(menuParam)) {
+    initialMenu = menuParam!;
   }
 
   const [activeMenu, setActiveMenu] = useState(initialMenu);
 
   useEffect(() => {
-    if (menuParam && REALTY_MENU.some(m => m.key === menuParam)) {
-      setActiveMenu(menuParam);
+    if (isMenuKey(menuParam)) {
+      setActiveMenu(menuParam!);
     } else {
       setActiveMenu("dashboard");
     }
@@ -84,6 +105,8 @@ function RealtyAdminContent() {
   const [planEndDate, setPlanEndDate] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>("");
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
+  const studioApp = useStudioApp();
+  const useStudioMenu = studioApp.isApp || STUDIO_MENU_ON_WEB;
 
   // 공실뉴스기자(유료회원/최고관리자) 자격 판별
   const isReporterEligible =
@@ -209,6 +232,15 @@ function RealtyAdminContent() {
     }
   }, [memberId, prefetchSection]);
 
+  const selectMenu = useCallback((key: string) => {
+    if (key === "article_ad" && !isReporterEligible) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    setActiveMenu(key);
+    router.push(`?menu=${key}`, { scroll: false });
+  }, [isReporterEligible, router]);
+
   const [saving] = useState(false);
 
   const theme = computeTheme(darkMode);
@@ -228,7 +260,21 @@ function RealtyAdminContent() {
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: theme.bg, overflow: "hidden" }}>
-      {/* ===== 좌측 사이드바 (80px, 블루 테마) ===== */}
+      {useStudioMenu ? (
+        <StudioSidebar
+          main={STUDIO_MAIN_MENU}
+          more={STUDIO_MORE_MENU}
+          settings={STUDIO_SETTINGS_MENU}
+          activeMenu={activeMenu}
+          onSelect={selectMenu}
+          onHover={handleMenuHover}
+          background={sidebarBg}
+          isApp={studioApp.isApp}
+          appVersion={studioApp.version}
+          badges={STUDIO_BADGES}
+        />
+      ) : (
+      /* ===== 좌측 사이드바 (80px, 블루 테마) ===== */
       <aside style={{ width: 80, background: sidebarBg, display: "flex", flexDirection: "column", zIndex: 10, boxShadow: "2px 0 8px rgba(0,0,0,0.12)" }}>
         <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid rgba(255,255,255,0.15)", cursor: "pointer", flexShrink: 0 }}>
           <img src="/new_logo.png" alt="공실뉴스 로고" style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", cursor: "pointer" }} onClick={() => window.location.href = "/"} />
@@ -237,14 +283,7 @@ function RealtyAdminContent() {
           {REALTY_MENU.map((item) => (
             <li key={item.key} style={{ margin: 0, position: "relative", ...(item.separated ? { marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)" } : {}) }}
               onMouseEnter={() => handleMenuHover(item.key)} onMouseLeave={() => setHoveredMenu(null)}>
-              <button onClick={() => {
-                  if (item.key === "article_ad" && !isReporterEligible) {
-                    setShowUpgradeModal(true);
-                    return;
-                  }
-                  setActiveMenu(item.key);
-                  router.push(`?menu=${item.key}`, { scroll: false });
-                }}
+              <button onClick={() => selectMenu(item.key)}
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                   padding: "18px 0", textDecoration: "none", width: "100%", border: "none", cursor: "pointer",
@@ -264,6 +303,7 @@ function RealtyAdminContent() {
           ))}
         </ul>
       </aside>
+      )}
 
       {/* ===== 우측 메인 영역 ===== */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", background: theme.bg, overflow: "hidden" }}>
@@ -354,6 +394,9 @@ function RealtyAdminContent() {
           {activeMenu === "customer" && memberId && <CustomerSection theme={theme} role={userRole === "ADMIN" ? "admin" : userRole === "REALTOR" ? "realtor" : "user"} memberId={memberId} />}
           {activeMenu === "study" && memberId && <StudySection theme={theme} mode="member" />}
           {activeMenu === "manual" && <ManualFrame kind="realtor" />}
+          {(activeMenu === "sns" || activeMenu === "video") && (
+            <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />
+          )}
         </Suspense>
 
         {/* 공실뉴스기자 멤버십 안내 모달 */}
