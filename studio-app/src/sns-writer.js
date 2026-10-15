@@ -252,14 +252,10 @@ const safeName = (s) => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/
 async function exportChannel({ vacancyId, channel }) {
   const data = readJson(snsFile(vacancyId));
   if (!data) throw new Error("먼저 SNS 글을 써 주세요.");
-  const analysis = readJson(path.join(mediaDir(vacancyId), "analysis.json")) || { vacancy: {} };
   const c = sns.GW_SNS_CHANNELS[channel];
   const web = forWeb(data).channels[channel];
-  // 폴더 이름: 공실이면 매물 이름, 칼럼이면 기사 제목
-  const article = blogWriter.isColumn(vacancyId) ? readJson(blogWriter.docFile(vacancyId, "article")) : null;
-  const simTitle = blogWriter.isSim(vacancyId) ? `${simW().kindOf(vacancyId) === "interior" ? "인테리어" : "리모델링"}_${safeName(simW().resultOf(vacancyId).result.title)}` : "";
-  const name = simTitle || (article ? `칼럼_${safeName(article.title)}` : safeName(analysis.vacancy.title) || "공실");
-  const folder = path.join(app.getPath("documents"), "공실뉴스 스튜디오", `${name}_${String(vacancyId).replace(/^(col|int|rem)-/, "").slice(0, 8)}`, c.label);
+  // 저장 자리: 문서\공실뉴스 스튜디오\<매물 이름_공실번호 | 뉴스칼럼_제목 | 시뮬레이션>\<채널> (out-folder.js)
+  const folder = require("./out-folder").folderFor(vacancyId, c.label);
   fs.rmSync(folder, { recursive: true, force: true });
   fs.mkdirSync(folder, { recursive: true });
 

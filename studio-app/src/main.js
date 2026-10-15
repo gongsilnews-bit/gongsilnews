@@ -29,6 +29,7 @@ const NO_EXT = new Set([
   "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info",
   "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect",
   "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news",
+  "studio:save-file", "studio:open-out-folder",
 ]);
 const ipcHandle = ipcMain.handle.bind(ipcMain);
 ipcMain.handle = (channel, fn) =>
@@ -247,6 +248,7 @@ function buildMenu() {
       submenu: [
         { label: "새로고침", accelerator: "F5", role: "reload" },
         { label: "관리자 화면으로", accelerator: "Alt+Home", click: () => mainWindow && mainWindow.loadURL(`${BASE_URL}/realty_admin`) },
+        { label: "내 저장 폴더 열기 (문서\\공실뉴스 스튜디오)", accelerator: "Ctrl+Shift+O", click: () => require("./out-folder").openRoot() },
         { type: "separator" },
         { label: "확대", role: "zoomIn" },
         { label: "축소", role: "zoomOut" },
@@ -383,6 +385,9 @@ ipcMain.handle("studio:sim-update", (_e, opts) => simWriter.update(opts));
 ipcMain.handle("studio:sim-export", (_e, opts) => simWriter.exportResult(opts));
 ipcMain.handle("studio:sim-run", (e, id) => simWriter.run({ id, baseUrl: BASE_URL }, (text) => e.sender.send("studio:sim-progress", text)));
 // 공실마케팅 AI 채우기 (매물보고서·유리창홍보지 — 도구가 앱 화면 안에서 부른다)
+// 홍보지·매물보고서 [이미지 내보내기] — 저장 창 없이 문서\공실뉴스 스튜디오\<매물>\<홍보지|매물보고서>\ 에 (out-folder.js)
+ipcMain.handle("studio:save-file", (_e, opts) => require("./out-folder").saveFile(opts));
+ipcMain.handle("studio:open-out-folder", () => require("./out-folder").openRoot());
 ipcMain.handle("studio:marketing-fill", (e, opts) => marketingWriter.fill({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:marketing-progress", text)));
 // 유튜브 대본
 ipcMain.handle("studio:youtube-options", (_e, id) => youtubeWriter.options(id));

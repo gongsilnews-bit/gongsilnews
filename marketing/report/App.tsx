@@ -698,6 +698,8 @@ function App() {
       const json = await res.json();
       if (json.success && json.data) {
         const v = json.data;
+        // 저장 폴더 이름 (매물 이름 + 공실번호)
+        vacancyMetaRef.current = { title: v.building_name || [v.dong, v.property_type].filter(Boolean).join(' '), no: v.vacancy_no ? String(v.vacancy_no) : '' };
 
         // 1. Supabase 클라우드 동기화 데이터 우선 로드
         let supabaseFlyerSettings = json.flyer?.flyer_state;
@@ -1360,6 +1362,8 @@ function App() {
   type StudioMarketing = {
     fill: (opts: { kind: string; vacancyId: string; fields: Record<string, unknown> }) => Promise<Record<string, any>>;
     onProgress?: (fn: (t: string) => void) => () => void;
+    /** 그림·PDF 를 문서\공실뉴스 스튜디오\<매물>\<sub>\ 에 저장 (앱 안에서만) */
+    saveFile?: (opts: { id: string; sub: string; fileName: string; dataUrl: string; hint?: { title?: string; no?: string } }) => Promise<{ file: string; folder: string }>;
   };
   const studioMarketing: StudioMarketing | null = (() => {
     try {
@@ -1368,6 +1372,19 @@ function App() {
       return null;
     }
   })();
+  /* 앱 안이면 저장 창 없이 문서\공실뉴스 스튜디오\<매물 이름_공실번호>\매물보고서\ 에 바로 저장 (2026-10-15 사장님 회의).
+     웹에서는 false — 예전처럼 브라우저 다운로드. */
+  const saveToStudio = async (fileName: string, dataUrl: string): Promise<boolean> => {
+    const id = new URLSearchParams(window.location.search).get("vacancy_id");
+    if (!id || !studioMarketing?.saveFile) return false;
+    try {
+      await studioMarketing.saveFile({ id, sub: '매물보고서', fileName, dataUrl, hint: vacancyMetaRef.current });
+      return true;
+    } catch (e: any) {
+      alert("내 저장 폴더에 저장하지 못했습니다: " + (e?.message || e) + "\n대신 다운로드로 받습니다.");
+      return false;
+    }
+  };
   const [aiProgress, setAiProgress] = useState("");
   const runAiFill = async (kind: "flyer" | "report", fields: Record<string, unknown>, apply: (out: Record<string, any>) => void) => {
     const vacancyId = new URLSearchParams(window.location.search).get("vacancy_id");
@@ -1827,10 +1844,14 @@ ${clone.outerHTML}
 
       document.body.removeChild(clone); // Cleanup
 
-      const link = document.createElement('a');
-      link.download = `flyer_${Date.now()}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 1.0);
-      link.click();
+      const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+      const name = `매물보고서_${(state.info.address || '매물').replace(/[\\/:*?"<>|\s]+/g, '_')}.jpg`;
+      if (!(await saveToStudio(name, dataUrl))) {
+        const link = document.createElement('a');
+        link.download = name;
+        link.href = dataUrl;
+        link.click();
+      }
       setShowExportModal(false);
     } catch (err) {
       console.error(err);
@@ -1841,6 +1862,7 @@ ${clone.outerHTML}
   };
 
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const vacancyMetaRef = useRef<{ title?: string; no?: string }>({});
   const [isPrinting, setIsPrinting] = useState(false);
   const [isExportingImage, setIsExportingImage] = useState(false);
 
@@ -1896,7 +1918,8 @@ ${clone.outerHTML}
       document.body.removeChild(clone);
       
       // Save PDF
-      pdf.save(`${state.info.address || '보고서'}.pdf`);
+      const pdfName = `매물보고서_${(state.info.address || '보고서').replace(/[\\/:*?"<>|\s]+/g, '_')}.pdf`;
+      if (!(await saveToStudio(pdfName, pdf.output('datauristring')))) pdf.save(pdfName);
       
     } catch (err) {
       console.error(err);

@@ -65,6 +65,9 @@ if (allowed) {
     },
     marketing: {
       fill: (opts) => ipcRenderer.invoke("studio:marketing-fill", opts),
+      /** 그림·PDF 를 문서\공실뉴스 스튜디오\<매물>\<sub>\ 에 저장하고 탐색기로 보여 준다 */
+      saveFile: (opts) => ipcRenderer.invoke("studio:save-file", opts),
+      openFolder: () => ipcRenderer.invoke("studio:open-out-folder"),
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
         ipcRenderer.on("studio:marketing-progress", h);

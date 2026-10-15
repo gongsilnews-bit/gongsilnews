@@ -349,6 +349,7 @@ function App() {
 
 
   const [activeImageKey, setActiveImageKey] = useState<string>('');
+  const vacancyMetaRef = useRef<{ title?: string; no?: string }>({});
 
   /* 오른쪽 클릭 [새 이미지 넣기] — 고른 파일을 올리고 주소를 돌려준다 */
   const pickImageDone = useRef<((url: string) => void) | null>(null);
@@ -396,6 +397,8 @@ function App() {
       const json = await res.json();
       if (json.success && json.data) {
         const v = json.data;
+        // 저장 폴더 이름 (매물 이름 + 공실번호)
+        vacancyMetaRef.current = { title: v.building_name || [v.dong, v.property_type].filter(Boolean).join(' '), no: v.vacancy_no ? String(v.vacancy_no) : '' };
         const photos = json.photos || [];
         if (json.qrUrl) setQrUrl(json.qrUrl);
 
@@ -848,6 +851,8 @@ function App() {
   type StudioMarketing = {
     fill: (opts: { kind: string; vacancyId: string; fields: Record<string, unknown> }) => Promise<Record<string, any>>;
     onProgress?: (fn: (t: string) => void) => () => void;
+    /** 그림·PDF 를 문서\공실뉴스 스튜디오\<매물>\<sub>\ 에 저장 (앱 안에서만) */
+    saveFile?: (opts: { id: string; sub: string; fileName: string; dataUrl: string; hint?: { title?: string; no?: string } }) => Promise<{ file: string; folder: string }>;
   };
   const studioMarketing: StudioMarketing | null = (() => {
     try {
@@ -856,6 +861,19 @@ function App() {
       return null;
     }
   })();
+  /* 앱 안이면 저장 창 없이 문서\공실뉴스 스튜디오\<매물 이름_공실번호>\홍보지\ 에 바로 저장 (2026-10-15 사장님 회의).
+     웹에서는 false — 예전처럼 브라우저 다운로드. */
+  const saveToStudio = async (fileName: string, dataUrl: string): Promise<boolean> => {
+    const id = new URLSearchParams(window.location.search).get("vacancy_id");
+    if (!id || !studioMarketing?.saveFile) return false;
+    try {
+      await studioMarketing.saveFile({ id, sub: '홍보지', fileName, dataUrl, hint: vacancyMetaRef.current });
+      return true;
+    } catch (e: any) {
+      alert("내 저장 폴더에 저장하지 못했습니다: " + (e?.message || e) + "\n대신 다운로드로 받습니다.");
+      return false;
+    }
+  };
   const [aiProgress, setAiProgress] = useState("");
   const runAiFill = async (kind: "flyer" | "report", fields: Record<string, unknown>, apply: (out: Record<string, any>) => void) => {
     const vacancyId = new URLSearchParams(window.location.search).get("vacancy_id");
@@ -1024,9 +1042,12 @@ function App() {
     try {
       const canvas = await capturePage();
       if (!canvas) return;
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      const name = `${fileBaseName()}_${orientation === 'landscape' ? '가로' : '세로'}.jpg`;
+      if (await saveToStudio(name, dataUrl)) return;
       const link = document.createElement('a');
-      link.download = `${fileBaseName()}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 0.95);
+      link.download = name;
+      link.href = dataUrl;
       link.click();
     } catch (err) {
       console.error(err);

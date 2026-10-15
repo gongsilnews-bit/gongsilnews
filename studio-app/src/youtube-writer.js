@@ -194,12 +194,8 @@ function exportText(id) {
   const d = readJson(ytFile(id));
   if (!d) throw new Error("먼저 대본을 써 주세요.");
   const web = forWeb(id, d);
-  const article = isColumn(id) ? readJson(blogWriter.docFile(id, "article")) : null;
-  const analysis = readAnalysis(id) || { vacancy: {} };
-  const simTitle = isSim(id) ? `${simW().kindOf(id) === "interior" ? "인테리어" : "리모델링"}_${safeName(simW().resultOf(id).result.title)}` : "";
-  const name = simTitle || (article ? `칼럼_${safeName(article.title)}` : safeName(analysis.vacancy.title) || "공실");
-  const folder = path.join(app.getPath("documents"), "공실뉴스 스튜디오", `${name}_${String(id).replace(/^(col|int|rem)-/, "").slice(0, 8)}`, "유튜브");
-  fs.mkdirSync(folder, { recursive: true });
+  // 저장 자리: 문서\공실뉴스 스튜디오\<매물·칼럼·시뮬레이션>\유튜브 (out-folder.js)
+  const folder = require("./out-folder").folderFor(id, "유튜브");
   const min = Math.floor(web.seconds / 60);
   const text = [
     `[제목]\n${d.title}`,

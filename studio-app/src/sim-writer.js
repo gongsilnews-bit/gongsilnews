@@ -318,7 +318,7 @@ function buildResult(d, L, picked) {
 function resultOf(id) {
   const d = read(id);
   if (!d.result) throw new Error("먼저 시뮬레이션을 해서 결과표를 만들어 주세요.");
-  return { result: d.result, vacancy: d.vacancy || null, kind: d.kind };
+  return { result: d.result, vacancy: d.vacancy || null, kind: d.kind, createdAt: d.createdAt };
 }
 
 /** 기사 첫 사진: 예측 이미지(대표) → 지금 모습 (확장 panel.js remodelMedia 와 같은 설명글) */
@@ -355,12 +355,8 @@ const fileToDataUrl = (file) => {
   return `data:${type};base64,${fs.readFileSync(file).toString("base64")}`;
 };
 
-function resultFolder(d) {
-  const label = KINDS[d.kind].label;
-  const folder = path.join(app.getPath("documents"), "공실뉴스 스튜디오", `${label}_${safeName(d.result.title) || "시뮬레이션"}_${d.id.replace(/^(int|rem)-/, "").slice(0, 8)}`);
-  fs.mkdirSync(folder, { recursive: true });
-  return folder;
-}
+/* 매물 사진으로 했으면 그 매물 폴더 안 "인테리어 시뮬레이션_날짜", 직접 올린 사진이면 따로 (out-folder.js) */
+const resultFolder = (d) => require("./out-folder").folderFor(d.id);
 
 /* 확장 결과표 그림 코드(rmDrawSheet, canvas)를 안 보이는 창에서 그대로 돌려 PNG 를 받는다 */
 async function drawSheet(d) {
