@@ -184,6 +184,15 @@ async function createWindow() {
     else if (isPathOf(url, "/realty_admin")) ext.ensure().catch((e) => log.warn(`[글쓰기 설정] 미리 받기 실패: ${e.message}`));
   });
 
+  // 동영상제작(편집기)에서는 창 메뉴(보기·AI·계정·도움말)를 숨겨 화면을 넓게 — Alt 를 누르면 잠깐 보인다
+  const menuForUrl = (url) => {
+    const video = /[?&]menu=video(&|$)/.test(url);
+    mainWindow.setAutoHideMenuBar(video);
+    mainWindow.setMenuBarVisibility(!video);
+  };
+  mainWindow.webContents.on("did-navigate", (_e, url) => menuForUrl(url));
+  mainWindow.webContents.on("did-navigate-in-page", (_e, url) => menuForUrl(url));
+
   // 다른 사이트로 넘어가는 링크는 평소 브라우저로
   mainWindow.webContents.on("will-navigate", (e, url) => {
     if (url.startsWith("file://")) return;

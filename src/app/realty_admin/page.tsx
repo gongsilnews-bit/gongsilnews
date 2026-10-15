@@ -340,7 +340,7 @@ function RealtyAdminContent() {
 
       {/* ===== 우측 메인 영역 ===== */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", background: theme.bg, overflow: "hidden" }}>
-        <header style={{ height: 64, background: useStudioMenu ? sidebarBg : theme.headerBg, borderBottom: useStudioMenu ? "1px solid rgba(255,255,255,0.12)" : `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5 }}>
+        <header style={{ height: 64, background: useStudioMenu ? sidebarBg : theme.headerBg, borderBottom: useStudioMenu ? "1px solid rgba(255,255,255,0.12)" : `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5, ...(activeMenu === "video" && studioApp.isApp ? { display: "none" } : {}) /* 영상 편집기는 화면을 넓게 */ }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s", minWidth: 0, flexShrink: 1, overflow: "hidden", whiteSpace: "nowrap" }}
             onClick={() => { setActiveMenu("settings"); router.push('?menu=settings'); }}
             onMouseEnter={(e) => { e.currentTarget.style.background = useStudioMenu ? "rgba(255,255,255,0.10)" : darkMode ? "#2c2d31" : "#f3f4f6"; }}
