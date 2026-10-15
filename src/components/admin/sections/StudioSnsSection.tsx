@@ -343,9 +343,12 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
               </a>
             );
           })()}
-          <button onClick={() => bridge()?.openAiConnect()} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: connectedAi.length ? "#22c55e" : "#cbd5e1" }} />
-            {connectedAi.length ? `내 AI: ${connectedAi.map((a) => a.name).join(", ")}` : "내 AI 연결하기"}
+          {/* 연결되면 초록, 아니면 회색 — 누르면 [내 AI 연결] 창 */}
+          <button onClick={() => bridge()?.openAiConnect()} title="내 AI 연결"
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700,
+              background: connectedAi.length ? "#ecfdf5" : theme.cardBg, border: `1px solid ${connectedAi.length ? "#6ee7b7" : theme.border}`, color: connectedAi.length ? "#047857" : theme.textPrimary }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: connectedAi.length ? "#22c55e" : "#cbd5e1", boxShadow: connectedAi.length ? "0 0 0 3px rgba(34,197,94,0.2)" : "none" }} />
+            {connectedAi.length ? `${connectedAi.map((a) => a.name).join(", ")} 연결됨` : "내 AI 연결하기"}
           </button>
           </div>
         </div>

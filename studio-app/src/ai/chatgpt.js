@@ -130,6 +130,14 @@ async function exclusive(fn) {
  * 프롬프트를 보내고 답변 글을 돌려준다.
  * isComplete(text) 가 true 가 되고 답변이 멈추면 끝난다 (최대 4분).
  */
+/* 받아 오기에 성공하면 [내 AI 연결]에 "연결됨"으로 남긴다 */
+function connected(result) {
+  try {
+    require("../ai-connect").markConnected("chatgpt");
+  } catch {}
+  return result;
+}
+
 function ask(prompt, { onProgress = () => {}, isComplete = () => true } = {}) {
   return exclusive(async () => {
     const page = await openAndSend(prompt, onProgress);
@@ -144,16 +152,16 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true } = {}) {
 
       // 1순위: 대화 원문 — 답변이 끝났다고(finished_successfully) 표시되면 바로 끝
       const api = await readByConversationApi(page);
-      if (api.text && api.status === "finished_successfully" && isComplete(api.text)) return api.text;
+      if (api.text && api.status === "finished_successfully" && isComplete(api.text)) return connected(api.text);
 
       // 2순위: 화면 — 중지 버튼이 없고 글자가 두 번 연달아 같으면 끝
       const busy = await anyVisible(page, SEL.STOP);
       const text = api.text || (await readLastAnswer(page));
       stable = !busy && text && text === last ? stable + 1 : 0;
       last = text;
-      if (stable >= 2 && isComplete(text)) return text;
+      if (stable >= 2 && isComplete(text)) return connected(text);
     }
-    if (last && isComplete(last)) return last;
+    if (last && isComplete(last)) return connected(last);
     throw new Error("ChatGPT 답변을 4분 안에 받지 못했습니다. ChatGPT 창을 확인해 주세요.");
   });
 }
@@ -237,7 +245,7 @@ function askImage(prompt, { onProgress = () => {} } = {}) {
         onProgress("그림을 받아 오는 중…");
         const dataUrl = await downloadImage(page, st.conversationId, done[done.length - 1].fileId);
         if (!dataUrl) throw new Error("ChatGPT 그림을 내려받지 못했습니다.");
-        return dataUrl;
+        return connected(dataUrl);
       }
       // 그림 없이 글로만 답하고 끝났으면 (거절·하루 한도 등) 그 이유를 보여 준다
       if (!st.busy && !st.images.length && st.text && Date.now() > deadline - 4 * 60 * 1000) {

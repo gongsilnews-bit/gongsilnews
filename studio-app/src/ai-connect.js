@@ -102,4 +102,11 @@ async function connect(id, onProgress = () => {}) {
   return check(id);
 }
 
-module.exports = { PROVIDERS, list, check, connect, finishLogin: () => chrome.closePlain() };
+/* 실제로 글·그림을 받아 왔으면 연결된 것이다 — 확인 기록을 "연결됨"으로 남긴다 (계정 이름은 이전 값 유지) */
+function markConnected(id) {
+  const prev = loadStatus()[id] || {};
+  if (prev.ok) return;
+  saveStatus(id, { ...prev, ok: true });
+}
+
+module.exports = { PROVIDERS, list, check, connect, markConnected, finishLogin: () => chrome.closePlain() };
