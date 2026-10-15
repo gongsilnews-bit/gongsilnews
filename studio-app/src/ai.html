@@ -64,7 +64,7 @@
       b.textContent = it.name + (it.isImager ? " ✓" : !it.imageReady ? " (준비 중)" : "");
       b.disabled = busy || !it.ok || !it.imageReady;
       b.title = !it.imageReady ? "그림 그리기는 준비 중입니다" : it.ok ? "" : "먼저 아래에서 연결해 주세요";
-      b.onclick = async () => { if (it.isImager) return; render(await studio.ai.setImager(it.id)); say(`이제 ${it.name}로 그림을 그립니다. (인테리어·리모델링 시뮬레이션은 ChatGPT)`); };
+      b.onclick = async () => { if (it.isImager) return; render(await studio.ai.setImager(it.id)); say(`이제 ${it.name}로 그림을 그립니다. (AI 표지·본문 그림·인테리어·리모델링 시뮬레이션)`); };
       box.querySelector("#pi").appendChild(b);
     }
     const pills = box.querySelector("#pw");
@@ -75,7 +75,7 @@
       b.textContent = it.name + (it.isWriter ? " ✓" : "");
       b.disabled = busy || !it.ok || !it.ready;
       b.title = !it.ready ? "준비 중입니다" : it.ok ? "" : "먼저 아래에서 연결해 주세요";
-      b.onclick = async () => { if (it.isWriter) return; render(await studio.ai.setWriter(it.id)); say(`이제 ${it.name}로 글을 씁니다.${it.id !== "chatgpt" ? " 그림(AI 표지·시뮬레이션)은 ChatGPT로 그립니다." : ""}`); };
+      b.onclick = async () => { if (it.isWriter) return; render(await studio.ai.setWriter(it.id)); say(`이제 ${it.name}로 글을 씁니다. 그림은 아래 [기본 이미지 생성 AI]로 그립니다.`); };
       pills.appendChild(b);
     }
   }
