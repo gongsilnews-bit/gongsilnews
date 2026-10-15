@@ -365,7 +365,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           {/* 경매·공매 물건이나 남의 공실은 물건번호로 */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, color: theme.textSecondary }}>또는</span>
-            <input value={noInput} onChange={(e) => setNoInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && pickByNo()} placeholder="공실·경매 물건번호 (예: 87889)"
+            <input value={noInput} onChange={(e) => setNoInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && pickByNo()} placeholder="공실번호 또는 경매 관리번호"
               style={{ width: 240, padding: "9px 12px", border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, background: theme.cardBg, color: theme.textPrimary }} />
             <button onClick={pickByNo} style={{ padding: "9px 14px", background: theme.cardBg, color: theme.textPrimary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>불러오기</button>
             {/* 공실열람을 새 창으로 열어 물건(경매·공매 포함)을 둘러보고 번호를 확인한다 */}
