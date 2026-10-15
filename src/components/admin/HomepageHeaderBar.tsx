@@ -11,7 +11,7 @@ import { HOMEPAGE_ACTIVE_EVENT, shareHomepageUrl } from "@/hooks/useHomepageEdit
  * 편집기와 달리 저장 버튼이 없으므로 스위치는 누르는 즉시 저장하고, 편집기와 서로
  * 값을 맞춘다. 주소를 한 번도 저장하지 않은 회원에게는 보이지 않는다.
  */
-export default function HomepageHeaderBar({ memberId, darkMode }: { memberId: string; darkMode: boolean }) {
+export default function HomepageHeaderBar({ memberId, darkMode, onDark = false }: { memberId: string; darkMode: boolean; /** 남색 머리글 위 (흰 글씨) */ onDark?: boolean }) {
   const [subdomain, setSubdomain] = useState("");
   const [siteTitle, setSiteTitle] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -38,10 +38,10 @@ export default function HomepageHeaderBar({ memberId, darkMode }: { memberId: st
   if (!subdomain) return null;
 
   const liveUrl = `https://${subdomain}.gongsilnews.com`;
-  const border = darkMode ? "#374151" : "#e5e7eb";
-  const text = darkMode ? "#f3f4f6" : "#111827";
-  const sub = darkMode ? "#9ca3af" : "#6b7280";
-  const bg = darkMode ? "#1f2937" : "#ffffff";
+  const border = onDark ? "rgba(255,255,255,0.25)" : darkMode ? "#374151" : "#e5e7eb";
+  const text = onDark ? "#ffffff" : darkMode ? "#f3f4f6" : "#111827";
+  const sub = onDark ? "rgba(255,255,255,0.7)" : darkMode ? "#9ca3af" : "#6b7280";
+  const bg = onDark ? "rgba(255,255,255,0.08)" : darkMode ? "#1f2937" : "#ffffff";
 
   const flash = (message: string) => {
     setNotice(message);
@@ -76,7 +76,7 @@ export default function HomepageHeaderBar({ memberId, darkMode }: { memberId: st
         aria-checked={isActive}
         onClick={toggleActive}
         disabled={saving}
-        style={{ display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0, padding: "6px 10px", border: `1px solid ${isActive ? "#86efac" : border}`, borderRadius: 999, background: isActive ? (darkMode ? "#052e24" : "#f0fdf4") : (darkMode ? "#111827" : "#f8fafc"), color: isActive ? "#059669" : sub, fontSize: 12.5, fontWeight: 800, cursor: saving ? "wait" : "pointer" }}
+        style={{ display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0, padding: "6px 10px", border: `1px solid ${isActive ? "#86efac" : border}`, borderRadius: 999, background: isActive ? (onDark ? "rgba(16,185,129,0.18)" : darkMode ? "#052e24" : "#f0fdf4") : (onDark ? "rgba(255,255,255,0.06)" : darkMode ? "#111827" : "#f8fafc"), color: isActive ? (onDark ? "#6ee7b7" : "#059669") : sub, fontSize: 12.5, fontWeight: 800, cursor: saving ? "wait" : "pointer" }}
       >
         <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "#10b981" : "#9ca3af" }} />
         {isActive ? "사용 중" : "사용 안 함"}

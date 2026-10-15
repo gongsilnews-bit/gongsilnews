@@ -7,6 +7,8 @@ import HomepageHeaderBar from "@/components/admin/HomepageHeaderBar";
 import { computeTheme, MenuItem } from "@/components/admin/sections/types";
 import { IconDashboard, IconBuilding, IconArticle, IconAd, IconStudy, IconCustomer, IconComment, IconManual, IconSettings, IconPoint, IconHomepage, IconSend, IconFilm } from "@/components/admin/sections/AdminIcons";
 import StudioSidebar, { useStudioApp } from "@/components/admin/StudioSidebar";
+import { FACTORY_LAYOUT, normalizeLayout, menuItem, MenuLayoutEditor, type MenuLayout } from "@/components/admin/realtyMenu";
+import { getRealtyMenu, saveMyRealtyMenu } from "@/app/actions/realtyMenu";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
 import ArticleAdUpgradeModal from "@/components/admin/ArticleAdUpgradeModal";
 import { getVacancies } from "@/app/actions/vacancy";
@@ -107,6 +109,31 @@ function RealtyAdminContent() {
   const [userRole, setUserRole] = useState<string>("");
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
   const studioApp = useStudioApp();
+
+  /* 메뉴 구성: 최고관리자 기본값 위에 회원 각자의 구성 (realtyMenu.tsx) */
+  const [defaultLayout, setDefaultLayout] = useState<MenuLayout>(FACTORY_LAYOUT);
+  const [menuLayout, setMenuLayout] = useState<MenuLayout>(FACTORY_LAYOUT);
+  const [canSaveMenu, setCanSaveMenu] = useState(true);
+  const [menuDraft, setMenuDraft] = useState<MenuLayout | null>(null);
+  const [menuSaving, setMenuSaving] = useState(false);
+  const [menuError, setMenuError] = useState("");
+  useEffect(() => {
+    getRealtyMenu().then((r) => {
+      const def = normalizeLayout(r.defaultLayout);
+      setDefaultLayout(def);
+      setMenuLayout(normalizeLayout(r.mine, def));
+      setCanSaveMenu(r.canSaveMine);
+    }).catch(() => {});
+  }, []);
+  const saveMenu = async (layout: MenuLayout | null) => {
+    setMenuSaving(true);
+    setMenuError("");
+    const res = await saveMyRealtyMenu(layout);
+    setMenuSaving(false);
+    if (!res.success) return setMenuError(res.error || "저장하지 못했습니다.");
+    setMenuLayout(layout ? normalizeLayout(layout, defaultLayout) : defaultLayout);
+    setMenuDraft(null);
+  };
   const useStudioMenu = studioApp.isApp || STUDIO_MENU_ON_WEB;
 
   // 공실뉴스기자(유료회원/최고관리자) 자격 판별
@@ -263,8 +290,9 @@ function RealtyAdminContent() {
     <div style={{ display: "flex", height: "100vh", width: "100vw", fontFamily: "'Pretendard Variable', -apple-system, sans-serif", background: theme.bg, overflow: "hidden" }}>
       {useStudioMenu ? (
         <StudioSidebar
-          main={STUDIO_MAIN_MENU}
-          more={STUDIO_MORE_MENU}
+          main={menuLayout.main.map(menuItem)}
+          more={menuLayout.more.map(menuItem)}
+          onEditMenu={() => { setMenuError(""); setMenuDraft(menuLayout); }}
           settings={STUDIO_SETTINGS_MENU}
           activeMenu={activeMenu}
           onSelect={selectMenu}
@@ -308,13 +336,13 @@ function RealtyAdminContent() {
 
       {/* ===== 우측 메인 영역 ===== */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", background: theme.bg, overflow: "hidden" }}>
-        <header style={{ height: 64, background: theme.headerBg, borderBottom: `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5 }}>
+        <header style={{ height: 64, background: useStudioMenu ? sidebarBg : theme.headerBg, borderBottom: useStudioMenu ? "1px solid rgba(255,255,255,0.12)" : `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)", flexShrink: 0, zIndex: 5 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "6px 12px", borderRadius: 6, transition: "background 0.2s", minWidth: 0, flexShrink: 1, overflow: "hidden", whiteSpace: "nowrap" }}
             onClick={() => { setActiveMenu("settings"); router.push('?menu=settings'); }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = darkMode ? "#2c2d31" : "#f3f4f6"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = useStudioMenu ? "rgba(255,255,255,0.10)" : darkMode ? "#2c2d31" : "#f3f4f6"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-            <span style={{ fontWeight: 800, fontSize: 17, color: theme.textPrimary, flexShrink: 0 }}>{userName}</span>
-            <span style={{ fontSize: 14, color: darkMode ? "#aaa" : "#666", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{userEmail || "로딩중..."}</span>
+            <span style={{ fontWeight: 800, fontSize: 17, color: useStudioMenu ? "#fff" : theme.textPrimary, flexShrink: 0 }}>{userName}</span>
+            <span style={{ fontSize: 14, color: useStudioMenu ? "rgba(255,255,255,0.7)" : darkMode ? "#aaa" : "#666", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{userEmail || "로딩중..."}</span>
             {userRole === 'ADMIN' ? (
               <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, background: "#111827", color: "#fff" }}>최고관리자</span>
             ) : (
@@ -349,11 +377,11 @@ function RealtyAdminContent() {
             {agencyStatus === "APPROVED" && <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 4, marginLeft: 4, color: "#166534", background: "#dcfce7", border: "1px solid #bbf7d0" }}>✅ 정상승인</span>}
             {agencyStatus !== "APPROVED" && showDocWarning && <span onClick={() => { setActiveMenu("settings"); router.push('?menu=settings&tab=agency'); }} style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, padding: "4px 12px", borderRadius: 20, marginLeft: 8, color: "#c53030", background: "#fff5f5", border: "1px solid #fed7d7" }}>⚠️ 소장님! 아직 필수 서류(사업자등록증)를 내시지 않았어요! 👉 (여기를 클릭해서 서류를 제출해주세요)</span>}
           </div>
-          {memberId && <HomepageHeaderBar memberId={memberId} darkMode={darkMode} />}
+          {memberId && <HomepageHeaderBar memberId={memberId} darkMode={darkMode} onDark={useStudioMenu} />}
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0, whiteSpace: "nowrap" }}>
-            <NotificationBell color={darkMode ? "#e1e4e8" : "#333"} />
-            <button onClick={() => setDarkMode(!darkMode)} style={{ background: darkMode ? "#2c2d31" : "none", border: `1px solid ${darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">{darkMode ? "☀️" : "🌙"}</button>
-            <button onClick={async () => { const supabase = createClient(); await supabase.auth.signOut(); window.location.href = "/"; }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#fff", border: "none", borderRadius: 6, background: darkMode ? "#374151" : "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>로그아웃</button>
+            <NotificationBell color={useStudioMenu ? "#ffffff" : darkMode ? "#e1e4e8" : "#333"} />
+            <button onClick={() => setDarkMode(!darkMode)} style={{ background: useStudioMenu ? "rgba(255,255,255,0.08)" : darkMode ? "#2c2d31" : "none", border: `1px solid ${useStudioMenu ? "rgba(255,255,255,0.25)" : darkMode ? "#444" : "#e5e7eb"}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, color: darkMode ? "#e1e4e8" : "#555" }} title="다크모드 전환">{darkMode ? "☀️" : "🌙"}</button>
+            <button onClick={async () => { const supabase = createClient(); await supabase.auth.signOut(); window.location.href = "/"; }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#fff", border: useStudioMenu ? "1px solid rgba(255,255,255,0.25)" : "none", borderRadius: 6, background: useStudioMenu ? "rgba(255,255,255,0.12)" : darkMode ? "#374151" : "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>로그아웃</button>
           </div>
         </header>
 
@@ -400,6 +428,37 @@ function RealtyAdminContent() {
             <StudioComingSoon theme={theme} kind={activeMenu} isApp={studioApp.isApp} onGoGongsil={() => selectMenu("gongsil")} />
           )}
         </Suspense>
+
+        {/* 메뉴 편집: 업무·더보기와 순서 (회원 각자) */}
+        {menuDraft && (
+          <div onClick={() => !menuSaving && setMenuDraft(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 680, maxHeight: "90vh", overflowY: "auto", background: theme.cardBg, borderRadius: 14, padding: "22px 24px", boxShadow: "0 20px 50px rgba(0,0,0,0.25)" }}>
+              <h3 style={{ margin: "0 0 4px", fontSize: 19, fontWeight: 800, color: theme.textPrimary }}>메뉴 편집</h3>
+              <p style={{ margin: "0 0 16px", fontSize: 13, color: theme.textSecondary, lineHeight: 1.6 }}>
+                끌어서 옮기거나 ▲▼·[업무로]/[더보기로] 버튼을 쓰세요. 웹과 PC 앱에 똑같이 적용됩니다. 정보설정은 늘 맨 아래에 있습니다.
+              </p>
+              <MenuLayoutEditor theme={theme} value={menuDraft} onChange={setMenuDraft} />
+              {!canSaveMenu && <div style={{ marginTop: 12, fontSize: 13, color: "#b45309" }}>메뉴 저장 준비 중입니다. 지금 바꾼 구성은 저장되지 않습니다.</div>}
+              {menuError && <div style={{ marginTop: 12, fontSize: 13, color: "#c53030" }}>{menuError}</div>}
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 18 }}>
+                <button onClick={() => saveMenu(null)} disabled={menuSaving || !canSaveMenu}
+                  style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${theme.border}`, background: "transparent", color: theme.textSecondary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  기본값으로 되돌리기
+                </button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setMenuDraft(null)} disabled={menuSaving}
+                    style={{ padding: "10px 16px", borderRadius: 8, border: `1px solid ${theme.border}`, background: "transparent", color: theme.textPrimary, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                    취소
+                  </button>
+                  <button onClick={() => saveMenu(menuDraft)} disabled={menuSaving || !canSaveMenu}
+                    style={{ padding: "10px 18px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", opacity: menuSaving || !canSaveMenu ? 0.6 : 1 }}>
+                    {menuSaving ? "저장 중…" : "저장"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 공실뉴스기자 멤버십 안내 모달 */}
         <ArticleAdUpgradeModal

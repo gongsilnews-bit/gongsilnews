@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminSectionProps } from "./types";
 import MemberRegisterForm from "@/components/admin/MemberRegisterForm";
+import RealtyMenuDefaultSettings from "./RealtyMenuDefaultSettings";
 import { adminGetMembers, adminSoftDeleteMember, adminRestoreMember, adminHardDeleteMember, adminApproveRealtorApplication, adminRejectRealtorApplication, adminApproveBusinessApplication, adminRejectBusinessApplication, adminGetLimitPolicies, adminUpdateLimitPolicies, adminToggleMemberHomepage } from "@/app/admin/actions";
 
 interface MemberSectionProps extends AdminSectionProps {
@@ -173,7 +174,7 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
       </div>
 
       {/* 필터 (상단으로 분리) */}
-      {currentTab !== "policy" && (
+      {currentTab !== "policy" && currentTab !== "realty_menu" && (
         <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", padding: "16px 24px", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <label style={{ fontSize: 13, fontWeight: 600, color: textSecondary, whiteSpace: "nowrap" }}>회원번호</label>
@@ -199,7 +200,8 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
           { key: "pending", label: "승인대기", count: counts.pending, color: "#f59e0b", activeColor: "#d97706" },
           { key: "rejected", label: "서류보완", count: counts.rejected, color: "#ef4444", activeColor: "#dc2626" },
           { key: "dormant", label: "휴지통", count: counts.dormant, color: "#6b7280", activeColor: "#4b5563" },
-          { key: "policy", label: "등급별 한도 설정", color: "#6b7280", activeColor: "#4b5563" }
+          { key: "policy", label: "등급별 한도 설정", color: "#6b7280", activeColor: "#4b5563" },
+          { key: "realty_menu", label: "중개사 메뉴 기본값", color: "#6b7280", activeColor: "#1a3a6b" }
         ].map(tab => (
           <button
             key={tab.key}
@@ -235,7 +237,9 @@ export default function MemberSection({ theme, activeSubmenu, onSubmenuChange, i
         ))}
       </div>
 
-      {currentTab === "policy" ? (
+      {currentTab === "realty_menu" ? (
+        <RealtyMenuDefaultSettings theme={theme} />
+      ) : currentTab === "policy" ? (
         <MemberPolicySettings theme={theme} darkMode={darkMode} />
       ) : (
         <div style={{ background: cardBg, borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", overflow: "hidden" }}>

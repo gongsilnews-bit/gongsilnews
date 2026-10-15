@@ -32,7 +32,7 @@ const ADMIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", icon: <IconDashboard /> },
   { key: "agent", label: "AI 비서실", icon: <IconRobot /> },
   { key: "marketing", label: "부동산마케팅", icon: <IconComment /> },
-  { key: "members", label: "회원관리", icon: <IconMembers />, submenus: [{ key: "members_list", label: "회원목록" }, { key: "dormant", label: "휴지통" }, { key: "policy", label: "등급별 한도 설정" }] },
+  { key: "members", label: "회원관리", icon: <IconMembers />, submenus: [{ key: "members_list", label: "회원목록" }, { key: "dormant", label: "휴지통" }, { key: "policy", label: "등급별 한도 설정" }, { key: "realty_menu", label: "중개사 메뉴 기본값" }] },
   { key: "newsrealty", label: "멤버십관리", icon: <IconBuilding /> },
   { key: "gongsil", label: "공실관리", icon: <IconBuilding /> },
   { key: "article", label: "기사관리", icon: <IconArticle /> },
