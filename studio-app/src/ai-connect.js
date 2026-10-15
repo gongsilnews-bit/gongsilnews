@@ -68,11 +68,11 @@ const PROVIDERS = {
     name: "Gemini",
     host: "gemini.google.com",
     url: "https://gemini.google.com/app",
-    // 2026-10-15: Gemini 4 개편 날 Gemini 자체가 먹통(확장·웹 모두 답 없음)이라 회원에게는 "준비 중"으로 둔다.
-    // 글쓰기 코드(ai/gemini.js)는 준비돼 있다 — Gemini 가 안정되면 시험하고 true 로 연다
-    ready: false,
+    // 2026-10-15 글쓰기 시험: 공매 기사 33초, 같은 대화 수정 22초 (낮에는 Gemini 개편으로 먹통이었다)
+    ready: true,
     writer: true,
-    image: true, // 그림 (나노바나나) — 시험 뒤 연다
+    image: true,
+    imageReady: false, // 그림(나노바나나)은 아직 — 만들고 시험한 뒤 연다
     check: (page) =>
       page.evaluate(() => {
         if (/accounts\.google\.com/.test(location.href)) return { ok: false };
@@ -106,7 +106,7 @@ function list() {
   const w = getWriter();
   return Object.entries(PROVIDERS)
     .filter(([, p]) => !p.hidden)
-    .map(([id, p]) => ({ id, name: p.name, ready: p.ready, canWrite: Boolean(p.writer), canImage: Boolean(p.image), noImage: Boolean(p.noImage), isWriter: id === w, isImager: id === getImager(), ...(saved[id] || { ok: false }) }));
+    .map(([id, p]) => ({ id, name: p.name, ready: p.ready, canWrite: Boolean(p.writer), canImage: Boolean(p.image), imageReady: Boolean(p.image && p.ready && p.imageReady !== false), noImage: Boolean(p.noImage), isWriter: id === w, isImager: id === getImager(), ...(saved[id] || { ok: false }) }));
 }
 
 /* 기본 글쓰기 AI (ChatGPT · Claude · Gemini) · 기본 이미지 생성 AI (ChatGPT · Gemini) — [내 AI 연결]에서 고른다. 처음엔 둘 다 ChatGPT */

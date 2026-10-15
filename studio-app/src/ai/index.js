@@ -35,7 +35,7 @@ function ask(prompt, opts = {}) {
 function currentImager() {
   const conn = require("../ai-connect");
   const want = conn.getImager();
-  return conn.list().some((x) => x.id === want && x.ok && x.ready) ? want : "chatgpt";
+  return conn.list().some((x) => x.id === want && x.ok && x.imageReady) ? want : "chatgpt";
 }
 
 function askImage(prompt, opts = {}) {

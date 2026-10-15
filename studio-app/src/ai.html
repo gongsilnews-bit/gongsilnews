@@ -61,9 +61,9 @@
     for (const it of items.filter((x) => x.canImage)) {
       const b = document.createElement("button");
       b.className = "pill" + (it.isImager ? " on" : "");
-      b.textContent = it.name + (it.isImager ? " ✓" : !it.ready ? " (준비 중)" : "");
-      b.disabled = busy || !it.ok || !it.ready;
-      b.title = !it.ready ? "준비 중입니다" : it.ok ? "" : "먼저 아래에서 연결해 주세요";
+      b.textContent = it.name + (it.isImager ? " ✓" : !it.imageReady ? " (준비 중)" : "");
+      b.disabled = busy || !it.ok || !it.imageReady;
+      b.title = !it.imageReady ? "그림 그리기는 준비 중입니다" : it.ok ? "" : "먼저 아래에서 연결해 주세요";
       b.onclick = async () => { if (it.isImager) return; render(await studio.ai.setImager(it.id)); say(`이제 ${it.name}로 그림을 그립니다. (인테리어·리모델링 시뮬레이션은 ChatGPT)`); };
       box.querySelector("#pi").appendChild(b);
     }
