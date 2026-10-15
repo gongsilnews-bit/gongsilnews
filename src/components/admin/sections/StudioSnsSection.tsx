@@ -10,7 +10,8 @@ import { findStudioVacancyByNo } from "@/app/actions/studio";
  * 1단계 공실 분석·캡처: 공실을 고르면 앱이 안 보이는 창에서 공실열람을 열어
  * 매물 정보를 읽고, 등록 사진 전부 + 화면 3장(공실열람 검증·지도·로드뷰)을 모은다.
  * 결과는 앱(PC)에 저장되고 기사·블로그·SNS·영상이 함께 쓴다.
- * 다음 단계(블로그 쓰기·네이버 붙여넣기)는 이어서 붙인다.
+ * 3단계 블로그 쓰기: 크롬 확장과 같은 블로그 프롬프트(6문체·글자 수)로 소장님 AI(ChatGPT)가 쓴다.
+ * 네이버 붙여넣기는 이어서 붙인다.
  */
 
 type MediaThumb = { kind: string; caption: string; thumb: string | null };
@@ -20,11 +21,18 @@ type Analysis = {
   media: MediaThumb[];
   failures: string[];
 };
+type BlogStyles = { styles: { id: string; label: string; fit: string; titleExample: string }[]; lengths: { id: string; label: string; chars: string }[] };
+type Blog = { title: string; paragraphs: string[]; keywords: string[]; style: string; length: string };
 type AiItem = { id: string; name: string; ready: boolean; ok: boolean; account?: string; plan?: string };
 type StudioBridge = {
   openAiConnect: () => Promise<void>;
   ai: { list: () => Promise<AiItem[]> };
   vacancy: { analyze: (id: string) => Promise<Analysis>; onProgress: (fn: (t: string) => void) => () => void };
+  blog: {
+    styles: () => Promise<BlogStyles>;
+    write: (opts: { vacancyId: string; style: string; length: string }) => Promise<Blog>;
+    onProgress: (fn: (t: string) => void) => () => void;
+  };
 };
 type VacancyRow = { id: string; vacancy_no: number; building_name?: string | null; trade_type?: string; property_type?: string; sido?: string; sigungu?: string; dong?: string };
 
@@ -43,6 +51,17 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<Analysis | null>(null);
+  const [blogOpts, setBlogOpts] = useState<BlogStyles | null>(null);
+  const [style, setStyle] = useState("listing");
+  const [length, setLength] = useState("normal");
+  const [writing, setWriting] = useState(false);
+  const [blogProgress, setBlogProgress] = useState("");
+  const [blogError, setBlogError] = useState("");
+  const [blog, setBlog] = useState<Blog | null>(null);
+
+  useEffect(() => {
+    bridge()?.blog.styles().then(setBlogOpts);
+  }, []);
 
   const loadAi = useCallback(async () => {
     const b = bridge();
@@ -68,6 +87,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     if (!res.success) return setError(res.error);
     setPicked(res.data as VacancyRow);
     setResult(null);
+    setBlog(null);
   };
 
   const analyze = async () => {
@@ -85,6 +105,24 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       off();
       setProgress("");
       setBusy(false);
+    }
+  };
+
+  const writeBlog = async () => {
+    const b = bridge();
+    if (!b || !result) return;
+    setWriting(true);
+    setBlogError("");
+    setBlog(null);
+    const off = b.blog.onProgress(setBlogProgress);
+    try {
+      setBlog(await b.blog.write({ vacancyId: result.vacancyId, style, length }));
+    } catch (e) {
+      setBlogError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
+    } finally {
+      off();
+      setBlogProgress("");
+      setWriting(false);
     }
   };
 
@@ -128,7 +166,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflowY: "auto" }}>
               {mine.map((v) => (
-                <button key={v.id} onClick={() => { setPicked(v); setResult(null); }}
+                <button key={v.id} onClick={() => { setPicked(v); setResult(null); setBlog(null); }}
                   style={{ textAlign: "left", padding: "10px 12px", borderRadius: 8, cursor: "pointer", fontSize: 14, color: theme.textPrimary,
                     border: `1px solid ${picked?.id === v.id ? "#1a3a6b" : theme.border}`, background: picked?.id === v.id ? "rgba(26,58,107,0.08)" : "transparent", fontWeight: picked?.id === v.id ? 700 : 500 }}>
                   {vacancyLabel(v)}
@@ -184,10 +222,61 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           )}
         </div>
 
-        {/* 3. 블로그 쓰기 (다음 단계) */}
-        <div style={{ ...card, opacity: 0.6 }}>
-          {stepTitle(3, "블로그 쓰기 · 네이버 채우기")}
-          <div style={{ fontSize: 14, color: theme.textSecondary }}>다음 단계에서 붙입니다. 소장님 AI(ChatGPT)로 블로그 글을 쓰고 네이버 글쓰기에 채웁니다.</div>
+        {/* 3. 블로그 쓰기 */}
+        <div style={{ ...card, opacity: result ? 1 : 0.6 }}>
+          {stepTitle(3, "블로그 쓰기")}
+          {!result ? (
+            <div style={{ fontSize: 14, color: theme.textSecondary }}>먼저 공실 분석·캡처를 해 주세요.</div>
+          ) : (
+            <>
+              <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 8 }}>문체</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8, marginBottom: 14 }}>
+                {(blogOpts?.styles || []).map((s) => (
+                  <button key={s.id} onClick={() => setStyle(s.id)} title={`예: ${s.titleExample}`}
+                    style={{ textAlign: "left", padding: "10px 12px", borderRadius: 8, cursor: "pointer", background: style === s.id ? "rgba(26,58,107,0.08)" : "transparent",
+                      border: `1px solid ${style === s.id ? "#1a3a6b" : theme.border}`, color: theme.textPrimary }}>
+                    <div style={{ fontSize: 14, fontWeight: 800 }}>{s.label}</div>
+                    <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>{s.fit}</div>
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginRight: 4 }}>글자 수</span>
+                {(blogOpts?.lengths || []).map((l) => (
+                  <button key={l.id} onClick={() => setLength(l.id)}
+                    style={{ padding: "7px 12px", borderRadius: 999, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                      border: `1px solid ${length === l.id ? "#1a3a6b" : theme.border}`, background: length === l.id ? "#1a3a6b" : "transparent", color: length === l.id ? "#fff" : theme.textPrimary }}>
+                    {l.label} · {l.chars}
+                  </button>
+                ))}
+                <button onClick={writeBlog} disabled={writing}
+                  style={{ marginLeft: "auto", padding: "10px 18px", background: writing ? "#94a3b8" : "#16a34a", color: "#fff", border: 0, borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: writing ? "default" : "pointer" }}>
+                  {writing ? "ChatGPT가 쓰는 중…" : blog ? "다시 쓰기" : "ChatGPT로 블로그 글 쓰기"}
+                </button>
+              </div>
+              <div style={{ marginTop: 8, fontSize: 13, color: theme.textSecondary }}>스튜디오 전용 크롬에서 ChatGPT가 열려 직접 씁니다. 1~2분 걸립니다.</div>
+            </>
+          )}
+          {blogProgress && <div style={{ marginTop: 12, fontSize: 14, color: "#1a3a6b", fontWeight: 600 }}>{blogProgress}</div>}
+          {blogError && <div style={{ marginTop: 12, fontSize: 14, color: "#c53030" }}>{blogError}</div>}
+
+          {blog && (
+            <div style={{ marginTop: 18, padding: "22px 24px", border: `1px solid ${theme.border}`, borderRadius: 12, background: theme.bg || "#f6f8fa" }}>
+              <h3 style={{ margin: "0 0 14px", fontSize: 20, fontWeight: 800, color: theme.textPrimary, lineHeight: 1.4 }}>{blog.title}</h3>
+              {blog.paragraphs.map((p, i) =>
+                p.startsWith("■") ? (
+                  <h4 key={i} style={{ margin: "18px 0 8px", fontSize: 16, fontWeight: 800, color: theme.textPrimary }}>{p.replace(/^■\s*/, "")}</h4>
+                ) : (
+                  <p key={i} style={{ margin: "0 0 10px", fontSize: 15, lineHeight: 1.8, color: theme.textPrimary, wordBreak: "keep-all" }}>{p}</p>
+                )
+              )}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 14 }}>
+                {blog.keywords.map((k) => (
+                  <span key={k} style={{ fontSize: 12, fontWeight: 700, padding: "4px 9px", borderRadius: 999, background: "#e0e7ff", color: "#3730a3" }}>#{k}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

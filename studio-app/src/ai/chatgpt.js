@@ -1,0 +1,146 @@
+// ChatGPT 작성 (스튜디오 전용 크롬, 회원이 로그인한 구독 계정)
+// 크롬 확장 shared/ai-common.js 의 입력·전송·읽기 방법을 Playwright 로 옮겼다.
+//  - 새 대화를 열고, 입력칸에 프롬프트를 넣고, 전송 버튼을 누르고,
+//  - 답변은 ChatGPT 대화 원문(/backend-api/conversation)에서 읽는다. 화면 모양과 상관없어 가장 튼튼하다
+//    (확장 shared/chatgpt-direct.js 와 같은 방법). 원문을 못 읽으면 화면에서 읽는다.
+//  - 2026-10 ChatGPT 화면 개편으로 data-message-author-role 이 사라졌다. 화면 읽기는 새 표시를 먼저 본다.
+// 사람이 쓰는 것처럼: 크롬 창을 보이게 띄우고, 한 번에 한 건만, 동작 사이에 잠깐씩 쉰다.
+const chrome = require("../studio-chrome");
+
+const SEL = {
+  URL: "https://chatgpt.com/",
+  INPUT: ["#prompt-textarea", 'div.ProseMirror[contenteditable="true"]', 'form [contenteditable="true"]', 'textarea[name="prompt-textarea"]'],
+  SEND: ['button[data-testid="send-button"]', 'button[aria-label="Send prompt"]', 'button[aria-label="프롬프트 보내기"]'],
+  STOP: ['button[data-testid="stop-button"]', 'button[aria-label*="중지"]', 'button[aria-label*="Stop"]'],
+  ANSWER: ['[data-markdown-text-style="assistant-message"]', 'div[data-message-author-role="assistant"]', ".markdown.prose"],
+};
+
+const humanPause = (min = 400, max = 1100) => chrome.sleep(min + Math.random() * (max - min));
+let running = false;
+
+async function firstVisible(page, list, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    for (const sel of list) {
+      const loc = page.locator(sel).first();
+      if (await loc.isVisible().catch(() => false)) return loc;
+    }
+    await chrome.sleep(300);
+  }
+  return null;
+}
+
+async function anyVisible(page, list) {
+  for (const sel of list) if (await page.locator(sel).first().isVisible().catch(() => false)) return true;
+  return false;
+}
+
+async function readLastAnswer(page) {
+  return page.evaluate((selectors) => {
+    for (const sel of selectors) {
+      const nodes = document.querySelectorAll(sel);
+      if (nodes.length) return nodes[nodes.length - 1].innerText || "";
+    }
+    return "";
+  }, SEL.ANSWER);
+}
+
+/* 대화 원문에서 현재 가지의 마지막 AI 답변과 상태를 읽는다 (로그인된 페이지 안에서 실행) */
+function readByConversationApi(page) {
+  return page
+    .evaluate(async () => {
+      const withTimeout = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("timeout")), ms))]);
+      const id = (location.pathname.match(/\/c\/([0-9a-f-]{36})/) || [])[1];
+      if (!id) return { error: "대화 주소 없음" };
+      const session = await withTimeout(fetch("/api/auth/session", { credentials: "include" }).then((r) => r.json()), 8000);
+      const token = session && session.accessToken;
+      if (!token) return { error: "로그인 토큰 없음" };
+      const res = await withTimeout(fetch("/backend-api/conversation/" + id, { credentials: "include", headers: { Authorization: "Bearer " + token } }), 10000);
+      if (!res.ok) return { error: "HTTP " + res.status };
+      const data = await res.json();
+      let node = data.mapping && data.mapping[data.current_node];
+      while (node) {
+        const msg = node.message;
+        if (msg && msg.author && msg.author.role === "assistant" && msg.content) {
+          const parts = (msg.content.parts || []).filter((part) => typeof part === "string");
+          const text = (parts.join("\n") || msg.content.text || "").trim();
+          if (text) return { text, status: msg.status || "", endTurn: msg.end_turn };
+        }
+        node = node.parent ? data.mapping[node.parent] : null;
+      }
+      return { error: "AI 답변 없음" };
+    })
+    .catch((e) => ({ error: e.message }));
+}
+
+/**
+ * 프롬프트를 보내고 답변 글을 돌려준다.
+ * isComplete(text) 가 true 가 되고 답변이 멈추면 끝난다 (최대 4분).
+ */
+async function ask(prompt, { onProgress = () => {}, isComplete = () => true } = {}) {
+  if (running) throw new Error("이미 ChatGPT가 글을 쓰고 있습니다. 끝난 뒤 다시 눌러 주세요.");
+  running = true;
+  try {
+    onProgress("스튜디오 전용 크롬에서 ChatGPT를 여는 중…");
+    const page = await chrome.openPage("chatgpt.com", SEL.URL);
+    await page.goto(SEL.URL, { waitUntil: "domcontentloaded" }); // 늘 새 대화에서 쓴다
+    if (/auth|login/.test(new URL(page.url()).pathname + new URL(page.url()).hostname)) {
+      throw new Error("ChatGPT 로그인이 풀렸습니다. [내 AI 연결]에서 다시 연결해 주세요.");
+    }
+
+    const input = await firstVisible(page, SEL.INPUT, 30000);
+    if (!input) throw new Error("ChatGPT 입력칸을 찾지 못했습니다. 로그인 상태를 확인해 주세요.");
+    await humanPause();
+
+    onProgress("ChatGPT에 요청을 넣는 중…");
+    await input.click();
+    // contenteditable 은 줄마다 문단을 만들어야 줄바꿈이 살아남는다 (확장과 같은 방법)
+    await input.evaluate((el, text) => {
+      if (el.tagName === "TEXTAREA") {
+        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set;
+        setter.call(el, text);
+      } else {
+        el.innerHTML = "";
+        for (const line of text.split("\n")) {
+          const p = document.createElement("p");
+          if (line.trim()) p.textContent = line;
+          else p.appendChild(document.createElement("br"));
+          el.appendChild(p);
+        }
+      }
+      el.dispatchEvent(new InputEvent("input", { bubbles: true, cancelable: true }));
+    }, prompt);
+    await humanPause(700, 1500);
+
+    const send = await firstVisible(page, SEL.SEND, 8000);
+    if (send && (await send.isEnabled().catch(() => false))) await send.click();
+    else await page.keyboard.press("Enter");
+
+    onProgress("ChatGPT가 글을 쓰는 중… (1~2분)");
+    const deadline = Date.now() + 4 * 60 * 1000;
+    let last = "";
+    let stable = 0;
+    while (Date.now() < deadline) {
+      await chrome.sleep(2000);
+      if (page.isClosed()) throw new Error("ChatGPT 창이 닫혔습니다.");
+      if (!/\/c\/[0-9a-f-]{36}/.test(page.url())) continue; // 아직 대화가 만들어지지 않음
+
+      // 1순위: 대화 원문 — 답변이 끝났다고(finished_successfully) 표시되면 바로 끝
+      const api = await readByConversationApi(page);
+      if (api.text && api.status === "finished_successfully" && isComplete(api.text)) return api.text;
+
+      // 2순위: 화면 — 중지 버튼이 없고 글자가 두 번 연달아 같으면 끝
+      const busy = await anyVisible(page, SEL.STOP);
+      const text = api.text || (await readLastAnswer(page));
+      stable = !busy && text && text === last ? stable + 1 : 0;
+      last = text;
+      if (stable >= 2 && isComplete(text)) return text;
+    }
+    if (last && isComplete(last)) return last;
+    throw new Error("ChatGPT 답변을 4분 안에 받지 못했습니다. ChatGPT 창을 확인해 주세요.");
+  } finally {
+    running = false;
+  }
+}
+
+module.exports = { ask };

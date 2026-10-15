@@ -13,7 +13,13 @@ const { spawn, execFile } = require("child_process");
 const { chromium } = require("playwright-core");
 const log = require("electron-log/main");
 
-const profileDir = () => path.join(app.getPath("userData"), "studio-chrome");
+// 개발판(npm start)은 설치판이 로그인해 둔 전용 크롬을 같이 쓴다 (AI에 다시 로그인하지 않게)
+const profileDir = () => {
+  if (process.env.STUDIO_CHROME_DIR) return process.env.STUDIO_CHROME_DIR;
+  const installed = path.join(app.getPath("appData"), "공실뉴스 스튜디오", "studio-chrome");
+  if (!app.isPackaged && fs.existsSync(installed)) return installed;
+  return path.join(app.getPath("userData"), "studio-chrome");
+};
 const portFile = () => path.join(profileDir(), "DevToolsActivePort");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

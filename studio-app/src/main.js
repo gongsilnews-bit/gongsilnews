@@ -9,6 +9,7 @@ const { autoUpdater } = require("electron-updater");
 const aiConnect = require("./ai-connect");
 const { ffmpegPath } = require("./paths");
 const { analyzeVacancy } = require("./vacancy-capture");
+const blogWriter = require("./blog-writer");
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE_URL).origin;
@@ -18,8 +19,10 @@ const IN_APP_POPUP_HOSTS = [/(^|\.)daum\.net$/, /(^|\.)daumcdn\.net$/, /(^|\.)ka
 
 // 개발 실행은 설치판과 저장 공간(로그인·전용 크롬)과 "한 번만 실행"이 겹치지 않게 이름을 달리 한다
 if (!app.isPackaged) {
-  app.setName("공실뉴스 스튜디오 (개발)");
-  app.setPath("userData", path.join(app.getPath("appData"), "공실뉴스 스튜디오 (개발)"));
+  // STUDIO_INSTANCE 를 주면 개발판을 하나 더 따로 띄울 수 있다 (자동 시험용)
+  const devName = `공실뉴스 스튜디오 (개발${process.env.STUDIO_INSTANCE ? ` ${process.env.STUDIO_INSTANCE}` : ""})`;
+  app.setName(devName);
+  app.setPath("userData", path.join(app.getPath("appData"), devName));
 }
 
 log.initialize();
@@ -291,6 +294,8 @@ ipcMain.handle("studio:open-ai-window", () => openAiWindow());
 ipcMain.handle("studio:ai-list", () => aiConnect.list());
 ipcMain.handle("studio:ai-check", (_e, id) => aiConnect.check(id));
 ipcMain.handle("studio:ai-finish-login", () => aiConnect.finishLogin());
+ipcMain.handle("studio:blog-styles", () => blogWriter.styles());
+ipcMain.handle("studio:blog-write", (e, opts) => blogWriter.write(opts, (text) => e.sender.send("studio:blog-progress", text)));
 ipcMain.handle("studio:vacancy-analyze", async (e, vacancyId) => {
   const r = await analyzeVacancy(BASE_URL, vacancyId, (text) => e.sender.send("studio:vacancy-progress", text));
   // 웹 화면은 PC 파일을 직접 못 읽으므로 작은 미리보기만 보낸다
