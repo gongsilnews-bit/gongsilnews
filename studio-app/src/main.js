@@ -345,9 +345,18 @@ ipcMain.handle("studio:naver-fill", (e, opts) =>
   naverWrite.fillNaver({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:naver-progress", text))
 );
 ipcMain.handle("studio:blog-write", (e, opts) => blogWriter.write({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:blog-progress", text)));
+// 웹 화면은 PC 파일을 직접 못 읽으므로 작은 미리보기만 보낸다
+const analysisForWeb = (r) =>
+  r && {
+    vacancyId: r.vacancyId,
+    vacancy: r.vacancy,
+    failures: r.failures || [],
+    media: (r.media || []).map((m) => ({ kind: m.kind, caption: m.caption, thumb: thumbOf(m.file) })),
+  };
+// 다른 메뉴에 갔다 와도 이어서 보이게: 저장된 분석 결과를 다시 찍지 않고 그대로 돌려준다
+ipcMain.handle("studio:vacancy-load", (_e, vacancyId) => analysisForWeb(blogWriter.readJson(require("path").join(blogWriter.mediaDir(vacancyId), "analysis.json"))));
 ipcMain.handle("studio:vacancy-analyze", async (e, vacancyId) => {
   const r = await analyzeVacancy(BASE_URL, vacancyId, (text) => e.sender.send("studio:vacancy-progress", text));
-  // 웹 화면은 PC 파일을 직접 못 읽으므로 작은 미리보기만 보낸다
   return {
     vacancyId: r.vacancyId,
     vacancy: r.vacancy,

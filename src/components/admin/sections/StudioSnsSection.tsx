@@ -34,7 +34,7 @@ type AiItem = { id: string; name: string; ready: boolean; ok: boolean; account?:
 type StudioBridge = {
   openAiConnect: () => Promise<void>;
   ai: { list: () => Promise<AiItem[]>; connect: (id: string) => Promise<{ ok: boolean }>; finishLogin: () => Promise<void> };
-  vacancy: { analyze: (id: string) => Promise<Analysis>; onProgress: (fn: (t: string) => void) => () => void };
+  vacancy: { analyze: (id: string) => Promise<Analysis>; load: (id: string) => Promise<Analysis | null>; onProgress: (fn: (t: string) => void) => () => void };
   naver: {
     designs: () => Promise<{ id: string; label: string; hint: string }[]>;
     fill: (opts: { vacancyId: string; design: string }) => Promise<{ ok: boolean; imagesInserted: number; imagesTotal: number; design: string; tags: string[] }>;
@@ -69,6 +69,7 @@ function priceText(v: MyVacancy) {
 
 const bridge = (): StudioBridge | null => (typeof window !== "undefined" ? ((window as unknown as { gongsilStudio?: StudioBridge }).gongsilStudio ?? null) : null);
 
+const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const KIND_LABEL: Record<string, string> = { photo: "등록 사진", proof: "공실열람 검증", map: "지도", roadview: "로드뷰" };
 
 type Theme = { cardBg: string; textPrimary: string; textSecondary: string; border: string; bg?: string };
@@ -164,6 +165,54 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     setSnsData(null);
   };
 
+  /* 분석 결과와 써 둔 기사·블로그·SNS 를 화면에 올린다 (새로 분석했을 때·돌아왔을 때 공용) */
+  const applyResult = async (r: Analysis, v: VacancyRow) => {
+    const b = bridge();
+    if (!b) return;
+    setResult(r);
+    setPickOpen(false);
+    const opts = await b.blog.styles(r.vacancyId); // 경매·공매 물건이면 경매용 문체
+    setBlogOpts(opts);
+    setSnsData(await b.sns.get(r.vacancyId).catch(() => null));
+    const prevArticle = await b.blog.get(r.vacancyId, "article").catch(() => null);
+    setArticle(prevArticle ? { ...prevArticle, doc: "article" } : null);
+    const prev = await b.blog.get(r.vacancyId).catch(() => null);
+    setBlog(prev);
+    if (prev) {
+      setStyle(prev.style);
+      setLength(prev.length);
+      setDesign(opts.styles.find((x) => x.id === prev.style)?.design || "basic");
+    }
+    // 다른 메뉴(예: 기사쓰기)에 갔다 와도 이어서 보이게 이 기기에 기억한다
+    try {
+      localStorage.setItem(LAST_KEY, JSON.stringify({ vacancyId: r.vacancyId, picked: v }));
+    } catch {}
+  };
+
+  // 돌아오면 마지막 공실과 탭을 다시 불러온다 (분석·캡처는 다시 하지 않는다)
+  useEffect(() => {
+    const b = bridge();
+    if (!b) return;
+    let saved: { vacancyId: string; picked: VacancyRow; tab?: string } | null = null;
+    try {
+      saved = JSON.parse(localStorage.getItem(LAST_KEY) || "null");
+    } catch {}
+    if (!saved?.vacancyId) return;
+    b.vacancy.load(saved.vacancyId).then(async (r) => {
+      if (!r) return;
+      setPicked(saved!.picked);
+      await applyResult(r, saved!.picked);
+      if (saved!.tab) setTab(saved!.tab);
+    }).catch(() => {});
+  }, []);
+  const chooseTab = (id: string) => {
+    setTab(id);
+    try {
+      const saved = JSON.parse(localStorage.getItem(LAST_KEY) || "null");
+      if (saved) localStorage.setItem(LAST_KEY, JSON.stringify({ ...saved, tab: id }));
+    } catch {}
+  };
+
   const analyze = async () => {
     const b = bridge();
     if (!b || !picked) return;
@@ -173,19 +222,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
     const off = b.vacancy.onProgress(setProgress);
     try {
       const r = await b.vacancy.analyze(picked.id);
-      setResult(r);
-      setBlogOpts(await b.blog.styles(r.vacancyId)); // 경매·공매 물건이면 경매용 문체
-      setPickOpen(false);
-      setSnsData(await b.sns.get(r.vacancyId).catch(() => null));
-      const prevArticle = await b.blog.get(r.vacancyId, "article").catch(() => null);
-      setArticle(prevArticle ? { ...prevArticle, doc: "article" } : null);
-      const prev = await b.blog.get(r.vacancyId);
-      if (prev) {
-        setBlog(prev);
-        setStyle(prev.style);
-        setLength(prev.length);
-        setDesign(designFor(prev.style));
-      }
+      await applyResult(r, picked);
     } catch (e) {
       setError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
     } finally {
@@ -438,7 +475,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         {result && (
           <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${theme.border}`, marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
             {[{ id: "article", label: "공실뉴스 기사", done: Boolean(article) }, { id: "blog", label: "네이버 블로그", done: Boolean(blog) }, ...channels.map((c) => ({ id: c.id, label: c.label, done: Boolean(snsData?.channels[c.id]?.post) }))].map((t) => (
-              <button key={t.id} onClick={() => setTab(t.id)}
+              <button key={t.id} onClick={() => chooseTab(t.id)}
                 style={{ padding: "11px 18px", border: 0, background: "transparent", cursor: "pointer", fontSize: 14.5, whiteSpace: "nowrap",
                   fontWeight: tab === t.id ? 800 : 600, color: tab === t.id ? "#1a3a6b" : theme.textSecondary,
                   borderBottom: `3px solid ${tab === t.id ? "#1a3a6b" : "transparent"}`, marginBottom: -1 }}>

@@ -13,6 +13,7 @@ if (allowed) {
     openInBrowser: (url) => ipcRenderer.invoke("studio:open-external", url),
     vacancy: {
       analyze: (vacancyId) => ipcRenderer.invoke("studio:vacancy-analyze", vacancyId),
+      load: (vacancyId) => ipcRenderer.invoke("studio:vacancy-load", vacancyId),
       onProgress: (fn) => {
         const h = (_e, text) => fn(text);
         ipcRenderer.on("studio:vacancy-progress", h);
