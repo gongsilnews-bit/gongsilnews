@@ -46,9 +46,19 @@ function findBrowser() {
 /** 처음 만들 때 프로필 이름을 "공실뉴스 스튜디오"로 해 둔다 (창 위쪽 프로필 표시) */
 function seedProfile() {
   const pref = path.join(profileDir(), "Default", "Preferences");
-  if (fs.existsSync(pref)) return;
-  fs.mkdirSync(path.dirname(pref), { recursive: true });
-  fs.writeFileSync(pref, JSON.stringify({ profile: { name: "공실뉴스 스튜디오" }, browser: { has_seen_welcome_page: true } }));
+  if (!fs.existsSync(pref)) {
+    fs.mkdirSync(path.dirname(pref), { recursive: true });
+    fs.writeFileSync(pref, JSON.stringify({ profile: { name: "공실뉴스 스튜디오" }, browser: { has_seen_welcome_page: true } }));
+  }
+  // 창을 닫으면 크롬이 완전히 끝나게 한다 (뒤에서 계속 실행하면 다음 작업이 그 크롬에 막힌다)
+  const localState = path.join(profileDir(), "Local State");
+  try {
+    const st = fs.existsSync(localState) ? JSON.parse(fs.readFileSync(localState, "utf8")) : {};
+    if (!st.background_mode || st.background_mode.enabled !== false) {
+      st.background_mode = { ...(st.background_mode || {}), enabled: false };
+      fs.writeFileSync(localState, JSON.stringify(st));
+    }
+  } catch {}
 }
 
 function readPort() {
@@ -152,6 +162,10 @@ function closePlain() {
   const proc = plainProc;
   if (!proc || proc.exitCode !== null) return;
   execFile("taskkill", ["/PID", String(proc.pid), "/T"], () => {});
+  // 창 없이 뒤에서 도는 크롬은 창 닫기에 답하지 않는다 — 6초 뒤에도 살아 있으면 강제로 끝낸다
+  setTimeout(() => {
+    if (proc.exitCode === null) execFile("taskkill", ["/PID", String(proc.pid), "/T", "/F"], () => {});
+  }, 6000);
 }
 
 /* 이 프로필로 떠 있는 크롬 본체 프로세스 번호들 (조종용·로그인용 모두) */
@@ -173,15 +187,24 @@ function profileChromePids() {
  */
 async function closeStrayChrome() {
   if (plainProc && plainProc.exitCode === null) {
-    throw new Error("로그인용 크롬 창이 아직 열려 있습니다. [내 AI·계정 연결] 창에서 [로그인 다 했어요]를 먼저 눌러 주세요.");
+    throw new Error("로그인용 크롬 창이 아직 열려 있습니다. [로그인 다 했어요]를 먼저 눌러 주세요.");
   }
   let pids = await profileChromePids();
   if (!pids.length) return;
   log.info(`[전용 크롬] 남아 있는 창 정리 ${pids.join(",")}`);
   for (const pid of pids) execFile("taskkill", ["/PID", String(pid), "/T"], () => {});
-  for (let i = 0; i < 30 && pids.length; i++) {
+  for (let i = 0; i < 12 && pids.length; i++) {
     await sleep(500);
     pids = await profileChromePids();
+  }
+  // 창 없이 뒤에서 도는 크롬은 창 닫기에 답하지 않는다 — 강제로 끝낸다 (로그인 정보는 이미 저장돼 있다)
+  if (pids.length) {
+    log.info(`[전용 크롬] 강제 정리 ${pids.join(",")}`);
+    for (const pid of pids) execFile("taskkill", ["/PID", String(pid), "/T", "/F"], () => {});
+    for (let i = 0; i < 10 && pids.length; i++) {
+      await sleep(500);
+      pids = await profileChromePids();
+    }
   }
   if (pids.length) throw new Error("이전에 열린 스튜디오 전용 크롬 창을 닫지 못했습니다. 그 크롬 창을 직접 닫고 다시 눌러 주세요.");
 }
