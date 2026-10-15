@@ -15,7 +15,7 @@ interface Props {
 
 const Page1Overview: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, colorTheme, mainImage, customQrImage, onUpdateInfo, onImageUpload, isUploadingImage }) => {
   const hc = (key: string, value: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, [key]: value }); };
-  const targetTitle = info.address || '서초동 역세권 매매 안내서';
+  const targetTitle = info.address || '매물 안내서';
   const price = info.priceMain || '75억 원';
 
   // [표지] QR코드 넣기를 끄면 표지·개요의 QR을 모두 뺀다

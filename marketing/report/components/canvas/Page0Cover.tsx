@@ -56,7 +56,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                 </p>
                 <div className="w-16 h-[2px] bg-[var(--theme-primary)] mx-auto my-6"></div>
                 <h1 className={`text-5xl sm:text-6xl font-black text-gray-900 tracking-tight leading-[1.3] ${headingFont} max-w-[800px] mx-auto`}>
-                  <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
+                  <EditableText multiline={true} value={info.address || "매물 안내서"} onChange={(v) => hc('address', v)} />
                 </h1>
               </div>
 
@@ -128,7 +128,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
                   </div>
                   <h1 className={`text-4xl font-extrabold text-gray-900 tracking-tight leading-[1.3] mt-2 ${headingFont} max-w-[650px]`}>
-                    <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
+                    <EditableText multiline={true} value={info.address || "매물 안내서"} onChange={(v) => hc('address', v)} />
                   </h1>
                   <div className="w-24 h-[6px] bg-[var(--theme-primary)] mt-8"></div>
                 </div>
@@ -215,7 +215,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                   <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
                 </span>
                 <h1 className={`text-5xl font-black tracking-tight leading-[1.2] text-white ${headingFont} max-w-[750px]`}>
-                  <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
+                  <EditableText multiline={true} value={info.address || "매물 안내서"} onChange={(v) => hc('address', v)} />
                 </h1>
                 <div className="w-32 h-[8px] bg-[var(--theme-secondary)] mt-6"></div>
               </div>
@@ -285,7 +285,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                     <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
                   </p>
                   <h1 className={`text-5xl font-black text-gray-900 tracking-tight leading-[1.3] w-full ${headingFont}`}>
-                    <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
+                    <EditableText multiline={true} value={info.address || "매물 안내서"} onChange={(v) => hc('address', v)} />
                   </h1>
                   <div className="w-[100px] h-[2px] bg-gray-900 mt-8 mb-8"></div>
                 </div>
@@ -368,7 +368,7 @@ const Page0Cover: React.FC<Props> = ({ info, pageString, isHidden, layoutTheme, 
                   <EditableText value={info.coverSubtitle || "부동산 물건 보고서"} onChange={(v) => hc('coverSubtitle', v)} />
                 </span>
                 <h1 className={`text-4xl font-extrabold text-gray-900 tracking-tight leading-[1.3] ${headingFont} max-w-[500px]`}>
-                  <EditableText multiline={true} value={info.address || "서울특별시 강남구 논현동 매매 안내서"} onChange={(v) => hc('address', v)} />
+                  <EditableText multiline={true} value={info.address || "매물 안내서"} onChange={(v) => hc('address', v)} />
                 </h1>
                 <div className="w-20 h-1 bg-[var(--theme-primary)] mt-8"></div>
               </div>

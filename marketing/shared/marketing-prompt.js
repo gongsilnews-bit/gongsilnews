@@ -45,6 +45,8 @@ const GW_MK_GUIDE = {
   areaBox3Title: "입지 상자 3 제목. 지금 형식 유지",
   areaBox3Text: "입지 상자 3 글. 1~2문장, 40~70자. 이 매물의 쓰임새·장점 (개발 호재·가치 상승 전망은 쓰지 말 것)",
   page4TargetTitle: "입지 지도 제목. 지금 글과 비슷한 길이",
+  leaseRightTitle: "임대 조건 상자 제목. 8~16자",
+  leaseRightText: "임대 조건 요약. 줄마다 '• '로 시작하는 3~5줄(줄바꿈 \\n). 매물 정보의 금액·관리비·면적·층·입주·주차만",
   page6FooterQuote: "마지막 페이지 아래 인용 한 문장. 큰따옴표로 감쌀 것. 25~45자",
   "roadmap.box1Title": "추천 포인트 카드 1 제목. 8~16자",
   "roadmap.box1Text": "추천 포인트 카드 1 글. 2문장, 50~90자",

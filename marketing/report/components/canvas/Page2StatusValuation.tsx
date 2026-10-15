@@ -56,11 +56,10 @@ const Page2StatusValuation: React.FC<Props> = ({ info, pageString, isHidden, lay
                         </h3>
                         {(() => {
                             const showChart = info.showChart !== false;
+                            // 예시 숫자를 두지 않는다 — 중개사가 직접 넣는다
                             const bars = info.chartBars || [
-                                { label: "탁상감정가", value: "80", isHighlight: false },
-                                { label: "기존 희망가", value: "75", isHighlight: false },
-                                { label: "인근 시세", value: "85", isHighlight: false },
-                                { label: "현재 급매가", value: "65", isHighlight: true }
+                                { label: "인근 시세", value: "", isHighlight: false },
+                                { label: "현재 금액", value: "", isHighlight: true }
                             ];
                             const upd = (newBars: any) => { if (onUpdateInfo) onUpdateInfo({ ...info, chartBars: newBars }); };
                             return (
@@ -124,7 +123,7 @@ const Page2StatusValuation: React.FC<Props> = ({ info, pageString, isHidden, lay
                                 <EditableText value={ia.chartAdvisoryTitle || "STRATEGIC ADVISORY"} onChange={(v) => hc('chartAdvisoryTitle', v)} />
                             </div>
                             <div className="text-xs text-gray-600 leading-relaxed">
-                                <EditableBlock value={ia.chartAdviseText || "본 자산의 시세는 최근 실거래가 및 시장 동향을 반영하여 산출되었습니다. 입지 조건에 따른 프리미엄이 내재되어 있어 향후 가치 상승이 기대됩니다."} onChange={(v) => hc('chartAdviseText', v)} placeholder="그래프 분석 및 조언 입력..." />
+                                <EditableBlock value={ia.chartAdviseText || ""} onChange={(v) => hc('chartAdviseText', v)} placeholder="그래프 분석 및 조언 입력..." />
                             </div>
                         </div>
                     </div>

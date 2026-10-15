@@ -83,10 +83,7 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
         {(() => {
             const leaseTable = info.leaseTable || {
                 headers: ["층수", "호실", "면적", "금액", "현용도", "기타"],
-                rows: [
-                    ["지상 5층", "501호", "165.2㎡", "보증금 1억 / 월세 450만", "사무실", "즉시입주"],
-                    ["지상 4층", "401호", "165.2㎡", "보증금 1억 / 월세 450만", "학원", "임대중"],
-                ]
+                rows: [] // 예시 호실을 두지 않는다
             };
             const headers = leaseTable.headers;
             const rows = leaseTable.rows;
@@ -210,12 +207,12 @@ const Page3LeaseStatus: React.FC<Page3LeaseStatusProps> = ({
                         <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col justify-center shadow-sm">
                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Total Summary</span>
                             <div className="text-sm font-bold text-slate-800">
-                                <EditableText value={(info as any).leaseSummaryText || "총 6세대 / 보증금 0원 / 월세 0원"} onChange={(val) => handleTextChange('leaseSummaryText', val)} />
+                                <EditableText value={(info as any).leaseSummaryText || (rows.length === 1 ? `이 매물 · ${rows[0][3] || ""}` : rows.length ? `총 ${rows.length}건` : "")} onChange={(val) => handleTextChange('leaseSummaryText', val)} />
                             </div>
                         </div>
                         {(info as any).showLeaseSummaryDesc !== false && (
                             <div className="flex-1 bg-white border border-slate-200 rounded-lg p-4 text-xs text-slate-600 shadow-sm flex flex-col justify-center">
-                                <EditableText multiline value={(info as any).leaseSummaryDesc || "임대 수익률 및 상세 조건은 협의 가능합니다."} onChange={(val) => handleTextChange('leaseSummaryDesc', val)} />
+                                <EditableText multiline value={(info as any).leaseSummaryDesc || "상세 조건은 상담 때 함께 확인해 주세요."} onChange={(val) => handleTextChange('leaseSummaryDesc', val)} />
                             </div>
                         )}
                     </div>

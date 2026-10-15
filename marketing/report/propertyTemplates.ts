@@ -381,7 +381,7 @@ export const buildOverviewTable = (
     buildingName: vacancy.building_name || '',
     area: formatAreaDisplay(vacancy),
     floor: vacancy.current_floor
-      ? `${vacancy.current_floor}층 / 총 ${vacancy.total_floor || '-'}층`
+      ? `${/^-?\d+$/.test(String(vacancy.current_floor)) ? `${vacancy.current_floor}층` : vacancy.current_floor} / 총 ${vacancy.total_floor ? `${String(vacancy.total_floor).replace(/층$/, '')}층` : '-'}`
       : '',
     roomCount: vacancy.room_count
       ? `${vacancy.room_count}개 / ${vacancy.bath_count || vacancy.bathroom_count || '-'}개`

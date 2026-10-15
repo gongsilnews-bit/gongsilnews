@@ -8,6 +8,7 @@ import TableEditorModal from './components/TableEditorModal';
 import { FlyerState, PropertyInfo, GeneratedContent, FlyerColor, FlyerLayout } from './types';
 import { detectPropertyCategory, getOverviewTemplate, buildOverviewTable, buildInvestmentSummary, buildPage2Content, buildPage5Content, buildPage6Content, type OverviewField } from './propertyTemplates';
 import { ArrowDownTrayIcon, CodeBracketIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/solid';
+import { scrubSampleInfo, buildLeaseTable, buildLeaseRight, LEASE_NOTICE, floorText } from './realData';
 
 export const COLORS: FlyerColor[] = [
   { id: 'teal', name: 'Teal (Raemian)', primary: '#00788c', secondary: '#00c6d7', dark: '#003845' },
@@ -32,20 +33,11 @@ const INITIAL_INFO: PropertyInfo = {
   coverQRLink: "https://gongsilnews.com",
 
   // Page 1: Overview
-  address: "서울 강남구 논현동",
-  subTitle: "Asset Sales Briefing",
-  priceMain: "500억",
-  overviewTable: [
-    { label: "소재지", value: "서울 강남구 논현동" },
-    { label: "용도지역", value: "제3종 일반주거지역 / 도로 6m 접" },
-    { label: "대지면적", value: "317.9㎡ (96.16평)" },
-    { label: "연면적", value: "905.13㎡ (273.8평)" },
-    { label: "건물규모", value: "지하 1층 / 지상 5층" },
-    { label: "주용도", value: "근린생활시설 및 주택 (상가주택)" },
-    { label: "주차대수", value: "자주식 7대" },
-    { label: "승강기", value: "1대 완비" },
-    { label: "준공연도", value: "2002년 (최근 층별 리모델링 완료)" },
-  ],
+  // ⚠ 예시(가짜) 값을 두지 않는다 — 실제 매물로 채우지 못한 칸은 빈칸으로 남는다 (realData.ts)
+  address: "",
+  subTitle: "",
+  priceMain: "",
+  overviewTable: [],
   agentName: "",
   agentLabel: "REALTY AGENCY",
   qrLabel: "QR REPORT",
@@ -55,76 +47,57 @@ const INITIAL_INFO: PropertyInfo = {
   agentMobile: "",
   agentAddress: "",
   investmentSummary: {
-    box1Title: "CONNECTIVITY", box1Text: "전철역\n도보 4분",
-    box2Title: "ASSET QUALITY", box2Text: "내외관\n리모델링",
-    box3Title: "SUITABILITY", box3Text: "사옥 및\n수익형 최적",
+    box1Title: "CONNECTIVITY", box1Text: "",
+    box2Title: "ASSET QUALITY", box2Text: "",
+    box3Title: "SUITABILITY", box3Text: "",
   },
 
   // Page 2: Status & Valuation
-  floorStatus: [
-    { floor: "5F", purpose: "주택", lease: "보증금 / 차임 내역 별도문의", status: "임대 중", note: "명도 용이" },
-    { floor: "4F", purpose: "주택", lease: "가족 거주", status: "가족 거주", note: "명도 용이" },
-    { floor: "3F", purpose: "근생", lease: "임대 중", status: "임대 중", note: "명도 협의" },
-    { floor: "2F", purpose: "근생", lease: "임대 중", status: "임대 중", note: "명도 용이" },
-    { floor: "1F", purpose: "근생", lease: "가족 사용", status: "가족 사용", note: "명도 용이" },
-    { floor: "B1", purpose: "근생", lease: "현재 공실", status: "즉시 활용", note: "즉시 활용" },
-  ],
-  floorStatusNotice: "※ 전체 6개 층 중 3개 층(B1, 1F, 4F)이 소유주 직접 관리 하에 있어, 신속한 인도 및 명도 협의가 가능합니다.",
-  highlights: [
-    "가격 경쟁력: 감정가 대비 매우 낮은 파격적인 금매가",
-    "입지 강점: 역세권 초인접, 오피스 밀집지로 배후수요 풍부",
-    "명도 완료: 지하 공실 및 소유주 가족 점유로 즉시 인도 협의 가능",
-    "행정 지원: 책임명도 및 근생 용도변경 등 전폭적 지원"
-  ],
-  valuationText: "본 자산은 역세권 500억 희소 급매물로, 매입 즉시 감정가 대비 강력한 시세 차익 확보가 가능하며 사업 가치 증대에 최적화된 조건입니다.",
-  showChart: true,
+  floorStatus: [],
+  floorStatusNotice: "",
+  highlights: [],
+  valuationText: "",
+  showChart: false, // 시세 자료가 없으면 그래프를 숨긴다 (중개사가 숫자를 넣으면 보인다)
   chartBars: [
-    { label: "탁상감정가", value: "80", isHighlight: false },
-    { label: "기존 희망가", value: "75", isHighlight: false },
-    { label: "인근 시세", value: "85", isHighlight: false },
-    { label: "현재 급매가", value: "65", isHighlight: true }
+    { label: "탁상감정가", value: "", isHighlight: false },
+    { label: "기존 희망가", value: "", isHighlight: false },
+    { label: "인근 시세", value: "", isHighlight: false },
+    { label: "현재 급매가", value: "", isHighlight: true }
   ],
 
   // Page 3: Lease Status (New PPT style interactive grid page)
   leaseTable: {
     headers: ["층수", "호실", "면적", "금액", "현용도", "기타"],
-    rows: [
-      ["지상 5층", "501호", "165.2㎡", "보증금 1억 / 월세 450만", "사무실", "즉시입주"],
-      ["지상 4층", "401호", "165.2㎡", "보증금 1억 / 월세 450만", "학원", "임대중"],
-      ["지상 3층", "301호", "165.2㎡", "보증금 1억 / 월세 430만", "사무실", "임대중"],
-      ["지상 2층", "201호", "165.2㎡", "보증금 1억 / 월세 450만", "사무실", "즉시입주"],
-      ["지상 1층", "101호", "132.2㎡", "보증금 2억 / 월세 900만", "의원", "임대중"],
-      ["지하 1층", "B01호", "198.3㎡", "보증금 5,000만 / 월세 300만", "노래연습장", "명도협의"],
-    ],
+    rows: [],
     widths: [10, 10, 15, 35, 15, 15]
   },
   leaseNotice: "※ 위 임대현황은 임차인 사정 및 임대 시장 상황에 따라 실제 조건과 상이할 수 있으므로, 반드시 사전 확인 바랍니다.",
-  leaseRightTitle: "임대 핵심 가치 및 MD 추천 전략",
-  leaseRightText: "• 우량 임차인 유치: 역세권 오피스 밀집 상권으로 탄탄한 임차 수요 확보 가능\n• 밸류업 기회: 노후 호실 리모델링 및 용도 변경을 통한 추가 임대 수익률 상승\n• MD 리뉴얼 전략: 하층부 트렌디한 F&B 브랜드 유치 및 상층부 메디컬/클리닉 특화 구성 제안\n• 책임명도 지원: 매수인 요구 조건에 맞춰 명도 및 신규 계약 주선 지원 가능",
+  leaseRightTitle: "임대 조건 요약",
+  leaseRightText: "",
 
   // Page 4: Photos Captions (was Page 3)
   photoCaptions: {
-    main: "EXTERIOR VIEW - 건물 정면 외관",
-    sub1: "Side View",
-    sub2: "Entrance",
-    feat1: "1F Interior",
-    feat2: "Rooftop"
+    main: "",
+    sub1: "",
+    sub2: "",
+    feat1: "",
+    feat2: ""
   },
 
   // Page 5: Area Analysis (was Page 4)
-  areaTargetName: "남부터미널역(3호선)\n도보 4분 초역세권",
-  areaTargetDesc: "대한민국 최고의 문화 인프라와 남부터미널 업무 지구의 풍부한 배후 수요가 공존합니다.\n희소성 높은 초역세권 대지로서 사옥 신축 및 수익형 밸류업 시 최고의 자산 가치를 보장합니다.",
-  areaBox1Title: "STATION AREA", areaBox1Text: "지하철 3호선 남부터미널역과 도보 약 250m 거리로 최상의 대중교통 접근성 확보",
-  areaBox2Title: "CULTURAL DIST.", areaBox2Text: "대한민국 대표 문화거점인 예술의전당, 국립국악원 및 관련 클러스터 인접",
-  areaBox3Title: "CONNECTIVITY", areaBox3Text: "남부순환로, 서초중앙로 진입이 용이하여 강남권 전역 및 고속도로 접근성 탁월",
+  areaTargetName: "",
+  areaTargetDesc: "",
+  areaBox1Title: "STATION AREA", areaBox1Text: "",
+  areaBox2Title: "CULTURAL DIST.", areaBox2Text: "",
+  areaBox3Title: "CONNECTIVITY", areaBox3Text: "",
   mapType: 'kakao',
 
   // Page 6: Roadmap (was Page 5)
   roadmap: {
-    box1Title: "단독 사옥 활용 시나리오", box1Text: "전층 명도 협의 후 기업의 아이덴티티를 투영한 단독 사옥으로 활용합니다. 서초동 초역세권 입지의 상징성을 동시에 확보할 수 있는 최상의 환경을 제공합니다.",
-    box2Title: "주거 및 근생 수익 모델", box2Text: "상층부(4~5층) 실거주를 통해 최고의 직주근접 환경을 실현합니다. 하층부(B1~3층)는 오피스 및 갤러리 임대를 통해 안정적인 월세 수익을 확보할 수 있습니다.",
-    box3Title: "수익형 자산 밸류업 전략", box3Text: "주택 부분의 근생 용도변경 및 전면 리모델링을 통해 우량 법인 임차를 유치합니다. 자산 가치 극대화 후 시세 차익 실현에 집중하는 투자 안입니다.",
-    box4Title: "역세권 오피스 개발안", box4Text: "제3종일반주거지역의 높은 용적률을 활용한 고품격 오피스 빌딩 신축 개발입니다. 서초동 초역세권 입지의 희소성을 활용하여 개발 이익을 극대화할 수 있습니다."
+    box1Title: "", box1Text: "",
+    box2Title: "", box2Text: "",
+    box3Title: "", box3Text: "",
+    box4Title: "", box4Text: ""
   },
   
   pageBadges: {
@@ -744,6 +717,8 @@ function App() {
             transactionType: v.trade_type || '매매',
             subCategory: v.sub_category || "",
           };
+          // 예전 저장본에 남은 예시(가짜) 값은 실제 값으로 바꾼다 (realData.ts)
+          merged.info = scrubSampleInfo(merged.info, v);
           if (!merged.info.pageBadges) merged.info.pageBadges = {};
           if (!merged.info.pageBadges.page1 || ["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes((merged.info.pageBadges.page1 || "").toUpperCase().trim())) {
             merged.info.pageBadges.page1 = `${v.sub_category || "매물"} | ${v.trade_type || "매매"}`;
@@ -771,6 +746,7 @@ function App() {
               transactionType: v.trade_type || '매매',
               subCategory: v.sub_category || "",
             };
+            merged.info = scrubSampleInfo(merged.info, v);
             if (!merged.info.pageBadges) merged.info.pageBadges = {};
             if (!merged.info.pageBadges.page1 || ["FOR SALE", "FOR RENT", "FOR LEASE", "FOR AUCTION", "매매", "전세", "월세", "임대"].includes((merged.info.pageBadges.page1 || "").toUpperCase().trim())) {
               merged.info.pageBadges.page1 = `${v.sub_category || "매물"} | ${v.trade_type || "매매"}`;
@@ -876,7 +852,7 @@ function App() {
           
           const newItems = sec.items.map(item => {
             if (item.title === '세대수' && v.total_units) return { ...item, text: `${v.total_units}세대` };
-            if (item.title === '저/최고층' && v.current_floor && v.total_floor) return { ...item, text: `${v.current_floor}층/${v.total_floor}층` };
+            if (item.title === '저/최고층' && v.current_floor && v.total_floor) return { ...item, text: `${floorText(v.current_floor)}/${floorText(v.total_floor)}` };
             if (item.title === '사용승인일' && v.approval_year) return { ...item, text: `${v.approval_year}년` };
             if (item.title === '건설사' && v.constructor_name) return { ...item, text: v.constructor_name };
             if (item.title === '주소') return { ...item, text: [v.sido, v.sigungu, v.dong].filter(Boolean).join(" ") };
@@ -907,19 +883,20 @@ function App() {
           promotionText: priceText,
           propertyNumber: `No. ${v.property_no || v.id || v.vacancy_id || "0000"}`,
           address: autoAddress || "공실 매물 정보",
-          subTitle: `${v.sub_category || v.property_type || "프리미엄"} | ${v.direction || "방향 없음"} | ${areaDisplay}`,
+          // 등록 안 된 값은 지어내지 않는다 (남향·즉시 입주·관리비 없음 같은 추측 금지 — 2026-10-15)
+          subTitle: [v.sub_category || v.property_type, v.direction, areaDisplay !== "-" ? areaDisplay : ""].filter(Boolean).join(" | "),
           transactionType: v.trade_type || "월세",
           propertyCategory: detectPropertyCategory(v.sub_category, v.property_type),
           subCategory: v.sub_category || "",
           priceMain: formatAmount(v.deposit) || "",
           priceSub: v.monthly_rent ? `${Math.round(v.monthly_rent / 10000)}만` : "",
-          managementFee: v.maintenance_fee ? `${Math.round(v.maintenance_fee / 10000)}만원` : "없음",
+          managementFee: v.maintenance_fee ? `${Math.round(v.maintenance_fee / 10000)}만원` : "-",
           area: areaDisplay,
-          floor: `${v.current_floor || "-"}층 / 총 ${v.total_floor || "-"}층`,
-          direction: v.direction || "남향",
+          floor: `${floorText(v.current_floor) || "-"} / 총 ${floorText(v.total_floor) || "-"}`,
+          direction: v.direction || "-",
           roomCount: `${v.room_count || "-"}개 / ${v.bathroom_count || "-"}개`,
-          parking: v.parking || "없음",
-          moveInDate: v.move_in_date || (['shop', 'office', 'building'].includes(detectPropertyCategory(v.sub_category, v.property_type)) ? "즉시 사용 가능" : "즉시 입주 가능"),
+          parking: v.parking || "-",
+          moveInDate: v.move_in_date || "-",
           options: Array.isArray(v.options) ? v.options.join(", ") : (v.options || ""),
           
           agentName,
@@ -1023,20 +1000,21 @@ function App() {
             gridInfo: {
                 title: "주요 특징",
                 intro: "HIGHLIGHTS",
+                // 실제 등록 값으로만 (없으면 빈칸 — "탁 트인 개방감" 같은 지어낸 장점 금지)
                 features: [
-                  mappedInfo.direction === "방향 없음" ? "우수한 채광" : `채광 좋은 ${mappedInfo.direction}`,
-                  "탁 트인 개방감",
-                  mappedInfo.parking !== "없음" ? "편리한 주차" : "역세권 인프라",
-                  "다양한 옵션"
+                  v.direction ? `${v.direction}` : "",
+                  v.parking ? `주차 ${v.parking}` : "",
+                  v.move_in_date ? `입주 ${v.move_in_date}` : "",
+                  (Array.isArray(v.options) ? v.options.slice(0, 3).join(" · ") : String(v.options || "").split(",").slice(0, 3).join(" · ")) || "",
                 ]
             },
             listInfo: {
                 title: "공간 상세",
                 intro: "DETAILS",
-                description: "섬세한 디테일과 세련된 마감이 돋보이는 공간입니다.",
+                description: "",
                 items: [
-                    { title: "MAIN ZONE", description: "아늑하고 편안한 분위기의 메인 공간입니다." },
-                    { title: "SUB ZONE", description: "효율적인 동선으로 설계된 서브 공간입니다." }
+                    { title: "", description: "" },
+                    { title: "", description: "" }
                 ]
             }
         };
@@ -1075,10 +1053,19 @@ function App() {
           ...prev,
           ...newImages,
           colorTheme: autoTheme,
-          info: {
+          // 실제 매물로 만들 수 있는 칸은 실제로, 없는 자료는 비운다 (예시 값이 남지 않게)
+          info: scrubSampleInfo({
             ...mappedInfo,
+            leaseTable: buildLeaseTable(v),
+            leaseNotice: LEASE_NOTICE,
+            leaseRightTitle: buildLeaseRight(v).title,
+            leaseRightText: buildLeaseRight(v).text,
+            floorStatus: [],
+            floorStatusNotice: "",
+            showChart: false,
+            photoCaptions: { main: "", sub1: "", sub2: "", feat1: "", feat2: "" },
             sections: finalSections
-          },
+          }, v),
           generated: aiCopy
         }));
         
@@ -1400,7 +1387,7 @@ function App() {
   const REPORT_TEXT_KEYS = [
     "coverTitle", "coverSubtitle", "subTitle", "highlights", "valuationText", "page2HighlightBoxTitle",
     "areaTargetName", "areaTargetDesc", "areaBox1Title", "areaBox1Text", "areaBox2Title", "areaBox2Text", "areaBox3Title", "areaBox3Text",
-    "page4TargetTitle", "page6FooterQuote", "noticeContent", "chartAdviseText",
+    "page4TargetTitle", "page6FooterQuote", "noticeContent", "chartAdviseText", "leaseRightTitle", "leaseRightText",
   ];
   const handleAiFill = () => {
     const info: any = state.info;
