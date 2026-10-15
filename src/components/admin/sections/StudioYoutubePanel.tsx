@@ -56,6 +56,7 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript 
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
+  const [copiedWhat, setCopiedWhat] = useState(""); // 방금 복사한 칸 (아이콘이 잠깐 ✓)
 
   const show = (s: Script | null) => {
     setScript(s);
@@ -120,10 +121,12 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript 
     }
   };
 
-  const copy = async (value: string, msg: string) => {
+  const copy = async (value: string, msg: string, what = "") => {
     try {
       await navigator.clipboard.writeText(value);
       setNote(msg);
+      setCopiedWhat(what);
+      setTimeout(() => setCopiedWhat(""), 1500);
     } catch {
       setError("복사하지 못했습니다.");
     }
@@ -162,6 +165,22 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript 
     border: primary ? 0 : `1px solid ${theme.border}`, background: primary ? "#1a3a6b" : theme.cardBg, color: primary ? "#fff" : theme.textPrimary,
   });
   const liveSeconds = secondsOf(text);
+  /* SNS 글 칸과 같은 복사 아이콘 */
+  const copyIcon = (what: string, value: string, msg: string) => {
+    const done = copiedWhat === what;
+    return (
+      <button onClick={() => copy(value, msg, what)} title="복사"
+        style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.cardBg, color: done ? "#16a34a" : theme.textSecondary, fontSize: 12.5, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+        {done ? (
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+        ) : (
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></svg>
+        )}
+        {done ? "복사됨" : "복사"}
+      </button>
+    );
+  };
+  const descText = script ? `${script.description.text}${script.description.tags.length ? `\n\n${script.description.tags.join(" ")}` : ""}` : "";
   const target = opts?.durations.find((d) => d.id === (script?.settings?.duration || pick.duration));
 
   return (
@@ -188,8 +207,11 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript 
       {script && (
         <div style={card}>
           <div style={{ fontSize: 13, fontWeight: 700, color: theme.textSecondary, marginBottom: 6 }}>제목</div>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => title !== script.title && persist({ title })}
-            style={{ ...area, padding: "10px 14px", fontSize: 17, fontWeight: 800, resize: undefined }} />
+          <div style={{ position: "relative" }}>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => title !== script.title && persist({ title })}
+              style={{ ...area, padding: "10px 100px 10px 14px", fontSize: 17, fontWeight: 800, resize: undefined }} />
+            <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)" }}>{copyIcon("title", title, "제목을 복사했습니다.")}</div>
+          </div>
           {script.titles.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
               <span style={{ fontSize: 12, color: theme.textSecondary }}>후보 (누르면 제목으로)</span>
@@ -202,10 +224,13 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript 
             </div>
           )}
 
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", margin: "20px 0 6px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "20px 0 6px" }}>
             <span style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>나레이션 원고</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: target?.id === "short" && liveSeconds > 65 ? "#c53030" : "#1a3a6b" }}>
-              약 {clock(liveSeconds)} · {text.replace(/\s/g, "").length.toLocaleString()}자{target ? ` (목표 ${target.label})` : ""}
+            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: target?.id === "short" && liveSeconds > 65 ? "#c53030" : "#1a3a6b" }}>
+                약 {clock(liveSeconds)} · {text.replace(/\s/g, "").length.toLocaleString()}자{target ? ` (목표 ${target.label})` : ""}
+              </span>
+              {copyIcon("narration", paragraphs().join("\n\n"), "원고를 복사했습니다.")}
             </span>
           </div>
           <textarea value={text} onChange={(e) => setText(e.target.value)} rows={Math.min(22, Math.max(8, script.narration.length * 3))} style={area}
@@ -214,17 +239,19 @@ export default function StudioYoutubePanel({ theme, vacancyId, onUsed, onScript 
 
           <details style={{ marginTop: 16 }}>
             <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, color: theme.textSecondary }}>설명란·태그 보기 (요약·링크·출처 — 자동)</summary>
-            <pre style={{ whiteSpace: "pre-wrap", wordBreak: "keep-all", margin: "10px 0 0", padding: "14px 16px", borderRadius: 10, background: theme.bg || "#f6f8fa", fontSize: 13.5, lineHeight: 1.7, color: theme.textPrimary, fontFamily: "inherit" }}>
-              {script.description.text}
-              {script.description.tags.length ? `\n\n${script.description.tags.join(" ")}` : ""}
-            </pre>
+            <div style={{ position: "relative" }}>
+              <pre style={{ whiteSpace: "pre-wrap", wordBreak: "keep-all", margin: "10px 0 0", padding: "14px 100px 14px 16px", borderRadius: 10, background: theme.bg || "#f6f8fa", fontSize: 13.5, lineHeight: 1.7, color: theme.textPrimary, fontFamily: "inherit" }}>
+                {descText}
+              </pre>
+              <div style={{ position: "absolute", top: 10, right: 10 }}>{copyIcon("desc", descText, "설명란을 복사했습니다.")}</div>
+            </div>
           </details>
 
           <StudioReviseBar theme={theme} label="대본" onRevise={revise} examples="첫 문장 훅을 더 강하게, 마지막을 한 줄 정리로" />
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18 }}>
-            <button onClick={() => copy(paragraphs().join("\n\n"), "원고를 복사했습니다.")} style={btn(true)}>원고 복사</button>
-            <button onClick={() => copy(`${script.description.text}\n\n${script.description.tags.join(" ")}`, "설명란을 복사했습니다.")} style={btn()}>설명란 복사</button>
+            <button onClick={() => copy(paragraphs().join("\n\n"), "원고를 복사했습니다.", "narration")} style={btn(true)}>원고 복사</button>
+            <button onClick={() => copy(descText, "설명란을 복사했습니다.", "desc")} style={btn()}>설명란 복사</button>
             <button onClick={exportText} style={btn()}>텍스트로 저장</button>
           </div>
           {note && <div style={{ marginTop: 10, fontSize: 13, color: "#16a34a", lineHeight: 1.6, wordBreak: "break-all" }}>{note}</div>}
