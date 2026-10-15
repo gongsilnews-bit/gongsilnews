@@ -144,7 +144,7 @@ async function createWindow() {
     minHeight: 640,
     title: `공실뉴스 스튜디오 v${app.getVersion()}`,
     icon: path.join(__dirname, "..", "build", "icon.png"),
-    autoHideMenuBar: false, // 메뉴(보기·AI·계정·도움말)를 늘 보이게
+    autoHideMenuBar: false, // 메뉴 막대는 아래에서 숨긴다 (Alt 로도 안 나오게 false)
     backgroundColor: "#f6f8fa",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -184,14 +184,9 @@ async function createWindow() {
     else if (isPathOf(url, "/realty_admin")) ext.ensure().catch((e) => log.warn(`[글쓰기 설정] 미리 받기 실패: ${e.message}`));
   });
 
-  // 동영상제작(편집기)에서는 창 메뉴(보기·AI·계정·도움말)를 숨겨 화면을 넓게 — Alt 를 누르면 잠깐 보인다
-  const menuForUrl = (url) => {
-    const video = /[?&]menu=video(&|$)/.test(url);
-    mainWindow.setAutoHideMenuBar(video);
-    mainWindow.setMenuBarVisibility(!video);
-  };
-  mainWindow.webContents.on("did-navigate", (_e, url) => menuForUrl(url));
-  mainWindow.webContents.on("did-navigate-in-page", (_e, url) => menuForUrl(url));
+  // 창 메뉴(보기·AI·계정·도움말)는 보이지 않게 — 사장님: "사실 필요가 없음".
+  // 메뉴 자체는 남겨 F5·Ctrl+Shift+I 같은 단축키는 그대로 된다. AI 연결·로그아웃은 웹 화면 버튼으로.
+  mainWindow.setMenuBarVisibility(false);
 
   // 다른 사이트로 넘어가는 링크는 평소 브라우저로
   mainWindow.webContents.on("will-navigate", (e, url) => {
