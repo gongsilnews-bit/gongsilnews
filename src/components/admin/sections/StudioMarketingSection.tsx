@@ -76,6 +76,9 @@ export default function StudioMarketingSection({ theme }: { theme: Theme }) {
   const known = mine?.some((v) => v.id === vacancyId);
   // 만들어 둔 도구 파일(public/marketing/…/index.html)을 바로 연다 — 개발 PC에서 도구 개발 서버를 안 켜도 열리게
   const url = vacancyId && known ? `${cat.path}/index.html?vacancy_id=${encodeURIComponent(vacancyId)}` : "";
+  // 열 때마다·[새로 고침] 때마다 최신 도구 화면을 받는다 (예전 화면이 남아 새 기능이 안 보이던 것)
+  const [fresh, setFresh] = useState(() => Date.now());
+  const frameUrl = url ? `${url}&v=${fresh}` : "";
   const openNew = () => {
     if (!url) return;
     const full = `${window.location.origin}${url}`;
@@ -134,10 +137,14 @@ export default function StudioMarketingSection({ theme }: { theme: Theme }) {
             style={{ padding: "10px 14px", background: theme.cardBg, color: url ? theme.textPrimary : theme.textSecondary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: url ? "pointer" : "default" }}>
             새 창으로 열기
           </button>
+          <button onClick={() => setFresh(Date.now())} disabled={!url} title="도구 화면을 다시 불러옵니다 (저장하지 않은 편집은 사라집니다)"
+            style={{ padding: "10px 14px", background: theme.cardBg, color: url ? theme.textPrimary : theme.textSecondary, border: `1px solid ${theme.border}`, borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: url ? "pointer" : "default" }}>
+            ↻ 새로 고침
+          </button>
         </div>
 
         {url ? (
-          <iframe key={url} src={url} title={cat.label}
+          <iframe key={frameUrl} src={frameUrl} title={cat.label}
             style={{ flex: 1, width: "100%", border: `1px solid ${theme.border}`, borderBottom: 0, borderRadius: "12px 12px 0 0", background: "#fff" }} />
         ) : (
           <div style={{ background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 14, padding: "48px 24px", textAlign: "center", fontSize: 14, color: theme.textSecondary }}>

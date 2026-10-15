@@ -57,6 +57,8 @@ export interface PropertyInfo {
   adjust?: Record<string, { x: number; y: number; s: number; c?: string; f?: string; h?: boolean }>;
   /** 새 디자인에서 손으로 고친 글자 (머리 띠·금액 이름·칩·사무소 줄 등). '' 이면 그 글자를 뺀다 */
   texts?: Record<string, string>;
+  /** 새 디자인에 특징(소개글)을 넣을지 — 처음엔 꺼 둔다 */
+  showNotice?: boolean;
   /** 오른쪽 클릭으로 새로 넣은 글자·이미지. lay = '디자인-방향' (그 홍보지에만 보인다), x·y = 넣은 자리(px) */
   items?: FlyerItem[];
   rows?: FlyerRow[];        // 정보 표 — 사장님이 지우고·고치고·추가한다

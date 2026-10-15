@@ -18,11 +18,13 @@ interface FlyerFormProps {
   onColorSelect: (color: FlyerColor) => void;
   onLayoutSelect: (layout: FlyerLayout) => void;
   isUploadingImage?: Record<string, boolean>;
+  /** 디자인 고르기 아래에 붙는 "내 디자인 1·2·3" */
+  presetsSlot?: React.ReactNode;
 }
 
 const FlyerForm: React.FC<FlyerFormProps> = ({ qrLink, 
     info, setInfo, onImageUpload, uploadedImages, 
-    colors, layouts, currentColor, currentLayout, onColorSelect, onLayoutSelect, isUploadingImage
+    colors, layouts, currentColor, currentLayout, onColorSelect, onLayoutSelect, isUploadingImage, presetsSlot
 }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -202,6 +204,7 @@ const FlyerForm: React.FC<FlyerFormProps> = ({ qrLink,
              ))}
           </div>
         </details>
+        {presetsSlot}
       </div>
 
 
@@ -321,17 +324,17 @@ const FlyerForm: React.FC<FlyerFormProps> = ({ qrLink,
             </div>
         </Group>
 
-        {/* ⑥ 특징 — 새 디자인(숫자 크게형·사진형)에는 소개글이 안 나와서 칸도 뺀다 (2026-10-15 사장님) */}
-        {!(currentLayout.type === 'big' || currentLayout.type === 'photo') && (
+        {/* ⑥ 특징 — 새 디자인은 처음에 꺼 두고 [표시]로 켠다 (필요한 매물만, 2026-10-15 사장님) */}
         <Group title="특징" color={primaryColor}>
-            <Field label="특징 설명 (소개글)" show={shown('noticeContent')} onShow={(v) => toggle('noticeContent', v)}>
+            <Field label="특징 설명 (소개글)"
+                show={(currentLayout.type === 'big' || currentLayout.type === 'photo') ? !!info.showNotice : shown('noticeContent')}
+                onShow={(v) => ((currentLayout.type === 'big' || currentLayout.type === 'photo') ? setInfo({ ...info, showNotice: v }) : toggle('noticeContent', v))}>
                 <textarea name="noticeContent" value={info.noticeContent} onChange={handleChange} rows={4}
                     className="w-full px-3 py-2 text-xs border rounded outline-none focus:ring-1"
                     style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                     placeholder="역세권, 올수리, 채광 좋음 등 — 길면 홍보지 칸에 맞게 글자가 줄어듭니다" />
             </Field>
         </Group>
-        )}
 
         {/* ⑦ 연락처 */}
         <Group title="연락처" color={primaryColor} action={

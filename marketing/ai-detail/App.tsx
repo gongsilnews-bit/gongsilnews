@@ -266,6 +266,82 @@ function App() {
       setIsDirty(true);
   };
 
+  /* ── 내 디자인 3칸 (회원 계정에 저장) ──
+   * 담는 것: 디자인·색·방향, 요소 위치/크기/색/폰트, 넣은 글자·이미지, 표시 켜고 끈 항목, 특징 켜기.
+   * 담지 않는 것: 금액·면적 등 매물 값 — 불러오면 지금 매물의 실제 값으로 채워진다. */
+  type Preset = { name: string; savedAt?: string; layoutId: string; colorTheme: FlyerColor; orientation: FlyerOrientation; adjust: Record<string, any>; items: any[]; itemTexts: Record<string, string>; hiddenFields?: string[]; showNotice?: boolean };
+  const [presets, setPresets] = useState<(Preset | null)[] | null>(null);
+  const [presetMsg, setPresetMsg] = useState('');
+  useEffect(() => {
+    fetch('/api/vacancy/flyer-presets').then((r) => r.json()).then((j) => setPresets(j.success ? j.presets : [null, null, null])).catch(() => setPresets([null, null, null]));
+  }, []);
+  const callPresets = async (slot: number, preset: Preset | null) => {
+    const r = await fetch('/api/vacancy/flyer-presets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slot, preset }) }).then((x) => x.json()).catch(() => null);
+    if (!r?.success) { setPresetMsg(`저장하지 못했습니다${r?.error ? `: ${r.error}` : ''}`); return false; }
+    setPresets(r.presets);
+    return true;
+  };
+  const savePreset = async (slot: number) => {
+    if (presets?.[slot] && !window.confirm(`"${presets[slot]!.name}"에 지금 디자인을 덮어쓸까요?`)) return;
+    const L = state.layoutTheme;
+    const lay = `${L.type}-${orientation}`;
+    const items = (state.info.items || []).filter((it) => it.lay === lay);
+    const itemKeys = new Set(items.map((it) => `item-${it.id}`));
+    const preset: Preset = {
+      name: `${L.name} · ${orientation === 'landscape' ? '가로' : '세로'}`,
+      layoutId: L.id, colorTheme: state.colorTheme, orientation,
+      adjust: Object.fromEntries(Object.entries(state.info.adjust || {}).filter(([k]) => k.startsWith(`${lay}-`))),
+      items,
+      itemTexts: Object.fromEntries(Object.entries(state.info.texts || {}).filter(([k]) => itemKeys.has(k))),
+      hiddenFields: state.info.hiddenFields, showNotice: state.info.showNotice,
+    };
+    if (await callPresets(slot, preset)) setPresetMsg(`내 디자인 ${slot + 1}에 저장했습니다. 다른 매물에서 불러올 수 있어요.`);
+  };
+  const applyPreset = (p: Preset) => {
+    const L = LAYOUTS.find((l) => l.id === p.layoutId) || state.layoutTheme;
+    const lay = `${L.type}-${p.orientation}`;
+    setState((prev) => {
+      const adjust = Object.fromEntries(Object.entries(prev.info.adjust || {}).filter(([k]) => !k.startsWith(`${lay}-`)));
+      return {
+        ...prev, layoutTheme: L, colorTheme: p.colorTheme || prev.colorTheme, orientation: p.orientation,
+        info: {
+          ...prev.info,
+          adjust: { ...adjust, ...(p.adjust || {}) },
+          items: [...(prev.info.items || []).filter((it) => it.lay !== lay), ...(p.items || [])],
+          texts: { ...(prev.info.texts || {}), ...(p.itemTexts || {}) },
+          hiddenFields: p.hiddenFields ?? prev.info.hiddenFields,
+          showNotice: p.showNotice,
+        },
+      };
+    });
+    setIsDirty(true);
+    setPresetMsg(`"${p.name}"을(를) 불러왔습니다. 금액·면적은 이 매물의 값입니다.`);
+  };
+  const clearPreset = async (slot: number) => {
+    if (!window.confirm('이 칸의 디자인을 지울까요?')) return;
+    if (await callPresets(slot, null)) setPresetMsg(`내 디자인 ${slot + 1}을 비웠습니다.`);
+  };
+  const presetBox = (state.layoutTheme?.type === 'big' || state.layoutTheme?.type === 'photo') && (
+    <div className="mt-4">
+      <div className="text-xs font-bold text-gray-600 mb-1">내 디자인 <span className="font-normal text-gray-400">· 계정에 저장, 다른 매물에서 불러오기</span></div>
+      <div className="grid grid-cols-3 gap-2">
+        {[0, 1, 2].map((i) => {
+          const p = presets?.[i] || null;
+          return (
+            <div key={i} className={`rounded-lg border p-2 text-center ${p ? 'border-gray-300 bg-white' : 'border-dashed border-gray-300 bg-gray-50'}`}>
+              <div className="text-[11px] font-bold text-gray-700 truncate" title={p?.name}>{p ? p.name : `빈 칸 ${i + 1}`}</div>
+              <div className="text-[10px] text-gray-400 mb-1.5">{p?.savedAt ? new Date(p.savedAt).toLocaleDateString('ko-KR') : '저장 전'}</div>
+              {p && <button type="button" onClick={() => applyPreset(p)} className="w-full mb-1 py-1 rounded-md text-[11px] font-bold text-white" style={{ background: state.colorTheme.primary }}>불러오기</button>}
+              <button type="button" disabled={presets === null} onClick={() => savePreset(i)} className="w-full py-1 rounded-md border border-gray-300 text-[11px] font-bold text-gray-600 hover:bg-gray-50">{p ? '덮어쓰기' : '지금 저장'}</button>
+              {p && <button type="button" onClick={() => clearPreset(i)} className="mt-1 text-[10px] text-gray-400 hover:text-red-500">비우기</button>}
+            </div>
+          );
+        })}
+      </div>
+      {presetMsg && <p className={`mt-1.5 text-[11px] ${/못했/.test(presetMsg) ? 'text-red-500' : 'text-green-600'}`}>{presetMsg}</p>}
+    </div>
+  );
+
   const handleTextChange = (key: any, value: string) => {
       setState(prev => ({ ...prev, info: { ...prev.info, [key]: value } }));
       setIsDirty(true);
@@ -1316,6 +1392,7 @@ function App() {
         <div className="col-span-12 lg:col-span-4 xl:col-span-3">
           <FlyerForm 
             qrLink={qrUrl}
+            presetsSlot={presetBox}
             info={state.info}
             setInfo={handleInfoChange}
             onImageUpload={handleImageUpload}

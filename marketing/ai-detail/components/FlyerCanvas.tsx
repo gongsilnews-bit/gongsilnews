@@ -888,6 +888,13 @@ const FlyerCanvas = forwardRef<HTMLDivElement, FlyerCanvasProps>(({ data, orient
       {vis('sizeLine') && sizeWord && mov('size', <div {...editable('sizeLine')} {...fitBy(sz('size', p.size), 26)} className={editClass}
         style={{ ...one, fontWeight: 900, color: '#111', letterSpacing: -1 }}>{sizeWord}</div>, { marginTop: p.gap })}
       {chips.length > 0 && <div style={{ marginTop: p.gap + 8, flexShrink: 0 }}>{renderChips(p.chip, p.rows)}</div>}
+      {/* 특징 — 켠 매물만, 두 줄까지 (길면 줄여 보여 준다) */}
+      {info.showNotice && (info.noticeContent || '').trim() !== '' && mov('notice', (
+        <div {...editable('noticeContent')} className={editClass}
+          style={{ fontSize: sz('notice', p.chip * 0.8), fontWeight: 700, color: '#374151', textAlign: 'center', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {info.noticeContent}
+        </div>
+      ), { marginTop: p.gap + 4 })}
     </div>
   );
   /* 어디 매물인지 — 건물·단지명 */
