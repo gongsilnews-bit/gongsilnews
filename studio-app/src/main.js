@@ -311,11 +311,11 @@ ipcMain.handle("studio:blog-get", (_e, vacancyId) => blogWriter.get(vacancyId));
 ipcMain.handle("studio:blog-save", (_e, patch) => blogWriter.save(patch));
 ipcMain.handle("studio:blog-add-photo", (_e, opts) => blogWriter.addPhoto(opts));
 ipcMain.handle("studio:blog-image-styles", () => blogWriter.imageStyles());
-ipcMain.handle("studio:blog-make-image", (e, opts) => blogWriter.makeImage(opts, (text) => e.sender.send("studio:blog-progress", text)));
+ipcMain.handle("studio:blog-make-image", (e, opts) => blogWriter.makeImage({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:blog-progress", text)));
 ipcMain.handle("studio:naver-fill", (e, opts) =>
   naverWrite.fillNaver({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:naver-progress", text))
 );
-ipcMain.handle("studio:blog-write", (e, opts) => blogWriter.write(opts, (text) => e.sender.send("studio:blog-progress", text)));
+ipcMain.handle("studio:blog-write", (e, opts) => blogWriter.write({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:blog-progress", text)));
 ipcMain.handle("studio:vacancy-analyze", async (e, vacancyId) => {
   const r = await analyzeVacancy(BASE_URL, vacancyId, (text) => e.sender.send("studio:vacancy-progress", text));
   // 웹 화면은 PC 파일을 직접 못 읽으므로 작은 미리보기만 보낸다

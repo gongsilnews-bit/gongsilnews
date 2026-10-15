@@ -6,7 +6,7 @@
 //  - blog.media 의 사진마다 insertAfterParagraph(0 = 첫 문단 앞, n = n번째 문단 뒤) 자리를 둔다.
 //    네이버 채우기(naver-write.js)는 이 자리를 그대로 따른다 → 미리보기 순서 = 네이버 순서.
 //  - 웹 화면은 PC 파일 경로를 모른다. 사진은 id 로만 주고받고, 미리보기는 썸네일로 보낸다.
-const { app } = require("electron");
+const { app, session } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
@@ -77,12 +77,26 @@ function get(vacancyId) {
   return forWeb(blog);
 }
 
+/* 이용 횟수 확인·기록 (서버가 판단: 등급·회원별 한 달 횟수, 하루 안전 상한) — /api/studio/usage */
+async function useQuota(baseUrl, kind, vacancyId) {
+  const res = await session.defaultSession.fetch(`${baseUrl}/api/studio/usage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind, vacancyId }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!data || !data.success) throw new Error((data && data.error) || "이용 횟수를 확인하지 못했습니다. 잠시 뒤 다시 시도해 주세요.");
+  return data.usage;
+}
+
 /* 기사를 먼저 쓰지 않았으면 [참조 기사] 자리에 "없음"을 알려 매물 정보만 쓰게 한다 */
 const NO_ARTICLE = { title: "(참조 기사 없음)", subtitles: [], body: "이번에는 참조 기사가 없습니다. 아래 [확인된 매물 정보]만 사용해 작성하십시오." };
 
-async function write({ vacancyId, style = "listing", length = "normal", article = null }, onProgress = () => {}) {
+async function write({ baseUrl, vacancyId, style = "listing", length = "normal", article = null }, onProgress = () => {}) {
   const analysis = readJson(path.join(mediaDir(vacancyId), "analysis.json"));
   if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
+  onProgress("이용 횟수를 확인하는 중…");
+  await useQuota(baseUrl, "blog", vacancyId); // 이번 달 이 공실을 처음 쓸 때만 1회
 
   const prompt = blogPrompt.gwBuildBlogPrompt({ vacancy: analysis.vacancy, article: article || NO_ARTICLE }, { style, length });
   const text = await chatgpt.ask(prompt, { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t) });
@@ -157,10 +171,11 @@ function imageStyles() {
 }
 
 /* AI 이미지 만들기: 확장과 같은 이미지 프롬프트(매물 사실 + 블로그 글 + 화풍·장면 요청)로 ChatGPT 가 그린 그림을 slot 에 넣는다 */
-async function makeImage({ vacancyId, style = "news", request = "", slot }, onProgress = () => {}) {
+async function makeImage({ baseUrl, vacancyId, style = "news", request = "", slot }, onProgress = () => {}) {
   const blog = readJson(blogFile(vacancyId));
   const analysis = readJson(path.join(mediaDir(vacancyId), "analysis.json"));
   if (!blog || !analysis) throw new Error("먼저 블로그 글을 써 주세요.");
+  await useQuota(baseUrl, "ai_image");
   const prompt = extPrompt.gwBuildImagePrompt(analysis.vacancy, { title: blog.title, body: blog.paragraphs.join("\n\n") }, { style, request });
   const dataUrl = await chatgpt.askImage(prompt, { onProgress });
   onProgress("그림을 블로그에 넣는 중…");

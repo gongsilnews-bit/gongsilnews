@@ -49,6 +49,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
     max_vacancies: 5,
     max_articles_per_month: 0,
     max_lectures: 0,
+    studio_blog_limit: "" as string, // "" = 등급 기본, "-1" = 무제한, "n" = 월 n회
+    studio_blog_limit_loaded: "" as string, // 불러온 값 — 바뀌었을 때만 저장한다
     use_custom_registration_limits: false,
     can_article_banner: false,
     can_article_vacancy_banner: false,
@@ -182,6 +184,8 @@ export default function MemberRegisterForm({ onBack, darkMode = false, editMembe
             max_vacancies: res.member.max_vacancies ?? 5,
             max_articles_per_month: res.member.max_articles_per_month ?? 0,
             max_lectures: res.member.max_lectures ?? 0,
+            studio_blog_limit: typeof res.member.studio_blog_limit === "number" ? String(res.member.studio_blog_limit) : "",
+            studio_blog_limit_loaded: typeof res.member.studio_blog_limit === "number" ? String(res.member.studio_blog_limit) : "",
             use_custom_registration_limits: !!res.member.use_custom_registration_limits,
             can_article_banner: !!res.member.can_article_banner,
             can_article_vacancy_banner: !!res.member.can_article_vacancy_banner,
@@ -637,6 +641,9 @@ function gradeDefaults(p: any, role: string, planType?: string) {
           can_site_logo: !!formData.can_site_logo,
           can_hero_video: !!formData.can_hero_video,
           can_sns_links: !!formData.can_sns_links,
+          ...(isAdmin && formData.studio_blog_limit !== formData.studio_blog_limit_loaded
+            ? { studio_blog_limit: formData.studio_blog_limit === "" ? null : Number(formData.studio_blog_limit) }
+            : {}),
           ...(profileImageUrl !== undefined ? { profile_image_url: profileImageUrl } : {})
         });
         if (!updateRes.success) throw new Error(updateRes.error || "회원 수정에 실패했습니다.");
@@ -888,6 +895,22 @@ function gradeDefaults(p: any, role: string, planType?: string) {
             : "현재 등급의 기본 한도를 사용합니다. 등급별 한도가 바뀌면 이 회원의 세 숫자도 자동으로 함께 변경됩니다."}
           <br />0은 해당 등록 기능을 사용하지 않는다는 뜻입니다.
         </div>
+
+        {/* 공실뉴스 스튜디오 블로그(SNS뉴스발행) 한 달 횟수 — 회원별 조정 (src/utils/studioUsage.ts) */}
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, flexWrap: "wrap" }}>
+          <span style={{ fontWeight: 600, color: darkMode ? "#ccc" : "#444" }}>스튜디오 블로그(월):</span>
+          <select value={formData.studio_blog_limit} disabled={!isAdmin}
+            onChange={(e) => setFormData((prev) => ({ ...prev, studio_blog_limit: e.target.value }))}
+            style={{ ...inputStyle, flex: "none", width: 170 }}>
+            <option value="">등급 기본</option>
+            <option value="0">0회 (사용 안 함)</option>
+            <option value="3">3회</option>
+            <option value="10">10회</option>
+            <option value="30">30회</option>
+            <option value="-1">무제한</option>
+          </select>
+          <span style={{ fontSize: 12.5, color: "#6b7280" }}>등급 기본: 무료부동산 3회 · 공실스터디부동산·비즈니스 무제한(하루 20건) · 일반회원 0회</span>
+        </label>
       </div>
     </div>
   );

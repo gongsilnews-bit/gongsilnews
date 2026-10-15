@@ -24,6 +24,7 @@ type Analysis = {
 };
 type BlogStyles = { styles: { id: string; label: string; fit: string; titleExample: string }[]; lengths: { id: string; label: string; chars: string }[] };
 type Blog = BlogDraft;
+type Usage = { plan: string; monthLimit: number; monthUsed: number; monthRemaining: number | null; dailyLimit: number | null; todayUsed: number; custom: boolean };
 type AiItem = { id: string; name: string; ready: boolean; ok: boolean; account?: string; plan?: string };
 type StudioBridge = {
   openAiConnect: () => Promise<void>;
@@ -68,6 +69,14 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 
 export default function StudioSnsSection({ theme, memberId }: { theme: Theme; memberId: string }) {
   const [ai, setAi] = useState<AiItem[]>([]);
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const loadUsage = useCallback(() => {
+    fetch("/api/studio/usage", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => d.success && setUsage(d.usage))
+      .catch(() => {});
+  }, []);
+  useEffect(() => loadUsage(), [loadUsage]);
   const [mine, setMine] = useState<MyVacancy[] | null>(null);
   const [mineError, setMineError] = useState("");
   const [search, setSearch] = useState("");
@@ -176,6 +185,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
       off();
       setBlogProgress("");
       setWriting(false);
+      loadUsage();
     }
   };
 
@@ -216,10 +226,27 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
             <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: theme.textPrimary }}>SNS뉴스발행</h2>
             <p style={{ margin: "6px 0 0", fontSize: 14, color: theme.textSecondary }}>공실을 고르면 사진을 모으고, 소장님 AI로 블로그 글을 써서 네이버에 채워 드립니다. 발행은 소장님이 누릅니다.</p>
           </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {usage && (
+            usage.monthRemaining === null ? (
+              <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#ecfdf5", color: "#047857" }}>
+                블로그 무제한{usage.dailyLimit !== null ? ` · 오늘 ${usage.todayUsed}/${usage.dailyLimit}건` : ""}
+              </span>
+            ) : usage.monthRemaining > 0 ? (
+              <span style={{ fontSize: 13, fontWeight: 700, padding: "8px 12px", borderRadius: 10, background: "#eff6ff", color: "#1d4ed8" }}>
+                이번 달 블로그 {usage.monthRemaining}/{usage.monthLimit}회 남음
+              </span>
+            ) : (
+              <a href="/study" target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800, padding: "8px 12px", borderRadius: 10, background: "#fef3c7", color: "#b45309", textDecoration: "none" }}>
+                {usage.monthLimit === 0 ? "블로그는 부동산회원 기능입니다" : `이번 달 ${usage.monthLimit}회를 모두 썼어요 · 공실스터디 멤버십 무제한 →`}
+              </a>
+            )
+          )}
           <button onClick={() => bridge()?.openAiConnect()} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, color: theme.textPrimary }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: connectedAi.length ? "#22c55e" : "#cbd5e1" }} />
             {connectedAi.length ? `내 AI: ${connectedAi.map((a) => a.name).join(", ")}` : "내 AI 연결하기"}
           </button>
+          </div>
         </div>
 
         {/* 1. 공실 고르기 */}
