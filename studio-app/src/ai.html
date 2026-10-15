@@ -29,10 +29,9 @@
 <body>
   <div class="wrap">
     <h1>내 AI 연결</h1>
-    <p class="lead">소장님이 구독 중인 AI로 기사·블로그를 씁니다. [연결하기]를 누르면 <b>스튜디오 전용 크롬</b>이 열립니다. 그 창에서 평소처럼 로그인한 뒤 <b>[로그인 다 했어요]</b>를 누르면 연결이 끝납니다. 비밀번호는 공실뉴스에 저장되지 않습니다.</p>
+    <p class="lead">소장님이 구독 중인 AI로 기사·블로그를 씁니다. [연결하기]를 누르면 <b>스튜디오 전용 크롬</b>이 열립니다. 그 창에서 평소처럼 로그인한 뒤 그 줄의 <b>[로그인 다 했어요]</b>를 누르면 연결이 끝납니다. 비밀번호는 공실뉴스에 저장되지 않습니다.</p>
     <div id="list"></div>
     <div class="msg" id="msg"></div>
-    <button class="done" id="done">로그인 다 했어요</button>
     <div class="note">
       AI 회사 약관은 개인 계정의 자동 사용을 제한하고 있어, 계정이 제한될 수 있습니다. 스튜디오는 소장님이 버튼을 누를 때만 한 건씩 사람처럼 작성합니다.
       Gemini는 지메일·유튜브에 쓰는 업무용 구글 계정 말고 별도 계정을 권합니다.
@@ -42,7 +41,8 @@
   const studio = window.gongsilStudio;
   const msg = document.getElementById("msg");
   const say = (t, err) => { msg.textContent = t || ""; msg.className = "msg" + (err ? " err" : ""); };
-  let busy = false;
+  let busy = false;        // 확인·연결 중에는 다른 버튼을 잠근다 (동작이 겹치지 않게)
+  let connectingId = null; // 로그인 창을 연 AI — 그 줄에 [로그인 다 했어요]를 띄운다
   const checking = new Set();
 
   function render(items) {
@@ -51,16 +51,26 @@
     for (const it of items) {
       const row = document.createElement("div");
       row.className = "row";
-      const sub = !it.ready ? "준비 중" : checking.has(it.id) ? "확인 중…" : it.ok ? `● 연결됨${it.account ? " · " + it.account : ""}${it.plan ? " (" + it.plan + ")" : ""}` : "연결 안 됨";
-      if (it.ok) row.classList.add("on");
-      row.innerHTML = `<span class="dot ${it.ok ? "on" : ""}"></span><div class="grow"><div class="name"></div><div class="sub ${it.ok ? "on" : ""}"></div></div>`;
+      const sub = !it.ready ? "준비 중"
+        : connectingId === it.id ? "오른쪽 크롬 창에서 로그인해 주세요"
+        : checking.has(it.id) ? "확인 중…"
+        : it.ok ? `● 연결됨${it.account ? " · " + it.account : ""}${it.plan ? " (" + it.plan + ")" : ""}`
+        : "연결 안 됨";
+      if (it.ok && connectingId !== it.id) row.classList.add("on");
+      row.innerHTML = `<span class="dot ${it.ok ? "on" : ""}"></span><div class="grow"><div class="name"></div><div class="sub ${it.ok && connectingId !== it.id ? "on" : ""}"></div></div>`;
       row.querySelector(".name").textContent = it.name;
       row.querySelector(".sub").textContent = sub;
       const btn = document.createElement("button");
-      btn.textContent = it.ok ? "다시 확인" : "연결하기";
-      if (it.ok) btn.className = "ghost";
-      btn.disabled = !it.ready || busy;
-      btn.onclick = () => (it.ok ? run(it.id, it.name, "check") : run(it.id, it.name, "connect"));
+      if (connectingId === it.id) {
+        btn.textContent = "로그인 다 했어요";
+        btn.style.background = "#16a34a";
+        btn.onclick = () => { btn.disabled = true; btn.textContent = "확인 중…"; studio.ai.finishLogin(); };
+      } else {
+        btn.textContent = it.ok ? "다시 확인" : "연결하기";
+        if (it.ok) btn.className = "ghost";
+        btn.disabled = !it.ready || busy;
+        btn.onclick = () => (it.ok ? run(it.id, it.name, "check") : run(it.id, it.name, "connect"));
+      }
       row.appendChild(btn);
       list.appendChild(row);
     }
@@ -68,12 +78,11 @@
 
   async function load() { render(await studio.ai.list()); }
 
-  const done = document.getElementById("done");
-  done.onclick = () => { done.style.display = "none"; studio.ai.finishLogin(); };
-
   async function run(id, name, how) {
-    busy = true; await load();
-    if (how === "connect") done.style.display = "block";
+    if (busy) return;
+    busy = true;
+    if (how === "connect") connectingId = id; else checking.add(id);
+    await load();
     if (how === "check") say(`${name} 로그인을 확인하는 중…`);
     try {
       const r = await studio.ai[how](id);
@@ -81,8 +90,10 @@
     } catch (e) {
       say(String(e && e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""), true);
     }
-    done.style.display = "none";
-    busy = false; await load();
+    connectingId = null;
+    checking.delete(id);
+    busy = false;
+    await load();
   }
 
   studio.ai.onProgress((t) => say(t));
@@ -90,13 +101,8 @@
   (async () => {
     const items = await studio.ai.list();
     render(items);
-    for (const it of items.filter((x) => x.ready && !x.ok && !x.checkedAt)) {
-      checking.add(it.id);
-      render(await studio.ai.list());
-      try { await studio.ai.check(it.id); } catch {}
-      checking.delete(it.id);
-      render(await studio.ai.list());
-    }
+    for (const it of items.filter((x) => x.ready && !x.ok && !x.checkedAt)) await run(it.id, it.name, "check");
+    if (!busy) say("");
   })();
 </script>
 </body>
