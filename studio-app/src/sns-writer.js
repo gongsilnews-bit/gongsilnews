@@ -22,6 +22,8 @@ const { ffmpegPath } = require("./paths");
 const blogWriter = require("./blog-writer");
 const { fetchListing } = require("./naver-write");
 const nm = require("./ext-newsmaker");
+// 인테리어·리모델링(번호 int-·rem-): 확장 interior10·remodeling10 의 SNS 프롬프트 (글 끝 "AI 예측 이미지" 안내 포함)
+const simW = () => require("./sim-writer");
 
 const CHANNELS = ["instagram", "threads", "facebook"]; // 화면 탭 순서 (회의 결정: 인스타 → 스레드 → 페이스북)
 const FIT_KINDS = new Set(["proof", "map", "roadview"]); // 화면 캡처는 자르지 않고 흰 여백으로 맞춘다
@@ -39,8 +41,9 @@ function channelInfo() {
 /* 사진 모음: 블로그에서 다듬은 사진(대표·추가·AI 포함)이 있으면 그것, 없으면 기사 사진, 없으면 분석 사진 */
 function photoPool(vacancyId) {
   const pick = (d) => (d && Array.isArray(d.media) && d.media.length ? d.media.map((m) => ({ id: m.id, kind: m.kind, file: m.file, caption: m.caption, isCover: Boolean(m.isCover) })) : null);
-  const fromDocs = pick(readJson(blogWriter.blogFile(vacancyId))) || (blogWriter.isColumn(vacancyId) ? pick(readJson(blogWriter.docFile(vacancyId, "article"))) : null);
+  const fromDocs = pick(readJson(blogWriter.blogFile(vacancyId))) || (blogWriter.isColumn(vacancyId) || blogWriter.isSim(vacancyId) ? pick(readJson(blogWriter.docFile(vacancyId, "article"))) : null);
   if (fromDocs) return fromDocs;
+  if (blogWriter.isSim(vacancyId)) return simW().resultMedia(vacancyId);
   const analysis = readJson(path.join(mediaDir(vacancyId), "analysis.json"));
   return ((analysis && analysis.media) || []).map((m, i) => ({ id: newId(), kind: m.kind, file: m.file, caption: m.caption, isCover: i === 0 }));
 }
@@ -48,9 +51,10 @@ function photoPool(vacancyId) {
 function forWeb(data) {
   if (!data) return null;
   const column = data.kind === "column";
-  const ctx = column ? { credit: data.credit } : { noun: data.noun || "매물", url: (data.listing && data.listing.detailUrl) || "", listing: data.listing || null };
-  const compose = column ? nm.gwSnsCompose : sns.gwSnsCompose;
-  const aiNote = column ? nm.gwSnsAiLabelNote : sns.gwSnsAiLabelNote;
+  const simL = data.kind === "sim" ? simW().lib(data.vacancyId) : null;
+  const ctx = column ? { credit: data.credit } : simL ? data.ctx : { noun: data.noun || "매물", url: (data.listing && data.listing.detailUrl) || "", listing: data.listing || null };
+  const compose = column ? nm.gwSnsCompose : simL ? simL.gwSnsCompose : sns.gwSnsCompose;
+  const aiNote = column ? nm.gwSnsAiLabelNote : simL ? simL.gwSnsAiLabelNote : sns.gwSnsAiLabelNote;
   const byId = new Map((data.pool || []).map((m) => [m.id, m]));
   const thumbs = new Map((data.pool || []).map((m) => [m.id, thumbOf(m.file, 360)]));
   const channels = {};
@@ -96,6 +100,7 @@ function snsPrompt(vacancyId) {
       ? { title: blog.title, subtitles: [], body: blog.paragraphs.join("\n\n") }
       : { title: "(참조 기사 없음)", subtitles: [], body: "이번에는 참조 기사가 없습니다. 아래 확인된 매물 정보만 사용해 작성하십시오." });
   if (blogWriter.isColumn(vacancyId)) return nm.gwBuildSnsPrompt({ article, source: require("./column-writer").readSource(vacancyId) });
+  if (blogWriter.isSim(vacancyId)) return simW().lib(vacancyId).gwBuildSnsPrompt({ vacancy: simW().resultOf(vacancyId).vacancy, article });
   const analysis = readJson(path.join(mediaDir(vacancyId), "analysis.json"));
   if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
   return sns.gwBuildSnsPrompt({ vacancy: analysis.vacancy, article });
@@ -108,7 +113,7 @@ async function revise({ vacancyId, channel, request }, onProgress = () => {}) {
   const data = readJson(snsFile(vacancyId));
   if (!data) throw new Error("먼저 SNS 글을 써 주세요.");
   if (!CHANNELS.includes(channel)) throw new Error("알 수 없는 채널입니다.");
-  const lib = data.kind === "column" ? nm : sns;
+  const lib = data.kind === "column" ? nm : data.kind === "sim" ? simW().lib(vacancyId) : sns;
   const ask = lib.gwBuildSnsRevisePrompt(channel, req);
   const now = "```json\n" + JSON.stringify(data.posts, null, 2) + "\n```";
   const fallbackPrompt = `${snsPrompt(vacancyId)}\n\n[앞서 작성한 SNS 글 — 고친 내용 포함]\n${now}\n\n${ask}`;
@@ -126,6 +131,7 @@ async function revise({ vacancyId, channel, request }, onProgress = () => {}) {
 }
 
 async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
+  if (blogWriter.isSim(vacancyId)) return writeSim({ baseUrl, vacancyId }, onProgress);
   const column = blogWriter.isColumn(vacancyId);
   const analysis = column ? null : readJson(path.join(mediaDir(vacancyId), "analysis.json"));
   if (!column && !analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
@@ -149,7 +155,17 @@ async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
   const parsed = (column ? nm.gwSnsParse : sns.gwSnsParse)(text);
   if (!parsed.ok) throw new Error(parsed.reason || "SNS 글을 읽지 못했습니다.");
 
-  // 다시 쓸 때는 고른 사진은 그대로 두고 글만 바꾼다
+  const { pool, media } = pickMedia(vacancyId);
+  const data = column
+    ? { vacancyId, kind: "column", credit: nm.gwSnsCredit(source), posts: parsed.posts, pool, media, chatUrl, writtenAt: new Date().toISOString() }
+    : { vacancyId, noun: saleKind ? "물건" : "매물", listing, posts: parsed.posts, pool, media, chatUrl, writtenAt: new Date().toISOString() };
+  fs.writeFileSync(snsFile(vacancyId), JSON.stringify(data, null, 2));
+  log.info(`[SNS] ${vacancyId} ${Object.keys(parsed.posts).join(",")}`);
+  return forWeb(data);
+}
+
+/* 채널마다 사진 고르기 — 다시 쓸 때는 고른 사진을 그대로 둔다 (실제 사진 먼저, AI·예측 이미지는 뒤) */
+function pickMedia(vacancyId) {
   const prev = readJson(snsFile(vacancyId));
   const pool = photoPool(vacancyId);
   const media = {};
@@ -161,11 +177,40 @@ async function write({ baseUrl, vacancyId }, onProgress = () => {}) {
       media[ch] = picked.map((p) => pool.find((m) => m.file === p.url)).filter(Boolean).map((m) => m.id);
     }
   }
-  const data = column
-    ? { vacancyId, kind: "column", credit: nm.gwSnsCredit(source), posts: parsed.posts, pool, media, chatUrl, writtenAt: new Date().toISOString() }
-    : { vacancyId, noun: saleKind ? "물건" : "매물", listing, posts: parsed.posts, pool, media, chatUrl, writtenAt: new Date().toISOString() };
+  return { pool, media };
+}
+
+/* 인테리어·리모델링 SNS — 결과표로 쓴 기사가 있어야 한다. 매물과 연결된 시뮬레이션만 매물 출처(표시·광고)를 붙인다 */
+async function writeSim({ baseUrl, vacancyId }, onProgress) {
+  const S = simW();
+  const L = S.lib(vacancyId);
+  const { result, vacancy } = S.resultOf(vacancyId);
+  if (!blogWriter.referenceArticle(vacancyId)) throw new Error("먼저 [공실뉴스 기사] 탭에서 기사를 써 주세요. SNS 글은 그 기사를 바탕으로 씁니다.");
+  onProgress("이용 권한을 확인하는 중…");
+  await useQuota(baseUrl, vacancyId);
+  let listing = null;
+  if (result.vacancyId) {
+    onProgress("매물 정보 출처(중개사무소)를 확인하는 중…");
+    listing = await fetchListing(baseUrl, result.vacancyId, result.saleKind || "");
+    const problems = L.GWNaverBlog.listingProblems(listing, Boolean(result.saleKind));
+    if (problems.length) throw new Error(`${result.saleKind ? "물건" : "부동산 표시·광고 필수"} 정보가 없어 멈췄습니다: ${problems.join(", ")}. 공실의 등록자 정보를 확인해 주세요.`);
+  }
+  let chatUrl = "";
+  const text = await chatgpt.ask(snsPrompt(vacancyId), { onProgress, isComplete: (t) => articleJson.hasCompleteObject(t), onChat: (u) => (chatUrl = u) });
+  onProgress("받은 글을 정리하는 중…");
+  const parsed = L.gwSnsParse(text);
+  if (!parsed.ok) throw new Error(parsed.reason || "SNS 글을 읽지 못했습니다.");
+  const { pool, media } = pickMedia(vacancyId);
+  const ctx = {
+    noun: L.gwSnsNoun(vacancy),
+    url: listing ? listing.detailUrl : "https://www.gongsilnews.com",
+    listing,
+    noVacancy: !result.vacancyId,
+    credit: S.creditOf(vacancyId), // 매물과 연결되지 않았을 때
+  };
+  const data = { vacancyId, kind: "sim", ctx, posts: parsed.posts, pool, media, chatUrl, writtenAt: new Date().toISOString() };
   fs.writeFileSync(snsFile(vacancyId), JSON.stringify(data, null, 2));
-  log.info(`[SNS] ${vacancyId} ${Object.keys(parsed.posts).join(",")}`);
+  log.info(`[SNS] 시뮬레이션 ${vacancyId} ${Object.keys(parsed.posts).join(",")}`);
   return forWeb(data);
 }
 
@@ -212,8 +257,9 @@ async function exportChannel({ vacancyId, channel }) {
   const web = forWeb(data).channels[channel];
   // 폴더 이름: 공실이면 매물 이름, 칼럼이면 기사 제목
   const article = blogWriter.isColumn(vacancyId) ? readJson(blogWriter.docFile(vacancyId, "article")) : null;
-  const name = article ? `칼럼_${safeName(article.title)}` : safeName(analysis.vacancy.title) || "공실";
-  const folder = path.join(app.getPath("documents"), "공실뉴스 스튜디오", `${name}_${String(vacancyId).replace(/^col-/, "").slice(0, 8)}`, c.label);
+  const simTitle = blogWriter.isSim(vacancyId) ? `${simW().kindOf(vacancyId) === "interior" ? "인테리어" : "리모델링"}_${safeName(simW().resultOf(vacancyId).result.title)}` : "";
+  const name = simTitle || (article ? `칼럼_${safeName(article.title)}` : safeName(analysis.vacancy.title) || "공실");
+  const folder = path.join(app.getPath("documents"), "공실뉴스 스튜디오", `${name}_${String(vacancyId).replace(/^(col|int|rem)-/, "").slice(0, 8)}`, c.label);
   fs.rmSync(folder, { recursive: true, force: true });
   fs.mkdirSync(folder, { recursive: true });
 

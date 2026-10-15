@@ -16,6 +16,7 @@ const blogPrompt = ext.lazyModule(() => ext.run(["gongsil/blog-prompt.js"]));
 const chrome = require("./studio-chrome");
 const nm = require("./ext-newsmaker");
 const isColumn = (id) => /^col-[a-f0-9]+$/.test(String(id || ""));
+const isSim = (id) => /^(int|rem)-[a-f0-9]+$/.test(String(id || "")); // 인테리어·리모델링 시뮬레이션
 
 const mediaDir = (vacancyId) => path.join(app.getPath("userData"), "media", String(vacancyId).replace(/[^\w-]/g, ""));
 
@@ -103,6 +104,7 @@ async function findEditorFrame(page, timeoutMs = 30000) {
  */
 async function fillNaver({ baseUrl, vacancyId, design }, onProgress = () => {}) {
   if (isColumn(vacancyId)) return fillColumn({ vacancyId, design }, onProgress);
+  if (isSim(vacancyId)) return fillSim({ baseUrl, vacancyId, design }, onProgress);
   const dir = mediaDir(vacancyId);
   const analysisFile = path.join(dir, "analysis.json");
   const blogFile = path.join(dir, "blog.json");
@@ -149,6 +151,34 @@ async function fillColumn({ vacancyId, design }, onProgress) {
   const tags = nb.normalizeTags(blog.keywords);
   const res = await fillEditor({ title: blog.title, blocks, tags }, onProgress);
   log.info(`[네이버] 칼럼 ${vacancyId} 디자인 ${chosenDesign} 사진 ${res.imagesInserted}장 채움`);
+  return { ok: true, imagesInserted: res.imagesInserted, imagesTotal: blocks.filter((b) => b.type === "image").length, design: chosenDesign, tags };
+}
+
+/* 인테리어·리모델링 블로그: 확장 interior10·remodeling10 의 블록. 매물과 연결된 시뮬레이션이면 매물 출처를 붙이고,
+   중개사무소 정보가 없어도 채운다 (확장과 같음 — 경매·공매 물건 정보가 없을 때만 멈춘다) */
+async function fillSim({ baseUrl, vacancyId, design }, onProgress) {
+  const S = require("./sim-writer");
+  const L = S.lib(vacancyId);
+  const { result, vacancy } = S.resultOf(vacancyId);
+  const blogFile = path.join(mediaDir(vacancyId), "blog.json");
+  if (!fs.existsSync(blogFile)) throw new Error("먼저 블로그 글을 써 주세요.");
+  const blog = JSON.parse(fs.readFileSync(blogFile, "utf8"));
+  let listing = null;
+  if (result.vacancyId) {
+    onProgress("매물 출처 정보(중개사무소)를 확인하는 중…");
+    listing = await fetchListing(baseUrl, result.vacancyId, result.saleKind || "").catch(() => null);
+    const problems = L.GWNaverBlog.listingProblems(listing, Boolean(result.saleKind));
+    if (problems.length && result.saleKind) throw new Error(`물건 정보가 없어 멈췄습니다: ${problems.join(", ")}.`);
+  }
+  const media = blog.media || [];
+  const nb = L.GWNaverBlog;
+  const chosenDesign = nb.DESIGNS[design] ? design : (L.gwBlogStyles(null)[blog.style] || {}).design || "basic";
+  const blocks = nb
+    .buildNaverBlocks(blog.paragraphs.join("\n\n"), media, { design: chosenDesign, title: blog.title, vacancy: vacancy ? { ...vacancy, vacancyId: result.vacancyId } : null, listing })
+    .map((b) => (b.type === "image" ? { type: "image", dataUrl: media[b.mediaIndex] && media[b.mediaIndex].file ? toDataUrl(media[b.mediaIndex].file) : null } : b));
+  const tags = nb.normalizeTags(blog.keywords);
+  const res = await fillEditor({ title: blog.title, blocks, tags }, onProgress);
+  log.info(`[네이버] 시뮬레이션 ${vacancyId} 디자인 ${chosenDesign} 사진 ${res.imagesInserted}장 채움`);
   return { ok: true, imagesInserted: res.imagesInserted, imagesTotal: blocks.filter((b) => b.type === "image").length, design: chosenDesign, tags };
 }
 

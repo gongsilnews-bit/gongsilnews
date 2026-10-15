@@ -4,6 +4,7 @@
 //   node scripts/sync-ext.mjs   (npm run dist 도 빌드 전에 부른다)
 //  - gongsil/…   : 기사작성기 gongsilwriter30/shared (+ content-naver.js)
 //  - newsmaker/… : 뉴스메이커 newsmaker10/shared
+//  - interior/… · remodel/… : 인테리어 interior10/shared · 리모델링 remodeling10/shared
 import { readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
@@ -17,6 +18,15 @@ const GROUPS = {
   gongsil: {
     dir: join(extRoot, "gongsilwriter30", "shared"),
     files: ["prompt.js", "blog-prompt.js", "article-json.js", "naver-blog.js", "sns-prompt.js", "youtube-json.js", "youtube-prompt.js", "../content-naver.js"],
+  },
+  // 인테리어뉴스(interior10) · 리모델링뉴스(remodeling10) — 시뮬레이션 + 결과표로 쓰는 기사·블로그·SNS·대본 (유료 전용)
+  interior: {
+    dir: join(extRoot, "interior10", "shared"),
+    files: ["interior-spec.js", "interior-cost.js", "prompt.js", "interior-prompt.js", "article-json.js", "blog-prompt.js", "naver-blog.js", "youtube-prompt.js", "youtube-json.js", "sns-prompt.js"],
+  },
+  remodel: {
+    dir: join(extRoot, "remodeling10", "shared"),
+    files: ["remodel-spec.js", "remodel-cost.js", "prompt.js", "remodel-prompt.js", "article-json.js", "blog-prompt.js", "naver-blog.js", "youtube-prompt.js", "youtube-json.js", "sns-prompt.js"],
   },
   newsmaker: {
     dir: join(extRoot, "newsmaker10", "shared"),

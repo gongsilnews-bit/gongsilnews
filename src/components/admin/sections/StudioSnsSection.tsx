@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { findStudioVacancyByNo, listMyStudioVacancies } from "@/app/actions/studio";
 import StudioChannelTabs from "./StudioChannelTabs";
 import StudioColumnSource from "./StudioColumnSource";
+import StudioSimSource from "./StudioSimSource";
 
 /**
  * SNS뉴스발행 (공실뉴스 스튜디오 앱 전용)
@@ -56,8 +57,8 @@ const bridge = (): StudioBridge | null => (typeof window !== "undefined" ? ((win
 const NEWS_CATEGORIES = [
   { id: "gongsil", label: "공실뉴스", lead: "공실 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 등록·발행은 소장님이 누릅니다." },
   { id: "column", label: "뉴스칼럼", lead: "뉴스나 주제 하나로 공실뉴스 기사·네이버 블로그·SNS 글을 소장님 AI가 씁니다. 원문 문장은 옮기지 않고 출처를 밝힙니다." },
-  { id: "interior", label: "인테리어뉴스", lead: "인테리어 사례·시뮬레이션으로 기사와 SNS 글을 씁니다." },
-  { id: "remodel", label: "리모델링뉴스", lead: "리모델링 전후·시뮬레이션으로 기사와 SNS 글을 씁니다." },
+  { id: "interior", label: "인테리어뉴스", lead: "실내 사진 한 장으로 인테리어 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
+  { id: "remodel", label: "리모델링뉴스", lead: "건물 외관 사진 한 장으로 리모델링 예측 이미지와 예상 공사비를 만들고, 그 결과로 기사·블로그·SNS·유튜브 대본을 씁니다. (유료회원 전용)" },
 ];
 const LAST_KEY = "studio_last_vacancy"; // 마지막으로 작업한 공실·탭 (이 기기)
 const CATEGORY_KEY = "studio_news_category"; // 마지막으로 연 카테고리
@@ -74,6 +75,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
   const [tab, setTab] = useState("article"); // 공실뉴스 기사가 맨 앞
   const [category, setCategoryState] = useState("gongsil"); // 왼쪽 뉴스 카테고리
   const [columnTab, setColumnTab] = useState("article"); // 뉴스칼럼의 채널 탭
+  const [simTabs, setSimTabs] = useState<Record<string, string>>({ interior: "article", remodel: "article" }); // 인테리어·리모델링 채널 탭
+  const [simAllowed, setSimAllowed] = useState<boolean | null>(null); // 유료회원만 (서버가 알려 줌)
   const [pickOpen, setPickOpen] = useState(true); // ①② 펼침 — 분석이 끝나면 한 줄로 접는다
   const setCategory = (id: string) => {
     setCategoryState(id);
@@ -95,6 +98,7 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
         setUsage(d.usage);
         setSnsUsage(d.snsUsage || null);
         setYoutubeUsage(d.youtubeUsage || null);
+        setSimAllowed(typeof d.simAllowed === "boolean" ? d.simAllowed : null);
       })
       .catch(() => {});
   }, []);
@@ -248,8 +252,8 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
           {(() => {
-            const t = category === "column" ? columnTab : tab;
-            if ((category !== "gongsil" && category !== "column") || t === "article") return null; // 기사 한도는 기사 등록할 때 센다
+            const t = category === "column" ? columnTab : category === "gongsil" ? tab : simTabs[category];
+            if (!t || t === "article" || ((category === "interior" || category === "remodel") && !simAllowed)) return null; // 기사 한도는 기사 등록할 때 센다
             const u = t === "blog" ? usage : t === "youtube" ? youtubeUsage : snsUsage;
             const name = t === "blog" ? "블로그" : t === "youtube" ? "유튜브" : "SNS";
             if (!u) return null;
@@ -274,11 +278,9 @@ export default function StudioSnsSection({ theme, memberId }: { theme: Theme; me
           <StudioColumnSource theme={theme} tab={columnTab} onTab={setColumnTab} onUsed={loadUsage} />
         )}
 
-        {category !== "gongsil" && category !== "column" && (
-          <div style={{ ...card, textAlign: "center", padding: "48px 24px" }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: theme.textPrimary }}>{NEWS_CATEGORIES.find((c) => c.id === category)?.label} · 준비 중</div>
-            <div style={{ marginTop: 8, fontSize: 13.5, color: theme.textSecondary }}>곧 이 자리에서 쓸 수 있게 됩니다.</div>
-          </div>
+        {(category === "interior" || category === "remodel") && (
+          <StudioSimSource key={category} theme={theme} kind={category} allowed={simAllowed} tab={simTabs[category]}
+            onTab={(id) => setSimTabs((m) => ({ ...m, [category]: id }))} onUsed={loadUsage} />
         )}
 
         {category === "gongsil" && (<>

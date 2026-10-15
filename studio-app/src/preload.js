@@ -63,6 +63,22 @@ if (allowed) {
         return () => ipcRenderer.removeListener("studio:blog-progress", h);
       },
     },
+    sim: {
+      options: (kind) => ipcRenderer.invoke("studio:sim-options", kind),
+      estimate: (kind, costBase, design) => ipcRenderer.invoke("studio:sim-estimate", kind, costBase, design),
+      create: (kind) => ipcRenderer.invoke("studio:sim-create", kind),
+      get: (id) => ipcRenderer.invoke("studio:sim-get", id),
+      list: (kind) => ipcRenderer.invoke("studio:sim-list", kind),
+      useVacancy: (opts) => ipcRenderer.invoke("studio:sim-use-vacancy", opts),
+      addPhotos: (opts) => ipcRenderer.invoke("studio:sim-add-photos", opts),
+      update: (opts) => ipcRenderer.invoke("studio:sim-update", opts),
+      run: (id) => ipcRenderer.invoke("studio:sim-run", id),
+      onProgress: (fn) => {
+        const h = (_e, text) => fn(text);
+        ipcRenderer.on("studio:sim-progress", h);
+        return () => ipcRenderer.removeListener("studio:sim-progress", h);
+      },
+    },
     youtube: {
       options: (vacancyId) => ipcRenderer.invoke("studio:youtube-options", vacancyId),
       get: (vacancyId) => ipcRenderer.invoke("studio:youtube-get", vacancyId),

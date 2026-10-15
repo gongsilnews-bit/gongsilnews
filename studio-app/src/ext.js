@@ -3,6 +3,7 @@
 // - 앱을 켜고 로그인이 확인되면 /api/studio/prompts 에서 한 번 받아 **메모리에만** 둔다. PC 파일로 남기지 않는다.
 // - 30분이 지나면 다음에 쓸 때 뒤에서 새로 받는다 (서버에서 프롬프트를 고치면 켜 둔 앱에도 반영). 실패하면 받아 둔 것을 쓴다.
 // - 파일 이름: "gongsil/…"(기사작성기 gongsilwriter30) · "newsmaker/…"(뉴스메이커 newsmaker10)
+//             "interior/…"(인테리어 interior10) · "remodel/…"(리모델링 remodeling10)
 // - 각 파일은 브라우저용이라 vm 실행 공간에서 돌린다. module.exports 가 있으면 그것을, 없으면 이름을 골라 꺼낸다.
 // - 다른 모듈은 lazyModule() 이 돌려주는 대역을 평소 require 결과처럼 쓴다 (속성을 읽는 순간 실행).
 //   그래서 파일을 쓰는 IPC 는 먼저 ensure() 를 기다린다 (main.js withExt).
@@ -27,7 +28,12 @@ function configure(url) {
 }
 
 /* 개발용: 확장 폴더에서 바로 읽기 */
-const LOCAL = { gongsil: path.join("gongsilwriter30", "shared"), newsmaker: path.join("newsmaker10", "shared") };
+const LOCAL = {
+  gongsil: path.join("gongsilwriter30", "shared"),
+  newsmaker: path.join("newsmaker10", "shared"),
+  interior: path.join("interior10", "shared"),
+  remodel: path.join("remodeling10", "shared"),
+};
 function localFile(name) {
   const [group, file] = name.split("/");
   const dir = process.env.STUDIO_EXT_DIR;

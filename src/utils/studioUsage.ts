@@ -13,6 +13,8 @@ import { isAdminRole } from "@/utils/permissionCheck";
  * - 크롬 확장 블로그 체험과 같은 기록(extension_trial_usage, feature 'blog')을 함께 센다.
  * - SNS(인스타그램·페이스북·스레드 한 번에)는 'sns' 로 따로 세고 규칙은 블로그와 같다 (확장 SNS 체험과 함께 셈).
  *   확장 기록(vacancy_id 없음)은 한 줄 = 1회, 스튜디오 기록은 공실 하나 = 1회.
+ * - 인테리어뉴스·리모델링뉴스(번호 int-·rem-)는 유료회원 전용(canRemodel, 무료 체험 없음 — 확장과 같음).
+ *   시뮬레이션(kind 'simulation')은 예측 이미지를 만들므로 AI 이미지 하루 한도에서 1장으로 센다.
  * - 유튜브 대본은 'youtube' 로 따로 세고 규칙은 같다 (확장 유튜브 체험과 함께 셈). 뉴스칼럼은 칼럼 하나 = 1회.
  * - 무제한이어도 하루 안전 상한이 있다 (회원 ChatGPT·네이버 계정 보호): 새 공실 20건, AI 이미지 10장. 최고관리자는 없음.
  */
@@ -105,8 +107,16 @@ export async function getStudioUsage(member: ExtensionMember, feature: StudioFea
 
 export type ConsumeResult = { ok: true; charged: boolean; usage: StudioUsage } | { ok: false; reason: string; usage: StudioUsage };
 
+const SIM_ID = /^(int|rem)-[a-f0-9]+$/;
+const SIM_LOCKED = "인테리어뉴스·리모델링뉴스는 유료회원(공실스터디 멤버십) 전용 기능입니다.";
+
 /** 블로그를 쓰기 전(kind 'blog', 공실 하나 1회) 또는 AI 이미지를 만들기 전(kind 'ai_image')에 부른다 */
-export async function consumeStudio(member: ExtensionMember, kind: StudioFeature | "ai_image", vacancyId?: string): Promise<ConsumeResult> {
+export async function consumeStudio(member: ExtensionMember, kind: StudioFeature | "ai_image" | "simulation", vacancyId?: string): Promise<ConsumeResult> {
+  // 인테리어·리모델링: 유료회원만. 시뮬레이션은 AI 이미지 한도로 센다
+  if (kind === "simulation" || (vacancyId && SIM_ID.test(vacancyId))) {
+    if (!member.canRemodel) return { ok: false, reason: SIM_LOCKED, usage: await getStudioUsage(member, "blog") };
+    if (kind === "simulation") return consumeStudio(member, "ai_image");
+  }
   const feature: StudioFeature = kind === "sns" || kind === "youtube" ? kind : "blog";
   const name = feature === "sns" ? "SNS" : feature === "youtube" ? "유튜브 대본" : "블로그";
   const usage = await getStudioUsage(member, feature);

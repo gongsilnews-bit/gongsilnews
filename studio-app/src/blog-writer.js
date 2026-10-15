@@ -28,6 +28,14 @@ const nm = require("./ext-newsmaker");
 
 const isColumn = (id) => /^col-[a-f0-9]+$/.test(String(id || ""));
 const column = () => require("./column-writer"); // 서로 부르므로 쓸 때 불러온다
+// 인테리어뉴스·리모델링뉴스(번호 "int-…"·"rem-…"): 시뮬레이션 결과표가 원자료 (sim-writer.js, 확장 interior10·remodeling10)
+const isSim = (id) => /^(int|rem)-[a-f0-9]+$/.test(String(id || ""));
+const sim = () => require("./sim-writer");
+/* 결과표의 매물 정보 — 매물과 연결되지 않은 시뮬레이션이면 null */
+const simSource = (id) => {
+  const s = sim().resultOf(id);
+  return { ...s, L: sim().lib(id) };
+};
 
 const DOCS = { blog: "blog.json", article: "article.json" };
 const DOC_NAME = { blog: "블로그", article: "기사" };
@@ -42,6 +50,14 @@ function readJson(file) {
 const readAnalysis = (vacancyId) => readJson(path.join(mediaDir(vacancyId), "analysis.json"));
 
 function styles(vacancyId) {
+  if (isSim(vacancyId)) {
+    const L = sim().lib(vacancyId);
+    return {
+      saleKind: "",
+      styles: Object.entries(L.gwBlogStyles(null)).map(([id, s]) => ({ id, label: s.label, fit: s.fit, titleExample: s.titleExample, design: s.design })),
+      lengths: Object.entries(L.GW_BLOG_LENGTH).map(([id, l]) => ({ id, label: l.label, chars: l.chars })),
+    };
+  }
   if (isColumn(vacancyId)) {
     return {
       saleKind: "",
@@ -61,6 +77,13 @@ function styles(vacancyId) {
 /* 기사 스타일·분량 (확장과 같음, 경매·공매면 경매용 스타일) */
 function articleOptions(vacancyId) {
   if (isColumn(vacancyId)) return column().articleOptions();
+  if (isSim(vacancyId)) {
+    const L = sim().lib(vacancyId);
+    return {
+      kinds: Object.entries(L.RM_KIND).map(([id, k]) => ({ id, label: k.label, brief: k.brief })),
+      lengths: Object.entries(L.GW_LENGTH).map(([id, l]) => ({ id, label: l.label, chars: l.chars })),
+    };
+  }
   const analysis = vacancyId ? readAnalysis(vacancyId) : null;
   const auction = Boolean(analysis && analysis.vacancy && analysis.vacancy.saleKind);
   const kinds = auction ? extPrompt.GW_AUCTION_KIND : extPrompt.GW_KIND;
@@ -84,6 +107,8 @@ function materializeSlots(media, paragraphCount) {
 const freshMedia = (analysis) => ((analysis && analysis.media) || []).map((m, i) => ({ id: newId(), kind: m.kind, file: m.file, caption: m.caption, isCover: i === 0 }));
 /* 새 글의 처음 사진: 공실이면 분석 사진, 칼럼이면 기사에 넣은 사진(대표 AI 이미지 등) */
 function seedMedia(vacancyId, doc) {
+  // 시뮬레이션 기사: 예측 이미지(대표) + 지금 모습
+  if (isSim(vacancyId) && (doc === "article" || !readJson(docFile(vacancyId, "article")))) return sim().resultMedia(vacancyId);
   const analysis = readAnalysis(vacancyId);
   if (analysis) return freshMedia(analysis);
   if (doc === "article") return [];
@@ -173,6 +198,7 @@ function saveWritten(vacancyId, doc, parsed, extra) {
 
 async function write({ baseUrl, vacancyId, style = "listing", length = "normal" }, onProgress = () => {}) {
   if (isColumn(vacancyId)) return writeColumnBlog({ baseUrl, vacancyId, style, length }, onProgress);
+  if (isSim(vacancyId)) return writeSimBlog({ baseUrl, vacancyId, style, length }, onProgress);
   const analysis = readAnalysis(vacancyId);
   if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
   onProgress("이용 횟수를 확인하는 중…");
@@ -205,9 +231,46 @@ async function writeColumnBlog({ baseUrl, vacancyId, style, length }, onProgress
   return saveWritten(vacancyId, "blog", parsed, { style: st, length, chatUrl });
 }
 
+/* 인테리어·리모델링 블로그: 결과표 + 기사 (확장 blog-prompt 가 결과표가 있으면 gwBuildRemodelBlogPrompt 로 간다) */
+async function writeSimBlog({ baseUrl, vacancyId, style, length }, onProgress) {
+  const { result, vacancy, L } = simSource(vacancyId);
+  const article = referenceArticle(vacancyId);
+  if (!article) throw new Error("먼저 [공실뉴스 기사] 탭에서 기사를 써 주세요. 블로그는 결과표와 그 기사를 바탕으로 씁니다.");
+  const st = L.gwBlogStyles(null)[style] ? style : "listing";
+  onProgress("이용 권한을 확인하는 중…");
+  await useQuota(baseUrl, "blog", vacancyId);
+  let chatUrl = "";
+  const text = await chatgpt.ask(L.gwBuildBlogPrompt({ vacancy, article, remodel: result }, { style: st, length }), {
+    onProgress,
+    isComplete: (t) => L.GWArticleJson.hasCompleteObject(t),
+    onChat: (u) => (chatUrl = u),
+  });
+  onProgress("받은 글을 정리하는 중…");
+  const parsed = L.GWArticleJson.parse(text);
+  if (!parsed.ok) throw new Error(parsed.reason || "AI 답변을 읽지 못했습니다.");
+  return saveWritten(vacancyId, "blog", parsed, { style: st, length, chatUrl });
+}
+
+/* 인테리어·리모델링 기사: 결과표로 (확장 gwBuildRemodelArticlePrompt). 기사 한도는 기사 등록할 때 센다 */
+async function writeSimArticle({ baseUrl, vacancyId, kind, length }, onProgress) {
+  const { result, L } = simSource(vacancyId);
+  // 유료 확인은 시뮬레이션(결과표 만들기)에서 이미 했다. 기사 한도는 기사 등록할 때 센다
+  let chatUrl = "";
+  const text = await chatgpt.ask(L.gwBuildRemodelArticlePrompt(result, { kind: L.RM_KIND[kind] ? kind : "news", length }), {
+    onProgress,
+    isComplete: (t) => L.GWArticleJson.hasCompleteObject(t),
+    onChat: (u) => (chatUrl = u),
+  });
+  onProgress("받은 기사를 정리하는 중…");
+  const parsed = L.GWArticleJson.parse(text);
+  if (!parsed.ok) throw new Error(parsed.reason || "AI 답변을 읽지 못했습니다.");
+  return saveWritten(vacancyId, "article", parsed, { style: kind, length, chatUrl });
+}
+
 /* 공실뉴스 기사 쓰기 — 기사 한도는 기사쓰기 화면에서 [기사 등록] 할 때 센다 (여기서는 세지 않음) */
 async function writeArticle({ baseUrl, vacancyId, kind = "news", length = "normal", autoCover }, onProgress = () => {}) {
   if (isColumn(vacancyId)) return column().writeArticle({ baseUrl, vacancyId, kind, length, autoCover }, onProgress);
+  if (isSim(vacancyId)) return writeSimArticle({ baseUrl, vacancyId, kind, length }, onProgress);
   const analysis = readAnalysis(vacancyId);
   if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
   const prompt = extPrompt.gwBuildPrompt(analysis.vacancy, { kind, length });
@@ -221,6 +284,12 @@ async function writeArticle({ baseUrl, vacancyId, kind = "news", length = "norma
 
 /* 처음 쓸 때 보낸 프롬프트 (이어 쓸 대화가 없을 때 다시 보낸다) */
 function originalPrompt(vacancyId, doc, d) {
+  if (isSim(vacancyId)) {
+    const { result, vacancy, L } = simSource(vacancyId);
+    return doc === "article"
+      ? L.gwBuildRemodelArticlePrompt(result, { kind: d.style, length: d.length })
+      : L.gwBuildBlogPrompt({ vacancy, article: referenceArticle(vacancyId), remodel: result }, { style: d.style, length: d.length });
+  }
   if (isColumn(vacancyId)) {
     const source = column().readSource(vacancyId);
     return doc === "article"
@@ -235,6 +304,10 @@ function originalPrompt(vacancyId, doc, d) {
 }
 
 function revisePrompt(vacancyId, doc, request) {
+  if (isSim(vacancyId)) {
+    const { vacancy, L } = simSource(vacancyId);
+    return doc === "article" ? L.gwBuildRevisePrompt(request, vacancy || {}) : L.gwBuildBlogRevisePrompt(request, vacancy || {});
+  }
   if (isColumn(vacancyId)) {
     return doc === "article" ? nm.gwBuildRevisePrompt(request, column().readSource(vacancyId)) : nm.gwBuildBlogRevisePrompt(request);
   }
@@ -261,7 +334,7 @@ async function revise({ vacancyId, doc = "blog", request }, onProgress = () => {
   if (!d) throw new Error(`먼저 ${DOC_NAME[doc] || "글"}을 써 주세요.`);
   const ask = revisePrompt(vacancyId, doc, req);
   const fallbackPrompt = `${originalPrompt(vacancyId, doc, d)}\n\n[앞서 작성한 ${DOC_NAME[doc]} — 미리보기에서 고친 내용 포함]\n${draftJson(d, doc)}\n\n${ask}`;
-  const parser = isColumn(vacancyId) ? nm.GWArticleJson : articleJson;
+  const parser = isColumn(vacancyId) ? nm.GWArticleJson : isSim(vacancyId) ? sim().lib(vacancyId).GWArticleJson : articleJson;
   let chatUrl = d.chatUrl || "";
   const text = await chatgpt.ask(ask, { onProgress, isComplete: (t) => parser.hasCompleteObject(t), chatUrl, fallbackPrompt, onChat: (u) => (chatUrl = u) });
   onProgress("고친 글을 정리하는 중…");
@@ -336,6 +409,7 @@ async function addPhoto({ vacancyId, doc = "blog", dataUrl, slot, caption = "", 
 
 /* AI 이미지 화풍 (확장과 같은 5종) */
 function imageStyles(vacancyId) {
+  if (isSim(vacancyId)) return Object.entries(sim().lib(vacancyId).GW_IMAGE_STYLE).map(([id, s]) => ({ id, label: s.label }));
   if (isColumn(vacancyId)) return Object.entries(nm.GW_IMAGE_STYLE).map(([id, s]) => ({ id, label: s.label }));
   return Object.entries(extPrompt.GW_IMAGE_STYLE).map(([id, s]) => ({ id, label: s.label }));
 }
@@ -343,6 +417,17 @@ function imageStyles(vacancyId) {
 /* AI 이미지 만들기: 확장과 같은 이미지 프롬프트(매물 사실 + 글 + 화풍·장면 요청)로 ChatGPT 가 그린 그림을 넣는다 */
 async function makeImage({ baseUrl, vacancyId, doc = "blog", style = "news", request = "", slot, replaceId = null }, onProgress = () => {}) {
   const d = readJson(docFile(vacancyId, doc));
+  if (isSim(vacancyId)) {
+    if (!d) throw new Error(`먼저 ${DOC_NAME[doc] || "글"}을 써 주세요.`);
+    const { result, vacancy, L } = simSource(vacancyId);
+    await useQuota(baseUrl, "ai_image");
+    const st = L.GW_IMAGE_STYLE[style] ? style : Object.keys(L.GW_IMAGE_STYLE)[0];
+    const article = { title: d.title, body: d.paragraphs.join("\n\n") };
+    const dataUrl = await chatgpt.askImage(L.gwBuildImagePrompt(vacancy || { title: result.title }, article, { style: st, request }), { onProgress });
+    onProgress("그림을 넣는 중…");
+    const label = (L.GW_IMAGE_STYLE[st] || {}).label || "AI 이미지";
+    return addPhoto({ vacancyId, doc, dataUrl, slot, replaceId, kind: "ai", caption: `${result.title} ${label} (AI 생성 이미지)` });
+  }
   if (isColumn(vacancyId)) {
     if (!d) throw new Error(`먼저 ${DOC_NAME[doc] || "글"}을 써 주세요.`);
     await useQuota(baseUrl, "ai_image");
@@ -378,7 +463,7 @@ function exportArticleDraft(vacancyId) {
     subtitles: d.subtitles || [],
     paragraphs: d.paragraphs,
     keywords: d.keywords || [],
-    saleKind: analysis.vacancy.saleKind || "",
+    saleKind: (isSim(vacancyId) ? sim().resultOf(vacancyId).result.saleKind : analysis.vacancy.saleKind) || "",
     section1: d.section1 || "", // 뉴스칼럼: AI 가 고른 공실뉴스 섹션
     section2: d.section2 || "",
     photos: (d.media || [])
@@ -387,4 +472,4 @@ function exportArticleDraft(vacancyId) {
   };
 }
 
-module.exports = { styles, articleOptions, write, writeArticle, revise, get, save, addPhoto, imageStyles, makeImage, exportArticleDraft, referenceArticle, saveWritten, useQuota, isColumn, mediaDir, readJson, blogFile, docFile };
+module.exports = { isSim, styles, articleOptions, write, writeArticle, revise, get, save, addPhoto, imageStyles, makeImage, exportArticleDraft, referenceArticle, saveWritten, useQuota, isColumn, mediaDir, readJson, blogFile, docFile };

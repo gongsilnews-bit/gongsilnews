@@ -43,7 +43,7 @@ type Theme = { cardBg: string; textPrimary: string; textSecondary: string; borde
 export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onUsed }: {
   theme: Theme;
   workId: string;
-  kind: "gongsil" | "column";
+  kind: "gongsil" | "column" | "sim"; // sim = 인테리어·리모델링 시뮬레이션 결과표
   tab: string;
   onTab: (id: string) => void;
   onUsed: () => void;
@@ -188,7 +188,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
     </div>
   );
   // 칼럼은 기사가 있어야 블로그·SNS 를 쓴다 (뉴스메이커와 같다: 기사 → 블로그·SNS)
-  const needArticle = column && !article;
+  const needArticle = kind !== "gongsil" && !article; // 칼럼·시뮬레이션은 기사를 먼저
   const firstStep = column ? 2 : 3;
 
   return (
@@ -284,7 +284,7 @@ export default function StudioChannelTabs({ theme, workId, kind, tab, onTab, onU
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ fontSize: 13, color: theme.textSecondary, flex: 1, minWidth: 260, lineHeight: 1.6 }}>
-                  스튜디오 전용 크롬에 네이버 글쓰기가 열리고 제목·본문·사진 {blog.media.length}장·{column ? "참고 자료(원문 출처)" : "매물 정보 출처"}가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
+                  스튜디오 전용 크롬에 네이버 글쓰기가 열리고 제목·본문·사진 {blog.media.length}장·{column ? "참고 자료(원문 출처)" : kind === "sim" ? "AI 예측 안내·출처" : "매물 정보 출처"}가 채워집니다. <b>[발행]은 소장님이 직접</b> 눌러 주세요. 태그는 발행 창이 열릴 때 자동으로 들어갑니다.
                 </div>
                 <ChannelButton channel="blog" label="네이버 블로그 바로가기" onClick={() => bridge()?.naver.openMyBlog()} />
                 <button onClick={fillNaver} disabled={filling}

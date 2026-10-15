@@ -15,6 +15,7 @@ const naverWrite = require("./naver-write");
 const snsWriter = require("./sns-writer");
 const columnWriter = require("./column-writer");
 const youtubeWriter = require("./youtube-writer");
+const simWriter = require("./sim-writer");
 
 const BASE_URL = (process.env.STUDIO_BASE_URL || "https://www.gongsilnews.com").replace(/\/$/, "");
 const BASE_ORIGIN = new URL(BASE_URL).origin;
@@ -369,6 +370,16 @@ ipcMain.handle("studio:column-grab-news", () => columnWriter.grabNews());
 ipcMain.handle("studio:column-create", (_e, source) => columnWriter.create(source));
 ipcMain.handle("studio:column-get", (_e, id) => columnWriter.get(id));
 ipcMain.handle("studio:column-list", () => columnWriter.list());
+// 인테리어뉴스·리모델링뉴스 시뮬레이션 (유료 전용)
+ipcMain.handle("studio:sim-options", (_e, kind) => simWriter.options(kind));
+ipcMain.handle("studio:sim-estimate", (_e, kind, costBase, design) => simWriter.estimate(kind, costBase, design));
+ipcMain.handle("studio:sim-create", (_e, kind) => simWriter.create(kind));
+ipcMain.handle("studio:sim-get", (_e, id) => simWriter.get(id));
+ipcMain.handle("studio:sim-list", (_e, kind) => simWriter.list(kind));
+ipcMain.handle("studio:sim-use-vacancy", (e, opts) => simWriter.useVacancy({ ...opts, baseUrl: BASE_URL }, (text) => e.sender.send("studio:sim-progress", text)));
+ipcMain.handle("studio:sim-add-photos", (_e, opts) => simWriter.addPhotos(opts));
+ipcMain.handle("studio:sim-update", (_e, opts) => simWriter.update(opts));
+ipcMain.handle("studio:sim-run", (e, id) => simWriter.run({ id, baseUrl: BASE_URL }, (text) => e.sender.send("studio:sim-progress", text)));
 // 유튜브 대본
 ipcMain.handle("studio:youtube-options", (_e, id) => youtubeWriter.options(id));
 ipcMain.handle("studio:youtube-get", (_e, id) => youtubeWriter.get(id));

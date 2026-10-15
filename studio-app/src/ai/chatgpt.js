@@ -7,6 +7,7 @@
 //  - 수정 요청은 처음 쓴 대화(chatUrl)에 이어 보낸다 (확장과 같다). 그 대화가 없어졌으면 fallbackPrompt 로 새 대화에서 한다.
 // 사람이 쓰는 것처럼: 크롬 창을 보이게 띄우고, 한 번에 한 건만, 동작 사이에 잠깐씩 쉰다.
 const chrome = require("../studio-chrome");
+const log = require("electron-log/main");
 
 const SEL = {
   URL: "https://chatgpt.com/",
@@ -53,8 +54,10 @@ function readByConversationApi(page) {
       const withTimeout = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("timeout")), ms))]);
       const id = (location.pathname.match(/\/c\/([0-9a-f-]{36})/) || [])[1];
       if (!id) return { error: "대화 주소 없음" };
-      const session = await withTimeout(fetch("/api/auth/session", { credentials: "include" }).then((r) => r.json()), 8000);
+      // 로그인 토큰은 5분 동안 다시 묻지 않는다 (자주 물으면 ChatGPT 가 429 로 막는다)
+      const { session } = (window.__gwTok && Date.now() - window.__gwTok.at < 300000 ? window.__gwTok : (window.__gwTok = { at: Date.now(), session: await withTimeout(fetch("/api/auth/session", { credentials: "include" }).then((r) => r.json()), 8000) }));
       const token = session && session.accessToken;
+      if (!token) window.__gwTok = null;
       if (!token) return { error: "로그인 토큰 없음" };
       const res = await withTimeout(fetch("/backend-api/conversation/" + id, { credentials: "include", headers: { Authorization: "Bearer " + token } }), 10000);
       if (!res.ok) return { error: "HTTP " + res.status };
@@ -82,17 +85,36 @@ const chatIdOf = (url) => (String(url || "").match(/\/c\/([0-9a-f-]{36})/) || []
 
 /* 대화를 열고 프롬프트를 넣어 보낸다. 보낸 ChatGPT 페이지와, 보내기 전 마지막 답변(prev)을 돌려준다.
    chatUrl 이 있으면 그 대화에 이어 보낸다 (수정 요청). 그 대화를 못 열면 새 대화에 fallbackPrompt 를 보낸다. */
-async function openAndSend(prompt, onProgress, { chatUrl = "", fallbackPrompt = "" } = {}) {
+async function openAndSend(prompt, onProgress, { chatUrl = "", fallbackPrompt = "", files = [] } = {}) {
   onProgress("스튜디오 전용 크롬에서 ChatGPT를 여는 중…");
   const page = await chrome.openPage("chatgpt.com", SEL.URL);
   let prev = null;
   const wantId = chatIdOf(chatUrl);
   if (wantId) {
-    await page.goto(`${SEL.URL}c/${wantId}`, { waitUntil: "domcontentloaded" });
-    await chrome.sleep(1500);
-    prev = chatIdOf(page.url()) === wantId ? await readByConversationApi(page) : null;
-    if (!prev || !prev.id) {
+    // 이미 그 대화가 열려 있으면 다시 열지 않는다 (방금 쓴 대화에 바로 이어 그리는 시뮬레이션)
+    if (chatIdOf(page.url()) !== wantId) await page.goto(`${SEL.URL}c/${wantId}`, { waitUntil: "domcontentloaded" });
+    // 보내기 전 마지막 답변 — 대화 원문이 늦게 읽히면 몇 번 더 본다
+    let found = false;
+    for (let i = 0; i < 8; i++) {
+      await chrome.sleep(i ? 1200 : 800);
+      if (chatIdOf(page.url()) !== wantId) continue;
+      const api = await readByConversationApi(page);
+      if (api.id) {
+        prev = api;
+        found = true;
+        break;
+      }
+      // 원문을 못 읽어도 대화가 열렸고 입력칸이 보이면 그 대화에 이어 보낸다 (이전 답은 화면 글로 구분)
+      if (i >= 4 && (await firstVisible(page, SEL.INPUT, 1000))) {
+        log.warn(`[ChatGPT] 대화 원문 읽기 실패(${api.error || "?"}) — 화면으로 이어 보냄`);
+        prev = { id: "", text: await readLastAnswer(page) };
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
       // 대화가 지워졌거나 열리지 않으면 새 대화에서 처음 자료와 지금 글을 함께 보낸다
+      log.warn(`[ChatGPT] 이어 쓸 대화를 못 엶: ${page.url()}`);
       prev = null;
       if (!fallbackPrompt) throw new Error("처음 쓴 ChatGPT 대화를 찾지 못했습니다. [다시 쓰기]를 해 주세요.");
       prompt = fallbackPrompt;
@@ -129,6 +151,22 @@ async function openAndSend(prompt, onProgress, { chatUrl = "", fallbackPrompt = 
     el.dispatchEvent(new InputEvent("input", { bubbles: true, cancelable: true }));
   }, prompt);
   await humanPause(700, 1500);
+
+  // 사진 첨부 (인테리어·리모델링 시뮬레이션 — 지금 모습 사진을 고쳐 그리게 한다). 올라가는 동안 보내기 버튼이 잠긴다
+  if (files.length) {
+    onProgress(`사진 ${files.length}장을 ChatGPT에 올리는 중…`);
+    const input = page.locator('input[type="file"][accept*="image"]').first();
+    const anyInput = page.locator('input[type="file"]').first();
+    await ((await input.count()) ? input : anyInput).setInputFiles(files);
+    await chrome.sleep(2500);
+    const deadline = Date.now() + 90 * 1000;
+    while (Date.now() < deadline) {
+      const btn = await firstVisible(page, SEL.SEND, 2000);
+      if (btn && (await btn.isEnabled().catch(() => false))) break;
+      await chrome.sleep(800);
+    }
+    await humanPause();
+  }
 
   const send = await firstVisible(page, SEL.SEND, 8000);
   if (send && (await send.isEnabled().catch(() => false))) await send.click();
@@ -172,13 +210,13 @@ function ask(prompt, { onProgress = () => {}, isComplete = () => true, onChat = 
       return connected(text);
     };
     // 이어 보낸 경우: 보내기 전 답변(prev)을 새 답으로 잘못 읽지 않는다
-    const isOld = (api, text) => Boolean(prev && ((api.id && api.id === prev.id) || (!api.id && text === prev.text)));
+    const isOld = (api, text) => Boolean(prev && (prev.id && api.id ? api.id === prev.id : text === prev.text));
     onProgress(prev ? "ChatGPT가 고치는 중… (1~2분)" : "ChatGPT가 글을 쓰는 중… (1~2분)");
     const deadline = Date.now() + 4 * 60 * 1000;
     let last = "";
     let stable = 0;
     while (Date.now() < deadline) {
-      await chrome.sleep(2000);
+      await chrome.sleep(3000); // 너무 자주 읽으면 ChatGPT 가 429 로 막는다
       if (page.isClosed()) throw new Error("ChatGPT 창이 닫혔습니다.");
       if (!/\/c\/[0-9a-f-]{36}/.test(page.url())) continue; // 아직 대화가 만들어지지 않음
 
@@ -205,8 +243,9 @@ function readImages(page) {
     .evaluate(async () => {
       const id = (location.pathname.match(/\/c\/([0-9a-f-]{36})/) || [])[1];
       if (!id) return { error: "대화 주소 없음" };
-      const session = await fetch("/api/auth/session", { credentials: "include" }).then((r) => r.json());
+      const { session } = (window.__gwTok && Date.now() - window.__gwTok.at < 300000 ? window.__gwTok : (window.__gwTok = { at: Date.now(), session: await fetch("/api/auth/session", { credentials: "include" }).then((r) => r.json()) }));
       const token = session && session.accessToken;
+      if (!token) window.__gwTok = null;
       if (!token) return { error: "로그인 토큰 없음" };
       const res = await fetch("/backend-api/conversation/" + id, { credentials: "include", headers: { Authorization: "Bearer " + token } });
       if (!res.ok) return { error: "HTTP " + res.status };
@@ -236,8 +275,9 @@ function readImages(page) {
 function downloadImage(page, conversationId, fileId) {
   return page.evaluate(
     async ({ id, file }) => {
-      const session = await fetch("/api/auth/session", { credentials: "include" }).then((r) => r.json());
+      const { session } = (window.__gwTok && Date.now() - window.__gwTok.at < 300000 ? window.__gwTok : (window.__gwTok = { at: Date.now(), session: await fetch("/api/auth/session", { credentials: "include" }).then((r) => r.json()) }));
       const token = session && session.accessToken;
+      if (!token) window.__gwTok = null;
       if (!token) return null;
       const meta = await fetch(`/backend-api/files/download/${encodeURIComponent(file)}?conversation_id=${id}&inline=false`, {
         credentials: "include",
@@ -260,9 +300,10 @@ function downloadImage(page, conversationId, fileId) {
 /**
  * 그림 프롬프트를 보내고, ChatGPT 가 만든 그림 1장을 data URL 로 돌려준다 (최대 5분).
  */
-function askImage(prompt, { onProgress = () => {} } = {}) {
+/* chatUrl: 그 대화에 이어서 그린다 (시뮬레이션: 설계 지시서를 받은 대화) · files: 첨부할 사진 경로 · onChat: 대화 주소 */
+function askImage(prompt, { onProgress = () => {}, chatUrl = "", files = [], onChat = () => {} } = {}) {
   return exclusive(async () => {
-    const { page } = await openAndSend(prompt, onProgress);
+    const { page } = await openAndSend(prompt, onProgress, { chatUrl, files });
     onProgress("ChatGPT가 그림을 그리는 중… (1~3분)");
     const deadline = Date.now() + 5 * 60 * 1000;
     let lastText = "";
@@ -278,6 +319,9 @@ function askImage(prompt, { onProgress = () => {} } = {}) {
         onProgress("그림을 받아 오는 중…");
         const dataUrl = await downloadImage(page, st.conversationId, done[done.length - 1].fileId);
         if (!dataUrl) throw new Error("ChatGPT 그림을 내려받지 못했습니다.");
+        try {
+          onChat(page.url());
+        } catch {}
         return connected(dataUrl);
       }
       // 그림 없이 글로만 답하고 끝났으면 (거절·하루 한도 등) 그 이유를 보여 준다

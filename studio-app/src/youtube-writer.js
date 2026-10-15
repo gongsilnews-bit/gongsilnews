@@ -23,10 +23,14 @@ const HOME = "https://www.gongsilnews.com";
 const DEFAULTS = { duration: "short", tone: "news", number: "hangul" }; // 회의 결정: 60초 쇼츠 · 한글 읽기 (AI 성우가 바로 읽게)
 
 const readAnalysis = (id) => readJson(path.join(mediaDir(id), "analysis.json"));
-const lib = (id) => (isColumn(id) ? yt.column : yt.gongsil);
+// 인테리어·리모델링(번호 int-·rem-): 확장 interior10·remodeling10 대본 (결과표 + 기사, 영상 형식은 인테리어용)
+const isSim = (id) => blogWriter.isSim(id);
+const simW = () => require("./sim-writer");
+const lib = (id) => (isColumn(id) ? yt.column : isSim(id) ? simW().lib(id) : yt.gongsil);
 
 function videoTypes(id) {
   if (isColumn(id)) return yt.column.GW_YT_VIDEO_TYPE;
+  if (isSim(id)) return simW().lib(id).gwYtVideoTypes(null);
   const analysis = readAnalysis(id);
   return yt.gongsil.gwYtVideoTypes(analysis && analysis.vacancy);
 }
@@ -49,7 +53,7 @@ function options(id) {
 function referenceArticle(id) {
   const ref = blogWriter.referenceArticle(id);
   if (ref) return ref;
-  if (isColumn(id)) throw new Error("먼저 [공실뉴스 기사] 탭에서 기사를 써 주세요. 대본은 그 기사를 바탕으로 씁니다.");
+  if (isColumn(id) || isSim(id)) throw new Error("먼저 [공실뉴스 기사] 탭에서 기사를 써 주세요. 대본은 그 기사를 바탕으로 씁니다.");
   const blog = readJson(blogWriter.blogFile(id));
   if (blog) return { title: blog.title, subtitles: [], body: blog.paragraphs.join("\n\n") };
   throw new Error("먼저 [공실뉴스 기사]나 [네이버 블로그]를 써 주세요. 대본은 그 글을 바탕으로 씁니다.");
@@ -58,9 +62,13 @@ function referenceArticle(id) {
 function scriptPrompt(id, settings) {
   const article = referenceArticle(id);
   if (isColumn(id)) return yt.column.gwBuildYtScriptPrompt({ article, source: require("./column-writer").readSource(id) }, settings);
+  const number = yt.column.GW_YT_NUMBER[settings.number] || yt.column.GW_YT_NUMBER.hangul;
+  if (isSim(id)) {
+    const { result, vacancy } = simW().resultOf(id);
+    return `${simW().lib(id).gwBuildYtScriptPrompt({ vacancy, article, remodel: result }, settings)}\n\n[숫자 표기]\n- ${number.prompt}`;
+  }
   const analysis = readAnalysis(id);
   if (!analysis) throw new Error("먼저 [분석·캡처]를 해 주세요.");
-  const number = yt.column.GW_YT_NUMBER[settings.number] || yt.column.GW_YT_NUMBER.hangul;
   // 매물 대본 프롬프트에는 숫자 읽기 칸이 없어 한 줄 덧붙인다 (AI 성우가 읽기 좋게)
   return `${yt.gongsil.gwBuildYtScriptPrompt({ vacancy: analysis.vacancy, article }, settings)}\n\n[숫자 표기]\n- ${number.prompt}`;
 }
@@ -91,6 +99,10 @@ function description(id, d) {
   const lines = [summary];
   if (isColumn(id)) {
     lines.push(`▶ 공실뉴스에서 더 보기\n${HOME}`, nm.gwSnsCredit(require("./column-writer").readSource(id)));
+  } else if (isSim(id)) {
+    // 예측 이미지를 실제 모습으로 오해하지 않게 (SNS 와 같은 안내)
+    const L = simW().lib(id);
+    lines.push(d.detailUrl ? `▶ 매물 자세히 보기 (공실뉴스 공실열람)\n${d.detailUrl}` : `▶ 공실뉴스에서 더 보기\n${HOME}`, L.GW_SNS_SIM_NOTICE || "", d.detailUrl ? "공실뉴스" : simW().creditOf(id));
   } else {
     lines.push(`▶ 매물 자세히 보기 (공실뉴스 공실열람)\n${d.detailUrl || HOME}`, "공실뉴스");
   }
@@ -124,7 +136,10 @@ async function write({ baseUrl, vacancyId: id, videoType, duration, tone, number
   onProgress("이용 횟수를 확인하는 중…");
   await blogWriter.useQuota(baseUrl, "youtube", id);
   let detailUrl = "";
-  if (!isColumn(id)) {
+  if (isSim(id)) {
+    const { result } = simW().resultOf(id);
+    if (result.vacancyId) detailUrl = await fetchListing(baseUrl, result.vacancyId, result.saleKind || "").then((l) => l.detailUrl).catch(() => "");
+  } else if (!isColumn(id)) {
     const analysis = readAnalysis(id);
     detailUrl = await fetchListing(baseUrl, id, analysis.vacancy.saleKind || "").then((l) => l.detailUrl).catch(() => "");
   }
@@ -145,7 +160,11 @@ async function revise({ vacancyId: id, request }, onProgress = () => {}) {
   const d = readJson(ytFile(id));
   if (!d) throw new Error("먼저 대본을 써 주세요.");
   const full = { title: d.title, text: d.narration.join("\n\n") };
-  const ask = isColumn(id) ? yt.column.gwBuildYtRevisePrompt(full, req) : yt.gongsil.gwBuildYtRevisePrompt(full, req, (readAnalysis(id) || {}).vacancy);
+  const ask = isColumn(id)
+    ? yt.column.gwBuildYtRevisePrompt(full, req)
+    : isSim(id)
+      ? simW().lib(id).gwBuildYtRevisePrompt(full, req, simW().resultOf(id).vacancy)
+      : yt.gongsil.gwBuildYtRevisePrompt(full, req, (readAnalysis(id) || {}).vacancy);
   const fallbackPrompt = `${scriptPrompt(id, d.settings || DEFAULTS)}\n\n${ask}`;
   let chatUrl = d.chatUrl || "";
   const text = await chatgpt.ask(ask, { onProgress, isComplete: (t) => lib(id).GWYoutubeJson.hasCompleteObject(t), chatUrl, fallbackPrompt, onChat: (u) => (chatUrl = u) });
@@ -177,8 +196,9 @@ function exportText(id) {
   const web = forWeb(id, d);
   const article = isColumn(id) ? readJson(blogWriter.docFile(id, "article")) : null;
   const analysis = readAnalysis(id) || { vacancy: {} };
-  const name = article ? `칼럼_${safeName(article.title)}` : safeName(analysis.vacancy.title) || "공실";
-  const folder = path.join(app.getPath("documents"), "공실뉴스 스튜디오", `${name}_${String(id).replace(/^col-/, "").slice(0, 8)}`, "유튜브");
+  const simTitle = isSim(id) ? `${simW().kindOf(id) === "interior" ? "인테리어" : "리모델링"}_${safeName(simW().resultOf(id).result.title)}` : "";
+  const name = simTitle || (article ? `칼럼_${safeName(article.title)}` : safeName(analysis.vacancy.title) || "공실");
+  const folder = path.join(app.getPath("documents"), "공실뉴스 스튜디오", `${name}_${String(id).replace(/^(col|int|rem)-/, "").slice(0, 8)}`, "유튜브");
   fs.mkdirSync(folder, { recursive: true });
   const min = Math.floor(web.seconds / 60);
   const text = [
