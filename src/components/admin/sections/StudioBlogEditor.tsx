@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import StudioReviseBar from "./StudioReviseBar";
+import StudioWorking from "./StudioWorking";
 
 /**
  * 블로그 미리보기 편집기 (공실뉴스 스튜디오 SNS뉴스발행 3단계)
@@ -275,8 +276,10 @@ export default function StudioBlogEditor({ theme, initial }: { theme: Theme; ini
           style={{ padding: "9px 16px", borderRadius: 8, border: 0, background: "#1a3a6b", color: "#fff", fontSize: 13, fontWeight: 700, cursor: aiBusy ? "default" : "pointer", opacity: aiBusy ? 0.6 : 1 }}>
           {aiBusy ? "그리는 중…" : "ChatGPT로 그리기"}
         </button>
-        <span style={{ fontSize: 12, color: aiErr ? "#c53030" : theme.textSecondary }}>{aiErr || aiMsg || "1~3분 걸립니다. 글자·사람 얼굴은 넣지 않습니다."}</span>
+        {!aiBusy && <span style={{ fontSize: 12, color: aiErr ? "#c53030" : theme.textSecondary }}>{aiErr || "1~3분 걸립니다. 글자·사람 얼굴은 넣지 않습니다."}</span>}
       </div>
+      {/* 그리는 동안: 점점점 + 쉬운 말 + 걸린 시간 */}
+      {aiBusy && <StudioWorking title="AI가 이미지를 만들고 있어요" detail={aiMsg} />}
     </div>
   );
 
