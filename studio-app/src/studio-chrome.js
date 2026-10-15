@@ -128,6 +128,7 @@ async function closeControlled() {
  */
 async function openPlain(url, timeoutMs = 15 * 60 * 1000) {
   await closeControlled();
+  await closeStrayChrome(); // 남은 창이 있으면 새 로그인 창이 그 창에 묻혀 바로 끝나 버린다
   const proc = spawnChrome([...visiblePlacement(), url]);
   plainProc = proc;
   await new Promise((resolve) => {
@@ -153,9 +154,42 @@ function closePlain() {
   execFile("taskkill", ["/PID", String(proc.pid), "/T"], () => {});
 }
 
+/* 이 프로필로 떠 있는 크롬 본체 프로세스 번호들 (조종용·로그인용 모두) */
+function profileChromePids() {
+  return new Promise((resolve) => {
+    const dir = profileDir().replace(/'/g, "''");
+    const ps = `Get-CimInstance Win32_Process -Filter "Name='chrome.exe' OR Name='msedge.exe'" | Where-Object { $_.CommandLine -like '*${dir}*' -and $_.CommandLine -notlike '*--type=*' } | ForEach-Object { $_.ProcessId }`;
+    execFile("powershell", ["-NoProfile", "-Command", ps], { windowsHide: true }, (err, out) => {
+      resolve(err ? [] : String(out).split(/\s+/).map(Number).filter(Boolean));
+    });
+  });
+}
+
+/*
+ * 조종 없이 떠 있는 전용 크롬(로그인 창 등)이 있으면 조종용 크롬을 띄울 수 없다.
+ * (같은 프로필이면 새 크롬이 떠 있는 창에 빈 탭만 열고 끝난다)
+ *  - 지금 로그인 중인 창이면 회원에게 [로그인 다 했어요]를 먼저 누르라고 알린다.
+ *  - 지난 실행에서 남은 창이면 창 닫기로 정상 종료시킨다.
+ */
+async function closeStrayChrome() {
+  if (plainProc && plainProc.exitCode === null) {
+    throw new Error("로그인용 크롬 창이 아직 열려 있습니다. [내 AI·계정 연결] 창에서 [로그인 다 했어요]를 먼저 눌러 주세요.");
+  }
+  let pids = await profileChromePids();
+  if (!pids.length) return;
+  log.info(`[전용 크롬] 남아 있는 창 정리 ${pids.join(",")}`);
+  for (const pid of pids) execFile("taskkill", ["/PID", String(pid), "/T"], () => {});
+  for (let i = 0; i < 30 && pids.length; i++) {
+    await sleep(500);
+    pids = await profileChromePids();
+  }
+  if (pids.length) throw new Error("이전에 열린 스튜디오 전용 크롬 창을 닫지 못했습니다. 그 크롬 창을 직접 닫고 다시 눌러 주세요.");
+}
+
 /** 전용 크롬을 켜거나, 이미 켜져 있으면 붙는다. hidden 이면 화면 밖에 띄운다 (확인용) */
 async function ensureBrowser({ hidden = false } = {}) {
   if (await isRunning()) return browser;
+  await closeStrayChrome();
 
   try {
     fs.unlinkSync(portFile());
