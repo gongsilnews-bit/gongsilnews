@@ -121,10 +121,11 @@ async function fillNaver({ baseUrl, vacancyId, design }, onProgress = () => {}) 
   return { ok: true, imagesInserted: res.imagesInserted, imagesTotal: blocks.filter((b) => b.type === "image").length, design: chosenDesign, tags };
 }
 
-/* [네이버 블로그 바로가기]: 전용 크롬(로그인된)에서 내 블로그를 연다 */
+/* [네이버 블로그 바로가기]: 전용 크롬(로그인된)에서 네이버 블로그 홈(이웃 새글)을 연다 */
+const BLOG_HOME_URL = "https://section.blog.naver.com/BlogHome.naver?directoryNo=0&currentPage=1&groupId=0";
 async function openMyBlog() {
-  const page = await chrome.openPage("blog.naver.com", "https://blog.naver.com/MyBlog.naver");
-  if (!/MyBlog|blog\.naver\.com\/[A-Za-z0-9_-]+$/.test(page.url())) await page.goto("https://blog.naver.com/MyBlog.naver", { waitUntil: "domcontentloaded" });
+  const page = await chrome.openPage("section.blog.naver.com", BLOG_HOME_URL);
+  if (page.url() !== BLOG_HOME_URL) await page.goto(BLOG_HOME_URL, { waitUntil: "domcontentloaded" });
   return { ok: true };
 }
 
