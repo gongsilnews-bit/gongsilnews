@@ -591,7 +591,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       {(line || (clip && editing === `sub:${clip.id}`)) && (() => {
         const look: React.CSSProperties = {
           display: "inline", whiteSpace: "pre-wrap", fontFamily: fontCss(st.font), fontWeight: fontWeight(st.font, st.bold !== false),
-          fontSize: fontPx, lineHeight: 1.25, letterSpacing: `${Math.max(-0.1, Math.min(0.5, st.spacing ?? 0)) * fontPx}px`, color: st.color || "#fff", WebkitTextStroke: st.bg ? undefined : `${Math.max(1, (st.outlineWidth ?? 3) * k * 2)}px ${st.outline || "#000"}`,
+          fontSize: fontPx, lineHeight: Math.max(0.9, Math.min(2.5, st.leading ?? 1.25)), letterSpacing: `${Math.max(-0.1, Math.min(0.5, st.spacing ?? 0)) * fontPx}px`, color: st.color || "#fff", WebkitTextStroke: st.bg ? undefined : `${Math.max(1, (st.outlineWidth ?? 3) * k * 2)}px ${st.outline || "#000"}`,
           paintOrder: "stroke fill", background: st.bg ? rgba(st.bgColor || "#000000", st.bgOpacity ?? 0.62) : undefined, padding: st.bg ? `${fontPx * 0.12}px ${fontPx * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
         };
         const full = clip ? (typeof clip.subText === "string" ? clip.subText : clipText(clip)) : "";

@@ -93,6 +93,7 @@ export type SubtitleSettings = {
   x?: number; y?: number; // 미리보기에서 끌어 옮긴 자리 (가운데 기준 0~1). 있으면 position 대신
   wrap?: number; // 줄 너비 (1 = 기본, 0.3~1) — 한 줄 글자 수를 그만큼 줄인다
   spacing?: number; // 자간 — 글자 크기에 대한 비율 (-0.1~0.5, 0 = 기본)
+  leading?: number; // 행간 — 줄 높이 = 글자 크기 × 이 값 (0.9~2.5, 없으면 1.25)
 };
 
 export type Settings = {

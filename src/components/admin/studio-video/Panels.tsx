@@ -442,6 +442,13 @@ export function SubtitlePanel({ settings, onChange, onClose, clip, onSubText, ra
         <input type="range" min={40} max={260} step={5} value={s.size} onChange={(e) => onChange({ size: Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
       </div>
       <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}>
+        <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>행간 (줄 사이)</span><span>{Math.round(((s.leading ?? 1.25) / 1.25) * 100)}%</span></div>
+        <input type="range" min={0.9} max={2.5} step={0.05} value={s.leading ?? 1.25} onChange={(e) => onChange({ leading: Math.abs(Number(e.target.value) - 1.25) < 0.001 ? undefined : Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
+        <div style={{ display: "flex", gap: 6, marginTop: 6, marginBottom: 14 }}>
+          {[[1, "좁게"], [1.25, "기본"], [1.6, "넓게"], [2, "더 넓게"]].map(([v, t]) => (
+            <button key={String(v)} type="button" onClick={() => onChange({ leading: v === 1.25 ? undefined : (v as number) })} style={{ ...chip(Math.abs((s.leading ?? 1.25) - (v as number)) < 0.001), flex: 1, padding: 0 }}>{t}</button>
+          ))}
+        </div>
         <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>자간 (글자 사이)</span><span>{Math.round((s.spacing ?? 0) * 100)}%</span></div>
         <input type="range" min={-0.1} max={0.5} step={0.01} value={s.spacing ?? 0} onChange={(e) => onChange({ spacing: Number(e.target.value) || undefined })} style={{ width: "100%", accentColor: C.accent }} />
         <div style={{ display: "flex", gap: 6, marginTop: 6 }}>

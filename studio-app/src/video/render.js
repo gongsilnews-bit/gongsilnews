@@ -277,9 +277,33 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
   const subPos = typeof sst.x === "number" && typeof sst.y === "number" ? `{\\an5\\pos(${Math.round(sst.x * W)},${Math.round(sst.y * H)})}` : "";
   const texts = layers.filter((l) => l.type === "text" && String(l.text || "").trim());
   if (lines.length || texts.length) {
-    const styles = [subtitleStyle(W, H, sst).style, ...texts.map((l, j) => textLayerStyle(`T${j}`, W, H, l))];
+    const sub = subtitleStyle(W, H, sst);
+    const styles = [sub.style, ...texts.map((l, j) => textLayerStyle(`T${j}`, W, H, l))];
+    // 행간을 바꿨으면 줄마다 자리를 계산해 따로 놓는다 (자막 엔진에 행간 설정이 없어서). 미리보기 Player.tsx 와 같은 줄 높이
+    const lead = typeof sst.leading === "number" ? Math.max(0.9, Math.min(2.5, sst.leading)) : 0;
+    const subEvents = (l) => {
+      const parts = String(l.text).split(/\r?\n/);
+      if (!lead || parts.length < 2) return [`Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${subPos}${assEsc(l.text)}`];
+      const lh = sub.size * lead;
+      const n = parts.length;
+      const pos = sst.position || "bottom";
+      const free = typeof sst.x === "number" && typeof sst.y === "number";
+      return parts.map((t, i) => {
+        let tag;
+        if (free || pos === "middle") {
+          const cx = free ? sst.x * W : W / 2;
+          const cy = free ? sst.y * H : H / 2;
+          tag = `{\\an5\\pos(${Math.round(cx)},${Math.round(cy + (i - (n - 1) / 2) * lh)})}`;
+        } else if (pos === "top") tag = `{\\an8\\pos(${Math.round(W / 2)},${Math.round(H * 0.08 + i * lh)})}`;
+        else {
+          const bottom = H - (pos === "middle-low" ? H * 0.24 : H * 0.07);
+          tag = `{\\an2\\pos(${Math.round(W / 2)},${Math.round(bottom - (n - 1 - i) * lh)})}`;
+        }
+        return `Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${tag}${assEsc(t)}`;
+      });
+    };
     const events = [
-      ...lines.map((l) => `Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${subPos}${assEsc(l.text)}`),
+      ...lines.flatMap(subEvents),
       // 미리보기에서 끌어 옮긴 글자는 그 자리(가운데 기준)에
       ...texts.map((l, j) => `Dialogue: 1,${assTime(0)},${assTime(dur + 0.05)},T${j},,0,0,0,,${typeof l.x === "number" && typeof l.y === "number" ? `{\\an5\\pos(${Math.round(l.x * W)},${Math.round(l.y * H)})}` : ""}${assEsc(String(l.text).trim())}`),
     ];
