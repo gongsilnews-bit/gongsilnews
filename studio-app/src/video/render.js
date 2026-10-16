@@ -167,6 +167,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
   const args = ["-y", "-hide_banner", "-loglevel", "error"];
   const filters = [];
   let aIn = null;
+  let visIn = -1; // 배경 영상 입력 번호 (목소리 클립 화면 영상 소리 섞기)
   let n = 0;
 
   // 화면 — 글 클립: 화면 자료 / 촬영 클립: 그 영상 (화면만 바꾼 경우 바꾼 자료, 소리는 원본)
@@ -196,6 +197,7 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
       const vs = Number(clip.visual && clip.visual.s) || 0;
       if (visual.duration && visual.duration - vs < dur) args.push("-stream_loop", "-1");
       args.push("-ss", vs.toFixed(3), "-t", dur.toFixed(3), "-i", assetFile(visual));
+      visIn = n;
       filters.push(`[${n++}:v]fps=${FPS},setpts=PTS-STARTPTS[vraw]`);
     } else {
       args.push("-f", "lavfi", "-t", dur.toFixed(3), "-i", `color=c=black:s=${W}x${H}:r=${FPS}`);
@@ -316,6 +318,9 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
 
   // 소리
   const vol = (x) => Math.max(0, Math.min(3, Number(x ?? 1)));
+  // 목소리 클립: 화면 영상 소리 (올렸을 때만)
+  const vv = clip.type === "voice" && visIn >= 0 && visual && visual.hasAudio ? Math.max(0, Math.min(2, Number(clip.visualVolume) || 0)) : 0;
+  if (vv > 0) filters.push(`[${visIn}:a]volume=${vv.toFixed(3)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[avis]`);
   if (clip.type === "voice" && clip.voice && clip.voice.file && fs.existsSync(clip.voice.file)) {
     args.push("-i", clip.voice.file);
     const k = n++;
@@ -325,7 +330,10 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     while (s > 2) { tempo.push("atempo=2"); s /= 2; }
     while (s < 0.5) { tempo.push("atempo=0.5"); s /= 0.5; }
     if (Math.abs(s - 1) > 0.001) tempo.push(`atempo=${s.toFixed(3)}`);
-    filters.push(`[${k}:a]${tempo.length ? tempo.join(",") + "," : ""}volume=${vol(st.voice && st.voice.volume)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[aout]`);
+    filters.push(`[${k}:a]${tempo.length ? tempo.join(",") + "," : ""}volume=${vol(st.voice && st.voice.volume)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[${vv > 0 ? "avo" : "aout"}]`);
+    if (vv > 0) filters.push(`[avo][avis]amix=inputs=2:duration=first:normalize=0[aout]`);
+  } else if (vv > 0) {
+    filters.push(`[avis]anull[aout]`);
   } else if (aIn && !clip.muted) {
     filters.push(`[${aIn}]volume=${vol(st.sourceVolume) * vol(clip.volume)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[aout]`);
   } else {

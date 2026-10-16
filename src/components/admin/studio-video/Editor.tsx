@@ -585,6 +585,17 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const canStart = (c: Clip) => Boolean(c.visual && project.assets[c.visual.asset]?.kind === "video" && !(c.src && c.src.asset === c.visual.asset));
   /** 클립 소리 — 원본 소리가 있는 영상 클립 (촬영·불러온 영상) */
   const soundOf = (c: Clip) =>
+    c.type === "voice" && c.visual && project.assets[c.visual.asset]?.kind === "video" && project.assets[c.visual.asset]?.hasAudio
+      ? {
+          // AI 목소리 클립의 화면 영상 소리 — 기본 무음, 올리면 목소리와 섞인다
+          label: "이 클립 화면 영상의 소리 (AI 목소리와 섞여요)",
+          muted: !(c.visualVolume && c.visualVolume > 0),
+          value: c.visualVolume && c.visualVolume > 0 ? c.visualVolume : 1,
+          onMute: (v: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.visualVolume = v ? undefined : x.visualVolume || 1; }),
+          onVolume: (v: number, first: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.visualVolume = v > 0 ? +v.toFixed(2) : undefined; }, first),
+        }
+      : soundOfSource(c);
+  const soundOfSource = (c: Clip) =>
     // 보이는 화면이 영상일 때만 (사진으로 바꾼 클립은 카드의 [소리 끄기]로)
     c.type !== "voice" && c.src && project.assets[c.src.asset]?.hasAudio && project.assets[(c.visual || c.src).asset]?.kind === "video"
       ? {

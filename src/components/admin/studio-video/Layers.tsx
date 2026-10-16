@@ -203,7 +203,7 @@ export function VisualPanel({ project, clip, n, total, cur, many, sound, onFit, 
   total: number;
   cur: number;
   many: { a: number; b: number; n: number } | null; // 고른 클립 범위 (여러 개 골랐을 때)
-  sound?: { muted: boolean; value: number; onMute: (v: boolean) => void; onVolume: (v: number, first: boolean) => void };
+  sound?: { muted: boolean; value: number; label?: string; onMute: (v: boolean) => void; onVolume: (v: number, first: boolean) => void };
   onFit: (f: Fill) => void;
   onFlip: (axis: "x" | "y") => void;
   onReplace: () => void;
@@ -243,7 +243,7 @@ export function VisualPanel({ project, clip, n, total, cur, many, sound, onFit, 
       </div>
       {sound && (
         <div style={row}>
-          <div style={{ ...label, marginBottom: 8 }}>소리 <span style={{ color: C.sub, fontWeight: 600 }}>· 이 클립의 원본 소리</span></div>
+          <div style={{ ...label, marginBottom: 8 }}>소리 <span style={{ color: C.sub, fontWeight: 600 }}>· {sound.label || "이 클립의 원본 소리"}</span></div>
           <VolumeControl muted={sound.muted} value={sound.value} onMute={sound.onMute} onVolume={sound.onVolume} />
         </div>
       )}

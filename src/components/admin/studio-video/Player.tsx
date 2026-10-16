@@ -144,8 +144,10 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         } catch {}
       }
       const st = project.settings;
-      v.muted = !sameSource || Boolean(c.muted);
-      v.volume = Math.max(0, Math.min(1, (st.sourceVolume ?? 1) * (c.volume ?? 1)));
+      // 목소리 클립은 화면 영상 소리를 올렸을 때만 (기본 무음)
+      const vv = c.type === "voice" ? Math.max(0, Math.min(2, c.visualVolume || 0)) : 0;
+      v.muted = c.type === "voice" ? vv <= 0 : !sameSource || Boolean(c.muted);
+      v.volume = c.type === "voice" ? Math.min(1, vv) : Math.max(0, Math.min(1, (st.sourceVolume ?? 1) * (c.volume ?? 1)));
       v.playbackRate = rateOk(previewRate * (sameSource ? srcSpeed(c) : 1));
       if (bgRef.current && fill === "blur") {
         try {
