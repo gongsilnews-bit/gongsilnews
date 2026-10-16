@@ -161,7 +161,19 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             style={{ position: "relative", aspectRatio: "16 / 10", padding: 0, borderRadius: 4, overflow: "hidden", border: `2px solid ${on ? C.accent : "transparent"}`, background: "#000", cursor: "pointer" }}>
             {it.thumb ? <img src={it.thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 12 }}>준비 중</span>}
             {it.kind === "video" && <span style={{ position: "absolute", left: 6, bottom: 5, fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.6)", padding: "1px 5px", borderRadius: 3 }}>{dur ? fmtTime(dur, false) : "영상"}</span>}
-            {"fav" in it && it.fav && <span style={{ position: "absolute", right: 5, top: 4, color: "#fff" }}><Icon name="star" size={15} /></span>}
+            {"fav" in it && (
+              <span role="button" title={it.fav ? "즐겨찾기 빼기" : "즐겨찾기"} draggable={false}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const fav = !it.fav;
+                  await b?.lib.fav(it.id, fav);
+                  if (picked && picked.id === it.id) setPicked({ ...picked, fav });
+                  load();
+                }}
+                style={{ position: "absolute", right: 4, top: 4, width: 26, height: 26, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)", color: it.fav ? "#FACC15" : "#fff", cursor: "pointer" }}>
+                <svg width={16} height={16} viewBox="0 0 24 24" fill={it.fav ? "#FACC15" : "none"} stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z" /></svg>
+              </span>
+            )}
           </button>
           {/* 고른 자료가 있는 줄 바로 아래에 단추 (두 칸 줄이라 줄 끝에서) */}
           {inlinePick && (() => {
@@ -169,7 +181,7 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
             const i = list.indexOf(it);
             return pi >= 0 && (i === Math.min(list.length - 1, pi - (pi % 2) + 1)) ? (
               <div ref={(el) => el?.scrollIntoView({ block: "nearest", behavior: "smooth" })}
-                style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6, padding: 10, borderRadius: 6, border: `1px solid ${C.accent}`, background: C.panel2 }}>
+                style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6, padding: 8, borderRadius: 6, border: `1px solid ${C.accent}`, background: C.panel2 }}>
                 {pickActions}
               </div>
             ) : null;
@@ -182,18 +194,14 @@ export function LibraryPanel({ project, canReplace, onPick, onClose, initialTab 
 
   const pickActions = picked && (
     <>
-      <div style={{ width: "100%", fontSize: 13.5, color: C.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>고른 자료: {picked.name}</div>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 6 }}>
           {overlay ? (
             <Btn primary small onClick={() => act("overlay")} disabled={picked.kind !== "image"}><Icon name="image" size={16} />{picked.kind === "image" ? "화면 위에 올리기" : "사진만 올릴 수 있어요"}</Btn>
           ) : (
             <>
-              {canReplace && <Btn primary small onClick={() => act("replace")}><Icon name="image" size={16} />고른 클립 화면 바꾸기</Btn>}
-              <Btn small onClick={() => act("insert")}><Icon name="plus" size={16} />{canReplace ? "고른 클립 뒤에 넣기" : "끝에 넣기"}</Btn>
+              {canReplace && <Btn primary small onClick={() => act("replace")} title="고른 클립의 화면을 이 자료로 바꿔요" style={{ flex: 1, justifyContent: "center" }}><Icon name="image" size={16} />화면 바꾸기</Btn>}
+              <Btn small onClick={() => act("insert")} title={canReplace ? "고른 클립 뒤에 새 클립으로 넣어요" : "맨 끝에 새 클립으로 넣어요"} style={{ flex: 1, justifyContent: "center" }}><Icon name="plus" size={16} />{canReplace ? "뒤에 넣기" : "끝에 넣기"}</Btn>
             </>
-          )}
-          {"fav" in picked && (
-            <Btn small onClick={async () => { await b?.lib.fav(picked.id, !picked.fav); setPicked({ ...picked, fav: !picked.fav }); load(); }}><Icon name="star" size={16} />{picked.fav ? "즐겨찾기 빼기" : "즐겨찾기"}</Btn>
           )}
       </div>
     </>
