@@ -1211,8 +1211,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             </button>
             <span style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtTime(time)} <span style={{ color: C.dim }}>/ {fmtTime(flat.total)}</span></span>
             <span style={{ flex: 1 }} />
-            <select value={rate} onChange={(e) => setRate(Number(e.target.value))} title="미리보기 빠르기" style={{ height: 34, borderRadius: 5, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14, fontFamily: FONT }}>
-              {[0.75, 1, 1.25, 1.5, 2].map((r) => <option key={r} value={r}>{r}배</option>)}
+            <select value={rate} onChange={(e) => setRate(Number(e.target.value))} title="미리보기만 빠르게·느리게 봐요 (만든 영상의 빠르기는 그대로)" style={{ height: 34, borderRadius: 5, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 14, fontFamily: FONT }}>
+              {[0.75, 1, 1.25, 1.5, 2].map((r) => <option key={r} value={r}>미리보기 {r}배</option>)}
             </select>
             <button type="button" onClick={() => { if (!big && !panel && selLayer) setPanel("layer"); setBig(!big); }} title={big ? "작게 보기 (Esc)" : "미리보기를 크게 보기"}
               style={{ height: 34, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, borderRadius: 5, border: `1px solid ${C.line2}`, background: C.card, color: C.text, fontSize: 13.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer", whiteSpace: "nowrap" }}>
