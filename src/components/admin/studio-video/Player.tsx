@@ -7,7 +7,7 @@ import { RATIO_SIZE, rgba } from "./types";
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
 import { clipOrder, clipText, flatten, layerItems, layersAt, musicLayers, sourceTimeAt, speedOf, subtitleLines } from "./timeline";
-import { C } from "./ui";
+import { C, Icon } from "./ui";
 
 export type PlayerHandle = { play: () => void; pause: () => void; toggle: () => void; seek: (t: number) => void; time: () => number; playing: () => boolean };
 
@@ -26,7 +26,7 @@ type Props = {
   onSubText?: (clipId: string, text: string) => void;
   /** 미리보기에서 클립 화면을 끌어 옮기기·크기 / 자막을 끌어 옮기기·줄 너비 */
   onVisualMove?: (clipId: string, box: { x: number; y: number; w: number }, first: boolean) => void;
-  onSubMove?: (patch: { x?: number; y?: number; wrap?: number }, first: boolean) => void;
+  onSubMove?: (patch: { x?: number; y?: number; wrap?: number; size?: number }, first: boolean) => void;
   /** 클립 화면·자막을 눌러 고르면 (오른쪽 속성 칸 열기) */
   onBoxPick?: (kind: "visual" | "sub", clipId: string) => void;
 };
@@ -408,7 +408,16 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       const dx = ev.clientX - sx;
       const dy = ev.clientY - sy;
       if (kind === "sub") {
-        if (mode === "e" || mode === "w") {
+        if (mode !== "move" && mode !== "e" && mode !== "w") {
+          const ccx = el.left + el.width / 2;
+          const ccy = el.top + el.height / 2;
+          const k0x = Math.abs(sx - ccx) / Math.max(1, el.width / 2);
+          const k0y = Math.abs(sy - ccy) / Math.max(1, el.height / 2);
+          const kx = Math.abs(ev.clientX - ccx) / Math.max(1, el.width / 2) / Math.max(0.01, k0x);
+          const ky = Math.abs(ev.clientY - ccy) / Math.max(1, el.height / 2) / Math.max(0.01, k0y);
+          const s0 = st.size || 100;
+          onSubMove!({ size: Math.round(clamp(s0 * Math.max(kx, ky), 40, 260)) }, first);
+        } else if (mode === "e" || mode === "w") {
           const nw = el.width + (mode === "e" ? dx : -dx) * 2; // 가운데는 그대로, 양쪽으로
           onSubMove!({ wrap: +clamp(nw / (box.width * 0.88), 0.3, 1).toFixed(3) }, first);
         } else onSubMove!({ x: +clamp(cx + dx / box.width, 0.05, 0.95).toFixed(4), y: +clamp(cy + dy / box.height, 0.05, 0.95).toFixed(4) }, first);
@@ -439,10 +448,24 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
               <span key={c} onPointerDown={(e) => startBox("visual", c, e)} title="끌어서 크기 바꾸기 (반대쪽 모서리는 그대로)"
                 style={{ position: "absolute", [c[0] === "n" ? "top" : "bottom"]: -8, [c[1] === "w" ? "left" : "right"]: -8, width: 12, height: 12, background: "#fff", border: "1.5px solid #000", cursor: c === "nw" || c === "se" ? "nwse-resize" : "nesw-resize", touchAction: "none", pointerEvents: "auto" }} />
             ))
-          : (["w", "e"] as const).map((sd) => (
-              <span key={sd} onPointerDown={(e) => startBox("sub", sd, e)} title="끌어서 줄 너비 바꾸기"
-                style={{ position: "absolute", top: "50%", [sd === "w" ? "left" : "right"]: -9, width: 10, height: 26, marginTop: -13, background: "#fff", border: "1.5px solid #000", borderRadius: 3, cursor: "ew-resize", touchAction: "none", pointerEvents: "auto" }} />
-            ))}
+          : (
+            <>
+              {(["w", "e"] as const).map((sd) => (
+                <span key={sd} onPointerDown={(e) => startBox("sub", sd, e)} title="끌어서 줄 너비 바꾸기"
+                  style={{ position: "absolute", top: "50%", [sd === "w" ? "left" : "right"]: -9, width: 10, height: 26, marginTop: -13, background: "#fff", border: "1.5px solid #000", borderRadius: 3, cursor: "ew-resize", touchAction: "none", pointerEvents: "auto" }} />
+              ))}
+              {(["nw", "ne", "sw", "se"] as Corner[]).map((c) => (
+                <span key={c} onPointerDown={(e) => startBox("sub", c, e)} title="끌어서 글자 크기 바꾸기"
+                  style={{ position: "absolute", [c[0] === "n" ? "top" : "bottom"]: -8, [c[1] === "w" ? "left" : "right"]: -8, width: 12, height: 12, background: "#fff", border: "1.5px solid #000", cursor: c === "nw" || c === "se" ? "nwse-resize" : "nesw-resize", touchAction: "none", pointerEvents: "auto" }} />
+              ))}
+              {onSubText && clip && (
+                <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setEditing(`sub:${clip.id}`); }} title="메인자막 글 고치기 (두 번 눌러도 돼요)"
+                  style={{ position: "absolute", right: -8, top: -38, height: 26, padding: "0 8px", display: "flex", alignItems: "center", gap: 4, borderRadius: 5, border: "1.5px solid #000", background: "#fff", color: "#111", fontSize: 12, fontWeight: 800, cursor: "pointer", pointerEvents: "auto", whiteSpace: "nowrap" }}>
+                  <Icon name="pen" size={13} />글 고치기
+                </button>
+              )}
+            </>
+          )}
       </>
     ) : null;
 
@@ -572,7 +595,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           ? { left: (st.x as number) * boxW, top: (st.y as number) * boxH, transform: "translate(-50%, -50%)" }
           : { left: (boxW - subW) / 2, ...posStyle };
         return (
-          <div data-layer="__sub" onPointerDown={onSubMove ? (e) => startBox("sub", "move", e) : undefined}
+          <div data-layer="__sub" onPointerDown={onSubMove && !(clip && editing === `sub:${clip.id}`) ? (e) => startBox("sub", "move", e) : undefined}
             style={{ position: "absolute", width: subW, textAlign: "center", ...at, pointerEvents: onSubMove ? "auto" : "none", cursor: onSubMove ? "move" : undefined, touchAction: "none" }}>
             {boxFrame("sub")}
             {clip && editing === `sub:${clip.id}` && onSubText ? (
