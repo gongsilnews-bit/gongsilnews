@@ -852,6 +852,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const preview = useRef<HTMLVideoElement>(null);
   const streams = useRef<MediaStream[]>([]);
   const rec = useRef<MediaRecorder | null>(null);
+  const writes = useRef<Promise<void>>(Promise.resolve()); // 녹화 조각 쓰기 줄 (차례대로)
   const token = useRef("");
   const raf = useRef(0);
   // 녹화 전 실시간 보기 — 모니터에 마우스를 올리면 그 모니터, 아니면 고른 모니터 (카메라 모드는 카메라)
@@ -1087,8 +1088,15 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       token.current = await b.record.start(mode === "camera" ? "카메라 녹화" : "화면 녹화", { dir: saveDir || undefined, fileName: fileName.trim() || undefined });
       const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus") ? "video/webm;codecs=vp9,opus" : "video/webm";
       const r = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
-      r.ondataavailable = async (e) => {
-        if (e.data.size) await b.record.chunk(token.current, await e.data.arrayBuffer());
+      // 조각은 받은 순서대로 하나씩 쓴다 — 따로따로 쓰면 느린 PC에서 순서가 뒤바뀌어(첫 조각=머리말) 파일이 깨졌다 (2026-10-16)
+      writes.current = Promise.resolve();
+      const tk = token.current;
+      r.ondataavailable = (e) => {
+        if (!e.data.size) return;
+        const blob = e.data;
+        writes.current = writes.current.then(async () => {
+          await b.record.chunk(tk, await blob.arrayBuffer());
+        }).catch(() => {});
       };
       r.start(1000);
       rec.current = r;
@@ -1117,7 +1125,9 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
       r.onstop = () => res();
       r.stop();
     });
-    await new Promise((res) => setTimeout(res, 400));
+    // 마지막 조각까지 다 쓴 뒤에 파일을 닫는다 (느린 PC에서는 0.4초로 모자랐다)
+    await new Promise((res) => setTimeout(res, 100));
+    await writes.current;
     stopAll();
     try {
       const item = await b.record.stop(token.current);

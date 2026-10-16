@@ -388,7 +388,10 @@ function register(base) {
       await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-i", r.file, "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p", "-r", "30", ...enc.args("fast"), "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", mp4]);
       fs.rmSync(r.file, { force: true });
     } catch (err) {
-      log.warn(`[녹화] mp4 변환 실패, webm 그대로: ${err.message}`);
+      log.warn(`[녹화] mp4 변환 실패: ${err.message} (webm ${fs.existsSync(r.file) ? fs.statSync(r.file).size : 0}바이트)`);
+      // webm 이라도 읽히면 그걸로, 깨졌으면 알아듣게 알린다 (조각 순서가 뒤바뀌면 머리말이 없어 못 읽는다)
+      const ok = await ff.probe(r.file).then((i) => i && i.duration > 0).catch(() => false);
+      if (!ok) throw new Error("녹화한 파일을 읽지 못했어요. 다시 녹화해 주세요. (녹화가 너무 짧았거나 파일이 깨졌어요)");
       return (await library.add([r.file], { source: "record" }))[0];
     }
     return (await library.add([mp4], { source: "record" }))[0];
