@@ -7,7 +7,7 @@ import type { Clip, Project, Word } from "./types";
 import { DRAG_MEDIA, fmtTime } from "./types";
 import { clipText, type FlatItem, speedOf, srcSpeed, wordTimes } from "./timeline";
 import { STUDIO_VOICES } from "@/lib/studio-video/voices";
-import { C, Icon, FONT } from "./ui";
+import { C, Icon, FONT, VolumeControl } from "./ui";
 import { Gutter, type LaneEntry, type LayerDrag } from "./Layers";
 
 export type ClipActions = {
@@ -24,6 +24,7 @@ export type ClipActions = {
   openMedia: (id: string, x: number, y: number) => void; // 화면 썸네일을 누르면 사진·영상 메뉴
   openTiming: (id: string) => void; // 시간을 누르면 속도·길이 칸
   toggleMute: (id: string) => void;
+  setSource: (id: string, patch: { muted?: boolean; volume?: number }, first: boolean) => void; // 원본 소리 무음·크기
   sceneBreak: (id: string) => void;
   play: (id: string) => void;
   editSub: (id: string, text: string | null) => void; // 자막만 고치기 (null = 원래대로)
@@ -47,6 +48,26 @@ type Props = {
   /** 왼쪽 애셋 줄에 놓으면 그 클립부터 사진 올리기 (레이어) */
   onDropLayer?: (clipId: string, raw: string) => void;
 };
+
+/** 원본 소리 (클립의 말소리) — 누르면 무음·크기 조절이 바로 아래에 */
+function SourceSound({ c, p }: { c: Clip; p: Props }) {
+  const [open, setOpen] = React.useState(false);
+  const silent = c.muted || (c.volume ?? 1) === 0;
+  return (
+    <span style={{ position: "relative", display: "inline-flex" }}>
+      <ActionBtn icon={silent ? "mute" : "volume"} label={silent ? "원본 소리 꺼짐 ▾" : `원본 소리 ${Math.round((c.volume ?? 1) * 100)}% ▾`} onClick={() => setOpen((v) => !v)} danger={silent} />
+      {open && (
+        <>
+          <div onClick={(e) => { e.stopPropagation(); setOpen(false); }} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+          <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 41, width: 270, padding: 12, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8 }}>원본 소리 <span style={{ color: C.sub, fontWeight: 600 }}>· 이 클립의 말소리</span></div>
+            <VolumeControl muted={Boolean(c.muted)} value={c.volume ?? 1} onMute={(v) => p.actions.setSource(c.id, { muted: v }, true)} onVolume={(v, first) => p.actions.setSource(c.id, { volume: v }, first)} />
+          </div>
+        </>
+      )}
+    </span>
+  );
+}
 
 /** 썸네일 크게 보기 — 마우스를 올린 동안 썸네일 왼쪽에 크게 (영상은 소리 없이 재생). 왼쪽 자리가 모자라면 오른쪽에 */
 function Peek({ asset, rect, start, flipX, flipY }: { asset: { url: string; kind: string; name: string }; rect: DOMRect; start: number; flipX?: boolean; flipY?: boolean }) {
@@ -232,7 +253,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
             <ActionBtn icon="pen" label="글 고치기" onClick={() => { setDraft(clipText(c)); setEditing(true); }} />
             <ActionBtn icon="image" label="화면 바꾸기" onClick={() => p.actions.openVisual(c.id)} />
             <ActionBtn icon="voice" label="목소리" onClick={() => p.actions.openVoice(c.id)} />
-            {c.type !== "voice" && <ActionBtn icon={c.muted ? "volume" : "mute"} label={c.muted ? "소리 켜기" : "소리 끄기"} onClick={() => p.actions.toggleMute(c.id)} />}
+            {c.type !== "voice" && <SourceSound c={c} p={p} />}
             {n > 1 && <ActionBtn icon="merge" label="윗 클립과 합치기" onClick={() => p.actions.mergeUp(c.id)} />}
             {n > 1 && <ActionBtn icon="scene" label="여기서 씬 나누기" onClick={() => p.actions.sceneBreak(c.id)} />}
             <ActionBtn icon="trash" label="클립 지우기" onClick={() => p.actions.removeClip([c.id])} danger />

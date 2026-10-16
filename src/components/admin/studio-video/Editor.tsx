@@ -375,6 +375,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       setVisualClip(id);
       setPanel("visual");
     },
+    setSource: (id, patch, first) => change((p) => {
+      const c = findClip(p, id)?.clip;
+      if (!c) return;
+      if ("muted" in patch) c.muted = patch.muted || undefined;
+      if ("volume" in patch) c.volume = patch.volume === undefined || Math.abs(patch.volume - 1) < 0.001 ? undefined : +patch.volume.toFixed(2);
+    }, first),
     toggleMute: (id) => change((p) => {
       const c = findClip(p, id)?.clip;
       if (c) c.muted = !c.muted;
@@ -584,27 +590,18 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   /** 영상 화면이면 시작점을 고를 수 있다 (촬영 원본 그대로인 클립은 빼고) */
   const canStart = (c: Clip) => Boolean(c.visual && project.assets[c.visual.asset]?.kind === "video" && !(c.src && c.src.asset === c.visual.asset));
   /** 클립 소리 — 원본 소리가 있는 영상 클립 (촬영·불러온 영상) */
-  const soundOf = (c: Clip) =>
-    c.type === "voice" && c.visual && project.assets[c.visual.asset]?.kind === "video" && project.assets[c.visual.asset]?.hasAudio
-      ? {
-          // AI 목소리 클립의 화면 영상 소리 — 기본 무음, 올리면 목소리와 섞인다
-          label: "이 클립 화면 영상의 소리 (AI 목소리와 섞여요)",
-          muted: !(c.visualVolume && c.visualVolume > 0),
-          value: c.visualVolume && c.visualVolume > 0 ? c.visualVolume : 1,
-          onMute: (v: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.visualVolume = v ? undefined : x.visualVolume || 1; }),
-          onVolume: (v: number, first: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.visualVolume = v > 0 ? +v.toFixed(2) : undefined; }, first),
-        }
-      : soundOfSource(c);
-  const soundOfSource = (c: Clip) =>
-    // 보이는 화면이 영상일 때만 (사진으로 바꾼 클립은 카드의 [소리 끄기]로)
-    c.type !== "voice" && c.src && project.assets[c.src.asset]?.hasAudio && project.assets[(c.visual || c.src).asset]?.kind === "video"
-      ? {
-          muted: Boolean(c.muted),
-          value: c.volume ?? 1,
-          onMute: (v: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.muted = v || undefined; }),
-          onVolume: (v: number, first: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first),
-        }
-      : undefined;
+  /** 썸네일 메뉴·화면 속성의 볼륨 = 첨부한 영상의 소리 (원래 촬영 화면 그대로인 클립·사진에는 없음). 기본 무음 */
+  const soundOf = (c: Clip) => {
+    const a = c.visual ? project.assets[c.visual.asset] : null;
+    if (!a || a.kind !== "video" || !a.hasAudio || (c.src && c.src.asset === c.visual!.asset)) return undefined;
+    return {
+      label: "첨부한 영상의 소리 (원본 소리와 섞여요)",
+      muted: !(c.visualVolume && c.visualVolume > 0),
+      value: c.visualVolume && c.visualVolume > 0 ? c.visualVolume : 1,
+      onMute: (v: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.visualVolume = v ? undefined : x.visualVolume || 1; }),
+      onVolume: (v: number, first: boolean) => change((p) => { const x = findClip(p, c.id)?.clip; if (x) x.visualVolume = v > 0 ? +v.toFixed(2) : undefined; }, first),
+    };
+  };
   /* ── 속도·길이 (고른 클립 모두) ── */
   const timingIds = () => (selected.length ? selected : cur ? [cur.clip.id] : []);
   /** 빠르기를 바꿀 수 있는 클립: 목소리가 있는 AI 목소리 클립, 촬영 영상 클립 */

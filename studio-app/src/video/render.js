@@ -318,8 +318,8 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
 
   // 소리
   const vol = (x) => Math.max(0, Math.min(3, Number(x ?? 1)));
-  // 목소리 클립: 화면 영상 소리 (올렸을 때만)
-  const vv = clip.type === "voice" && visIn >= 0 && visual && visual.hasAudio ? Math.max(0, Math.min(2, Number(clip.visualVolume) || 0)) : 0;
+  // 첨부한 화면 영상의 소리 (올렸을 때만) — 원본 메인 소리와 섞는다
+  const vv = visIn >= 0 && visual && visual.hasAudio ? Math.max(0, Math.min(2, Number(clip.visualVolume) || 0)) : 0;
   if (vv > 0) filters.push(`[${visIn}:a]volume=${vv.toFixed(3)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[avis]`);
   if (clip.type === "voice" && clip.voice && clip.voice.file && fs.existsSync(clip.voice.file)) {
     args.push("-i", clip.voice.file);
@@ -335,7 +335,8 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
   } else if (vv > 0) {
     filters.push(`[avis]anull[aout]`);
   } else if (aIn && !clip.muted) {
-    filters.push(`[${aIn}]volume=${vol(st.sourceVolume) * vol(clip.volume)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[aout]`);
+    filters.push(`[${aIn}]volume=${vol(st.sourceVolume) * vol(clip.volume)},aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${dur.toFixed(3)}[${vv > 0 ? "aso" : "aout"}]`);
+    if (vv > 0) filters.push(`[aso][avis]amix=inputs=2:duration=first:normalize=0[aout]`);
   } else {
     args.push("-f", "lavfi", "-t", dur.toFixed(3), "-i", "anullsrc=r=48000:cl=stereo");
     filters.push(`[${n++}:a]anull[aout]`);

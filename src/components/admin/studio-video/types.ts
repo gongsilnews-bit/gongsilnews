@@ -40,7 +40,7 @@ export type Clip = {
   flipY?: boolean; // 화면 상하 반전
   muted?: boolean;
   volume?: number;
-  visualVolume?: number; // AI 목소리 클립의 화면 영상 소리 (0~2, 없으면 0 = 무음) — 목소리와 섞인다
+  visualVolume?: number; // 첨부한 화면 영상의 소리 (0~2, 없으면 0 = 무음) — 원본 메인 소리(말소리·AI 목소리)와 섞인다
   sub?: boolean;
   subStyle?: Partial<SubtitleSettings>; // 이 클립만 따로 바꾼 메인자막 서식 (바꾼 항목만, 나머지는 전체 서식)
   subText?: string; // 자막만 따로 쓴 글 (말소리·목소리는 그대로). 무음 클립에도 자막을 넣을 수 있다
