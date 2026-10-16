@@ -606,7 +606,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
             style={{ position: "absolute", width: subW, textAlign: "center", ...at, pointerEvents: onSubMove ? "auto" : "none", cursor: onSubMove ? "move" : undefined, touchAction: "none" }}>
             {boxFrame("sub")}
             {clip && editing === `sub:${clip.id}` && onSubText ? (
-              <InlineEdit text={full} style={look} onDone={(t) => { setEditing(""); if (t !== null && t.replace(/\s+/g, " ").trim() !== full.trim()) onSubText(clip.id, t); }} />
+              <InlineEdit text={full} style={look} onDone={(t) => { setEditing(""); const tidy = (x: string) => x.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"); if (t !== null && tidy(t) !== tidy(full)) onSubText(clip.id, t); }} />
             ) : (
               <span onDoubleClick={() => clip && onSubText && setEditing(`sub:${clip.id}`)} title={onSubText ? "두 번 누르면 자막 고치기 — 엔터: 줄바꿈, Ctrl+엔터·바깥 누르기: 저장 (목소리는 그대로)" : undefined}
                 style={{ ...look, pointerEvents: onSubText ? "auto" : "none", cursor: onSubText ? "text" : undefined }}>{line?.text}</span>

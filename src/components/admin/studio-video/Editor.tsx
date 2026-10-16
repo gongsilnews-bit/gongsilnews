@@ -1205,7 +1205,13 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         {panel === "library" && <LibraryPanel key={`${libTab}${libOverlay}`} project={project} canReplace={selected.length > 0} onPick={onPick} initialTab={libTab} overlay={libOverlay}
           onClose={() => (libOverlay && overlayTarget && (project.layers || []).some((l) => l.id === overlayTarget) ? openLayer(overlayTarget) : setPanel(""))} />}
         {panel === "voice" && <VoicePanel project={project} targetCount={selected.filter((id) => findClip(project, id)?.clip.type === "voice").length} onApply={applyVoice} onClose={() => setPanel("")} />}
-        {panel === "subtitle" && <SubtitlePanel settings={project.settings} onChange={(patch) => change((p) => { p.settings.subtitle = { ...p.settings.subtitle, ...patch }; })} onClose={() => setPanel("")} />}
+        {panel === "subtitle" && (() => {
+          // 이 클립 자막 — 고른 클립(하나)이 있으면 그것, 없으면 지금 재생 위치 클립
+          const it = (selected.length === 1 && flat.items.find((x) => x.clip.id === selected[0])) || cur;
+          const sc = it ? { id: it.clip.id, n: flat.items.indexOf(it) + 1, text: typeof it.clip.subText === "string" ? it.clip.subText : clipText(it.clip), custom: typeof it.clip.subText === "string" } : null;
+          return <SubtitlePanel settings={project.settings} onChange={(patch) => change((p) => { p.settings.subtitle = { ...p.settings.subtitle, ...patch }; })} onClose={() => setPanel("")}
+            clip={sc} onSubText={(id, t) => actions.editSub(id, t)} />;
+        })()}
         {panel === "ratio" && <RatioPanel ratio={project.ratio} fill={project.settings.fill} onRatio={(r: Ratio) => change((p) => { p.ratio = r; })} onFill={(f) => change((p) => { p.settings.fill = f; })} onClose={() => setPanel("")} />}
         {panel === "music" && (
           <MusicPanel project={project} current={(project.layers || []).find((l) => l.id === musicTarget) || null}

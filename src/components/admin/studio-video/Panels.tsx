@@ -377,11 +377,33 @@ export function VoicePanel({ project, targetCount, onApply, onClose }: { project
 }
 
 /* ── 메인자막 (자막 서식) ── */
-export function SubtitlePanel({ settings, onChange, onClose }: { settings: Settings; onChange: (patch: Partial<Settings["subtitle"]>) => void; onClose: () => void }) {
+export function SubtitlePanel({ settings, onChange, onClose, clip, onSubText }: {
+  settings: Settings;
+  onChange: (patch: Partial<Settings["subtitle"]>) => void;
+  onClose: () => void;
+  /** 이 클립 자막 글 — 고르거나 재생 중인 클립 */
+  clip?: { id: string; n: number; text: string; custom: boolean } | null;
+  onSubText?: (clipId: string, text: string | null) => void;
+}) {
   const s = settings.subtitle;
+  const [draft, setDraft] = useState(clip?.text || "");
+  useEffect(() => setDraft(clip?.text || ""), [clip?.id, clip?.text]);
   const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${C.line}` };
   return (
     <Side title="메인자막" onClose={onClose}>
+      {clip && onSubText && (
+        <div style={{ ...row, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+          <span style={label}>이 클립 자막 <span style={{ color: C.sub, fontWeight: 600 }}>· 클립 {clip.n}</span></span>
+          <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={3}
+            onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); onSubText(clip.id, draft); } }}
+            style={{ ...input, height: "auto", padding: 10, lineHeight: 1.5, resize: "vertical", fontSize: 15 }} />
+          <div style={{ display: "flex", gap: 6 }}>
+            <Btn small primary onClick={() => onSubText(clip.id, draft)} disabled={draft === clip.text}>자막 바꾸기</Btn>
+            {clip.custom && <Btn small onClick={() => onSubText(clip.id, null)}>말한 그대로</Btn>}
+          </div>
+          <span style={{ fontSize: 12.5, color: C.dim }}>엔터로 줄을 나누면 그대로 두 줄이 돼요. 목소리는 그대로예요.</span>
+        </div>
+      )}
       <div style={row}><span style={{ ...label, flex: 1 }}>자막 보이기</span><Toggle on={s.on} onChange={(v) => onChange({ on: v })} /></div>
       <div style={{ ...row, flexWrap: "wrap" }}>
         <span style={{ ...label, width: "100%" }}>위치</span>
