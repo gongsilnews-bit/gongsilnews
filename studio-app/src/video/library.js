@@ -166,7 +166,8 @@ function pump() {
   }
 }
 
-const forWeb = (it) => ({
+// 편집 화면에 주소를 줄 때 그 파일을 열 수 있게 등록한다 (앱을 다시 켜면 등록이 비워지므로)
+const forWeb = (it) => (media.allow(it.path), it.edit && media.allow(it.edit), it.thumb && media.allow(it.thumb), {
   id: it.id,
   name: it.name,
   kind: it.kind,

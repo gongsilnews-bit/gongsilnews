@@ -195,6 +195,9 @@ async function addAsset(p, libId, onProgress = () => {}) {
     source: it.source,
     credit: it.credit || "",
   };
+  media.allow(a.path);
+  if (a.edit) media.allow(a.edit);
+  if (it.thumb) media.allow(it.thumb);
   a.url = media.urlOf(a.edit || a.path);
   return a;
 }
