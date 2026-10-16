@@ -74,7 +74,11 @@ function register(base) {
     return project.open(path.dirname(r.filePaths[0]));
   });
   ipcMain.handle("video:project-save", (_e, p) => project.save(p));
-  ipcMain.handle("video:project-save-as", (_e, p, name) => project.saveAs(p, name));
+  ipcMain.handle("video:project-save-as", (_e, p, name, parent) => project.saveAs(p, name, parent));
+  ipcMain.handle("video:pick-folder", async (e, title, defaultPath) => {
+    const r = await dialog.showOpenDialog(winOf(e), { title: title || "폴더 고르기", defaultPath: defaultPath || undefined, properties: ["openDirectory", "createDirectory"] });
+    return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
+  });
   ipcMain.handle("video:project-recent", () => project.recent());
   ipcMain.handle("video:project-add-asset", (e, libId) => project.addAsset({}, libId, (f) => send(e, "video:progress", "편집용 사본 만드는 중…", f)));
   ipcMain.handle("video:project-export-text", (_e, p, kind) => {

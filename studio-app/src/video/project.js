@@ -101,11 +101,13 @@ function save(p) {
  * 폴더 안 파일(목소리 등)을 가리키는 위치는 새 폴더로 고친다. 내 자료처럼 폴더 밖 파일은 그대로 같이 쓴다.
  * 원본은 마지막으로 저장된 그대로 두고, 지금 편집 중인 내용은 사본에 담는다
  */
-function saveAs(p, name) {
+function saveAs(p, name, parent) {
   if (!p || !p.dir || !fs.existsSync(p.dir)) throw new Error("프로젝트 정보가 없습니다.");
   const nm = safeName(name);
   if (!nm) throw new Error("새 이름을 써 주세요.");
-  const base = path.dirname(p.dir);
+  const base = parent ? path.resolve(parent) : path.dirname(p.dir);
+  if (!fs.existsSync(base)) throw new Error("저장할 폴더를 찾지 못했습니다.");
+  if ((base + path.sep).toLowerCase().startsWith(p.dir.toLowerCase() + path.sep)) throw new Error("지금 프로젝트 폴더 안에는 저장할 수 없어요. 다른 폴더를 골라 주세요.");
   let dir = path.join(base, nm);
   for (let n = 2; fs.existsSync(dir); n++) dir = path.join(base, `${nm}_${n}`);
   const auto = path.join(p.dir, "autosave").toLowerCase();

@@ -747,6 +747,12 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
 
   /* ── 다른 이름으로 저장 ── */
   const [saveAsName, setSaveAsName] = useState("");
+  const [saveAsDir, setSaveAsDir] = useState(""); // 저장할 폴더 (처음엔 지금 프로젝트가 있는 폴더)
+  const pickSaveAsDir = async () => {
+    if (!b.project.pickFolder) return say("앱을 새 버전으로 업데이트하면 쓸 수 있어요");
+    const d = await b.project.pickFolder("새 프로젝트를 저장할 폴더", saveAsDir);
+    if (d) setSaveAsDir(d);
+  };
   const doSaveAs = async () => {
     const name = saveAsName.trim();
     if (!name) return;
@@ -754,7 +760,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
     setDialog("");
     setWork({ title: "다른 이름으로 저장하는 중…", detail: name });
     try {
-      const np = await b.project.saveAs(pref.current, name);
+      const np = await b.project.saveAs(pref.current, name, saveAsDir || undefined);
       setWork(null);
       onSwitch?.(np);
     } catch (e) {
@@ -858,7 +864,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       { icon: "ratio", label: "화면 비율", onClick: () => setPanel("ratio") },
       "|",
       { icon: "save", label: "프로젝트 저장하기", onClick: () => b.project.save(pref.current).then(() => say("저장했어요")) },
-      { icon: "copy", label: "다른 이름으로 저장", onClick: () => { setSaveAsName(`${pref.current.name}_사본`); setDialog("saveAs"); } },
+      { icon: "copy", label: "다른 이름으로 저장", onClick: () => { setSaveAsName(`${pref.current.name}_사본`); setSaveAsDir(pref.current.dir.replace(/[\\/][^\\/]+[\\/]?$/, "")); setDialog("saveAs"); } },
       { icon: "folder", label: "프로젝트 폴더 열기", onClick: () => b.openPath(project.dir) },
       "|",
       { icon: "export", label: "영상으로 내보내기", onClick: () => setDialog("export") },
@@ -1218,6 +1224,15 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             <div style={{ ...label, marginBottom: 8 }}>새 프로젝트 이름</div>
             <input value={saveAsName} onChange={(e) => setSaveAsName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && doSaveAs()} autoFocus
               onFocus={(e) => e.currentTarget.select()} style={{ ...input }} />
+            <div style={{ ...label, margin: "16px 0 8px" }}>저장할 위치</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div title={saveAsDir} style={{ flex: 1, minWidth: 0, height: 40, display: "flex", alignItems: "center", gap: 8, padding: "0 12px", border: `1px solid ${C.line2}`, borderRadius: 6, background: C.card, fontSize: 13.5, color: C.text }}>
+                <Icon name="folder" size={17} color={C.sub} />
+                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", direction: "rtl", textAlign: "left" }}>{"\u200e" + saveAsDir}</span>
+              </div>
+              <Btn onClick={pickSaveAsDir}><Icon name="open" size={16} />위치 바꾸기</Btn>
+            </div>
+            <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6 }}>이 폴더 안에 「{saveAsName.trim() || "새 이름"}」 폴더가 만들어져요.</div>
             <div style={{ fontSize: 13.5, color: C.sub, marginTop: 10, lineHeight: 1.6 }}>
               지금 편집한 내용 그대로 새 프로젝트로 복사하고, 새 프로젝트를 열어요.<br />
               원래 프로젝트 「{project.name}」는 그대로 남아요.
