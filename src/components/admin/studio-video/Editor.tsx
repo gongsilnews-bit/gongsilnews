@@ -1134,6 +1134,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         .sv-dark ::-webkit-scrollbar-track, body:has(.sv-dark) ::-webkit-scrollbar-track { background: #1b1d22; }
         .sv-dark ::-webkit-scrollbar-thumb, body:has(.sv-dark) ::-webkit-scrollbar-thumb { background: #3a3e46; border-radius: 6px; border: 2px solid #1b1d22; }
         .sv-dark ::-webkit-scrollbar-thumb:hover, body:has(.sv-dark) ::-webkit-scrollbar-thumb:hover { background: #4b505a; }
+        .sv-dark ::-webkit-scrollbar-thumb:active, body:has(.sv-dark) ::-webkit-scrollbar-thumb:active { background: ${C.accent}; }
         .sv-dark ::-webkit-scrollbar-corner, body:has(.sv-dark) ::-webkit-scrollbar-corner { background: #1b1d22; }
         .sv-dark ::-webkit-scrollbar-button, body:has(.sv-dark) ::-webkit-scrollbar-button { display: none; }
       `}</style>
