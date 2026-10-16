@@ -583,7 +583,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const canStart = (c: Clip) => Boolean(c.visual && project.assets[c.visual.asset]?.kind === "video" && !(c.src && c.src.asset === c.visual.asset));
   /** 클립 소리 — 원본 소리가 있는 영상 클립 (촬영·불러온 영상) */
   const soundOf = (c: Clip) =>
-    c.type !== "voice" && c.src && project.assets[c.src.asset]?.hasAudio
+    // 보이는 화면이 영상일 때만 (사진으로 바꾼 클립은 카드의 [소리 끄기]로)
+    c.type !== "voice" && c.src && project.assets[c.src.asset]?.hasAudio && project.assets[(c.visual || c.src).asset]?.kind === "video"
       ? {
           muted: Boolean(c.muted),
           value: c.volume ?? 1,
