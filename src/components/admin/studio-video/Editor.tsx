@@ -5,7 +5,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene, StockItem } from "./types";
 import { DRAG_MEDIA, errText, fmtTime, uid, videoBridge } from "./types";
-import { clipOrder, clipText, flatten, layersAt, splitScript, wordTimes } from "./timeline";
+import { clipOrder, clipText, flatten, layerItems, layersAt, splitScript, wordTimes } from "./timeline";
+import MediaMenu, { type MediaFit, type MediaOrder } from "./MediaMenu";
 import Player, { type PlayerHandle } from "./Player";
 import ClipList, { type ClipActions } from "./ClipList";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
@@ -91,6 +92,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
   const [work, setWork] = useState<{ title: string; detail?: string; frac?: number | null } | null>(null);
   const [selLayer, setSelLayer] = useState("");
   const [pop, setPop] = useState<{ id: string; x: number; y: number } | null>(null); // 아이콘 옆 작은 메뉴
+  const [media, setMedia] = useState<{ kind: "clip" | "layer"; id: string; x: number; y: number } | null>(null); // 사진·영상 메뉴
   const [libOverlay, setLibOverlay] = useState(false); // 자료 칸을 "사진 올리기"로 열었는지
   const [overlayTarget, setOverlayTarget] = useState(""); // 사진을 바꿀 애셋
   const [musicTarget, setMusicTarget] = useState(""); // 음악을 바꿀 애셋
@@ -347,6 +349,10 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
       setSelected([id]);
       openLib("mine");
     },
+    openMedia: (id, x, y) => {
+      setSelected([id]);
+      setMedia({ kind: "clip", id, x, y });
+    },
     toggleMute: (id) => change((p) => {
       const c = findClip(p, id)?.clip;
       if (c) c.muted = !c.muted;
@@ -504,7 +510,9 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
       window.removeEventListener("pointermove", move);
       if (!moved) {
         openLayer(id);
-        setPop({ id, x: r0.right + 8, y: r0.top - 4 }); // 브루처럼 아이콘 바로 옆에
+        // 브루처럼 아이콘 바로 옆에 — 사진은 사진·영상 메뉴, 음악·글자는 작은 메뉴
+        if ((pref.current.layers || []).find((x) => x.id === id)?.type === "image") setMedia({ kind: "layer", id, x: r0.right + 8, y: r0.top - 4 });
+        else setPop({ id, x: r0.right + 8, y: r0.top - 4 });
       }
       else {
         setSelLayer(id);
@@ -515,6 +523,56 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up, { once: true });
   };
+  /* ── 사진·영상 메뉴 (채우기·반전·교체·적용 범위·순서·삭제) ── */
+  const clipFit = (id: string, f: MediaFit) => change((p) => {
+    const c = findClip(p, id)?.clip;
+    if (c && f !== "free") c.fill = f;
+  });
+  const clipFlip = (id: string, axis: "x" | "y") => change((p) => {
+    const c = findClip(p, id)?.clip;
+    if (!c) return;
+    if (axis === "x") c.flipX = !c.flipX || undefined;
+    else c.flipY = !c.flipY || undefined;
+  });
+  /** 이 클립 화면을 a~b번 클립에 똑같이 (채우기·반전도) */
+  const clipRange = (id: string, a: number, b: number) => {
+    const ids = flat.items.slice(a - 1, b).map((x) => x.clip.id);
+    change((p) => {
+      const c0 = findClip(p, id)?.clip;
+      if (!c0) return;
+      const vis = c0.visual ? { ...c0.visual } : c0.src ? { asset: c0.src.asset, s: c0.src.s } : null;
+      if (!vis) return;
+      for (const cid of ids) {
+        const c = findClip(p, cid)?.clip;
+        if (!c || c === c0) continue;
+        c.visual = c.src && c.src.asset === vis.asset ? null : { ...vis };
+        c.fill = c0.fill;
+        c.flipX = c0.flipX;
+        c.flipY = c0.flipY;
+      }
+    });
+    setSelected(ids);
+    say(`클립 ${a}~${b}번 화면을 똑같이 했어요`);
+  };
+  const clipRemoveVisual = (id: string) => {
+    change((p) => {
+      const c = findClip(p, id)?.clip;
+      if (c) c.visual = null;
+    });
+    say("화면을 지웠어요 (되돌리기로 살릴 수 있어요)");
+  };
+  /** 사진 올리기끼리 겹치는 순서 — 배열 뒤쪽이 위 */
+  const layerOrder = (id: string, o: MediaOrder) => change((p) => {
+    const all = p.layers || [];
+    const imgs = all.filter((l) => l.type === "image");
+    const i = imgs.findIndex((l) => l.id === id);
+    if (i < 0) return;
+    const [l] = imgs.splice(i, 1);
+    const j = o === "top" ? imgs.length : o === "bottom" ? 0 : o === "up" ? Math.min(imgs.length, i + 1) : Math.max(0, i - 1);
+    imgs.splice(j, 0, l);
+    let k = 0;
+    p.layers = all.map((x) => (x.type === "image" ? imgs[k++] : x));
+  });
   const addTextLayer = () => addLayer({ type: "text", text: "글자를 써 주세요", pos: "top", size: 100, color: "#FFFFFF", font: "Pretendard", box: false }, false);
   const openMusic = (target = "") => {
     setMusicTarget(target);
@@ -1018,6 +1076,39 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
         })()}
       </div>
 
+      {media && (() => {
+        const items = flat.items;
+        const total = items.length;
+        const pos = new Map(items.map((x, i) => [x.clip.id, i + 1]));
+        const close = () => setMedia(null);
+        if (media.kind === "clip") {
+          const c = items.find((x) => x.clip.id === media.id)?.clip;
+          if (!c) return null;
+          const n = pos.get(c.id) || 1;
+          const a = c.visual ? project.assets[c.visual.asset] : c.src ? project.assets[c.src.asset] : null;
+          return <MediaMenu key={"c" + c.id} title={`클립 ${n} · ${a?.name || "화면"}`} x={media.x} y={media.y} kind="clip"
+            fit={c.fill || project.settings.fill} fits={["contain", "cover", "blur"]} flipX={c.flipX} flipY={c.flipY}
+            range={{ a: n, b: n, cur: n, total }} canRemove={Boolean(c.visual)}
+            onFit={(f) => clipFit(c.id, f)} onFlip={(ax) => clipFlip(c.id, ax)} onReplace={() => actions.openVisual(c.id)}
+            onRange={(x, y) => clipRange(c.id, x, y)} onRemove={() => clipRemoveVisual(c.id)} onClose={close} />;
+        }
+        const l = (project.layers || []).find((x) => x.id === media.id);
+        if (!l) return null;
+        const cov = layerItems(project, l, items);
+        const a = cov.length ? pos.get(cov[0].clip.id) || 1 : 1;
+        const b = cov.length ? pos.get(cov[cov.length - 1].clip.id) || a : a;
+        const curN = cur ? pos.get(cur.clip.id) || a : a;
+        const imgs = (project.layers || []).filter((x) => x.type === "image");
+        const oi = imgs.findIndex((x) => x.id === l.id);
+        return <MediaMenu key={"l" + l.id} title={`사진 올리기 · ${layerTitle(l)}`} x={media.x} y={media.y} kind="layer"
+          fit={l.fit || "free"} fits={["free", "contain", "cover"]} flipX={l.flipX} flipY={l.flipY}
+          range={{ a, b, cur: curN, total }} order={{ up: oi < imgs.length - 1, down: oi > 0 }} canRemove
+          onFit={(f) => updateLayer(l.id, { fit: f === "blur" ? "contain" : f })}
+          onFlip={(ax) => updateLayer(l.id, ax === "x" ? { flipX: !l.flipX || undefined } : { flipY: !l.flipY || undefined })}
+          onReplace={() => { setOverlayTarget(l.id); openLib("mine", true); }}
+          onRange={(x, y) => total && updateLayer(l.id, { from: items[x - 1].clip.id, to: items[y - 1].clip.id })}
+          onOrder={(o) => layerOrder(l.id, o)} onRemove={() => removeLayer(l.id)} onClose={close} />;
+      })()}
       {pop && (() => {
         const l = (project.layers || []).find((x) => x.id === pop.id);
         if (!l) return null;

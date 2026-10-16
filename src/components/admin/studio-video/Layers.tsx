@@ -105,6 +105,11 @@ function Choice<T extends string | number>({ title, value, options, onChange }: 
   );
 }
 
+const FITS: ["free" | "contain" | "cover", string, string, string][] = [
+  ["free", "fitFree", "직접 크기", "미리보기에서 끌어 자리와 크기를 정해요"],
+  ["contain", "fitContain", "비율 유지", "사진이 잘리지 않게 화면 안에 다 보여요"],
+  ["cover", "fitCover", "잘라서 채우기", "빈 곳 없이 꽉 채우고 가장자리는 잘려요"],
+];
 const FADES: [number, string][] = [[0, "없음"], [1, "1초"], [2, "2초"], [3, "3초"]];
 const GRID: [number, number, string][] = [
   [0.2, 0.18, "왼쪽 위"], [0.5, 0.18, "위"], [0.8, 0.18, "오른쪽 위"],
@@ -201,6 +206,23 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
             <Btn small onClick={onReplace}>사진 바꾸기</Btn>
           </div>
           <div style={row}>
+            <div style={{ ...label, marginBottom: 8 }}>채우기</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {FITS.map(([v, ic, t, d]) => (
+                <button key={v} type="button" onClick={() => onChange({ fit: v === "free" ? undefined : v })} title={`${t} — ${d}`}
+                  style={{ ...chip((layer.fit || "free") === v), flex: 1, height: 58, padding: "4px 2px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, fontSize: 12 }}>
+                  <Icon name={ic} size={20} />
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ ...row, display: "flex", gap: 6 }}>
+            <button type="button" onClick={() => onChange({ flipX: !layer.flipX || undefined })} title="왼쪽과 오른쪽을 거울처럼 뒤집어요" style={{ ...chip(Boolean(layer.flipX)), flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon name="flipH" size={17} />좌우 반전</button>
+            <button type="button" onClick={() => onChange({ flipY: !layer.flipY || undefined })} title="위와 아래를 뒤집어요" style={{ ...chip(Boolean(layer.flipY)), flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon name="flipV" size={17} />상하 반전</button>
+          </div>
+          {(layer.fit || "free") === "free" && <>
+          <div style={row}>
             <div style={{ ...label, marginBottom: 8 }}>자리</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, maxWidth: 260 }}>
               {GRID.map(([x, y, t]) => {
@@ -211,6 +233,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
           </div>
           <div style={{ padding: "10px 16px 0" }}><Hint>미리보기에서 사진을 끌면 옮겨지고, 네 모서리 네모를 끌면 크기가 바뀌어요. 미리보기 옆 [크게]를 누르면 크게 보며 고칠 수 있어요.</Hint></div>
           <Slider title="크기" value={layer.w ?? 0.35} min={0.1} max={1} step={0.01} show={`${Math.round((layer.w ?? 0.35) * 100)}%`} onChange={(v) => onChange({ w: v })} />
+          </>}
           <Slider title="진하기" value={layer.opacity ?? 1} min={0.2} max={1} step={0.05} show={`${Math.round((layer.opacity ?? 1) * 100)}%`} onChange={(v) => onChange({ opacity: v })} />
         </>
       )}

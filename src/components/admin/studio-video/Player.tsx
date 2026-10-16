@@ -385,15 +385,17 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     ) : null;
   const dragStyle = (l: Layer): React.CSSProperties => (onLayerMove ? { pointerEvents: "auto", cursor: "move", touchAction: "none", userSelect: "none" } : { pointerEvents: "none" });
 
-  const mediaStyle: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: fill === "cover" ? "cover" : "contain" };
+  const flipOf = (o?: { flipX?: boolean; flipY?: boolean }) => (o?.flipX || o?.flipY ? `scale(${o.flipX ? -1 : 1}, ${o.flipY ? -1 : 1})` : undefined);
+  const mediaStyle: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: fill === "cover" ? "cover" : "contain", transform: flipOf(clip || undefined) };
+  const blurT = `scale(${clip?.flipX ? -1.15 : 1.15}, ${clip?.flipY ? -1.15 : 1.15})`;
   const vUrl = visual?.url || "";
 
   return (
     <div ref={boxRef} style={{ position: "relative", width: boxW, height: boxH, background: "#000", overflow: "hidden", borderRadius: 4 }}>
       {visual && fill === "blur" && (visual.kind === "image" ? (
-        <img src={vUrl} alt="" style={{ ...mediaStyle, objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: "scale(1.15)" }} />
+        <img src={vUrl} alt="" style={{ ...mediaStyle, objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
       ) : (
-        <video ref={bgRef} src={vUrl} muted playsInline preload="auto" style={{ ...mediaStyle, objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: "scale(1.15)" }} />
+        <video ref={bgRef} src={vUrl} muted playsInline preload="auto" style={{ ...mediaStyle, objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
       ))}
       {visual?.kind === "image" && <img src={vUrl} alt="" style={mediaStyle} />}
       <video ref={videoRef} src={visual?.kind === "video" ? vUrl : undefined} playsInline preload="auto" style={{ ...mediaStyle, display: visual?.kind === "video" ? "block" : "none" }}
@@ -401,6 +403,16 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       {visual?.missing && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub, fontSize: 14 }}>원본 파일을 찾지 못했어요</div>}
       {overImages.map((l) => {
         const a = project.assets[l.asset!];
+        const op = Math.max(0.05, Math.min(1, l.opacity ?? 1));
+        // 채우기 — 화면 전체에 (잘라서 / 비율 유지하며). 끌어 옮기기·크기 손잡이는 없다
+        if (l.fit === "cover" || l.fit === "contain")
+          return (
+            <div key={l.id} data-layer={l.id} onPointerDown={(e) => { if (onLayerMove) { e.stopPropagation(); onLayerPick?.(l.id); } }} title="채우기 중 — [직접 크기]로 바꾸면 끌어 옮길 수 있어요"
+              style={{ position: "absolute", inset: 0, ...(onLayerMove ? { pointerEvents: "auto" } : { pointerEvents: "none" }) }}>
+              <img src={a.url} alt="" draggable={false} style={{ width: "100%", height: "100%", display: "block", objectFit: l.fit, opacity: op, transform: flipOf(l), pointerEvents: "none" }} />
+              {l.id === selLayer && onLayerMove && <span style={{ position: "absolute", inset: 1, border: "1.5px dashed #fff", outline: "1px dashed #000", pointerEvents: "none" }} />}
+            </div>
+          );
         const pw = Math.max(0.03, Math.min(1, l.w ?? 0.35)) * boxW;
         const ph = a.width && a.height ? (pw * a.height) / a.width : pw;
         // 화면 밖으로 나가지 않게 (굽기 render.js 와 같은 계산)
@@ -409,7 +421,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         return (
           <div key={l.id} data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} title="끌어서 옮기기"
             style={{ position: "absolute", left, top, width: pw, height: ph, ...dragStyle(l) }}>
-            <img src={a.url} alt="" draggable={false} style={{ width: "100%", height: "100%", display: "block", opacity: Math.max(0.05, Math.min(1, l.opacity ?? 1)), pointerEvents: "none" }} />
+            <img src={a.url} alt="" draggable={false} style={{ width: "100%", height: "100%", display: "block", opacity: op, transform: flipOf(l), pointerEvents: "none" }} />
             {frame(l)}
           </div>
         );

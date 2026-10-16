@@ -150,6 +150,9 @@ function fitFilter(inLabel, W, H, fill, outLabel) {
   return `[${inLabel}]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},setsar=1[${outLabel}]`;
 }
 
+/** 반전 — 좌우(hflip)·상하(vflip). 없으면 빈 문자열 */
+const flipChain = (o) => [o && o.flipX ? "hflip" : "", o && o.flipY ? "vflip" : ""].filter(Boolean).join(",");
+
 const assetFile = (a) => (a.edit && fs.existsSync(a.edit) ? a.edit : a.path);
 
 /** 클립 하나 → 조각 영상 (seg.mp4) */
@@ -203,7 +206,9 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
       aIn = "araw";
     }
   }
-  filters.push(fitFilter("vraw", W, H, fill, "vfit"));
+  const cflip = flipChain(clip);
+  if (cflip) filters.push(`[vraw]${cflip}[vflip]`);
+  filters.push(fitFilter(cflip ? "vflip" : "vraw", W, H, fill, "vfit"));
   let vOut = "vfit";
 
   // 사진 올리기 애셋 (자막·화면 글자 아래)
@@ -212,13 +217,23 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     if (!ok(a) || a.kind !== "image") return;
     args.push("-loop", "1", "-framerate", String(FPS), "-t", dur.toFixed(3), "-i", assetFile(a));
     const k = n++;
+    const op0 = Math.max(0.05, Math.min(1, Number(l.opacity ?? 1)));
+    const lflip = flipChain(l);
+    // 채우기 — 화면 전체에 (잘라서 / 비율 유지하며 가운데)
+    if (l.fit === "cover" || l.fit === "contain") {
+      const sc = l.fit === "cover" ? `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}` : `scale=${W}:${H}:force_original_aspect_ratio=decrease`;
+      filters.push(`[${k}:v]${sc},${lflip ? lflip + "," : ""}setsar=1,format=rgba,colorchannelmixer=aa=${op0.toFixed(3)}[ov${j}]`);
+      filters.push(`[${vOut}][ov${j}]overlay=x=(W-w)/2:y=(H-h)/2:eof_action=pass[vo${j}]`);
+      vOut = `vo${j}`;
+      return;
+    }
     const pw = Math.max(8, Math.round((W * Math.max(0.03, Math.min(1, Number(l.w ?? 0.35)))) / 2) * 2);
     const op = Math.max(0.05, Math.min(1, Number(l.opacity ?? 1)));
     const ph = a.width && a.height ? Math.round((pw * a.height) / a.width) : pw;
     // 화면 밖으로 나가지 않게 (미리보기 Player.tsx 와 같은 계산)
     const x0 = Math.round(Math.max(0, Math.min(W - pw, W * Number(l.x ?? 0.5) - pw / 2)));
     const y0 = Math.round(Math.max(0, Math.min(H - ph, H * Number(l.y ?? 0.5) - ph / 2)));
-    filters.push(`[${k}:v]scale=${pw}:-2,format=rgba,colorchannelmixer=aa=${op.toFixed(3)}[ov${j}]`);
+    filters.push(`[${k}:v]scale=${pw}:-2,${lflip ? lflip + "," : ""}format=rgba,colorchannelmixer=aa=${op.toFixed(3)}[ov${j}]`);
     filters.push(`[${vOut}][ov${j}]overlay=x=${x0}:y=${y0}:eof_action=pass[vo${j}]`);
     vOut = `vo${j}`;
   });

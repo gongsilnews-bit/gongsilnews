@@ -34,6 +34,8 @@ export type Clip = {
   visual?: { asset: string; s: number } | null; // 화면 자료 (글 클립 배경 · 촬영 클립 화면 바꾸기)
   hold?: number; // 목소리 없을 때 길이
   fill?: Fill;
+  flipX?: boolean; // 화면 좌우 반전
+  flipY?: boolean; // 화면 상하 반전
   muted?: boolean;
   volume?: number;
   sub?: boolean;
@@ -69,6 +71,9 @@ export type Layer = {
   y?: number;
   w?: number; // 화면 폭에 대한 비율 0~1
   opacity?: number; // 0~1
+  fit?: "free" | "contain" | "cover"; // free(기본) = x·y·w 자리 / contain = 비율 유지하며 채우기 / cover = 잘라서 채우기
+  flipX?: boolean;
+  flipY?: boolean;
   // 화면 글자
   text?: string;
   pos?: "top" | "middle" | "bottom";

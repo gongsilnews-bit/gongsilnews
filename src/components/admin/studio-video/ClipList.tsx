@@ -20,6 +20,7 @@ export type ClipActions = {
   mergeUp: (id: string) => void;
   openVoice: (id: string) => void;
   openVisual: (id: string) => void;
+  openMedia: (id: string, x: number, y: number) => void; // 화면 썸네일을 누르면 사진·영상 메뉴
   toggleMute: (id: string) => void;
   sceneBreak: (id: string) => void;
   play: (id: string) => void;
@@ -172,7 +173,7 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
         {/* 2줄: 화면 자료 + 자막 */}
         {p.view === "detail" && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderTop: `1px solid ${C.line}` }}>
-            <button type="button" onClick={(e) => { e.stopPropagation(); p.actions.openVisual(c.id); }} title="화면 바꾸기"
+            <button type="button" onClick={(e) => { e.stopPropagation(); if (!thumb) return p.actions.openVisual(c.id); const r = e.currentTarget.getBoundingClientRect(); p.actions.openMedia(c.id, r.right + 8, r.top - 4); }} title={thumb ? "눌러서 채우기·반전·교체·적용 범위" : "화면 넣기"}
               style={{ width: 54, height: 34, padding: 0, border: `1px solid ${C.line2}`, borderRadius: 4, background: "#000", overflow: "hidden", cursor: "pointer", flexShrink: 0 }}>
               {thumb ? <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <span style={{ color: C.dim, fontSize: 11 }}>화면</span>}
             </button>
