@@ -9,6 +9,7 @@ if (allowed) {
   contextBridge.exposeInMainWorld("gongsilStudio", {
     openConnect: () => ipcRenderer.invoke("studio:open-connect"),
     info: () => ipcRenderer.invoke("studio:info"),
+    checkUpdate: () => ipcRenderer.invoke("studio:check-update"), // 새 버전 받기 → 준비되면 [지금 다시 시작]
     openAiConnect: () => ipcRenderer.invoke("studio:open-ai-window"),
     openInBrowser: (url) => ipcRenderer.invoke("studio:open-external", url),
     vacancy: {
@@ -126,18 +127,49 @@ if (allowed) {
       },
       project: {
         create: (opts) => ipcRenderer.invoke("video:project-create", opts),
-        open: (dir) => ipcRenderer.invoke("video:project-open", dir),
+        open: (dir, choice) => ipcRenderer.invoke("video:project-open", dir, choice), // choice: "work" 이어서 / "file" 마지막 저장
         openPick: () => ipcRenderer.invoke("video:project-open-pick"),
         save: (p) => ipcRenderer.invoke("video:project-save", p),
+        flush: (p) => ipcRenderer.invoke("video:project-flush", p), // [저장] — .gss 로 묶기
+        discard: (p) => ipcRenderer.invoke("video:project-discard", p), // [저장 안 함]
+        setDirty: (v, dir, file) => ipcRenderer.invoke("video:set-dirty", v, dir, file),
+        backup: (p) => ipcRenderer.invoke("video:backup", p), // 자동 저장본 (5분마다)
+        backups: (p) => ipcRenderer.invoke("video:backups", p),
+        closeNow: () => ipcRenderer.invoke("video:close-now"),
+        onWantClose: (fn) => {
+          const h = () => fn();
+          ipcRenderer.on("video:want-close", h);
+          return () => ipcRenderer.removeListener("video:want-close", h);
+        },
+        convert: (p) => ipcRenderer.invoke("video:project-convert", p), // 예전 폴더 → .gss
+        packageInfo: (p) => ipcRenderer.invoke("video:package-info", p),
+        makePackage: (p) => ipcRenderer.invoke("video:package-make", p), // 프로젝트 패키지 (원본을 한 폴더에)
+        relink: (p, assetId) => ipcRenderer.invoke("video:relink", p, assetId), // 없어진 원본 다시 연결
+        pendingFile: () => ipcRenderer.invoke("video:pending-file"),
+        onOpenFile: (fn) => {
+          const h = (_e, f) => fn(f);
+          ipcRenderer.on("video:open-file", h);
+          return () => ipcRenderer.removeListener("video:open-file", h);
+        },
         saveAs: (p, name, parent) => ipcRenderer.invoke("video:project-save-as", p, name, parent),
         pickFolder: (title, defaultPath) => ipcRenderer.invoke("video:pick-folder", title, defaultPath),
         recent: () => ipcRenderer.invoke("video:project-recent"),
+        folders: () => ipcRenderer.invoke("video:folders-get"), // 저장 폴더 설정
+        setFolders: (patch) => ipcRenderer.invoke("video:folders-set", patch),
+        rename: (dir, name) => ipcRenderer.invoke("video:project-rename", dir, name), // 이름만 바꾸기 (폴더는 그대로)
+        trash: (dir) => ipcRenderer.invoke("video:trash", dir), // 휴지통으로 옮기기
+        trashList: () => ipcRenderer.invoke("video:trash-list"),
+        restore: (id) => ipcRenderer.invoke("video:trash-restore", id),
+        purge: (id) => ipcRenderer.invoke("video:trash-purge", id), // 영구 삭제 (id 또는 "all")
         addAsset: (libId) => ipcRenderer.invoke("video:project-add-asset", libId),
         exportText: (p, kind) => ipcRenderer.invoke("video:project-export-text", p, kind),
       },
       voice: (dir, text, voiceId) => ipcRenderer.invoke("video:voice", dir, text, voiceId),
       transcribe: (p, assetId) => ipcRenderer.invoke("video:transcribe", p, assetId),
       split: (p, assetId) => ipcRenderer.invoke("video:split", p, assetId),
+      speech: (p, assetIds) => ipcRenderer.invoke("video:speech", p, assetIds), // 무음 줄이기 — 실제 말소리 구간 (PC에서)
+      realign: (p, items) => ipcRenderer.invoke("video:realign", p, items), // 자막 시각 맞추기 — 글은 그대로, 시각만 (무료)
+      transcribeClips: (p, targets) => ipcRenderer.invoke("video:transcribe-clips", p, targets), // 자동 자막 — 지금 클립에 글만 채우기
       ai: {
         script: (opts) => ipcRenderer.invoke("video:ai-script", opts),
         scenes: (lines) => ipcRenderer.invoke("video:ai-scenes", lines),
@@ -159,9 +191,19 @@ if (allowed) {
       record: {
         sources: () => ipcRenderer.invoke("video:record-sources"),
         choose: (id) => ipcRenderer.invoke("video:record-choose", id),
-        start: (name) => ipcRenderer.invoke("video:record-start", name),
+        start: (name, opt) => ipcRenderer.invoke("video:record-start", name, opt),
+        defaultDir: () => ipcRenderer.invoke("video:record-default-dir"),
+        pickDir: (cur) => ipcRenderer.invoke("video:record-pick-dir", cur),
         chunk: (token, buf) => ipcRenderer.invoke("video:record-chunk", token, buf),
         stop: (token) => ipcRenderer.invoke("video:record-stop", token),
+        // 녹화 중 작게 하기 — 큰 창은 내려가고 작은 막대(녹화에 안 찍힘)가 뜬다. 끝나면 다시 크게
+        live: (on, startedAt) => ipcRenderer.invoke("video:record-live", on, startedAt),
+        minimize: () => ipcRenderer.invoke("video:record-minimize"),
+        onMiniStop: (fn) => {
+          const h = () => fn();
+          ipcRenderer.on("video:record-mini-stop", h);
+          return () => ipcRenderer.removeListener("video:record-mini-stop", h);
+        },
       },
       showFile: (file) => ipcRenderer.invoke("video:show-file", file),
       openPath: (p) => ipcRenderer.invoke("video:open-path", p),

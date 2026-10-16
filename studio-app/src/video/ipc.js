@@ -1,10 +1,11 @@
 // 영상 편집기 — 편집 화면(웹)과 PC(앱)를 잇는 통로. preload 의 gongsilStudio.video.* 가 부른다.
-const { ipcMain, dialog, shell, BrowserWindow, desktopCapturer, session } = require("electron");
+const { ipcMain, dialog, shell, BrowserWindow, desktopCapturer, session, screen } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const log = require("electron-log/main");
 const library = require("./library");
+const folders = require("./folders");
 const fonts = require("./fonts");
 const project = require("./project");
 const render = require("./render");
@@ -17,6 +18,85 @@ let baseUrl = "";
 const jobs = new Map(); // 굽기 멈추기
 const recs = new Map(); // 녹화 중 파일
 let chosenSource = null; // 화면 녹화로 고른 화면
+let pendingFile = ""; // 탐색기에서 두 번 눌러 연 .gss
+let dirty = false; // 편집 화면에 저장 안 한 내용이 있음
+let dirtyWork = { dir: "", file: "" }; // 그 프로젝트 (작업 폴더·.gss)
+let closing = false; // [저장 안 함]·[저장] 뒤 정말 닫는 중
+/** 앱 바깥에서 .gss 를 열었을 때 (main.js) — 영상 편집기가 켜져 있으면 바로, 아니면 켜질 때 가져간다 */
+function openFile(file, win) {
+  pendingFile = file;
+  if (win && !win.isDestroyed()) win.webContents.send("video:open-file", file);
+}
+let live = null; // 녹화 중인 창 { win, startedAt, onMin, onRestore }
+let mini = null; // 녹화 중 작은 막대 창
+let miniOpening = false;
+
+/** 녹화 중 큰 창을 내리면 — 녹화하는 모니터 위쪽 가운데에 작은 막대. 막대는 녹화에 찍히지 않게(화면 캡처 제외) */
+async function openMini() {
+  if (!live || mini || miniOpening) return;
+  miniOpening = true;
+  try {
+    let d = null;
+    try {
+      const srcs = await desktopCapturer.getSources({ types: ["screen"], thumbnailSize: { width: 0, height: 0 } });
+      const s = srcs.find((x) => x.id === chosenSource);
+      if (s) d = screen.getAllDisplays().find((x) => String(x.id) === String(s.display_id)) || null;
+    } catch {}
+    if (!live) return;
+    if (!d) d = screen.getDisplayMatching(live.win.getBounds());
+    const W = 340, H = 54, wa = d.workArea;
+    mini = new BrowserWindow({
+      width: W,
+      height: H,
+      x: Math.round(wa.x + (wa.width - W) / 2),
+      y: wa.y + 12,
+      frame: false,
+      transparent: true,
+      backgroundColor: "#00000000",
+      resizable: false,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
+      skipTaskbar: true,
+      alwaysOnTop: true,
+      show: false,
+      title: "녹화 중",
+      webPreferences: { preload: path.join(__dirname, "record-mini-preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true },
+    });
+    mini.setAlwaysOnTop(true, "screen-saver");
+    mini.setContentProtection(true); // 윈도우: 화면 녹화·캡처에서 빠진다
+    mini.loadFile(path.join(__dirname, "record-mini.html"), { query: { t: String(live.startedAt) } });
+    mini.once("ready-to-show", () => mini && mini.showInactive());
+    mini.on("closed", () => {
+      mini = null;
+    });
+  } finally {
+    miniOpening = false;
+  }
+}
+function closeMini() {
+  if (mini && !mini.isDestroyed()) mini.close();
+  mini = null;
+}
+function showBig(win) {
+  if (!win || win.isDestroyed()) return;
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+}
+/** 녹화 끝 — 막대를 닫고, 내려가 있던 큰 창을 다시 올린다 */
+function endLive() {
+  if (!live) return;
+  const { win, onMin, onRestore } = live;
+  live = null;
+  closeMini();
+  if (!win.isDestroyed()) {
+    win.removeListener("minimize", onMin);
+    win.removeListener("restore", onRestore);
+    win.webContents.setBackgroundThrottling(true);
+    showBig(win);
+  }
+}
 
 const winOf = (e) => BrowserWindow.fromWebContents(e.sender);
 const send = (e, ch, ...a) => {
@@ -67,19 +147,72 @@ function register(base) {
 
   /* ── 프로젝트 ── */
   ipcMain.handle("video:project-create", (_e, opts) => project.withUrls(project.create(opts || {})));
-  ipcMain.handle("video:project-open", (_e, dir) => project.open(dir));
+  ipcMain.handle("video:project-open", (_e, dir, choice) => project.open(dir, choice));
   ipcMain.handle("video:project-open-pick", async (e) => {
-    const r = await dialog.showOpenDialog(winOf(e), { title: "프로젝트 열기", defaultPath: path.join(library.studioRoot(), "영상"), properties: ["openFile"], filters: [{ name: "공실뉴스 영상 프로젝트", extensions: ["json"] }] });
+    const r = await dialog.showOpenDialog(winOf(e), { title: "프로젝트 열기", defaultPath: folders.projectDir(), properties: ["openFile"], filters: [{ name: "공실뉴스 스튜디오 파일", extensions: ["gss"] }, { name: "예전 폴더 방식 프로젝트 (project.json)", extensions: ["json"] }] });
     if (r.canceled || !r.filePaths[0]) return null;
-    return project.open(path.dirname(r.filePaths[0]));
+    const f = r.filePaths[0];
+    return project.open(f.toLowerCase().endsWith(".gss") ? f : path.dirname(f));
   });
   ipcMain.handle("video:project-save", (_e, p) => project.save(p));
+  // .gss — 바로 묶기 · 예전 폴더 → .gss · 프로젝트 패키지 · 없어진 원본 다시 연결
+  ipcMain.handle("video:project-flush", (_e, p) => project.flush(p));
+  ipcMain.handle("video:project-discard", (_e, p) => project.discard(p));
+  // 저장 안 한 내용이 있으면 앱 창 X 를 누를 때 먼저 묻는다 (main.js 창 닫기)
+  ipcMain.handle("video:set-dirty", (_e, v, dir, file) => {
+    dirty = Boolean(v);
+    dirtyWork = { dir: dir || "", file: file || "" };
+    return true;
+  });
+  ipcMain.handle("video:backup", (_e, p) => project.backup(p));
+  ipcMain.handle("video:backups", (_e, p) => project.backups(p));
+  ipcMain.handle("video:close-now", (e) => {
+    dirty = false;
+    closing = true;
+    const w = winOf(e);
+    if (w) setTimeout(() => w.close(), 30);
+    return true;
+  });
+  ipcMain.handle("video:project-convert", (_e, p) => project.convert(p));
+  ipcMain.handle("video:package-info", (_e, p) => project.packageInfo(p));
+  ipcMain.handle("video:package-make", async (e, p) => {
+    const r = await dialog.showOpenDialog(winOf(e), { title: "프로젝트 패키지를 만들 곳 (이 안에 '이름_패키지' 폴더가 생겨요)", defaultPath: p.file ? path.dirname(p.file) : folders.projectDir(), properties: ["openDirectory", "createDirectory"] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    const out = await project.makePackage(p, r.filePaths[0], (t, f) => send(e, "video:progress", t, f));
+    shell.showItemInFolder(out.file);
+    return out;
+  });
+  ipcMain.handle("video:relink", async (e, p, assetId) => {
+    const a = p && p.assets && p.assets[assetId];
+    const r = await dialog.showOpenDialog(winOf(e), { title: `원본 다시 연결 — ${a ? a.name : ""}`, defaultPath: p.file ? path.dirname(p.file) : undefined, properties: ["openFile"] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    return project.relink(p, assetId, r.filePaths[0]);
+  });
+  // 탐색기에서 .gss 를 두 번 눌러 앱을 열었으면 — 편집 화면이 물어 가져간다
+  ipcMain.handle("video:pending-file", () => {
+    const f = pendingFile;
+    pendingFile = "";
+    return f;
+  });
   ipcMain.handle("video:project-save-as", (_e, p, name, parent) => project.saveAs(p, name, parent));
   ipcMain.handle("video:pick-folder", async (e, title, defaultPath) => {
     const r = await dialog.showOpenDialog(winOf(e), { title: title || "폴더 고르기", defaultPath: defaultPath || undefined, properties: ["openDirectory", "createDirectory"] });
     return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
   });
   ipcMain.handle("video:project-recent", () => project.recent());
+  // 저장 폴더 설정 — 프로젝트·녹화·내보내기 (비우면 기본)
+  ipcMain.handle("video:folders-get", () => folders.get());
+  ipcMain.handle("video:folders-set", (_e, patch) => {
+    const r = folders.set(patch);
+    library.scan().catch(() => {}); // 바꾼 폴더도 내 자료에서 보이게
+    return r;
+  });
+  ipcMain.handle("video:project-rename", (_e, dir, name) => project.rename(dir, name));
+  // 휴지통 — 옮겨 두기 · 목록 · 되살리기 · 영구 삭제(하나 / "all")
+  ipcMain.handle("video:trash", (_e, dir) => project.trash(dir));
+  ipcMain.handle("video:trash-list", () => project.trashList());
+  ipcMain.handle("video:trash-restore", (_e, id) => project.restore(id));
+  ipcMain.handle("video:trash-purge", (_e, id) => project.purge(id));
   ipcMain.handle("video:project-add-asset", (e, libId) => project.addAsset({}, libId, (f) => send(e, "video:progress", "편집용 사본 만드는 중…", f)));
   ipcMain.handle("video:project-export-text", (_e, p, kind) => {
     const f = project.exportText(p, kind);
@@ -92,6 +225,19 @@ function register(base) {
 
   /* ── 받아쓰기 ── */
   ipcMain.handle("video:transcribe", (e, p, assetId) => project.transcribe(p, assetId, (t, f) => send(e, "video:progress", t, f)));
+  // 무음 줄이기 — 영상별 실제 말소리 구간 (0.2초 넘게 쉰 곳에서 끊음). 서버로 보내지 않는다 (무료)
+  ipcMain.handle("video:speech", async (e, p, assetIds) => {
+    const out = {};
+    const ids = [...new Set(assetIds || [])].filter((id) => p.assets[id]);
+    for (let i = 0; i < ids.length; i++) {
+      const a = p.assets[ids[i]];
+      send(e, "video:progress", `말소리 구간을 찾는 중… (${i + 1}/${ids.length})`, i / ids.length);
+      out[ids[i]] = a.hasAudio === false ? [] : await ff.speech(a.path, a.duration, { min: 0.2 }).catch(() => []);
+    }
+    return out;
+  });
+  ipcMain.handle("video:realign", (e, p, items) => project.realign(p, items, (t, f) => send(e, "video:progress", t, f)));
+  ipcMain.handle("video:transcribe-clips", (e, p, targets) => project.transcribeClips(p, targets, (t, f) => send(e, "video:progress", t, f)));
   ipcMain.handle("video:split", (e, p, assetId) => project.splitBySpeech(p, assetId, (t, f) => send(e, "video:progress", t, f)));
 
   /* ── 회원 AI ── */
@@ -159,7 +305,7 @@ function register(base) {
   ipcMain.handle("video:render-cancel", (_e, id) => jobs.set(id, true));
   ipcMain.handle("video:export-audio", (e, p, kind) => render.exportAudio(p, kind, (t, f) => send(e, "video:render-progress", t, f)));
   ipcMain.handle("video:snapshot", async (_e, p, file, at) => {
-    const out = path.join(p.dir, "output", `${p.name}_화면_${Date.now()}.png`);
+    const out = path.join(folders.exportDir(p), `${p.name}_화면_${Date.now()}.png`);
     fs.mkdirSync(path.dirname(out), { recursive: true });
     await render.snapshot(p, media.fileOf(file) || file, at, out);
     shell.showItemInFolder(out);
@@ -182,14 +328,47 @@ function register(base) {
     chosenSource = id;
     return true;
   });
-  ipcMain.handle("video:record-start", (_e, name) => {
-    const dir = path.join(library.studioRoot(), "영상", "녹화");
+  // 저장할 곳 — 기본은 문서\공실뉴스 스튜디오\영상\녹화, 회원이 다른 폴더를 고를 수 있다
+  const recDir = () => folders.recordDir(); // 처음 화면 [저장 폴더] (기본: 문서\공실뉴스 스튜디오\영상\녹화)
+  ipcMain.handle("video:record-default-dir", () => recDir());
+  ipcMain.handle("video:record-pick-dir", async (e, cur) => {
+    const r = await dialog.showOpenDialog(winOf(e), { title: "녹화 파일을 저장할 폴더", defaultPath: cur || recDir(), properties: ["openDirectory", "createDirectory"] });
+    return r.canceled || !r.filePaths.length ? "" : r.filePaths[0];
+  });
+  ipcMain.handle("video:record-start", (_e, name, opt = {}) => {
+    const dir = opt.dir && path.isAbsolute(String(opt.dir)) ? String(opt.dir) : recDir();
     fs.mkdirSync(dir, { recursive: true });
     const d = new Date();
-    const file = path.join(dir, `${String(name || "녹화").replace(/[\\/:*?"<>|]/g, " ")}_${d.getMonth() + 1}월${d.getDate()}일 ${d.getHours()}시${String(d.getMinutes()).padStart(2, "0")}분${String(d.getSeconds()).padStart(2, "0")}초.webm`);
+    const safe = (s) => String(s || "").replace(/[\\/:*?"<>|]/g, " ").replace(/\.(mp4|webm)$/i, "").trim();
+    const base = safe(opt.fileName) || `${safe(name) || "녹화"}_${d.getMonth() + 1}월${d.getDate()}일 ${d.getHours()}시${String(d.getMinutes()).padStart(2, "0")}분${String(d.getSeconds()).padStart(2, "0")}초`;
+    // 같은 이름이 있으면 덮어쓰지 않고 (2), (3)…
+    let file = path.join(dir, `${base}.webm`);
+    for (let i = 2; fs.existsSync(file) || fs.existsSync(file.replace(/\.webm$/, ".mp4")); i++) file = path.join(dir, `${base} (${i}).webm`);
     const token = crypto.randomBytes(4).toString("hex");
     recs.set(token, { file, fd: fs.openSync(file, "w") });
     return token;
+  });
+  // 녹화 시작·끝 — 녹화 중에는 큰 창을 내려도 녹화가 멈추지 않게(백그라운드 느려짐 끔), 내리면 작은 막대
+  ipcMain.handle("video:record-live", (e, on, startedAt) => {
+    if (!on) return endLive(), true;
+    const win = winOf(e);
+    if (!win || live) return true;
+    win.webContents.setBackgroundThrottling(false);
+    live = { win, startedAt: Number(startedAt) || Date.now(), onMin: () => openMini(), onRestore: () => closeMini() };
+    win.on("minimize", live.onMin);
+    win.on("restore", live.onRestore);
+    return true;
+  });
+  ipcMain.handle("video:record-minimize", (e) => {
+    const win = winOf(e);
+    if (win) win.minimize();
+    return true;
+  });
+  ipcMain.on("record-mini:expand", () => live && showBig(live.win));
+  ipcMain.on("record-mini:stop", () => {
+    if (!live || live.win.isDestroyed()) return closeMini();
+    live.win.webContents.send("video:record-mini-stop");
+    showBig(live.win);
   });
   ipcMain.handle("video:record-chunk", (_e, token, buf) => {
     const r = recs.get(token);
@@ -217,7 +396,7 @@ function register(base) {
 
   /* ── 폴더·파일 열기 ── */
   ipcMain.handle("video:show-file", (_e, file) => shell.showItemInFolder(media.fileOf(file) || file));
-  ipcMain.handle("video:open-path", (_e, p) => shell.openPath(p));
+  ipcMain.handle("video:open-path", (_e, p) => shell.openPath(media.fileOf(p) || p));
 }
 
 /** 화면 녹화 허용 — 편집 화면이 고른 화면(없으면 첫 화면)을 준다. 카메라·마이크 권한도 허용 */
@@ -235,4 +414,16 @@ function setupCapture() {
   });
 }
 
-module.exports = { register, setupCapture };
+/** 앱 창 X — 저장 안 한 내용이 있으면 true (main.js 가 닫기를 멈추고 편집 화면에 묻게 한다) */
+const wantsAsk = () => dirty && !closing;
+/** F5·창 이동 때 앱이 직접 — 저장하고 나가기 / 저장 안 함 (작업 폴더는 자동 저장으로 최신이다) */
+function leave(save) {
+  try {
+    if (save) project.saveWork(dirtyWork.dir, dirtyWork.file);
+    else project.discardWork(dirtyWork.dir, dirtyWork.file);
+  } catch (e) {
+    log.warn(`[.gss] 나갈 때 ${save ? "저장" : "버리기"} 실패: ${e.message}`);
+  }
+  dirty = false;
+}
+module.exports = { register, setupCapture, openFile, wantsAsk, leave };

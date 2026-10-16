@@ -4,14 +4,14 @@
 //  source  : 촬영 영상의 한 구간 (자기 소리)  src {asset, s, e}, words [{w, s, e, del}] (원본 시각)
 //  silence : 말이 없는 구간 (무음 구간 줄이기로 지운다) src {asset, s, e}
 //  voice   : 글로 만든 클립 — AI 목소리 voice {file, duration} (+ 화면 자료 visual {asset, s}), words (목소리 파일 시각, 1배속 기준)
-// clip.del = 지운 클립, word.del = 지운 단어 (그 소리·영상 구간이 잘린다)
+// clip.del = 지운 클립, word.del = 지운 단어, clip.cuts = 무음 줄이기로 건너뛰는 구간 [{s, e}] (원본 시각) — 그 소리·영상 구간이 잘린다
 const GAP = 0.12; // 목소리 클립 뒤 숨 쉬는 틈
 
 function keepRanges(clip) {
   if (!clip.src) return [];
   let ranges = [{ s: clip.src.s, e: clip.src.e }];
-  for (const w of clip.words || []) {
-    if (!w.del) continue;
+  for (const w of [...(clip.words || []), ...(clip.cuts || [])]) {
+    if (w.w !== undefined && !w.del) continue;
     const next = [];
     for (const r of ranges) {
       if (w.e <= r.s || w.s >= r.e) next.push(r);

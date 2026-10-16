@@ -30,7 +30,7 @@ const BASE_ORIGIN = new URL(BASE_URL).origin;
 const ext = require("./ext");
 ext.configure(BASE_URL);
 const NO_EXT = new Set([
-  "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info",
+  "studio:open-connect", "studio:open-ai-window", "studio:open-external", "studio:info", "studio:check-update",
   "studio:ai-list", "studio:ai-check", "studio:ai-finish-login", "studio:ai-connect", "studio:ai-set-writer", "studio:ai-writer", "studio:ai-set-imager", "studio:ai-imager",
   "studio:vacancy-load", "studio:vacancy-analyze", "studio:naver-open-blog", "studio:column-open-news",
   "studio:save-file", "studio:open-out-folder",
@@ -69,6 +69,8 @@ if (!app.requestSingleInstanceLock()) {
   app.on("second-instance", (_event, argv) => {
     const url = findDeepLink(argv);
     if (url) handleDeepLink(url);
+    const gssFile = findGss(argv);
+    if (gssFile) openGss(gssFile);
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
@@ -81,6 +83,19 @@ if (app.isPackaged) {
 }
 // 개발 실행(npm start)은 gongsilstudio:// 를 등록하지 않는다. 등록하면 설치판 앱의 연결이 개발판으로 넘어간다.
 // 개발판 로그인은 scripts/dev-connect.mjs 가 연결 신호를 실행 인자로 넘긴다.
+
+/** 탐색기에서 두 번 누른 .gss 파일 (실행 인자) */
+function findGss(argv) {
+  return (argv || []).find((a) => typeof a === "string" && /\.gss$/i.test(a) && fs.existsSync(a)) || null;
+}
+/** .gss 열기 — 영상 편집기(동영상제작)로 가서 그 파일을 연다 */
+async function openGss(file) {
+  log.info(`[.gss] 탐색기에서 엶 ${file}`);
+  videoIpc.openFile(file, mainWindow);
+  if (!mainWindow) return;
+  const cur = mainWindow.webContents.getURL();
+  if (!/[?&]menu=video/.test(cur) && (await isLoggedIn())) mainWindow.loadURL(`${BASE_URL}/realty_admin?menu=video`);
+}
 
 function findDeepLink(argv) {
   return argv.find((a) => typeof a === "string" && a.startsWith(`${PROTOCOL}://`)) || null;
@@ -208,6 +223,28 @@ async function createWindow() {
     return { action: "deny" };
   });
 
+  // 영상 편집기에 저장 안 한 내용이 있으면 — 닫기를 멈추고 [저장 / 다른 이름으로 / 저장 안 함 / 취소] 를 묻는다
+  mainWindow.on("close", (e) => {
+    if (!videoIpc.wantsAsk()) return;
+    e.preventDefault();
+    mainWindow.webContents.send("video:want-close");
+  });
+  // F5·다른 주소로 이동 — 편집기에 저장 안 한 내용이 있으면 앱이 직접 묻는다 (웹 화면은 나가는 중이라 창을 못 띄움)
+  mainWindow.webContents.on("will-prevent-unload", (e) => {
+    if (!videoIpc.wantsAsk()) return e.preventDefault(); // 그냥 나간다
+    const r = dialog.showMessageBoxSync(mainWindow, {
+      type: "question",
+      buttons: ["저장하고 나가기", "저장 안 함", "취소"],
+      defaultId: 0,
+      cancelId: 2,
+      title: "공실뉴스 스튜디오",
+      message: "동영상제작에 저장하지 않은 내용이 있어요.",
+      detail: "[저장 안 함]을 누르면 마지막으로 저장한 상태로 돌아가요.",
+    });
+    if (r === 2) return; // 취소 — 나가지 않는다
+    videoIpc.leave(r === 0);
+    e.preventDefault(); // 나간다
+  });
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
@@ -308,7 +345,9 @@ autoUpdater.logger = log;
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
+let startupInstalling = false; // 켤 때 업데이트 중 — 아래 [지금 다시 시작] 창을 띄우지 않는다
 autoUpdater.on("update-downloaded", async (info) => {
+  if (startupInstalling) return;
   const { response } = await dialog.showMessageBox(mainWindow, {
     type: "info",
     buttons: ["지금 다시 시작", "나중에"],
@@ -319,6 +358,78 @@ autoUpdater.on("update-downloaded", async (info) => {
   });
   if (response === 0) autoUpdater.quitAndInstall();
 });
+
+/**
+ * 켤 때 업데이트 — 새 버전이 있으면 묻지 않고 받아서 설치하고 다시 켠다 (아직 작업 전이라 잃을 게 없다).
+ * 업데이트 서버가 8초 안에 답이 없거나, 받다가 1분 넘게 멈추면 그냥 지금 버전으로 쓴다 (일을 막지 않게).
+ * 쓰는 중에 받은 업데이트는 강제로 다시 켜지 않는다 — 닫을 때 적용 (autoInstallOnAppQuit).
+ * 돌려줌: true = 설치하러 끝나는 중 (창을 만들지 않는다)
+ */
+async function startupUpdate() {
+  if (!app.isPackaged) return false;
+  autoUpdater.autoDownload = false;
+  let result = null;
+  try {
+    result = await Promise.race([autoUpdater.checkForUpdates(), new Promise((r) => setTimeout(() => r(null), 8000))]);
+  } catch (e) {
+    log.warn("[업데이트] 켤 때 확인 실패", e && e.message);
+  }
+  autoUpdater.autoDownload = true;
+  if (!result || !result.isUpdateAvailable) return false;
+  const ver = (result.updateInfo && result.updateInfo.version) || "";
+  log.info(`[업데이트] 켤 때 새 버전 v${ver} — 받아서 설치`);
+  const win = new BrowserWindow({ width: 440, height: 160, frame: false, resizable: false, alwaysOnTop: true, backgroundColor: "#16202b", title: "공실뉴스 스튜디오 업데이트", icon: path.join(__dirname, "..", "build", "icon.png"), webPreferences: { sandbox: true } });
+  const html = `<!doctype html><meta charset="utf-8"><body style="margin:0;height:100vh;display:flex;flex-direction:column;justify-content:center;padding:0 28px;box-sizing:border-box;background:#16202b;color:#fff;font-family:'Malgun Gothic',sans-serif">
+<div style="font-size:17px;font-weight:800">공실뉴스 스튜디오 새 버전${ver ? ` v${ver}` : ""}</div>
+<div id="t" style="font-size:14px;color:#b6c2cf;margin-top:8px">새 버전을 받는 중… 0%</div>
+<div style="height:6px;border-radius:3px;background:#2b3644;margin-top:12px;overflow:hidden"><div id="b" style="height:100%;width:0;background:#3b82f6"></div></div></body>`;
+  win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+  const show = (text, pct) =>
+    !win.isDestroyed() && win.webContents.executeJavaScript(`document.getElementById("t").textContent=${JSON.stringify(text)};${typeof pct === "number" ? `document.getElementById("b").style.width="${pct}%"` : ""}`).catch(() => {});
+  startupInstalling = true;
+  return new Promise((resolve) => {
+    let last = Date.now();
+    let finished = false;
+    const stop = (installing) => {
+      if (finished) return;
+      finished = true;
+      clearInterval(watch);
+      autoUpdater.removeListener("download-progress", onProgress);
+      autoUpdater.removeListener("update-downloaded", onDone);
+      autoUpdater.removeListener("error", onError);
+      if (!installing) {
+        startupInstalling = false;
+        if (!win.isDestroyed()) win.close();
+      }
+      resolve(installing);
+    };
+    const onProgress = (p) => {
+      last = Date.now();
+      const pct = Math.round(p.percent || 0);
+      show(`새 버전을 받는 중… ${pct}%`, pct);
+      if (!win.isDestroyed()) win.setProgressBar(pct / 100);
+    };
+    const onDone = () => {
+      show("설치하고 다시 켜는 중…", 100);
+      stop(true);
+      setTimeout(() => autoUpdater.quitAndInstall(true, true), 800); // 조용히 설치하고 바로 다시 켠다
+    };
+    const onError = (e) => {
+      log.warn("[업데이트] 켤 때 받기 실패 — 지금 버전으로", e && e.message);
+      stop(false);
+    };
+    const watch = setInterval(() => {
+      if (Date.now() - last > 60000) {
+        log.warn("[업데이트] 받기가 1분 넘게 멈춤 — 지금 버전으로 (닫을 때 적용)");
+        stop(false);
+      }
+    }, 5000);
+    autoUpdater.on("download-progress", onProgress);
+    autoUpdater.once("update-downloaded", onDone);
+    autoUpdater.once("error", onError);
+    autoUpdater.downloadUpdate().catch(onError);
+  });
+}
 
 async function checkForUpdates(manual = false) {
   if (!app.isPackaged) {
@@ -463,9 +574,14 @@ app.whenReady().then(async () => {
   const url = findDeepLink(process.argv);
   if (url) pendingDeepLink = url;
   buildMenu();
+  // 켤 때 새 버전이 있으면 먼저 업데이트 (설치하러 끝나면 창을 만들지 않는다)
+  if (await startupUpdate()) return;
   await createWindow();
+  const gssFile = findGss(process.argv);
+  if (gssFile) openGss(gssFile);
   log.info(`[시작] v${app.getVersion()} ${BASE_URL} ffmpeg=${ffmpegPath() || "없음"}`);
-  checkForUpdates();
 });
+// 웹 화면의 [지금 업데이트] (필수 버전보다 낮을 때)
+ipcMain.handle("studio:check-update", () => checkForUpdates(true));
 
 app.on("window-all-closed", () => app.quit());

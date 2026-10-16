@@ -78,7 +78,7 @@ function walk(dir, out, depth = 0, audio = false) {
     return;
   }
   for (const e of ents) {
-    if (e.name.startsWith(".") || /^(proxy|thumbnails|autosave|waveform|audio|node_modules|studio-chrome|Cache|Code Cache|GPUCache|video-cache)$/i.test(e.name)) continue;
+    if (e.name.startsWith(".") || /^(proxy|thumbnails|autosave|휴지통|waveform|audio|node_modules|studio-chrome|Cache|Code Cache|GPUCache|video-cache)$/i.test(e.name)) continue;
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p, out, depth + 1, audio);
     else if (audio ? ff.kindOf(p) === "audio" : ff.kindOf(p) === "image" || ff.kindOf(p) === "video") out.push(p);
@@ -93,6 +93,11 @@ function scan() {
     const d = load();
     const roots = [
       { dir: studioRoot(), source: "studio" },
+      // 처음 화면 [저장 폴더]에서 다른 곳을 골랐으면 그 폴더도 (스튜디오 폴더 안이면 이미 훑음)
+      ...(() => {
+        const f = require("./folders").get();
+        return [f.projectDir, f.recordDir, f.exportDir].filter((x) => x && !(x.toLowerCase() + path.sep).startsWith(studioRoot().toLowerCase() + path.sep)).map((x) => ({ dir: x, source: "studio" }));
+      })(),
       { dir: path.join(app.getPath("userData"), "media"), source: "vacancy" },
       ...d.folders.map((f) => ({ dir: f, source: "local" })),
     ];
@@ -169,6 +174,7 @@ function pump() {
 // 편집 화면에 주소를 줄 때 그 파일을 열 수 있게 등록한다 (앱을 다시 켜면 등록이 비워지므로)
 const forWeb = (it) => (media.allow(it.path), it.edit && media.allow(it.edit), it.thumb && media.allow(it.thumb), {
   id: it.id,
+  path: it.path, // 원본 파일 자리 (녹화 파일 "폴더에서 보기"용)
   name: it.name,
   kind: it.kind,
   source: it.source,

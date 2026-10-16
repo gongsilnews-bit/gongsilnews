@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+<title>녹화 중</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font-family: "Malgun Gothic", "Pretendard", sans-serif; user-select: none; }
+  /* 막대 전체를 잡고 끌어 옮길 수 있게 (버튼은 빼고) */
+  .bar { box-sizing: border-box; height: 100%; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 14px; background: rgba(24, 26, 32, 0.96); border: 1px solid #3a3f4b; border-radius: 10px; color: #fff; -webkit-app-region: drag; }
+  .dot { width: 11px; height: 11px; border-radius: 6px; background: #ef4444; animation: blink 1.2s infinite; flex-shrink: 0; }
+  @keyframes blink { 50% { opacity: 0.25; } }
+  .time { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; flex: 1; }
+  button { -webkit-app-region: no-drag; height: 34px; padding: 0 12px; border-radius: 6px; border: 1px solid #4b5160; background: transparent; color: #e5e7eb; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  button:hover { background: #2d3240; }
+  button.stop { background: #ef4444; border-color: #ef4444; color: #fff; }
+  button.stop:hover { background: #dc2626; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <span class="dot"></span>
+  <span class="time" id="t">녹화 중 0:00</span>
+  <button id="expand" title="스튜디오 창을 다시 크게">크게 보기</button>
+  <button id="stop" class="stop">■ 녹화 끝내기</button>
+</div>
+<script>
+  // 녹화를 시작한 시각(ms)부터 센다
+  const t0 = Number(new URLSearchParams(location.search).get("t")) || Date.now();
+  const el = document.getElementById("t");
+  const tick = () => {
+    const s = Math.max(0, Math.floor((Date.now() - t0) / 1000));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = String(s % 60).padStart(2, "0");
+    el.textContent = "녹화 중 " + (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + ss;
+  };
+  tick();
+  setInterval(tick, 500);
+  document.getElementById("expand").onclick = () => window.mini.expand();
+  document.getElementById("stop").onclick = (e) => {
+    e.currentTarget.disabled = true;
+    window.mini.stop();
+  };
+</script>
+</body>
+</html>

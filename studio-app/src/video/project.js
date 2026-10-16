@@ -1,5 +1,7 @@
 // 영상 편집기 — 프로젝트 (PC에 저장, 자동 저장·복구)
-//  저장 자리: 문서\공실뉴스 스튜디오\영상\<이름_날짜>\  (공실과 연결된 영상은 그 매물 폴더\영상\<이름_날짜>\)
+//  저장: <이름>.gss 파일 하나 (gss.js) — [저장 폴더]의 프로젝트 폴더(기본 문서\공실뉴스 스튜디오\영상)에. 공실과 연결된 영상은 그 매물 폴더\영상\
+//    p.file = .gss 위치, p.dir = 보이지 않는 작업 폴더 (편집 중 파일들). 예전 폴더 방식(p.file 없음)도 그대로 열린다 → [.gss 파일로 바꾸기]
+//  예전 폴더 방식 자리: 문서\공실뉴스 스튜디오\영상\<이름_날짜>\
 //    project.json  autosave\  voice\  assets\(받은 자료)  audio\(받아쓰기용 소리)  output\(완성 영상)
 //  최근 프로젝트 목록: userData\video-projects.json
 const { app } = require("electron");
@@ -12,6 +14,7 @@ const library = require("./library");
 const server = require("./server");
 const ff = require("./ff");
 const tl = require("./timeline");
+const gss = require("./gss");
 
 const recentFile = () => path.join(app.getPath("userData"), "video-projects.json");
 const RATIOS = { "16:9": [1920, 1080], "9:16": [1080, 1920], "1:1": [1080, 1080], "4:5": [1080, 1350], "4:3": [1440, 1080] };
@@ -38,8 +41,9 @@ function readRecent() {
   }
 }
 function remember(p) {
-  const list = readRecent().filter((r) => r.dir.toLowerCase() !== p.dir.toLowerCase());
-  list.unshift({ dir: p.dir, name: p.name, ratio: p.ratio, method: p.method, updatedAt: p.updatedAt, thumb: p.thumb || "", duration: p.duration || 0 });
+  const key = p.file || p.dir; // .gss 프로젝트는 파일 위치, 예전 폴더 방식은 폴더
+  const list = readRecent().filter((r) => r.dir.toLowerCase() !== key.toLowerCase() && r.dir.toLowerCase() !== String(p.dir || "").toLowerCase());
+  list.unshift({ dir: key, name: p.name, ratio: p.ratio, method: p.method, updatedAt: p.updatedAt, thumb: p.thumb || "", duration: p.duration || 0 });
   fs.mkdirSync(path.dirname(recentFile()), { recursive: true });
   fs.writeFileSync(recentFile(), JSON.stringify(list.slice(0, 100), null, 1));
 }
@@ -49,26 +53,32 @@ function create({ method = "video", ratio = "16:9", name = "", vacancyId = "" } 
   if (!RATIOS[ratio]) ratio = "16:9";
   const label = { text: "텍스트 영상", video: "영상 편집", longform: "숏폼", record: "녹화 영상" }[method] || "영상";
   const nm = safeName(name) || `${label}_${stamp()}`;
-  let base = path.join(library.studioRoot(), "영상");
+  let base = require("./folders").projectDir(); // 처음 화면 [저장 폴더]에서 고른 곳 (기본: 문서\공실뉴스 스튜디오\영상)
   if (vacancyId) {
     try {
       base = require("../out-folder").folderFor(vacancyId, "영상");
     } catch {}
   }
-  let dir = path.join(base, nm);
-  for (let n = 2; fs.existsSync(dir); n++) dir = path.join(base, `${nm}_${n}`);
+  // <이름>.gss 파일 하나 — 같은 이름이 있으면 _2
+  let file = path.join(base, `${nm}${gss.EXT}`);
+  for (let n = 2; fs.existsSync(file); n++) file = path.join(base, `${nm}_${n}${gss.EXT}`);
+  const dir = gss.workFor(file);
+  fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
   const now = new Date().toISOString();
-  const p = { v: 1, id: uid(), name: path.basename(dir), method, ratio, vacancyId: vacancyId || "", createdAt: now, updatedAt: now, settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), assets: {}, scenes: [{ id: uid(), clips: [] }], dir };
+  const p = { v: 1, id: uid(), name: path.basename(file, gss.EXT), method, ratio, vacancyId: vacancyId || "", createdAt: now, updatedAt: now, savedAt: "", settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), assets: {}, scenes: [{ id: uid(), clips: [] }], dir, file };
   writeProject(p);
+  gss.setSource(dir, file);
+  gss.pack(dir, file);
   media.allowRoot(dir);
-  log.info(`[영상] 새 프로젝트 ${dir}`);
+  remember(p);
+  log.info(`[영상] 새 프로젝트 ${file}`);
   return p;
 }
 
 function writeProject(p) {
   const file = path.join(p.dir, "project.json");
-  const { dir, ...data } = p;
+  const { dir, file: _file, ...data } = p; // 위치는 열 때마다 다시 붙인다
   const json = JSON.stringify(data, null, 1);
   fs.mkdirSync(p.dir, { recursive: true });
   fs.writeFileSync(`${file}.tmp`, json);
@@ -95,6 +105,79 @@ function save(p) {
   remember(p);
   return { updatedAt: p.updatedAt, duration: p.duration };
 }
+/** [저장] — 지금 내용을 .gss 파일로 묶는다 (자동 저장은 작업 폴더에만 하는 복구용). 돌려줌: 저장한 시각 */
+function flush(p) {
+  if (!p || !p.file) {
+    if (p && p.scenes) save(p);
+    return { savedAt: "" };
+  }
+  p.savedAt = new Date().toISOString();
+  save(p);
+  gss.pack(p.dir, p.file);
+  return { savedAt: p.savedAt };
+}
+/** 자동 저장본 — .gss 옆 "자동 저장\<이름>\<이름>_날짜_시각.gss" (원래 .gss 는 그대로). 최근 20개 */
+const backupDir = (file) => path.join(path.dirname(file), "자동 저장", path.basename(file, gss.EXT));
+function backup(p) {
+  if (!p || !p.file) return "";
+  const d = new Date();
+  const two = (n) => String(n).padStart(2, "0");
+  const dir = backupDir(p.file);
+  fs.mkdirSync(dir, { recursive: true });
+  const out = path.join(dir, `${path.basename(p.file, gss.EXT)}_${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}_${two(d.getHours())}-${two(d.getMinutes())}${gss.EXT}`);
+  gss.pack(p.dir, out);
+  const list = backups(p);
+  for (const x of list.slice(20)) fs.rmSync(x.file, { force: true });
+  log.info(`[영상] 자동 저장본 ${out}`);
+  return out;
+}
+function backups(p) {
+  if (!p || !p.file) return [];
+  const dir = backupDir(p.file);
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((f) => gss.isGss(f))
+    .map((f) => {
+      const st = fs.statSync(path.join(dir, f));
+      return { file: path.join(dir, f), at: st.mtime.toISOString(), size: st.size };
+    })
+    .sort((a, b) => (a.at < b.at ? 1 : -1));
+}
+/** 앱이 직접 (F5·창 이동 때) — 작업 폴더를 .gss 로 저장 / 버리기 */
+function saveWork(dir, file) {
+  if (!dir || !file || !fs.existsSync(path.join(dir, "project.json"))) return false;
+  const pj = path.join(dir, "project.json");
+  const data = JSON.parse(fs.readFileSync(pj, "utf8"));
+  data.savedAt = new Date().toISOString();
+  fs.writeFileSync(pj, JSON.stringify(data, null, 1));
+  gss.pack(dir, file);
+  return true;
+}
+function discardWork(dir, file) {
+  if (!dir || !file) return false;
+  let savedAt;
+  try {
+    savedAt = JSON.parse(fs.readFileSync(path.join(dir, "project.json"), "utf8")).savedAt;
+  } catch {}
+  return discard({ dir, file, savedAt });
+}
+
+/**
+ * [저장 안 함] — 저장하지 않은 고친 내용(작업 폴더)을 버린다. 한 번도 저장 안 한 새 프로젝트면 .gss 파일도 지운다
+ * (빈 프로젝트가 쌓이지 않게)
+ */
+function discard(p) {
+  if (!p || !p.file) return false;
+  const never = p.savedAt === ""; // 새로 만들고 한 번도 저장 안 함 (예전에 만든 .gss 는 이 표시가 없어서 지우지 않는다)
+  fs.rmSync(p.dir, { recursive: true, force: true });
+  if (never && fs.existsSync(p.file)) {
+    fs.rmSync(p.file, { force: true });
+    fs.writeFileSync(recentFile(), JSON.stringify(readRecent().filter((r) => gss.norm(r.dir) !== gss.norm(p.file)), null, 1));
+    log.info(`[영상] 저장 안 한 새 프로젝트를 지움 ${p.file}`);
+  } else log.info(`[영상] 저장 안 함 — 마지막 저장 상태로 ${p.file}`);
+  return true;
+}
 
 /**
  * 다른 이름으로 저장 — 프로젝트 폴더를 통째로 새 이름 폴더로 복사 (자동 저장 기록은 빼고)
@@ -105,6 +188,18 @@ function saveAs(p, name, parent) {
   if (!p || !p.dir || !fs.existsSync(p.dir)) throw new Error("프로젝트 정보가 없습니다.");
   const nm = safeName(name);
   if (!nm) throw new Error("새 이름을 써 주세요.");
+  if (p.file) {
+    // .gss — 지금 편집 중인 내용을 새 .gss 로 묶고 그걸 연다 (원본 .gss 는 마지막으로 저장된 그대로)
+    const base = parent ? path.resolve(parent) : path.dirname(p.file);
+    if (!fs.existsSync(base)) throw new Error("저장할 폴더를 찾지 못했습니다.");
+    let file = path.join(base, `${nm}${gss.EXT}`);
+    for (let n = 2; fs.existsSync(file); n++) file = path.join(base, `${nm}_${n}${gss.EXT}`);
+    writeProject(p);
+    const now = new Date().toISOString();
+    gss.pack(p.dir, file, { patch: (d) => ({ ...d, id: uid(), name: path.basename(file, gss.EXT), createdAt: now, updatedAt: now }) });
+    log.info(`[영상] 다른 이름으로 저장 ${p.file} → ${file}`);
+    return open(file);
+  }
   const base = parent ? path.resolve(parent) : path.dirname(p.dir);
   if (!fs.existsSync(base)) throw new Error("저장할 폴더를 찾지 못했습니다.");
   if ((base + path.sep).toLowerCase().startsWith(p.dir.toLowerCase() + path.sep)) throw new Error("지금 프로젝트 폴더 안에는 저장할 수 없어요. 다른 폴더를 골라 주세요.");
@@ -142,18 +237,251 @@ function saveAs(p, name, parent) {
   return opened;
 }
 
-/** 열기 — 없어진 원본 파일 표시 (missing) */
-function open(dir) {
+/**
+ * 이름 바꾸기 (처음 화면 최근 프로젝트) — project.json 의 이름만 바꾼다. 폴더 이름은 그대로
+ * (폴더를 옮기면 안의 영상·목소리 파일 위치가 다 바뀌어서). 내보낸 영상 파일 이름은 이 이름을 쓴다
+ */
+function rename(dir, name) {
+  const nm = String(name || "").replace(/[\\/:*?"<>|\r\n]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+  if (!nm) throw new Error("새 이름을 써 주세요.");
+  if (gss.isGss(dir)) {
+    // .gss — 파일 이름을 바꾼다 (작업 폴더도 같이 옮겨 저장 안 된 내용을 지킨다)
+    if (!fs.existsSync(dir)) throw new Error("프로젝트 파일을 찾지 못했습니다.");
+    const to = path.join(path.dirname(dir), `${nm}${gss.EXT}`);
+    if (gss.norm(to) === gss.norm(dir)) return nm;
+    if (fs.existsSync(to)) throw new Error("같은 이름의 프로젝트가 이미 있어요. 다른 이름을 써 주세요.");
+    gss.flush(dir);
+    fs.renameSync(dir, to);
+    const wOld = gss.workFor(dir), wNew = gss.workFor(to);
+    if (fs.existsSync(wOld)) {
+      fs.rmSync(wNew, { recursive: true, force: true });
+      fs.renameSync(wOld, wNew);
+      gss.setSource(wNew, to);
+    }
+    const list = readRecent().map((r) => (gss.norm(r.dir) === gss.norm(dir) ? { ...r, dir: to, name: nm } : r));
+    fs.writeFileSync(recentFile(), JSON.stringify(list, null, 1));
+    log.info(`[영상] 이름 바꾸기 ${dir} → ${to}`);
+    return nm;
+  }
   const file = path.join(dir, "project.json");
   if (!fs.existsSync(file)) throw new Error("프로젝트 파일을 찾지 못했습니다.");
   const p = JSON.parse(fs.readFileSync(file, "utf8"));
+  p.name = nm;
   p.dir = dir;
+  writeProject(p);
+  remember(p);
+  log.info(`[영상] 이름 바꾸기 ${dir} → ${nm}`);
+  return nm;
+}
+
+/* ── 휴지통 (처음 화면) — 프로젝트 폴더를 통째로 문서\공실뉴스 스튜디오\휴지통 으로 옮겨 둔다 (바로 지우지 않음).
+   되살리면 원래 자리로 그대로 옮겨서 안의 파일 위치가 다시 맞는다. 녹화 원본처럼 폴더 밖 파일은 건드리지 않는다 ── */
+const trashDir = () => path.join(library.studioRoot(), "휴지통");
+const trashFile = () => path.join(trashDir(), "휴지통.json");
+function readTrash() {
+  try {
+    return JSON.parse(fs.readFileSync(trashFile(), "utf8")).filter((x) => x && x.at && fs.existsSync(x.at));
+  } catch {
+    return [];
+  }
+}
+function writeTrash(list) {
+  fs.mkdirSync(trashDir(), { recursive: true });
+  fs.writeFileSync(trashFile(), JSON.stringify(list, null, 1));
+}
+function trashList() {
+  return readTrash().map((x) => {
+    if (x.thumb) media.allow(media.fileOf(x.thumb));
+    return x;
+  });
+}
+function trash(dir) {
+  const isFile = gss.isGss(dir);
+  if (isFile) gss.flush(dir);
+  const file = isFile ? dir : path.join(dir, "project.json");
+  if (!fs.existsSync(file)) throw new Error("프로젝트 파일을 찾지 못했습니다.");
+  const r0 = readRecent().find((r) => gss.norm(r.dir) === gss.norm(dir)) || {};
+  const p = isFile ? { name: path.basename(dir, gss.EXT), thumb: r0.thumb, ratio: r0.ratio, duration: r0.duration } : JSON.parse(fs.readFileSync(file, "utf8"));
+  fs.mkdirSync(trashDir(), { recursive: true });
+  const at = path.join(trashDir(), `${safeName(isFile ? path.basename(dir, gss.EXT) : path.basename(dir)) || "프로젝트"}_${Date.now()}${isFile ? gss.EXT : ""}`);
+  try {
+    fs.renameSync(dir, at);
+  } catch (e) {
+    throw new Error(`휴지통으로 옮기지 못했어요. 이 프로젝트를 연 프로그램(탐색기·영상 플레이어)을 닫고 다시 해 주세요. (${e.code || e.message})`);
+  }
+  const list = readTrash();
+  const id = uid();
+  list.unshift({ id, name: p.name || path.basename(dir), from: dir, at, deletedAt: new Date().toISOString(), thumb: p.thumb || "", ratio: p.ratio, duration: p.duration || 0 });
+  writeTrash(list);
+  // 최근 목록에서 뺀다
+  fs.writeFileSync(recentFile(), JSON.stringify(readRecent().filter((r) => r.dir.toLowerCase() !== dir.toLowerCase()), null, 1));
+  log.info(`[영상] 휴지통으로 ${dir} → ${at}`);
+  return id; // 되돌리기용
+}
+function restore(id) {
+  const list = readTrash();
+  const x = list.find((y) => y.id === id);
+  if (!x) throw new Error("휴지통에서 찾지 못했어요.");
+  const isFile = gss.isGss(x.from);
+  let to = x.from;
+  for (let n = 2; fs.existsSync(to); n++) to = isFile ? x.from.replace(/\.gss$/i, `_${n}${gss.EXT}`) : `${x.from}_${n}`; // 그 자리에 같은 이름이 생겼으면 _2
+  fs.mkdirSync(path.dirname(to), { recursive: true });
+  fs.renameSync(x.at, to);
+  writeTrash(list.filter((y) => y.id !== id));
+  if (isFile) {
+    const list2 = readRecent().filter((r) => gss.norm(r.dir) !== gss.norm(to));
+    list2.unshift({ dir: to, name: path.basename(to, gss.EXT), ratio: x.ratio, method: "", updatedAt: new Date().toISOString(), thumb: x.thumb || "", duration: x.duration || 0 });
+    fs.writeFileSync(recentFile(), JSON.stringify(list2.slice(0, 100), null, 1));
+  } else {
+    const p = JSON.parse(fs.readFileSync(path.join(to, "project.json"), "utf8"));
+    p.dir = to;
+    remember(p);
+  }
+  log.info(`[영상] 휴지통에서 되살림 ${x.at} → ${to}`);
+  return to;
+}
+/** 영구 삭제 — id 하나 또는 "all"(휴지통 비우기) */
+function purge(id) {
+  const list = readTrash();
+  const gone = id === "all" ? list : list.filter((y) => y.id === id);
+  for (const x of gone) fs.rmSync(x.at, { recursive: true, force: true });
+  writeTrash(id === "all" ? [] : list.filter((y) => y.id !== id));
+  log.info(`[영상] 휴지통 영구 삭제 ${gone.length}개`);
+  return gone.length;
+}
+
+/**
+ * 예전 폴더 방식 → .gss 파일로 바꾸기. 같은 자리에 <이름>.gss 를 만들고, 완성 영상(output)은 옆 폴더로 꺼내 두고,
+ * 원래 폴더는 휴지통으로 (되살릴 수 있게). 바꾼 .gss 를 열어 돌려준다
+ */
+function convert(p) {
+  if (!p || !p.dir || p.file) throw new Error("이미 .gss 파일 프로젝트예요.");
+  writeProject(p);
+  const parent = path.dirname(p.dir);
+  const nm = safeName(p.name) || path.basename(p.dir);
+  let file = path.join(parent, `${nm}${gss.EXT}`);
+  for (let n = 2; fs.existsSync(file); n++) file = path.join(parent, `${nm}_${n}${gss.EXT}`);
+  gss.pack(p.dir, file);
+  const out = path.join(p.dir, "output");
+  if (fs.existsSync(out) && fs.readdirSync(out).length) {
+    let keep = path.join(parent, `${path.basename(file, gss.EXT)}_내보낸 영상`);
+    for (let n = 2; fs.existsSync(keep); n++) keep = `${keep}_${n}`;
+    fs.renameSync(out, keep);
+  }
+  try {
+    trash(p.dir);
+  } catch (e) {
+    log.warn(`[영상] 예전 폴더를 휴지통으로 못 옮김 (그대로 둠): ${e.message}`);
+  }
+  log.info(`[영상] .gss 로 바꿈 ${p.dir} → ${file}`);
+  return open(file);
+}
+
+/* ── 프로젝트 패키지 (프리미어 "파일 수집") — 원본 영상·사진·음악을 한 폴더에 모아 그 폴더만 옮기면 어디서든 열리게 ── */
+function externals(p) {
+  const out = new Map(); // 원래 위치(소문자) → { path, size }
+  const add = (f) => {
+    if (!f || gss.under(f, p.dir) || !fs.existsSync(f)) return;
+    if (!out.has(gss.norm(f))) out.set(gss.norm(f), { path: f, size: fs.statSync(f).size });
+  };
+  for (const a of Object.values(p.assets || {})) add(a.path);
+  for (const l of p.layers || []) add(l.file);
+  if (p.settings && p.settings.music) add(p.settings.music.file);
+  return [...out.values()];
+}
+function packageInfo(p) {
+  const list = externals(p);
+  const missing = Object.values(p.assets || {}).filter((a) => !fs.existsSync(a.path)).map((a) => a.name);
+  return { count: list.length, bytes: list.reduce((a, x) => a + x.size, 0), missing };
+}
+async function makePackage(p, parent, onProgress = () => {}) {
+  if (!p || !p.dir) throw new Error("프로젝트 정보가 없습니다.");
+  writeProject(p);
+  const nm = safeName(p.name) || "프로젝트";
+  let dest = path.join(parent, `${nm}_패키지`);
+  for (let n = 2; fs.existsSync(dest); n++) dest = path.join(parent, `${nm}_패키지_${n}`);
+  const md = path.join(dest, "미디어");
+  fs.mkdirSync(md, { recursive: true });
+  const list = externals(p);
+  const total = list.reduce((a, x) => a + x.size, 0) || 1;
+  const map = new Map(); // 원래 위치 → 미디어/이름
+  const used = new Set();
+  let done = 0;
+  for (let i = 0; i < list.length; i++) {
+    const x = list[i];
+    let base = path.basename(x.path);
+    const ext = path.extname(base);
+    for (let n = 2; used.has(base.toLowerCase()); n++) base = `${path.basename(x.path, ext)}_${n}${ext}`;
+    used.add(base.toLowerCase());
+    onProgress(`원본을 모으는 중… (${i + 1}/${list.length}) ${base}`, done / total);
+    await fs.promises.copyFile(x.path, path.join(md, base));
+    done += x.size;
+    map.set(gss.norm(x.path), `미디어/${base}`);
+  }
+  onProgress("프로젝트 파일을 만드는 중…", 0.99);
+  const file = path.join(dest, `${nm}${gss.EXT}`);
+  // 편집용 사본(edit)은 이 PC 캐시라 빼고, 원본은 옆 "미디어" 폴더를 보게
+  gss.pack(p.dir, file, { extra: map, patch: (d) => { for (const a of Object.values(d.assets || {})) a.edit = ""; return d; } });
+  log.info(`[영상] 프로젝트 패키지 ${dest} (원본 ${list.length}개)`);
+  return { dir: dest, file, count: list.length, bytes: total };
+}
+
+/** 없어진 원본 다시 연결 — 고른 파일로 그 자료(asset) 위치를 바꾼다 */
+function relink(p, assetId, newFile) {
+  const a = p && p.assets && p.assets[assetId];
+  if (!a) throw new Error("자료를 찾지 못했습니다.");
+  if (!newFile || !fs.existsSync(newFile)) throw new Error("고른 파일을 찾지 못했어요.");
+  media.allow(newFile);
+  return { path: newFile, edit: "", missing: false, url: media.urlOf(newFile) };
+}
+
+/** 열기 — 없어진 원본 파일 표시 (missing) */
+function open(target, choice = "") {
+  let dir = target;
+  let file = "";
+  if (gss.isGss(target)) {
+    if (!fs.existsSync(target)) throw new Error("프로젝트 파일을 찾지 못했어요. 옮겼거나 지웠는지 확인해 주세요.");
+    // 저장 안 한 고친 내용이 남아 있으면 — 편집 화면이 [이어서 열기 / 마지막 저장 상태로] 를 묻는다
+    if (!choice && gss.hasUnsaved(target)) return { recover: true, file: target, name: path.basename(target, gss.EXT) };
+    file = target;
+    dir = gss.unpack(target, choice === "work");
+  } else if (gss.sourceOf(target)) file = gss.sourceOf(target); // 편집 화면이 작업 폴더로 다시 열 때
+  const pj = path.join(dir, "project.json");
+  if (!fs.existsSync(pj)) throw new Error("프로젝트 파일을 찾지 못했습니다.");
+  const p = JSON.parse(fs.readFileSync(pj, "utf8"));
+  p.dir = dir;
+  if (file) {
+    p.file = file;
+    p.name = path.basename(file, gss.EXT); // .gss 는 파일 이름이 곧 프로젝트 이름
+  }
   media.allowRoot(dir);
+  const here = file ? path.dirname(file) : "";
   for (const a of Object.values(p.assets || {})) {
+    // 원본이 없으면 .gss 옆 "미디어" 폴더·.gss 옆에서 같은 이름을 찾는다 (프로젝트 패키지·다른 PC)
+    if (!fs.existsSync(a.path) && here) {
+      const nm = path.basename(String(a.path || ""));
+      const found = [path.join(here, "미디어", nm), path.join(here, nm)].find((x) => nm && fs.existsSync(x));
+      if (found) {
+        a.path = found;
+        a.edit = "";
+      }
+    }
     a.missing = !fs.existsSync(a.path);
     if (!a.missing) media.allow(a.path);
     if (a.edit && fs.existsSync(a.edit)) media.allow(a.edit);
+    else a.edit = a.edit && fs.existsSync(a.edit) ? a.edit : "";
     if (a.thumb) media.allow(media.fileOf(a.thumb));
+  }
+  for (const l of p.layers || []) {
+    if (l.file && !fs.existsSync(l.file) && here) {
+      const nm = path.basename(l.file);
+      const found = [path.join(here, "미디어", nm), path.join(here, nm)].find((x) => fs.existsSync(x));
+      if (found) l.file = found;
+    }
+    if (l.file && fs.existsSync(l.file)) {
+      media.allow(l.file);
+      l.url = media.urlOf(l.file);
+    }
   }
   remember(p);
   return withUrls(p);
@@ -171,7 +499,7 @@ function withUrls(p) {
 
 function recent() {
   return readRecent()
-    .filter((r) => fs.existsSync(path.join(r.dir, "project.json")))
+    .filter((r) => (gss.isGss(r.dir) ? fs.existsSync(r.dir) : fs.existsSync(path.join(r.dir, "project.json"))))
     .map((r) => ({ ...r, thumb: r.thumb || "" }));
 }
 
@@ -263,6 +591,150 @@ async function transcribe(p, assetId, onProgress = () => {}) {
   return { clips: buildClips(assetId, segs, speech, dur), speech };
 }
 
+/**
+ * 자동 자막 — 지금 있는 클립은 그대로 두고 글만 채운다 (편집 화면 [자동 자막 만들기]).
+ * targets: [{ id, asset, s, e }] 클립의 원본 구간. 같은 영상에서 가까운 클립끼리 90초 안으로 묶어 소리만 서버로 보내고
+ * (지운 클립·긴 침묵은 안 보내니 그만큼 비용이 준다), 받아온 단어를 그 시각이 들어간 클립에 나눠 준다.
+ * 돌려줌: [{ id, text, words, sents: [{ text, s, e, words }] }] — sents 는 그 클립 안의 문장 (편집 화면이 문장마다 클립을 나눈다)
+ */
+async function transcribeClips(p, targets, onProgress = () => {}) {
+  const CH = 90;
+  const list = (targets || []).filter((t) => p.assets[t.asset] && t.e > t.s).sort((a, b) => (a.asset === b.asset ? a.s - b.s : a.asset < b.asset ? -1 : 1));
+  const wins = [];
+  for (const t of list) {
+    const w = wins[wins.length - 1];
+    if (w && w.asset === t.asset && t.s - w.e <= 5 && Math.max(w.e, t.e) - w.s <= CH) w.e = Math.max(w.e, t.e);
+    else wins.push({ asset: t.asset, s: t.s, e: t.e });
+  }
+  const pieces = [];
+  for (const w of wins) for (let s = w.s; s < w.e - 0.05; s += CH) pieces.push({ asset: w.asset, s, e: Math.min(w.e, s + CH) });
+  fs.mkdirSync(path.join(p.dir, "audio"), { recursive: true });
+  // 실제 말소리 구간 (PC에서, 무료) — AI 가 준 문장 시각은 대략이라 여기에 맞추고, 단어는 말하는 시간 안에서만 나눈다
+  const speechOf = {};
+  for (const id of new Set(pieces.map((x) => x.asset))) {
+    onProgress("말소리 구간을 찾는 중… (PC에서)", 0);
+    speechOf[id] = await ff.speech(p.assets[id].path, p.assets[id].duration, { min: 0.2 }).catch(() => []);
+  }
+  const snap = (sp, t, edge) => {
+    let best = t;
+    let bd = 0.7;
+    for (const r of sp) {
+      const v = edge === "s" ? r.s : r.e;
+      if (Math.abs(v - t) < bd) (bd = Math.abs(v - t)), (best = v);
+    }
+    return best;
+  };
+  const words = {}; // 영상별 [{ w, s, e, g }] (원본 시각, g = 문장 번호)
+  let g = 0;
+  for (let i = 0; i < pieces.length; i++) {
+    const pc = pieces[i];
+    onProgress(`말소리를 글로 바꾸는 중… (${i + 1}/${pieces.length})`, i / pieces.length);
+    const tmp = path.join(p.dir, "audio", `${pc.asset}_c${Math.round(pc.s * 1000)}.mp3`);
+    await ff.audioForSpeech(p.assets[pc.asset].path, tmp, { start: pc.s, len: pc.e - pc.s + 0.3 });
+    const b64 = fs.readFileSync(tmp).toString("base64");
+    fs.rmSync(tmp, { force: true });
+    let r = null;
+    for (let tryNo = 0; tryNo < 3 && !(r && r.success); tryNo++) {
+      r = await server.call("/api/studio/video/transcribe", { method: "POST", body: { audio: b64, mime: "audio/mpeg" } }).catch((e) => ({ success: false, error: e.message }));
+    }
+    if (!r || !r.success) throw new Error(`받아쓰기에 실패했습니다: ${(r && r.error) || ""}`);
+    const arr = (words[pc.asset] = words[pc.asset] || []);
+    const sp = speechOf[pc.asset] || [];
+    // AI 가 준 문장 시각은 1~2초씩 틀릴 때가 있다 — 문장 사이 경계는 "두 문장 사이에서 가장 길게 쉰 곳"으로 정하고,
+    // 문장 = 그 경계 사이의 실제 말소리 전부 (AI 시각 근처만 보면 말 일부가 옆 문장으로 빠진다)
+    const segs = (r.segments || []).map((sg) => ({ text: sg.text, s: pc.s + sg.start, e: pc.s + sg.end }));
+    const gaps = sp.slice(1).map((x, i) => ({ s: sp[i].e, e: x.s }));
+    const cut = segs.slice(1).map((nx, i) => {
+      const a = segs[i].e - 1.5, z = nx.s + 1.5;
+      const cand = gaps.filter((gp) => gp.e > a && gp.s < z && (gp.s + gp.e) / 2 > segs[i].s && (gp.s + gp.e) / 2 < nx.e);
+      if (!cand.length) return (segs[i].e + nx.s) / 2;
+      const best = cand.reduce((m, gp) => (gp.e - gp.s > m.e - m.s ? gp : m));
+      return (best.s + best.e) / 2;
+    });
+    for (let si = 0; si < segs.length; si++) {
+      const sg = segs[si];
+      const prevE = arr.length ? arr[arr.length - 1].e : 0;
+      const L = Math.max(prevE, si ? cut[si - 1] : pc.s);
+      const R = si < cut.length ? cut[si] : pc.e + 0.3;
+      const inside = sp.filter((x) => x.e > L && x.s < R);
+      const ss = inside.length ? Math.max(L, inside[0].s) : Math.max(L, snap(sp, sg.s, "s"));
+      const ee = inside.length ? Math.min(R, inside[inside.length - 1].e) : Math.min(R, snap(sp, sg.e, "e"));
+      if (!(ee > ss + 0.05)) continue;
+      if (arr.length && sg.s < prevE - 0.3 && !si) continue; // 토막 경계에서 겹친 문장
+      // AI 가 같은 문장을 한 번 더 지어낼 때가 있다 — 그 구간에 실제 말소리가 글자 수에 비해 거의 없으면 버린다
+      //  (버린 시간은 다음 문장 클립의 앞부분이 된다). 한 글자에 0.05초도 안 되면 말한 게 아니다
+      const talk = sp.reduce((a, x) => a + Math.max(0, Math.min(ee, x.e) - Math.max(ss, x.s)), 0);
+      const chars = String(sg.text).replace(/[\s.,?!~'"·…]/g, "").length;
+      if (sp.length && talk < Math.max(0.25, chars * 0.05)) continue;
+      // 서버가 여러 문장을 한 덩어리로 줄 때가 있다 — 마침표·물음표·느낌표 뒤에서 문장을 나눈다 (문장마다 클립)
+      const parts = String(sg.text).split(/(?<=[.?!。？！])\s+/).map((x) => x.trim()).filter(Boolean);
+      // 문장 전체 단어를 실제 말소리 구간 안에서만 나누고(쉬는 곳엔 단어를 두지 않음), 단어마다 몇째 문장인지 붙인다
+      const ws = alignWords(parts.join(" "), ss, ee, sp);
+      let k = 0;
+      for (const part of parts) {
+        g++;
+        const n = part.split(/\s+/).filter(Boolean).length;
+        arr.push(...ws.slice(k, k + n).map((w) => ({ ...w, g })));
+        k += n;
+      }
+    }
+  }
+  // 단어 가운데 시각이 들어간 클립으로 (사이 틈에 떨어지면 0.6초 안의 가까운 클립으로)
+  const out = new Map(list.map((t) => [t.id, []]));
+  for (const [asset, arr] of Object.entries(words)) {
+    const mine = list.filter((t) => t.asset === asset);
+    for (const w of arr) {
+      const m = (w.s + w.e) / 2;
+      let best = mine.find((t) => m >= t.s && m < t.e);
+      if (!best) {
+        let bd = 0.6;
+        for (const t of mine) {
+          const d = m < t.s ? t.s - m : m - t.e;
+          if (d < bd) (bd = d), (best = t);
+        }
+      }
+      if (best) out.get(best.id).push({ w: w.w, s: +Math.max(best.s, w.s).toFixed(3), e: +Math.min(best.e, w.e).toFixed(3), g: w.g });
+    }
+  }
+  onProgress("자막을 채우는 중…", 1);
+  const strip = (ws) => ws.map(({ w, s, e }) => ({ w, s, e }));
+  return list.map((t) => {
+    const ws = out.get(t.id);
+    const sents = [];
+    for (const w of ws) {
+      const last = sents[sents.length - 1];
+      if (last && last.g === w.g) last.ws.push(w);
+      else sents.push({ g: w.g, ws: [w] });
+    }
+    return {
+      id: t.id,
+      text: ws.map((w) => w.w).join(" "),
+      words: strip(ws),
+      sents: sents.map((x) => ({ text: x.ws.map((w) => w.w).join(" "), s: x.ws[0].s, e: x.ws[x.ws.length - 1].e, words: strip(x.ws) })),
+    };
+  });
+}
+
+/**
+ * 자막 시각 맞추기 (무료, AI 없음) — 이미 받아쓴 클립의 글은 그대로 두고, 단어 시각만 실제 말소리에 다시 맞춘다.
+ * items: [{ id, asset, s, e, text }] → [{ id, words }]
+ */
+async function realign(p, items, onProgress = () => {}) {
+  const speechOf = {};
+  const ids = [...new Set((items || []).map((x) => x.asset))].filter((id) => p.assets[id]);
+  for (let i = 0; i < ids.length; i++) {
+    onProgress(`말소리 구간을 찾는 중… (${i + 1}/${ids.length})`, i / ids.length);
+    speechOf[ids[i]] = await ff.speech(p.assets[ids[i]].path, p.assets[ids[i]].duration, { min: 0.2 }).catch(() => []);
+  }
+  return (items || []).filter((x) => speechOf[x.asset]).map((x) => {
+    const sp = speechOf[x.asset];
+    const inside = sp.filter((r) => r.e > x.s && r.s < x.e);
+    const s = inside.length ? Math.max(x.s, inside[0].s) : x.s;
+    const e = inside.length ? Math.min(x.e, inside[inside.length - 1].e) : x.e;
+    return { id: x.id, words: alignWords(x.text, s, e, sp) };
+  });
+}
+
 /* 문장 시각을 실제 말소리 구간에 맞추고, 사이의 무음은 따로 클립으로 (브루처럼) */
 /**
  * 받아쓰기 없이 넣기 — PC에서 말소리 구간만 찾아(ffmpeg, 무료) 말하는 구간 = 클립, 긴 침묵 = 말 없는 구간.
@@ -332,6 +804,55 @@ function buildClips(assetId, segs, speech, dur) {
   return clips;
 }
 
+/**
+ * 단어 시각 맞추기 (자동 자막) — 문장 안의 실제 말소리 덩어리마다 단어를 통째로 배정한다 (쉬는 곳에 걸친 단어가 없게).
+ * 글자 수 비율로 "이 단어는 몇째 덩어리"를 정하고, 덩어리 안에서 다시 글자 수만큼 나눈다
+ */
+function alignWords(text, s, e, speech) {
+  const tokens = String(text).split(/\s+/).filter(Boolean);
+  const runs = speech.map((r) => ({ s: Math.max(s, r.s), e: Math.min(e, r.e) })).filter((r) => r.e - r.s > 0.05);
+  if (runs.length < 2 || !tokens.length) return spreadSource(text, s, e, speech);
+  const T = runs.reduce((a, r) => a + (r.e - r.s), 0);
+  // 글자 양 — 문장부호(. , ? ! 등)는 소리가 아니라 빼고 센다
+  const wt = tokens.map((w) => w.replace(/[.,?!~'"·…。？！]/g, "").length + 0.5);
+  const W = wt.reduce((a, x) => a + x, 0);
+  // 나눌 수 있는 모든 경우 중 "덩어리마다 말한 시간 비율 ≈ 맡은 글자 양 비율"이 가장 잘 맞는 나눔 (단어 순서는 그대로)
+  const n = tokens.length, m = runs.length;
+  const pre = [0];
+  for (const x of wt) pre.push(pre[pre.length - 1] + x);
+  const share = runs.map((r) => (r.e - r.s) / T);
+  const f = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(Infinity));
+  const from = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  f[0][0] = 0;
+  for (let k = 1; k <= m; k++)
+    for (let i = 0; i <= n; i++)
+      for (let j = 0; j <= i; j++) {
+        if (f[k - 1][j] === Infinity) continue;
+        const d = share[k - 1] - (pre[i] - pre[j]) / W;
+        const v = f[k - 1][j] + d * d;
+        if (v < f[k][i]) (f[k][i] = v), (from[k][i] = j);
+      }
+  const groups = runs.map(() => []);
+  for (let k = m, i = n; k > 0; k--) {
+    const j = from[k][i];
+    for (let x = j; x < i; x++) groups[k - 1].push(x);
+    i = j;
+  }
+  const out = [];
+  groups.forEach((idx, gi) => {
+    if (!idx.length) return;
+    const r = runs[gi];
+    const sum = idx.reduce((a, i) => a + wt[i], 0);
+    let t = r.s;
+    for (const i of idx) {
+      const d = ((r.e - r.s) * wt[i]) / sum;
+      out.push({ w: tokens[i], s: +t.toFixed(3), e: +(t + d).toFixed(3) });
+      t += d;
+    }
+  });
+  return out;
+}
+
 /* 원본 문장 안 단어 시각 — 말소리 구간 안에서 글자 수만큼 나눈다 */
 function spreadSource(text, s, e, speech) {
   const tokens = String(text).split(/\s+/).filter(Boolean);
@@ -367,7 +888,7 @@ const srtTime = (t) => {
 };
 function exportText(p, kind) {
   const { items } = tl.flatten(p);
-  const out = path.join(p.dir, "output");
+  const out = require("./folders").exportDir(p); // 완성 영상과 같은 곳 (.gss 옆 · 예전 방식은 output)
   fs.mkdirSync(out, { recursive: true });
   let file;
   if (kind === "srt") {
@@ -386,4 +907,4 @@ function exportText(p, kind) {
   return file;
 }
 
-module.exports = { create, open, save, saveAs, recent, addAsset, voiceFor, transcribe, splitBySpeech, exportText, withUrls, RATIOS, DEFAULT_SETTINGS, uid, spreadWords };
+module.exports = { create, open, save, flush, discard, backup, backups, saveWork, discardWork, convert, packageInfo, makePackage, relink, saveAs, rename, trashList, trash, restore, purge, recent, addAsset, voiceFor, transcribe, transcribeClips, realign, splitBySpeech, exportText, withUrls, RATIOS, DEFAULT_SETTINGS, uid, spreadWords };

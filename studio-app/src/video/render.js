@@ -194,12 +194,12 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
       args.push("-loop", "1", "-framerate", String(FPS), "-t", dur.toFixed(3), "-i", assetFile(visual));
       filters.push(`[${n++}:v]format=yuv420p[vraw]`);
     } else if (ok(visual) && visual.kind === "video") {
-      // 배경 영상: 시작점부터 길이만큼 (짧으면 반복)
+      // 배경 영상: 시작점부터 길이만큼 (클립보다 짧으면 마지막 장면에서 멈춰 채운다 — 처음부터 반복하지 않음)
       const vs = Number(clip.visual && clip.visual.s) || 0;
-      if (visual.duration && visual.duration - vs < dur) args.push("-stream_loop", "-1");
+      const short = visual.duration ? dur - (visual.duration - vs) : 0;
       args.push("-ss", vs.toFixed(3), "-t", dur.toFixed(3), "-i", assetFile(visual));
       visIn = n;
-      filters.push(`[${n++}:v]fps=${FPS},setpts=PTS-STARTPTS[vraw]`);
+      filters.push(`[${n++}:v]fps=${FPS},setpts=PTS-STARTPTS${short > 0 ? `,tpad=stop_mode=clone:stop_duration=${(short + 0.5).toFixed(3)},trim=duration=${dur.toFixed(3)}` : ""}[vraw]`);
     } else {
       args.push("-f", "lavfi", "-t", dur.toFixed(3), "-i", `color=c=black:s=${W}x${H}:r=${FPS}`);
       filters.push(`[${n++}:v]null[vraw]`);
@@ -356,6 +356,59 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
   return out;
 }
 
+/* ── 화면전환 (transitions.ts 와 같은 규칙) ──
+   뒤 클립의 clip.trans = { type, a, b }: 앞 클립 끝 a초 + 뒤 클립 시작 b초 동안 화면만 섞는다.
+   앞 조각 끝에 b초(마지막 장면 멈춤), 뒤 조각 앞에 a초(첫 장면 멈춤)를 붙이고 a+b초 겹쳐 xfade —
+   그래서 전체 길이·소리·자막 시각은 그대로다. 효과 id = ffmpeg xfade 이름 */
+const TRANS_FF = new Set(["fade", "fadeblack", "fadewhite", "slideleft", "slideright", "slideup", "slidedown", "coverleft", "wiperight", "circleopen", "zoomin", "hblur"]);
+function transOf(prev, cur) {
+  const t = cur.clip.trans;
+  if (!prev || !t) return null;
+  const a = Math.max(0, Math.min(Number(t.a) || 0, prev.dur * 0.45));
+  const b = Math.max(0, Math.min(Number(t.b) || 0, cur.dur * 0.45));
+  if (a + b < 0.05) return null;
+  return { type: TRANS_FF.has(t.type) ? t.type : "fade", a, b };
+}
+async function joinWithTransitions(segs, trs, out, tmp, enc) {
+  const lens = [];
+  for (const s of segs) lens.push((await ff.probe(s)).duration || 0);
+  const args = ["-y", "-hide_banner", "-loglevel", "error"];
+  segs.forEach((s) => args.push("-i", path.basename(s)));
+  const f = [];
+  segs.forEach((_, k) => {
+    const a = trs[k] ? trs[k].a : 0; // 이 조각 앞에 붙일 첫 장면 멈춤
+    const b = trs[k + 1] ? trs[k + 1].b : 0; // 이 조각 끝에 붙일 마지막 장면 멈춤
+    const pad = [a > 0 ? `tpad=start_mode=clone:start_duration=${a.toFixed(3)}` : "", b > 0 ? `tpad=stop_mode=clone:stop_duration=${b.toFixed(3)}` : ""].filter(Boolean);
+    f.push(`[${k}:v]settb=AVTB,fps=${FPS},format=yuv420p${pad.length ? "," + pad.join(",") : ""}[p${k}]`);
+  });
+  let cur = "p0";
+  let len = lens[0] + (trs[1] ? trs[1].b : 0);
+  for (let k = 1; k < segs.length; k++) {
+    const tr = trs[k];
+    const segLen = lens[k] + (tr ? tr.a : 0) + (trs[k + 1] ? trs[k + 1].b : 0);
+    const nx = `x${k}`;
+    if (tr) {
+      const d = tr.a + tr.b;
+      f.push(`[${cur}][p${k}]xfade=transition=${tr.type}:duration=${d.toFixed(3)}:offset=${Math.max(0, len - d).toFixed(3)}[${nx}]`);
+      len += segLen - d;
+    } else {
+      f.push(`[${cur}][p${k}]concat=n=2:v=1:a=0[${nx}]`);
+      len += segLen;
+    }
+    cur = nx;
+  }
+  // 소리는 그대로 이어 붙인다 (전환해도 말·자막 시각이 움직이지 않게)
+  f.push(`${segs.map((_, k) => `[${k}:a]`).join("")}concat=n=${segs.length}:v=0:a=1[aout]`);
+  const tail = ["-filter_complex", f.join(";"), "-map", `[${cur}]`, "-map", "[aout]", "-r", String(FPS), "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out];
+  try {
+    await ff.run(ff.ff(), [...args, ...enc.args("final"), ...tail], { cwd: tmp });
+  } catch (e) {
+    log.warn(`[굽기] 화면전환 ${enc.name} 실패 → 일반 인코더: ${e.message}`);
+    const fb = ff.fallbackEncoder();
+    await ff.run(ff.ff(), [...args, ...fb.args("final"), ...tail], { cwd: tmp });
+  }
+}
+
 /**
  * 굽기 — onProgress(문구, 0~1). 결과 파일 경로를 돌려준다.
  *  opts: { scope: all|scene|selected, sceneId, clipIds, height(해상도 세로, 기본 원본) }
@@ -407,11 +460,17 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
       done += items[i].dur;
     }
     onProgress("클립을 잇는 중…", 0.92);
-    fs.writeFileSync(path.join(tmp, "list.txt"), segs.map((s) => `file '${path.basename(s)}'`).join("\n"));
     const joined = path.join(tmp, "joined.mp4");
-    await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", "-movflags", "+faststart", joined], { cwd: tmp });
+    const trs = items.map((x, i) => (i ? transOf(items[i - 1], x) : null));
+    if (trs.some(Boolean)) {
+      onProgress("화면전환을 넣는 중…", 0.92);
+      await joinWithTransitions(segs, trs, joined, tmp, enc);
+    } else {
+      fs.writeFileSync(path.join(tmp, "list.txt"), segs.map((s) => `file '${path.basename(s)}'`).join("\n"));
+      await ff.run(ff.ff(), ["-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", "-movflags", "+faststart", joined], { cwd: tmp });
+    }
 
-    const outDir = path.join(p.dir, "output");
+    const outDir = require("./folders").exportDir(p); // 처음 화면 [저장 폴더] (기본: .gss 파일 옆)
     fs.mkdirSync(outDir, { recursive: true });
     let outFile = path.join(outDir, `${p.name}_${p.ratio.replace(":", "x")}.mp4`);
     for (let n = 2; fs.existsSync(outFile); n++) outFile = path.join(outDir, `${p.name}_${p.ratio.replace(":", "x")}_${n}.mp4`);
@@ -484,4 +543,4 @@ async function snapshot(p, assetFilePath, at, dest) {
   return dest;
 }
 
-module.exports = { render, exportAudio, snapshot, subtitleLines, wrap };
+module.exports = { render, joinWithTransitions, exportAudio, snapshot, subtitleLines, wrap };
