@@ -543,7 +543,10 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   /* ── 사진·영상 메뉴 (채우기·반전·교체·적용 범위·순서·삭제) ── */
   const clipFit = (id: string, f: MediaFit) => change((p) => {
     const c = findClip(p, id)?.clip;
-    if (c && f !== "free") c.fill = f;
+    if (c && f !== "free") {
+      c.fill = f;
+      delete c.box; // 채우기를 고르면 직접 크기는 풀린다
+    }
   });
   const clipFlip = (id: string, axis: "x" | "y") => change((p) => {
     const c = findClip(p, id)?.clip;
@@ -564,6 +567,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         if (!c || c === c0) continue;
         c.visual = c.src && c.src.asset === vis.asset ? null : { ...vis };
         c.fill = c0.fill;
+        c.box = c0.box ? { ...c0.box } : undefined;
         c.flipX = c0.flipX;
         c.flipY = c0.flipY;
       }
@@ -1061,6 +1065,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             onDragOver={(e) => { if (e.dataTransfer.types.includes(DRAG_MEDIA)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } }} onDrop={onDropPreview}>
             <Player ref={player} project={project} width={big ? bigW : previewW} onTime={setTime} onPlaying={setPlaying} previewRate={rate}
               selLayer={panel === "layer" ? selLayer : ""} onLayerPick={openLayer}
+              onVisualMove={(id, box, first) => change((p) => { const c = findClip(p, id)?.clip; if (c) c.box = box; }, first)}
+              onSubMove={(patch, first) => change((p) => { Object.assign(p.settings.subtitle, patch); }, first)}
               onLayerMove={(id, patch, first) => change((p) => {
                 const l = (p.layers || []).find((x) => x.id === id);
                 if (l) Object.assign(l, patch);

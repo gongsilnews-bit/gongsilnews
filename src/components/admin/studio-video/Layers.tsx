@@ -135,7 +135,7 @@ export function VisualPanel({ project, clip, n, total, cur, many, sound, onFit, 
   onClose: () => void;
 }) {
   const a = clip.visual ? project.assets[clip.visual.asset] : clip.src ? project.assets[clip.src.asset] : null;
-  const fill = clip.fill || project.settings.fill;
+  const fill = clip.box ? "" : clip.fill || project.settings.fill;
   const flip = clip.flipX || clip.flipY ? `scale(${clip.flipX ? -1 : 1}, ${clip.flipY ? -1 : 1})` : undefined;
   const FILLS: [Fill, string, string, string][] = [
     ["contain", "fitContain", "비율 유지", "사진이 잘리지 않게 화면 안에 다 보여요"],
@@ -179,6 +179,9 @@ export function VisualPanel({ project, clip, n, total, cur, many, sound, onFit, 
               {t}
             </button>
           ))}
+        </div>
+        <div style={{ fontSize: 12.5, color: clip.box ? C.accent : C.dim, marginTop: 8, lineHeight: 1.5 }}>
+          {clip.box ? "지금은 직접 크기예요. 위 채우기를 누르면 원래대로 돌아가요." : "미리보기에서 화면을 누르면 끌어 옮기고, 네 모서리로 크기를 바꿀 수 있어요."}
         </div>
       </div>
       <div style={{ ...row, display: "flex", gap: 6 }}>

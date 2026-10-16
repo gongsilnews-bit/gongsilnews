@@ -24,6 +24,9 @@ type Props = {
   /** 화면에서 바로 글 고치기 (두 번 누르기) — 화면 글자 / 자막 */
   onLayerText?: (id: string, text: string) => void;
   onSubText?: (clipId: string, text: string) => void;
+  /** 미리보기에서 클립 화면을 끌어 옮기기·크기 / 자막을 끌어 옮기기·줄 너비 */
+  onVisualMove?: (clipId: string, box: { x: number; y: number; w: number }, first: boolean) => void;
+  onSubMove?: (patch: { x?: number; y?: number; wrap?: number }, first: boolean) => void;
 };
 
 /** 화면 위 글자를 그 자리에서 고치는 칸 — 엔터: 저장, Shift+엔터: 줄바꿈, Esc: 취소 */
@@ -65,7 +68,7 @@ function InlineEdit({ text, style, onDone }: { text: string; style: React.CSSPro
   );
 }
 
-const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width, onTime, onPlaying, previewRate = 1, selLayer = "", onLayerPick, onLayerMove, onLayerText, onSubText }, ref) {
+const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width, onTime, onPlaying, previewRate = 1, selLayer = "", onLayerPick, onLayerMove, onLayerText, onSubText, onVisualMove, onSubMove }, ref) {
   const [editing, setEditing] = useState(""); // 고치는 중: 애셋 id 또는 "sub:클립id"
   const boxRef = useRef<HTMLDivElement>(null);
   const [W, H] = RATIO_SIZE[project.ratio] || RATIO_SIZE["16:9"];
@@ -373,6 +376,72 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up, { once: true });
   };
+  /* ── 클립 화면·자막 고르기 (화면 글자·사진 올리기와 같은 손잡이) ── */
+  const [pick, setPick] = useState<"" | "visual" | "sub">("");
+  useEffect(() => setPick(""), [clip?.id, selLayer]);
+  const startBox = (kind: "visual" | "sub", mode: "move" | Corner | "e" | "w", e: React.PointerEvent) => {
+    const can = kind === "visual" ? onVisualMove && clip : onSubMove;
+    if (!can) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setPick(kind);
+    const box = boxRef.current?.getBoundingClientRect();
+    const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-layer]")?.getBoundingClientRect();
+    if (!box || !el) return;
+    const sx = e.clientX;
+    const sy = e.clientY;
+    const cx = (el.left + el.width / 2 - box.left) / box.width;
+    const cy = (el.top + el.height / 2 - box.top) / box.height;
+    const w0 = el.width / box.width;
+    const right = mode === "ne" || mode === "se";
+    const down = mode === "sw" || mode === "se";
+    const fx = right ? el.left : el.right;
+    const fy = down ? el.top : el.bottom;
+    const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+    let first = true;
+    const move = (ev: PointerEvent) => {
+      if (first && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 3) return;
+      const dx = ev.clientX - sx;
+      const dy = ev.clientY - sy;
+      if (kind === "sub") {
+        if (mode === "e" || mode === "w") {
+          const nw = el.width + (mode === "e" ? dx : -dx) * 2; // 가운데는 그대로, 양쪽으로
+          onSubMove!({ wrap: +clamp(nw / (box.width * 0.88), 0.3, 1).toFixed(3) }, first);
+        } else onSubMove!({ x: +clamp(cx + dx / box.width, 0.05, 0.95).toFixed(4), y: +clamp(cy + dy / box.height, 0.05, 0.95).toFixed(4) }, first);
+      } else if (mode === "move") {
+        onVisualMove!(clip!.id, { x: +clamp(cx + dx / box.width, 0, 1).toFixed(4), y: +clamp(cy + dy / box.height, 0, 1).toFixed(4), w: +w0.toFixed(4) }, first);
+      } else {
+        const kx = (right ? ev.clientX - fx : fx - ev.clientX) / Math.max(1, el.width);
+        const ky = (down ? ev.clientY - fy : fy - ev.clientY) / Math.max(1, el.height);
+        const kk = clamp(Math.max(kx, ky), 0.1 / w0, 4 / w0);
+        const nw = el.width * kk;
+        const nh = el.height * kk;
+        const ncx = (fx + (right ? nw / 2 : -nw / 2) - box.left) / box.width;
+        const ncy = (fy + (down ? nh / 2 : -nh / 2) - box.top) / box.height;
+        onVisualMove!(clip!.id, { x: +ncx.toFixed(4), y: +ncy.toFixed(4), w: +(w0 * kk).toFixed(4) }, first);
+      }
+      first = false;
+    };
+    const up = () => window.removeEventListener("pointermove", move);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up, { once: true });
+  };
+  const boxFrame = (kind: "visual" | "sub") =>
+    pick === kind ? (
+      <>
+        <span style={{ position: "absolute", inset: -3, border: "1.5px dashed #fff", outline: "1px dashed #000", pointerEvents: "none" }} />
+        {kind === "visual"
+          ? (["nw", "ne", "sw", "se"] as Corner[]).map((c) => (
+              <span key={c} onPointerDown={(e) => startBox("visual", c, e)} title="끌어서 크기 바꾸기 (반대쪽 모서리는 그대로)"
+                style={{ position: "absolute", [c[0] === "n" ? "top" : "bottom"]: -8, [c[1] === "w" ? "left" : "right"]: -8, width: 12, height: 12, background: "#fff", border: "1.5px solid #000", cursor: c === "nw" || c === "se" ? "nwse-resize" : "nesw-resize", touchAction: "none", pointerEvents: "auto" }} />
+            ))
+          : (["w", "e"] as const).map((sd) => (
+              <span key={sd} onPointerDown={(e) => startBox("sub", sd, e)} title="끌어서 줄 너비 바꾸기"
+                style={{ position: "absolute", top: "50%", [sd === "w" ? "left" : "right"]: -9, width: 10, height: 26, marginTop: -13, background: "#fff", border: "1.5px solid #000", borderRadius: 3, cursor: "ew-resize", touchAction: "none", pointerEvents: "auto" }} />
+            ))}
+      </>
+    ) : null;
+
   /** 고른 애셋 테두리 + 네 모서리 크기 손잡이 */
   const frame = (l: Layer) =>
     l.id === selLayer && onLayerMove ? (
@@ -387,21 +456,51 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const dragStyle = (l: Layer): React.CSSProperties => (onLayerMove ? { pointerEvents: "auto", cursor: "move", touchAction: "none", userSelect: "none" } : { pointerEvents: "none" });
 
   const flipOf = (o?: { flipX?: boolean; flipY?: boolean }) => (o?.flipX || o?.flipY ? `scale(${o.flipX ? -1 : 1}, ${o.flipY ? -1 : 1})` : undefined);
-  const mediaStyle: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: fill === "cover" ? "cover" : "contain", transform: flipOf(clip || undefined) };
+  // 클립 화면이 보이는 네모 — 직접 크기(box)면 그 자리, 아니면 채우기대로 (굽기 render.js 와 같은 계산)
+  const vAr = visual && visual.width && visual.height ? visual.width / visual.height : boxW / boxH;
+  const vbox = clip?.box;
+  const vRect = (() => {
+    if (vbox) {
+      const w = vbox.w * boxW;
+      const h = w / vAr;
+      return { left: vbox.x * boxW - w / 2, top: vbox.y * boxH - h / 2, width: w, height: h };
+    }
+    let w: number;
+    let h: number;
+    if (vAr > boxW / boxH !== (fill === "cover")) {
+      w = boxW;
+      h = boxW / vAr;
+    } else {
+      h = boxH;
+      w = boxH * vAr;
+    }
+    return { left: (boxW - w) / 2, top: (boxH - h) / 2, width: w, height: h };
+  })();
+  const mediaStyle: React.CSSProperties = vbox
+    ? { position: "absolute", ...vRect, objectFit: "fill", transform: flipOf(clip || undefined) }
+    : { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: fill === "cover" ? "cover" : "contain", transform: flipOf(clip || undefined) };
   const blurT = `scale(${clip?.flipX ? -1.15 : 1.15}, ${clip?.flipY ? -1.15 : 1.15})`;
   const vUrl = visual?.url || "";
 
   return (
-    <div ref={boxRef} style={{ position: "relative", width: boxW, height: boxH, background: "#000", overflow: "hidden", borderRadius: 4 }}>
-      {visual && fill === "blur" && (visual.kind === "image" ? (
-        <img src={vUrl} alt="" style={{ ...mediaStyle, objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
+    <div ref={boxRef} style={{ position: "relative", width: boxW, height: boxH, background: "#000", overflow: "hidden", borderRadius: 4 }}
+      onPointerDown={(e) => { if (e.target === e.currentTarget) setPick(""); }}>
+      {visual && fill === "blur" && !vbox && (visual.kind === "image" ? (
+        <img src={vUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
       ) : (
-        <video ref={bgRef} src={vUrl} muted playsInline preload="auto" style={{ ...mediaStyle, objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
+        <video ref={bgRef} src={vUrl} muted playsInline preload="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: blurT }} />
       ))}
       {visual?.kind === "image" && <img src={vUrl} alt="" style={mediaStyle} />}
       <video ref={videoRef} src={visual?.kind === "video" ? vUrl : undefined} playsInline preload="auto" style={{ ...mediaStyle, display: visual?.kind === "video" ? "block" : "none" }}
         onLoadedData={() => sync(tRef.current, true)} />
       {visual?.missing && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: C.sub, fontSize: 14 }}>원본 파일을 찾지 못했어요</div>}
+      {/* 클립 화면 고르기 — 누르면 테두리, 끌면 옮기기, 모서리로 크기 */}
+      {visual && !visual.missing && onVisualMove && clip && (
+        <div data-layer="__visual" onPointerDown={(e) => startBox("visual", "move", e)} title="끌어서 화면 옮기기 · 모서리로 크기"
+          style={{ position: "absolute", ...vRect, cursor: "move", touchAction: "none", userSelect: "none" }}>
+          {boxFrame("visual")}
+        </div>
+      )}
       {overImages.map((l) => {
         const a = project.assets[l.asset!];
         const op = Math.max(0.05, Math.min(1, l.opacity ?? 1));
@@ -462,8 +561,16 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           paintOrder: "stroke fill", background: st.bg ? rgba(st.bgColor || "#000000", st.bgOpacity ?? 0.62) : undefined, padding: st.bg ? `${fontPx * 0.12}px ${fontPx * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
         };
         const full = clip ? (typeof clip.subText === "string" ? clip.subText : clipText(clip)) : "";
+        // 줄 너비·옮긴 자리 (굽기와 같은 계산)
+        const subW = boxW * 0.88 * Math.max(0.3, Math.min(1, st.wrap ?? 1));
+        const free = typeof st.x === "number" && typeof st.y === "number";
+        const at: React.CSSProperties = free
+          ? { left: (st.x as number) * boxW, top: (st.y as number) * boxH, transform: "translate(-50%, -50%)" }
+          : { left: (boxW - subW) / 2, ...posStyle };
         return (
-          <div style={{ position: "absolute", left: W * 0.06 * k, right: W * 0.06 * k, textAlign: "center", ...posStyle, pointerEvents: "none" }}>
+          <div data-layer="__sub" onPointerDown={onSubMove ? (e) => startBox("sub", "move", e) : undefined}
+            style={{ position: "absolute", width: subW, textAlign: "center", ...at, pointerEvents: onSubMove ? "auto" : "none", cursor: onSubMove ? "move" : undefined, touchAction: "none" }}>
+            {boxFrame("sub")}
             {clip && editing === `sub:${clip.id}` && onSubText ? (
               <InlineEdit text={full} style={look} onDone={(t) => { setEditing(""); if (t !== null && t.replace(/\s+/g, " ").trim() !== full.trim()) onSubText(clip.id, t); }} />
             ) : (

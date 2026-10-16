@@ -385,7 +385,13 @@ export function SubtitlePanel({ settings, onChange, onClose }: { settings: Setti
       <div style={row}><span style={{ ...label, flex: 1 }}>자막 보이기</span><Toggle on={s.on} onChange={(v) => onChange({ on: v })} /></div>
       <div style={{ ...row, flexWrap: "wrap" }}>
         <span style={{ ...label, width: "100%" }}>위치</span>
-        {([["top", "상단"], ["middle", "중단"], ["middle-low", "중하단"], ["bottom", "하단"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => onChange({ position: k })} style={chip(s.position === k)}>{l}</button>)}
+        {([["top", "상단"], ["middle", "중단"], ["middle-low", "중하단"], ["bottom", "하단"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => onChange({ position: k, x: undefined, y: undefined })} style={chip(typeof s.x !== "number" && s.position === k)}>{l}</button>)}
+        {typeof s.x === "number" && <button type="button" style={chip(true)}>옮긴 자리</button>}
+        <span style={{ width: "100%", fontSize: 12.5, color: C.dim }}>미리보기에서 자막을 끌어 옮기고, 양옆 손잡이로 줄 너비를 바꿀 수 있어요.</span>
+      </div>
+      <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}>
+        <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>줄 너비</span><span>{Math.round((s.wrap ?? 1) * 100)}%</span></div>
+        <input type="range" min={0.3} max={1} step={0.05} value={s.wrap ?? 1} onChange={(e) => onChange({ wrap: Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
       </div>
       <div style={{ ...row, flexWrap: "wrap" }}>
         <span style={{ ...label, width: "100%" }}>길이</span>

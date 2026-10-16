@@ -97,7 +97,7 @@ function subtitleLines(clip, dur, settings, W) {
   const custom = typeof clip.subText === "string";
   const text = tl.subtitleText(clip).trim();
   if (!st.on || !text || (clip.type === "silence" && !custom) || clip.sub === false) return [];
-  const max = W >= 1400 ? 26 : W >= 1080 ? 18 : 16;
+  const max = Math.max(4, Math.round((W >= 1400 ? 26 : W >= 1080 ? 18 : 16) * Math.max(0.3, Math.min(1, Number(st.wrap ?? 1)))));
   if (custom) return evenLines(text, dur, st.length === "short" ? Math.round(max * 0.7) : max, st.length === "short" ? 1 : 2);
   if (st.length !== "short") {
     const lines = wrap(text, max);
@@ -208,7 +208,18 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
   }
   const cflip = flipChain(clip);
   if (cflip) filters.push(`[vraw]${cflip}[vflip]`);
-  filters.push(fitFilter(cflip ? "vflip" : "vraw", W, H, fill, "vfit"));
+  const vb = clip.box && ok(visual) ? clip.box : null;
+  if (vb) {
+    // 직접 크기 — 검은 바탕 위 그 자리에 (미리보기 Player.tsx 와 같은 계산)
+    const ar = visual.width && visual.height ? visual.width / visual.height : W / H;
+    const pw = Math.max(2, Math.round((W * Number(vb.w)) / 2) * 2);
+    const ph = Math.max(2, Math.round(pw / ar / 2) * 2);
+    const x0 = Math.round(W * Number(vb.x) - pw / 2);
+    const y0 = Math.round(H * Number(vb.y) - ph / 2);
+    filters.push(`[${cflip ? "vflip" : "vraw"}]scale=${pw}:${ph},setsar=1[vbx]`);
+    filters.push(`color=c=black:s=${W}x${H}:r=${FPS}:d=${dur.toFixed(3)}[vbg]`);
+    filters.push(`[vbg][vbx]overlay=x=${x0}:y=${y0}:eof_action=pass,setsar=1[vfit]`);
+  } else filters.push(fitFilter(cflip ? "vflip" : "vraw", W, H, fill, "vfit"));
   let vOut = "vfit";
 
   // 사진 올리기 애셋 (자막·화면 글자 아래)
@@ -240,11 +251,14 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
 
   // 자막 + 화면 글자 애셋
   const lines = subtitleLines(clip, dur, st, W);
+  // 미리보기에서 끌어 옮긴 자막은 그 자리(가운데 기준)에
+  const sst = st.subtitle || {};
+  const subPos = typeof sst.x === "number" && typeof sst.y === "number" ? `{\\an5\\pos(${Math.round(sst.x * W)},${Math.round(sst.y * H)})}` : "";
   const texts = layers.filter((l) => l.type === "text" && String(l.text || "").trim());
   if (lines.length || texts.length) {
     const styles = [subtitleStyle(W, H, st.subtitle || {}).style, ...texts.map((l, j) => textLayerStyle(`T${j}`, W, H, l))];
     const events = [
-      ...lines.map((l) => `Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${assEsc(l.text)}`),
+      ...lines.map((l) => `Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${subPos}${assEsc(l.text)}`),
       // 미리보기에서 끌어 옮긴 글자는 그 자리(가운데 기준)에
       ...texts.map((l, j) => `Dialogue: 1,${assTime(0)},${assTime(dur + 0.05)},T${j},,0,0,0,,${typeof l.x === "number" && typeof l.y === "number" ? `{\\an5\\pos(${Math.round(l.x * W)},${Math.round(l.y * H)})}` : ""}${assEsc(String(l.text).trim())}`),
     ];

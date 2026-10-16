@@ -124,7 +124,7 @@ export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: nu
   const custom = typeof clip.subText === "string";
   const text = (custom ? clip.subText! : clipText(clip)).trim();
   if (!st.on || !text || (clip.type === "silence" && !custom) || clip.sub === false) return [] as { s: number; e: number; text: string }[];
-  const max = W >= 1400 ? 26 : W >= 1080 ? 18 : 16;
+  const max = Math.max(4, Math.round((W >= 1400 ? 26 : W >= 1080 ? 18 : 16) * Math.max(0.3, Math.min(1, st.wrap ?? 1))));
   if (custom) return evenLines(text, dur, st.length === "short" ? Math.round(max * 0.7) : max, st.length === "short" ? 1 : 2);
   if (st.length !== "short") {
     const lines = wrap(text, max);
