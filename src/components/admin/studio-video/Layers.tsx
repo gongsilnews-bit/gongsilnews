@@ -8,7 +8,6 @@ import { type FlatItem, clipOrder, clipText, layerItems } from "./timeline";
 import { Side } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Toggle, VolumeControl, input, label } from "./ui";
 import { ColorPick, FontPick } from "./Pickers";
-import { STUDIO_VOICES } from "@/lib/studio-video/voices";
 
 export const LAYER_ICON: Record<Layer["type"], string> = { music: "music", image: "image", text: "text" };
 export const LAYER_NAME: Record<Layer["type"], string> = { music: "배경 음악", image: "사진 올리기", text: "화면 글자" };
@@ -134,7 +133,6 @@ export function SourcePanel({ mode, selCount, allCount, muted, value, speed, onM
   onClose: () => void;
 }) {
   const first = React.useRef(true);
-  const [voice, setVoice] = React.useState(STUDIO_VOICES.find((v) => v.recommended)?.id || STUDIO_VOICES[0]?.id || "");
   const n = mode === "all" ? allCount : selCount;
   return (
     <Side title="원본 소리 설정" onClose={onClose}>
@@ -165,11 +163,8 @@ export function SourcePanel({ mode, selCount, allCount, muted, value, speed, onM
       </div>
       <div style={row}>
         <div style={{ ...label, marginBottom: 8 }}>목소리 바꾸기</div>
-        <select value={voice} onChange={(e) => setVoice(e.target.value)} style={{ ...input, height: 38, marginBottom: 8 }}>
-          {STUDIO_VOICES.map((v) => <option key={v.id} value={v.id}>{v.name} · {v.gender}</option>)}
-        </select>
-        <Btn primary small onClick={() => onToVoice(voice)}><Icon name="voice" size={15} />AI 목소리로 바꾸기 ({n}개)</Btn>
-        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>말소리 대신 고른 AI 목소리가 같은 글을 읽어요. 화면은 촬영 영상 그대로예요. 되돌리기로 원래대로 돌아갈 수 있어요.</div>
+        <Btn primary small onClick={() => onToVoice("")}><Icon name="voice" size={15} />AI 목소리 고르기 ({n}개)</Btn>
+        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>AI 목소리 설정 칸에서 목소리를 듣고 골라요. 말소리 대신 AI 목소리가 같은 글을 읽고, 화면은 촬영 영상 그대로예요. 되돌리기로 원래대로 돌아갈 수 있어요.</div>
       </div>
     </Side>
   );

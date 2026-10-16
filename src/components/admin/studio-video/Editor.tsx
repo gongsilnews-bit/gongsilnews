@@ -6,8 +6,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Asset, Clip, Layer, LibItem, Project, Ratio, Scene, StockItem } from "./types";
 import { DRAG_MEDIA, errText, fmtTime, uid, videoBridge } from "./types";
 import { GAP, clipOrder, clipText, flatten, keepRanges, layerItems, layersAt, speedOf, splitScript, srcSpeed, subStyleOf, wordTimes } from "./timeline";
-import MediaMenu, { type MediaFit, type MediaOrder } from "./MediaMenu";
+import MediaMenu, { SoundMenu, type MediaFit, type MediaOrder } from "./MediaMenu";
 import VideoStart from "./VideoStart";
+import { STUDIO_VOICES } from "@/lib/studio-video/voices";
 import Player, { type PlayerHandle } from "./Player";
 import ClipList, { AllBox, type ClipActions } from "./ClipList";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
@@ -96,6 +97,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [visualClip, setVisualClip] = useState(""); // 오른쪽 화면 속성 칸의 클립
   const [subMode, setSubMode] = useState<"all" | "sel">("all"); // 메인자막 서식 적용 범위
   const [srcMode, setSrcMode] = useState<"sel" | "all">("sel"); // 원본 소리 설정 적용 범위
+  const [soundPop, setSoundPop] = useState<{ id: string; x: number; y: number } | null>(null); // 소리 칩 옆 작은 창
   const [startClip, setStartClip] = useState(""); // 비디오 시작점 변경 창의 클립
   const [media, setMedia] = useState<{ kind: "clip" | "layer"; id: string; x: number; y: number } | null>(null); // 사진·영상 메뉴
   const [libOverlay, setLibOverlay] = useState(false); // 자료 칸을 "사진 올리기"로 열었는지
@@ -358,6 +360,13 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       if (!prevId) return;
       mergeClips([prevId, id]);
     },
+    openSound: (id, x, y) => {
+      if (!(selected.length > 1 && selected.includes(id))) setSelected([id]);
+      const c = findClip(pref.current, id)?.clip;
+      setSrcMode("sel");
+      setPanel(c && c.type !== "voice" ? "source" : "voice");
+      setSoundPop({ id, x, y });
+    },
     openVoice: (id) => {
       const c = findClip(pref.current, id)?.clip;
       // 촬영 클립 [원본 소리] → 원본 소리 설정 (고른 클립 중 하나면 고른 클립 모두)
@@ -608,30 +617,6 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       if (c) fn(c);
     }
   }, first);
-  /** 말소리를 AI 목소리로 — 화면은 촬영 영상 그대로, 글은 남은 단어 */
-  const toVoice = async (voiceId: string) => {
-    const ids = srcTargets();
-    if (!ids.length) return say("바꿀 클립이 없어요");
-    change((p) => {
-      for (const id of ids) {
-        const c = findClip(p, id)?.clip;
-        if (!c || !c.src) continue;
-        const text = clipText(c).trim();
-        if (!c.visual) c.visual = { asset: c.src.asset, s: c.src.s };
-        c.type = "voice";
-        c.text = text;
-        c.words = undefined;
-        c.voice = null;
-        c.voiceId = voiceId;
-        delete c.speed;
-        delete c.muted;
-        delete c.volume;
-      }
-    });
-    setPanel("");
-    say(`AI 목소리로 바꿔요 (클립 ${ids.length}개)`);
-    await revoice(ids);
-  };
   /** 썸네일 메뉴·화면 속성의 볼륨 = 첨부한 영상의 소리 (원래 촬영 화면 그대로인 클립·사진에는 없음). 기본 무음 */
   const soundOf = (c: Clip) => {
     const a = c.visual ? project.assets[c.visual.asset] : null;
@@ -936,6 +921,21 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       } else {
         for (const id of selected) {
           const c = findClip(p, id)?.clip;
+          if (c && c.type !== "voice" && c.src) {
+            // 촬영 클립 → AI 목소리 클립 (화면은 촬영 영상 그대로, 글은 남은 단어)
+            const text = clipText(c).trim();
+            if (!c.visual) c.visual = { asset: c.src.asset, s: c.src.s };
+            c.type = "voice";
+            c.text = text;
+            c.words = undefined;
+            c.voice = null;
+            c.voiceId = o.id;
+            c.speed = o.speed;
+            delete c.muted;
+            delete c.volume;
+            ids.push(c.id);
+            continue;
+          }
           if (!c || c.type !== "voice") continue;
           const was = c.voiceId || p.settings.voice.id;
           c.voiceId = o.id;
@@ -1276,7 +1276,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         {/* 오른쪽 칸 */}
         {panel === "library" && <LibraryPanel key={`${libTab}${libOverlay}`} project={project} canReplace={selected.length > 0} onPick={onPick} initialTab={libTab} overlay={libOverlay}
           onClose={() => (libOverlay && overlayTarget && (project.layers || []).some((l) => l.id === overlayTarget) ? openLayer(overlayTarget) : setPanel(""))} />}
-        {panel === "voice" && <VoicePanel project={project} targetCount={selected.filter((id) => findClip(project, id)?.clip.type === "voice").length} onApply={applyVoice} onClose={() => setPanel("")} />}
+        {panel === "voice" && <VoicePanel project={project} targetCount={selected.filter((id) => { const c = findClip(project, id)?.clip; return c && (c.type === "voice" || c.src); }).length} onApply={applyVoice} onClose={() => setPanel("")} />}
         {panel === "subtitle" && (() => {
           // 이 클립 자막 — 고른 클립(하나)이 있으면 그것, 없으면 지금 재생 위치 클립
           const it = (selected.length === 1 && flat.items.find((x) => x.clip.id === selected[0])) || cur;
@@ -1303,7 +1303,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
               onMute={(v) => srcEach((c) => { c.muted = v || undefined; })}
               onVolume={(v, first) => srcEach((c) => { c.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}
               onSpeed={(v, first) => srcEach((c) => { c.speed = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}
-              onToVoice={toVoice} onClose={() => setPanel("")} />
+              onToVoice={() => { setSelected(srcTargets()); setPanel("voice"); }} onClose={() => setPanel("")} />
           );
         })()}
         {panel === "timing" && (() => {
@@ -1348,6 +1348,20 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
         if (!it || !a || a.kind !== "video") return null;
         return <VideoStart key={startClip} asset={a} dur={it.dur} start={it.clip.visual?.s || 0} onClose={() => setStartClip("")}
           onApply={(s) => { change((p) => { const c = findClip(p, startClip)?.clip; if (c?.visual) c.visual.s = s; }); say(s > 0 ? "시작점을 바꿨어요" : "처음부터 나가요"); }} />;
+      })()}
+      {soundPop && (() => {
+        const c = findClip(project, soundPop.id)?.clip;
+        if (!c) return null;
+        const ids = selected.length > 1 && selected.includes(c.id) ? selected : [c.id];
+        const each = (fn: (x: Clip) => void, first = true) => change((p) => { for (const id of ids) { const x = findClip(p, id)?.clip; if (x) fn(x); } }, first);
+        const isVoice = c.type === "voice";
+        const sp = isVoice ? speedOf(c, project.settings) : srcSpeed(c);
+        return <SoundMenu title={isVoice ? `AI 목소리 · ${STUDIO_VOICES.find((v) => v.id === (c.voiceId || project.settings.voice.id))?.name || ""}` : "원본 소리"} x={soundPop.x} y={soundPop.y} count={ids.length}
+          muted={Boolean(c.muted)} value={c.volume ?? 1} speed={sp}
+          onMute={(v) => each((x) => { x.muted = v || undefined; })}
+          onVolume={(v, first) => each((x) => { x.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}
+          onSpeed={(v) => each((x) => { if (x.type === "voice" ? x.voice?.duration : x.src) x.speed = x.type !== "voice" && Math.abs(v - 1) < 0.001 ? undefined : v; })}
+          onVoice={() => setPanel("voice")} onClose={() => setSoundPop(null)} />;
       })()}
       {media && (() => {
         const items = flat.items;

@@ -165,11 +165,11 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     // 화면만 바꾼 촬영 클립: 원본 소리를 따로
     const a = voiceRef.current;
     if (a) {
-      if (c.type === "voice" && c.voice?.url) {
+      if (c.type === "voice" && c.voice?.url && !c.muted) {
         const sp = speedOf(c, project.settings);
         const target = loc * sp;
         a.playbackRate = rateOk(sp * previewRate);
-        a.volume = Math.max(0, Math.min(1, project.settings.voice?.volume ?? 1));
+        a.volume = Math.max(0, Math.min(1, (project.settings.voice?.volume ?? 1) * (c.volume ?? 1)));
         if (force || Math.abs(a.currentTime - target) > 0.3) {
           try {
             a.currentTime = Math.min(target, Math.max(0, (c.voice.duration || 0) - 0.01));

@@ -173,5 +173,50 @@ export default function MediaMenu(p: Props) {
   );
 }
 
+/** 소리 칩(원본 소리·AI 목소리)을 누르면 바로 옆에 — 볼륨·빠르기·목소리 바꾸기 */
+export function SoundMenu({ title, x, y, count, muted, value, speed, onMute, onVolume, onSpeed, onVoice, onClose }: {
+  title: string;
+  x: number;
+  y: number;
+  count: number; // 적용되는 클립 수
+  muted: boolean;
+  value: number;
+  speed: number;
+  onMute: (v: boolean) => void;
+  onVolume: (v: number, first: boolean) => void;
+  onSpeed: (v: number) => void;
+  onVoice: () => void;
+  onClose: () => void;
+}) {
+  React.useEffect(() => {
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [onClose]);
+  const W = 280;
+  const left = Math.max(8, Math.min(x, (typeof window !== "undefined" ? window.innerWidth : 1600) - W - 16));
+  const top = Math.max(8, Math.min(y, (typeof window !== "undefined" ? window.innerHeight : 900) - 330));
+  const chipS = (on: boolean): React.CSSProperties => ({ flex: 1, height: 28, padding: 0, borderRadius: 5, border: `1px solid ${on ? C.accent : C.line2}`, background: on ? C.accentDim : "transparent", color: C.text, fontSize: 12, fontWeight: 700, fontFamily: FONT, cursor: "pointer" });
+  return (
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 69 }} />
+      <div onClick={(e) => e.stopPropagation()}
+        style={{ position: "fixed", left, top, zIndex: 70, width: W, padding: 12, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)", fontFamily: FONT, color: C.text }}>
+        <div style={{ fontSize: 12.5, color: C.dim, marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}{count > 1 ? ` · 고른 클립 ${count}개` : ""}</div>
+        <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 6 }}>볼륨</div>
+        <VolumeControl muted={muted} value={value} onMute={onMute} onVolume={onVolume} />
+        <div style={{ fontSize: 13.5, fontWeight: 800, margin: "12px 0 6px" }}>빠르기 <span style={{ color: C.sub, fontWeight: 600 }}>{+speed.toFixed(2)}배</span></div>
+        <div style={{ display: "flex", gap: 5 }}>
+          {[0.75, 1, 1.25, 1.5, 2].map((v) => <button key={v} type="button" onClick={() => onSpeed(v)} style={chipS(Math.abs(speed - v) < 0.001)}>{v}배</button>)}
+        </div>
+        <button type="button" onClick={() => { onVoice(); onClose(); }} style={{ ...rowStyle, marginTop: 12, border: `1px solid ${C.line2}`, justifyContent: "center", color: C.text }}>
+          <Icon name="voice" size={16} />AI 목소리 바꾸기<Icon name="chevron" size={14} color={C.sub} />
+        </button>
+        <div style={{ fontSize: 11.5, color: C.dim, marginTop: 6 }}>자세한 설정은 오른쪽 칸 · Esc 로 닫기</div>
+      </div>
+    </>
+  );
+}
+
 const rowStyle: React.CSSProperties = { width: "100%", display: "flex", alignItems: "center", gap: 9, height: 36, padding: "0 10px", border: 0, borderRadius: 5, background: "transparent", fontSize: 14, fontWeight: 700, fontFamily: FONT, cursor: "pointer" };
 const numStyle: React.CSSProperties = { ...input, width: 52, height: 32, padding: "0 6px", textAlign: "center", fontSize: 14, fontWeight: 700 };
