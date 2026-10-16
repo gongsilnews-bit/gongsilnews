@@ -806,7 +806,12 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
         {/* 왼쪽: 미리보기 */}
         <div style={{ width: 412, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, padding: 16, background: C.panel, borderRight: `1px solid ${C.line}`, overflowY: "auto" }}>
           <div style={{ display: "flex", justifyContent: "center", background: "#000", borderRadius: 4 }}>
-            <Player ref={player} project={project} width={previewW} onTime={setTime} onPlaying={setPlaying} previewRate={rate} />
+            <Player ref={player} project={project} width={previewW} onTime={setTime} onPlaying={setPlaying} previewRate={rate}
+              selLayer={panel === "layer" ? selLayer : ""} onLayerPick={openLayer}
+              onLayerMove={(id, patch, first) => change((p) => {
+                const l = (p.layers || []).find((x) => x.id === id);
+                if (l) Object.assign(l, patch);
+              }, first)} />
           </div>
           <input type="range" min={0} max={Math.max(0.1, flat.total)} step={0.01} value={Math.min(time, flat.total)} onChange={(e) => player.current?.seek(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent }} />
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

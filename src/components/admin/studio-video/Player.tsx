@@ -9,9 +9,20 @@ import { C } from "./ui";
 
 export type PlayerHandle = { play: () => void; pause: () => void; toggle: () => void; seek: (t: number) => void; time: () => number; playing: () => boolean };
 
-type Props = { project: Project; width: number; onTime?: (t: number) => void; onPlaying?: (p: boolean) => void; previewRate?: number };
+type Props = {
+  project: Project;
+  width: number;
+  onTime?: (t: number) => void;
+  onPlaying?: (p: boolean) => void;
+  previewRate?: number;
+  /** 미리보기 위 화면 글자·사진을 끌어 옮기기 / 모서리로 크기 (first = 한 번 끄는 동안 처음 바뀔 때) */
+  selLayer?: string;
+  onLayerPick?: (id: string) => void;
+  onLayerMove?: (id: string, patch: Partial<Layer>, first: boolean) => void;
+};
 
-const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width, onTime, onPlaying, previewRate = 1 }, ref) {
+const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width, onTime, onPlaying, previewRate = 1, selLayer = "", onLayerPick, onLayerMove }, ref) {
+  const boxRef = useRef<HTMLDivElement>(null);
   const [W, H] = RATIO_SIZE[project.ratio] || RATIO_SIZE["16:9"];
   const boxW = width;
   const boxH = Math.round((width * H) / W);
@@ -262,11 +273,55 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const overImages = over.filter((l) => l.type === "image" && l.asset && project.assets[l.asset]?.kind === "image");
   const overTexts = over.filter((l) => l.type === "text" && String(l.text || "").trim());
 
+  /** 끌기 — mode move: 자리 / size: 크기. 거의 안 움직이면 고르기만 */
+  const startDrag = (l: Layer, mode: "move" | "size", e: React.PointerEvent) => {
+    if (!onLayerMove) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onLayerPick?.(l.id);
+    const box = boxRef.current?.getBoundingClientRect();
+    const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-layer]")?.getBoundingClientRect();
+    if (!box || !el) return;
+    const sx = e.clientX;
+    const sy = e.clientY;
+    // 지금 보이는 가운데 자리에서 시작 (글자가 상단·가운데·하단 자리였어도)
+    const cx = (el.left + el.width / 2 - box.left) / box.width;
+    const cy = (el.top + el.height / 2 - box.top) / box.height;
+    const w0 = l.w ?? 0.35;
+    const s0 = l.size ?? 100;
+    let first = true;
+    const move = (ev: PointerEvent) => {
+      const dx = (ev.clientX - sx) / box.width;
+      const dy = (ev.clientY - sy) / box.height;
+      if (first && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 3) return;
+      const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+      let patch: Partial<Layer>;
+      if (mode === "move") patch = { x: +clamp(cx + dx, 0, 1).toFixed(4), y: +clamp(cy + dy, 0, 1).toFixed(4) };
+      else if (l.type === "image") patch = { w: +clamp(w0 + dx * 2, 0.05, 1).toFixed(3) };
+      else patch = { size: Math.round(clamp(s0 * (1 + (dx * box.width) / Math.max(40, el.width / 2)), 40, 260)) };
+      onLayerMove(l.id, patch, first);
+      first = false;
+    };
+    const up = () => window.removeEventListener("pointermove", move);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up, { once: true });
+  };
+  /** 고른 애셋 테두리 + 오른쪽 아래 크기 손잡이 */
+  const frame = (l: Layer) =>
+    l.id === selLayer && onLayerMove ? (
+      <>
+        <span style={{ position: "absolute", inset: -3, border: "1.5px dashed #fff", outline: "1px dashed #000", pointerEvents: "none" }} />
+        <span onPointerDown={(e) => startDrag(l, "size", e)} title="끌어서 크기 바꾸기"
+          style={{ position: "absolute", right: -7, bottom: -7, width: 12, height: 12, background: "#fff", border: "1.5px solid #000", cursor: "nwse-resize", touchAction: "none" }} />
+      </>
+    ) : null;
+  const dragStyle = (l: Layer): React.CSSProperties => (onLayerMove ? { pointerEvents: "auto", cursor: "move", touchAction: "none", userSelect: "none" } : { pointerEvents: "none" });
+
   const mediaStyle: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: fill === "cover" ? "cover" : "contain" };
   const vUrl = visual?.url || "";
 
   return (
-    <div style={{ position: "relative", width: boxW, height: boxH, background: "#000", overflow: "hidden", borderRadius: 4 }}>
+    <div ref={boxRef} style={{ position: "relative", width: boxW, height: boxH, background: "#000", overflow: "hidden", borderRadius: 4 }}>
       {visual && fill === "blur" && (visual.kind === "image" ? (
         <img src={vUrl} alt="" style={{ ...mediaStyle, objectFit: "cover", filter: "blur(18px) brightness(0.8)", transform: "scale(1.15)" }} />
       ) : (
@@ -283,19 +338,28 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         // 화면 밖으로 나가지 않게 (굽기 render.js 와 같은 계산)
         const left = Math.max(0, Math.min(boxW - pw, (l.x ?? 0.5) * boxW - pw / 2));
         const top = Math.max(0, Math.min(boxH - ph, (l.y ?? 0.5) * boxH - ph / 2));
-        return <img key={l.id} src={a.url} alt="" style={{ position: "absolute", left, top, width: pw, height: ph, opacity: Math.max(0.05, Math.min(1, l.opacity ?? 1)), pointerEvents: "none" }} />;
+        return (
+          <div key={l.id} data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} title="끌어서 옮기기"
+            style={{ position: "absolute", left, top, width: pw, height: ph, ...dragStyle(l) }}>
+            <img src={a.url} alt="" draggable={false} style={{ width: "100%", height: "100%", display: "block", opacity: Math.max(0.05, Math.min(1, l.opacity ?? 1)), pointerEvents: "none" }} />
+            {frame(l)}
+          </div>
+        );
       })}
       {overTexts.map((l) => {
         const px = Math.min(W, H) * 0.08 * ((l.size || 100) / 100) * k;
         const pos = l.pos || "top";
-        const ps: React.CSSProperties = pos === "top" ? { top: H * 0.06 * k } : pos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : { bottom: H * 0.07 * k };
+        const free = typeof l.x === "number" && typeof l.y === "number"; // 끌어서 옮긴 글자
+        const ps: React.CSSProperties = free
+          ? { left: (l.x as number) * boxW, top: (l.y as number) * boxH, transform: "translate(-50%, -50%)", maxWidth: boxW * 0.9 }
+          : { left: W * 0.05 * k, right: W * 0.05 * k, ...(pos === "top" ? { top: H * 0.06 * k } : pos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : { bottom: H * 0.07 * k }) };
         return (
-          <div key={l.id} style={{ position: "absolute", left: W * 0.05 * k, right: W * 0.05 * k, textAlign: "center", ...ps, pointerEvents: "none" }}>
-            <span style={{
+          <div key={l.id} style={{ position: "absolute", textAlign: "center", ...ps, pointerEvents: "none" }}>
+            <span data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} title="끌어서 옮기기" style={{ position: "relative", display: "inline-block", ...dragStyle(l),
               whiteSpace: "pre-wrap", fontFamily: "'Malgun Gothic', sans-serif", fontWeight: 700, fontSize: px, lineHeight: 1.25, color: l.color || "#fff",
               WebkitTextStroke: l.box ? undefined : `${Math.max(1, 4 * k * 2)}px ${String(l.color).toUpperCase() === "#111111" ? "#fff" : "#000"}`, paintOrder: "stroke fill",
               background: l.box ? "rgba(0,0,0,0.62)" : undefined, padding: l.box ? `${px * 0.12}px ${px * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
-            }}>{String(l.text).trim()}</span>
+            }}>{String(l.text).trim()}{frame(l)}</span>
           </div>
         );
       })}

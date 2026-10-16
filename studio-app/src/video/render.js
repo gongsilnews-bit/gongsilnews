@@ -225,7 +225,8 @@ async function renderClip(p, clip, dur, idx, tmp, enc, layers = []) {
     const styles = [subtitleStyle(W, H, st.subtitle || {}).style, ...texts.map((l, j) => textLayerStyle(`T${j}`, W, H, l))];
     const events = [
       ...lines.map((l) => `Dialogue: 0,${assTime(l.s)},${assTime(l.e)},S,,0,0,0,,${assEsc(l.text)}`),
-      ...texts.map((l, j) => `Dialogue: 1,${assTime(0)},${assTime(dur + 0.05)},T${j},,0,0,0,,${assEsc(String(l.text).trim())}`),
+      // 미리보기에서 끌어 옮긴 글자는 그 자리(가운데 기준)에
+      ...texts.map((l, j) => `Dialogue: 1,${assTime(0)},${assTime(dur + 0.05)},T${j},,0,0,0,,${typeof l.x === "number" && typeof l.y === "number" ? `{\\an5\\pos(${Math.round(l.x * W)},${Math.round(l.y * H)})}` : ""}${assEsc(String(l.text).trim())}`),
     ];
     const ass = assHead(W, H) + styles.join("\n") + "\n" + assEvents + events.join("\n") + "\n";
     fs.writeFileSync(path.join(tmp, `s${idx}.ass`), ass, "utf8");
