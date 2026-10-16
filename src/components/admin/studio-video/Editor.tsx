@@ -635,6 +635,24 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
       say(ids.length > 1 ? `고른 클립 ${ids.length}개 화면을 바꿨어요` : "이 클립 화면을 바꿨어요");
     } else await placeMedia(a, clipId, where === "before");
   };
+  /** 왼쪽 애셋 줄에 놓으면 사진 올리기 — 그 클립부터 끝까지 (고른 클립 중 하나에 놓으면 고른 범위) */
+  const onDropLayer = async (clipId: string, raw: string) => {
+    const item = await dropItem(raw);
+    if (!item) return;
+    if (item.kind !== "image") return say("왼쪽 줄에는 사진만 올릴 수 있어요. 영상은 클립에 놓아 주세요");
+    const a = await ensureAsset(item);
+    const items = flatten(pref.current).items;
+    const sel = selected.length > 1 && selected.includes(clipId) ? selRange() : null;
+    const r = sel || (items.length ? { from: clipId, to: items[items.length - 1].clip.id, n: items.length - items.findIndex((x) => x.clip.id === clipId) } : null);
+    if (!r) return;
+    const id = uid();
+    change((p) => {
+      p.layers = [...(p.layers || []), { id, type: "image", asset: a.id, name: a.name, x: 0.8, y: 0.18, w: 0.3, opacity: 1, from: r.from, to: r.to } as Layer];
+    });
+    setSelLayer(id);
+    setPanel("layer");
+    say(`사진을 클립 ${r.n}개 위에 올렸어요`);
+  };
   /** 미리보기에 놓으면 그 자리에 사진 올리기 */
   const onDropPreview = async (e: React.DragEvent<HTMLDivElement>) => {
     const raw = e.dataTransfer.getData(DRAG_MEDIA);
@@ -973,7 +991,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
             </div>
           )}
           <div ref={listRef} style={{ flex: 1, overflowY: "auto", minHeight: 0 }} onClick={(e) => { if (e.target === e.currentTarget) { setSelected([]); setSelWord(null); } }}>
-            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={panel === "layer" ? selLayer : ""} onLayerDrag={dragLayer} onDropMedia={onDropMedia} />
+            <ClipList project={project} items={flat.items} selected={selected} selWord={selWord} curClip={cur?.clip.id || ""} curWord={curWord} busy={busy} actions={actions} view={view} lanes={lanes} selLayer={panel === "layer" ? selLayer : ""} onLayerDrag={dragLayer} onDropMedia={onDropMedia} onDropLayer={onDropLayer} />
           </div>
         </div>
 

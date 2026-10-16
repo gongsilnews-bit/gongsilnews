@@ -41,6 +41,8 @@ type Props = {
   onLayerDrag: LayerDrag;
   /** 자료 칸에서 끌어 놓기 — before/after: 그 자리에 새 클립, replace: 그 클립 화면 바꾸기 */
   onDropMedia?: (clipId: string, where: "before" | "after" | "replace", raw: string) => void;
+  /** 왼쪽 애셋 줄에 놓으면 그 클립부터 사진 올리기 (레이어) */
+  onDropLayer?: (clipId: string, raw: string) => void;
 };
 
 const voiceName = (id?: string) => STUDIO_VOICES.find((v) => v.id === id)?.name || "AI 목소리";
@@ -208,6 +210,8 @@ function ClipCard({ project, it, n, p }: { project: Project; it: FlatItem; n: nu
   );
 }
 
+const SPARE_W = 30; // 애셋 줄 끝 빈 칸 (사진을 놓는 자리)
+
 export default function ClipList(p: Props) {
   const { project } = p;
   const [drop, setDrop] = React.useState<{ id: string; where: "before" | "after" | "replace" } | null>(null);
@@ -236,6 +240,48 @@ export default function ClipList(p: Props) {
           },
         }
       : {};
+  // 왼쪽 애셋 줄 — 빈 칸 하나를 늘 두고, 클립 줄에서는 사진을 놓으면 그 클립부터 사진 올리기
+  const [layerDrop, setLayerDrop] = React.useState("");
+  const gutter = (idx: number, pass: boolean, clipId?: string) => {
+    const on = Boolean(clipId) && layerDrop === clipId;
+    const drop = clipId && p.onDropLayer
+      ? {
+          onDragOver: (e: React.DragEvent<HTMLDivElement>) => {
+            if (!e.dataTransfer.types.includes(DRAG_MEDIA)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = "copy";
+            if (layerDrop !== clipId) setLayerDrop(clipId);
+          },
+          onDragLeave: (e: React.DragEvent<HTMLDivElement>) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) setLayerDrop((d) => (d === clipId ? "" : d));
+          },
+          onDrop: (e: React.DragEvent<HTMLDivElement>) => {
+            const raw = e.dataTransfer.getData(DRAG_MEDIA);
+            setLayerDrop("");
+            if (!raw) return;
+            e.preventDefault();
+            e.stopPropagation();
+            p.onDropLayer!(clipId, raw);
+          },
+        }
+      : {};
+    const many = Boolean(clipId) && p.selected.length > 1 && p.selected.includes(clipId!);
+    return (
+      <div {...drop} style={{ display: "flex", flexShrink: 0, position: "relative", alignSelf: "stretch" }}>
+        <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={idx} pass={pass} selLayer={p.selLayer} onDrag={p.onLayerDrag} />
+        <div style={{ width: SPARE_W }} />
+        {on && (
+          <>
+            <div style={{ position: "absolute", inset: "6px 0", border: `2px dashed ${C.accent}`, borderRadius: 8, background: "rgba(59,130,246,0.15)", pointerEvents: "none" }} />
+            <span style={{ position: "absolute", left: "100%", top: 8, marginLeft: 4, zIndex: 5, whiteSpace: "nowrap", padding: "4px 10px", borderRadius: 5, background: C.accent, color: "#fff", fontSize: 13, fontWeight: 800, pointerEvents: "none" }}>
+              {many ? `고른 클립 ${p.selected.length}개에 사진 올리기` : "이 클립부터 끝까지 사진 올리기"}
+            </span>
+          </>
+        )}
+      </div>
+    );
+  };
   let n = 0;
   const byId = new Map(p.items.map((x) => [x.clip.id, x]));
   return (
@@ -248,7 +294,7 @@ export default function ClipList(p: Props) {
         return (
           <div key={sc.id}>
             <div style={{ display: "flex" }}>
-            {its.length > 0 && <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={its[0].index} pass selLayer={p.selLayer} onDrag={p.onLayerDrag} />}
+            {its.length > 0 && gutter(its[0].index, true)}
             <div style={{ flex: 1, display: "flex", alignItems: "baseline", gap: 12, padding: "14px 4px 4px" }}>
               <span style={{ fontSize: 19, fontWeight: 800, color: C.sub }}>씬 {si + 1}</span>
               {sc.title && <span style={{ fontSize: 15, color: C.dim }}>{sc.title}</span>}
@@ -258,7 +304,7 @@ export default function ClipList(p: Props) {
             </div>
             {its.map((it) => (
               <div key={it.clip.id} data-row={it.clip.id} style={{ display: "flex" }}>
-                <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={it.index} selLayer={p.selLayer} onDrag={p.onLayerDrag} />
+                {gutter(it.index, false, it.clip.id)}
                 <div style={{ flex: 1, minWidth: 0, position: "relative" }} {...dropProps(it.clip.id)}>
                   <ClipCard project={project} it={it} n={++n} p={p} />
                   {drop?.id === it.clip.id && (drop.where === "replace" ? (
@@ -275,7 +321,7 @@ export default function ClipList(p: Props) {
             ))}
             {its.length > 0 && (
               <div style={{ display: "flex", height: 20 }}>
-                <Gutter entries={p.lanes.entries} lanes={p.lanes.lanes} idx={its[its.length - 1].index + 1} pass selLayer={p.selLayer} onDrag={p.onLayerDrag} />
+                {gutter(its[its.length - 1].index + 1, true)}
               </div>
             )}
             {!its.length && <div style={{ padding: 30, textAlign: "center", color: C.dim, fontSize: 15, border: `1px dashed ${C.line2}`, borderRadius: 8 }}>아직 클립이 없어요. 위 [삽입] 탭이나 오른쪽 자료에서 넣어 주세요.</div>}
