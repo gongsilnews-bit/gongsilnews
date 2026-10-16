@@ -230,6 +230,7 @@ export type VideoBridge = {
     onMiniStop?: (fn: () => void) => () => void;
   };
   showFile: (file: string) => Promise<void>;
+  openSettings?: (what: "camera" | "microphone") => Promise<void>; // 윈도우 설정 화면 (옛 앱에는 없음)
   openPath: (p: string) => Promise<string>;
   onProgress: (fn: (text: string, frac?: number) => void) => () => void;
   onRender: (fn: (text: string, frac: number, jobId?: string) => void) => () => void;

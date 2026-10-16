@@ -923,18 +923,39 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   }, [phase, mode, cam]);
   useEffect(() => () => stopCamLive(), []);
 
+  // 카메라·마이크 찾기 — 카메라는 따로 열어 봐서, 못 열면 이유를 알려 준다 (노트북에서 안 잡히던 문제, 2026-10-16)
+  //  denied: 윈도우 카메라 권한 꺼짐 · busy: 다른 프로그램이 쓰는 중이거나 카메라 끄기 키·가림막 · none: 카메라 없음
+  const [camErr, setCamErr] = useState("");
+  const probeDevices = async () => {
+    setCamErr("");
+    let err = "";
+    try {
+      const st = await navigator.mediaDevices.getUserMedia({ video: true });
+      st.getTracks().forEach((t) => t.stop());
+    } catch (e) {
+      const n = (e as DOMException)?.name || "";
+      err = /NotAllowed|Security|PermissionDenied/.test(n) ? "denied" : /NotReadable|TrackStart|Abort/.test(n) ? "busy" : /NotFound|DevicesNotFound|Overconstrained/.test(n) ? "none" : `other:${n}`;
+    }
+    try {
+      const st = await navigator.mediaDevices.getUserMedia({ audio: true });
+      st.getTracks().forEach((t) => t.stop());
+    } catch {}
+    const d = await navigator.mediaDevices.enumerateDevices().catch(() => [] as MediaDeviceInfo[]);
+    const vids = d.filter((x) => x.kind === "videoinput");
+    setCams(vids);
+    setMics(d.filter((x) => x.kind === "audioinput"));
+    if (!vids.length && !err) err = "none";
+    setCamErr(err);
+    // 얼굴 인식용 적외선(IR) 카메라는 검은 화면이라 빼고 일반 카메라를 먼저 고른다
+    const normal = vids.find((v) => v.label && !/\bIR\b|infrared|적외선/i.test(v.label));
+    if (normal && vids.length > 1) setCam((cur) => cur || normal.deviceId);
+  };
   useEffect(() => {
     b.record.sources().then((s) => {
       setSources(s);
       if (s[0]) setSource(s[0].id);
     }).catch(() => {});
-    navigator.mediaDevices.getUserMedia({ audio: true, video: true }).catch(() => null).then((st) => {
-      st?.getTracks().forEach((t) => t.stop());
-      navigator.mediaDevices.enumerateDevices().then((d) => {
-        setCams(d.filter((x) => x.kind === "videoinput"));
-        setMics(d.filter((x) => x.kind === "audioinput"));
-      });
-    });
+    probeDevices();
     return () => stopAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1180,6 +1201,18 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
                 <option value="">기본 카메라</option>
                 {cams.map((c) => <option key={c.deviceId} value={c.deviceId}>{c.label || "카메라"}</option>)}
               </select>
+              {camErr && (
+                <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 6, background: "rgba(239,68,68,0.10)", border: `1px solid ${C.danger}`, fontSize: 13.5, lineHeight: 1.6 }}>
+                  {camErr === "denied" ? <>윈도우에서 <b>카메라 사용이 꺼져 있어요.</b> [설정] → [개인 정보 및 보안] → [카메라]에서 <b>“데스크톱 앱이 카메라에 액세스하도록 허용”</b>을 켜 주세요.</>
+                    : camErr === "busy" ? <><b>카메라를 열 수 없어요.</b> 다른 프로그램(줌·팀즈·카카오톡 영상통화 등)이 카메라를 쓰고 있거나, 노트북의 <b>카메라 끄기 키</b>(카메라 그림 키)·<b>렌즈 가림막</b>이 닫혀 있을 수 있어요.</>
+                    : camErr === "none" ? <><b>카메라를 찾지 못했어요.</b> 노트북의 카메라 끄기 키·렌즈 가림막을 확인하거나, 외장 카메라면 다시 꽂아 주세요.</>
+                    : <>카메라를 열지 못했어요 ({camErr.replace("other:", "") || "알 수 없음"}). 노트북을 다시 켜 보거나 다른 카메라를 골라 주세요.</>}
+                  <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                    {camErr !== "busy" && b.openSettings && <Btn small primary={camErr === "denied"} onClick={() => b.openSettings!("camera")}>윈도우 카메라 설정 열기</Btn>}
+                    <Btn small onClick={() => void probeDevices()}>다시 찾기</Btn>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {mode === "both" && (

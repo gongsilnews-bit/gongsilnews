@@ -206,6 +206,7 @@ if (allowed) {
         },
       },
       showFile: (file) => ipcRenderer.invoke("video:show-file", file),
+      openSettings: (what) => ipcRenderer.invoke("video:open-settings", what), // 윈도우 카메라·마이크 권한 화면
       openPath: (p) => ipcRenderer.invoke("video:open-path", p),
       onProgress: (fn) => {
         const h = (_e, text, frac) => fn(text, frac);

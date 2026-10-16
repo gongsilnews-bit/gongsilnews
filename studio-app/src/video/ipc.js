@@ -399,6 +399,8 @@ function register(base) {
 
   /* ── 폴더·파일 열기 ── */
   ipcMain.handle("video:show-file", (_e, file) => shell.showItemInFolder(media.fileOf(file) || file));
+  // 윈도우 카메라·마이크 권한 화면 (녹화 창 — 카메라 사용이 꺼져 있을 때)
+  ipcMain.handle("video:open-settings", (_e, what) => shell.openExternal(what === "microphone" ? "ms-settings:privacy-microphone" : "ms-settings:privacy-webcam"));
   ipcMain.handle("video:open-path", (_e, p) => shell.openPath(media.fileOf(p) || p));
 }
 
