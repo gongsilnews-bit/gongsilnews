@@ -926,30 +926,59 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   // 카메라·마이크 찾기 — 카메라는 따로 열어 봐서, 못 열면 이유를 알려 준다 (노트북에서 안 잡히던 문제, 2026-10-16)
   //  denied: 윈도우 카메라 권한 꺼짐 · busy: 다른 프로그램이 쓰는 중이거나 카메라 끄기 키·가림막 · none: 카메라 없음
   const [camErr, setCamErr] = useState("");
+  const [micErr, setMicErr] = useState("");
+  const errOf = (e: unknown) => {
+    const n = (e as DOMException)?.name || "";
+    return /NotAllowed|Security|PermissionDenied/.test(n) ? "denied" : /NotReadable|TrackStart|Abort/.test(n) ? "busy" : /NotFound|DevicesNotFound|Overconstrained/.test(n) ? "none" : `other:${n}`;
+  };
+  const probing = useRef(false);
   const probeDevices = async () => {
-    setCamErr("");
+    if (probing.current || phase !== "setup") return; // 녹화 중에는 장치를 건드리지 않는다
+    probing.current = true;
     let err = "";
+    let merr = "";
     try {
       const st = await navigator.mediaDevices.getUserMedia({ video: true });
       st.getTracks().forEach((t) => t.stop());
     } catch (e) {
-      const n = (e as DOMException)?.name || "";
-      err = /NotAllowed|Security|PermissionDenied/.test(n) ? "denied" : /NotReadable|TrackStart|Abort/.test(n) ? "busy" : /NotFound|DevicesNotFound|Overconstrained/.test(n) ? "none" : `other:${n}`;
+      err = errOf(e);
     }
     try {
       const st = await navigator.mediaDevices.getUserMedia({ audio: true });
       st.getTracks().forEach((t) => t.stop());
-    } catch {}
+    } catch (e) {
+      merr = errOf(e);
+    }
     const d = await navigator.mediaDevices.enumerateDevices().catch(() => [] as MediaDeviceInfo[]);
     const vids = d.filter((x) => x.kind === "videoinput");
+    const auds = d.filter((x) => x.kind === "audioinput");
     setCams(vids);
-    setMics(d.filter((x) => x.kind === "audioinput"));
+    setMics(auds);
     if (!vids.length && !err) err = "none";
+    if (!auds.length && !merr) merr = "none";
     setCamErr(err);
+    setMicErr(merr);
+    probing.current = false;
     // 얼굴 인식용 적외선(IR) 카메라는 검은 화면이라 빼고 일반 카메라를 먼저 고른다
     const normal = vids.find((v) => v.label && !/\bIR\b|infrared|적외선/i.test(v.label));
     if (normal && vids.length > 1) setCam((cur) => cur || normal.deviceId);
   };
+  const probeRef = useRef(probeDevices);
+  probeRef.current = probeDevices;
+  useEffect(() => {
+    const again = () => void probeRef.current();
+    navigator.mediaDevices.addEventListener?.("devicechange", again);
+    window.addEventListener("focus", again);
+    return () => {
+      navigator.mediaDevices.removeEventListener?.("devicechange", again);
+      window.removeEventListener("focus", again);
+    };
+  }, []);
+  useEffect(() => {
+    if (!camErr && !micErr) return;
+    const t = setInterval(() => void probeRef.current(), 3000);
+    return () => clearInterval(t);
+  }, [camErr, micErr]);
   useEffect(() => {
     b.record.sources().then((s) => {
       setSources(s);
@@ -1210,6 +1239,7 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
                   <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                     {camErr !== "busy" && b.openSettings && <Btn small primary={camErr === "denied"} onClick={() => b.openSettings!("camera")}>윈도우 카메라 설정 열기</Btn>}
                     <Btn small onClick={() => void probeDevices()}>다시 찾기</Btn>
+                    <span style={{ fontSize: 12, color: C.dim, alignSelf: "center" }}>고치면 저절로 다시 잡아요</span>
                   </div>
                 </div>
               )}
@@ -1284,6 +1314,19 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
             </select>
             <VolumeControl muted={micMuted} value={micVol} onMute={setMicMuted} onVolume={(v) => { setMicVol(v); if (v > 0) setMicMuted(false); }} />
             {micOn && <MicMeter deviceId={mic} gain={micVol} auto={micAuto} />}
+            {micErr && !micMuted && (
+              <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 6, background: "rgba(239,68,68,0.10)", border: `1px solid ${C.danger}`, fontSize: 13.5, lineHeight: 1.6 }}>
+                {micErr === "denied" ? <>윈도우에서 <b>마이크 사용이 꺼져 있어요.</b> [설정] → [개인 정보 및 보안] → [마이크]에서 <b>“데스크톱 앱이 마이크에 액세스하도록 허용”</b>을 켜 주세요.</>
+                  : micErr === "busy" ? <><b>마이크를 열 수 없어요.</b> 다른 프로그램(줌·팀즈·카카오톡 통화 등)이 마이크를 쓰고 있을 수 있어요. 그 프로그램을 닫아 주세요.</>
+                  : micErr === "none" ? <><b>마이크를 찾지 못했어요.</b> 이어폰·헤드셋 마이크면 다시 꽂아 주세요. 노트북 마이크 끄기 키가 있는지도 확인해 주세요.</>
+                  : <>마이크를 열지 못했어요 ({micErr.replace("other:", "") || "알 수 없음"}). 다른 마이크를 골라 주세요.</>}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+                  {micErr !== "busy" && b.openSettings && <Btn small primary={micErr === "denied"} onClick={() => b.openSettings!("microphone")}>윈도우 마이크 설정 열기</Btn>}
+                  <Btn small onClick={() => void probeDevices()}>다시 찾기</Btn>
+                  <span style={{ fontSize: 12, color: C.dim }}>고치면 저절로 다시 잡아요</span>
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <div style={{ ...label, marginBottom: 8 }}>PC 소리 <span style={{ color: C.dim, fontWeight: 600 }}>· 컴퓨터에서 나는 소리 (영상·음악 등)</span></div>
