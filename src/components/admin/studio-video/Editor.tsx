@@ -12,9 +12,9 @@ import Player, { type PlayerHandle } from "./Player";
 import ClipList, { AllBox, type ClipActions } from "./ClipList";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Modal, Working, input, label } from "./ui";
-import { LAYER_ICON, LayerPanel, LayerPopup, TimingPanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
+import { LAYER_ICON, LayerPanel, LayerPopup, SourcePanel, TimingPanel, VisualPanel, computeLanes, layerTitle } from "./Layers";
 
-type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing";
+type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer" | "visual" | "timing" | "source";
 type RibbonBtn = { icon: string; label: string; onClick?: () => void; disabled?: boolean; title?: string } | "|";
 
 const TABS = ["파일", "홈", "편집", "자막", "서식", "삽입", "AI 목소리", "효과", "도움말"] as const;
@@ -95,6 +95,7 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   const [pop, setPop] = useState<{ id: string; x: number; y: number } | null>(null); // 아이콘 옆 작은 메뉴
   const [visualClip, setVisualClip] = useState(""); // 오른쪽 화면 속성 칸의 클립
   const [subMode, setSubMode] = useState<"all" | "sel">("all"); // 메인자막 서식 적용 범위
+  const [srcMode, setSrcMode] = useState<"sel" | "all">("sel"); // 원본 소리 설정 적용 범위
   const [startClip, setStartClip] = useState(""); // 비디오 시작점 변경 창의 클립
   const [media, setMedia] = useState<{ kind: "clip" | "layer"; id: string; x: number; y: number } | null>(null); // 사진·영상 메뉴
   const [libOverlay, setLibOverlay] = useState(false); // 자료 칸을 "사진 올리기"로 열었는지
@@ -358,6 +359,14 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       mergeClips([prevId, id]);
     },
     openVoice: (id) => {
+      const c = findClip(pref.current, id)?.clip;
+      // 촬영 클립 [원본 소리] → 원본 소리 설정 (고른 클립 중 하나면 고른 클립 모두)
+      if (c && c.type !== "voice") {
+        if (!(selected.length > 1 && selected.includes(id))) setSelected([id]);
+        setSrcMode("sel");
+        setPanel("source");
+        return;
+      }
       setSelected([id]);
       setPanel("voice");
     },
@@ -590,6 +599,39 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
   /** 영상 화면이면 시작점을 고를 수 있다 (촬영 원본 그대로인 클립은 빼고) */
   const canStart = (c: Clip) => Boolean(c.visual && project.assets[c.visual.asset]?.kind === "video" && !(c.src && c.src.asset === c.visual.asset));
   /** 클립 소리 — 원본 소리가 있는 영상 클립 (촬영·불러온 영상) */
+  /* ── 원본 소리 설정 (촬영 클립) — 고른 클립 / 모든 클립 ── */
+  const isSrc = (c?: Clip | null) => Boolean(c && c.type !== "voice" && c.src);
+  const srcTargets = () => (srcMode === "all" ? flat.items.map((x) => x.clip).filter(isSrc).map((c) => c.id) : selected.filter((id) => isSrc(findClip(pref.current, id)?.clip)));
+  const srcEach = (fn: (c: Clip) => void, first = true) => change((p) => {
+    for (const id of srcTargets()) {
+      const c = findClip(p, id)?.clip;
+      if (c) fn(c);
+    }
+  }, first);
+  /** 말소리를 AI 목소리로 — 화면은 촬영 영상 그대로, 글은 남은 단어 */
+  const toVoice = async (voiceId: string) => {
+    const ids = srcTargets();
+    if (!ids.length) return say("바꿀 클립이 없어요");
+    change((p) => {
+      for (const id of ids) {
+        const c = findClip(p, id)?.clip;
+        if (!c || !c.src) continue;
+        const text = clipText(c).trim();
+        if (!c.visual) c.visual = { asset: c.src.asset, s: c.src.s };
+        c.type = "voice";
+        c.text = text;
+        c.words = undefined;
+        c.voice = null;
+        c.voiceId = voiceId;
+        delete c.speed;
+        delete c.muted;
+        delete c.volume;
+      }
+    });
+    setPanel("");
+    say(`AI 목소리로 바꿔요 (클립 ${ids.length}개)`);
+    await revoice(ids);
+  };
   /** 썸네일 메뉴·화면 속성의 볼륨 = 첨부한 영상의 소리 (원래 촬영 화면 그대로인 클립·사진에는 없음). 기본 무음 */
   const soundOf = (c: Clip) => {
     const a = c.visual ? project.assets[c.visual.asset] : null;
@@ -1251,6 +1293,19 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
             rangeText={selected.length ? `고른 클립 ${selected.length}개` : "영상 처음부터 끝까지"} onPick={onMusic}
             onClose={() => (musicTarget && (project.layers || []).some((l) => l.id === musicTarget) ? openLayer(musicTarget) : setPanel(""))} />
         )}
+        {panel === "source" && (() => {
+          const ids = srcTargets();
+          const c0 = ids.length ? findClip(project, ids[0])?.clip : null;
+          if (!c0) return null;
+          return (
+            <SourcePanel mode={srcMode} selCount={selected.filter((id) => isSrc(findClip(project, id)?.clip)).length || 1} allCount={flat.items.filter((x) => isSrc(x.clip)).length}
+              muted={Boolean(c0.muted)} value={c0.volume ?? 1} speed={srcSpeed(c0)} onMode={setSrcMode}
+              onMute={(v) => srcEach((c) => { c.muted = v || undefined; })}
+              onVolume={(v, first) => srcEach((c) => { c.volume = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}
+              onSpeed={(v, first) => srcEach((c) => { c.speed = Math.abs(v - 1) < 0.001 ? undefined : +v.toFixed(2); }, first)}
+              onToVoice={toVoice} onClose={() => setPanel("")} />
+          );
+        })()}
         {panel === "timing" && (() => {
           const ids = timingIds();
           const its = flat.items.filter((x) => ids.includes(x.clip.id));

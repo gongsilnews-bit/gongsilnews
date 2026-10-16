@@ -8,6 +8,7 @@ import { type FlatItem, clipOrder, clipText, layerItems } from "./timeline";
 import { Side } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Toggle, VolumeControl, input, label } from "./ui";
 import { ColorPick, FontPick } from "./Pickers";
+import { STUDIO_VOICES } from "@/lib/studio-video/voices";
 
 export const LAYER_ICON: Record<Layer["type"], string> = { music: "music", image: "image", text: "text" };
 export const LAYER_NAME: Record<Layer["type"], string> = { music: "배경 음악", image: "사진 올리기", text: "화면 글자" };
@@ -116,6 +117,63 @@ const GRID: [number, number, string][] = [
   [0.2, 0.5, "왼쪽"], [0.5, 0.5, "가운데"], [0.8, 0.5, "오른쪽"],
   [0.2, 0.82, "왼쪽 아래"], [0.5, 0.82, "아래"], [0.8, 0.82, "오른쪽 아래"],
 ];
+
+/** 원본 소리 설정 — 촬영 클립의 [원본 소리]를 누르면 오른쪽에. 고른 클립 모두 / 모든 클립 */
+export function SourcePanel({ mode, selCount, allCount, muted, value, speed, onMode, onMute, onVolume, onSpeed, onToVoice, onClose }: {
+  mode: "sel" | "all";
+  selCount: number;
+  allCount: number;
+  muted: boolean;
+  value: number;
+  speed: number;
+  onMode: (m: "sel" | "all") => void;
+  onMute: (v: boolean) => void;
+  onVolume: (v: number, first: boolean) => void;
+  onSpeed: (v: number, first: boolean) => void;
+  onToVoice: (voiceId: string) => void;
+  onClose: () => void;
+}) {
+  const first = React.useRef(true);
+  const [voice, setVoice] = React.useState(STUDIO_VOICES.find((v) => v.recommended)?.id || STUDIO_VOICES[0]?.id || "");
+  const n = mode === "all" ? allCount : selCount;
+  return (
+    <Side title="원본 소리 설정" onClose={onClose}>
+      <div style={{ ...row, background: C.accentDim }}>
+        <div style={{ ...label, marginBottom: 8 }}>적용 범위</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button type="button" onClick={() => onMode("sel")} style={{ ...chip(mode === "sel"), flex: 1 }}>{selCount > 1 ? `고른 클립 ${selCount}개` : "이 클립에만"}</button>
+          <button type="button" onClick={() => onMode("all")} style={{ ...chip(mode === "all"), flex: 1 }}>모든 클립 ({allCount}개)</button>
+        </div>
+        <div style={{ fontSize: 12.5, color: C.sub, marginTop: 8 }}>아래에서 바꾸면 원본 소리 클립 {n}개에 들어가요.</div>
+      </div>
+      <div style={row}>
+        <div style={{ ...label, marginBottom: 8 }}>볼륨</div>
+        <VolumeControl muted={muted} value={value} onMute={onMute} onVolume={onVolume} />
+      </div>
+      <div style={row}>
+        <div style={{ ...label, display: "flex", marginBottom: 6 }}><span style={{ flex: 1 }}>빠르기</span><span style={{ color: C.sub }}>{+speed.toFixed(2)}배</span></div>
+        <input type="range" min={-1} max={Math.log10(20)} step={0.01} value={Math.log10(speed)}
+          onPointerDown={() => (first.current = true)}
+          onChange={(e) => { const v = Math.pow(10, Number(e.target.value)); onSpeed(+(v < 5 ? v.toFixed(2) : v.toFixed(1)), first.current); first.current = false; }}
+          style={{ width: "100%", accentColor: C.accent }} />
+        <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
+          {[0.5, 0.75, 1, 1.25, 1.5, 2].map((v) => (
+            <button key={v} type="button" onClick={() => onSpeed(v, true)} style={{ ...chip(Math.abs(speed - v) < 0.001), flex: 1, padding: 0, height: 32, fontSize: 12.5 }}>{v}배</button>
+          ))}
+        </div>
+        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8 }}>영상과 소리가 함께 빨라지거나 느려져요. 더 넓은 범위(0.1~20배)는 클립 시간을 눌러 속도·길이에서.</div>
+      </div>
+      <div style={row}>
+        <div style={{ ...label, marginBottom: 8 }}>목소리 바꾸기</div>
+        <select value={voice} onChange={(e) => setVoice(e.target.value)} style={{ ...input, height: 38, marginBottom: 8 }}>
+          {STUDIO_VOICES.map((v) => <option key={v.id} value={v.id}>{v.name} · {v.gender}</option>)}
+        </select>
+        <Btn primary small onClick={() => onToVoice(voice)}><Icon name="voice" size={15} />AI 목소리로 바꾸기 ({n}개)</Btn>
+        <div style={{ fontSize: 12.5, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>말소리 대신 고른 AI 목소리가 같은 글을 읽어요. 화면은 촬영 영상 그대로예요. 되돌리기로 원래대로 돌아갈 수 있어요.</div>
+      </div>
+    </Side>
+  );
+}
 
 /** 클립 속도·길이 — 클립 시간을 누르면 오른쪽에. 여러 클립을 고르면 고른 클립 모두 */
 export function TimingPanel({ clips, nums, durs, speeds, onSpeed, onLength, onReset, onClose }: {
