@@ -6,7 +6,7 @@ import type { Clip, Layer, Project } from "./types";
 import { RATIO_SIZE, rgba } from "./types";
 import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
 import { useFonts } from "./Pickers";
-import { clipOrder, flatten, layerItems, layersAt, musicLayers, sourceTimeAt, speedOf, subtitleLines } from "./timeline";
+import { clipOrder, clipText, flatten, layerItems, layersAt, musicLayers, sourceTimeAt, speedOf, subtitleLines } from "./timeline";
 import { C } from "./ui";
 
 export type PlayerHandle = { play: () => void; pause: () => void; toggle: () => void; seek: (t: number) => void; time: () => number; playing: () => boolean };
@@ -21,9 +21,52 @@ type Props = {
   selLayer?: string;
   onLayerPick?: (id: string) => void;
   onLayerMove?: (id: string, patch: Partial<Layer>, first: boolean) => void;
+  /** 화면에서 바로 글 고치기 (두 번 누르기) — 화면 글자 / 자막 */
+  onLayerText?: (id: string, text: string) => void;
+  onSubText?: (clipId: string, text: string) => void;
 };
 
-const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width, onTime, onPlaying, previewRate = 1, selLayer = "", onLayerPick, onLayerMove }, ref) {
+/** 화면 위 글자를 그 자리에서 고치는 칸 — 엔터: 저장, Shift+엔터: 줄바꿈, Esc: 취소 */
+function InlineEdit({ text, style, onDone }: { text: string; style: React.CSSProperties; onDone: (t: string | null) => void }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const done = useRef(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.focus();
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(r);
+  }, []);
+  const finish = (v: string | null) => {
+    if (done.current) return;
+    done.current = true;
+    onDone(v);
+  };
+  return (
+    <span ref={ref} contentEditable suppressContentEditableWarning
+      onPointerDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          finish(ref.current?.innerText ?? null);
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          finish(null);
+        }
+      }}
+      onBlur={() => finish(ref.current?.innerText ?? null)}
+      style={{ ...style, outline: "2px solid #3b82f6", outlineOffset: 2, cursor: "text", pointerEvents: "auto", userSelect: "text", WebkitUserSelect: "text" }}>
+      {text}
+    </span>
+  );
+}
+
+const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width, onTime, onPlaying, previewRate = 1, selLayer = "", onLayerPick, onLayerMove, onLayerText, onSubText }, ref) {
+  const [editing, setEditing] = useState(""); // 고치는 중: 애셋 id 또는 "sub:클립id"
   const boxRef = useRef<HTMLDivElement>(null);
   const [W, H] = RATIO_SIZE[project.ratio] || RATIO_SIZE["16:9"];
   const boxW = width;
@@ -380,23 +423,43 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
           : { left: W * 0.05 * k, right: W * 0.05 * k, ...(pos === "top" ? { top: H * 0.06 * k } : pos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : { bottom: H * 0.07 * k }) };
         return (
           <div key={l.id} style={{ position: "absolute", textAlign: "center", ...ps, pointerEvents: "none" }}>
-            <span data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} title="끌어서 옮기기" style={{ position: "relative", display: "inline-block", ...dragStyle(l),
-              whiteSpace: "pre", fontFamily: fontCss(l.font), fontWeight: fontWeight(l.font), fontSize: px, lineHeight: 1.25, color: l.color || "#fff",
-              WebkitTextStroke: l.box ? undefined : `${Math.max(1, 4 * k * 2)}px ${String(l.color).toUpperCase() === "#111111" ? "#fff" : "#000"}`, paintOrder: "stroke fill",
-              background: l.box ? rgba(l.boxColor || "#000000", l.boxOpacity ?? 0.62) : undefined, padding: l.box ? `${px * 0.12}px ${px * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
-            }}>{String(l.text).trim()}{frame(l)}</span>
+            {(() => {
+              const look: React.CSSProperties = {
+                position: "relative", display: "inline-block",
+                whiteSpace: "pre", fontFamily: fontCss(l.font), fontWeight: fontWeight(l.font), fontSize: px, lineHeight: 1.25, color: l.color || "#fff",
+                WebkitTextStroke: l.box ? undefined : `${Math.max(1, 4 * k * 2)}px ${String(l.color).toUpperCase() === "#111111" ? "#fff" : "#000"}`, paintOrder: "stroke fill",
+                background: l.box ? rgba(l.boxColor || "#000000", l.boxOpacity ?? 0.62) : undefined, padding: l.box ? `${px * 0.12}px ${px * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
+              };
+              if (editing === l.id && onLayerText)
+                return <InlineEdit text={String(l.text).trim()} style={look} onDone={(t) => { setEditing(""); if (t !== null && t.trim() && t.trim() !== String(l.text).trim()) onLayerText(l.id, t.trim()); }} />;
+              return (
+                <span data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} onDoubleClick={() => onLayerText && setEditing(l.id)}
+                  title={onLayerText ? "끌어서 옮기기 · 두 번 누르면 글 고치기" : undefined} style={{ ...look, ...dragStyle(l) }}>
+                  {String(l.text).trim()}{frame(l)}
+                </span>
+              );
+            })()}
           </div>
         );
       })}
-      {line && (
-        <div style={{ position: "absolute", left: W * 0.06 * k, right: W * 0.06 * k, textAlign: "center", ...posStyle, pointerEvents: "none" }}>
-          <span style={{
-            display: "inline", whiteSpace: "pre-wrap", fontFamily: fontCss(st.font), fontWeight: fontWeight(st.font, st.bold !== false),
-            fontSize: fontPx, lineHeight: 1.25, color: st.color || "#fff", WebkitTextStroke: st.bg ? undefined : `${Math.max(1, (st.outlineWidth ?? 3) * k * 2)}px ${st.outline || "#000"}`,
-            paintOrder: "stroke fill", background: st.bg ? rgba(st.bgColor || "#000000", st.bgOpacity ?? 0.62) : undefined, padding: st.bg ? `${fontPx * 0.12}px ${fontPx * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
-          }}>{line.text}</span>
-        </div>
-      )}
+      {(line || (clip && editing === `sub:${clip.id}`)) && (() => {
+        const look: React.CSSProperties = {
+          display: "inline", whiteSpace: "pre-wrap", fontFamily: fontCss(st.font), fontWeight: fontWeight(st.font, st.bold !== false),
+          fontSize: fontPx, lineHeight: 1.25, color: st.color || "#fff", WebkitTextStroke: st.bg ? undefined : `${Math.max(1, (st.outlineWidth ?? 3) * k * 2)}px ${st.outline || "#000"}`,
+          paintOrder: "stroke fill", background: st.bg ? rgba(st.bgColor || "#000000", st.bgOpacity ?? 0.62) : undefined, padding: st.bg ? `${fontPx * 0.12}px ${fontPx * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
+        };
+        const full = clip ? (typeof clip.subText === "string" ? clip.subText : clipText(clip)) : "";
+        return (
+          <div style={{ position: "absolute", left: W * 0.06 * k, right: W * 0.06 * k, textAlign: "center", ...posStyle, pointerEvents: "none" }}>
+            {clip && editing === `sub:${clip.id}` && onSubText ? (
+              <InlineEdit text={full} style={look} onDone={(t) => { setEditing(""); if (t !== null && t.replace(/\s+/g, " ").trim() !== full.trim()) onSubText(clip.id, t); }} />
+            ) : (
+              <span onDoubleClick={() => clip && onSubText && setEditing(`sub:${clip.id}`)} title={onSubText ? "두 번 누르면 자막 고치기 (목소리는 그대로)" : undefined}
+                style={{ ...look, pointerEvents: onSubText ? "auto" : "none", cursor: onSubText ? "text" : undefined }}>{line?.text}</span>
+            )}
+          </div>
+        );
+      })()}
       <audio ref={voiceRef} preload="auto" />
       {musics.map(({ l }) => <audio key={l.id} ref={(el) => { musicEls.current[l.id] = el; }} src={l.url} preload="auto" />)}
       {playing ? null : null}

@@ -123,7 +123,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
   onClose: () => void;
 }) {
   const [draft, setDraft] = React.useState(layer.text || "");
-  React.useEffect(() => setDraft(layer.text || ""), [layer.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  React.useEffect(() => setDraft(layer.text || ""), [layer.id, layer.text]); // 화면에서 고친 글도 칸에 바로
   const clipLabel = (x: FlatItem, i: number) => {
     const t = clipText(x.clip).trim() || (x.clip.type === "silence" ? "말 없는 구간" : "화면");
     return `클립 ${i + 1} · ${t.length > 16 ? t.slice(0, 16) + "…" : t}`;
@@ -253,5 +253,89 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
         </>
       )}
     </Side>
+  );
+}
+
+/* ── 아이콘을 누르면 바로 옆에 뜨는 작은 메뉴 (브루처럼) — 적용 범위·간단한 조절·삭제. 자세한 것은 오른쪽 칸 ── */
+export function LayerPopup({ project, layer, items, selRange, x, y, onChange, onRemove, onClose }: {
+  project: Project;
+  layer: Layer;
+  items: FlatItem[];
+  selRange: { from: string; to: string; n: number } | null;
+  x: number;
+  y: number;
+  onChange: (patch: Partial<Layer>) => void;
+  onRemove: () => void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = React.useState(layer.text || "");
+  React.useEffect(() => setDraft(layer.text || ""), [layer.id, layer.text]);
+  React.useEffect(() => {
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [onClose]);
+  const cov = layerItems(project, layer, items);
+  const pos = new Map(items.map((it, i) => [it.clip.id, i + 1]));
+  const a = cov.length ? pos.get(cov[0].clip.id) : 0;
+  const b = cov.length ? pos.get(cov[cov.length - 1].clip.id) : 0;
+  const top = Math.max(8, Math.min(y, (typeof window !== "undefined" ? window.innerHeight : 900) - 420));
+  const line: React.CSSProperties = { padding: "10px 12px", borderBottom: `1px solid ${C.line}` };
+  const mini = (title: string, value: number, min: number, max: number, step: number, show: string, set: (v: number) => void) => (
+    <div style={line}>
+      <div style={{ display: "flex", fontSize: 13.5, fontWeight: 700, marginBottom: 4 }}><span style={{ flex: 1 }}>{title}</span><span style={{ color: C.sub }}>{show}</span></div>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => set(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent }} />
+    </div>
+  );
+  const sw = (title: string, on: boolean, set: (v: boolean) => void) => (
+    <div style={{ ...line, display: "flex", alignItems: "center" }}><span style={{ flex: 1, fontSize: 13.5, fontWeight: 700 }}>{title}</span><Toggle on={on} onChange={set} /></div>
+  );
+  return (
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 69 }} />
+      <div onClick={(e) => e.stopPropagation()}
+        style={{ position: "fixed", left: x, top, zIndex: 70, width: 270, background: C.panel, border: `1px solid ${C.line2}`, borderRadius: 8, boxShadow: "0 12px 36px rgba(0,0,0,0.45)", fontFamily: FONT, color: C.text, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: `1px solid ${C.line}` }}>
+          <Icon name={LAYER_ICON[layer.type]} size={17} />
+          <span style={{ flex: 1, fontSize: 14, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{layerTitle(layer)}</span>
+          <button type="button" onClick={onClose} title="닫기" style={{ border: 0, background: "transparent", color: C.sub, cursor: "pointer", padding: 0 }}><Icon name="close" size={18} /></button>
+        </div>
+        <div style={line}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 6 }}>적용 범위 <span style={{ color: C.sub, fontWeight: 600 }}>· 클립 {a}{a !== b ? ` ~ ${b}` : ""}</span></div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {selRange && <Btn small onClick={() => onChange({ from: selRange.from, to: selRange.to })}>고른 클립 {selRange.n}개로</Btn>}
+            {items.length > 0 && <Btn small onClick={() => onChange({ from: items[0].clip.id, to: items[items.length - 1].clip.id })}>처음부터 끝까지</Btn>}
+          </div>
+          <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>막대 끝 손잡이를 끌어도 바뀌어요.</div>
+        </div>
+        {layer.type === "music" && (
+          <>
+            {mini("볼륨", layer.volume ?? 0.15, 0.03, 0.6, 0.01, `${Math.round((layer.volume ?? 0.15) * 100)}%`, (v) => onChange({ volume: v }))}
+            {sw("페이드인 (점점 커지며 시작)", (layer.fadeIn ?? 0) > 0, (v) => onChange({ fadeIn: v ? 2 : 0 }))}
+            {sw("페이드아웃 (점점 작아지며 끝)", (layer.fadeOut ?? 0) > 0, (v) => onChange({ fadeOut: v ? 2 : 0 }))}
+            {sw("반복 (루프)", layer.loop !== false, (v) => onChange({ loop: v }))}
+          </>
+        )}
+        {layer.type === "image" && (
+          <>
+            {mini("크기", layer.w ?? 0.35, 0.1, 1, 0.01, `${Math.round((layer.w ?? 0.35) * 100)}%`, (v) => onChange({ w: v }))}
+            {mini("진하기", layer.opacity ?? 1, 0.2, 1, 0.05, `${Math.round((layer.opacity ?? 1) * 100)}%`, (v) => onChange({ opacity: v }))}
+          </>
+        )}
+        {layer.type === "text" && (
+          <>
+            <div style={line}>
+              <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && draft.trim() && onChange({ text: draft.trim() })} onBlur={() => draft.trim() && draft !== layer.text && onChange({ text: draft.trim() })}
+                placeholder="화면에 나올 글" style={{ ...input, height: 36, fontSize: 14 }} />
+            </div>
+            {mini("글자 크기", layer.size ?? 100, 40, 260, 5, `${layer.size ?? 100}%`, (v) => onChange({ size: v }))}
+          </>
+        )}
+        <div style={{ padding: "8px 12px", display: "flex", alignItems: "center" }}>
+          <span style={{ flex: 1, fontSize: 12, color: C.dim }}>자세한 설정은 오른쪽 칸</span>
+          <Btn small onClick={onRemove} style={{ color: C.danger }}><Icon name="trash" size={15} />삭제</Btn>
+        </div>
+      </div>
+    </>
   );
 }

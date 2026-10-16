@@ -10,7 +10,7 @@ import Player, { type PlayerHandle } from "./Player";
 import ClipList, { type ClipActions } from "./ClipList";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Modal, Working, input, label } from "./ui";
-import { LAYER_ICON, LayerPanel, computeLanes, layerTitle } from "./Layers";
+import { LAYER_ICON, LayerPanel, LayerPopup, computeLanes, layerTitle } from "./Layers";
 
 type PanelKind = "" | "library" | "voice" | "subtitle" | "ratio" | "music" | "layer";
 type RibbonBtn = { icon: string; label: string; onClick?: () => void; disabled?: boolean; title?: string } | "|";
@@ -90,6 +90,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
   const [dialog, setDialog] = useState<"" | "export" | "formats" | "addText" | "help" | "find">("");
   const [work, setWork] = useState<{ title: string; detail?: string; frac?: number | null } | null>(null);
   const [selLayer, setSelLayer] = useState("");
+  const [pop, setPop] = useState<{ id: string; x: number; y: number } | null>(null); // 아이콘 옆 작은 메뉴
   const [libOverlay, setLibOverlay] = useState(false); // 자료 칸을 "사진 올리기"로 열었는지
   const [overlayTarget, setOverlayTarget] = useState(""); // 사진을 바꿀 애셋
   const [musicTarget, setMusicTarget] = useState(""); // 음악을 바꿀 애셋
@@ -457,6 +458,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
     if (l) Object.assign(l, patch);
   });
   const removeLayer = (id: string) => {
+    setPop(null);
     change((p) => {
       p.layers = (p.layers || []).filter((x) => x.id !== id);
     });
@@ -473,6 +475,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
     e.preventDefault();
     e.stopPropagation();
     const y0 = e.clientY;
+    const r0 = (e.currentTarget as HTMLElement).getBoundingClientRect();
     let moved = false;
     let pushed = false;
     const move = (ev: PointerEvent) => {
@@ -499,7 +502,10 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
     };
     const up = () => {
       window.removeEventListener("pointermove", move);
-      if (!moved) openLayer(id);
+      if (!moved) {
+        openLayer(id);
+        setPop({ id, x: r0.right + 8, y: r0.top - 4 }); // 브루처럼 아이콘 바로 옆에
+      }
       else {
         setSelLayer(id);
         setPanel("layer");
@@ -636,6 +642,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
   /* ── 키보드 ── */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return; // 화면 위 글 고치기 칸 등에서 이미 처리한 키 (Esc 로 고치기만 취소)
       const tg = e.target as HTMLElement;
       if (tg && (tg.tagName === "INPUT" || tg.tagName === "TEXTAREA" || tg.tagName === "SELECT" || tg.isContentEditable)) return;
       const ctrl = e.ctrlKey || e.metaKey;
@@ -838,7 +845,9 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
               onLayerMove={(id, patch, first) => change((p) => {
                 const l = (p.layers || []).find((x) => x.id === id);
                 if (l) Object.assign(l, patch);
-              }, first)} />
+              }, first)}
+              onLayerText={(id, text) => { updateLayer(id, { text }); say("글자를 바꿨어요"); }}
+              onSubText={(clipId, text) => actions.editSub(clipId, text)} />
           </div>
           <input type="range" min={0} max={Math.max(0.1, flat.total)} step={0.01} value={Math.min(time, flat.total)} onChange={(e) => player.current?.seek(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent }} />
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -926,6 +935,12 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
         })()}
       </div>
 
+      {pop && (() => {
+        const l = (project.layers || []).find((x) => x.id === pop.id);
+        if (!l) return null;
+        return <LayerPopup key={l.id} project={project} layer={l} items={flat.items} selRange={selRange()} x={pop.x} y={pop.y}
+          onChange={(patch) => updateLayer(l.id, patch)} onRemove={() => removeLayer(l.id)} onClose={() => setPop(null)} />;
+      })()}
       {work && <Modal title=""><Working title={work.title} detail={work.detail} frac={work.frac} /></Modal>}
       {dialog === "export" && <ExportDialog project={project} selected={selected} sceneOf={sel1?.scene.id} onClose={() => setDialog("")} />}
       {dialog === "formats" && <FormatsDialog project={project} onClose={() => setDialog("")} />}
