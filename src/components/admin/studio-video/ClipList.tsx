@@ -12,6 +12,7 @@ import { Gutter, type LaneEntry, type LayerDrag } from "./Layers";
 
 export type ClipActions = {
   selectClip: (id: string, multi: boolean) => void;
+  selectMany: (ids: string[], on: boolean) => void; // 씬 전체·클립 전체 고르기/풀기
   selectWord: (clipId: string, i: number) => void;
   toggleWord: (clipId: string, i: number) => void;
   splitAt: (clipId: string, i: number) => void;
@@ -45,6 +46,22 @@ type Props = {
   /** 왼쪽 애셋 줄에 놓으면 그 클립부터 사진 올리기 (레이어) */
   onDropLayer?: (clipId: string, raw: string) => void;
 };
+
+/** 여러 클립 한꺼번에 고르기/풀기 — 다 골랐으면 체크, 일부면 반쯤 */
+export function AllBox({ ids, selected, onChange, title, label }: { ids: string[]; selected: string[]; onChange: (ids: string[], on: boolean) => void; title: string; label?: string }) {
+  const n = ids.filter((id) => selected.includes(id)).length;
+  const all = n > 0 && n === ids.length;
+  const ref = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => {
+    if (ref.current) ref.current.indeterminate = n > 0 && !all;
+  }, [n, all]);
+  return (
+    <label title={title} onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", alignSelf: "center", fontSize: 14, color: C.sub, fontWeight: 700 }}>
+      <input ref={ref} type="checkbox" checked={all} onChange={() => onChange(ids, !all)} style={{ width: 18, height: 18, accentColor: C.accent, cursor: "pointer", margin: 0 }} />
+      {label}
+    </label>
+  );
+}
 
 const voiceName = (id?: string) => STUDIO_VOICES.find((v) => v.id === id)?.name || "AI 목소리";
 
@@ -297,6 +314,7 @@ export default function ClipList(p: Props) {
             <div style={{ display: "flex" }}>
             {its.length > 0 && gutter(its[0].index, true)}
             <div style={{ flex: 1, display: "flex", alignItems: "baseline", gap: 12, padding: "14px 4px 4px" }}>
+              {its.length > 0 && <AllBox ids={its.map((x) => x.clip.id)} selected={p.selected} onChange={p.actions.selectMany} title={`씬 ${si + 1} 클립 모두 고르기 / 풀기`} />}
               <span style={{ fontSize: 19, fontWeight: 800, color: C.sub }}>씬 {si + 1}</span>
               {sc.title && <span style={{ fontSize: 15, color: C.dim }}>{sc.title}</span>}
               <span style={{ flex: 1 }} />

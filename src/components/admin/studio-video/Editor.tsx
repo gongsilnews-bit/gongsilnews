@@ -8,7 +8,7 @@ import { DRAG_MEDIA, errText, fmtTime, uid, videoBridge } from "./types";
 import { clipOrder, clipText, flatten, layerItems, layersAt, splitScript, wordTimes } from "./timeline";
 import MediaMenu, { type MediaFit, type MediaOrder } from "./MediaMenu";
 import Player, { type PlayerHandle } from "./Player";
-import ClipList, { type ClipActions } from "./ClipList";
+import ClipList, { AllBox, type ClipActions } from "./ClipList";
 import { LibraryPanel, MusicPanel, RatioPanel, SubtitlePanel, VoicePanel, type LibPickAction } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Modal, Working, input, label } from "./ui";
 import { LAYER_ICON, LayerPanel, LayerPopup, computeLanes, layerTitle } from "./Layers";
@@ -241,6 +241,10 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
         setSelected([id]);
         if (!player.current?.playing()) seekClip(id);
       }
+    },
+    selectMany: (ids, on) => {
+      setSelWord(null);
+      setSelected((s) => (on ? [...s, ...ids.filter((id) => !s.includes(id))] : s.filter((id) => !ids.includes(id))));
     },
     selectWord: (clipId, i) => {
       setSelected([clipId]);
@@ -1034,6 +1038,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
         {/* 가운데: 클립 목록 */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 24px", borderBottom: `1px solid ${C.line}` }}>
+            {flat.items.length > 0 && <AllBox ids={flat.items.map((x) => x.clip.id)} selected={selected} onChange={actions.selectMany} title="클립 모두 고르기 / 풀기" label="전체" />}
             <span style={{ fontSize: 14, color: C.sub }}>클립 {flat.items.length}개 · {fmtTime(flat.total, false)}{selected.length ? ` · ${selected.length}개 고름` : ""}</span>
             <span style={{ flex: 1 }} />
             {toast && <span style={{ fontSize: 14, color: C.text, background: C.card, border: `1px solid ${C.line2}`, padding: "5px 12px", borderRadius: 5 }}>{toast}</span>}
