@@ -168,8 +168,15 @@ function register(base) {
 
   /* ── 녹화 ── 화면/카메라는 편집 화면이 녹화하고, 조각을 앱이 PC 파일로 쓴다 */
   ipcMain.handle("video:record-sources", async () => {
-    const list = await desktopCapturer.getSources({ types: ["screen", "window"], thumbnailSize: { width: 320, height: 180 } });
-    return list.map((s) => ({ id: s.id, name: s.name, thumb: s.thumbnail.toDataURL() }));
+    // 모니터만 (창 목록은 복잡해서 뺀다) — 실제 놓인 순서대로 왼쪽·오른쪽 모니터
+    const list = await desktopCapturer.getSources({ types: ["screen"], thumbnailSize: { width: 320, height: 180 } });
+    const { screen } = require("electron");
+    const displays = screen.getAllDisplays();
+    const primary = screen.getPrimaryDisplay().id;
+    const xOf = (s) => (displays.find((d) => String(d.id) === String(s.display_id)) || { bounds: { x: 0 } }).bounds.x;
+    const sorted = [...list].sort((a, b) => xOf(a) - xOf(b));
+    const names = sorted.length === 1 ? ["모니터"] : sorted.length === 2 ? ["왼쪽 모니터", "오른쪽 모니터"] : sorted.map((_, i) => `모니터 ${i + 1} (왼쪽부터)`);
+    return sorted.map((s, i) => ({ id: s.id, name: names[i] + (String(s.display_id) === String(primary) ? " · 주 모니터" : ""), thumb: s.thumbnail.toDataURL() }));
   });
   ipcMain.handle("video:record-choose", (_e, id) => {
     chosenSource = id;

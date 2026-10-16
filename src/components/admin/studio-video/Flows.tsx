@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import type { Clip, LibItem, Method, Project, Ratio, Recent } from "./types";
 import { RATIO_LABEL, errText, fmtTime, uid, videoBridge } from "./types";
 import { useStudioWriter } from "@/components/admin/sections/useStudioWriter";
-import { Btn, C, FONT, Hint, Icon, Modal, Toggle, Working, input, label } from "./ui";
+import { Btn, C, FONT, Hint, Icon, Modal, Toggle, VolumeControl, Working, input, label } from "./ui";
 
 /* ── 처음 화면 ── */
 export function Home({ onNew, onOpenPick, onOpen }: { onNew: () => void; onOpenPick: () => void; onOpen: (dir: string) => void }) {
@@ -241,16 +241,20 @@ export function VideoFlow({ method = "video", preset, onCancel, onDone }: { meth
 }
 
 /** 마이크 소리 크기 막대 — 말하면 움직인다 (녹화 전·녹화 중 모두). 너무 크면 노랑·빨강 */
-function MicMeter({ deviceId }: { deviceId: string }) {
+function MicMeter({ deviceId, gain = 1, auto = true }: { deviceId: string; gain?: number; auto?: boolean }) {
   const [level, setLevel] = useState(0); // 0~1
   const [err, setErr] = useState("");
+  const gainRef = useRef(gain);
+  useEffect(() => {
+    gainRef.current = gain;
+  }, [gain]);
   useEffect(() => {
     let dead = false;
     let raf = 0;
     let stream: MediaStream | null = null;
     let ctx: AudioContext | null = null;
     navigator.mediaDevices
-      .getUserMedia({ audio: deviceId ? { deviceId: { exact: deviceId } } : true, video: false })
+      .getUserMedia({ audio: deviceId ? { deviceId: { exact: deviceId }, autoGainControl: auto } : { autoGainControl: auto }, video: false })
       .then((st) => {
         if (dead) return st.getTracks().forEach((t) => t.stop());
         stream = st;
@@ -264,7 +268,7 @@ function MicMeter({ deviceId }: { deviceId: string }) {
           an.getFloatTimeDomainData(buf);
           let sum = 0;
           for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
-          const rms = Math.sqrt(sum / buf.length);
+          const rms = Math.sqrt(sum / buf.length) * gainRef.current;
           // dB(-60~0) → 0~1, 올라갈 땐 바로 내려갈 땐 천천히
           const v = Math.max(0, Math.min(1, (20 * Math.log10(rms || 1e-6) + 60) / 60));
           shown = v > shown ? v : shown * 0.92 + v * 0.08;
@@ -281,7 +285,7 @@ function MicMeter({ deviceId }: { deviceId: string }) {
       stream?.getTracks().forEach((t) => t.stop());
       ctx?.close().catch(() => {});
     };
-  }, [deviceId]);
+  }, [deviceId, auto]);
   const color = level > 0.9 ? C.danger : level > 0.75 ? "#eab308" : "#22c55e";
   return (
     <div style={{ marginTop: 8 }}>
@@ -423,7 +427,20 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
   const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
   const [cam, setCam] = useState("");
   const [mic, setMic] = useState("");
-  const [micOn, setMicOn] = useState(true);
+  // 소리 — 마이크·PC 소리 각각 크기·무음 (둘 다 무음이면 소리 없이 녹화). 녹화 중에 바꿔도 바로 들어간다
+  const [micMuted, setMicMuted] = useState(false);
+  const [micVol, setMicVol] = useState(1);
+  const [micAuto, setMicAuto] = useState(true); // 마이크 자동 조절 (작은 소리는 키우고 큰 소리는 줄임)
+  const [pcMuted, setPcMuted] = useState(false);
+  const [pcVol, setPcVol] = useState(1);
+  const micOn = !micMuted;
+  const audioCtx = useRef<AudioContext | null>(null);
+  const micGain = useRef<GainNode | null>(null);
+  const pcGain = useRef<GainNode | null>(null);
+  useEffect(() => {
+    if (micGain.current) micGain.current.gain.value = micMuted ? 0 : micVol;
+    if (pcGain.current) pcGain.current.gain.value = pcMuted ? 0 : pcVol;
+  }, [micMuted, micVol, pcMuted, pcVol]);
   const [phase, setPhase] = useState<"setup" | "count" | "rec" | "saving">("setup");
   const [count, setCount] = useState(3);
   const [sec, setSec] = useState(0);
@@ -452,6 +469,10 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
 
   const stopAll = () => {
     cancelAnimationFrame(raf.current);
+    audioCtx.current?.close().catch(() => {});
+    audioCtx.current = null;
+    micGain.current = null;
+    pcGain.current = null;
     streams.current.forEach((s) => s.getTracks().forEach((t) => t.stop()));
     streams.current = [];
   };
@@ -462,17 +483,52 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
     let camera: MediaStream | null = null;
     if (mode !== "camera") {
       await b.record.choose(source);
-      screen = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+      // PC 소리는 화면과 함께 받는다 (윈도우 루프백)
+      screen = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: !pcMuted });
       streams.current.push(screen);
+    }
+    // 카메라만 녹화해도 PC 소리를 넣으려면 소리만 따로 받는다
+    let pcAudio: MediaStreamTrack[] = screen ? screen.getAudioTracks() : [];
+    if (mode === "camera" && !pcMuted) {
+      try {
+        if (sources[0]) await b.record.choose(sources[0].id);
+        const d = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        d.getVideoTracks().forEach((t) => t.stop());
+        streams.current.push(d);
+        pcAudio = d.getAudioTracks();
+      } catch {
+        pcAudio = [];
+      }
     }
     if (mode !== "screen") {
       camera = await navigator.mediaDevices.getUserMedia({ video: cam ? { deviceId: { exact: cam }, width: 1280, height: 720 } : { width: 1280, height: 720 }, audio: false });
       streams.current.push(camera);
     }
+    // 마이크 + PC 소리를 각각 크기 조절해서 섞는다
     let audio: MediaStream | null = null;
+    let micStream: MediaStream | null = null;
     if (micOn) {
-      audio = await navigator.mediaDevices.getUserMedia({ audio: mic ? { deviceId: { exact: mic }, echoCancellation: true, noiseSuppression: true } : { echoCancellation: true, noiseSuppression: true }, video: false });
-      streams.current.push(audio);
+      const base = { echoCancellation: true, noiseSuppression: true, autoGainControl: micAuto };
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: mic ? { ...base, deviceId: { exact: mic } } : base, video: false });
+      streams.current.push(micStream);
+    }
+    if (micStream || pcAudio.length) {
+      const ctx = new AudioContext();
+      audioCtx.current = ctx;
+      const dest = ctx.createMediaStreamDestination();
+      if (micStream) {
+        const g = ctx.createGain();
+        g.gain.value = micMuted ? 0 : micVol;
+        ctx.createMediaStreamSource(micStream).connect(g).connect(dest);
+        micGain.current = g;
+      }
+      if (pcAudio.length) {
+        const g = ctx.createGain();
+        g.gain.value = pcMuted ? 0 : pcVol;
+        ctx.createMediaStreamSource(new MediaStream(pcAudio)).connect(g).connect(dest);
+        pcGain.current = g;
+      }
+      audio = dest.stream;
     }
     let video: MediaStream;
     if (mode === "both" && screen && camera) {
@@ -588,8 +644,8 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
           </div>
           {mode !== "camera" && (
             <div>
-              <div style={{ ...label, marginBottom: 8 }}>녹화할 화면</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, maxHeight: 220, overflowY: "auto" }}>
+              <div style={{ ...label, marginBottom: 8 }}>녹화할 모니터</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                 {sources.map((s) => (
                   <button key={s.id} type="button" disabled={phase !== "setup"} onClick={() => setSource(s.id)} title={s.name} style={{ padding: 0, border: `2px solid ${source === s.id ? C.accent : "transparent"}`, borderRadius: 4, background: "#000", cursor: "pointer", overflow: "hidden" }}>
                     <img src={s.thumb} alt="" style={{ width: "100%", display: "block" }} />
@@ -609,14 +665,22 @@ export function RecordFlow({ onCancel, onRecorded }: { onCancel: () => void; onR
             </div>
           )}
           <div>
-            <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}><span style={{ ...label, flex: 1 }}>마이크</span><Toggle on={micOn} onChange={setMicOn} disabled={phase !== "setup"} /></div>
-            {micOn && (
-              <select value={mic} onChange={(e) => setMic(e.target.value)} style={input} disabled={phase !== "setup"}>
-                <option value="">기본 마이크</option>
-                {mics.map((m) => <option key={m.deviceId} value={m.deviceId}>{m.label || "마이크"}</option>)}
-              </select>
-            )}
-            {micOn && <MicMeter deviceId={mic} />}
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ ...label, flex: 1 }}>마이크</span>
+              <span style={{ fontSize: 13, color: C.sub, marginRight: 6 }}>자동 조절</span>
+              <Toggle on={micAuto} onChange={setMicAuto} disabled={phase !== "setup" || micMuted} />
+            </div>
+            <select value={mic} onChange={(e) => setMic(e.target.value)} style={{ ...input, marginBottom: 8 }} disabled={phase !== "setup" || micMuted}>
+              <option value="">기본 마이크</option>
+              {mics.map((m) => <option key={m.deviceId} value={m.deviceId}>{m.label || "마이크"}</option>)}
+            </select>
+            <VolumeControl muted={micMuted} value={micVol} onMute={setMicMuted} onVolume={(v) => { setMicVol(v); if (v > 0) setMicMuted(false); }} />
+            {micOn && <MicMeter deviceId={mic} gain={micVol} auto={micAuto} />}
+          </div>
+          <div>
+            <div style={{ ...label, marginBottom: 8 }}>PC 소리 <span style={{ color: C.dim, fontWeight: 600 }}>· 컴퓨터에서 나는 소리 (영상·음악 등)</span></div>
+            <VolumeControl muted={pcMuted} value={pcVol} onMute={setPcMuted} onVolume={(v) => { setPcVol(v); if (v > 0) setPcMuted(false); }} />
+            {phase !== "setup" && pcMuted !== false && <div style={{ fontSize: 12, color: C.dim, marginTop: 4 }}>녹화를 시작할 때 무음이었으면 녹화 중에 켤 수 없어요.</div>}
           </div>
           {err && <div style={{ color: C.danger, fontSize: 14.5, lineHeight: 1.5 }}>{err}</div>}
           <Hint>[녹화 시작]을 누르면 3초 뒤 녹화돼요. 끝나면 [녹화 끝내기]를 누르세요. 바로 편집 화면으로 가요.</Hint>
