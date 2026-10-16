@@ -209,7 +209,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
               })}
             </div>
           </div>
-          <div style={{ padding: "10px 16px 0" }}><Hint>미리보기에서 사진을 끌면 옮겨지고, 오른쪽 아래 네모를 끌면 크기가 바뀌어요.</Hint></div>
+          <div style={{ padding: "10px 16px 0" }}><Hint>미리보기에서 사진을 끌면 옮겨지고, 네 모서리 네모를 끌면 크기가 바뀌어요. 미리보기 옆 [크게]를 누르면 크게 보며 고칠 수 있어요.</Hint></div>
           <Slider title="크기" value={layer.w ?? 0.35} min={0.1} max={1} step={0.01} show={`${Math.round((layer.w ?? 0.35) * 100)}%`} onChange={(v) => onChange({ w: v })} />
           <Slider title="진하기" value={layer.opacity ?? 1} min={0.2} max={1} step={0.05} show={`${Math.round((layer.opacity ?? 1) * 100)}%`} onChange={(v) => onChange({ opacity: v })} />
         </>
@@ -227,7 +227,7 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
           </div>
           <Choice title="자리" value={typeof layer.x === "number" ? "free" : layer.pos || "top"} options={[["top", "상단"], ["middle", "가운데"], ["bottom", "하단"], ...(typeof layer.x === "number" ? [["free", "옮긴 자리"] as ["free", string]] : [])]}
             onChange={(v) => v !== "free" && onChange({ pos: v as Layer["pos"], x: undefined, y: undefined })} />
-          <div style={{ padding: "10px 16px 0" }}><Hint>미리보기에서 글자를 끌면 옮겨지고, 오른쪽 아래 네모를 끌면 크기가 바뀌어요.</Hint></div>
+          <div style={{ padding: "10px 16px 0" }}><Hint>미리보기에서 글자를 끌면 옮겨지고, 네 모서리 네모를 끌면 크기가 바뀌어요. 미리보기 옆 [크게]를 누르면 크게 보며 고칠 수 있어요.</Hint></div>
           <Slider title="글자 크기" value={layer.size ?? 100} min={50} max={200} step={5} show={`${layer.size ?? 100}%`} onChange={(v) => onChange({ size: v })} />
           <div style={row}>
             <div style={{ ...label, marginBottom: 8 }}>글꼴</div>
