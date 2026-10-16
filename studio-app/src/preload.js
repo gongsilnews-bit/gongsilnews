@@ -148,6 +148,7 @@ if (allowed) {
       },
       musicGet: (dir, rel) => ipcRenderer.invoke("video:music-get", dir, rel),
       musicUse: (dir, libId) => ipcRenderer.invoke("video:music-use", dir, libId),
+      fonts: { ensure: (family) => ipcRenderer.invoke("video:font-ensure", family) },
       render: (p, opts) => ipcRenderer.invoke("video:render", p, opts),
       renderCancel: (id) => ipcRenderer.invoke("video:render-cancel", id),
       exportAudio: (p, kind) => ipcRenderer.invoke("video:export-audio", p, kind),

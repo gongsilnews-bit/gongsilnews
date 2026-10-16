@@ -5,6 +5,7 @@ const path = require("path");
 const crypto = require("crypto");
 const log = require("electron-log/main");
 const library = require("./library");
+const fonts = require("./fonts");
 const project = require("./project");
 const render = require("./render");
 const server = require("./server");
@@ -46,6 +47,7 @@ function register(base) {
     return library.addFolder(r.filePaths[0]);
   });
   ipcMain.handle("video:lib-remove-folder", (_e, dir) => library.removeFolder(dir));
+  ipcMain.handle("video:font-ensure", (_e, family) => fonts.ensure(family));
   ipcMain.handle("video:lib-music-folder", () => {
     fs.mkdirSync(library.musicDir(), { recursive: true });
     return library.musicDir();

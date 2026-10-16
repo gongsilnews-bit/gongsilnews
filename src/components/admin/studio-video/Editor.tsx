@@ -501,7 +501,7 @@ export default function Editor({ initial, onHome, onNew, onOpen }: { initial: Pr
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up, { once: true });
   };
-  const addTextLayer = () => addLayer({ type: "text", text: "글자를 써 주세요", pos: "top", size: 100, color: "#FFFFFF", box: false }, false);
+  const addTextLayer = () => addLayer({ type: "text", text: "글자를 써 주세요", pos: "top", size: 100, color: "#FFFFFF", font: "Pretendard", box: false }, false);
   const openMusic = (target = "") => {
     setMusicTarget(target);
     setPanel("music");

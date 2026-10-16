@@ -7,6 +7,7 @@ import type { Layer, Project } from "./types";
 import { type FlatItem, clipOrder, clipText, layerItems } from "./timeline";
 import { Side } from "./Panels";
 import { Btn, C, FONT, Hint, Icon, Toggle, input, label } from "./ui";
+import { ColorPick, FontPick } from "./Pickers";
 
 export const LAYER_ICON: Record<Layer["type"], string> = { music: "music", image: "image", text: "text" };
 export const LAYER_NAME: Record<Layer["type"], string> = { music: "배경 음악", image: "사진 올리기", text: "화면 글자" };
@@ -105,7 +106,6 @@ function Choice<T extends string | number>({ title, value, options, onChange }: 
 }
 
 const FADES: [number, string][] = [[0, "없음"], [1, "1초"], [2, "2초"], [3, "3초"]];
-const COLORS: [string, string][] = [["#FFFFFF", "흰색"], ["#111111", "검정"], ["#FFD400", "노랑"]];
 const GRID: [number, number, string][] = [
   [0.2, 0.18, "왼쪽 위"], [0.5, 0.18, "위"], [0.8, 0.18, "오른쪽 위"],
   [0.2, 0.5, "왼쪽"], [0.5, 0.5, "가운데"], [0.8, 0.5, "오른쪽"],
@@ -229,11 +229,27 @@ export function LayerPanel({ project, layer, items, selRange, onChange, onRemove
             onChange={(v) => v !== "free" && onChange({ pos: v as Layer["pos"], x: undefined, y: undefined })} />
           <div style={{ padding: "10px 16px 0" }}><Hint>미리보기에서 글자를 끌면 옮겨지고, 오른쪽 아래 네모를 끌면 크기가 바뀌어요.</Hint></div>
           <Slider title="글자 크기" value={layer.size ?? 100} min={50} max={200} step={5} show={`${layer.size ?? 100}%`} onChange={(v) => onChange({ size: v })} />
-          <Choice title="글자 색" value={(layer.color || "#FFFFFF").toUpperCase()} options={COLORS} onChange={(v) => onChange({ color: v })} />
+          <div style={row}>
+            <div style={{ ...label, marginBottom: 8 }}>글꼴</div>
+            <FontPick value={layer.font} onChange={(f) => onChange({ font: f })} />
+          </div>
+          <div style={row}>
+            <div style={{ ...label, marginBottom: 8 }}>글자 색</div>
+            <ColorPick value={layer.color} onChange={(c) => onChange({ color: c })} />
+          </div>
           <div style={{ ...row, display: "flex", alignItems: "center" }}>
-            <span style={{ ...label, flex: 1 }}>글자 뒤 검은 상자</span>
+            <span style={{ ...label, flex: 1 }}>글자 뒤 상자</span>
             <Toggle on={Boolean(layer.box)} onChange={(v) => onChange({ box: v })} />
           </div>
+          {layer.box && (
+            <>
+              <div style={row}>
+                <div style={{ ...label, marginBottom: 8 }}>상자 색</div>
+                <ColorPick value={layer.boxColor || "#000000"} onChange={(c) => onChange({ boxColor: c })} />
+              </div>
+              <Slider title="상자 진하기" value={layer.boxOpacity ?? 0.62} min={0.1} max={1} step={0.05} show={`${Math.round((layer.boxOpacity ?? 0.62) * 100)}%`} onChange={(v) => onChange({ boxOpacity: v })} />
+            </>
+          )}
         </>
       )}
     </Side>

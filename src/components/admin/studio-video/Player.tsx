@@ -3,7 +3,9 @@
 // 미리보기 — 굽기(render.js)와 같은 규칙으로 화면·성우·원본 소리·음악·자막을 맞춰 보여 준다 (PC 파일을 바로 재생)
 import React, { useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from "react";
 import type { Clip, Layer, Project } from "./types";
-import { RATIO_SIZE } from "./types";
+import { RATIO_SIZE, rgba } from "./types";
+import { fontCss, fontWeight } from "@/lib/studio-video/fonts";
+import { useFonts } from "./Pickers";
 import { clipOrder, flatten, layerItems, layersAt, musicLayers, sourceTimeAt, speedOf, subtitleLines } from "./timeline";
 import { C } from "./ui";
 
@@ -268,6 +270,8 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const posStyle: React.CSSProperties =
     st.position === "top" ? { top: H * 0.08 * k } : st.position === "middle" ? { top: "50%", transform: "translateY(-50%)" } : st.position === "middle-low" ? { bottom: H * 0.24 * k } : { bottom: H * 0.07 * k };
 
+  // 쓰인 글꼴을 받아 둔다 (처음 한 번)
+  useFonts([project.settings.subtitle.font, ...(project.layers || []).filter((l) => l.type === "text").map((l) => l.font)]);
   // 지금 클립에 걸린 사진·화면 글자 애셋 (굽기와 같은 자리·크기)
   const over = clip ? layersAt(project, clip.id, order) : [];
   const overImages = over.filter((l) => l.type === "image" && l.asset && project.assets[l.asset]?.kind === "image");
@@ -356,9 +360,9 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         return (
           <div key={l.id} style={{ position: "absolute", textAlign: "center", ...ps, pointerEvents: "none" }}>
             <span data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} title="끌어서 옮기기" style={{ position: "relative", display: "inline-block", ...dragStyle(l),
-              whiteSpace: "pre-wrap", fontFamily: "'Malgun Gothic', sans-serif", fontWeight: 700, fontSize: px, lineHeight: 1.25, color: l.color || "#fff",
+              whiteSpace: "pre-wrap", fontFamily: fontCss(l.font), fontWeight: fontWeight(l.font), fontSize: px, lineHeight: 1.25, color: l.color || "#fff",
               WebkitTextStroke: l.box ? undefined : `${Math.max(1, 4 * k * 2)}px ${String(l.color).toUpperCase() === "#111111" ? "#fff" : "#000"}`, paintOrder: "stroke fill",
-              background: l.box ? "rgba(0,0,0,0.62)" : undefined, padding: l.box ? `${px * 0.12}px ${px * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
+              background: l.box ? rgba(l.boxColor || "#000000", l.boxOpacity ?? 0.62) : undefined, padding: l.box ? `${px * 0.12}px ${px * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
             }}>{String(l.text).trim()}{frame(l)}</span>
           </div>
         );
@@ -366,9 +370,9 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       {line && (
         <div style={{ position: "absolute", left: W * 0.06 * k, right: W * 0.06 * k, textAlign: "center", ...posStyle, pointerEvents: "none" }}>
           <span style={{
-            display: "inline", whiteSpace: "pre-wrap", fontFamily: `'${st.font || "Malgun Gothic"}', 'Malgun Gothic', sans-serif`, fontWeight: st.bold === false ? 400 : 700,
+            display: "inline", whiteSpace: "pre-wrap", fontFamily: fontCss(st.font), fontWeight: fontWeight(st.font, st.bold !== false),
             fontSize: fontPx, lineHeight: 1.25, color: st.color || "#fff", WebkitTextStroke: st.bg ? undefined : `${Math.max(1, (st.outlineWidth ?? 3) * k * 2)}px ${st.outline || "#000"}`,
-            paintOrder: "stroke fill", background: st.bg ? "rgba(0,0,0,0.62)" : undefined, padding: st.bg ? `${fontPx * 0.12}px ${fontPx * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
+            paintOrder: "stroke fill", background: st.bg ? rgba(st.bgColor || "#000000", st.bgOpacity ?? 0.62) : undefined, padding: st.bg ? `${fontPx * 0.12}px ${fontPx * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
           }}>{line.text}</span>
         </div>
       )}

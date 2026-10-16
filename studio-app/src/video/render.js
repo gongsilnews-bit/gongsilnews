@@ -10,6 +10,7 @@ const log = require("electron-log/main");
 const ff = require("./ff");
 const tl = require("./timeline");
 const { RATIOS } = require("./project");
+const fonts = require("./fonts");
 
 const FPS = 30;
 
@@ -52,8 +53,10 @@ function textLayerStyle(name, W, H, l) {
   const pos = l.pos || "top";
   const align = pos === "top" ? 8 : pos === "middle" ? 5 : 2;
   const marginV = pos === "top" ? Math.round(H * 0.06) : pos === "middle" ? 0 : Math.round(H * 0.07);
-  const back = l.box ? assColor("#000000", 0x60) : assColor("#000000", 0xff);
-  return `Style: ${name},Malgun Gothic,${size},${assColor(l.color || "#FFFFFF")},${assColor(l.color || "#FFFFFF")},${assColor(String(l.color).toUpperCase() === "#111111" ? "#FFFFFF" : "#000000")},${back},-1,0,0,0,100,100,0,0,${l.box ? 3 : 1},${l.box ? Math.round(size * 0.25) : 4},0,${align},${Math.round(W * 0.05)},${Math.round(W * 0.05)},${marginV},1`;
+  // 상자(BorderStyle 3)는 libass 가 테두리 색(OutlineColour)으로 칠한다
+  const boxCol = assColor(l.boxColor || "#000000", Math.round((1 - Math.max(0, Math.min(1, l.boxOpacity ?? 0.62))) * 255));
+  const back = assColor("#000000", 0xff);
+  return `Style: ${name},${l.font || fonts.DEFAULT_FAMILY},${size},${assColor(l.color || "#FFFFFF")},${assColor(l.color || "#FFFFFF")},${l.box ? boxCol : assColor(String(l.color).toUpperCase() === "#111111" ? "#FFFFFF" : "#000000")},${back},${fonts.assBold(l.font, true) ? -1 : 0},0,0,0,100,100,0,0,${l.box ? 3 : 1},${l.box ? Math.round(size * 0.25) : 4},0,${align},${Math.round(W * 0.05)},${Math.round(W * 0.05)},${marginV},1`;
 }
 
 /** 자막만 따로 쓴 글 — 글자 수만큼 시간을 나눠 차례로 (timeline.ts evenLines 와 같음) */
@@ -78,11 +81,13 @@ function subtitleStyle(W, H, st) {
   const align = pos === "top" ? 8 : pos === "middle" ? 5 : 2;
   const marginV = pos === "top" ? Math.round(H * 0.08) : pos === "middle-low" ? Math.round(H * 0.24) : pos === "middle" ? 0 : Math.round(H * 0.07);
   const borderStyle = st.bg ? 3 : 1; // 3 = 글자 뒤 상자
-  const back = st.bg ? assColor("#000000", 0x60) : assColor("#000000", 0xff);
+  // 상자(BorderStyle 3)는 libass 가 테두리 색(OutlineColour)으로 칠한다
+  const boxCol = assColor(st.bgColor || "#000000", Math.round((1 - Math.max(0, Math.min(1, st.bgOpacity ?? 0.62))) * 255));
+  const back = assColor("#000000", 0xff);
   return {
     size,
     style:
-      `Style: S,${st.font || "Malgun Gothic"},${size},${assColor(st.color)},${assColor(st.color)},${assColor(st.outline || "#000000")},${back},${st.bold === false ? 0 : -1},0,0,0,100,100,0,0,${borderStyle},${st.bg ? Math.round(size * 0.25) : Number(st.outlineWidth ?? 3)},0,${align},${Math.round(W * 0.06)},${Math.round(W * 0.06)},${marginV},1`,
+      `Style: S,${st.font || "Malgun Gothic"},${size},${assColor(st.color)},${assColor(st.color)},${st.bg ? boxCol : assColor(st.outline || "#000000")},${back},${fonts.assBold(st.font, st.bold) ? -1 : 0},0,0,0,100,100,0,0,${borderStyle},${st.bg ? Math.round(size * 0.25) : Number(st.outlineWidth ?? 3)},0,${align},${Math.round(W * 0.06)},${Math.round(W * 0.06)},${marginV},1`,
   };
 }
 
@@ -302,6 +307,8 @@ async function render(p, opts = {}, onProgress = () => {}, isCancelled = () => f
     const src = path.join(process.env.WINDIR || "C:\\Windows", "Fonts", f);
     if (fs.existsSync(src)) fs.copyFileSync(src, path.join(tmp, "fonts", f));
   }
+  // 자막·화면 글자에 쓴 글꼴 (처음이면 받는다)
+  await fonts.copyTo([p.settings && p.settings.subtitle && p.settings.subtitle.font, ...(p.layers || []).filter((l) => l.type === "text").map((l) => l.font)], path.join(tmp, "fonts"));
   const enc = await ff.encoder();
   const t0 = Date.now();
   try {

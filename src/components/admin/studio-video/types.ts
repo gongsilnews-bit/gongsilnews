@@ -74,10 +74,13 @@ export type Layer = {
   pos?: "top" | "middle" | "bottom";
   size?: number; // 100 = 기본
   color?: string;
-  box?: boolean;
+  font?: string; // 글꼴 이름 (src/lib/studio-video/fonts.ts)
+  box?: boolean; // 글자 뒤 상자
+  boxColor?: string;
+  boxOpacity?: number; // 0~1
 };
 
-export type SubtitleSettings = { on: boolean; position: "top" | "middle" | "middle-low" | "bottom"; length: "long" | "short"; size: number; font: string; color: string; outline: string; outlineWidth: number; bg: boolean; bold: boolean };
+export type SubtitleSettings = { on: boolean; position: "top" | "middle" | "middle-low" | "bottom"; length: "long" | "short"; size: number; font: string; color: string; outline: string; outlineWidth: number; bg: boolean; bgColor?: string; bgOpacity?: number; bold: boolean };
 
 export type Settings = {
   fill: Fill;
@@ -148,6 +151,7 @@ export type VideoBridge = {
   };
   musicGet: (dir: string, rel: string) => Promise<{ file: string; url: string }>;
   musicUse: (dir: string, libId: string) => Promise<{ file: string; url: string; name: string }>;
+  fonts: { ensure: (family: string) => Promise<{ family: string; url: string }> };
   render: (p: Project, o?: { scope?: string; sceneId?: string; clipIds?: string[]; height?: number }) => Promise<{ file: string; seconds: number; took: number; encoder: string }>;
   renderCancel: (id: string) => Promise<void>;
   exportAudio: (p: Project, kind: "mp3" | "wav") => Promise<string>;
@@ -181,4 +185,11 @@ export const fmtTime = (t: number, cs = true) => {
   const m = Math.floor(t / 60);
   const s = t - m * 60;
   return cs ? `${String(m).padStart(2, "0")}:${s.toFixed(2).padStart(5, "0")}` : `${String(m).padStart(2, "0")}:${String(Math.floor(s)).padStart(2, "0")}`;
+};
+
+/** "#RRGGBB" + 진하기 → CSS rgba (글자 뒤 상자) */
+export const rgba = (hex: string | undefined, a: number) => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || "#000000");
+  const n = parseInt(m ? m[1] : "000000", 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${Math.max(0, Math.min(1, a))})`;
 };

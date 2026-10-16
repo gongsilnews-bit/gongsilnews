@@ -9,6 +9,8 @@ import { MUSIC_LIBRARY, MUSIC_MOODS } from "@/lib/reels/music-catalog";
 import { listMyStudioVacancies } from "@/app/actions/studio";
 import { useStudioImager } from "@/components/admin/sections/useStudioWriter";
 import { Btn, C, FONT, Hint, Icon, Toggle, input, label } from "./ui";
+import { ColorPick, FontPick } from "./Pickers";
+import { DEFAULT_FONT } from "@/lib/studio-video/fonts";
 
 export function Side({ title, onClose, children, footer }: { title: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode }) {
   return (
@@ -338,13 +340,9 @@ export function VoicePanel({ project, targetCount, onApply, onClose }: { project
 }
 
 /* ── 자막 서식 ── */
-const COLORS = ["#FFFFFF", "#FFE14D", "#000000", "#FF5A5A", "#7CC8FF"];
 export function SubtitlePanel({ settings, onChange, onClose }: { settings: Settings; onChange: (patch: Partial<Settings["subtitle"]>) => void; onClose: () => void }) {
   const s = settings.subtitle;
   const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${C.line}` };
-  const sw = (color: string, on: boolean, pick: () => void) => (
-    <button key={color} type="button" onClick={pick} title={color} style={{ width: 30, height: 30, borderRadius: 4, border: `2px solid ${on ? C.accent : C.line2}`, background: color, cursor: "pointer" }} />
-  );
   return (
     <Side title="자막 서식" onClose={onClose}>
       <div style={row}><span style={{ ...label, flex: 1 }}>자막 보이기</span><Toggle on={s.on} onChange={(v) => onChange({ on: v })} /></div>
@@ -361,14 +359,24 @@ export function SubtitlePanel({ settings, onChange, onClose }: { settings: Setti
         <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>글자 크기</span><span>{s.size}%</span></div>
         <input type="range" min={60} max={170} step={5} value={s.size} onChange={(e) => onChange({ size: Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
       </div>
-      <div style={{ ...row, flexWrap: "wrap" }}><span style={{ ...label, width: "100%" }}>글자 색</span>{COLORS.map((c) => sw(c, s.color.toUpperCase() === c, () => onChange({ color: c })))}</div>
-      <div style={{ ...row, flexWrap: "wrap" }}><span style={{ ...label, width: "100%" }}>테두리 색</span>{COLORS.map((c) => sw(c, (s.outline || "").toUpperCase() === c, () => onChange({ outline: c })))}</div>
+      <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}><span style={label}>글꼴</span><FontPick value={s.font} onChange={(f) => onChange({ font: f })} /></div>
+      <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}><span style={label}>글자 색</span><ColorPick value={s.color} onChange={(c) => onChange({ color: c })} /></div>
+      <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}><span style={label}>테두리 색</span><ColorPick value={s.outline || "#000000"} onChange={(c) => onChange({ outline: c })} /></div>
       <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}>
         <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>테두리 두께</span><span>{s.outlineWidth}</span></div>
         <input type="range" min={0} max={8} step={1} value={s.outlineWidth} onChange={(e) => onChange({ outlineWidth: Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
       </div>
-      <div style={row}><span style={{ ...label, flex: 1 }}>글자 뒤 검은 상자</span><Toggle on={s.bg} onChange={(v) => onChange({ bg: v })} /></div>
-      <div style={row}><span style={{ ...label, flex: 1 }}>굵게</span><Toggle on={s.bold} onChange={(v) => onChange({ bold: v })} /></div>
+      <div style={row}><span style={{ ...label, flex: 1 }}>글자 뒤 상자</span><Toggle on={s.bg} onChange={(v) => onChange({ bg: v })} /></div>
+      {s.bg && (
+        <>
+          <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}><span style={label}>상자 색</span><ColorPick value={s.bgColor || "#000000"} onChange={(c) => onChange({ bgColor: c })} /></div>
+          <div style={{ ...row, flexDirection: "column", alignItems: "stretch" }}>
+            <div style={{ ...label, display: "flex" }}><span style={{ flex: 1 }}>상자 진하기</span><span>{Math.round((s.bgOpacity ?? 0.62) * 100)}%</span></div>
+            <input type="range" min={0.1} max={1} step={0.05} value={s.bgOpacity ?? 0.62} onChange={(e) => onChange({ bgOpacity: Number(e.target.value) })} style={{ width: "100%", accentColor: C.accent }} />
+          </div>
+        </>
+      )}
+      {(!s.font || s.font === DEFAULT_FONT) && <div style={row}><span style={{ ...label, flex: 1 }}>굵게</span><Toggle on={s.bold} onChange={(v) => onChange({ bold: v })} /></div>}
     </Side>
   );
 }
