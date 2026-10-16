@@ -122,21 +122,22 @@ export function Btn({ children, onClick, primary, disabled, small, title, style,
 export function VolumeControl({ muted, value, onMute, onVolume }: { muted: boolean; value: number; onMute: (v: boolean) => void; onVolume: (v: number, first: boolean) => void }) {
   const first = React.useRef(true);
   const pct = Math.round(value * 100);
+  const silent = muted || pct === 0; // 무음이거나 0% 면 빨간 무음 표시
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, opacity: muted ? 0.4 : 1 }}>
-        <Icon name={muted ? "mute" : "volume"} size={17} color={muted ? C.danger : C.text} />
+        <Icon name={silent ? "mute" : "volume"} size={17} color={silent ? C.danger : C.text} />
         <input type="range" min={0} max={2} step={0.05} value={value} disabled={muted}
           onPointerDown={() => (first.current = true)}
           onChange={(e) => { onVolume(Number(e.target.value), first.current); first.current = false; }}
           style={{ flex: 1, accentColor: C.accent }} />
-        <span style={{ width: 46, textAlign: "right", fontSize: 13.5, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{muted ? "무음" : `${pct}%`}</span>
+        <span style={{ width: 46, textAlign: "right", fontSize: 13.5, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: silent ? C.danger : C.text }}>{muted ? "0%" : `${pct}%`}</span>
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         {/* 무음 — 50% 옆, 다시 누르면 소리 켜기 */}
-        <button type="button" onClick={() => onMute(!muted)} title={muted ? "다시 누르면 소리 켜기" : "이 클립 소리 끄기"}
-          style={{ flex: 1, height: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 3, borderRadius: 5, border: `1px solid ${muted ? C.danger : C.line2}`, background: muted ? "rgba(239,68,68,0.15)" : "transparent", color: muted ? C.danger : C.text, fontSize: 12.5, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
-          <Icon name="mute" size={13} />무음
+        <button type="button" onClick={() => onMute(!muted)} title={muted ? "무음 (다시 누르면 소리 켜기)" : "무음 (이 클립 소리 끄기)"}
+          style={{ flex: 1, height: 28, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 5, border: `1px solid ${silent ? C.danger : C.line2}`, background: silent ? "rgba(239,68,68,0.15)" : "transparent", color: silent ? C.danger : C.text, fontFamily: FONT, cursor: "pointer" }}>
+          <Icon name="mute" size={16} />
         </button>
         {[0.5, 1, 1.5, 2].map((v) => (
           <button key={v} type="button" onClick={() => { if (muted) onMute(false); onVolume(v, true); }}
