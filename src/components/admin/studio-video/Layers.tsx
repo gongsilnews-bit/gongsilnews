@@ -137,13 +137,7 @@ export function SourcePanel({ selCount, allCount, muted, value, speed, onApply, 
     setSp(speed);
   }, [muted, value, speed]);
   return (
-    <Side title="원본 소리 설정" onClose={onClose}
-      footer={
-        <>
-          <Btn primary small onClick={() => onApply({ muted: m, volume: v, speed: sp }, "sel")} disabled={!selCount}><Icon name="check" size={16} />선택한 클립에만{selCount > 1 ? ` (${selCount}개)` : ""}</Btn>
-          <Btn small onClick={() => onApply({ muted: m, volume: v, speed: sp }, "all")}><Icon name="check" size={16} />모든 클립 ({allCount}개)</Btn>
-        </>
-      }>
+    <Side title="원본 소리 설정" onClose={onClose}>
       <div style={row}>
         <div style={{ ...label, marginBottom: 8 }}>볼륨</div>
         <VolumeControl muted={m} value={v} onMute={setM} onVolume={(x) => { setV(x); if (x > 0) setM(false); }} />
@@ -157,6 +151,13 @@ export function SourcePanel({ selCount, allCount, muted, value, speed, onApply, 
           {[0.5, 0.75, 1, 1.25, 1.5, 2].map((x) => (
             <button key={x} type="button" onClick={() => setSp(x)} style={{ ...chip(Math.abs(sp - x) < 0.001), flex: 1, padding: 0, height: 32, fontSize: 12.5 }}>{x}배</button>
           ))}
+        </div>
+      </div>
+      <div style={row}>
+        <div style={{ ...label, marginBottom: 8 }}>적용 범위</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <Btn primary small onClick={() => onApply({ muted: m, volume: v, speed: sp }, "sel")} disabled={!selCount} style={{ flex: 1, justifyContent: "center" }}><Icon name="check" size={16} />선택한 클립에만{selCount > 1 ? ` (${selCount}개)` : ""}</Btn>
+          <Btn small onClick={() => onApply({ muted: m, volume: v, speed: sp }, "all")} style={{ flex: 1, justifyContent: "center" }}><Icon name="check" size={16} />모든 클립 ({allCount}개)</Btn>
         </div>
       </div>
       <div style={row}>
