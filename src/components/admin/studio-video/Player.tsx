@@ -277,8 +277,12 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
   const overImages = over.filter((l) => l.type === "image" && l.asset && project.assets[l.asset]?.kind === "image");
   const overTexts = over.filter((l) => l.type === "text" && String(l.text || "").trim());
 
-  /** 끌기 — mode move: 자리 / size: 크기. 거의 안 움직이면 고르기만 */
-  const startDrag = (l: Layer, mode: "move" | "size", e: React.PointerEvent) => {
+  /**
+   * 끌기 — move: 자리 / 모서리(nw·ne·sw·se): 크기. 크기는 잡은 모서리의 반대쪽 모서리를 고정하고
+   * 가로·세로를 같은 비율로 바꾼다 (인디자인처럼). 거의 안 움직이면 고르기만
+   */
+  type Corner = "nw" | "ne" | "sw" | "se";
+  const startDrag = (l: Layer, mode: "move" | Corner, e: React.PointerEvent) => {
     if (!onLayerMove) return;
     e.preventDefault();
     e.stopPropagation();
@@ -293,16 +297,31 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     const cy = (el.top + el.height / 2 - box.top) / box.height;
     const w0 = l.w ?? 0.35;
     const s0 = l.size ?? 100;
+    // 고정 모서리와 커지는 방향
+    const right = mode === "ne" || mode === "se";
+    const down = mode === "sw" || mode === "se";
+    const fx = right ? el.left : el.right;
+    const fy = down ? el.top : el.bottom;
     let first = true;
     const move = (ev: PointerEvent) => {
-      const dx = (ev.clientX - sx) / box.width;
-      const dy = (ev.clientY - sy) / box.height;
       if (first && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 3) return;
       const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
       let patch: Partial<Layer>;
-      if (mode === "move") patch = { x: +clamp(cx + dx, 0, 1).toFixed(4), y: +clamp(cy + dy, 0, 1).toFixed(4) };
-      else if (l.type === "image") patch = { w: +clamp(w0 + dx * 2, 0.05, 1).toFixed(3) };
-      else patch = { size: Math.round(clamp(s0 * (1 + (dx * box.width) / Math.max(40, el.width / 2)), 40, 260)) };
+      if (mode === "move") {
+        patch = { x: +clamp(cx + (ev.clientX - sx) / box.width, 0, 1).toFixed(4), y: +clamp(cy + (ev.clientY - sy) / box.height, 0, 1).toFixed(4) };
+      } else {
+        // 고정 모서리에서 손가락까지 거리로 비율을 정한다 (가로·세로 중 더 많이 끈 쪽)
+        const kx = (right ? ev.clientX - fx : fx - ev.clientX) / Math.max(1, el.width);
+        const ky = (down ? ev.clientY - fy : fy - ev.clientY) / Math.max(1, el.height);
+        let k = Math.max(kx, ky);
+        k = l.type === "image" ? clamp(k, 0.05 / w0, 1 / w0) : clamp(k, 30 / s0, 400 / s0);
+        const nw = el.width * k;
+        const nh = el.height * k;
+        const ncx = (fx + (right ? nw / 2 : -nw / 2) - box.left) / box.width;
+        const ncy = (fy + (down ? nh / 2 : -nh / 2) - box.top) / box.height;
+        const pos = { x: +ncx.toFixed(4), y: +ncy.toFixed(4) };
+        patch = l.type === "image" ? { ...pos, w: +(w0 * k).toFixed(3) } : { ...pos, size: Math.round(s0 * k) };
+      }
       onLayerMove(l.id, patch, first);
       first = false;
     };
@@ -310,13 +329,15 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up, { once: true });
   };
-  /** 고른 애셋 테두리 + 오른쪽 아래 크기 손잡이 */
+  /** 고른 애셋 테두리 + 네 모서리 크기 손잡이 */
   const frame = (l: Layer) =>
     l.id === selLayer && onLayerMove ? (
       <>
         <span style={{ position: "absolute", inset: -3, border: "1.5px dashed #fff", outline: "1px dashed #000", pointerEvents: "none" }} />
-        <span onPointerDown={(e) => startDrag(l, "size", e)} title="끌어서 크기 바꾸기"
-          style={{ position: "absolute", right: -7, bottom: -7, width: 12, height: 12, background: "#fff", border: "1.5px solid #000", cursor: "nwse-resize", touchAction: "none" }} />
+        {(["nw", "ne", "sw", "se"] as Corner[]).map((c) => (
+          <span key={c} onPointerDown={(e) => startDrag(l, c, e)} title="끌어서 크기 바꾸기 (반대쪽 모서리는 그대로)"
+            style={{ position: "absolute", [c[0] === "n" ? "top" : "bottom"]: -8, [c[1] === "w" ? "left" : "right"]: -8, width: 12, height: 12, background: "#fff", border: "1.5px solid #000", cursor: c === "nw" || c === "se" ? "nwse-resize" : "nesw-resize", touchAction: "none" }} />
+        ))}
       </>
     ) : null;
   const dragStyle = (l: Layer): React.CSSProperties => (onLayerMove ? { pointerEvents: "auto", cursor: "move", touchAction: "none", userSelect: "none" } : { pointerEvents: "none" });
@@ -355,12 +376,12 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
         const pos = l.pos || "top";
         const free = typeof l.x === "number" && typeof l.y === "number"; // 끌어서 옮긴 글자
         const ps: React.CSSProperties = free
-          ? { left: (l.x as number) * boxW, top: (l.y as number) * boxH, transform: "translate(-50%, -50%)", maxWidth: boxW * 0.9 }
+          ? { left: (l.x as number) * boxW, top: (l.y as number) * boxH, transform: "translate(-50%, -50%)" }
           : { left: W * 0.05 * k, right: W * 0.05 * k, ...(pos === "top" ? { top: H * 0.06 * k } : pos === "middle" ? { top: "50%", transform: "translateY(-50%)" } : { bottom: H * 0.07 * k }) };
         return (
           <div key={l.id} style={{ position: "absolute", textAlign: "center", ...ps, pointerEvents: "none" }}>
             <span data-layer={l.id} onPointerDown={(e) => startDrag(l, "move", e)} title="끌어서 옮기기" style={{ position: "relative", display: "inline-block", ...dragStyle(l),
-              whiteSpace: "pre-wrap", fontFamily: fontCss(l.font), fontWeight: fontWeight(l.font), fontSize: px, lineHeight: 1.25, color: l.color || "#fff",
+              whiteSpace: "pre", fontFamily: fontCss(l.font), fontWeight: fontWeight(l.font), fontSize: px, lineHeight: 1.25, color: l.color || "#fff",
               WebkitTextStroke: l.box ? undefined : `${Math.max(1, 4 * k * 2)}px ${String(l.color).toUpperCase() === "#111111" ? "#fff" : "#000"}`, paintOrder: "stroke fill",
               background: l.box ? rgba(l.boxColor || "#000000", l.boxOpacity ?? 0.62) : undefined, padding: l.box ? `${px * 0.12}px ${px * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
             }}>{String(l.text).trim()}{frame(l)}</span>
