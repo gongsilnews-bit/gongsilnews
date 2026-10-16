@@ -34,7 +34,7 @@ type Props = {
 /** 브라우저가 낼 수 있는 재생 빠르기 (0.0625~16배) — 20배는 미리보기에서 16배로 */
 const rateOk = (r: number) => Math.max(0.0625, Math.min(16, r));
 
-/** 화면 위 글자를 그 자리에서 고치는 칸 — 엔터: 저장, Shift+엔터: 줄바꿈, Esc: 취소 */
+/** 화면 위 글자를 그 자리에서 고치는 칸 — 엔터: 줄바꿈, Ctrl+엔터·바깥 누르기: 저장, Esc: 취소 */
 function InlineEdit({ text, style, onDone }: { text: string; style: React.CSSProperties; onDone: (t: string | null) => void }) {
   const ref = useRef<HTMLSpanElement>(null);
   const done = useRef(false);
@@ -57,9 +57,12 @@ function InlineEdit({ text, style, onDone }: { text: string; style: React.CSSPro
     <span ref={ref} contentEditable suppressContentEditableWarning
       onPointerDown={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
           finish(ref.current?.innerText ?? null);
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          document.execCommand("insertLineBreak");
         } else if (e.key === "Escape") {
           e.preventDefault();
           e.stopPropagation();
@@ -588,7 +591,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
       {(line || (clip && editing === `sub:${clip.id}`)) && (() => {
         const look: React.CSSProperties = {
           display: "inline", whiteSpace: "pre-wrap", fontFamily: fontCss(st.font), fontWeight: fontWeight(st.font, st.bold !== false),
-          fontSize: fontPx, lineHeight: 1.25, color: st.color || "#fff", WebkitTextStroke: st.bg ? undefined : `${Math.max(1, (st.outlineWidth ?? 3) * k * 2)}px ${st.outline || "#000"}`,
+          fontSize: fontPx, lineHeight: 1.25, letterSpacing: `${Math.max(-0.1, Math.min(0.5, st.spacing ?? 0)) * fontPx}px`, color: st.color || "#fff", WebkitTextStroke: st.bg ? undefined : `${Math.max(1, (st.outlineWidth ?? 3) * k * 2)}px ${st.outline || "#000"}`,
           paintOrder: "stroke fill", background: st.bg ? rgba(st.bgColor || "#000000", st.bgOpacity ?? 0.62) : undefined, padding: st.bg ? `${fontPx * 0.12}px ${fontPx * 0.3}px` : undefined, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
         };
         const full = clip ? (typeof clip.subText === "string" ? clip.subText : clipText(clip)) : "";
@@ -605,7 +608,7 @@ const Player = forwardRef<PlayerHandle, Props>(function Player({ project, width,
             {clip && editing === `sub:${clip.id}` && onSubText ? (
               <InlineEdit text={full} style={look} onDone={(t) => { setEditing(""); if (t !== null && t.replace(/\s+/g, " ").trim() !== full.trim()) onSubText(clip.id, t); }} />
             ) : (
-              <span onDoubleClick={() => clip && onSubText && setEditing(`sub:${clip.id}`)} title={onSubText ? "두 번 누르면 자막 고치기 (목소리는 그대로)" : undefined}
+              <span onDoubleClick={() => clip && onSubText && setEditing(`sub:${clip.id}`)} title={onSubText ? "두 번 누르면 자막 고치기 — 엔터: 줄바꿈, Ctrl+엔터·바깥 누르기: 저장 (목소리는 그대로)" : undefined}
                 style={{ ...look, pointerEvents: onSubText ? "auto" : "none", cursor: onSubText ? "text" : undefined }}>{line?.text}</span>
             )}
           </div>

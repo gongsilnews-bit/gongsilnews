@@ -396,7 +396,8 @@ export default function Editor({ initial, onHome, onNew, onOpen, onSwitch }: { i
       change((p) => {
         const c = findClip(p, id)?.clip;
         if (!c) return;
-        const t = text === null ? null : text.replace(/\s+/g, " ").trim();
+        // 줄 안의 띄어쓰기만 정리하고, 직접 넣은 줄바꿈(엔터)은 남긴다
+        const t = text === null ? null : text.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
         if (t === null || (c.type !== "silence" && t === clipText(c)) || (c.type === "silence" && !t)) delete c.subText;
         else c.subText = t;
       });

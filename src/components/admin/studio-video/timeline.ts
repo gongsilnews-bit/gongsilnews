@@ -108,17 +108,20 @@ export function flatten(p: Project): { items: FlatItem[]; total: number } {
 }
 
 /** 자막 줄 나누기 (render.js wrap 과 같음) */
+/** 줄 나누기 — 직접 넣은 줄바꿈(엔터)은 그대로 두고, 긴 줄만 글자 수로 나눈다 */
 export function wrap(text: string, max: number) {
-  const words = String(text).split(/\s+/).filter(Boolean);
   const lines: string[] = [];
-  let cur = "";
-  for (const w of words) {
-    if (cur && (cur + " " + w).length > max) {
-      lines.push(cur);
-      cur = w;
-    } else cur = cur ? `${cur} ${w}` : w;
+  for (const part of String(text).split(/\r?\n/)) {
+    const words = part.split(/\s+/).filter(Boolean);
+    let cur = "";
+    for (const w of words) {
+      if (cur && (cur + " " + w).length > max) {
+        lines.push(cur);
+        cur = w;
+      } else cur = cur ? `${cur} ${w}` : w;
+    }
+    if (cur) lines.push(cur);
   }
-  if (cur) lines.push(cur);
   return lines;
 }
 
@@ -129,7 +132,7 @@ export function subtitleLines(clip: Clip, dur: number, settings: Settings, W: nu
   const text = (custom ? clip.subText! : clipText(clip)).trim();
   if (!st.on || !text || (clip.type === "silence" && !custom) || clip.sub === false) return [] as { s: number; e: number; text: string }[];
   // 한 줄 글자 수 — 줄 너비만큼, 글자가 작으면 더 많이 (render.js 와 같은 계산)
-  const max = Math.max(4, Math.round(((W >= 1400 ? 26 : W >= 1080 ? 18 : 16) * Math.max(0.3, Math.min(1, st.wrap ?? 1)) * 100) / Math.max(40, st.size || 100)));
+  const max = Math.max(4, Math.round(((W >= 1400 ? 26 : W >= 1080 ? 18 : 16) * Math.max(0.3, Math.min(1, st.wrap ?? 1)) * 100) / Math.max(40, st.size || 100) / (1 + Math.max(-0.1, Math.min(0.5, st.spacing ?? 0)))));
   if (custom) return evenLines(text, dur, st.length === "short" ? Math.round(max * 0.7) : max, st.length === "short" ? 1 : 2);
   if (st.length !== "short") {
     const lines = wrap(text, max);
